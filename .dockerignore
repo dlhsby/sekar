@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Scripts
+*.sh
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database data (handled by volumes)
+db/
+
+# Frontend (not containerized)
+fe/
+
+# Development logs
+SESSION_SUMMARY.md
+SETUP_STATUS.md
+
+

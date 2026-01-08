@@ -1,0 +1,22 @@
+version: '3.8'
+
+# Development docker-compose override
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # Backend API (Development mode with hot reload)
+  backend:
+    build:
+      context: ./be
+      dockerfile: Dockerfile.dev
+      target: development
+    environment:
+      NODE_ENV: development
+      DATABASE_HOST: postgres
+    volumes:
+      - ./be:/app
+      - /app/node_modules
+      - /app/dist
+    command: npm run start:dev
+
+
