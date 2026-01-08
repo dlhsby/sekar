@@ -1,0 +1,297 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseUUIDPipe,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from './entities/user.entity';
+
+/**
+ * User Management Controller
+ *
+ * Handles HTTP requests related to user operations including
+ * creation, retrieval, updating, and deletion of user records.
+ *
+ * All endpoints require authentication and specific role permissions.
+ */
+@ApiTags('users')
+@ApiBearerAuth('JWT-auth')
+@Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  /**
+   * Create a new user.
+   * Only administrators can create users.
+   *
+   * @route POST /api/users
+   * @param createUserDto - User creation data
+   * @returns Created user entity (without password)
+   * @throws ConflictException if username already exists
+   * @throws UnauthorizedException if not admin
+   */
+  @Post()
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Create new user',
+    description:
+      'Create a new user account. Only accessible by administrators. Username must be unique.',
+  })
+  @ApiBody({ type: CreateUserDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'User created successfully.',
+    schema: {
+      example: {
+        id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+        username: 'worker4',
+        full_name: 'Pekerja Empat',
+        role: 'worker',
+        is_active: true,
+        created_at: '2026-01-07T10:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Username already exists.',
+    schema: {
+      example: {
+        statusCode: 409,
+        message: 'Username already exists',
+        error: 'Conflict',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized. Admin role required.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Bad Request. Validation failed.',
+  })
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  /**
+   * Get all users.
+   * Accessible by administrators and supervisors.
+   *
+   * @route GET /api/users
+   * @returns Array of users (without passwords)
+   */
+  @Get()
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @ApiOperation({
+    summary: 'Get all users',
+    description:
+      'Retrieve list of all users. Accessible by administrators and supervisors. Passwords are excluded.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'List of users retrieved successfully.',
+    schema: {
+      example: [
+        {
+          id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+          username: 'worker1',
+          full_name: 'Pekerja Satu',
+          role: 'worker',
+          is_active: true,
+          created_at: '2026-01-07T10:00:00.000Z',
+        },
+        {
+          id: '9237ec92-08df-5d7f-b2c5-c2bdf395fb89',
+          username: 'supervisor1',
+          full_name: 'Supervisor Satu',
+          role: 'supervisor',
+          is_active: true,
+          created_at: '2026-01-07T10:00:00.000Z',
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized. Admin or Supervisor role required.',
+  })
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  /**
+   * Get user by ID.
+   * Accessible by administrators and supervisors.
+   *
+   * @route GET /api/users/:id
+   * @param id - User UUID
+   * @returns User entity (without password)
+   * @throws NotFoundException if user not found
+   */
+  @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @ApiOperation({
+    summary: 'Get user by ID',
+    description:
+      'Retrieve a specific user by their UUID. Accessible by administrators and supervisors.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'User UUID',
+    example: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User retrieved successfully.',
+    schema: {
+      example: {
+        id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+        username: 'worker1',
+        full_name: 'Pekerja Satu',
+        role: 'worker',
+        is_active: true,
+        created_at: '2026-01-07T10:00:00.000Z',
+        updated_at: '2026-01-07T10:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found.',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'User with ID {id} not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid UUID format.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized. Admin or Supervisor role required.',
+  })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  /**
+   * Update user information.
+   * Only administrators can update users.
+   *
+   * @route PATCH /api/users/:id
+   * @param id - User UUID
+   * @param updateUserDto - Updated user data
+   * @returns Updated user entity (without password)
+   * @throws NotFoundException if user not found
+   */
+  @Patch(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Update user',
+    description:
+      'Update user information. Only accessible by administrators. All fields are optional.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'User UUID',
+    example: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+  })
+  @ApiBody({ type: UpdateUserDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User updated successfully.',
+    schema: {
+      example: {
+        id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+        username: 'worker1',
+        full_name: 'Pekerja Satu Updated',
+        role: 'worker',
+        is_active: true,
+        created_at: '2026-01-07T10:00:00.000Z',
+        updated_at: '2026-01-07T11:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized. Admin role required.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Bad Request. Validation failed.',
+  })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  /**
+   * Soft delete user (set is_active to false).
+   * Only administrators can delete users.
+   *
+   * @route DELETE /api/users/:id
+   * @param id - User UUID
+   * @returns No content
+   * @throws NotFoundException if user not found
+   */
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Delete user (soft delete)',
+    description:
+      'Soft delete user by setting is_active to false. Only accessible by administrators. User can no longer login but data is preserved.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'User UUID',
+    example: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User deleted successfully (soft delete).',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized. Admin role required.',
+  })
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.remove(id);
+  }
+}

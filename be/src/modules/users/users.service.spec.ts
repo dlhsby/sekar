@@ -1,0 +1,190 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { User, UserRole } from './entities/user.entity';
+import { AuthService } from '../auth/auth.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+
+describe('UsersService', () => {
+  let service: UsersService;
+  let userRepository: Repository<User>;
+  let authService: AuthService;
+
+  const mockUser: User = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    username: 'testuser',
+    password_hash: '$2b$10$hashedpassword',
+    full_name: 'Test User',
+    role: UserRole.WORKER,
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  const mockUserRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockAuthService = {
+    hashPassword: jest.fn().mockResolvedValue('$2b$10$hashedpassword'),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepository,
+        },
+        {
+          provide: AuthService,
+          useValue: mockAuthService,
+        },
+      ],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    authService = module.get<AuthService>(AuthService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('create', () => {
+    const createUserDto: CreateUserDto = {
+      username: 'newuser',
+      password: 'password123',
+      full_name: 'New User',
+      role: UserRole.WORKER,
+    };
+
+    it('should successfully create a user', async () => {
+      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUserRepository.create.mockReturnValue(mockUser);
+      mockUserRepository.save.mockResolvedValue(mockUser);
+
+      const result = await service.create(createUserDto);
+
+      expect(result).toEqual(mockUser);
+      expect(authService.hashPassword).toHaveBeenCalledWith(createUserDto.password);
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if username exists', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      await expect(service.create(createUserDto)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.create(createUserDto)).rejects.toThrow(
+        'Username already exists',
+      );
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return an array of users', async () => {
+      const users = [mockUser];
+      mockUserRepository.find.mockResolvedValue(users);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual(users);
+      expect(mockUserRepository.find).toHaveBeenCalledWith({
+        select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],
+      });
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a user by ID', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      const result = await service.findOne(mockUser.id);
+
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      const id = 'non-existent-id';
+      mockUserRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('update', () => {
+    const updateUserDto: UpdateUserDto = {
+      full_name: 'Updated Name',
+    };
+
+    it('should update a user', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.save.mockResolvedValue({
+        ...mockUser,
+        ...updateUserDto,
+      });
+
+      const result = await service.update(mockUser.id, updateUserDto);
+
+      expect(result.full_name).toBe(updateUserDto.full_name);
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update user password if provided', async () => {
+      const updateWithPassword: UpdateUserDto = {
+        password: 'newpassword123',
+      };
+
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.save.mockResolvedValue(mockUser);
+
+      await service.update(mockUser.id, updateWithPassword);
+
+      expect(authService.hashPassword).toHaveBeenCalledWith(updateWithPassword.password);
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('should soft delete a user', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.save.mockResolvedValue({
+        ...mockUser,
+        is_active: false,
+      });
+
+      await service.remove(mockUser.id);
+
+      expect(mockUserRepository.save).toHaveBeenCalledWith({
+        ...mockUser,
+        is_active: false,
+      });
+    });
+  });
+
+  describe('hardRemove', () => {
+    it('should hard delete a user', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.remove.mockResolvedValue(mockUser);
+
+      await service.hardRemove(mockUser.id);
+
+      expect(mockUserRepository.remove).toHaveBeenCalledWith(mockUser);
+    });
+  });
+});
