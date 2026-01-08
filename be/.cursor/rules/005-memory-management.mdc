@@ -1,0 +1,381 @@
+# Memory Management and Performance Optimization
+
+**Activation Mode:** Model Decision
+**Description:** Apply when working on performance optimization, memory usage, resource management, or performance-critical code in NestJS applications
+
+## Memory Management
+
+### Lifecycle Hooks
+- Implement proper cleanup in OnModuleDestroy lifecycle hook
+- Close database connections when module is destroyed
+- Unsubscribe from observables and event listeners
+- Clear intervals and timeouts
+
+### Example
+```typescript
+@Injectable()
+export class MyService implements OnModuleDestroy {
+  private subscription: Subscription;
+
+  onModuleDestroy() {
+    // Clean up subscriptions
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+  }
+}
+```
+
+### Connection Pooling
+- Configure appropriate database connection pool size
+- Reuse connections instead of creating new ones
+- Monitor connection pool usage
+- Implement connection timeout handling
+
+### Example Configuration
+```typescript
+TypeOrmModule.forRoot({
+  type: 'postgres',
+  poolSize: 10,
+  extra: {
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  },
+});
+```
+
+## Caching Strategies
+
+### In-Memory Caching
+- Use Cache Module for in-memory caching
+- Implement appropriate TTL (Time To Live)
+- Cache frequently accessed data
+- Implement cache invalidation strategies
+
+### Example
+```typescript
+@Injectable()
+export class UserService {
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+
+  async findById(id: string): Promise<User> {
+    const cacheKey = `user:${id}`;
+    const cached = await this.cacheManager.get<User>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const user = await this.userRepository.findOne({ where: { id } });
+    await this.cacheManager.set(cacheKey, user, { ttl: 300 }); // 5 minutes
+    return user;
+  }
+}
+```
+
+### Redis Caching
+- Use Redis for distributed caching
+- Implement cache-aside pattern
+- Use appropriate data structures (strings, hashes, sets)
+- Monitor Redis memory usage
+
+## Database Optimization
+
+### Query Optimization
+- Use select specific fields instead of SELECT *
+- Implement proper indexing strategy
+- Use query builders for complex queries
+- Avoid N+1 query problems
+
+### Example - Avoiding N+1
+```typescript
+// Bad - N+1 query problem
+const users = await this.userRepository.find();
+for (const user of users) {
+  user.posts = await this.postRepository.find({ where: { userId: user.id } });
+}
+
+// Good - Single query with join
+const users = await this.userRepository.find({
+  relations: ['posts'],
+});
+```
+
+### Pagination
+- Implement cursor-based or offset-based pagination
+- Limit result sets for large tables
+- Use streaming for very large datasets
+
+### Example
+```typescript
+async findAll(page: number = 1, limit: number = 10) {
+  const [items, total] = await this.repository.findAndCount({
+    skip: (page - 1) * limit,
+    take: limit,
+  });
+
+  return {
+    items,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+```
+
+### Batch Operations
+- Use batch inserts for multiple records
+- Implement bulk updates when possible
+- Use transactions for related operations
+
+### Example
+```typescript
+async batchCreate(dtos: CreateUserDto[]): Promise<User[]> {
+  const users = dtos.map(dto => this.userRepository.create(dto));
+  return await this.userRepository.save(users);
+}
+```
+
+## Request Optimization
+
+### Response Compression
+- Enable compression middleware
+- Configure compression thresholds
+- Use appropriate compression algorithms
+
+### Example
+```typescript
+import * as compression from 'compression';
+
+app.use(compression());
+```
+
+### Rate Limiting
+- Implement rate limiting to prevent abuse
+- Configure appropriate limits per endpoint
+- Use Redis for distributed rate limiting
+
+### Example
+```typescript
+@UseGuards(ThrottlerGuard)
+@Throttle(10, 60) // 10 requests per 60 seconds
+@Controller('users')
+export class UserController {}
+```
+
+## Async Operations
+
+### Promise Optimization
+- Use Promise.all for parallel operations
+- Avoid sequential awaits when not necessary
+- Implement proper error handling
+
+### Example
+```typescript
+// Bad - Sequential
+const user = await this.userService.findById(id);
+const posts = await this.postService.findByUserId(id);
+const comments = await this.commentService.findByUserId(id);
+
+// Good - Parallel
+const [user, posts, comments] = await Promise.all([
+  this.userService.findById(id),
+  this.postService.findByUserId(id),
+  this.commentService.findByUserId(id),
+]);
+```
+
+### Queue Management
+- Use Bull or similar for background jobs
+- Implement job prioritization
+- Configure concurrency limits
+- Monitor queue health
+
+### Example
+```typescript
+@Processor('email')
+export class EmailProcessor {
+  @Process({
+    concurrency: 5,
+  })
+  async sendEmail(job: Job<EmailData>) {
+    // Process email
+  }
+}
+```
+
+## Memory Leaks Prevention
+
+### Event Listeners
+- Always remove event listeners when done
+- Use weak references when appropriate
+- Limit the number of listeners
+
+### Streams
+- Properly close streams after use
+- Handle stream errors
+- Use pipeline for better error handling
+
+### Example
+```typescript
+import { pipeline } from 'stream';
+import { promisify } from 'util';
+
+const pipelineAsync = promisify(pipeline);
+
+async processFile(filePath: string) {
+  const readStream = createReadStream(filePath);
+  const writeStream = createWriteStream(outputPath);
+
+  try {
+    await pipelineAsync(readStream, transformStream, writeStream);
+  } catch (error) {
+    // Streams are automatically closed on error
+    throw error;
+  }
+}
+```
+
+## Monitoring and Profiling
+
+### Performance Monitoring
+- Implement request logging with duration
+- Monitor memory usage
+- Track database query performance
+- Use APM tools (Application Performance Monitoring)
+
+### Example - Logging Interceptor
+```typescript
+@Injectable()
+export class LoggingInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const now = Date.now();
+    const request = context.switchToHttp().getRequest();
+
+    return next.handle().pipe(
+      tap(() => {
+        const duration = Date.now() - now;
+        console.log(`${request.method} ${request.url} - ${duration}ms`);
+      }),
+    );
+  }
+}
+```
+
+### Health Checks
+- Implement health check endpoints
+- Monitor database connectivity
+- Check external service availability
+- Monitor memory and CPU usage
+
+### Example
+```typescript
+@Controller('health')
+export class HealthController {
+  constructor(
+    private health: HealthCheckService,
+    private db: TypeOrmHealthIndicator,
+  ) {}
+
+  @Get()
+  @HealthCheck()
+  check() {
+    return this.health.check([
+      () => this.db.pingCheck('database'),
+    ]);
+  }
+}
+```
+
+## Resource Limits
+
+### Request Payload Size
+- Configure body parser limits
+- Implement file upload size limits
+- Set appropriate timeouts
+
+### Example
+```typescript
+app.use(json({ limit: '10mb' }));
+app.use(urlencoded({ limit: '10mb', extended: true }));
+```
+
+### Timeout Configuration
+- Set request timeouts
+- Configure database query timeouts
+- Implement circuit breakers for external services
+
+## Code Optimization
+
+### Lazy Loading
+- Use lazy loading for modules when appropriate
+- Defer loading of heavy dependencies
+- Load resources on demand
+
+### Example
+```typescript
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+  ],
+})
+export class AppModule {}
+
+// Lazy load heavy module
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  const { HeavyModule } = await import('./heavy.module');
+  app.use('/heavy', HeavyModule);
+
+  await app.listen(3000);
+}
+```
+
+### Object Creation
+- Reuse objects when possible
+- Use object pooling for frequently created objects
+- Avoid creating unnecessary objects in loops
+
+### Data Structures
+- Choose appropriate data structures
+- Use Sets for unique values
+- Use Maps for key-value lookups
+- Consider using WeakMap/WeakSet for cache
+
+## File Operations
+
+### File Uploads
+- Stream large file uploads
+- Implement chunked uploads for very large files
+- Clean up temporary files
+
+### Example
+```typescript
+@Post('upload')
+@UseInterceptors(FileInterceptor('file'))
+async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  // Process file
+  // Clean up
+  await fs.unlink(file.path);
+}
+```
+
+## Best Practices Summary
+
+- [ ] Implement proper lifecycle hooks for cleanup
+- [ ] Configure appropriate connection pooling
+- [ ] Use caching for frequently accessed data
+- [ ] Implement pagination for large datasets
+- [ ] Optimize database queries and indexes
+- [ ] Use batch operations when appropriate
+- [ ] Enable response compression
+- [ ] Implement rate limiting
+- [ ] Use Promise.all for parallel operations
+- [ ] Prevent memory leaks (close streams, remove listeners)
+- [ ] Monitor performance metrics
+- [ ] Set appropriate resource limits
+- [ ] Implement health checks
+- [ ] Use lazy loading when appropriate
+- [ ] Clean up temporary resources

@@ -1,0 +1,374 @@
+# Unit Testing Guidelines
+
+**Activation Mode:** Model Decision
+**Description:** Apply when creating unit tests, test cases, and testing strategies for NestJS applications
+
+## Testing Framework
+- Use Jest as the primary testing framework
+- Use @nestjs/testing utilities for module testing
+- Use Supertest for e2e testing
+- Write tests in TypeScript with proper type safety
+- Follow the Arrange-Act-Assert (AAA) pattern
+
+## Test Structure
+
+### Organization
+- Group related tests using `describe` blocks
+- Use descriptive test names that explain the expected behavior
+- Keep tests focused on a single behavior or outcome
+- Avoid testing implementation details
+- Separate unit tests from e2e tests
+
+### Naming Conventions
+```typescript
+describe('ServiceName', () => {
+  describe('methodName', () => {
+    it('should [expected behavior] when [condition]', () => {
+      // test implementation
+    });
+  });
+});
+```
+
+## Service Testing
+
+### Mock Dependencies
+- Mock all external dependencies (repositories, other services)
+- Use Jest mocks for repositories and services
+- Create mock factories for reusable test data
+- Reset mocks between tests
+
+### Example
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { UserService } from './user.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Repository } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
+
+describe('UserService', () => {
+  let service: UserService;
+  let repository: Repository<User>;
+
+  const mockUserRepository = {
+    findOne: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepository,
+        },
+      ],
+    }).compile();
+
+    service = module.get<UserService>(UserService);
+    repository = module.get<Repository<User>>(getRepositoryToken(User));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('findById', () => {
+    it('should return a user when found', async () => {
+      // Arrange
+      const userId = '123';
+      const expectedUser = {
+        id: userId,
+        email: 'test@example.com',
+        name: 'Test User',
+      };
+      mockUserRepository.findOne.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.findById(userId);
+
+      // Assert
+      expect(result).toEqual(expectedUser);
+      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
+    });
+
+    it('should throw NotFoundException when user is not found', async () => {
+      // Arrange
+      const userId = '999';
+      mockUserRepository.findOne.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.findById(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
+    });
+  });
+});
+```
+
+## Controller Testing
+
+### Best Practices
+- Mock service dependencies
+- Test request validation
+- Test response transformation
+- Test error handling
+- Verify service method calls
+
+### Example
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { UserController } from './user.controller';
+import { UserService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
+
+describe('UserController', () => {
+  let controller: UserController;
+  let service: UserService;
+
+  const mockUserService = {
+    create: jest.fn(),
+    findById: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UserController],
+      providers: [
+        {
+          provide: UserService,
+          useValue: mockUserService,
+        },
+      ],
+    }).compile();
+
+    controller = module.get<UserController>(UserController);
+    service = module.get<UserService>(UserService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('create', () => {
+    it('should create a new user', async () => {
+      // Arrange
+      const createUserDto: CreateUserDto = {
+        email: 'test@example.com',
+        name: 'Test User',
+        password: 'password123',
+      };
+      const expectedResult = { id: '123', ...createUserDto };
+      mockUserService.create.mockResolvedValue(expectedResult);
+
+      // Act
+      const result = await controller.create(createUserDto);
+
+      // Assert
+      expect(result).toEqual(expectedResult);
+      expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
+    });
+  });
+});
+```
+
+## E2E Testing
+
+### Setup
+- Test the entire request/response cycle
+- Use real application configuration
+- Test with actual HTTP requests using Supertest
+- Test authentication and authorization flows
+
+### Example
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import * as request from 'supertest';
+import { AppModule } from '../src/app.module';
+
+describe('UserController (e2e)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('/users (POST)', () => {
+    it('should create a new user', () => {
+      return request(app.getHttpServer())
+        .post('/users')
+        .send({
+          email: 'test@example.com',
+          name: 'Test User',
+          password: 'password123',
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toHaveProperty('id');
+          expect(res.body.email).toBe('test@example.com');
+        });
+    });
+
+    it('should return 400 when validation fails', () => {
+      return request(app.getHttpServer())
+        .post('/users')
+        .send({
+          email: 'invalid-email',
+        })
+        .expect(400);
+    });
+  });
+
+  describe('/users/:id (GET)', () => {
+    it('should return a user by ID', () => {
+      const userId = '123';
+      return request(app.getHttpServer())
+        .get(`/users/${userId}`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toHaveProperty('id', userId);
+        });
+    });
+
+    it('should return 404 when user not found', () => {
+      return request(app.getHttpServer())
+        .get('/users/nonexistent')
+        .expect(404);
+    });
+  });
+});
+```
+
+## Guard Testing
+
+### Test Authentication and Authorization
+- Test guard approval and rejection
+- Mock execution context
+- Test role-based access
+
+### Example
+```typescript
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { ExecutionContext } from '@nestjs/common';
+
+describe('JwtAuthGuard', () => {
+  let guard: JwtAuthGuard;
+
+  beforeEach(() => {
+    guard = new JwtAuthGuard();
+  });
+
+  it('should allow access with valid token', async () => {
+    const mockContext = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: { authorization: 'Bearer valid-token' },
+        }),
+      }),
+    } as ExecutionContext;
+
+    const result = await guard.canActivate(mockContext);
+    expect(result).toBe(true);
+  });
+});
+```
+
+## Test Coverage
+
+### Coverage Goals
+- Aim for high code coverage but focus on meaningful tests
+- Prioritize testing critical business logic
+- Test both happy path and error scenarios
+- Include integration tests for complex workflows
+- Test edge cases and boundary conditions
+
+### What to Test
+- Service methods with business logic
+- Controller endpoints
+- Custom guards and interceptors
+- Custom pipes and validators
+- Custom exceptions and filters
+- Database operations (with mocked repositories)
+
+## Best Practices
+
+### Test Independence
+- Tests should run in isolation without dependencies
+- Clean up side effects with proper teardown
+- Use beforeEach and afterEach hooks appropriately
+- Don't rely on test execution order
+
+### Mock Best Practices
+- Create reusable mock factories
+- Mock only what's necessary
+- Use spy functions to verify calls
+- Reset mocks between tests
+
+### Async Testing
+- Always use async/await for async tests
+- Test promise rejections with expect().rejects
+- Ensure all promises are awaited
+
+### Factory Functions
+```typescript
+const createMockUser = (overrides = {}): User => ({
+  id: '123',
+  email: 'test@example.com',
+  name: 'Test User',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+```
+
+## Common Testing Patterns
+
+### Testing Exceptions
+```typescript
+it('should throw BadRequestException for invalid input', async () => {
+  await expect(service.someMethod(invalidInput)).rejects.toThrow(
+    BadRequestException,
+  );
+});
+```
+
+### Testing Pagination
+```typescript
+it('should return paginated results', async () => {
+  const result = await service.findAll({ page: 1, limit: 10 });
+  expect(result.items).toHaveLength(10);
+  expect(result).toHaveProperty('total');
+  expect(result).toHaveProperty('page', 1);
+});
+```
+
+### Testing Transactions
+```typescript
+it('should rollback transaction on error', async () => {
+  mockRepository.save.mockRejectedValue(new Error('DB Error'));
+  await expect(service.createUser(dto)).rejects.toThrow();
+  expect(mockRepository.rollback).toHaveBeenCalled();
+});
+```

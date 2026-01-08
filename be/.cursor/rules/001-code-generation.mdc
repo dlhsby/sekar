@@ -1,0 +1,251 @@
+# Code Generation Guidelines
+
+**Activation Mode:** Always On
+
+You are an expert in TypeScript, Node.js, NestJS, TypeORM/Prisma, GraphQL, and REST APIs.
+
+## Core Technologies
+- TypeScript for all code with strict mode enabled
+- NestJS framework for backend development
+- TypeORM or Prisma for database operations
+- Jest for testing
+- GraphQL and/or REST for APIs
+
+## Follow Official Documentation
+Follow NestJS official documentation for best practices, architecture patterns, and implementation guidelines.
+
+## TypeScript Usage
+
+### Type System
+- Use TypeScript for all code; prefer interfaces over types for DTOs and entities
+- Avoid enums; use const objects with 'as const' assertion instead
+- Enable strict mode in tsconfig.json for better type safety
+- Use TypeScript decorators extensively
+
+### Best Practices
+- Leverage TypeScript's strict mode for better type safety
+- Define clear interfaces for DTOs, entities, and service contracts
+- Use type guards when necessary for runtime type checking
+- Properly type async functions with Promise return types
+
+## NestJS Architecture
+
+### Module Organization
+- Follow modular architecture with feature-based modules
+- Keep modules focused and cohesive
+- Use barrel exports (index.ts) for clean imports
+- Implement dynamic modules for configurable features
+
+### Dependency Injection
+- Use constructor-based dependency injection
+- Prefer interface-based abstractions for services
+- Use custom providers when needed (useClass, useValue, useFactory)
+- Implement proper scope management (DEFAULT, REQUEST, TRANSIENT)
+
+## Controllers
+
+### Best Practices
+- Keep controllers thin, delegate business logic to services
+- Use proper HTTP method decorators (@Get, @Post, @Put, @Delete, @Patch)
+- Implement DTOs for request/response validation
+- Use route parameters and query parameters appropriately
+- Apply Guards and Interceptors at controller or route level
+- Use Swagger decorators for API documentation
+
+### Example Structure
+```typescript
+@Controller('users')
+@UseGuards(JwtAuthGuard)
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
+    return this.userService.findById(id);
+  }
+}
+```
+
+## Services
+
+### Best Practices
+- Implement business logic in services
+- Use @Injectable() decorator for all services
+- Keep services focused on single responsibility
+- Use repository pattern for data access
+- Handle errors appropriately and throw NestJS exceptions
+
+### Example Structure
+```typescript
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async findById(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+}
+```
+
+## Data Transfer Objects (DTOs)
+
+### Validation
+- Use class-validator for validation
+- Use class-transformer for transformation
+- Implement separate DTOs for create, update, and response
+- Use PartialType, PickType, OmitType for DTO composition
+
+### Example
+```typescript
+export class CreateUserDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @Length(2, 100)
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @MinLength(8)
+  @IsNotEmpty()
+  password: string;
+}
+
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
+```
+
+## Entities
+
+### Database Models
+- Use TypeORM decorators for entity definition
+- Define proper relationships and cascade options
+- Implement entity validation
+- Use timestamps (createdAt, updatedAt) consistently
+
+### Example
+```typescript
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  email: string;
+
+  @Column()
+  name: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
+```
+
+## Guards and Interceptors
+
+### Guards
+- Implement authentication guards (JWT, Passport)
+- Create role-based authorization guards
+- Use Guards for route protection
+- Return true for authorized, false or throw for unauthorized
+
+### Interceptors
+- Use interceptors for cross-cutting concerns (logging, transformation)
+- Implement response transformation interceptors
+- Use for timeout and caching logic
+
+## Exception Handling
+
+### Custom Exceptions
+- Use NestJS built-in exceptions (NotFoundException, BadRequestException, etc.)
+- Create custom exceptions extending HttpException when needed
+- Implement global exception filters for consistent error responses
+- Provide meaningful error messages
+
+## Configuration Management
+
+### Environment Configuration
+- Use @nestjs/config for configuration management
+- Implement environment-specific configurations
+- Validate configuration on application startup
+- Never hardcode sensitive values
+- Use ConfigService for accessing configuration
+
+## Database Operations
+
+### Best Practices
+- Use migrations for schema changes
+- Implement proper transaction handling
+- Use query builders for complex queries
+- Implement soft deletes where appropriate
+- Always use parameterized queries to prevent SQL injection
+
+## Testing
+
+### Unit Testing
+- Write unit tests for services with mocked dependencies
+- Use Test module builder for dependency injection in tests
+- Mock external dependencies properly
+- Follow AAA pattern (Arrange-Act-Assert)
+
+### E2E Testing
+- Write e2e tests for controllers and endpoints
+- Use Supertest for HTTP request testing
+- Test both success and error scenarios
+
+## Security
+
+### Best Practices
+- Use Guards for authentication and authorization
+- Implement rate limiting and throttling
+- Use Helmet for security headers
+- Implement proper CORS configuration
+- Validate and sanitize all inputs using DTOs
+- Use bcrypt or argon2 for password hashing
+
+## Performance
+
+### Optimization
+- Implement caching strategies (Redis, in-memory)
+- Use database indexes appropriately
+- Implement pagination for large datasets
+- Use lazy loading for module imports when appropriate
+- Monitor and optimize database queries
+
+## Naming Conventions
+
+- Use PascalCase for classes (controllers, services, modules, entities)
+- Use camelCase for methods, variables, and properties
+- Use lowercase with dashes for directories (e.g., user-management)
+- Use descriptive names that clearly indicate purpose
+- Favor named exports
+
+## File Structure
+
+Structure files in this order:
+1. Imports
+2. Decorators and class definition
+3. Constructor
+4. Public methods
+5. Private methods
+6. Helper methods
+
+## Code Style
+
+- Use async/await for asynchronous operations
+- Prefer early returns over nested conditionals
+- Keep methods focused and concise
+- Use logger service instead of console.log
+- Implement proper error handling at all layers

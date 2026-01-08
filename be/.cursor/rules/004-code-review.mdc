@@ -1,0 +1,262 @@
+# Code Review Guidelines
+
+**Activation Mode:** Model Decision
+**Description:** Apply when reviewing code, identifying issues, and providing feedback for NestJS applications
+
+## Review Criteria
+
+### Code Standards
+- Check for adherence to NestJS coding standards and conventions
+- Verify TypeScript types are properly defined and used
+- Ensure proper use of decorators and metadata
+- Verify consistent naming conventions throughout
+- Check for proper file organization and module structure
+
+### Architecture Review
+- Validate proper use of NestJS module system
+- Check for appropriate separation of concerns (controllers, services, repositories)
+- Verify dependency injection is used correctly
+- Ensure proper module imports and exports
+- Review layered architecture adherence
+
+## TypeScript Review
+
+### Type Safety
+- Verify all functions have proper return type annotations
+- Check for proper use of interfaces vs types
+- Ensure DTOs are properly typed and validated
+- Look for any usage of 'any' type (should be avoided)
+- Verify generic types are used appropriately
+
+### Decorator Usage
+- Verify proper use of NestJS decorators
+- Check for correct parameter decorators (@Body, @Param, @Query)
+- Ensure validation decorators are applied to DTOs
+- Verify Swagger decorators are present for API documentation
+
+## Controllers Review
+
+### Best Practices
+- Verify controllers are thin and delegate to services
+- Check for proper HTTP method decorators
+- Ensure DTOs are used for request/response
+- Verify proper error handling
+- Check for appropriate use of Guards and Interceptors
+
+### Route Design
+- Review RESTful route design
+- Check for consistent route naming
+- Verify proper HTTP status codes
+- Ensure route versioning if applicable
+
+## Services Review
+
+### Business Logic
+- Verify business logic is in services, not controllers
+- Check for single responsibility principle adherence
+- Ensure proper error handling and exception throwing
+- Verify transaction management where needed
+- Check for proper async/await usage
+
+### Dependency Management
+- Review constructor injection usage
+- Check for circular dependencies
+- Verify proper scope usage (singleton, request, transient)
+- Ensure interfaces are used for abstractions
+
+## Data Layer Review
+
+### DTOs
+- Verify validation decorators are present
+- Check for proper use of PartialType, PickType, OmitType
+- Ensure separate DTOs for create, update, and response
+- Verify transformation decorators if needed
+
+### Entities
+- Check for proper relationship definitions
+- Verify cascade options are appropriate
+- Ensure indexes are defined for frequently queried fields
+- Check for proper use of timestamps
+
+### Repository Usage
+- Verify custom repositories extend TypeORM Repository
+- Check for proper query optimization
+- Ensure parameterized queries (no SQL injection risks)
+- Verify transaction handling for complex operations
+
+## Security Review
+
+### Authentication & Authorization
+- Verify Guards are applied to protected routes
+- Check for proper JWT validation
+- Ensure role-based access control is implemented correctly
+- Verify password hashing (bcrypt/argon2)
+
+### Input Validation
+- Ensure all inputs are validated using DTOs
+- Check for SQL injection prevention
+- Verify XSS prevention measures
+- Check for proper sanitization
+
+### Configuration & Secrets
+- Verify no hardcoded secrets or credentials
+- Check for proper use of ConfigService
+- Ensure environment variables are validated
+- Verify sensitive data is not logged
+
+### Rate Limiting & Throttling
+- Check for rate limiting on public endpoints
+- Verify throttling configuration
+- Ensure CORS is properly configured
+- Check for Helmet usage for security headers
+
+## Performance Review
+
+### Database Optimization
+- Review query efficiency
+- Check for N+1 query problems
+- Verify proper use of indexes
+- Ensure pagination for large datasets
+- Check for lazy vs eager loading appropriateness
+
+### Caching
+- Review caching strategy
+- Check for cache invalidation logic
+- Verify cache key naming conventions
+- Ensure appropriate TTL values
+
+### Resource Management
+- Check for proper cleanup in lifecycle hooks
+- Verify connection pooling configuration
+- Ensure no memory leaks in subscriptions
+- Review file upload size limits
+
+## Error Handling Review
+
+### Exception Handling
+- Verify proper use of NestJS exception classes
+- Check for meaningful error messages
+- Ensure errors are logged appropriately
+- Verify global exception filter usage
+
+### Error Responses
+- Check for consistent error response format
+- Verify appropriate HTTP status codes
+- Ensure error details don't leak sensitive information
+- Check for proper error logging
+
+## Testing Review
+
+### Test Coverage
+- Verify unit tests exist for services
+- Check for controller tests
+- Ensure e2e tests for critical paths
+- Verify test naming conventions
+
+### Test Quality
+- Check for proper mocking of dependencies
+- Verify tests are independent
+- Ensure both success and failure cases are tested
+- Check for edge case coverage
+
+## Code Quality
+
+### Readability
+- Assess code readability and maintainability
+- Check for proper comments on complex logic
+- Verify consistent code formatting
+- Ensure meaningful variable and function names
+
+### Code Smells
+- Look for duplicated code
+- Check for overly complex functions (cyclomatic complexity)
+- Identify long parameter lists
+- Look for large classes/services that need refactoring
+
+### Documentation
+- Verify JSDoc comments on public methods
+- Check for README updates if needed
+- Ensure Swagger documentation is complete
+- Verify changelog updates for significant changes
+
+## Module Organization
+
+### Structure
+- Verify proper module hierarchy
+- Check for circular module dependencies
+- Ensure shared modules are properly exported
+- Verify dynamic modules are implemented correctly
+
+### Imports
+- Check for unnecessary imports
+- Verify barrel exports are used
+- Ensure proper re-exports in modules
+- Check for unused dependencies
+
+## Configuration Review
+
+### Environment Configuration
+- Verify proper use of @nestjs/config
+- Check for configuration validation
+- Ensure environment-specific configurations
+- Verify default values are provided
+
+### Application Configuration
+- Check for proper global pipe configuration
+- Verify global interceptor setup
+- Ensure global filter configuration
+- Review middleware configuration
+
+## Logging Review
+
+### Logger Usage
+- Verify Logger service is used instead of console.log
+- Check for appropriate log levels
+- Ensure sensitive data is not logged
+- Verify request/response logging configuration
+
+## API Design Review
+
+### REST API
+- Verify RESTful principles are followed
+- Check for proper resource naming
+- Ensure consistent response formats
+- Verify proper use of HTTP methods
+
+### GraphQL (if applicable)
+- Check resolver implementation
+- Verify proper query/mutation structure
+- Ensure proper type definitions
+- Check for N+1 query prevention (DataLoader)
+
+## Feedback Guidelines
+
+### Constructive Feedback
+- Provide specific, actionable feedback
+- Suggest improvements with reasoning
+- Include code examples for suggested changes
+- Highlight both positive aspects and areas for improvement
+- Focus on the code, not the person
+
+### Priority Levels
+- Critical: Security issues, bugs, data loss risks
+- High: Performance issues, architectural problems
+- Medium: Code quality, maintainability concerns
+- Low: Style preferences, minor optimizations
+
+## Common Issues Checklist
+
+- [ ] No hardcoded credentials or secrets
+- [ ] Proper error handling and logging
+- [ ] Input validation on all endpoints
+- [ ] Proper TypeScript typing (no 'any')
+- [ ] Security headers configured
+- [ ] Authentication/Authorization properly implemented
+- [ ] Database queries optimized
+- [ ] Proper transaction handling
+- [ ] Tests cover critical functionality
+- [ ] API documentation up to date
+- [ ] No circular dependencies
+- [ ] Proper module organization
+- [ ] Environment variables validated
+- [ ] Migrations for database changes

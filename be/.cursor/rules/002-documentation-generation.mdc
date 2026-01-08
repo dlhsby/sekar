@@ -1,0 +1,236 @@
+# Documentation Generation Guidelines
+
+**Activation Mode:** Model Decision
+**Description:** Apply when writing documentation, comments, README files, and technical specifications for NestJS applications
+
+## Documentation Standards
+- Write clear, concise documentation with practical examples
+- Use proper JSDoc/TSDoc formatting and structure
+- Include code examples that demonstrate usage
+- Provide context and reasoning behind architectural decisions
+- Document all public APIs and interfaces
+
+## Code Comments
+
+### Service Documentation
+- Document each service method with purpose, parameters, and return types
+- Add comments for complex business logic
+- Document exceptions that can be thrown
+- Explain the "why" not just the "what"
+
+### Example
+```typescript
+/**
+ * Retrieves a user by their unique identifier.
+ *
+ * This method queries the database to find a user with the specified ID.
+ * If the user is not found, a NotFoundException is thrown.
+ *
+ * @param id - The unique identifier of the user to retrieve
+ * @returns A Promise that resolves to the User entity
+ * @throws NotFoundException if the user with the specified ID does not exist
+ * @throws InternalServerErrorException if a database error occurs
+ */
+async findById(id: string): Promise<User> {
+  // implementation
+}
+```
+
+## Controller Documentation
+
+### API Endpoint Documentation
+- Document each endpoint with route, method, and purpose
+- Include request/response examples
+- Document authentication requirements
+- Specify error responses
+
+### Example
+```typescript
+/**
+ * User Management Controller
+ *
+ * Handles HTTP requests related to user operations including
+ * creation, retrieval, updating, and deletion of user records.
+ */
+@Controller('users')
+@ApiTags('users')
+export class UserController {
+  /**
+   * Retrieves a user by ID.
+   *
+   * @route GET /users/:id
+   * @param id - User unique identifier from route parameter
+   * @returns UserResponseDto containing user information
+   * @throws NotFoundException if user doesn't exist
+   */
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiResponse({ status: 200, description: 'User found', type: UserResponseDto })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
+    // implementation
+  }
+}
+```
+
+## DTO Documentation
+
+### Validation Rules
+- Document each DTO field with its purpose and validation rules
+- Include examples of valid values
+- Specify constraints and formats
+
+### Example
+```typescript
+/**
+ * Data Transfer Object for creating a new user.
+ *
+ * Validates incoming request data for user creation endpoint.
+ * All fields are required unless marked as @IsOptional().
+ */
+export class CreateUserDto {
+  /**
+   * User's email address.
+   * Must be a valid email format and unique in the system.
+   *
+   * @example 'user@example.com'
+   */
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  /**
+   * User's full name.
+   * Must be between 2 and 100 characters.
+   *
+   * @example 'John Doe'
+   */
+  @ApiProperty({ example: 'John Doe' })
+  @IsString()
+  @Length(2, 100)
+  @IsNotEmpty()
+  name: string;
+}
+```
+
+## Module Documentation
+
+### Module Purpose and Structure
+- Document module responsibilities
+- List key components and their relationships
+- Document module dependencies
+- Explain configuration options for dynamic modules
+
+### Example
+```typescript
+/**
+ * User Module
+ *
+ * Encapsulates all user-related functionality including:
+ * - User CRUD operations
+ * - User authentication
+ * - User profile management
+ *
+ * This module provides UserService for use in other modules
+ * and registers UserController for handling HTTP requests.
+ *
+ * @module UserModule
+ */
+@Module({
+  imports: [TypeOrmModule.forFeature([User])],
+  controllers: [UserController],
+  providers: [UserService],
+  exports: [UserService],
+})
+export class UserModule {}
+```
+
+## README Files
+
+### Project Documentation
+- Include project overview and purpose
+- Provide clear installation and setup instructions
+- Document environment variables and configuration
+- List available npm scripts and their purposes
+- Include API documentation or links to Swagger
+- Document database setup and migrations
+- Provide examples of common use cases
+
+### Structure
+```markdown
+# Project Name
+
+## Description
+[Brief description of the project]
+
+## Installation
+[Step-by-step installation instructions]
+
+## Configuration
+[Environment variables and configuration options]
+
+## Running the App
+[Commands to run the application]
+
+## Testing
+[How to run tests]
+
+## API Documentation
+[Link to Swagger or API documentation]
+
+## Architecture
+[High-level architecture overview]
+```
+
+## API Documentation
+
+### Swagger/OpenAPI
+- Use @ApiTags for grouping endpoints
+- Use @ApiOperation for endpoint descriptions
+- Use @ApiResponse for response documentation
+- Use @ApiProperty for DTO field documentation
+- Document authentication requirements with @ApiBearerAuth
+
+### Example
+```typescript
+@ApiTags('authentication')
+@Controller('auth')
+export class AuthController {
+  @Post('login')
+  @ApiOperation({ summary: 'User login' })
+  @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
+    // implementation
+  }
+}
+```
+
+## Technical Specifications
+
+### Architecture Documentation
+- Define clear requirements and acceptance criteria
+- Include architecture diagrams when helpful (use Mermaid or similar)
+- Document design decisions and trade-offs
+- Document database schema and relationships
+- Maintain up-to-date documentation with code changes
+
+### Guard and Interceptor Documentation
+- Document the purpose and behavior of custom guards
+- Explain when and how interceptors transform data
+- Document any side effects or state changes
+
+## Configuration Documentation
+
+- Document all environment variables with descriptions and examples
+- Provide default values where applicable
+- Document required vs optional configuration
+- Include examples for different environments (dev, staging, prod)
+
+## Error Documentation
+
+- Document custom exceptions and when they're thrown
+- Provide error code references
+- Document error response formats
+- Include examples of error responses
