@@ -22,7 +22,7 @@ DB_CONTAINER_NAME="sekar-postgres"
 BACKEND_DIR="./be"
 FRONTEND_DIR="./fe/mobile"
 BACKEND_PORT=3000
-LOG_DIR="./log"
+LOG_DIR="./logs"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 # Function to print colored messages
