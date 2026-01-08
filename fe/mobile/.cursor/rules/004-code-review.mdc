@@ -1,0 +1,48 @@
+# Code Review Guidelines
+
+**Activation Mode:** Model Decision
+**Description:** Apply when reviewing code, identifying issues, and providing feedback
+
+## Review Criteria
+- Check for adherence to coding standards and style guidelines
+- Verify TypeScript types are properly defined and used
+- Ensure proper error handling and edge case coverage
+- Review for potential security vulnerabilities
+- Check platform-specific implementations (iOS vs Android)
+
+## Performance Considerations
+- Look for unnecessary re-renders in React Native components
+- Check for proper memoization and optimization
+- Verify efficient data structures and algorithms
+- Ensure proper resource cleanup and memory management
+- Review list performance (FlatList vs ScrollView usage)
+- Check image optimization and loading strategies
+
+## Mobile-Specific Review Points
+- Verify proper navigation implementation
+- Check platform-specific code and styling
+- Review accessibility implementation
+- Ensure proper keyboard handling and safe area management
+- Check for proper permission handling
+- Review battery and performance impact
+
+## Code Quality
+- Assess code readability and maintainability
+- Check for proper abstraction and separation of concerns
+- Verify consistent naming conventions throughout
+- Ensure adequate test coverage for new functionality
+- Review React Native best practices adherence
+
+## Architecture Review
+- Validate component structure and hierarchy
+- Check for proper separation of business logic
+- Ensure consistent patterns across the codebase
+- Review API design and data flow
+- Validate navigation structure and deep linking
+
+## Feedback Guidelines
+- Provide constructive and specific feedback
+- Suggest improvements with reasoning
+- Highlight both positive aspects and areas for improvement
+- Focus on the code, not the person writing it
+- Include mobile-specific considerations in feedback

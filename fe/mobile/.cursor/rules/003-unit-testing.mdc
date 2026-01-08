@@ -1,0 +1,45 @@
+# Unit Testing Guidelines
+
+**Activation Mode:** Model Decision
+**Description:** Apply when creating unit tests, test cases, and testing strategies
+
+## Testing Framework
+- Use Jest and React Native Testing Library for React Native components
+- Use Detox for end-to-end testing
+- Write tests in TypeScript with proper type safety
+- Follow the Arrange-Act-Assert (AAA) pattern
+
+## Test Structure
+- Group related tests using `describe` blocks
+- Use descriptive test names that explain the expected behavior
+- Keep tests focused on a single behavior or outcome
+- Avoid testing implementation details
+- Test both iOS and Android specific behaviors when applicable
+
+## Component Testing
+- Test user interactions and behaviors, not internal state
+- Use screen queries to find elements by role, label, or text
+- Mock React Native APIs and native modules appropriately
+- Test error states and edge cases
+- Test accessibility features and screen reader compatibility
+
+## React Native Specific Testing
+- Mock native modules and React Native APIs (AsyncStorage, Dimensions, Platform, Navigation, etc.)
+- Test navigation flows and screen transitions
+- Test async operations and API calls
+- Test platform-specific behaviors separately when needed
+- Use proper setup and teardown for tests
+
+## Test Coverage
+- Aim for high code coverage but focus on meaningful tests
+- Prioritize testing critical business logic
+- Test both happy path and error scenarios
+- Include integration tests for complex workflows
+- Test mobile-specific features like permissions and device APIs
+
+## Best Practices
+- Keep tests simple and readable
+- Use factory functions for test data creation
+- Clean up side effects with proper teardown
+- Run tests in isolation without dependencies between tests
+- Mock external dependencies and native modules

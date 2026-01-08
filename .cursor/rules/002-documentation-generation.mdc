@@ -1,0 +1,128 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Documentation Generation Standards
+
+You are a senior developer with expertise in writing comprehensive and accessible code documentation. When generating or reviewing documentation, apply these standards:
+
+## Documentation Requirements
+
+### Function and Method Documentation
+1. **Summary**: Provide a concise, clear summary of the function's purpose
+2. **Parameters**: Document each parameter including:
+   - Data type
+   - Purpose and role
+   - Default values (if any)
+   - Constraints or validation requirements
+3. **Return Values**: Specify return type and describe what is returned
+   - Include cases where null/undefined/None might be returned
+   - Document return value structure for complex objects
+4. **Exceptions**: List errors that may be thrown and their conditions
+5. **Examples**: Provide usage examples for complex functions
+6. **Edge Cases**: Discuss any constraints, limitations, or special behaviors
+
+### Class and Module Documentation
+1. **Purpose**: Clear description of the class/module's responsibility
+2. **Usage Patterns**: How the class should be instantiated and used
+3. **Dependencies**: External dependencies and requirements
+4. **Thread Safety**: Concurrency considerations if applicable
+5. **Performance Notes**: Any performance characteristics users should know
+
+## Documentation Format Standards
+
+### JSDoc Format (JavaScript/TypeScript)
+```javascript
+/**
+ * Calculates the distance between two geographical points
+ * @param {number} lat1 - Latitude of the first point
+ * @param {number} lon1 - Longitude of the first point
+ * @param {number} lat2 - Latitude of the second point
+ * @param {number} lon2 - Longitude of the second point
+ * @param {string} [unit='km'] - Unit of measurement ('km' or 'miles')
+ * @returns {number} Distance between points in specified unit
+ * @throws {Error} When coordinates are invalid
+ * @example
+ * const distance = calculateDistance(40.7128, -74.0060, 34.0522, -118.2437);
+ * console.log(distance); // ~3944.42 km
+ */
+```
+
+### Python Docstring Format
+```python
+def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float, unit: str = 'km') -> float:
+    """
+    Calculate the distance between two geographical points.
+    
+    Args:
+        lat1: Latitude of the first point
+        lon1: Longitude of the first point
+        lat2: Latitude of the second point
+        lon2: Longitude of the second point
+        unit: Unit of measurement, either 'km' or 'miles' (default: 'km')
+    
+    Returns:
+        Distance between points in the specified unit
+    
+    Raises:
+        ValueError: When coordinates are out of valid range
+        TypeError: When unit is not 'km' or 'miles'
+    
+    Example:
+        >>> distance = calculate_distance(40.7128, -74.0060, 34.0522, -118.2437)
+        >>> print(f"{distance:.2f} km")
+        3944.42 km
+    """
+```
+
+### Java Documentation Format
+```java
+/**
+ * Calculates the distance between two geographical points using the Haversine formula.
+ * 
+ * @param lat1 latitude of the first point in decimal degrees
+ * @param lon1 longitude of the first point in decimal degrees
+ * @param lat2 latitude of the second point in decimal degrees
+ * @param lon2 longitude of the second point in decimal degrees
+ * @param unit unit of measurement ("km" for kilometers, "miles" for miles)
+ * @return distance between the two points in the specified unit
+ * @throws IllegalArgumentException if coordinates are invalid or unit is unsupported
+ * @since 1.0
+ * @see <a href="https://en.wikipedia.org/wiki/Haversine_formula">Haversine Formula</a>
+ */
+```
+
+## Quality Guidelines
+
+### Content Quality
+- Use clear, concise language
+- Avoid assumptions about reader's knowledge level
+- Include practical examples that can be copy-pasted
+- Keep documentation up-to-date with code changes
+- Use consistent terminology throughout
+
+### Structure and Organization
+- Start with the most important information
+- Use consistent formatting and style
+- Include cross-references to related functions/classes
+- Group related functionality together
+- Provide table of contents for long documents
+
+### Code Examples
+- Ensure all examples are tested and working
+- Show both common use cases and edge cases
+- Include error handling in examples where relevant
+- Use realistic data in examples
+- Provide complete, runnable examples when possible
+
+## When Generating Documentation
+
+1. **Read the code thoroughly** to understand its purpose and behavior
+2. **Identify all parameters, return values, and exceptions**
+3. **Look for edge cases and special behaviors**
+4. **Create meaningful examples** that demonstrate real-world usage
+5. **Use the appropriate format** for the programming language
+6. **Include performance considerations** if relevant
+7. **Cross-reference related functions** and dependencies
+8. **Validate examples** to ensure they work correctly

@@ -1,0 +1,99 @@
+---
+description: "Create a well-scoped GitHub Issue from a high-level idea and file it to the configured repo/project."
+globs: 
+alwaysApply: false
+---
+
+## Purpose
+
+Take the user's high-level idea and turn it into a detailed, actionable GitHub Issue. Ask for any missing information, synthesize the details, and then create the issue in the configured repository. Optionally, attach to the configured GitHub Project and set the default status if supported by available tools.
+
+---
+
+## Configuration Setup
+
+Before creating the issue, check local configuration:
+
+1. Search the local project directory (the working directory on the user's machine) for a `prompt.yml`. Do not search remote repositories. If `prompt.yml` is missing, prompt the user to create it with the required structure.
+2. Read it (e.g., `cat prompt.yml`) and parse the following keys:
+   - `issue`:
+     - `assignees`: Array of usernames to assign to the issue
+     - `labels`: Array of labels to apply to the issue
+     - `repo`: Target repository in `owner/repo` format
+   - `github-project` (optional):
+     - `organization`: GitHub organization that owns the project
+     - `number`: The project number
+     - `default-status`: The default status field value to set
+
+If `prompt.yml` is missing values, ask the user for the required info or proceed with reasonable defaults.
+
+---
+
+## Issue Authoring Flow
+
+1. Clarify and Elaborate
+   - If the user's idea is incomplete or ambiguous, ask targeted follow-ups for: scope, users/persona, success criteria, constraints, dependencies, and risks.
+   - Propose a scope suggestion when useful (what to include vs. defer).
+
+2. Draft the Issue Content
+   - Title: A concise, outcome-focused sentence. Prefer imperative voice.
+   - Body sections (include only those that add value):
+     - Summary: One or two sentences capturing the objective and motivation.
+     - Goals: Bullet list of what success must include.
+     - Non-Goals: Bullet list of what is explicitly out of scope now.
+     - Acceptance Criteria: Testable, binary checks (Given/When/Then or plain bullets).
+     - Technical Notes: Implementation direction, key modules/services, data model, APIs.
+     - Impacted Areas: Code paths, services, docs, configs, migrations.
+     - Risks & Mitigations: Known risks with proposed safeguards.
+     - Dependencies: External teams, services, features, or decisions required.
+     - Milestones: Optional phased plan with rough dates or order.
+     - Estimate: T-shirt size or person-days if available.
+
+3. Create the GitHub Issue
+   - Split `issue.repo` into owner and repo.
+   - Use `github-mcp/create_issue` with `title` and `body`.
+   - After creation, if provided in config:
+     - Use `github-mcp/update_issue` to set `assignees` and `labels`.
+   - If `github-project` config is present and a tool exists to attach issues to Projects, add the new issue to the given project and set the status to `default-status`. If such a tool is not available, note this in a comment on the issue.
+
+4. Wrap-Up
+   - Comment on the issue with any open questions or next steps.
+
+---
+
+## Issue Template (Use as guidance)
+
+Title: <crisp outcome-oriented title>
+
+Summary
+- <what problem we solve and why now>
+
+Goals
+- <must-have 1>
+- <must-have 2>
+
+Non-Goals
+- <explicitly out of scope>
+
+Acceptance Criteria
+- [ ] <criterion 1>
+- [ ] <criterion 2>
+
+Technical Notes
+- <approach, modules, APIs, data, migrations>
+
+Impacted Areas
+- <code/services/docs>
+
+Risks & Mitigations
+- <risk> — <mitigation>
+
+Dependencies
+- <dependency or upstream work>
+
+Milestones (optional)
+- M1: <milestone>
+- M2: <milestone>
+
+Estimate (optional)
+- <days>

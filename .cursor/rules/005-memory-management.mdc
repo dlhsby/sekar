@@ -1,0 +1,138 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Memory Management and Resource Optimization Standards
+
+You are an expert software engineer with deep understanding of memory management principles across various programming languages and runtime environments. Apply these comprehensive memory management guidelines to prevent memory leaks, optimize resource usage, and ensure efficient memory utilization.
+
+## Core Memory Management Principles
+
+### 1. Resource Lifecycle Management
+- **Explicit Resource Control**: Every resource acquisition should have a corresponding release
+- **Deterministic Cleanup**: Resources should be released as soon as they're no longer needed
+- **Exception Safety**: Ensure resources are properly cleaned up even when exceptions occur
+- **Scope-based Management**: Limit resource lifetime to the smallest possible scope
+
+### 2. Memory Leak Prevention Strategies
+
+#### Resource Disposal Patterns
+- **RAII (Resource Acquisition Is Initialization)**: Acquire resources in constructors, release in destructors/finalizers
+- **Dispose Pattern**: Implement proper cleanup methods and ensure they're called consistently
+- **Using Statements**: Leverage language-specific resource management constructs (using, with, defer, etc.)
+- **Try-Finally Blocks**: Ensure cleanup code runs even if exceptions occur
+
+#### Reference Management
+- **Avoid Circular References**: Break circular dependencies that prevent garbage collection
+- **Weak References**: Use weak references for parent-child relationships or cache scenarios
+- **Event Handler Cleanup**: Always unsubscribe/detach event handlers to prevent memory leaks
+- **Callback Management**: Properly cancel or clean up callbacks, timers, and async operations
+
+### 3. Memory Allocation Optimization
+
+#### Hot Path Optimization
+- **Minimize Allocations**: Reduce object creation in frequently executed code paths
+- **Object Pooling**: Reuse expensive objects instead of creating new instances
+- **Buffer Reuse**: Reuse buffers and data structures where possible
+- **Lazy Initialization**: Create objects only when needed to reduce memory footprint
+
+#### Collection and Data Structure Optimization
+- **Initial Capacity**: Set appropriate initial capacities for collections to avoid resizing
+- **Memory-Efficient Structures**: Choose data structures based on memory characteristics
+- **String Handling**: Use string builders for multiple concatenations, avoid creating temporary strings
+- **Primitive vs Object**: Prefer primitive types over boxed objects when possible
+
+### 4. Garbage Collection Awareness
+
+#### GC-Friendly Patterns
+- **Avoid Finalizers**: Minimize use of finalizers/destructors as they delay garbage collection
+- **Generational Awareness**: Understand generational GC behavior and write generation-friendly code
+- **Allocation Rate**: Keep allocation rates reasonable to avoid frequent GC pressure
+- **Object Lifetime**: Align object lifetimes with GC generation patterns
+
+#### Memory Pressure Management
+- **Large Object Heap**: Be aware of large object heap behavior and avoid large object allocations
+- **GC Notifications**: Monitor and respond to memory pressure notifications where available
+- **Manual GC Hints**: Use GC hints judiciously in specific scenarios (rarely needed)
+
+## Language-Agnostic Best Practices
+
+### Connection and Resource Management
+- **Connection Pooling**: Reuse expensive connections (database, network, file handles)
+- **Bounded Pools**: Implement proper bounds and cleanup for connection pools
+- **Resource Timeouts**: Set appropriate timeouts for resource usage
+- **Monitoring**: Track resource usage and detect leaks early
+
+### Async and Concurrent Programming
+- **Async Resource Management**: Properly dispose of async resources and cancel operations
+- **Concurrent Collection Safety**: Use thread-safe collections or proper synchronization
+- **Task Cancellation**: Implement proper cancellation tokens and cleanup
+- **Resource Contention**: Minimize resource contention in concurrent scenarios
+
+## Memory Profiling and Monitoring
+
+### Design for Observability
+- **Memory Metrics**: Include memory usage metrics in application monitoring
+- **Profiling Hooks**: Design code to be profiler-friendly with clear object relationships
+- **Resource Tracking**: Implement resource tracking for critical resources
+- **Memory Budgets**: Set and monitor memory usage budgets for different components
+
+### Debugging and Diagnostics
+- **Leak Detection**: Implement or use tools for memory leak detection
+- **Allocation Tracking**: Track allocation patterns and identify hotspots
+- **Reference Counting**: Monitor reference patterns for potential circular references
+- **Memory Dumps**: Design code to produce analyzable memory dumps when needed
+
+## Common Anti-Patterns to Avoid
+
+### Resource Management Anti-Patterns
+- **Forgetting to Dispose**: Not properly disposing of IDisposable objects or equivalent
+- **Exception Swallowing**: Ignoring exceptions during resource cleanup
+- **Nested Resource Acquisition**: Acquiring resources in deeply nested scopes without proper cleanup
+- **Long-Lived References**: Holding references to resources longer than necessary
+
+### Allocation Anti-Patterns
+- **Boxing in Loops**: Unnecessary boxing/unboxing operations in performance-critical paths
+- **Temporary Collections**: Creating temporary collections for simple operations
+- **String Concatenation**: Using string concatenation operators in loops
+- **Premature Optimization**: Over-optimizing memory usage at the cost of code clarity
+
+## Code Review Checklist
+
+When reviewing code for memory management:
+
+### Critical Issues (🚨)
+- [ ] Resources are properly disposed in all code paths
+- [ ] No obvious memory leaks (event handlers, timers, circular references)
+- [ ] Exception safety is maintained during resource cleanup
+- [ ] Async operations are properly cancelled and cleaned up
+
+### Performance Issues (⚡)
+- [ ] No excessive allocations in hot paths
+- [ ] Appropriate use of object pooling for expensive resources
+- [ ] Collections have appropriate initial capacities
+- [ ] String operations are efficient
+
+### Best Practice Issues (🔧)
+- [ ] Resource lifetime is appropriately scoped
+- [ ] Weak references are used where appropriate
+- [ ] GC-friendly patterns are followed
+- [ ] Memory usage is monitored and bounded
+
+## Implementation Guidelines
+
+### Code Generation Requirements
+When generating code:
+1. Always include proper resource disposal patterns
+2. Use language-appropriate resource management constructs
+3. Include error handling that doesn't leak resources
+4. Implement lazy loading where appropriate
+5. Design for memory profiling and monitoring
+6. Include memory usage documentation for complex algorithms
+
+### Documentation Requirements
+- Document resource ownership and lifetime
+- Explain memory usage characteristics of algorithms
+- Provide guidance on memory-sensitive usage patterns
+- Include performance characteristics and memory complexity

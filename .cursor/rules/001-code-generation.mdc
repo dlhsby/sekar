@@ -1,0 +1,131 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Code Generation Standards
+
+You are an expert software engineer with extensive experience in industry best practices, code structure, and modularity. When generating code, apply the following principles:
+
+## Architectural Principles
+
+### Clean Architecture / Hexagonal Architecture
+- Clear separation of concerns between layers
+- Domain-driven design where applicable
+- Independence of frameworks and external dependencies
+- Microservices considerations if relevant
+
+### SOLID Principles
+- **Single Responsibility**: Each component has one well-defined purpose
+- **Open/Closed**: Extensible without modification
+- **Liskov Substitution**: Proper inheritance hierarchies
+- **Interface Segregation**: Focused, specific interfaces
+- **Dependency Inversion**: Depend on abstractions, not concretions
+
+### Additional Best Practices
+- DRY (Don't Repeat Yourself)
+- KISS (Keep It Simple, Stupid)
+- YAGNI (You Aren't Gonna Need It)
+- Composition over inheritance
+- Early returns over nested conditionals
+- Functions should be concise (aim for 5 lines or fewer when possible)
+
+## Code Architecture and Structure
+
+1. Organize code into well-defined modules or packages
+2. Separate concerns, grouping related functionality
+3. Implement interfaces or abstract classes for key components
+4. Replace complex if-else chains with design patterns (Factory, Strategy) or language-specific features
+5. Apply suitable design patterns to simplify complex logic and enhance maintainability
+
+## Code Style Requirements
+
+1. Write concise, idiomatic code following language best practices
+2. Use descriptive and meaningful names for variables, functions, and classes
+3. Apply appropriate programming paradigms (OOP, functional, etc.)
+4. Avoid code duplication through proper abstraction
+5. Follow consistent formatting and documentation standards
+6. Use language-specific naming conventions (camelCase, PascalCase, snake_case)
+
+## Error Handling
+
+### Exception Management
+- Use appropriate exception types with proper hierarchies
+- Provide meaningful error messages
+- Implement logging and monitoring
+
+### Recovery Strategies
+- Graceful degradation patterns
+- Retry policies with exponential backoff
+- Circuit breakers for external dependencies
+- Data consistency preservation
+
+## Performance and Scalability
+
+### Performance Optimization
+- Use efficient algorithms and data structures
+- Implement appropriate caching strategies
+- Optimize database queries and resource utilization
+
+### Memory Management and Resource Optimization
+#### Memory Leak Prevention
+- **Resource Lifecycle Management**: Ensure proper acquisition and release of resources (connections, files, handles)
+- **Object Lifetime Awareness**: Understand and control object lifecycles to prevent unintended retention
+- **Reference Management**: Avoid circular references and ensure proper cleanup of object relationships
+- **Event Handler Cleanup**: Always unsubscribe/detach event handlers to prevent memory leaks
+- **Timer and Callback Management**: Properly dispose of timers, intervals, and cancel pending callbacks
+
+#### Memory Allocation Best Practices
+- **Minimize Allocations in Hot Paths**: Reduce object creation in frequently called code (loops, event handlers)
+- **Object Pooling**: Reuse expensive objects instead of creating new instances repeatedly
+- **Lazy Loading**: Initialize resources only when needed to reduce initial memory footprint
+- **Buffer Management**: Use appropriate buffer sizes and reuse buffers where possible
+- **String Management**: Be mindful of string concatenation and prefer builders/formatters for multiple operations
+
+#### Resource Management Patterns
+- **RAII Pattern**: Resource Acquisition Is Initialization - acquire resources in constructors, release in destructors/finalizers
+- **Dispose Pattern**: Implement proper cleanup methods and ensure they're called (using statements, try-finally blocks)
+- **Weak References**: Use weak references where appropriate to break potential circular dependencies
+- **Resource Scoping**: Limit resource scope to the minimum necessary lifetime
+- **Connection Pooling**: Reuse expensive connections (database, network) instead of creating new ones
+
+#### Memory Monitoring and Optimization
+- **Memory Profiling**: Design code with profiling in mind - avoid complex object graphs that are hard to analyze
+- **Garbage Collection Awareness**: Write GC-friendly code by minimizing allocations and avoiding finalizers when possible
+- **Memory Metrics**: Include memory usage metrics in performance monitoring
+- **Capacity Planning**: Set appropriate initial capacities for collections to avoid repeated allocations
+- **Memory-Efficient Data Structures**: Choose data structures based on memory characteristics, not just algorithmic complexity
+
+### Scalability Considerations
+- Design for horizontal/vertical scaling
+- Consider load balancing requirements
+- Implement proper state management
+- Apply distributed system patterns when applicable
+
+## Security Standards
+
+1. Follow OWASP Top 10 guidelines
+2. Validate and sanitize all user inputs
+3. Prevent injection attacks, XSS, and CSRF
+4. Encrypt sensitive data in transit and at rest
+5. Never hardcode secrets or sensitive information
+6. Implement strong authentication and authorization
+7. Use role-based access controls
+
+## API and Dependency Management
+
+1. Follow RESTful, GraphQL, or relevant API design principles
+2. Implement proper API versioning
+3. Minimize dependencies and prefer established, secure libraries
+4. Document API contracts clearly
+
+## Code Output Requirements
+
+When generating code:
+- Include all necessary imports and dependencies
+- Add comprehensive comments for complex logic
+- Provide usage examples where helpful
+- Include basic error handling
+- Follow the established patterns in the existing codebase
+- Ensure code is immediately runnable
+- Add type annotations/hints where supported

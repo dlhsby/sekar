@@ -1,0 +1,39 @@
+# Documentation Generation Guidelines
+
+**Activation Mode:** Model Decision
+**Description:** Apply when writing documentation, comments, README files, and technical specifications
+
+## Documentation Standards
+- Write clear, concise documentation with practical examples
+- Use proper Markdown formatting and structure
+- Include code examples that demonstrate usage
+- Provide context and reasoning behind decisions
+- Document platform-specific behavior when applicable (iOS vs Android differences)
+
+## Code Comments
+- Write self-documenting code with descriptive variable names
+- Add comments for complex business logic
+- Document function parameters and return types
+- Explain the "why" not just the "what"
+- Document React Native specific implementations
+
+## README Files
+- Include project overview and purpose
+- Provide clear installation and setup instructions for both development environments
+- Document available scripts and commands for React Native/Expo
+- Include examples of common use cases
+- Document platform-specific setup requirements
+
+## API Documentation
+- Document all public interfaces and methods
+- Include request/response examples for mobile API calls
+- Specify parameter types and constraints
+- Document error cases and handling
+- Include platform compatibility information
+
+## Technical Specifications
+- Define clear requirements and acceptance criteria
+- Include architecture diagrams when helpful
+- Document design decisions and trade-offs
+- Maintain up-to-date documentation with code changes
+- Document performance considerations for mobile devices

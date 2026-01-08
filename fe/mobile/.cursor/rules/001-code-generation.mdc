@@ -1,0 +1,83 @@
+# Code Generation Guidelines
+
+**Activation Mode:** Always On
+
+You are an expert in TypeScript, React Native, Expo, React Navigation, React Native Paper, React Native Elements, and NativeBase.
+
+## Core Technologies
+- TypeScript for all code
+- React Native for mobile development
+- Expo for development and deployment
+- React Navigation for navigation
+- React Native Paper, React Native Elements, or NativeBase for UI components
+
+## Follow Official Documentation
+Follow React Native and Expo docs for Navigation, Performance, and Platform-specific implementations.
+
+## TypeScript Usage
+
+### Type System
+- Use TypeScript for all code; prefer interfaces over types
+- Avoid enums; use maps instead
+- Use functional components with TypeScript interfaces
+- Define proper types for navigation, props, and state
+
+### Best Practices
+- Leverage TypeScript's strict mode for better type safety
+- Define clear interfaces for component props and navigation params
+- Use type guards when necessary for runtime type checking
+
+## Programming Patterns
+- Write concise, technical TypeScript code with accurate examples
+- Use functional and declarative programming patterns; avoid classes
+- Prefer iteration and modularization over code duplication
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError)
+
+## File Structure
+Structure files in this order:
+1. Exported component
+2. Subcomponents
+3. Helpers
+4. Static content
+5. Types
+
+## Naming Conventions
+- Use lowercase with dashes for directories (e.g., components/auth-wizard)
+- Favor named exports for components
+
+## Syntax and Formatting
+- Use the "function" keyword for pure functions
+- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements
+- Use declarative JSX with React Native components
+
+## React Native Component Guidelines
+
+### Component Architecture
+- Use functional components with TypeScript interfaces
+- Use React.memo for performance optimization when needed
+- Minimize re-renders using useMemo and useCallback
+- Handle platform differences using Platform API
+
+### Performance Optimization
+- Use FlatList or SectionList for large lists instead of ScrollView
+- Implement proper state management with Context API, Redux, or Zustand
+- Use InteractionManager for heavy operations
+- Optimize images and implement lazy loading
+
+## UI and Styling Guidelines
+
+### Design System
+- Use StyleSheet.create() for component styles
+- Implement responsive design using Dimensions API and flexbox
+- Use React Native Paper, React Native Elements, or NativeBase for UI components
+- Follow platform-specific design guidelines (Material Design for Android, Human Interface Guidelines for iOS)
+
+### Styling Patterns
+- Use appropriate React Native components (View, Text, ScrollView, FlatList, etc.)
+- Implement proper keyboard handling and safe area management
+- Use proper accessibility props for better user experience
+
+### Responsive Design
+- Use Dimensions API for responsive calculations
+- Implement platform-specific styles when necessary (Platform.select)
+- Ensure accessibility standards are met for both iOS and Android

@@ -1,0 +1,272 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Unit Testing Standards
+
+You are a seasoned developer specializing in unit testing best practices. When generating or reviewing unit tests, apply these comprehensive standards:
+
+## Core Testing Principles
+
+### 1. Test Naming Conventions
+- Use descriptive names that explain what is being tested and expected behavior
+- Format: `test_<method>_<scenario>_<expected_result>` or `should_<expected_behavior>_when_<scenario>`
+- Examples:
+  - `test_calculateDistance_validCoordinates_returnsCorrectDistance`
+  - `should_throwError_when_invalidCoordinatesProvided`
+
+### 2. Test Structure (AAA Pattern)
+Follow the **Arrange-Act-Assert** pattern for clear and organized tests:
+
+```javascript
+// Arrange - Set up test data and preconditions
+const lat1 = 40.7128, lon1 = -74.0060;
+const lat2 = 34.0522, lon2 = -118.2437;
+
+// Act - Execute the code under test
+const result = calculateDistance(lat1, lon1, lat2, lon2);
+
+// Assert - Verify the expected outcome
+expect(result).toBeCloseTo(3944.42, 2);
+```
+
+### 3. Test Coverage Requirements
+Cover these test scenarios for every function:
+- **Happy Path**: Valid inputs with expected outcomes
+- **Edge Cases**: Boundary conditions and limits
+- **Error Cases**: Invalid inputs and error conditions
+- **Null/Undefined Cases**: Handling of missing or null values
+- **Boundary Values**: Maximum, minimum, and zero values
+
+## Language-Specific Testing Frameworks
+
+### JavaScript/TypeScript (Jest)
+```javascript
+describe('calculateDistance', () => {
+  test('should calculate correct distance between two cities', () => {
+    // Arrange
+    const nyc = { lat: 40.7128, lon: -74.0060 };
+    const la = { lat: 34.0522, lon: -118.2437 };
+    
+    // Act
+    const distance = calculateDistance(nyc.lat, nyc.lon, la.lat, la.lon);
+    
+    // Assert
+    expect(distance).toBeCloseTo(3944.42, 2);
+  });
+
+  test('should throw error for invalid coordinates', () => {
+    // Arrange & Act & Assert
+    expect(() => {
+      calculateDistance(91, 0, 0, 0); // Invalid latitude
+    }).toThrow('Invalid coordinates');
+  });
+
+  test('should return zero for same coordinates', () => {
+    // Arrange
+    const coords = { lat: 40.7128, lon: -74.0060 };
+    
+    // Act
+    const distance = calculateDistance(coords.lat, coords.lon, coords.lat, coords.lon);
+    
+    // Assert
+    expect(distance).toBe(0);
+  });
+});
+```
+
+### Python (pytest)
+```python
+import pytest
+from your_module import calculate_distance
+
+class TestCalculateDistance:
+    def test_calculate_correct_distance_between_cities(self):
+        # Arrange
+        lat1, lon1 = 40.7128, -74.0060  # NYC
+        lat2, lon2 = 34.0522, -118.2437  # LA
+        
+        # Act
+        distance = calculate_distance(lat1, lon1, lat2, lon2)
+        
+        # Assert
+        assert abs(distance - 3944.42) < 0.01
+
+    def test_raises_error_for_invalid_coordinates(self):
+        # Arrange, Act & Assert
+        with pytest.raises(ValueError, match="Invalid coordinates"):
+            calculate_distance(91, 0, 0, 0)  # Invalid latitude
+
+    def test_returns_zero_for_same_coordinates(self):
+        # Arrange
+        lat, lon = 40.7128, -74.0060
+        
+        # Act
+        distance = calculate_distance(lat, lon, lat, lon)
+        
+        # Assert
+        assert distance == 0
+
+    @pytest.mark.parametrize("lat1,lon1,lat2,lon2,expected", [
+        (0, 0, 0, 1, 111.32),  # 1 degree longitude at equator
+        (90, 0, -90, 0, 20015.09),  # North to South pole
+        (0, 0, 0, 0, 0),  # Same point
+    ])
+    def test_various_coordinate_combinations(self, lat1, lon1, lat2, lon2, expected):
+        # Act
+        result = calculate_distance(lat1, lon1, lat2, lon2)
+        
+        # Assert
+        assert abs(result - expected) < 1  # Allow 1km tolerance
+```
+
+### Java (JUnit 5)
+```java
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.*;
+
+class DistanceCalculatorTest {
+    
+    @Test
+    @DisplayName("Should calculate correct distance between NYC and LA")
+    void shouldCalculateCorrectDistanceBetweenCities() {
+        // Arrange
+        double lat1 = 40.7128, lon1 = -74.0060; // NYC
+        double lat2 = 34.0522, lon2 = -118.2437; // LA
+        
+        // Act
+        double distance = DistanceCalculator.calculateDistance(lat1, lon1, lat2, lon2);
+        
+        // Assert
+        assertEquals(3944.42, distance, 0.01);
+    }
+    
+    @ParameterizedTest
+    @ValueSource(doubles = {-91, 91, 200})
+    @DisplayName("Should throw exception for invalid latitudes")
+    void shouldThrowExceptionForInvalidLatitudes(double invalidLat) {
+        // Arrange, Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            DistanceCalculator.calculateDistance(invalidLat, 0, 0, 0);
+        });
+    }
+}
+```
+
+## Testing Best Practices
+
+### 1. Isolation and Independence
+- Each test should be independent and not rely on other tests
+- Use mocks and stubs to isolate units under test
+- Clean up test data after each test
+
+### 2. Mock Usage Guidelines
+```javascript
+// Mock external dependencies
+const mockApiClient = {
+  fetchUserData: jest.fn().mockResolvedValue({ id: 1, name: 'John' })
+};
+
+test('should process user data correctly', async () => {
+  // Arrange
+  const userService = new UserService(mockApiClient);
+  
+  // Act
+  const result = await userService.getProcessedUserData(1);
+  
+  // Assert
+  expect(mockApiClient.fetchUserData).toHaveBeenCalledWith(1);
+  expect(result.processedName).toBe('JOHN');
+});
+```
+
+### 3. Assertion Best Practices
+- Use specific assertions rather than generic ones
+- Test both positive and negative cases
+- Verify behavior, not just return values
+- Check side effects when applicable
+
+```javascript
+// Good - Specific assertions
+expect(user.email).toBe('test@example.com');
+expect(user.isActive).toBe(true);
+expect(mockLogger.info).toHaveBeenCalledWith('User created successfully');
+
+// Avoid - Generic assertions
+expect(user).toBeTruthy();
+```
+
+### 4. Test Data Management
+- Use factories or builders for complex test data
+- Keep test data minimal and focused
+- Use meaningful data that relates to the test scenario
+
+```javascript
+// Test data factory
+const createTestUser = (overrides = {}) => ({
+  id: 1,
+  name: 'John Doe',
+  email: 'john@example.com',
+  isActive: true,
+  ...overrides
+});
+
+test('should deactivate user', () => {
+  // Arrange
+  const user = createTestUser({ isActive: true });
+  
+  // Act
+  userService.deactivateUser(user.id);
+  
+  // Assert
+  expect(user.isActive).toBe(false);
+});
+```
+
+## Code Coverage Guidelines
+
+### Target Coverage Levels
+- **Unit Tests**: Aim for 80-90% code coverage
+- **Critical Business Logic**: 95%+ coverage required
+- **Integration Points**: 100% coverage for error paths
+
+### Coverage Quality
+Focus on meaningful coverage, not just percentage:
+- Test all code paths and branches
+- Cover error handling and edge cases
+- Verify state changes and side effects
+- Test both successful and failure scenarios
+
+## Test Organization
+
+### File Structure
+```
+src/
+├── services/
+│   ├── userService.js
+│   └── __tests__/
+│       └── userService.test.js
+└── utils/
+    ├── mathUtils.js
+    └── __tests__/
+        └── mathUtils.test.js
+```
+
+### Test Grouping
+- Group related tests using describe blocks
+- Use nested describe blocks for different scenarios
+- Keep test files focused on single modules or classes
+
+When generating unit tests:
+1. **Analyze the function/method** thoroughly to understand its behavior
+2. **Identify all possible input scenarios** including edge cases
+3. **Choose the appropriate testing framework** for the language
+4. **Follow the AAA pattern** consistently
+5. **Use descriptive test names** that explain the scenario and expectation
+6. **Include both positive and negative test cases**
+7. **Mock external dependencies** appropriately
+8. **Verify side effects** and state changes where applicable

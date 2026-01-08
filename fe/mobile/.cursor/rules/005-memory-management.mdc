@@ -1,0 +1,37 @@
+# Memory Management and Performance Optimization
+
+**Activation Mode:** Model Decision
+**Description:** Apply when working on performance optimization, memory usage, resource management, or performance-critical code
+
+## Image Optimization
+- Optimize images for mobile: use appropriate formats and sizes
+- Implement lazy loading for images
+- Use React Native Fast Image for better performance
+- Cache images appropriately to reduce network requests
+
+## List Performance
+- Use FlatList or SectionList for large lists instead of ScrollView
+- Implement proper keyExtractor and getItemLayout for better performance
+- Use removeClippedSubviews for very long lists
+- Implement lazy loading for list items when appropriate
+
+## Memory Management
+- Implement proper cleanup in useEffect hooks
+- Avoid memory leaks in event listeners and subscriptions
+- Use WeakMap and WeakSet when appropriate
+- Clean up timers and intervals properly
+- Remove navigation listeners on component unmount
+
+## Performance Optimization
+- Use React.memo, useMemo, and useCallback to prevent unnecessary re-renders
+- Optimize bundle size and reduce JavaScript thread blocking
+- Use InteractionManager for heavy operations
+- Implement proper state management to avoid prop drilling
+- Use Hermes JavaScript engine for better performance
+
+## React Native Specific Optimizations
+- Minimize bridge communications between JavaScript and native code
+- Use native driver for animations when possible
+- Implement proper keyboard handling to avoid performance issues
+- Optimize startup time and reduce time to interactive
+- Use proper debugging tools (Flipper, React Native Debugger) for performance profiling
