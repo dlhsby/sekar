@@ -3,6 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { User, UserRole } from '../users/entities/user.entity';
+import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -23,6 +24,10 @@ describe('AuthController', () => {
     login: jest.fn(),
   };
 
+  const mockWorkerAssignmentsService = {
+    getWorkerAssignment: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
@@ -30,6 +35,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: WorkerAssignmentsService,
+          useValue: mockWorkerAssignmentsService,
         },
       ],
     }).compile();
@@ -74,7 +83,46 @@ describe('AuthController', () => {
   });
 
   describe('getMe', () => {
-    it('should return current user info', async () => {
+    it('should return current user info without assignment for non-worker', async () => {
+      const adminUser: User = {
+        ...mockUser,
+        role: UserRole.ADMIN,
+      };
+
+      const result = await controller.getMe(adminUser);
+
+      expect(result).toHaveProperty('id', adminUser.id);
+      expect(result).toHaveProperty('username', adminUser.username);
+      expect(result).toHaveProperty('full_name', adminUser.full_name);
+      expect(result).toHaveProperty('role', adminUser.role);
+      expect(result).not.toHaveProperty('password_hash');
+      expect(result).not.toHaveProperty('assigned_area');
+      expect(mockWorkerAssignmentsService.getWorkerAssignment).not.toHaveBeenCalled();
+    });
+
+    it('should return current user info with assignment for worker', async () => {
+      const mockAssignment = {
+        area: {
+          id: 'area-uuid-123',
+          name: 'Test Area',
+          area_type_id: 'type-uuid-123',
+          areaType: {
+            id: 'type-uuid-123',
+            code: 'park',
+            name: 'Taman',
+            description: 'Park area',
+          },
+          gps_lat: '-7.2905',
+          gps_lng: '112.7398',
+          radius_meters: '150',
+          address: 'Test Address',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      };
+
+      mockWorkerAssignmentsService.getWorkerAssignment.mockResolvedValue(mockAssignment);
+
       const result = await controller.getMe(mockUser);
 
       expect(result).toHaveProperty('id', mockUser.id);
@@ -82,6 +130,24 @@ describe('AuthController', () => {
       expect(result).toHaveProperty('full_name', mockUser.full_name);
       expect(result).toHaveProperty('role', mockUser.role);
       expect(result).not.toHaveProperty('password_hash');
+      expect(result).toHaveProperty('assigned_area');
+      expect(result.assigned_area).toHaveProperty('id', 'area-uuid-123');
+      expect(result.assigned_area).toHaveProperty('name', 'Test Area');
+      expect(mockWorkerAssignmentsService.getWorkerAssignment).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('should return current user info without assignment when worker has no assignment', async () => {
+      mockWorkerAssignmentsService.getWorkerAssignment.mockResolvedValue(null);
+
+      const result = await controller.getMe(mockUser);
+
+      expect(result).toHaveProperty('id', mockUser.id);
+      expect(result).toHaveProperty('username', mockUser.username);
+      expect(result).toHaveProperty('full_name', mockUser.full_name);
+      expect(result).toHaveProperty('role', mockUser.role);
+      expect(result).not.toHaveProperty('password_hash');
+      expect(result).not.toHaveProperty('assigned_area');
+      expect(mockWorkerAssignmentsService.getWorkerAssignment).toHaveBeenCalledWith(mockUser.id);
     });
   });
 });

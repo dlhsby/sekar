@@ -2,6 +2,28 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as os from 'os';
+
+/**
+ * Get the local network IP address
+ * Returns the first non-internal IPv4 address found
+ */
+function getLocalIpAddress(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    const addresses = interfaces[name];
+    if (addresses) {
+      for (const addr of addresses) {
+        // Skip internal (loopback) and non-IPv4 addresses
+        // In Node.js, family is a string: 'IPv4' or 'IPv6'
+        if (!addr.internal && addr.family === 'IPv4') {
+          return addr.address;
+        }
+      }
+    }
+  }
+  return 'localhost'; // Fallback if no network interface found
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -61,9 +83,12 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  const host = '0.0.0.0'; // Listen on all network interfaces
+  await app.listen(port, host);
 
+  const localIp = getLocalIpAddress();
   console.log(`🚀 SEKAR Backend API is running on: http://localhost:${port}/api`);
+  console.log(`🌐 Network access: http://${localIp}:${port}/api`);
   console.log(`📚 API Documentation available at: http://localhost:${port}/api/docs`);
 }
 

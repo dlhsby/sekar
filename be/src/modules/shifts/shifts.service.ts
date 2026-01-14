@@ -1,0 +1,253 @@
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { v4 as uuid } from 'uuid';
+import { Shift } from './entities/shift.entity';
+import { ClockInDto } from './dto/clock-in.dto';
+import { ClockOutDto } from './dto/clock-out.dto';
+import { AreasService } from '../areas/areas.service';
+import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
+import { S3Service } from '../../shared/services/s3.service';
+import { GpsUtil } from '../../common/utils/gps.util';
+
+/**
+ * Service for managing worker shifts
+ *
+ * Handles clock-in/out operations with GPS validation and photo uploads.
+ * Ensures workers can only clock in to their assigned areas within GPS boundaries.
+ */
+@Injectable()
+export class ShiftsService {
+  private readonly logger = new Logger(ShiftsService.name);
+
+  constructor(
+    @InjectRepository(Shift)
+    private readonly shiftRepository: Repository<Shift>,
+    private readonly areasService: AreasService,
+    private readonly workerAssignmentsService: WorkerAssignmentsService,
+    private readonly s3Service: S3Service,
+  ) {}
+
+  /**
+   * Clock in to start a shift
+   *
+   * @param workerId Worker UUID
+   * @param dto Clock-in data (area_id, GPS, selfie photo)
+   * @returns Created shift entity
+   * @throws BadRequestException if already clocked in, not assigned to area, or GPS outside boundary
+   */
+  async clockIn(workerId: string, dto: ClockInDto): Promise<Shift> {
+    this.logger.log(`Worker ${workerId} attempting to clock in to area ${dto.area_id}`);
+
+    // 1. Check if worker already has an active shift
+    const activeShift = await this.findActiveShift(workerId);
+    if (activeShift) {
+      throw new BadRequestException(
+        `Already clocked in. Active shift ID: ${activeShift.id}`,
+      );
+    }
+
+    // 2. Verify worker is assigned to this area
+    const assignment = await this.workerAssignmentsService.getWorkerAssignment(workerId);
+    if (!assignment) {
+      throw new BadRequestException('Worker is not assigned to any area');
+    }
+    if (assignment.area_id !== dto.area_id) {
+      throw new BadRequestException(
+        `Worker is assigned to area ${assignment.area_id}, not ${dto.area_id}`,
+      );
+    }
+
+    // 3. Validate GPS is within area boundary
+    const area = await this.areasService.findOne(dto.area_id);
+    const isWithin = GpsUtil.isWithinBoundary(
+      dto.gps_lat,
+      dto.gps_lng,
+      Number(area.gps_lat),
+      Number(area.gps_lng),
+      area.radius_meters,
+    );
+
+    if (!isWithin) {
+      const distance = GpsUtil.calculateDistance(
+        dto.gps_lat,
+        dto.gps_lng,
+        Number(area.gps_lat),
+        Number(area.gps_lng),
+      );
+      throw new BadRequestException(
+        `GPS location is ${Math.round(distance)}m away from area center. Must be within ${area.radius_meters}m`,
+      );
+    }
+
+    // 4. Upload selfie to S3
+    let photoUrl: string;
+    try {
+      const photoData = dto.selfie_photo.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+      const photoBuffer = Buffer.from(photoData, 'base64');
+      const filename = `${uuid()}.jpg`;
+      const key = this.s3Service.generateKey('clock-in', filename);
+      photoUrl = await this.s3Service.uploadFile(photoBuffer, key, 'image/jpeg');
+    } catch (error) {
+      this.logger.error(`Failed to upload selfie photo: ${error.message}`, error.stack);
+      throw new BadRequestException('Failed to upload selfie photo');
+    }
+
+    // 5. Create shift record
+    const shift = this.shiftRepository.create({
+      worker_id: workerId,
+      area_id: dto.area_id,
+      clock_in_time: new Date(),
+      clock_in_gps_lat: dto.gps_lat,
+      clock_in_gps_lng: dto.gps_lng,
+      clock_in_photo_url: photoUrl,
+    });
+
+    const savedShift = await this.shiftRepository.save(shift);
+    this.logger.log(`Worker ${workerId} clocked in successfully. Shift ID: ${savedShift.id}`);
+
+    return savedShift;
+  }
+
+  /**
+   * Clock out to end a shift
+   *
+   * @param workerId Worker UUID
+   * @param dto Clock-out data (GPS coordinates)
+   * @returns Updated shift entity
+   * @throws BadRequestException if no active shift found
+   */
+  async clockOut(workerId: string, dto: ClockOutDto): Promise<Shift> {
+    this.logger.log(`Worker ${workerId} attempting to clock out`);
+
+    // Find active shift
+    const shift = await this.shiftRepository.findOne({
+      where: {
+        worker_id: workerId,
+        clock_out_time: IsNull(),
+      },
+      relations: ['area'],
+    });
+
+    if (!shift) {
+      throw new BadRequestException('No active shift found');
+    }
+
+    // Update shift with clock-out details
+    shift.clock_out_time = new Date();
+    shift.clock_out_gps_lat = dto.gps_lat;
+    shift.clock_out_gps_lng = dto.gps_lng;
+
+    const updatedShift = await this.shiftRepository.save(shift);
+
+    const hoursWorked = this.calculateHoursWorked(
+      shift.clock_in_time,
+      shift.clock_out_time,
+    );
+    this.logger.log(
+      `Worker ${workerId} clocked out successfully. Hours worked: ${hoursWorked}`,
+    );
+
+    return updatedShift;
+  }
+
+  /**
+   * Get active shift for a worker
+   *
+   * @param workerId Worker UUID
+   * @returns Active shift or null if not clocked in
+   */
+  async findActiveShift(workerId: string): Promise<Shift | null> {
+    return this.shiftRepository.findOne({
+      where: {
+        worker_id: workerId,
+        clock_out_time: IsNull(),
+      },
+      relations: ['area', 'area.areaType', 'worker'],
+    });
+  }
+
+  /**
+   * Get shift by ID
+   *
+   * @param id Shift UUID
+   * @returns Shift entity
+   * @throws NotFoundException if shift not found
+   */
+  async findOne(id: string): Promise<Shift> {
+    const shift = await this.shiftRepository.findOne({
+      where: { id },
+      relations: ['area', 'area.areaType', 'worker'],
+    });
+
+    if (!shift) {
+      throw new NotFoundException(`Shift with ID ${id} not found`);
+    }
+
+    return shift;
+  }
+
+  /**
+   * Get all shifts for a worker
+   *
+   * @param workerId Worker UUID
+   * @param limit Maximum number of results (default: 50)
+   * @returns Array of shifts ordered by clock-in time descending
+   */
+  async findByWorkerId(workerId: string, limit = 50): Promise<Shift[]> {
+    return this.shiftRepository.find({
+      where: { worker_id: workerId },
+      relations: ['area', 'area.areaType'],
+      order: { clock_in_time: 'DESC' },
+      take: limit,
+    });
+  }
+
+  /**
+   * Get all shifts for an area
+   *
+   * @param areaId Area UUID
+   * @param limit Maximum number of results (default: 100)
+   * @returns Array of shifts ordered by clock-in time descending
+   */
+  async findByAreaId(areaId: string, limit = 100): Promise<Shift[]> {
+    return this.shiftRepository.find({
+      where: { area_id: areaId },
+      relations: ['worker'],
+      order: { clock_in_time: 'DESC' },
+      take: limit,
+    });
+  }
+
+  /**
+   * Calculate hours worked in a shift
+   *
+   * @param clockInTime Clock-in timestamp
+   * @param clockOutTime Clock-out timestamp (if null, uses current time)
+   * @returns Hours worked rounded to 2 decimal places
+   */
+  calculateHoursWorked(clockInTime: Date, clockOutTime: Date | null): number {
+    const end = clockOutTime || new Date();
+    const diffMs = end.getTime() - clockInTime.getTime();
+    const hours = diffMs / (1000 * 60 * 60);
+    return Math.round(hours * 100) / 100;
+  }
+
+  /**
+   * Get all active shifts (for supervisor dashboard)
+   *
+   * @returns Array of active shifts with worker and area details
+   */
+  async findAllActiveShifts(): Promise<Shift[]> {
+    return this.shiftRepository.find({
+      where: { clock_out_time: IsNull() },
+      relations: ['worker', 'area', 'area.areaType'],
+      order: { clock_in_time: 'ASC' },
+    });
+  }
+}

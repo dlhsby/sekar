@@ -28,9 +28,10 @@ Phase 5 - Advanced      ░░░░░░░░░░░░░░░░░░�
 |--------|-----|--------|-------------|
 | Auth | 1-2 | ✅ Done | JWT authentication, role guards |
 | Users | 1-2 | ✅ Done | CRUD operations, password management |
-| Areas | 3 | 📋 Pending | Area CRUD, GPS boundaries |
-| AreaTypes | 3 | 📋 Pending | Lookup table for area types |
-| Shifts | 3-4 | 📋 Pending | Clock-in/out with GPS validation |
+| AreaTypes | 3 | ✅ Done | Lookup table for area types |
+| Areas | 3 | ✅ Done | Area CRUD, GPS boundaries |
+| WorkerAssignments | 3 | ✅ Done | Assign workers to areas |
+| Shifts | 4 | ✅ Done | Clock-in/out with GPS validation |
 | Reports | 4-5 | 📋 Pending | Work reports with media upload |
 | Location | 5 | 📋 Pending | Batch GPS pings |
 | Supervisor | 5 | 📋 Pending | Dashboard endpoints |
@@ -39,9 +40,15 @@ Phase 5 - Advanced      ░░░░░░░░░░░░░░░░░░�
 - [x] JWT token-based authentication
 - [x] Role-based access control (worker, supervisor, admin)
 - [x] User CRUD with soft delete
-- [ ] Area management with GPS boundaries
-- [ ] Clock-in/out with GPS validation (±100m)
-- [ ] Selfie photo upload to S3
+- [x] Area management with GPS boundaries
+- [x] Area type management (park, pedestrian, mini_garden, street)
+- [x] Worker-to-area assignments
+- [x] GPS distance calculation (Haversine formula)
+- [x] UUID primary keys for all tables (Users, AreaTypes, Areas, WorkerAssignments, Shifts)
+- [x] Clock-in/out with GPS validation (±100m)
+- [x] Selfie photo upload to S3 (AWS SDK v3)
+- [x] Hours worked calculation
+- [x] Active shift query and shift history
 - [ ] Work report submission with photos/videos
 - [ ] Background location tracking (batch upload)
 - [ ] Supervisor dashboard endpoints

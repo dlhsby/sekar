@@ -20,6 +20,7 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
+import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 
 /**
  * Authentication Controller
@@ -30,7 +31,10 @@ import { User } from '../users/entities/user.entity';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly workerAssignmentsService: WorkerAssignmentsService,
+  ) {}
 
   /**
    * User login endpoint.
@@ -119,13 +123,45 @@ export class AuthController {
       },
     },
   })
-  async getMe(@GetUser() user: User): Promise<Partial<User>> {
-    return {
+  async getMe(@GetUser() user: User): Promise<any> {
+    const userData: any = {
       id: user.id,
       username: user.username,
       full_name: user.full_name,
       role: user.role,
       created_at: user.created_at,
     };
+
+    // If user is a worker, include assigned area with full details
+    if (user.role === 'worker') {
+      const assignment = await this.workerAssignmentsService.getWorkerAssignment(
+        user.id,
+      );
+
+      if (assignment && assignment.area) {
+        // Ensure GPS coordinates are numbers, not strings
+        userData.assigned_area = {
+          id: assignment.area.id,
+          name: assignment.area.name,
+          area_type_id: assignment.area.area_type_id,
+          area_type: assignment.area.areaType
+            ? {
+                id: assignment.area.areaType.id,
+                code: assignment.area.areaType.code,
+                name: assignment.area.areaType.name,
+                description: assignment.area.areaType.description,
+              }
+            : undefined,
+          gps_lat: Number(assignment.area.gps_lat),
+          gps_lng: Number(assignment.area.gps_lng),
+          radius_meters: Number(assignment.area.radius_meters),
+          address: assignment.area.address,
+          created_at: assignment.area.created_at,
+          updated_at: assignment.area.updated_at,
+        };
+      }
+    }
+
+    return userData;
   }
 }

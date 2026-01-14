@@ -45,5 +45,25 @@ describe('AppService', () => {
       const result = service.healthCheck() as any;
       expect(result.uptime).toBeGreaterThanOrEqual(0);
     });
+
+    it('should return development environment if NODE_ENV is not set', () => {
+      const originalEnv = process.env.NODE_ENV;
+      delete process.env.NODE_ENV;
+
+      const result = service.healthCheck() as any;
+      expect(result.environment).toBe('development');
+
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it('should return correct environment from NODE_ENV', () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      const result = service.healthCheck() as any;
+      expect(result.environment).toBe('production');
+
+      process.env.NODE_ENV = originalEnv;
+    });
   });
 });

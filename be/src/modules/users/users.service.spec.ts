@@ -187,4 +187,28 @@ describe('UsersService', () => {
       expect(mockUserRepository.remove).toHaveBeenCalledWith(mockUser);
     });
   });
+
+  describe('findByUsername', () => {
+    it('should return user if found by username', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      const result = await service.findByUsername('testuser');
+
+      expect(result).toEqual(mockUser);
+      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+        where: { username: 'testuser' },
+      });
+    });
+
+    it('should return null if user not found by username', async () => {
+      mockUserRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.findByUsername('nonexistent');
+
+      expect(result).toBeNull();
+      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+        where: { username: 'nonexistent' },
+      });
+    });
+  });
 });
