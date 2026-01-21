@@ -1,0 +1,69 @@
+# SEKAR Mobile - Release Signing Configuration Template
+#
+# Copy this file to gradle.properties and fill in your actual values
+# NEVER commit gradle.properties with real credentials to version control!
+
+# Project-wide Gradle settings
+org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m
+android.useAndroidX=true
+reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
+newArchEnabled=true
+hermesEnabled=true
+
+# ========================================
+# Release Signing Configuration
+# ========================================
+#
+# To generate a release keystore, run:
+# keytool -genkeypair -v -storetype PKCS12 -keystore sekar-release.keystore \
+#   -alias sekar-key -keyalg RSA -keysize 2048 -validity 10000
+#
+# You will be prompted to enter:
+# - Keystore password (store this securely!)
+# - Key password (can be the same as keystore password)
+# - Your name, organization, city, state, country
+#
+# IMPORTANT:
+# - Keep your keystore file and passwords SECURE
+# - Back up your keystore file - if lost, you cannot update your app!
+# - Never commit the keystore file to version control
+# - Add gradle.properties to .gitignore
+
+# Release keystore file path (relative to android/app/ directory)
+# Example: sekar-release.keystore (place in android/app/)
+SEKAR_RELEASE_STORE_FILE=sekar-release.keystore
+
+# Keystore password (the password you entered when generating the keystore)
+SEKAR_RELEASE_STORE_PASSWORD=your_keystore_password_here
+
+# Key alias (the alias you specified when generating, e.g., sekar-key)
+SEKAR_RELEASE_KEY_ALIAS=sekar-key
+
+# Key password (the key password you entered, often same as store password)
+SEKAR_RELEASE_KEY_PASSWORD=your_key_password_here
+
+# ========================================
+# Optional: ADB Path (if not in system PATH)
+# ========================================
+# android.adbExecutable=/path/to/adb
+
+# ========================================
+# Production Configuration Notes
+# ========================================
+#
+# For production releases, ensure:
+# 1. You have generated a release keystore (see commands above)
+# 2. The keystore file is in android/app/ directory
+# 3. All passwords are filled in correctly
+# 4. gradle.properties is in .gitignore (it is by default)
+# 5. You have backed up your keystore and passwords securely
+#
+# To build a release APK:
+#   cd android && ./gradlew assembleRelease
+#
+# To build a release AAB (for Google Play):
+#   cd android && ./gradlew bundleRelease
+#
+# Output locations:
+#   APK: android/app/build/outputs/apk/release/app-release.apk
+#   AAB: android/app/build/outputs/bundle/release/app-release.aab

@@ -15,13 +15,13 @@ import type {
 
 /**
  * Create a work report
- * @param data - Report data
+ * @param data - Report data with base64 photos
  * @returns Report response with report ID
  */
 export async function createReport(
   data: CreateReportRequest,
 ): Promise<ApiResponse<CreateReportResponse>> {
-  return post<CreateReportResponse>('/api/reports/create', data);
+  return post<CreateReportResponse>('/reports', data);
 }
 
 /**
@@ -45,7 +45,7 @@ export async function uploadMedia(
     } as any);
 
     const response = await apiClient.post<UploadMediaResponse>(
-      `/api/reports/${reportId}/upload-media`,
+      `/reports/${reportId}/upload-media`,
       formData,
       {
         headers: {
@@ -69,6 +69,6 @@ export async function getMyReports(
   date?: string,
 ): Promise<ApiResponse<MyReportsResponse[]>> {
   const params = date ? { date } : {};
-  return get<MyReportsResponse[]>('/api/reports/my-reports', params);
+  return get<MyReportsResponse[]>('/reports/my-reports', params);
 }
 

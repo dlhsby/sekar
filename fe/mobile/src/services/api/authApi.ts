@@ -22,7 +22,7 @@ export async function login(
   password: string,
 ): Promise<ApiResponse<LoginResponse>> {
   const payload: LoginRequest = { username, password };
-  return post<LoginResponse>('/api/auth/login', payload);
+  return post<LoginResponse>('/auth/login', payload);
 }
 
 /**
@@ -30,7 +30,7 @@ export async function login(
  * @returns User data with assigned area
  */
 export async function getMe(): Promise<ApiResponse<MeResponse>> {
-  return get<MeResponse>('/api/auth/me');
+  return get<MeResponse>('/auth/me');
 }
 
 /**
@@ -39,6 +39,6 @@ export async function getMe(): Promise<ApiResponse<MeResponse>> {
  * @returns Logout response
  */
 export async function logout(): Promise<ApiResponse<{ success: boolean }>> {
-  return post<{ success: boolean }>('/api/auth/logout');
+  return post<{ success: boolean }>('/auth/logout');
 }
 

@@ -21,7 +21,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  access_token: string;
   user: User;
 }
 
@@ -43,7 +43,6 @@ export interface ClockInResponse {
 }
 
 export interface ClockOutRequest {
-  shift_id: number;
   gps_lat: number;
   gps_lng: number;
 }
@@ -63,11 +62,11 @@ export interface CurrentShiftResponse extends Shift {
 // Reports API
 export interface CreateReportRequest {
   shift_id: number;
-  notes?: string;
-  condition?: 'Baik' | 'Cukup' | 'Buruk';
-  asset_id?: number;
+  description: string;
+  report_type: 'cleaning' | 'planting' | 'maintenance' | 'inspection';
   gps_lat: number;
   gps_lng: number;
+  photos: string[]; // base64 encoded
 }
 
 export interface CreateReportResponse {
@@ -86,7 +85,23 @@ export interface MyReportsResponse extends WorkReport {
 }
 
 // Location API
+// Single location point for batch upload (matches backend LocationPointDto)
+export interface LocationPoint {
+  gps_lat: number;
+  gps_lng: number;
+  accuracy_meters?: number;
+  battery_level?: number;
+  logged_at: string; // ISO 8601 timestamp
+}
+
+// Backend expects shift_id + locations array (matches CreateLocationBatchDto)
 export interface LocationBatchRequest {
+  shift_id: string;
+  locations: LocationPoint[];
+}
+
+// Legacy format for migration - kept for offline queue compatibility
+export interface LegacyLocationBatchRequest {
   pings: LocationPing[];
 }
 
@@ -95,8 +110,40 @@ export interface LocationBatchResponse {
 }
 
 // Supervisor API
-export interface ActiveWorkersResponse {
-  workers: ActiveWorker[];
+export interface ActiveWorkerLocation {
+  gps_lat: number;
+  gps_lng: number;
+  logged_at: string;
+}
+
+export interface ActiveWorkerArea {
+  id: number;
+  name: string;
+}
+
+export interface ActiveWorkerShift {
+  id: number;
+  clock_in_time: string;
+  area: ActiveWorkerArea;
+}
+
+export interface ActiveWorkerData {
+  id: number;
+  username: string;
+  full_name: string;
+  shift: ActiveWorkerShift;
+  latest_location: ActiveWorkerLocation | null;
+}
+
+// Backend returns paginated response
+export interface PaginatedActiveWorkersResponse {
+  data: ActiveWorkerData[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface ReportsFilter {
@@ -129,7 +176,20 @@ export interface AttendanceFilter {
 }
 
 export interface AttendanceResponse {
-  records: AttendanceRecord[];
+  date: string;
+  total_workers: number;
+  clocked_in_count: number;
+  not_clocked_in: NotClockedInWorker[];
+}
+
+export interface NotClockedInWorker {
+  id: string;
+  username: string;
+  full_name: string;
+  area?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 // Master Data API
@@ -150,8 +210,13 @@ export interface ApiResponse<T> {
 
 // Generic API Error
 export interface ApiError {
-  status: number;
-  message: string;
-  errors?: Record<string, string[]>;
+  status: number; // Maps to statusCode from backend
+  code: string; // Error code enum value (e.g., 'SHIFT_ALREADY_ACTIVE')
+  message: string; // Human-readable error message
+  error?: string; // Error name (e.g., 'Bad Request', 'Unauthorized')
+  timestamp?: string; // ISO 8601 timestamp when error occurred
+  path?: string; // Request path that caused the error
+  details?: any; // Additional error context (e.g., activeShiftId)
+  errors?: Record<string, string[]>; // Validation errors (legacy, keep for compatibility)
 }
 

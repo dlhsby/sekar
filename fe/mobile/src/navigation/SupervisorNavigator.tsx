@@ -1,46 +1,41 @@
 /**
  * Supervisor Navigator
- * Bottom tab navigation for supervisor role
+ * Bottom tab navigation for supervisor role with stack navigation for reports
  */
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { SupervisorTabParamList } from '../types/navigation.types';
-import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../constants/theme';
 
+// Import screens
+import ReportsListScreen from '../screens/supervisor/ReportsListScreen';
+import ReportDetailScreen from '../screens/supervisor/ReportDetailScreen';
+import { MapDashboardScreen, AttendanceScreen, ProfileScreen } from '../screens/supervisor';
+
 const Tab = createBottomTabNavigator<SupervisorTabParamList>();
+const Stack = createNativeStackNavigator();
 
-// Placeholder screens (to be implemented)
-function MapDashboardScreen() {
+/**
+ * Reports Stack Navigator
+ * Handles navigation between reports list and detail
+ */
+function ReportsStackNavigator() {
   return (
-    <View style={styles.container}>
-      <Text>Map Dashboard Screen</Text>
-    </View>
-  );
-}
-
-function ReportsListScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Reports List Screen</Text>
-    </View>
-  );
-}
-
-function AttendanceScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Attendance Screen</Text>
-    </View>
-  );
-}
-
-function ProfileScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Profile Screen</Text>
-    </View>
+    <Stack.Navigator>
+      <Stack.Screen
+        name="ReportsListMain"
+        component={ReportsListScreen}
+        options={{ title: 'Laporan Kerja' }}
+      />
+      <Stack.Screen
+        name="ReportDetail"
+        component={ReportDetailScreen}
+        options={{ title: 'Detail Laporan' }}
+      />
+    </Stack.Navigator>
   );
 }
 
@@ -50,39 +45,62 @@ function SupervisorNavigator(): React.JSX.Element {
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.gray500,
-        headerShown: true,
+        headerShown: false,
       }}>
       <Tab.Screen
         name="MapDashboard"
         component={MapDashboardScreen}
-        options={{ title: 'Peta' }}
+        options={{
+          title: 'Peta',
+          headerShown: true,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="map" color={color} size={size} />
+          ),
+        }}
       />
       <Tab.Screen
         name="ReportsList"
-        component={ReportsListScreen}
-        options={{ title: 'Laporan' }}
+        component={ReportsStackNavigator}
+        options={{
+          title: 'Laporan',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="file-document-multiple"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Attendance"
         component={AttendanceScreen}
-        options={{ title: 'Kehadiran' }}
+        options={{
+          title: 'Kehadiran',
+          headerShown: true,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="clipboard-check"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: 'Profil' }}
+        options={{
+          title: 'Profil',
+          headerShown: true,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account" color={color} size={size} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 export default SupervisorNavigator;
 

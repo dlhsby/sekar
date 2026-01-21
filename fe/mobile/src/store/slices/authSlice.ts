@@ -12,6 +12,7 @@ interface AuthState {
   assignedArea: Area | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isRestoring: boolean;
   error: string | null;
 }
 
@@ -20,6 +21,7 @@ const initialState: AuthState = {
   assignedArea: null,
   isAuthenticated: false,
   isLoading: false,
+  isRestoring: true, // Start as true, will be set to false after checking storage
   error: null,
 };
 
@@ -30,34 +32,58 @@ const authSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
-    
+
     setUser: (state, action: PayloadAction<{ user: User; area?: Area }>) => {
       state.user = action.payload.user;
       state.assignedArea = action.payload.area || null;
       state.isAuthenticated = true;
       state.error = null;
     },
-    
+
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
       state.isLoading = false;
     },
-    
+
     clearError: (state) => {
       state.error = null;
     },
-    
+
     logout: (state) => {
       state.user = null;
       state.assignedArea = null;
       state.isAuthenticated = false;
       state.error = null;
     },
+
+    setRestoring: (state, action: PayloadAction<boolean>) => {
+      state.isRestoring = action.payload;
+    },
+
+    restoreAuth: (
+      state,
+      action: PayloadAction<{ user: User; area: Area | null }>,
+    ) => {
+      state.user = action.payload.user;
+      state.assignedArea = action.payload.area;
+      state.isAuthenticated = true;
+      state.isRestoring = false;
+    },
+
+    resetState: () => initialState,
   },
 });
 
-export const { setLoading, setUser, setError, clearError, logout } =
-  authSlice.actions;
+export const {
+  setLoading,
+  setUser,
+  setError,
+  clearError,
+  logout,
+  setRestoring,
+  restoreAuth,
+  resetState,
+} = authSlice.actions;
 
 export default authSlice.reducer;
 

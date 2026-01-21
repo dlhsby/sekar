@@ -8,6 +8,7 @@ import type { User } from '../../types/models.types';
 
 const KEYS = {
   TOKEN: 'auth_token',
+  REFRESH_TOKEN: 'refresh_token',
   USER: 'user_data',
 };
 
@@ -45,6 +46,44 @@ export async function removeToken(): Promise<void> {
     await EncryptedStorage.removeItem(KEYS.TOKEN);
   } catch (error) {
     console.error('Error removing token:', error);
+    throw error;
+  }
+}
+
+/**
+ * Store refresh token securely
+ * @param refreshToken - Refresh token string
+ */
+export async function setRefreshToken(refreshToken: string): Promise<void> {
+  try {
+    await EncryptedStorage.setItem(KEYS.REFRESH_TOKEN, refreshToken);
+  } catch (error) {
+    console.error('Error storing refresh token:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieve refresh token
+ * @returns Refresh token or null
+ */
+export async function getRefreshToken(): Promise<string | null> {
+  try {
+    return await EncryptedStorage.getItem(KEYS.REFRESH_TOKEN);
+  } catch (error) {
+    console.error('Error retrieving refresh token:', error);
+    return null;
+  }
+}
+
+/**
+ * Remove refresh token
+ */
+export async function removeRefreshToken(): Promise<void> {
+  try {
+    await EncryptedStorage.removeItem(KEYS.REFRESH_TOKEN);
+  } catch (error) {
+    console.error('Error removing refresh token:', error);
     throw error;
   }
 }

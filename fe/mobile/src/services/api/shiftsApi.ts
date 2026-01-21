@@ -33,27 +33,26 @@ export async function clockIn(
     gps_lng: gpsLng,
     selfie_photo: selfiePhoto,
   };
-  return post<ClockInResponse>('/api/shifts/clock-in', payload);
+  return post<ClockInResponse>('/shifts/clock-in', payload);
 }
 
 /**
  * Clock out to end shift
- * @param shiftId - Shift ID
+ * Backend automatically uses the current active shift for the authenticated user.
+ *
  * @param gpsLat - GPS latitude
  * @param gpsLng - GPS longitude
  * @returns Clock-out response with total hours
  */
 export async function clockOut(
-  shiftId: number,
   gpsLat: number,
   gpsLng: number,
 ): Promise<ApiResponse<ClockOutResponse>> {
   const payload: ClockOutRequest = {
-    shift_id: shiftId,
     gps_lat: gpsLat,
     gps_lng: gpsLng,
   };
-  return post<ClockOutResponse>('/api/shifts/clock-out', payload);
+  return post<ClockOutResponse>('/shifts/clock-out', payload);
 }
 
 /**
@@ -63,6 +62,6 @@ export async function clockOut(
 export async function getCurrentShift(): Promise<
   ApiResponse<CurrentShiftResponse | null>
 > {
-  return get<CurrentShiftResponse | null>('/api/shifts/current');
+  return get<CurrentShiftResponse | null>('/shifts/current');
 }
 

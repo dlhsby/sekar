@@ -7,6 +7,11 @@ import type { Coordinates } from '../types/models.types';
 import config from '../constants/config';
 
 /**
+ * GPS tolerance as per business rules
+ */
+export const GPS_TOLERANCE_METERS = 100;
+
+/**
  * Calculate distance between two GPS coordinates using Haversine formula
  * @param lat1 - Latitude of first point
  * @param lng1 - Longitude of first point
@@ -41,7 +46,7 @@ export function calculateDistance(
  * @param currentLng - Current longitude
  * @param areaLat - Area center latitude
  * @param areaLng - Area center longitude
- * @param radiusMeters - Area radius (optional, uses config default)
+ * @param radiusMeters - Area radius (optional, uses 100m tolerance)
  * @returns True if within boundary
  */
 export function isWithinBoundary(
@@ -49,7 +54,7 @@ export function isWithinBoundary(
   currentLng: number,
   areaLat: number,
   areaLng: number,
-  radiusMeters: number = config.GPS_BOUNDARY_RADIUS,
+  radiusMeters: number = GPS_TOLERANCE_METERS,
 ): boolean {
   const distance = calculateDistance(currentLat, currentLng, areaLat, areaLng);
   return distance <= radiusMeters;
@@ -57,11 +62,23 @@ export function isWithinBoundary(
 
 /**
  * Format coordinates for display
- * @param coordinates - GPS coordinates
+ * @param lat - Latitude OR Coordinates object
+ * @param lng - Longitude (optional if first param is Coordinates)
+ * @param decimals - Number of decimal places (default: 6)
  * @returns Formatted string
  */
-export function formatCoordinates(coordinates: Coordinates): string {
-  return `${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`;
+export function formatCoordinates(
+  lat: number | Coordinates,
+  lng?: number,
+  decimals: number = 6,
+): string {
+  if (typeof lat === 'object') {
+    return `${lat.latitude.toFixed(decimals)}, ${lat.longitude.toFixed(decimals)}`;
+  }
+  if (lng === undefined) {
+    throw new Error('Longitude is required when latitude is a number');
+  }
+  return `${lat.toFixed(decimals)}, ${lng.toFixed(decimals)}`;
 }
 
 /**
@@ -73,41 +90,82 @@ export function formatDistance(meters: number): string {
   if (meters < 1000) {
     return `${Math.round(meters)}m`;
   }
-  return `${(meters / 1000).toFixed(2)}km`;
+  const km = meters / 1000;
+  // Use .toFixed(1) and remove .0 if whole number
+  return km % 1 === 0 ? `${km.toFixed(0)}km` : `${km.toFixed(1)}km`;
 }
 
 /**
  * Check if GPS accuracy is acceptable
- * @param accuracy - GPS accuracy in meters
- * @param threshold - Maximum acceptable accuracy (default: 50m)
+ * @param accuracy - GPS accuracy in meters (or null)
+ * @param threshold - Maximum acceptable accuracy (default: 30m)
  * @returns True if accuracy is acceptable
  */
 export function isAccuracyAcceptable(
-  accuracy: number,
-  threshold: number = 50,
+  accuracy: number | null,
+  threshold: number = 30,
 ): boolean {
+  if (accuracy === null) {
+    return false;
+  }
   return accuracy <= threshold;
 }
 
 /**
  * Get status message for GPS accuracy
- * @param accuracy - GPS accuracy in meters
+ * @param accuracy - GPS accuracy in meters (or null)
  * @returns Status message
  */
-export function getAccuracyStatus(accuracy: number): {
-  status: 'excellent' | 'good' | 'fair' | 'poor';
+export function getAccuracyStatus(accuracy: number | null): {
+  status: 'unavailable' | 'good' | 'fair' | 'poor';
   message: string;
 } {
+  if (accuracy === null) {
+    return {status: 'unavailable', message: 'GPS accuracy unavailable'};
+  }
   if (accuracy <= 10) {
-    return {status: 'excellent', message: 'GPS signal excellent'};
+    return {status: 'good', message: 'Excellent GPS accuracy'};
   }
   if (accuracy <= 30) {
-    return {status: 'good', message: 'GPS signal good'};
+    return {status: 'fair', message: 'Acceptable GPS accuracy'};
   }
-  if (accuracy <= 50) {
-    return {status: 'fair', message: 'GPS signal fair'};
+  return {status: 'poor', message: 'Poor GPS accuracy'};
+}
+
+/**
+ * Validate clock-in location against area boundary and GPS accuracy
+ * @param currentLat - Current latitude
+ * @param currentLng - Current longitude
+ * @param currentAccuracy - GPS accuracy in meters
+ * @param areaLat - Area center latitude
+ * @param areaLng - Area center longitude
+ * @returns Validation result with error message if invalid
+ */
+export function validateClockInLocation(
+  currentLat: number,
+  currentLng: number,
+  currentAccuracy: number | null,
+  areaLat: number,
+  areaLng: number,
+): { valid: boolean; error?: string } {
+  // Check GPS accuracy first
+  if (!isAccuracyAcceptable(currentAccuracy)) {
+    return {
+      valid: false,
+      error: `GPS accuracy too low (${currentAccuracy ? Math.round(currentAccuracy) : 'unknown'}m). Please wait for better signal.`,
+    };
   }
-  return {status: 'poor', message: 'GPS signal poor'};
+
+  // Check if within boundary (100m tolerance)
+  const distance = calculateDistance(currentLat, currentLng, areaLat, areaLng);
+  if (distance > GPS_TOLERANCE_METERS) {
+    return {
+      valid: false,
+      error: `You are ${Math.round(distance)}m away from the work area. Must be within ${GPS_TOLERANCE_METERS}m.`,
+    };
+  }
+
+  return { valid: true };
 }
 
 /**

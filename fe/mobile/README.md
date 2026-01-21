@@ -1,251 +1,220 @@
-# 🌸 SEKAR Mobile App
+# SEKAR Mobile App
 
-React Native mobile application for DKRTH Surabaya's worker tracking and task management system.
+React Native mobile application for DLH Surabaya's worker tracking and task management system.
 
-## 📱 Project Overview
+## Status
 
-**Project:** SEKAR (Sistem Evaluasi Kerja Satgas RTH)  
-**Platform:** Android (MVP), iOS (Phase 5)  
-**Framework:** React Native with TypeScript  
-**State Management:** Redux Toolkit  
-**Navigation:** React Navigation v6
+**Phase 1 MVP:** COMPLETE ✅
+**Last Updated:** January 19, 2026
 
-## 🏗️ Project Structure
+| Metric | Value |
+|--------|-------|
+| Screens | 14 (7 worker + 7 supervisor) |
+| Components | 11 reusable |
+| Tests | 831 passing (100% pass rate) |
+| Services | 6 core services |
+
+## Project Overview
+
+**Project:** SEKAR (Sistem Evaluasi Kerja Satgas RTH)
+**Platform:** Android (MVP), iOS (Phase 5)
+**Framework:** React Native 0.76.6 with TypeScript
+**State Management:** Redux Toolkit
+**Navigation:** React Navigation v7
+
+## Project Structure
 
 ```
 src/
 ├── screens/              # Screen components
 │   ├── auth/            # Login screen
-│   ├── worker/          # Worker-specific screens
-│   └── supervisor/      # Supervisor-specific screens
-├── components/          # Reusable UI components
-│   ├── common/          # Shared components
-│   ├── worker/          # Worker-specific components
-│   └── supervisor/      # Supervisor-specific components
-├── services/            # Business logic & external services
+│   ├── worker/          # Worker screens (7)
+│   │   ├── WorkerHomeScreen
+│   │   ├── ClockInOutScreen
+│   │   ├── ReportSubmissionScreen
+│   │   ├── ReportsListScreen
+│   │   ├── WorkerProfileScreen
+│   │   ├── ShiftHistoryScreen
+│   │   └── index.tsx
+│   └── supervisor/      # Supervisor screens (7)
+│       ├── SupervisorHomeScreen
+│       ├── MapDashboardScreen
+│       ├── ReportsReviewScreen
+│       ├── AttendanceScreen
+│       ├── WorkerListScreen
+│       ├── AreaOverviewScreen
+│       ├── SupervisorProfileScreen
+│       └── index.tsx
+├── components/          # Reusable UI components (11)
+│   ├── Button
+│   ├── Card
+│   ├── TextInput
+│   ├── LoadingSpinner
+│   ├── ErrorBanner
+│   ├── SyncStatusIndicator
+│   ├── Header
+│   ├── MapView
+│   ├── PhotoPicker
+│   ├── ShiftTimer
+│   └── ReportCard
+├── services/            # Business logic (6 services)
 │   ├── api/             # API client & endpoints
-│   ├── storage/         # Secure storage & offline storage
-│   ├── location/        # GPS & location services
-│   └── offline/         # Offline sync services
+│   ├── storage/         # Secure storage
+│   ├── location/        # GPS services
+│   ├── media/           # Photo capture & compression
+│   ├── permissions/     # Permission handling
+│   └── sync/            # Offline sync manager
 ├── store/               # Redux state management
-│   └── slices/          # Redux slices (auth, shift, report, offline)
+│   └── slices/          # 4 slices (auth, shift, report, offline)
 ├── navigation/          # Navigation configuration
-├── utils/               # Utility functions (GPS, validators, dates)
-├── types/               # TypeScript type definitions
-└── constants/           # App constants (config, theme)
+├── utils/               # Utility functions
+├── types/               # TypeScript definitions
+└── constants/           # App constants
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- npm or yarn
-- Android Studio (for Android development)
-- Xcode (for iOS development, Phase 5)
-- React Native development environment set up
+- Android Studio with Android SDK
+- Physical Android device or emulator
+- USB debugging enabled (for physical devices)
 
 ### Installation
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+```bash
+# Install dependencies
+npm install
 
-2. **Configure environment:**
-   - Copy environment configuration template
-   - Update API URL and Google Maps API key in `src/constants/config.ts`
-
-3. **Run on Android:**
-   ```bash
-   npx react-native run-android
-   ```
-
-4. **Run on iOS (Phase 5):**
-   ```bash
-   cd ios && pod install && cd ..
-   npx react-native run-ios
-   ```
-
-## 📦 Dependencies
-
-### Core
-- `react-native` - Mobile framework
-- `typescript` - Type safety
-- `@reduxjs/toolkit` - State management
-- `react-redux` - Redux bindings for React
-- `@react-navigation/native` - Navigation
-- `@react-navigation/native-stack` - Stack navigator
-- `@react-navigation/bottom-tabs` - Tab navigator
-
-### Services
-- `axios` - HTTP client
-- `react-native-encrypted-storage` - Secure storage
-- `@react-native-async-storage/async-storage` - Async storage
-
-### Maps & Location
-- `react-native-maps` - Google Maps integration
-- `react-native-geolocation-service` - GPS location
-- ~~`react-native-background-geolocation`~~ - Background tracking (to be added)
-
-### Media
-- `react-native-image-picker` - Camera & photo picker
-- ~~`react-native-vision-camera`~~ - Alternative camera (to be evaluated)
-
-### Development
-- `@testing-library/react-native` - Component testing
-- `jest` - Testing framework
-
-## 🎨 Design System
-
-### Colors
-- **Primary:** Green (`#2E7D32`) - Nature/parks theme
-- **Secondary:** Blue (`#1976D2`) - Trust/government
-- **Success:** Green
-- **Warning:** Orange
-- **Error:** Red
-
-### Typography
-- **Headers:** Bold, 20-24px
-- **Body:** Regular, 16px
-- **Labels:** 14px
-- **Buttons:** Bold, 16-18px
-
-### Components
-- Large touch targets (min 48px)
-- Loading states for all async actions
-- Error messages with retry options
-- Offline indicators
-
-## 🔧 Configuration
-
-### API Configuration
-Edit `src/constants/config.ts`:
-```typescript
-const config = {
-  API_BASE_URL: 'http://localhost:3000',
-  GOOGLE_MAPS_API_KEY: 'your-key-here',
-  // ... other config
-};
+# Create .env file
+cat > .env << 'EOF'
+API_BASE_URL=http://your-backend-ip:3000
+GOOGLE_MAPS_API_KEY=your-key-here
+EOF
 ```
 
-### Theme Customization
-Edit `src/constants/theme.ts` to customize colors, typography, spacing, etc.
+### Running the App
 
-## 🧪 Testing
-
-### Run Tests
 ```bash
+# Start Metro bundler (terminal 1)
+npm start
+
+# Run on Android (terminal 2)
+npm run android
+```
+
+### WSL Development
+
+If developing on WSL2:
+
+```bash
+# Get WSL IP
+ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
+
+# In Windows PowerShell (as Admin)
+netsh interface portproxy add v4tov4 listenport=8081 listenaddress=0.0.0.0 connectport=8081 connectaddress=<WSL_IP>
+netsh interface portproxy add v4tov4 listenport=3000 listenaddress=0.0.0.0 connectport=3000 connectaddress=<WSL_IP>
+
+# Start Metro with correct hostname
+REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0 npm start
+```
+
+## Features
+
+### Worker Features
+- GPS-validated clock-in/out with selfie
+- Work report submission with photos
+- Real-time shift timer
+- Reports list and history
+- Profile management
+- Offline-first with auto-sync
+
+### Supervisor Features
+- Live map dashboard with worker locations
+- Report review and approval workflow
+- Attendance tracking
+- Worker list management
+- Area overview
+- Profile management
+
+## Testing
+
+```bash
+# Run all tests
 npm test
-```
 
-### Test Coverage
-```bash
+# Run with coverage
 npm test -- --coverage
+
+# Run specific test file
+npm test -- <filename>
 ```
 
-### Testing Standards
-- Target: >80% coverage for critical features
-- Unit tests for utility functions
-- Component tests for screens
-- Integration tests for workflows
+**Current:** 831 tests passing (100% pass rate)
 
-## 📱 Features
+## Build
 
-### Worker Role
-- ✅ Login with username/password
-- ⏳ Clock in/out with GPS + selfie
-- ⏳ Submit work reports with photos
-- ⏳ Offline mode with auto-sync
-- ⏳ Background location tracking
-
-### Supervisor Role
-- ✅ Login with username/password
-- ⏳ Live map view of active workers
-- ⏳ Review work reports
-- ⏳ View attendance records
-- ⏳ Filter by area and area type
-
-## 🔐 Security
-
-- JWT token authentication
-- Encrypted storage for sensitive data
-- Secure API communication (HTTPS)
-- Location tracking only during shifts
-- Photo EXIF data validation
-
-## 📦 Build
-
-### Android Debug Build
+### Debug Build
 ```bash
-npx react-native run-android
+npm run android
 ```
 
-### Android Release Build
+### Release Build
 ```bash
 cd android
 ./gradlew assembleRelease
 # APK: android/app/build/outputs/apk/release/app-release.apk
 ```
 
-### iOS Build (Phase 5)
-```bash
-cd ios
-pod install
-cd ..
-npx react-native run-ios --configuration Release
-```
+### ProGuard
+ProGuard rules are configured in `android/app/proguard-rules.pro`
 
-## 📝 Development Status
+## Design System
 
-### ✅ Completed
-- [x] Project setup and folder structure
-- [x] TypeScript configuration
-- [x] Redux store setup
-- [x] API client with interceptors
-- [x] Navigation structure
-- [x] Login screen
-- [x] Theme and constants
-- [x] Utility functions (GPS, validators, dates)
-- [x] Type definitions
+### Colors
+- **Primary:** Green (#2E7D32) - Nature/parks theme
+- **Secondary:** Blue (#1976D2) - Trust/government
+- **Success/Warning/Error:** Standard palette
 
-### ⏳ In Progress (Week 2)
-- [ ] Worker screens implementation
-- [ ] Supervisor screens implementation
-- [ ] Camera integration
-- [ ] GPS services
-- [ ] Offline storage
-- [ ] Background location tracking
+### Components
+11 reusable components with consistent styling:
+- Large touch targets (min 48px)
+- Loading states for async actions
+- Error messages with retry options
+- Offline indicators
 
-### 📋 TODO (Future)
-- [ ] Push notifications (Phase 2)
-- [ ] Task assignment (Phase 2)
-- [ ] Advanced analytics (Phase 3)
-- [ ] Asset management (Phase 4)
-- [ ] iOS support (Phase 5)
+## Documentation
 
-## 🐛 Known Issues
+- **Implementation Summary:** `specs/phases/phase-1-mvp/IMPLEMENTATION_SUMMARY.md`
+- **Mobile Screens:** `specs/mobile/screens.md`
+- **API Contracts:** `specs/api/contracts.md`
+- **Design System:** `specs/ui-ux/design-system.md`
 
-- None yet (MVP in development)
+## Dependencies
 
-## 📚 Documentation
+### Core
+- react-native: 0.76.6
+- typescript: 5.x
+- @reduxjs/toolkit
+- react-redux
+- @react-navigation/native
 
-- **Project Overview:** `/README.md` (root)
-- **Development Plan:** `/.agents/phase-1-mvp/`
-- **Mobile Requirements:** `/.agents/phase-1-mvp/mobile-requirements.md`
-- **API Documentation:** (backend repo)
+### Services
+- axios
+- react-native-encrypted-storage
+- @react-native-async-storage/async-storage
 
-## 👥 Team
+### Maps & Location
+- react-native-maps
+- react-native-geolocation-service
 
-- **Developer:** 1 full-stack developer
-- **Client:** DKRTH Surabaya
-
-## 📄 License
-
-Proprietary - DKRTH Surabaya Municipal Government
+### Media
+- react-native-image-picker
 
 ---
 
-**Last Updated:** January 2026  
-**Version:** 0.1.0 (MVP)  
+**Version:** 1.0.0
+**Phase:** 1 - MVP (COMPLETE)
 **React Native:** 0.76.6
+**Last Updated:** January 19, 2026

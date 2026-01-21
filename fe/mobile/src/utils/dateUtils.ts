@@ -37,6 +37,9 @@ export function formatDateLong(date: Date | string): string {
  */
 export function formatTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) {
+    return '--:--';
+  }
   return d.toLocaleTimeString('id-ID', {
     hour: '2-digit',
     minute: '2-digit',
@@ -46,11 +49,17 @@ export function formatTime(date: Date | string): string {
 
 /**
  * Format datetime to readable format
- * @param date - Date object or string
- * @returns Formatted datetime string
+ * @param date - Date object or string (or undefined/null)
+ * @returns Formatted datetime string or '-' if invalid
  */
-export function formatDateTime(date: Date | string): string {
+export function formatDateTime(date: Date | string | undefined | null): string {
+  if (!date) {
+    return '-';
+  }
   const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) {
+    return '-';
+  }
   return d.toLocaleString('id-ID', {
     day: 'numeric',
     month: 'short',
@@ -117,16 +126,32 @@ export function calculateDuration(
     hours,
     minutes,
     totalMinutes,
-    formatted: `${hours}j ${minutes}m`,
+    formatted: formatHours(hours, minutes),
   };
 }
 
 /**
  * Format duration in hours
- * @param hours - Number of hours (can be decimal)
+ * @param hours - Number of hours (can be decimal) OR integer hours
+ * @param minutes - Optional minutes (if provided, hours is treated as integer)
  * @returns Formatted string
  */
-export function formatHours(hours: number): string {
+export function formatHours(hours: number, minutes?: number): string {
+  if (minutes !== undefined) {
+    // Called with separate hours and minutes
+    if (hours === 0 && minutes === 0) {
+      return '0m';
+    }
+    if (hours === 0) {
+      return `${minutes}m`;
+    }
+    if (minutes === 0) {
+      return `${hours}j`;
+    }
+    return `${hours}j ${minutes}m`;
+  }
+
+  // Called with decimal hours
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
   if (m === 0) {

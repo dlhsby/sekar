@@ -17,8 +17,7 @@ import SupervisorNavigator from './SupervisorNavigator';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function RootNavigator(): React.JSX.Element {
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  const userRole = useAppSelector((state) => state.auth.user?.role);
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   return (
     <NavigationContainer>
@@ -26,9 +25,9 @@ function RootNavigator(): React.JSX.Element {
         screenOptions={{
           headerShown: false,
         }}>
-        {!isAuthenticated ? (
+        {!isAuthenticated || !user ? (
           <Stack.Screen name="Login" component={LoginScreen} />
-        ) : userRole === 'worker' ? (
+        ) : user.role === 'worker' ? (
           <Stack.Screen name="WorkerTabs" component={WorkerNavigator} />
         ) : (
           <Stack.Screen name="SupervisorTabs" component={SupervisorNavigator} />

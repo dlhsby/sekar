@@ -5,7 +5,6 @@
 
 import { get, put } from './apiClient';
 import type {
-  ActiveWorkersResponse,
   ReportsFilter,
   ReportsListResponse,
   ReviewReportRequest,
@@ -13,17 +12,23 @@ import type {
   AttendanceFilter,
   AttendanceResponse,
   ApiResponse,
+  ActiveWorkerData,
 } from '../../types/api.types';
 import type { WorkReport } from '../../types/models.types';
 
 /**
- * Get all currently active workers
- * @returns List of active workers with their locations
+ * Get all currently active workers (paginated)
+ * @param page - Page number (default 1)
+ * @param limit - Items per page (default 500 to get all workers)
+ * @returns Paginated list of active workers with their locations
  */
-export async function getActiveWorkers(): Promise<
-  ApiResponse<ActiveWorkersResponse>
+export async function getActiveWorkers(
+  page: number = 1,
+  limit: number = 500,
+): Promise<
+  ApiResponse<{ data: ActiveWorkerData[]; meta: { total: number; page: number; limit: number; totalPages: number } }>
 > {
-  return get<ActiveWorkersResponse>('/api/supervisor/active-workers');
+  return get('/supervisor/active-workers', { page, limit });
 }
 
 /**
@@ -34,7 +39,7 @@ export async function getActiveWorkers(): Promise<
 export async function getReports(
   filters: ReportsFilter = {},
 ): Promise<ApiResponse<ReportsListResponse[]>> {
-  return get<ReportsListResponse[]>('/api/supervisor/reports', filters);
+  return get<ReportsListResponse[]>('/supervisor/reports', filters);
 }
 
 /**
@@ -45,7 +50,7 @@ export async function getReports(
 export async function getReportDetails(
   reportId: number,
 ): Promise<ApiResponse<WorkReport>> {
-  return get<WorkReport>(`/api/reports/${reportId}`);
+  return get<WorkReport>(`/reports/${reportId}`);
 }
 
 /**
@@ -57,7 +62,7 @@ export async function reviewReport(
   reportId: number,
 ): Promise<ApiResponse<ReviewReportResponse>> {
   const payload: ReviewReportRequest = { reviewed: true };
-  return put<ReviewReportResponse>(`/api/reports/${reportId}/review`, payload);
+  return put<ReviewReportResponse>(`/reports/${reportId}/review`, payload);
 }
 
 /**
@@ -68,6 +73,6 @@ export async function reviewReport(
 export async function getAttendance(
   filters: AttendanceFilter = {},
 ): Promise<ApiResponse<AttendanceResponse>> {
-  return get<AttendanceResponse>('/api/supervisor/attendance', filters);
+  return get<AttendanceResponse>('/supervisor/attendance', filters);
 }
 

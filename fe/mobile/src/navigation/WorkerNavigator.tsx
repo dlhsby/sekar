@@ -5,44 +5,16 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { WorkerTabParamList } from '../types/navigation.types';
-import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../constants/theme';
+import { WorkerHomeScreen } from '../screens/worker/WorkerHomeScreen';
+import { ClockInOutScreen } from '../screens/worker/ClockInOutScreen';
+import { ReportSubmissionScreen } from '../screens/worker/ReportSubmissionScreen';
+import { ReportsListScreen } from '../screens/worker/ReportsListScreen';
+import { ProfileScreen } from '../screens/worker/ProfileScreen';
 
 const Tab = createBottomTabNavigator<WorkerTabParamList>();
-
-// Placeholder screens (to be implemented)
-function WorkerHomeScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Worker Home Screen</Text>
-    </View>
-  );
-}
-
-function ClockInOutScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Clock In/Out Screen</Text>
-    </View>
-  );
-}
-
-function ReportScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Report Screen</Text>
-    </View>
-  );
-}
-
-function ProfileScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Profile Screen</Text>
-    </View>
-  );
-}
 
 function WorkerNavigator(): React.JSX.Element {
   return (
@@ -52,37 +24,71 @@ function WorkerNavigator(): React.JSX.Element {
         tabBarInactiveTintColor: colors.gray500,
         headerShown: true,
       }}>
-      <Tab.Screen 
-        name="WorkerHome" 
+      <Tab.Screen
+        name="WorkerHome"
         component={WorkerHomeScreen}
-        options={{ title: 'Home' }}
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="home" color={color} size={size} />
+          ),
+        }}
       />
       <Tab.Screen
         name="ClockInOut"
         component={ClockInOutScreen}
-        options={{ title: 'Absensi' }}
+        options={{
+          title: 'Absensi',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="clock-outline"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Report"
-        component={ReportScreen}
-        options={{ title: 'Laporan' }}
+        component={ReportSubmissionScreen}
+        options={{
+          title: 'Buat Laporan',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="file-document-edit"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ReportsList"
+        component={ReportsListScreen}
+        options={{
+          title: 'Laporan Saya',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="file-document-multiple"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: 'Profil' }}
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account" color={color} size={size} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 export default WorkerNavigator;
 

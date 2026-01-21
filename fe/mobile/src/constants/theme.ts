@@ -8,18 +8,18 @@ export const colors = {
   primary: '#2E7D32',
   primaryLight: '#4CAF50',
   primaryDark: '#1B5E20',
-  
+
   // Secondary (Blue - trust/government)
   secondary: '#1976D2',
   secondaryLight: '#42A5F5',
   secondaryDark: '#0D47A1',
-  
+
   // Status colors
   success: '#4CAF50',
   warning: '#FF9800',
   error: '#F44336',
   info: '#2196F3',
-  
+
   // Grayscale
   black: '#000000',
   white: '#FFFFFF',
@@ -32,22 +32,25 @@ export const colors = {
   gray700: '#616161',
   gray800: '#424242',
   gray900: '#212121',
-  
+
   // Text colors
   textPrimary: '#212121',
   textSecondary: '#757575',
   textDisabled: '#BDBDBD',
   textHint: '#9E9E9E',
-  
+
+  // Component state colors
+  disabled: '#BDBDBD',
+
   // Background colors
   background: '#FFFFFF',
   backgroundSecondary: '#F5F5F5',
   surface: '#FFFFFF',
-  
+
   // Border colors
   border: '#E0E0E0',
   divider: '#BDBDBD',
-  
+
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.5)',
   overlayLight: 'rgba(0, 0, 0, 0.3)',
@@ -60,11 +63,12 @@ export const typography = {
     medium: 'System',
     bold: 'System',
   },
-  
+
   // Font sizes
   fontSize: {
     xs: 12,
     sm: 14,
+    md: 16,
     base: 16,
     lg: 18,
     xl: 20,
@@ -72,7 +76,7 @@ export const typography = {
     '3xl': 30,
     '4xl': 36,
   },
-  
+
   // Font weights
   fontWeight: {
     regular: '400' as const,
@@ -80,7 +84,7 @@ export const typography = {
     semibold: '600' as const,
     bold: '700' as const,
   },
-  
+
   // Line heights
   lineHeight: {
     tight: 1.2,

@@ -1,0 +1,507 @@
+/**
+ * Reports List Screen
+ * Display worker's own submitted reports with sync status
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { WorkerTabScreenProps } from '../../types/navigation.types';
+import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { ReportListItem } from '../../components/worker/ReportListItem';
+import { getMyReports } from '../../services/api/reportsApi';
+import {
+  getQueueByType,
+  updateQueueItem,
+  type QueueItem,
+} from '../../services/sync/offlineQueue';
+import { syncManager } from '../../services/sync/syncManager';
+import type { MyReportsResponse } from '../../types/api.types';
+
+const REPORTS_CACHE_KEY = 'cached_my_reports';
+
+/**
+ * Sync status type
+ */
+type SyncStatus = 'synced' | 'pending' | 'failed';
+
+/**
+ * Report with sync status
+ */
+interface ReportWithStatus {
+  id: string;
+  reportType: string;
+  description?: string;
+  createdAt: string;
+  areaName?: string;
+  photoUrl?: string;
+  syncStatus: SyncStatus;
+  queueId?: string;
+  originalData?: any;
+}
+
+/**
+ * Status filter options
+ */
+type StatusFilter = 'all' | 'synced' | 'pending' | 'failed';
+
+const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
+  all: 'Semua',
+  synced: 'Terkirim',
+  pending: 'Menunggu',
+  failed: 'Gagal',
+};
+
+export function ReportsListScreen({
+  navigation,
+}: WorkerTabScreenProps<'Report'>): React.JSX.Element {
+  const [reports, setReports] = useState<ReportWithStatus[]>([]);
+  const [filteredReports, setFilteredReports] = useState<ReportWithStatus[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showCacheWarning, setShowCacheWarning] = useState(false);
+
+  /**
+   * Load reports from API and offline queue
+   * Caches synced reports for offline viewing
+   */
+  const loadReports = useCallback(async (showLoader = true): Promise<void> => {
+    try {
+      if (showLoader) {
+        setIsLoading(true);
+      }
+      setError(null);
+      setShowCacheWarning(false);
+
+      let syncedReports: ReportWithStatus[] = [];
+
+      try {
+        // Fetch synced reports from API
+        const apiResult = await getMyReports();
+
+        // Check for API error
+        if (apiResult.error) {
+          throw new Error(apiResult.error);
+        }
+
+        syncedReports = apiResult.data
+          ? apiResult.data.map((report: MyReportsResponse) => ({
+              id: `synced-${report.id}`,
+              reportType: 'task_completion', // Default, adjust based on your report type field
+              description: report.notes,
+              createdAt: report.created_at,
+              areaName: report.area?.name,
+              photoUrl: report.media_urls?.[0],
+              syncStatus: 'synced' as SyncStatus,
+              originalData: report,
+            }))
+          : [];
+
+        // Cache synced reports for offline access
+        await AsyncStorage.setItem(REPORTS_CACHE_KEY, JSON.stringify(syncedReports));
+      } catch (apiError: any) {
+        console.warn('[ReportsListScreen] API error, trying cache:', apiError.message);
+
+        // Load from cache if API fails (offline)
+        const cachedData = await AsyncStorage.getItem(REPORTS_CACHE_KEY);
+        if (cachedData) {
+          syncedReports = JSON.parse(cachedData);
+          setShowCacheWarning(true);
+        } else {
+          throw apiError; // Re-throw if no cache available
+        }
+      }
+
+      // Fetch queued reports (pending/failed)
+      const queuedItems = await getQueueByType('report');
+      const queuedReports: ReportWithStatus[] = queuedItems
+        .filter(item => item.status === 'pending' || item.status === 'failed')
+        .map((item: QueueItem) => ({
+          id: `queue-${item.id}`,
+          reportType: item.data.report_type || 'task_completion',
+          description: item.data.notes,
+          createdAt: new Date(item.timestamp).toISOString(),
+          areaName: item.data.area_name,
+          photoUrl: item.data.photo_uri,
+          syncStatus: item.status === 'failed' ? 'failed' : 'pending',
+          queueId: item.id,
+          originalData: item,
+        }));
+
+      // Combine and sort by date (newest first)
+      const allReports = [...syncedReports, ...queuedReports].sort((a, b) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      setReports(allReports);
+    } catch (err: any) {
+      console.error('[ReportsListScreen] Error loading reports:', err);
+      setError(err.message || 'Gagal memuat laporan');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  /**
+   * Load reports on initial mount
+   */
+  useEffect(() => {
+    loadReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Load reports on screen focus
+   */
+  useFocusEffect(
+    useCallback(() => {
+      loadReports();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
+
+  /**
+   * Apply status filter
+   */
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      setFilteredReports(reports);
+    } else {
+      setFilteredReports(
+        reports.filter(report => report.syncStatus === statusFilter)
+      );
+    }
+  }, [reports, statusFilter]);
+
+  /**
+   * Handle pull-to-refresh
+   */
+  const handleRefresh = useCallback(async (): Promise<void> => {
+    setIsRefreshing(true);
+    // Trigger sync first
+    syncManager.forceSyncNow();
+    // Wait a bit for sync to process
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Reload reports
+    await loadReports(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Handle retry for failed reports
+   */
+  const handleRetry = useCallback(async (queueId: string): Promise<void> => {
+    try {
+      console.log('[ReportsListScreen] Retrying report:', queueId);
+      // Reset queue item to pending
+      await updateQueueItem(queueId, {
+        status: 'pending',
+        retryCount: 0,
+        error: undefined,
+      });
+      // Trigger sync
+      syncManager.forceSyncNow();
+      // Reload reports after a short delay
+      setTimeout(() => {
+        loadReports(false);
+      }, 1000);
+    } catch (err: any) {
+      console.error('[ReportsListScreen] Error retrying report:', err);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Navigate to create new report
+   */
+  const handleCreateReport = useCallback((): void => {
+    navigation.navigate('Report');
+  }, [navigation]);
+
+  /**
+   * Render status filter button
+   */
+  const renderFilterButton = (filter: StatusFilter): React.JSX.Element => {
+    const isActive = statusFilter === filter;
+    return (
+      <TouchableOpacity
+        key={filter}
+        style={[styles.filterButton, isActive && styles.filterButtonActive]}
+        onPress={() => setStatusFilter(filter)}
+        activeOpacity={0.7}>
+        <Text
+          style={[
+            styles.filterButtonText,
+            isActive && styles.filterButtonTextActive,
+          ]}>
+          {STATUS_FILTER_LABELS[filter]}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  /**
+   * Render report item
+   */
+  const renderItem = useCallback(
+    ({ item }: { item: ReportWithStatus }) => (
+      <ReportListItem
+        id={item.id}
+        reportType={item.reportType}
+        description={item.description}
+        areaName={item.areaName}
+        createdAt={item.createdAt}
+        syncStatus={item.syncStatus}
+        photoUrl={item.photoUrl}
+        queueId={item.queueId}
+        onRetry={handleRetry}
+      />
+    ),
+    [handleRetry]
+  );
+
+  /**
+   * Render empty state
+   */
+  const renderEmptyState = (): React.JSX.Element => {
+    if (isLoading) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Memuat laporan...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => loadReports()}
+            activeOpacity={0.7}>
+            <Text style={styles.retryButtonText}>Coba Lagi</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.emptyIcon}>📋</Text>
+        <Text style={styles.emptyTitle}>Belum Ada Laporan</Text>
+        <Text style={styles.emptyDescription}>
+          {statusFilter === 'all'
+            ? 'Anda belum membuat laporan hari ini'
+            : `Tidak ada laporan dengan status "${STATUS_FILTER_LABELS[statusFilter]}"`}
+        </Text>
+        {statusFilter === 'all' && (
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={handleCreateReport}
+            activeOpacity={0.7}>
+            <Text style={styles.createButtonText}>+ Buat Laporan Baru</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  /**
+   * Render list header with filters
+   */
+  const renderListHeader = (): React.JSX.Element => (
+    <View style={styles.header}>
+      <Text style={styles.title}>Laporan Saya</Text>
+      {showCacheWarning && (
+        <View style={styles.cacheWarning}>
+          <Text style={styles.cacheWarningText}>
+            ⚠️ Mode offline - Menampilkan data tersimpan
+          </Text>
+        </View>
+      )}
+      <View style={styles.filterContainer}>
+        {(['all', 'synced', 'pending', 'failed'] as StatusFilter[]).map(
+          renderFilterButton
+        )}
+      </View>
+    </View>
+  );
+
+  /**
+   * Render list footer
+   */
+  const renderListFooter = (): React.JSX.Element | null => {
+    if (filteredReports.length === 0) {
+      return null;
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={handleCreateReport}
+        activeOpacity={0.7}>
+        <Text style={styles.createButtonText}>+ Buat Laporan Baru</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        testID="reports-list"
+        data={filteredReports}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderListFooter}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  listContent: {
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  header: {
+    marginBottom: spacing.md,
+  },
+  title: {
+    fontSize: typography.fontSize['2xl'],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  cacheWarning: {
+    backgroundColor: colors.warning + '20',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.warning,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: borderRadius.sm,
+  },
+  cacheWarningText: {
+    color: colors.warning,
+    fontSize: typography.fontSize.sm,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  filterButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterButtonText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+  },
+  filterButtonTextActive: {
+    color: colors.white,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing['3xl'],
+    paddingHorizontal: spacing.xl,
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: spacing.md,
+  },
+  errorText: {
+    fontSize: typography.fontSize.base,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  emptyDescription: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  createButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.md,
+    ...shadows.sm,
+  },
+  createButtonText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: colors.error,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+  },
+  retryButtonText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.white,
+  },
+});
