@@ -6,6 +6,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 
 describe('AuthController', () => {
+  let module: TestingModule;
   let controller: AuthController;
   let authService: AuthService;
 
@@ -22,6 +23,7 @@ describe('AuthController', () => {
 
   const mockAuthService = {
     login: jest.fn(),
+    logout: jest.fn(),
   };
 
   const mockWorkerAssignmentsService = {
@@ -29,7 +31,7 @@ describe('AuthController', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         {
@@ -47,8 +49,10 @@ describe('AuthController', () => {
     authService = module.get<AuthService>(AuthService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
@@ -148,6 +152,18 @@ describe('AuthController', () => {
       expect(result).not.toHaveProperty('password_hash');
       expect(result).not.toHaveProperty('assigned_area');
       expect(mockWorkerAssignmentsService.getWorkerAssignment).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('logout', () => {
+    it('should call authService.logout and return success message', async () => {
+      mockAuthService.logout.mockResolvedValue(undefined);
+
+      const result = await controller.logout(mockUser);
+
+      expect(result).toEqual({ message: 'Logged out successfully' });
+      expect(authService.logout).toHaveBeenCalledWith(mockUser.id);
+      expect(authService.logout).toHaveBeenCalledTimes(1);
     });
   });
 });

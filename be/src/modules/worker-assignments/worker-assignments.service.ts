@@ -44,24 +44,18 @@ export class WorkerAssignmentsService {
     workerId: string,
     assignWorkerDto: AssignWorkerDto,
   ): Promise<WorkerAssignment> {
-    this.logger.log(
-      `Assigning worker ${workerId} to area ${assignWorkerDto.area_id}`,
-    );
+    this.logger.log(`Assigning worker ${workerId} to area ${assignWorkerDto.area_id}`);
 
     // Validate worker exists and has worker role
     const worker = await this.usersService.findOne(workerId);
     if (worker.role !== UserRole.WORKER) {
-      throw new BadRequestException(
-        'User must have worker role to be assigned to an area',
-      );
+      throw new BadRequestException('User must have worker role to be assigned to an area');
     }
 
     // Validate area exists and is active
     const area = await this.areasService.findOne(assignWorkerDto.area_id);
     if (!area.is_active) {
-      throw new BadRequestException(
-        'Cannot assign worker to inactive area',
-      );
+      throw new BadRequestException('Cannot assign worker to inactive area');
     }
 
     // Check if worker already has an assignment (MVP: one area per worker)
@@ -83,9 +77,7 @@ export class WorkerAssignmentsService {
 
     const savedAssignment = await this.assignmentRepository.save(assignment);
 
-    this.logger.log(
-      `Worker ${workerId} successfully assigned to area ${assignWorkerDto.area_id}`,
-    );
+    this.logger.log(`Worker ${workerId} successfully assigned to area ${assignWorkerDto.area_id}`);
     return savedAssignment;
   }
 
@@ -103,16 +95,12 @@ export class WorkerAssignmentsService {
     });
 
     if (!assignment) {
-      throw new NotFoundException(
-        `Worker ${workerId} has no area assignment`,
-      );
+      throw new NotFoundException(`Worker ${workerId} has no area assignment`);
     }
 
     await this.assignmentRepository.remove(assignment);
 
-    this.logger.log(
-      `Assignment removed for worker ${workerId} from area ${assignment.area_id}`,
-    );
+    this.logger.log(`Assignment removed for worker ${workerId} from area ${assignment.area_id}`);
   }
 
   /**
@@ -121,9 +109,7 @@ export class WorkerAssignmentsService {
    * @param workerId - Worker user ID
    * @returns The worker's assignment or null if not assigned
    */
-  async getWorkerAssignment(
-    workerId: string,
-  ): Promise<WorkerAssignment | null> {
+  async getWorkerAssignment(workerId: string): Promise<WorkerAssignment | null> {
     this.logger.log(`Fetching assignment for worker ${workerId}`);
 
     return this.assignmentRepository.findOne({

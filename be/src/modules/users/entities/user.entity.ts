@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 
@@ -18,18 +19,22 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, length: 50 })
   username: string;
 
-  @Column()
+  @Column({ length: 255 })
   @Exclude()
   password_hash: string;
 
-  @Column()
+  @Column({ length: 100 })
   full_name: string;
 
+  @Column({ length: 20, nullable: true })
+  phone?: string;
+
   @Column({
-    type: 'enum',
+    type: 'varchar',
+    length: 20,
     enum: UserRole,
     default: UserRole.WORKER,
   })
@@ -43,4 +48,7 @@ export class User {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @DeleteDateColumn()
+  deleted_at?: Date;
 }

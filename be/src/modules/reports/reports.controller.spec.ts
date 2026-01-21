@@ -5,14 +5,18 @@ import { Report, ReportType } from './entities/report.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 describe('ReportsController', () => {
+  let module: TestingModule;
   let controller: ReportsController;
   let service: ReportsService;
 
   const mockReportsService = {
     create: jest.fn(),
+    createFromJson: jest.fn(),
     findAll: jest.fn(),
+    findAllPaginated: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
@@ -33,19 +37,22 @@ describe('ReportsController', () => {
     id: 'report-uuid-1',
     worker_id: mockWorker.id,
     shift_id: 'shift-uuid-1',
+    area_id: 'area-uuid-1',
     report_type: ReportType.TASK_COMPLETION,
     description: 'Completed cleaning',
     photo_url: 'https://s3.amazonaws.com/photo.jpg',
     gps_lat: -7.2905,
     gps_lng: 112.7398,
+    is_reviewed: false,
     created_at: new Date(),
     updated_at: new Date(),
     worker: mockWorker,
     shift: null as any,
+    area: null as any,
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [ReportsController],
       providers: [
         {
@@ -59,8 +66,10 @@ describe('ReportsController', () => {
     service = module.get<ReportsService>(ReportsService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('create', () => {
@@ -73,11 +82,11 @@ describe('ReportsController', () => {
     };
 
     it('should create report without photo', async () => {
-      mockReportsService.create.mockResolvedValue(mockReport);
+      mockReportsService.createFromJson.mockResolvedValue(mockReport);
 
       const result = await controller.create(createDto, undefined, mockWorker);
 
-      expect(service.create).toHaveBeenCalledWith(createDto, undefined, mockWorker.id);
+      expect(service.createFromJson).toHaveBeenCalledWith(createDto, mockWorker.id, undefined);
       expect(result).toEqual(mockReport);
     });
 
@@ -88,78 +97,121 @@ describe('ReportsController', () => {
         mimetype: 'image/jpeg',
       } as Express.Multer.File;
 
-      mockReportsService.create.mockResolvedValue({ ...mockReport, photo_url: 'https://s3.amazonaws.com/photo.jpg' });
+      mockReportsService.createFromJson.mockResolvedValue({
+        ...mockReport,
+        photo_url: 'https://s3.amazonaws.com/photo.jpg',
+      });
 
       const result = await controller.create(createDto, mockFile, mockWorker);
 
-      expect(service.create).toHaveBeenCalledWith(createDto, mockFile, mockWorker.id);
+      expect(service.createFromJson).toHaveBeenCalledWith(createDto, mockWorker.id, mockFile);
       expect(result.photo_url).toBeDefined();
     });
   });
 
   describe('findAll', () => {
-    it('should return all reports with no filters', async () => {
-      const mockReports = [mockReport];
-      mockReportsService.findAll.mockResolvedValue(mockReports);
+    it('should return paginated reports with no filters', async () => {
+      const paginatedResult = {
+        data: [mockReport],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll({ page: 1, limit: 50 });
 
-      expect(service.findAll).toHaveBeenCalledWith({
-        worker_id: undefined,
-        shift_id: undefined,
-        report_type: undefined,
-        from_date: undefined,
-        to_date: undefined,
-      });
-      expect(result).toEqual(mockReports);
+      expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+        {
+          worker_id: undefined,
+          shift_id: undefined,
+          report_type: undefined,
+          from_date: undefined,
+          to_date: undefined,
+        },
+        1,
+        50,
+      );
+      expect(result).toEqual(paginatedResult);
     });
 
-    it('should return reports filtered by worker_id', async () => {
-      const mockReports = [mockReport];
-      mockReportsService.findAll.mockResolvedValue(mockReports);
+    it('should return paginated reports filtered by worker_id', async () => {
+      const paginatedResult = {
+        data: [mockReport],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll('worker-uuid-123');
+      const result = await controller.findAll({ page: 1, limit: 50 }, 'worker-uuid-123');
 
-      expect(service.findAll).toHaveBeenCalledWith({
-        worker_id: 'worker-uuid-123',
-        shift_id: undefined,
-        report_type: undefined,
-        from_date: undefined,
-        to_date: undefined,
-      });
-      expect(result).toEqual(mockReports);
+      expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+        {
+          worker_id: 'worker-uuid-123',
+          shift_id: undefined,
+          report_type: undefined,
+          from_date: undefined,
+          to_date: undefined,
+        },
+        1,
+        50,
+      );
+      expect(result).toEqual(paginatedResult);
     });
 
-    it('should return reports filtered by report_type', async () => {
-      const mockReports = [mockReport];
-      mockReportsService.findAll.mockResolvedValue(mockReports);
+    it('should return paginated reports filtered by report_type', async () => {
+      const paginatedResult = {
+        data: [mockReport],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll(undefined, undefined, ReportType.INCIDENT);
+      const result = await controller.findAll(
+        { page: 1, limit: 50 },
+        undefined,
+        undefined,
+        ReportType.INCIDENT,
+      );
 
-      expect(service.findAll).toHaveBeenCalledWith({
-        worker_id: undefined,
-        shift_id: undefined,
-        report_type: ReportType.INCIDENT,
-        from_date: undefined,
-        to_date: undefined,
-      });
-      expect(result).toEqual(mockReports);
+      expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+        {
+          worker_id: undefined,
+          shift_id: undefined,
+          report_type: ReportType.INCIDENT,
+          from_date: undefined,
+          to_date: undefined,
+        },
+        1,
+        50,
+      );
+      expect(result).toEqual(paginatedResult);
     });
 
-    it('should return reports filtered by date range', async () => {
-      const mockReports = [mockReport];
-      mockReportsService.findAll.mockResolvedValue(mockReports);
+    it('should return paginated reports filtered by date range', async () => {
+      const paginatedResult = {
+        data: [mockReport],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll(undefined, undefined, undefined, '2026-01-01', '2026-01-31');
+      const result = await controller.findAll(
+        { page: 1, limit: 50 },
+        undefined,
+        undefined,
+        undefined,
+        '2026-01-01',
+        '2026-01-31',
+      );
 
-      expect(service.findAll).toHaveBeenCalledWith({
-        worker_id: undefined,
-        shift_id: undefined,
-        report_type: undefined,
-        from_date: '2026-01-01',
-        to_date: '2026-01-31',
-      });
-      expect(result).toEqual(mockReports);
+      expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+        {
+          worker_id: undefined,
+          shift_id: undefined,
+          report_type: undefined,
+          from_date: '2026-01-01',
+          to_date: '2026-01-31',
+        },
+        1,
+        50,
+      );
+      expect(result).toEqual(paginatedResult);
     });
   });
 
@@ -185,7 +237,12 @@ describe('ReportsController', () => {
 
       const result = await controller.update('report-uuid-1', updateDto, undefined, mockWorker);
 
-      expect(service.update).toHaveBeenCalledWith('report-uuid-1', updateDto, undefined, mockWorker.id);
+      expect(service.update).toHaveBeenCalledWith(
+        'report-uuid-1',
+        updateDto,
+        undefined,
+        mockWorker.id,
+      );
       expect(result.description).toBe('Updated description');
     });
 
@@ -201,7 +258,12 @@ describe('ReportsController', () => {
 
       const result = await controller.update('report-uuid-1', updateDto, mockFile, mockWorker);
 
-      expect(service.update).toHaveBeenCalledWith('report-uuid-1', updateDto, mockFile, mockWorker.id);
+      expect(service.update).toHaveBeenCalledWith(
+        'report-uuid-1',
+        updateDto,
+        mockFile,
+        mockWorker.id,
+      );
       expect(result.photo_url).toBe('https://s3.amazonaws.com/new-photo.jpg');
     });
   });

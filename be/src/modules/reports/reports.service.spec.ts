@@ -1,11 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { Report, ReportType } from './entities/report.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -13,8 +8,11 @@ import { S3Service } from '../../shared/services/s3.service';
 import { UserRole } from '../users/entities/user.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
+import { ApiException } from '../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 
 describe('ReportsService', () => {
+  let module: TestingModule;
   let service: ReportsService;
   let reportsRepository: Repository<Report>;
   let shiftsRepository: Repository<Shift>;
@@ -25,6 +23,7 @@ describe('ReportsService', () => {
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    findAndCount: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -38,7 +37,7 @@ describe('ReportsService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         ReportsService,
         {
@@ -62,8 +61,10 @@ describe('ReportsService', () => {
     s3Service = module.get<S3Service>(S3Service);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('create', () => {
@@ -121,21 +122,33 @@ describe('ReportsService', () => {
       expect(result.photo_url).toBe('https://s3.amazonaws.com/photo.jpg');
     });
 
-    it('should throw NotFoundException if shift not found', async () => {
+    it('should throw ApiException with REPORT_SHIFT_NOT_FOUND when shift not found', async () => {
       mockShiftsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto, undefined, workerId)).rejects.toThrow(
-        NotFoundException,
-      );
+      try {
+        await service.create(createDto, undefined, workerId);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_SHIFT_NOT_FOUND);
+        expect(error.message).toContain('Shift not found');
+        expect(error.getStatus()).toBe(404);
+      }
     });
 
-    it('should throw BadRequestException if shift is completed', async () => {
+    it('should throw ApiException with REPORT_SHIFT_REQUIRED when shift is completed', async () => {
       const completedShift = { ...mockShift, clock_out_time: new Date() };
       mockShiftsRepository.findOne.mockResolvedValue(completedShift);
 
-      await expect(service.create(createDto, undefined, workerId)).rejects.toThrow(
-        BadRequestException,
-      );
+      try {
+        await service.create(createDto, undefined, workerId);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_SHIFT_REQUIRED);
+        expect(error.message).toContain('Cannot create report for completed shift');
+        expect(error.getStatus()).toBe(400);
+      }
     });
   });
 
@@ -179,6 +192,130 @@ describe('ReportsService', () => {
 
       expect(result).toEqual(mockReports);
     });
+
+    it('should filter by from_date only (to current date)', async () => {
+      const mockReports = [{ id: 'report-1' }];
+      mockReportsRepository.find.mockResolvedValue(mockReports);
+
+      const result = await service.findAll({
+        from_date: '2026-01-01',
+      });
+
+      expect(result).toEqual(mockReports);
+    });
+
+    it('should filter by shift_id', async () => {
+      const mockReports = [{ id: 'report-1', shift_id: 'shift-123' }];
+      mockReportsRepository.find.mockResolvedValue(mockReports);
+
+      const result = await service.findAll({ shift_id: 'shift-123' });
+
+      expect(result).toEqual(mockReports);
+    });
+  });
+
+  describe('findAllPaginated', () => {
+    it('should return paginated reports with no filters', async () => {
+      const mockReports = [{ id: 'report-1' }, { id: 'report-2' }];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 2]);
+
+      const result = await service.findAllPaginated({}, 1, 50);
+
+      expect(result.data).toEqual(mockReports);
+      expect(result.meta.total).toBe(2);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(50);
+      expect(mockReportsRepository.findAndCount).toHaveBeenCalledWith({
+        where: {},
+        relations: ['worker', 'shift', 'shift.area'],
+        order: { created_at: 'DESC' },
+        skip: 0,
+        take: 50,
+      });
+    });
+
+    it('should return paginated reports filtered by worker_id', async () => {
+      const mockReports = [{ id: 'report-1', worker_id: 'worker-123' }];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
+
+      const result = await service.findAllPaginated({ worker_id: 'worker-123' }, 1, 50);
+
+      expect(result.data).toEqual(mockReports);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should return paginated reports filtered by shift_id', async () => {
+      const mockReports = [{ id: 'report-1', shift_id: 'shift-123' }];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
+
+      const result = await service.findAllPaginated({ shift_id: 'shift-123' }, 1, 50);
+
+      expect(result.data).toEqual(mockReports);
+    });
+
+    it('should return paginated reports filtered by report_type', async () => {
+      const mockReports = [{ id: 'report-1', report_type: ReportType.INCIDENT }];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
+
+      const result = await service.findAllPaginated({ report_type: ReportType.INCIDENT }, 1, 50);
+
+      expect(result.data).toEqual(mockReports);
+    });
+
+    it('should return paginated reports filtered by date range', async () => {
+      const mockReports = [{ id: 'report-1' }];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
+
+      const result = await service.findAllPaginated(
+        { from_date: '2026-01-01', to_date: '2026-01-31' },
+        1,
+        50,
+      );
+
+      expect(result.data).toEqual(mockReports);
+    });
+
+    it('should return paginated reports filtered by from_date only', async () => {
+      const mockReports = [{ id: 'report-1' }];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
+
+      const result = await service.findAllPaginated({ from_date: '2026-01-01' }, 1, 50);
+
+      expect(result.data).toEqual(mockReports);
+    });
+
+    it('should handle pagination correctly', async () => {
+      const mockReports = [{ id: 'report-3' }, { id: 'report-4' }];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 10]);
+
+      const result = await service.findAllPaginated({}, 2, 2);
+
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.limit).toBe(2);
+      expect(result.meta.totalPages).toBe(5);
+      expect(mockReportsRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 2,
+          take: 2,
+        }),
+      );
+    });
+
+    it('should use default pagination values', async () => {
+      const mockReports: Report[] = [];
+      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 0]);
+
+      const result = await service.findAllPaginated({});
+
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(50);
+      expect(mockReportsRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 0,
+          take: 50,
+        }),
+      );
+    });
   });
 
   describe('findOne', () => {
@@ -214,20 +351,32 @@ describe('ReportsService', () => {
       expect(result).toEqual(mockReport);
     });
 
-    it('should throw ForbiddenException for non-owner worker', async () => {
+    it('should throw ApiException with REPORT_ACCESS_DENIED for non-owner worker', async () => {
       mockReportsRepository.findOne.mockResolvedValue(mockReport);
 
-      await expect(
-        service.findOne(reportId, 'other-worker-uuid', UserRole.WORKER),
-      ).rejects.toThrow(ForbiddenException);
+      try {
+        await service.findOne(reportId, 'other-worker-uuid', UserRole.WORKER);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_ACCESS_DENIED);
+        expect(error.message).toBe('You can only access your own reports');
+        expect(error.getStatus()).toBe(403);
+      }
     });
 
-    it('should throw NotFoundException if report not found', async () => {
+    it('should throw ApiException with REPORT_NOT_FOUND when report not found', async () => {
       mockReportsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne(reportId, workerId, UserRole.ADMIN)).rejects.toThrow(
-        NotFoundException,
-      );
+      try {
+        await service.findOne(reportId, workerId, UserRole.ADMIN);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_NOT_FOUND);
+        expect(error.message).toContain('Report not found');
+        expect(error.getStatus()).toBe(404);
+      }
     });
   });
 
@@ -281,7 +430,7 @@ describe('ReportsService', () => {
       expect(result.photo_url).toBe('https://s3.amazonaws.com/new-photo.jpg');
     });
 
-    it('should throw ForbiddenException if not owner', async () => {
+    it('should throw ApiException with REPORT_ACCESS_DENIED if not owner', async () => {
       const mockReport = {
         id: reportId,
         worker_id: workerId,
@@ -289,12 +438,18 @@ describe('ReportsService', () => {
       };
       mockReportsRepository.findOne.mockResolvedValue(mockReport);
 
-      await expect(
-        service.update(reportId, updateDto, undefined, 'other-worker-uuid'),
-      ).rejects.toThrow(ForbiddenException);
+      try {
+        await service.update(reportId, updateDto, undefined, 'other-worker-uuid');
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_ACCESS_DENIED);
+        expect(error.message).toBe('You can only update your own reports');
+        expect(error.getStatus()).toBe(403);
+      }
     });
 
-    it('should throw ForbiddenException if more than 1 hour old', async () => {
+    it('should throw ApiException with REPORT_EDIT_WINDOW_CLOSED if more than 1 hour old', async () => {
       const mockReport = {
         id: reportId,
         worker_id: workerId,
@@ -302,17 +457,29 @@ describe('ReportsService', () => {
       };
       mockReportsRepository.findOne.mockResolvedValue(mockReport);
 
-      await expect(
-        service.update(reportId, updateDto, undefined, workerId),
-      ).rejects.toThrow(ForbiddenException);
+      try {
+        await service.update(reportId, updateDto, undefined, workerId);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED);
+        expect(error.message).toBe('Reports can only be updated within 1 hour of creation');
+        expect(error.getStatus()).toBe(403);
+      }
     });
 
-    it('should throw NotFoundException if report not found', async () => {
+    it('should throw ApiException with REPORT_NOT_FOUND if report not found', async () => {
       mockReportsRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.update(reportId, updateDto, undefined, workerId),
-      ).rejects.toThrow(NotFoundException);
+      try {
+        await service.update(reportId, updateDto, undefined, workerId);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_NOT_FOUND);
+        expect(error.message).toContain('Report not found');
+        expect(error.getStatus()).toBe(404);
+      }
     });
   });
 
@@ -329,10 +496,18 @@ describe('ReportsService', () => {
       expect(reportsRepository.remove).toHaveBeenCalledWith(mockReport);
     });
 
-    it('should throw NotFoundException if report not found', async () => {
+    it('should throw ApiException with REPORT_NOT_FOUND if report not found', async () => {
       mockReportsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.remove(reportId)).rejects.toThrow(NotFoundException);
+      try {
+        await service.remove(reportId);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_NOT_FOUND);
+        expect(error.message).toContain('Report not found');
+        expect(error.getStatus()).toBe(404);
+      }
     });
   });
 });

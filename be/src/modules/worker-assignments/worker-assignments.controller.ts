@@ -1,18 +1,5 @@
-import {
-  Controller,
-  Post,
-  Delete,
-  Param,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { Controller, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { WorkerAssignmentsService } from './worker-assignments.service';
 import { AssignWorkerDto } from './dto/assign-worker.dto';
 import { WorkerAssignment } from './entities/worker-assignment.entity';
@@ -32,9 +19,7 @@ import { UserRole } from '../users/entities/user.entity';
 @Controller('workers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkerAssignmentsController {
-  constructor(
-    private readonly workerAssignmentsService: WorkerAssignmentsService,
-  ) {}
+  constructor(private readonly workerAssignmentsService: WorkerAssignmentsService) {}
 
   /**
    * Assign a worker to an area
@@ -67,8 +52,7 @@ export class WorkerAssignmentsController {
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Bad request - User is not a worker, area is inactive, or invalid data',
+    description: 'Bad request - User is not a worker, area is inactive, or invalid data',
   })
   @ApiResponse({
     status: 401,
@@ -90,10 +74,7 @@ export class WorkerAssignmentsController {
     @Param('id') workerId: string,
     @Body() assignWorkerDto: AssignWorkerDto,
   ): Promise<WorkerAssignment> {
-    return this.workerAssignmentsService.assignWorker(
-      workerId,
-      assignWorkerDto,
-    );
+    return this.workerAssignmentsService.assignWorker(workerId, assignWorkerDto);
   }
 
   /**
@@ -107,8 +88,7 @@ export class WorkerAssignmentsController {
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
   @ApiOperation({
     summary: 'Remove worker assignment',
-    description:
-      'Remove a worker\'s area assignment. Admin and Supervisor only.',
+    description: "Remove a worker's area assignment. Admin and Supervisor only.",
   })
   @ApiParam({
     name: 'id',

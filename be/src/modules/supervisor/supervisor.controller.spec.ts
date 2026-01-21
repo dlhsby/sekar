@@ -1,28 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupervisorController } from './supervisor.controller';
 import { SupervisorService } from './supervisor.service';
-import {
-  ActiveWorkersResponseDto,
-  ActiveWorkerDto,
-} from './dto/active-workers-response.dto';
-import {
-  AreaStatusResponseDto,
-  AreaStatusDto,
-} from './dto/area-status-response.dto';
+import { ActiveWorkersResponseDto, ActiveWorkerDto } from './dto/active-workers-response.dto';
+import { AreaStatusResponseDto, AreaStatusDto } from './dto/area-status-response.dto';
 import { AttendanceResponseDto } from './dto/attendance-response.dto';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 describe('SupervisorController', () => {
+  let module: TestingModule;
   let controller: SupervisorController;
   let service: SupervisorService;
 
   const mockSupervisorService = {
     getActiveWorkers: jest.fn(),
+    getActiveWorkersPaginated: jest.fn(),
     getAreaStatus: jest.fn(),
     getAttendance: jest.fn(),
+    getAttendancePaginated: jest.fn(),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [SupervisorController],
       providers: [
         {
@@ -36,12 +34,14 @@ describe('SupervisorController', () => {
     service = module.get<SupervisorService>(SupervisorService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('getActiveWorkers', () => {
-    it('should return active workers', async () => {
+    it('should return paginated active workers', async () => {
       const mockActiveWorker: ActiveWorkerDto = {
         id: 'worker-uuid-1',
         username: 'worker1',
@@ -61,29 +61,28 @@ describe('SupervisorController', () => {
         },
       };
 
-      const mockResponse: ActiveWorkersResponseDto = {
-        workers: [mockActiveWorker],
-      };
+      const paginatedResult = new PaginatedResponseDto([mockActiveWorker], 1, 1, 50);
 
-      mockSupervisorService.getActiveWorkers.mockResolvedValue(mockResponse);
+      mockSupervisorService.getActiveWorkersPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.getActiveWorkers();
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
+      const result = await controller.getActiveWorkers(paginationDto);
 
-      expect(service.getActiveWorkers).toHaveBeenCalled();
-      expect(result).toEqual(mockResponse);
-      expect(result.workers).toHaveLength(1);
+      expect(service.getActiveWorkersPaginated).toHaveBeenCalledWith(1, 50);
+      expect(result).toEqual(paginatedResult);
+      expect(result.data).toHaveLength(1);
     });
 
-    it('should return empty array if no active workers', async () => {
-      const mockResponse: ActiveWorkersResponseDto = {
-        workers: [],
-      };
+    it('should return empty paginated result if no active workers', async () => {
+      const paginatedResult = new PaginatedResponseDto([], 0, 1, 50);
 
-      mockSupervisorService.getActiveWorkers.mockResolvedValue(mockResponse);
+      mockSupervisorService.getActiveWorkersPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.getActiveWorkers();
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
+      const result = await controller.getActiveWorkers(paginationDto);
 
-      expect(result.workers).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
     });
   });
 
@@ -149,11 +148,11 @@ describe('SupervisorController', () => {
         ],
       };
 
-      mockSupervisorService.getAttendance.mockResolvedValue(mockResponse);
+      mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
 
       const result = await controller.getAttendance();
 
-      expect(service.getAttendance).toHaveBeenCalledWith(undefined);
+      expect(service.getAttendancePaginated).toHaveBeenCalledWith(undefined, undefined, undefined);
       expect(result).toEqual(mockResponse);
       expect(result.total_workers).toBe(10);
       expect(result.clocked_in_count).toBe(8);
@@ -175,11 +174,11 @@ describe('SupervisorController', () => {
         ],
       };
 
-      mockSupervisorService.getAttendance.mockResolvedValue(mockResponse);
+      mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
 
       const result = await controller.getAttendance('2026-01-08');
 
-      expect(service.getAttendance).toHaveBeenCalledWith('2026-01-08');
+      expect(service.getAttendancePaginated).toHaveBeenCalledWith('2026-01-08', undefined, undefined);
       expect(result.date).toBe('2026-01-08');
       expect(result.clocked_in_count).toBe(7);
     });
@@ -192,7 +191,7 @@ describe('SupervisorController', () => {
         not_clocked_in: [],
       };
 
-      mockSupervisorService.getAttendance.mockResolvedValue(mockResponse);
+      mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
 
       const result = await controller.getAttendance();
 

@@ -43,5 +43,3 @@ export const ValidationConstants = {
    */
   FULL_NAME_MAX_LENGTH: 100,
 } as const;
-
-

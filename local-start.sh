@@ -17,7 +17,7 @@ DB_NAME="sekar_db"
 DB_USER="postgres"
 DB_PASSWORD="postgres"
 DB_PORT="5432"
-DB_DATA_DIR="./db/data"
+DB_DATA_DIR="./infra/data"
 DB_CONTAINER_NAME="sekar-postgres"
 BACKEND_DIR="./be"
 FRONTEND_DIR="./fe/mobile"
@@ -74,12 +74,12 @@ if [ ! -d "$LOG_DIR" ]; then
     print_success "Log directory created"
 fi
 
-# Start database and Adminer using db/start.sh script
+# Start infrastructure (PostgreSQL + Adminer) using infra/start.sh script
 print_info "Starting database and Adminer..."
-if [ -f "./db/start.sh" ]; then
-    ./db/start.sh
+if [ -f "./infra/start.sh" ]; then
+    ./infra/start.sh
 else
-    print_error "Database start script not found at ./db/start.sh"
+    print_error "Infrastructure start script not found at ./infra/start.sh"
     exit 1
 fi
 
@@ -102,11 +102,13 @@ DATABASE_NAME=$DB_NAME
 JWT_SECRET=local-development-secret-key-change-in-production
 JWT_EXPIRATION=7d
 
-# AWS S3 (optional for local development)
+# AWS S3 - LocalStack (Local Development)
 AWS_REGION=ap-southeast-1
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_S3_BUCKET=sekar-media
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_S3_BUCKET=sekar-media-dev
+AWS_ENDPOINT_URL=http://localhost:4566
+AWS_S3_FORCE_PATH_STYLE=true
 
 # Google Maps (optional for local development)
 GOOGLE_MAPS_API_KEY=

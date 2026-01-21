@@ -1,11 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { WorkerAssignmentsService } from './worker-assignments.service';
 import { WorkerAssignment } from './entities/worker-assignment.entity';
 import { UsersService } from '../users/users.service';
@@ -14,6 +10,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { AssignWorkerDto } from './dto/assign-worker.dto';
 
 describe('WorkerAssignmentsService', () => {
+  let module: TestingModule;
   let service: WorkerAssignmentsService;
   let repository: Repository<WorkerAssignment>;
   let usersService: UsersService;
@@ -72,7 +69,7 @@ describe('WorkerAssignmentsService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         WorkerAssignmentsService,
         {
@@ -91,19 +88,21 @@ describe('WorkerAssignmentsService', () => {
     }).compile();
 
     service = module.get<WorkerAssignmentsService>(WorkerAssignmentsService);
-    repository = module.get<Repository<WorkerAssignment>>(
-      getRepositoryToken(WorkerAssignment),
-    );
+    repository = module.get<Repository<WorkerAssignment>>(getRepositoryToken(WorkerAssignment));
     usersService = module.get<UsersService>(UsersService);
     areasService = module.get<AreasService>(AreasService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('assignWorker', () => {
-    const assignWorkerDto: AssignWorkerDto = { area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012' };
+    const assignWorkerDto: AssignWorkerDto = {
+      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+    };
 
     it('should assign a worker to an area successfully', async () => {
       mockUsersService.findOne.mockResolvedValue(mockWorker);
@@ -112,11 +111,18 @@ describe('WorkerAssignmentsService', () => {
       mockRepository.create.mockReturnValue(mockAssignment);
       mockRepository.save.mockResolvedValue(mockAssignment);
 
-      const result = await service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto);
+      const result = await service.assignWorker(
+        'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+        assignWorkerDto,
+      );
 
       expect(result).toEqual(mockAssignment);
-      expect(usersService.findOne).toHaveBeenCalledWith('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890');
-      expect(areasService.findOne).toHaveBeenCalledWith('area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012');
+      expect(usersService.findOne).toHaveBeenCalledWith(
+        'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+      );
+      expect(areasService.findOne).toHaveBeenCalledWith(
+        'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      );
       expect(repository.create).toHaveBeenCalledWith({
         worker_id: 'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
         area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
@@ -126,12 +132,18 @@ describe('WorkerAssignmentsService', () => {
     it('should throw BadRequestException if user is not a worker', async () => {
       mockUsersService.findOne.mockResolvedValue(mockSupervisor);
 
-      await expect(service.assignWorker('supervisor-uuid-2b3c4d5e-f6a7-8901-bcde-f12345678901', assignWorkerDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.assignWorker('supervisor-uuid-2b3c4d5e-f6a7-8901-bcde-f12345678901', assignWorkerDto)).rejects.toThrow(
-        'User must have worker role',
-      );
+      await expect(
+        service.assignWorker(
+          'supervisor-uuid-2b3c4d5e-f6a7-8901-bcde-f12345678901',
+          assignWorkerDto,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.assignWorker(
+          'supervisor-uuid-2b3c4d5e-f6a7-8901-bcde-f12345678901',
+          assignWorkerDto,
+        ),
+      ).rejects.toThrow('User must have worker role');
     });
 
     it('should throw BadRequestException if area is inactive', async () => {
@@ -141,12 +153,12 @@ describe('WorkerAssignmentsService', () => {
         is_active: false,
       });
 
-      await expect(service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto)).rejects.toThrow(
-        'Cannot assign worker to inactive area',
-      );
+      await expect(
+        service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto),
+      ).rejects.toThrow('Cannot assign worker to inactive area');
     });
 
     it('should throw ConflictException if worker already has an assignment', async () => {
@@ -154,12 +166,12 @@ describe('WorkerAssignmentsService', () => {
       mockAreasService.findOne.mockResolvedValue(mockArea);
       mockRepository.findOne.mockResolvedValue(mockAssignment); // Existing assignment
 
-      await expect(service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto)).rejects.toThrow(
-        'Worker is already assigned',
-      );
+      await expect(
+        service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', assignWorkerDto),
+      ).rejects.toThrow('Worker is already assigned');
     });
 
     it('should throw NotFoundException if worker not found', async () => {
@@ -167,9 +179,9 @@ describe('WorkerAssignmentsService', () => {
         new NotFoundException('User with ID e5f6a7b8-c9d0-1234-ef01-345678901234 not found'),
       );
 
-      await expect(service.assignWorker('e5f6a7b8-c9d0-1234-ef01-345678901234', assignWorkerDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.assignWorker('e5f6a7b8-c9d0-1234-ef01-345678901234', assignWorkerDto),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException if area not found', async () => {
@@ -179,7 +191,9 @@ describe('WorkerAssignmentsService', () => {
       );
 
       await expect(
-        service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', { area_id: 'f5f6a7b8-c9d0-1234-ef01-345678901234' }),
+        service.assignWorker('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890', {
+          area_id: 'f5f6a7b8-c9d0-1234-ef01-345678901234',
+        }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -197,10 +211,12 @@ describe('WorkerAssignmentsService', () => {
     it('should throw NotFoundException if worker has no assignment', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.removeAssignment('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890')).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.removeAssignment('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890')).rejects.toThrow(
+      await expect(
+        service.removeAssignment('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890'),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.removeAssignment('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890'),
+      ).rejects.toThrow(
         'Worker worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890 has no area assignment',
       );
     });
@@ -210,7 +226,9 @@ describe('WorkerAssignmentsService', () => {
     it('should return worker assignment', async () => {
       mockRepository.findOne.mockResolvedValue(mockAssignment);
 
-      const result = await service.getWorkerAssignment('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890');
+      const result = await service.getWorkerAssignment(
+        'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+      );
 
       expect(result).toEqual(mockAssignment);
       expect(repository.findOne).toHaveBeenCalledWith({
@@ -222,7 +240,9 @@ describe('WorkerAssignmentsService', () => {
     it('should return null if worker has no assignment', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getWorkerAssignment('worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890');
+      const result = await service.getWorkerAssignment(
+        'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+      );
 
       expect(result).toBeNull();
     });
@@ -245,7 +265,9 @@ describe('WorkerAssignmentsService', () => {
     it('should return all assignments for an area', async () => {
       mockRepository.find.mockResolvedValue([mockAssignment]);
 
-      const result = await service.getAreaAssignments('area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012');
+      const result = await service.getAreaAssignments(
+        'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      );
 
       expect(result).toEqual([mockAssignment]);
       expect(repository.find).toHaveBeenCalledWith({

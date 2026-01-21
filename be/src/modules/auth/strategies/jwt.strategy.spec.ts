@@ -1,13 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtStrategy } from './jwt.strategy';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { ApiException } from '../../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../../common/enums/api-error-codes.enum';
 
 describe('JwtStrategy', () => {
+  let module: TestingModule;
   let strategy: JwtStrategy;
   let userRepository: Repository<User>;
 
@@ -31,7 +33,7 @@ describe('JwtStrategy', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         JwtStrategy,
         {
@@ -49,8 +51,10 @@ describe('JwtStrategy', () => {
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('constructor', () => {
@@ -59,7 +63,7 @@ describe('JwtStrategy', () => {
         get: jest.fn().mockReturnValue(undefined),
       };
 
-      const module = await Test.createTestingModule({
+      const testModule = await Test.createTestingModule({
         providers: [
           JwtStrategy,
           {
@@ -73,9 +77,11 @@ describe('JwtStrategy', () => {
         ],
       }).compile();
 
-      const strategyWithDefault = module.get<JwtStrategy>(JwtStrategy);
+      const strategyWithDefault = testModule.get<JwtStrategy>(JwtStrategy);
       expect(strategyWithDefault).toBeDefined();
       expect(mockConfigWithoutSecret.get).toHaveBeenCalledWith('JWT_SECRET');
+
+      await testModule.close();
     });
   });
 
@@ -97,24 +103,30 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('should throw UnauthorizedException if user not found', async () => {
+    it('should throw ApiException with AUTH_USER_NOT_FOUND if user not found', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
-      await expect(strategy.validate(payload)).rejects.toThrow(
-        UnauthorizedException,
-      );
-      await expect(strategy.validate(payload)).rejects.toThrow(
-        'User not found or inactive',
-      );
+      try {
+        await strategy.validate(payload);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.AUTH_USER_NOT_FOUND);
+        expect(error.message).toBe('User not found or inactive');
+      }
     });
 
-    it('should throw UnauthorizedException if user is inactive', async () => {
+    it('should throw ApiException with AUTH_USER_NOT_FOUND if user is inactive', async () => {
       const inactiveUser = { ...mockUser, is_active: false };
       mockUserRepository.findOne.mockResolvedValue(null);
 
-      await expect(strategy.validate(payload)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      try {
+        await strategy.validate(payload);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.AUTH_USER_NOT_FOUND);
+      }
     });
 
     it('should validate with different user roles', async () => {

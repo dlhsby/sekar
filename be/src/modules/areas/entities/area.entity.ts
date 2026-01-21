@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -39,11 +40,15 @@ export class Area {
   @Column('uuid')
   area_type_id: string;
 
+  /**
+   * Area type relationship
+   * onDelete: RESTRICT prevents deletion of area_types that are in use
+   */
   @ApiProperty({
     description: 'Area type details',
     type: () => AreaType,
   })
-  @ManyToOne(() => AreaType, { eager: true })
+  @ManyToOne(() => AreaType, { eager: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'area_type_id' })
   areaType: AreaType;
 
@@ -104,4 +109,11 @@ export class Area {
   })
   @UpdateDateColumn()
   updated_at: Date;
+
+  /**
+   * Soft delete timestamp for data retention
+   * CHECK constraints for GPS ranges and radius are implemented in database migration
+   */
+  @DeleteDateColumn()
+  deleted_at?: Date;
 }

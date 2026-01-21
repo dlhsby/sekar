@@ -1,0 +1,2021 @@
+{
+  "info": {
+    "_postman_id": "1e98228b-6063-442d-a730-5cb0a62dc3dc",
+    "name": "SEKAR API",
+    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 37\n- **Authentication:** JWT Bearer Token\n- **Base URL:** http://localhost:3000/api/v1\n\n## Test Users\n- admin / admin123 (Admin)\n- supervisor1 / supervisor123 (Supervisor)\n- worker1,2,3 / worker123 (Worker)\n\n## Collection Structure\n- 00. Health Check\n- 01. Authentication\n- 02. Users Management\n- 03. Area Types\n- 04. Areas Management\n- 05. Worker Assignments\n- 06. Shifts - Worker Flow\n- 07. Shifts - Supervisor View\n- 08. Reports - Worker Flow\n- 09. Reports - Admin/Supervisor\n- 10. Location Tracking\n- 11. Supervisor Dashboard",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-level pre-request script",
+          "console.log('Request: ' + pm.info.requestName + ' at ' + new Date().toISOString());",
+          "",
+          "// Skip auth for public endpoints",
+          "const publicEndpoints = ['/api', '/api/v1', '/api/v1/health', '/auth/login'];",
+          "const requestPath = pm.request.url.getPath();",
+          "const isPublic = publicEndpoints.some(ep => requestPath.endsWith(ep));",
+          "",
+          "if (!isPublic && pm.request.auth && pm.request.auth.type === 'bearer') {",
+          "    const token = pm.environment.get('access_token');",
+          "    if (!token) {",
+          "        console.warn('Warning: No access_token set. Please login first.');",
+          "    }",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-level test script",
+          "",
+          "// Response time check",
+          "pm.test('Response time is acceptable', function() {",
+          "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+          "});",
+          "",
+          "// Valid JSON check (for non-empty responses)",
+          "if (pm.response.text() && pm.response.text().length > 0) {",
+          "    pm.test('Response is valid JSON', function() {",
+          "        pm.response.json();",
+          "    });",
+          "}",
+          "",
+          "// Log errors for debugging",
+          "if (pm.response.code >= 400) {",
+          "    console.error('Error Response:', pm.response.json());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{host}}://{{base_url}}{{port}}/api/{{version}}"
+    }
+  ],
+  "item": [
+    {
+      "name": "00. Health Check",
+      "item": [
+        {
+          "name": "Base API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('version');",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json.status).to.eql('running');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}"]
+            }
+          }
+        },
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has health info', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json.status).to.eql('ok');",
+                  "    pm.expect(json).to.have.property('timestamp');",
+                  "    pm.expect(json).to.have.property('uptime');",
+                  "    pm.expect(json).to.have.property('environment');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/health",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01. Authentication",
+      "item": [
+        {
+          "name": "Login (Worker)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Validate credentials are set",
+                  "const username = pm.environment.get('username');",
+                  "const password = pm.environment.get('password');",
+                  "",
+                  "if (!username || !password) {",
+                  "    console.error('username and password must be set in environment');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has tokens and user', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('access_token');",
+                  "    pm.expect(json).to.have.property('refresh_token');",
+                  "    pm.expect(json).to.have.property('user');",
+                  "    pm.expect(json.user).to.have.property('id');",
+                  "    pm.expect(json.user).to.have.property('username');",
+                  "    pm.expect(json.user).to.have.property('role');",
+                  "});",
+                  "",
+                  "pm.test('Password not in response', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.user).to.not.have.property('password');",
+                  "});",
+                  "",
+                  "// Save tokens and user info",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('access_token', json.access_token);",
+                  "    pm.environment.set('refresh_token', json.refresh_token);",
+                  "    pm.environment.set('current_user_id', json.user.id);",
+                  "    pm.environment.set('current_user_role', json.user.role);",
+                  "    pm.environment.set('current_user_username', json.user.username);",
+                  "    console.log('Logged in as: ' + json.user.username + ' (' + json.user.role + ')');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('User role is admin', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.user.role).to.eql('admin');",
+                  "});",
+                  "",
+                  "// Save tokens",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('access_token', json.access_token);",
+                  "    pm.environment.set('refresh_token', json.refresh_token);",
+                  "    pm.environment.set('current_user_id', json.user.id);",
+                  "    pm.environment.set('current_user_role', json.user.role);",
+                  "    pm.environment.set('current_user_username', json.user.username);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Supervisor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('User role is supervisor', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.user.role).to.eql('supervisor');",
+                  "});",
+                  "",
+                  "// Save tokens",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('access_token', json.access_token);",
+                  "    pm.environment.set('refresh_token', json.refresh_token);",
+                  "    pm.environment.set('current_user_id', json.user.id);",
+                  "    pm.environment.set('current_user_role', json.user.role);",
+                  "    pm.environment.set('current_user_username', json.user.username);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{supervisor_username}}\",\n  \"password\": \"{{supervisor_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const refreshToken = pm.environment.get('refresh_token');",
+                  "if (!refreshToken) {",
+                  "    console.error('refresh_token not set. Please login first.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has new tokens', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('access_token');",
+                  "    pm.expect(json).to.have.property('refresh_token');",
+                  "});",
+                  "",
+                  "// Update tokens",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('access_token', json.access_token);",
+                  "    pm.environment.set('refresh_token', json.refresh_token);",
+                  "    console.log('Tokens refreshed successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/refresh",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User (Me)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.environment.get('access_token');",
+                  "if (!token) {",
+                  "    console.error('access_token not set. Please login first.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has user info', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('username');",
+                  "    pm.expect(json).to.have.property('full_name');",
+                  "    pm.expect(json).to.have.property('role');",
+                  "});",
+                  "",
+                  "pm.test('Password not in response', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.not.have.property('password');",
+                  "});",
+                  "",
+                  "pm.test('ID is valid UUID', function() {",
+                  "    const json = pm.response.json();",
+                  "    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;",
+                  "    pm.expect(json.id).to.match(uuidRegex);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/me",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success message', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('message');",
+                  "});",
+                  "",
+                  "// Clear tokens",
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.unset('access_token');",
+                  "    pm.environment.unset('refresh_token');",
+                  "    pm.environment.unset('current_user_id');",
+                  "    pm.environment.unset('current_user_role');",
+                  "    pm.environment.unset('current_user_username');",
+                  "    console.log('Logged out and cleared tokens');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/logout",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Users Management",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique username for testing",
+                  "const timestamp = Date.now();",
+                  "pm.environment.set('test_username', 'test_user_' + timestamp);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has user data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('username');",
+                  "    pm.expect(json).to.have.property('full_name');",
+                  "    pm.expect(json).to.have.property('role');",
+                  "    pm.expect(json).to.have.property('is_active');",
+                  "    pm.expect(json.is_active).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Password not returned', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.not.have.property('password');",
+                  "});",
+                  "",
+                  "// Save created user ID",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('created_user_id', json.id);",
+                  "    console.log('Created user: ' + json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"password\": \"testpassword123\",\n  \"full_name\": \"Test User\",\n  \"role\": \"worker\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Users have required fields', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('username');",
+                  "        pm.expect(json[0]).to.have.property('role');",
+                  "        pm.expect(json[0]).to.not.have.property('password');",
+                  "    }",
+                  "});",
+                  "",
+                  "// Save first worker ID for testing",
+                  "const json = pm.response.json();",
+                  "const worker = json.find(u => u.role === 'worker');",
+                  "if (worker) {",
+                  "    pm.environment.set('worker_id', worker.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const userId = pm.environment.get('created_user_id') || pm.environment.get('worker_id');",
+                  "if (!userId) {",
+                  "    console.warn('No user ID set. Create a user first or set created_user_id.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has user data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('username');",
+                  "    pm.expect(json).to.have.property('full_name');",
+                  "    pm.expect(json).to.have.property('role');",
+                  "});",
+                  "",
+                  "pm.test('ID matches requested ID', function() {",
+                  "    const json = pm.response.json();",
+                  "    const requestedId = pm.environment.get('created_user_id') || pm.environment.get('worker_id');",
+                  "    pm.expect(json.id).to.eql(requestedId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users/{{created_user_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "users", "{{created_user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has updated data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('updated_at');",
+                  "});",
+                  "",
+                  "pm.test('Full name was updated', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.full_name).to.include('Updated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Test User Updated\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users/{{created_user_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "users", "{{created_user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Clear the created user ID",
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.unset('created_user_id');",
+                  "    console.log('User deleted and ID cleared');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users/{{created_user_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "users", "{{created_user_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Area Types",
+      "item": [
+        {
+          "name": "Get All Area Types",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Area types have required fields', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('code');",
+                  "        pm.expect(json[0]).to.have.property('name');",
+                  "    }",
+                  "});",
+                  "",
+                  "// Save first area type ID for testing",
+                  "const json = pm.response.json();",
+                  "if (json.length > 0) {",
+                  "    const parkType = json.find(at => at.code === 'park') || json[0];",
+                  "    pm.environment.set('area_type_id_park', parkType.id);",
+                  "    console.log('Saved area type: ' + parkType.code + ' (' + parkType.id + ')');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "area-types"]
+            }
+          }
+        },
+        {
+          "name": "Get Area Type by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has area type data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('code');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "});",
+                  "",
+                  "pm.test('ID matches requested ID', function() {",
+                  "    const json = pm.response.json();",
+                  "    const requestedId = pm.environment.get('area_type_id_park');",
+                  "    pm.expect(json.id).to.eql(requestedId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types/{{area_type_id_park}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "area-types", "{{area_type_id_park}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Areas Management",
+      "item": [
+        {
+          "name": "Create Area",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const areaTypeId = pm.environment.get('area_type_id_park');",
+                  "if (!areaTypeId) {",
+                  "    console.error('area_type_id_park not set. Get area types first.');",
+                  "}",
+                  "",
+                  "// Generate unique area name",
+                  "const timestamp = Date.now();",
+                  "pm.environment.set('test_area_name', 'Test Area ' + timestamp);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has area data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "    pm.expect(json).to.have.property('area_type_id');",
+                  "    pm.expect(json).to.have.property('gps_lat');",
+                  "    pm.expect(json).to.have.property('gps_lng');",
+                  "    pm.expect(json).to.have.property('radius_meters');",
+                  "    pm.expect(json).to.have.property('is_active');",
+                  "    pm.expect(json.is_active).to.be.true;",
+                  "});",
+                  "",
+                  "// Save created area ID",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('created_area_id', json.id);",
+                  "    console.log('Created area: ' + json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{test_area_name}}\",\n  \"area_type_id\": \"{{area_type_id_park}}\",\n  \"gps_lat\": {{test_gps_lat}},\n  \"gps_lng\": {{test_gps_lng}},\n  \"radius_meters\": 150,\n  \"address\": \"Test Address, Surabaya\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "areas"]
+            }
+          }
+        },
+        {
+          "name": "Get All Areas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Areas have required fields', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('name');",
+                  "        pm.expect(json[0]).to.have.property('gps_lat');",
+                  "        pm.expect(json[0]).to.have.property('gps_lng');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "areas"]
+            }
+          }
+        },
+        {
+          "name": "Get Areas by Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('All areas match filter', function() {",
+                  "    const json = pm.response.json();",
+                  "    json.forEach(area => {",
+                  "        if (area.areaType) {",
+                  "            pm.expect(area.areaType.code).to.eql('park');",
+                  "        }",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas?area_type=park",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "areas"],
+              "query": [
+                { "key": "area_type", "value": "park" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Area by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has area data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "    pm.expect(json).to.have.property('gps_lat');",
+                  "    pm.expect(json).to.have.property('gps_lng');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas/{{created_area_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "areas", "{{created_area_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Area",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has updated data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('updated_at');",
+                  "});",
+                  "",
+                  "pm.test('Radius was updated', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(parseInt(json.radius_meters)).to.eql(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"radius_meters\": 200,\n  \"address\": \"Updated Address, Surabaya\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas/{{created_area_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "areas", "{{created_area_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Area",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.unset('created_area_id');",
+                  "    console.log('Area deleted and ID cleared');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas/{{created_area_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "areas", "{{created_area_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Worker Assignments",
+      "item": [
+        {
+          "name": "Assign Worker to Area",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const workerId = pm.environment.get('worker_id');",
+                  "const areaId = pm.environment.get('created_area_id');",
+                  "",
+                  "if (!workerId) {",
+                  "    console.error('worker_id not set. Get users list first.');",
+                  "}",
+                  "if (!areaId) {",
+                  "    console.error('created_area_id not set. Create an area first.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has assignment data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('worker_id');",
+                  "    pm.expect(json).to.have.property('area_id');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('worker_assignment_id', json.id);",
+                  "    console.log('Worker assigned: ' + json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"area_id\": \"{{created_area_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/workers/{{worker_id}}/assign",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "workers", "{{worker_id}}", "assign"]
+            }
+          }
+        },
+        {
+          "name": "Remove Worker Assignment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.unset('worker_assignment_id');",
+                  "    console.log('Worker assignment removed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/workers/{{worker_id}}/assign",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "workers", "{{worker_id}}", "assign"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Shifts - Worker Flow",
+      "item": [
+        {
+          "name": "Clock In",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Validate required fields",
+                  "const gpsLat = pm.environment.get('test_gps_lat');",
+                  "const gpsLng = pm.environment.get('test_gps_lng');",
+                  "",
+                  "if (!gpsLat || !gpsLng) {",
+                  "    console.error('GPS coordinates not set in environment');",
+                  "}",
+                  "",
+                  "// Validate GPS ranges",
+                  "const lat = parseFloat(gpsLat);",
+                  "const lng = parseFloat(gpsLng);",
+                  "if (lat < -90 || lat > 90) {",
+                  "    console.error('Invalid latitude: must be between -90 and 90');",
+                  "}",
+                  "if (lng < -180 || lng > 180) {",
+                  "    console.error('Invalid longitude: must be between -180 and 180');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has shift data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('worker_id');",
+                  "    pm.expect(json).to.have.property('area_id');",
+                  "    pm.expect(json).to.have.property('clock_in_time');",
+                  "    pm.expect(json).to.have.property('clock_in_gps_lat');",
+                  "    pm.expect(json).to.have.property('clock_in_gps_lng');",
+                  "    pm.expect(json).to.have.property('selfie_photo_url');",
+                  "});",
+                  "",
+                  "pm.test('Clock out fields are null', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.clock_out_time).to.be.null;",
+                  "    pm.expect(json.hours_worked).to.be.null;",
+                  "});",
+                  "",
+                  "// Save shift ID",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('active_shift_id', json.id);",
+                  "    pm.environment.set('current_shift_id', json.id);",
+                  "    console.log('Clocked in - Shift ID: ' + json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"area_id\": \"{{created_area_id}}\",\n  \"gps_lat\": {{test_gps_lat}},\n  \"gps_lng\": {{test_gps_lng}},\n  \"selfie_photo\": \"{{test_base64_photo}}\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/clock-in",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "shifts", "clock-in"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Shift",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response can be null or shift object",
+                  "const json = pm.response.json();",
+                  "if (json !== null) {",
+                  "    pm.test('Active shift has required fields', function() {",
+                  "        pm.expect(json).to.have.property('id');",
+                  "        pm.expect(json).to.have.property('clock_in_time');",
+                  "        pm.expect(json.clock_out_time).to.be.null;",
+                  "    });",
+                  "    ",
+                  "    pm.environment.set('active_shift_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/current",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "shifts", "current"]
+            }
+          }
+        },
+        {
+          "name": "Get My Shifts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Shifts have required fields', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('clock_in_time');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/my-shifts",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "shifts", "my-shifts"]
+            }
+          }
+        },
+        {
+          "name": "Clock Out",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const shiftId = pm.environment.get('active_shift_id');",
+                  "if (!shiftId) {",
+                  "    console.warn('No active shift. Clock in first.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has completed shift data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('clock_out_time');",
+                  "    pm.expect(json.clock_out_time).to.not.be.null;",
+                  "    pm.expect(json).to.have.property('hours_worked');",
+                  "});",
+                  "",
+                  "pm.test('Clock out GPS is recorded', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('clock_out_gps_lat');",
+                  "    pm.expect(json).to.have.property('clock_out_gps_lng');",
+                  "});",
+                  "",
+                  "// Update shift tracking",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('last_completed_shift_id', json.id);",
+                  "    pm.environment.unset('active_shift_id');",
+                  "    console.log('Clocked out - Hours worked: ' + json.hours_worked);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gps_lat\": {{test_gps_lat}},\n  \"gps_lng\": {{test_gps_lng}}\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/clock-out",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "shifts", "clock-out"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Shifts - Supervisor View",
+      "item": [
+        {
+          "name": "Get Active Shifts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Active shifts have no clock out time', function() {",
+                  "    const json = pm.response.json();",
+                  "    json.forEach(shift => {",
+                  "        pm.expect(shift.clock_out_time).to.be.null;",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/active",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "shifts", "active"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Reports - Worker Flow",
+      "item": [
+        {
+          "name": "Create Report",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const shiftId = pm.environment.get('active_shift_id') || pm.environment.get('current_shift_id');",
+                  "if (!shiftId) {",
+                  "    console.error('No shift ID set. Clock in first.');",
+                  "}",
+                  "",
+                  "// Set shift_id for the request",
+                  "pm.environment.set('report_shift_id', shiftId);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has report data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('worker_id');",
+                  "    pm.expect(json).to.have.property('shift_id');",
+                  "    pm.expect(json).to.have.property('report_type');",
+                  "    pm.expect(json).to.have.property('description');",
+                  "    pm.expect(json).to.have.property('gps_lat');",
+                  "    pm.expect(json).to.have.property('gps_lng');",
+                  "});",
+                  "",
+                  "pm.test('Report type is valid', function() {",
+                  "    const json = pm.response.json();",
+                  "    const validTypes = ['task_completion', 'incident', 'maintenance_request'];",
+                  "    pm.expect(validTypes).to.include(json.report_type);",
+                  "});",
+                  "",
+                  "// Save report ID",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('created_report_id', json.id);",
+                  "    console.log('Report created: ' + json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shift_id\": \"{{report_shift_id}}\",\n  \"report_type\": \"task_completion\",\n  \"description\": \"Completed cleaning task in the park area. All debris removed and plants watered.\",\n  \"gps_lat\": {{test_gps_lat}},\n  \"gps_lng\": {{test_gps_lng}},\n  \"photo\": \"{{test_base64_photo}}\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "reports"]
+            }
+          }
+        },
+        {
+          "name": "Get My Reports",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Reports belong to current user', function() {",
+                  "    const json = pm.response.json();",
+                  "    const userId = pm.environment.get('current_user_id');",
+                  "    json.forEach(report => {",
+                  "        pm.expect(report.worker_id).to.eql(userId);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/my-reports",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "reports", "my-reports"]
+            }
+          }
+        },
+        {
+          "name": "Get Report by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has report data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('report_type');",
+                  "    pm.expect(json).to.have.property('description');",
+                  "});",
+                  "",
+                  "pm.test('ID matches requested ID', function() {",
+                  "    const json = pm.response.json();",
+                  "    const requestedId = pm.environment.get('created_report_id');",
+                  "    pm.expect(json.id).to.eql(requestedId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "reports", "{{created_report_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Note: Update only works within 1 hour of creation",
+                  "pm.test('Status code is 200 or 403', function() {",
+                  "    pm.expect([200, 403]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Response has updated data', function() {",
+                  "        const json = pm.response.json();",
+                  "        pm.expect(json).to.have.property('updated_at');",
+                  "        pm.expect(json.description).to.include('Updated');",
+                  "    });",
+                  "}",
+                  "",
+                  "if (pm.response.code === 403) {",
+                  "    console.log('Update window (1 hour) has passed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated: Completed cleaning task in the park area. All debris removed and plants watered. Additional trimming done.\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "reports", "{{created_report_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Reports - Admin/Supervisor",
+      "item": [
+        {
+          "name": "Get All Reports",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Reports have required fields', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('worker_id');",
+                  "        pm.expect(json[0]).to.have.property('report_type');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "reports"]
+            }
+          }
+        },
+        {
+          "name": "Delete Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.unset('created_report_id');",
+                  "    console.log('Report deleted and ID cleared');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "reports", "{{created_report_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Location Tracking",
+      "item": [
+        {
+          "name": "Batch Upload Locations",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const shiftId = pm.environment.get('active_shift_id') || pm.environment.get('current_shift_id');",
+                  "if (!shiftId) {",
+                  "    console.error('No shift ID set. Clock in first.');",
+                  "}",
+                  "pm.environment.set('location_shift_id', shiftId);",
+                  "",
+                  "// Generate timestamp",
+                  "pm.environment.set('location_timestamp', new Date().toISOString());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has count', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('count');",
+                  "    pm.expect(json.count).to.be.a('number');",
+                  "    pm.expect(json.count).to.be.above(0);",
+                  "});",
+                  "",
+                  "console.log('Uploaded ' + pm.response.json().count + ' locations');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shift_id\": \"{{location_shift_id}}\",\n  \"locations\": [\n    {\n      \"gps_lat\": {{test_gps_lat}},\n      \"gps_lng\": {{test_gps_lng}},\n      \"accuracy\": 10.5,\n      \"battery_level\": 85,\n      \"timestamp\": \"{{location_timestamp}}\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/location/batch",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "location", "batch"]
+            }
+          }
+        },
+        {
+          "name": "Get Worker Location History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Locations have required fields', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('gps_lat');",
+                  "        pm.expect(json[0]).to.have.property('gps_lng');",
+                  "        pm.expect(json[0]).to.have.property('timestamp');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/location/worker/{{worker_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "location", "worker", "{{worker_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Worker Latest Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response can be null or location object",
+                  "const json = pm.response.json();",
+                  "if (json !== null) {",
+                  "    pm.test('Location has required fields', function() {",
+                  "        pm.expect(json).to.have.property('id');",
+                  "        pm.expect(json).to.have.property('gps_lat');",
+                  "        pm.expect(json).to.have.property('gps_lng');",
+                  "        pm.expect(json).to.have.property('timestamp');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/location/worker/{{worker_id}}/latest",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "location", "worker", "{{worker_id}}", "latest"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Supervisor Dashboard",
+      "item": [
+        {
+          "name": "Get Active Workers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has dashboard structure', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('active_workers');",
+                  "    pm.expect(json).to.have.property('total');",
+                  "    pm.expect(json.active_workers).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Active workers have required data', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.active_workers.length > 0) {",
+                  "        const worker = json.active_workers[0];",
+                  "        pm.expect(worker).to.have.property('worker');",
+                  "        pm.expect(worker).to.have.property('shift');",
+                  "        pm.expect(worker).to.have.property('area');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/supervisor/active-workers",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "supervisor", "active-workers"]
+            }
+          }
+        },
+        {
+          "name": "Get Area Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has area status structure', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('areas');",
+                  "    pm.expect(json).to.have.property('total_areas');",
+                  "    pm.expect(json).to.have.property('total_assigned_workers');",
+                  "    pm.expect(json).to.have.property('total_active_workers');",
+                  "    pm.expect(json.areas).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Areas have worker counts', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.areas.length > 0) {",
+                  "        const area = json.areas[0];",
+                  "        pm.expect(area).to.have.property('area');",
+                  "        pm.expect(area).to.have.property('assigned_workers_count');",
+                  "        pm.expect(area).to.have.property('active_workers_count');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/supervisor/area-status",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "supervisor", "area-status"]
+            }
+          }
+        },
+        {
+          "name": "Get Attendance",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set today's date",
+                  "const today = new Date().toISOString().split('T')[0];",
+                  "pm.environment.set('attendance_date', today);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has attendance structure', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('date');",
+                  "    pm.expect(json).to.have.property('clocked_in');",
+                  "    pm.expect(json).to.have.property('not_clocked_in');",
+                  "    pm.expect(json).to.have.property('total_workers');",
+                  "    pm.expect(json).to.have.property('clocked_in_count');",
+                  "    pm.expect(json).to.have.property('not_clocked_in_count');",
+                  "});",
+                  "",
+                  "pm.test('Counts are consistent', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.clocked_in_count + json.not_clocked_in_count).to.eql(json.total_workers);",
+                  "    pm.expect(json.clocked_in.length).to.eql(json.clocked_in_count);",
+                  "    pm.expect(json.not_clocked_in.length).to.eql(json.not_clocked_in_count);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/supervisor/attendance?date={{attendance_date}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "supervisor", "attendance"],
+              "query": [
+                { "key": "date", "value": "{{attendance_date}}" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

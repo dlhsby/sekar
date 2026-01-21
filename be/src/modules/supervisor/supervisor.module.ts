@@ -17,9 +17,7 @@ import { LocationLog } from '../location/entities/location-log.entity';
  * - Daily attendance reports
  */
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Shift, User, Area, WorkerAssignment, LocationLog]),
-  ],
+  imports: [TypeOrmModule.forFeature([Shift, User, Area, WorkerAssignment, LocationLog])],
   controllers: [SupervisorController],
   providers: [SupervisorService],
   exports: [SupervisorService],

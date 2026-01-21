@@ -4,14 +4,16 @@ import { LocationService } from './location.service';
 import { LocationLog } from './entities/location-log.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 describe('LocationController', () => {
+  let module: TestingModule;
   let controller: LocationController;
   let service: LocationService;
 
   const mockLocationService = {
     createBatch: jest.fn(),
-    getWorkerHistory: jest.fn(),
+    getWorkerHistoryPaginated: jest.fn(),
     getLatestLocation: jest.fn(),
   };
 
@@ -40,7 +42,7 @@ describe('LocationController', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [LocationController],
       providers: [
         {
@@ -54,8 +56,10 @@ describe('LocationController', () => {
     service = module.get<LocationService>(LocationService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('createBatch', () => {
@@ -103,55 +107,84 @@ describe('LocationController', () => {
   describe('getWorkerHistory', () => {
     const workerId = 'worker-uuid-123';
 
-    it('should return worker location history with no filters', async () => {
-      const mockLocations = [mockLocationLog];
-      mockLocationService.getWorkerHistory.mockResolvedValue(mockLocations);
+    it('should return paginated worker location history with no filters', async () => {
+      const paginatedResult = {
+        data: [mockLocationLog],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockLocationService.getWorkerHistoryPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.getWorkerHistory(workerId);
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
+      const result = await controller.getWorkerHistory(workerId, paginationDto);
 
-      expect(service.getWorkerHistory).toHaveBeenCalledWith(workerId, {
-        from_date: undefined,
-        to_date: undefined,
-        shift_id: undefined,
-      });
-      expect(result).toEqual(mockLocations);
+      expect(service.getWorkerHistoryPaginated).toHaveBeenCalledWith(
+        workerId,
+        {
+          from_date: undefined,
+          to_date: undefined,
+          shift_id: undefined,
+        },
+        1,
+        50,
+      );
+      expect(result).toEqual(paginatedResult);
     });
 
-    it('should filter by date range', async () => {
-      const mockLocations = [mockLocationLog];
-      mockLocationService.getWorkerHistory.mockResolvedValue(mockLocations);
+    it('should filter by date range with pagination', async () => {
+      const paginatedResult = {
+        data: [mockLocationLog],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockLocationService.getWorkerHistoryPaginated.mockResolvedValue(paginatedResult);
 
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
       const result = await controller.getWorkerHistory(
         workerId,
+        paginationDto,
         '2026-01-01',
         '2026-01-31',
       );
 
-      expect(service.getWorkerHistory).toHaveBeenCalledWith(workerId, {
-        from_date: '2026-01-01',
-        to_date: '2026-01-31',
-        shift_id: undefined,
-      });
-      expect(result).toEqual(mockLocations);
+      expect(service.getWorkerHistoryPaginated).toHaveBeenCalledWith(
+        workerId,
+        {
+          from_date: '2026-01-01',
+          to_date: '2026-01-31',
+          shift_id: undefined,
+        },
+        1,
+        50,
+      );
+      expect(result).toEqual(paginatedResult);
     });
 
-    it('should filter by shift_id', async () => {
-      const mockLocations = [mockLocationLog];
-      mockLocationService.getWorkerHistory.mockResolvedValue(mockLocations);
+    it('should filter by shift_id with pagination', async () => {
+      const paginatedResult = {
+        data: [mockLocationLog],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockLocationService.getWorkerHistoryPaginated.mockResolvedValue(paginatedResult);
 
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
       const result = await controller.getWorkerHistory(
         workerId,
+        paginationDto,
         undefined,
         undefined,
         'shift-uuid-1',
       );
 
-      expect(service.getWorkerHistory).toHaveBeenCalledWith(workerId, {
-        from_date: undefined,
-        to_date: undefined,
-        shift_id: 'shift-uuid-1',
-      });
-      expect(result).toEqual(mockLocations);
+      expect(service.getWorkerHistoryPaginated).toHaveBeenCalledWith(
+        workerId,
+        {
+          from_date: undefined,
+          to_date: undefined,
+          shift_id: 'shift-uuid-1',
+        },
+        1,
+        50,
+      );
+      expect(result).toEqual(paginatedResult);
     });
   });
 

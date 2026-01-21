@@ -25,6 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
+import { CreateReportJsonDto } from './dto/create-report-json.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { Report, ReportType } from './entities/report.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -32,6 +33,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
  * Reports Controller
@@ -54,7 +56,6 @@ export class ReportsController {
   @Roles(UserRole.WORKER)
   @UseInterceptors(FileInterceptor('photo'))
   @ApiOperation({ summary: 'Create work report (Worker only)' })
-  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
@@ -64,10 +65,10 @@ export class ReportsController {
         description: { type: 'string' },
         gps_lat: { type: 'number' },
         gps_lng: { type: 'number' },
-        photo: {
-          type: 'string',
-          format: 'binary',
-          description: 'Photo file (max 10MB, jpeg/png)',
+        photos: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Base64-encoded photo strings (max 5)',
         },
       },
       required: ['shift_id', 'report_type', 'description', 'gps_lat', 'gps_lng'],
@@ -81,7 +82,7 @@ export class ReportsController {
   @ApiResponse({ status: 400, description: 'Invalid input or shift not active' })
   @ApiResponse({ status: 404, description: 'Shift not found' })
   async create(
-    @Body() createReportDto: CreateReportDto,
+    @Body() createReportDto: CreateReportJsonDto,
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({ maxSize: 10 * 1024 * 1024 }) // 10MB
@@ -93,16 +94,18 @@ export class ReportsController {
     file: Express.Multer.File | undefined,
     @GetUser() user: User,
   ): Promise<Report> {
-    return this.reportsService.create(createReportDto, file, user.id);
+    return this.reportsService.createFromJson(createReportDto, user.id, file);
   }
 
   /**
-   * Get all reports with optional filters
+   * Get all reports with optional filters and pagination
    * Admin and Supervisor can view all reports
    */
   @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
-  @ApiOperation({ summary: 'List all reports with filters (Admin, Supervisor)' })
+  @ApiOperation({ summary: 'List all reports with filters and pagination (Admin, Supervisor)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiQuery({ name: 'worker_id', required: false, type: String })
   @ApiQuery({ name: 'shift_id', required: false, type: String })
   @ApiQuery({ name: 'report_type', required: false, enum: ReportType })
@@ -110,23 +113,70 @@ export class ReportsController {
   @ApiQuery({ name: 'to_date', required: false, type: String, description: 'ISO date string' })
   @ApiResponse({
     status: 200,
-    description: 'List of reports',
-    type: [Report],
+    description: 'Paginated list of reports',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'report-uuid',
+            worker_id: 'worker-uuid',
+            shift_id: 'shift-uuid',
+            report_type: 'cleaning',
+            description: 'Cleaned the park',
+            photo_url: 'https://s3.amazonaws.com/...',
+            gps_lat: -7.250445,
+            gps_lng: 112.768845,
+            created_at: '2026-01-16T10:00:00.000Z',
+          },
+        ],
+        meta: {
+          total: 150,
+          page: 1,
+          limit: 50,
+          totalPages: 3,
+        },
+      },
+    },
   })
   async findAll(
+    @Query() paginationDto: PaginationDto,
     @Query('worker_id') workerId?: string,
     @Query('shift_id') shiftId?: string,
     @Query('report_type') reportType?: string,
     @Query('from_date') fromDate?: string,
     @Query('to_date') toDate?: string,
+  ): Promise<PaginatedResponseDto<Report>> {
+    return this.reportsService.findAllPaginated(
+      {
+        worker_id: workerId,
+        shift_id: shiftId,
+        report_type: reportType,
+        from_date: fromDate,
+        to_date: toDate,
+      },
+      paginationDto.page,
+      paginationDto.limit,
+    );
+  }
+
+  /**
+   * Get worker's own reports
+   * Worker can view their own reports
+   */
+  @Get('my-reports')
+  @Roles(UserRole.WORKER)
+  @ApiOperation({ summary: 'Get my reports (Worker only)' })
+  @ApiQuery({ name: 'date', required: false, type: String, description: 'Filter by date (YYYY-MM-DD)' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of worker reports',
+    type: [Report],
+  })
+  async getMyReports(
+    @Query('date') date: string | undefined,
+    @GetUser() user: User,
   ): Promise<Report[]> {
-    return this.reportsService.findAll({
-      worker_id: workerId,
-      shift_id: shiftId,
-      report_type: reportType,
-      from_date: fromDate,
-      to_date: toDate,
-    });
+    return this.reportsService.findMyReports(user.id, date);
   }
 
   /**

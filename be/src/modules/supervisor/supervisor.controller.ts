@@ -1,19 +1,14 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SupervisorService } from './supervisor.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { ActiveWorkersResponseDto } from './dto/active-workers-response.dto';
+import { ActiveWorkersResponseDto, ActiveWorkerDto } from './dto/active-workers-response.dto';
 import { AreaStatusResponseDto } from './dto/area-status-response.dto';
 import { AttendanceResponseDto } from './dto/attendance-response.dto';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
  * Supervisor Controller
@@ -30,21 +25,52 @@ export class SupervisorController {
   constructor(private readonly supervisorService: SupervisorService) {}
 
   /**
-   * Get all active workers with real-time locations
+   * Get all active workers with real-time locations and pagination
    * Shows workers who are currently clocked in
    */
   @Get('active-workers')
   @ApiOperation({
-    summary: 'Get active workers (Admin, Supervisor)',
-    description: 'Returns all workers currently clocked in with their latest GPS locations',
+    summary: 'Get active workers with pagination (Admin, Supervisor)',
+    description: 'Returns paginated list of workers currently clocked in with their latest GPS locations',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiResponse({
     status: 200,
-    description: 'List of active workers',
-    type: ActiveWorkersResponseDto,
+    description: 'Paginated list of active workers',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'worker-uuid',
+            username: 'worker1',
+            full_name: 'Pekerja Satu',
+            shift: {
+              id: 'shift-uuid',
+              clock_in_time: '2026-01-16T08:00:00.000Z',
+              area: {
+                id: 'area-uuid',
+                name: 'Taman A',
+              },
+            },
+            latest_location: {
+              gps_lat: -7.250445,
+              gps_lng: 112.768845,
+              logged_at: '2026-01-16T10:00:00.000Z',
+            },
+          },
+        ],
+        meta: {
+          total: 25,
+          page: 1,
+          limit: 50,
+          totalPages: 1,
+        },
+      },
+    },
   })
-  async getActiveWorkers(): Promise<ActiveWorkersResponseDto> {
-    return this.supervisorService.getActiveWorkers();
+  async getActiveWorkers(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
+    return this.supervisorService.getActiveWorkersPaginated(paginationDto.page, paginationDto.limit);
   }
 
   /**
@@ -66,13 +92,13 @@ export class SupervisorController {
   }
 
   /**
-   * Get daily attendance report
+   * Get daily attendance report with pagination
    * Shows which workers clocked in and who did not
    */
   @Get('attendance')
   @ApiOperation({
-    summary: 'Get attendance report (Admin, Supervisor)',
-    description: 'Returns attendance statistics for a specific date (defaults to today)',
+    summary: 'Get attendance report with pagination (Admin, Supervisor)',
+    description: 'Returns paginated attendance statistics for a specific date (defaults to today)',
   })
   @ApiQuery({
     name: 'date',
@@ -81,12 +107,42 @@ export class SupervisorController {
     description: 'Date in YYYY-MM-DD format (defaults to today)',
     example: '2026-01-09',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiResponse({
     status: 200,
-    description: 'Attendance report',
-    type: AttendanceResponseDto,
+    description: 'Paginated attendance report',
+    schema: {
+      example: {
+        date: '2026-01-16',
+        total_workers: 50,
+        clocked_in_count: 45,
+        not_clocked_in: {
+          data: [
+            {
+              id: 'worker-uuid',
+              username: 'worker5',
+              full_name: 'Pekerja Lima',
+              area: {
+                id: 'area-uuid',
+                name: 'Taman B',
+              },
+            },
+          ],
+          meta: {
+            total: 5,
+            page: 1,
+            limit: 50,
+            totalPages: 1,
+          },
+        },
+      },
+    },
   })
-  async getAttendance(@Query('date') date?: string): Promise<AttendanceResponseDto> {
-    return this.supervisorService.getAttendance(date);
+  async getAttendance(
+    @Query('date') date?: string,
+    @Query() paginationDto?: PaginationDto,
+  ): Promise<any> {
+    return this.supervisorService.getAttendancePaginated(date, paginationDto?.page, paginationDto?.limit);
   }
 }

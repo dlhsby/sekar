@@ -6,8 +6,10 @@ import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { BadRequestException } from '@nestjs/common';
 import { UserRole } from '../users/entities/user.entity';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 describe('ShiftsController', () => {
+  let module: TestingModule;
   let controller: ShiftsController;
   let service: ShiftsService;
 
@@ -48,10 +50,11 @@ describe('ShiftsController', () => {
     findActiveShift: jest.fn(),
     findByWorkerId: jest.fn(),
     findAllActiveShifts: jest.fn(),
+    findAllActiveShiftsPaginated: jest.fn(),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [ShiftsController],
       providers: [
         {
@@ -65,8 +68,10 @@ describe('ShiftsController', () => {
     service = module.get<ShiftsService>(ShiftsService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('clockIn', () => {
@@ -88,9 +93,7 @@ describe('ShiftsController', () => {
     });
 
     it('should throw BadRequestException if already clocked in', async () => {
-      mockShiftsService.clockIn.mockRejectedValue(
-        new BadRequestException('Already clocked in'),
-      );
+      mockShiftsService.clockIn.mockRejectedValue(new BadRequestException('Already clocked in'));
 
       await expect(controller.clockIn(mockWorker as any, clockInDto)).rejects.toThrow(
         BadRequestException,
@@ -191,22 +194,28 @@ describe('ShiftsController', () => {
   });
 
   describe('getActiveShifts', () => {
-    it('should return all active shifts', async () => {
+    it('should return paginated active shifts', async () => {
       const activeShifts = [mockShift, { ...mockShift, worker_id: 'worker-2' }];
-      mockShiftsService.findAllActiveShifts.mockResolvedValue(activeShifts);
+      const paginatedResult = new PaginatedResponseDto(activeShifts, 2, 1, 50);
+      mockShiftsService.findAllActiveShiftsPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.getActiveShifts();
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
+      const result = await controller.getActiveShifts(paginationDto);
 
-      expect(result).toEqual(activeShifts);
-      expect(service.findAllActiveShifts).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(paginatedResult);
+      expect(service.findAllActiveShiftsPaginated).toHaveBeenCalledWith(1, 50);
     });
 
-    it('should return empty array if no active shifts', async () => {
-      mockShiftsService.findAllActiveShifts.mockResolvedValue([]);
+    it('should return empty paginated result if no active shifts', async () => {
+      const paginatedResult = new PaginatedResponseDto([], 0, 1, 50);
+      mockShiftsService.findAllActiveShiftsPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.getActiveShifts();
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
+      const result = await controller.getActiveShifts(paginationDto);
 
-      expect(result).toEqual([]);
+      expect(result).toEqual(paginatedResult);
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
     });
   });
 });

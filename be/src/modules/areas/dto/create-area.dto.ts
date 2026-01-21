@@ -55,8 +55,7 @@ export class CreateAreaDto {
   gps_lng: number;
 
   @ApiPropertyOptional({
-    description:
-      'Boundary radius in meters (defaults to 100m, max 10000m / 10km)',
+    description: 'Boundary radius in meters (defaults to 100m, max 10000m / 10km)',
     example: 100,
     default: 100,
     minimum: 1,

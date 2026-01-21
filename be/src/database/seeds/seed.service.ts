@@ -52,10 +52,7 @@ export class SeedService {
     await this.locationLogRepository.createQueryBuilder().delete().execute();
     await this.reportRepository.createQueryBuilder().delete().execute();
     await this.shiftRepository.createQueryBuilder().delete().execute();
-    await this.workerAssignmentRepository
-      .createQueryBuilder()
-      .delete()
-      .execute();
+    await this.workerAssignmentRepository.createQueryBuilder().delete().execute();
     await this.areaRepository.createQueryBuilder().delete().execute();
     await this.areaTypeRepository.createQueryBuilder().delete().execute();
     await this.userRepository.createQueryBuilder().delete().execute();
@@ -329,7 +326,8 @@ export class SeedService {
         clock_in_time: new Date(yesterday.setHours(8, 0, 0, 0)),
         clock_in_gps_lat: -7.2905,
         clock_in_gps_lng: 112.7398,
-        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker1-abc123.jpg',
+        clock_in_photo_url:
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker1-abc123.jpg',
         clock_out_time: new Date(yesterday.setHours(16, 0, 0, 0)),
         clock_out_gps_lat: -7.2906,
         clock_out_gps_lng: 112.7399,
@@ -342,7 +340,8 @@ export class SeedService {
         clock_in_time: new Date(yesterday.setHours(7, 30, 0, 0)),
         clock_in_gps_lat: -7.2844,
         clock_in_gps_lng: 112.7915,
-        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker2-def456.jpg',
+        clock_in_photo_url:
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker2-def456.jpg',
         clock_out_time: new Date(yesterday.setHours(15, 30, 0, 0)),
         clock_out_gps_lat: -7.2845,
         clock_out_gps_lng: 112.7916,
@@ -356,7 +355,8 @@ export class SeedService {
         clock_in_time: new Date(twoDaysAgo.setHours(8, 15, 0, 0)),
         clock_in_gps_lat: -7.3037,
         clock_in_gps_lng: 112.7375,
-        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/07/clock-in/worker3-ghi789.jpg',
+        clock_in_photo_url:
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/07/clock-in/worker3-ghi789.jpg',
         clock_out_time: new Date(twoDaysAgo.setHours(16, 30, 0, 0)),
         clock_out_gps_lat: -7.3038,
         clock_out_gps_lng: 112.7376,
@@ -370,7 +370,8 @@ export class SeedService {
         clock_in_time: new Date(now.setHours(8, 5, 0, 0)),
         clock_in_gps_lat: -7.2905,
         clock_in_gps_lng: 112.7398,
-        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/worker1-jkl012.jpg',
+        clock_in_photo_url:
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/worker1-jkl012.jpg',
         clock_out_time: null,
         clock_out_gps_lat: null,
         clock_out_gps_lng: null,
@@ -392,7 +393,9 @@ export class SeedService {
         clock_out_gps_lng: shiftData.clock_out_gps_lng,
       } as any);
       const status = shiftData.clock_out_time ? 'completed' : 'active';
-      console.log(`  ✓ Created ${status} shift for ${shiftData.workerName} at ${shiftData.areaName}`);
+      console.log(
+        `  ✓ Created ${status} shift for ${shiftData.workerName} at ${shiftData.areaName}`,
+      );
     }
   }
 
@@ -425,18 +428,23 @@ export class SeedService {
       {
         worker_id: worker1.id,
         shift_id: activeShift.id,
+        area_id: activeShift.area_id,
         report_type: ReportType.TASK_COMPLETION,
-        description: 'Completed cleaning main area of Taman Bungkul. All trash collected and disposed properly.',
-        photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/reports/report1-abc123.jpg',
+        description:
+          'Completed cleaning main area of Taman Bungkul. All trash collected and disposed properly.',
+        photo_url:
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/reports/report1-abc123.jpg',
         gps_lat: -7.2905,
         gps_lng: 112.7398,
       },
       {
         worker_id: worker1.id,
         shift_id: activeShift.id,
+        area_id: activeShift.area_id,
         report_type: ReportType.MAINTENANCE_REQUEST,
         description: 'Bench near playground needs repair. One leg is loose and unstable.',
-        photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/reports/report2-def456.jpg',
+        photo_url:
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/reports/report2-def456.jpg',
         gps_lat: -7.2906,
         gps_lng: 112.7399,
       },

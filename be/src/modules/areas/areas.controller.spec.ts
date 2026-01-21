@@ -7,6 +7,7 @@ import { UpdateAreaDto } from './dto/update-area.dto';
 import { NotFoundException } from '@nestjs/common';
 
 describe('AreasController', () => {
+  let module: TestingModule;
   let controller: AreasController;
   let service: AreasService;
 
@@ -41,7 +42,7 @@ describe('AreasController', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [AreasController],
       providers: [
         {
@@ -55,8 +56,10 @@ describe('AreasController', () => {
     service = module.get<AreasService>(AreasService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('create', () => {
@@ -137,7 +140,10 @@ describe('AreasController', () => {
       const result = await controller.update('c3d4e5f6-a7b8-9012-cdef-123456789012', updateAreaDto);
 
       expect(result).toEqual(updatedArea);
-      expect(service.update).toHaveBeenCalledWith('c3d4e5f6-a7b8-9012-cdef-123456789012', updateAreaDto);
+      expect(service.update).toHaveBeenCalledWith(
+        'c3d4e5f6-a7b8-9012-cdef-123456789012',
+        updateAreaDto,
+      );
       expect(service.update).toHaveBeenCalledTimes(1);
     });
 

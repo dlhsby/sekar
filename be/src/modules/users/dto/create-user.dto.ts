@@ -27,8 +27,7 @@ export class CreateUserDto {
    * @example 'worker4'
    */
   @ApiProperty({
-    description:
-      'Username for login (alphanumeric with underscores/hyphens allowed)',
+    description: 'Username for login (alphanumeric with underscores/hyphens allowed)',
     example: 'worker4',
     minLength: 1,
     maxLength: ValidationConstants.USERNAME_MAX_LENGTH,

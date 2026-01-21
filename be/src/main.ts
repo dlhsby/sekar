@@ -2,7 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ApiVersionInterceptor } from './common/interceptors/api-version.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import * as os from 'os';
+import * as bodyParser from 'body-parser';
 
 /**
  * Get the local network IP address
@@ -28,11 +31,18 @@ function getLocalIpAddress(): string {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Increase body size limit for base64 photo uploads (50MB)
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+
   // Enable CORS
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
     credentials: true,
   });
+
+  // Global exception filter for standardized error responses
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -43,14 +53,17 @@ async function bootstrap() {
     }),
   );
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  // Global interceptor for API version tracking
+  app.useGlobalInterceptors(new ApiVersionInterceptor());
+
+  // Global prefix with versioning
+  app.setGlobalPrefix('api/v1');
 
   // Swagger/OpenAPI configuration
   const config = new DocumentBuilder()
     .setTitle('SEKAR API')
     .setDescription(
-      'API documentation for SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Worker tracking and task management system for DKRTH Surabaya',
+      'API documentation for SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Worker tracking and task management system for DLH Surabaya',
     )
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
@@ -74,7 +87,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('api/v1/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
       tagsSorter: 'alpha',
@@ -87,9 +100,9 @@ async function bootstrap() {
   await app.listen(port, host);
 
   const localIp = getLocalIpAddress();
-  console.log(`🚀 SEKAR Backend API is running on: http://localhost:${port}/api`);
-  console.log(`🌐 Network access: http://${localIp}:${port}/api`);
-  console.log(`📚 API Documentation available at: http://localhost:${port}/api/docs`);
+  console.log(`🚀 SEKAR Backend API v1 is running on: http://localhost:${port}/api/v1`);
+  console.log(`🌐 Network access: http://${localIp}:${port}/api/v1`);
+  console.log(`📚 API Documentation available at: http://localhost:${port}/api/v1/docs`);
 }
 
 bootstrap();

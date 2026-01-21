@@ -9,6 +9,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 describe('UsersService', () => {
+  let module: TestingModule;
   let service: UsersService;
   let userRepository: Repository<User>;
   let authService: AuthService;
@@ -27,6 +28,7 @@ describe('UsersService', () => {
   const mockUserRepository = {
     findOne: jest.fn(),
     find: jest.fn(),
+    findAndCount: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
@@ -37,7 +39,7 @@ describe('UsersService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         UsersService,
         {
@@ -56,8 +58,10 @@ describe('UsersService', () => {
     authService = module.get<AuthService>(AuthService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
@@ -87,12 +91,8 @@ describe('UsersService', () => {
     it('should throw ConflictException if username exists', async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
-      await expect(service.create(createUserDto)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.create(createUserDto)).rejects.toThrow(
-        'Username already exists',
-      );
+      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createUserDto)).rejects.toThrow('Username already exists');
     });
   });
 
@@ -107,6 +107,53 @@ describe('UsersService', () => {
       expect(mockUserRepository.find).toHaveBeenCalledWith({
         select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],
       });
+    });
+  });
+
+  describe('findAllPaginated', () => {
+    it('should return paginated users with default values', async () => {
+      const users = [mockUser];
+      mockUserRepository.findAndCount.mockResolvedValue([users, 1]);
+
+      const result = await service.findAllPaginated();
+
+      expect(result.data).toEqual(users);
+      expect(result.meta.total).toBe(1);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(50);
+      expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
+        select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],
+        skip: 0,
+        take: 50,
+        order: { created_at: 'DESC' },
+      });
+    });
+
+    it('should return paginated users with custom page and limit', async () => {
+      const users = [mockUser];
+      mockUserRepository.findAndCount.mockResolvedValue([users, 10]);
+
+      const result = await service.findAllPaginated(2, 5);
+
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.limit).toBe(5);
+      expect(result.meta.totalPages).toBe(2);
+      expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
+        select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],
+        skip: 5,
+        take: 5,
+        order: { created_at: 'DESC' },
+      });
+    });
+
+    it('should return empty array when no users exist', async () => {
+      mockUserRepository.findAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.findAllPaginated();
+
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
+      expect(result.meta.totalPages).toBe(0);
     });
   });
 

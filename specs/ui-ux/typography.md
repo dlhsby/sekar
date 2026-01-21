@@ -1,0 +1,630 @@
+# Typography System
+
+Complete typography specifications for SEKAR applications.
+
+## Font Strategy
+
+SEKAR uses system fonts for optimal performance, native feel, and broad language support (Indonesian locale).
+
+### Font Families
+
+| Platform | Regular | Medium | Bold |
+|----------|---------|--------|------|
+| iOS | SF Pro Text | SF Pro Text Medium | SF Pro Text Bold |
+| Android | Roboto | Roboto Medium | Roboto Bold |
+| Web | -apple-system, BlinkMacSystemFont, Segoe UI, Roboto | Same with weight | Same with weight |
+
+```typescript
+fontFamily: {
+  regular: 'System',
+  medium: 'System',
+  bold: 'System',
+}
+```
+
+### Monospace (Optional)
+
+For timestamps, IDs, and code-like content:
+- iOS: SF Mono
+- Android: Roboto Mono
+- Web: Consolas, Monaco, monospace
+
+---
+
+## Type Scale
+
+Based on the implemented theme with adjusted roles for field worker readability.
+
+| Name | Size | Line Height | Weight | Mobile Usage |
+|------|------|-------------|--------|--------------|
+| `xs` | 12px | 16px (1.33) | Regular | Timestamps, badge labels |
+| `sm` | 14px | 20px (1.43) | Regular | Helper text, captions |
+| `base` | 16px | 24px (1.5) | Regular | Body text (default) |
+| `lg` | 18px | 28px (1.55) | Medium | Emphasized body, large labels |
+| `xl` | 20px | 28px (1.4) | Semi-Bold | Subheadings, card titles |
+| `2xl` | 24px | 32px (1.33) | Bold | Section headers |
+| `3xl` | 30px | 38px (1.27) | Bold | Screen titles |
+| `4xl` | 36px | 44px (1.22) | Bold | Hero text, dashboard metrics |
+
+```typescript
+fontSize: {
+  xs: 12,
+  sm: 14,
+  base: 16,
+  lg: 18,
+  xl: 20,
+  '2xl': 24,
+  '3xl': 30,
+  '4xl': 36,
+}
+```
+
+---
+
+## Font Weights
+
+| Weight | Value | Usage |
+|--------|-------|-------|
+| Regular | 400 | Body text, labels |
+| Medium | 500 | Emphasized body, buttons |
+| Semi-Bold | 600 | Subheadings, important labels |
+| Bold | 700 | Headings, titles |
+
+```typescript
+fontWeight: {
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+}
+```
+
+---
+
+## Line Heights
+
+| Name | Multiplier | Usage |
+|------|------------|-------|
+| `tight` | 1.2 | Headings, titles |
+| `normal` | 1.5 | Body text (default) |
+| `relaxed` | 1.75 | Long-form content |
+
+```typescript
+lineHeight: {
+  tight: 1.2,
+  normal: 1.5,
+  relaxed: 1.75,
+}
+```
+
+---
+
+## Typography Hierarchy
+
+### Screen Hierarchy Example
+
+```
+┌────────────────────────────────────┐
+│                                    │
+│  Dashboard                   (3xl) │
+│  ═══════════════════════════════   │
+│                                    │
+│  Shift Hari Ini              (2xl) │
+│  ──────────────────────────────    │
+│                                    │
+│  Jam Masuk                    (xl) │
+│  08:00 WIB                  (base) │
+│  Taman Bungkul               (sm)  │
+│                                    │
+│  Catatan: Mulai dari pintu    (sm) │
+│  utara sebelah parkir.             │
+│                                    │
+│  Diperbarui: 10:30            (xs) │
+│                                    │
+└────────────────────────────────────┘
+```
+
+### Card Content Hierarchy
+
+```
+┌──────────────────────────────┐
+│  Laporan #12345        (xs)  │
+│                              │
+│  Pembersihan Taman     (xl)  │
+│  ────────────────────────    │
+│                              │
+│  Kondisi: Baik        (base) │
+│  Area sudah dibersihkan      │
+│  dan tanaman disiram.  (sm)  │
+│                              │
+│  📍 Taman Bungkul      (sm)  │
+│  🕐 10:30 WIB          (xs)  │
+└──────────────────────────────┘
+```
+
+---
+
+## Text Styles
+
+### Headings
+
+```typescript
+// Screen Title (3xl)
+{
+  fontSize: 30,
+  fontWeight: '700',
+  lineHeight: 38,
+  color: colors.textPrimary,
+}
+
+// Section Header (2xl)
+{
+  fontSize: 24,
+  fontWeight: '700',
+  lineHeight: 32,
+  color: colors.textPrimary,
+}
+
+// Card Title (xl)
+{
+  fontSize: 20,
+  fontWeight: '600',
+  lineHeight: 28,
+  color: colors.textPrimary,
+}
+```
+
+### Body Text
+
+```typescript
+// Body Default (base)
+{
+  fontSize: 16,
+  fontWeight: '400',
+  lineHeight: 24,
+  color: colors.textPrimary,
+}
+
+// Body Secondary (sm)
+{
+  fontSize: 14,
+  fontWeight: '400',
+  lineHeight: 20,
+  color: colors.textSecondary,
+}
+
+// Body Emphasized (lg)
+{
+  fontSize: 18,
+  fontWeight: '500',
+  lineHeight: 28,
+  color: colors.textPrimary,
+}
+```
+
+### Utility Text
+
+```typescript
+// Caption (xs)
+{
+  fontSize: 12,
+  fontWeight: '400',
+  lineHeight: 16,
+  color: colors.textSecondary,
+}
+
+// Label (sm, medium)
+{
+  fontSize: 14,
+  fontWeight: '500',
+  lineHeight: 20,
+  color: colors.textPrimary,
+}
+
+// Button Text (base, medium)
+{
+  fontSize: 16,
+  fontWeight: '500',
+  lineHeight: 24,
+  color: colors.white,
+  textTransform: 'none', // Use sentence case
+}
+```
+
+---
+
+## Typography Rules
+
+### Capitalization
+
+Use **sentence case** for all UI text (Indonesian convention):
+
+| ✅ Correct | ❌ Incorrect |
+|------------|--------------|
+| Jam masuk | JAM MASUK |
+| Kirim laporan | Kirim Laporan |
+| Lihat semua | LIHAT SEMUA |
+
+### Number Formatting
+
+| Type | Format | Example |
+|------|--------|---------|
+| Time | HH:mm WIB | 08:30 WIB |
+| Date | DD MMMM YYYY | 15 Januari 2026 |
+| Short Date | DD/MM/YY | 15/01/26 |
+| Distance | XX m / XX km | 45 m, 1.2 km |
+| Currency | Rp X.XXX | Rp 50.000 |
+
+### Truncation
+
+- Single line: Ellipsis (...) at end
+- Multi-line: Limit to 2-3 lines with "Lihat selengkapnya" link
+- Never truncate critical information (IDs, timestamps)
+
+```typescript
+// Single line truncation
+numberOfLines: 1,
+ellipsizeMode: 'tail',
+
+// Multi-line truncation
+numberOfLines: 3,
+ellipsizeMode: 'tail',
+```
+
+---
+
+## Responsive Typography
+
+### Mobile Scaling
+
+| Breakpoint | Scale Factor |
+|------------|--------------|
+| Small (< 375px) | 0.9× base sizes |
+| Medium (375-414px) | 1.0× base sizes |
+| Large (> 414px) | 1.0× base sizes |
+
+### Dynamic Type Support
+
+Support system accessibility settings:
+
+- **iOS:** Support Dynamic Type scaling
+- **Android:** Respect font size accessibility settings
+- **Maximum scale:** 1.5× (prevent layout breaking)
+
+```typescript
+// React Native
+<Text
+  style={{ fontSize: 16 }}
+  maxFontSizeMultiplier={1.5}
+  allowFontScaling={true}
+>
+  Body text
+</Text>
+```
+
+---
+
+## Indonesian Language Considerations
+
+SEKAR uses Bahasa Indonesia as the primary language. Indonesian has linguistic characteristics that require specific design considerations.
+
+### Long Word Handling
+
+**Problem:** Indonesian compound words are significantly longer than English equivalents.
+
+**Examples:**
+
+| English | Characters | Indonesian | Characters | Difference |
+|---------|-----------|------------|-----------|------------|
+| Synced | 6 | Tersinkronisasi | 15 | +150% |
+| Maintenance | 11 | Pemeliharaan | 12 | +9% |
+| Synchronized | 12 | Disinkronkan | 12 | 0% |
+| Work Assignment | 15 | Penugasan Kerja | 15 | 0% |
+| Submit Report | 13 | Kirim Laporan | 13 | 0% |
+
+**Design Implications:**
+
+```typescript
+// ✅ Allow 20-30% more horizontal space for Indonesian
+const buttonWidth = {
+  english: 120,
+  indonesian: 150,  // 25% wider
+};
+
+// ✅ Use multi-line layouts when space constrained
+<View style={{ flexDirection: 'column' }}>  {/* Not row */}
+  <Text style={styles.label}>Status Sinkronisasi:</Text>
+  <Text style={styles.value}>Tersinkronisasi</Text>
+</View>
+
+// ✅ Increase button padding to accommodate longer text
+<TouchableOpacity style={{
+  paddingHorizontal: 24,  // vs 16px for English
+  paddingVertical: 12,    // vs 8px for English
+}}>
+  <Text>Sinkronkan Ulang</Text>
+</TouchableOpacity>
+
+// ❌ Avoid: Fixed width containers
+<View style={{ width: 100 }}>  {/* Will truncate */}
+  <Text>Tersinkronisasi</Text>
+</View>
+
+// ✅ Better: Flexible width with max
+<View style={{ minWidth: 100, maxWidth: 200, flexShrink: 1 }}>
+  <Text numberOfLines={2}>Tersinkronisasi</Text>
+</View>
+```
+
+---
+
+### Common Abbreviations and Conventions
+
+**Standard Abbreviations:**
+
+| Full Form | Abbreviated | Context | Usage |
+|-----------|-------------|---------|-------|
+| Nomor | No. | Forms, lists | "No. Telepon", "No. Laporan" |
+| Waktu Indonesia Barat | WIB | Timestamps | Always use with time (08:30 WIB) |
+| Tidak ada | - | Empty states, null values | Show dash, not empty |
+| Kilometer | km | Distance | "2.5 km" (space before unit) |
+| Meter | m | Distance | "150 m" (space before unit) |
+| Rupiah | Rp | Currency | "Rp 50.000" (space after Rp) |
+
+**Time and Date Formatting:**
+
+```typescript
+// ✅ Correct Indonesian time format
+const formatTime = (date: Date): string => {
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} WIB`;
+};
+// Output: "08:30 WIB"
+
+// ✅ Correct Indonesian date format
+const formatDate = (date: Date): string => {
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+};
+// Output: "15 Januari 2026"
+
+// ✅ Short date for space-constrained areas
+const formatShortDate = (date: Date): string => {
+  return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear().toString().slice(-2)}`;
+};
+// Output: "15/01/26"
+```
+
+**Distance Formatting:**
+
+```typescript
+// ✅ Correct distance formatting with space
+const formatDistance = (meters: number): string => {
+  if (meters < 1000) {
+    return `${meters} m`;  // Space before unit
+  }
+  return `${(meters / 1000).toFixed(1)} km`;  // Space before unit
+};
+// Output: "150 m" or "2.5 km"
+
+// ❌ Wrong: No space
+"150m" // Incorrect
+```
+
+---
+
+### Text Truncation Strategy
+
+**What to Truncate:**
+
+| Content Type | Strategy | Max Lines | Ellipsis | Link |
+|--------------|----------|-----------|----------|------|
+| **Descriptions** | Multi-line | 2-3 lines | Yes | "Lihat selengkapnya" |
+| **Addresses** | Single line | 1 line | Yes | Tap to expand |
+| **Notes** | Multi-line | 3 lines | Yes | "Baca selengkapnya" |
+| **Instructions** | Multi-line | No limit | No | Show all |
+
+**What NEVER to Truncate:**
+
+- ❌ Names (user names, area names)
+- ❌ Timestamps (dates, times with WIB)
+- ❌ IDs (report IDs, shift IDs)
+- ❌ Status labels (short by design)
+- ❌ Critical instructions (safety, errors)
+
+**Implementation:**
+
+```tsx
+// ✅ Single-line truncation with ellipsis
+<Text
+  numberOfLines={1}
+  ellipsizeMode="tail"
+  style={{ fontSize: 16 }}
+>
+  {longAreaName}
+</Text>
+// Output: "Taman Bungkul Sektor Utara Zona..."
+
+// ✅ Multi-line truncation with "Lihat selengkapnya"
+const [expanded, setExpanded] = useState(false);
+
+<View>
+  <Text
+    numberOfLines={expanded ? undefined : 3}
+    ellipsizeMode="tail"
+  >
+    {longDescription}
+  </Text>
+  {!expanded && (
+    <TouchableOpacity onPress={() => setExpanded(true)}>
+      <Text style={{ color: colors.primary, marginTop: 4 }}>
+        Lihat selengkapnya
+      </Text>
+    </TouchableOpacity>
+  )}
+</View>
+
+// ✅ Never truncate critical info
+<Text style={styles.timestamp}>
+  {formatDateTime(clockInTime)}  {/* Always show full: "15 Januari 2026, 08:30 WIB" */}
+</Text>
+```
+
+---
+
+### Indonesian Typography Patterns
+
+**Sentence Case (Kapitalisasi Kalimat):**
+
+Indonesian conventionally uses sentence case, not title case.
+
+```tsx
+// ✅ Correct: Sentence case
+"Jam masuk"
+"Kirim laporan"
+"Lihat semua laporan"
+"Status sinkronisasi"
+
+// ❌ Incorrect: Title Case (English convention)
+"Jam Masuk"
+"Kirim Laporan"
+"Lihat Semua Laporan"
+"Status Sinkronisasi"
+
+// ❌ Incorrect: ALL CAPS (too aggressive)
+"JAM MASUK"
+"KIRIM LAPORAN"
+```
+
+**Exceptions for Capitalization:**
+
+- ✅ Proper nouns: "Taman Bungkul", "Dinas Lingkungan Hidup"
+- ✅ Acronyms: "WIB", "GPS", "SEKAR"
+- ✅ First word of sentence: "Laporan berhasil dikirim"
+- ❌ Do not capitalize every word (English title case)
+
+**Button Text:**
+
+```tsx
+// ✅ Primary actions: Sentence case
+<Button>Masuk kerja</Button>
+<Button>Kirim laporan</Button>
+<Button>Ambil foto</Button>
+
+// ✅ Destructive actions: Sentence case
+<Button variant="danger">Hapus laporan</Button>
+<Button variant="danger">Keluar</Button>
+
+// ❌ Avoid: ALL CAPS (unless specifically needed for emphasis)
+<Button>MASUK KERJA</Button>  // Too aggressive
+```
+
+---
+
+### Character Count Guidelines
+
+**Form Labels:**
+
+| Field Type | Max Characters | Example |
+|-----------|---------------|---------|
+| Short labels | 20 chars | "Nama lengkap" (13) ✅ |
+| Medium labels | 30 chars | "Nomor telepon" (14) ✅ |
+| Long labels | 50 chars | "Deskripsi kondisi taman" (24) ✅ |
+
+**Button Text:**
+
+| Button Type | Max Characters | Example |
+|------------|---------------|---------|
+| Primary CTA | 15 chars | "Masuk kerja" (12) ✅ |
+| Secondary | 20 chars | "Lihat riwayat" (13) ✅ |
+| Icon + text | 10 chars | "Kirim" (5) ✅ |
+
+**Error Messages:**
+
+| Message Type | Max Characters | Example |
+|-------------|---------------|---------|
+| Inline error | 50 chars | "Nomor telepon harus 10-12 digit" (33) ✅ |
+| Modal error | 120 chars | "Gagal mengirim laporan. Periksa koneksi internet dan coba lagi." (65) ✅ |
+| Toast message | 60 chars | "Laporan berhasil disimpan" (26) ✅ |
+
+---
+
+### Empty States and Placeholders
+
+**Standard Empty State Messages:**
+
+```tsx
+// ✅ Empty list
+<Text>Tidak ada laporan hari ini</Text>
+<Text>Belum ada shift aktif</Text>
+<Text>Belum ada notifikasi</Text>
+
+// ✅ No results
+<Text>Tidak ditemukan hasil pencarian</Text>
+<Text>Tidak ada data untuk tanggal ini</Text>
+
+// ✅ No data yet (first time use)
+<Text>Mulai shift pertama Anda dengan tombol di bawah</Text>
+<Text>Belum ada laporan yang dikirim</Text>
+```
+
+**Input Placeholders:**
+
+```tsx
+// ✅ Helpful, specific placeholders
+<TextInput placeholder="Contoh: 081234567890" />  // Phone
+<TextInput placeholder="Contoh: Taman dalam kondisi baik" />  // Description
+<TextInput placeholder="Masukkan catatan tambahan" />  // Notes
+
+// ❌ Generic, unhelpful
+<TextInput placeholder="Input" />
+<TextInput placeholder="Isi data" />
+```
+
+---
+
+### Localization Checklist
+
+When adding new text content:
+
+- [ ] Use sentence case (not title case)
+- [ ] Include "WIB" with all timestamps
+- [ ] Use "Rp" with space for currency
+- [ ] Use " m" or " km" with space for distance
+- [ ] Abbreviate "Nomor" as "No." in labels
+- [ ] Use "-" for empty/null values (not "N/A", "None", etc.)
+- [ ] Provide 20-30% extra horizontal space for buttons/labels
+- [ ] Test with longest expected Indonesian words
+- [ ] Never truncate timestamps, IDs, or names
+- [ ] Use "Lihat selengkapnya" for expandable text
+- [ ] Format dates as "DD MMMM YYYY" (e.g., "15 Januari 2026")
+- [ ] Use proper Indonesian month names (not abbreviations)
+
+---
+
+## Best Practices
+
+### Do's
+
+- ✅ Use sentence case for Indonesian text
+- ✅ Maintain consistent hierarchy
+- ✅ Allow 60-80 characters per line for readability
+- ✅ Use sufficient line height (1.5× for body)
+- ✅ Support accessibility font scaling
+
+### Don'ts
+
+- ❌ Don't use more than 3 font sizes per screen
+- ❌ Don't use all caps except for abbreviations (WIB, GPS)
+- ❌ Don't use light font weights (< 400) for body text
+- ❌ Don't use justified text alignment
+- ❌ Don't disable font scaling for body text
+
+---
+
+**Document Owner:** UI/UX Designer
+**Last Updated:** 2026-01-16
+**Status:** Active
+**Implementation:** `fe/mobile/src/constants/theme.ts`

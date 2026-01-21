@@ -1,10 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
 import { AreasService } from '../areas/areas.service';
@@ -13,8 +10,11 @@ import { S3Service } from '../../shared/services/s3.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { UserRole } from '../users/entities/user.entity';
+import { ApiException } from '../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 
 describe('ShiftsService', () => {
+  let module: TestingModule;
   let service: ShiftsService;
   let repository: Repository<Shift>;
   let areasService: AreasService;
@@ -67,6 +67,7 @@ describe('ShiftsService', () => {
     save: jest.fn(),
     findOne: jest.fn(),
     find: jest.fn(),
+    findAndCount: jest.fn(),
   };
 
   const mockAreasService = {
@@ -83,7 +84,7 @@ describe('ShiftsService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         ShiftsService,
         {
@@ -112,8 +113,10 @@ describe('ShiftsService', () => {
     s3Service = module.get<S3Service>(S3Service);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('clockIn', () => {
@@ -145,45 +148,55 @@ describe('ShiftsService', () => {
       expect(mockS3Service.uploadFile).toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException if worker already clocked in', async () => {
+    it('should throw ApiException with SHIFT_ALREADY_ACTIVE if worker already clocked in', async () => {
       mockRepository.findOne.mockResolvedValue(mockShift);
 
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        'Already clocked in',
-      );
+      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(ApiException);
+
+      try {
+        await service.clockIn(mockWorker.id, clockInDto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_ALREADY_ACTIVE);
+        expect(error.message).toContain('Already clocked in');
+        expect(error.getDetails()).toHaveProperty('activeShiftId');
+      }
     });
 
-    it('should throw BadRequestException if worker not assigned to any area', async () => {
+    it('should throw ApiException with SHIFT_NOT_ASSIGNED if worker not assigned to any area', async () => {
       mockRepository.findOne.mockResolvedValue(null);
       mockWorkerAssignmentsService.getWorkerAssignment.mockResolvedValue(null);
 
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        'Worker is not assigned to any area',
-      );
+      try {
+        await service.clockIn(mockWorker.id, clockInDto);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_ASSIGNED);
+        expect(error.message).toContain('Worker is not assigned to any area');
+      }
     });
 
-    it('should throw BadRequestException if worker assigned to different area', async () => {
+    it('should throw ApiException with SHIFT_NOT_ASSIGNED if worker assigned to different area', async () => {
+      const differentArea = { ...mockArea, id: 'different-area-id' };
       mockRepository.findOne.mockResolvedValue(null);
       mockWorkerAssignmentsService.getWorkerAssignment.mockResolvedValue({
         ...mockAssignment,
-        area_id: 'different-area-id',
+        area_id: differentArea.id,
+        area: differentArea,
       });
 
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        'Worker is assigned to area',
-      );
+      try {
+        await service.clockIn(mockWorker.id, clockInDto);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_ASSIGNED);
+        expect(error.message).toContain('Worker is assigned to area');
+      }
     });
 
-    it('should throw BadRequestException if GPS outside boundary', async () => {
+    it('should throw ApiException with SHIFT_GPS_OUT_OF_BOUNDS if GPS outside boundary', async () => {
       const farAwayDto = {
         ...clockInDto,
         gps_lat: -7.3037, // ~1.5km away
@@ -194,27 +207,64 @@ describe('ShiftsService', () => {
       mockWorkerAssignmentsService.getWorkerAssignment.mockResolvedValue(mockAssignment);
       mockAreasService.findOne.mockResolvedValue(mockArea);
 
-      await expect(service.clockIn(mockWorker.id, farAwayDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.clockIn(mockWorker.id, farAwayDto)).rejects.toThrow(
-        'GPS location is',
-      );
+      await expect(service.clockIn(mockWorker.id, farAwayDto)).rejects.toThrow(ApiException);
+
+      try {
+        await service.clockIn(mockWorker.id, farAwayDto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS);
+        expect(error.message).toContain('GPS location is');
+        expect(error.getDetails()).toHaveProperty('distance');
+        expect(error.getDetails()).toHaveProperty('maxDistance');
+      }
     });
 
-    it('should throw BadRequestException if selfie upload fails', async () => {
+    it('should throw ApiException with SHIFT_PHOTO_UPLOAD_FAILED if selfie upload fails', async () => {
       mockRepository.findOne.mockResolvedValue(null);
       mockWorkerAssignmentsService.getWorkerAssignment.mockResolvedValue(mockAssignment);
       mockAreasService.findOne.mockResolvedValue(mockArea);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockRejectedValue(new Error('S3 upload failed'));
 
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(
-        'Failed to upload selfie photo',
-      );
+      try {
+        await service.clockIn(mockWorker.id, clockInDto);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_PHOTO_UPLOAD_FAILED);
+        expect(error.message).toContain('Failed to upload selfie photo');
+      }
+    });
+
+    it('should validate all error code scenarios for clockIn', async () => {
+      // Test 1: SHIFT_ALREADY_ACTIVE
+      mockRepository.findOne.mockResolvedValue(mockShift);
+      try {
+        await service.clockIn(mockWorker.id, clockInDto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_ALREADY_ACTIVE);
+      }
+
+      // Test 2: SHIFT_GPS_OUT_OF_BOUNDS
+      mockRepository.findOne.mockResolvedValue(null);
+      mockWorkerAssignmentsService.getWorkerAssignment.mockResolvedValue(mockAssignment);
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+
+      const farAwayDto = {
+        ...clockInDto,
+        gps_lat: -7.3037, // ~1.5km away
+        gps_lng: 112.7375,
+      };
+
+      try {
+        await service.clockIn(mockWorker.id, farAwayDto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS);
+        expect(error.getDetails()).toHaveProperty('distance');
+      }
     });
   });
 
@@ -241,15 +291,18 @@ describe('ShiftsService', () => {
       expect(result.clock_out_gps_lng).toBe(clockOutDto.gps_lng);
     });
 
-    it('should throw BadRequestException if no active shift found', async () => {
+    it('should throw ApiException with SHIFT_NOT_ACTIVE if no active shift found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.clockOut(mockWorker.id, clockOutDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.clockOut(mockWorker.id, clockOutDto)).rejects.toThrow(
-        'No active shift found',
-      );
+      await expect(service.clockOut(mockWorker.id, clockOutDto)).rejects.toThrow(ApiException);
+
+      try {
+        await service.clockOut(mockWorker.id, clockOutDto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_ACTIVE);
+        expect(error.message).toContain('No active shift found');
+      }
     });
   });
 
@@ -284,12 +337,17 @@ describe('ShiftsService', () => {
       expect(result).toEqual(mockShift);
     });
 
-    it('should throw NotFoundException if shift not found', async () => {
+    it('should throw ApiException with SHIFT_NOT_FOUND if shift not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('nonexistent-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      try {
+        await service.findOne('nonexistent-id');
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_FOUND);
+        expect(error.message).toContain('not found');
+      }
     });
   });
 
@@ -351,6 +409,53 @@ describe('ShiftsService', () => {
         relations: ['worker', 'area', 'area.areaType'],
         order: { clock_in_time: 'ASC' },
       });
+    });
+  });
+
+  describe('findAllActiveShiftsPaginated', () => {
+    it('should return paginated active shifts with default values', async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockShift], 1]);
+
+      const result = await service.findAllActiveShiftsPaginated();
+
+      expect(result.data).toEqual([mockShift]);
+      expect(result.meta.total).toBe(1);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(50);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { clock_out_time: IsNull() },
+        relations: ['worker', 'area', 'area.areaType'],
+        order: { clock_in_time: 'ASC' },
+        skip: 0,
+        take: 50,
+      });
+    });
+
+    it('should return paginated active shifts with custom page and limit', async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockShift], 10]);
+
+      const result = await service.findAllActiveShiftsPaginated(2, 5);
+
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.limit).toBe(5);
+      expect(result.meta.totalPages).toBe(2);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { clock_out_time: IsNull() },
+        relations: ['worker', 'area', 'area.areaType'],
+        order: { clock_in_time: 'ASC' },
+        skip: 5,
+        take: 5,
+      });
+    });
+
+    it('should return empty array when no active shifts', async () => {
+      mockRepository.findAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.findAllActiveShiftsPaginated();
+
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
+      expect(result.meta.totalPages).toBe(0);
     });
   });
 });

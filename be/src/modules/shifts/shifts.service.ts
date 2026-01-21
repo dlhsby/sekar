@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
@@ -14,6 +15,10 @@ import { AreasService } from '../areas/areas.service';
 import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 import { S3Service } from '../../shared/services/s3.service';
 import { GpsUtil } from '../../common/utils/gps.util';
+import { ApiException } from '../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { MINIMUM_SHIFT_DURATION_MS, MINIMUM_SHIFT_DURATION_MINUTES } from '../../common/constants/shift.constants';
 
 /**
  * Service for managing worker shifts
@@ -47,19 +52,29 @@ export class ShiftsService {
     // 1. Check if worker already has an active shift
     const activeShift = await this.findActiveShift(workerId);
     if (activeShift) {
-      throw new BadRequestException(
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ApiErrorCode.SHIFT_ALREADY_ACTIVE,
         `Already clocked in. Active shift ID: ${activeShift.id}`,
+        { activeShiftId: activeShift.id },
       );
     }
 
     // 2. Verify worker is assigned to this area
     const assignment = await this.workerAssignmentsService.getWorkerAssignment(workerId);
     if (!assignment) {
-      throw new BadRequestException('Worker is not assigned to any area');
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ApiErrorCode.SHIFT_NOT_ASSIGNED,
+        'Worker is not assigned to any area',
+      );
     }
     if (assignment.area_id !== dto.area_id) {
-      throw new BadRequestException(
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ApiErrorCode.SHIFT_NOT_ASSIGNED,
         `Worker is assigned to area ${assignment.area_id}, not ${dto.area_id}`,
+        { assignedAreaId: assignment.area_id, requestedAreaId: dto.area_id },
       );
     }
 
@@ -80,8 +95,11 @@ export class ShiftsService {
         Number(area.gps_lat),
         Number(area.gps_lng),
       );
-      throw new BadRequestException(
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS,
         `GPS location is ${Math.round(distance)}m away from area center. Must be within ${area.radius_meters}m`,
+        { distance: Math.round(distance), maxDistance: area.radius_meters },
       );
     }
 
@@ -95,7 +113,12 @@ export class ShiftsService {
       photoUrl = await this.s3Service.uploadFile(photoBuffer, key, 'image/jpeg');
     } catch (error) {
       this.logger.error(`Failed to upload selfie photo: ${error.message}`, error.stack);
-      throw new BadRequestException('Failed to upload selfie photo');
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ApiErrorCode.SHIFT_PHOTO_UPLOAD_FAILED,
+        'Failed to upload selfie photo',
+        { error: error.message },
+      );
     }
 
     // 5. Create shift record
@@ -135,7 +158,28 @@ export class ShiftsService {
     });
 
     if (!shift) {
-      throw new BadRequestException('No active shift found');
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ApiErrorCode.SHIFT_NOT_ACTIVE,
+        'No active shift found',
+      );
+    }
+
+    // Check minimum shift duration (15 minutes)
+    const shiftDurationMs = Date.now() - shift.clock_in_time.getTime();
+    
+    if (shiftDurationMs < MINIMUM_SHIFT_DURATION_MS) {
+      const minutesWorked = Math.floor(shiftDurationMs / (60 * 1000));
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ApiErrorCode.SHIFT_DURATION_TOO_SHORT,
+        `Shift duration too short. Minimum ${MINIMUM_SHIFT_DURATION_MINUTES} minutes required. Current duration: ${minutesWorked} minutes`,
+        { 
+          minutesWorked, 
+          minimumRequired: MINIMUM_SHIFT_DURATION_MINUTES,
+          clockInTime: shift.clock_in_time.toISOString(),
+        },
+      );
     }
 
     // Update shift with clock-out details
@@ -145,13 +189,8 @@ export class ShiftsService {
 
     const updatedShift = await this.shiftRepository.save(shift);
 
-    const hoursWorked = this.calculateHoursWorked(
-      shift.clock_in_time,
-      shift.clock_out_time,
-    );
-    this.logger.log(
-      `Worker ${workerId} clocked out successfully. Hours worked: ${hoursWorked}`,
-    );
+    const hoursWorked = this.calculateHoursWorked(shift.clock_in_time, shift.clock_out_time);
+    this.logger.log(`Worker ${workerId} clocked out successfully. Hours worked: ${hoursWorked}`);
 
     return updatedShift;
   }
@@ -186,7 +225,11 @@ export class ShiftsService {
     });
 
     if (!shift) {
-      throw new NotFoundException(`Shift with ID ${id} not found`);
+      throw new ApiException(
+        HttpStatus.NOT_FOUND,
+        ApiErrorCode.SHIFT_NOT_FOUND,
+        `Shift with ID ${id} not found`,
+      );
     }
 
     return shift;
@@ -249,5 +292,27 @@ export class ShiftsService {
       relations: ['worker', 'area', 'area.areaType'],
       order: { clock_in_time: 'ASC' },
     });
+  }
+
+  /**
+   * Get all active shifts with pagination (for supervisor dashboard)
+   *
+   * @param page Page number
+   * @param limit Items per page
+   * @returns Paginated active shifts with worker and area details
+   */
+  async findAllActiveShiftsPaginated(
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<PaginatedResponseDto<Shift>> {
+    const [data, total] = await this.shiftRepository.findAndCount({
+      where: { clock_out_time: IsNull() },
+      relations: ['worker', 'area', 'area.areaType'],
+      order: { clock_in_time: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 }

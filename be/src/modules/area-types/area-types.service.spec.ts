@@ -6,6 +6,7 @@ import { AreaTypesService } from './area-types.service';
 import { AreaType } from './entities/area-type.entity';
 
 describe('AreaTypesService', () => {
+  let module: TestingModule;
   let service: AreaTypesService;
   let repository: Repository<AreaType>;
 
@@ -48,7 +49,7 @@ describe('AreaTypesService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         AreaTypesService,
         {
@@ -59,13 +60,13 @@ describe('AreaTypesService', () => {
     }).compile();
 
     service = module.get<AreaTypesService>(AreaTypesService);
-    repository = module.get<Repository<AreaType>>(
-      getRepositoryToken(AreaType),
-    );
+    repository = module.get<Repository<AreaType>>(getRepositoryToken(AreaType));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('findAll', () => {
@@ -107,7 +108,9 @@ describe('AreaTypesService', () => {
     it('should throw NotFoundException if area type not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('f5f6a7b8-c9d0-1234-ef01-345678901234')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('f5f6a7b8-c9d0-1234-ef01-345678901234')).rejects.toThrow(
+        NotFoundException,
+      );
       await expect(service.findOne('f5f6a7b8-c9d0-1234-ef01-345678901234')).rejects.toThrow(
         'Area type with ID f5f6a7b8-c9d0-1234-ef01-345678901234 not found',
       );
@@ -133,9 +136,7 @@ describe('AreaTypesService', () => {
     it('should throw NotFoundException if area type code not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findByCode('invalid')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findByCode('invalid')).rejects.toThrow(NotFoundException);
       await expect(service.findByCode('invalid')).rejects.toThrow(
         'Area type with code "invalid" not found',
       );

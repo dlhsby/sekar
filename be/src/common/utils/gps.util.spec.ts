@@ -3,12 +3,7 @@ import { GpsUtil } from './gps.util';
 describe('GpsUtil', () => {
   describe('calculateDistance', () => {
     it('should return 0 for same coordinates', () => {
-      const distance = GpsUtil.calculateDistance(
-        -7.2905,
-        112.7398,
-        -7.2905,
-        112.7398,
-      );
+      const distance = GpsUtil.calculateDistance(-7.2905, 112.7398, -7.2905, 112.7398);
       expect(distance).toBe(0);
     });
 
@@ -44,12 +39,7 @@ describe('GpsUtil', () => {
 
     it('should handle negative coordinates correctly', () => {
       // Both points in southern/western hemisphere
-      const distance = GpsUtil.calculateDistance(
-        -7.2905,
-        112.7398,
-        -7.2915,
-        112.7408,
-      );
+      const distance = GpsUtil.calculateDistance(-7.2905, 112.7398, -7.2915, 112.7408);
 
       expect(distance).toBeGreaterThan(0);
       expect(distance).toBeLessThan(200); // Should be ~150m
@@ -86,9 +76,9 @@ describe('GpsUtil', () => {
     it('should calculate small distances accurately', () => {
       // Points very close together (10 meters apart)
       const distance = GpsUtil.calculateDistance(
-        -7.29050,
-        112.73980,
-        -7.29050,
+        -7.2905,
+        112.7398,
+        -7.2905,
         112.73989, // ~10m east
       );
 
@@ -117,25 +107,13 @@ describe('GpsUtil', () => {
     const radius = 100; // 100 meters
 
     it('should return true for same coordinates', () => {
-      const result = GpsUtil.isWithinBoundary(
-        centerLat,
-        centerLng,
-        centerLat,
-        centerLng,
-        radius,
-      );
+      const result = GpsUtil.isWithinBoundary(centerLat, centerLng, centerLat, centerLng, radius);
       expect(result).toBe(true);
     });
 
     it('should return true for point within boundary', () => {
       // Point 50 meters away (well within 100m radius)
-      const result = GpsUtil.isWithinBoundary(
-        -7.29054,
-        112.73985,
-        centerLat,
-        centerLng,
-        radius,
-      );
+      const result = GpsUtil.isWithinBoundary(-7.29054, 112.73985, centerLat, centerLng, radius);
       expect(result).toBe(true);
     });
 
@@ -205,13 +183,7 @@ describe('GpsUtil', () => {
 
     it('should handle negative coordinates', () => {
       // Test in southern/western hemisphere
-      const result = GpsUtil.isWithinBoundary(
-        -7.2906,
-        112.7399,
-        -7.2905,
-        112.7398,
-        radius,
-      );
+      const result = GpsUtil.isWithinBoundary(-7.2906, 112.7399, -7.2905, 112.7398, radius);
       expect(result).toBe(true);
     });
 
@@ -253,13 +225,7 @@ describe('GpsUtil', () => {
 
     it('should handle very large radius', () => {
       // 10,000 meter (10km) radius
-      const result = GpsUtil.isWithinBoundary(
-        -7.2905,
-        112.7398,
-        -7.3037,
-        112.7375,
-        10000,
-      );
+      const result = GpsUtil.isWithinBoundary(-7.2905, 112.7398, -7.3037, 112.7375, 10000);
       expect(result).toBe(true); // ~2.5km distance is within 10km radius
     });
 

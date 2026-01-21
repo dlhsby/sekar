@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Area } from './entities/area.entity';
@@ -55,9 +50,7 @@ export class AreasService {
    * @returns Array of areas with areaType loaded
    */
   async findAll(areaType?: string): Promise<Area[]> {
-    this.logger.log(
-      `Fetching all areas${areaType ? ` filtered by type: ${areaType}` : ''}`,
-    );
+    this.logger.log(`Fetching all areas${areaType ? ` filtered by type: ${areaType}` : ''}`);
 
     const query = this.areaRepository
       .createQueryBuilder('area')

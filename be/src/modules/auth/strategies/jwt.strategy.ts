@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, HttpStatus } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -6,6 +6,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { ApiException } from '../../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../../common/enums/api-error-codes.enum';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -28,7 +30,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      throw new UnauthorizedException('User not found or inactive');
+      throw new ApiException(
+        HttpStatus.UNAUTHORIZED,
+        ApiErrorCode.AUTH_USER_NOT_FOUND,
+        'User not found or inactive',
+      );
     }
 
     return user;

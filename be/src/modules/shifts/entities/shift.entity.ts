@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -37,7 +38,7 @@ export class Shift {
     description: 'Worker details',
     type: () => User,
   })
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'worker_id' })
   worker: User;
 
@@ -52,7 +53,7 @@ export class Shift {
     description: 'Area details',
     type: () => Area,
   })
-  @ManyToOne(() => Area, { eager: true })
+  @ManyToOne(() => Area, { eager: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'area_id' })
   area: Area;
 
@@ -81,7 +82,8 @@ export class Shift {
 
   @ApiProperty({
     description: 'S3 URL of selfie photo taken at clock-in',
-    example: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/abc123.jpg',
+    example:
+      'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/abc123.jpg',
     nullable: true,
   })
   @Column({ type: 'text', nullable: true })
@@ -112,6 +114,15 @@ export class Shift {
   clock_out_gps_lng: number;
 
   @ApiProperty({
+    description: 'S3 URL of selfie photo taken at clock-out',
+    example:
+      'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-out/abc123.jpg',
+    nullable: true,
+  })
+  @Column({ type: 'text', nullable: true })
+  clock_out_photo_url?: string;
+
+  @ApiProperty({
     description: 'Timestamp when record was created',
     example: '2026-01-09T08:00:00.000Z',
   })
@@ -124,4 +135,11 @@ export class Shift {
   })
   @UpdateDateColumn()
   updated_at: Date;
+
+  /**
+   * Soft delete timestamp for data retention
+   * CHECK constraints (clock_out_time > clock_in_time) are implemented in database migration
+   */
+  @DeleteDateColumn()
+  deleted_at?: Date;
 }

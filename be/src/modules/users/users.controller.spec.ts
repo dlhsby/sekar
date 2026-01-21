@@ -6,6 +6,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 describe('UsersController', () => {
+  let module: TestingModule;
   let controller: UsersController;
   let usersService: UsersService;
 
@@ -23,13 +24,14 @@ describe('UsersController', () => {
   const mockUsersService = {
     create: jest.fn(),
     findAll: jest.fn(),
+    findAllPaginated: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
         {
@@ -43,8 +45,10 @@ describe('UsersController', () => {
     usersService = module.get<UsersService>(UsersService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
@@ -70,14 +74,17 @@ describe('UsersController', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of users', async () => {
-      const users = [mockUser];
-      mockUsersService.findAll.mockResolvedValue(users);
+    it('should return paginated users', async () => {
+      const paginatedResult = {
+        data: [mockUser],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockUsersService.findAllPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll({ page: 1, limit: 50 });
 
-      expect(result).toEqual(users);
-      expect(usersService.findAll).toHaveBeenCalled();
+      expect(result).toEqual(paginatedResult);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50);
     });
   });
 

@@ -46,12 +46,12 @@ print_info "Stopping frontend Metro bundler..."
 pkill -f "react-native start" || pkill -f "metro" || true
 print_success "Frontend Metro bundler stopped"
 
-# Stop database and Adminer using db/stop.sh script
+# Stop infrastructure (PostgreSQL + Adminer) using infra/stop.sh script
 print_info "Stopping database and Adminer..."
-if [ -f "./db/stop.sh" ]; then
-    ./db/stop.sh
+if [ -f "./infra/stop.sh" ]; then
+    ./infra/stop.sh
 else
-    print_warning "Database stop script not found at ./db/stop.sh, trying direct docker commands..."
+    print_warning "Infrastructure stop script not found at ./infra/stop.sh, trying direct docker commands..."
     if docker ps --format '{{.Names}}' | grep -q "^${DB_CONTAINER_NAME}$"; then
         docker stop "$DB_CONTAINER_NAME" 2>/dev/null || true
         docker stop sekar-adminer 2>/dev/null || true

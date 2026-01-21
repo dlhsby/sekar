@@ -1,21 +1,9 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
+import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
@@ -39,6 +27,7 @@ export class AuthController {
   /**
    * User login endpoint.
    * Authenticates user and returns JWT token.
+   * Rate limited to 5 attempts per minute to prevent brute force attacks.
    *
    * @route POST /api/auth/login
    * @param loginDto - Login credentials (username and password)
@@ -47,10 +36,10 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
   @ApiOperation({
     summary: 'User login',
-    description:
-      'Authenticate user with username and password. Returns JWT token for API access.',
+    description: 'Authenticate user with username and password. Returns JWT token for API access. Rate limited to 5 attempts per minute.',
   })
   @ApiBody({ type: LoginDto })
   @ApiResponse({
@@ -80,8 +69,121 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Too Many Requests. Rate limit exceeded (5 attempts per minute).',
+    schema: {
+      example: {
+        statusCode: 429,
+        message: 'ThrottlerException: Too Many Requests',
+      },
+    },
+  })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
+  }
+
+  /**
+   * Refresh access token using a valid refresh token.
+   * Returns new access token and refresh token.
+   *
+   * @route POST /api/auth/refresh
+   * @param refreshTokenDto - Contains the refresh token
+   * @returns AuthResponseDto containing new tokens and user information
+   * @throws UnauthorizedException if refresh token is invalid or expired
+   */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description:
+      'Obtain a new access token using a valid refresh token. Both access and refresh tokens will be rotated for enhanced security.',
+  })
+  @ApiBody({ type: RefreshTokenDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Token refresh successful. Returns new access token, refresh token, and user information.',
+    type: AuthResponseDto,
+    schema: {
+      example: {
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+          username: 'worker1',
+          full_name: 'Pekerja Satu',
+          role: 'worker',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Invalid or expired refresh token.',
+    schema: {
+      example: {
+        statusCode: 401,
+        code: 'AUTH_INVALID_TOKEN',
+        message: 'Invalid refresh token',
+        timestamp: '2026-01-16T10:30:00.000Z',
+        path: '/api/v1/auth/refresh',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request. Validation failed.',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: ['refresh_token is required', 'refresh_token must be a string'],
+        error: 'Bad Request',
+      },
+    },
+  })
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto): Promise<AuthResponseDto> {
+    return this.authService.refreshToken(refreshTokenDto.refresh_token);
+  }
+
+  /**
+   * Logout user and invalidate session.
+   * Client must clear tokens locally after calling this endpoint.
+   *
+   * @route POST /api/auth/logout
+   * @param user - Current authenticated user (injected from JWT)
+   * @returns Success message
+   * @throws UnauthorizedException if token is invalid or missing
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Logout user',
+    description: 'Logout the currently authenticated user. Client must clear tokens locally after this call.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Logout successful.',
+    schema: {
+      example: {
+        message: 'Logged out successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized. Invalid or missing JWT token.',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  async logout(@GetUser() user: User): Promise<{ message: string }> {
+    await this.authService.logout(user.id);
+    return { message: 'Logged out successfully' };
   }
 
   /**
@@ -97,8 +199,7 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get current user',
-    description:
-      'Retrieve information about the currently authenticated user from JWT token.',
+    description: 'Retrieve information about the currently authenticated user from JWT token.',
   })
   @ApiResponse({
     status: 200,
@@ -134,9 +235,7 @@ export class AuthController {
 
     // If user is a worker, include assigned area with full details
     if (user.role === 'worker') {
-      const assignment = await this.workerAssignmentsService.getWorkerAssignment(
-        user.id,
-      );
+      const assignment = await this.workerAssignmentsService.getWorkerAssignment(user.id);
 
       if (assignment && assignment.area) {
         // Ensure GPS coordinates are numbers, not strings

@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
@@ -17,7 +11,10 @@ import { Shift } from '../../shifts/entities/shift.entity';
  */
 @Entity('location_logs')
 export class LocationLog {
-  @ApiProperty({ description: 'Location log UUID', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+  @ApiProperty({
+    description: 'Location log UUID',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -58,13 +55,22 @@ export class LocationLog {
   logged_at: Date;
 
   // Relations
+  /**
+   * Worker who sent the location ping
+   * onDelete: RESTRICT prevents deletion of users with location logs
+   */
   @ApiProperty({ type: () => User, description: 'Worker who sent the location' })
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'worker_id' })
   worker: User;
 
+  /**
+   * Shift when location was logged
+   * onDelete: CASCADE automatically deletes location logs when shift is deleted
+   * This is appropriate since location logs are meaningless without their parent shift
+   */
   @ApiProperty({ type: () => Shift, description: 'Shift when location was logged' })
-  @ManyToOne(() => Shift)
+  @ManyToOne(() => Shift, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shift_id' })
   shift: Shift;
 }

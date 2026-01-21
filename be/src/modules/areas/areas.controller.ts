@@ -158,8 +158,7 @@ export class AreasController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Update area',
-    description:
-      'Update area details. Admin only. Cannot change area type (excluded from update).',
+    description: 'Update area details. Admin only. Cannot change area type (excluded from update).',
   })
   @ApiParam({
     name: 'id',
@@ -188,10 +187,7 @@ export class AreasController {
     status: 404,
     description: 'Area not found',
   })
-  update(
-    @Param('id') id: string,
-    @Body() updateAreaDto: UpdateAreaDto,
-  ): Promise<Area> {
+  update(@Param('id') id: string, @Body() updateAreaDto: UpdateAreaDto): Promise<Area> {
     return this.areasService.update(id, updateAreaDto);
   }
 

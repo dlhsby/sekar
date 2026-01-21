@@ -9,6 +9,7 @@ import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 
 describe('AreasService', () => {
+  let module: TestingModule;
   let service: AreasService;
   let repository: Repository<Area>;
   let areaTypesService: AreaTypesService;
@@ -50,7 +51,7 @@ describe('AreasService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         AreasService,
         {
@@ -69,8 +70,10 @@ describe('AreasService', () => {
     areaTypesService = module.get<AreaTypesService>(AreaTypesService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('create', () => {
@@ -102,9 +105,9 @@ describe('AreasService', () => {
         new NotFoundException(`Area type with ID ${invalidUUID} not found`),
       );
 
-      await expect(
-        service.create({ ...createAreaDto, area_type_id: invalidUUID }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.create({ ...createAreaDto, area_type_id: invalidUUID })).rejects.toThrow(
+        NotFoundException,
+      );
       expect(areaTypesService.findOne).toHaveBeenCalledWith(invalidUUID);
       expect(repository.create).not.toHaveBeenCalled();
     });
@@ -124,10 +127,9 @@ describe('AreasService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual([mockArea]);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'area.is_active = :isActive',
-        { isActive: true },
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.is_active = :isActive', {
+        isActive: true,
+      });
       expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
     });
 
@@ -144,10 +146,9 @@ describe('AreasService', () => {
       const result = await service.findAll('park');
 
       expect(result).toEqual([mockArea]);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'areaType.code = :areaType',
-        { areaType: 'park' },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('areaType.code = :areaType', {
+        areaType: 'park',
+      });
     });
   });
 
@@ -188,18 +189,14 @@ describe('AreasService', () => {
       const result = await service.update('c3d4e5f6-a7b8-9012-cdef-123456789012', updateAreaDto);
 
       expect(result).toEqual(updatedArea);
-      expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining(updateAreaDto),
-      );
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updateAreaDto));
     });
 
     it('should throw NotFoundException if area not found', async () => {
       const invalidUUID = 'f5f6a7b8-c9d0-1234-ef01-345678901234';
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update(invalidUUID, updateAreaDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.update(invalidUUID, updateAreaDto)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -210,9 +207,7 @@ describe('AreasService', () => {
 
       await service.remove('c3d4e5f6-a7b8-9012-cdef-123456789012');
 
-      expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ is_active: false }),
-      );
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ is_active: false }));
     });
 
     it('should throw NotFoundException if area not found', async () => {

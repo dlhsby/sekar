@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -23,7 +25,15 @@ import { SeedModule } from './database/seeds/seed.module';
       envFilePath: '.env',
     }),
 
-    // Database module
+    // Rate limiting module
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // Time window in milliseconds (60 seconds)
+        limit: 100, // Maximum requests per time window
+      },
+    ]),
+
+    // Database module with connection pooling
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST || 'localhost',
@@ -32,8 +42,32 @@ import { SeedModule } from './database/seeds/seed.module';
       password: process.env.DATABASE_PASSWORD || 'postgres',
       database: process.env.DATABASE_NAME || 'sekar_db',
       autoLoadEntities: true,
+      
+      // Disable synchronize in production for safety
       synchronize: process.env.NODE_ENV === 'development',
       logging: process.env.NODE_ENV === 'development',
+      
+      // Connection pooling configuration
+      extra: {
+        // Maximum number of connections in pool
+        max: process.env.NODE_ENV === 'production' ? 15 : 10,
+        // Minimum number of connections to maintain
+        min: process.env.NODE_ENV === 'production' ? 5 : 2,
+        // How long a connection can be idle before being released (ms)
+        idleTimeoutMillis: process.env.NODE_ENV === 'production' ? 60000 : 30000,
+        // Maximum time to wait for connection from pool (ms)
+        connectionTimeoutMillis: 3000,
+      },
+      
+      // TypeORM connection pool size (for backwards compatibility)
+      poolSize: 15,
+      
+      // Log slow queries (queries taking longer than 1 second)
+      maxQueryExecutionTime: 1000,
+      
+      // Migrations configuration
+      migrations: ['dist/database/migrations/*.js'],
+      migrationsRun: process.env.NODE_ENV === 'production',
     }),
 
     // Feature modules (order matters due to dependencies)
@@ -50,6 +84,13 @@ import { SeedModule } from './database/seeds/seed.module';
     SeedModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Global rate limiting guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

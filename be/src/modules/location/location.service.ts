@@ -1,14 +1,10 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between } from 'typeorm';
 import { LocationLog } from './entities/location-log.entity';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
 import { Shift } from '../shifts/entities/shift.entity';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
  * Location Service
@@ -38,10 +34,7 @@ export class LocationService {
    * @param workerId UUID of the worker
    * @returns Number of locations inserted
    */
-  async createBatch(
-    dto: CreateLocationBatchDto,
-    workerId: string,
-  ): Promise<{ count: number }> {
+  async createBatch(dto: CreateLocationBatchDto, workerId: string): Promise<{ count: number }> {
     this.logger.log(
       `Worker ${workerId} uploading ${dto.locations.length} location logs for shift ${dto.shift_id}`,
     );
@@ -52,16 +45,12 @@ export class LocationService {
     });
 
     if (!shift) {
-      throw new NotFoundException(
-        `Shift not found or does not belong to worker ${workerId}`,
-      );
+      throw new NotFoundException(`Shift not found or does not belong to worker ${workerId}`);
     }
 
     // Validate shift is active (no clock_out_time)
     if (shift.clock_out_time) {
-      throw new BadRequestException(
-        'Cannot upload locations for completed shift',
-      );
+      throw new BadRequestException('Cannot upload locations for completed shift');
     }
 
     // Batch insert locations in a single transaction
@@ -85,9 +74,7 @@ export class LocationService {
       await queryRunner.manager.save(LocationLog, locationEntities);
       await queryRunner.commitTransaction();
 
-      this.logger.log(
-        `Successfully inserted ${locationEntities.length} location logs`,
-      );
+      this.logger.log(`Successfully inserted ${locationEntities.length} location logs`);
 
       return { count: locationEntities.length };
     } catch (error) {
@@ -121,10 +108,7 @@ export class LocationService {
     }
 
     if (filters.from_date && filters.to_date) {
-      where.logged_at = Between(
-        new Date(filters.from_date),
-        new Date(filters.to_date),
-      );
+      where.logged_at = Between(new Date(filters.from_date), new Date(filters.to_date));
     } else if (filters.from_date) {
       where.logged_at = Between(new Date(filters.from_date), new Date());
     }
@@ -135,6 +119,48 @@ export class LocationService {
       order: { logged_at: 'DESC' },
       take: 1000, // Limit to 1000 records
     });
+  }
+
+  /**
+   * Get paginated location history for a worker
+   *
+   * @param workerId UUID of the worker
+   * @param filters Date range and shift filters
+   * @param page Page number
+   * @param limit Items per page
+   * @returns Paginated location logs
+   */
+  async getWorkerHistoryPaginated(
+    workerId: string,
+    filters: {
+      from_date?: string;
+      to_date?: string;
+      shift_id?: string;
+    },
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<PaginatedResponseDto<LocationLog>> {
+    const where: any = { worker_id: workerId };
+
+    if (filters.shift_id) {
+      where.shift_id = filters.shift_id;
+    }
+
+    if (filters.from_date && filters.to_date) {
+      where.logged_at = Between(new Date(filters.from_date), new Date(filters.to_date));
+    } else if (filters.from_date) {
+      where.logged_at = Between(new Date(filters.from_date), new Date());
+    }
+
+    const [data, total] = await this.locationLogsRepository.findAndCount({
+      where,
+      relations: ['shift', 'shift.area'],
+      order: { logged_at: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   /**

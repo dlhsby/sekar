@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   ParseUUIDPipe,
   HttpStatus,
@@ -17,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -25,6 +27,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from './entities/user.entity';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { User } from './entities/user.entity';
 
 /**
  * User Management Controller
@@ -97,49 +101,60 @@ export class UsersController {
   }
 
   /**
-   * Get all users.
+   * Get all users with pagination.
    * Accessible by administrators and supervisors.
    *
    * @route GET /api/users
-   * @returns Array of users (without passwords)
+   * @param paginationDto - Pagination parameters (page, limit)
+   * @returns Paginated users (without passwords)
    */
   @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
   @ApiOperation({
-    summary: 'Get all users',
+    summary: 'Get all users with pagination',
     description:
-      'Retrieve list of all users. Accessible by administrators and supervisors. Passwords are excluded.',
+      'Retrieve paginated list of all users. Accessible by administrators and supervisors. Passwords are excluded.',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'List of users retrieved successfully.',
+    description: 'List of users retrieved successfully with pagination.',
     schema: {
-      example: [
-        {
-          id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-          username: 'worker1',
-          full_name: 'Pekerja Satu',
-          role: 'worker',
-          is_active: true,
-          created_at: '2026-01-07T10:00:00.000Z',
+      example: {
+        data: [
+          {
+            id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+            username: 'worker1',
+            full_name: 'Pekerja Satu',
+            role: 'worker',
+            is_active: true,
+            created_at: '2026-01-07T10:00:00.000Z',
+          },
+          {
+            id: '9237ec92-08df-5d7f-b2c5-c2bdf395fb89',
+            username: 'supervisor1',
+            full_name: 'Supervisor Satu',
+            role: 'supervisor',
+            is_active: true,
+            created_at: '2026-01-07T10:00:00.000Z',
+          },
+        ],
+        meta: {
+          total: 250,
+          page: 1,
+          limit: 50,
+          totalPages: 5,
         },
-        {
-          id: '9237ec92-08df-5d7f-b2c5-c2bdf395fb89',
-          username: 'supervisor1',
-          full_name: 'Supervisor Satu',
-          role: 'supervisor',
-          is_active: true,
-          created_at: '2026-01-07T10:00:00.000Z',
-        },
-      ],
+      },
     },
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized. Admin or Supervisor role required.',
   })
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<User>> {
+    return this.usersService.findAllPaginated(paginationDto.page, paginationDto.limit);
   }
 
   /**
@@ -251,10 +266,7 @@ export class UsersController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Bad Request. Validation failed.',
   })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 

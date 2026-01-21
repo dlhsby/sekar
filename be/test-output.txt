@@ -1,0 +1,1833 @@
+
+> sekar-backend@1.0.0 test
+> jest
+
+FAIL src/modules/location/location.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/location/location.controller.spec.ts[0m:[93m110[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 2-5 arguments, but got 1.
+
+    [7m110[0m       const result = await controller.getWorkerHistory(workerId);
+    [7m   [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/location/location.controller.ts[0m:[93m119[0m:[93m5[0m
+        [7m119[0m     @Query() paginationDto: PaginationDto,
+        [7m   [0m [96m    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/location/location.controller.spec.ts[0m:[93m124[0m:[93m66[0m - [91merror[0m[90m TS2559: [0mType '"2026-01-01"' has no properties in common with type 'PaginationDto'.
+
+    [7m124[0m       const result = await controller.getWorkerHistory(workerId, '2026-01-01', '2026-01-31');
+    [7m   [0m [91m                                                                 ~~~~~~~~~~~~[0m
+    [96msrc/modules/location/location.controller.spec.ts[0m:[93m140[0m:[93m9[0m - [91merror[0m[90m TS2345: [0mArgument of type 'undefined' is not assignable to parameter of type 'PaginationDto'.
+
+    [7m140[0m         undefined,
+    [7m   [0m [91m        ~~~~~~~~~[0m
+
+FAIL src/modules/reports/reports.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m112[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m112[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m116[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m116[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m135[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m135[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m139[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m139[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m158[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m158[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m167[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m167[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m186[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m186[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m197[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m197[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+
+FAIL src/modules/shifts/shifts.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/shifts/shifts.controller.spec.ts[0m:[93m196[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m196[0m       const result = await controller.getActiveShifts();
+    [7m   [0m [91m                                      ~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/shifts/shifts.controller.ts[0m:[93m186[0m:[93m25[0m
+        [7m186[0m   async getActiveShifts(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<Shift>> {
+        [7m   [0m [96m                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/shifts/shifts.controller.spec.ts[0m:[93m205[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m205[0m       const result = await controller.getActiveShifts();
+    [7m   [0m [91m                                      ~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/shifts/shifts.controller.ts[0m:[93m186[0m:[93m25[0m
+        [7m186[0m   async getActiveShifts(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<Shift>> {
+        [7m   [0m [96m                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+
+FAIL src/modules/users/users.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/users/users.controller.spec.ts[0m:[93m78[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m78[0m       mockUsersService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m  [0m [91m                       ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/users/users.controller.spec.ts[0m:[93m83[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m83[0m       expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50);
+    [7m  [0m [91m                              ~~~~~~~~~~~~~~~~[0m
+
+FAIL src/modules/supervisor/supervisor.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m64[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m64[0m       const result = await controller.getActiveWorkers();
+    [7m  [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/supervisor/supervisor.controller.ts[0m:[93m72[0m:[93m26[0m
+        [7m72[0m   async getActiveWorkers(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
+        [7m  [0m [96m                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m68[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'workers' does not exist on type 'PaginatedResponseDto<ActiveWorkerDto>'.
+
+    [7m68[0m       expect(result.workers).toHaveLength(1);
+    [7m  [0m [91m                    ~~~~~~~[0m
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m78[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m78[0m       const result = await controller.getActiveWorkers();
+    [7m  [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/supervisor/supervisor.controller.ts[0m:[93m72[0m:[93m26[0m
+        [7m72[0m   async getActiveWorkers(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
+        [7m  [0m [96m                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m80[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'workers' does not exist on type 'PaginatedResponseDto<ActiveWorkerDto>'.
+
+    [7m80[0m       expect(result.workers).toEqual([]);
+    [7m  [0m [91m                    ~~~~~~~[0m
+
+PASS src/modules/auth/auth.service.spec.ts (32.978 s)
+FAIL src/database/migrations/migration-validation.spec.ts (32.461 s)
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should execute migration up successfully
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should execute migration up successfully
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should add all required columns to reports table
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should add all required columns to reports table
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create all 11 indexes
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create all 11 indexes
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create shifts table indexes correctly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create shifts table indexes correctly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create location_logs table indexes correctly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create location_logs table indexes correctly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create reports table indexes correctly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create reports table indexes correctly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should create all CHECK constraints
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should create all CHECK constraints
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS latitude constraints (-90 to 90)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS latitude constraints (-90 to 90)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS longitude constraints (-180 to 180)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS longitude constraints (-180 to 180)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce battery level constraint (0 to 100)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce battery level constraint (0 to 100)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce report_type enum constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce report_type enum constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce condition enum constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce condition enum constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce area radius constraint (1 to 10000 meters)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce area radius constraint (1 to 10000 meters)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce clock_out after clock_in constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce clock_out after clock_in constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should update location_logs foreign key to CASCADE
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should update location_logs foreign key to CASCADE
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should create reports foreign keys with correct cascades
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should create reports foreign keys with correct cascades
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should rollback migration cleanly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should rollback migration cleanly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all indexes after rollback
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all indexes after rollback
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all CHECK constraints after rollback
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all CHECK constraints after rollback
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove added columns from reports table after rollback
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove added columns from reports table after rollback
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should restore original foreign key cascade behavior
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should restore original foreign key cascade behavior
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be idempotent - running up twice should not error
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be idempotent - running up twice should not error
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be reversible - up then down then up should work
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be reversible - up then down then up should work
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should detect orphaned reports and prevent migration
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should detect orphaned reports and prevent migration
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should detect orphaned reports and prevent migration
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should successfully backfill area_id from valid shifts
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should successfully backfill area_id from valid shifts
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should successfully backfill area_id from valid shifts
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should handle soft-deleted shifts during backfill
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should handle soft-deleted shifts during backfill
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should handle soft-deleted shifts during backfill
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should verify all reports have area_id before adding NOT NULL constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should verify all reports have area_id before adding NOT NULL constraint
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should verify all reports have area_id before adding NOT NULL constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should provide helpful error messages with diagnostic information
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should provide helpful error messages with diagnostic information
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should provide helpful error messages with diagnostic information
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+PASS src/common/dto/pagination.dto.spec.ts (5.756 s)
+PASS src/modules/areas/areas.service.spec.ts
+PASS src/modules/worker-assignments/worker-assignments.controller.spec.ts (35.104 s)
+PASS src/modules/auth/auth.controller.spec.ts (35.675 s)
+PASS src/modules/reports/reports.service.spec.ts (35.723 s)
+PASS src/modules/users/users.service.spec.ts (7.131 s)
+PASS src/modules/areas/areas.controller.spec.ts (35.512 s)
+PASS src/modules/auth/strategies/jwt.strategy.spec.ts (35.19 s)
+PASS src/modules/auth/guards/roles.guard.spec.ts
+PASS src/modules/area-types/area-types.controller.spec.ts
+PASS src/modules/supervisor/supervisor.service.spec.ts (6.434 s)
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: Worker already has an active shift - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 404 Error: Shift not found - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 401 Error: Token has expired - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: GPS location is 500m from area center (max: 150m) - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 403 Error: Reports can only be edited within 1 hour of creation - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 403 Error: Forbidden resource - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: Validation failed - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 401 Error: Unauthorized - Path: /api/v1/shifts/clock-in[39m
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mHTTP 500 Error: {"statusCode":500,"code":"INTERNAL_SERVER_ERROR","message":"Internal error","error":"Internal Server Error","timestamp":"2026-01-16T05:20:11.856Z","path":"/api/v1/shifts/clock-in"}[39m
+HttpException: Internal error
+    at Object.<anonymous> (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/src/common/filters/http-exception.filter.spec.ts:205:25)
+    at Promise.then.completed (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at _runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mUnexpected error: Error: Unexpected error occurred[39m
+Error: Unexpected error occurred
+    at Object.<anonymous> (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/src/common/filters/http-exception.filter.spec.ts:216:25)
+    at Promise.then.completed (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at _runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mHTTP 500 Error: {"statusCode":500,"code":"INTERNAL_SERVER_ERROR","message":"Internal server error","error":"Internal Server Error","timestamp":"2026-01-16T05:20:11.931Z","path":"/api/v1/shifts/clock-in"}[39m
+Error: Unexpected error occurred
+    at Object.<anonymous> (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/src/common/filters/http-exception.filter.spec.ts:216:25)
+    at Promise.then.completed (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at _runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mUnexpected error: null[39m
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mHTTP 500 Error: {"statusCode":500,"code":"INTERNAL_SERVER_ERROR","message":"Internal server error","error":"Internal Server Error","timestamp":"2026-01-16T05:20:11.952Z","path":"/api/v1/shifts/clock-in"}[39m
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mUnexpected error: undefined[39m
+PASS src/modules/areas/entities/area.entity.spec.ts
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mHTTP 500 Error: {"statusCode":500,"code":"INTERNAL_SERVER_ERROR","message":"Internal server error","error":"Internal Server Error","timestamp":"2026-01-16T05:20:11.961Z","path":"/api/v1/shifts/clock-in"}[39m
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mUnexpected error: Something went wrong[39m
+[31m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mHTTP 500 Error: {"statusCode":500,"code":"INTERNAL_SERVER_ERROR","message":"Internal server error","error":"Internal Server Error","timestamp":"2026-01-16T05:20:11.968Z","path":"/api/v1/shifts/clock-in"}[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 404 Error: Resource not found - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 409 Error: Conflict detected - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: Bad request - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 401 Error: Unauthorized - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 403 Error: Forbidden - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 404 Error: Not found - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 409 Error: Conflict - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 412 Error: Precondition failed - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 418 Error: Teapot - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:11 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: Shift required - Path: /api/v1/reports[39m
+PASS src/modules/worker-assignments/worker-assignments.service.spec.ts (36.803 s)
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:12 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: Bad request - Path: /api/v1/shifts?worker_id=123&from_date=2026-01-01[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:12 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 401 Error: Invalid username or password - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:12 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: GPS location is 500m from area center (max: 150m) - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:12 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 400 Error: Cannot create report for completed shift - Path: /api/v1/shifts/clock-in[39m
+[33m[Nest] 17625  - [39m01/16/2026, 12:20:12 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mHTTP 403 Error: Insufficient permissions - Path: /api/v1/shifts/clock-in[39m
+PASS src/common/filters/http-exception.filter.spec.ts
+[31m[Nest] 17613  - [39m01/16/2026, 12:20:12 PM [31m  ERROR[39m [38;5;3m[S3Service] [39m[31mFailed to upload file to S3: S3 upload failed[39m
+Error: S3 upload failed
+    at Object.<anonymous> (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/src/shared/services/s3.service.spec.ts:122:36)
+    at Promise.then.completed (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at _runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/testWorker.js:106:12)
+PASS src/shared/services/s3.service.spec.ts
+[31m[Nest] 17667  - [39m01/16/2026, 12:20:12 PM [31m  ERROR[39m [38;5;3m[LocationService] [39m[31mFailed to insert location logs: Database error[39m
+PASS src/modules/location/location.service.spec.ts (6.294 s)
+PASS src/modules/reports/entities/report.entity.spec.ts
+PASS src/common/utils/gps.util.spec.ts
+PASS src/app.service.spec.ts
+PASS src/common/exceptions/api.exception.spec.ts
+PASS src/app.controller.spec.ts
+[31m[Nest] 17626  - [39m01/16/2026, 12:20:12 PM [31m  ERROR[39m [38;5;3m[ShiftsService] [39m[31mFailed to upload selfie photo: S3 upload failed[39m
+Error: S3 upload failed
+    at Object.<anonymous> (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/src/modules/shifts/shifts.service.spec.ts:224:50)
+    at Promise.then.completed (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at _runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/be/node_modules/jest-runner/build/testWorker.js:106:12)
+PASS src/modules/auth/decorators/get-user.decorator.spec.ts
+PASS src/modules/shifts/shifts.service.spec.ts (37.994 s)
+PASS src/modules/area-types/area-types.service.spec.ts
+PASS src/modules/location/entities/location-log.entity.spec.ts
+PASS src/modules/worker-assignments/entities/worker-assignment.entity.spec.ts
+PASS src/modules/shifts/entities/shift.entity.spec.ts
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+
+Summary of all failing tests
+FAIL modules/location/location.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/location/location.controller.spec.ts[0m:[93m110[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 2-5 arguments, but got 1.
+
+    [7m110[0m       const result = await controller.getWorkerHistory(workerId);
+    [7m   [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/location/location.controller.ts[0m:[93m119[0m:[93m5[0m
+        [7m119[0m     @Query() paginationDto: PaginationDto,
+        [7m   [0m [96m    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/location/location.controller.spec.ts[0m:[93m124[0m:[93m66[0m - [91merror[0m[90m TS2559: [0mType '"2026-01-01"' has no properties in common with type 'PaginationDto'.
+
+    [7m124[0m       const result = await controller.getWorkerHistory(workerId, '2026-01-01', '2026-01-31');
+    [7m   [0m [91m                                                                 ~~~~~~~~~~~~[0m
+    [96msrc/modules/location/location.controller.spec.ts[0m:[93m140[0m:[93m9[0m - [91merror[0m[90m TS2345: [0mArgument of type 'undefined' is not assignable to parameter of type 'PaginationDto'.
+
+    [7m140[0m         undefined,
+    [7m   [0m [91m        ~~~~~~~~~[0m
+
+FAIL modules/reports/reports.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m112[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m112[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m116[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m116[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m135[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m135[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m139[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m139[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m158[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m158[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m167[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m167[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m186[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m186[0m       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m   [0m [91m                         ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/reports/reports.controller.spec.ts[0m:[93m197[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m197[0m       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
+    [7m   [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+
+FAIL modules/shifts/shifts.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/shifts/shifts.controller.spec.ts[0m:[93m196[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m196[0m       const result = await controller.getActiveShifts();
+    [7m   [0m [91m                                      ~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/shifts/shifts.controller.ts[0m:[93m186[0m:[93m25[0m
+        [7m186[0m   async getActiveShifts(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<Shift>> {
+        [7m   [0m [96m                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/shifts/shifts.controller.spec.ts[0m:[93m205[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m205[0m       const result = await controller.getActiveShifts();
+    [7m   [0m [91m                                      ~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/shifts/shifts.controller.ts[0m:[93m186[0m:[93m25[0m
+        [7m186[0m   async getActiveShifts(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<Shift>> {
+        [7m   [0m [96m                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+
+FAIL modules/users/users.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/users/users.controller.spec.ts[0m:[93m78[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m78[0m       mockUsersService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
+    [7m  [0m [91m                       ~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/users/users.controller.spec.ts[0m:[93m83[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'findAllPaginated' does not exist on type '{ create: Mock<any, any, any>; findAll: Mock<any, any, any>; findOne: Mock<any, any, any>; update: Mock<any, any, any>; remove: Mock<any, any, any>; }'.
+
+    [7m83[0m       expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50);
+    [7m  [0m [91m                              ~~~~~~~~~~~~~~~~[0m
+
+FAIL modules/supervisor/supervisor.controller.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m64[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m64[0m       const result = await controller.getActiveWorkers();
+    [7m  [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/supervisor/supervisor.controller.ts[0m:[93m72[0m:[93m26[0m
+        [7m72[0m   async getActiveWorkers(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
+        [7m  [0m [96m                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m68[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'workers' does not exist on type 'PaginatedResponseDto<ActiveWorkerDto>'.
+
+    [7m68[0m       expect(result.workers).toHaveLength(1);
+    [7m  [0m [91m                    ~~~~~~~[0m
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m78[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 0.
+
+    [7m78[0m       const result = await controller.getActiveWorkers();
+    [7m  [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+
+      [96msrc/modules/supervisor/supervisor.controller.ts[0m:[93m72[0m:[93m26[0m
+        [7m72[0m   async getActiveWorkers(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
+        [7m  [0m [96m                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+        An argument for 'paginationDto' was not provided.
+    [96msrc/modules/supervisor/supervisor.controller.spec.ts[0m:[93m80[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'workers' does not exist on type 'PaginatedResponseDto<ActiveWorkerDto>'.
+
+    [7m80[0m       expect(result.workers).toEqual([]);
+    [7m  [0m [91m                    ~~~~~~~[0m
+
+FAIL database/migrations/migration-validation.spec.ts (32.461 s)
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should execute migration up successfully
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should execute migration up successfully
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should add all required columns to reports table
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should add all required columns to reports table
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create all 11 indexes
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create all 11 indexes
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create shifts table indexes correctly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create shifts table indexes correctly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create location_logs table indexes correctly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create location_logs table indexes correctly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create reports table indexes correctly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Up › should create reports table indexes correctly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should create all CHECK constraints
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should create all CHECK constraints
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS latitude constraints (-90 to 90)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS latitude constraints (-90 to 90)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS longitude constraints (-180 to 180)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce GPS longitude constraints (-180 to 180)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce battery level constraint (0 to 100)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce battery level constraint (0 to 100)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce report_type enum constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce report_type enum constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce condition enum constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce condition enum constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce area radius constraint (1 to 10000 meters)
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce area radius constraint (1 to 10000 meters)
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce clock_out after clock_in constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › CHECK Constraints › should enforce clock_out after clock_in constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should update location_logs foreign key to CASCADE
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should update location_logs foreign key to CASCADE
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should create reports foreign keys with correct cascades
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Foreign Key Cascades › should create reports foreign keys with correct cascades
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should rollback migration cleanly
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should rollback migration cleanly
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all indexes after rollback
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all indexes after rollback
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all CHECK constraints after rollback
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove all CHECK constraints after rollback
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove added columns from reports table after rollback
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should remove added columns from reports table after rollback
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should restore original foreign key cascade behavior
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Migration Down (Rollback) › should restore original foreign key cascade behavior
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be idempotent - running up twice should not error
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be idempotent - running up twice should not error
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be reversible - up then down then up should work
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Idempotency › should be reversible - up then down then up should work
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should detect orphaned reports and prevent migration
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should detect orphaned reports and prevent migration
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should detect orphaned reports and prevent migration
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should successfully backfill area_id from valid shifts
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should successfully backfill area_id from valid shifts
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should successfully backfill area_id from valid shifts
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should handle soft-deleted shifts during backfill
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should handle soft-deleted shifts during backfill
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should handle soft-deleted shifts during backfill
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should verify all reports have area_id before adding NOT NULL constraint
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should verify all reports have area_id before adding NOT NULL constraint
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should verify all reports have area_id before adding NOT NULL constraint
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should provide helpful error messages with diagnostic information
+
+    error: database "sekar_test" does not exist
+
+      at Parser.parseErrorMessage (../node_modules/pg-protocol/src/parser.ts:369:69)
+      at Parser.handlePacket (../node_modules/pg-protocol/src/parser.ts:187:21)
+      at Parser.parse (../node_modules/pg-protocol/src/parser.ts:102:30)
+      at Socket.<anonymous> (../node_modules/pg-protocol/src/index.ts:7:48)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should provide helpful error messages with diagnostic information
+
+    TypeError: Cannot read properties of undefined (reading 'query')
+
+      552 |     afterEach(async () => {
+      553 |       // Cleanup: Drop tables in reverse dependency order
+    > 554 |       await queryRunner.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+          |                         ^
+      555 |       await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE;`);
+      556 |       await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE;`);
+      557 |       await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE;`);
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:554:25)
+
+  ● AddProductionIndexesAndConstraints Migration › Data Integrity Safeguards › should provide helpful error messages with diagnostic information
+
+    TypeError: Cannot read properties of undefined (reading 'rollbackTransaction')
+
+      56 |   afterEach(async () => {
+      57 |     // Rollback transaction to keep tests isolated
+    > 58 |     await queryRunner.rollbackTransaction();
+         |                       ^
+      59 |   });
+      60 |
+      61 |   describe('Migration Up', () => {
+
+      at Object.<anonymous> (database/migrations/migration-validation.spec.ts:58:23)
+
+
+Test Suites: 6 failed, 28 passed, 34 total
+Tests:       28 failed, 283 passed, 311 total
+Snapshots:   0 total
+Time:        42.249 s
+Ran all test suites.

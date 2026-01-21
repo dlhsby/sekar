@@ -1,19 +1,5 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { ShiftsService } from './shifts.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
@@ -23,6 +9,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
  * Shifts Controller
@@ -54,8 +41,7 @@ export class ShiftsController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description:
-      'Already clocked in, not assigned to area, or GPS outside boundary',
+    description: 'Already clocked in, not assigned to area, or GPS outside boundary',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -65,10 +51,7 @@ export class ShiftsController {
     status: HttpStatus.FORBIDDEN,
     description: 'Only workers can clock in',
   })
-  async clockIn(
-    @GetUser() user: User,
-    @Body() dto: ClockInDto,
-  ): Promise<Shift> {
+  async clockIn(@GetUser() user: User, @Body() dto: ClockInDto): Promise<Shift> {
     return this.shiftsService.clockIn(user.id, dto);
   }
 
@@ -98,10 +81,7 @@ export class ShiftsController {
     status: HttpStatus.FORBIDDEN,
     description: 'Only workers can clock out',
   })
-  async clockOut(
-    @GetUser() user: User,
-    @Body() dto: ClockOutDto,
-  ): Promise<Shift> {
+  async clockOut(@GetUser() user: User, @Body() dto: ClockOutDto): Promise<Shift> {
     return this.shiftsService.clockOut(user.id, dto);
   }
 
@@ -109,7 +89,8 @@ export class ShiftsController {
   @Roles(UserRole.WORKER)
   @ApiOperation({
     summary: 'Get current active shift',
-    description: 'Returns the active shift for the authenticated worker, or null if not clocked in.',
+    description:
+      'Returns the active shift for the authenticated worker, or null if not clocked in.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -132,7 +113,8 @@ export class ShiftsController {
   @Roles(UserRole.WORKER)
   @ApiOperation({
     summary: 'Get my shift history',
-    description: 'Returns the last 50 shifts for the authenticated worker, ordered by most recent first.',
+    description:
+      'Returns the last 50 shifts for the authenticated worker, ordered by most recent first.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -154,15 +136,44 @@ export class ShiftsController {
   @Get('active')
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
   @ApiOperation({
-    summary: 'Get all active shifts',
+    summary: 'Get all active shifts with pagination',
     description:
       'Returns all currently active shifts (not yet clocked out). ' +
       'For supervisor/admin dashboard to monitor active workers.',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'List of active shifts',
-    type: [Shift],
+    description: 'Paginated list of active shifts',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'shift-uuid',
+            worker_id: 'worker-uuid',
+            area_id: 'area-uuid',
+            clock_in_time: '2026-01-16T08:00:00.000Z',
+            clock_out_time: null,
+            worker: {
+              id: 'worker-uuid',
+              username: 'worker1',
+              full_name: 'Pekerja Satu',
+            },
+            area: {
+              id: 'area-uuid',
+              name: 'Taman A',
+            },
+          },
+        ],
+        meta: {
+          total: 25,
+          page: 1,
+          limit: 50,
+          totalPages: 1,
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -172,7 +183,7 @@ export class ShiftsController {
     status: HttpStatus.FORBIDDEN,
     description: 'Only admin and supervisors can view all active shifts',
   })
-  async getActiveShifts(): Promise<Shift[]> {
-    return this.shiftsService.findAllActiveShifts();
+  async getActiveShifts(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<Shift>> {
+    return this.shiftsService.findAllActiveShiftsPaginated(paginationDto.page, paginationDto.limit);
   }
 }

@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsString, IsUUID, Max, Min, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ReportType } from '../entities/report.entity';
 
@@ -24,11 +24,16 @@ export class CreateReportDto {
   report_type: ReportType;
 
   @ApiProperty({
-    description: 'Detailed description of the report',
-    example: 'Completed cleaning Taman Bungkul main area. All trash collected and disposed properly.',
+    description: 'Detailed description of the report (5-500 characters)',
+    example:
+      'Completed cleaning Taman Bungkul main area. All trash collected and disposed properly.',
+    minLength: 5,
+    maxLength: 500,
   })
   @IsString()
   @IsNotEmpty()
+  @MinLength(5, { message: 'Deskripsi minimal 5 karakter' })
+  @MaxLength(500, { message: 'Deskripsi maksimal 500 karakter' })
   description: string;
 
   @ApiProperty({

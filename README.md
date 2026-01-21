@@ -1,6 +1,6 @@
 # 🌸 SEKAR - Sistem Evaluasi Kerja Satgas RTH
 
-**Worker Tracking & Task Management System for DKRTH Surabaya**
+**Worker Tracking & Task Management System for DLH Surabaya**
 
 [![Status](https://img.shields.io/badge/status-in%20development-yellow)](https://github.com)
 [![Phase](https://img.shields.io/badge/phase-MVP-blue)](https://github.com)
@@ -24,7 +24,7 @@
 
 ## 📖 Overview
 
-SEKAR (Sistem Evaluasi Kerja Satgas RTH) is a comprehensive worker tracking and task management system designed for DKRTH Surabaya - the municipal department responsible for parks and green spaces.
+SEKAR (Sistem Evaluasi Kerja Satgas RTH) is a comprehensive worker tracking and task management system designed for DLH Surabaya - the municipal department responsible for parks and green spaces.
 
 ### The Problem
 
@@ -73,14 +73,14 @@ curl http://localhost:3000/api/health
 
 ### Option 2: Manual Setup
 
-#### 1. Database Setup
+#### 1. Infrastructure Setup (PostgreSQL + Adminer + LocalStack)
 
 ```bash
-# Create database
-createdb sekar_db
+# Start all infrastructure services
+./infra/start.sh
 
-# Verify connection
-psql -U postgres -d sekar_db
+# Verify services are running
+cd infra && docker-compose ps
 ```
 
 #### 2. Backend Setup
@@ -194,29 +194,46 @@ sekar/
 ├── be/                         # NestJS Backend API
 │   ├── src/
 │   │   └── modules/            # Auth, Users, Shifts, Reports, etc.
-│   ├── .agents/                # Backend development plans
+│   ├── .agents/                # Backend-specific development plans
+│   ├── .cursor/rules/          # Backend-specific rules (NestJS patterns)
 │   └── README.md
 │
 ├── fe/
 │   ├── mobile/                 # React Native Mobile App
 │   │   ├── src/
-│   │   ├── .agents/            # Mobile development plans
+│   │   ├── .agents/            # Mobile-specific development plans
+│   │   ├── .cursor/rules/      # Mobile-specific rules (React Native patterns)
 │   │   └── README.md
 │   │
 │   └── web/                    # Next.js Web Dashboard (Phase 6)
-│       ├── .agents/            # Web development plans
+│       ├── .agents/            # Web-specific development plans
 │       └── README.md
 │
-├── .agents/                    # Root development plans & guides
+├── .agents/                    # General development guidelines (overall project)
 │   ├── README.md               # 🔥 START HERE for development
 │   ├── SUMMARY.md              # Executive summary
 │   └── phase-X-*/              # Phase-specific plans
 │
+├── .cursor/                    # General rules for all components
+│   ├── rules/                  # Project-wide development rules
+│   └── commands/               # Custom commands (commit, review, etc.)
+│
 ├── brainstorm/                 # Original planning documents
 ├── docker-compose.yml          # Production Docker config
 ├── docker-compose.dev.yml      # Development Docker config
+├── CLAUDE.md                   # 🤖 Guide for Claude Code AI
 └── README.md                   # This file
 ```
+
+### Folder Structure Notes
+
+**`.agents/` Folders:**
+- **Root `.agents/`**: General guidelines for overall project development
+- **Component `.agents/`** (be, fe/mobile, fe/web): Technology-specific development plans
+
+**`.cursor/` Folders:**
+- **Root `.cursor/`**: General rules applicable across all components
+- **Component `.cursor/`** (be, fe/mobile): Technology-specific rules (NestJS, React Native)
 
 ---
 
@@ -393,7 +410,10 @@ docker-compose up --build
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Development Plans | `.agents/README.md` | AI agent & developer guide |
+| **CLAUDE.md** | `CLAUDE.md` | 🤖 Guide for Claude Code AI |
+| Development Plans | `.agents/README.md` | General development guidelines |
+| Backend Plans | `be/.agents/` | Backend-specific development plans |
+| Mobile Plans | `fe/mobile/.agents/` | Mobile-specific development plans |
 | Backend API | `be/README.md` | API documentation |
 | Mobile App | `fe/mobile/README.md` | Mobile setup & architecture |
 | Original Requirements | `brainstorm/` | Project planning |
@@ -402,7 +422,7 @@ docker-compose up --build
 
 ## 📞 Contact & Support
 
-- **Client:** DKRTH Surabaya
+- **Client:** DLH Surabaya
 - **Project:** SEKAR (Sistem Evaluasi Kerja Satgas RTH)
 - **Status:** In Development (Phase 1 - MVP)
 
@@ -410,7 +430,7 @@ docker-compose up --build
 
 ## 📄 License
 
-Proprietary - DKRTH Surabaya Municipal Government
+Proprietary - DLH Surabaya Municipal Government
 
 ---
 

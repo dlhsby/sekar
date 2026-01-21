@@ -5,6 +5,7 @@ import { AreaType } from './entities/area-type.entity';
 import { NotFoundException } from '@nestjs/common';
 
 describe('AreaTypesController', () => {
+  let module: TestingModule;
   let controller: AreaTypesController;
   let service: AreaTypesService;
 
@@ -34,7 +35,7 @@ describe('AreaTypesController', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [AreaTypesController],
       providers: [
         {
@@ -48,8 +49,10 @@ describe('AreaTypesController', () => {
     service = module.get<AreaTypesService>(AreaTypesService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('findAll', () => {
@@ -88,7 +91,9 @@ describe('AreaTypesController', () => {
         new NotFoundException('Area type with ID f5f6a7b8-c9d0-1234-ef01-345678901234 not found'),
       );
 
-      await expect(controller.findOne('f5f6a7b8-c9d0-1234-ef01-345678901234')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('f5f6a7b8-c9d0-1234-ef01-345678901234')).rejects.toThrow(
+        NotFoundException,
+      );
       await expect(controller.findOne('f5f6a7b8-c9d0-1234-ef01-345678901234')).rejects.toThrow(
         'Area type with ID f5f6a7b8-c9d0-1234-ef01-345678901234 not found',
       );

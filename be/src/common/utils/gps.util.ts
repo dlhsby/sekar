@@ -5,6 +5,8 @@
  * using the Haversine formula for great-circle distances on Earth.
  */
 
+import { EARTH_RADIUS_METERS } from '../constants/gps.constants';
+
 /**
  * Calculate the great-circle distance between two GPS coordinates
  * using the Haversine formula.
@@ -21,10 +23,6 @@
  * console.log(distance); // ~615 meters
  */
 export class GpsUtil {
-  /**
-   * Earth's radius in meters (mean radius)
-   */
-  private static readonly EARTH_RADIUS_METERS = 6371000;
 
   /**
    * Convert degrees to radians
@@ -57,12 +55,7 @@ export class GpsUtil {
    * @param lng2 - Longitude of second point in degrees
    * @returns Distance in meters
    */
-  static calculateDistance(
-    lat1: number,
-    lng1: number,
-    lat2: number,
-    lng2: number,
-  ): number {
+  static calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
     // Convert coordinates to radians
     const lat1Rad = this.toRadians(lat1);
     const lng1Rad = this.toRadians(lng1);
@@ -75,13 +68,12 @@ export class GpsUtil {
 
     // Haversine formula
     const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLng / 2) ** 2;
+      Math.sin(dLat / 2) ** 2 + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLng / 2) ** 2;
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     // Calculate distance
-    const distance = this.EARTH_RADIUS_METERS * c;
+    const distance = EARTH_RADIUS_METERS * c;
 
     return distance;
   }

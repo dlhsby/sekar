@@ -15,6 +15,7 @@ jest.mock('@aws-sdk/client-s3', () => {
 });
 
 describe('S3Service', () => {
+  let module: TestingModule;
   let service: S3Service;
   let configService: ConfigService;
   let mockS3Send: jest.Mock;
@@ -34,7 +35,7 @@ describe('S3Service', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         S3Service,
         {
@@ -51,8 +52,10 @@ describe('S3Service', () => {
     mockS3Send = (S3Client as jest.Mock).mock.results[0].value.send;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('constructor', () => {
@@ -75,7 +78,7 @@ describe('S3Service', () => {
         get: jest.fn(() => undefined),
       };
 
-      const module = await Test.createTestingModule({
+      const testModule = await Test.createTestingModule({
         providers: [
           S3Service,
           {
@@ -85,10 +88,12 @@ describe('S3Service', () => {
         ],
       }).compile();
 
-      const serviceWithDefaults = module.get<S3Service>(S3Service);
+      const serviceWithDefaults = testModule.get<S3Service>(S3Service);
 
       expect(serviceWithDefaults.getRegion()).toBe('ap-southeast-1');
       expect(serviceWithDefaults.getBucket()).toBe('sekar-media');
+
+      await testModule.close();
     });
   });
 

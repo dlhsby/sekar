@@ -5,7 +5,7 @@
 **NestJS Backend for SEKAR**  
 (Sistem Evaluasi Kerja Satgas RTH)
 
-Worker Tracking & Task Management System for DKRTH Surabaya
+Worker Tracking & Task Management System for DLH Surabaya
 
 [![NestJS](https://img.shields.io/badge/NestJS-10.x-E0234E?logo=nestjs)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -23,6 +23,7 @@ Worker Tracking & Task Management System for DKRTH Surabaya
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
 - [Getting Started (Detailed)](#-getting-started-detailed)
+- [AWS S3 Setup](#-aws-s3-setup)
 - [Project Structure](#-project-structure)
 - [API Documentation](#-api-documentation)
 - [Testing](#-testing)
@@ -33,7 +34,7 @@ Worker Tracking & Task Management System for DKRTH Surabaya
 
 ## 🎯 Overview
 
-SEKAR is a comprehensive worker tracking and task management system designed specifically for DKRTH (Dinas Kebersihan dan Ruang Terbuka Hijau) Surabaya to monitor and manage green space workers across the city.
+SEKAR is a comprehensive worker tracking and task management system designed specifically for DLH (Dinas Kebersihan dan Ruang Terbuka Hijau) Surabaya to monitor and manage green space workers across the city.
 
 ### Problem Statement
 - Manual tracking of 500+ field workers across multiple areas
@@ -356,7 +357,7 @@ netsh interface portproxy show all
 - **class-validator** - Input validation
 
 ### Cloud Services (Production)
-- **AWS S3** - Media storage
+- **AWS S3** - Media storage (see [AWS S3 Setup](#-aws-s3-setup))
 - **AWS RDS** - PostgreSQL database
 - **AWS Elastic Beanstalk/ECS** - Application hosting
 - **AWS CloudWatch** - Logging and monitoring
@@ -460,6 +461,160 @@ The API will be available at:
 
 ---
 
+## ☁️ AWS S3 Setup
+
+The backend uses AWS S3 for storing selfie photos (clock-in) and work report media. This section explains how to set up S3 for development and production.
+
+### Option 1: Use Real AWS S3 (Recommended for Testing)
+
+#### Step 1: Create an AWS Account
+If you don't have one, sign up at https://aws.amazon.com/
+
+#### Step 2: Create an S3 Bucket
+
+1. Go to AWS Console → S3
+2. Click "Create bucket"
+3. Configure:
+   - **Bucket name:** `sekar-media-dev` (or your preferred name)
+   - **Region:** `ap-southeast-1` (Singapore - closest to Indonesia)
+   - **Object Ownership:** ACLs disabled (recommended)
+   - **Block Public Access:** Keep all blocked (we'll use signed URLs)
+   - **Versioning:** Disabled (optional, enable for production)
+4. Click "Create bucket"
+
+#### Step 3: Create IAM User with S3 Access
+
+1. Go to AWS Console → IAM → Users
+2. Click "Create user"
+3. **User name:** `sekar-s3-user`
+4. Click "Next"
+5. **Permissions:**
+   - Select "Attach policies directly"
+   - Search and select `AmazonS3FullAccess` (or create custom policy below)
+6. Click "Create user"
+
+**Custom Policy (More Secure):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::sekar-media-dev",
+        "arn:aws:s3:::sekar-media-dev/*"
+      ]
+    }
+  ]
+}
+```
+
+#### Step 4: Create Access Keys
+
+1. Go to IAM → Users → `sekar-s3-user`
+2. Click "Security credentials" tab
+3. Click "Create access key"
+4. Select "Application running outside AWS"
+5. Click "Create access key"
+6. **IMPORTANT:** Copy and save both:
+   - Access key ID
+   - Secret access key (shown only once!)
+
+#### Step 5: Configure Backend .env
+
+```bash
+# AWS S3 Configuration
+AWS_REGION=ap-southeast-1
+AWS_ACCESS_KEY_ID=AKIA...your-access-key...
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_S3_BUCKET=sekar-media-dev
+```
+
+#### Step 6: Configure CORS (For Direct Browser Uploads)
+
+1. Go to S3 → Your bucket → Permissions → CORS
+2. Add this configuration:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+    "AllowedOrigins": ["*"],
+    "ExposeHeaders": ["ETag"]
+  }
+]
+```
+
+### Option 2: Local Development Without AWS
+
+For development without AWS, you can use **LocalStack** (free AWS emulator):
+
+```bash
+# Install and run LocalStack
+docker run -d -p 4566:4566 localstack/localstack
+
+# Create local S3 bucket
+aws --endpoint-url=http://localhost:4566 s3 mb s3://sekar-media-dev
+
+# Configure .env for LocalStack
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_S3_BUCKET=sekar-media-dev
+AWS_S3_ENDPOINT=http://localhost:4566  # Add this line
+```
+
+**Note:** You may need to modify the S3 service to use custom endpoint for LocalStack.
+
+### Option 3: Skip S3 (Store Locally)
+
+For quick local testing without S3, you can modify the S3 service to save files locally. Add to your `.env`:
+
+```bash
+# Disable S3 uploads (saves to local disk instead)
+S3_ENABLED=false
+UPLOAD_DIR=./uploads
+```
+
+**Note:** This requires modifying `s3.service.ts` to check `S3_ENABLED` flag.
+
+### Verify S3 Configuration
+
+After configuration, test by:
+
+1. Start the backend: `npm run start:dev`
+2. Login as a worker via Swagger or mobile app
+3. Try to clock-in with a selfie
+4. Check S3 bucket for uploaded image
+
+### Troubleshooting S3
+
+**Error: "The AWS Access Key Id you provided does not exist"**
+- Verify your Access Key ID is correct in `.env`
+- Check if the IAM user still exists
+- Regenerate access keys if needed
+
+**Error: "Access Denied"**
+- Verify the IAM user has S3 permissions
+- Check the bucket name matches in `.env`
+- Verify the bucket exists in the correct region
+
+**Error: "NoSuchBucket"**
+- Create the bucket first
+- Verify bucket name is correct (case-sensitive)
+
+**Error: "Invalid region"**
+- Verify `AWS_REGION` matches where you created the bucket
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -542,7 +697,6 @@ be/
 ├── .env                             # Environment variables (not in git)
 ├── package.json                     # Dependencies and scripts
 ├── tsconfig.json                    # TypeScript configuration
-├── API_DOCUMENTATION.md             # Comprehensive API docs
 └── README.md                        # This file
 ```
 
@@ -554,7 +708,7 @@ be/
 Visit http://localhost:3000/api/docs for interactive API documentation.
 
 ### Comprehensive Guide
-See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for detailed endpoint documentation including:
+See [specs/api/contracts.md](../specs/api/contracts.md) for detailed endpoint documentation including:
 - Complete request/response examples
 - Authentication flows
 - Error handling
@@ -690,11 +844,11 @@ open coverage/lcov-report/index.html
 ```
 
 **Coverage Summary:**
-- **Statements:** 100%
-- **Branches:** 100%
-- **Functions:** 100%
-- **Lines:** 100%
-- **Total Tests:** 256 passing ✅
+- **Statements:** 84.23%
+- **Branches:** 78.56%
+- **Functions:** 82.91%
+- **Lines:** 85.17%
+- **Total Tests:** 370+ passing ✅
 
 ### Testing Guidelines
 
@@ -854,13 +1008,13 @@ See [ENV_TEMPLATE.md](./ENV_TEMPLATE.md) for production configuration.
 
 | Metric | Status |
 |--------|--------|
-| Test Coverage | 100% ✅ |
-| Tests Passing | 256/256 ✅ |
+| Test Coverage | 84.23% ✅ |
+| Tests Passing | 370+ ✅ |
 | Linting Errors | 0 ✅ |
 | Build Status | Passing ✅ |
 | TypeScript Strict Mode | Enabled ✅ |
 | API Documentation | Complete ✅ |
-| API Endpoints | 34 documented ✅ |
+| API Endpoints | 36 documented ✅ |
 | Code Quality | Production-Ready ✅ |
 
 ---
@@ -902,7 +1056,7 @@ test(shifts): add GPS validation tests
 
 ### Resources
 
-- **API Documentation:** [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
+- **API Documentation:** [specs/api/contracts.md](../specs/api/contracts.md)
 - **Swagger UI:** http://localhost:3000/api/docs
 - **Development Plans:** [.agents/](./.agents/)
 - **Development Logs:** [development_log/](./development_log/)
@@ -910,7 +1064,7 @@ test(shifts): add GPS validation tests
 
 ### Getting Help
 
-- Check [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) first
+- Check [specs/api/contracts.md](../specs/api/contracts.md) first
 - Review [development_log/](./development_log/) for implementation details
 - Check Swagger UI for interactive API testing
 - Review code guidelines in `.cursor/rules/`
@@ -919,13 +1073,13 @@ test(shifts): add GPS validation tests
 
 ## 📄 License
 
-UNLICENSED - Private project for DKRTH Surabaya
+UNLICENSED - Private project for DLH Surabaya
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **Client:** DKRTH (Dinas Kebersihan dan Ruang Terbuka Hijau) Surabaya
+- **Client:** DLH (Dinas Kebersihan dan Ruang Terbuka Hijau) Surabaya
 - **Framework:** NestJS Team
 - **Database:** PostgreSQL Community
 - **Cloud:** AWS
@@ -934,15 +1088,15 @@ UNLICENSED - Private project for DKRTH Surabaya
 
 <div align="center">
 
-**Built with ❤️ for DKRTH Surabaya**
+**Built with ❤️ for DLH Surabaya**
 
-[API Docs](./API_DOCUMENTATION.md) • [Development Plans](./.agents/) • [Changelog](./development_log/)
+[API Docs](../specs/api/contracts.md) • [Development Plans](./.agents/) • [Changelog](./development_log/)
 
 </div>
 
 ---
 
-**Last Updated:** January 9, 2026
+**Last Updated:** January 19, 2026
 **Version:** 1.0.0
 **Phase:** 1 - MVP (COMPLETE!)
-**Status:** ✅ Production-Ready (10 modules, 34 endpoints, 256 tests passing, 100% coverage)
+**Status:** ✅ Production-Ready (10 modules, 36 endpoints, 370+ tests passing, 84.23% coverage)

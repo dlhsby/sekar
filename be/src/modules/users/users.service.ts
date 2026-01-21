@@ -1,15 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthService } from '../auth/auth.service';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -65,6 +61,25 @@ export class UsersService {
     return this.userRepository.find({
       select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],
     });
+  }
+
+  /**
+   * Find all users with pagination (without sensitive data)
+   * @param page Page number (1-based)
+   * @param limit Items per page
+   * @returns Paginated users
+   */
+  async findAllPaginated(page: number = 1, limit: number = 50): Promise<PaginatedResponseDto<User>> {
+    this.logger.log(`Fetching users with pagination: page=${page}, limit=${limit}`);
+
+    const [data, total] = await this.userRepository.findAndCount({
+      select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { created_at: 'DESC' },
+    });
+
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   /**

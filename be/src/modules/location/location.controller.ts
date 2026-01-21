@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -23,6 +15,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
  * Location Controller
@@ -64,17 +57,19 @@ export class LocationController {
   }
 
   /**
-   * Get location history for a worker
+   * Get location history for a worker with pagination
    * Admin and Supervisor can view worker location history
    */
   @Get('worker/:workerId')
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
-  @ApiOperation({ summary: 'Get worker location history (Admin, Supervisor)' })
+  @ApiOperation({ summary: 'Get worker location history with pagination (Admin, Supervisor)' })
   @ApiParam({
     name: 'workerId',
     description: 'Worker UUID',
     type: String,
   })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiQuery({
     name: 'from_date',
     required: false,
@@ -95,20 +90,47 @@ export class LocationController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Location history (max 1000 records)',
-    type: [LocationLog],
+    description: 'Paginated location history',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'location-uuid',
+            worker_id: 'worker-uuid',
+            shift_id: 'shift-uuid',
+            gps_lat: -7.250445,
+            gps_lng: 112.768845,
+            accuracy_meters: 10,
+            battery_level: 85,
+            logged_at: '2026-01-16T10:00:00.000Z',
+          },
+        ],
+        meta: {
+          total: 5000,
+          page: 1,
+          limit: 50,
+          totalPages: 100,
+        },
+      },
+    },
   })
   async getWorkerHistory(
     @Param('workerId') workerId: string,
+    @Query() paginationDto: PaginationDto,
     @Query('from_date') fromDate?: string,
     @Query('to_date') toDate?: string,
     @Query('shift_id') shiftId?: string,
-  ): Promise<LocationLog[]> {
-    return this.locationService.getWorkerHistory(workerId, {
-      from_date: fromDate,
-      to_date: toDate,
-      shift_id: shiftId,
-    });
+  ): Promise<PaginatedResponseDto<LocationLog>> {
+    return this.locationService.getWorkerHistoryPaginated(
+      workerId,
+      {
+        from_date: fromDate,
+        to_date: toDate,
+        shift_id: shiftId,
+      },
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   /**
@@ -132,9 +154,7 @@ export class LocationController {
     status: 404,
     description: 'No location found for worker',
   })
-  async getLatestLocation(
-    @Param('workerId') workerId: string,
-  ): Promise<LocationLog | null> {
+  async getLatestLocation(@Param('workerId') workerId: string): Promise<LocationLog | null> {
     return this.locationService.getLatestLocation(workerId);
   }
 }

@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
@@ -14,9 +15,10 @@ import { Area } from '../../areas/entities/area.entity';
  * WorkerAssignment Entity
  *
  * Represents the assignment of a worker to a specific work area.
- * For MVP, one worker can only be assigned to one area at a time.
+ * For MVP, one worker can only be assigned to one area at a time (enforced by UNIQUE constraint on worker_id).
  */
 @Entity('worker_assignments')
+@Unique(['worker_id'])
 export class WorkerAssignment {
   @ApiProperty({
     description: 'Unique identifier for the assignment',
@@ -32,11 +34,16 @@ export class WorkerAssignment {
   @Column('uuid')
   worker_id: string;
 
+  /**
+   * Worker relationship
+   * onDelete: RESTRICT prevents deletion of workers who have assignments
+   * UNIQUE constraint on worker_id ensures one-to-one relationship (one worker = one area)
+   */
   @ApiProperty({
     description: 'Worker details',
     type: () => User,
   })
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'worker_id' })
   worker: User;
 
@@ -47,11 +54,15 @@ export class WorkerAssignment {
   @Column('uuid')
   area_id: string;
 
+  /**
+   * Area relationship
+   * onDelete: RESTRICT prevents deletion of areas that have worker assignments
+   */
   @ApiProperty({
     description: 'Area details',
     type: () => Area,
   })
-  @ManyToOne(() => Area, { eager: true })
+  @ManyToOne(() => Area, { eager: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'area_id' })
   area: Area;
 

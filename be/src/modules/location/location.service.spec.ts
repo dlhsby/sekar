@@ -8,6 +8,7 @@ import { Shift } from '../shifts/entities/shift.entity';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
 
 describe('LocationService', () => {
+  let module: TestingModule;
   let service: LocationService;
   let locationLogsRepository: Repository<LocationLog>;
   let shiftsRepository: Repository<Shift>;
@@ -17,6 +18,7 @@ describe('LocationService', () => {
     create: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    findAndCount: jest.fn(),
   };
 
   const mockShiftsRepository = {
@@ -39,7 +41,7 @@ describe('LocationService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         LocationService,
         {
@@ -58,15 +60,15 @@ describe('LocationService', () => {
     }).compile();
 
     service = module.get<LocationService>(LocationService);
-    locationLogsRepository = module.get<Repository<LocationLog>>(
-      getRepositoryToken(LocationLog),
-    );
+    locationLogsRepository = module.get<Repository<LocationLog>>(getRepositoryToken(LocationLog));
     shiftsRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
     dataSource = module.get<DataSource>(DataSource);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await module.close();
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('createBatch', () => {
@@ -108,10 +110,7 @@ describe('LocationService', () => {
       expect(result.count).toBe(2);
       expect(mockQueryRunner.connect).toHaveBeenCalled();
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
-        LocationLog,
-        expect.any(Array),
-      );
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(LocationLog, expect.any(Array));
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
@@ -119,18 +118,14 @@ describe('LocationService', () => {
     it('should throw NotFoundException if shift not found', async () => {
       mockShiftsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.createBatch(createDto, workerId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.createBatch(createDto, workerId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if shift is completed', async () => {
       const completedShift = { ...mockShift, clock_out_time: new Date() };
       mockShiftsRepository.findOne.mockResolvedValue(completedShift);
 
-      await expect(service.createBatch(createDto, workerId)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createBatch(createDto, workerId)).rejects.toThrow(BadRequestException);
     });
 
     it('should rollback transaction on error', async () => {
@@ -183,6 +178,17 @@ describe('LocationService', () => {
       expect(result).toEqual(mockLocations);
     });
 
+    it('should filter by from_date only (to current date)', async () => {
+      const mockLocations = [{ id: 'loc-1' }];
+      mockLocationLogsRepository.find.mockResolvedValue(mockLocations);
+
+      const result = await service.getWorkerHistory(workerId, {
+        from_date: '2026-01-01',
+      });
+
+      expect(result).toEqual(mockLocations);
+    });
+
     it('should limit results to 1000 records', async () => {
       const mockLocations = Array(1000).fill({ id: 'loc-1' });
       mockLocationLogsRepository.find.mockResolvedValue(mockLocations);
@@ -190,6 +196,105 @@ describe('LocationService', () => {
       const result = await service.getWorkerHistory(workerId, {});
 
       expect(result.length).toBeLessThanOrEqual(1000);
+    });
+  });
+
+  describe('getWorkerHistoryPaginated', () => {
+    const workerId = 'worker-uuid-123';
+
+    beforeEach(() => {
+      mockLocationLogsRepository.findAndCount = jest.fn();
+    });
+
+    it('should return paginated location history with default parameters', async () => {
+      const mockData = [
+        { id: 'loc-1', worker_id: workerId },
+        { id: 'loc-2', worker_id: workerId },
+      ];
+      mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 100]);
+
+      const result = await service.getWorkerHistoryPaginated(workerId, {}, 1, 50);
+
+      expect(result.data).toEqual(mockData);
+      expect(result.meta.total).toBe(100);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(50);
+      expect(result.meta.totalPages).toBe(2);
+      expect(mockLocationLogsRepository.findAndCount).toHaveBeenCalled();
+    });
+
+    it('should filter by shift_id in paginated results', async () => {
+      const mockData = [{ id: 'loc-1', shift_id: 'shift-123' }];
+      mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 1]);
+
+      const result = await service.getWorkerHistoryPaginated(
+        workerId,
+        { shift_id: 'shift-123' },
+        1,
+        50,
+      );
+
+      expect(result.data).toEqual(mockData);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should filter by date range in paginated results', async () => {
+      const mockData = [{ id: 'loc-1', logged_at: new Date('2026-01-15') }];
+      mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 1]);
+
+      const result = await service.getWorkerHistoryPaginated(
+        workerId,
+        {
+          from_date: '2026-01-01',
+          to_date: '2026-01-31',
+        },
+        1,
+        50,
+      );
+
+      expect(result.data).toEqual(mockData);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should filter by from_date only in paginated results', async () => {
+      const mockData = [{ id: 'loc-1', logged_at: new Date('2026-01-15') }];
+      mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 1]);
+
+      const result = await service.getWorkerHistoryPaginated(
+        workerId,
+        { from_date: '2026-01-01' },
+        1,
+        50,
+      );
+
+      expect(result.data).toEqual(mockData);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should handle pagination with page 2', async () => {
+      const mockData = [{ id: 'loc-51' }];
+      mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 100]);
+
+      const result = await service.getWorkerHistoryPaginated(workerId, {}, 2, 50);
+
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.totalPages).toBe(2);
+      expect(mockLocationLogsRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 50,
+          take: 50,
+        }),
+      );
+    });
+
+    it('should return empty results when no data found', async () => {
+      mockLocationLogsRepository.findAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.getWorkerHistoryPaginated(workerId, {}, 1, 50);
+
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
+      expect(result.meta.totalPages).toBe(0);
     });
   });
 

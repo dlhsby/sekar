@@ -1,0 +1,66 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: sekar-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sekar_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sekar-db-network
+
+  # Adminer - Database Management Tool
+  adminer:
+    image: adminer:latest
+    container_name: sekar-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sekar-db-network
+
+  # LocalStack - Local AWS Cloud Stack
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: sekar-localstack
+    restart: unless-stopped
+    environment:
+      SERVICES: s3                           # Only S3 service (fast startup: ~5s)
+      DEBUG: ${LOCALSTACK_DEBUG:-0}          # Set to 1 for verbose logs
+      DATA_DIR: /var/lib/localstack/data     # Persistent data directory
+      EAGER_SERVICE_LOADING: 1               # Load S3 immediately
+    ports:
+      - "${LOCALSTACK_PORT:-4566}:4566"      # LocalStack gateway
+    volumes:
+      - ./localstack/data:/var/lib/localstack/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sekar-db-network
+
+networks:
+  sekar-db-network:
+    driver: bridge
+
+

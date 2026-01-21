@@ -39,9 +39,7 @@ describe('RolesGuard', () => {
 
     it('should return true if user has required role', () => {
       const context = mockExecutionContext({ role: UserRole.ADMIN });
-      jest
-        .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN]);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
       const result = guard.canActivate(context);
 
@@ -61,9 +59,7 @@ describe('RolesGuard', () => {
 
     it('should return false if user does not have required role', () => {
       const context = mockExecutionContext({ role: UserRole.WORKER });
-      jest
-        .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN]);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
       const result = guard.canActivate(context);
 
@@ -84,9 +80,7 @@ describe('RolesGuard', () => {
     it('should handle admin-only access', () => {
       const adminContext = mockExecutionContext({ role: UserRole.ADMIN });
       const workerContext = mockExecutionContext({ role: UserRole.WORKER });
-      jest
-        .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN]);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
       expect(guard.canActivate(adminContext)).toBe(true);
       expect(guard.canActivate(workerContext)).toBe(false);
