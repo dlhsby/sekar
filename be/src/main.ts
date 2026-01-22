@@ -68,11 +68,13 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management endpoints')
-    .addTag('areas', 'Area management endpoints (Phase 1 Day 3-4)')
-    .addTag('shifts', 'Worker shift tracking endpoints (Phase 1 Day 3-4)')
-    .addTag('reports', 'Work report endpoints (Phase 1 Day 5)')
-    .addTag('location', 'Location tracking endpoints (Phase 1 Day 5)')
-    .addTag('supervisor', 'Supervisor dashboard endpoints (Phase 1 Day 5)')
+    .addTag('area-types', 'Area type management endpoints')
+    .addTag('areas', 'Area management endpoints')
+    .addTag('worker-assignments', 'Worker-to-area assignment endpoints')
+    .addTag('shifts', 'Worker shift tracking endpoints')
+    .addTag('reports', 'Work report endpoints')
+    .addTag('location', 'Location tracking endpoints')
+    .addTag('supervisor', 'Supervisor dashboard endpoints')
     .addBearerAuth(
       {
         type: 'http',

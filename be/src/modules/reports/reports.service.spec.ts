@@ -7,6 +7,7 @@ import { Shift } from '../shifts/entities/shift.entity';
 import { S3Service } from '../../shared/services/s3.service';
 import { UserRole } from '../users/entities/user.entity';
 import { CreateReportDto } from './dto/create-report.dto';
+import { CreateReportJsonDto } from './dto/create-report-json.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
@@ -508,6 +509,225 @@ describe('ReportsService', () => {
         expect(error.message).toContain('Report not found');
         expect(error.getStatus()).toBe(404);
       }
+    });
+  });
+
+  describe('createFromJson', () => {
+    const workerId = 'worker-uuid-123';
+    const shiftId = 'shift-uuid-456';
+    const areaId = 'area-uuid-789';
+    const createJsonDto: CreateReportJsonDto = {
+      shift_id: shiftId,
+      report_type: ReportType.TASK_COMPLETION,
+      description: 'Completed cleaning',
+      gps_lat: -7.2905,
+      gps_lng: 112.7398,
+    };
+
+    const mockShift = {
+      id: shiftId,
+      worker_id: workerId,
+      area_id: areaId,
+      clock_in_time: new Date(),
+      clock_out_time: null,
+    };
+
+    it('should create report from JSON without photos', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(mockShift);
+      mockReportsRepository.create.mockReturnValue({
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+      });
+      mockReportsRepository.save.mockResolvedValue({
+        id: 'report-uuid-1',
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+      });
+
+      const result = await service.createFromJson(createJsonDto, workerId);
+
+      expect(shiftsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: shiftId, worker_id: workerId },
+        relations: ['worker', 'area'],
+      });
+      expect(result.id).toBe('report-uuid-1');
+      expect(result.worker_id).toBe(workerId);
+      expect(result.area_id).toBe(areaId);
+    });
+
+    it('should create report from JSON with base64 photos', async () => {
+      const dtoWithPhotos: CreateReportJsonDto = {
+        ...createJsonDto,
+        photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRg=='],
+      };
+
+      mockShiftsRepository.findOne.mockResolvedValue(mockShift);
+      mockS3Service.generateKey.mockReturnValue('reports/uuid.jpg');
+      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/reports/uuid.jpg');
+      mockReportsRepository.create.mockReturnValue({
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+      });
+      mockReportsRepository.save.mockResolvedValue({
+        id: 'report-uuid-1',
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+        photo_url: 'https://s3.amazonaws.com/reports/uuid.jpg',
+      });
+
+      const result = await service.createFromJson(dtoWithPhotos, workerId);
+
+      expect(s3Service.uploadFile).toHaveBeenCalled();
+      expect(result.photo_url).toBe('https://s3.amazonaws.com/reports/uuid.jpg');
+    });
+
+    it('should create report from JSON with raw base64 (no data URI prefix)', async () => {
+      const dtoWithRawBase64: CreateReportJsonDto = {
+        ...createJsonDto,
+        photos: ['/9j/4AAQSkZJRg=='], // raw base64 without data URI prefix
+      };
+
+      mockShiftsRepository.findOne.mockResolvedValue(mockShift);
+      mockS3Service.generateKey.mockReturnValue('reports/uuid.jpg');
+      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/reports/uuid.jpg');
+      mockReportsRepository.create.mockReturnValue({
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+      });
+      mockReportsRepository.save.mockResolvedValue({
+        id: 'report-uuid-1',
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+        photo_url: 'https://s3.amazonaws.com/reports/uuid.jpg',
+      });
+
+      const result = await service.createFromJson(dtoWithRawBase64, workerId);
+
+      expect(s3Service.uploadFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        'reports/uuid.jpg',
+        'image/jpeg',
+      );
+      expect(result.photo_url).toBe('https://s3.amazonaws.com/reports/uuid.jpg');
+    });
+
+    it('should prefer file upload over base64 photos', async () => {
+      const dtoWithPhotos: CreateReportJsonDto = {
+        ...createJsonDto,
+        photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRg=='],
+      };
+      const mockFile = {
+        buffer: Buffer.from('test'),
+        originalname: 'photo.jpg',
+        mimetype: 'image/jpeg',
+      } as Express.Multer.File;
+
+      mockShiftsRepository.findOne.mockResolvedValue(mockShift);
+      mockS3Service.generateKey.mockReturnValue('reports/photo.jpg');
+      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
+      mockReportsRepository.create.mockReturnValue({
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+      });
+      mockReportsRepository.save.mockResolvedValue({
+        id: 'report-uuid-1',
+        ...createJsonDto,
+        worker_id: workerId,
+        area_id: areaId,
+        photo_url: 'https://s3.amazonaws.com/photo.jpg',
+      });
+
+      const result = await service.createFromJson(dtoWithPhotos, workerId, mockFile);
+
+      // Should use file buffer, not base64
+      expect(s3Service.uploadFile).toHaveBeenCalledWith(
+        mockFile.buffer,
+        'reports/photo.jpg',
+        'image/jpeg',
+      );
+      expect(result.photo_url).toBe('https://s3.amazonaws.com/photo.jpg');
+    });
+
+    it('should throw ApiException with REPORT_SHIFT_NOT_FOUND when shift not found', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(null);
+
+      try {
+        await service.createFromJson(createJsonDto, workerId);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_SHIFT_NOT_FOUND);
+        expect(error.message).toContain('Shift not found');
+        expect(error.getStatus()).toBe(404);
+      }
+    });
+
+    it('should throw ApiException with REPORT_SHIFT_REQUIRED when shift is completed', async () => {
+      const completedShift = { ...mockShift, clock_out_time: new Date() };
+      mockShiftsRepository.findOne.mockResolvedValue(completedShift);
+
+      try {
+        await service.createFromJson(createJsonDto, workerId);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.REPORT_SHIFT_REQUIRED);
+        expect(error.message).toContain('Cannot create report for completed shift');
+        expect(error.getStatus()).toBe(400);
+      }
+    });
+  });
+
+  describe('findMyReports', () => {
+    const workerId = 'worker-uuid-123';
+
+    it('should return all reports for a worker', async () => {
+      const mockReports = [
+        { id: 'report-1', worker_id: workerId },
+        { id: 'report-2', worker_id: workerId },
+      ];
+      mockReportsRepository.find.mockResolvedValue(mockReports);
+
+      const result = await service.findMyReports(workerId);
+
+      expect(result).toEqual(mockReports);
+      expect(reportsRepository.find).toHaveBeenCalledWith({
+        where: { worker_id: workerId },
+        relations: ['worker', 'shift', 'shift.area'],
+        order: { created_at: 'DESC' },
+      });
+    });
+
+    it('should return reports for a worker filtered by date', async () => {
+      const mockReports = [{ id: 'report-1', worker_id: workerId }];
+      mockReportsRepository.find.mockResolvedValue(mockReports);
+
+      const result = await service.findMyReports(workerId, '2026-01-15');
+
+      expect(result).toEqual(mockReports);
+      expect(reportsRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            worker_id: workerId,
+            created_at: expect.anything(),
+          }),
+        }),
+      );
+    });
+
+    it('should return empty array when worker has no reports', async () => {
+      mockReportsRepository.find.mockResolvedValue([]);
+
+      const result = await service.findMyReports(workerId);
+
+      expect(result).toEqual([]);
     });
   });
 });
