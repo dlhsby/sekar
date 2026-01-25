@@ -5,13 +5,13 @@ React Native mobile application for DLH Surabaya's worker tracking and task mana
 ## Status
 
 **Phase 1 MVP:** COMPLETE ✅
-**Last Updated:** January 19, 2026
+**Last Updated:** January 23, 2026
 
 | Metric | Value |
 |--------|-------|
 | Screens | 14 (7 worker + 7 supervisor) |
-| Components | 11 reusable |
-| Tests | 831 passing (100% pass rate) |
+| Components | 14 reusable |
+| Tests | 1,086+ passing (100% pass rate) |
 | Services | 6 core services |
 
 ## Project Overview
@@ -45,13 +45,16 @@ src/
 │       ├── AreaOverviewScreen
 │       ├── SupervisorProfileScreen
 │       └── index.tsx
-├── components/          # Reusable UI components (11)
-│   ├── Button
-│   ├── Card
-│   ├── TextInput
-│   ├── LoadingSpinner
-│   ├── ErrorBanner
-│   ├── SyncStatusIndicator
+├── components/          # Reusable UI components (14)
+│   ├── common/          # Shared components
+│   │   ├── Button        # Primary/secondary/outline + haptic feedback
+│   │   ├── Card          # Elevated/outlined/filled variants
+│   │   ├── TextInput     # With label, error, and success states
+│   │   ├── LoadingSpinner
+│   │   ├── ErrorBanner
+│   │   ├── SyncStatusIndicator
+│   │   ├── SkeletonLoader # Shimmer loading animation
+│   │   └── EmptyState     # 9 contextual variants
 │   ├── Header
 │   ├── MapView
 │   ├── PhotoPicker
@@ -87,11 +90,14 @@ src/
 # Install dependencies
 npm install
 
-# Create .env file
+# Create .env file (API_BASE_URL is host only, no /api path)
 cat > .env << 'EOF'
 API_BASE_URL=http://your-backend-ip:3000
+API_VERSION=v1
 GOOGLE_MAPS_API_KEY=your-key-here
+APP_ENV=development
 EOF
+# Result: API calls go to http://your-backend-ip:3000/api/v1
 ```
 
 ### Running the App
@@ -126,12 +132,15 @@ REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0 npm start
 - GPS-validated clock-in/out with selfie
 - Work report submission with photos
 - Real-time shift timer
+- Background location tracking with battery level
 - Reports list and history
 - Profile management
 - Offline-first with auto-sync
 
 ### Supervisor Features
 - Live map dashboard with worker locations
+- Progressive loading (50 initial, 500 background)
+- Map marker clustering for dense areas
 - Report review and approval workflow
 - Attendance tracking
 - Worker list management
@@ -151,7 +160,7 @@ npm test -- --coverage
 npm test -- <filename>
 ```
 
-**Current:** 831 tests passing (100% pass rate)
+**Current:** 1,086+ tests passing (100% pass rate)
 
 ## Build
 
@@ -175,18 +184,30 @@ ProGuard rules are configured in `android/app/proguard-rules.pro`
 ### Colors
 - **Primary:** Green (#2E7D32) - Nature/parks theme
 - **Secondary:** Blue (#1976D2) - Trust/government
-- **Success/Warning/Error:** Standard palette
+- **Warning:** Orange (#F57C00) - 4.5:1 contrast for outdoor visibility
+- **Success/Error:** Standard palette
 
 ### Components
-11 reusable components with consistent styling:
-- Large touch targets (min 48px)
+14 reusable components with consistent styling:
+- **Touch targets:** 56dp standard, 72dp critical actions
+- **Card variants:** Elevated, outlined, filled
+- **Button features:** Haptic feedback, focus indicators
+- **TextInput states:** Label, error, success with icons
+- **SkeletonLoader:** Shimmer animation for loading states
+- **EmptyState:** 9 contextual variants (reports, shifts, workers, etc.)
 - Loading states for async actions
 - Error messages with retry options
 - Offline indicators
 
+### Accessibility
+- WCAG 2.1 AA compliant
+- High contrast text (gray900 for outdoor readability)
+- Focus indicators for keyboard/screen reader navigation
+- Live region announcements for GPS status
+
 ## Documentation
 
-- **Implementation Summary:** `specs/phases/phase-1-mvp/IMPLEMENTATION_SUMMARY.md`
+- **Phase 1 Status:** `specs/phases/phase-1-mvp/STATUS.md`
 - **Mobile Screens:** `specs/mobile/screens.md`
 - **API Contracts:** `specs/api/contracts.md`
 - **Design System:** `specs/ui-ux/design-system.md`
@@ -208,6 +229,7 @@ ProGuard rules are configured in `android/app/proguard-rules.pro`
 ### Maps & Location
 - react-native-maps
 - react-native-geolocation-service
+- react-native-device-info (battery level tracking)
 
 ### Media
 - react-native-image-picker
@@ -217,4 +239,4 @@ ProGuard rules are configured in `android/app/proguard-rules.pro`
 **Version:** 1.0.0
 **Phase:** 1 - MVP (COMPLETE)
 **React Native:** 0.76.6
-**Last Updated:** January 19, 2026
+**Last Updated:** January 23, 2026

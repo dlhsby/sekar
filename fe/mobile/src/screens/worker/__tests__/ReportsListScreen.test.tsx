@@ -95,7 +95,9 @@ describe('ReportsListScreen', () => {
 
       await waitFor(() => {
         expect(getByText('Belum Ada Laporan')).toBeTruthy();
-        expect(getByText('Anda belum membuat laporan hari ini')).toBeTruthy();
+        // Empty state now has multi-line text with instruction
+        expect(getByText(/Anda belum membuat laporan hari ini/)).toBeTruthy();
+        // Fixed button at bottom should always be visible
         expect(getByText('+ Buat Laporan Baru')).toBeTruthy();
       });
     });

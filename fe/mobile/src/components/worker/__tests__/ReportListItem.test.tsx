@@ -175,15 +175,17 @@ describe('ReportListItem', () => {
       expect(queryByText('Coba Lagi')).toBeNull();
     });
 
-    it('calls onPress when item pressed', () => {
+    it('calls onPress when item pressed with valid UUID', () => {
+      const testUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
       const { getByTestId } = render(
-        <ReportListItem {...defaultProps} onPress={mockOnPress} />
+        <ReportListItem {...defaultProps} id="synced-123" reportId={testUuid} onPress={mockOnPress} />
       );
 
       const item = getByTestId('report-item');
       fireEvent.press(item);
 
       expect(mockOnPress).toHaveBeenCalledTimes(1);
+      expect(mockOnPress).toHaveBeenCalledWith(testUuid);
     });
 
     it('does not wrap in TouchableOpacity when onPress not provided', () => {
@@ -193,6 +195,19 @@ describe('ReportListItem', () => {
 
       const touchable = queryByTestId('report-item');
       expect(touchable).toBeNull();
+    });
+
+    it('does not call onPress with invalid UUID format', () => {
+      const invalidId = '12345'; // Not a valid UUID
+      const { getByTestId } = render(
+        <ReportListItem {...defaultProps} id="test-456" reportId={invalidId} onPress={mockOnPress} />
+      );
+
+      const item = getByTestId('report-item');
+      fireEvent.press(item);
+
+      // Should not call onPress because UUID validation fails
+      expect(mockOnPress).toHaveBeenCalledTimes(0);
     });
   });
 

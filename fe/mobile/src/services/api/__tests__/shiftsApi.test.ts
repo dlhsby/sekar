@@ -15,7 +15,10 @@ describe('shiftsApi', () => {
   });
 
   describe('clockIn', () => {
-    it('should call clock-in API with correct parameters', async () => {
+    const mockAreaId = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
+    const mockBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
+
+    it('should call clock-in API with JSON payload', async () => {
       const mockResponse = {
         data: {
           shift_id: 1,
@@ -27,20 +30,34 @@ describe('shiftsApi', () => {
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
       const result = await clockIn(
-        1, // areaId
-        -7.250445, // gpsLat
-        112.768845, // gpsLng
-        'data:image/jpeg;base64,xyz' // selfiePhoto
+        mockAreaId,
+        -7.250445,
+        112.768845,
+        mockBase64
       );
 
       expect(apiClient.post).toHaveBeenCalledWith('/shifts/clock-in', {
-        area_id: 1,
+        area_id: mockAreaId,
         gps_lat: -7.250445,
         gps_lng: 112.768845,
-        selfie_photo: 'data:image/jpeg;base64,xyz',
+        selfie_photo: mockBase64,
       });
 
       expect(result).toEqual(mockResponse);
+    });
+
+    it('should include correct fields in payload', async () => {
+      const mockResponse = { data: { shift_id: 1 }, error: null };
+      (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
+
+      await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
+
+      const payload = (apiClient.post as jest.Mock).mock.calls[0][1];
+
+      expect(payload.area_id).toBe(mockAreaId);
+      expect(payload.gps_lat).toBe(-7.250445);
+      expect(payload.gps_lng).toBe(112.768845);
+      expect(payload.selfie_photo).toBe(mockBase64);
     });
 
     it('should handle clock-in errors', async () => {
@@ -51,7 +68,7 @@ describe('shiftsApi', () => {
 
       (apiClient.post as jest.Mock).mockResolvedValue(mockError);
 
-      const result = await clockIn(1, -7.250445, 112.768845, 'base64-photo');
+      const result = await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
 
       expect(result.error).toBe('Already clocked in');
     });
@@ -129,14 +146,14 @@ describe('shiftsApi', () => {
   describe('getCurrentShift', () => {
     it('should fetch current active shift', async () => {
       const mockShift = {
-        id: 1,
-        area_id: 1,
-        worker_id: 1,
+        id: 'abc-123',
+        area_id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+        worker_id: 'worker-uuid',
         clock_in_time: '2026-01-16T08:00:00Z',
         clock_in_gps_lat: -7.250445,
         clock_in_gps_lng: 112.768845,
         area: {
-          id: 1,
+          id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
           name: 'Park A',
         },
       };
@@ -182,17 +199,19 @@ describe('shiftsApi', () => {
   });
 
   describe('Type Safety', () => {
+    const mockAreaId = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
+    const mockBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
+
     it('should enforce correct parameter types for clockIn', async () => {
       const mockResponse = { data: { shift_id: 1 }, error: null };
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      // These should compile (correct types)
-      await clockIn(1, -7.250445, 112.768845, 'base64-photo');
+      // area_id is now a UUID string, not a number
+      await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
 
       // TypeScript would prevent these at compile time:
-      // await clockIn('1', -7.250445, 112.768845, 'base64-photo'); // areaId must be number
-      // await clockIn(1, '(-7.250445' as any, 112.768845, 'base64-photo'); // lat must be number
-      // await clockIn(1, -7.250445, 112.768845, 123 as any); // photo must be string
+      // await clockIn(1, -7.250445, 112.768845, mockBase64); // areaId must be string (UUID)
+      // await clockIn(mockAreaId, '(-7.250445' as any, 112.768845, mockBase64); // lat must be number
 
       expect(true).toBe(true);
     });
@@ -222,7 +241,7 @@ describe('shiftsApi', () => {
 
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await clockIn(1, -7.250445, 112.768845, 'photo');
+      const result = await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
 
       // Should have ApiResponse structure
       expect(result).toHaveProperty('data');
@@ -243,7 +262,7 @@ describe('shiftsApi', () => {
       };
 
       (apiClient.post as jest.Mock).mockResolvedValue(successResponse);
-      const successResult = await clockIn(1, -7.250445, 112.768845, 'photo');
+      const successResult = await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
       expect(successResult.data).toBeTruthy();
       expect(successResult.error).toBeNull();
 
@@ -254,26 +273,30 @@ describe('shiftsApi', () => {
       };
 
       (apiClient.post as jest.Mock).mockResolvedValue(errorResponse);
-      const errorResult = await clockIn(1, -7.250445, 112.768845, 'photo');
+      const errorResult = await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
       expect(errorResult.data).toBeNull();
       expect(errorResult.error).toBeTruthy();
     });
   });
 
   describe('API Contract Validation', () => {
-    it('should send correct payload structure for clock-in', async () => {
+    const mockAreaId = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
+    const mockBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
+
+    it('should send JSON payload with correct fields for clock-in', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue({ data: {}, error: null });
 
-      await clockIn(5, -7.123456, 112.654321, 'photo-data');
+      await clockIn(mockAreaId, -7.123456, 112.654321, mockBase64);
 
       const callArgs = (apiClient.post as jest.Mock).mock.calls[0];
       const payload = callArgs[1];
 
+      // Should be plain object with JSON fields
       expect(payload).toEqual({
-        area_id: 5,
+        area_id: mockAreaId,
         gps_lat: -7.123456,
         gps_lng: 112.654321,
-        selfie_photo: 'photo-data',
+        selfie_photo: mockBase64,
       });
     });
 
@@ -296,7 +319,7 @@ describe('shiftsApi', () => {
       (apiClient.post as jest.Mock).mockResolvedValue({ data: {}, error: null });
       (apiClient.get as jest.Mock).mockResolvedValue({ data: {}, error: null });
 
-      await clockIn(1, -7.250445, 112.768845, 'photo');
+      await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
       expect(apiClient.post).toHaveBeenCalledWith(
         '/shifts/clock-in',
         expect.any(Object)

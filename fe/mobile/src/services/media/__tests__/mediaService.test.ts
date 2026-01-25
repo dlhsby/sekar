@@ -24,15 +24,23 @@ const mockStat = jest.fn();
 const mockReadFile = jest.fn();
 const mockUnlink = jest.fn();
 const mockExists = jest.fn();
+const mockGetFSInfo = jest.fn();
 
 (RNFS as any).stat = mockStat;
 (RNFS as any).readFile = mockReadFile;
 (RNFS as any).unlink = mockUnlink;
 (RNFS as any).exists = mockExists;
+(RNFS as any).getFSInfo = mockGetFSInfo;
 
 describe('MediaService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Mock sufficient disk space by default
+    mockGetFSInfo.mockResolvedValue({
+      freeSpace: 100 * 1024 * 1024, // 100MB free
+      totalSpace: 1000 * 1024 * 1024, // 1GB total
+    });
   });
 
   describe('capturePhoto', () => {

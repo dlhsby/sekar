@@ -3,38 +3,69 @@
  * Background location tracking service for active shifts
  *
  * Features:
- * - Tracks worker location every 5-10 minutes (randomized) during active shifts
- * - Battery optimized with 50m distance filter
- * - Batch uploads (max 20 locations per request)
+ * - Tracks worker location at configurable intervals (default: 10-60 seconds randomized)
+ * - Configurable distance filter (default: 0 = tracks even when stationary)
+ * - Batch uploads (configurable batch size, default: 20)
  * - Offline support with queue management
  * - High accuracy GPS with timeout handling
- * - Memory leak prevention
+ * - Memory leak prevention with singleton pattern
  * - Immediate capture on initialize and network reconnect
+ *
+ * Configuration via .env:
+ * - LOCATION_MIN_INTERVAL_SECONDS (default: 10)
+ * - LOCATION_MAX_INTERVAL_SECONDS (default: 60)
+ * - LOCATION_DISTANCE_FILTER_METERS (default: 0)
+ * - LOCATION_BATCH_UPLOAD_SIZE (default: 20)
+ * - LOCATION_MAX_BUFFER_SIZE (default: 100)
+ * - GPS_TIMEOUT_SECONDS (default: 10)
  */
 
-import { Platform, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
+import DeviceInfo from 'react-native-device-info';
 import { EventEmitter } from 'events';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { uploadLocationBatch, convertPingsToLocations, type TrackerLocationPing } from '../api/locationApi';
 import { addToQueue } from '../sync/offlineQueue';
 import { checkLocationPermission, requestLocationPermission } from '../permissions/permissionService';
+import config from '../../constants/config';
 
 /**
- * Configuration constants
+ * Configuration from centralized config (reads from .env)
  */
-const MIN_PING_INTERVAL = 5 * 60 * 1000; // 5 minutes minimum
-const MAX_PING_INTERVAL = 10 * 60 * 1000; // 10 minutes maximum
-const DISTANCE_FILTER = 50; // 50 meters
-const BATCH_UPLOAD_SIZE = 20; // Max 20 locations per batch
-const GPS_TIMEOUT = 10000; // 10 seconds
-const GPS_MAXIMUM_AGE = 5000; // 5 seconds
+const MIN_PING_INTERVAL = config.LOCATION_MIN_INTERVAL_MS;
+const MAX_PING_INTERVAL = config.LOCATION_MAX_INTERVAL_MS;
+const DISTANCE_FILTER = config.LOCATION_DISTANCE_FILTER;
+const BATCH_UPLOAD_SIZE = config.LOCATION_BATCH_SIZE;
+const MAX_BUFFER_SIZE = config.LOCATION_MAX_BUFFER_SIZE;
+const GPS_TIMEOUT = config.GPS_TIMEOUT_MS;
+const GPS_MAXIMUM_AGE = config.GPS_MAXIMUM_AGE_MS;
 const HIGH_ACCURACY = true;
+const BUFFER_STORAGE_KEY = 'location_buffer';
+
+// Track if singleton has been initialized to prevent duplicates
+let singletonInitialized = false;
 
 /**
  * Get random interval between min and max
  */
 function getRandomInterval(): number {
   return MIN_PING_INTERVAL + Math.random() * (MAX_PING_INTERVAL - MIN_PING_INTERVAL);
+}
+
+/**
+ * Get battery level as percentage (0-100)
+ * Returns undefined if unavailable (e.g., emulator returns -1)
+ */
+async function getBatteryLevel(): Promise<number | undefined> {
+  try {
+    const level = await DeviceInfo.getBatteryLevel();
+    if (level === -1) return undefined; // Unavailable (emulator)
+    return Math.round(level * 100);
+  } catch (error) {
+    console.warn('[LocationTracker] Failed to get battery level:', error);
+    return undefined;
+  }
 }
 
 /**
@@ -46,7 +77,17 @@ export interface LocationPing {
   accuracy: number;
   timestamp: string; // ISO format
   shift_id: string;
+  battery_level?: number; // 0-100 percentage
 }
+
+/**
+ * Location error types for specific handling
+ */
+export type LocationErrorType =
+  | 'permission_denied'
+  | 'gps_disabled'
+  | 'timeout'
+  | 'unknown';
 
 /**
  * Location tracker events
@@ -58,10 +99,13 @@ export interface LocationTrackerEvents {
   trackingStarted: (shiftId: string) => void;
   trackingStopped: () => void;
   error: (error: string) => void;
+  /** Specific error event with error type for targeted handling */
+  locationError: (errorType: LocationErrorType, message: string) => void;
 }
 
 /**
  * Location Tracker class (Singleton)
+ * Only one instance should exist - use the exported `locationTracker` singleton
  */
 class LocationTracker extends EventEmitter {
   private shiftId: string | null = null;
@@ -69,6 +113,20 @@ class LocationTracker extends EventEmitter {
   private locationBuffer: LocationPing[] = [];
   private watchId: number | null = null;
   private intervalId: NodeJS.Timeout | null = null;
+  private instanceId: string;
+
+  constructor() {
+    super();
+    // Generate unique instance ID for debugging
+    this.instanceId = Math.random().toString(36).substring(2, 8);
+
+    if (singletonInitialized) {
+      console.warn(`[LocationTracker:${this.instanceId}] WARNING: Multiple instances detected! Use the singleton export.`);
+    }
+    singletonInitialized = true;
+
+    console.log(`[LocationTracker:${this.instanceId}] Instance created`);
+  }
 
   /**
    * Initialize and start location tracking for a shift
@@ -78,27 +136,36 @@ class LocationTracker extends EventEmitter {
     if (this.tracking) {
       // If already tracking the same shift, just capture a new location
       if (this.shiftId === shiftId) {
-        console.log('[LocationTracker] Already tracking this shift, capturing location');
+        console.log(`[LocationTracker:${this.instanceId}] Already tracking this shift, capturing location`);
         this.captureLocation();
         return;
       }
       // If tracking a different shift, stop first
-      console.log('[LocationTracker] Switching to new shift');
+      console.log(`[LocationTracker:${this.instanceId}] Switching to new shift`);
       await this.stop();
     }
 
-    console.log('[LocationTracker] Initializing for shift:', shiftId);
+    console.log(`[LocationTracker:${this.instanceId}] Initializing for shift:`, shiftId);
+
+    // Set shiftId FIRST so restored locations can be uploaded
+    this.shiftId = shiftId;
+    this.tracking = true;
+
+    // Restore buffer from AsyncStorage on app restart (now shiftId is set)
+    await this.restoreBuffer();
 
     // Check location permission
     const hasPermission = await checkLocationPermission();
     if (!hasPermission) {
-      console.log('[LocationTracker] Requesting location permission');
+      console.log(`[LocationTracker:${this.instanceId}] Requesting location permission`);
       const result = await requestLocationPermission();
 
       if (!result.granted) {
-        const errorMsg = 'Location permission denied. Cannot start tracking.';
-        console.error('[LocationTracker]', errorMsg);
+        const errorMsg = 'Izin lokasi ditolak. Tidak dapat memulai pelacakan.';
+        console.error(`[LocationTracker:${this.instanceId}]`, errorMsg);
         this.emit('error', errorMsg);
+        this.shiftId = null;
+        this.tracking = false;
 
         Alert.alert(
           'Izin Lokasi Diperlukan',
@@ -114,18 +181,16 @@ class LocationTracker extends EventEmitter {
       await this.checkLocationServicesEnabled();
     } catch (error: any) {
       this.emit('error', error.message);
+      this.shiftId = null;
+      this.tracking = false;
       return;
     }
-
-    this.shiftId = shiftId;
-    this.tracking = true;
-    this.locationBuffer = [];
 
     // Start location watching with randomized interval
     this.startLocationWatch();
 
     this.emit('trackingStarted', shiftId);
-    console.log('[LocationTracker] Tracking started for shift:', shiftId);
+    console.log(`[LocationTracker:${this.instanceId}] Tracking started for shift:`, shiftId);
   }
 
   /**
@@ -158,15 +223,18 @@ class LocationTracker extends EventEmitter {
   }
 
   /**
-   * Get current location reading (one-time)
+   * Get current location reading (one-time) with battery level
    */
-  public getCurrentLocation(): Promise<LocationPing> {
-    return new Promise((resolve, reject) => {
-      if (!this.shiftId) {
-        reject(new Error('No active shift'));
-        return;
-      }
+  public async getCurrentLocation(): Promise<LocationPing> {
+    if (!this.shiftId) {
+      throw new Error('No active shift');
+    }
 
+    // Get battery level first
+    const batteryLevel = await getBatteryLevel();
+    const shiftId = this.shiftId;
+
+    return new Promise((resolve, reject) => {
       Geolocation.getCurrentPosition(
         (position) => {
           const location: LocationPing = {
@@ -174,10 +242,16 @@ class LocationTracker extends EventEmitter {
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
             timestamp: new Date().toISOString(),
-            shift_id: this.shiftId!,
+            shift_id: shiftId,
+            battery_level: batteryLevel,
           };
 
-          console.log('[LocationTracker] Got current location:', location);
+          console.log('[LocationTracker] Got current location:', {
+            lat: location.latitude.toFixed(6),
+            lng: location.longitude.toFixed(6),
+            accuracy: `${location.accuracy.toFixed(1)}m`,
+            battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
+          });
           resolve(location);
         },
         (error) => {
@@ -276,15 +350,18 @@ class LocationTracker extends EventEmitter {
   }
 
   /**
-   * Capture current location
+   * Capture current location with battery level
    */
-  private captureLocation(): void {
+  private async captureLocation(): Promise<void> {
     if (!this.shiftId || !this.tracking) {
       console.log('[LocationTracker] Not tracking, skipping capture');
       return;
     }
 
     console.log('[LocationTracker] Capturing location...');
+
+    // Get battery level first (non-blocking, fast ~1-5ms)
+    const batteryLevel = await getBatteryLevel();
 
     Geolocation.getCurrentPosition(
       (position) => {
@@ -294,12 +371,14 @@ class LocationTracker extends EventEmitter {
           accuracy: position.coords.accuracy,
           timestamp: new Date().toISOString(),
           shift_id: this.shiftId!,
+          battery_level: batteryLevel,
         };
 
         console.log('[LocationTracker] Location captured:', {
           lat: location.latitude.toFixed(6),
           lng: location.longitude.toFixed(6),
           accuracy: `${location.accuracy.toFixed(1)}m`,
+          battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
         });
 
         this.addLocationToBuffer(location);
@@ -334,12 +413,15 @@ class LocationTracker extends EventEmitter {
   /**
    * Retry location capture with lower accuracy
    */
-  private retryWithLowerAccuracy(): void {
+  private async retryWithLowerAccuracy(): Promise<void> {
     if (!this.shiftId || !this.tracking) {
       return;
     }
 
     console.log('[LocationTracker] Retrying with lower accuracy...');
+
+    // Get battery level (may have changed since first attempt)
+    const batteryLevel = await getBatteryLevel();
 
     Geolocation.getCurrentPosition(
       (position) => {
@@ -349,9 +431,15 @@ class LocationTracker extends EventEmitter {
           accuracy: position.coords.accuracy,
           timestamp: new Date().toISOString(),
           shift_id: this.shiftId!,
+          battery_level: batteryLevel,
         };
 
-        console.log('[LocationTracker] Location captured (low accuracy):', location);
+        console.log('[LocationTracker] Location captured (low accuracy):', {
+          lat: location.latitude.toFixed(6),
+          lng: location.longitude.toFixed(6),
+          accuracy: `${location.accuracy.toFixed(1)}m`,
+          battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
+        });
         this.addLocationToBuffer(location);
         this.emit('locationUpdate', location);
       },
@@ -369,11 +457,88 @@ class LocationTracker extends EventEmitter {
   }
 
   /**
-   * Add location to memory buffer
+   * Add location to memory buffer with OOM prevention
    */
   private addLocationToBuffer(location: LocationPing): void {
     this.locationBuffer.push(location);
-    console.log(`[LocationTracker] Buffer size: ${this.locationBuffer.length}/${BATCH_UPLOAD_SIZE}`);
+    console.log(`[LocationTracker] Buffer size: ${this.locationBuffer.length}/${MAX_BUFFER_SIZE}`);
+
+    // Warning at 80% capacity
+    const warningThreshold = Math.floor(MAX_BUFFER_SIZE * 0.8);
+    if (this.locationBuffer.length === warningThreshold) {
+      console.warn(`[LocationTracker] Buffer reaching capacity (${warningThreshold}/${MAX_BUFFER_SIZE}), consider uploading soon`);
+      this.emit('error', `Buffer lokasi hampir penuh (${warningThreshold}/${MAX_BUFFER_SIZE}). Menunggu koneksi jaringan.`);
+    }
+
+    // Force upload if buffer exceeds max size to prevent OOM
+    if (this.locationBuffer.length >= MAX_BUFFER_SIZE) {
+      console.warn('[LocationTracker] Buffer exceeded max size, forcing upload');
+      this.uploadLocations(true); // Force upload all
+    }
+
+    // Persist buffer to AsyncStorage for crash recovery
+    this.persistBuffer().catch(err =>
+      console.error('[LocationTracker] Failed to persist buffer:', err)
+    );
+  }
+
+  /**
+   * Persist location buffer to AsyncStorage for crash recovery
+   */
+  private async persistBuffer(): Promise<void> {
+    try {
+      await AsyncStorage.setItem(BUFFER_STORAGE_KEY, JSON.stringify(this.locationBuffer));
+    } catch (error) {
+      console.error('[LocationTracker] Failed to persist buffer:', error);
+    }
+  }
+
+  /**
+   * Restore location buffer from AsyncStorage
+   */
+  private async restoreBuffer(): Promise<void> {
+    try {
+      const bufferStr = await AsyncStorage.getItem(BUFFER_STORAGE_KEY);
+      if (bufferStr) {
+        const restoredBuffer = JSON.parse(bufferStr) as LocationPing[];
+
+        // Filter: only keep locations for the current shift
+        const currentShiftLocations = restoredBuffer.filter(
+          loc => loc.shift_id === this.shiftId
+        );
+        const otherShiftLocations = restoredBuffer.length - currentShiftLocations.length;
+
+        if (otherShiftLocations > 0) {
+          console.log(`[LocationTracker:${this.instanceId}] Discarding ${otherShiftLocations} locations from other shifts`);
+        }
+
+        this.locationBuffer = currentShiftLocations;
+        console.log(`[LocationTracker:${this.instanceId}] Restored ${this.locationBuffer.length} locations for current shift`);
+
+        // Upload restored locations if any (now shiftId is set)
+        if (this.locationBuffer.length > 0 && this.shiftId) {
+          console.log(`[LocationTracker:${this.instanceId}] Uploading restored locations...`);
+          await this.uploadLocations();
+        }
+
+        // Clear the persisted buffer after restore
+        await this.clearPersistedBuffer();
+      }
+    } catch (error) {
+      console.error(`[LocationTracker:${this.instanceId}] Failed to restore buffer:`, error);
+      this.locationBuffer = [];
+    }
+  }
+
+  /**
+   * Clear persisted buffer from AsyncStorage
+   */
+  private async clearPersistedBuffer(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(BUFFER_STORAGE_KEY);
+    } catch (error) {
+      console.error('[LocationTracker] Failed to clear persisted buffer:', error);
+    }
   }
 
   /**
@@ -419,6 +584,9 @@ class LocationTracker extends EventEmitter {
       // Success - remove uploaded locations from buffer
       this.locationBuffer = this.locationBuffer.slice(uploadCount);
 
+      // Update persisted buffer
+      await this.persistBuffer();
+
       console.log(`[LocationTracker] Batch uploaded successfully: ${result.data?.inserted_count || locationsToUpload.length} locations`);
       this.emit('batchUploaded', locationsToUpload.length);
     } catch (error: any) {
@@ -436,6 +604,9 @@ class LocationTracker extends EventEmitter {
         // Remove queued locations from buffer
         this.locationBuffer = this.locationBuffer.slice(uploadCount);
 
+        // Update persisted buffer
+        await this.persistBuffer();
+
         console.log(`[LocationTracker] Batch queued for offline sync: ${locationsToUpload.length} locations`);
         this.emit('batchQueued', locationsToUpload.length);
       } catch (queueError: any) {
@@ -451,16 +622,31 @@ class LocationTracker extends EventEmitter {
    * 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
    */
   private handleLocationError(error: any): string {
+    let errorType: LocationErrorType;
+    let message: string;
+
     switch (error.code) {
       case 1: // PERMISSION_DENIED
-        return 'Location permission denied. Please enable it in settings.';
+        errorType = 'permission_denied';
+        message = 'Izin lokasi ditolak. Silakan aktifkan di pengaturan.';
+        break;
       case 2: // POSITION_UNAVAILABLE
-        return 'GPS signal unavailable. Please check if location services are enabled.';
+        errorType = 'gps_disabled';
+        message = 'Sinyal GPS tidak tersedia. Periksa apakah layanan lokasi aktif.';
+        break;
       case 3: // TIMEOUT
-        return 'GPS timeout. Please ensure you have a clear view of the sky.';
+        errorType = 'timeout';
+        message = 'GPS timeout. Pastikan Anda berada di area terbuka.';
+        break;
       default:
-        return error.message || 'Unknown location error';
+        errorType = 'unknown';
+        message = error.message || 'Gagal mendapatkan lokasi. Silakan coba lagi.';
     }
+
+    // Emit specific error event for targeted handling
+    this.emit('locationError', errorType, message);
+
+    return message;
   }
 
   /**
@@ -472,7 +658,7 @@ class LocationTracker extends EventEmitter {
         () => resolve(),
         (error) => {
           if (error.code === 2) { // POSITION_UNAVAILABLE - GPS/location services disabled
-            const errorMsg = 'GPS is disabled. Please enable location services to continue.';
+            const errorMsg = 'GPS tidak aktif. Silakan aktifkan layanan lokasi untuk melanjutkan.';
 
             Alert.alert(
               'GPS Tidak Aktif',

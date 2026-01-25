@@ -34,6 +34,7 @@ import {
 } from '../../services/sync/offlineQueue';
 import { syncManager } from '../../services/sync/syncManager';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { ChangePasswordModal } from '../../components/common';
 import type { RootState } from '../../store/store';
 import type { ApiResponse } from '../../types/api.types';
 
@@ -84,6 +85,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
   const [supervisorStats, setSupervisorStats] = useState<SupervisorStats>({
     totalWorkersManaged: 0,
     totalAreasMonitored: 0,
@@ -128,8 +130,8 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         setProfileData(profileResponse.data);
       }
 
-      // Load active workers count (using high limit to get all)
-      const workersResponse = await getActiveWorkers(1, 500);
+      // Load active workers count (limit is capped to 100 by the API)
+      const workersResponse = await getActiveWorkers(1, 100);
       const workersCount = workersResponse.data?.meta?.total || 0;
 
       // Load area status to get areas count
@@ -146,11 +148,19 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       endOfMonth.setDate(0);
       endOfMonth.setHours(23, 59, 59, 999);
 
+      // Format dates as YYYY-MM-DD (backend expects this format, not ISO strings)
+      const formatDateParam = (d: Date): string => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const reportsResponse = await get<{ data: any[]; meta: { total: number } }>(
         '/reports',
         {
-          from_date: startOfMonth.toISOString(),
-          to_date: endOfMonth.toISOString(),
+          from_date: formatDateParam(startOfMonth),
+          to_date: formatDateParam(endOfMonth),
           page: 1,
           limit: 1, // We only need the total count from meta
         }
@@ -276,7 +286,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       if (totalPending > 0) {
         // Show detailed pending breakdown with 3 options
         const description = buildPendingDescription();
-        const message = `Ada ${pendingCount} data pending dan ${failedCount} data gagal yang belum tersinkronisasi:\n\n${description}\n\nData ini akan hilang jika Anda keluar.`;
+        const message = `Ada ${pendingCount} data tertunda dan ${failedCount} data gagal yang belum tersinkronisasi:\n\n${description}\n\nData ini akan hilang jika Anda keluar.`;
 
         Alert.alert('Data Belum Tersinkronisasi', message, [
           {
@@ -369,7 +379,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
   const handleMenuPress = (menu: string) => {
     switch (menu) {
       case 'change-password':
-        Alert.alert('Segera hadir', 'Fitur ubah password akan segera hadir');
+        setIsChangePasswordModalVisible(true);
         break;
       case 'about':
         Alert.alert(
@@ -460,7 +470,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sinkronisasi Data</Text>
           <View style={styles.syncStatusRow}>
-            <Text style={styles.syncLabel}>Pending:</Text>
+            <Text style={styles.syncLabel}>Tertunda:</Text>
             <Text style={[styles.syncValue, syncStatus.pendingCount > 0 && styles.syncWarning]}>
               {syncStatus.pendingCount}
             </Text>
@@ -559,6 +569,12 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
 
       {/* Bottom spacing */}
       <View style={styles.bottomSpacer} />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        visible={isChangePasswordModalVisible}
+        onClose={() => setIsChangePasswordModalVisible(false)}
+      />
     </ScrollView>
   );
 }

@@ -233,4 +233,103 @@ describe('WorkerMarker', () => {
       expect(getByText('JM')).toBeTruthy();
     });
   });
+
+  describe('Cluster Marker', () => {
+    it('should render cluster marker when clusterCount > 1', () => {
+      const { getByText, getByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={5} />
+      );
+
+      expect(getByTestId('marker')).toBeTruthy();
+      expect(getByText('5')).toBeTruthy();
+    });
+
+    it('should not render cluster marker when clusterCount is 1', () => {
+      const { queryByText, getByText } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={1} />
+      );
+
+      // Should render individual marker (initials), not cluster count
+      expect(getByText('JD')).toBeTruthy();
+      expect(queryByText('1')).toBeNull();
+    });
+
+    it('should not render cluster marker when clusterCount is undefined', () => {
+      const { getByText } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} />
+      );
+
+      // Should render individual marker (initials)
+      expect(getByText('JD')).toBeTruthy();
+    });
+
+    it('should display correct count for large clusters', () => {
+      const { getByText } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={99} />
+      );
+
+      expect(getByText('99')).toBeTruthy();
+    });
+
+    it('should not render callout for cluster markers', () => {
+      const { queryByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={10} />
+      );
+
+      expect(queryByTestId('callout')).toBeNull();
+    });
+
+    it('should render callout for individual markers', () => {
+      const { getByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={1} />
+      );
+
+      expect(getByTestId('callout')).toBeTruthy();
+    });
+
+    it('should use primary color for cluster markers', () => {
+      const { getByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={5} />
+      );
+
+      // Cluster marker should render (color is applied via StyleSheet)
+      expect(getByTestId('marker')).toBeTruthy();
+    });
+
+    it('should use status color for individual markers', () => {
+      const { getByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="warning" onPress={mockOnPress} />
+      );
+
+      // Individual marker should render with status color (yellow for warning)
+      expect(getByTestId('marker')).toBeTruthy();
+    });
+
+    it('should handle cluster count of 2', () => {
+      const { getByText } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={2} />
+      );
+
+      expect(getByText('2')).toBeTruthy();
+    });
+
+    it('should handle cluster count of 0 as individual marker', () => {
+      const { getByText, queryByText } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={0} />
+      );
+
+      // clusterCount of 0 or 1 should render individual marker
+      expect(getByText('JD')).toBeTruthy();
+      expect(queryByText('0')).toBeNull();
+    });
+
+    it('should not render marker arrow for cluster', () => {
+      const { queryByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={5} />
+      );
+
+      // Cluster markers don't have arrows (only individual markers do)
+      expect(queryByTestId('marker')).toBeTruthy();
+    });
+  });
 });

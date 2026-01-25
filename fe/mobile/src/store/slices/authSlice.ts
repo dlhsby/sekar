@@ -53,6 +53,7 @@ const authSlice = createSlice({
       state.user = null;
       state.assignedArea = null;
       state.isAuthenticated = false;
+      state.isRestoring = false; // Ensure we're not stuck on loading spinner
       state.error = null;
     },
 

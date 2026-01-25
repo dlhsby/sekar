@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -45,4 +52,18 @@ export class AreaType {
   })
   @CreateDateColumn()
   created_at: Date;
+
+  @ApiProperty({
+    description: 'Timestamp when the area type was last updated',
+    example: '2026-01-08T10:00:00.000Z',
+  })
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  /**
+   * Soft delete timestamp for data retention
+   * When set, the area type is considered deleted but preserved in database
+   */
+  @DeleteDateColumn()
+  deleted_at?: Date;
 }

@@ -5,24 +5,51 @@
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { WorkerHomeScreen } from '../WorkerHomeScreen';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
 import shiftReducer from '../../../store/slices/shiftSlice';
+import reportReducer from '../../../store/slices/reportSlice';
 import offlineReducer from '../../../store/slices/offlineSlice';
 import * as shiftsApi from '../../../services/api/shiftsApi';
+import * as reportsApi from '../../../services/api/reportsApi';
 
-// Mock the API
+// Mock Alert to prevent "Alert.alert is not a function" errors
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+// Mock the APIs
 jest.mock('../../../services/api/shiftsApi');
+jest.mock('../../../services/api/reportsApi');
+
+// Mock useLocationPermission hook
+jest.mock('../../../hooks', () => ({
+  useLocationPermission: jest.fn(() => ({
+    isLocationAvailable: true,
+    permissionGranted: true,
+    gpsEnabled: true,
+    isChecking: false,
+    error: null,
+    permissionStatus: 'granted',
+    refresh: jest.fn(),
+    requestPermission: jest.fn(),
+    showPermissionAlert: jest.fn(),
+    showGpsAlert: jest.fn(),
+  })),
+}));
 
 // Helper to create test store with optional shift
 const createTestStore = (currentShift: any = null) => {
+  // Mock reportsApi to return empty array
+  (reportsApi.getMyReports as jest.Mock).mockResolvedValue({ data: [] });
+
   return configureStore({
     reducer: {
       auth: authReducer,
       shift: shiftReducer,
+      report: reportReducer,
       offline: offlineReducer,
     },
     preloadedState: {
@@ -47,6 +74,12 @@ const createTestStore = (currentShift: any = null) => {
       },
       shift: {
         currentShift,
+        isSubmitting: false,
+        error: null,
+      },
+      report: {
+        reports: [],
+        isLoading: false,
         isSubmitting: false,
         error: null,
       },
@@ -219,7 +252,7 @@ describe('WorkerHomeScreen Timer Management', () => {
       jest.advanceTimersByTime(100);
     });
 
-    // The timer interval should be created for the shift
+    // Timer updates every 1 second for real-time display
     expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
 
     setIntervalSpy.mockRestore();
@@ -291,5 +324,82 @@ describe('WorkerHomeScreen Timer Management', () => {
     expect(clearIntervalSpy).toHaveBeenCalled();
 
     clearIntervalSpy.mockRestore();
+  });
+});
+
+describe('WorkerHomeScreen Accessibility (Issue 8)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
+
+  it('should announce timer every 5 minutes for screen readers', async () => {
+    // Mock AccessibilityInfo BEFORE creating shift (so it's ready before render)
+    const mockAnnounce = jest.fn();
+    const AccessibilityInfo = require('react-native').AccessibilityInfo;
+    jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(mockAnnounce);
+
+    // Create a shift that started exactly 5 minutes ago (at 5 min mark)
+    const clockInTime = new Date(Date.now() - 5 * 60 * 1000);
+    const shift = createShift(clockInTime);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    const store = createTestStore(shift);
+
+    render(
+      <Provider store={store}>
+        <NavigationContainer>
+          <WorkerHomeScreen />
+        </NavigationContainer>
+      </Provider>
+    );
+
+    // Initial render triggers updateTimer which checks if at 5 min mark
+    // Since shift started exactly 5 minutes ago, it should announce immediately
+    await act(async () => {
+      jest.advanceTimersByTime(100);
+    });
+
+    // Should have announced at 5 minute mark (initial render)
+    expect(mockAnnounce).toHaveBeenCalledWith('Waktu shift: 0 jam 5 menit');
+  });
+
+  it('should not announce the same minute twice', async () => {
+    // Create a shift that started exactly 5 minutes ago
+    const clockInTime = new Date(Date.now() - 5 * 60 * 1000);
+    const shift = createShift(clockInTime);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    const store = createTestStore(shift);
+
+    const mockAnnounce = jest.fn();
+    jest.spyOn(require('react-native').AccessibilityInfo, 'announceForAccessibility')
+      .mockImplementation(mockAnnounce);
+
+    render(
+      <Provider store={store}>
+        <NavigationContainer>
+          <WorkerHomeScreen />
+        </NavigationContainer>
+      </Provider>
+    );
+
+    // Initial render triggers first announcement
+    await act(async () => {
+      jest.advanceTimersByTime(100);
+    });
+
+    const initialCallCount = mockAnnounce.mock.calls.length;
+
+    // Advance by another 10 seconds (still at 5 min mark)
+    await act(async () => {
+      jest.advanceTimersByTime(10000);
+    });
+
+    // Should NOT have announced again for the same minute
+    expect(mockAnnounce).toHaveBeenCalledTimes(initialCallCount);
   });
 });

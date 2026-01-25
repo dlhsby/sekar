@@ -16,8 +16,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { logout, resetState as resetAuthState } from '../../store/slices/authSlice';
+import { logout } from '../../store/slices/authSlice';
 import { resetState as resetShiftState } from '../../store/slices/shiftSlice';
 import { resetState as resetReportState } from '../../store/slices/reportSlice';
 import { resetState as resetOfflineState } from '../../store/slices/offlineSlice';
@@ -34,6 +35,7 @@ import {
 import { syncManager } from '../../services/sync/syncManager';
 import { locationTracker } from '../../services/location/locationTracker';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { ChangePasswordModal } from '../../components/common';
 import type { RootState } from '../../store/store';
 import type { Shift } from '../../types/models.types';
 
@@ -70,6 +72,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats>({
     daysWorked: 0,
     totalHours: 0,
@@ -270,17 +273,49 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
 
   /**
    * Handle logout with enhanced confirmation
+   * Fix: Use fresh values from async calls to avoid stale closure issues
    */
   const handleLogout = async () => {
+    setIsLoading(true);
     try {
-      await loadSyncStatus();
-      const { pendingCount, failedCount } = syncStatus;
-      const totalPending = pendingCount + failedCount;
+      // Get fresh values directly from async calls to avoid stale closure
+      const [freshPending, freshFailed, freshPendingByType] = await Promise.all([
+        getPendingCount(),
+        getFailedCount(),
+        getPendingCountsByType(),
+      ]);
+      const totalPending = freshPending + freshFailed;
+
+      // Update sync status state for UI consistency
+      setSyncStatus({
+        pendingCount: freshPending,
+        failedCount: freshFailed,
+        pendingByType: freshPendingByType,
+      });
+
+      setIsLoading(false);
 
       if (totalPending > 0) {
-        // Show detailed pending breakdown with 3 options
-        const description = buildPendingDescription();
-        const message = `Ada ${pendingCount} data pending dan ${failedCount} data gagal yang belum tersinkronisasi:\n\n${description}\n\nData ini akan hilang jika Anda keluar.`;
+        // Build pending description from fresh data
+        const buildFreshPendingDescription = (): string => {
+          const parts: string[] = [];
+          if (freshPendingByType['clock-in'] > 0) {
+            parts.push(`${freshPendingByType['clock-in']} clock-in`);
+          }
+          if (freshPendingByType['clock-out'] > 0) {
+            parts.push(`${freshPendingByType['clock-out']} clock-out`);
+          }
+          if (freshPendingByType.report > 0) {
+            parts.push(`${freshPendingByType.report} laporan`);
+          }
+          if (freshPendingByType.location > 0) {
+            parts.push(`${freshPendingByType.location} lokasi`);
+          }
+          return parts.length > 0 ? parts.join(', ') : 'Tidak ada';
+        };
+
+        const description = buildFreshPendingDescription();
+        const message = `Ada ${freshPending} data tertunda dan ${freshFailed} data gagal yang belum tersinkronisasi:\n\n${description}\n\nData ini akan hilang jika Anda keluar.`;
 
         Alert.alert('Data Belum Tersinkronisasi', message, [
           {
@@ -292,7 +327,15 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
             onPress: async () => {
               setIsSyncing(true);
               try {
-                await syncManager.processQueue();
+                // Add timeout to prevent infinite hanging (30 seconds)
+                const syncWithTimeout = Promise.race([
+                  syncManager.processQueue(),
+                  new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Sync timeout')), 30000)
+                  ),
+                ]);
+
+                await syncWithTimeout;
                 await loadSyncStatus();
 
                 // Check if still has pending items
@@ -310,7 +353,15 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
                   );
                 }
               } catch (error: any) {
-                Alert.alert('Kesalahan', `Sinkronisasi gagal: ${error.message}`);
+                if (error.message === 'Sync timeout') {
+                  Alert.alert(
+                    'Timeout',
+                    'Sinkronisasi terlalu lama. Silakan coba lagi atau pilih "Keluar Saja".',
+                    [{ text: 'OK' }]
+                  );
+                } else {
+                  Alert.alert('Kesalahan', `Sinkronisasi gagal: ${error.message}`);
+                }
               } finally {
                 setIsSyncing(false);
               }
@@ -339,6 +390,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       }
     } catch (error) {
       console.error('[ProfileScreen] Error during logout check:', error);
+      setIsLoading(false);
       // Just logout if check fails
       await performLogout();
     }
@@ -358,13 +410,14 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       await EncryptedStorage.removeItem('auth_token');
       await EncryptedStorage.removeItem('refresh_token');
 
-      // Clear all Redux states
-      dispatch(resetAuthState());
+      // Clear non-auth Redux states first
       dispatch(resetShiftState());
       dispatch(resetReportState());
       dispatch(resetOfflineState());
 
-      // Dispatch logout last to trigger navigation
+      // Dispatch logout to clear auth state and trigger navigation
+      // Note: logout() handles isAuthenticated, user, assignedArea, and isRestoring
+      // No need to call resetAuthState() separately as it would set isRestoring: true temporarily
       dispatch(logout());
     } catch (error) {
       console.error('[ProfileScreen] Logout error:', error);
@@ -378,10 +431,10 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
   const handleMenuPress = (menu: string) => {
     switch (menu) {
       case 'change-password':
-        Alert.alert('Segera Hadir', 'Fitur ubah password akan segera hadir');
+        setIsChangePasswordModalVisible(true);
         break;
       case 'shift-history':
-        Alert.alert('Segera Hadir', 'Fitur riwayat shift akan segera hadir');
+        navigation.navigate('ShiftHistory');
         break;
       case 'about':
         Alert.alert(
@@ -471,7 +524,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sinkronisasi Data</Text>
           <View style={styles.syncStatusRow}>
-            <Text style={styles.syncLabel}>Pending:</Text>
+            <Text style={styles.syncLabel}>Tertunda:</Text>
             <Text style={[styles.syncValue, syncStatus.pendingCount > 0 && styles.syncWarning]}>
               {syncStatus.pendingCount}
             </Text>
@@ -565,9 +618,18 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           style={styles.menuItem}
           onPress={() => handleMenuPress('change-password')}
           activeOpacity={0.7}>
-          <Text style={styles.menuIcon}>***</Text>
+          <MaterialCommunityIcons
+            name="lock-outline"
+            size={24}
+            color={colors.textSecondary}
+            style={styles.menuIcon}
+          />
           <Text style={styles.menuText}>Ubah Password</Text>
-          <Text style={styles.menuArrow}>{'>'}</Text>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={colors.textSecondary}
+          />
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -576,9 +638,18 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           style={styles.menuItem}
           onPress={() => handleMenuPress('shift-history')}
           activeOpacity={0.7}>
-          <Text style={styles.menuIcon}>...</Text>
+          <MaterialCommunityIcons
+            name="clock-outline"
+            size={24}
+            color={colors.textSecondary}
+            style={styles.menuIcon}
+          />
           <Text style={styles.menuText}>Riwayat Shift</Text>
-          <Text style={styles.menuArrow}>{'>'}</Text>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={colors.textSecondary}
+          />
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -587,9 +658,18 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           style={styles.menuItem}
           onPress={() => handleMenuPress('about')}
           activeOpacity={0.7}>
-          <Text style={styles.menuIcon}>(i)</Text>
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={24}
+            color={colors.textSecondary}
+            style={styles.menuIcon}
+          />
           <Text style={styles.menuText}>Tentang Aplikasi</Text>
-          <Text style={styles.menuArrow}>{'>'}</Text>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={colors.textSecondary}
+          />
         </TouchableOpacity>
       </View>
 
@@ -603,6 +683,12 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
 
       {/* Bottom spacing */}
       <View style={styles.bottomSpacer} />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        visible={isChangePasswordModalVisible}
+        onClose={() => setIsChangePasswordModalVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -836,10 +922,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   menuIcon: {
-    fontSize: typography.fontSize.base,
     marginRight: spacing.md,
-    width: 28,
-    textAlign: 'center',
   },
   menuText: {
     flex: 1,
@@ -854,7 +937,7 @@ const styles = StyleSheet.create({
   menuDivider: {
     height: 1,
     backgroundColor: colors.border,
-    marginLeft: spacing.md + spacing.md + 28,
+    marginLeft: spacing.md + spacing.md + 24, // icon width (24) + margins
   },
 
   // Logout button styles

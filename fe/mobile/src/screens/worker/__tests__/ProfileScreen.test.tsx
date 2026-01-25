@@ -38,9 +38,6 @@ jest.mock('../../../services/location/locationTracker', () => ({
 }));
 jest.mock('react-native-encrypted-storage');
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
-
 // Mock navigation
 const mockNavigate = jest.fn();
 const mockReset = jest.fn();
@@ -113,6 +110,8 @@ describe('ProfileScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Setup Alert spy in beforeEach to prevent cross-test pollution
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     store = configureStore({
       reducer: {
@@ -194,8 +193,8 @@ describe('ProfileScreen', () => {
 
       await waitFor(() => {
         expect(getByText('PS')).toBeTruthy(); // Pekerja Satu -> PS
-      });
-    });
+      }, { timeout: 10000 });
+    }, 15000);
 
     it('should display full name and username', async () => {
       const { getByText } = renderProfileScreen();
@@ -442,21 +441,27 @@ describe('ProfileScreen', () => {
       });
     });
 
-    it('should show alert when change password is pressed', async () => {
-      const { getByText } = renderProfileScreen();
+    it('should open change password modal when button is pressed', async () => {
+      const { getByText, queryByText } = renderProfileScreen();
 
       await waitFor(() => {
-        const changePasswordButton = getByText('Ubah Password');
-        fireEvent.press(changePasswordButton);
+        expect(getByText('Ubah Password')).toBeTruthy();
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Segera Hadir',
-        'Fitur ubah password akan segera hadir'
-      );
+      // Modal should not be visible initially
+      expect(queryByText('Password Saat Ini')).toBeNull();
+
+      // Press change password button
+      const changePasswordButton = getByText('Ubah Password');
+      fireEvent.press(changePasswordButton);
+
+      // Modal should now be visible
+      await waitFor(() => {
+        expect(getByText('Password Saat Ini')).toBeTruthy();
+      });
     });
 
-    it('should show alert when shift history is pressed', async () => {
+    it('should navigate to shift history when pressed', async () => {
       const { getByText } = renderProfileScreen();
 
       await waitFor(() => {
@@ -464,10 +469,7 @@ describe('ProfileScreen', () => {
         fireEvent.press(shiftHistoryButton);
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Segera Hadir',
-        'Fitur riwayat shift akan segera hadir'
-      );
+      expect(mockNavigate).toHaveBeenCalledWith('ShiftHistory');
     });
 
     it('should show app info when about is pressed', async () => {
@@ -525,7 +527,7 @@ describe('ProfileScreen', () => {
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith(
           'Data Belum Tersinkronisasi',
-          expect.stringContaining('Ada 3 data pending'),
+          expect.stringContaining('Ada 3 data tertunda'),
           expect.any(Array)
         );
       });

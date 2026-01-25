@@ -22,9 +22,10 @@ import { colors, typography, spacing } from '../../constants/theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setLoading, setUser, setError } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
-import { setToken, setUser as setUserStorage } from '../../services/storage/secureStorage';
+import { setToken, setRefreshToken, setUser as setUserStorage } from '../../services/storage/secureStorage';
 import { loadAndSyncCurrentShift } from '../../services/shift';
 import { isValidUsername, isValidPassword } from '../../utils/validators';
+import type { LoginResponse } from '../../types/api.types';
 
 function LoginScreen(): React.JSX.Element {
   const [username, setUsername] = useState('');
@@ -66,20 +67,28 @@ function LoginScreen(): React.JSX.Element {
         return;
       }
 
-      // Store token and user data
-      // Backend returns 'access_token', map it to 'token' for storage
-      const token = response.data.access_token || (response.data as any).token;
-      if (!token) {
+      // Type-safe response handling
+      const loginData = response.data as LoginResponse;
+
+      // Store access token and refresh token
+      if (!loginData.access_token) {
         dispatch(setError('Invalid response from server'));
         Alert.alert('Error', 'Invalid response from server');
         return;
       }
-      await setToken(token);
-      await setUserStorage(response.data.user);
+
+      await setToken(loginData.access_token);
+
+      // Store refresh token if provided (two-token system)
+      if (loginData.refresh_token) {
+        await setRefreshToken(loginData.refresh_token);
+      }
+
+      await setUserStorage(loginData.user);
 
       // Fetch assigned area for worker users
       let assignedArea = null;
-      if (response.data.user.role === 'worker') {
+      if (loginData.user.role === 'worker') {
         try {
           const meResponse = await getMe();
           if (meResponse.data && meResponse.data.assigned_area) {
@@ -98,11 +107,11 @@ function LoginScreen(): React.JSX.Element {
       }
 
       // Update Redux state with user and assigned area
-      dispatch(setUser({ user: response.data.user, area: assignedArea }));
+      dispatch(setUser({ user: loginData.user, area: assignedArea }));
 
       // Load current shift for workers only (supervisors/admins don't have shifts)
       // This ensures the home screen shows correct shift status immediately after login
-      if (response.data.user.role === 'worker') {
+      if (loginData.user.role === 'worker') {
         loadAndSyncCurrentShift(dispatch).catch((err) =>
           console.warn('Shift sync after login failed:', err),
         );
@@ -123,10 +132,19 @@ function LoginScreen(): React.JSX.Element {
         <View style={styles.content}>
           {/* Logo/Title */}
           <View style={styles.header}>
+            {/* Logo icon container */}
+            <View style={styles.logoContainer}>
+              <MaterialCommunityIcons
+                name="leaf"
+                size={56}
+                color={colors.white}
+              />
+            </View>
             <Text style={styles.title}>SEKAR</Text>
             <Text style={styles.subtitle}>
               Sistem Evaluasi Kerja Satgas RTH
             </Text>
+            <Text style={styles.organization}>DLH Kota Surabaya</Text>
           </View>
 
           {/* Login Form */}
@@ -241,16 +259,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing['2xl'],
   },
+  logoContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    // Shadow for elevation
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   title: {
     fontSize: typography.fontSize['3xl'],
     fontWeight: typography.fontWeight.bold,
     color: colors.primary,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
+    letterSpacing: 2,
   },
   subtitle: {
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  organization: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textHint,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   form: {
     marginBottom: spacing.xl,

@@ -20,9 +20,6 @@ import Geolocation from 'react-native-geolocation-service';
 // Mock Geolocation
 jest.mock('react-native-geolocation-service');
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
-
 // Mock permissions
 jest.mock('../../../services/permissions', () => ({
   requestCameraPermission: jest.fn().mockResolvedValue({ granted: true, status: 'granted' }),
@@ -61,6 +58,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    // Setup Alert spy in beforeEach to prevent cross-test pollution
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     getCurrentPositionMock = jest.fn();
     (Geolocation.getCurrentPosition as jest.Mock) = getCurrentPositionMock;
@@ -508,5 +507,281 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
     // Verify it saved the latest text
     const savedDraft = JSON.parse(draftCalls[0][1]);
     expect(savedDraft.description).toBe('Third change here now');
+  });
+
+  describe('Disk Space Check (Issue #9)', () => {
+    let DeviceInfo: any;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      DeviceInfo = require('react-native-device-info');
+    });
+
+    it('should check disk space before capturing photo', async () => {
+      // Mock sufficient disk space (5GB)
+      DeviceInfo.getFreeDiskStorage.mockResolvedValue(5 * 1024 * 1024 * 1024);
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // Should check disk space
+      expect(DeviceInfo.getFreeDiskStorage).toHaveBeenCalled();
+    });
+
+    it('should show alert when disk space is below minimum', async () => {
+      const config = require('../../../constants/config').default;
+      const minStorageMB = config.MIN_FREE_STORAGE_MB;
+
+      // Mock insufficient disk space (50MB, below 100MB minimum)
+      const lowDiskSpace = 50 * 1024 * 1024; // 50MB in bytes
+      DeviceInfo.getFreeDiskStorage.mockResolvedValue(lowDiskSpace);
+
+      const alertSpy = jest.spyOn(Alert, 'alert');
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // Should show alert with storage warning
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          'Penyimpanan Penuh',
+          expect.stringContaining('50MB'),
+          expect.any(Array)
+        );
+      });
+    });
+
+    it('should use config.MIN_FREE_STORAGE_MB for threshold', async () => {
+      const config = require('../../../constants/config').default;
+      expect(config.MIN_FREE_STORAGE_MB).toBe(100);
+
+      // Mock disk space exactly at threshold (100MB)
+      const exactThreshold = 100 * 1024 * 1024; // 100MB in bytes
+      DeviceInfo.getFreeDiskStorage.mockResolvedValue(exactThreshold);
+
+      const alertSpy = jest.spyOn(Alert, 'alert');
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // At exactly 100MB, should NOT show alert (only < 100MB triggers alert)
+      await waitFor(() => {
+        expect(DeviceInfo.getFreeDiskStorage).toHaveBeenCalled();
+      });
+
+      // No alert should be shown for exactly at threshold
+      expect(alertSpy).not.toHaveBeenCalled();
+    });
+
+    it('should allow photo capture when disk space is sufficient', async () => {
+      // Mock sufficient disk space (2GB)
+      DeviceInfo.getFreeDiskStorage.mockResolvedValue(2 * 1024 * 1024 * 1024);
+
+      const mediaService = require('../../../services/media').mediaService;
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // Should proceed with photo capture
+      await waitFor(() => {
+        expect(DeviceInfo.getFreeDiskStorage).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
+      });
+    });
+
+    it('should block photo capture when disk space is insufficient', async () => {
+      // Mock insufficient disk space (30MB)
+      DeviceInfo.getFreeDiskStorage.mockResolvedValue(30 * 1024 * 1024);
+
+      const mediaService = require('../../../services/media').mediaService;
+      const alertSpy = jest.spyOn(Alert, 'alert');
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // Should show alert and NOT proceed with photo capture
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalled();
+      });
+      expect(mediaService.capturePhoto).not.toHaveBeenCalled();
+    });
+
+    it('should log warning when approaching storage limit', async () => {
+      // Mock disk space approaching limit (150MB, below 200MB warning threshold)
+      DeviceInfo.getFreeDiskStorage.mockResolvedValue(150 * 1024 * 1024);
+
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // Should log warning for approaching limit
+      await waitFor(() => {
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Low disk space')
+        );
+      });
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle disk space check error gracefully', async () => {
+      // Mock disk space check error
+      DeviceInfo.getFreeDiskStorage.mockRejectedValue(new Error('Storage API error'));
+
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const mediaService = require('../../../services/media').mediaService;
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // Should log error but still allow photo capture (fail-safe)
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should convert bytes to MB correctly in alert message', async () => {
+      // Mock disk space 75MB
+      const diskSpaceBytes = 75 * 1024 * 1024;
+      DeviceInfo.getFreeDiskStorage.mockResolvedValue(diskSpaceBytes);
+
+      const alertSpy = jest.spyOn(Alert, 'alert');
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ReportSubmissionScreen />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(getCurrentPositionMock).toHaveBeenCalled();
+      });
+
+      // Click "Ambil Foto" button
+      const photoButton = getByText('Ambil Foto');
+      await act(async () => {
+        fireEvent.press(photoButton);
+      });
+
+      // Should show alert with correct MB value (rounded)
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          'Penyimpanan Penuh',
+          expect.stringContaining('75MB'),
+          expect.any(Array)
+        );
+      });
+    });
   });
 });

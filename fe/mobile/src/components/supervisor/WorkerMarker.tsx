@@ -15,6 +15,7 @@ interface WorkerMarkerProps {
   worker: ActiveWorkerData;
   status: WorkerStatus;
   onPress: () => void;
+  clusterCount?: number; // If provided, renders as a cluster marker
 }
 
 /**
@@ -47,7 +48,7 @@ function getInitials(fullName: string): string {
 /**
  * WorkerMarker - Custom marker for worker on map
  */
-export function WorkerMarker({ worker, status, onPress }: WorkerMarkerProps): React.JSX.Element | null {
+export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMarkerProps): React.JSX.Element | null {
   // Don't render marker if no location data
   if (!worker.latest_location) {
     return null;
@@ -55,6 +56,7 @@ export function WorkerMarker({ worker, status, onPress }: WorkerMarkerProps): Re
 
   const markerColor = getMarkerColor(status);
   const initials = getInitials(worker.full_name);
+  const isCluster = clusterCount !== undefined && clusterCount > 1;
 
   return (
     <Marker
@@ -66,18 +68,30 @@ export function WorkerMarker({ worker, status, onPress }: WorkerMarkerProps): Re
       tracksViewChanges={false} // Performance optimization
     >
       <View style={styles.markerContainer}>
-        <View style={[styles.marker, { backgroundColor: markerColor }]}>
-          <Text style={styles.markerText}>{initials}</Text>
-        </View>
-        <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
+        {isCluster ? (
+          // Cluster marker
+          <View style={[styles.clusterMarker, { backgroundColor: colors.primary }]}>
+            <Text style={styles.clusterText}>{clusterCount}</Text>
+          </View>
+        ) : (
+          // Individual worker marker
+          <>
+            <View style={[styles.marker, { backgroundColor: markerColor }]}>
+              <Text style={styles.markerText}>{initials}</Text>
+            </View>
+            <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
+          </>
+        )}
       </View>
 
-      <Callout tooltip>
-        <View style={styles.calloutContainer}>
-          <Text style={styles.calloutName}>{worker.full_name}</Text>
-          <Text style={styles.calloutArea}>{worker.shift.area.name}</Text>
-        </View>
-      </Callout>
+      {!isCluster && (
+        <Callout tooltip>
+          <View style={styles.calloutContainer}>
+            <Text style={styles.calloutName}>{worker.full_name}</Text>
+            <Text style={styles.calloutArea}>{worker.shift.area.name}</Text>
+          </View>
+        </Callout>
+      )}
     </Marker>
   );
 }
@@ -112,6 +126,21 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     marginTop: -1,
+  },
+  clusterMarker: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: colors.white,
+    ...shadows.lg,
+  },
+  clusterText: {
+    color: colors.white,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
   },
   calloutContainer: {
     backgroundColor: colors.white,

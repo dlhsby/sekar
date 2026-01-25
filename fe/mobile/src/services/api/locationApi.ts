@@ -20,6 +20,7 @@ export interface TrackerLocationPing {
   accuracy: number;
   timestamp: string; // ISO format
   shift_id: string;
+  battery_level?: number; // 0-100 percentage
 }
 
 /**
@@ -53,6 +54,7 @@ export function convertPingsToLocations(pings: TrackerLocationPing[]): LocationP
     gps_lat: ping.latitude,
     gps_lng: ping.longitude,
     accuracy_meters: ping.accuracy,
+    battery_level: ping.battery_level,
     logged_at: ping.timestamp,
   }));
 }

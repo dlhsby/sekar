@@ -72,19 +72,17 @@ function ReportsListScreen({
       if (response.error) {
         setError(response.error);
       } else if (response.data) {
+        // Response is now paginated: { data: [], meta: {} }
+        const reportsData = response.data.data || [];
         // Transform API response to ReportCardData format
-        const transformedReports: ReportCardData[] = response.data.map((report) => ({
+        const transformedReports: ReportCardData[] = reportsData.map((report: any) => ({
           id: report.id,
-          worker_name: report.worker_name,
-          area_name: report.area_name,
-          report_type: (report.notes?.toLowerCase().includes('insiden')
-            ? 'incident'
-            : report.notes?.toLowerCase().includes('pemeliharaan')
-              ? 'maintenance_request'
-              : 'task_completion') as 'task_completion' | 'incident' | 'maintenance_request',
-          created_at: report.report_time,
-          thumbnail_url: report.thumbnail_url,
-          reviewed: report.reviewed,
+          worker_name: report.worker?.full_name || 'Nama tidak tersedia',
+          area_name: report.area?.name || 'Area tidak tersedia',
+          report_type: report.report_type as 'task_completion' | 'incident' | 'maintenance_request',
+          created_at: report.created_at,
+          thumbnail_url: report.photo_url,
+          reviewed: report.is_reviewed || false,
         }));
 
         // Apply client-side report type filter

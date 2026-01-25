@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { theme } from '../../constants/theme';
 
 interface SyncStatusIndicatorProps {
@@ -16,30 +17,67 @@ export function SyncStatusIndicator({
   isSyncing,
   pendingCount = 0,
 }: SyncStatusIndicatorProps): JSX.Element {
+  // Determine descriptive accessibility label based on state
+  const getAccessibilityLabel = () => {
+    if (isSyncing) {
+      return 'Menyinkronkan data';
+    }
+    if (!isOnline) {
+      return pendingCount > 0
+        ? `Mode luring. ${pendingCount} item menunggu sinkronisasi`
+        : 'Mode luring';
+    }
+    return 'Daring dan tersambung';
+  };
+
   if (isSyncing) {
     return (
-      <View style={styles.container}>
+      <View
+        style={styles.container}
+        accessibilityLiveRegion="polite"
+        accessibilityLabel={getAccessibilityLabel()}
+      >
         <ActivityIndicator size="small" color={theme.colors.warning} />
-        <Text style={styles.text}>Syncing...</Text>
+        <Text style={styles.text}>Menyinkronkan...</Text>
       </View>
     );
   }
 
   if (!isOnline) {
     return (
-      <View style={styles.container}>
+      <View
+        style={styles.container}
+        accessibilityLiveRegion="polite"
+        accessibilityLabel={getAccessibilityLabel()}
+      >
+        <MaterialCommunityIcons
+          name="cloud-off-outline"
+          size={16}
+          color={theme.colors.error}
+          style={styles.icon}
+        />
         <View style={[styles.dot, styles.dotOffline]} />
         <Text style={styles.text}>
-          Offline{pendingCount > 0 ? ` (${pendingCount})` : ''}
+          Luring{pendingCount > 0 ? ` (${pendingCount})` : ''}
         </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessibilityLiveRegion="polite"
+      accessibilityLabel={getAccessibilityLabel()}
+    >
+      <MaterialCommunityIcons
+        name="check-circle-outline"
+        size={16}
+        color={theme.colors.success}
+        style={styles.icon}
+      />
       <View style={[styles.dot, styles.dotOnline]} />
-      <Text style={styles.text}>Online</Text>
+      <Text style={styles.text}>Daring</Text>
     </View>
   );
 }
@@ -51,10 +89,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
   },
+  icon: {
+    marginRight: theme.spacing.xs / 2,
+  },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 12, // Increased from 8 to 12dp for better visibility
+    height: 12,
+    borderRadius: 6,
     marginRight: theme.spacing.xs,
   },
   dotOnline: {

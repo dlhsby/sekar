@@ -23,9 +23,6 @@ jest.mock('@react-native-community/netinfo', () => ({
   fetch: jest.fn(),
 }));
 
-// Mock Alert to prevent errors from any loaded screens
-jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-
 /**
  * Mock NetworkProvider Component
  * This represents what the actual NetworkProvider should do
@@ -58,6 +55,9 @@ describe('NetworkProvider', () => {
   let addEventListenerMock: jest.Mock;
 
   beforeEach(() => {
+    // Setup Alert spy in beforeEach to prevent cross-test pollution
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
     unsubscribeMock = jest.fn();
     addEventListenerMock = jest.fn().mockReturnValue(unsubscribeMock);
 

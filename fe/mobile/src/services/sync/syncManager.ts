@@ -18,6 +18,7 @@ import { clockIn, clockOut } from '../api/shiftsApi';
 import { createReport } from '../api/reportsApi';
 import { uploadLocationBatch } from '../api/locationApi';
 import { locationTracker } from '../location/locationTracker';
+import config from '../../constants/config';
 import type { LocationPoint } from '../../types/api.types';
 import type { LocationPing } from '../../types/models.types';
 
@@ -69,11 +70,11 @@ const SYNC_PRIORITY: Record<string, number> = {
 };
 
 /**
- * Retry configuration
+ * Retry configuration - imported from centralized config
  */
-const MAX_RETRIES = 5;
-const RETRY_DELAYS = [1000, 2000, 4000, 8000, 16000]; // Exponential backoff (1s, 2s, 4s, 8s, 16s)
-const PERIODIC_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const MAX_RETRIES = config.MAX_RETRY_COUNT;
+const RETRY_DELAYS = config.RETRY_DELAYS_MS;
+const PERIODIC_SYNC_INTERVAL = config.SYNC_INTERVAL;
 
 /**
  * Sync events

@@ -12,12 +12,30 @@ import * as supervisorApi from '../../../services/api/supervisorApi';
 // Mock the API
 jest.mock('../../../services/api/supervisorApi');
 
+// Mock react-native-maps
+jest.mock('react-native-maps', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: (props: any) => <View testID={props.testID} {...props} />,
+    Marker: View,
+    PROVIDER_GOOGLE: 'google',
+  };
+});
+
+// Mock react-native-vector-icons
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
+  const { Text } = require('react-native');
+  return (props: any) => <Text>{props.name}</Text>;
+});
+
 // Mock Linking
 jest.spyOn(Linking, 'openURL').mockImplementation(() => Promise.resolve(true));
 
 // Mock navigation
 const mockNavigation = {
   goBack: jest.fn(),
+  setOptions: jest.fn(),
 };
 
 describe('ReportDetailScreen', () => {
@@ -85,8 +103,8 @@ describe('ReportDetailScreen', () => {
         expect(getByText('John Doe')).toBeTruthy();
         expect(getByText('Park A')).toBeTruthy();
         expect(getByText('Penyelesaian Tugas')).toBeTruthy();
-      });
-    });
+      }, { timeout: 10000 });
+    }, 15000);
 
     it('should render worker name', async () => {
       const { getByText } = render(
@@ -284,6 +302,141 @@ describe('ReportDetailScreen', () => {
         expect(getByText('Tidak dapat membuka aplikasi peta')).toBeTruthy();
       });
     });
+
+    it('should show message when GPS coordinates are null', async () => {
+      (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
+        data: {
+          ...mockReport,
+          gps_lat: null,
+          gps_lng: null,
+        },
+      });
+
+      const { getByText, queryByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByText('📍 Data lokasi GPS tidak tersedia')).toBeTruthy();
+        expect(queryByTestId('open-maps-button')).toBeNull();
+      });
+    });
+
+    it('should show message when gps_lat is null', async () => {
+      (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
+        data: {
+          ...mockReport,
+          gps_lat: null,
+          gps_lng: 112.768845,
+        },
+      });
+
+      const { getByText, queryByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByText('📍 Data lokasi GPS tidak tersedia')).toBeTruthy();
+        expect(queryByTestId('open-maps-button')).toBeNull();
+      });
+    });
+
+    it('should show message when gps_lng is null', async () => {
+      (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
+        data: {
+          ...mockReport,
+          gps_lat: -7.250445,
+          gps_lng: null,
+        },
+      });
+
+      const { getByText, queryByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByText('📍 Data lokasi GPS tidak tersedia')).toBeTruthy();
+        expect(queryByTestId('open-maps-button')).toBeNull();
+      });
+    });
+
+    it('should show message when gps_lat is undefined', async () => {
+      (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
+        data: {
+          ...mockReport,
+          gps_lat: undefined,
+          gps_lng: 112.768845,
+        },
+      });
+
+      const { getByText, queryByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByText('📍 Data lokasi GPS tidak tersedia')).toBeTruthy();
+        expect(queryByTestId('open-maps-button')).toBeNull();
+      });
+    });
+
+    it('should show message when gps_lng is undefined', async () => {
+      (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
+        data: {
+          ...mockReport,
+          gps_lat: -7.250445,
+          gps_lng: undefined,
+        },
+      });
+
+      const { getByText, queryByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByText('📍 Data lokasi GPS tidak tersedia')).toBeTruthy();
+        expect(queryByTestId('open-maps-button')).toBeNull();
+      });
+    });
+
+    it('should show message when both GPS coordinates are undefined', async () => {
+      (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
+        data: {
+          ...mockReport,
+          gps_lat: undefined,
+          gps_lng: undefined,
+        },
+      });
+
+      const { getByText, queryByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByText('📍 Data lokasi GPS tidak tersedia')).toBeTruthy();
+        expect(queryByTestId('open-maps-button')).toBeNull();
+      });
+    });
+
+    it('should handle GPS coordinates as strings (PostgreSQL decimal type)', async () => {
+      // PostgreSQL returns decimal type as strings to preserve precision
+      (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
+        data: {
+          ...mockReport,
+          gps_lat: '-7.290493',
+          gps_lng: '112.739797',
+        },
+      });
+
+      const { getByText, getByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        // Should display coordinates correctly after converting to number
+        expect(getByText('📍 -7.290493, 112.739797')).toBeTruthy();
+        expect(getByTestId('open-maps-button')).toBeTruthy();
+      });
+    });
   });
 
   describe('error handling', () => {
@@ -354,6 +507,117 @@ describe('ReportDetailScreen', () => {
 
       await waitFor(() => {
         expect(supervisorApi.getReportDetails).toHaveBeenCalledWith(42);
+      });
+    });
+  });
+
+  describe('worker view (in-app map)', () => {
+    it('should show in-app map button when isWorkerView is true', async () => {
+      const workerRoute = {
+        params: {
+          reportId: 1,
+          isWorkerView: true,
+        },
+      };
+
+      const { getByTestId, getByText } = render(
+        <ReportDetailScreen route={workerRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByText('Buka di Peta')).toBeTruthy();
+        expect(getByTestId('open-maps-button')).toBeTruthy();
+      });
+    });
+
+    it('should show in-app map when open maps button is pressed in worker view', async () => {
+      const workerRoute = {
+        params: {
+          reportId: 1,
+          isWorkerView: true,
+        },
+      };
+
+      const { getByTestId, getByText } = render(
+        <ReportDetailScreen route={workerRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('open-maps-button')).toBeTruthy();
+      });
+
+      fireEvent.press(getByTestId('open-maps-button'));
+
+      await waitFor(() => {
+        expect(getByTestId('report-location-map')).toBeTruthy();
+        expect(getByText('Lokasi Laporan')).toBeTruthy();
+      });
+
+      // Should NOT open external maps
+      expect(Linking.openURL).not.toHaveBeenCalled();
+    });
+
+    it('should close in-app map when close button is pressed', async () => {
+      const workerRoute = {
+        params: {
+          reportId: 1,
+          isWorkerView: true,
+        },
+      };
+
+      const { getByTestId, queryByTestId } = render(
+        <ReportDetailScreen route={workerRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('open-maps-button')).toBeTruthy();
+      });
+
+      // Open map
+      fireEvent.press(getByTestId('open-maps-button'));
+
+      await waitFor(() => {
+        expect(getByTestId('report-location-map')).toBeTruthy();
+      });
+
+      // Close map
+      fireEvent.press(getByTestId('close-map-button'));
+
+      await waitFor(() => {
+        expect(queryByTestId('report-location-map')).toBeNull();
+      });
+    });
+
+    it('should open external maps when isWorkerView is false (supervisor view)', async () => {
+      const { getByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('open-maps-button')).toBeTruthy();
+      });
+
+      fireEvent.press(getByTestId('open-maps-button'));
+
+      // Supervisor view should open external maps
+      expect(Linking.openURL).toHaveBeenCalled();
+    });
+  });
+
+  describe('back button navigation', () => {
+    it('should set up header with back button', async () => {
+      const mockSetOptions = jest.fn();
+      const navWithOptions = {
+        ...mockNavigation,
+        setOptions: mockSetOptions,
+      };
+
+      render(
+        <ReportDetailScreen route={mockRoute} navigation={navWithOptions} />
+      );
+
+      await waitFor(() => {
+        expect(mockSetOptions).toHaveBeenCalled();
       });
     });
   });

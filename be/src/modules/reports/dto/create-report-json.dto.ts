@@ -9,6 +9,8 @@ import {
   Max,
   Min,
   ArrayMaxSize,
+  Matches,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ReportType } from '../entities/report.entity';
@@ -66,14 +68,19 @@ export class CreateReportJsonDto {
   gps_lng: number;
 
   @ApiProperty({
-    description: 'Array of base64-encoded photo strings (max 5 photos)',
+    description: 'Array of base64-encoded photo strings (max 5 photos, ~7.5MB each)',
     type: [String],
     example: ['data:image/jpeg;base64,/9j/4AAQSkZJRg...'],
     required: false,
   })
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(5)
+  @ArrayMaxSize(5, { message: 'Maximum 5 photos allowed per report' })
   @IsString({ each: true })
+  @MaxLength(10_000_000, { each: true, message: 'Each photo must not exceed ~7.5MB (10MB base64 encoded)' })
+  @Matches(/^data:image\/(jpeg|jpg|png);base64,[A-Za-z0-9+/=]+$/, {
+    each: true,
+    message: 'Invalid base64 image format. Must be data:image/(jpeg|jpg|png);base64,<data>',
+  })
   photos?: string[];
 }

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, InteractionManager } from 'react-native';
 import { MapDashboardScreen } from '../MapDashboardScreen';
 import * as supervisorApi from '../../../services/api/supervisorApi';
 import * as apiClient from '../../../services/api/apiClient';
@@ -32,9 +32,9 @@ jest.mock('../../../components/supervisor/WorkerMarker', () => ({
 jest.mock('../../../components/supervisor/WorkerInfoCard', () => ({
   WorkerInfoCard: () => null,
 }));
-
-// Mock Alert
-jest.spyOn(Alert, 'alert');
+jest.mock('../../../components/supervisor/MapErrorBoundary', () => ({
+  MapErrorBoundary: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 const mockWorker1: ActiveWorkerData = {
   id: 1,
@@ -102,6 +102,25 @@ describe('MapDashboardScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    // Setup Alert spy in beforeEach to prevent cross-test pollution
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    // Mock InteractionManager to execute callbacks immediately
+    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation(
+      (callback: (() => void) | { gen: () => Generator }) => {
+        if (typeof callback === 'function') {
+          callback();
+        } else if (callback?.gen) {
+          // Handle generator function case
+          const gen = callback.gen();
+          let result = gen.next();
+          while (!result.done) {
+            result = gen.next();
+          }
+        }
+        return { cancel: jest.fn(), done: Promise.resolve() };
+      }
+    );
 
     // Default successful API responses
     (supervisorApi.getActiveWorkers as jest.Mock).mockResolvedValue({
@@ -131,7 +150,8 @@ describe('MapDashboardScreen', () => {
       render(<MapDashboardScreen />);
 
       await waitFor(() => {
-        expect(supervisorApi.getActiveWorkers).toHaveBeenCalledWith(1, 500);
+        // Initial load uses INITIAL_FETCH_LIMIT (50) for fast first render
+        expect(supervisorApi.getActiveWorkers).toHaveBeenCalledWith(1, 50);
         expect(apiClient.get).toHaveBeenCalledWith('/areas');
       });
     });
@@ -207,7 +227,7 @@ describe('MapDashboardScreen', () => {
       const { getByText } = render(<MapDashboardScreen />);
 
       await waitFor(() => {
-        expect(getByText('Refresh')).toBeTruthy();
+        expect(getByText('Perbarui')).toBeTruthy();
       });
     });
 
@@ -215,10 +235,10 @@ describe('MapDashboardScreen', () => {
       const { getByText } = render(<MapDashboardScreen />);
 
       await waitFor(() => {
-        expect(getByText('Refresh')).toBeTruthy();
+        expect(getByText('Perbarui')).toBeTruthy();
       });
 
-      const refreshButton = getByText('Refresh');
+      const refreshButton = getByText('Perbarui');
       fireEvent.press(refreshButton);
 
       // Should call API again
@@ -260,7 +280,7 @@ describe('MapDashboardScreen', () => {
       const { getByText } = render(<MapDashboardScreen />);
 
       await waitFor(() => {
-        expect(getByText('Zoom')).toBeTruthy();
+        expect(getByText('Perbesar')).toBeTruthy();
       });
     });
   });
@@ -387,11 +407,12 @@ describe('MapDashboardScreen', () => {
   });
 
   describe('Pagination', () => {
-    it('should request high limit to get all workers', async () => {
+    it('should request initial limit for fast first render', async () => {
       render(<MapDashboardScreen />);
 
       await waitFor(() => {
-        expect(supervisorApi.getActiveWorkers).toHaveBeenCalledWith(1, 500);
+        // Initial load uses INITIAL_FETCH_LIMIT (50) for better performance
+        expect(supervisorApi.getActiveWorkers).toHaveBeenCalledWith(1, 50);
       });
     });
 

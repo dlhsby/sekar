@@ -50,6 +50,21 @@ jest.mock('../../screens/worker/ProfileScreen', () => ({
   },
 }));
 
+jest.mock('../../screens/worker/ShiftHistoryScreen', () => ({
+  ShiftHistoryScreen: function MockShiftHistory() {
+    const { Text } = require('react-native');
+    return <Text testID="shift-history-screen">Shift History</Text>;
+  },
+}));
+
+jest.mock('../../screens/supervisor/ReportDetailScreen', () => ({
+  __esModule: true,
+  default: function MockReportDetail() {
+    const { Text } = require('react-native');
+    return <Text testID="report-detail-screen">Report Detail</Text>;
+  },
+}));
+
 // Helper to create store
 function createTestStore() {
   return configureStore({
@@ -123,11 +138,16 @@ describe('WorkerNavigator', () => {
     it('should have all required tabs', () => {
       renderNavigator();
 
+      // Visible tabs
       expect(screen.getAllByText('Home').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Absensi').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Buat Laporan').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Laporan Saya').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Profil').length).toBeGreaterThan(0);
+
+      // Hidden tabs should not be visible
+      expect(screen.queryByText('Buat Laporan')).toBeNull();
+      expect(screen.queryByText('Riwayat Shift')).toBeNull();
+      expect(screen.queryByText('Detail Laporan')).toBeNull();
     });
   });
 
@@ -143,16 +163,8 @@ describe('WorkerNavigator', () => {
       });
     });
 
-    it('should navigate to ReportSubmission when Buat Laporan tab is pressed', async () => {
-      renderNavigator();
-
-      const reportTab = screen.getAllByText('Buat Laporan')[0];
-      fireEvent.press(reportTab);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('report-submission-screen')).toBeTruthy();
-      });
-    });
+    // Removed: "Buat Laporan" tab is now hidden (tabBarButton: () => null)
+    // Accessible via navigation.navigate('Report') from other screens
 
     it('should navigate to ReportsList when Laporan Saya tab is pressed', async () => {
       renderNavigator();

@@ -1,7 +1,37 @@
-// Mock react-native Alert
+// Mock react-native Alert component
+// Use Object.defineProperty to ensure the mock is properly applied and cannot be overridden
+const mockAlert = jest.fn();
+const mockPrompt = jest.fn();
+
 jest.mock('react-native/Libraries/Alert/Alert', () => ({
-  alert: jest.fn(),
+  alert: mockAlert,
+  prompt: mockPrompt,
 }));
+
+// Ensure Alert is properly mocked in all contexts
+// This handles cases where Alert is imported before the mock is applied
+const RN = require('react-native');
+if (RN.Alert) {
+  Object.defineProperty(RN.Alert, 'alert', {
+    value: mockAlert,
+    writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(RN.Alert, 'prompt', {
+    value: mockPrompt,
+    writable: true,
+    configurable: true,
+  });
+}
+
+// Re-apply Alert mock before each test to ensure consistency
+beforeEach(() => {
+  // Ensure Alert mock is always available
+  if (RN.Alert) {
+    RN.Alert.alert = mockAlert;
+    RN.Alert.prompt = mockPrompt;
+  }
+});
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -74,18 +104,36 @@ jest.mock('react-native-encrypted-storage', () => ({
   clear: jest.fn(() => Promise.resolve()),
 }));
 
+// Mock react-native-device-info
+jest.mock('react-native-device-info', () => ({
+  getBatteryLevel: jest.fn(() => Promise.resolve(0.75)), // Default 75%
+  getDeviceId: jest.fn(() => 'mock-device-id'),
+  getUniqueId: jest.fn(() => Promise.resolve('mock-unique-id')),
+  getFreeDiskStorage: jest.fn(() => Promise.resolve(5 * 1024 * 1024 * 1024)), // Default 5GB free
+  default: {
+    getBatteryLevel: jest.fn(() => Promise.resolve(0.75)),
+    getDeviceId: jest.fn(() => 'mock-device-id'),
+    getUniqueId: jest.fn(() => Promise.resolve('mock-unique-id')),
+    getFreeDiskStorage: jest.fn(() => Promise.resolve(5 * 1024 * 1024 * 1024)),
+  },
+}));
+
 // Mock environment variables
 global.API_BASE_URL = 'http://localhost:3000';
+global.API_VERSION = 'v1';
 global.GOOGLE_MAPS_API_KEY = 'mock-google-maps-key';
 global.APP_ENV = 'test';
 
-// Global cleanup hooks to prevent worker process leaks
+// Global cleanup hooks to prevent worker process leaks and mock pollution
 afterEach(() => {
-  // Clear all mock call counts
+  // Clear all mock call counts and instances
   jest.clearAllMocks();
 
   // Clear all timers
   jest.clearAllTimers();
+
+  // NOTE: Do NOT call jest.restoreAllMocks() here as it undoes jest.spyOn() mocks
+  // set up in individual test files and can cause cross-test pollution
 });
 
 afterAll(() => {

@@ -5,7 +5,6 @@
 
 import { get, post } from './apiClient';
 import type {
-  ClockInRequest,
   ClockInResponse,
   ClockOutRequest,
   ClockOutResponse,
@@ -14,24 +13,24 @@ import type {
 } from '../../types/api.types';
 
 /**
- * Clock in to start shift
- * @param areaId - Area ID
+ * Clock in to start shift using Base64 encoded photo
+ * @param areaId - Area UUID (string)
  * @param gpsLat - GPS latitude
  * @param gpsLng - GPS longitude
- * @param selfiePhoto - Base64 encoded selfie photo
+ * @param selfiePhotoBase64 - Base64 encoded selfie photo with data URI prefix
  * @returns Clock-in response with shift ID
  */
 export async function clockIn(
-  areaId: number,
+  areaId: string,
   gpsLat: number,
   gpsLng: number,
-  selfiePhoto: string,
+  selfiePhotoBase64: string,
 ): Promise<ApiResponse<ClockInResponse>> {
-  const payload: ClockInRequest = {
+  const payload = {
     area_id: areaId,
     gps_lat: gpsLat,
     gps_lng: gpsLng,
-    selfie_photo: selfiePhoto,
+    selfie_photo: selfiePhotoBase64,
   };
   return post<ClockInResponse>('/shifts/clock-in', payload);
 }
@@ -63,5 +62,13 @@ export async function getCurrentShift(): Promise<
   ApiResponse<CurrentShiftResponse | null>
 > {
   return get<CurrentShiftResponse | null>('/shifts/current');
+}
+
+/**
+ * Get worker's shift history
+ * @returns Array of past shifts
+ */
+export async function getMyShifts(): Promise<ApiResponse<CurrentShiftResponse[]>> {
+  return get<CurrentShiftResponse[]>('/shifts/my-shifts');
 }
 

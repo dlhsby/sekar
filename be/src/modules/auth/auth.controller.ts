@@ -94,6 +94,7 @@ export class AuthController {
    */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 attempts per minute to prevent brute-force
   @ApiOperation({
     summary: 'Refresh access token',
     description:

@@ -20,6 +20,8 @@ describe('AreasService', () => {
     name: 'Park',
     description: 'Public park or garden',
     created_at: new Date(),
+    updated_at: new Date(),
+    deleted_at: undefined,
   };
 
   const mockArea: Area = {

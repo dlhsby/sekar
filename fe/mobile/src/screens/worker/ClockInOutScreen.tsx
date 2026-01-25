@@ -15,6 +15,7 @@ import { launchCamera } from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
 import { Button, Card } from '../../components/common';
 import { theme } from '../../constants/theme';
+import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../../services/api/shiftsApi';
 import { setCurrentShift } from '../../store/slices/shiftSlice';
@@ -150,9 +151,12 @@ export function ClockInOutScreen(): JSX.Element {
   // Request permissions on mount and get initial location
   useEffect(() => {
     let watchId: number | null = null;
+    let isMounted = true; // Track if component is mounted
 
     const initializeLocation = async () => {
       const result = await requestClockInPermissions();
+      if (!isMounted) return; // Prevent state update if unmounted
+
       if (!result.success) {
         setLocation((prev) => ({ ...prev, error: result.message || 'Permission denied' }));
         return;
@@ -164,6 +168,8 @@ export function ClockInOutScreen(): JSX.Element {
       // Watch position for continuous updates during clock-in/out
       watchId = Geolocation.watchPosition(
         (position) => {
+          if (!isMounted) return; // Prevent state update if unmounted
+
           const { latitude, longitude, accuracy } = position.coords;
           setLocation({
             latitude,
@@ -190,6 +196,7 @@ export function ClockInOutScreen(): JSX.Element {
           }
         },
         (error) => {
+          if (!isMounted) return; // Prevent state update if unmounted
           console.error('Watch position error:', error);
         },
         {
@@ -208,13 +215,15 @@ export function ClockInOutScreen(): JSX.Element {
       initializeLocation();
     }
 
-    // Cleanup: Clear watch on unmount
+    // Cleanup: Clear watch on unmount and mark as unmounted
     return () => {
+      isMounted = false;
       if (watchId !== null) {
         Geolocation.clearWatch(watchId);
+        watchId = null;
       }
     };
-  }, [assignedArea, getCurrentLocation]);
+  }, [assignedArea]);
 
   const handleCaptureSelfie = async () => {
     try {
@@ -276,16 +285,17 @@ export function ClockInOutScreen(): JSX.Element {
     setIsSubmitting(true);
 
     try {
-      // Convert image to base64
-      const base64Image = await RNFS.readFile(selfieUri, 'base64');
-      const selfiePhotoBase64 = `data:image/jpeg;base64,${base64Image}`;
+      // Convert file URI to Base64 for API upload
+      // Remove file:// prefix if present for RNFS compatibility
+      const filePath = selfieUri.replace('file://', '');
+      const base64Data = await RNFS.readFile(filePath, 'base64');
+      const selfieBase64 = `data:image/jpeg;base64,${base64Data}`;
 
-      // Call API with individual parameters (not FormData)
       const response = await clockIn(
-        assignedArea.id,
+        assignedArea.id,  // UUID string
         location.latitude,
         location.longitude,
-        selfiePhotoBase64,
+        selfieBase64,
       );
 
       if (response.error || !response.data) {
@@ -309,7 +319,7 @@ export function ClockInOutScreen(): JSX.Element {
       // Clear selfie after successful clock-in
       setSelfieUri(null);
 
-      Alert.alert('Berhasil', 'Clock in berhasil!', [
+      Alert.alert('Berhasil', 'Berhasil clock in!', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error: any) {
@@ -336,8 +346,8 @@ export function ClockInOutScreen(): JSX.Element {
 
     // Confirmation
     Alert.alert(
-      'Clock Out',
-      'Apakah Anda yakin ingin clock out?',
+      'Konfirmasi Clock Out',
+      'Apakah Anda yakin ingin mengakhiri shift?',
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -369,7 +379,7 @@ export function ClockInOutScreen(): JSX.Element {
 
               dispatch(setCurrentShift(null));
 
-              Alert.alert('Berhasil', 'Clock out berhasil!', [
+              Alert.alert('Berhasil', 'Berhasil clock out!', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
             } catch (error: any) {
@@ -423,12 +433,22 @@ export function ClockInOutScreen(): JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        {/* Offline Banner for Clock-in (at the very top) */}
+        {!isOnline && isClockIn && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineBannerIcon}>📵</Text>
+            <Text style={styles.offlineBannerText}>
+              Mode Offline - Clock in memerlukan koneksi
+            </Text>
+          </View>
+        )}
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{isClockIn ? 'Clock In' : 'Clock Out'}</Text>
           <Text style={styles.subtitle}>
             {isClockIn
-              ? 'Ambil selfie dan konfirmasi lokasi untuk memulai shift'
+              ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
               : 'Konfirmasi lokasi untuk mengakhiri shift'}
           </Text>
         </View>
@@ -490,6 +510,15 @@ export function ClockInOutScreen(): JSX.Element {
                   <Text style={styles.infoValue}>{location.accuracy.toFixed(0)}m</Text>
                 </View>
               )}
+              {/* GPS Accuracy Warning */}
+              {location.accuracy !== null && location.accuracy > config.GPS_ACCURACY_THRESHOLD && (
+                <View style={styles.warningBox}>
+                  <Text style={styles.warningIcon}>⚠️</Text>
+                  <Text style={styles.warningText}>
+                    GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.
+                  </Text>
+                </View>
+              )}
               {assignedArea && assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Jarak dari area:</Text>
@@ -504,7 +533,11 @@ export function ClockInOutScreen(): JSX.Element {
                   </Text>
                 </View>
               )}
-              <View style={styles.boundaryStatus}>
+              <View
+                style={styles.boundaryStatus}
+                accessibilityLiveRegion="assertive"
+                accessibilityRole="alert"
+              >
                 <View
                   style={[
                     styles.statusDot,
@@ -585,6 +618,12 @@ export function ClockInOutScreen(): JSX.Element {
             !location.longitude ||
             (isClockIn && (!isWithinBoundary || !selfieUri || !isOnline))
           }
+          isCritical={true}
+          accessibilityHint={
+            isClockIn
+              ? 'Mulai shift kerja dengan verifikasi foto diri dan lokasi'
+              : 'Akhiri shift kerja saat ini'
+          }
         />
 
         {/* Offline Warning for Clock-out */}
@@ -663,7 +702,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
+    color: theme.colors.gray900, // Improved contrast from gray600 (#757575) to gray900 (#212121) for outdoor visibility
+    fontWeight: theme.typography.fontWeight.medium,
+    // Add text shadow for sunlight readability
+    textShadowColor: 'rgba(255, 255, 255, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   infoValue: {
     fontSize: theme.typography.fontSize.sm,
@@ -747,6 +791,51 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.warning,
     textAlign: 'center',
+  },
+  // Persistent offline banner at top
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.error,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  offlineBannerIcon: {
+    fontSize: 20,
+    marginRight: theme.spacing.sm,
+  },
+  offlineBannerText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.white,
+    fontWeight: theme.typography.fontWeight.semibold,
+    flex: 1,
+  },
+  // GPS accuracy warning box
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.warning + '20',
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.warning,
+  },
+  warningIcon: {
+    fontSize: 20,
+    marginRight: theme.spacing.sm,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.gray900, // High contrast for outdoor visibility
+    fontWeight: theme.typography.fontWeight.medium,
+    // Add text shadow for extreme sunlight readability
+    textShadowColor: 'rgba(255, 255, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
 

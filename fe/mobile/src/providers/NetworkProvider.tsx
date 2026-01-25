@@ -5,10 +5,11 @@
  * Listens to NetInfo changes and dispatches setOnlineStatus action to Redux
  */
 
-import React, { useEffect, type ReactNode } from 'react';
+import React, { useEffect, useRef, type ReactNode } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import { useAppDispatch } from '../store/store';
 import { setOnlineStatus } from '../store/slices/offlineSlice';
+import { syncManager } from '../services/sync';
 
 interface NetworkProviderProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ interface NetworkProviderProps {
  */
 export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element {
   const dispatch = useAppDispatch();
+  const previousOnlineStatus = useRef<boolean | null>(null);
 
   useEffect(() => {
     // Subscribe to network state changes
@@ -36,6 +38,16 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
       });
 
       dispatch(setOnlineStatus(isOnline));
+
+      // Trigger sync when transitioning from offline to online
+      if (previousOnlineStatus.current === false && isOnline) {
+        console.log('[NetworkProvider] Network restored - triggering sync');
+        syncManager.syncNow().catch((error) => {
+          console.error('[NetworkProvider] Sync after reconnect failed:', error);
+        });
+      }
+
+      previousOnlineStatus.current = isOnline;
     });
 
     // Get initial network state
@@ -50,6 +62,15 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
       });
 
       dispatch(setOnlineStatus(isOnline));
+      previousOnlineStatus.current = isOnline;
+
+      // Trigger initial sync if online
+      if (isOnline) {
+        console.log('[NetworkProvider] Initial online state - triggering sync');
+        syncManager.syncNow().catch((error) => {
+          console.error('[NetworkProvider] Initial sync failed:', error);
+        });
+      }
     });
 
     // Cleanup: Unsubscribe on unmount

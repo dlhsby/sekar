@@ -39,7 +39,8 @@ describe('API Client Error Handling', () => {
       const apiError = error as ApiError;
       expect(apiError.status).toBe(400);
       expect(apiError.code).toBe('SHIFT_ALREADY_ACTIVE');
-      expect(apiError.message).toBe('Already clocked in');
+      // Now returns Indonesian error message from mapping
+      expect(apiError.message).toBe('Anda sudah clock-in. Selesaikan shift terlebih dahulu');
       expect(apiError.error).toBe('Bad Request');
       expect(apiError.timestamp).toBe('2026-01-16T10:00:00Z');
       expect(apiError.path).toBe('/api/v1/shifts/clock-in');
@@ -66,7 +67,8 @@ describe('API Client Error Handling', () => {
       const apiError = error as ApiError;
       expect(apiError.status).toBe(401);
       expect(apiError.code).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
-      expect(apiError.message).toBe('Invalid username or password');
+      // Now returns Indonesian error message from mapping
+      expect(apiError.message).toBe('Username atau password salah');
     }
   });
 
@@ -132,7 +134,8 @@ describe('API Client Error Handling', () => {
       const apiError = error as ApiError;
       expect(apiError.status).toBe(500);
       expect(apiError.code).toBe('UNKNOWN_ERROR');
-      expect(apiError.message).toBe('Internal server error');
+      // When no code provided, uses UNKNOWN_ERROR Indonesian message with backend message as fallback
+      expect(apiError.message).toBe('Terjadi kesalahan yang tidak diketahui');
     }
   });
 

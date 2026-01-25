@@ -13,7 +13,10 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  Dimensions,
 } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 import { formatDateTime } from '../../utils/dateUtils';
 import { getReportDetails } from '../../services/api/supervisorApi';
@@ -21,6 +24,8 @@ import PhotoGallery from '../../components/supervisor/PhotoGallery';
 import Card from '../../components/common/Card';
 import ErrorBanner from '../../components/common/ErrorBanner';
 import type { WorkReport } from '../../types/models.types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Report types mapping
 const REPORT_TYPE_LABELS: Record<string, string> = {
@@ -32,7 +37,8 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
 interface ReportDetailScreenProps {
   route: {
     params: {
-      reportId: number;
+      reportId: string;
+      isWorkerView?: boolean; // If true, show in-app map instead of opening external app
     };
   };
   navigation: any;
@@ -43,14 +49,31 @@ interface ReportDetailScreenProps {
  * Full view of report with all details, photos, and location
  */
 function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX.Element {
-  const { reportId } = route.params;
+  const { reportId, isWorkerView = false } = route.params;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<WorkReport | null>(null);
+  const [showInAppMap, setShowInAppMap] = useState(false);
 
   useEffect(() => {
     loadReportDetails();
   }, [reportId]);
+
+  // Set up header with back button
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Kembali"
+          accessibilityRole="button"
+        >
+          <Icon name="arrow-left" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   const loadReportDetails = async () => {
     try {
@@ -72,27 +95,13 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
   };
 
   const handleOpenMaps = () => {
-    if (!report) {return;}
-
-    const latitude = report.gps_lat;
-    const longitude = report.gps_lng;
-    const label = 'Lokasi Laporan';
-
-    const scheme = Platform.select({
-      ios: 'maps:0,0?q=',
-      android: 'geo:0,0?q=',
-    });
-    const latLng = `${latitude},${longitude}`;
-    const url = Platform.select({
-      ios: `${scheme}${label}@${latLng}`,
-      android: `${scheme}${latLng}(${label})`,
-    });
-
-    if (url) {
-      Linking.openURL(url).catch(() => {
-        setError('Tidak dapat membuka aplikasi peta');
-      });
+    if (!report || report.gps_lat == null || report.gps_lng == null) {
+      setError('Data lokasi GPS tidak tersedia');
+      return;
     }
+
+    // Toggle in-app map view
+    setShowInAppMap(!showInAppMap);
   };
 
   if (loading) {
@@ -144,7 +153,7 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
 
         <View style={styles.row}>
           <Text style={styles.label}>Waktu:</Text>
-          <Text style={styles.value}>{formatDateTime(report.report_time)}</Text>
+          <Text style={styles.value}>{formatDateTime(report.created_at)}</Text>
         </View>
 
         {report.condition && (
@@ -188,17 +197,67 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
       {/* Location Card */}
       <Card style={styles.card}>
         <Text style={styles.sectionTitle}>Lokasi</Text>
-        <View style={styles.locationRow}>
-          <Text style={styles.coordinates}>
-            📍 {report.gps_lat.toFixed(6)}, {report.gps_lng.toFixed(6)}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.mapsButton}
-          onPress={handleOpenMaps}
-          testID="open-maps-button">
-          <Text style={styles.mapsButtonText}>Buka di Peta</Text>
-        </TouchableOpacity>
+        {report.gps_lat != null && report.gps_lng != null ? (
+          <>
+            <View style={styles.locationRow}>
+              <Text style={styles.coordinates}>
+                📍 {Number(report.gps_lat).toFixed(6)}, {Number(report.gps_lng).toFixed(6)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.mapsButton}
+              onPress={handleOpenMaps}
+              testID="open-maps-button">
+              <Text style={styles.mapsButtonText}>
+                {showInAppMap ? 'Sembunyikan Peta' : 'Lihat di Peta'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* In-App Map View */}
+            {showInAppMap && (
+              <View style={styles.inAppMapContainer}>
+                <View style={styles.mapHeader}>
+                  <Text style={styles.mapTitle}>Lokasi Laporan</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowInAppMap(false)}
+                    style={styles.closeMapButton}
+                    accessibilityLabel="Tutup peta"
+                    accessibilityRole="button"
+                    testID="close-map-button"
+                  >
+                    <Icon name="close" size={24} color={colors.textPrimary} />
+                  </TouchableOpacity>
+                </View>
+                <MapView
+                  provider={PROVIDER_GOOGLE}
+                  style={styles.map}
+                  initialRegion={{
+                    latitude: Number(report.gps_lat),
+                    longitude: Number(report.gps_lng),
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                  }}
+                  testID="report-location-map"
+                >
+                  <Marker
+                    coordinate={{
+                      latitude: Number(report.gps_lat),
+                      longitude: Number(report.gps_lng),
+                    }}
+                    title="Lokasi Laporan"
+                    description={report.area?.name || 'Lokasi pengambilan laporan'}
+                  />
+                </MapView>
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={styles.locationRow}>
+            <Text style={styles.noLocationText}>
+              📍 Data lokasi GPS tidak tersedia
+            </Text>
+          </View>
+        )}
       </Card>
     </ScrollView>
   );
@@ -287,6 +346,11 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
+  noLocationText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
   mapsButton: {
     backgroundColor: colors.secondary,
     paddingVertical: spacing.sm,
@@ -298,6 +362,39 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
+  },
+  backButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  inAppMapContainer: {
+    marginTop: spacing.md,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  mapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.backgroundSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  mapTitle: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+  closeMapButton: {
+    padding: spacing.xs,
+  },
+  map: {
+    width: '100%',
+    height: 250,
   },
 });
 

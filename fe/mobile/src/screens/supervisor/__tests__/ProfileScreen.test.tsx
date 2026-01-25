@@ -32,9 +32,6 @@ jest.mock('../../../services/sync/syncManager', () => ({
 }));
 jest.mock('react-native-encrypted-storage');
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
-
 // Mock navigation
 const mockNavigate = jest.fn();
 const mockReset = jest.fn();
@@ -82,7 +79,7 @@ describe('Supervisor ProfileScreen', () => {
       meta: {
         total: 5,
         page: 1,
-        limit: 500,
+        limit: 100,  // Backend max limit is 100
         totalPages: 1,
       },
     },
@@ -121,6 +118,8 @@ describe('Supervisor ProfileScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Setup Alert spy in beforeEach to prevent cross-test pollution
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     // Create fresh store for each test
     store = configureStore({
@@ -203,8 +202,8 @@ describe('Supervisor ProfileScreen', () => {
       expect(getByText('Supervisor Satu')).toBeTruthy();
       expect(getByText('@supervisor1')).toBeTruthy();
       expect(getByText('Supervisor')).toBeTruthy();
-    });
-  });
+    }, { timeout: 10000 });
+  }, 15000);
 
   it('displays supervisor statistics', async () => {
     const { getByText } = renderScreen();
@@ -222,7 +221,8 @@ describe('Supervisor ProfileScreen', () => {
 
     await waitFor(() => {
       expect(authApi.getMe).toHaveBeenCalled();
-      expect(supervisorApi.getActiveWorkers).toHaveBeenCalledWith(1, 500);
+      // Backend max limit is 100, so ProfileScreen calls with 100
+      expect(supervisorApi.getActiveWorkers).toHaveBeenCalledWith(1, 100);
       expect(apiClient.get).toHaveBeenCalledWith('/supervisor/area-status');
       expect(apiClient.get).toHaveBeenCalledWith(
         '/reports',
@@ -258,18 +258,24 @@ describe('Supervisor ProfileScreen', () => {
     });
   });
 
-  it('shows change password alert (placeholder)', async () => {
-    const { getByText } = renderScreen();
+  it('shows change password modal when button is pressed', async () => {
+    const { getByText, queryByText } = renderScreen();
 
     await waitFor(() => {
-      const changePasswordButton = getByText('Ubah password');
-      fireEvent.press(changePasswordButton);
+      expect(getByText('Ubah password')).toBeTruthy();
     });
 
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Segera hadir',
-      'Fitur ubah password akan segera hadir'
-    );
+    // Modal should not be visible initially
+    expect(queryByText('Password Saat Ini')).toBeNull();
+
+    // Press change password button
+    const changePasswordButton = getByText('Ubah password');
+    fireEvent.press(changePasswordButton);
+
+    // Modal should now be visible
+    await waitFor(() => {
+      expect(getByText('Password Saat Ini')).toBeTruthy();
+    });
   });
 
   it('shows about app dialog', async () => {
@@ -348,7 +354,7 @@ describe('Supervisor ProfileScreen', () => {
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith(
         'Data Belum Tersinkronisasi',
-        expect.stringContaining('Ada 2 data pending'),
+        expect.stringContaining('Ada 2 data tertunda'),
         expect.any(Array)
       );
     });

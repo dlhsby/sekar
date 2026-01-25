@@ -12,6 +12,7 @@ import axios, {
 import config from '../../constants/config';
 import { getToken, setToken, getRefreshToken, setRefreshToken, clearAll } from '../storage/secureStorage';
 import type { ApiError, ApiResponse } from '../../types/api.types';
+import { getErrorMessage } from '../../constants/errorCodes';
 
 /**
  * Create and configure Axios instance
@@ -28,19 +29,36 @@ const apiClient: AxiosInstance = axios.create({
  * Flag to prevent multiple simultaneous refresh attempts
  */
 let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
+let refreshSubscribers: Array<(token: string | null) => void> = [];
 
 /**
- * Add subscriber to wait for token refresh
+ * Subscriber timeout (30 seconds)
+ * Increased from 10s to handle slow networks and prevent cascading auth failures
  */
-function subscribeTokenRefresh(callback: (token: string) => void): void {
+const SUBSCRIBER_TIMEOUT = 30000;
+
+/**
+ * Add subscriber to wait for token refresh with timeout
+ */
+function subscribeTokenRefresh(callback: (token: string | null) => void): void {
   refreshSubscribers.push(callback);
+
+  // Add timeout to prevent hanging indefinitely
+  setTimeout(() => {
+    const index = refreshSubscribers.indexOf(callback);
+    if (index !== -1) {
+      console.warn('[ApiClient] Token refresh subscriber timed out');
+      refreshSubscribers.splice(index, 1);
+      callback(null); // Notify with null to trigger error handling
+    }
+  }, SUBSCRIBER_TIMEOUT);
 }
 
 /**
  * Notify all subscribers that token has been refreshed
  */
-function onTokenRefreshed(token: string): void {
+function onTokenRefreshed(token: string | null): void {
+  console.log(`[ApiClient] Notifying ${refreshSubscribers.length} subscribers`);
   refreshSubscribers.forEach(callback => callback(token));
   refreshSubscribers = [];
 }
@@ -130,10 +148,14 @@ apiClient.interceptors.response.use(
 
     // Handle specific error cases
     if (error.response) {
+      const errorCode = error.response.data?.code || 'UNKNOWN_ERROR';
+      // Use Indonesian message from error code mapping
+      const localizedMessage = getErrorMessage(errorCode, error.response.data?.message);
+
       const apiError: ApiError = {
         status: error.response.status,
-        code: error.response.data?.code || 'UNKNOWN_ERROR',
-        message: error.response.data?.message || 'An error occurred',
+        code: errorCode,
+        message: localizedMessage, // Indonesian user-friendly message
         error: error.response.data?.error,
         timestamp: error.response.data?.timestamp,
         path: error.response.data?.path,
@@ -172,19 +194,28 @@ apiClient.interceptors.response.use(
             } else {
               console.log('❌ Token refresh failed, clearing auth');
               isRefreshing = false;
+              onTokenRefreshed(null); // Notify all subscribers of failure
               await clearAll();
               return Promise.reject(apiError);
             }
           } catch (refreshError) {
             console.error('❌ Token refresh error:', refreshError);
             isRefreshing = false;
+            onTokenRefreshed(null); // Notify all subscribers of failure
             await clearAll();
             return Promise.reject(apiError);
           }
         } else {
-          // Wait for the current refresh to complete
+          // Wait for the current refresh to complete with timeout protection
           return new Promise((resolve, reject) => {
-            subscribeTokenRefresh((token: string) => {
+            subscribeTokenRefresh((token: string | null) => {
+              if (!token) {
+                // Refresh failed
+                reject(apiError);
+                return;
+              }
+
+              // Refresh succeeded, retry request
               if (originalRequest.headers) {
                 originalRequest.headers.Authorization = `Bearer ${token}`;
               }
@@ -202,7 +233,7 @@ apiClient.interceptors.response.use(
       const networkError: ApiError = {
         status: 0,
         code: 'NETWORK_ERROR',
-        message: 'Network error. Please check your connection.',
+        message: getErrorMessage('NETWORK_ERROR'),
       };
       return Promise.reject(networkError);
     }
@@ -211,7 +242,7 @@ apiClient.interceptors.response.use(
     const unknownError: ApiError = {
       status: -1,
       code: 'UNKNOWN_ERROR',
-      message: error.message || 'An unexpected error occurred',
+      message: getErrorMessage('UNKNOWN_ERROR', error.message),
     };
     return Promise.reject(unknownError);
   },

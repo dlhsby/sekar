@@ -22,6 +22,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token?: string; // Optional for two-token system
   user: User;
 }
 
@@ -29,16 +30,22 @@ export interface MeResponse extends User {
   assigned_area?: Area;
 }
 
+// Users API
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 // Shifts API
 export interface ClockInRequest {
-  area_id: number;
+  area_id: string; // UUID
   gps_lat: number;
   gps_lng: number;
-  selfie_photo: string; // base64 encoded
+  selfie_photo: string; // base64 encoded with data URI prefix
 }
 
 export interface ClockInResponse {
-  shift_id: number;
+  shift_id: string; // UUID (updated to match backend)
   clock_in_time: string;
 }
 
@@ -48,7 +55,7 @@ export interface ClockOutRequest {
 }
 
 export interface ClockOutResponse {
-  shift_id: number;
+  shift_id: string; // UUID (updated to match backend)
   clock_out_time: string;
   total_hours: number;
 }
@@ -61,7 +68,7 @@ export interface CurrentShiftResponse extends Shift {
 
 // Reports API
 export interface CreateReportRequest {
-  shift_id: number;
+  shift_id: string; // UUID (updated to match backend)
   description: string;
   report_type: 'cleaning' | 'planting' | 'maintenance' | 'inspection';
   gps_lat: number;
@@ -70,7 +77,7 @@ export interface CreateReportRequest {
 }
 
 export interface CreateReportResponse {
-  report_id: number;
+  report_id: string; // UUID
   report_time: string;
 }
 
@@ -96,7 +103,7 @@ export interface LocationPoint {
 
 // Backend expects shift_id + locations array (matches CreateLocationBatchDto)
 export interface LocationBatchRequest {
-  shift_id: string;
+  shift_id: string; // UUID - already correct
   locations: LocationPoint[];
 }
 
@@ -117,18 +124,18 @@ export interface ActiveWorkerLocation {
 }
 
 export interface ActiveWorkerArea {
-  id: number;
+  id: string; // UUID (updated to match backend)
   name: string;
 }
 
 export interface ActiveWorkerShift {
-  id: number;
+  id: string; // UUID (updated to match backend)
   clock_in_time: string;
   area: ActiveWorkerArea;
 }
 
 export interface ActiveWorkerData {
-  id: number;
+  id: string; // UUID (updated to match backend)
   username: string;
   full_name: string;
   shift: ActiveWorkerShift;
@@ -147,17 +154,24 @@ export interface PaginatedActiveWorkersResponse {
 }
 
 export interface ReportsFilter {
-  date?: string; // YYYY-MM-DD
-  worker_id?: number;
-  area_id?: number;
+  date?: string; // YYYY-MM-DD - will be converted to from_date/to_date
+  worker_id?: string; // UUID
+  area_id?: string; // UUID (not supported by backend yet)
   area_type?: string;
+  from_date?: string; // YYYY-MM-DD
+  to_date?: string; // YYYY-MM-DD
 }
 
 export interface ReportsListResponse extends WorkReport {
-  worker_name: string;
-  area_name: string;
-  area_type: string;
-  media_urls: string[];
+  // Nested relations (eager-loaded by backend)
+  worker?: User;
+  area?: Area;
+  shift?: Shift;
+  // Legacy flat fields (deprecated - use nested objects above)
+  worker_name?: string;
+  area_name?: string;
+  area_type?: string;
+  media_urls?: string[];
   thumbnail_url?: string;
 }
 
@@ -171,7 +185,7 @@ export interface ReviewReportResponse {
 
 export interface AttendanceFilter {
   date?: string; // YYYY-MM-DD
-  area_id?: number;
+  area_id?: string; // UUID (updated to match backend)
   area_type?: string;
 }
 

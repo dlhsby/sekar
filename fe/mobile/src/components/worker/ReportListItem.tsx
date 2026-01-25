@@ -10,11 +10,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Platform,
 } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
 import { formatDateTime } from '../../utils/dateUtils';
-import type { QueueItemStatus } from '../../services/sync/offlineQueue';
 
 /**
  * Report type labels in Indonesian
@@ -56,7 +54,7 @@ const SYNC_STATUS_CONFIG = {
 };
 
 export interface ReportListItemProps {
-  id: string | number;
+  id: string;
   reportType: string;
   description?: string;
   areaName?: string;
@@ -64,8 +62,9 @@ export interface ReportListItemProps {
   syncStatus: 'synced' | 'pending' | 'failed';
   photoUrl?: string;
   queueId?: string;
+  reportId?: string; // UUID for synced reports
   onRetry?: (queueId: string) => void;
-  onPress?: () => void;
+  onPress?: (reportId: string) => void;
 }
 
 export function ReportListItem({
@@ -77,6 +76,7 @@ export function ReportListItem({
   syncStatus,
   photoUrl,
   queueId,
+  reportId,
   onRetry,
   onPress,
 }: ReportListItemProps): React.JSX.Element {
@@ -87,6 +87,18 @@ export function ReportListItem({
   const handleRetry = (): void => {
     if (queueId && onRetry) {
       onRetry(queueId);
+    }
+  };
+
+  const handlePress = (): void => {
+    if (onPress && reportId) {
+      // Validate UUID format before navigation
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(reportId)) {
+        onPress(reportId);
+      } else {
+        console.error('[ReportListItem] Invalid UUID format, cannot navigate:', reportId);
+      }
     }
   };
 
@@ -161,7 +173,7 @@ export function ReportListItem({
       <TouchableOpacity
         testID="report-item"
         style={styles.wrapper}
-        onPress={onPress}
+        onPress={handlePress}
         activeOpacity={0.7}>
         {content}
       </TouchableOpacity>

@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Platform,
+  SafeAreaView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,7 +39,8 @@ type SyncStatus = 'synced' | 'pending' | 'failed';
  * Report with sync status
  */
 interface ReportWithStatus {
-  id: string;
+  id: string; // Composite ID for list (synced-{uuid} or queue-{id})
+  reportId?: string; // UUID for synced reports
   reportType: string;
   description?: string;
   createdAt: string;
@@ -97,16 +98,25 @@ export function ReportsListScreen({
         }
 
         syncedReports = apiResult.data
-          ? apiResult.data.map((report: MyReportsResponse) => ({
-              id: `synced-${report.id}`,
-              reportType: 'task_completion', // Default, adjust based on your report type field
-              description: report.notes,
-              createdAt: report.created_at,
-              areaName: report.area?.name,
-              photoUrl: report.media_urls?.[0],
-              syncStatus: 'synced' as SyncStatus,
-              originalData: report,
-            }))
+          ? apiResult.data.map((report: MyReportsResponse) => {
+              console.log('[ReportsListScreen] Processing report from API:', {
+                id: report.id,
+                shift_id: report.shift_id,
+                worker_id: report.worker_id,
+                area_id: report.area_id,
+              });
+              return {
+                id: `synced-${report.id}`, // Composite ID for list key
+                reportId: report.id, // UUID for navigation
+                reportType: 'task_completion', // Default, adjust based on your report type field
+                description: report.notes,
+                createdAt: report.created_at,
+                areaName: report.area?.name,
+                photoUrl: report.media_urls?.[0],
+                syncStatus: 'synced' as SyncStatus,
+                originalData: report,
+              };
+            })
           : [];
 
         // Cache synced reports for offline access
@@ -232,6 +242,22 @@ export function ReportsListScreen({
   }, [navigation]);
 
   /**
+   * Navigate to report detail
+   */
+  const handleReportPress = useCallback((reportId: string): void => {
+    console.log('[ReportsListScreen] Navigating to report detail with UUID:', reportId);
+    // Validate that reportId is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(reportId)) {
+      console.error('[ReportsListScreen] Invalid report ID format. Expected UUID, got:', reportId);
+      console.error('[ReportsListScreen] This may indicate old test data or a data migration issue.');
+      setError('Format ID laporan tidak valid. Silakan hubungi administrator.');
+      return;
+    }
+    navigation.navigate('ReportDetail', { reportId, isWorkerView: true });
+  }, [navigation]);
+
+  /**
    * Render status filter button
    */
   const renderFilterButton = (filter: StatusFilter): React.JSX.Element => {
@@ -260,6 +286,7 @@ export function ReportsListScreen({
     ({ item }: { item: ReportWithStatus }) => (
       <ReportListItem
         id={item.id}
+        reportId={item.reportId}
         reportType={item.reportType}
         description={item.description}
         areaName={item.areaName}
@@ -268,9 +295,10 @@ export function ReportsListScreen({
         photoUrl={item.photoUrl}
         queueId={item.queueId}
         onRetry={handleRetry}
+        onPress={item.syncStatus === 'synced' ? handleReportPress : undefined}
       />
     ),
-    [handleRetry]
+    [handleRetry, handleReportPress]
   );
 
   /**
@@ -307,17 +335,9 @@ export function ReportsListScreen({
         <Text style={styles.emptyTitle}>Belum Ada Laporan</Text>
         <Text style={styles.emptyDescription}>
           {statusFilter === 'all'
-            ? 'Anda belum membuat laporan hari ini'
+            ? 'Anda belum membuat laporan hari ini.\nGunakan tombol di bawah untuk membuat laporan.'
             : `Tidak ada laporan dengan status "${STATUS_FILTER_LABELS[statusFilter]}"`}
         </Text>
-        {statusFilter === 'all' && (
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={handleCreateReport}
-            activeOpacity={0.7}>
-            <Text style={styles.createButtonText}>+ Buat Laporan Baru</Text>
-          </TouchableOpacity>
-        )}
       </View>
     );
   };
@@ -343,26 +363,8 @@ export function ReportsListScreen({
     </View>
   );
 
-  /**
-   * Render list footer
-   */
-  const renderListFooter = (): React.JSX.Element | null => {
-    if (filteredReports.length === 0) {
-      return null;
-    }
-
-    return (
-      <TouchableOpacity
-        style={styles.createButton}
-        onPress={handleCreateReport}
-        activeOpacity={0.7}>
-        <Text style={styles.createButtonText}>+ Buat Laporan Baru</Text>
-      </TouchableOpacity>
-    );
-  };
-
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         testID="reports-list"
         data={filteredReports}
@@ -371,7 +373,6 @@ export function ReportsListScreen({
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmptyState}
-        ListFooterComponent={renderListFooter}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -381,7 +382,19 @@ export function ReportsListScreen({
           />
         }
       />
-    </View>
+      {/* Fixed bottom button - always visible */}
+      <View style={styles.bottomButtonContainer}>
+        <TouchableOpacity
+          style={styles.fixedCreateButton}
+          onPress={handleCreateReport}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Buat Laporan Baru"
+          accessibilityHint="Membuat laporan kerja baru">
+          <Text style={styles.createButtonText}>+ Buat Laporan Baru</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -392,7 +405,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg, // Reduced since we have fixed button at bottom
+    flexGrow: 1,
   },
   header: {
     marginBottom: spacing.md,
@@ -478,6 +492,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.lg,
+  },
+  bottomButtonContainer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.backgroundSecondary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  fixedCreateButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    ...shadows.md,
   },
   createButton: {
     backgroundColor: colors.primary,

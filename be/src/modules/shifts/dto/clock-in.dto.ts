@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsUUID, Min, Max } from 'class-validator';
+import { IsNumber, IsString, IsUUID, Min, Max, MaxLength, Matches } from 'class-validator';
 
 /**
  * Clock-In DTO
@@ -38,9 +38,13 @@ export class ClockInDto {
   gps_lng: number;
 
   @ApiProperty({
-    description: 'Base64 encoded selfie photo (data:image/jpeg;base64,...)',
+    description: 'Base64 encoded selfie photo (data:image/jpeg;base64,...). Max size ~7.5MB (10MB base64 encoded)',
     example: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...',
   })
   @IsString()
+  @MaxLength(10_000_000, { message: 'Photo size must not exceed ~7.5MB (10MB base64 encoded)' })
+  @Matches(/^data:image\/(jpeg|jpg|png);base64,[A-Za-z0-9+/=]+$/, {
+    message: 'Invalid base64 image format. Must be data:image/(jpeg|jpg|png);base64,<data>',
+  })
   selfie_photo: string;
 }

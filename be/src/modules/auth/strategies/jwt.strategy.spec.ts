@@ -58,9 +58,31 @@ describe('JwtStrategy', () => {
   });
 
   describe('constructor', () => {
-    it('should use default JWT secret when not configured', async () => {
+    it('should throw error when JWT_SECRET is not configured', async () => {
       const mockConfigWithoutSecret = {
         get: jest.fn().mockReturnValue(undefined),
+      };
+
+      await expect(
+        Test.createTestingModule({
+          providers: [
+            JwtStrategy,
+            {
+              provide: getRepositoryToken(User),
+              useValue: mockUserRepository,
+            },
+            {
+              provide: ConfigService,
+              useValue: mockConfigWithoutSecret,
+            },
+          ],
+        }).compile(),
+      ).rejects.toThrow('JWT_SECRET environment variable is required. Application cannot start without it.');
+    });
+
+    it('should initialize successfully when JWT_SECRET is configured', async () => {
+      const mockConfigWithSecret = {
+        get: jest.fn().mockReturnValue('test-secret-key'),
       };
 
       const testModule = await Test.createTestingModule({
@@ -72,14 +94,14 @@ describe('JwtStrategy', () => {
           },
           {
             provide: ConfigService,
-            useValue: mockConfigWithoutSecret,
+            useValue: mockConfigWithSecret,
           },
         ],
       }).compile();
 
-      const strategyWithDefault = testModule.get<JwtStrategy>(JwtStrategy);
-      expect(strategyWithDefault).toBeDefined();
-      expect(mockConfigWithoutSecret.get).toHaveBeenCalledWith('JWT_SECRET');
+      const strategyWithSecret = testModule.get<JwtStrategy>(JwtStrategy);
+      expect(strategyWithSecret).toBeDefined();
+      expect(mockConfigWithSecret.get).toHaveBeenCalledWith('JWT_SECRET');
 
       await testModule.close();
     });

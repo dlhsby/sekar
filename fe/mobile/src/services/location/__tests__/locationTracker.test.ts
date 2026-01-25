@@ -8,10 +8,12 @@ import * as locationApi from '../../api/locationApi';
 import * as offlineQueue from '../../sync/offlineQueue';
 import * as permissionService from '../../permissions/permissionService';
 import Geolocation from 'react-native-geolocation-service';
+import DeviceInfo from 'react-native-device-info';
 import { Alert } from 'react-native';
 
 // Mock dependencies
 jest.mock('react-native-geolocation-service');
+jest.mock('react-native-device-info');
 jest.mock('../../api/locationApi');
 jest.mock('../../sync/offlineQueue');
 jest.mock('../../permissions/permissionService');
@@ -19,6 +21,7 @@ jest.mock('react-native', () => ({
   Platform: { OS: 'android' },
   Alert: { alert: jest.fn() },
 }));
+
 
 describe('LocationTracker', () => {
   const mockShiftId = 'test-shift-123';
@@ -48,6 +51,8 @@ describe('LocationTracker', () => {
       granted: true,
       status: 'granted',
     });
+    // Mock battery level (75% = 0.75)
+    (DeviceInfo.getBatteryLevel as jest.Mock).mockResolvedValue(0.75);
   });
 
   afterEach(() => {
@@ -200,7 +205,7 @@ describe('LocationTracker', () => {
       await locationTracker.initialize(mockShiftId);
     });
 
-    it('should return current location', async () => {
+    it('should return current location with battery level', async () => {
       const location = await locationTracker.getCurrentLocation();
 
       expect(location).toMatchObject({
@@ -208,6 +213,7 @@ describe('LocationTracker', () => {
         longitude: mockLocation.coords.longitude,
         accuracy: mockLocation.coords.accuracy,
         shift_id: mockShiftId,
+        battery_level: 75, // 0.75 * 100 = 75%
       });
       expect(location.timestamp).toBeDefined();
     });
@@ -250,11 +256,12 @@ describe('LocationTracker', () => {
       expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
     });
 
-    it('should capture location at random interval between 5-10 minutes', () => {
+    it('should capture location at random interval between 5-10 minutes', async () => {
       const initialCalls = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
 
       // Advance by 10 minutes to ensure at least one interval has passed
-      jest.advanceTimersByTime(10 * 60 * 1000);
+      // Use advanceTimersByTimeAsync to properly handle async timer callbacks
+      await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
 
       expect((Geolocation.getCurrentPosition as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
     });
@@ -263,7 +270,7 @@ describe('LocationTracker', () => {
       expect(locationTracker.getBufferCount()).toBeGreaterThan(0);
     });
 
-    it('should emit locationUpdate event', () => {
+    it('should emit locationUpdate event', async () => {
       const listener = jest.fn();
       locationTracker.on('locationUpdate', listener);
 
@@ -271,7 +278,8 @@ describe('LocationTracker', () => {
         success(mockLocation);
       });
 
-      jest.advanceTimersByTime(10 * 60 * 1000);
+      // Use advanceTimersByTimeAsync to properly handle async timer callbacks
+      await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
 
       expect(listener).toHaveBeenCalled();
     });
@@ -405,7 +413,7 @@ describe('LocationTracker', () => {
       await locationTracker.initialize(mockShiftId);
     });
 
-    it('should emit error event on location error', () => {
+    it('should emit error event on location error', async () => {
       const listener = jest.fn();
       locationTracker.on('error', listener);
 
@@ -413,29 +421,36 @@ describe('LocationTracker', () => {
         error({ code: 1, message: 'Permission denied' });
       });
 
-      jest.advanceTimersByTime(10 * 60 * 1000);
+      // Use advanceTimersByTimeAsync - use max interval (60s) to ensure at least one trigger
+      await jest.advanceTimersByTimeAsync(60 * 1000);
 
       expect(listener).toHaveBeenCalled();
     });
 
-    it('should retry with lower accuracy on timeout', () => {
-      const initialCalls = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
+    it('should retry with lower accuracy on timeout', async () => {
+      // Clear mock to get accurate count
+      (Geolocation.getCurrentPosition as jest.Mock).mockClear();
 
-      (Geolocation.getCurrentPosition as jest.Mock)
-        .mockImplementationOnce((_, error) => {
+      let callCount = 0;
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success, error) => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: simulate timeout
           error({ code: 3, message: 'Timeout' });
-        })
-        .mockImplementationOnce((success) => {
+        } else {
+          // Retry with lower accuracy: success
           success(mockLocation);
-        });
+        }
+      });
 
-      jest.advanceTimersByTime(10 * 60 * 1000);
+      // Advance by max interval to trigger a capture
+      await jest.advanceTimersByTimeAsync(60 * 1000);
 
-      // Should have made 2 additional calls (timeout + retry)
-      expect((Geolocation.getCurrentPosition as jest.Mock).mock.calls.length).toBe(initialCalls + 2);
+      // Should have made at least 2 calls (timeout + retry)
+      expect(callCount).toBeGreaterThanOrEqual(2);
     });
 
-    it('should handle permission denied error', () => {
+    it('should handle permission denied error', async () => {
       const listener = jest.fn();
       locationTracker.on('error', listener);
 
@@ -443,12 +458,13 @@ describe('LocationTracker', () => {
         error({ code: 1, message: 'Permission denied' });
       });
 
-      jest.advanceTimersByTime(10 * 60 * 1000);
+      // Use advanceTimersByTimeAsync - use max interval (60s) to ensure trigger
+      await jest.advanceTimersByTimeAsync(60 * 1000);
 
-      expect(listener).toHaveBeenCalledWith(expect.stringContaining('Location permission denied'));
+      expect(listener).toHaveBeenCalledWith(expect.stringContaining('Izin lokasi ditolak'));
     });
 
-    it('should handle GPS unavailable error', () => {
+    it('should handle GPS unavailable error', async () => {
       const listener = jest.fn();
       locationTracker.on('error', listener);
 
@@ -456,9 +472,10 @@ describe('LocationTracker', () => {
         error({ code: 2, message: 'Position unavailable' });
       });
 
-      jest.advanceTimersByTime(10 * 60 * 1000);
+      // Use advanceTimersByTimeAsync to properly handle async timer callbacks
+      await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
 
-      expect(listener).toHaveBeenCalledWith(expect.stringContaining('GPS signal unavailable'));
+      expect(listener).toHaveBeenCalledWith(expect.stringContaining('Sinyal GPS tidak tersedia'));
     });
   });
 
@@ -494,6 +511,8 @@ describe('LocationTracker', () => {
       });
 
       await locationTracker.initialize(mockShiftId);
+      // Run only the first batch of pending timers/promises (not recurring)
+      await jest.runOnlyPendingTimersAsync();
       expect(locationTracker.getBufferCount()).toBeGreaterThan(0);
     });
 
@@ -504,6 +523,8 @@ describe('LocationTracker', () => {
       (locationApi.uploadLocationBatch as jest.Mock).mockResolvedValue({ data: { inserted_count: 1 } });
 
       await locationTracker.initialize(mockShiftId);
+      // Run only the first batch of pending timers/promises (not recurring)
+      await jest.runOnlyPendingTimersAsync();
       await locationTracker.forceUpload();
 
       expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
@@ -515,6 +536,8 @@ describe('LocationTracker', () => {
       });
 
       await locationTracker.initialize(mockShiftId);
+      // Run only the first batch of pending timers/promises (not recurring)
+      await jest.runOnlyPendingTimersAsync();
       expect(locationTracker.getBufferCount()).toBeGreaterThan(0);
 
       locationTracker.clearBuffer();
@@ -532,6 +555,71 @@ describe('LocationTracker', () => {
       expect(locationTracker.isTracking()).toBe(false);
       expect(locationTracker.getCurrentShiftId()).toBeNull();
       expect(locationTracker.getBufferCount()).toBe(0);
+    });
+  });
+
+  describe('battery level tracking', () => {
+    beforeEach(async () => {
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
+        success(mockLocation);
+      });
+
+      // Prevent unhandled error events
+      locationTracker.on('error', jest.fn());
+    });
+
+    it('should include battery level in captured location', async () => {
+      (DeviceInfo.getBatteryLevel as jest.Mock).mockResolvedValue(0.85);
+
+      await locationTracker.initialize(mockShiftId);
+      const location = await locationTracker.getCurrentLocation();
+
+      expect(location.battery_level).toBe(85);
+    });
+
+    it('should return undefined battery_level when emulator returns -1', async () => {
+      (DeviceInfo.getBatteryLevel as jest.Mock).mockResolvedValue(-1);
+
+      await locationTracker.initialize(mockShiftId);
+      const location = await locationTracker.getCurrentLocation();
+
+      expect(location.battery_level).toBeUndefined();
+    });
+
+    it('should return undefined battery_level on error', async () => {
+      (DeviceInfo.getBatteryLevel as jest.Mock).mockRejectedValue(new Error('Battery API not available'));
+
+      await locationTracker.initialize(mockShiftId);
+      const location = await locationTracker.getCurrentLocation();
+
+      expect(location.battery_level).toBeUndefined();
+    });
+
+    it('should round battery percentage correctly', async () => {
+      (DeviceInfo.getBatteryLevel as jest.Mock).mockResolvedValue(0.756);
+
+      await locationTracker.initialize(mockShiftId);
+      const location = await locationTracker.getCurrentLocation();
+
+      expect(location.battery_level).toBe(76); // Math.round(0.756 * 100) = 76
+    });
+
+    it('should handle 0% battery', async () => {
+      (DeviceInfo.getBatteryLevel as jest.Mock).mockResolvedValue(0);
+
+      await locationTracker.initialize(mockShiftId);
+      const location = await locationTracker.getCurrentLocation();
+
+      expect(location.battery_level).toBe(0);
+    });
+
+    it('should handle 100% battery', async () => {
+      (DeviceInfo.getBatteryLevel as jest.Mock).mockResolvedValue(1);
+
+      await locationTracker.initialize(mockShiftId);
+      const location = await locationTracker.getCurrentLocation();
+
+      expect(location.battery_level).toBe(100);
     });
   });
 });

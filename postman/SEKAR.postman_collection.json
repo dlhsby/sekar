@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "1e98228b-6063-442d-a730-5cb0a62dc3dc",
     "name": "SEKAR API",
-    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 37\n- **Authentication:** JWT Bearer Token\n- **Base URL:** http://localhost:3000/api/v1\n\n## Test Users\n- admin / admin123 (Admin)\n- supervisor1 / supervisor123 (Supervisor)\n- worker1,2,3 / worker123 (Worker)\n\n## Collection Structure\n- 00. Health Check\n- 01. Authentication\n- 02. Users Management\n- 03. Area Types\n- 04. Areas Management\n- 05. Worker Assignments\n- 06. Shifts - Worker Flow\n- 07. Shifts - Supervisor View\n- 08. Reports - Worker Flow\n- 09. Reports - Admin/Supervisor\n- 10. Location Tracking\n- 11. Supervisor Dashboard",
+    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 41\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n- **Backend:** NestJS 11.x, Node.js >=24.13.0\n- **Database:** PostgreSQL 14+ with TypeORM\n- **Tests:** 416 passing (99.06% coverage)\n\n## Test Users\n- admin / admin123 (Admin)\n- supervisor1 / supervisor123 (Supervisor)\n- worker1,2,3 / worker123 (Worker)\n\n## Collection Structure\n- 00. Health Check (2 endpoints)\n- 01. Authentication (4 endpoints: login, refresh, me, logout)\n- 02. Users Management (6 endpoints + change password)\n- 03. Area Types (5 endpoints)\n- 04. Areas Management (5 endpoints)\n- 05. Worker Assignments (2 endpoints)\n- 06. Shifts - Worker Flow (5 endpoints)\n- 07. Reports - Worker/Admin (6 endpoints)\n- 08. Location Tracking (3 endpoints)\n- 09. Supervisor Dashboard (3 endpoints)\n\n## Phase 1 MVP Status\n- ✅ Complete (January 24, 2026)\n- ✅ Node.js v24.13 compatible\n- ✅ 31 standardized error codes\n- ✅ Rate limiting (100 req/min global, 5 req/min auth)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -812,6 +812,146 @@
               "protocol": "{{host}}",
               "host": ["{{base_url}}{{port}}"],
               "path": ["api", "{{version}}", "area-types", "{{area_type_id_park}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Area Type (Admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique code for testing",
+                  "const timestamp = Date.now();",
+                  "pm.environment.set('test_area_type_code', 'test_type_' + timestamp);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has area type data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('code');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "    pm.expect(json).to.have.property('created_at');",
+                  "});",
+                  "",
+                  "pm.test('Code matches requested code', function() {",
+                  "    const json = pm.response.json();",
+                  "    const requestedCode = pm.environment.get('test_area_type_code');",
+                  "    pm.expect(json.code).to.eql(requestedCode);",
+                  "});",
+                  "",
+                  "// Save created area type ID",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('created_area_type_id', json.id);",
+                  "    console.log('Created area type: ' + json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{test_area_type_code}}\",\n  \"name\": \"Test Area Type\",\n  \"description\": \"A test area type for automated testing\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "area-types"]
+            }
+          }
+        },
+        {
+          "name": "Update Area Type (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has updated data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('updated_at');",
+                  "});",
+                  "",
+                  "pm.test('Name was updated', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.name).to.include('Updated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Test Area Type\",\n  \"description\": \"Updated description for the test area type\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types/{{created_area_type_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "area-types", "{{created_area_type_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Area Type (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Clear the created area type ID",
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.unset('created_area_type_id');",
+                  "    pm.environment.unset('test_area_type_code');",
+                  "    console.log('Area type deleted and ID cleared');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types/{{created_area_type_id}}",
+              "protocol": "{{host}}",
+              "host": ["{{base_url}}{{port}}"],
+              "path": ["api", "{{version}}", "area-types", "{{created_area_type_id}}"]
             }
           }
         }

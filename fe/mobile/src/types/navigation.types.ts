@@ -23,7 +23,9 @@ export type WorkerTabParamList = {
   ClockInOut: undefined;
   Report: undefined;
   ReportsList: undefined;
+  ReportDetail: { reportId: string; isWorkerView?: boolean };
   Profile: undefined;
+  ShiftHistory: undefined;
 };
 
 export type WorkerTabScreenProps<T extends keyof WorkerTabParamList> =
@@ -36,7 +38,7 @@ export type WorkerTabScreenProps<T extends keyof WorkerTabParamList> =
 export type SupervisorTabParamList = {
   MapDashboard: undefined;
   ReportsList: undefined;
-  ReportDetail: { reportId: number };
+  ReportDetail: { reportId: string; isWorkerView?: boolean };
   Attendance: undefined;
   Profile: undefined;
 };

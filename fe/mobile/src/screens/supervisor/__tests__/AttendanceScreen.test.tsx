@@ -12,9 +12,6 @@ import * as supervisorApi from '../../../services/api/supervisorApi';
 // Mock the API
 jest.mock('../../../services/api/supervisorApi');
 
-// Mock Alert
-jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-
 // Mock react-native-safe-area-context
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
@@ -49,6 +46,8 @@ describe('AttendanceScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Setup Alert spy in beforeEach to prevent cross-test pollution
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     (supervisorApi.getAttendance as jest.Mock).mockResolvedValue({
       data: mockAttendanceData,
     });

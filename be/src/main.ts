@@ -31,13 +31,17 @@ function getLocalIpAddress(): string {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Increase body size limit for base64 photo uploads (50MB)
-  app.use(bodyParser.json({ limit: '50mb' }));
-  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+  // Increase body size limit for base64 photo uploads (15MB max for 5 photos at ~3MB each)
+  app.use(bodyParser.json({ limit: '15mb' }));
+  app.use(bodyParser.urlencoded({ limit: '15mb', extended: true }));
 
-  // Enable CORS
+  // Enable CORS with secure defaults
+  const corsOrigin = process.env.CORS_ORIGIN?.split(',');
+  if (!corsOrigin && process.env.NODE_ENV === 'production') {
+    throw new Error('CORS_ORIGIN must be set in production environment');
+  }
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: corsOrigin || ['http://localhost:3001', 'http://localhost:19006'],
     credentials: true,
   });
 

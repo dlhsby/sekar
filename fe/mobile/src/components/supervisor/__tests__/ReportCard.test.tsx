@@ -229,6 +229,70 @@ describe('ReportCard', () => {
       expect(screen.getByText('Area')).toBeTruthy();
       expect(screen.getByText('Insiden')).toBeTruthy();
     });
+
+    it('should handle undefined worker_name gracefully', () => {
+      const report = {
+        ...defaultReport,
+        worker_name: undefined,
+      };
+      render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
+
+      expect(screen.getByText('Nama tidak tersedia')).toBeTruthy();
+      expect(screen.getByText('??')).toBeTruthy(); // Default initials
+    });
+
+    it('should handle null worker_name gracefully', () => {
+      const report = {
+        ...defaultReport,
+        worker_name: null,
+      };
+      render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
+
+      expect(screen.getByText('Nama tidak tersedia')).toBeTruthy();
+      expect(screen.getByText('??')).toBeTruthy();
+    });
+
+    it('should handle empty string worker_name', () => {
+      const report = {
+        ...defaultReport,
+        worker_name: '',
+      };
+      render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
+
+      expect(screen.getByText('Nama tidak tersedia')).toBeTruthy();
+      expect(screen.getByText('??')).toBeTruthy();
+    });
+
+    it('should handle whitespace-only worker_name', () => {
+      const report = {
+        ...defaultReport,
+        worker_name: '   ',
+      };
+      render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
+
+      expect(screen.getByText('Nama tidak tersedia')).toBeTruthy();
+      expect(screen.getByText('??')).toBeTruthy();
+    });
+
+    it('should handle undefined area_name gracefully', () => {
+      const report = {
+        ...defaultReport,
+        area_name: undefined,
+      };
+      render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
+
+      expect(screen.getByText('Area tidak tersedia')).toBeTruthy();
+    });
+
+    it('should handle null area_name gracefully', () => {
+      const report = {
+        ...defaultReport,
+        area_name: null,
+      };
+      render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
+
+      expect(screen.getByText('Area tidak tersedia')).toBeTruthy();
+    });
   });
 
   describe('testID', () => {

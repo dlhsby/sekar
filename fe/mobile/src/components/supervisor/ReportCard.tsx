@@ -3,8 +3,9 @@
  * Display individual report in the list
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, spacing, borderRadius, typography, shadows } from '../../constants/theme';
 import { getRelativeTime } from '../../utils/dateUtils';
 
@@ -23,8 +24,8 @@ const REPORT_TYPE_COLORS: Record<string, string> = {
 
 export interface ReportCardData {
   id: number;
-  worker_name: string;
-  area_name: string;
+  worker_name?: string | null;
+  area_name?: string | null;
   report_type: 'task_completion' | 'incident' | 'maintenance_request';
   created_at: string;
   thumbnail_url?: string;
@@ -42,12 +43,21 @@ interface ReportCardProps {
  * Shows worker name, area, type badge, time, and thumbnail
  */
 export function ReportCard({ report, onPress, testID }: ReportCardProps): JSX.Element {
-  const getInitials = (name: string): string => {
-    const parts = name.split(' ');
+  const [imageError, setImageError] = useState(false);
+
+  const getInitials = (name?: string | null): string => {
+    // Handle undefined, null, or empty string
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return '??';
+    }
+
+    const trimmedName = name.trim();
+    const parts = trimmedName.split(' ');
+
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return trimmedName.substring(0, 2).toUpperCase();
   };
 
   const reportTypeLabel = REPORT_TYPE_LABELS[report.report_type] || report.report_type;
@@ -70,10 +80,10 @@ export function ReportCard({ report, onPress, testID }: ReportCardProps): JSX.El
         {/* Content */}
         <View style={styles.content}>
           <Text style={styles.workerName} numberOfLines={1}>
-            {report.worker_name}
+            {report.worker_name?.trim() || 'Nama tidak tersedia'}
           </Text>
           <Text style={styles.areaName} numberOfLines={1}>
-            {report.area_name}
+            {report.area_name?.trim() || 'Area tidak tersedia'}
           </Text>
           <View style={styles.metaRow}>
             <View style={[styles.badge, { backgroundColor: reportTypeColor }]}>
@@ -88,13 +98,18 @@ export function ReportCard({ report, onPress, testID }: ReportCardProps): JSX.El
 
       <View style={styles.rightSection}>
         {/* Thumbnail if exists */}
-        {report.thumbnail_url && (
+        {report.thumbnail_url && !imageError ? (
           <Image
             source={{ uri: report.thumbnail_url }}
             style={styles.thumbnail}
             resizeMode="cover"
+            onError={() => setImageError(true)}
           />
-        )}
+        ) : report.thumbnail_url ? (
+          <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+            <Icon name="image-off-outline" size={24} color={colors.gray400} />
+          </View>
+        ) : null}
 
         {/* Chevron icon */}
         <Text style={styles.chevron}>›</Text>
@@ -186,6 +201,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     marginRight: spacing.sm,
     backgroundColor: colors.gray200,
+  },
+  thumbnailPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.gray100,
+    borderWidth: 1,
+    borderColor: colors.gray300,
+    borderStyle: 'dashed',
   },
   chevron: {
     fontSize: 28,

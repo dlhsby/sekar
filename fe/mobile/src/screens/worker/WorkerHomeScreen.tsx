@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,17 @@ import {
   RefreshControl,
   StyleSheet,
   SafeAreaView,
+  AccessibilityInfo,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Button, Card, SyncStatusIndicator, LoadingSpinner } from '../../components/common';
+import { Button, Card, SyncStatusIndicator, LoadingSpinner, ErrorBanner } from '../../components/common';
 import { theme } from '../../constants/theme';
 import { useAppDispatch, useAppSelector } from '../../store/store';
-import { shiftsApi } from '../../services/api';
+import { shiftsApi, reportsApi } from '../../services/api';
 import { setCurrentShift, setError } from '../../store/slices/shiftSlice';
-import { formatTime, calculateDuration } from '../../utils/dateUtils';
+import { setReports } from '../../store/slices/reportSlice';
+import { formatTime, formatDateTime, calculateDuration, isToday } from '../../utils/dateUtils';
+import { useLocationPermission } from '../../hooks';
 
 /**
  * Worker Home Screen - Main dashboard for workers
@@ -25,6 +28,7 @@ export function WorkerHomeScreen(): JSX.Element {
 
   const { user, assignedArea } = useAppSelector((state) => state.auth);
   const { currentShift } = useAppSelector((state) => state.shift);
+  const { reports } = useAppSelector((state) => state.report);
   const { isOnline, isSyncing, pendingShiftsCount, pendingReportsCount } = useAppSelector(
     (state) => state.offline
   );
@@ -33,20 +37,51 @@ export function WorkerHomeScreen(): JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
 
-  // Load current shift on mount
+  // Issue 8: Track last announced minute for accessibility (announce every 5 minutes)
+  const lastAnnouncedMinuteRef = useRef<number>(-1);
+
+  // Monitor location permission and GPS status during active shift
+  const {
+    isLocationAvailable,
+    permissionGranted,
+    gpsEnabled,
+    showPermissionAlert,
+    showGpsAlert,
+    refresh: refreshLocationStatus,
+  } = useLocationPermission({
+    // Only monitor when there's an active shift
+    enableMonitoring: !!currentShift,
+    showAlerts: true,
+    onPermissionLost: () => {
+      console.log('[WorkerHomeScreen] Location permission was revoked');
+    },
+    onGpsDisabled: () => {
+      console.log('[WorkerHomeScreen] GPS was disabled');
+    },
+  });
+
+  // Calculate today's reports count from Redux state
+  const todayReportsCount = useMemo(() => {
+    return reports.filter((report) => isToday(report.created_at)).length;
+  }, [reports]);
+
+  // Load current shift and reports on mount
   useEffect(() => {
     loadCurrentShift();
+    loadTodayReports();
   }, []);
 
-  // Update timer every second if shift is active
-  // Fix: Use currentShift?.id as dependency to prevent multiple intervals
+  // Update timer every second for real-time display
+  // Issue 5: Using currentShift?.id as dependency - stable unique identifier for the shift
   useEffect(() => {
     if (!currentShift) {
       setTimer('00:00:00');
+      lastAnnouncedMinuteRef.current = -1;
       return;
     }
 
-    const interval = setInterval(() => {
+    // Update immediately
+    const updateTimer = () => {
       const elapsed = Date.now() - new Date(currentShift.clock_in_time).getTime();
       const hours = Math.floor(elapsed / 3600000);
       const minutes = Math.floor((elapsed % 3600000) / 60000);
@@ -55,7 +90,21 @@ export function WorkerHomeScreen(): JSX.Element {
       setTimer(
         `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
       );
-    }, 1000);
+
+      // Issue 8: Announce every 5 minutes for screen reader users
+      const totalMinutes = hours * 60 + minutes;
+      if (totalMinutes > 0 && totalMinutes % 5 === 0 && totalMinutes !== lastAnnouncedMinuteRef.current) {
+        lastAnnouncedMinuteRef.current = totalMinutes;
+        AccessibilityInfo.announceForAccessibility(
+          `Waktu shift: ${hours} jam ${minutes} menit`
+        );
+      }
+    };
+
+    updateTimer(); // Initial update
+
+    // Update every 1 second for real-time timer display
+    const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
   }, [currentShift?.id]);
@@ -65,22 +114,58 @@ export function WorkerHomeScreen(): JSX.Element {
   const loadCurrentShift = async () => {
     try {
       setLoading(true);
-      const shift = await shiftsApi.getCurrentShift();
-      dispatch(setCurrentShift(shift));
-    } catch (error: any) {
-      // No active shift is not an error - it's expected
-      if (error.response?.status !== 404) {
-        dispatch(setError(error.message || 'Failed to load shift'));
+      const response = await shiftsApi.getCurrentShift();
+
+      // Check if API returned an error
+      if (response.error) {
+        // API error - log warning but DON'T clear cached shift state
+        // This preserves the shift data on network errors during refresh
+        console.warn('[WorkerHomeScreen] Failed to load shift:', response.error);
+        dispatch(setError(response.error));
+        return; // Keep existing shift state
       }
-      dispatch(setCurrentShift(null));
+
+      // Success - update with server data (could be null if no active shift)
+      dispatch(setCurrentShift(response.data ?? null));
+    } catch (error: any) {
+      // Unexpected error (should rarely happen as API client catches most errors)
+      // Don't clear shift state on network errors to preserve offline experience
+      console.warn('[WorkerHomeScreen] Unexpected error loading shift:', error.message);
+      dispatch(setError(error.message || 'Failed to load shift'));
     } finally {
       setLoading(false);
     }
   };
 
+  const loadTodayReports = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const response = await reportsApi.getMyReports(today);
+      if (response.data) {
+        // Convert MyReportsResponse[] to WorkReport[] format
+        const workReports = response.data.map((report) => ({
+          id: report.id,
+          shift_id: report.shift_id,
+          report_type: report.report_type,
+          description: report.description,
+          photo_urls: report.photo_urls,
+          video_url: report.video_url,
+          gps_lat: report.gps_lat,
+          gps_lng: report.gps_lng,
+          created_at: report.created_at,
+          updated_at: report.updated_at || report.created_at,
+        }));
+        dispatch(setReports(workReports));
+      }
+    } catch (error: any) {
+      // Silent fail for reports - not critical
+      console.warn('Failed to load reports:', error.message);
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadCurrentShift();
+    await Promise.all([loadCurrentShift(), loadTodayReports()]);
     setRefreshing(false);
   }, []);
 
@@ -135,35 +220,67 @@ export function WorkerHomeScreen(): JSX.Element {
             colors={[theme.colors.primary]}
           />
         }>
+        {/* Location Warning Banner - show when GPS/permission unavailable during active shift */}
+        {currentShift && !isLocationAvailable && (
+          <ErrorBanner
+            message={
+              !permissionGranted
+                ? 'Izin lokasi dicabut. Pelacakan lokasi tidak aktif.'
+                : !gpsEnabled
+                  ? 'GPS tidak aktif. Pelacakan lokasi tidak aktif.'
+                  : 'Lokasi tidak tersedia. Periksa pengaturan GPS.'
+            }
+            variant="warning"
+            actionText="Perbaiki"
+            onAction={() => {
+              if (!permissionGranted) {
+                showPermissionAlert();
+              } else if (!gpsEnabled) {
+                showGpsAlert();
+              } else {
+                refreshLocationStatus();
+              }
+            }}
+            style={styles.locationWarning}
+          />
+        )}
+
         {/* Current Shift Card */}
         {currentShift ? (
           <Card style={styles.shiftCard}>
-            <Text style={styles.cardTitle}>Current Shift</Text>
-            <Text style={styles.timer}>{timer}</Text>
+            <Text style={styles.cardTitle}>Shift Aktif</Text>
+            {/* Issue 8: Removed accessibilityLiveRegion to prevent constant announcements */}
+            {/* Announcements are now made every 5 minutes via AccessibilityInfo */}
+            <Text
+              style={styles.timer}
+              accessibilityLabel={`Waktu shift berjalan: ${timer}`}
+            >
+              {timer}
+            </Text>
             <View style={styles.shiftInfo}>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Area:</Text>
                 <Text style={styles.infoValue}>
-                  {currentShift.area?.name || 'Unknown'}
+                  {currentShift.area?.name || 'Tidak diketahui'}
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Clock-in:</Text>
+                <Text style={styles.infoLabel}>Clock In:</Text>
                 <Text style={styles.infoValue}>
-                  {formatTime(currentShift.clock_in_time)}
+                  {formatDateTime(currentShift.clock_in_time)}
                 </Text>
               </View>
             </View>
           </Card>
         ) : (
           <Card style={styles.shiftCard}>
-            <Text style={styles.cardTitle}>Not Clocked In</Text>
+            <Text style={styles.cardTitle}>Belum Clock In</Text>
             <Text style={styles.noShiftText}>
-              You haven't started your shift yet today.
+              Anda belum memulai shift hari ini.
             </Text>
             {assignedArea && (
               <View style={styles.assignedArea}>
-                <Text style={styles.assignedAreaLabel}>Assigned Area:</Text>
+                <Text style={styles.assignedAreaLabel}>Area Tugas:</Text>
                 <Text style={styles.assignedAreaValue}>
                   {assignedArea.name}
                 </Text>
@@ -174,16 +291,16 @@ export function WorkerHomeScreen(): JSX.Element {
 
         {/* Summary Card */}
         <Card style={styles.summaryCard}>
-          <Text style={styles.cardTitle}>Today's Summary</Text>
+          <Text style={styles.cardTitle}>Ringkasan Hari Ini</Text>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>0</Text>
-              <Text style={styles.summaryLabel}>Reports</Text>
+              <Text style={styles.summaryValue}>{todayReportsCount}</Text>
+              <Text style={styles.summaryLabel}>Laporan</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>{shiftDuration}</Text>
-              <Text style={styles.summaryLabel}>Hours</Text>
+              <Text style={styles.summaryLabel}>Jam</Text>
             </View>
           </View>
         </Card>
@@ -195,13 +312,20 @@ export function WorkerHomeScreen(): JSX.Element {
             onPress={handleClockInOut}
             variant="primary"
             style={styles.primaryAction}
+            isCritical={true}
+            accessibilityHint={
+              currentShift
+                ? 'Akhiri shift kerja saat ini'
+                : 'Mulai shift kerja baru dengan verifikasi lokasi'
+            }
           />
           {currentShift && (
             <Button
-              title="New Report"
+              title="Laporan Baru"
               onPress={handleNewReport}
               variant="outline"
               style={styles.secondaryAction}
+              accessibilityHint="Buat laporan kerja baru dengan foto dan deskripsi"
             />
           )}
         </View>
@@ -210,7 +334,7 @@ export function WorkerHomeScreen(): JSX.Element {
         {!assignedArea && !currentShift && (
           <Card style={styles.warningCard}>
             <Text style={styles.warningText}>
-              You are not assigned to any area yet. Please contact your supervisor.
+              Anda belum ditugaskan ke area manapun. Hubungi supervisor Anda.
             </Text>
           </Card>
         )}
@@ -275,7 +399,8 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textSecondary,
+    color: theme.colors.gray900, // Improved contrast from gray600 for outdoor visibility
+    fontWeight: theme.typography.fontWeight.medium,
   },
   infoValue: {
     fontSize: theme.typography.fontSize.md,
@@ -296,7 +421,8 @@ const styles = StyleSheet.create({
   },
   assignedAreaLabel: {
     fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
+    color: theme.colors.gray900, // Improved contrast from gray600 for outdoor visibility
+    fontWeight: theme.typography.fontWeight.medium,
     marginBottom: theme.spacing.xs,
   },
   assignedAreaValue: {
@@ -328,7 +454,8 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
+    color: theme.colors.gray900, // Improved contrast from gray600 for outdoor visibility
+    fontWeight: theme.typography.fontWeight.medium,
     marginTop: theme.spacing.xs,
   },
   actions: {
@@ -345,6 +472,9 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.warning,
     borderWidth: 1,
     marginTop: theme.spacing.md,
+  },
+  locationWarning: {
+    marginBottom: theme.spacing.md,
   },
   warningText: {
     fontSize: theme.typography.fontSize.md,

@@ -72,16 +72,16 @@ describe('Date Utils', () => {
   });
 
   describe('formatTime', () => {
-    it('should format time in HH.MM format (Indonesian locale)', () => {
+    it('should format time in HH:MM format with colon separator', () => {
       const date = new Date('2026-01-11T14:30:00Z');
       const formatted = formatTime(date);
-      // Indonesian locale uses dots: HH.MM
-      expect(formatted).toMatch(/^\d{2}\.\d{2}$/);
+      // Uses colon separator: HH:MM
+      expect(formatted).toMatch(/^\d{2}:\d{2}$/);
     });
 
     it('should format time from ISO string', () => {
       const formatted = formatTime('2026-01-11T08:00:00Z');
-      expect(formatted).toMatch(/^\d{2}\.\d{2}$/);
+      expect(formatted).toMatch(/^\d{2}:\d{2}$/);
     });
 
     it('should handle invalid date', () => {
@@ -92,13 +92,13 @@ describe('Date Utils', () => {
     it('should handle midnight', () => {
       const date = new Date('2026-01-19T00:00:00');
       const formatted = formatTime(date);
-      expect(formatted).toMatch(/^\d{2}\.\d{2}$/);
+      expect(formatted).toBe('00:00');
     });
 
     it('should handle noon', () => {
       const date = new Date('2026-01-19T12:00:00');
       const formatted = formatTime(date);
-      expect(formatted).toMatch(/^\d{2}\.\d{2}$/);
+      expect(formatted).toBe('12:00');
     });
   });
 
@@ -173,6 +173,18 @@ describe('Date Utils', () => {
     it('should work with ISO string', () => {
       const result = getRelativeTime('2026-01-19T09:55:00Z');
       expect(result).toBe('5 menit yang lalu');
+    });
+
+    it('should return "-" for null date', () => {
+      expect(getRelativeTime(null)).toBe('-');
+    });
+
+    it('should return "-" for undefined date', () => {
+      expect(getRelativeTime(undefined)).toBe('-');
+    });
+
+    it('should return "-" for invalid date string', () => {
+      expect(getRelativeTime('invalid-date')).toBe('-');
     });
   });
 

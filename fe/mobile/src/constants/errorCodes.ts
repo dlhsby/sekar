@@ -84,6 +84,12 @@ export const ApiErrorCode = {
    */
   SHIFT_PHOTO_UPLOAD_FAILED: 'SHIFT_PHOTO_UPLOAD_FAILED',
 
+  /**
+   * Shift duration is below the minimum required duration (15 minutes)
+   * HTTP Status: 400
+   */
+  SHIFT_DURATION_TOO_SHORT: 'SHIFT_DURATION_TOO_SHORT',
+
   // ==================== Report Errors ====================
   /**
    * Report must be created during an active shift
@@ -218,3 +224,68 @@ export const ApiErrorCode = {
 } as const;
 
 export type ApiErrorCodeType = typeof ApiErrorCode[keyof typeof ApiErrorCode];
+
+/**
+ * Indonesian error messages for each error code
+ * Maps API error codes to user-friendly Indonesian messages
+ */
+export const ErrorMessages: Record<string, string> = {
+  // Authentication Errors
+  [ApiErrorCode.AUTH_INVALID_CREDENTIALS]: 'Username atau password salah',
+  [ApiErrorCode.AUTH_TOKEN_EXPIRED]: 'Sesi telah berakhir. Silakan login kembali',
+  [ApiErrorCode.AUTH_TOKEN_INVALID]: 'Token tidak valid. Silakan login kembali',
+  [ApiErrorCode.AUTH_ACCOUNT_INACTIVE]: 'Akun tidak aktif. Hubungi administrator',
+  [ApiErrorCode.AUTH_USER_NOT_FOUND]: 'Pengguna tidak ditemukan',
+
+  // Shift Errors
+  [ApiErrorCode.SHIFT_ALREADY_ACTIVE]: 'Anda sudah clock-in. Selesaikan shift terlebih dahulu',
+  [ApiErrorCode.SHIFT_NOT_FOUND]: 'Shift tidak ditemukan',
+  [ApiErrorCode.SHIFT_NOT_ACTIVE]: 'Tidak ada shift aktif. Clock-in terlebih dahulu',
+  [ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS]: 'Anda di luar area kerja. Mendekat ke area yang ditugaskan',
+  [ApiErrorCode.SHIFT_NOT_ASSIGNED]: 'Anda belum ditugaskan ke area manapun. Hubungi supervisor',
+  [ApiErrorCode.SHIFT_PHOTO_UPLOAD_FAILED]: 'Gagal mengunggah foto. Periksa koneksi internet',
+  [ApiErrorCode.SHIFT_DURATION_TOO_SHORT]: 'Durasi shift terlalu singkat (minimal 15 menit)',
+
+  // Report Errors
+  [ApiErrorCode.REPORT_SHIFT_REQUIRED]: 'Harap clock-in terlebih dahulu untuk membuat laporan',
+  [ApiErrorCode.REPORT_SHIFT_NOT_FOUND]: 'Shift tidak ditemukan',
+  [ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED]: 'Waktu edit laporan telah habis (maks 1 jam)',
+  [ApiErrorCode.REPORT_PHOTO_REQUIRED]: 'Laporan harus menyertakan foto',
+  [ApiErrorCode.REPORT_NOT_FOUND]: 'Laporan tidak ditemukan',
+  [ApiErrorCode.REPORT_ACCESS_DENIED]: 'Anda tidak memiliki akses ke laporan ini',
+  [ApiErrorCode.REPORT_PHOTO_UPLOAD_FAILED]: 'Gagal mengunggah foto laporan. Periksa koneksi internet',
+
+  // Sync Errors
+  [ApiErrorCode.SYNC_CONFLICT]: 'Konflik data. Data telah diubah oleh pengguna lain',
+  [ApiErrorCode.SYNC_STALE_DATA]: 'Data sudah kadaluarsa. Memuat ulang data terbaru',
+  [ApiErrorCode.SYNC_PARTIAL_FAILURE]: 'Beberapa data gagal disinkronkan. Akan dicoba lagi',
+
+  // Area Errors
+  [ApiErrorCode.AREA_NOT_FOUND]: 'Area tidak ditemukan',
+  [ApiErrorCode.AREA_CODE_DUPLICATE]: 'Kode area sudah digunakan',
+
+  // Assignment Errors
+  [ApiErrorCode.ASSIGNMENT_NOT_FOUND]: 'Anda belum ditugaskan ke area manapun',
+  [ApiErrorCode.ASSIGNMENT_ALREADY_EXISTS]: 'Anda sudah ditugaskan ke area ini',
+
+  // General Errors
+  [ApiErrorCode.VALIDATION_ERROR]: 'Data tidak valid. Periksa kembali form Anda',
+  [ApiErrorCode.NOT_FOUND]: 'Data tidak ditemukan',
+  [ApiErrorCode.FORBIDDEN]: 'Anda tidak memiliki izin untuk melakukan tindakan ini',
+  [ApiErrorCode.INTERNAL_SERVER_ERROR]: 'Terjadi kesalahan server. Coba lagi nanti',
+  [ApiErrorCode.BAD_REQUEST]: 'Permintaan tidak valid',
+
+  // Client-side Errors
+  [ApiErrorCode.NETWORK_ERROR]: 'Tidak ada koneksi internet. Periksa koneksi Anda',
+  [ApiErrorCode.UNKNOWN_ERROR]: 'Terjadi kesalahan yang tidak diketahui',
+};
+
+/**
+ * Get user-friendly Indonesian error message from error code
+ * @param code - Error code from API
+ * @param defaultMessage - Fallback message if code not found
+ * @returns Indonesian error message
+ */
+export function getErrorMessage(code: string, defaultMessage?: string): string {
+  return ErrorMessages[code] || defaultMessage || 'Terjadi kesalahan';
+}

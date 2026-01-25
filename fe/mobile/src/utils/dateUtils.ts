@@ -31,26 +31,24 @@ export function formatDateLong(date: Date | string): string {
 }
 
 /**
- * Format time to HH:MM
+ * Format time to HH:MM (with colon separator)
  * @param date - Date object or string
- * @returns Formatted time string
+ * @returns Formatted time string (e.g., "08:29")
  */
 export function formatTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) {
     return '--:--';
   }
-  return d.toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
 }
 
 /**
- * Format datetime to readable format
+ * Format datetime to readable format (with colon time separator)
  * @param date - Date object or string (or undefined/null)
- * @returns Formatted datetime string or '-' if invalid
+ * @returns Formatted datetime string or '-' if invalid (e.g., "24 Jan 2026, 08:29")
  */
 export function formatDateTime(date: Date | string | undefined | null): string {
   if (!date) {
@@ -60,23 +58,31 @@ export function formatDateTime(date: Date | string | undefined | null): string {
   if (isNaN(d.getTime())) {
     return '-';
   }
-  return d.toLocaleString('id-ID', {
+  // Format date part using locale
+  const datePart = d.toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
   });
+  // Format time part manually to ensure colon separator
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${datePart}, ${hours}:${minutes}`;
 }
 
 /**
  * Get relative time (e.g., "2 hours ago", "5 minutes ago")
- * @param date - Date object or string
- * @returns Relative time string
+ * @param date - Date object or string (or undefined/null)
+ * @returns Relative time string or '-' if invalid
  */
-export function getRelativeTime(date: Date | string): string {
+export function getRelativeTime(date: Date | string | undefined | null): string {
+  if (!date) {
+    return '-';
+  }
   const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) {
+    return '-';
+  }
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffSec = Math.floor(diffMs / 1000);

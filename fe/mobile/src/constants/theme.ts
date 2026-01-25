@@ -16,7 +16,7 @@ export const colors = {
 
   // Status colors
   success: '#4CAF50',
-  warning: '#FF9800',
+  warning: '#F57C00', // 4.5:1 contrast ratio for outdoor visibility (spec requirement)
   error: '#F44336',
   info: '#2196F3',
 

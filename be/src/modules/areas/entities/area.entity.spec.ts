@@ -41,6 +41,8 @@ describe('Area Entity', () => {
       name: 'Taman',
       description: 'Park area',
       created_at: new Date(),
+      updated_at: new Date(),
+      deleted_at: undefined,
     };
 
     area.areaType = mockAreaType;
@@ -57,6 +59,8 @@ describe('Area Entity', () => {
       name: 'Taman',
       description: 'Park area',
       created_at: new Date(),
+      updated_at: new Date(),
+      deleted_at: undefined,
     };
 
     area.id = 'area-uuid-123';

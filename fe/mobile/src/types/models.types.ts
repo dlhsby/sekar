@@ -20,7 +20,7 @@ export type TaskStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 
 
 // User
 export interface User {
-  id: number;
+  id: string; // UUID (updated to match backend)
   username: string;
   full_name: string;
   role: UserRole;
@@ -30,7 +30,7 @@ export interface User {
 
 // Area Type
 export interface AreaType {
-  id: number;
+  id: string; // UUID (updated to match backend)
   code: AreaTypeCode;
   name: string;
   description: string;
@@ -39,9 +39,9 @@ export interface AreaType {
 
 // Area
 export interface Area {
-  id: number;
+  id: string; // UUID
   name: string;
-  area_type_id: number;
+  area_type_id: string; // UUID (updated to match backend)
   area_type?: AreaType;
   gps_lat: number;
   gps_lng: number;
@@ -53,18 +53,18 @@ export interface Area {
 
 // Worker Assignment
 export interface WorkerAssignment {
-  id: number;
-  worker_id: number;
-  area_id: number;
+  id: string; // UUID (updated to match backend)
+  worker_id: string; // UUID (updated to match backend)
+  area_id: string; // UUID (updated to match backend)
   area?: Area;
   assigned_at: string;
 }
 
 // Shift
 export interface Shift {
-  id: number;
-  worker_id: number;
-  area_id: number;
+  id: string; // UUID (updated to match backend)
+  worker_id: string; // UUID (updated to match backend)
+  area_id: string; // UUID (updated to match backend)
   area?: Area;
   clock_in_time: string;
   clock_in_gps_lat: number;
@@ -79,20 +79,20 @@ export interface Shift {
 
 // Work Report
 export interface WorkReport {
-  id: number;
-  shift_id: number;
-  worker_id: number;
-  area_id: number;
+  id: string; // UUID
+  shift_id: string; // UUID
+  worker_id: string; // UUID
+  area_id: string; // UUID
   worker?: User;
   area?: Area;
   report_time: string;
-  gps_lat: number;
-  gps_lng: number;
+  gps_lat: number | null;
+  gps_lng: number | null;
   notes?: string;
   condition?: ReportCondition;
   asset_id?: number;
   reviewed: boolean;
-  reviewed_by?: number;
+  reviewed_by?: string; // UUID
   reviewed_at?: string;
   media?: ReportMedia[];
   created_at: string;
@@ -101,8 +101,8 @@ export interface WorkReport {
 
 // Report Media
 export interface ReportMedia {
-  id: number;
-  report_id: number;
+  id: string; // UUID
+  report_id: string; // UUID
   media_type: MediaType;
   media_url: string;
   thumbnail_url?: string;
@@ -110,11 +110,11 @@ export interface ReportMedia {
   created_at: string;
 }
 
-// Location Ping
+// Location Ping (LocationLog in backend)
 export interface LocationPing {
-  id?: number;
-  worker_id?: number;
-  shift_id?: number;
+  id?: string; // UUID (updated to match backend)
+  worker_id?: string; // UUID (updated to match backend)
+  shift_id?: string; // UUID (updated to match backend)
   timestamp: string;
   gps_lat: number;
   gps_lng: number;
@@ -134,7 +134,7 @@ export interface Coordinates {
 
 // Active Worker (for supervisor map)
 export interface ActiveWorker {
-  worker_id: number;
+  worker_id: string; // UUID (updated to match backend)
   full_name: string;
   area_name: string;
   area_type: string;
@@ -146,7 +146,7 @@ export interface ActiveWorker {
 
 // Attendance Record (for supervisor)
 export interface AttendanceRecord {
-  worker_id: number;
+  worker_id: string; // UUID (updated to match backend)
   full_name: string;
   area_name: string;
   area_type: string;

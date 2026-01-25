@@ -21,9 +21,6 @@ jest.mock('../../../services/shift', () => ({
   loadAndSyncCurrentShift: jest.fn().mockResolvedValue(undefined),
 }));
 
-// Mock Alert
-jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-
 // Helper to create test store
 const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>) => {
   return configureStore({
@@ -56,6 +53,8 @@ const renderLoginScreen = (store = createTestStore()) => {
 describe('LoginScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Setup Alert spy in beforeEach to prevent cross-test pollution
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
     (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
   });

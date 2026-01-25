@@ -171,11 +171,36 @@ class MediaService {
   }
 
   /**
+   * Check available disk space
+   * Requires minimum 50MB free space for compression operations
+   */
+  private async checkDiskSpace(): Promise<void> {
+    try {
+      const freeSpace = await RNFS.getFSInfo();
+      const minRequiredSpace = 50 * 1024 * 1024; // 50MB in bytes
+
+      if (freeSpace.freeSpace < minRequiredSpace) {
+        throw new Error('Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.');
+      }
+    } catch (error: any) {
+      // If error message is already localized, rethrow it
+      if (error.message?.includes('Penyimpanan penuh')) {
+        throw error;
+      }
+      // Otherwise throw generic storage check error
+      throw new Error('Gagal memeriksa ruang penyimpanan');
+    }
+  }
+
+  /**
    * Compress photo to target size
    * Uses iterative quality reduction to reach target file size
    */
   async compressPhoto(uri: string): Promise<CompressedPhoto> {
     try {
+      // Check disk space before compression
+      await this.checkDiskSpace();
+
       let quality = PHOTO_CONFIG.initialQuality;
       let compressed = await ImageResizer.createResizedImage(
         uri,
@@ -239,7 +264,15 @@ class MediaService {
         width: compressed.width || PHOTO_CONFIG.maxWidth,
         height: compressed.height || PHOTO_CONFIG.maxHeight,
       };
-    } catch (error) {
+    } catch (error: any) {
+      // Handle disk full error specifically
+      if (error?.code === 'ENOSPC' || error?.message?.includes('ENOSPC')) {
+        throw new Error('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+      }
+      // Rethrow localized errors as-is
+      if (error?.message?.includes('Penyimpanan penuh')) {
+        throw error;
+      }
       throw new Error(`Kompresi gagal: ${error instanceof Error ? error.message : 'Kesalahan tidak diketahui'}`);
     }
   }

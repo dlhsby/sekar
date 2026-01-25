@@ -21,14 +21,17 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DeviceInfo from 'react-native-device-info';
 import { Button, Card, ErrorBanner } from '../../components/common';
 import { theme } from '../../constants/theme';
+import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { createReport } from '../../services/api/reportsApi';
 import { addReport, setSubmitting, setError } from '../../store/slices/reportSlice';
 import { addToQueue as addToOfflineQueue } from '../../services/sync/offlineQueue';
 import { mediaService, type Photo } from '../../services/media';
 import { requestCameraPermission } from '../../services/permissions';
+import { sanitizeMultilineText } from '../../utils/sanitize';
 
 /**
  * Work type options
@@ -170,6 +173,37 @@ export function ReportSubmissionScreen(): JSX.Element {
   }, []);
 
   /**
+   * Check available disk space
+   * Returns true if enough space is available
+   */
+  const checkDiskSpace = useCallback(async (): Promise<boolean> => {
+    try {
+      const freeDiskStorage = await DeviceInfo.getFreeDiskStorage();
+      const freeDiskStorageMB = freeDiskStorage / (1024 * 1024); // Convert bytes to MB
+
+      if (freeDiskStorageMB < config.MIN_FREE_STORAGE_MB) {
+        Alert.alert(
+          'Penyimpanan Penuh',
+          `Ruang penyimpanan tersisa ${Math.round(freeDiskStorageMB)}MB. Minimal ${config.MIN_FREE_STORAGE_MB}MB diperlukan untuk menyimpan foto. Hapus beberapa file untuk melanjutkan.`,
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+
+      // Warn if approaching limit (< 200MB)
+      if (freeDiskStorageMB < 200) {
+        console.warn(`[ReportSubmission] Low disk space: ${Math.round(freeDiskStorageMB)}MB remaining`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[ReportSubmission] Failed to check disk space:', error);
+      // Don't block on error - allow user to proceed
+      return true;
+    }
+  }, []);
+
+  /**
    * Add photo from camera
    */
   const handleAddPhotoFromCamera = useCallback(async () => {
@@ -179,6 +213,12 @@ export function ReportSubmissionScreen(): JSX.Element {
         'Maksimal Foto',
         `Anda hanya dapat menambahkan maksimal ${mediaService.getMaxPhotos()} foto.`
       );
+      return;
+    }
+
+    // Check disk space before capturing photo
+    const hasEnoughSpace = await checkDiskSpace();
+    if (!hasEnoughSpace) {
       return;
     }
 
@@ -203,7 +243,7 @@ export function ReportSubmissionScreen(): JSX.Element {
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Gagal mengambil foto');
     }
-  }, [form.photos]);
+  }, [form.photos, checkDiskSpace]);
 
   /**
    * Remove photo
@@ -359,10 +399,10 @@ export function ReportSubmissionScreen(): JSX.Element {
         photoBase64Array.push(base64);
       }
 
-      // Prepare report data
+      // Prepare report data with sanitized description
       const reportData = {
         shift_id: currentShift.id,
-        description: form.description,
+        description: sanitizeMultilineText(form.description),
         report_type: form.workType!,
         gps_lat: form.location!.latitude,
         gps_lng: form.location!.longitude,
@@ -455,6 +495,9 @@ export function ReportSubmissionScreen(): JSX.Element {
       <TouchableOpacity
         style={styles.removePhotoButton}
         onPress={() => handleRemovePhoto(item.id)}
+        accessibilityRole="button"
+        accessibilityLabel="Hapus foto"
+        accessibilityHint="Ketuk untuk menghapus foto ini dari laporan"
       >
         <Text style={styles.removePhotoText}>✕</Text>
       </TouchableOpacity>
@@ -679,29 +722,37 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   photoThumbnail: {
-    width: 120,
-    height: 120,
+    width: 160, // Increased from 120 to 160dp for better visibility outdoors
+    height: 160, // Increased from 120 to 160dp for better visibility outdoors
     borderRadius: theme.borderRadius.md,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
   },
   removePhotoButton: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -12,
+    right: -12,
     backgroundColor: theme.colors.error,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 48, // Increased from 24 to 48dp for glove-friendly touch target
+    height: 48, // Increased from 24 to 48dp for glove-friendly touch target
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    // Add shadow for better visibility outdoors
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
   },
   removePhotoText: {
     color: theme.colors.white,
-    fontSize: 16,
+    fontSize: 24, // Increased from 16 to 24 for better visibility
     fontWeight: 'bold',
   },
   addPhotoButton: {
-    width: 120,
-    height: 120,
+    width: 160, // Matched to thumbnail size
+    height: 160, // Matched to thumbnail size
     borderRadius: theme.borderRadius.md,
     borderWidth: 2,
     borderColor: theme.colors.border,

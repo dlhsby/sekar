@@ -60,8 +60,9 @@ describe('ReportsListScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // API returns paginated format: { data: { data: [], meta: {} } }
     (supervisorApi.getReports as jest.Mock).mockResolvedValue({
-      data: mockReports,
+      data: { data: mockReports, meta: { total: 3, page: 1, limit: 10, totalPages: 1 } },
     });
   });
 
@@ -92,7 +93,9 @@ describe('ReportsListScreen', () => {
 
     it('should show loading indicator while fetching', async () => {
       (supervisorApi.getReports as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ data: mockReports }), 100))
+        () => new Promise((resolve) => setTimeout(() => resolve({
+          data: { data: mockReports, meta: { total: 3, page: 1, limit: 10, totalPages: 1 } }
+        }), 100))
       );
 
       const { getByTestId, queryByTestId } = renderWithNavigation(
@@ -303,7 +306,7 @@ describe('ReportsListScreen', () => {
   describe('empty state', () => {
     it('should show empty message when no reports', async () => {
       (supervisorApi.getReports as jest.Mock).mockResolvedValue({
-        data: [],
+        data: { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } },
       });
 
       const { getByText } = renderWithNavigation(
@@ -358,7 +361,7 @@ describe('ReportsListScreen', () => {
       ];
 
       (supervisorApi.getReports as jest.Mock).mockResolvedValue({
-        data: incidentReports,
+        data: { data: incidentReports, meta: { total: 1, page: 1, limit: 10, totalPages: 1 } },
       });
 
       const { getByTestId } = renderWithNavigation(
@@ -383,7 +386,7 @@ describe('ReportsListScreen', () => {
       ];
 
       (supervisorApi.getReports as jest.Mock).mockResolvedValue({
-        data: maintenanceReports,
+        data: { data: maintenanceReports, meta: { total: 1, page: 1, limit: 10, totalPages: 1 } },
       });
 
       const { getByTestId } = renderWithNavigation(
