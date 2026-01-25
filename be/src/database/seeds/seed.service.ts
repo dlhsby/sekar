@@ -47,15 +47,63 @@ export class SeedService {
 
   private async clearDatabase() {
     console.log('🗑️  Clearing existing data...');
-    // Use createQueryBuilder().delete() to delete all records
+
+    // First, trigger table creation by querying each repository
+    // This is necessary when using TypeORM synchronize=true on an empty database
+    // TypeORM only creates tables when entities are first accessed
+    await Promise.all([
+      this.locationLogRepository.find({ take: 1 }).catch(() => []),
+      this.reportRepository.find({ take: 1 }).catch(() => []),
+      this.shiftRepository.find({ take: 1 }).catch(() => []),
+      this.workerAssignmentRepository.find({ take: 1 }).catch(() => []),
+      this.areaRepository.find({ take: 1 }).catch(() => []),
+      this.areaTypeRepository.find({ take: 1 }).catch(() => []),
+      this.userRepository.find({ take: 1 }).catch(() => []),
+    ]);
+
+    // Now delete all records (tables should exist now)
     // Clear in reverse FK order to avoid constraint violations
-    await this.locationLogRepository.createQueryBuilder().delete().execute();
-    await this.reportRepository.createQueryBuilder().delete().execute();
-    await this.shiftRepository.createQueryBuilder().delete().execute();
-    await this.workerAssignmentRepository.createQueryBuilder().delete().execute();
-    await this.areaRepository.createQueryBuilder().delete().execute();
-    await this.areaTypeRepository.createQueryBuilder().delete().execute();
-    await this.userRepository.createQueryBuilder().delete().execute();
+    try {
+      await this.locationLogRepository.createQueryBuilder().delete().execute();
+    } catch (error) {
+      console.log('  ⚠️  No location_logs to clear (table may be empty)');
+    }
+
+    try {
+      await this.reportRepository.createQueryBuilder().delete().execute();
+    } catch (error) {
+      console.log('  ⚠️  No reports to clear (table may be empty)');
+    }
+
+    try {
+      await this.shiftRepository.createQueryBuilder().delete().execute();
+    } catch (error) {
+      console.log('  ⚠️  No shifts to clear (table may be empty)');
+    }
+
+    try {
+      await this.workerAssignmentRepository.createQueryBuilder().delete().execute();
+    } catch (error) {
+      console.log('  ⚠️  No worker_assignments to clear (table may be empty)');
+    }
+
+    try {
+      await this.areaRepository.createQueryBuilder().delete().execute();
+    } catch (error) {
+      console.log('  ⚠️  No areas to clear (table may be empty)');
+    }
+
+    try {
+      await this.areaTypeRepository.createQueryBuilder().delete().execute();
+    } catch (error) {
+      console.log('  ⚠️  No area_types to clear (table may be empty)');
+    }
+
+    try {
+      await this.userRepository.createQueryBuilder().delete().execute();
+    } catch (error) {
+      console.log('  ⚠️  No users to clear (table may be empty)');
+    }
   }
 
   private async seedUsers() {
