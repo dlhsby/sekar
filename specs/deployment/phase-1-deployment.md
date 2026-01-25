@@ -594,7 +594,12 @@ DATABASE_PORT=5432
 DATABASE_USER=sekar_admin
 DATABASE_PASSWORD=<your-rds-password>
 DATABASE_NAME=sekar_db
-DATABASE_SYNCHRONIZE=false
+
+# Database Configuration - CRITICAL FOR INITIAL SETUP
+DATABASE_SYNCHRONIZE=true     # Set to TRUE for initial setup (creates tables)
+DATABASE_MIGRATIONS_RUN=false # Keep FALSE (run migrations manually)
+
+# Database SSL
 DATABASE_SSL=true
 
 # JWT (generate secure secrets - see below)
@@ -628,6 +633,20 @@ openssl rand -base64 32  # Copy output to JWT_SECRET
 openssl rand -base64 32  # Copy output to JWT_REFRESH_SECRET
 ```
 
+**⚠️ CRITICAL: Verify `app.module.ts` Configuration**
+
+The backend code must respect the `DATABASE_SYNCHRONIZE` environment variable. Verify this in `be/src/app.module.ts` (around line 59):
+
+```typescript
+// CORRECT - reads from environment variable
+synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+
+// WRONG - hardcoded to development only
+// synchronize: process.env.NODE_ENV === 'development',
+```
+
+**If the code shows the WRONG version**, tables will NOT be created even with `DATABASE_SYNCHRONIZE=true` in your `.env.production` file. This was fixed in commit `95f09eb` (January 25, 2026).
+
 ### 6.5 Create Docker Compose File
 
 ```bash
@@ -637,8 +656,7 @@ nano docker-compose.yml
 Paste (replace `<account-id>` with your AWS account ID):
 
 ```yaml
-version: '3.8'
-
+# Note: 'version' field is obsolete in Docker Compose v2+, but harmless to include
 services:
   backend:
     image: <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:latest
@@ -846,29 +864,48 @@ docker-compose up -d
 
 **🔧 Troubleshooting:**
 
-**Issue 1: "relation 'location_logs' does not exist" when seeding**
+**Issue 1: Seed script fails with "relation 'users' does not exist"**
 
-This was fixed in the January 2026 seed script update. If you still see this:
+**Cause:** `DATABASE_SYNCHRONIZE=true` is set in `.env.production` but app.module.ts is not reading it.
+
+**Solution:**
+
+1. Verify `be/src/app.module.ts` line 59 reads from environment variable (not hardcoded)
+2. Rebuild and redeploy Docker image with the fix
+3. Restart container and retry seeding
 
 ```bash
-# Update the backend code
+# Verify the fix is in your codebase
+grep "DATABASE_SYNCHRONIZE" be/src/app.module.ts
+# Should show: synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+
+# If not, update app.module.ts, rebuild, and redeploy
+cd be
+docker build -t sekar-backend:latest .
+docker push <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:latest
+
+# On EC2: pull and restart
 cd ~/sekar
 docker-compose down
 aws ecr get-login-password --region ap-southeast-3 | \
   docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com
 docker-compose pull
 docker-compose up -d
-# Then retry seeding
+sleep 30
 docker-compose exec backend npm run seed:prod
 ```
 
-**Issue 2: Migration fails with "relation does not exist"**
+**Issue 2: Seed warnings "⚠️ No location_logs to clear" but then fails on INSERT**
 
-Your database is empty but migrations try to ALTER tables. Solution:
+**Cause:** Tables aren't being created even though synchronize=true.
 
-```bash
-# Use synchronize first (see above), then switch to migrations
-```
+**Solution:** Same as Issue 1 - verify app.module.ts is reading DATABASE_SYNCHRONIZE environment variable.
+
+**Issue 3: Migration fails with "relation does not exist"**
+
+**Cause:** Database is empty but migrations try to ALTER tables.
+
+**Solution:** Use synchronize=true for initial setup (creates tables), then switch to migrations for future schema changes.
 
 **Issue 3: Seed hangs or takes too long**
 
@@ -904,9 +941,43 @@ docker-compose exec backend sh -c "
 "
 ```
 
-### 6.8 Future Deployments (Zero-Downtime)
+### 6.8 Post-Setup: Disable Synchronize (CRITICAL!)
 
-For subsequent deployments via GitHub Actions or manual updates:
+**⚠️ IMPORTANT:** After successful initial setup, **immediately disable synchronize** to prevent accidental schema changes in production.
+
+```bash
+# On EC2
+cd ~/sekar
+docker-compose down
+
+# Edit .env.production
+nano .env.production
+```
+
+**Change:**
+```bash
+DATABASE_SYNCHRONIZE=false    # ← CRITICAL: Set to false after initial setup!
+DATABASE_MIGRATIONS_RUN=false # Keep false (run migrations manually)
+```
+
+Save and restart:
+```bash
+docker-compose up -d
+
+# Verify app started successfully
+docker-compose logs backend | tail -20
+curl http://localhost:3000/api/health
+```
+
+**Why this is critical:**
+
+- With `synchronize=true`, TypeORM automatically alters your database schema on every deployment
+- If you accidentally modify an entity (add/remove/change a column), TypeORM will **drop and recreate tables**, causing **data loss**
+- Always use migrations for schema changes in production (never synchronize)
+
+### 6.9 Future Deployments (Zero-Downtime)
+
+For subsequent code deployments via GitHub Actions or manual updates:
 
 ```bash
 # SSH to EC2
@@ -929,6 +1000,19 @@ docker-compose logs --tail=50 backend
 curl http://localhost:3000/api/health
 ```
 
+**For deployments with schema changes:**
+
+```bash
+# Run migrations BEFORE restarting app
+docker-compose run --rm backend npm run migration:run:prod
+
+# Verify migrations applied
+docker-compose run --rm backend npm run migration:show:prod
+
+# Then restart app
+docker-compose up -d
+```
+
 ---
 
 ## 7. Verify Deployment
@@ -949,23 +1033,28 @@ curl -I http://sekar.wahyutrip.com/api/docs
 # Test login endpoint (should return 401 for wrong credentials)
 curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"phone":"081234567890","password":"wrong"}'
+  -d '{"username":"admin","password":"wrong"}'
 # Expected: 401 Unauthorized (confirms auth is working)
 ```
 
 ### 7.2 Test with Seeded Users
 
 ```bash
+# Login with seeded admin
+curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+# Expected: JWT token response with access_token and refresh_token
+
 # Login with seeded supervisor
 curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"phone":"08111111111","password":"supervisor123"}'
-# Expected: JWT token response with access_token and refresh_token
+  -d '{"username":"supervisor1","password":"supervisor123"}'
 
 # Login with seeded worker
 curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"phone":"08222222221","password":"worker123"}'
+  -d '{"username":"worker1","password":"worker123"}'
 ```
 
 ---
@@ -1308,6 +1397,111 @@ sudo certbot --nginx -d sekar.wahyutrip.com
 4. **Delete unused snapshots** - RDS snapshots cost money
 
 5. **Set up billing alerts** - Don't let credits run out unexpectedly
+
+---
+
+## 15. Quick Reference: Complete Deployment Workflow
+
+Use this as a checklist for deploying Phase 1 MVP from scratch:
+
+### Initial Deployment
+
+```bash
+# === LOCAL MACHINE ===
+# 1. Build and push Docker image
+cd be
+export AWS_PROFILE=sekar
+aws ecr get-login-password --region ap-southeast-3 | \
+  docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com
+docker build -t sekar-backend:latest .
+docker tag sekar-backend:latest <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:latest
+docker push <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:latest
+
+# === EC2 SERVER ===
+# 2. Create .env.production with DATABASE_SYNCHRONIZE=true
+nano ~/sekar/.env.production
+# 3. Create docker-compose.yml
+nano ~/sekar/docker-compose.yml
+# 4. Login to ECR and pull image
+aws ecr get-login-password --region ap-southeast-3 | \
+  docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com
+docker-compose pull
+# 5. Start container
+docker-compose up -d
+sleep 30
+# 6. Seed database (creates tables + data)
+docker-compose exec backend npm run seed:prod
+# 7. Verify database
+docker-compose exec backend sh -c "PGPASSWORD=\$DATABASE_PASSWORD psql -h \$DATABASE_HOST -U \$DATABASE_USER -d \$DATABASE_NAME -c '\dt'"
+# 8. DISABLE SYNCHRONIZE (CRITICAL!)
+nano .env.production  # Set DATABASE_SYNCHRONIZE=false
+docker-compose down && docker-compose up -d
+# 9. Test API
+curl http://sekar.wahyutrip.com/api/health
+curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}'
+```
+
+### Future Deployments (Code Updates Only)
+
+```bash
+# === LOCAL MACHINE ===
+docker build -t sekar-backend:latest .
+docker push <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:latest
+
+# === EC2 SERVER ===
+cd ~/sekar
+docker-compose pull
+docker-compose up -d
+docker-compose logs --tail=50 backend
+```
+
+### Future Deployments (With Schema Changes)
+
+```bash
+# === LOCAL MACHINE ===
+# 1. Create migration
+cd be
+npm run migration:generate -- src/database/migrations/AddNewFeature
+npm run migration:run  # Test locally
+npm run migration:revert && npm run migration:run  # Verify rollback works
+# 2. Build and push
+docker build -t sekar-backend:latest .
+docker push <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:latest
+
+# === EC2 SERVER ===
+cd ~/sekar
+docker-compose pull
+# Run migrations BEFORE restarting app
+docker-compose run --rm backend npm run migration:run:prod
+docker-compose run --rm backend npm run migration:show:prod
+# Then restart
+docker-compose up -d
+```
+
+### Common Commands
+
+```bash
+# View logs
+docker-compose logs -f backend
+
+# Restart app
+docker-compose restart backend
+
+# Stop all
+docker-compose down
+
+# Check container status
+docker-compose ps
+
+# Execute command in container
+docker-compose exec backend sh
+
+# Check database connection
+docker-compose exec backend sh -c "PGPASSWORD=\$DATABASE_PASSWORD psql -h \$DATABASE_HOST -U \$DATABASE_USER -d \$DATABASE_NAME -c 'SELECT version();'"
+
+# View environment variables
+docker-compose exec backend env | grep DATABASE
+```
 
 ---
 
