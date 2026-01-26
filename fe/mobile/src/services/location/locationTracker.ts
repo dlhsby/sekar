@@ -60,7 +60,7 @@ function getRandomInterval(): number {
 async function getBatteryLevel(): Promise<number | undefined> {
   try {
     const level = await DeviceInfo.getBatteryLevel();
-    if (level === -1) return undefined; // Unavailable (emulator)
+    if (level === -1) {return undefined;} // Unavailable (emulator)
     return Math.round(level * 100);
   } catch (error) {
     console.warn('[LocationTracker] Failed to get battery level:', error);

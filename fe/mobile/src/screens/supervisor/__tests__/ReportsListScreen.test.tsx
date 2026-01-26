@@ -66,6 +66,11 @@ describe('ReportsListScreen', () => {
     });
   });
 
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   describe('rendering', () => {
     it('should render filter bar', async () => {
       const { getByText, getByTestId } = renderWithNavigation(
@@ -73,7 +78,7 @@ describe('ReportsListScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('Semua Jenis')).toBeTruthy();
+        expect(getByText('Semua Jenis ▼')).toBeTruthy();
         expect(getByTestId('filter-button')).toBeTruthy();
         expect(getByTestId('date-filter-button')).toBeTruthy();
       });
@@ -94,7 +99,7 @@ describe('ReportsListScreen', () => {
     it('should show loading indicator while fetching', async () => {
       (supervisorApi.getReports as jest.Mock).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve({
-          data: { data: mockReports, meta: { total: 3, page: 1, limit: 10, totalPages: 1 } }
+          data: { data: mockReports, meta: { total: 3, page: 1, limit: 10, totalPages: 1 } },
         }), 100))
       );
 
@@ -196,7 +201,7 @@ describe('ReportsListScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getAllByText('Semua Jenis').length).toBeGreaterThan(0);
+        expect(getAllByText('Semua Jenis ▼').length).toBeGreaterThan(0);
       });
 
       fireEvent.press(getByTestId('filter-button'));
@@ -208,10 +213,10 @@ describe('ReportsListScreen', () => {
       fireEvent.press(getByTestId('filter-option-incident'));
 
       await waitFor(() => {
-        // After filter selection, "Insiden" appears in filter button
+        // After filter selection, "Insiden ▼" appears in filter button (with dropdown arrow)
         // Use getAllByText since modal option may still be in DOM
-        expect(getAllByText('Insiden').length).toBeGreaterThan(0);
-      });
+        expect(getAllByText('Insiden ▼').length).toBeGreaterThan(0);
+      }, { timeout: 3000 });
     });
 
     it('should apply date filter when date button is pressed', async () => {

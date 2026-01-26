@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { NBCard } from '../../components/nb';
 import { getAttendance } from '../../services/api/supervisorApi';
 import { formatDate } from '../../utils/dateUtils';
 import AttendanceCard from '../../components/supervisor/AttendanceCard';
@@ -238,14 +239,14 @@ export default function AttendanceScreen() {
       {/* Summary Cards */}
       {attendanceData && (
         <View style={styles.summaryContainer}>
-          <View style={[styles.summaryCard, styles.summaryCardPresent]}>
+          <NBCard variant="elevated" style={[styles.summaryCard, styles.summaryCardPresent]}>
             <Text style={styles.summaryCount}>{attendanceData.clocked_in_count}</Text>
             <Text style={styles.summaryLabel}>Hadir</Text>
-          </View>
-          <View style={[styles.summaryCard, styles.summaryCardAbsent]}>
+          </NBCard>
+          <NBCard variant="elevated" style={[styles.summaryCard, styles.summaryCardAbsent]}>
             <Text style={styles.summaryCount}>{attendanceData.not_clocked_in.length}</Text>
             <Text style={styles.summaryLabel}>Tidak Hadir</Text>
-          </View>
+          </NBCard>
         </View>
       )}
 

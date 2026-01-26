@@ -213,3 +213,42 @@ export function parseISODate(isoString: string): Date | null {
   }
 }
 
+/**
+ * Format relative time for deadlines (handles both past and future)
+ * @param date - Date object or string (or undefined/null)
+ * @returns Relative time string (e.g., "dalam 2 jam", "2 jam yang lalu")
+ */
+export function formatRelativeTime(date: Date | string | undefined | null): string {
+  if (!date) {
+    return '-';
+  }
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) {
+    return '-';
+  }
+  const now = new Date();
+  const diffMs = d.getTime() - now.getTime();
+  const isFuture = diffMs > 0;
+  const absDiffMs = Math.abs(diffMs);
+
+  const diffSec = Math.floor(absDiffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) {
+    return isFuture ? 'sebentar lagi' : 'baru saja';
+  }
+  if (diffMin < 60) {
+    return isFuture ? `dalam ${diffMin} menit` : `${diffMin} menit lalu`;
+  }
+  if (diffHour < 24) {
+    return isFuture ? `dalam ${diffHour} jam` : `${diffHour} jam lalu`;
+  }
+  if (diffDay < 7) {
+    return isFuture ? `dalam ${diffDay} hari` : `${diffDay} hari lalu`;
+  }
+  // For dates more than a week away, show the date
+  return formatDateLong(d);
+}
+

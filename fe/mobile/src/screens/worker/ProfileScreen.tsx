@@ -18,6 +18,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import { NBButton, NBCard } from '../../components/nb';
 import { logout } from '../../store/slices/authSlice';
 import { resetState as resetShiftState } from '../../store/slices/shiftSlice';
 import { resetState as resetReportState } from '../../store/slices/reportSlice';
@@ -521,7 +522,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
 
       {/* Sync Status Card (only show if has pending items) */}
       {hasPendingItems && (
-        <View style={styles.card}>
+        <NBCard variant="elevated" style={styles.card}>
           <Text style={styles.cardTitle}>Sinkronisasi Data</Text>
           <View style={styles.syncStatusRow}>
             <Text style={styles.syncLabel}>Tertunda:</Text>
@@ -536,39 +537,36 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
             </Text>
           </View>
           <View style={styles.syncButtons}>
-            <TouchableOpacity
-              style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]}
+            <NBButton
+              title="Sinkronkan"
               onPress={handleSyncNow}
               disabled={isSyncing}
-              activeOpacity={0.7}>
-              {isSyncing ? (
-                <ActivityIndicator size="small" color={colors.white} />
-              ) : (
-                <Text style={styles.syncButtonText}>Sinkronkan</Text>
-              )}
-            </TouchableOpacity>
+              loading={isSyncing}
+              variant="primary"
+              size="sm"
+            />
             {syncStatus.failedCount > 0 && (
               <>
-                <TouchableOpacity
-                  style={[styles.syncButton, styles.syncButtonSecondary]}
+                <NBButton
+                  title="Coba Ulang"
                   onPress={handleRetryFailed}
-                  activeOpacity={0.7}>
-                  <Text style={styles.syncButtonTextSecondary}>Coba Ulang</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.syncButton, styles.syncButtonDanger]}
+                  variant="secondary"
+                  size="sm"
+                />
+                <NBButton
+                  title="Hapus Gagal"
                   onPress={handleClearFailed}
-                  activeOpacity={0.7}>
-                  <Text style={styles.syncButtonText}>Hapus Gagal</Text>
-                </TouchableOpacity>
+                  variant="danger"
+                  size="sm"
+                />
               </>
             )}
           </View>
-        </View>
+        </NBCard>
       )}
 
       {/* Assigned Area Card */}
-      <View style={styles.card}>
+      <NBCard variant="elevated" style={styles.card}>
         <Text style={styles.cardTitle}>Area Ditugaskan</Text>
         {assignedArea || profileData?.assigned_area ? (
           <View style={styles.areaInfo}>
@@ -590,10 +588,10 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         ) : (
           <Text style={styles.noArea}>Tidak ada area ditugaskan</Text>
         )}
-      </View>
+      </NBCard>
 
       {/* Monthly Statistics Card */}
-      <View style={styles.card}>
+      <NBCard variant="elevated" style={styles.card}>
         <Text style={styles.cardTitle}>Statistik Bulan Ini</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
@@ -610,10 +608,10 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <Text style={styles.reportsLabel}>Laporan:</Text>
           <Text style={styles.reportsValue}>{monthlyStats.reportsCount}</Text>
         </View>
-      </View>
+      </NBCard>
 
       {/* Menu Items */}
-      <View style={styles.menuContainer}>
+      <NBCard variant="elevated" style={styles.menuContainer}>
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => handleMenuPress('change-password')}
@@ -671,15 +669,16 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
             color={colors.textSecondary}
           />
         </TouchableOpacity>
-      </View>
+      </NBCard>
 
       {/* Logout Button */}
-      <TouchableOpacity
-        style={styles.logoutButton}
+      <NBButton
+        title="Keluar"
         onPress={handleLogout}
-        activeOpacity={0.7}>
-        <Text style={styles.logoutText}>Keluar</Text>
-      </TouchableOpacity>
+        variant="danger"
+        fullWidth
+        style={styles.logoutButton}
+      />
 
       {/* Bottom spacing */}
       <View style={styles.bottomSpacer} />

@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import Geolocation from 'react-native-geolocation-service';
 import { launchCamera } from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
-import { Button, Card } from '../../components/common';
+import { NBButton, NBCard } from '../../components/nb';
 import { theme } from '../../constants/theme';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
@@ -155,7 +155,7 @@ export function ClockInOutScreen(): JSX.Element {
 
     const initializeLocation = async () => {
       const result = await requestClockInPermissions();
-      if (!isMounted) return; // Prevent state update if unmounted
+      if (!isMounted) {return;} // Prevent state update if unmounted
 
       if (!result.success) {
         setLocation((prev) => ({ ...prev, error: result.message || 'Permission denied' }));
@@ -168,7 +168,7 @@ export function ClockInOutScreen(): JSX.Element {
       // Watch position for continuous updates during clock-in/out
       watchId = Geolocation.watchPosition(
         (position) => {
-          if (!isMounted) return; // Prevent state update if unmounted
+          if (!isMounted) {return;} // Prevent state update if unmounted
 
           const { latitude, longitude, accuracy } = position.coords;
           setLocation({
@@ -196,7 +196,7 @@ export function ClockInOutScreen(): JSX.Element {
           }
         },
         (error) => {
-          if (!isMounted) return; // Prevent state update if unmounted
+          if (!isMounted) {return;} // Prevent state update if unmounted
           console.error('Watch position error:', error);
         },
         {
@@ -407,10 +407,11 @@ export function ClockInOutScreen(): JSX.Element {
         <View style={styles.centerContent}>
           <Text style={styles.errorText}>Anda belum ditugaskan ke area manapun</Text>
           <Text style={styles.subtitle}>Hubungi supervisor untuk penugasan area</Text>
-          <Button
+          <NBButton
             title="Kembali"
             onPress={() => navigation.goBack()}
             variant="primary"
+            fullWidth
             style={styles.retryButton}
           />
         </View>
@@ -455,7 +456,7 @@ export function ClockInOutScreen(): JSX.Element {
 
         {/* Area Info Card */}
         {assignedArea && (
-          <Card style={styles.card}>
+          <NBCard variant="elevated" style={styles.card}>
             <Text style={styles.cardTitle}>Area Ditugaskan</Text>
             <Text style={styles.areaName}>{assignedArea.name}</Text>
             {assignedArea.address && (
@@ -479,20 +480,21 @@ export function ClockInOutScreen(): JSX.Element {
                 <Text style={styles.infoValue}>{assignedArea.radius_meters}m</Text>
               </View>
             )}
-          </Card>
+          </NBCard>
         )}
 
         {/* Current Location Card */}
-        <Card style={styles.card}>
+        <NBCard variant="elevated" style={styles.card}>
           <Text style={styles.cardTitle}>Lokasi Anda</Text>
 
           {location.error ? (
             <View>
               <Text style={styles.errorText}>{location.error}</Text>
-              <Button
+              <NBButton
                 title="Coba Lagi"
                 onPress={getCurrentLocation}
-                variant="outline"
+                variant="secondary"
+                fullWidth
                 style={styles.retryButton}
               />
             </View>
@@ -554,10 +556,11 @@ export function ClockInOutScreen(): JSX.Element {
                     : 'Di luar batas - Mendekat ke area'}
                 </Text>
               </View>
-              <Button
+              <NBButton
                 title="Perbarui Lokasi"
                 onPress={getCurrentLocation}
-                variant="outline"
+                variant="secondary"
+                fullWidth
                 style={styles.refreshButton}
                 disabled={location.loading}
               />
@@ -565,34 +568,36 @@ export function ClockInOutScreen(): JSX.Element {
           ) : (
             <ActivityIndicator size="small" color={theme.colors.primary} />
           )}
-        </Card>
+        </NBCard>
 
         {/* Selfie Card (Clock In only) */}
         {isClockIn && (
-          <Card style={styles.card}>
+          <NBCard variant="elevated" style={styles.card}>
             <Text style={styles.cardTitle}>Foto Selfie</Text>
             {selfieUri ? (
               <View>
                 <Image source={{ uri: selfieUri }} style={styles.selfieImage} />
-                <Button
+                <NBButton
                   title="Ambil Ulang"
                   onPress={handleCaptureSelfie}
-                  variant="outline"
+                  variant="secondary"
+                  fullWidth
                   style={styles.retakeButton}
                 />
               </View>
             ) : (
               <View>
                 <Text style={styles.selfiePrompt}>Ambil selfie untuk verifikasi identitas</Text>
-                <Button
+                <NBButton
                   title="Ambil Selfie"
                   onPress={handleCaptureSelfie}
                   variant="primary"
+                  fullWidth
                   style={styles.captureButton}
                 />
               </View>
             )}
-          </Card>
+          </NBCard>
         )}
 
         {/* Offline Warning for Clock-in */}
@@ -605,10 +610,11 @@ export function ClockInOutScreen(): JSX.Element {
         )}
 
         {/* Clock In/Out Button */}
-        <Button
+        <NBButton
           title={isClockIn ? 'Clock In' : 'Clock Out'}
           onPress={isClockIn ? handleClockIn : handleClockOut}
           variant="primary"
+          fullWidth
           style={styles.submitButton}
           loading={isSubmitting}
           disabled={
@@ -618,7 +624,6 @@ export function ClockInOutScreen(): JSX.Element {
             !location.longitude ||
             (isClockIn && (!isWithinBoundary || !selfieUri || !isOnline))
           }
-          isCritical={true}
           accessibilityHint={
             isClockIn
               ? 'Mulai shift kerja dengan verifikasi foto diri dan lokasi'

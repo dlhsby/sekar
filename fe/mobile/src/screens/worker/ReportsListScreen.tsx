@@ -18,6 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WorkerTabScreenProps } from '../../types/navigation.types';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { NBButton } from '../../components/nb';
 import { ReportListItem } from '../../components/worker/ReportListItem';
 import { getMyReports } from '../../services/api/reportsApi';
 import {
@@ -319,12 +320,12 @@ export function ReportsListScreen({
         <View style={styles.centerContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
+          <NBButton
+            title="Coba Lagi"
             onPress={() => loadReports()}
-            activeOpacity={0.7}>
-            <Text style={styles.retryButtonText}>Coba Lagi</Text>
-          </TouchableOpacity>
+            variant="danger"
+            style={styles.retryButton}
+          />
         </View>
       );
     }
@@ -384,15 +385,15 @@ export function ReportsListScreen({
       />
       {/* Fixed bottom button - always visible */}
       <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity
-          style={styles.fixedCreateButton}
+        <NBButton
+          title="+ Buat Laporan Baru"
           onPress={handleCreateReport}
-          activeOpacity={0.7}
-          accessibilityRole="button"
+          variant="primary"
+          fullWidth
+          style={styles.fixedCreateButton}
           accessibilityLabel="Buat Laporan Baru"
-          accessibilityHint="Membuat laporan kerja baru">
-          <Text style={styles.createButtonText}>+ Buat Laporan Baru</Text>
-        </TouchableOpacity>
+          accessibilityHint="Membuat laporan kerja baru"
+        />
       </View>
     </SafeAreaView>
   );

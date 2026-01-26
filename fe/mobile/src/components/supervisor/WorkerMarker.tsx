@@ -1,15 +1,19 @@
 /**
  * WorkerMarker Component
- * Custom map marker showing worker status and position
+ * Custom map marker showing worker status, role, and position
+ *
+ * Phase 2 Enhancement: Shows different marker styles for Worker (👷) vs Linmas (🛡️)
  */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Marker, Callout } from 'react-native-maps';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, typography, shadows } from '../../constants/theme';
 import type { ActiveWorkerData } from '../../types/api.types';
 
 export type WorkerStatus = 'active' | 'warning' | 'outside';
+export type WorkerRole = 'Worker' | 'Linmas';
 
 interface WorkerMarkerProps {
   worker: ActiveWorkerData;
@@ -46,6 +50,32 @@ function getInitials(fullName: string): string {
 }
 
 /**
+ * Get role icon name for MaterialCommunityIcons
+ */
+function getRoleIcon(role?: WorkerRole): string {
+  switch (role) {
+    case 'Linmas':
+      return 'shield-account'; // Security shield icon
+    case 'Worker':
+    default:
+      return 'account-hard-hat'; // Worker with hard hat
+  }
+}
+
+/**
+ * Get role label for display
+ */
+function getRoleLabel(role?: WorkerRole): string {
+  switch (role) {
+    case 'Linmas':
+      return 'Linmas';
+    case 'Worker':
+    default:
+      return 'Satgas';
+  }
+}
+
+/**
  * WorkerMarker - Custom marker for worker on map
  */
 export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMarkerProps): React.JSX.Element | null {
@@ -55,8 +85,10 @@ export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMa
   }
 
   const markerColor = getMarkerColor(status);
-  const initials = getInitials(worker.full_name);
+  const roleIcon = getRoleIcon(worker.role);
+  const roleLabel = getRoleLabel(worker.role);
   const isCluster = clusterCount !== undefined && clusterCount > 1;
+  const isLinmas = worker.role === 'Linmas';
 
   return (
     <Marker
@@ -74,10 +106,18 @@ export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMa
             <Text style={styles.clusterText}>{clusterCount}</Text>
           </View>
         ) : (
-          // Individual worker marker
+          // Individual worker marker with role-based icon
           <>
-            <View style={[styles.marker, { backgroundColor: markerColor }]}>
-              <Text style={styles.markerText}>{initials}</Text>
+            <View style={[
+              styles.marker,
+              { backgroundColor: markerColor },
+              isLinmas && styles.linmasMarker,
+            ]}>
+              <MaterialCommunityIcons
+                name={roleIcon}
+                size={20}
+                color={colors.white}
+              />
             </View>
             <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
           </>
@@ -87,6 +127,16 @@ export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMa
       {!isCluster && (
         <Callout tooltip>
           <View style={styles.calloutContainer}>
+            <View style={styles.calloutHeader}>
+              <MaterialCommunityIcons
+                name={roleIcon}
+                size={16}
+                color={isLinmas ? colors.secondaryDark : colors.primary}
+              />
+              <Text style={[styles.calloutRole, isLinmas && styles.linmasRole]}>
+                {roleLabel}
+              </Text>
+            </View>
             <Text style={styles.calloutName}>{worker.full_name}</Text>
             <Text style={styles.calloutArea}>{worker.shift.area.name}</Text>
           </View>
@@ -109,6 +159,10 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: colors.white,
     ...shadows.md,
+  },
+  linmasMarker: {
+    // Slightly different shape for Linmas (square-ish rounded)
+    borderRadius: 12,
   },
   markerText: {
     color: colors.white,
@@ -148,6 +202,22 @@ const styles = StyleSheet.create({
     padding: 12,
     minWidth: 150,
     ...shadows.lg,
+  },
+  calloutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  calloutRole: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.primary,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  linmasRole: {
+    color: colors.secondaryDark,
   },
   calloutName: {
     fontSize: typography.fontSize.base,

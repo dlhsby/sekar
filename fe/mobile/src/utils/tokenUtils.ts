@@ -15,7 +15,7 @@ import { getToken } from '../services/storage/secureStorage';
 function decodeJWT(token: string): any {
   try {
     const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
+    if (!base64Url) {return null;}
 
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
@@ -78,10 +78,10 @@ export async function isTokenExpired(bufferMinutes: number = 1): Promise<boolean
 export async function getTokenExpiry(): Promise<Date | null> {
   try {
     const token = await getToken();
-    if (!token) return null;
+    if (!token) {return null;}
 
     const decoded = decodeJWT(token);
-    if (!decoded || !decoded.exp) return null;
+    if (!decoded || !decoded.exp) {return null;}
 
     return new Date(decoded.exp * 1000);
   } catch (error) {
@@ -98,7 +98,7 @@ export async function getTokenExpiry(): Promise<Date | null> {
 export async function getTokenTimeRemaining(): Promise<number | null> {
   try {
     const expiry = await getTokenExpiry();
-    if (!expiry) return null;
+    if (!expiry) {return null;}
 
     const now = Date.now();
     const remaining = Math.floor((expiry.getTime() - now) / 60000);

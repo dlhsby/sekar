@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, typography, spacing } from '../../constants/theme';
+import { NBButton, NBTextInput } from '../../components/nb';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setLoading, setUser, setError } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
@@ -150,28 +151,22 @@ function LoginScreen(): React.JSX.Element {
           {/* Login Form */}
           <View style={styles.form}>
             {/* Username Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Username</Text>
-              <TextInput
-                style={[styles.input, usernameError && styles.inputError]}
-                placeholder="Masukkan username"
-                placeholderTextColor={colors.textHint}
-                value={username}
-                onChangeText={(text) => {
-                  setUsername(text);
-                  setUsernameError('');
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-                returnKeyType="next"
-                onSubmitEditing={() => passwordInputRef.current?.focus()}
-                blurOnSubmit={false}
-              />
-              {usernameError ? (
-                <Text style={styles.errorText}>{usernameError}</Text>
-              ) : null}
-            </View>
+            <NBTextInput
+              label="Username"
+              placeholder="Masukkan username"
+              value={username}
+              onChangeText={(text) => {
+                setUsername(text);
+                setUsernameError('');
+              }}
+              error={usernameError}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isLoading}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+              blurOnSubmit={false}
+            />
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
@@ -220,16 +215,15 @@ function LoginScreen(): React.JSX.Element {
             ) : null}
 
             {/* Login Button */}
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
+            <NBButton
+              title="Masuk"
               onPress={handleLogin}
-              disabled={isLoading}>
-              {isLoading ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.buttonText}>Masuk</Text>
-              )}
-            </TouchableOpacity>
+              loading={isLoading}
+              disabled={isLoading}
+              fullWidth
+              variant="primary"
+              style={styles.button}
+            />
           </View>
 
           {/* Footer */}

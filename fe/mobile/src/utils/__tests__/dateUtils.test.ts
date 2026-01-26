@@ -9,6 +9,7 @@ import {
   formatTime,
   formatDateTime,
   getRelativeTime,
+  formatRelativeTime,
   calculateDuration,
   formatHours,
   isToday,
@@ -185,6 +186,103 @@ describe('Date Utils', () => {
 
     it('should return "-" for invalid date string', () => {
       expect(getRelativeTime('invalid-date')).toBe('-');
+    });
+  });
+
+  describe('formatRelativeTime', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-01-19T10:00:00Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    // Future dates (for deadlines)
+    it('should return "sebentar lagi" for less than 60 seconds in future', () => {
+      const date = new Date('2026-01-19T10:00:30Z');
+      expect(formatRelativeTime(date)).toBe('sebentar lagi');
+    });
+
+    it('should return "dalam X menit" for 1-59 minutes in future', () => {
+      const date = new Date('2026-01-19T10:15:00Z');
+      expect(formatRelativeTime(date)).toBe('dalam 15 menit');
+    });
+
+    it('should return "dalam X jam" for 1-23 hours in future', () => {
+      const date = new Date('2026-01-19T13:00:00Z');
+      expect(formatRelativeTime(date)).toBe('dalam 3 jam');
+    });
+
+    it('should return "dalam X hari" for 1-6 days in future', () => {
+      const date = new Date('2026-01-21T10:00:00Z');
+      expect(formatRelativeTime(date)).toBe('dalam 2 hari');
+    });
+
+    it('should return formatted date for 7+ days in future', () => {
+      const date = new Date('2026-01-28T10:00:00Z');
+      // Should return long date format
+      expect(formatRelativeTime(date)).toContain('2026');
+    });
+
+    // Past dates (for overdue)
+    it('should return "baru saja" for less than 60 seconds ago', () => {
+      const date = new Date('2026-01-19T09:59:30Z');
+      expect(formatRelativeTime(date)).toBe('baru saja');
+    });
+
+    it('should return "X menit lalu" for 1-59 minutes ago', () => {
+      const date = new Date('2026-01-19T09:45:00Z');
+      expect(formatRelativeTime(date)).toBe('15 menit lalu');
+    });
+
+    it('should return "X jam lalu" for 1-23 hours ago', () => {
+      const date = new Date('2026-01-19T07:00:00Z');
+      expect(formatRelativeTime(date)).toBe('3 jam lalu');
+    });
+
+    it('should return "X hari lalu" for 1-6 days ago', () => {
+      const date = new Date('2026-01-17T10:00:00Z');
+      expect(formatRelativeTime(date)).toBe('2 hari lalu');
+    });
+
+    it('should return formatted date for 7+ days ago', () => {
+      const date = new Date('2026-01-10T10:00:00Z');
+      expect(formatRelativeTime(date)).toContain('2026');
+    });
+
+    // Edge cases
+    it('should handle 1 minute in future', () => {
+      const date = new Date('2026-01-19T10:01:00Z');
+      expect(formatRelativeTime(date)).toBe('dalam 1 menit');
+    });
+
+    it('should handle 1 hour in future', () => {
+      const date = new Date('2026-01-19T11:00:00Z');
+      expect(formatRelativeTime(date)).toBe('dalam 1 jam');
+    });
+
+    it('should handle 1 day in future', () => {
+      const date = new Date('2026-01-20T10:00:00Z');
+      expect(formatRelativeTime(date)).toBe('dalam 1 hari');
+    });
+
+    it('should work with ISO string', () => {
+      const result = formatRelativeTime('2026-01-19T10:05:00Z');
+      expect(result).toBe('dalam 5 menit');
+    });
+
+    it('should return "-" for null date', () => {
+      expect(formatRelativeTime(null)).toBe('-');
+    });
+
+    it('should return "-" for undefined date', () => {
+      expect(formatRelativeTime(undefined)).toBe('-');
+    });
+
+    it('should return "-" for invalid date string', () => {
+      expect(formatRelativeTime('invalid-date')).toBe('-');
     });
   });
 

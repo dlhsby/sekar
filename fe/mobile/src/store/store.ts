@@ -9,6 +9,8 @@ import authReducer from './slices/authSlice';
 import shiftReducer from './slices/shiftSlice';
 import reportReducer from './slices/reportSlice';
 import offlineReducer from './slices/offlineSlice';
+import tasksReducer from './slices/tasksSlice';
+import notificationsReducer from './slices/notificationsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +18,8 @@ export const store = configureStore({
     shift: shiftReducer,
     report: reportReducer,
     offline: offlineReducer,
+    tasks: tasksReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

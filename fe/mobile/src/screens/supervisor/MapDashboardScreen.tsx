@@ -18,11 +18,13 @@ import {
 } from 'react-native';
 import MapView, { Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { colors, typography, spacing, borderRadius, shadows, touchTarget } from '../../constants/theme';
+import { NBButton, NBCard } from '../../components/nb';
 import { WorkerMarker } from '../../components/supervisor/WorkerMarker';
 import { WorkerInfoCard } from '../../components/supervisor/WorkerInfoCard';
 import { MapErrorBoundary } from '../../components/supervisor/MapErrorBoundary';
 import { getActiveWorkers } from '../../services/api/supervisorApi';
 import { get } from '../../services/api/apiClient';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { ActiveWorkerData } from '../../types/api.types';
 import type { Area } from '../../types/models.types';
 import {
@@ -299,6 +301,13 @@ export function MapDashboardScreen(): React.JSX.Element {
     [filteredWorkers, areas]
   );
 
+  // Memoized: Calculate role counts (Phase 2 enhancement)
+  const roleCounts = useMemo(() => {
+    const workers = filteredWorkers.filter(w => !w.role || w.role === 'Worker').length;
+    const linmas = filteredWorkers.filter(w => w.role === 'Linmas').length;
+    return { workers, linmas };
+  }, [filteredWorkers]);
+
   // Memoized: Get area circles for overlay
   const areaCircles = useMemo(
     () => getAreaCircles(areas),
@@ -368,9 +377,12 @@ export function MapDashboardScreen(): React.JSX.Element {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => fetchWorkers()}>
-          <Text style={styles.retryButtonText}>Coba Lagi</Text>
-        </TouchableOpacity>
+        <NBButton
+          title="Coba Lagi"
+          onPress={() => fetchWorkers()}
+          variant="primary"
+          style={styles.retryButton}
+        />
       </View>
     );
   }
@@ -437,8 +449,9 @@ export function MapDashboardScreen(): React.JSX.Element {
 
       {/* Top controls */}
       <View style={styles.topControls}>
-        {/* Status summary card */}
-        <View style={styles.summaryCard}>
+        {/* Status summary card with role breakdown */}
+        <NBCard variant="elevated" style={styles.summaryCard}>
+          {/* Status row */}
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
@@ -455,39 +468,48 @@ export function MapDashboardScreen(): React.JSX.Element {
             <View style={styles.summarySeparator} />
             <Text style={styles.summaryTotal}>Total: {statusSummary.total}</Text>
           </View>
-        </View>
+          {/* Role breakdown row (Phase 2) */}
+          <View style={styles.roleRow}>
+            <View style={styles.roleItem}>
+              <MaterialCommunityIcons name="account-hard-hat" size={16} color={colors.primary} />
+              <Text style={styles.roleText}>Satgas: {roleCounts.workers}</Text>
+            </View>
+            <View style={styles.roleItem}>
+              <MaterialCommunityIcons name="shield-account" size={16} color={colors.secondaryDark} />
+              <Text style={styles.roleText}>Linmas: {roleCounts.linmas}</Text>
+            </View>
+          </View>
+        </NBCard>
 
         {/* Action buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.actionButton}
+          <NBButton
+            title={selectedAreaFilter
+              ? areas.find(a => a.id === selectedAreaFilter)?.name || 'Filter'
+              : 'Semua Area'}
             onPress={handleAreaFilterPress}
-          >
-            <Text style={styles.actionButtonText}>
-              {selectedAreaFilter
-                ? areas.find(a => a.id === selectedAreaFilter)?.name || 'Filter'
-                : 'Semua Area'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
+            variant="secondary"
+            size="sm"
             style={styles.actionButton}
+          />
+
+          <NBButton
+            title="Perbarui"
             onPress={handleRefresh}
             disabled={refreshing}
-          >
-            {refreshing ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Text style={styles.actionButtonText}>Perbarui</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
+            loading={refreshing}
+            variant="secondary"
+            size="sm"
             style={styles.actionButton}
+          />
+
+          <NBButton
+            title="Perbesar"
             onPress={handleFitToMarkers}
-          >
-            <Text style={styles.actionButtonText}>Perbesar</Text>
-          </TouchableOpacity>
+            variant="secondary"
+            size="sm"
+            style={styles.actionButton}
+          />
         </View>
       </View>
 
@@ -518,6 +540,9 @@ export function MapDashboardScreen(): React.JSX.Element {
                 status === 'active' ? colors.success :
                 status === 'warning' ? colors.warning :
                 colors.error;
+              const isLinmas = worker.role === 'Linmas';
+              const roleIcon = isLinmas ? 'shield-account' : 'account-hard-hat';
+              const roleColor = isLinmas ? colors.secondaryDark : colors.primary;
 
               return (
                 <TouchableOpacity
@@ -526,6 +551,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                   onPress={() => handleMarkerPress(worker)}
                 >
                   <View style={[styles.workerStatusDot, { backgroundColor: statusColor }]} />
+                  <MaterialCommunityIcons name={roleIcon} size={16} color={roleColor} style={styles.workerRoleIcon} />
                   <View style={styles.workerListItemContent}>
                     <Text style={styles.workerListName} numberOfLines={1}>
                       {worker.full_name}
@@ -629,6 +655,24 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     color: colors.textPrimary,
   },
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.gray200,
+  },
+  roleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: spacing.lg,
+  },
+  roleText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    marginLeft: spacing.xs,
+  },
   actionButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -680,6 +724,9 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+    marginRight: spacing.xs,
+  },
+  workerRoleIcon: {
     marginRight: spacing.sm,
   },
   workerListItemContent: {

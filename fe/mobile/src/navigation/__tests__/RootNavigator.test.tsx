@@ -22,8 +22,11 @@ beforeEach(() => {
 // Mock all screens
 jest.mock('../../screens/auth/LoginScreen', () => {
   const { Text } = require('react-native');
-  return function MockLoginScreen() {
-    return <Text testID="login-screen">Login Screen</Text>;
+  return {
+    __esModule: true,
+    default: function MockLoginScreen() {
+      return <Text testID="login-screen">Login Screen</Text>;
+    },
   };
 });
 

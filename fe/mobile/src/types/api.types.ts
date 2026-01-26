@@ -12,6 +12,15 @@ import type {
   LocationPing,
   ActiveWorker,
   AttendanceRecord,
+  Task,
+  TaskStatus,
+  TaskPriority,
+  ActivityType,
+  ShiftDefinition,
+  Notification,
+  MonitoringStats,
+  LiveWorker,
+  UserRole,
 } from './models.types';
 
 // Auth API
@@ -138,6 +147,7 @@ export interface ActiveWorkerData {
   id: string; // UUID (updated to match backend)
   username: string;
   full_name: string;
+  role?: 'Worker' | 'Linmas'; // Phase 2 - optional for backwards compatibility
   shift: ActiveWorkerShift;
   latest_location: ActiveWorkerLocation | null;
 }
@@ -232,5 +242,166 @@ export interface ApiError {
   path?: string; // Request path that caused the error
   details?: any; // Additional error context (e.g., activeShiftId)
   errors?: Record<string, string[]>; // Validation errors (legacy, keep for compatibility)
+}
+
+// =====================
+// Phase 2 API Types
+// =====================
+
+// Tasks API
+export interface TasksFilter {
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  area_id?: string;
+  assigned_to?: string;
+  created_by?: string;
+  from_date?: string;
+  to_date?: string;
+}
+
+export interface CreateTaskRequest {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  deadline?: string;
+  area_id: string;
+  activity_type_id: string;
+  assigned_to?: string;
+}
+
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string;
+  priority?: TaskPriority;
+  deadline?: string;
+  assigned_to?: string;
+}
+
+export interface AssignTaskRequest {
+  assigned_to: string;
+}
+
+export interface DeclineTaskRequest {
+  decline_reason: string;
+}
+
+export interface CompleteTaskRequest {
+  completion_notes?: string;
+  completion_photo?: string; // base64
+  gps_lat: number;
+  gps_lng: number;
+}
+
+export interface TasksListResponse {
+  data: Task[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Activity Types API
+export interface ActivityTypesFilter {
+  role?: UserRole;
+  is_active?: boolean;
+}
+
+export interface ActivityTypesListResponse {
+  data: ActivityType[];
+}
+
+// Shift Definitions API
+export interface ShiftDefinitionsListResponse {
+  data: ShiftDefinition[];
+}
+
+export interface CurrentShiftDefinitionResponse extends ShiftDefinition {
+  is_current: boolean;
+  time_remaining_minutes?: number;
+}
+
+// Notifications API
+export interface RegisterDeviceRequest {
+  fcm_token: string;
+  device_id: string;
+  platform: 'android' | 'ios';
+}
+
+export interface NotificationsFilter {
+  read?: boolean;
+  type?: string;
+  from_date?: string;
+  to_date?: string;
+}
+
+export interface NotificationsListResponse {
+  data: Notification[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    unread_count: number;
+  };
+}
+
+export interface BroadcastNotificationRequest {
+  title: string;
+  body: string;
+  target_roles?: UserRole[];
+  target_area_id?: string;
+  target_rayon_id?: string;
+  data?: Record<string, any>;
+}
+
+// Monitoring API
+export interface MonitoringFilter {
+  rayon_id?: string;
+  area_id?: string;
+  date?: string;
+}
+
+export interface CityMonitoringResponse extends MonitoringStats {
+  rayons: {
+    id: string;
+    name: string;
+    stats: MonitoringStats;
+  }[];
+}
+
+export interface RayonMonitoringResponse extends MonitoringStats {
+  rayon_id: string;
+  rayon_name: string;
+  areas: {
+    id: string;
+    name: string;
+    stats: MonitoringStats;
+    staffing_status: 'adequate' | 'understaffed' | 'overstaffed';
+  }[];
+}
+
+export interface AreaMonitoringResponse extends MonitoringStats {
+  area_id: string;
+  area_name: string;
+  staffing_status: 'adequate' | 'understaffed' | 'overstaffed';
+  required_workers: number;
+  actual_workers: number;
+  workers: LiveWorker[];
+}
+
+export interface LiveWorkersFilter {
+  area_id?: string;
+  rayon_id?: string;
+  shift_definition_id?: string;
+}
+
+export interface LiveWorkersResponse {
+  data: LiveWorker[];
+  meta: {
+    total: number;
+    last_updated: string;
+  };
 }
 

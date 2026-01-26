@@ -22,10 +22,12 @@ export type WorkerTabParamList = {
   WorkerHome: undefined;
   ClockInOut: undefined;
   Report: undefined;
-  ReportsList: undefined;
+  TasksReports: undefined;
   ReportDetail: { reportId: string; isWorkerView?: boolean };
   Profile: undefined;
   ShiftHistory: undefined;
+  TaskDetail: { taskId: string };
+  TaskComplete: { taskId: string };
 };
 
 export type WorkerTabScreenProps<T extends keyof WorkerTabParamList> =

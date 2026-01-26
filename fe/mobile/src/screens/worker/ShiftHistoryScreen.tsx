@@ -13,7 +13,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Card, EmptyState, SkeletonLoader } from '../../components/common';
+import { EmptyState, SkeletonLoader } from '../../components/common';
+import { NBCard } from '../../components/nb';
 import { getMyShifts } from '../../services/api/shiftsApi';
 import { getToken, getRefreshToken } from '../../services/storage/secureStorage';
 import { isTokenExpired, getTokenTimeRemaining } from '../../utils/tokenUtils';
@@ -110,7 +111,7 @@ function ShiftCard({ shift }: ShiftCardProps): React.JSX.Element {
   const isActive = !shift.clock_out_time;
 
   return (
-    <Card style={styles.shiftCard} variant="outlined">
+    <NBCard style={styles.shiftCard} variant="outlined">
       <View style={styles.shiftHeader}>
         <View style={styles.areaInfo}>
           <Text style={styles.areaName} numberOfLines={1}>
@@ -183,7 +184,7 @@ function ShiftCard({ shift }: ShiftCardProps): React.JSX.Element {
           </View>
         </View>
       </View>
-    </Card>
+    </NBCard>
   );
 }
 
@@ -346,7 +347,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       {/* Summary Header */}
-      <View style={styles.summaryCard}>
+      <NBCard variant="elevated" style={styles.summaryCard}>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryValue}>{shifts.length}</Text>
           <Text style={styles.summaryLabel}>Total Shift</Text>
@@ -355,7 +356,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
         <View style={styles.summaryItem}>
           <Text style={styles.summaryValue}>
             {shifts.reduce((acc, shift) => {
-              if (!shift.clock_out_time) return acc;
+              if (!shift.clock_out_time) {return acc;}
               const duration = calculateDuration(
                 shift.clock_in_time,
                 shift.clock_out_time
@@ -365,7 +366,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
           </Text>
           <Text style={styles.summaryLabel}>Total Jam</Text>
         </View>
-      </View>
+      </NBCard>
 
       {/* Shifts List */}
       <FlatList

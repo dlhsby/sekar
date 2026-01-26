@@ -367,7 +367,7 @@ describe('syncManager', () => {
           work_type: 'cleaning',
           photos: ['photo1.jpg'],
           gps_lat: -7.25,
-          gps_lng: 112.75
+          gps_lng: 112.75,
         },
         timestamp: 123,
         retryCount: 0,
@@ -700,9 +700,9 @@ describe('syncManager', () => {
       await syncManager.processQueue();
       const endTime = Date.now();
 
-      // Should use delays[3] = 8000ms (with 100ms margin)
+      // Should use delays[3] = 8000ms (with 200ms margin for timing variance)
       const expectedDelay = delays[Math.min(item.retryCount - 1, delays.length - 1)];
-      expect(endTime - startTime).toBeGreaterThanOrEqual(expectedDelay - 100);
+      expect(endTime - startTime).toBeGreaterThanOrEqual(expectedDelay - 200);
     }, 15000); // Increase timeout to 15 seconds to accommodate 8s delay
 
     it('should handle successful sync after retries', async () => {

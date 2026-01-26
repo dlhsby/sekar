@@ -22,7 +22,8 @@ import { useNavigation } from '@react-navigation/native';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DeviceInfo from 'react-native-device-info';
-import { Button, Card, ErrorBanner } from '../../components/common';
+import { ErrorBanner } from '../../components/common';
+import { NBButton, NBCard, NBTextInput } from '../../components/nb';
 import { theme } from '../../constants/theme';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
@@ -545,15 +546,15 @@ export function ReportSubmissionScreen(): JSX.Element {
 
         {/* Offline warning */}
         {!isOnline && (
-          <Card style={styles.offlineWarning}>
+          <NBCard variant="outlined" style={styles.offlineWarning}>
             <Text style={styles.offlineWarningText}>
               ⚠️ Mode Offline - Laporan akan disimpan dan dikirim saat online
             </Text>
-          </Card>
+          </NBCard>
         )}
 
         {/* Photos section */}
-        <Card style={styles.section}>
+        <NBCard variant="elevated" style={styles.section}>
           <Text style={styles.sectionTitle}>📸 Foto/Video (Maks 5)</Text>
           {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
 
@@ -576,13 +577,12 @@ export function ReportSubmissionScreen(): JSX.Element {
               <Text style={styles.emptyPhotoText}>Ambil Foto</Text>
             </TouchableOpacity>
           )}
-        </Card>
+        </NBCard>
 
         {/* Description */}
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>📝 Deskripsi Pekerjaan</Text>
-          <RNTextInput
-            style={styles.descriptionInput}
+        <NBCard variant="elevated" style={styles.section}>
+          <NBTextInput
+            label="📝 Deskripsi Pekerjaan"
             placeholder="Jelaskan pekerjaan yang telah dilakukan..."
             multiline
             numberOfLines={4}
@@ -592,20 +592,13 @@ export function ReportSubmissionScreen(): JSX.Element {
               setForm((prev) => ({ ...prev, description: text }));
               setErrors((prev) => ({ ...prev, description: undefined }));
             }}
-            textAlignVertical="top"
+            error={errors.description}
+            hint={`${form.description.length}/500 karakter`}
           />
-          <View style={styles.characterCounter}>
-            <Text style={styles.characterCountText}>
-              {form.description.length}/500 karakter
-            </Text>
-          </View>
-          {errors.description && (
-            <Text style={styles.errorText}>{errors.description}</Text>
-          )}
-        </Card>
+        </NBCard>
 
         {/* Work type */}
-        <Card style={styles.section}>
+        <NBCard variant="elevated" style={styles.section}>
           <Text style={styles.sectionTitle}>🏷 Jenis Pekerjaan</Text>
           {errors.workType && <Text style={styles.errorText}>{errors.workType}</Text>}
 
@@ -632,10 +625,10 @@ export function ReportSubmissionScreen(): JSX.Element {
               </Text>
             </TouchableOpacity>
           ))}
-        </Card>
+        </NBCard>
 
         {/* GPS location */}
-        <Card style={styles.section}>
+        <NBCard variant="elevated" style={styles.section}>
           <Text style={styles.sectionTitle}>📍 Lokasi</Text>
           {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
 
@@ -654,20 +647,22 @@ export function ReportSubmissionScreen(): JSX.Element {
               </Text>
             </View>
           ) : (
-            <Button
+            <NBButton
               title="Dapatkan Lokasi GPS"
               onPress={getCurrentLocation}
-              variant="outline"
+              variant="secondary"
+              fullWidth
             />
           )}
-        </Card>
+        </NBCard>
 
         {/* Submit button */}
-        <Button
+        <NBButton
           title={isOnline ? 'Kirim Laporan' : 'Simpan untuk Sync'}
           onPress={handleSubmit}
           loading={isSubmitting}
           disabled={isSubmitting}
+          fullWidth
           style={styles.submitButton}
         />
       </ScrollView>

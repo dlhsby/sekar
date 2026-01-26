@@ -253,7 +253,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
    */
   const showPermissionAlertInternal = useCallback(() => {
     // Issue 4: Check if still mounted before showing alert
-    if (!mountedRef.current) return;
+    if (!mountedRef.current) {return;}
 
     Alert.alert(
       'Izin Lokasi Diperlukan',
@@ -279,7 +279,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
    */
   const showGpsAlertInternal = useCallback(() => {
     // Issue 4: Check if still mounted before showing alert
-    if (!mountedRef.current) return;
+    if (!mountedRef.current) {return;}
 
     Alert.alert(
       'GPS Tidak Aktif',
@@ -290,7 +290,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
           text: 'Buka Pengaturan',
           onPress: () => {
             // Issue 4: Check mounted before executing callback
-            if (!mountedRef.current) return;
+            if (!mountedRef.current) {return;}
 
             // On Android, we can open location settings directly
             if (Platform.OS === 'android') {
@@ -321,7 +321,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
    * Show alert for permission denied/blocked (public API)
    */
   const showPermissionAlert = useCallback(() => {
-    if (!showAlerts) return;
+    if (!showAlerts) {return;}
     showPermissionAlertInternal();
   }, [showAlerts, showPermissionAlertInternal]);
 
@@ -329,7 +329,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
    * Show alert for GPS disabled (public API)
    */
   const showGpsAlert = useCallback(() => {
-    if (!showAlerts) return;
+    if (!showAlerts) {return;}
     showGpsAlertInternal();
   }, [showAlerts, showGpsAlertInternal]);
 

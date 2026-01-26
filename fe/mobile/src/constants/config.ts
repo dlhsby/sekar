@@ -28,7 +28,7 @@ const DEFAULT_API_VERSION = 'v1';
  * Parse numeric env var with fallback
  */
 const parseEnvNumber = (value: string | undefined, fallback: number): number => {
-  if (!value) return fallback;
+  if (!value) {return fallback;}
   const parsed = parseInt(value, 10);
   return isNaN(parsed) ? fallback : parsed;
 };

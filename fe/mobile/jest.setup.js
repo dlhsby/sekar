@@ -1,36 +1,24 @@
-// Mock react-native Alert component
-// Use Object.defineProperty to ensure the mock is properly applied and cannot be overridden
-const mockAlert = jest.fn();
-const mockPrompt = jest.fn();
+// Mock Alert before any other mocks to ensure it's available
+// This mock is hoisted to the top automatically by Jest
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
 
-jest.mock('react-native/Libraries/Alert/Alert', () => ({
-  alert: mockAlert,
-  prompt: mockPrompt,
-}));
-
-// Ensure Alert is properly mocked in all contexts
-// This handles cases where Alert is imported before the mock is applied
-const RN = require('react-native');
-if (RN.Alert) {
-  Object.defineProperty(RN.Alert, 'alert', {
-    value: mockAlert,
-    writable: true,
-    configurable: true,
+  // Create mock functions
+  const mockAlert = jest.fn((title, message, buttons) => {
+    if (buttons && buttons.length > 0 && buttons[0].onPress) {
+      buttons[0].onPress();
+    }
   });
-  Object.defineProperty(RN.Alert, 'prompt', {
-    value: mockPrompt,
-    writable: true,
-    configurable: true,
-  });
-}
 
-// Re-apply Alert mock before each test to ensure consistency
-beforeEach(() => {
-  // Ensure Alert mock is always available
-  if (RN.Alert) {
-    RN.Alert.alert = mockAlert;
-    RN.Alert.prompt = mockPrompt;
-  }
+  const mockPrompt = jest.fn();
+
+  // Add Alert to RN without spreading (which triggers getters)
+  RN.Alert = {
+    alert: mockAlert,
+    prompt: mockPrompt,
+  };
+
+  return RN;
 });
 
 // Mock AsyncStorage
@@ -117,6 +105,64 @@ jest.mock('react-native-device-info', () => ({
     getFreeDiskStorage: jest.fn(() => Promise.resolve(5 * 1024 * 1024 * 1024)),
   },
 }));
+
+// Mock react-native-haptic-feedback
+jest.mock('react-native-haptic-feedback', () => ({
+  trigger: jest.fn(),
+  HapticFeedbackTypes: {
+    impactLight: 'impactLight',
+    impactMedium: 'impactMedium',
+    impactHeavy: 'impactHeavy',
+    selection: 'selection',
+    notificationSuccess: 'notificationSuccess',
+    notificationWarning: 'notificationWarning',
+    notificationError: 'notificationError',
+  },
+}));
+
+// Mock @react-native-firebase/messaging (Phase 2 - FCM)
+jest.mock('@react-native-firebase/messaging', () => {
+  const messaging = jest.fn(() => ({
+    requestPermission: jest.fn(() => Promise.resolve(1)),
+    hasPermission: jest.fn(() => Promise.resolve(1)),
+    getToken: jest.fn(() => Promise.resolve('mock-fcm-token')),
+    deleteToken: jest.fn(() => Promise.resolve()),
+    onTokenRefresh: jest.fn(() => jest.fn()),
+    onMessage: jest.fn(() => jest.fn()),
+    setBackgroundMessageHandler: jest.fn(),
+    onNotificationOpenedApp: jest.fn(() => jest.fn()),
+    getInitialNotification: jest.fn(() => Promise.resolve(null)),
+  }));
+
+  messaging.AuthorizationStatus = {
+    AUTHORIZED: 1,
+    DENIED: 0,
+    NOT_DETERMINED: -1,
+    PROVISIONAL: 2,
+  };
+
+  return messaging;
+});
+
+// Mock socket.io-client (Phase 2 - WebSocket)
+jest.mock('socket.io-client', () => {
+  const mockSocket = {
+    connected: false,
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn((event, data, callback) => {
+      if (callback && typeof callback === 'function') {
+        callback({ success: true });
+      }
+    }),
+    disconnect: jest.fn(),
+  };
+
+  const io = jest.fn(() => mockSocket);
+  io.mockSocket = mockSocket;
+
+  return io;
+});
 
 // Mock environment variables
 global.API_BASE_URL = 'http://localhost:3000';

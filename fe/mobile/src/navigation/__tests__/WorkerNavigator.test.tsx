@@ -43,6 +43,13 @@ jest.mock('../../screens/worker/ReportsListScreen', () => ({
   },
 }));
 
+jest.mock('../../screens/worker/TasksReportsScreen', () => ({
+  TasksReportsScreen: function MockTasksReports() {
+    const { Text } = require('react-native');
+    return <Text testID="tasks-reports-screen">Tasks Reports</Text>;
+  },
+}));
+
 jest.mock('../../screens/worker/ProfileScreen', () => ({
   ProfileScreen: function MockProfile() {
     const { Text } = require('react-native');
@@ -141,7 +148,7 @@ describe('WorkerNavigator', () => {
       // Visible tabs
       expect(screen.getAllByText('Home').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Absensi').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Laporan Saya').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Tugas & Laporan').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Profil').length).toBeGreaterThan(0);
 
       // Hidden tabs should not be visible
@@ -166,14 +173,14 @@ describe('WorkerNavigator', () => {
     // Removed: "Buat Laporan" tab is now hidden (tabBarButton: () => null)
     // Accessible via navigation.navigate('Report') from other screens
 
-    it('should navigate to ReportsList when Laporan Saya tab is pressed', async () => {
+    it('should navigate to TasksReports when Tugas & Laporan tab is pressed', async () => {
       renderNavigator();
 
-      const reportsTab = screen.getAllByText('Laporan Saya')[0];
-      fireEvent.press(reportsTab);
+      const tasksReportsTab = screen.getAllByText('Tugas & Laporan')[0];
+      fireEvent.press(tasksReportsTab);
 
       await waitFor(() => {
-        expect(screen.getByTestId('reports-list-screen')).toBeTruthy();
+        expect(screen.getByTestId('tasks-reports-screen')).toBeTruthy();
       });
     });
 

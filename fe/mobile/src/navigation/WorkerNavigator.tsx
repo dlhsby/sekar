@@ -11,9 +11,11 @@ import { colors } from '../constants/theme';
 import { WorkerHomeScreen } from '../screens/worker/WorkerHomeScreen';
 import { ClockInOutScreen } from '../screens/worker/ClockInOutScreen';
 import { ReportSubmissionScreen } from '../screens/worker/ReportSubmissionScreen';
-import { ReportsListScreen } from '../screens/worker/ReportsListScreen';
+import { TasksReportsScreen } from '../screens/worker/TasksReportsScreen';
 import { ProfileScreen } from '../screens/worker/ProfileScreen';
 import { ShiftHistoryScreen } from '../screens/worker/ShiftHistoryScreen';
+import { TaskDetailScreen } from '../screens/worker/TaskDetailScreen';
+import { TaskCompleteScreen } from '../screens/worker/TaskCompleteScreen';
 import ReportDetailScreen from '../screens/supervisor/ReportDetailScreen';
 
 const Tab = createBottomTabNavigator<WorkerTabParamList>();
@@ -67,13 +69,13 @@ function WorkerNavigator(): React.JSX.Element {
         }}
       />
       <Tab.Screen
-        name="ReportsList"
-        component={ReportsListScreen}
+        name="TasksReports"
+        component={TasksReportsScreen}
         options={{
-          title: 'Laporan Saya',
+          title: 'Tugas & Laporan',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
-              name="file-document-multiple"
+              name="clipboard-text-multiple"
               color={color}
               size={size}
             />
@@ -116,6 +118,38 @@ function WorkerNavigator(): React.JSX.Element {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="file-document"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="TaskDetail"
+        component={TaskDetailScreen}
+        options={{
+          title: 'Detail Tugas',
+          // Hidden from tab bar - accessed via WorkerHome tasks list
+          tabBarButton: () => null,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="clipboard-text"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="TaskComplete"
+        component={TaskCompleteScreen}
+        options={{
+          title: 'Selesaikan Tugas',
+          // Hidden from tab bar - accessed via TaskDetail
+          tabBarButton: () => null,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="clipboard-check"
               color={color}
               size={size}
             />

@@ -1,6 +1,8 @@
 /**
  * WorkerMarker Component Tests
  * Unit tests for custom map marker component
+ *
+ * Phase 2 Update: Changed from initials to role-based icons
  */
 
 import React from 'react';
@@ -17,10 +19,17 @@ jest.mock('react-native-maps', () => {
   };
 });
 
+// Mock react-native-vector-icons
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
+  const { Text } = require('react-native');
+  return ({ name, ...props }: any) => <Text testID={`icon-${name}`} {...props}>{name}</Text>;
+});
+
 const mockWorker: ActiveWorkerData = {
   id: 1,
   username: 'worker1',
   full_name: 'John Doe',
+  role: 'Worker',
   shift: {
     id: 101,
     clock_in_time: '2026-01-17T08:00:00.000Z',
@@ -34,6 +43,14 @@ const mockWorker: ActiveWorkerData = {
     gps_lng: 112.7398,
     logged_at: '2026-01-17T10:00:00.000Z',
   },
+};
+
+const mockLinmasWorker: ActiveWorkerData = {
+  ...mockWorker,
+  id: 2,
+  username: 'linmas1',
+  full_name: 'Jane Smith',
+  role: 'Linmas',
 };
 
 const mockWorkerNoLocation: ActiveWorkerData = {
@@ -65,12 +82,21 @@ describe('WorkerMarker', () => {
       expect(queryByTestId('marker')).toBeNull();
     });
 
-    it('should display worker initials', () => {
+    it('should display worker role icon', () => {
+      const { getAllByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} />
+      );
+
+      // Worker role should show hard-hat icon (in marker and callout)
+      expect(getAllByTestId('icon-account-hard-hat').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should display role label in callout', () => {
       const { getByText } = render(
         <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} />
       );
 
-      expect(getByText('JD')).toBeTruthy();
+      expect(getByText('Satgas')).toBeTruthy();
     });
 
     it('should display full name in callout', () => {
@@ -90,50 +116,54 @@ describe('WorkerMarker', () => {
     });
   });
 
-  describe('Initials Generation', () => {
-    it('should generate initials for two-word name', () => {
-      const worker = { ...mockWorker, full_name: 'John Doe' };
-      const { getByText } = render(
-        <WorkerMarker worker={worker} status="active" onPress={mockOnPress} />
+  describe('Role-based Display', () => {
+    it('should show Satgas label for Worker role', () => {
+      const { getByText, getAllByTestId } = render(
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} />
       );
 
-      expect(getByText('JD')).toBeTruthy();
+      expect(getByText('Satgas')).toBeTruthy();
+      // Two icons: one in marker, one in callout
+      expect(getAllByTestId('icon-account-hard-hat').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should generate initials for single-word name', () => {
-      const worker = { ...mockWorker, full_name: 'John' };
-      const { getByText } = render(
-        <WorkerMarker worker={worker} status="active" onPress={mockOnPress} />
+    it('should show Linmas label for Linmas role', () => {
+      const { getByText, getAllByTestId } = render(
+        <WorkerMarker worker={mockLinmasWorker} status="active" onPress={mockOnPress} />
       );
 
-      expect(getByText('JO')).toBeTruthy();
+      expect(getByText('Linmas')).toBeTruthy();
+      // Two icons: one in marker, one in callout
+      expect(getAllByTestId('icon-shield-account').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should generate initials for multi-word name (first and last)', () => {
-      const worker = { ...mockWorker, full_name: 'John Michael Doe' };
-      const { getByText } = render(
-        <WorkerMarker worker={worker} status="active" onPress={mockOnPress} />
+    it('should default to Satgas for undefined role', () => {
+      const workerNoRole = { ...mockWorker, role: undefined };
+      const { getByText, getAllByTestId } = render(
+        <WorkerMarker worker={workerNoRole} status="active" onPress={mockOnPress} />
       );
 
-      expect(getByText('JD')).toBeTruthy();
+      expect(getByText('Satgas')).toBeTruthy();
+      // Two icons: one in marker, one in callout
+      expect(getAllByTestId('icon-account-hard-hat').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should handle name with extra spaces', () => {
-      const worker = { ...mockWorker, full_name: '  John   Doe  ' };
-      const { getByText } = render(
-        <WorkerMarker worker={worker} status="active" onPress={mockOnPress} />
+    it('should display different marker shape for Linmas', () => {
+      const { getAllByTestId } = render(
+        <WorkerMarker worker={mockLinmasWorker} status="active" onPress={mockOnPress} />
       );
 
-      expect(getByText('JD')).toBeTruthy();
+      // Linmas markers use shield icon (appears in marker and callout)
+      expect(getAllByTestId('icon-shield-account').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should capitalize initials', () => {
-      const worker = { ...mockWorker, full_name: 'john doe' };
+    it('should display worker info in callout', () => {
       const { getByText } = render(
-        <WorkerMarker worker={worker} status="active" onPress={mockOnPress} />
+        <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} />
       );
 
-      expect(getByText('JD')).toBeTruthy();
+      expect(getByText('John Doe')).toBeTruthy();
+      expect(getByText('Taman Bungkul')).toBeTruthy();
     });
   });
 
@@ -226,11 +256,13 @@ describe('WorkerMarker', () => {
 
     it('should handle special characters in name', () => {
       const worker = { ...mockWorker, full_name: 'José María' };
-      const { getByText } = render(
+      const { getByText, getAllByTestId } = render(
         <WorkerMarker worker={worker} status="active" onPress={mockOnPress} />
       );
 
-      expect(getByText('JM')).toBeTruthy();
+      // Should show role icon (in marker and callout) and name
+      expect(getAllByTestId('icon-account-hard-hat').length).toBeGreaterThanOrEqual(1);
+      expect(getByText('José María')).toBeTruthy();
     });
   });
 
@@ -245,22 +277,24 @@ describe('WorkerMarker', () => {
     });
 
     it('should not render cluster marker when clusterCount is 1', () => {
-      const { queryByText, getByText } = render(
+      const { queryByText, getAllByTestId, getByText } = render(
         <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={1} />
       );
 
-      // Should render individual marker (initials), not cluster count
-      expect(getByText('JD')).toBeTruthy();
+      // Should render individual marker with role icon (in marker and callout), not cluster count
+      expect(getAllByTestId('icon-account-hard-hat').length).toBeGreaterThanOrEqual(1);
+      expect(getByText('Satgas')).toBeTruthy();
       expect(queryByText('1')).toBeNull();
     });
 
     it('should not render cluster marker when clusterCount is undefined', () => {
-      const { getByText } = render(
+      const { getAllByTestId, getByText } = render(
         <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} />
       );
 
-      // Should render individual marker (initials)
-      expect(getByText('JD')).toBeTruthy();
+      // Should render individual marker with role icon (in marker and callout)
+      expect(getAllByTestId('icon-account-hard-hat').length).toBeGreaterThanOrEqual(1);
+      expect(getByText('Satgas')).toBeTruthy();
     });
 
     it('should display correct count for large clusters', () => {
@@ -314,12 +348,13 @@ describe('WorkerMarker', () => {
     });
 
     it('should handle cluster count of 0 as individual marker', () => {
-      const { getByText, queryByText } = render(
+      const { getAllByTestId, getByText, queryByText } = render(
         <WorkerMarker worker={mockWorker} status="active" onPress={mockOnPress} clusterCount={0} />
       );
 
-      // clusterCount of 0 or 1 should render individual marker
-      expect(getByText('JD')).toBeTruthy();
+      // clusterCount of 0 or 1 should render individual marker with role icon (in marker and callout)
+      expect(getAllByTestId('icon-account-hard-hat').length).toBeGreaterThanOrEqual(1);
+      expect(getByText('Satgas')).toBeTruthy();
       expect(queryByText('0')).toBeNull();
     });
 

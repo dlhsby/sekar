@@ -375,7 +375,7 @@ export function clusterWorkers(
  * Validate that a region has valid bounds
  */
 export function isValidRegion(region: Region | null): region is Region {
-  if (!region) return false;
+  if (!region) {return false;}
 
   return (
     typeof region.latitude === 'number' &&

@@ -199,7 +199,7 @@ describe('ReportDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('Buka di Peta')).toBeTruthy();
+        expect(getByText('Lihat di Peta')).toBeTruthy();
       });
     });
   });
@@ -271,23 +271,7 @@ describe('ReportDetailScreen', () => {
   });
 
   describe('maps integration', () => {
-    it('should open maps when open maps button is pressed', async () => {
-      const { getByTestId } = render(
-        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
-      );
-
-      await waitFor(() => {
-        expect(getByTestId('open-maps-button')).toBeTruthy();
-      });
-
-      fireEvent.press(getByTestId('open-maps-button'));
-
-      expect(Linking.openURL).toHaveBeenCalled();
-    });
-
-    it('should show error when maps fails to open', async () => {
-      (Linking.openURL as jest.Mock).mockRejectedValue(new Error('Cannot open maps'));
-
+    it('should show in-app map when open maps button is pressed', async () => {
       const { getByTestId, getByText } = render(
         <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
       );
@@ -298,8 +282,32 @@ describe('ReportDetailScreen', () => {
 
       fireEvent.press(getByTestId('open-maps-button'));
 
+      // Component now uses in-app map instead of Linking.openURL
       await waitFor(() => {
-        expect(getByText('Tidak dapat membuka aplikasi peta')).toBeTruthy();
+        expect(getByTestId('report-location-map')).toBeTruthy();
+        expect(getByText('Lokasi Laporan')).toBeTruthy();
+      });
+    });
+
+    it('should toggle map visibility when button is pressed twice', async () => {
+      const { getByTestId, queryByTestId } = render(
+        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('open-maps-button')).toBeTruthy();
+      });
+
+      // Open map
+      fireEvent.press(getByTestId('open-maps-button'));
+      await waitFor(() => {
+        expect(getByTestId('report-location-map')).toBeTruthy();
+      });
+
+      // Close map with close button
+      fireEvent.press(getByTestId('close-map-button'));
+      await waitFor(() => {
+        expect(queryByTestId('report-location-map')).toBeNull();
       });
     });
 
@@ -525,7 +533,7 @@ describe('ReportDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('Buka di Peta')).toBeTruthy();
+        expect(getByText('Lihat di Peta')).toBeTruthy();
         expect(getByTestId('open-maps-button')).toBeTruthy();
       });
     });
@@ -588,8 +596,8 @@ describe('ReportDetailScreen', () => {
       });
     });
 
-    it('should open external maps when isWorkerView is false (supervisor view)', async () => {
-      const { getByTestId } = render(
+    it('should show in-app map when isWorkerView is false (supervisor view)', async () => {
+      const { getByTestId, getByText } = render(
         <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
       );
 
@@ -599,8 +607,11 @@ describe('ReportDetailScreen', () => {
 
       fireEvent.press(getByTestId('open-maps-button'));
 
-      // Supervisor view should open external maps
-      expect(Linking.openURL).toHaveBeenCalled();
+      // Supervisor view now also uses in-app map (same as worker view)
+      await waitFor(() => {
+        expect(getByTestId('report-location-map')).toBeTruthy();
+        expect(getByText('Lokasi Laporan')).toBeTruthy();
+      });
     });
   });
 

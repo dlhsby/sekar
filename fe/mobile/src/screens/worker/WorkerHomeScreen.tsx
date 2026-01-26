@@ -9,7 +9,8 @@ import {
   AccessibilityInfo,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Button, Card, SyncStatusIndicator, LoadingSpinner, ErrorBanner } from '../../components/common';
+import { SyncStatusIndicator, LoadingSpinner, ErrorBanner } from '../../components/common';
+import { NBButton, NBCard } from '../../components/nb';
 import { theme } from '../../constants/theme';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { shiftsApi, reportsApi } from '../../services/api';
@@ -20,7 +21,7 @@ import { useLocationPermission } from '../../hooks';
 
 /**
  * Worker Home Screen - Main dashboard for workers
- * Shows current shift status, summary stats, and quick actions
+ * Shows current shift status, today's summary, and quick actions
  */
 export function WorkerHomeScreen(): JSX.Element {
   const navigation = useNavigation<any>();
@@ -33,8 +34,11 @@ export function WorkerHomeScreen(): JSX.Element {
     (state) => state.offline
   );
 
+  // Loading states
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Data states
   const [timer, setTimer] = useState('00:00:00');
 
   // Issue 8: Track last announced minute for accessibility (announce every 5 minutes)
@@ -67,8 +71,7 @@ export function WorkerHomeScreen(): JSX.Element {
 
   // Load current shift and reports on mount
   useEffect(() => {
-    loadCurrentShift();
-    loadTodayReports();
+    loadInitialData();
   }, []);
 
   // Update timer every second for real-time display
@@ -111,9 +114,14 @@ export function WorkerHomeScreen(): JSX.Element {
 
   const pad = (num: number): string => String(num).padStart(2, '0');
 
+  const loadInitialData = async () => {
+    setLoading(true);
+    await Promise.all([loadCurrentShift(), loadTodayReports()]);
+    setLoading(false);
+  };
+
   const loadCurrentShift = async () => {
     try {
-      setLoading(true);
       const response = await shiftsApi.getCurrentShift();
 
       // Check if API returned an error
@@ -132,8 +140,6 @@ export function WorkerHomeScreen(): JSX.Element {
       // Don't clear shift state on network errors to preserve offline experience
       console.warn('[WorkerHomeScreen] Unexpected error loading shift:', error.message);
       dispatch(setError(error.message || 'Failed to load shift'));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -177,6 +183,10 @@ export function WorkerHomeScreen(): JSX.Element {
     navigation.navigate('Report' as never);
   };
 
+  const handleViewReports = () => {
+    navigation.navigate('TasksReports' as never);
+  };
+
   // Derived state - must be before any early returns to satisfy React's rules of hooks
   const pendingCount = pendingShiftsCount + pendingReportsCount;
 
@@ -184,7 +194,7 @@ export function WorkerHomeScreen(): JSX.Element {
   // This avoids recalculating on every second tick while still staying accurate
   const timerMinutes = timer.slice(0, 5); // Extract HH:MM from HH:MM:SS
   const shiftDuration = useMemo(() => {
-    if (!currentShift) return '0h';
+    if (!currentShift) {return '0h';}
     return calculateDuration(
       new Date(currentShift.clock_in_time),
       new Date()
@@ -247,7 +257,7 @@ export function WorkerHomeScreen(): JSX.Element {
 
         {/* Current Shift Card */}
         {currentShift ? (
-          <Card style={styles.shiftCard}>
+          <NBCard variant="elevated" style={styles.shiftCard}>
             <Text style={styles.cardTitle}>Shift Aktif</Text>
             {/* Issue 8: Removed accessibilityLiveRegion to prevent constant announcements */}
             {/* Announcements are now made every 5 minutes via AccessibilityInfo */}
@@ -271,9 +281,9 @@ export function WorkerHomeScreen(): JSX.Element {
                 </Text>
               </View>
             </View>
-          </Card>
+          </NBCard>
         ) : (
-          <Card style={styles.shiftCard}>
+          <NBCard variant="elevated" style={styles.shiftCard}>
             <Text style={styles.cardTitle}>Belum Clock In</Text>
             <Text style={styles.noShiftText}>
               Anda belum memulai shift hari ini.
@@ -286,11 +296,11 @@ export function WorkerHomeScreen(): JSX.Element {
                 </Text>
               </View>
             )}
-          </Card>
+          </NBCard>
         )}
 
-        {/* Summary Card */}
-        <Card style={styles.summaryCard}>
+        {/* Today's Summary Card */}
+        <NBCard variant="elevated" style={styles.summaryCard}>
           <Text style={styles.cardTitle}>Ringkasan Hari Ini</Text>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
@@ -300,43 +310,49 @@ export function WorkerHomeScreen(): JSX.Element {
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>{shiftDuration}</Text>
-              <Text style={styles.summaryLabel}>Jam</Text>
+              <Text style={styles.summaryLabel}>Jam Kerja</Text>
             </View>
           </View>
-        </Card>
+          {todayReportsCount > 0 && (
+            <NBButton
+              title="Lihat Semua Laporan"
+              onPress={handleViewReports}
+              variant="secondary"
+              fullWidth
+              style={styles.viewAllButton}
+            />
+          )}
+        </NBCard>
 
         {/* Quick Actions */}
         <View style={styles.actions}>
-          <Button
+          <NBButton
             title={currentShift ? 'Clock Out' : 'Clock In'}
             onPress={handleClockInOut}
             variant="primary"
+            fullWidth
             style={styles.primaryAction}
-            isCritical={true}
-            accessibilityHint={
-              currentShift
-                ? 'Akhiri shift kerja saat ini'
-                : 'Mulai shift kerja baru dengan verifikasi lokasi'
-            }
+            testID="clock-button"
           />
           {currentShift && (
-            <Button
-              title="Laporan Baru"
+            <NBButton
+              title="Buat Laporan Baru"
               onPress={handleNewReport}
-              variant="outline"
+              variant="secondary"
+              fullWidth
               style={styles.secondaryAction}
-              accessibilityHint="Buat laporan kerja baru dengan foto dan deskripsi"
+              testID="new-report-button"
             />
           )}
         </View>
 
         {/* Empty state message if not assigned */}
         {!assignedArea && !currentShift && (
-          <Card style={styles.warningCard}>
+          <NBCard variant="outlined" style={styles.warningCard}>
             <Text style={styles.warningText}>
               Anda belum ditugaskan ke area manapun. Hubungi supervisor Anda.
             </Text>
-          </Card>
+          </NBCard>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -457,6 +473,9 @@ const styles = StyleSheet.create({
     color: theme.colors.gray900, // Improved contrast from gray600 for outdoor visibility
     fontWeight: theme.typography.fontWeight.medium,
     marginTop: theme.spacing.xs,
+  },
+  viewAllButton: {
+    marginTop: theme.spacing.lg,
   },
   actions: {
     marginTop: theme.spacing.md,

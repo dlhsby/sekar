@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { NBButton } from '../../components/nb';
 import { formatDate } from '../../utils/dateUtils';
 import { getReports } from '../../services/api/supervisorApi';
 import ReportCard, { type ReportCardData } from '../../components/supervisor/ReportCard';
@@ -166,30 +167,34 @@ function ReportsListScreen({
     return (
       <View style={styles.filterBar}>
         {/* Filter by type */}
-        <TouchableOpacity
-          style={styles.filterButton}
+        <NBButton
+          title={`${selectedFilterLabel} ▼`}
           onPress={() => setShowFilterModal(true)}
-          testID="filter-button">
-          <Text style={styles.filterButtonText}>{selectedFilterLabel}</Text>
-          <Text style={styles.filterButtonIcon}>▼</Text>
-        </TouchableOpacity>
+          variant="secondary"
+          size="sm"
+          style={styles.filterButton}
+          testID="filter-button"
+        />
 
         {/* Date filter */}
         {!filters.date ? (
-          <TouchableOpacity
-            style={styles.dateButton}
+          <NBButton
+            title="📅 Hari Ini"
             onPress={handleDateFilter}
-            testID="date-filter-button">
-            <Text style={styles.dateButtonText}>📅 Hari Ini</Text>
-          </TouchableOpacity>
+            variant="secondary"
+            size="sm"
+            style={styles.dateButton}
+            testID="date-filter-button"
+          />
         ) : (
-          <TouchableOpacity
-            style={[styles.dateButton, styles.dateButtonActive]}
+          <NBButton
+            title={`${filters.date} ✕`}
             onPress={clearDateFilter}
-            testID="clear-date-button">
-            <Text style={styles.dateButtonText}>{filters.date}</Text>
-            <Text style={styles.clearIcon}>✕</Text>
-          </TouchableOpacity>
+            variant="primary"
+            size="sm"
+            style={[styles.dateButton, styles.dateButtonActive]}
+            testID="clear-date-button"
+          />
         )}
       </View>
     );
@@ -260,12 +265,14 @@ function ReportsListScreen({
                 )}
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
-              style={styles.modalCloseButton}
+            <NBButton
+              title="Tutup"
               onPress={() => setShowFilterModal(false)}
-              testID="close-modal-button">
-              <Text style={styles.modalCloseButtonText}>Tutup</Text>
-            </TouchableOpacity>
+              variant="primary"
+              fullWidth
+              style={styles.modalCloseButton}
+              testID="close-modal-button"
+            />
           </View>
         </TouchableOpacity>
       </Modal>

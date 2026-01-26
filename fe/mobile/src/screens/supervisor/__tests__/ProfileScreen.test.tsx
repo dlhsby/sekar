@@ -297,7 +297,7 @@ describe('Supervisor ProfileScreen', () => {
     const { getByText } = renderScreen();
 
     await waitFor(() => {
-      const logoutButton = getByText('Keluar');
+      const logoutButton = getByText('🚪 Keluar');
       fireEvent.press(logoutButton);
     });
 
@@ -317,7 +317,7 @@ describe('Supervisor ProfileScreen', () => {
     const { getByText } = renderScreen();
 
     await waitFor(() => {
-      const logoutButton = getByText('Keluar');
+      const logoutButton = getByText('🚪 Keluar');
       fireEvent.press(logoutButton);
     });
 
@@ -347,7 +347,7 @@ describe('Supervisor ProfileScreen', () => {
     const { getByText } = renderScreen();
 
     await waitFor(() => {
-      const logoutButton = getByText('Keluar');
+      const logoutButton = getByText('🚪 Keluar');
       fireEvent.press(logoutButton);
     });
 
@@ -379,7 +379,7 @@ describe('Supervisor ProfileScreen', () => {
     const { getByText } = renderScreen();
 
     await waitFor(() => {
-      const logoutButton = getByText('Keluar');
+      const logoutButton = getByText('🚪 Keluar');
       fireEvent.press(logoutButton);
     });
 

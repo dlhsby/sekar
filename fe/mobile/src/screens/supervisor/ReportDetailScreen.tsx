@@ -18,10 +18,10 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { NBButton, NBCard } from '../../components/nb';
 import { formatDateTime } from '../../utils/dateUtils';
 import { getReportDetails } from '../../services/api/supervisorApi';
 import PhotoGallery from '../../components/supervisor/PhotoGallery';
-import Card from '../../components/common/Card';
 import ErrorBanner from '../../components/common/ErrorBanner';
 import type { WorkReport } from '../../types/models.types';
 
@@ -129,13 +129,16 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
     );
   }
 
-  const reportTypeLabel = REPORT_TYPE_LABELS[report.condition || 'task_completion'] || 'Laporan';
-  const photoUrls = report.media?.map((m) => m.media_url) || [];
+  // Support both report_type (backend) and condition (legacy/tests) fields for type label
+  const reportTypeLabel = REPORT_TYPE_LABELS[report.report_type || report.condition || 'task_completion'] || 'Laporan';
+  // Support both backend formats: single photo_url or media array
+  const photoUrls = report.media?.map((m) => m.media_url) ||
+    (report.photo_url ? [report.photo_url] : []);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header Card */}
-      <Card style={styles.card}>
+      <NBCard variant="elevated" style={styles.card}>
         <View style={styles.row}>
           <Text style={styles.label}>Pekerja:</Text>
           <Text style={styles.value}>{report.worker?.full_name || 'N/A'}</Text>
@@ -163,7 +166,7 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
           </View>
         )}
 
-        {report.reviewed && (
+        {(report.reviewed || report.is_reviewed) && (
           <View style={styles.reviewedRow}>
             <Text style={styles.reviewedText}>✓ Sudah Ditinjau</Text>
             {report.reviewed_at && (
@@ -173,29 +176,29 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
             )}
           </View>
         )}
-      </Card>
+      </NBCard>
 
-      {/* Description Card */}
-      {report.notes && (
-        <Card style={styles.card}>
+      {/* Description Card - support both 'notes' and 'description' fields */}
+      {(report.notes || report.description) && (
+        <NBCard variant="elevated" style={styles.card}>
           <Text style={styles.sectionTitle}>Deskripsi</Text>
-          <Text style={styles.description}>{report.notes}</Text>
-        </Card>
+          <Text style={styles.description}>{report.notes || report.description}</Text>
+        </NBCard>
       )}
 
       {/* Photos Card */}
       {photoUrls.length > 0 && (
-        <Card style={styles.card}>
+        <NBCard variant="elevated" style={styles.card}>
           <Text style={styles.sectionTitle}>
             Foto ({photoUrls.length})
           </Text>
           <Text style={styles.hint}>Ketuk foto untuk memperbesar</Text>
           <PhotoGallery photos={photoUrls} testID="report-detail-gallery" />
-        </Card>
+        </NBCard>
       )}
 
       {/* Location Card */}
-      <Card style={styles.card}>
+      <NBCard variant="elevated" style={styles.card}>
         <Text style={styles.sectionTitle}>Lokasi</Text>
         {report.gps_lat != null && report.gps_lng != null ? (
           <>
@@ -204,14 +207,14 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
                 📍 {Number(report.gps_lat).toFixed(6)}, {Number(report.gps_lng).toFixed(6)}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.mapsButton}
+            <NBButton
+              title={showInAppMap ? 'Sembunyikan Peta' : 'Lihat di Peta'}
               onPress={handleOpenMaps}
-              testID="open-maps-button">
-              <Text style={styles.mapsButtonText}>
-                {showInAppMap ? 'Sembunyikan Peta' : 'Lihat di Peta'}
-              </Text>
-            </TouchableOpacity>
+              variant="secondary"
+              fullWidth
+              style={styles.mapsButton}
+              testID="open-maps-button"
+            />
 
             {/* In-App Map View */}
             {showInAppMap && (
@@ -258,7 +261,7 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
             </Text>
           </View>
         )}
-      </Card>
+      </NBCard>
     </ScrollView>
   );
 }
