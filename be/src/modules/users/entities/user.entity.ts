@@ -5,13 +5,31 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * User Role Enum
+ *
+ * Phase 2: Extended to 6 roles with hierarchy:
+ * - Admin: Full system access
+ * - TopManagement: City-wide view (Kepala Dinas, Wali Kota, Kepala Bidang)
+ * - KepalaRayon: Manages an entire Rayon
+ * - KoordinatorLapangan: Manages specific Area (replaces Supervisor)
+ * - Worker: Field worker (Satgas)
+ * - Linmas: Security officer
+ */
 export enum UserRole {
   WORKER = 'worker',
-  SUPERVISOR = 'supervisor',
+  SUPERVISOR = 'supervisor', // Legacy, maps to koordinator_lapangan
   ADMIN = 'admin',
+  TOP_MANAGEMENT = 'top_management',
+  KEPALA_RAYON = 'kepala_rayon',
+  KOORDINATOR_LAPANGAN = 'koordinator_lapangan',
+  LINMAS = 'linmas',
 }
 
 @Entity('users')
@@ -34,11 +52,19 @@ export class User {
 
   @Column({
     type: 'varchar',
-    length: 20,
+    length: 30,
     enum: UserRole,
     default: UserRole.WORKER,
   })
   role: UserRole;
+
+  @ApiProperty({
+    description: 'Rayon ID for KepalaRayon role',
+    example: '11111111-1111-1111-1111-111111111101',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  rayon_id?: string;
 
   @Column({ default: true })
   is_active: boolean;

@@ -23,9 +23,11 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from './entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { User } from './entities/user.entity';
@@ -305,5 +307,61 @@ export class UsersController {
   })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.remove(id);
+  }
+
+  /**
+   * Change authenticated user's password.
+   * Accessible by all authenticated users (Worker, Supervisor, Admin).
+   *
+   * @route PATCH /api/users/me/change-password
+   * @param user - Authenticated user from JWT token
+   * @param changePasswordDto - Current and new password
+   * @returns No content (204)
+   * @throws UnauthorizedException if current password is incorrect
+   * @throws BadRequestException if new password is same as current
+   */
+  @Patch('me/change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Change password',
+    description:
+      "Change authenticated user's password. Requires current password for verification. New password must be different from current password.",
+  })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'Password changed successfully.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Current password is incorrect.',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Current password is incorrect',
+        error: 'Unauthorized',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Validation failed or new password same as current.',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'New password must be different from current password',
+        error: 'Bad Request',
+      },
+    },
+  })
+  async changePassword(
+    @GetUser() user: User,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    await this.usersService.changePassword(
+      user.id,
+      changePasswordDto.current_password,
+      changePasswordDto.new_password,
+    );
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
  * S3 Service
@@ -131,5 +132,107 @@ export class S3Service {
    */
   getEndpoint(): string | undefined {
     return this.endpoint;
+  }
+
+  /**
+   * Generate presigned URL for private S3 object
+   *
+   * @param key S3 object key
+   * @param expiresIn Expiration time in seconds (default: 1 hour)
+   * @returns Presigned URL valid for the specified duration
+   */
+  async getPresignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      });
+
+      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+      this.logger.log(`Generated presigned URL for ${key}, expires in ${expiresIn}s`);
+      return url;
+    } catch (error) {
+      this.logger.error(`Failed to generate presigned URL: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract S3 key from URL
+   * Supports both LocalStack and AWS URL formats
+   *
+   * @param url Full S3 URL (HTTP or s3://)
+   * @returns S3 object key
+   */
+  extractKeyFromUrl(url: string): string | null {
+    if (!url) return null;
+
+    // Handle s3:// URIs
+    if (url.startsWith('s3://')) {
+      const parts = url.replace('s3://', '').split('/');
+      parts.shift(); // Remove bucket name
+      return parts.join('/');
+    }
+
+    // Handle HTTP/HTTPS URLs
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      try {
+        const urlObj = new URL(url);
+
+        // LocalStack path-style: http://localhost:4566/bucket-name/key
+        if (this.endpoint && url.startsWith(this.endpoint)) {
+          const path = urlObj.pathname;
+          const parts = path.split('/').filter((p) => p);
+          parts.shift(); // Remove bucket name
+          return parts.join('/');
+        }
+
+        // AWS virtual-hosted-style: https://bucket.s3.region.amazonaws.com/key
+        // OR path-style: https://s3.region.amazonaws.com/bucket/key
+        const path = urlObj.pathname;
+        const parts = path.split('/').filter((p) => p);
+
+        // If hostname starts with bucket name (virtual-hosted)
+        if (urlObj.hostname.startsWith(this.bucket)) {
+          return parts.join('/');
+        }
+
+        // If path-style (bucket is first path segment)
+        if (parts[0] === this.bucket) {
+          parts.shift();
+          return parts.join('/');
+        }
+
+        return parts.join('/');
+      } catch (error) {
+        this.logger.error(`Failed to parse URL: ${url}`);
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert existing URL to presigned URL
+   *
+   * @param url Existing S3 URL (can be s3://, http://, or https://)
+   * @param expiresIn Expiration time in seconds (default: 1 hour)
+   * @returns Presigned URL or original URL if extraction fails
+   */
+  async convertToPresignedUrl(url: string, expiresIn: number = 3600): Promise<string> {
+    const key = this.extractKeyFromUrl(url);
+
+    if (!key) {
+      this.logger.warn(`Could not extract key from URL: ${url}, returning original URL`);
+      return url;
+    }
+
+    try {
+      return await this.getPresignedUrl(key, expiresIn);
+    } catch (error) {
+      this.logger.error(`Failed to generate presigned URL for ${url}, returning original URL`);
+      return url;
+    }
   }
 }

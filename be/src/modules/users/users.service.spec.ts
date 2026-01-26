@@ -1,7 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { AuthService } from '../auth/auth.service';
@@ -256,6 +262,85 @@ describe('UsersService', () => {
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
         where: { username: 'nonexistent' },
       });
+    });
+  });
+
+  describe('changePassword', () => {
+    const currentPassword = 'oldpass123';
+    const newPassword = 'newpass456';
+    const newPasswordHash = '$2b$10$newhashedpassword';
+
+    beforeEach(() => {
+      jest.spyOn(bcrypt, 'compare').mockImplementation((password: string, hash: string) => {
+        if (password === currentPassword && hash === mockUser.password_hash) {
+          return Promise.resolve(true as never);
+        }
+        if (password === newPassword && hash === mockUser.password_hash) {
+          return Promise.resolve(false as never);
+        }
+        return Promise.resolve(false as never);
+      });
+      mockAuthService.hashPassword.mockResolvedValue(newPasswordHash);
+    });
+
+    it('should successfully change password when current password is correct', async () => {
+      const userWithHash = { ...mockUser, password_hash: '$2b$10$hashedpassword' };
+      mockUserRepository.findOne.mockResolvedValue(userWithHash);
+      mockUserRepository.save.mockResolvedValue({
+        ...userWithHash,
+        password_hash: newPasswordHash,
+      });
+
+      await service.changePassword(mockUser.id, currentPassword, newPassword);
+
+      // Verify bcrypt.compare was called twice (current password verification + new password check)
+      expect(bcrypt.compare).toHaveBeenCalledTimes(2);
+      expect(bcrypt.compare).toHaveBeenNthCalledWith(1, currentPassword, '$2b$10$hashedpassword');
+      expect(bcrypt.compare).toHaveBeenNthCalledWith(2, newPassword, '$2b$10$hashedpassword');
+      expect(authService.hashPassword).toHaveBeenCalledWith(newPassword);
+      expect(mockUserRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: mockUser.id,
+          password_hash: newPasswordHash,
+        }),
+      );
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      mockUserRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.changePassword('non-existent-id', currentPassword, newPassword),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.changePassword('non-existent-id', currentPassword, newPassword),
+      ).rejects.toThrow('User with ID non-existent-id not found');
+    });
+
+    it('should throw UnauthorizedException if current password is incorrect', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+
+      await expect(
+        service.changePassword(mockUser.id, 'wrongpassword', newPassword),
+      ).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.changePassword(mockUser.id, 'wrongpassword', newPassword),
+      ).rejects.toThrow('Current password is incorrect');
+    });
+
+    it('should throw BadRequestException if new password is same as current', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockImplementation((password: string, hash: string) => {
+        return Promise.resolve(true as never); // Both current and new password match
+      });
+
+      await expect(
+        service.changePassword(mockUser.id, currentPassword, currentPassword),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.changePassword(mockUser.id, currentPassword, currentPassword),
+      ).rejects.toThrow('New password must be different from current password');
     });
   });
 });

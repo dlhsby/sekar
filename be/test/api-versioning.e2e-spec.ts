@@ -228,9 +228,7 @@ describe('API Versioning (e2e)', () => {
     });
 
     it('OpenAPI spec should include all v1 endpoints', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/v1/docs-json')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/api/v1/docs-json').expect(200);
 
       const paths = Object.keys(response.body.paths);
 

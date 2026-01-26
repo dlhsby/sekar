@@ -12,6 +12,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Area } from '../../areas/entities/area.entity';
+import { Task } from '../../tasks/entities/task.entity';
+import { ActivityType } from '../../activity-types/entities/activity-type.entity';
 
 export enum ReportType {
   // Mobile-compatible values
@@ -54,6 +56,21 @@ export class Report {
   @ApiProperty({ description: 'Area UUID where work was performed' })
   @Column({ type: 'uuid' })
   area_id: string;
+
+  // Phase 2 additions
+  @ApiProperty({
+    description: 'Task UUID (if report is linked to a task)',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  task_id?: string;
+
+  @ApiProperty({
+    description: 'Activity type UUID',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  activity_type_id?: string;
 
   @ApiProperty({
     description: 'Report type',
@@ -149,4 +166,23 @@ export class Report {
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'reviewed_by' })
   reviewer?: User;
+
+  // Phase 2 relations
+  @ApiProperty({
+    type: () => Task,
+    description: 'Task this report is linked to (if any)',
+    required: false,
+  })
+  @ManyToOne(() => Task, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'task_id' })
+  task?: Task;
+
+  @ApiProperty({
+    type: () => ActivityType,
+    description: 'Activity type of the work performed',
+    required: false,
+  })
+  @ManyToOne(() => ActivityType, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'activity_type_id' })
+  activityType?: ActivityType;
 }

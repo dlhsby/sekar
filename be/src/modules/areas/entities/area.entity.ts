@@ -96,6 +96,42 @@ export class Area {
   @Column({ default: true })
   is_active: boolean;
 
+  // Phase 2 additions
+  @ApiProperty({
+    description: 'Rayon ID this area belongs to',
+    example: '11111111-1111-1111-1111-111111111101',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  rayon_id?: string;
+
+  @ApiProperty({
+    description: 'GeoJSON polygon defining area boundary',
+    example: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [112.7395, -7.2908],
+          [112.7401, -7.2908],
+          [112.7401, -7.2902],
+          [112.7395, -7.2902],
+          [112.7395, -7.2908],
+        ],
+      ],
+    },
+    required: false,
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  boundary_polygon?: object;
+
+  @ApiProperty({
+    description: 'Coverage area in square meters',
+    example: 2500.5,
+    required: false,
+  })
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  coverage_area?: number;
+
   @ApiProperty({
     description: 'Timestamp when the area was created',
     example: '2026-01-08T10:00:00.000Z',

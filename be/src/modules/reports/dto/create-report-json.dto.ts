@@ -12,7 +12,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReportType } from '../entities/report.entity';
 
 /**
@@ -39,7 +39,8 @@ export class CreateReportJsonDto {
 
   @ApiProperty({
     description: 'Detailed description of the report',
-    example: 'Completed cleaning Taman Bungkul main area. All trash collected and disposed properly.',
+    example:
+      'Completed cleaning Taman Bungkul main area. All trash collected and disposed properly.',
   })
   @IsString()
   @IsNotEmpty()
@@ -77,10 +78,30 @@ export class CreateReportJsonDto {
   @IsArray()
   @ArrayMaxSize(5, { message: 'Maximum 5 photos allowed per report' })
   @IsString({ each: true })
-  @MaxLength(10_000_000, { each: true, message: 'Each photo must not exceed ~7.5MB (10MB base64 encoded)' })
+  @MaxLength(10_000_000, {
+    each: true,
+    message: 'Each photo must not exceed ~7.5MB (10MB base64 encoded)',
+  })
   @Matches(/^data:image\/(jpeg|jpg|png);base64,[A-Za-z0-9+/=]+$/, {
     each: true,
     message: 'Invalid base64 image format. Must be data:image/(jpeg|jpg|png);base64,<data>',
   })
   photos?: string[];
+
+  // Phase 2 fields
+  @ApiPropertyOptional({
+    description: 'Task UUID if this report is linked to a task completion',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @IsUUID()
+  @IsOptional()
+  task_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Activity type UUID',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @IsUUID()
+  @IsOptional()
+  activity_type_id?: string;
 }

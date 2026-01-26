@@ -94,6 +94,9 @@ export class ReportsService {
       gps_lat: dto.gps_lat,
       gps_lng: dto.gps_lng,
       photo_url: photoUrl,
+      // Phase 2 fields
+      task_id: dto.task_id,
+      activity_type_id: dto.activity_type_id,
     });
 
     const savedReport = await this.reportsRepository.save(report);
@@ -168,6 +171,9 @@ export class ReportsService {
       gps_lat: dto.gps_lat,
       gps_lng: dto.gps_lng,
       photo_url: photoUrl,
+      // Phase 2 fields
+      task_id: dto.task_id,
+      activity_type_id: dto.activity_type_id,
     });
 
     const savedReport = await this.reportsRepository.save(report);
@@ -281,7 +287,7 @@ export class ReportsService {
    *
    * @param workerId Worker UUID
    * @param date Optional date filter (YYYY-MM-DD)
-   * @returns List of worker's reports
+   * @returns List of worker's reports with presigned photo URLs
    */
   async findMyReports(workerId: string, date?: string): Promise<Report[]> {
     const where: any = { worker_id: workerId };
@@ -294,11 +300,14 @@ export class ReportsService {
       where.created_at = Between(startDate, endDate);
     }
 
-    return this.reportsRepository.find({
+    const reports = await this.reportsRepository.find({
       where,
       relations: ['worker', 'shift', 'shift.area'],
       order: { created_at: 'DESC' },
     });
+
+    // Convert photo URLs to presigned URLs (24 hour expiry for mobile caching)
+    return Promise.all(reports.map((report) => this.convertPhotoUrlToPresigned(report)));
   }
 
   /**
@@ -332,7 +341,8 @@ export class ReportsService {
       );
     }
 
-    return report;
+    // Convert photo URL to presigned URL (24 hour expiry)
+    return this.convertPhotoUrlToPresigned(report);
   }
 
   /**
@@ -416,5 +426,29 @@ export class ReportsService {
 
     await this.reportsRepository.remove(report);
     this.logger.log(`Report deleted: ${id}`);
+  }
+
+  /**
+   * Convert photo URL to presigned URL if needed
+   * Handles s3:// URIs, http/https URLs, or null values
+   *
+   * @param report Report with potentially non-presigned photo URL
+   * @returns Report with presigned photo URL (24 hour expiry for mobile caching)
+   */
+  private async convertPhotoUrlToPresigned(report: Report): Promise<Report> {
+    if (!report.photo_url) {
+      return report;
+    }
+
+    try {
+      // Convert to presigned URL (24 hours = 86400 seconds)
+      // Longer expiry allows mobile clients to cache the URL
+      report.photo_url = await this.s3Service.convertToPresignedUrl(report.photo_url, 86400);
+    } catch (error) {
+      this.logger.error(`Failed to convert photo URL for report ${report.id}: ${error.message}`);
+      // Return original URL on error - better than blocking the entire request
+    }
+
+    return report;
   }
 }

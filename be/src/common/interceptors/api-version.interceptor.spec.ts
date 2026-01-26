@@ -48,9 +48,7 @@ describe('ApiVersionInterceptor', () => {
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
         next: () => {
-          expect(loggerDebugSpy).toHaveBeenCalledWith(
-            'API Version v1 requested for GET /api/test',
-          );
+          expect(loggerDebugSpy).toHaveBeenCalledWith('API Version v1 requested for GET /api/test');
           done();
         },
         error: done,

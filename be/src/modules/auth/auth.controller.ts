@@ -39,7 +39,8 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
   @ApiOperation({
     summary: 'User login',
-    description: 'Authenticate user with username and password. Returns JWT token for API access. Rate limited to 5 attempts per minute.',
+    description:
+      'Authenticate user with username and password. Returns JWT token for API access. Rate limited to 5 attempts per minute.',
   })
   @ApiBody({ type: LoginDto })
   @ApiResponse({
@@ -103,7 +104,8 @@ export class AuthController {
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({
     status: 200,
-    description: 'Token refresh successful. Returns new access token, refresh token, and user information.',
+    description:
+      'Token refresh successful. Returns new access token, refresh token, and user information.',
     type: AuthResponseDto,
     schema: {
       example: {
@@ -161,7 +163,8 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Logout user',
-    description: 'Logout the currently authenticated user. Client must clear tokens locally after this call.',
+    description:
+      'Logout the currently authenticated user. Client must clear tokens locally after this call.',
   })
   @ApiResponse({
     status: 200,

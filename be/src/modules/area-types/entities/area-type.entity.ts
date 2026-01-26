@@ -46,6 +46,20 @@ export class AreaType {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  /**
+   * Phase 2: Category classification
+   * - ACTIVE: Parks, gardens requiring active maintenance
+   * - PASSIVE: Pedestrian walkways, streets requiring less maintenance
+   */
+  @ApiProperty({
+    description: 'Category classification (ACTIVE or PASSIVE)',
+    example: 'ACTIVE',
+    enum: ['ACTIVE', 'PASSIVE'],
+    default: 'ACTIVE',
+  })
+  @Column({ type: 'varchar', length: 20, default: 'ACTIVE' })
+  category: string;
+
   @ApiProperty({
     description: 'Timestamp when the area type was created',
     example: '2026-01-08T10:00:00.000Z',

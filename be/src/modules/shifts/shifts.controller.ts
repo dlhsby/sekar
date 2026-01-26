@@ -1,5 +1,21 @@
-import { Controller, Post, Get, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ShiftsService } from './shifts.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
@@ -183,7 +199,9 @@ export class ShiftsController {
     status: HttpStatus.FORBIDDEN,
     description: 'Only admin and supervisors can view all active shifts',
   })
-  async getActiveShifts(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<Shift>> {
+  async getActiveShifts(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponseDto<Shift>> {
     return this.shiftsService.findAllActiveShiftsPaginated(paginationDto.page, paginationDto.limit);
   }
 }

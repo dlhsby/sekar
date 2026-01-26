@@ -1,5 +1,16 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsString, IsUUID, Max, Min, MinLength, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsUUID,
+  IsOptional,
+  Max,
+  Min,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReportType } from '../entities/report.entity';
 
 /**
@@ -57,4 +68,21 @@ export class CreateReportDto {
   @Min(-180)
   @Max(180)
   gps_lng: number;
+
+  // Phase 2 fields
+  @ApiPropertyOptional({
+    description: 'Task UUID if this report is linked to a task completion',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @IsUUID()
+  @IsOptional()
+  task_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Activity type UUID',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @IsUUID()
+  @IsOptional()
+  activity_type_id?: string;
 }

@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { AreasService } from './areas.service';
 import { Area } from './entities/area.entity';
 import { AreaTypesService } from '../area-types/area-types.service';
+import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 
@@ -13,12 +14,14 @@ describe('AreasService', () => {
   let service: AreasService;
   let repository: Repository<Area>;
   let areaTypesService: AreaTypesService;
+  let workerAssignmentsService: WorkerAssignmentsService;
 
   const mockAreaType = {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     code: 'park',
     name: 'Park',
     description: 'Public park or garden',
+    category: 'ACTIVE',
     created_at: new Date(),
     updated_at: new Date(),
     deleted_at: undefined,
@@ -52,6 +55,10 @@ describe('AreasService', () => {
     findByCode: jest.fn(),
   };
 
+  const mockWorkerAssignmentsService = {
+    countByAreaId: jest.fn(),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -64,12 +71,17 @@ describe('AreasService', () => {
           provide: AreaTypesService,
           useValue: mockAreaTypesService,
         },
+        {
+          provide: WorkerAssignmentsService,
+          useValue: mockWorkerAssignmentsService,
+        },
       ],
     }).compile();
 
     service = module.get<AreasService>(AreasService);
     repository = module.get<Repository<Area>>(getRepositoryToken(Area));
     areaTypesService = module.get<AreaTypesService>(AreaTypesService);
+    workerAssignmentsService = module.get<WorkerAssignmentsService>(WorkerAssignmentsService);
   });
 
   afterEach(async () => {
@@ -203,13 +215,30 @@ describe('AreasService', () => {
   });
 
   describe('remove', () => {
-    it('should soft delete an area', async () => {
+    it('should soft delete an area when no workers are assigned', async () => {
       mockRepository.findOne.mockResolvedValue(mockArea);
+      mockWorkerAssignmentsService.countByAreaId.mockResolvedValue(0);
       mockRepository.save.mockResolvedValue({ ...mockArea, is_active: false });
 
       await service.remove('c3d4e5f6-a7b8-9012-cdef-123456789012');
 
+      expect(workerAssignmentsService.countByAreaId).toHaveBeenCalledWith(
+        'c3d4e5f6-a7b8-9012-cdef-123456789012',
+      );
       expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ is_active: false }));
+    });
+
+    it('should throw BadRequestException if workers are assigned to the area', async () => {
+      mockRepository.findOne.mockResolvedValue(mockArea);
+      mockWorkerAssignmentsService.countByAreaId.mockResolvedValue(3);
+
+      await expect(service.remove('c3d4e5f6-a7b8-9012-cdef-123456789012')).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.remove('c3d4e5f6-a7b8-9012-cdef-123456789012')).rejects.toThrow(
+        'Cannot delete area: 3 worker(s) assigned',
+      );
+      expect(repository.save).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if area not found', async () => {

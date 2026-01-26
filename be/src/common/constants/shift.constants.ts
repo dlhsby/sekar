@@ -13,9 +13,16 @@
  *
  * Rationale: 5 minutes is enough time for setup/arrival but prevents immediate
  * clock-in/clock-out which could indicate errors or abuse.
+ *
+ * Configuration: This value is configurable via the MINIMUM_SHIFT_DURATION_MINUTES
+ * environment variable. Defaults to 5 minutes if not set.
+ *
  * Updated from 15 minutes based on user feedback during testing.
  */
-export const MINIMUM_SHIFT_DURATION_MINUTES = 5;
+export const MINIMUM_SHIFT_DURATION_MINUTES = parseInt(
+  process.env.MINIMUM_SHIFT_DURATION_MINUTES || '5',
+  10,
+);
 
 /**
  * Minimum shift duration in milliseconds (calculated)

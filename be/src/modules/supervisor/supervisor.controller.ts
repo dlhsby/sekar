@@ -8,6 +8,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { ActiveWorkersResponseDto, ActiveWorkerDto } from './dto/active-workers-response.dto';
 import { AreaStatusResponseDto } from './dto/area-status-response.dto';
 import { AttendanceResponseDto } from './dto/attendance-response.dto';
+import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
@@ -31,7 +32,8 @@ export class SupervisorController {
   @Get('active-workers')
   @ApiOperation({
     summary: 'Get active workers with pagination (Admin, Supervisor)',
-    description: 'Returns paginated list of workers currently clocked in with their latest GPS locations',
+    description:
+      'Returns paginated list of workers currently clocked in with their latest GPS locations',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
@@ -69,8 +71,13 @@ export class SupervisorController {
       },
     },
   })
-  async getActiveWorkers(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
-    return this.supervisorService.getActiveWorkersPaginated(paginationDto.page, paginationDto.limit);
+  async getActiveWorkers(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
+    return this.supervisorService.getActiveWorkersPaginated(
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   /**
@@ -139,10 +146,11 @@ export class SupervisorController {
       },
     },
   })
-  async getAttendance(
-    @Query('date') date?: string,
-    @Query() paginationDto?: PaginationDto,
-  ): Promise<any> {
-    return this.supervisorService.getAttendancePaginated(date, paginationDto?.page, paginationDto?.limit);
+  async getAttendance(@Query() filterDto: AttendanceFilterDto): Promise<any> {
+    return this.supervisorService.getAttendancePaginated(
+      filterDto.date,
+      filterDto.page,
+      filterDto.limit,
+    );
   }
 }

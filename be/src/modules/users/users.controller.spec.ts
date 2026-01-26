@@ -4,6 +4,7 @@ import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 describe('UsersController', () => {
   let module: TestingModule;
@@ -28,6 +29,7 @@ describe('UsersController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    changePassword: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -122,6 +124,48 @@ describe('UsersController', () => {
       await controller.remove(mockUser.id);
 
       expect(usersService.remove).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('changePassword', () => {
+    const changePasswordDto: ChangePasswordDto = {
+      current_password: 'oldpass123',
+      new_password: 'newpass456',
+    };
+
+    it('should successfully change password', async () => {
+      mockUsersService.changePassword.mockResolvedValue(undefined);
+
+      await controller.changePassword(mockUser, changePasswordDto);
+
+      expect(usersService.changePassword).toHaveBeenCalledWith(
+        mockUser.id,
+        changePasswordDto.current_password,
+        changePasswordDto.new_password,
+      );
+    });
+
+    it('should call service with authenticated user ID', async () => {
+      const authenticatedUser: User = {
+        id: 'user-123',
+        username: 'worker1',
+        password_hash: 'hashedpassword',
+        full_name: 'Worker One',
+        role: UserRole.WORKER,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      mockUsersService.changePassword.mockResolvedValue(undefined);
+
+      await controller.changePassword(authenticatedUser, changePasswordDto);
+
+      expect(usersService.changePassword).toHaveBeenCalledWith(
+        authenticatedUser.id,
+        changePasswordDto.current_password,
+        changePasswordDto.new_password,
+      );
     });
   });
 });

@@ -77,7 +77,9 @@ describe('JwtStrategy', () => {
             },
           ],
         }).compile(),
-      ).rejects.toThrow('JWT_SECRET environment variable is required. Application cannot start without it.');
+      ).rejects.toThrow(
+        'JWT_SECRET environment variable is required. Application cannot start without it.',
+      );
     });
 
     it('should initialize successfully when JWT_SECRET is configured', async () => {

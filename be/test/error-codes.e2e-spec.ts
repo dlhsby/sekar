@@ -319,7 +319,7 @@ describe('Error Codes (e2e)', () => {
           });
       });
 
-      it('should return REPORT_ACCESS_DENIED when worker accesses another worker\'s report', async () => {
+      it("should return REPORT_ACCESS_DENIED when worker accesses another worker's report", async () => {
         // Create a report as worker1
         const createReportDto = {
           shift_id: 'worker1-shift-uuid',
@@ -485,12 +485,7 @@ describe('Error Codes (e2e)', () => {
   describe('Error Code Consistency', () => {
     it('should return same error code for same error across different endpoints', async () => {
       // Test AUTH_TOKEN_INVALID across multiple endpoints
-      const endpoints = [
-        '/api/v1/users',
-        '/api/v1/shifts',
-        '/api/v1/reports',
-        '/api/v1/areas',
-      ];
+      const endpoints = ['/api/v1/users', '/api/v1/shifts', '/api/v1/reports', '/api/v1/areas'];
 
       for (const endpoint of endpoints) {
         const response = await request(app.getHttpServer()).get(endpoint).expect(401);
@@ -508,8 +503,8 @@ describe('Error Codes (e2e)', () => {
       ];
 
       for (const test of notFoundTests) {
-        const response = await request(app.getHttpServer())
-          [test.method](test.path)
+        const agent = request(app.getHttpServer()) as any;
+        const response = await agent[test.method](test.path)
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(404);
 

@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Logger,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -64,12 +72,30 @@ export class UsersService {
   }
 
   /**
+   * Find users by roles
+   * @param roles Array of user roles to filter by
+   * @returns Array of users with specified roles
+   */
+  async findByRoles(roles: string[]): Promise<User[]> {
+    this.logger.log(`Fetching users by roles: ${roles.join(', ')}`);
+    return this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.username', 'user.full_name', 'user.role', 'user.is_active'])
+      .where('user.role IN (:...roles)', { roles })
+      .andWhere('user.is_active = :isActive', { isActive: true })
+      .getMany();
+  }
+
+  /**
    * Find all users with pagination (without sensitive data)
    * @param page Page number (1-based)
    * @param limit Items per page
    * @returns Paginated users
    */
-  async findAllPaginated(page: number = 1, limit: number = 50): Promise<PaginatedResponseDto<User>> {
+  async findAllPaginated(
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<PaginatedResponseDto<User>> {
     this.logger.log(`Fetching users with pagination: page=${page}, limit=${limit}`);
 
     const [data, total] = await this.userRepository.findAndCount({
@@ -164,5 +190,54 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.userRepository.remove(user);
     this.logger.warn(`User hard deleted: ID ${id}`);
+  }
+
+  /**
+   * Change user password
+   * @param userId User ID (UUID)
+   * @param currentPassword Current password for verification
+   * @param newPassword New password to set
+   * @throws NotFoundException if user not found
+   * @throws UnauthorizedException if current password is incorrect
+   * @throws BadRequestException if new password is same as current
+   */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    this.logger.log(`Password change attempt for user: ID ${userId}`);
+
+    // Find user with password hash
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username', 'password_hash', 'is_active'],
+    });
+
+    if (!user) {
+      this.logger.warn(`Password change failed: User not found - ID ${userId}`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isCurrentPasswordValid) {
+      this.logger.warn(`Password change failed: Incorrect current password - ID ${userId}`);
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Ensure new password is different from current (additional check beyond DTO validation)
+    const isSamePassword = await bcrypt.compare(newPassword, user.password_hash);
+    if (isSamePassword) {
+      this.logger.warn(`Password change failed: New password same as current - ID ${userId}`);
+      throw new BadRequestException('New password must be different from current password');
+    }
+
+    // Hash and update password
+    const newPasswordHash = await this.authService.hashPassword(newPassword);
+    user.password_hash = newPasswordHash;
+    await this.userRepository.save(user);
+
+    this.logger.log(`Password changed successfully for user: ID ${userId}`);
   }
 }

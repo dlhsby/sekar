@@ -23,7 +23,6 @@ import { EARTH_RADIUS_METERS } from '../constants/gps.constants';
  * console.log(distance); // ~615 meters
  */
 export class GpsUtil {
-
   /**
    * Convert degrees to radians
    * @param degrees - Angle in degrees

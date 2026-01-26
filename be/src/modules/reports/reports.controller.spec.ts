@@ -6,6 +6,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { ReportsFilterDto } from './dto/reports-filter.dto';
 
 describe('ReportsController', () => {
   let module: TestingModule;
@@ -140,7 +141,7 @@ describe('ReportsController', () => {
       };
       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 50 }, 'worker-uuid-123');
+      const result = await controller.findAll({ page: 1, limit: 50, worker_id: 'worker-uuid-123' });
 
       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
         {
@@ -163,12 +164,11 @@ describe('ReportsController', () => {
       };
       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll(
-        { page: 1, limit: 50 },
-        undefined,
-        undefined,
-        ReportType.INCIDENT,
-      );
+      const result = await controller.findAll({
+        page: 1,
+        limit: 50,
+        report_type: ReportType.INCIDENT,
+      });
 
       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
         {
@@ -191,14 +191,12 @@ describe('ReportsController', () => {
       };
       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll(
-        { page: 1, limit: 50 },
-        undefined,
-        undefined,
-        undefined,
-        '2026-01-01',
-        '2026-01-31',
-      );
+      const result = await controller.findAll({
+        page: 1,
+        limit: 50,
+        from_date: '2026-01-01',
+        to_date: '2026-01-31',
+      });
 
       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
         {

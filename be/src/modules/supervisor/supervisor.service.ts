@@ -261,7 +261,12 @@ export class SupervisorService {
     date?: string,
     page: number = 1,
     limit: number = 50,
-  ): Promise<{ date: string; total_workers: number; clocked_in_count: number; not_clocked_in: PaginatedResponseDto<NotClockedInWorkerDto> }> {
+  ): Promise<{
+    date: string;
+    total_workers: number;
+    clocked_in_count: number;
+    not_clocked_in: PaginatedResponseDto<NotClockedInWorkerDto>;
+  }> {
     // Get date parameter (default: today)
     const targetDate = date ? new Date(date) : new Date();
     const startOfDay = new Date(targetDate);

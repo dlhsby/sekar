@@ -10,13 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { AreaTypesService } from './area-types.service';
 import { AreaType } from './entities/area-type.entity';
 import { CreateAreaTypeDto } from './dto/create-area-type.dto';
@@ -186,10 +180,7 @@ export class AreaTypesController {
     status: 409,
     description: 'Conflict - Area type code already exists',
   })
-  update(
-    @Param('id') id: string,
-    @Body() updateAreaTypeDto: UpdateAreaTypeDto,
-  ): Promise<AreaType> {
+  update(@Param('id') id: string, @Body() updateAreaTypeDto: UpdateAreaTypeDto): Promise<AreaType> {
     return this.areaTypesService.update(id, updateAreaTypeDto);
   }
 

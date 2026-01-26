@@ -18,7 +18,10 @@ import { GpsUtil } from '../../common/utils/gps.util';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import { MINIMUM_SHIFT_DURATION_MS, MINIMUM_SHIFT_DURATION_MINUTES } from '../../common/constants/shift.constants';
+import {
+  MINIMUM_SHIFT_DURATION_MS,
+  MINIMUM_SHIFT_DURATION_MINUTES,
+} from '../../common/constants/shift.constants';
 
 /**
  * Service for managing worker shifts
@@ -167,15 +170,15 @@ export class ShiftsService {
 
     // Check minimum shift duration (15 minutes)
     const shiftDurationMs = Date.now() - shift.clock_in_time.getTime();
-    
+
     if (shiftDurationMs < MINIMUM_SHIFT_DURATION_MS) {
       const minutesWorked = Math.floor(shiftDurationMs / (60 * 1000));
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         ApiErrorCode.SHIFT_DURATION_TOO_SHORT,
         `Shift duration too short. Minimum ${MINIMUM_SHIFT_DURATION_MINUTES} minutes required. Current duration: ${minutesWorked} minutes`,
-        { 
-          minutesWorked, 
+        {
+          minutesWorked,
           minimumRequired: MINIMUM_SHIFT_DURATION_MINUTES,
           clockInTime: shift.clock_in_time.toISOString(),
         },

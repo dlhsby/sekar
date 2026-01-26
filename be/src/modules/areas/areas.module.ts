@@ -5,6 +5,7 @@ import { AreasController } from './areas.controller';
 import { Area } from './entities/area.entity';
 import { AuthModule } from '../auth/auth.module';
 import { AreaTypesModule } from '../area-types/area-types.module';
+import { WorkerAssignmentsModule } from '../worker-assignments/worker-assignments.module';
 
 /**
  * Areas Module
@@ -17,7 +18,7 @@ import { AreaTypesModule } from '../area-types/area-types.module';
     TypeOrmModule.forFeature([Area]),
     forwardRef(() => AuthModule), // For JwtAuthGuard and RolesGuard (circular dependency)
     AreaTypesModule, // For validating area_type_id
-    // WorkerAssignmentsModule will be imported via forwardRef when needed
+    forwardRef(() => WorkerAssignmentsModule), // For checking worker assignments before deletion
   ],
   controllers: [AreasController],
   providers: [AreasService],

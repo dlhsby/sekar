@@ -1,0 +1,25 @@
+# SEKAR Backend - Development Dockerfile
+# Build: docker build -f Dockerfile.dev -t sekar-backend-dev .
+# Run: docker run -p 3000:3000 -v $(pwd):/app -v /app/node_modules sekar-backend-dev
+
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Install build dependencies for native modules (bcrypt)
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Start in development mode with hot-reload
+CMD ["npm", "run", "start:dev"]

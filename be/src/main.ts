@@ -79,6 +79,17 @@ async function bootstrap() {
     .addTag('reports', 'Work report endpoints')
     .addTag('location', 'Location tracking endpoints')
     .addTag('supervisor', 'Supervisor dashboard endpoints')
+    // Phase 2 tags
+    .addTag('rayons', 'Rayon (geographic sector) management endpoints')
+    .addTag('shift-definitions', 'Shift definition endpoints')
+    .addTag('activity-types', 'Activity type management endpoints')
+    .addTag('area-staff-requirements', 'Area staff requirements endpoints')
+    .addTag('worker-schedules', 'Worker schedule management endpoints')
+    .addTag('special-day-overrides', 'Special day override endpoints (holidays, weekends)')
+    .addTag('tasks', 'Task management endpoints')
+    .addTag('notifications', 'Push notification endpoints')
+    .addTag('monitoring', 'Real-time monitoring endpoints')
+    .addTag('import', 'KMZ/KML import endpoints')
     .addBearerAuth(
       {
         type: 'http',

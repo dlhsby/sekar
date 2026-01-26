@@ -1,0 +1,374 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { RayonsService } from './rayons.service';
+import { Rayon } from './entities/rayon.entity';
+import { Area } from '../areas/entities/area.entity';
+import { CreateRayonDto } from './dto/create-rayon.dto';
+import { UpdateRayonDto } from './dto/update-rayon.dto';
+
+describe('RayonsService', () => {
+  let module: TestingModule;
+  let service: RayonsService;
+  let rayonRepository: Repository<Rayon>;
+  let areaRepository: Repository<Area>;
+
+  const mockRayon: Rayon = {
+    id: '11111111-1111-1111-1111-111111111101',
+    name: 'Rayon Selatan',
+    code: 'SELATAN',
+    description: 'Covers southern Surabaya districts',
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+  };
+
+  const mockArea: Partial<Area> = {
+    id: '22222222-2222-2222-2222-222222222201',
+    name: 'Taman Bungkul',
+    rayon_id: mockRayon.id,
+    is_active: true,
+  };
+
+  const mockRayonRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    softDelete: jest.fn(),
+  };
+
+  const mockAreaRepository = {
+    find: jest.fn(),
+    count: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    module = await Test.createTestingModule({
+      providers: [
+        RayonsService,
+        {
+          provide: getRepositoryToken(Rayon),
+          useValue: mockRayonRepository,
+        },
+        {
+          provide: getRepositoryToken(Area),
+          useValue: mockAreaRepository,
+        },
+      ],
+    }).compile();
+
+    service = module.get<RayonsService>(RayonsService);
+    rayonRepository = module.get<Repository<Rayon>>(getRepositoryToken(Rayon));
+    areaRepository = module.get<Repository<Area>>(getRepositoryToken(Area));
+  });
+
+  afterEach(async () => {
+    await module.close();
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('findAll', () => {
+    it('should return an array of rayons ordered by name', async () => {
+      const rayons = [mockRayon];
+      mockRayonRepository.find.mockResolvedValue(rayons);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual(rayons);
+      expect(mockRayonRepository.find).toHaveBeenCalledWith({
+        order: { name: 'ASC' },
+      });
+    });
+
+    it('should return empty array when no rayons exist', async () => {
+      mockRayonRepository.find.mockResolvedValue([]);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a rayon by ID', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+
+      const result = await service.findOne(mockRayon.id);
+
+      expect(result).toEqual(mockRayon);
+      expect(mockRayonRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockRayon.id },
+      });
+    });
+
+    it('should throw NotFoundException if rayon not found', async () => {
+      const id = 'non-existent-id';
+      mockRayonRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(id)).rejects.toThrow(`Rayon with ID ${id} not found`);
+    });
+  });
+
+  describe('findByCode', () => {
+    it('should return a rayon by code', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+
+      const result = await service.findByCode('SELATAN');
+
+      expect(result).toEqual(mockRayon);
+      expect(mockRayonRepository.findOne).toHaveBeenCalledWith({
+        where: { code: 'SELATAN' },
+      });
+    });
+
+    it('should throw NotFoundException if rayon with code not found', async () => {
+      const code = 'NONEXISTENT';
+      mockRayonRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.findByCode(code)).rejects.toThrow(NotFoundException);
+      await expect(service.findByCode(code)).rejects.toThrow(`Rayon with code "${code}" not found`);
+    });
+  });
+
+  describe('create', () => {
+    const createRayonDto: CreateRayonDto = {
+      code: 'UTARA',
+      name: 'Rayon Utara',
+      description: 'Covers northern Surabaya districts',
+    };
+
+    it('should successfully create a rayon', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(null);
+      const newRayon = { id: 'new-id', ...createRayonDto };
+      mockRayonRepository.create.mockReturnValue(newRayon);
+      mockRayonRepository.save.mockResolvedValue(newRayon);
+
+      const result = await service.create(createRayonDto);
+
+      expect(result).toEqual(newRayon);
+      expect(mockRayonRepository.create).toHaveBeenCalledWith(createRayonDto);
+      expect(mockRayonRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if code already exists', async () => {
+      const duplicateCodeDto: CreateRayonDto = {
+        code: 'SELATAN',
+        name: 'Different Name',
+      };
+
+      // First check: code already exists
+      mockRayonRepository.findOne.mockResolvedValueOnce(mockRayon);
+
+      await expect(service.create(duplicateCodeDto)).rejects.toThrow(ConflictException);
+
+      // Reset and test again for error message
+      mockRayonRepository.findOne.mockResolvedValueOnce(mockRayon);
+      await expect(service.create(duplicateCodeDto)).rejects.toThrow(
+        `Rayon with code "${duplicateCodeDto.code}" already exists`,
+      );
+    });
+
+    it('should throw ConflictException if name already exists', async () => {
+      mockRayonRepository.findOne
+        .mockResolvedValueOnce(null) // code check
+        .mockResolvedValueOnce(mockRayon); // name check
+
+      const duplicateNameDto: CreateRayonDto = {
+        code: 'NEWCODE',
+        name: 'Rayon Selatan',
+      };
+
+      await expect(service.create(duplicateNameDto)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a rayon with description only', async () => {
+      const updateDto: UpdateRayonDto = {
+        description: 'Updated description',
+      };
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon });
+      const updatedRayon = { ...mockRayon, ...updateDto };
+      mockRayonRepository.save.mockResolvedValue(updatedRayon);
+
+      const result = await service.update(mockRayon.id, updateDto);
+
+      expect(result).toEqual(updatedRayon);
+      expect(mockRayonRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update a rayon with new name', async () => {
+      const updateDto: UpdateRayonDto = {
+        name: 'Rayon Selatan Updated',
+      };
+      mockRayonRepository.findOne
+        .mockResolvedValueOnce({ ...mockRayon }) // initial findOne by id
+        .mockResolvedValueOnce(null); // name uniqueness check - no conflict
+      const updatedRayon = { ...mockRayon, ...updateDto };
+      mockRayonRepository.save.mockResolvedValue(updatedRayon);
+
+      const result = await service.update(mockRayon.id, updateDto);
+
+      expect(result).toEqual(updatedRayon);
+      expect(mockRayonRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if rayon not found', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.update('non-existent-id', { description: 'test' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw ConflictException if new code already exists', async () => {
+      const updateWithCode: UpdateRayonDto = { code: 'UTARA' };
+
+      mockRayonRepository.findOne
+        .mockResolvedValueOnce({ ...mockRayon }) // initial findOne by id
+        .mockResolvedValueOnce({ ...mockRayon, id: 'other-id', code: 'UTARA' }); // code uniqueness check - conflict
+
+      await expect(service.update(mockRayon.id, updateWithCode)).rejects.toThrow(ConflictException);
+
+      // Test again for message
+      mockRayonRepository.findOne
+        .mockResolvedValueOnce({ ...mockRayon })
+        .mockResolvedValueOnce({ ...mockRayon, id: 'other-id', code: 'UTARA' });
+
+      await expect(service.update(mockRayon.id, updateWithCode)).rejects.toThrow(
+        `Rayon with code "${updateWithCode.code}" already exists`,
+      );
+    });
+
+    it('should throw ConflictException if new name already exists', async () => {
+      const updateWithName: UpdateRayonDto = { name: 'Rayon Utara' };
+
+      // No code update, so only 2 findOne calls: by id, then by name
+      mockRayonRepository.findOne
+        .mockResolvedValueOnce({ ...mockRayon }) // initial findOne by id
+        .mockResolvedValueOnce({ ...mockRayon, id: 'other-id', name: 'Rayon Utara' }); // name uniqueness check - conflict
+
+      await expect(service.update(mockRayon.id, updateWithName)).rejects.toThrow(ConflictException);
+    });
+
+    it('should allow updating with same code (no change)', async () => {
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon });
+      mockRayonRepository.save.mockResolvedValue(mockRayon);
+
+      const updateWithSameCode: UpdateRayonDto = { code: 'SELATAN' };
+
+      const result = await service.update(mockRayon.id, updateWithSameCode);
+
+      expect(result).toEqual(mockRayon);
+    });
+  });
+
+  describe('remove', () => {
+    it('should soft delete a rayon', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.count.mockResolvedValue(0);
+      mockRayonRepository.softDelete.mockResolvedValue({ affected: 1 });
+
+      await service.remove(mockRayon.id);
+
+      expect(mockRayonRepository.softDelete).toHaveBeenCalledWith(mockRayon.id);
+    });
+
+    it('should throw NotFoundException if rayon not found', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.remove('non-existent-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if areas reference this rayon', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.count.mockResolvedValue(3);
+
+      await expect(service.remove(mockRayon.id)).rejects.toThrow(BadRequestException);
+      await expect(service.remove(mockRayon.id)).rejects.toThrow(
+        'Cannot delete rayon: 3 area(s) reference this rayon',
+      );
+    });
+  });
+
+  describe('findAreasByRayonId', () => {
+    it('should return areas belonging to a rayon', async () => {
+      const areas = [mockArea];
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.find.mockResolvedValue(areas);
+
+      const result = await service.findAreasByRayonId(mockRayon.id);
+
+      expect(result).toEqual(areas);
+      expect(mockAreaRepository.find).toHaveBeenCalledWith({
+        where: { rayon_id: mockRayon.id, is_active: true },
+        relations: ['areaType'],
+        order: { name: 'ASC' },
+      });
+    });
+
+    it('should throw NotFoundException if rayon not found', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.findAreasByRayonId('non-existent-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return empty array when rayon has no areas', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.find.mockResolvedValue([]);
+
+      const result = await service.findAreasByRayonId(mockRayon.id);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getStats', () => {
+    it('should return rayon statistics', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.count
+        .mockResolvedValueOnce(5) // total area count
+        .mockResolvedValueOnce(4); // active area count
+
+      const result = await service.getStats(mockRayon.id);
+
+      expect(result).toEqual({
+        rayon: mockRayon,
+        areaCount: 5,
+        activeAreaCount: 4,
+      });
+      expect(mockAreaRepository.count).toHaveBeenCalledTimes(2);
+      expect(mockAreaRepository.count).toHaveBeenNthCalledWith(1, {
+        where: { rayon_id: mockRayon.id },
+      });
+      expect(mockAreaRepository.count).toHaveBeenNthCalledWith(2, {
+        where: { rayon_id: mockRayon.id, is_active: true },
+      });
+    });
+
+    it('should throw NotFoundException if rayon not found', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.getStats('non-existent-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return zero counts when rayon has no areas', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.count.mockResolvedValue(0);
+
+      const result = await service.getStats(mockRayon.id);
+
+      expect(result.areaCount).toBe(0);
+      expect(result.activeAreaCount).toBe(0);
+    });
+  });
+});

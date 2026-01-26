@@ -4,6 +4,7 @@ import { SupervisorService } from './supervisor.service';
 import { ActiveWorkersResponseDto, ActiveWorkerDto } from './dto/active-workers-response.dto';
 import { AreaStatusResponseDto, AreaStatusDto } from './dto/area-status-response.dto';
 import { AttendanceResponseDto } from './dto/attendance-response.dto';
+import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 describe('SupervisorController', () => {
@@ -150,7 +151,7 @@ describe('SupervisorController', () => {
 
       mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
 
-      const result = await controller.getAttendance();
+      const result = await controller.getAttendance({});
 
       expect(service.getAttendancePaginated).toHaveBeenCalledWith(undefined, undefined, undefined);
       expect(result).toEqual(mockResponse);
@@ -176,9 +177,13 @@ describe('SupervisorController', () => {
 
       mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
 
-      const result = await controller.getAttendance('2026-01-08');
+      const result = await controller.getAttendance({ date: '2026-01-08' });
 
-      expect(service.getAttendancePaginated).toHaveBeenCalledWith('2026-01-08', undefined, undefined);
+      expect(service.getAttendancePaginated).toHaveBeenCalledWith(
+        '2026-01-08',
+        undefined,
+        undefined,
+      );
       expect(result.date).toBe('2026-01-08');
       expect(result.clocked_in_count).toBe(7);
     });
@@ -193,7 +198,7 @@ describe('SupervisorController', () => {
 
       mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
 
-      const result = await controller.getAttendance();
+      const result = await controller.getAttendance({});
 
       expect(result.not_clocked_in).toHaveLength(0);
     });

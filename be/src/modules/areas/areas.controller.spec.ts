@@ -16,6 +16,7 @@ describe('AreasController', () => {
     code: 'park',
     name: 'Park',
     description: 'Public park or garden',
+    category: 'ACTIVE',
     created_at: new Date(),
     updated_at: new Date(),
     deleted_at: undefined,

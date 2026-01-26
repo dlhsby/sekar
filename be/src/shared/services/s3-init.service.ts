@@ -54,7 +54,6 @@ export class S3InitService implements OnModuleInit {
       // Check if bucket exists
       await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucket }));
       this.logger.log(`S3 bucket already exists: ${this.bucket}`);
-
     } catch (error) {
       if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
         this.logger.log(`Creating S3 bucket: ${this.bucket}`);

@@ -19,7 +19,8 @@ config();
  * IMPORTANT: This file is only used by the TypeORM CLI, not the application.
  * The application uses the TypeORM configuration in app.module.ts.
  */
-export const AppDataSource = new DataSource({
+// Export as default for TypeORM CLI (only one export to avoid CLI errors)
+const AppDataSource = new DataSource({
   type: 'postgres',
   host: process.env.DATABASE_HOST || 'localhost',
   port: parseInt(process.env.DATABASE_PORT || '5432', 10),
@@ -41,5 +42,4 @@ export const AppDataSource = new DataSource({
   synchronize: false,
 });
 
-// Export as default for TypeORM CLI
 export default AppDataSource;

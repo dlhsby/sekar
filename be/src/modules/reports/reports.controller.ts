@@ -34,6 +34,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { ReportsFilterDto } from './dto/reports-filter.dto';
 
 /**
  * Reports Controller
@@ -138,24 +139,17 @@ export class ReportsController {
       },
     },
   })
-  async findAll(
-    @Query() paginationDto: PaginationDto,
-    @Query('worker_id') workerId?: string,
-    @Query('shift_id') shiftId?: string,
-    @Query('report_type') reportType?: string,
-    @Query('from_date') fromDate?: string,
-    @Query('to_date') toDate?: string,
-  ): Promise<PaginatedResponseDto<Report>> {
+  async findAll(@Query() filterDto: ReportsFilterDto): Promise<PaginatedResponseDto<Report>> {
     return this.reportsService.findAllPaginated(
       {
-        worker_id: workerId,
-        shift_id: shiftId,
-        report_type: reportType,
-        from_date: fromDate,
-        to_date: toDate,
+        worker_id: filterDto.worker_id,
+        shift_id: filterDto.shift_id,
+        report_type: filterDto.report_type,
+        from_date: filterDto.from_date,
+        to_date: filterDto.to_date,
       },
-      paginationDto.page,
-      paginationDto.limit,
+      filterDto.page,
+      filterDto.limit,
     );
   }
 
@@ -166,7 +160,12 @@ export class ReportsController {
   @Get('my-reports')
   @Roles(UserRole.WORKER)
   @ApiOperation({ summary: 'Get my reports (Worker only)' })
-  @ApiQuery({ name: 'date', required: false, type: String, description: 'Filter by date (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    type: String,
+    description: 'Filter by date (YYYY-MM-DD)',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of worker reports',
