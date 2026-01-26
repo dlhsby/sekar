@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "1e98228b-6063-442d-a730-5cb0a62dc3dc",
     "name": "SEKAR API",
-    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 41\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n- **Backend:** NestJS 11.x, Node.js >=24.13.0\n- **Database:** PostgreSQL 14+ with TypeORM\n- **Tests:** 416 passing (99.06% coverage)\n\n## Test Users\n- admin / admin123 (Admin)\n- supervisor1 / supervisor123 (Supervisor)\n- worker1,2,3 / worker123 (Worker)\n\n## Collection Structure\n- 00. Health Check (2 endpoints)\n- 01. Authentication (4 endpoints: login, refresh, me, logout)\n- 02. Users Management (6 endpoints + change password)\n- 03. Area Types (5 endpoints)\n- 04. Areas Management (5 endpoints)\n- 05. Worker Assignments (2 endpoints)\n- 06. Shifts - Worker Flow (5 endpoints)\n- 07. Reports - Worker/Admin (6 endpoints)\n- 08. Location Tracking (3 endpoints)\n- 09. Supervisor Dashboard (3 endpoints)\n\n## Phase 1 MVP Status\n- ✅ Complete (January 24, 2026)\n- ✅ Node.js v24.13 compatible\n- ✅ 31 standardized error codes\n- ✅ Rate limiting (100 req/min global, 5 req/min auth)",
+    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 104\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n\n## Test Users\n- admin / admin123 (Admin)\n- supervisor1 / supervisor123 (Supervisor)\n- worker1,2,3 / worker123 (Worker)\n- top_management1 / password123 (TopManagement)\n- kepala_rayon_selatan / password123 (KepalaRayon)\n- koordinator_bungkul / password123 (KoordinatorLapangan)\n- linmas1,2 / password123 (Linmas)\n\n## Collection Structure\n\n### Phase 1 MVP\n- 00-11: Core endpoints (auth, users, areas, shifts, reports, location, supervisor)\n\n### Phase 2A - Backend Foundation\n- 12. Special Day Overrides (6 endpoints)\n- 13. Rayons (7 endpoints)\n- 14. Shift Definitions (3 endpoints)\n- 15. Activity Types (7 endpoints)\n- 16. Area Staff Requirements (6 endpoints)\n- 17. Worker Schedules (7 endpoints)\n\n### Phase 2B - Backend Core Features\n- 18. Tasks (11 endpoints)\n- 19. Notifications (7 endpoints)\n- 20. Monitoring (4 endpoints)\n- 21. KMZ Import (3 endpoints)\n\n## Status\n- ✅ Phase 1 MVP Complete\n- ✅ Phase 2A Backend Foundation Complete\n- ✅ Phase 2B Backend Core Features Complete",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -99,14 +99,21 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}"
+              ]
             }
           }
         },
@@ -135,14 +142,22 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/health",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "health"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "health"
+              ]
             }
           }
         }
@@ -208,10 +223,15 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -220,8 +240,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "auth", "login"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -256,10 +283,15 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -268,8 +300,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "auth", "login"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -304,10 +343,15 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -316,8 +360,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "auth", "login"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -363,10 +414,15 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -375,8 +431,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/refresh",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "auth", "refresh"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "auth",
+                "refresh"
+              ]
             }
           }
         },
@@ -432,8 +495,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/me",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "auth", "me"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "auth",
+                "me"
+              ]
             }
           }
         },
@@ -473,8 +543,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/logout",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "auth", "logout"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "auth",
+                "logout"
+              ]
             }
           }
         }
@@ -534,7 +611,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -543,8 +623,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "users"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "users"
+              ]
             }
           }
         },
@@ -591,8 +677,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "users"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "users"
+              ]
             }
           }
         },
@@ -643,8 +735,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users/{{created_user_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "users", "{{created_user_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "users",
+                "{{created_user_id}}"
+              ]
             }
           }
         },
@@ -677,7 +776,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -686,8 +788,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users/{{created_user_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "users", "{{created_user_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "users",
+                "{{created_user_id}}"
+              ]
             }
           }
         },
@@ -718,8 +827,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users/{{created_user_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "users", "{{created_user_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "users",
+                "{{created_user_id}}"
+              ]
             }
           }
         }
@@ -771,8 +887,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "area-types"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "area-types"
+              ]
             }
           }
         },
@@ -810,8 +932,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types/{{area_type_id_park}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "area-types", "{{area_type_id_park}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "area-types",
+                "{{area_type_id_park}}"
+              ]
             }
           }
         },
@@ -865,7 +994,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -874,8 +1006,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "area-types"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "area-types"
+              ]
             }
           }
         },
@@ -908,7 +1046,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -917,8 +1058,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types/{{created_area_type_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "area-types", "{{created_area_type_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "area-types",
+                "{{created_area_type_id}}"
+              ]
             }
           }
         },
@@ -950,8 +1098,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/area-types/{{created_area_type_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "area-types", "{{created_area_type_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "area-types",
+                "{{created_area_type_id}}"
+              ]
             }
           }
         }
@@ -1013,7 +1168,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1022,8 +1180,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "areas"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "areas"
+              ]
             }
           }
         },
@@ -1063,8 +1227,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "areas"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "areas"
+              ]
             }
           }
         },
@@ -1103,10 +1273,19 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas?area_type=park",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "areas"],
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "areas"
+              ],
               "query": [
-                { "key": "area_type", "value": "park" }
+                {
+                  "key": "area_type",
+                  "value": "park"
+                }
               ]
             }
           }
@@ -1140,8 +1319,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas/{{created_area_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "areas", "{{created_area_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "areas",
+                "{{created_area_id}}"
+              ]
             }
           }
         },
@@ -1174,7 +1360,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1183,8 +1372,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas/{{created_area_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "areas", "{{created_area_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "areas",
+                "{{created_area_id}}"
+              ]
             }
           }
         },
@@ -1214,8 +1410,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/areas/{{created_area_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "areas", "{{created_area_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "areas",
+                "{{created_area_id}}"
+              ]
             }
           }
         }
@@ -1272,7 +1475,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1281,8 +1487,16 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/workers/{{worker_id}}/assign",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "workers", "{{worker_id}}", "assign"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "workers",
+                "{{worker_id}}",
+                "assign"
+              ]
             }
           }
         },
@@ -1312,8 +1526,16 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/workers/{{worker_id}}/assign",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "workers", "{{worker_id}}", "assign"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "workers",
+                "{{worker_id}}",
+                "assign"
+              ]
             }
           }
         }
@@ -1390,7 +1612,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1399,8 +1624,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/clock-in",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "shifts", "clock-in"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "shifts",
+                "clock-in"
+              ]
             }
           }
         },
@@ -1437,8 +1669,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/current",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "shifts", "current"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "shifts",
+                "current"
+              ]
             }
           }
         },
@@ -1476,8 +1715,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/my-shifts",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "shifts", "my-shifts"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "shifts",
+                "my-shifts"
+              ]
             }
           }
         },
@@ -1533,7 +1779,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1542,8 +1791,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/clock-out",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "shifts", "clock-out"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "shifts",
+                "clock-out"
+              ]
             }
           }
         }
@@ -1585,8 +1841,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/shifts/active",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "shifts", "active"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "shifts",
+                "active"
+              ]
             }
           }
         }
@@ -1652,7 +1915,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1661,8 +1927,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "reports"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "reports"
+              ]
             }
           }
         },
@@ -1700,8 +1972,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/my-reports",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "reports", "my-reports"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "reports",
+                "my-reports"
+              ]
             }
           }
         },
@@ -1739,8 +2018,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "reports", "{{created_report_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "reports",
+                "{{created_report_id}}"
+              ]
             }
           }
         },
@@ -1775,7 +2061,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1784,8 +2073,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "reports", "{{created_report_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "reports",
+                "{{created_report_id}}"
+              ]
             }
           }
         }
@@ -1829,8 +2125,14 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "reports"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "reports"
+              ]
             }
           }
         },
@@ -1860,8 +2162,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "reports", "{{created_report_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "reports",
+                "{{created_report_id}}"
+              ]
             }
           }
         }
@@ -1913,7 +2222,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1922,8 +2234,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/location/batch",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "location", "batch"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "location",
+                "batch"
+              ]
             }
           }
         },
@@ -1963,8 +2282,16 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/location/worker/{{worker_id}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "location", "worker", "{{worker_id}}"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "location",
+                "worker",
+                "{{worker_id}}"
+              ]
             }
           }
         },
@@ -2000,8 +2327,17 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/location/worker/{{worker_id}}/latest",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "location", "worker", "{{worker_id}}", "latest"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "location",
+                "worker",
+                "{{worker_id}}",
+                "latest"
+              ]
             }
           }
         }
@@ -2048,8 +2384,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/supervisor/active-workers",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "supervisor", "active-workers"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "supervisor",
+                "active-workers"
+              ]
             }
           }
         },
@@ -2093,8 +2436,15 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/supervisor/area-status",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "supervisor", "area-status"]
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "supervisor",
+                "area-status"
+              ]
             }
           }
         },
@@ -2147,13 +2497,2572 @@
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/supervisor/attendance?date={{attendance_date}}",
               "protocol": "{{host}}",
-              "host": ["{{base_url}}{{port}}"],
-              "path": ["api", "{{version}}", "supervisor", "attendance"],
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "supervisor",
+                "attendance"
+              ],
               "query": [
-                { "key": "date", "value": "{{attendance_date}}" }
+                {
+                  "key": "date",
+                  "value": "{{attendance_date}}"
+                }
               ]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "12. Special Day Overrides",
+      "item": [
+        {
+          "name": "Get All Special Day Overrides",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Overrides have required fields', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('id');",
+                  "        pm.expect(json[0]).to.have.property('date');",
+                  "        pm.expect(json[0]).to.have.property('day_type');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/special-day-overrides",
+              "protocol": "{{host}}",
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "special-day-overrides"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Special Day Overrides (Date Range)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Dates are within range', function() {",
+                  "    const json = pm.response.json();",
+                  "    const startDate = new Date('2026-01-01');",
+                  "    const endDate = new Date('2026-12-31');",
+                  "    json.forEach(override => {",
+                  "        const overrideDate = new Date(override.date);",
+                  "        pm.expect(overrideDate >= startDate && overrideDate <= endDate).to.be.true;",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/special-day-overrides?startDate=2026-01-01&endDate=2026-12-31",
+              "protocol": "{{host}}",
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "special-day-overrides"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Special Day Override (Admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate a unique date for testing (far future)",
+                  "const timestamp = Date.now();",
+                  "const year = 2030 + Math.floor(timestamp % 20);",
+                  "const month = String((timestamp % 12) + 1).padStart(2, '0');",
+                  "const day = String((timestamp % 28) + 1).padStart(2, '0');",
+                  "pm.environment.set('test_special_day_date', `${year}-${month}-${day}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has override data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('date');",
+                  "    pm.expect(json).to.have.property('day_type');",
+                  "    pm.expect(json).to.have.property('created_at');",
+                  "});",
+                  "",
+                  "pm.test('Day type is valid', function() {",
+                  "    const json = pm.response.json();",
+                  "    const validTypes = ['WEEKEND', 'HOLIDAY', 'SPECIAL'];",
+                  "    pm.expect(validTypes).to.include(json.day_type);",
+                  "});",
+                  "",
+                  "// Save created override ID",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.environment.set('created_special_day_id', json.id);",
+                  "    console.log('Created special day override: ' + json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{test_special_day_date}}\",\n  \"day_type\": \"HOLIDAY\",\n  \"name\": \"Test Holiday\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/special-day-overrides",
+              "protocol": "{{host}}",
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "special-day-overrides"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Special Day Override by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const overrideId = pm.environment.get('created_special_day_id');",
+                  "if (!overrideId) {",
+                  "    console.warn('No override ID set. Create a special day override first.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has override data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('date');",
+                  "    pm.expect(json).to.have.property('day_type');",
+                  "});",
+                  "",
+                  "pm.test('ID matches requested ID', function() {",
+                  "    const json = pm.response.json();",
+                  "    const requestedId = pm.environment.get('created_special_day_id');",
+                  "    pm.expect(json.id).to.eql(requestedId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/special-day-overrides/{{created_special_day_id}}",
+              "protocol": "{{host}}",
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "special-day-overrides",
+                "{{created_special_day_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Special Day Override (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has updated data', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "});",
+                  "",
+                  "pm.test('Name was updated', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.name).to.include('Updated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Test Holiday\"\n}"
+            },
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/special-day-overrides/{{created_special_day_id}}",
+              "protocol": "{{host}}",
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "special-day-overrides",
+                "{{created_special_day_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Special Day Override (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 204', function() {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "// Clear the created override ID",
+                  "if (pm.response.code === 204) {",
+                  "    pm.environment.unset('created_special_day_id');",
+                  "    pm.environment.unset('test_special_day_date');",
+                  "    console.log('Special day override deleted and ID cleared');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/special-day-overrides/{{created_special_day_id}}",
+              "protocol": "{{host}}",
+              "host": [
+                "{{base_url}}{{port}}"
+              ],
+              "path": [
+                "api",
+                "{{version}}",
+                "special-day-overrides",
+                "{{created_special_day_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Rayons",
+      "item": [
+        {
+          "name": "Get All Rayons",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array', function() {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "if (pm.response.json().length > 0) {",
+                  "    pm.environment.set('rayon_id', pm.response.json()[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rayons",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rayons"
+              ]
+            },
+            "description": "Get all rayons (geographic sectors)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Rayon by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rayons/{{rayon_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rayons",
+                "{{rayon_id}}"
+              ]
+            },
+            "description": "Get a specific rayon by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Rayon Areas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array', function() {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rayons/{{rayon_id}}/areas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rayons",
+                "{{rayon_id}}",
+                "areas"
+              ]
+            },
+            "description": "Get all areas in a rayon"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Rayon Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rayons/{{rayon_id}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rayons",
+                "{{rayon_id}}",
+                "stats"
+              ]
+            },
+            "description": "Get statistics for a rayon"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Rayon (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('created_rayon_id', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rayons",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rayons"
+              ]
+            },
+            "description": "Create a new rayon (Admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rayon Test\",\n  \"code\": \"TEST\",\n  \"description\": \"Test rayon created via Postman\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Rayon (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rayons/{{created_rayon_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rayons",
+                "{{created_rayon_id}}"
+              ]
+            },
+            "description": "Update a rayon (Admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Rayon (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rayons/{{created_rayon_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rayons",
+                "{{created_rayon_id}}"
+              ]
+            },
+            "description": "Delete a rayon (Admin only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "14. Shift Definitions",
+      "item": [
+        {
+          "name": "Get All Shift Definitions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array with 3 shifts', function() {",
+                  "    const shifts = pm.response.json();",
+                  "    pm.expect(shifts).to.be.an('array');",
+                  "    pm.expect(shifts.length).to.eql(3);",
+                  "});",
+                  "if (pm.response.json().length > 0) {",
+                  "    pm.environment.set('shift_definition_id', pm.response.json()[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shift-definitions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shift-definitions"
+              ]
+            },
+            "description": "Get all shift definitions (read-only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Shift",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shift-definitions/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shift-definitions",
+                "current"
+              ]
+            },
+            "description": "Get the currently active shift based on current time"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shift Definition by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shift-definitions/{{shift_definition_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shift-definitions",
+                "{{shift_definition_id}}"
+              ]
+            },
+            "description": "Get a specific shift definition"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "15. Activity Types",
+      "item": [
+        {
+          "name": "Get All Activity Types",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array', function() {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "if (pm.response.json().length > 0) {",
+                  "    pm.environment.set('activity_type_id', pm.response.json()[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-types"
+              ]
+            },
+            "description": "Get all activity types"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Activity Types for Workers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-types?role=Worker",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-types?role=Worker"
+              ]
+            },
+            "description": "Get activity types applicable to Workers"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Activity Types for Linmas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-types?role=Linmas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-types?role=Linmas"
+              ]
+            },
+            "description": "Get activity types applicable to Linmas"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Activity Type by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-types/{{activity_type_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-types",
+                "{{activity_type_id}}"
+              ]
+            },
+            "description": "Get a specific activity type"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Activity Type (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('created_activity_type_id', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-types"
+              ]
+            },
+            "description": "Create a new activity type (Admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Activity\",\n  \"code\": \"TEST_ACTIVITY\",\n  \"description\": \"Test activity type\",\n  \"applicableRoles\": [\n    \"Worker\"\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Activity Type (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-types/{{created_activity_type_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-types",
+                "{{created_activity_type_id}}"
+              ]
+            },
+            "description": "Update an activity type (Admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Activity Type (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-types/{{created_activity_type_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-types",
+                "{{created_activity_type_id}}"
+              ]
+            },
+            "description": "Delete an activity type (Admin only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "16. Area Staff Requirements",
+      "item": [
+        {
+          "name": "Get Staff Requirements for Area",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array', function() {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "if (pm.response.json().length > 0) {",
+                  "    pm.environment.set('staff_requirement_id', pm.response.json()[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/staff-requirements",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "staff-requirements"
+              ]
+            },
+            "description": "Get all staff requirements for an area"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Staff Requirements Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/staff-requirements/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "staff-requirements",
+                "summary"
+              ]
+            },
+            "description": "Get staff requirements summary grouped by shift"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Staff Requirement by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/staff-requirements/{{staff_requirement_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "staff-requirements",
+                "{{staff_requirement_id}}"
+              ]
+            },
+            "description": "Get a specific staff requirement"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Staff Requirement (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('created_staff_requirement_id', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/staff-requirements",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "staff-requirements"
+              ]
+            },
+            "description": "Create a new staff requirement (Admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftDefinitionId\": \"{{shift_definition_id}}\",\n  \"role\": \"worker\",\n  \"requiredCount\": 5,\n  \"dayType\": \"WEEKDAY\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Staff Requirement (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/staff-requirements/{{created_staff_requirement_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "staff-requirements",
+                "{{created_staff_requirement_id}}"
+              ]
+            },
+            "description": "Update a staff requirement (Admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requiredCount\": 8\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Staff Requirement (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/staff-requirements/{{created_staff_requirement_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "staff-requirements",
+                "{{created_staff_requirement_id}}"
+              ]
+            },
+            "description": "Delete a staff requirement (Admin only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "17. Worker Schedules",
+      "item": [
+        {
+          "name": "Get All Schedules",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array', function() {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "if (pm.response.json().length > 0) {",
+                  "    pm.environment.set('worker_schedule_id', pm.response.json()[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/schedules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules"
+              ]
+            },
+            "description": "Get all worker schedules (filtered by role)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/schedules/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules",
+                "my"
+              ]
+            },
+            "description": "Get current user's schedule"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Schedules by Area",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/schedules/area/{{created_area_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules",
+                "area",
+                "{{created_area_id}}"
+              ]
+            },
+            "description": "Get all schedules for a specific area"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Schedule by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{worker_schedule_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules",
+                "{{worker_schedule_id}}"
+              ]
+            },
+            "description": "Get a specific worker schedule"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Worker Schedule (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('created_worker_schedule_id', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/schedules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules"
+              ]
+            },
+            "description": "Create a new worker schedule (Admin/Koordinator)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{worker_id}}\",\n  \"areaId\": \"{{created_area_id}}\",\n  \"shiftDefinitionId\": \"{{shift_definition_id}}\",\n  \"effectiveDate\": \"2026-01-25\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Worker Schedule (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{created_worker_schedule_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules",
+                "{{created_worker_schedule_id}}"
+              ]
+            },
+            "description": "Update a worker schedule (Admin/Koordinator)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endDate\": \"2026-02-24\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Worker Schedule (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/schedules/{{created_worker_schedule_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules",
+                "{{created_worker_schedule_id}}"
+              ]
+            },
+            "description": "Delete a worker schedule (Admin/Koordinator)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "18. Tasks",
+      "item": [
+        {
+          "name": "Get All Tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array', function() { pm.expect(pm.response.json()).to.be.an('array'); });",
+                  "if (pm.response.json().length > 0) { pm.environment.set('task_id', pm.response.json()[0].id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "description": "Get all tasks (filtered by role/area)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasks (Worker)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/my-tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "my-tasks"
+              ]
+            },
+            "description": "Get tasks assigned to current worker"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{task_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id}}"
+              ]
+            },
+            "description": "Get a specific task by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task (Koordinator+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "if (pm.response.code === 201) { pm.environment.set('created_task_id', pm.response.json().id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "description": "Create a new task",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Task\",\n  \"description\": \"Test task created via Postman\",\n  \"priority\": \"medium\",\n  \"areaId\": \"{{created_area_id}}\",\n  \"activityTypeId\": \"{{activity_type_id}}\",\n  \"deadline\": \"2026-02-01T11:37:41.849Z\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}"
+              ]
+            },
+            "description": "Update a task",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated task description\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Task to Worker",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}",
+                "assign"
+              ]
+            },
+            "description": "Assign task to a worker",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignedTo\": \"{{worker_id}}\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Task (Worker)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}",
+                "accept"
+              ]
+            },
+            "description": "Worker accepts assigned task"
+          },
+          "response": []
+        },
+        {
+          "name": "Decline Task (Worker)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/decline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}",
+                "decline"
+              ]
+            },
+            "description": "Worker declines assigned task",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cannot complete due to other priorities\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Task (Worker)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}",
+                "start"
+              ]
+            },
+            "description": "Worker starts working on task"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Task (Worker)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}",
+                "complete"
+              ]
+            },
+            "description": "Worker completes task with photo",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completionNotes\": \"Task completed successfully\",\n  \"completionPhotoBase64\": \"{{test_base64_photo}}\",\n  \"gpsLat\": -7.2905,\n  \"gpsLng\": 112.7398\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}"
+              ]
+            },
+            "description": "Delete a task (soft delete)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "19. Notifications",
+      "item": [
+        {
+          "name": "Register FCM Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "register"
+              ]
+            },
+            "description": "Register device FCM token for push notifications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"test-fcm-token-12345\",\n  \"deviceType\": \"android\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "pm.test('Response is array', function() { pm.expect(pm.response.json()).to.be.an('array'); });",
+                  "if (pm.response.json().length > 0) { pm.environment.set('notification_id', pm.response.json()[0].id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            },
+            "description": "Get notifications for current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unread Count",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "Get count of unread notifications"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notification_id}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ]
+            },
+            "description": "Mark a specific notification as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All as Read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Mark all notifications as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Broadcast Notification (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/broadcast",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "broadcast"
+              ]
+            },
+            "description": "Send notification to multiple users (Admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Broadcast\",\n  \"body\": \"This is a test broadcast notification\",\n  \"targetRoles\": [\n    \"worker\",\n    \"linmas\"\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unregister FCM Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unregister",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "unregister"
+              ]
+            },
+            "description": "Unregister device FCM token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"test-fcm-token-12345\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "20. Monitoring",
+      "item": [
+        {
+          "name": "Get City Stats (Admin/TopMgmt)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/city",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "city"
+              ]
+            },
+            "description": "Get city-wide statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Rayon Stats (KepalaRayon+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/rayon/{{rayon_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "rayon",
+                "{{rayon_id}}"
+              ]
+            },
+            "description": "Get statistics for a specific rayon"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Area Stats (Koordinator+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/area/{{created_area_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "area",
+                "{{created_area_id}}"
+              ]
+            },
+            "description": "Get statistics for a specific area"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Live Workers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/live-workers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "live-workers"
+              ]
+            },
+            "description": "Get real-time worker positions and status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "21. KMZ Import",
+      "item": [
+        {
+          "name": "Upload KMZ File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "if (pm.response.code === 201) { pm.environment.set('import_session_id', pm.response.json().sessionId); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/import/kmz/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "import",
+                "kmz",
+                "upload"
+              ]
+            },
+            "description": "Upload and parse KMZ/KML file"
+          },
+          "response": []
+        },
+        {
+          "name": "Preview Parsed Areas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/import/kmz/preview/{{import_session_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "import",
+                "kmz",
+                "preview",
+                "{{import_session_id}}"
+              ]
+            },
+            "description": "Preview parsed areas from uploaded KMZ"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Import",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/import/kmz/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "import",
+                "kmz",
+                "confirm"
+              ]
+            },
+            "description": "Confirm and create/update areas from KMZ",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{import_session_id}}\",\n  \"selectedAreas\": []\n}"
+            }
+          },
+          "response": []
         }
       ]
     }

@@ -558,4 +558,327 @@ SAFETYNET_API_KEY=your-api-key
 
 ---
 
-**Last Updated:** 2026-01-16
+## Deployment Checklist
+
+### Pre-Deployment
+
+- [ ] All unit tests passing (>80% coverage)
+- [ ] Apple Sign-In configured in Apple Developer Portal
+- [ ] Test Apple token verification in staging
+- [ ] Test fraud detection with mock scenarios
+- [ ] Verify device attestation (iOS + Android)
+- [ ] Database migration tested
+- [ ] Fraud alert emails configured
+
+### Environment Variables
+
+```env
+# Apple Sign-In
+APPLE_CLIENT_ID=com.sekar.dlh
+APPLE_TEAM_ID=XXXXXXXXXX
+APPLE_KEY_ID=YYYYYYYYYY
+APPLE_PRIVATE_KEY_PATH=./keys/apple-auth-key.p8
+
+# SafetyNet (Android)
+SAFETYNET_API_KEY=your-google-api-key
+
+# Fraud Detection
+FRAUD_DETECTION_ENABLED=true
+MAX_VELOCITY_MPS=50  # 50 m/s = 180 km/h
+MIN_ACCURACY_METERS=100
+FRAUD_ALERT_EMAIL=security@dlh.surabaya.go.id
+
+# App Attestation
+IOS_APP_ATTEST_ENABLED=true
+ANDROID_SAFETYNET_ENABLED=true
+ATTESTATION_CACHE_TTL=3600  # 1 hour
+```
+
+### Deployment Steps
+
+1. **Database Migration**
+   ```bash
+   npm run migration:run
+   # Adds apple_id, fraud_logs, device_fingerprints tables
+   ```
+
+2. **Upload Apple Private Key**
+   ```bash
+   # Securely store Apple auth key
+   mkdir -p ./keys
+   chmod 600 ./keys/apple-auth-key.p8
+   ```
+
+3. **Verify Endpoints**
+   ```bash
+   curl http://localhost:3000/api/auth/apple
+   curl http://localhost:3000/api/fraud/stats
+   curl http://localhost:3000/api/auth/attestation/challenge
+   ```
+
+4. **Test Apple Sign-In**
+   ```bash
+   # Use real Apple ID token from iOS device
+   curl -X POST http://localhost:3000/api/auth/apple \
+     -H "Content-Type: application/json" \
+     -d '{
+       "identityToken": "<real-token>",
+       "fullName": "Test User"
+     }'
+   ```
+
+5. **Test Fraud Detection**
+   ```bash
+   # Simulate mock location detection
+   curl -X POST http://localhost:3000/api/fraud/check-location \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "latitude": -7.2905,
+       "longitude": 112.7398,
+       "accuracy": 10,
+       "deviceInfo": {
+         "deviceId": "test-device",
+         "platform": "android",
+         "isMockLocationEnabled": true
+       }
+     }'
+   ```
+
+### Post-Deployment
+
+- [ ] Monitor Apple Sign-In success rate
+- [ ] Review fraud detection logs for false positives
+- [ ] Verify app attestation challenge/response flow
+- [ ] Check fraud alert emails delivered
+- [ ] Monitor device fingerprint database growth
+- [ ] Set up CloudWatch alarms for fraud spikes
+
+### Rollback Plan
+
+1. Disable Apple Sign-In: Set `APPLE_CLIENT_ID=` (empty)
+2. Disable fraud detection: Set `FRAUD_DETECTION_ENABLED=false`
+3. Revert database migration: `npm run migration:revert`
+4. Redeploy previous version
+
+---
+
+## Integration Testing Scenarios
+
+### Scenario 1: Apple Sign-In Flow
+
+**Test Steps:**
+1. User initiates Sign in with Apple on iOS device
+2. iOS SDK returns identity token and user data
+3. Mobile app sends token to backend `/auth/apple`
+4. Backend verifies token with Apple servers
+5. Backend creates/links user account
+6. Backend returns JWT access token
+
+**Expected Results:**
+- Token verified successfully
+- User account created or linked
+- JWT token issued
+- User can access protected endpoints
+
+**Test Data:**
+```json
+{
+  "identityToken": "eyJraWQiOiJXNldjT0tCIiwiYWxnIjoiUlMyNTYifQ...",
+  "user": "001234.a1b2c3d4e5f6.1234",
+  "email": "worker@privaterelay.appleid.com",
+  "fullName": "John Doe"
+}
+```
+
+### Scenario 2: Fraud Detection - Mock Location
+
+**Test Steps:**
+1. Worker enables mock location on Android device
+2. Worker attempts to clock in
+3. Mobile app detects mock location enabled
+4. Mobile app sends device info to backend
+5. Backend fraud detection service detects anomaly
+6. Backend logs fraud attempt
+7. Backend sends alert to admin
+
+**Expected Results:**
+- Fraud detected: `mock_location`
+- Fraud log created with device info
+- Admin email sent
+- Clock-in rejected with clear error message
+
+**Test Data:**
+```json
+{
+  "latitude": -7.2905,
+  "longitude": 112.7398,
+  "accuracy": 5,
+  "deviceInfo": {
+    "deviceId": "android-device-123",
+    "platform": "android",
+    "osVersion": "14",
+    "isMockLocationEnabled": true,
+    "isRooted": false
+  }
+}
+```
+
+### Scenario 3: Fraud Detection - Velocity Anomaly
+
+**Test Steps:**
+1. Worker clocks in at Location A
+2. 5 minutes later, worker tries to clock in at Location B (50km away)
+3. Backend calculates speed: 50,000m / 300s = 166.67 m/s (600 km/h)
+4. Speed exceeds threshold (50 m/s = 180 km/h)
+5. Backend detects velocity anomaly
+6. Backend logs fraud attempt
+
+**Expected Results:**
+- Fraud detected: `velocity_anomaly`
+- Fraud log with calculated speed
+- Clock-in rejected
+- Alert sent to supervisor
+
+### Scenario 4: App Attestation - iOS
+
+**Test Steps:**
+1. iOS app starts up
+2. App generates attestation challenge from backend
+3. App calls App Attest framework
+4. App sends attestation to backend
+5. Backend verifies attestation with Apple servers
+6. Backend marks device as trusted
+
+**Expected Results:**
+- Challenge generated successfully
+- Attestation verified
+- Device fingerprint created
+- Device marked as trusted
+
+---
+
+## Performance Criteria
+
+| Operation | Target | Acceptable | Notes |
+|-----------|--------|------------|-------|
+| Apple token verification | <500ms | <1s | Network call to Apple |
+| Fraud check - mock location | <100ms | <200ms | Local check |
+| Fraud check - velocity | <200ms | <500ms | DB query for last location |
+| App attestation verification | <1s | <2s | Network call to Apple/Google |
+| Fraud log query (admin) | <500ms | <1s | Paginated, 1K logs |
+
+---
+
+## API Response Examples
+
+### POST /auth/apple
+
+**Request:**
+```json
+{
+  "identityToken": "eyJraWQiOi...",
+  "user": "001234.a1b2c3d4e5f6.1234",
+  "email": "worker@privaterelay.appleid.com",
+  "fullName": "John Doe"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
+    "username": "worker1",
+    "full_name": "John Doe",
+    "role": "worker",
+    "appleId": "001234.a1b2c3d4e5f6.1234"
+  }
+}
+```
+
+### POST /fraud/check-location
+
+**Response (400 Bad Request - Fraud Detected):**
+```json
+{
+  "statusCode": 400,
+  "message": "Fraud detected: Mock location is enabled",
+  "error": "Bad Request",
+  "fraudCheckResult": {
+    "passed": false,
+    "checks": [
+      {
+        "type": "mock_location",
+        "passed": false,
+        "message": "Mock location is enabled"
+      }
+    ]
+  },
+  "fraudLogId": "fraud-log-uuid"
+}
+```
+
+**Response (200 OK - No Fraud):**
+```json
+{
+  "passed": true,
+  "checks": [
+    {
+      "type": "mock_location",
+      "passed": true,
+      "message": "Location source verified"
+    },
+    {
+      "type": "velocity_check",
+      "passed": true,
+      "message": "Travel speed normal (2.5 m/s)"
+    },
+    {
+      "type": "accuracy_check",
+      "passed": true,
+      "message": "GPS accuracy acceptable (8m)"
+    }
+  ]
+}
+```
+
+### GET /fraud/stats
+
+**Response (200 OK):**
+```json
+{
+  "period": {
+    "start": "2026-01-01",
+    "end": "2026-01-31"
+  },
+  "total": 47,
+  "byType": {
+    "mock_location": 25,
+    "velocity_anomaly": 12,
+    "device_tampering": 8,
+    "gps_spoofing": 2
+  },
+  "byStatus": {
+    "detected": 15,
+    "reviewed": 20,
+    "confirmed": 10,
+    "dismissed": 2
+  },
+  "uniqueUsers": 8,
+  "topOffenders": [
+    {
+      "userId": "worker-uuid",
+      "fullName": "Worker Five",
+      "fraudCount": 12,
+      "lastIncident": "2026-01-28T14:30:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+**Last Updated:** 2026-01-21

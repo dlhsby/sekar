@@ -13,27 +13,116 @@ This document outlines the database migration strategy for SEKAR using TypeORM. 
 
 ## Migration Philosophy
 
+### Two Configuration Variables
+
+SEKAR uses two environment variables to control database schema management:
+
+| Variable | Controls | Values |
+|----------|----------|--------|
+| `DATABASE_SYNCHRONIZE` | Auto-create tables from entity definitions | `true` / `false` |
+| `DATABASE_MIGRATIONS_RUN` | Auto-run pending migrations on app startup | `true` / `false` |
+
+**Configured in:** `be/src/app.module.ts` (lines 59, 82)
+
+```typescript
+TypeOrmModule.forRoot({
+  // ...
+  synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+  migrationsRun: process.env.DATABASE_MIGRATIONS_RUN === 'true',
+})
+```
+
 ### Development vs Production
 
-**Development Environment:**
-- Use TypeORM's `synchronize: true` for rapid iteration
-- Schema changes applied automatically on application start
-- No migration files needed during development
-- Faster development cycle, less overhead
+**Development Environment (Fast Iteration):**
+```bash
+DATABASE_SYNCHRONIZE=true      # Auto-create tables from entities
+DATABASE_MIGRATIONS_RUN=false  # Migrations not needed yet
+```
 
-**Production Environment:**
-- **NEVER** use `synchronize: true` in production
-- Always use explicit migration files
-- Version controlled schema changes
-- Rollback capability for failed deployments
+**Benefits:**
+- ✅ Schema changes applied automatically on app start
+- ✅ No migration files needed during development
+- ✅ Faster development cycle, less overhead
+- ✅ Perfect for rapid prototyping and feature building
+
+**Development Environment (Pre-Deployment Testing):**
+```bash
+DATABASE_SYNCHRONIZE=false     # No auto-schema changes
+DATABASE_MIGRATIONS_RUN=true   # Auto-run migrations on startup
+```
+
+**Benefits:**
+- ✅ Tests the same workflow as production
+- ✅ Catches migration bugs before deployment
+- ✅ Ensures migrations are complete and correct
+- ✅ Use this before pushing to production!
+
+**Production Environment (Initial Setup):**
+```bash
+DATABASE_SYNCHRONIZE=true      # Create tables on empty database
+DATABASE_MIGRATIONS_RUN=false  # Manual migration control
+```
+
+**Benefits:**
+- ✅ Creates tables when database is empty
+- ✅ No migrations needed for initial deployment
+- ⚠️ **CRITICAL:** Change to `false` immediately after initial setup!
+
+**Production Environment (After Initial Setup):**
+```bash
+DATABASE_SYNCHRONIZE=false     # NEVER auto-alter schema in production!
+DATABASE_MIGRATIONS_RUN=false  # Manual migration control for zero-downtime
+```
+
+**Benefits:**
+- ✅ Prevents accidental schema changes causing data loss
+- ✅ Manual migration execution = zero-downtime deployments
+- ✅ Migration failures don't crash the app
+- ✅ Full control over when schema changes happen
+
+### Why Manual Migrations in Production?
+
+**Problem with `DATABASE_MIGRATIONS_RUN=true`:**
+
+```bash
+# Scenario: Deploy with failed migration
+DATABASE_MIGRATIONS_RUN=true
+docker-compose up -d
+
+# What happens:
+# 1. Container starts
+# 2. App runs migration
+# 3. Migration FAILS (syntax error, constraint violation, etc.)
+# 4. App CRASHES and won't start
+# 5. DOWNTIME until migration is fixed
+```
+
+**Solution with `DATABASE_MIGRATIONS_RUN=false`:**
+
+```bash
+# Correct workflow
+DATABASE_MIGRATIONS_RUN=false
+
+# 1. Run migration BEFORE restarting app (old code still running)
+docker-compose run --rm backend npm run migration:run:prod
+
+# 2. Migration fails? No problem - app still running!
+# 3. Fix migration, retry, no downtime
+
+# 4. Only restart app after migration succeeds
+docker-compose up -d
+```
 
 ### Why This Approach?
 
-1. **Speed in Development** - Developers can iterate quickly without creating migrations
-2. **Safety in Production** - Explicit migrations prevent accidental schema changes
-3. **Version Control** - Migration files are code reviewed before deployment
-4. **Rollback** - Failed migrations can be reverted with down migrations
-5. **Audit Trail** - Clear history of all schema changes
+1. **Speed in Development** - Synchronize mode lets developers iterate quickly
+2. **Safety in Production** - Manual migrations prevent accidental schema changes and downtime
+3. **Testing Before Deployment** - Migration mode catches bugs early
+4. **Version Control** - Migration files are code reviewed before production
+5. **Rollback Capability** - Failed migrations can be reverted easily
+6. **Zero-Downtime** - Migrations run while old code continues serving traffic
+7. **Audit Trail** - Clear history of all schema changes
 
 ---
 
@@ -1379,6 +1468,1052 @@ export class FixTaskAssignmentIssue1705478400000 implements MigrationInterface {
 
 ---
 
+## Phase Migration Examples
+
+### Phase 1 to Phase 2: Role Enum Migration
+
+**Critical Migration:** The transition from Phase 1 to Phase 2 involves a breaking change in the role enum values. Phase 1 uses lowercase roles while Phase 2 uses PascalCase with an expanded set.
+
+#### Role Mapping
+
+| Phase 1 Role | Phase 2 Role | Notes |
+|--------------|--------------|-------|
+| `worker` | `Worker` | Direct mapping, case change only |
+| `supervisor` | `KoordinatorLapangan` | Supervisor becomes area-level coordinator |
+| `admin` | `Admin` | Direct mapping, case change only |
+| (new) | `TopManagement` | New role for city-wide view |
+| (new) | `KepalaRayon` | New role for rayon-level management |
+| (new) | `Linmas` | New role for security officers |
+
+#### Migration Strategy
+
+**Option A: In-Place Migration (Recommended for small datasets)**
+
+```typescript
+// 1705000000000-Phase2-MigrateRoleEnum.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase2MigrateRoleEnum1705000000000 implements MigrationInterface {
+  name = 'Phase2MigrateRoleEnum1705000000000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Step 1: Remove old CHECK constraint
+    await queryRunner.query(`
+      ALTER TABLE "users"
+      DROP CONSTRAINT IF EXISTS "chk_users_role"
+    `);
+
+    // Step 2: Migrate existing role values
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'Worker' WHERE role = 'worker'
+    `);
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'KoordinatorLapangan' WHERE role = 'supervisor'
+    `);
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'Admin' WHERE role = 'admin'
+    `);
+
+    // Step 3: Add new CHECK constraint with all Phase 2 roles
+    await queryRunner.query(`
+      ALTER TABLE "users"
+      ADD CONSTRAINT "chk_users_role"
+      CHECK ("role" IN (
+        'Admin', 'TopManagement', 'KepalaRayon',
+        'KoordinatorLapangan', 'Worker', 'Linmas'
+      ))
+    `);
+
+    // Step 4: Add rayon_id column for KepalaRayon assignment
+    await queryRunner.query(`
+      ALTER TABLE "users"
+      ADD COLUMN "rayon_id" UUID REFERENCES "rayons"("id") ON DELETE SET NULL
+    `);
+
+    // Step 5: Create index for rayon lookup
+    await queryRunner.query(`
+      CREATE INDEX "idx_users_rayon" ON "users"("rayon_id")
+      WHERE "rayon_id" IS NOT NULL
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Step 1: Remove rayon index and column
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_users_rayon"`);
+    await queryRunner.query(`ALTER TABLE "users" DROP COLUMN "rayon_id"`);
+
+    // Step 2: Remove new CHECK constraint
+    await queryRunner.query(`
+      ALTER TABLE "users"
+      DROP CONSTRAINT IF EXISTS "chk_users_role"
+    `);
+
+    // Step 3: Revert role values (may lose data for new roles)
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'worker' WHERE role = 'Worker'
+    `);
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'worker' WHERE role = 'Linmas'
+    `);
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'supervisor' WHERE role = 'KoordinatorLapangan'
+    `);
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'supervisor' WHERE role = 'KepalaRayon'
+    `);
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'admin' WHERE role = 'TopManagement'
+    `);
+    await queryRunner.query(`
+      UPDATE "users" SET role = 'admin' WHERE role = 'Admin'
+    `);
+
+    // Step 4: Restore old CHECK constraint
+    await queryRunner.query(`
+      ALTER TABLE "users"
+      ADD CONSTRAINT "chk_users_role"
+      CHECK ("role" IN ('worker', 'supervisor', 'admin'))
+    `);
+  }
+}
+```
+
+#### Deployment Notes
+
+1. **Pre-Migration Backup:**
+   ```bash
+   pg_dump sekar_db > backup_before_role_migration.sql
+   ```
+
+2. **Migration Order:**
+   - Run `Phase2-AddRayons` migration first (rayons table must exist)
+   - Then run `Phase2-MigrateRoleEnum` migration
+
+3. **Application Code Updates:**
+   - Update role constants/enums in backend code
+   - Update role checks in guards and decorators
+   - Update frontend role displays
+
+4. **Rollback Considerations:**
+   - New roles (`TopManagement`, `KepalaRayon`, `Linmas`) will be converted to Phase 1 equivalents
+   - `TopManagement` → `admin`
+   - `KepalaRayon` → `supervisor`
+   - `Linmas` → `worker`
+   - **Data about rayon assignments will be lost on rollback**
+
+5. **Testing Checklist:**
+   - [ ] Existing users can still login after migration
+   - [ ] Role-based guards work with new role values
+   - [ ] Supervisors converted to KoordinatorLapangan retain area access
+   - [ ] Admins retain full system access
+   - [ ] New role creation works (TopManagement, KepalaRayon, Linmas)
+
+---
+
+### Phase 2 Migration Examples
+
+#### Example 1: Add Tasks Table
+
+```typescript
+// 1705392000000-Phase2-AddTasks.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase2AddTasks1705392000000 implements MigrationInterface {
+  name = 'Phase2AddTasks1705392000000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create tasks table
+    await queryRunner.query(`
+      CREATE TABLE "tasks" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "title" VARCHAR(200) NOT NULL,
+        "description" TEXT,
+        "assigned_to" UUID,
+        "assigned_by" UUID,
+        "area_id" UUID,
+        "priority" VARCHAR(20) DEFAULT 'normal',
+        "status" VARCHAR(30) DEFAULT 'pending',
+        "due_date" TIMESTAMPTZ,
+        "started_at" TIMESTAMPTZ,
+        "completed_at" TIMESTAMPTZ,
+        "completion_photo_url" TEXT,
+        "completion_notes" TEXT,
+        "decline_reason" TEXT,
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+        "deleted_at" TIMESTAMPTZ,
+
+        CONSTRAINT "fk_tasks_assigned_to"
+          FOREIGN KEY ("assigned_to") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "fk_tasks_assigned_by"
+          FOREIGN KEY ("assigned_by") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "fk_tasks_area"
+          FOREIGN KEY ("area_id") REFERENCES "areas"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_task_priority"
+          CHECK ("priority" IN ('low', 'normal', 'high', 'urgent')),
+        CONSTRAINT "chk_task_status"
+          CHECK ("status" IN ('pending', 'assigned', 'accepted', 'declined', 'in_progress', 'completed', 'cancelled')),
+        CONSTRAINT "chk_task_completion"
+          CHECK (
+            ("status" = 'completed' AND "completed_at" IS NOT NULL) OR
+            ("status" != 'completed')
+          ),
+        CONSTRAINT "chk_task_decline"
+          CHECK (
+            ("status" = 'declined' AND "decline_reason" IS NOT NULL) OR
+            ("status" != 'declined')
+          )
+      )
+    `);
+
+    // Add indexes
+    await queryRunner.query(`
+      CREATE INDEX "idx_tasks_assigned_status"
+      ON "tasks"("assigned_to", "status", "due_date")
+      WHERE "deleted_at" IS NULL
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_tasks_area_status"
+      ON "tasks"("area_id", "status", "created_at")
+      WHERE "deleted_at" IS NULL
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_tasks_overdue"
+      ON "tasks"("due_date", "status")
+      WHERE "status" NOT IN ('completed', 'cancelled') AND "deleted_at" IS NULL
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_tasks_overdue"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_tasks_area_status"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_tasks_assigned_status"`);
+    await queryRunner.query(`DROP TABLE "tasks"`);
+  }
+}
+```
+
+#### Example 2: Add Notifications Infrastructure
+
+```typescript
+// 1705478400000-Phase2-AddNotifications.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase2AddNotifications1705478400000 implements MigrationInterface {
+  name = 'Phase2AddNotifications1705478400000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create notification_tokens table
+    await queryRunner.query(`
+      CREATE TABLE "notification_tokens" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "user_id" UUID NOT NULL,
+        "token" TEXT NOT NULL,
+        "platform" VARCHAR(20) NOT NULL,
+        "device_id" VARCHAR(255),
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_notification_tokens_user"
+          FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
+        CONSTRAINT "chk_notification_platform"
+          CHECK ("platform" IN ('android', 'ios', 'web')),
+        CONSTRAINT "uq_notification_tokens_user_token"
+          UNIQUE ("user_id", "token")
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_notification_tokens_user"
+      ON "notification_tokens"("user_id")
+    `);
+
+    // Create notifications table
+    await queryRunner.query(`
+      CREATE TABLE "notifications" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "user_id" UUID NOT NULL,
+        "title" VARCHAR(200) NOT NULL,
+        "body" TEXT NOT NULL,
+        "type" VARCHAR(50) NOT NULL,
+        "data" JSONB,
+        "read_at" TIMESTAMPTZ,
+        "sent_at" TIMESTAMPTZ DEFAULT NOW(),
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_notifications_user"
+          FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
+        CONSTRAINT "chk_notification_type"
+          CHECK ("type" IN (
+            'task_assigned', 'task_reminder', 'shift_reminder',
+            'report_reviewed', 'report_comment', 'system', 'announcement'
+          ))
+      )
+    `);
+
+    // Add CRITICAL indexes
+    await queryRunner.query(`
+      CREATE INDEX "idx_notifications_user_unread"
+      ON "notifications"("user_id", "created_at" DESC)
+      WHERE "read_at" IS NULL
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_notifications_user_all"
+      ON "notifications"("user_id", "created_at" DESC)
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_notifications_data"
+      ON "notifications" USING GIN ("data")
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_notifications_data"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_notifications_user_all"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_notifications_user_unread"`);
+    await queryRunner.query(`DROP TABLE "notifications"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_notification_tokens_user"`);
+    await queryRunner.query(`DROP TABLE "notification_tokens"`);
+  }
+}
+```
+
+---
+
+### Phase 3 Migration Examples
+
+#### Example 1: Add Report Templates
+
+```typescript
+// 1706601600000-Phase3-AddReportTemplates.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase3AddReportTemplates1706601600000 implements MigrationInterface {
+  name = 'Phase3AddReportTemplates1706601600000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create report_templates table
+    await queryRunner.query(`
+      CREATE TABLE "report_templates" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "name" VARCHAR(200) NOT NULL,
+        "description" TEXT,
+        "report_type" VARCHAR(50) NOT NULL,
+        "config" JSONB NOT NULL,
+        "created_by" UUID,
+        "is_system_template" BOOLEAN DEFAULT FALSE,
+        "is_active" BOOLEAN DEFAULT TRUE,
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_report_templates_creator"
+          FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_report_type"
+          CHECK ("report_type" IN (
+            'worker_performance', 'area_coverage', 'operational',
+            'attendance', 'task_completion', 'custom'
+          ))
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_report_templates_type"
+      ON "report_templates"("report_type", "is_active")
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_report_templates_config"
+      ON "report_templates" USING GIN ("config")
+    `);
+
+    // Insert system templates
+    await queryRunner.query(`
+      INSERT INTO "report_templates" ("name", "description", "report_type", "config", "is_system_template")
+      VALUES
+        (
+          'Worker Performance - Monthly',
+          'Monthly worker performance metrics',
+          'worker_performance',
+          '{"date_range": "last_month", "columns": ["attendance_rate", "avg_shift_hours", "reports_count"]}'::jsonb,
+          TRUE
+        ),
+        (
+          'Area Coverage - Weekly',
+          'Weekly area coverage summary',
+          'area_coverage',
+          '{"date_range": "last_week", "columns": ["days_covered", "total_reports", "avg_condition"]}'::jsonb,
+          TRUE
+        )
+    `);
+
+    // Create generated_reports table
+    await queryRunner.query(`
+      CREATE TABLE "generated_reports" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "template_id" UUID,
+        "generated_by" UUID,
+        "file_name" VARCHAR(255) NOT NULL,
+        "file_url" TEXT NOT NULL,
+        "file_format" VARCHAR(20) NOT NULL,
+        "file_size_bytes" INTEGER,
+        "parameters" JSONB NOT NULL,
+        "row_count" INTEGER,
+        "generation_time_ms" INTEGER,
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_generated_reports_template"
+          FOREIGN KEY ("template_id") REFERENCES "report_templates"("id") ON DELETE SET NULL,
+        CONSTRAINT "fk_generated_reports_user"
+          FOREIGN KEY ("generated_by") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_file_format"
+          CHECK ("file_format" IN ('pdf', 'csv', 'xlsx', 'json'))
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_generated_reports_created"
+      ON "generated_reports"("created_at" DESC)
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_generated_reports_created"`);
+    await queryRunner.query(`DROP TABLE "generated_reports"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_report_templates_config"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_report_templates_type"`);
+    await queryRunner.query(`DROP TABLE "report_templates"`);
+  }
+}
+```
+
+#### Example 2: Create Analytics Materialized Views
+
+```typescript
+// 1706688000000-Phase3-AddAnalyticsViews.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase3AddAnalyticsViews1706688000000 implements MigrationInterface {
+  name = 'Phase3AddAnalyticsViews1706688000000';
+
+  // Disable transaction for CREATE INDEX CONCURRENTLY
+  transaction = false;
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create worker performance materialized view
+    await queryRunner.query(`
+      CREATE MATERIALIZED VIEW "mv_worker_performance" AS
+      SELECT
+        u.id as worker_id,
+        u.full_name,
+        u.phone,
+        wa.area_id,
+        a.name as area_name,
+        COUNT(DISTINCT DATE(s.clock_in_time)) as days_worked,
+        AVG(EXTRACT(EPOCH FROM (s.clock_out_time - s.clock_in_time)) / 3600) as avg_shift_hours,
+        COUNT(r.id) as total_reports,
+        SUM(CASE WHEN r.condition = 'Baik' THEN 1 ELSE 0 END) as good_reports,
+        MAX(s.clock_in_time) as last_shift_date
+      FROM users u
+      LEFT JOIN worker_assignments wa ON u.id = wa.worker_id
+      LEFT JOIN areas a ON wa.area_id = a.id
+      LEFT JOIN shifts s ON u.id = s.worker_id AND s.deleted_at IS NULL
+      LEFT JOIN work_reports r ON u.id = r.worker_id AND r.deleted_at IS NULL
+      WHERE u.role = 'worker' AND u.deleted_at IS NULL
+      GROUP BY u.id, u.full_name, u.phone, wa.area_id, a.name
+    `);
+
+    // Add index on materialized view
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX "idx_mv_worker_performance"
+      ON "mv_worker_performance"("worker_id")
+    `);
+
+    // Create area coverage materialized view
+    await queryRunner.query(`
+      CREATE MATERIALIZED VIEW "mv_area_coverage" AS
+      SELECT
+        a.id as area_id,
+        a.name,
+        a.gps_lat,
+        a.gps_lng,
+        at.name as area_type,
+        COUNT(DISTINCT wa.worker_id) as assigned_workers,
+        COUNT(DISTINCT DATE(s.clock_in_time)) as days_covered,
+        COUNT(r.id) as total_reports,
+        AVG(CASE
+          WHEN r.condition = 'Baik' THEN 3
+          WHEN r.condition = 'Cukup' THEN 2
+          WHEN r.condition = 'Buruk' THEN 1
+        END) as avg_condition_score
+      FROM areas a
+      JOIN area_types at ON a.area_type_id = at.id
+      LEFT JOIN worker_assignments wa ON a.id = wa.area_id
+      LEFT JOIN shifts s ON a.id = s.area_id AND s.deleted_at IS NULL
+      LEFT JOIN work_reports r ON a.id = r.area_id AND r.deleted_at IS NULL
+      WHERE a.deleted_at IS NULL
+      GROUP BY a.id, a.name, a.gps_lat, a.gps_lng, at.name
+    `);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX "idx_mv_area_coverage"
+      ON "mv_area_coverage"("area_id")
+    `);
+
+    // Create function to refresh views (run daily via cron)
+    await queryRunner.query(`
+      CREATE OR REPLACE FUNCTION refresh_analytics_views()
+      RETURNS void AS $$
+      BEGIN
+        REFRESH MATERIALIZED VIEW CONCURRENTLY mv_worker_performance;
+        REFRESH MATERIALIZED VIEW CONCURRENTLY mv_area_coverage;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP FUNCTION IF EXISTS refresh_analytics_views`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_mv_area_coverage"`);
+    await queryRunner.query(`DROP MATERIALIZED VIEW IF EXISTS "mv_area_coverage"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_mv_worker_performance"`);
+    await queryRunner.query(`DROP MATERIALIZED VIEW IF EXISTS "mv_worker_performance"`);
+  }
+}
+```
+
+#### Example 3: Add Scheduled Reports
+
+```typescript
+// 1706774400000-Phase3-AddScheduledReports.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase3AddScheduledReports1706774400000 implements MigrationInterface {
+  name = 'Phase3AddScheduledReports1706774400000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      CREATE TABLE "scheduled_reports" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "template_id" UUID NOT NULL,
+        "created_by" UUID,
+        "name" VARCHAR(200) NOT NULL,
+        "schedule_cron" VARCHAR(100) NOT NULL,
+        "recipients" TEXT[] NOT NULL,
+        "is_active" BOOLEAN DEFAULT TRUE,
+        "last_run_at" TIMESTAMPTZ,
+        "next_run_at" TIMESTAMPTZ,
+        "run_count" INTEGER DEFAULT 0,
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_scheduled_reports_template"
+          FOREIGN KEY ("template_id") REFERENCES "report_templates"("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_scheduled_reports_creator"
+          FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_scheduled_reports_next_run"
+      ON "scheduled_reports"("next_run_at", "is_active")
+      WHERE "is_active" = TRUE
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_scheduled_reports_next_run"`);
+    await queryRunner.query(`DROP TABLE "scheduled_reports"`);
+  }
+}
+```
+
+---
+
+### Phase 4 Migration Examples
+
+#### Example 1: Add Asset Management Tables
+
+```typescript
+// 1707984000000-Phase4-AddAssetManagement.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase4AddAssetManagement1707984000000 implements MigrationInterface {
+  name = 'Phase4AddAssetManagement1707984000000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create asset_types table
+    await queryRunner.query(`
+      CREATE TABLE "asset_types" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "code" VARCHAR(50) UNIQUE NOT NULL,
+        "name" VARCHAR(100) NOT NULL,
+        "description" TEXT,
+        "requires_calibration" BOOLEAN DEFAULT FALSE,
+        "calibration_interval_days" INTEGER,
+        "default_warranty_months" INTEGER DEFAULT 12,
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX "idx_asset_types_code"
+      ON "asset_types"("code")
+    `);
+
+    // Seed asset types
+    await queryRunner.query(`
+      INSERT INTO "asset_types" ("code", "name", "description", "requires_calibration", "calibration_interval_days")
+      VALUES
+        ('mower', 'Lawn Mower', 'Gas-powered lawn mower', FALSE, NULL),
+        ('trimmer', 'Grass Trimmer', 'Cordless grass trimmer', FALSE, NULL),
+        ('sprayer', 'Chemical Sprayer', 'Backpack sprayer for fertilizer/pesticide', TRUE, 90),
+        ('rake', 'Garden Rake', 'Metal garden rake', FALSE, NULL),
+        ('cart', 'Garden Cart', 'Wheelbarrow/garden cart', FALSE, NULL),
+        ('blower', 'Leaf Blower', 'Gas-powered leaf blower', FALSE, NULL),
+        ('chainsaw', 'Chainsaw', 'Gas-powered chainsaw', TRUE, 180),
+        ('ladder', 'Ladder', 'Extension ladder', FALSE, NULL)
+    `);
+
+    // Create assets table
+    await queryRunner.query(`
+      CREATE TABLE "assets" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "asset_code" VARCHAR(50) UNIQUE NOT NULL,
+        "name" VARCHAR(200) NOT NULL,
+        "asset_type_id" UUID NOT NULL,
+        "description" TEXT,
+        "brand" VARCHAR(100),
+        "model" VARCHAR(100),
+        "serial_number" VARCHAR(100),
+        "purchase_date" DATE,
+        "purchase_price" DECIMAL(15, 2),
+        "warranty_expiry" DATE,
+        "status" VARCHAR(30) DEFAULT 'available',
+        "condition" VARCHAR(20) DEFAULT 'good',
+        "current_holder_id" UUID,
+        "current_area_id" UUID,
+        "last_maintenance_date" DATE,
+        "next_maintenance_date" DATE,
+        "gps_lat" DECIMAL(10, 8),
+        "gps_lng" DECIMAL(11, 8),
+        "photo_url" TEXT,
+        "qr_code_url" TEXT,
+        "notes" TEXT,
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+        "deleted_at" TIMESTAMPTZ,
+
+        CONSTRAINT "fk_assets_type"
+          FOREIGN KEY ("asset_type_id") REFERENCES "asset_types"("id") ON DELETE RESTRICT,
+        CONSTRAINT "fk_assets_holder"
+          FOREIGN KEY ("current_holder_id") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "fk_assets_area"
+          FOREIGN KEY ("current_area_id") REFERENCES "areas"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_asset_status"
+          CHECK ("status" IN ('available', 'in_use', 'maintenance', 'retired', 'lost', 'damaged')),
+        CONSTRAINT "chk_asset_condition"
+          CHECK ("condition" IN ('excellent', 'good', 'fair', 'poor', 'broken')),
+        CONSTRAINT "chk_asset_location"
+          CHECK (
+            ("current_holder_id" IS NOT NULL AND "current_area_id" IS NULL) OR
+            ("current_holder_id" IS NULL AND "current_area_id" IS NOT NULL) OR
+            ("current_holder_id" IS NULL AND "current_area_id" IS NULL)
+          )
+      )
+    `);
+
+    // Add CRITICAL indexes
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX "idx_assets_code"
+      ON "assets"("asset_code")
+      WHERE "deleted_at" IS NULL
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_assets_type_status"
+      ON "assets"("asset_type_id", "status")
+      WHERE "deleted_at" IS NULL
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_assets_available"
+      ON "assets"("status", "asset_type_id", "condition")
+      WHERE "status" = 'available' AND "deleted_at" IS NULL
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_assets_maintenance"
+      ON "assets"("next_maintenance_date")
+      WHERE "status" != 'retired' AND "deleted_at" IS NULL
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_assets_maintenance"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_assets_available"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_assets_type_status"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_assets_code"`);
+    await queryRunner.query(`DROP TABLE "assets"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_asset_types_code"`);
+    await queryRunner.query(`DROP TABLE "asset_types"`);
+  }
+}
+```
+
+#### Example 2: Add Asset Assignments and Maintenance
+
+```typescript
+// 1708070400000-Phase4-AddAssetAssignments.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase4AddAssetAssignments1708070400000 implements MigrationInterface {
+  name = 'Phase4AddAssetAssignments1708070400000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create asset_assignments table
+    await queryRunner.query(`
+      CREATE TABLE "asset_assignments" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "asset_id" UUID NOT NULL,
+        "assigned_to" UUID NOT NULL,
+        "assigned_by" UUID NOT NULL,
+        "area_id" UUID,
+        "assigned_at" TIMESTAMPTZ DEFAULT NOW(),
+        "returned_at" TIMESTAMPTZ,
+        "return_condition" VARCHAR(20),
+        "return_notes" TEXT,
+        "photo_assigned_url" TEXT,
+        "photo_returned_url" TEXT,
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_asset_assignments_asset"
+          FOREIGN KEY ("asset_id") REFERENCES "assets"("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_asset_assignments_user"
+          FOREIGN KEY ("assigned_to") REFERENCES "users"("id") ON DELETE RESTRICT,
+        CONSTRAINT "fk_asset_assignments_assigner"
+          FOREIGN KEY ("assigned_by") REFERENCES "users"("id") ON DELETE RESTRICT,
+        CONSTRAINT "fk_asset_assignments_area"
+          FOREIGN KEY ("area_id") REFERENCES "areas"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_assignment_return"
+          CHECK ("returned_at" IS NULL OR "returned_at" > "assigned_at"),
+        CONSTRAINT "chk_return_condition"
+          CHECK ("return_condition" IS NULL OR "return_condition" IN ('excellent', 'good', 'fair', 'poor', 'broken'))
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_asset_assignments_asset"
+      ON "asset_assignments"("asset_id", "assigned_at" DESC)
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_asset_assignments_active"
+      ON "asset_assignments"("asset_id", "assigned_to")
+      WHERE "returned_at" IS NULL
+    `);
+
+    // Create maintenance_records table
+    await queryRunner.query(`
+      CREATE TABLE "maintenance_records" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "asset_id" UUID NOT NULL,
+        "maintenance_type" VARCHAR(50) NOT NULL,
+        "description" TEXT NOT NULL,
+        "performed_by" UUID,
+        "vendor_name" VARCHAR(200),
+        "cost" DECIMAL(15, 2),
+        "scheduled_date" DATE,
+        "completed_date" DATE,
+        "status" VARCHAR(30) DEFAULT 'scheduled',
+        "notes" TEXT,
+        "photos_url" TEXT[],
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_maintenance_asset"
+          FOREIGN KEY ("asset_id") REFERENCES "assets"("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_maintenance_performer"
+          FOREIGN KEY ("performed_by") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_maintenance_type"
+          CHECK ("maintenance_type" IN ('routine', 'repair', 'calibration', 'inspection', 'replacement')),
+        CONSTRAINT "chk_maintenance_status"
+          CHECK ("status" IN ('scheduled', 'in_progress', 'completed', 'cancelled')),
+        CONSTRAINT "chk_maintenance_completed"
+          CHECK (("status" = 'completed' AND "completed_date" IS NOT NULL) OR ("status" != 'completed'))
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_maintenance_records_asset"
+      ON "maintenance_records"("asset_id", "completed_date" DESC)
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_maintenance_records_scheduled"
+      ON "maintenance_records"("scheduled_date", "status")
+      WHERE "status" IN ('scheduled', 'in_progress')
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_maintenance_records_scheduled"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_maintenance_records_asset"`);
+    await queryRunner.query(`DROP TABLE "maintenance_records"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_asset_assignments_active"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_asset_assignments_asset"`);
+    await queryRunner.query(`DROP TABLE "asset_assignments"`);
+  }
+}
+```
+
+---
+
+### Phase 6 Migration Examples
+
+#### Example 1: Add Audit Logs with Partitioning
+
+```typescript
+// 1710288000000-Phase6-AddAuditLogs.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase6AddAuditLogs1710288000000 implements MigrationInterface {
+  name = 'Phase6AddAuditLogs1710288000000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create parent partitioned table
+    await queryRunner.query(`
+      CREATE TABLE "audit_logs" (
+        "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+        "user_id" UUID,
+        "action" VARCHAR(50) NOT NULL,
+        "entity_type" VARCHAR(50) NOT NULL,
+        "entity_id" UUID,
+        "entity_name" VARCHAR(200),
+        "old_value" JSONB,
+        "new_value" JSONB,
+        "changed_fields" TEXT[],
+        "ip_address" INET,
+        "user_agent" TEXT,
+        "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+        CONSTRAINT "fk_audit_logs_user"
+          FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_audit_action"
+          CHECK ("action" IN (
+            'create', 'update', 'delete', 'soft_delete', 'restore',
+            'login', 'logout', 'login_failed', 'password_change',
+            'export', 'import', 'bulk_update', 'bulk_delete'
+          )),
+        PRIMARY KEY ("id", "created_at")
+      ) PARTITION BY RANGE ("created_at")
+    `);
+
+    // Create partitions for current and next 3 months
+    const startDate = new Date('2026-01-01');
+    for (let i = 0; i < 4; i++) {
+      const partitionDate = new Date(startDate);
+      partitionDate.setMonth(partitionDate.getMonth() + i);
+      const nextMonth = new Date(partitionDate);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+      const partitionName = `audit_logs_${partitionDate.getFullYear()}_${String(partitionDate.getMonth() + 1).padStart(2, '0')}`;
+
+      await queryRunner.query(`
+        CREATE TABLE "${partitionName}" PARTITION OF "audit_logs"
+        FOR VALUES FROM ('${partitionDate.toISOString().split('T')[0]}')
+        TO ('${nextMonth.toISOString().split('T')[0]}')
+      `);
+
+      // Add indexes to each partition
+      await queryRunner.query(`
+        CREATE INDEX "idx_${partitionName}_user"
+        ON "${partitionName}"("user_id", "created_at" DESC)
+      `);
+
+      await queryRunner.query(`
+        CREATE INDEX "idx_${partitionName}_entity"
+        ON "${partitionName}"("entity_type", "entity_id", "created_at" DESC)
+      `);
+
+      await queryRunner.query(`
+        CREATE INDEX "idx_${partitionName}_action"
+        ON "${partitionName}"("action", "created_at" DESC)
+      `);
+    }
+
+    // Create partition management function
+    await queryRunner.query(`
+      CREATE OR REPLACE FUNCTION create_audit_logs_partition()
+      RETURNS void AS $$
+      DECLARE
+        next_month DATE := DATE_TRUNC('month', NOW() + INTERVAL '1 month');
+        month_after DATE := next_month + INTERVAL '1 month';
+        partition_name TEXT := 'audit_logs_' || TO_CHAR(next_month, 'YYYY_MM');
+      BEGIN
+        EXECUTE format('CREATE TABLE IF NOT EXISTS %I PARTITION OF audit_logs FOR VALUES FROM (%L) TO (%L)',
+          partition_name, next_month, month_after);
+
+        EXECUTE format('CREATE INDEX idx_%I_user ON %I(user_id, created_at DESC)', partition_name, partition_name);
+        EXECUTE format('CREATE INDEX idx_%I_entity ON %I(entity_type, entity_id, created_at DESC)', partition_name, partition_name);
+        EXECUTE format('CREATE INDEX idx_%I_action ON %I(action, created_at DESC)', partition_name, partition_name);
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
+    // Create cleanup function (drop partitions older than 2 years)
+    await queryRunner.query(`
+      CREATE OR REPLACE FUNCTION cleanup_old_audit_logs_partitions()
+      RETURNS void AS $$
+      DECLARE
+        partition_record RECORD;
+        cutoff_date DATE := DATE_TRUNC('month', NOW() - INTERVAL '2 years');
+      BEGIN
+        FOR partition_record IN
+          SELECT tablename
+          FROM pg_tables
+          WHERE schemaname = 'public'
+            AND tablename LIKE 'audit_logs_%'
+            AND tablename != 'audit_logs'
+        LOOP
+          DECLARE
+            partition_date DATE;
+          BEGIN
+            partition_date := TO_DATE(SUBSTRING(partition_record.tablename FROM 'audit_logs_(.*)'), 'YYYY_MM');
+            IF partition_date < cutoff_date THEN
+              EXECUTE format('DROP TABLE IF EXISTS %I', partition_record.tablename);
+              RAISE NOTICE 'Dropped old partition: %', partition_record.tablename;
+            END IF;
+          EXCEPTION WHEN OTHERS THEN
+            RAISE WARNING 'Error processing partition %: %', partition_record.tablename, SQLERRM;
+          END;
+        END LOOP;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP FUNCTION IF EXISTS cleanup_old_audit_logs_partitions`);
+    await queryRunner.query(`DROP FUNCTION IF EXISTS create_audit_logs_partition`);
+
+    // Drop all partitions
+    const partitions = await queryRunner.query(`
+      SELECT tablename FROM pg_tables
+      WHERE schemaname = 'public' AND tablename LIKE 'audit_logs_%'
+    `);
+
+    for (const partition of partitions) {
+      await queryRunner.query(`DROP TABLE IF EXISTS "${partition.tablename}"`);
+    }
+
+    await queryRunner.query(`DROP TABLE "audit_logs"`);
+  }
+}
+```
+
+#### Example 2: Add System Settings and Bulk Operations
+
+```typescript
+// 1710374400000-Phase6-AddSystemSettings.ts
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class Phase6AddSystemSettings1710374400000 implements MigrationInterface {
+  name = 'Phase6AddSystemSettings1710374400000';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create system_settings table
+    await queryRunner.query(`
+      CREATE TABLE "system_settings" (
+        "key" VARCHAR(100) PRIMARY KEY,
+        "value" TEXT NOT NULL,
+        "value_type" VARCHAR(20) DEFAULT 'string',
+        "description" TEXT,
+        "category" VARCHAR(50) DEFAULT 'general',
+        "is_public" BOOLEAN DEFAULT FALSE,
+        "updated_by" UUID,
+        "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+        "created_at" TIMESTAMPTZ DEFAULT NOW(),
+
+        CONSTRAINT "fk_system_settings_updater"
+          FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_value_type"
+          CHECK ("value_type" IN ('string', 'number', 'boolean', 'json'))
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_system_settings_category"
+      ON "system_settings"("category")
+    `);
+
+    // Insert default settings
+    await queryRunner.query(`
+      INSERT INTO "system_settings" ("key", "value", "value_type", "description", "category", "is_public")
+      VALUES
+        ('shift_reminder_time', '07:00', 'string', 'Time to send shift reminder notifications (HH:MM)', 'notifications', TRUE),
+        ('max_shift_hours', '12', 'number', 'Maximum allowed shift duration in hours', 'shifts', TRUE),
+        ('location_ping_interval', '300', 'number', 'GPS ping interval in seconds', 'location', TRUE),
+        ('report_photo_required', 'true', 'boolean', 'Require photo for work reports', 'reports', TRUE),
+        ('gps_tolerance_meters', '100', 'number', 'GPS validation tolerance in meters', 'location', TRUE),
+        ('maintenance_notice_days', '7', 'number', 'Days before maintenance due to send notice', 'assets', FALSE),
+        ('auto_logout_minutes', '480', 'number', 'Auto logout after inactivity (minutes)', 'security', TRUE),
+        ('backup_retention_days', '90', 'number', 'Days to retain database backups', 'system', FALSE),
+        ('max_file_upload_mb', '10', 'number', 'Maximum file upload size in MB', 'system', TRUE)
+    `);
+
+    // Create bulk_operations table
+    await queryRunner.query(`
+      CREATE TABLE "bulk_operations" (
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "operation_type" VARCHAR(50) NOT NULL,
+        "entity_type" VARCHAR(50) NOT NULL,
+        "performed_by" UUID,
+        "affected_count" INTEGER DEFAULT 0,
+        "parameters" JSONB NOT NULL,
+        "entity_ids" UUID[],
+        "status" VARCHAR(30) DEFAULT 'pending',
+        "error_message" TEXT,
+        "started_at" TIMESTAMPTZ DEFAULT NOW(),
+        "completed_at" TIMESTAMPTZ,
+
+        CONSTRAINT "fk_bulk_operations_user"
+          FOREIGN KEY ("performed_by") REFERENCES "users"("id") ON DELETE SET NULL,
+        CONSTRAINT "chk_bulk_operation_type"
+          CHECK ("operation_type" IN ('bulk_update', 'bulk_delete', 'bulk_import', 'bulk_export', 'bulk_assign')),
+        CONSTRAINT "chk_bulk_status"
+          CHECK ("status" IN ('pending', 'in_progress', 'completed', 'failed', 'partial'))
+      )
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_bulk_operations_user"
+      ON "bulk_operations"("performed_by", "started_at" DESC)
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX "idx_bulk_operations_status"
+      ON "bulk_operations"("status", "started_at" DESC)
+    `);
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_bulk_operations_status"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_bulk_operations_user"`);
+    await queryRunner.query(`DROP TABLE "bulk_operations"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_system_settings_category"`);
+    await queryRunner.query(`DROP TABLE "system_settings"`);
+  }
+}
+```
+
+---
+
 ## Troubleshooting
 
 ### Migration Failed Mid-Execution
@@ -1516,6 +2651,7 @@ Add these to `be/package.json`:
 
 ---
 
-**Last Updated:** 2026-01-16
-**Migration Strategy Version:** 1.0
+**Last Updated:** 2026-01-21
+**Migration Strategy Version:** 2.0
 **TypeORM Version:** 0.3.x
+**Status:** Phase 1 Migrations Complete | Phases 2-6 Fully Specified

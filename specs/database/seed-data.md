@@ -48,27 +48,42 @@ Reference table with predefined area type categories.
 ### SQL Insert
 
 ```sql
-INSERT INTO area_types (id, code, name, description, created_at) VALUES
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'park', 'Taman', 'Taman kota dan ruang terbuka hijau publik', NOW()),
-  ('b2c3d4e5-f6a7-8901-bcde-f12345678901', 'pedestrian', 'Trotoar', 'Jalur pejalan kaki di sepanjang jalan raya', NOW()),
-  ('c3d4e5f6-a7b8-9012-cdef-123456789012', 'mini_garden', 'Taman Mini', 'Taman kecil di area pemukiman atau perumahan', NOW()),
-  ('d4e5f6a7-b8c9-0123-def0-123456789012', 'street', 'Jalanan', 'Jalanan umum yang memerlukan pemeliharaan kebersihan', NOW())
-ON CONFLICT (code) DO NOTHING;
+-- Phase 1: Basic area types
+-- Phase 2: Added 'category' column (ACTIVE/PASSIVE)
+
+INSERT INTO area_types (id, code, name, description, category, created_at) VALUES
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'park', 'Taman', 'Taman kota dan ruang terbuka hijau publik', 'ACTIVE', NOW()),
+  ('b2c3d4e5-f6a7-8901-bcde-f12345678901', 'pedestrian', 'Trotoar', 'Jalur pejalan kaki di sepanjang jalan raya', 'PASSIVE', NOW()),
+  ('c3d4e5f6-a7b8-9012-cdef-123456789012', 'mini_garden', 'Taman Mini', 'Taman kecil di area pemukiman atau perumahan', 'ACTIVE', NOW()),
+  ('d4e5f6a7-b8c9-0123-def0-123456789012', 'street', 'Jalanan', 'Jalanan umum yang memerlukan pemeliharaan kebersihan', 'PASSIVE', NOW()),
+  ('e5f6a7b8-c9d0-1234-ef01-234567890123', 'green_corridor', 'Koridor Hijau', 'Koridor tanaman penghubung antar taman', 'ACTIVE', NOW()),
+  ('f6a7b8c9-d0e1-2345-f012-345678901234', 'median', 'Median Jalan', 'Median jalan dengan tanaman hias', 'PASSIVE', NOW())
+ON CONFLICT (code) DO UPDATE SET category = EXCLUDED.category;
 ```
 
 ### Seed Data Details
 
-| Code | Name | Description | Use Case |
-|------|------|-------------|----------|
-| park | Taman | Taman kota dan ruang terbuka hijau publik | Large public parks like Taman Bungkul |
-| pedestrian | Trotoar | Jalur pejalan kaki di sepanjang jalan raya | Sidewalks with trees along roads |
-| mini_garden | Taman Mini | Taman kecil di area pemukiman | Small neighborhood gardens |
-| street | Jalanan | Jalanan umum yang memerlukan pemeliharaan | Streets requiring maintenance |
+| Code | Name | Category | Description | Use Case |
+|------|------|----------|-------------|----------|
+| park | Taman | ACTIVE | Taman kota dan ruang terbuka hijau publik | Large public parks like Taman Bungkul |
+| pedestrian | Trotoar | PASSIVE | Jalur pejalan kaki di sepanjang jalan raya | Sidewalks with trees along roads |
+| mini_garden | Taman Mini | ACTIVE | Taman kecil di area pemukiman | Small neighborhood gardens |
+| street | Jalanan | PASSIVE | Jalanan umum yang memerlukan pemeliharaan | Streets requiring maintenance |
+| green_corridor | Koridor Hijau | ACTIVE | Koridor tanaman penghubung antar taman | Green corridors connecting parks |
+| median | Median Jalan | PASSIVE | Median jalan dengan tanaman hias | Road medians with plants |
+
+### Category Definitions (Phase 2)
+
+| Category | Description | Characteristics |
+|----------|-------------|-----------------|
+| **ACTIVE** | Areas requiring regular active maintenance | More intensive work (watering, planting, pruning), higher staffing requirements |
+| **PASSIVE** | Areas with lower maintenance intensity | Basic cleaning and occasional trimming, lower staffing needs |
 
 **Business Rules:**
 - These are read-only in production (no CRUD operations)
 - Used for filtering and categorization
 - Cannot be deleted if referenced by areas
+- Category affects staff requirement calculations (Phase 2)
 
 ---
 
@@ -887,6 +902,550 @@ Before committing seed data changes:
 
 ---
 
-**Last Updated:** 2026-01-16
-**Seed Data Version:** 1.0 (Phase 1 MVP)
-**Total Records:** 28 (6 users, 4 area types, 3 areas, 3 assignments, 4 shifts, 2 reports, 10 location logs)
+## Phase 2 Seed Data
+
+Phase 2 introduces organizational structure, shift scheduling, and activity types. This section documents the additional seed data required for Phase 2 features.
+
+### Overview
+
+| Category | Count | Description |
+|----------|-------|-------------|
+| Rayons | 7 | Geographic sectors of Surabaya |
+| Shift Definitions | 3 | Fixed shift time periods |
+| Activity Types | 10 | Work activity categories |
+| Area Type Categories | 2 | Active/Passive classification |
+| Additional Users | 7 | New role users (2 TopMgmt, 2 KepalaRayon, 2 Koordinator, 1 Linmas) |
+
+---
+
+## 8. Rayons (New - Phase 2)
+
+Seven geographic sectors covering Surabaya city's green space management.
+
+### SQL Insert
+
+```sql
+INSERT INTO rayons (id, name, code, description, created_at, updated_at) VALUES
+  ('11111111-1111-1111-1111-111111111101', 'Rayon Selatan', 'SELATAN', 'Wilayah Surabaya Selatan termasuk Wonokromo, Wonocolo, dan sekitarnya', NOW(), NOW()),
+  ('11111111-1111-1111-1111-111111111102', 'Rayon Utara', 'UTARA', 'Wilayah Surabaya Utara termasuk Kenjeran, Bulak, dan sekitarnya', NOW(), NOW()),
+  ('11111111-1111-1111-1111-111111111103', 'Rayon Pusat', 'PUSAT', 'Wilayah Surabaya Pusat termasuk Tegalsari, Genteng, dan sekitarnya', NOW(), NOW()),
+  ('11111111-1111-1111-1111-111111111104', 'Rayon Timur 1', 'TIMUR1', 'Wilayah Surabaya Timur bagian 1 termasuk Sukolilo, Mulyorejo', NOW(), NOW()),
+  ('11111111-1111-1111-1111-111111111105', 'Rayon Timur 2', 'TIMUR2', 'Wilayah Surabaya Timur bagian 2 termasuk Gubeng, Tenggilis', NOW(), NOW()),
+  ('11111111-1111-1111-1111-111111111106', 'Rayon Barat 1', 'BARAT1', 'Wilayah Surabaya Barat bagian 1 termasuk Sawahan, Sukomanunggal', NOW(), NOW()),
+  ('11111111-1111-1111-1111-111111111107', 'Rayon Barat 2', 'BARAT2', 'Wilayah Surabaya Barat bagian 2 termasuk Tandes, Lakarsantri', NOW(), NOW())
+ON CONFLICT (code) DO NOTHING;
+```
+
+### Rayon Details
+
+| Code | Name | Description | Key Districts |
+|------|------|-------------|---------------|
+| SELATAN | Rayon Selatan | Southern Surabaya region | Wonokromo, Wonocolo, Wiyung |
+| UTARA | Rayon Utara | Northern Surabaya region | Kenjeran, Bulak, Pabean Cantian |
+| PUSAT | Rayon Pusat | Central Surabaya region | Tegalsari, Genteng, Bubutan |
+| TIMUR1 | Rayon Timur 1 | Eastern Surabaya region (part 1) | Sukolilo, Mulyorejo, Rungkut |
+| TIMUR2 | Rayon Timur 2 | Eastern Surabaya region (part 2) | Gubeng, Tenggilis Mejoyo |
+| BARAT1 | Rayon Barat 1 | Western Surabaya region (part 1) | Sawahan, Sukomanunggal |
+| BARAT2 | Rayon Barat 2 | Western Surabaya region (part 2) | Tandes, Lakarsantri, Sambikerep |
+
+**Business Rules:**
+- Rayons are managed by Admin only
+- Each area belongs to exactly one Rayon
+- KepalaRayon is assigned to one Rayon
+- Rayon boundaries do not overlap
+
+---
+
+## 9. Shift Definitions (New - Phase 2)
+
+Three fixed shift time periods for daily operations.
+
+### SQL Insert
+
+```sql
+INSERT INTO shift_definitions (id, name, code, start_time, end_time, crosses_midnight, is_active, created_at) VALUES
+  ('22222222-2222-2222-2222-222222222201', 'Shift 1', 'SHIFT1', '06:00:00', '15:00:00', false, true, NOW()),
+  ('22222222-2222-2222-2222-222222222202', 'Shift 2', 'SHIFT2', '15:00:00', '23:00:00', false, true, NOW()),
+  ('22222222-2222-2222-2222-222222222203', 'Shift 3', 'SHIFT3', '21:00:00', '05:00:00', true, true, NOW())
+ON CONFLICT (code) DO NOTHING;
+```
+
+### Shift Definition Details
+
+| Code | Name | Start | End | Duration | Crosses Midnight | Notes |
+|------|------|-------|-----|----------|------------------|-------|
+| SHIFT1 | Shift 1 | 06:00 | 15:00 | 9 hours | No | Morning shift, primary daylight hours |
+| SHIFT2 | Shift 2 | 15:00 | 23:00 | 8 hours | No | Afternoon/evening shift |
+| SHIFT3 | Shift 3 | 21:00 | 05:00 | 8 hours | Yes | Night shift (security focus) |
+
+**Business Rules:**
+- Shift definitions are fixed (not user-configurable)
+- All shifts are always active
+- `crosses_midnight` indicates the shift spans two calendar days
+- Workers are scheduled to specific shifts per area
+
+**Usage:**
+```typescript
+// Check if worker's clock-in time falls within their scheduled shift
+const isWithinShift = (clockInTime: Date, shiftDef: ShiftDefinition): boolean => {
+  const clockInHours = clockInTime.getHours() * 60 + clockInTime.getMinutes();
+  const startMinutes = shiftDef.startTime.getHours() * 60 + shiftDef.startTime.getMinutes();
+  const endMinutes = shiftDef.endTime.getHours() * 60 + shiftDef.endTime.getMinutes();
+
+  if (shiftDef.crossesMidnight) {
+    return clockInHours >= startMinutes || clockInHours <= endMinutes;
+  }
+  return clockInHours >= startMinutes && clockInHours <= endMinutes;
+};
+```
+
+---
+
+## 10. Activity Types (New - Phase 2)
+
+Ten activity types categorizing work activities for Workers and Linmas.
+
+### SQL Insert
+
+```sql
+INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active, created_at) VALUES
+  -- Worker-only activities
+  ('33333333-3333-3333-3333-333333333301', 'Penyiraman', 'WATERING', 'Penyiraman tanaman dan rumput', ARRAY['Worker'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333302', 'Penanaman', 'PLANTING', 'Penanaman tanaman baru atau penggantian tanaman mati', ARRAY['Worker'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333303', 'Pemangkasan', 'PRUNING', 'Pemangkasan pohon, semak, dan rumput', ARRAY['Worker'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333304', 'Pemupukan', 'FERTILIZING', 'Pemberian pupuk untuk tanaman', ARRAY['Worker'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333305', 'Perawatan Tanaman', 'PLANT_CARE', 'Perawatan umum tanaman termasuk penyiangan gulma', ARRAY['Worker'], true, NOW()),
+
+  -- Shared activities (Worker and Linmas)
+  ('33333333-3333-3333-3333-333333333306', 'Pembersihan', 'CLEANING', 'Pembersihan area dari sampah dan kotoran', ARRAY['Worker', 'Linmas'], true, NOW()),
+
+  -- Linmas-only activities
+  ('33333333-3333-3333-3333-333333333307', 'Patroli Keamanan', 'SECURITY_PATROL', 'Patroli rutin untuk keamanan area', ARRAY['Linmas'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333308', 'Laporan Insiden', 'INCIDENT_REPORT', 'Pelaporan insiden keamanan atau kejadian tidak biasa', ARRAY['Linmas'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333309', 'Pemantauan Pengunjung', 'VISITOR_MONITORING', 'Pemantauan pengunjung dan aktivitas di area', ARRAY['Linmas'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333310', 'Pengecekan Fasilitas', 'FACILITY_CHECK', 'Pengecekan kondisi fasilitas umum', ARRAY['Linmas'], true, NOW())
+ON CONFLICT (code) DO NOTHING;
+```
+
+### Activity Type Details
+
+#### Worker Activities
+
+| Code | Name (Indonesian) | Name (English) | Description |
+|------|-------------------|----------------|-------------|
+| WATERING | Penyiraman | Watering | Watering plants and grass |
+| PLANTING | Penanaman | Planting | Planting new or replacement plants |
+| PRUNING | Pemangkasan | Pruning | Trimming trees, shrubs, and grass |
+| FERTILIZING | Pemupukan | Fertilizing | Applying fertilizer to plants |
+| PLANT_CARE | Perawatan Tanaman | Plant Care | General plant care including weeding |
+
+#### Shared Activities
+
+| Code | Name (Indonesian) | Name (English) | Roles |
+|------|-------------------|----------------|-------|
+| CLEANING | Pembersihan | Cleaning | Worker, Linmas |
+
+#### Linmas (Security) Activities
+
+| Code | Name (Indonesian) | Name (English) | Description |
+|------|-------------------|----------------|-------------|
+| SECURITY_PATROL | Patroli Keamanan | Security Patrol | Routine security patrols |
+| INCIDENT_REPORT | Laporan Insiden | Incident Report | Reporting security incidents |
+| VISITOR_MONITORING | Pemantauan Pengunjung | Visitor Monitoring | Monitoring visitors and activities |
+| FACILITY_CHECK | Pengecekan Fasilitas | Facility Check | Checking facility conditions |
+
+**Business Rules:**
+- Activity types filter available options based on user role
+- Workers see: WATERING, PLANTING, PRUNING, FERTILIZING, PLANT_CARE, CLEANING
+- Linmas see: CLEANING, SECURITY_PATROL, INCIDENT_REPORT, VISITOR_MONITORING, FACILITY_CHECK
+- Admin can create/edit/deactivate activity types
+- Deactivated types don't appear in dropdowns but historical data is preserved
+
+---
+
+## 11. Area Type Categories (Update - Phase 2)
+
+Update existing area types to include category classification.
+
+### SQL Update
+
+```sql
+-- Add category column if not exists
+ALTER TABLE area_types ADD COLUMN IF NOT EXISTS category VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
+
+-- Update existing area types with categories
+UPDATE area_types SET category = 'ACTIVE' WHERE code IN ('park', 'mini_garden');
+UPDATE area_types SET category = 'PASSIVE' WHERE code IN ('pedestrian', 'street');
+
+-- Add new area types for Phase 2
+INSERT INTO area_types (id, code, name, description, category, created_at) VALUES
+  ('d4e5f6a7-b8c9-0123-def0-123456789013', 'green_corridor', 'Koridor Hijau', 'Jalur hijau penghubung antar area', 'ACTIVE', NOW()),
+  ('d4e5f6a7-b8c9-0123-def0-123456789014', 'median', 'Median Jalan', 'Median jalan dengan tanaman hias', 'PASSIVE', NOW())
+ON CONFLICT (code) DO NOTHING;
+```
+
+### Area Type Category Details
+
+| Category | Code | Name | Description |
+|----------|------|------|-------------|
+| ACTIVE | park | Taman | Large public parks requiring active maintenance |
+| ACTIVE | mini_garden | Taman Mini | Small neighborhood gardens |
+| ACTIVE | green_corridor | Koridor Hijau | Green corridors connecting areas |
+| PASSIVE | pedestrian | Trotoar | Sidewalks with trees |
+| PASSIVE | street | Jalanan | Streets requiring cleanliness |
+| PASSIVE | median | Median Jalan | Road medians with decorative plants |
+
+**Category Definitions:**
+- **ACTIVE**: Areas requiring regular horticultural activities (watering, planting, pruning)
+- **PASSIVE**: Areas primarily requiring cleaning and monitoring
+
+**Business Rules:**
+- Category determines default activity type suggestions for workers
+- Reporting metrics can be filtered by category
+- Staff requirement calculations may differ by category
+
+---
+
+## 12. Additional Users (New - Phase 2)
+
+Six new users representing the expanded role hierarchy.
+
+### SQL Insert
+
+```sql
+-- Passwords hashed with bcrypt (10 rounds)
+-- All use: <role>123 (e.g., kepalrayoon123)
+
+INSERT INTO users (id, username, password_hash, full_name, role, rayon_id, area_id, is_active, created_at, updated_at) VALUES
+  -- TopManagement (no rayon/area assignment)
+  ('f634880a-7498-449a-a293-9c5204176310', 'kepaladinas', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Dinas DLHK', 'TopManagement', NULL, NULL, true, NOW(), NOW()),
+  ('f634880a-7498-449a-a293-9c5204176311', 'kepalabidang', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Bidang Pertamanan', 'TopManagement', NULL, NULL, true, NOW(), NOW()),
+
+  -- KepalaRayon (assigned to specific Rayon)
+  ('f634880a-7498-449a-a293-9c5204176312', 'kepalaselatan', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Rayon Selatan', 'KepalaRayon', '11111111-1111-1111-1111-111111111101', NULL, true, NOW(), NOW()),
+  ('f634880a-7498-449a-a293-9c5204176313', 'kepalapusat', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Rayon Pusat', 'KepalaRayon', '11111111-1111-1111-1111-111111111103', NULL, true, NOW(), NOW()),
+
+  -- KoordinatorLapangan (assigned to specific Area via area_id column)
+  -- Note: area_id column is used for KoordinatorLapangan scope restriction
+  ('f634880a-7498-449a-a293-9c5204176314', 'koordinator1', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Koordinator Taman Bungkul', 'KoordinatorLapangan', NULL, 'b2c3d4e5-f6a7-8901-bcde-f12345678901', true, NOW(), NOW()),
+  ('f634880a-7498-449a-a293-9c5204176316', 'koordinator2', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Koordinator Jalan Darmo', 'KoordinatorLapangan', NULL, 'c3d4e5f6-a7b8-9012-cdef-123456789012', true, NOW(), NOW()),
+
+  -- Linmas (security officer - scheduled via worker_schedules like Worker)
+  ('f634880a-7498-449a-a293-9c5204176315', 'linmas1', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Linmas Satu', 'Linmas', NULL, NULL, true, NOW(), NOW())
+ON CONFLICT (username) DO NOTHING;
+```
+
+### New User Details
+
+#### TopManagement Users
+
+| Username | Password | Full Name | Role | Access |
+|----------|----------|-----------|------|--------|
+| kepaladinas | kepaladinas123 | Kepala Dinas DLHK | TopManagement | City-wide view, all rayons |
+| kepalabidang | kepalabidang123 | Kepala Bidang Pertamanan | TopManagement | City-wide view, all rayons |
+
+#### KepalaRayon Users
+
+| Username | Password | Full Name | Role | Rayon Assignment |
+|----------|----------|-----------|------|------------------|
+| kepalaselatan | kepalaselatan123 | Kepala Rayon Selatan | KepalaRayon | Rayon Selatan |
+| kepalapusat | kepalapusat123 | Kepala Rayon Pusat | KepalaRayon | Rayon Pusat |
+
+#### KoordinatorLapangan Users
+
+| Username | Password | Full Name | Role | Area Assignment |
+|----------|----------|-----------|------|-----------------|
+| koordinator1 | koordinator123 | Koordinator Taman Bungkul | KoordinatorLapangan | Taman Bungkul |
+| koordinator2 | koordinator123 | Koordinator Jalan Darmo | KoordinatorLapangan | Jalan Raya Darmo |
+
+**Note:** KoordinatorLapangan uses the `area_id` column on the users table for scope restriction. They can only view/manage workers and reports within their assigned area.
+
+#### Linmas User
+
+| Username | Password | Full Name | Role | Notes |
+|----------|----------|-----------|------|-------|
+| linmas1 | linmas123 | Linmas Satu | Linmas | Security officer, similar to Worker |
+
+**Role Hierarchy:**
+```
+Admin
+  └── TopManagement (Kepala Dinas, Kepala Bidang)
+        └── KepalaRayon (manages entire Rayon)
+              └── KoordinatorLapangan (manages specific Area)
+                    └── Worker / Linmas (field workers)
+```
+
+---
+
+## 13. Area Staff Requirements (New - Phase 2)
+
+Staff requirements for each area per shift.
+
+### SQL Insert
+
+```sql
+INSERT INTO area_staff_requirements (id, area_id, shift_definition_id, role, required_count, day_type, created_at, updated_at) VALUES
+  -- Taman Bungkul (large park) - higher staffing
+  ('44444444-4444-4444-4444-444444444401', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', 'Worker', 6, 'WEEKDAY', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444402', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', 'Linmas', 2, 'WEEKDAY', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444403', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222202', 'Worker', 9, 'WEEKDAY', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444404', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222202', 'Linmas', 2, 'WEEKDAY', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444405', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222203', 'Linmas', 3, 'WEEKDAY', NOW(), NOW()),
+
+  -- Weekend staffing for Taman Bungkul (higher due to visitors)
+  ('44444444-4444-4444-4444-444444444406', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', 'Worker', 8, 'WEEKEND', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444407', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', 'Linmas', 4, 'WEEKEND', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444408', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222202', 'Worker', 12, 'WEEKEND', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444409', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222202', 'Linmas', 4, 'WEEKEND', NOW(), NOW()),
+
+  -- Jalan Raya Darmo (pedestrian area) - lower staffing
+  ('44444444-4444-4444-4444-444444444410', 'c3d4e5f6-a7b8-9012-cdef-123456789012', '22222222-2222-2222-2222-222222222201', 'Worker', 3, 'WEEKDAY', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444411', 'c3d4e5f6-a7b8-9012-cdef-123456789012', '22222222-2222-2222-2222-222222222202', 'Worker', 2, 'WEEKDAY', NOW(), NOW()),
+
+  -- Taman Harmoni (small park) - minimal staffing
+  ('44444444-4444-4444-4444-444444444412', 'd4e5f6a7-b8c9-0123-def0-123456789012', '22222222-2222-2222-2222-222222222201', 'Worker', 2, 'WEEKDAY', NOW(), NOW()),
+  ('44444444-4444-4444-4444-444444444413', 'd4e5f6a7-b8c9-0123-def0-123456789012', '22222222-2222-2222-2222-222222222202', 'Worker', 2, 'WEEKDAY', NOW(), NOW())
+ON CONFLICT (area_id, shift_definition_id, role, day_type) DO NOTHING;
+```
+
+### Staff Requirement Details
+
+#### Taman Bungkul (Large Park)
+
+| Shift | Day Type | Workers Required | Linmas Required | Total |
+|-------|----------|------------------|-----------------|-------|
+| Shift 1 (06:00-15:00) | Weekday | 6 | 2 | 8 |
+| Shift 2 (15:00-23:00) | Weekday | 9 | 2 | 11 |
+| Shift 3 (21:00-05:00) | Weekday | 0 | 3 | 3 |
+| Shift 1 (06:00-15:00) | Weekend | 8 | 4 | 12 |
+| Shift 2 (15:00-23:00) | Weekend | 12 | 4 | 16 |
+
+#### Jalan Raya Darmo (Pedestrian)
+
+| Shift | Day Type | Workers Required | Linmas Required | Total |
+|-------|----------|------------------|-----------------|-------|
+| Shift 1 (06:00-15:00) | Weekday | 3 | 0 | 3 |
+| Shift 2 (15:00-23:00) | Weekday | 2 | 0 | 2 |
+
+#### Taman Harmoni (Small Park)
+
+| Shift | Day Type | Workers Required | Linmas Required | Total |
+|-------|----------|------------------|-----------------|-------|
+| Shift 1 (06:00-15:00) | Weekday | 2 | 0 | 2 |
+| Shift 2 (15:00-23:00) | Weekday | 2 | 0 | 2 |
+
+**Business Rules:**
+- Requirements can differ by day type (WEEKDAY, WEEKEND, HOLIDAY)
+- Linmas are typically assigned to evening/night shifts
+- Weekend staffing is higher for popular parks
+- Understaffed warnings trigger when actual < required
+
+---
+
+## 14. Worker Schedules (New - Phase 2)
+
+Worker assignments to areas and shifts.
+
+### SQL Insert
+
+```sql
+INSERT INTO worker_schedules (id, user_id, area_id, shift_definition_id, effective_date, end_date, created_by, created_at, updated_at) VALUES
+  -- Worker1 assigned to Taman Bungkul, Shift 1 (ongoing)
+  ('55555555-5555-5555-5555-555555555501', 'f634880a-7498-449a-a293-9c5204176300', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', CURRENT_DATE - INTERVAL '30 days', NULL, 'e5f6a7b8-c9d0-1234-ef01-23456789abcd', NOW(), NOW()),
+
+  -- Worker2 assigned to Jalan Raya Darmo, Shift 1 (ongoing)
+  ('55555555-5555-5555-5555-555555555502', 'f634880a-7498-449a-a293-9c5204176304', 'c3d4e5f6-a7b8-9012-cdef-123456789012', '22222222-2222-2222-2222-222222222201', CURRENT_DATE - INTERVAL '30 days', NULL, 'e5f6a7b8-c9d0-1234-ef01-23456789abcd', NOW(), NOW()),
+
+  -- Worker3 assigned to Taman Harmoni, Shift 2 (ongoing)
+  ('55555555-5555-5555-5555-555555555503', 'f634880a-7498-449a-a293-9c5204176305', 'd4e5f6a7-b8c9-0123-def0-123456789012', '22222222-2222-2222-2222-222222222202', CURRENT_DATE - INTERVAL '15 days', NULL, 'e5f6a7b8-c9d0-1234-ef01-23456789abcd', NOW(), NOW()),
+
+  -- Linmas1 assigned to Taman Bungkul, Shift 3 (ongoing)
+  ('55555555-5555-5555-5555-555555555504', 'f634880a-7498-449a-a293-9c5204176315', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222203', CURRENT_DATE - INTERVAL '20 days', NULL, 'e5f6a7b8-c9d0-1234-ef01-23456789abcd', NOW(), NOW())
+ON CONFLICT (user_id, effective_date, shift_definition_id) DO NOTHING;
+```
+
+### Schedule Details
+
+| Worker | Area | Shift | Effective Date | Status |
+|--------|------|-------|----------------|--------|
+| worker1 | Taman Bungkul | Shift 1 (06:00-15:00) | 30 days ago | Ongoing |
+| worker2 | Jalan Raya Darmo | Shift 1 (06:00-15:00) | 30 days ago | Ongoing |
+| worker3 | Taman Harmoni | Shift 2 (15:00-23:00) | 15 days ago | Ongoing |
+| linmas1 | Taman Bungkul | Shift 3 (21:00-05:00) | 20 days ago | Ongoing |
+
+**Business Rules:**
+- `end_date = NULL` means ongoing assignment
+- A worker can only have one active schedule per shift
+- Schedule changes require ending current schedule and creating new one
+- Created by Admin or KoordinatorLapangan
+
+---
+
+## 15. Special Day Overrides (New - Phase 2)
+
+Override day types for holidays and special events.
+
+### SQL Insert
+
+```sql
+INSERT INTO special_day_overrides (id, date, day_type, name, created_at) VALUES
+  -- Indonesian national holidays
+  ('66666666-6666-6666-6666-666666666601', '2026-01-01', 'HOLIDAY', 'Tahun Baru Masehi', NOW()),
+  ('66666666-6666-6666-6666-666666666602', '2026-08-17', 'HOLIDAY', 'Hari Kemerdekaan', NOW()),
+  ('66666666-6666-6666-6666-666666666603', '2026-12-25', 'HOLIDAY', 'Hari Natal', NOW()),
+
+  -- Local Surabaya events (example)
+  ('66666666-6666-6666-6666-666666666604', '2026-05-31', 'SPECIAL', 'Hari Jadi Kota Surabaya', NOW())
+ON CONFLICT (date) DO NOTHING;
+```
+
+### Special Day Details
+
+| Date | Day Type | Name | Staff Impact |
+|------|----------|------|--------------|
+| 2026-01-01 | HOLIDAY | Tahun Baru Masehi | Use HOLIDAY staffing requirements |
+| 2026-08-17 | HOLIDAY | Hari Kemerdekaan | Use HOLIDAY staffing requirements |
+| 2026-12-25 | HOLIDAY | Hari Natal | Use HOLIDAY staffing requirements |
+| 2026-05-31 | SPECIAL | Hari Jadi Kota Surabaya | Use SPECIAL staffing requirements |
+
+**Day Type Priority:**
+1. Special day override (if exists)
+2. Weekend (Saturday/Sunday)
+3. Weekday (default)
+
+---
+
+## 16. Update Areas with Rayon Assignment (Phase 2)
+
+Associate existing areas with Rayons.
+
+### SQL Update
+
+```sql
+-- Assign areas to Rayons
+UPDATE areas SET rayon_id = '11111111-1111-1111-1111-111111111101' -- Rayon Selatan
+WHERE name IN ('Taman Bungkul', 'Taman Harmoni');
+
+UPDATE areas SET rayon_id = '11111111-1111-1111-1111-111111111103' -- Rayon Pusat
+WHERE name = 'Jalan Raya Darmo';
+
+-- Add coverage_area field
+UPDATE areas SET coverage_area = 25000.00 WHERE name = 'Taman Bungkul';   -- 2.5 hectares
+UPDATE areas SET coverage_area = 5000.00 WHERE name = 'Jalan Raya Darmo';  -- 500m stretch
+UPDATE areas SET coverage_area = 8000.00 WHERE name = 'Taman Harmoni';     -- 0.8 hectares
+```
+
+### Updated Area Details
+
+| Area | Rayon | Coverage Area (m²) | Notes |
+|------|-------|-------------------|-------|
+| Taman Bungkul | Rayon Selatan | 25,000 | Major public park |
+| Taman Harmoni | Rayon Selatan | 8,000 | Neighborhood park |
+| Jalan Raya Darmo | Rayon Pusat | 5,000 | Central business district |
+
+---
+
+## Phase 2 Seed Service Extension
+
+### TypeScript Seed Service Update
+
+```typescript
+// be/src/database/seeds/phase2-seed.service.ts
+
+@Injectable()
+export class Phase2SeedService {
+  async seedPhase2Data() {
+    console.log('🌱 Seeding Phase 2 data...');
+
+    // Phase 2 specific seeding (order matters for FKs)
+    await this.seedRayons();
+    await this.seedShiftDefinitions();
+    await this.seedActivityTypes();
+    await this.updateAreaTypeCategories();
+    await this.seedAdditionalUsers();
+    await this.seedAreaStaffRequirements();
+    await this.seedWorkerSchedules();
+    await this.seedSpecialDayOverrides();
+    await this.updateAreasWithRayons();
+
+    console.log('✅ Phase 2 data seeded successfully!');
+  }
+
+  private async seedRayons() {
+    console.log('🏢 Seeding rayons...');
+    const rayons = [
+      { code: 'SELATAN', name: 'Rayon Selatan', description: 'Wilayah Surabaya Selatan...' },
+      { code: 'UTARA', name: 'Rayon Utara', description: 'Wilayah Surabaya Utara...' },
+      // ... other rayons
+    ];
+    for (const rayon of rayons) {
+      await this.rayonRepository.upsert(rayon, ['code']);
+      console.log(`  ✓ Created rayon: ${rayon.name}`);
+    }
+  }
+
+  private async seedShiftDefinitions() {
+    console.log('⏰ Seeding shift definitions...');
+    const shifts = [
+      { code: 'SHIFT1', name: 'Shift 1', startTime: '06:00', endTime: '15:00', crossesMidnight: false },
+      { code: 'SHIFT2', name: 'Shift 2', startTime: '15:00', endTime: '23:00', crossesMidnight: false },
+      { code: 'SHIFT3', name: 'Shift 3', startTime: '21:00', endTime: '05:00', crossesMidnight: true },
+    ];
+    for (const shift of shifts) {
+      await this.shiftDefinitionRepository.upsert(shift, ['code']);
+      console.log(`  ✓ Created shift: ${shift.name}`);
+    }
+  }
+
+  private async seedActivityTypes() {
+    console.log('📋 Seeding activity types...');
+    const activityTypes = [
+      { code: 'WATERING', name: 'Penyiraman', applicableRoles: ['Worker'] },
+      { code: 'CLEANING', name: 'Pembersihan', applicableRoles: ['Worker', 'Linmas'] },
+      { code: 'SECURITY_PATROL', name: 'Patroli Keamanan', applicableRoles: ['Linmas'] },
+      // ... other activity types
+    ];
+    for (const type of activityTypes) {
+      await this.activityTypeRepository.upsert(type, ['code']);
+      console.log(`  ✓ Created activity type: ${type.name}`);
+    }
+  }
+
+  // ... other seed methods
+}
+```
+
+### Running Phase 2 Seed
+
+```bash
+# Seed Phase 2 data (assumes Phase 1 seed already run)
+cd be
+npm run seed:phase2
+
+# Or full re-seed including Phase 2
+npm run seed:all
+```
+
+---
+
+## Phase 2 Seed Data Summary
+
+| Category | Count | Notes |
+|----------|-------|-------|
+| Rayons | 7 | Geographic sectors |
+| Shift Definitions | 3 | Fixed time periods |
+| Activity Types | 10 | 5 Worker, 4 Linmas, 1 Shared |
+| Area Type Categories | 2 | ACTIVE, PASSIVE |
+| Additional Users | 6 | TopManagement(2), KepalaRayon(2), Koordinator(1), Linmas(1) |
+| Area Staff Requirements | ~14 | Per area/shift/day-type combinations |
+| Worker Schedules | 4 | Sample ongoing schedules |
+| Special Day Overrides | 4 | Holidays and special events |
+
+**Total Phase 2 Records:** ~50
+**Combined Phase 1 + Phase 2:** ~78 records
+
+---
+
+**Last Updated:** 2026-01-24
+**Seed Data Version:** 2.0 (Phase 2 Enhanced)
+**Total Records:** ~78 (Phase 1: 28 + Phase 2: 50)

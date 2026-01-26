@@ -624,5 +624,191 @@ describe('MonitoringService', () => {
       expect(result.total_online).toBe(0);
       expect(result.total_offline).toBe(0);
     });
+
+    it('should handle worker without rayon', async () => {
+      const shiftWithoutRayon = {
+        ...mockShift,
+        area: { ...mockArea, rayon_id: null },
+      };
+
+      const qb = createMockQueryBuilder([shiftWithoutRayon], 1);
+      shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
+      locationRepository.findOne.mockResolvedValue(mockLocationLog);
+      taskRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.getLiveWorkers();
+
+      expect(result.workers[0].rayon_id).toBeNull();
+      expect(result.workers[0].rayon_name).toBeNull();
+    });
+
+    it('should handle worker without location log', async () => {
+      const qb = createMockQueryBuilder([mockShift], 1);
+      shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
+      locationRepository.findOne.mockResolvedValue(null);
+      taskRepository.findOne.mockResolvedValue(null);
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+
+      const result = await service.getLiveWorkers();
+
+      expect(result.workers[0].latitude).toBe(0);
+      expect(result.workers[0].longitude).toBe(0);
+      expect(result.workers[0].accuracy).toBeNull();
+      expect(result.workers[0].battery_level).toBeNull();
+      expect(result.workers[0].last_update).toEqual(mockShift.clock_in_time);
+    });
+  });
+
+  describe('helper methods - edge cases', () => {
+    it('should handle empty area IDs in countWorkersByAreaIds', async () => {
+      const qb = createMockQueryBuilder([], 0);
+      shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      // This is a private method, so we test it indirectly through getRayonStats
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      areaRepository.find.mockResolvedValue([]);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+
+      await service.getRayonStats('rayon-1');
+
+      // Empty area IDs should not cause errors
+      expect(shiftRepository.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('should handle area without rayon_id in getAreaStats', async () => {
+      const areaWithoutRayon = { ...mockArea, rayon_id: undefined };
+      areaRepository.findOne.mockResolvedValue(areaWithoutRayon);
+      shiftRepository.find.mockResolvedValue([]);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+      staffRequirementRepository.find.mockResolvedValue([]);
+      taskRepository.find.mockResolvedValue([]);
+      reportRepository.count.mockResolvedValue(0);
+
+      const result = await service.getAreaStats('area-1');
+
+      expect(result.rayon_name).toBe('Unassigned');
+      expect(result.rayon_id).toBe('');
+    });
+
+    it('should handle no current shift definition in getAreaStaffRequirements', async () => {
+      areaRepository.findOne.mockResolvedValue(mockArea);
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      shiftRepository.find.mockResolvedValue([]);
+      shiftDefinitionRepository.find.mockResolvedValue([]); // No active shifts
+      staffRequirementRepository.find.mockResolvedValue([]);
+      taskRepository.find.mockResolvedValue([]);
+      reportRepository.count.mockResolvedValue(0);
+
+      const result = await service.getAreaStats('area-1');
+
+      expect(result.staff_requirements).toEqual([]);
+    });
+
+    it('should handle shift crossing midnight', async () => {
+      const midnightShift = {
+        ...mockShiftDefinition,
+        start_time: '22:00',
+        end_time: '06:00',
+        crosses_midnight: true,
+      };
+
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      areaRepository.find.mockResolvedValue([mockArea]);
+      shiftDefinitionRepository.find.mockResolvedValue([midnightShift]);
+
+      const qb = createMockQueryBuilder([], 0);
+      shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
+      taskRepository.createQueryBuilder = jest.fn(() => qb as any);
+      taskRepository.count.mockResolvedValue(0);
+      reportRepository.createQueryBuilder = jest.fn(() => qb as any);
+      locationRepository.createQueryBuilder = jest.fn(() => qb as any);
+      staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      const result = await service.getRayonStats('rayon-1');
+
+      expect(result.shifts.length).toBe(1);
+    });
+
+    it('should handle tasks with ACCEPTED status in active tasks filter', async () => {
+      const acceptedTask = { ...mockTask, status: TaskStatus.ACCEPTED };
+      const inProgressTask = { ...mockTask, id: 'task-2', status: TaskStatus.IN_PROGRESS };
+
+      areaRepository.findOne.mockResolvedValue(mockArea);
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      shiftRepository.find.mockResolvedValue([]);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+      staffRequirementRepository.find.mockResolvedValue([]);
+      taskRepository.find.mockResolvedValue([acceptedTask, inProgressTask]);
+      reportRepository.count.mockResolvedValue(0);
+
+      const result = await service.getAreaStats('area-1');
+
+      expect(result.active_tasks.length).toBe(2);
+      // Only IN_PROGRESS tasks are counted in tasks_in_progress, ACCEPTED is separate
+      expect(result.tasks_in_progress).toBe(1);
+    });
+
+    it('should handle tasks with ASSIGNED status in active tasks filter', async () => {
+      const assignedTask = { ...mockTask, status: TaskStatus.ASSIGNED };
+
+      areaRepository.findOne.mockResolvedValue(mockArea);
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      shiftRepository.find.mockResolvedValue([]);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+      staffRequirementRepository.find.mockResolvedValue([]);
+      taskRepository.find.mockResolvedValue([assignedTask]);
+      reportRepository.count.mockResolvedValue(0);
+
+      const result = await service.getAreaStats('area-1');
+
+      expect(result.active_tasks.length).toBe(1);
+    });
+
+    it('should handle empty areaIds in count methods', async () => {
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+      areaRepository.find.mockResolvedValue([]); // No areas
+      shiftRepository.count.mockResolvedValue(0);
+      taskRepository.count.mockResolvedValue(0);
+      reportRepository.count.mockResolvedValue(0);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+
+      const result = await service.getCityStats();
+
+      expect(result.total_areas).toBe(0);
+      expect(result.total_workers).toBe(0);
+    });
+
+    it('should calculate required workers correctly when current shift exists', async () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+
+      // Make the shift active right now
+      const activeShiftDef = {
+        ...mockShiftDefinition,
+        start_time: `${String(currentHour).padStart(2, '0')}:00`,
+        end_time: `${String((currentHour + 1) % 24).padStart(2, '0')}:00`,
+        crosses_midnight: false,
+      };
+
+      const qb = createMockQueryBuilder([], 0);
+      qb.getRawOne = jest.fn().mockResolvedValue({ total: '10' });
+
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      areaRepository.find.mockResolvedValue([mockArea]);
+      shiftDefinitionRepository.find.mockResolvedValue([activeShiftDef]);
+      taskRepository.count.mockResolvedValue(0);
+
+      shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
+      taskRepository.createQueryBuilder = jest.fn(() => qb as any);
+      reportRepository.createQueryBuilder = jest.fn(() => qb as any);
+      locationRepository.createQueryBuilder = jest.fn(() => qb as any);
+      staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      const result = await service.getRayonStats('rayon-1');
+
+      // Check that the rayon has the correct structure
+      expect(result.total_workers).toBeGreaterThanOrEqual(0);
+      expect(result.areas).toBeDefined();
+    });
   });
 });

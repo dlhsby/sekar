@@ -67,8 +67,8 @@ With $200 credits, you can run MVP for approximately **5-6 months**.
 - [x] AWS Budgets configured (track credit usage)
 
 ### Credentials Ready
-- [ ] AWS Access Key ID and Secret Access Key
-- [ ] SSH key pair for EC2 access
+- [x] AWS Access Key ID and Secret Access Key
+- [x] SSH key pair for EC2 access
 - [ ] Android signing keystore
 - [ ] Google Maps API key
 
@@ -597,7 +597,7 @@ DATABASE_NAME=sekar_db
 
 # Database Configuration - CRITICAL FOR INITIAL SETUP
 DATABASE_SYNCHRONIZE=true     # Set to TRUE for initial setup (creates tables)
-DATABASE_MIGRATIONS_RUN=false # Keep FALSE (run migrations manually)
+DATABASE_MIGRATIONS_RUN=false # Keep FALSE in production (see note below)
 
 # Database SSL
 DATABASE_SSL=true
@@ -646,6 +646,42 @@ synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
 ```
 
 **If the code shows the WRONG version**, tables will NOT be created even with `DATABASE_SYNCHRONIZE=true` in your `.env.production` file. This was fixed in commit `95f09eb` (January 25, 2026).
+
+**📘 Understanding `DATABASE_MIGRATIONS_RUN=false`**
+
+**Why always `false` in production?**
+
+When `DATABASE_MIGRATIONS_RUN=true`, TypeORM automatically runs migrations on app startup. This is **dangerous in production** because:
+
+❌ **Migration failures cause downtime** - If migration fails, app won't start
+❌ **No error recovery** - App stuck in crash loop until migration is fixed
+❌ **No control** - Migrations run on every restart (even accidental restarts)
+❌ **Difficult rollback** - Can't easily revert if migration causes issues
+
+**The correct production approach:**
+
+✅ **Manual migrations** - Run before deploying new code
+✅ **Zero-downtime** - Old code runs while migration executes
+✅ **Error recovery** - Migration fails? App still running, fix and retry
+✅ **Testing** - Can run/revert migrations before committing
+✅ **Control** - You decide when schema changes happen
+
+**Production workflow:**
+```bash
+# 1. Pull new image (contains migration file)
+docker-compose pull
+
+# 2. Run migration BEFORE restarting app
+docker-compose run --rm backend npm run migration:run:prod
+
+# 3. Verify migration succeeded
+docker-compose run --rm backend npm run migration:show:prod
+
+# 4. NOW restart app with new code
+docker-compose up -d
+```
+
+**When to use `true`:** Development/CI only, NEVER production.
 
 ### 6.5 Create Docker Compose File
 

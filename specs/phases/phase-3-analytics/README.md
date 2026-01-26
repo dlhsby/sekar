@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 3 provides comprehensive analytics and automated reporting capabilities for data-driven decision making by supervisors and administrators, including real-time WebSocket updates.
+Phase 3 provides comprehensive analytics and automated reporting capabilities for data-driven decision making by supervisors and administrators. This phase builds upon the WebSocket foundation established in Phase 2, extending it with analytics-specific real-time updates.
 
 ---
 
@@ -19,7 +19,9 @@ Phase 3 provides comprehensive analytics and automated reporting capabilities fo
 3. **Operational Analytics** - System-wide metrics and KPIs
 4. **Automated Reports** - Scheduled reports via email (daily, weekly, monthly)
 5. **Report Builder** - Custom report templates with export options
-6. **Real-Time Updates** - WebSocket for live dashboard data
+6. **Real-Time Analytics** - Extend Phase 2 WebSocket with analytics-specific events
+
+> **Note:** WebSocket foundation (gateway, authentication, room management) was implemented in Phase 2. This phase extends it with analytics-specific events.
 
 ---
 
@@ -72,15 +74,16 @@ Phase 3 provides comprehensive analytics and automated reporting capabilities fo
 - Download from dashboard
 - API endpoint for integration
 
-### 4. Real-Time WebSocket
+### 4. Real-Time Analytics (WebSocket Extension)
 
-**Events:**
-- `worker:location_update` - Live location tracking
-- `worker:shift_start` - Clock-in notification
-- `worker:shift_end` - Clock-out notification
-- `report:new` - New report submitted
-- `task:assigned` - Task assignment
-- `task:completed` - Task completion
+> **Prerequisite:** WebSocket gateway from Phase 2 (see `specs/phases/phase-2-enhanced/README.md`)
+
+**New Analytics Events (extends Phase 2 events):**
+- `analytics:worker_performance` - Real-time performance metrics update
+- `analytics:area_status` - Area health status changes
+- `analytics:report_generated` - Automated report generated notification
+- `analytics:kpi_alert` - KPI threshold breach alert
+- `analytics:trend_change` - Significant trend change notification
 
 ---
 

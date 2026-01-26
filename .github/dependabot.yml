@@ -1,0 +1,97 @@
+# Dependabot Configuration
+# Automatically creates pull requests for dependency updates
+#
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  # Backend (NestJS) dependencies
+  - package-ecosystem: "npm"
+    directory: "/be"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "backend"
+    commit-message:
+      prefix: "chore(deps-be)"
+    ignore:
+      # Ignore major version updates for stability
+      - dependency-name: "@nestjs/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typeorm"
+        update-types: ["version-update:semver-major"]
+    groups:
+      nest-dependencies:
+        patterns:
+          - "@nestjs/*"
+      testing-dependencies:
+        patterns:
+          - "jest"
+          - "@types/jest"
+          - "supertest"
+          - "@types/supertest"
+
+  # Mobile (React Native) dependencies
+  - package-ecosystem: "npm"
+    directory: "/fe/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "mobile"
+    commit-message:
+      prefix: "chore(deps-mobile)"
+    ignore:
+      # React Native major updates need careful testing
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+    groups:
+      react-navigation:
+        patterns:
+          - "@react-navigation/*"
+      redux-dependencies:
+        patterns:
+          - "@reduxjs/*"
+          - "react-redux"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps-actions)"
+
+  # Docker base images (if Dockerfile uses specific versions)
+  - package-ecosystem: "docker"
+    directory: "/be"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(deps-docker)"

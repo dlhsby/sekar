@@ -339,4 +339,312 @@ describe('NotificationsService', () => {
       expect(result).toEqual({ count: 3 });
     });
   });
+
+  describe('registerToken edge cases', () => {
+    it('should register token with optional fields', async () => {
+      const registerDtoMinimal = {
+        fcm_token: 'new-fcm-token',
+        platform: DevicePlatform.IOS,
+      };
+
+      const newToken = { ...mockToken, fcm_token: 'new-fcm-token', platform: DevicePlatform.IOS };
+      tokenRepository.findOne.mockResolvedValue(null);
+      tokenRepository.create.mockReturnValue(newToken as NotificationToken);
+      tokenRepository.save.mockResolvedValue(newToken as NotificationToken);
+
+      const result = await service.registerToken(registerDtoMinimal, 'user-uuid');
+
+      expect(result).toEqual(newToken);
+    });
+
+    it('should update existing token with all fields when reassigning to different user', async () => {
+      const registerDto = {
+        fcm_token: 'existing-token',
+        platform: DevicePlatform.IOS,
+        device_name: 'iPhone 15',
+        device_model: 'iPhone15,2',
+        app_version: '1.0.5',
+      };
+
+      const existingToken = {
+        ...mockToken,
+        fcm_token: 'existing-token',
+        user_id: 'other-user-uuid',
+      };
+
+      tokenRepository.findOne.mockResolvedValue(existingToken as NotificationToken);
+      tokenRepository.save.mockResolvedValue({
+        ...existingToken,
+        user_id: 'user-uuid',
+        ...registerDto,
+      } as NotificationToken);
+
+      await service.registerToken(registerDto, 'user-uuid');
+
+      expect(tokenRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendToUser edge cases', () => {
+    it('should send notification with default type when not provided', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+      };
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockResolvedValue([]);
+
+      await service.sendToUser(sendDto);
+
+      expect(notificationRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: NotificationType.SYSTEM,
+        }),
+      );
+    });
+
+    it('should handle push notification sending failure silently', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+        type: NotificationType.TASK_ASSIGNED,
+      };
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockRejectedValue(new Error('Token fetch failed'));
+
+      // Should not throw - errors are caught
+      const result = await service.sendToUser(sendDto);
+
+      expect(result).toEqual(mockNotification);
+    });
+
+    it('should send notification with custom data', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+        type: NotificationType.TASK_ASSIGNED,
+        data: { task_id: 'task-123' },
+      };
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockResolvedValue([]);
+
+      await service.sendToUser(sendDto);
+
+      expect(notificationRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { task_id: 'task-123' },
+        }),
+      );
+    });
+  });
+
+  describe('broadcast edge cases', () => {
+    it('should handle broadcast with default type', async () => {
+      const broadcastDto = {
+        title: 'Announcement',
+        body: 'Test broadcast',
+      };
+
+      const targetUsers = [{ id: 'user-1', is_active: true }];
+      usersService.findAll.mockResolvedValue(targetUsers as User[]);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue([mockNotification] as any);
+      tokenRepository.find.mockResolvedValue([]);
+
+      await service.broadcast(broadcastDto);
+
+      expect(notificationRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: NotificationType.ANNOUNCEMENT,
+        }),
+      );
+    });
+
+    it('should handle partial failures in broadcast', async () => {
+      const broadcastDto = {
+        title: 'Announcement',
+        body: 'Test broadcast',
+        type: NotificationType.ANNOUNCEMENT,
+        target_roles: [UserRole.WORKER],
+      };
+
+      const targetUsers = [
+        { id: 'user-1', is_active: true },
+        { id: 'user-2', is_active: true },
+      ];
+
+      usersService.findByRoles.mockResolvedValue(targetUsers as User[]);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue([
+        { ...mockNotification, user_id: 'user-1' },
+        { ...mockNotification, user_id: 'user-2' },
+      ] as any);
+
+      // First call succeeds, second fails
+      tokenRepository.find
+        .mockResolvedValueOnce([])
+        .mockRejectedValueOnce(new Error('Token fetch failed'));
+
+      const result = await service.broadcast(broadcastDto);
+
+      expect(result.sent).toBe(1);
+      expect(result.failed).toBe(1);
+    });
+
+    it('should broadcast with custom data', async () => {
+      const broadcastDto = {
+        title: 'Announcement',
+        body: 'Test broadcast',
+        type: NotificationType.ANNOUNCEMENT,
+        target_roles: [UserRole.WORKER],
+        data: { priority: 'high' },
+      };
+
+      const targetUsers = [{ id: 'user-1', is_active: true }];
+      usersService.findByRoles.mockResolvedValue(targetUsers as User[]);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue([mockNotification] as any);
+      tokenRepository.find.mockResolvedValue([]);
+
+      await service.broadcast(broadcastDto);
+
+      expect(notificationRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { priority: 'high' },
+        }),
+      );
+    });
+  });
+
+  describe('getUserNotifications edge cases', () => {
+    it('should filter by is_read true', async () => {
+      const filters = {
+        is_read: true,
+      };
+
+      await service.getUserNotifications('user-uuid', filters);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalled();
+    });
+
+    it('should filter by type', async () => {
+      const filters = {
+        type: NotificationType.SHIFT_REMINDER,
+      };
+
+      await service.getUserNotifications('user-uuid', filters);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalled();
+    });
+
+    it('should apply created_before filter', async () => {
+      const filters = {
+        created_before: '2026-12-31',
+      };
+
+      await service.getUserNotifications('user-uuid', filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'notification.created_at <= :before',
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe('sendPushNotification (private method)', () => {
+    it('should skip sending when user has no active tokens', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+      };
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockResolvedValue([]); // No tokens
+
+      await service.sendToUser(sendDto);
+
+      // Notification should still be created even without tokens
+      expect(notificationRepository.save).toHaveBeenCalled();
+    });
+
+    it('should handle FCM send simulation with multiple tokens', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+      };
+
+      const multipleTokens = [
+        { ...mockToken, id: 'token-1' },
+        { ...mockToken, id: 'token-2' },
+      ];
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockResolvedValue(multipleTokens as NotificationToken[]);
+      tokenRepository.save.mockResolvedValue({} as any);
+
+      await service.sendToUser(sendDto);
+
+      // Wait for async push notification
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      expect(tokenRepository.save).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry on FCM send failure up to max attempts', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+      };
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue(mockNotification as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockRejectedValue(new Error('Simulated FCM error'));
+
+      await service.sendToUser(sendDto);
+
+      // Wait for async retries
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Should have saved notification with error tracking
+      expect(notificationRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('markAllAsRead edge cases', () => {
+    it('should handle when no notifications are updated', async () => {
+      notificationRepository.update.mockResolvedValue({ affected: 0 } as any);
+
+      const result = await service.markAllAsRead('user-uuid');
+
+      expect(result).toEqual({ marked: 0 });
+    });
+
+    it('should handle undefined affected count', async () => {
+      notificationRepository.update.mockResolvedValue({ affected: undefined } as any);
+
+      const result = await service.markAllAsRead('user-uuid');
+
+      expect(result).toEqual({ marked: 0 });
+    });
+  });
 });

@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-**Last Updated:** January 21, 2026
-**Status:** Phase 1 MVP Complete
+**Last Updated:** January 24, 2026
+**Status:** Phase 1 MVP Complete (UI/UX Enhanced)
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -10,9 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 SEKAR (Sistem Evaluasi Kerja Satgas RTH) is a worker tracking and task management system for DLH Surabaya - the municipal department managing parks and green spaces. The system provides real-time GPS tracking, digital clock-in/out, work reports with photo/video evidence, and supervisor dashboards.
 
 **Tech Stack:**
-- **Backend:** NestJS 10.x, TypeScript, PostgreSQL 14+, TypeORM, JWT, AWS (S3, RDS)
+- **Backend:** NestJS 11.x, TypeScript, PostgreSQL 14+, TypeORM, JWT, AWS (S3, RDS)
 - **Mobile:** React Native 0.76.x, TypeScript, Redux Toolkit, AsyncStorage
 - **Database:** PostgreSQL with TypeORM (auto-synchronize in dev)
+- **Runtime:** Node.js >=24.13.0, npm >=10.0.0
 
 ## Common Commands
 
@@ -132,22 +133,31 @@ be/src/
 fe/mobile/
 ├── android/               # Android native code
 ├── ios/                   # iOS native code
-├── src/                   # Application source (to be implemented)
-│   ├── screens/           # Screen components
-│   ├── components/        # Reusable components
-│   ├── store/             # Redux Toolkit store
-│   ├── services/          # API services
-│   └── constants/         # Config, API URLs
-└── __tests__/             # Jest tests
+├── src/                   # Application source
+│   ├── screens/           # Screen components (14 screens)
+│   ├── components/        # Reusable components (14 components)
+│   │   └── common/        # Shared UI components
+│   │       ├── Button     # Haptic feedback, focus indicators
+│   │       ├── Card       # Elevated/outlined/filled variants
+│   │       ├── TextInput  # Label, error, success states
+│   │       ├── SkeletonLoader  # Shimmer loading animation
+│   │       └── EmptyState      # 9 contextual variants
+│   ├── store/             # Redux Toolkit store (4 slices)
+│   ├── services/          # API services (6 services)
+│   ├── utils/             # Utilities (mapUtils, sanitize, etc.)
+│   └── constants/         # Config, theme, API URLs
+└── __tests__/             # Jest tests (1,086+ passing)
 ```
 
 **Key Dependencies:**
-- Navigation: React Navigation (native stack + bottom tabs)
+- Navigation: React Navigation 7.x (native stack + bottom tabs)
 - State: Redux Toolkit + React Redux
 - Storage: AsyncStorage, Encrypted Storage
 - Location: react-native-geolocation-service
-- Maps: react-native-maps
+- Maps: react-native-maps (with clustering)
 - Camera/Media: react-native-image-picker
+- Device Info: react-native-device-info (battery level)
+- Icons: react-native-vector-icons/MaterialCommunityIcons
 
 ### Database
 
@@ -223,13 +233,23 @@ AWS_REGION=ap-southeast-1
 # AWS_S3_BUCKET=sekar-media-production
 # AWS_REGION=ap-southeast-1
 CORS_ORIGIN=http://localhost:3001,http://localhost:19006
+# Shift Configuration
+MINIMUM_SHIFT_DURATION_MINUTES=5  # Minimum minutes before clock-out allowed
 ```
 
 ### Mobile (API Configuration)
 
-- **Android Emulator:** Use `http://10.0.2.2:3000/api`
-- **Physical Device:** Use `http://<your-ip>:3000/api`
-- Configure in `src/constants/config.ts`
+Configure in `fe/mobile/.env`:
+```env
+# Host URL (without /api path) + API version
+API_BASE_URL=http://10.0.2.2:3000    # Android emulator
+API_VERSION=v1
+# Result: http://10.0.2.2:3000/api/v1
+```
+
+- **Android Emulator:** `API_BASE_URL=http://10.0.2.2:3000`
+- **Physical Device:** `API_BASE_URL=http://<your-ip>:3000`
+- **Production:** `API_BASE_URL=https://api.sekar.dlhsurabaya.go.id`
 
 ## Important Development Notes
 
@@ -279,9 +299,10 @@ Follow `.cursor/rules/001-code-generation.mdc` and architectural specifications:
 
 ## Development Phases
 
-**Phase 1 MVP - COMPLETE ✅**
-- Backend: 9 modules, 37 endpoints, 401 tests, 84.23% coverage
-- Mobile: 14 screens, 12 components, 831 tests (100% pass rate)
+**Phase 1 MVP - COMPLETE ✅ (UI/UX Enhanced January 23, 2026)**
+- Backend: 9 modules, 40 endpoints, 401 tests, 84.23% coverage
+- Mobile: 14 screens, 14 components, 1,086+ tests (100% pass rate)
+- UI/UX: Skeleton loaders, empty states, card variants, haptic feedback, map clustering
 - Specifications: 50+ files enhanced with architectural improvements
 
 **Next Phases:**
@@ -312,8 +333,9 @@ rm -rf node_modules package-lock.json && npm install
 npm start -- --reset-cache
 # Android build failed
 cd android && ./gradlew clean && cd .. && npm run android
-# Can't connect to backend
-# Use 10.0.2.2:3000 (Android emulator) or your IP (physical device)
+# Can't connect to backend - check .env
+# API_BASE_URL=http://10.0.2.2:3000 (Android emulator) or your IP (physical device)
+# API_VERSION=v1
 ```
 
 ### Docker Issues
@@ -392,7 +414,7 @@ Comprehensive technical specifications organized by specialist roles:
 | Category | Resource | Description |
 |----------|----------|-------------|
 | **Status** | `specs/COMPLETION_STATUS.md` | Single source of truth for project status |
-| **API** | `specs/api/contracts.md` | All 37 endpoints documented |
+| **API** | `specs/api/contracts.md` | All 40 endpoints documented |
 | **Errors** | `specs/api/error-handling.md` | 31 standardized error codes |
 | **Business** | `specs/business-rules.md` | Consolidated business logic rules |
 | **Architecture** | `specs/architecture/decisions/` | 8 ADRs documenting key choices |
@@ -402,12 +424,12 @@ Comprehensive technical specifications organized by specialist roles:
 
 ## Project Status
 
-**Phase 1 MVP - COMPLETE ✅**
+**Phase 1 MVP - COMPLETE ✅ (UI/UX Enhanced)**
 
 | Component | Metrics | Status |
 |-----------|---------|--------|
-| **Backend** | 9 modules, 37 endpoints, 31 error codes, 401 tests (84.23%) | ✅ Complete |
-| **Mobile** | 14 screens, 12 components, 831 tests (100% pass) | ✅ Complete |
+| **Backend** | 9 modules, 40 endpoints, 31 error codes, 401 tests (84.23%) | ✅ Complete |
+| **Mobile** | 14 screens, 14 components, 1,086+ tests (100% pass) | ✅ Complete |
 | **Specs** | 50+ files with architectural improvements | ✅ Complete |
 
 **Key Features Implemented:**
@@ -416,7 +438,17 @@ Comprehensive technical specifications organized by specialist roles:
 - Work reports with photo compression (500KB target)
 - Offline-first with AsyncStorage queue
 - Rate limiting (100 req/min global, 5 req/min login)
-- Background location tracking
+- Background location tracking with battery level
+
+**UI/UX Enhancements (January 23, 2026):**
+- SkeletonLoader component with shimmer animation
+- EmptyState component with 9 contextual variants
+- Card component with 3 variants (elevated, outlined, filled)
+- Button with haptic feedback and focus indicators
+- TextInput with success state and consistent borders
+- Map marker clustering with O(n log n) algorithm
+- Progressive loading (50 initial → 500 background)
+- Warning color fix (#F57C00 for 4.5:1 outdoor contrast)
 
 **Next Phase:** Phase 2 - Enhanced Features (Tasks, Notifications, KMZ Import)
 

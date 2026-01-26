@@ -519,5 +519,298 @@ describe('TasksService', () => {
         declined: 0,
       });
     });
+
+    it('should count ACCEPTED tasks as inProgress', async () => {
+      const tasks = [
+        { status: TaskStatus.ACCEPTED },
+        { status: TaskStatus.IN_PROGRESS },
+      ];
+      taskRepository.find.mockResolvedValue(tasks as Task[]);
+
+      const result = await service.getAreaTaskStats('area-uuid');
+
+      expect(result.inProgress).toBe(2);
+    });
+
+    it('should handle DECLINED tasks', async () => {
+      const tasks = [
+        { status: TaskStatus.DECLINED },
+        { status: TaskStatus.DECLINED },
+      ];
+      taskRepository.find.mockResolvedValue(tasks as Task[]);
+
+      const result = await service.getAreaTaskStats('area-uuid');
+
+      expect(result.declined).toBe(2);
+    });
+  });
+
+  describe('edge cases and filters', () => {
+    it('should create task without activity_type_id', async () => {
+      const createDtoWithoutActivity = {
+        title: 'New Task',
+        description: 'Task description',
+        area_id: 'area-uuid',
+        priority: TaskPriority.HIGH,
+      };
+      const createdTask = { ...mockTask, ...createDtoWithoutActivity, id: 'new-task-uuid' };
+
+      areasService.findOne.mockResolvedValue(mockArea as any);
+      taskRepository.create.mockReturnValue(createdTask as Task);
+      taskRepository.save.mockResolvedValue(createdTask as Task);
+      taskRepository.findOne.mockResolvedValue(createdTask as Task);
+
+      const result = await service.create(createDtoWithoutActivity, 'creator-uuid');
+
+      expect(activityTypesService.findOne).not.toHaveBeenCalled();
+      expect(result).toEqual(createdTask);
+    });
+
+    it('should apply deadline_before filter', async () => {
+      const filters = {
+        deadline_before: '2026-12-31',
+      };
+
+      await service.findAll(filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'task.deadline <= :deadlineBefore',
+        expect.any(Object),
+      );
+    });
+
+    it('should apply deadline_after filter', async () => {
+      const filters = {
+        deadline_after: '2026-01-01',
+      };
+
+      await service.findAll(filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'task.deadline >= :deadlineAfter',
+        expect.any(Object),
+      );
+    });
+
+    it('should apply created_after filter', async () => {
+      const filters = {
+        created_after: '2026-01-01',
+      };
+
+      await service.findAll(filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'task.created_at >= :createdAfter',
+        expect.any(Object),
+      );
+    });
+
+    it('should apply created_before filter', async () => {
+      const filters = {
+        created_before: '2026-12-31',
+      };
+
+      await service.findAll(filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'task.created_at <= :createdBefore',
+        expect.any(Object),
+      );
+    });
+
+    it('should update task with area change', async () => {
+      const existingTask = { ...mockTask, area_id: 'old-area-uuid' };
+      const updateDto = {
+        area_id: 'new-area-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(existingTask as Task);
+      areasService.findOne.mockResolvedValue({ id: 'new-area-uuid' } as any);
+      taskRepository.save.mockResolvedValue({ ...existingTask, ...updateDto } as Task);
+
+      await service.update('task-uuid', updateDto);
+
+      expect(areasService.findOne).toHaveBeenCalledWith('new-area-uuid');
+    });
+
+    it('should update task with activity_type change', async () => {
+      const existingTask = { ...mockTask, activity_type_id: 'old-activity-uuid' };
+      const updateDto = {
+        activity_type_id: 'new-activity-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(existingTask as Task);
+      activityTypesService.findOne.mockResolvedValue({ id: 'new-activity-uuid' } as any);
+      taskRepository.save.mockResolvedValue({ ...existingTask, ...updateDto } as Task);
+
+      await service.update('task-uuid', updateDto);
+
+      expect(activityTypesService.findOne).toHaveBeenCalledWith('new-activity-uuid');
+    });
+
+    it('should update task description to empty string', async () => {
+      const existingTask = { ...mockTask, description: 'Old description' };
+      const updateDto = {
+        description: '',
+      };
+
+      taskRepository.findOne.mockResolvedValue(existingTask as Task);
+      taskRepository.save.mockResolvedValue({ ...existingTask, description: '' } as Task);
+
+      await service.update('task-uuid', updateDto);
+
+      expect(taskRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update task with null activity_type_id', async () => {
+      const existingTask = { ...mockTask, activity_type_id: 'old-activity-uuid' };
+      const updateDto = {
+        activity_type_id: null as any,
+      };
+
+      taskRepository.findOne.mockResolvedValue(existingTask as Task);
+      taskRepository.save.mockResolvedValue({ ...existingTask, activity_type_id: null } as Task);
+
+      await service.update('task-uuid', updateDto);
+
+      expect(taskRepository.save).toHaveBeenCalled();
+    });
+
+    it('should assign declined task successfully', async () => {
+      const declinedTask = { ...mockTask, status: TaskStatus.DECLINED };
+      const assignedTask = { ...declinedTask, status: TaskStatus.ASSIGNED, assigned_to: 'worker-uuid' };
+      const worker = { ...mockUser, id: 'worker-uuid' };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(declinedTask as Task)
+        .mockResolvedValueOnce(assignedTask as Task);
+      usersService.findOne.mockResolvedValue(worker as User);
+      taskRepository.save.mockResolvedValue(assignedTask as Task);
+
+      const result = await service.assign('task-uuid', { assigned_to: 'worker-uuid' });
+
+      expect(result.status).toBe(TaskStatus.ASSIGNED);
+    });
+
+    it('should throw BadRequestException if assigning to ADMIN', async () => {
+      const pendingTask = { ...mockTask, status: TaskStatus.PENDING };
+      const admin = { ...mockUser, role: UserRole.ADMIN };
+
+      taskRepository.findOne.mockResolvedValue(pendingTask as Task);
+      usersService.findOne.mockResolvedValue(admin as User);
+
+      await expect(service.assign('task-uuid', { assigned_to: 'admin-uuid' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should accept LINMAS as assignee', async () => {
+      const createDto = {
+        title: 'New Task',
+        description: 'Task for Linmas',
+        area_id: 'area-uuid',
+        assigned_to: 'linmas-uuid',
+      };
+      const linmas = { ...mockUser, id: 'linmas-uuid', role: UserRole.LINMAS };
+      const createdTask = { ...mockTask, ...createDto, status: TaskStatus.ASSIGNED };
+
+      areasService.findOne.mockResolvedValue(mockArea as any);
+      usersService.findOne.mockResolvedValue(linmas as User);
+      taskRepository.create.mockReturnValue(createdTask as Task);
+      taskRepository.save.mockResolvedValue(createdTask as Task);
+      taskRepository.findOne.mockResolvedValue(createdTask as Task);
+
+      const result = await service.create(createDto, 'creator-uuid');
+
+      expect(result.status).toBe(TaskStatus.ASSIGNED);
+    });
+
+    it('should throw ForbiddenException when declining task not assigned to user', async () => {
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'other-user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
+
+      await expect(
+        service.decline('task-uuid', 'user-uuid', { reason: 'Too busy' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException when starting task not assigned to user', async () => {
+      const acceptedTask = {
+        ...mockTask,
+        status: TaskStatus.ACCEPTED,
+        assigned_to: 'other-user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(acceptedTask as Task);
+
+      await expect(service.start('task-uuid', 'user-uuid')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException when completing task not assigned to user', async () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'other-user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
+
+      await expect(
+        service.complete('task-uuid', 'user-uuid', { gps_lat: -7.25, gps_lng: 112.75 }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should complete task with photo URL', async () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'user-uuid',
+      };
+      const completeDto = {
+        gps_lat: -7.2575,
+        gps_lng: 112.7521,
+        completion_notes: 'Done',
+        completion_photo_url: 'https://example.com/photo.jpg',
+      };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(inProgressTask as Task)
+        .mockResolvedValueOnce({
+          ...inProgressTask,
+          status: TaskStatus.COMPLETED,
+          completion_photo_url: completeDto.completion_photo_url,
+        } as Task);
+      taskRepository.save.mockResolvedValue({} as Task);
+
+      await service.complete('task-uuid', 'user-uuid', completeDto);
+
+      expect(taskRepository.save).toHaveBeenCalled();
+    });
+
+    it('should handle findByAreaId with activeOnly false', async () => {
+      await service.findByAreaId('area-uuid', false);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('task.area_id = :areaId', {
+        areaId: 'area-uuid',
+      });
+      // Should not add status filter when activeOnly is false
+    });
+
+    it('should handle findByAreaId with activeOnly true', async () => {
+      await service.findByAreaId('area-uuid', true);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('task.area_id = :areaId', {
+        areaId: 'area-uuid',
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'task.status NOT IN (:...completedStatuses)',
+        expect.any(Object),
+      );
+    });
   });
 });

@@ -467,8 +467,176 @@ npm install @aws-sdk/client-ses # Email
 
 ---
 
+## Deployment Checklist
+
+### Pre-Deployment
+
+- [ ] All unit tests passing (>80% coverage)
+- [ ] Integration tests passing
+- [ ] Load test analytics queries (1000 concurrent users)
+- [ ] Test report generation with large datasets (10K+ records)
+- [ ] Verify email delivery in staging environment
+- [ ] Database indexes created and verified
+- [ ] S3 bucket permissions configured for report storage
+
+### Environment Variables
+
+```env
+# Report Generation
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser  # For Docker
+REPORT_STORAGE_BUCKET=sekar-reports-production
+
+# Email Configuration (AWS SES)
+AWS_SES_REGION=ap-southeast-1
+SES_FROM_EMAIL=reports@sekar.dlh.surabaya.go.id
+SES_CONFIGURATION_SET=sekar-emails
+
+# Scheduler
+ENABLE_SCHEDULED_REPORTS=true
+SCHEDULER_TIMEZONE=Asia/Jakarta
+
+# Analytics Cache (Optional Redis)
+REDIS_HOST=redis-cluster.internal
+REDIS_PORT=6379
+ANALYTICS_CACHE_TTL=300
+```
+
+### Deployment Steps
+
+1. **Database Migration**
+   ```bash
+   npm run migration:run
+   npm run seed:report-templates  # Default templates
+   ```
+
+2. **Verify Services**
+   ```bash
+   curl http://localhost:3000/api/analytics/dashboard
+   curl http://localhost:3000/api/reports/templates
+   ```
+
+3. **Test Report Generation**
+   ```bash
+   # Generate test report
+   curl -X POST http://localhost:3000/api/reports/generate \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "template_id": "daily-attendance",
+       "start_date": "2026-01-20",
+       "end_date": "2026-01-20",
+       "format": "pdf"
+     }'
+   ```
+
+4. **Monitor Scheduler**
+   ```bash
+   # Check scheduler logs
+   docker logs backend | grep "ReportScheduler"
+   ```
+
+### Post-Deployment
+
+- [ ] Verify analytics queries return in <2 seconds
+- [ ] Verify PDF generation completes in <30 seconds
+- [ ] Verify scheduled reports execute at correct times
+- [ ] Monitor S3 storage usage
+- [ ] Check email delivery rates (AWS SES dashboard)
+- [ ] Set up CloudWatch alarms for failed jobs
+
+### Rollback Plan
+
+1. Stop scheduler: Set `ENABLE_SCHEDULED_REPORTS=false`
+2. Revert database migration: `npm run migration:revert`
+3. Redeploy previous version
+4. Restore backed-up report templates
+
+---
+
+## Performance Benchmarks
+
+| Operation | Target | Acceptable | Notes |
+|-----------|--------|------------|-------|
+| Worker analytics query | <1s | <2s | 10K shifts, 1K workers |
+| Area analytics query | <1s | <2s | 100 areas |
+| PDF generation (10 pages) | <15s | <30s | With charts |
+| Excel generation (5K rows) | <5s | <10s | Multiple sheets |
+| CSV generation (10K rows) | <2s | <5s | Simple format |
+| Email delivery | <5s | <10s | Via AWS SES |
+
+---
+
+## API Response Examples
+
+### GET /analytics/workers
+
+**Request:**
+```http
+GET /api/analytics/workers?start_date=2026-01-01&end_date=2026-01-31
+Authorization: Bearer {token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "workers": [
+    {
+      "worker_id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
+      "full_name": "Pekerja Satu",
+      "attendance_rate": 95.0,
+      "avg_shift_hours": 8.5,
+      "reports_per_day": 3.2,
+      "task_completion_rate": 92.5,
+      "avg_task_time_minutes": 45.3,
+      "late_clock_ins": 2
+    }
+  ],
+  "summary": {
+    "total_workers": 25,
+    "avg_attendance_rate": 88.5,
+    "total_reports": 2400
+  }
+}
+```
+
+### POST /reports/generate
+
+**Request:**
+```http
+POST /api/reports/generate
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "template_id": "weekly-performance",
+  "start_date": "2026-01-13",
+  "end_date": "2026-01-19",
+  "format": "pdf",
+  "filters": {
+    "area_id": "c3d4e5f6-a7b8-9012-cdef-123456789012"
+  }
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "f6a7b8c9-d0e1-2345-f678-456789012345",
+  "name": "Weekly Performance - Week 3",
+  "format": "pdf",
+  "status": "completed",
+  "file_url": "https://sekar-reports.s3.amazonaws.com/reports/2026/01/20/weekly-performance-f6a7b8c9.pdf",
+  "file_size": 245678,
+  "generated_at": "2026-01-20T08:00:00.000Z"
+}
+```
+
+---
+
 ## Sign-Off
 
 **Developer:** _______________ **Date:** _______________
 
 **Reviewer:** _______________ **Date:** _______________
+
+**Last Updated:** 2026-01-21

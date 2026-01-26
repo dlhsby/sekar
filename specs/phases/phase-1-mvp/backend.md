@@ -2,7 +2,7 @@
 
 **Status:** ✅ COMPLETE (103%)
 **Test Coverage:** 84.23% (Target: >80%)
-**API Endpoints:** 35 implemented (34 planned)
+**API Endpoints:** 40 implemented
 **API Version:** v1
 **Duration:** 8 days (Days 1-8)
 
@@ -124,11 +124,8 @@ src/modules/auth/
 **Test Coverage:** >85%
 
 #### 5. Worker Assignments Module ✅
-- [x] GET `/api/v1/worker-assignments` - List assignments
-- [x] GET `/api/v1/worker-assignments/:id` - Get assignment
-- [x] POST `/api/v1/worker-assignments` - Create assignment (Admin)
-- [x] PATCH `/api/v1/worker-assignments/:id` - Update assignment
-- [x] DELETE `/api/v1/worker-assignments/:id` - Delete assignment
+- [x] POST `/api/v1/workers/:id/assign` - Assign worker to area (Admin/Supervisor)
+- [x] DELETE `/api/v1/workers/:id/assign` - Remove worker assignment (Admin/Supervisor)
 - [x] Worker-to-area assignment management
 - [x] Assignment date tracking
 
@@ -145,7 +142,7 @@ src/modules/auth/
 - [x] Prevent double clock-in
 - [x] Automatic duration calculation
 - [x] Error codes: SHIFT_ALREADY_ACTIVE, SHIFT_NOT_FOUND, SHIFT_NOT_ACTIVE, SHIFT_GPS_OUT_OF_BOUNDS, SHIFT_NOT_ASSIGNED, SHIFT_PHOTO_UPLOAD_FAILED, SHIFT_DURATION_TOO_SHORT
-- [x] Minimum shift duration validation (15 minutes)
+- [x] Minimum shift duration validation (5 minutes)
 
 **Database Indexes:**
 - idx_shifts_worker_date (worker_id, clock_in_time DESC)
@@ -316,7 +313,7 @@ supervisor/             |   85.12 |    78.89 |   86.56 |   86.23
 **API Docs:** `specs/api/contracts.md` (single source of truth)
 
 ### Documentation Includes:
-- [x] All 35 endpoint specifications
+- [x] All 40 endpoint specifications
 - [x] Request/response schemas with examples
 - [x] Authentication requirements
 - [x] Role-based access rules
@@ -366,7 +363,7 @@ THROTTLE_LIMIT=100            # 100 requests per minute
 
 ### Development Complete ✅
 - [x] All 10 modules implemented
-- [x] 35 API endpoints working
+- [x] 40 API endpoints working
 - [x] Unit tests >80% coverage (84.23%)
 - [x] E2E tests for critical paths
 - [x] Swagger documentation complete
@@ -520,7 +517,7 @@ Requests/Second: 50
 ## Documentation Files
 
 ### Specifications
-- [x] `specs/api/contracts.md` - All 35 API contracts
+- [x] `specs/api/contracts.md` - All 40 API contracts
 - [x] `specs/api/auth.md` - Authentication specification
 - [x] `specs/api/error-handling.md` - Error codes
 - [x] `specs/database/schema.md` - Complete database schema
@@ -568,7 +565,7 @@ Requests/Second: 50
 ## Success Metrics
 
 ### Development Phase ✅
-- [x] All 35 endpoints implemented
+- [x] All 40 endpoints implemented
 - [x] Test coverage >80% (achieved 84.23%)
 - [x] Zero critical bugs
 - [x] API documentation complete

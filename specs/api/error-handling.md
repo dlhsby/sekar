@@ -52,7 +52,7 @@ The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for c
 | `SHIFT_GPS_OUT_OF_BOUNDS` | 400 | GPS coordinates are outside the allowed area boundary |
 | `SHIFT_NOT_ASSIGNED` | 400 | Worker is not assigned to any area or the requested area |
 | `SHIFT_PHOTO_UPLOAD_FAILED` | 400 | Failed to upload clock-in/out selfie photo |
-| `SHIFT_DURATION_TOO_SHORT` | 400 | Shift duration is below the minimum required duration (15 minutes) |
+| `SHIFT_DURATION_TOO_SHORT` | 400 | Shift duration is below the minimum required duration (default: 5 minutes, configurable) |
 
 ### Report Errors (7 codes)
 
@@ -440,7 +440,7 @@ Authorization: Bearer {worker_token}
 {
   "statusCode": 400,
   "code": "SHIFT_DURATION_TOO_SHORT",
-  "message": "Shift duration too short. Minimum 15 minutes required, but only 5 minutes worked.",
+  "message": "Shift duration too short. Minimum 5 minutes required, but only 2 minutes worked.",
   "error": "Bad Request"
 }
 ```

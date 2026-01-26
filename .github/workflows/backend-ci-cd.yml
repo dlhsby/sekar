@@ -1,0 +1,464 @@
+# SEKAR Backend CI/CD Pipeline
+# Triggered on: push to main/staging/develop, PRs to these branches
+#
+# Pipeline stages:
+# 1. Lint - ESLint and Prettier checks
+# 2. Test - Unit tests with PostgreSQL service
+# 3. Security - npm audit and secret scanning
+# 4. Build - TypeScript compilation
+# 5. Deploy - SSH deploy to EC2 (environment-specific)
+
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, staging, develop]
+    paths:
+      - 'be/**'
+      - '.github/workflows/backend-ci-cd.yml'
+  pull_request:
+    branches: [main, staging, develop]
+    paths:
+      - 'be/**'
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: ap-southeast-3
+
+jobs:
+  # ==========================================================================
+  # Job 1: Code Quality Checks
+  # ==========================================================================
+  lint:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./be
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: be/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        run: npx prettier --check "src/**/*.ts" "test/**/*.ts"
+
+  # ==========================================================================
+  # Job 2: Unit and Integration Tests
+  # ==========================================================================
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: ./be
+
+    services:
+      postgres:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sekar_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: be/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: postgres
+          DATABASE_NAME: sekar_test
+          JWT_SECRET: test-secret-key-for-ci-minimum-32-characters
+          JWT_REFRESH_SECRET: test-refresh-secret-key-for-ci-min-32-chars
+          NODE_ENV: test
+
+      - name: Run tests with coverage
+        run: npm run test:cov
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: postgres
+          DATABASE_NAME: sekar_test
+          JWT_SECRET: test-secret-key-for-ci-minimum-32-characters
+          JWT_REFRESH_SECRET: test-refresh-secret-key-for-ci-min-32-chars
+          NODE_ENV: test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./be/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+        continue-on-error: true
+
+      - name: Check coverage threshold
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+            echo "Coverage: $COVERAGE%"
+            if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+              echo "::warning::Coverage $COVERAGE% is below 80% threshold"
+            fi
+          fi
+
+  # ==========================================================================
+  # Job 3: Security Scanning
+  # ==========================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: ./be
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: be/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for secrets in code
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./be
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+        continue-on-error: true
+
+  # ==========================================================================
+  # Job 4: Build Application
+  # ==========================================================================
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    defaults:
+      run:
+        working-directory: ./be
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: be/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: be/dist
+          retention-days: 7
+
+  # ==========================================================================
+  # Job 5: Deploy to Development (develop branch)
+  # ==========================================================================
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: development
+      url: http://dev.sekar.wahyutrip.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-3
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sekar-backend
+          IMAGE_TAG: dev-${{ github.sha }}
+        working-directory: ./be
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:dev-latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:dev-latest
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        with:
+          host: ${{ secrets.EC2_HOST_DEV }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY
+          script: |
+            cd ~/sekar
+
+            # Login to ECR
+            aws ecr get-login-password --region ap-southeast-3 | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            # Update docker-compose to use dev-latest tag
+            sed -i "s|:latest|:dev-latest|g" docker-compose.yml
+
+            # Pull latest image
+            docker-compose pull
+
+            # Restart with zero-downtime
+            docker-compose up -d
+
+            # Wait for startup
+            sleep 30
+
+            # Show logs
+            docker-compose logs --tail=50 backend
+
+      - name: Verify deployment
+        run: |
+          sleep 30
+          curl -f http://dev.sekar.wahyutrip.com/api/health || echo "Health check pending..."
+        continue-on-error: true
+
+  # ==========================================================================
+  # Job 6: Deploy to Staging (staging branch)
+  # ==========================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: http://staging.sekar.wahyutrip.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-3
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sekar-backend
+          IMAGE_TAG: staging-${{ github.sha }}
+        working-directory: ./be
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:staging-latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:staging-latest
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        with:
+          host: ${{ secrets.EC2_HOST_STAGING }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY
+          script: |
+            cd ~/sekar
+
+            # Login to ECR
+            aws ecr get-login-password --region ap-southeast-3 | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            # Update docker-compose to use staging-latest tag
+            sed -i "s|:latest|:staging-latest|g" docker-compose.yml
+
+            # Pull latest image
+            docker-compose pull
+
+            # Restart with zero-downtime
+            docker-compose up -d
+
+            # Wait for startup
+            sleep 30
+
+            # Show logs
+            docker-compose logs --tail=50 backend
+
+      - name: Run smoke tests
+        run: |
+          sleep 30
+          curl -f http://staging.sekar.wahyutrip.com/api/health || echo "Health check pending..."
+        continue-on-error: true
+
+  # ==========================================================================
+  # Job 7: Deploy to Production (main branch - with manual approval)
+  # ==========================================================================
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: http://sekar.wahyutrip.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-3
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sekar-backend
+          IMAGE_TAG: ${{ github.sha }}
+        working-directory: ./be
+        run: |
+          # Build and tag
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          # Push both tags
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY,IMAGE_TAG
+          script: |
+            cd ~/sekar
+
+            # Login to ECR
+            aws ecr get-login-password --region ap-southeast-3 | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            # Create backup tag in ECR (for easy rollback)
+            CURRENT_IMAGE=$(docker-compose images -q backend)
+            if [ ! -z "$CURRENT_IMAGE" ]; then
+              docker tag $CURRENT_IMAGE $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S)
+              docker push $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S) || true
+            fi
+
+            # Pull latest image
+            docker-compose pull
+
+            # Restart with zero-downtime
+            docker-compose up -d
+
+            # Wait for startup
+            sleep 30
+
+            # Show logs
+            docker-compose logs --tail=50 backend
+
+      - name: Run smoke tests
+        run: |
+          chmod +x scripts/smoke-tests.sh || true
+          ./scripts/smoke-tests.sh http://sekar.wahyutrip.com || true
+
+          # Basic health check fallback
+          curl -f http://sekar.wahyutrip.com/api/health
+        continue-on-error: true
+
+      - name: Notify deployment result
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+          BRANCH_REF: ${{ github.ref }}
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "::notice::Backend deployed to production successfully!"
+          else
+            echo "::error::Backend deployment to production failed!"
+          fi
+          echo "Version: $COMMIT_SHA"
+          echo "Branch: $BRANCH_REF"
+          echo "ECR Image: ${{ steps.login-ecr.outputs.registry }}/sekar-backend:$COMMIT_SHA"

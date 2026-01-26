@@ -89,22 +89,47 @@ cd infra && docker-compose ps
 cd be
 npm install
 
-# Create .env file
+# Create .env file (or copy from .env.example)
+cp .env.example .env
+
+# Alternatively, create manually:
 cat > .env << 'EOF'
 NODE_ENV=development
 PORT=3000
+
+# Database
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres
 DATABASE_NAME=sekar_db
+
+# Database Behavior (see "Database Modes" section below)
+DATABASE_SYNCHRONIZE=true      # Auto-create tables for fast development
+DATABASE_MIGRATIONS_RUN=false  # Don't auto-run migrations (run manually)
+DATABASE_SSL=false
+
+# JWT
 JWT_SECRET=dev-secret-key-change-in-production-123456789
-JWT_EXPIRATION=7d
+JWT_EXPIRATION=15m
+JWT_REFRESH_SECRET=dev-refresh-secret-different-from-above-12345
+JWT_REFRESH_EXPIRATION=7d
+
+# AWS (LocalStack for local dev)
 AWS_REGION=ap-southeast-1
-AWS_ACCESS_KEY_ID=dummy-key-for-now
-AWS_SECRET_ACCESS_KEY=dummy-secret-for-now
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
 AWS_S3_BUCKET=sekar-media-dev
+AWS_ENDPOINT_URL=http://localhost:4566
+AWS_S3_FORCE_PATH_STYLE=true
+
+# CORS
 CORS_ORIGIN=http://localhost:3001,http://localhost:19006
+
+# Rate Limiting
+RATE_LIMIT_TTL=60
+RATE_LIMIT_MAX=100
+RATE_LIMIT_LOGIN_MAX=5
 EOF
 
 # Run
@@ -127,6 +152,121 @@ npm start
 # Run on Android (new terminal)
 npm run android
 ```
+
+---
+
+## 🗄️ Database Modes
+
+SEKAR uses TypeORM with two configuration options that control database schema management:
+
+### Configuration Options
+
+| Variable | Purpose | Values |
+|----------|---------|--------|
+| `DATABASE_SYNCHRONIZE` | Auto-create tables from entities | `true` / `false` |
+| `DATABASE_MIGRATIONS_RUN` | Auto-run migrations on startup | `true` / `false` |
+
+### Development Workflows
+
+#### **Mode 1: Synchronize (Fast Development)** ✅ Recommended for feature development
+
+```bash
+# .env
+DATABASE_SYNCHRONIZE=true      # TypeORM auto-creates/updates tables
+DATABASE_MIGRATIONS_RUN=false  # Migrations ignored
+```
+
+**When to use:**
+- Building new features
+- Experimenting with schema changes
+- Rapid iteration
+
+**How it works:**
+- TypeORM reads your entity definitions
+- Automatically creates/updates database tables
+- No migration files needed
+
+**Commands:**
+```bash
+npm run start:dev
+# Tables automatically created/updated from entities
+```
+
+#### **Mode 2: Migrations (Production-Like Testing)** ✅ Use before deployment
+
+```bash
+# .env
+DATABASE_SYNCHRONIZE=false     # No auto table creation
+DATABASE_MIGRATIONS_RUN=true   # Auto-run migrations on startup
+```
+
+**When to use:**
+- Testing migrations before production deployment
+- Ensuring local environment matches production
+- Finding migration bugs early
+
+**How it works:**
+- TypeORM doesn't modify schema
+- Only migrations can create/modify tables
+- Migrations run automatically on app startup
+
+**Commands:**
+```bash
+# 1. Generate migration from entity changes
+npm run migration:generate -- src/database/migrations/AddNewFeature
+
+# 2. Reset database (fresh start)
+cd ../infra && docker-compose down -v && docker-compose up -d
+
+# 3. Start app (migrations auto-run)
+cd ../be && npm run start:dev
+
+# 4. Verify migrations
+npm run migration:show
+
+# 5. Test rollback
+npm run migration:revert
+npm run migration:run
+```
+
+### Production Configuration
+
+```bash
+# .env.production (NEVER use synchronize=true after initial setup!)
+DATABASE_SYNCHRONIZE=false     # Prevent accidental schema changes
+DATABASE_MIGRATIONS_RUN=false  # Run migrations manually for control
+```
+
+**Why false for both in production?**
+
+- ❌ `DATABASE_SYNCHRONIZE=true` can cause data loss if entities change
+- ❌ `DATABASE_MIGRATIONS_RUN=true` causes downtime if migration fails
+
+**Production workflow:**
+```bash
+# 1. Pull new code
+docker-compose pull
+
+# 2. Run migrations BEFORE restarting app
+docker-compose run --rm backend npm run migration:run:prod
+
+# 3. Then restart app
+docker-compose up -d
+```
+
+### Quick Reference
+
+| Scenario | SYNCHRONIZE | MIGRATIONS_RUN | Use Case |
+|----------|-------------|----------------|----------|
+| **Local: Building features** | `true` | `false` | Fast development |
+| **Local: Testing migrations** | `false` | `true` | Pre-deployment testing |
+| **Production: Initial setup** | `true` | `false` | Create tables on empty DB |
+| **Production: After setup** | `false` | `false` | Manual migration control |
+
+**See also:**
+- [`be/.env.example`](be/.env.example) - Complete configuration template
+- [`specs/database/migrations.md`](specs/database/migrations.md) - Migration strategy guide
+- [`specs/deployment/phase-1-deployment.md`](specs/deployment/phase-1-deployment.md) - Production deployment guide
 
 ---
 

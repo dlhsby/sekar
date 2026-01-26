@@ -1,0 +1,318 @@
+# SEKAR Mobile CI/CD Pipeline (Android)
+# Triggered on: push to main/staging/develop, PRs to these branches
+#
+# Pipeline stages:
+# 1. Lint - ESLint and TypeScript checks
+# 2. Test - Jest unit tests
+# 3. Build APK - Environment-specific builds
+# 4. Release - GitHub Release for production builds
+
+name: Mobile CI/CD (Android)
+
+on:
+  push:
+    branches: [main, staging, develop]
+    paths:
+      - 'fe/mobile/**'
+      - '.github/workflows/mobile-ci-cd.yml'
+  pull_request:
+    branches: [main, staging, develop]
+    paths:
+      - 'fe/mobile/**'
+
+env:
+  NODE_VERSION: '24'
+  JAVA_VERSION: '17'
+
+jobs:
+  # ==========================================================================
+  # Job 1: Lint and Type Check
+  # ==========================================================================
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./fe/mobile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fe/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+
+  # ==========================================================================
+  # Job 2: Unit Tests
+  # ==========================================================================
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: ./fe/mobile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fe/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./fe/mobile/coverage/lcov.info
+          flags: mobile
+          name: mobile-coverage
+        continue-on-error: true
+
+  # ==========================================================================
+  # Job 3: Build Android APK (Development)
+  # ==========================================================================
+  build-android-dev:
+    name: Build Android APK (Dev)
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: ./fe/mobile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fe/mobile/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        env:
+          GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          echo "API_BASE_URL=http://dev.sekar.wahyutrip.com" > .env
+          echo "API_VERSION=v1" >> .env
+          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_KEY" >> .env
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Android APK (Debug)
+        run: cd android && ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sekar-dev-debug.apk
+          path: fe/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+  # ==========================================================================
+  # Job 4: Build Android APK (Staging)
+  # ==========================================================================
+  build-android-staging:
+    name: Build Android APK (Staging)
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: ./fe/mobile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fe/mobile/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        env:
+          GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          echo "API_BASE_URL=http://staging.sekar.wahyutrip.com" > .env
+          echo "API_VERSION=v1" >> .env
+          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_KEY" >> .env
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Android APK (Release)
+        run: cd android && ./gradlew assembleRelease
+
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: fe/mobile/android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sekar-staging-signed.apk
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          retention-days: 30
+
+  # ==========================================================================
+  # Job 5: Build Android APK (Production)
+  # ==========================================================================
+  build-android-prod:
+    name: Build Android APK (Production)
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+    defaults:
+      run:
+        working-directory: ./fe/mobile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fe/mobile/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        env:
+          GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          echo "API_BASE_URL=http://sekar.wahyutrip.com" > .env
+          echo "API_VERSION=v1" >> .env
+          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_KEY" >> .env
+
+      - name: Increment version code
+        run: |
+          cd android
+          VERSION_CODE=$(grep "versionCode" app/build.gradle | head -1 | awk '{print $2}')
+          NEW_VERSION_CODE=$((VERSION_CODE + 1))
+          sed -i "s/versionCode $VERSION_CODE/versionCode $NEW_VERSION_CODE/" app/build.gradle
+          echo "VERSION_CODE=$NEW_VERSION_CODE" >> $GITHUB_ENV
+          echo "Updated version code to $NEW_VERSION_CODE"
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Android APK (Release)
+        run: cd android && ./gradlew assembleRelease
+
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: fe/mobile/android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      - name: Upload APK to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sekar-production-v${{ github.run_number }}.apk
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          retention-days: 90
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          tag_name: mobile-v${{ github.run_number }}
+          name: SEKAR Mobile v${{ github.run_number }}
+          body: |
+            ## SEKAR Mobile App - Production Build
+
+            **Build Number:** ${{ github.run_number }}
+            **Commit:** ${{ github.sha }}
+
+            ### Installation
+            1. Download the APK file
+            2. Enable "Install from unknown sources" on your device
+            3. Install the APK
+            4. Open SEKAR app and login
+
+            ---
+            *Built with GitHub Actions*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify build result
+        env:
+          BUILD_NUM: ${{ github.run_number }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          echo "::notice::Android APK built successfully!"
+          echo "Version: $BUILD_NUM"
+          echo "Commit: $COMMIT_SHA"

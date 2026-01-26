@@ -616,4 +616,270 @@ npm install @types/qrcode --save-dev
 
 ---
 
-**Last Updated:** 2026-01-16
+## Deployment Checklist
+
+### Pre-Deployment
+
+- [ ] All unit tests passing (>80% coverage)
+- [ ] Integration tests for QR generation passing
+- [ ] Test bulk QR generation (1000+ assets)
+- [ ] Verify S3 bucket permissions for QR codes
+- [ ] Test asset assignment workflows
+- [ ] Test maintenance scheduling
+- [ ] Database indexes created
+- [ ] Asset seeder ready with sample data
+
+### Environment Variables
+
+```env
+# QR Code Generation
+QR_CODE_BUCKET=sekar-qr-codes
+QR_CODE_SIZE=300
+QR_CODE_ERROR_CORRECTION=H
+
+# Asset Management
+ASSET_CODE_PREFIX=SEKAR
+ASSET_PHOTO_BUCKET=sekar-asset-photos
+MAX_ASSET_PHOTO_SIZE=5242880  # 5MB
+
+# Maintenance
+MAINTENANCE_REMINDER_DAYS=7  # Days before scheduled maintenance
+OVERDUE_CHECK_CRON=0 9 * * *  # 9 AM daily
+```
+
+### Deployment Steps
+
+1. **Database Migration**
+   ```bash
+   npm run migration:run
+   npm run seed:asset-types  # Seed predefined asset types
+   ```
+
+2. **Verify Endpoints**
+   ```bash
+   curl http://localhost:3000/api/asset-types
+   curl http://localhost:3000/api/assets
+   curl http://localhost:3000/api/maintenance
+   ```
+
+3. **Test QR Generation**
+   ```bash
+   # Create test asset with QR
+   curl -X POST http://localhost:3000/api/assets \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Test Lawn Mower",
+       "assetTypeId": 1,
+       "condition": "good"
+     }'
+   ```
+
+4. **Verify QR Upload to S3**
+   ```bash
+   aws s3 ls s3://sekar-qr-codes/ --recursive
+   ```
+
+### Post-Deployment
+
+- [ ] Verify QR codes are scannable
+- [ ] Test assignment workflow end-to-end
+- [ ] Verify maintenance reminders trigger
+- [ ] Check overdue maintenance detection
+- [ ] Monitor S3 storage for QR codes
+- [ ] Set up CloudWatch alarms for failures
+
+### Rollback Plan
+
+1. Revert database migration: `npm run migration:revert`
+2. Delete generated QR codes: `aws s3 rm s3://sekar-qr-codes/ --recursive`
+3. Redeploy previous version
+4. Restore asset data from backup
+
+---
+
+## Bulk Operations Detail
+
+### Bulk Asset Import
+
+**CSV Format:**
+```csv
+asset_code,name,asset_type_id,brand,model,serial_number,purchase_date,purchase_price,condition,current_area_id
+SEKAR-001,Lawn Mower A,1,Honda,HRX217,SN001,2025-06-15,5000000,good,area-uuid-1
+SEKAR-002,Trimmer B,2,Stihl,FS 55,SN002,2025-07-20,2500000,excellent,area-uuid-2
+```
+
+**Endpoint:**
+```typescript
+POST /api/assets/bulk-import
+Content-Type: multipart/form-data
+
+Form Data:
+- file: assets.csv
+- generate_qr: true (optional)
+```
+
+**Response:**
+```json
+{
+  "total": 50,
+  "successful": 48,
+  "failed": 2,
+  "errors": [
+    {
+      "row": 15,
+      "field": "asset_type_id",
+      "message": "Asset type not found"
+    },
+    {
+      "row": 23,
+      "field": "asset_code",
+      "message": "Asset code already exists"
+    }
+  ],
+  "qr_codes_generated": 48
+}
+```
+
+### Bulk QR Generation
+
+**Request:**
+```http
+POST /api/assets/generate-qr-batch
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "asset_ids": [
+    "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
+    "9237ec92-08df-5d7f-b2c5-c2bdf395fb89"
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "total": 2,
+  "successful": 2,
+  "failed": 0,
+  "results": [
+    {
+      "asset_id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
+      "asset_code": "SEKAR-001",
+      "qr_code_url": "https://sekar-qr-codes.s3.amazonaws.com/qr-codes/SEKAR-001.png"
+    },
+    {
+      "asset_id": "9237ec92-08df-5d7f-b2c5-c2bdf395fb89",
+      "asset_code": "SEKAR-002",
+      "qr_code_url": "https://sekar-qr-codes.s3.amazonaws.com/qr-codes/SEKAR-002.png"
+    }
+  ]
+}
+```
+
+---
+
+## API Response Examples
+
+### POST /assets (Create Asset)
+
+**Response (201 Created):**
+```json
+{
+  "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
+  "assetCode": "SEKAR-LM001",
+  "name": "Lawn Mower Honda HRX217",
+  "assetType": {
+    "id": 1,
+    "name": "Lawn Mower",
+    "icon": "grass"
+  },
+  "description": "Commercial grade lawn mower",
+  "brand": "Honda",
+  "model": "HRX217",
+  "serialNumber": "SN12345678",
+  "purchaseDate": "2025-06-15",
+  "purchasePrice": 5000000,
+  "warrantyExpiry": "2027-06-15",
+  "status": "available",
+  "condition": "excellent",
+  "qrCodeUrl": "https://sekar-qr-codes.s3.amazonaws.com/qr-codes/SEKAR-LM001.png",
+  "createdAt": "2026-01-20T08:00:00.000Z",
+  "updatedAt": "2026-01-20T08:00:00.000Z"
+}
+```
+
+### POST /assets/:id/assign (Assign Asset)
+
+**Request:**
+```json
+{
+  "assignToUserId": "worker-uuid",
+  "notes": "Assigned for park maintenance",
+  "conditionOnAssign": "good"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "assignment-uuid",
+  "asset": {
+    "id": "asset-uuid",
+    "assetCode": "SEKAR-LM001",
+    "name": "Lawn Mower Honda HRX217"
+  },
+  "assignedToUser": {
+    "id": "worker-uuid",
+    "fullName": "Pekerja Satu"
+  },
+  "assignedBy": {
+    "id": "supervisor-uuid",
+    "fullName": "Supervisor Satu"
+  },
+  "assignedAt": "2026-01-20T08:00:00.000Z",
+  "assignmentNotes": "Assigned for park maintenance",
+  "conditionOnAssign": "good"
+}
+```
+
+### GET /maintenance/upcoming
+
+**Response (200 OK):**
+```json
+{
+  "maintenance": [
+    {
+      "id": "maintenance-uuid",
+      "asset": {
+        "id": "asset-uuid",
+        "assetCode": "SEKAR-LM001",
+        "name": "Lawn Mower Honda HRX217"
+      },
+      "maintenanceType": "preventive",
+      "title": "Monthly Oil Change",
+      "description": "Replace engine oil and check air filter",
+      "scheduledDate": "2026-01-25",
+      "status": "scheduled",
+      "priority": 2,
+      "daysUntilDue": 5,
+      "estimatedCost": 150000,
+      "createdBy": {
+        "id": "admin-uuid",
+        "fullName": "Admin Satu"
+      }
+    }
+  ],
+  "total": 12,
+  "summary": {
+    "this_week": 5,
+    "next_week": 7,
+    "high_priority": 2
+  }
+}
+```
+
+---
+
+**Last Updated:** 2026-01-21

@@ -1,7 +1,20 @@
 # Phase 6 - Backend Implementation Checklist
 
 **Duration:** 7 days
-**Prerequisites:** Phase 5 deployed
+**Prerequisites:** Phase 2-5 deployed
+
+---
+
+## Scope Clarification
+
+> **Note:** Basic CRUD endpoints for User, Area, Rayon, and Scheduling have been moved to Phase 2. This Phase 6 backend implementation focuses exclusively on:
+> - Audit logging system
+> - Bulk operations (CSV import/export)
+> - Report builder and scheduler
+> - Email service integration
+> - System settings management
+
+See [Phase 2 Backend Spec](../phase-2-enhanced/backend.md) for basic CRUD implementation.
 
 ---
 
@@ -655,4 +668,463 @@ SMTP_FROM="SEKAR System <sekar@DLH.surabaya.go.id>"
 
 ---
 
-**Last Updated:** 2026-01-16
+## WebSocket Implementation
+
+### Real-Time Dashboard Updates
+
+**Path:** `be/src/modules/realtime/`
+
+```
+realtime/
+├── realtime.module.ts
+├── realtime.gateway.ts
+├── realtime.gateway.spec.ts
+└── dto/
+    └── subscribe.dto.ts
+```
+
+### WebSocket Gateway
+
+```typescript
+// realtime.gateway.ts
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+
+@WebSocketGateway({
+  cors: {
+    origin: process.env.WEB_DASHBOARD_URL,
+    credentials: true,
+  },
+  namespace: '/realtime',
+})
+export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server;
+
+  private connectedClients: Map<string, Socket> = new Map();
+
+  async handleConnection(client: Socket) {
+    const userId = await this.validateClient(client);
+    if (!userId) {
+      client.disconnect();
+      return;
+    }
+
+    this.connectedClients.set(userId, client);
+    console.log(`Client connected: ${userId}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    const userId = this.findUserIdByClient(client);
+    if (userId) {
+      this.connectedClients.delete(userId);
+      console.log(`Client disconnected: ${userId}`);
+    }
+  }
+
+  @SubscribeMessage('subscribe:active-workers')
+  handleSubscribeActiveWorkers(client: Socket) {
+    client.join('active-workers');
+    return { event: 'subscribed', room: 'active-workers' };
+  }
+
+  @SubscribeMessage('subscribe:area-status')
+  handleSubscribeAreaStatus(client: Socket, data: { areaId: string }) {
+    client.join(`area:${data.areaId}`);
+    return { event: 'subscribed', room: `area:${data.areaId}` };
+  }
+
+  // Called by services to broadcast updates
+  broadcastActiveWorkerUpdate(data: any) {
+    this.server.to('active-workers').emit('active-workers:update', data);
+  }
+
+  broadcastAreaUpdate(areaId: string, data: any) {
+    this.server.to(`area:${areaId}`).emit('area-status:update', data);
+  }
+
+  broadcastNewReport(data: any) {
+    this.server.emit('new-report', data);
+  }
+}
+```
+
+### Integration with Existing Services
+
+```typescript
+// Example: shifts.service.ts
+@Injectable()
+export class ShiftsService {
+  constructor(private realtimeGateway: RealtimeGateway) {}
+
+  async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
+    const shift = await this.createShift(userId, dto);
+
+    // Broadcast to WebSocket clients
+    this.realtimeGateway.broadcastActiveWorkerUpdate({
+      type: 'clock-in',
+      worker: {
+        id: userId,
+        fullName: shift.worker.fullName,
+      },
+      shift: {
+        id: shift.id,
+        clockInTime: shift.clockInTime,
+      },
+    });
+
+    return shift;
+  }
+}
+```
+
+### WebSocket Events
+
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `subscribe:active-workers` | Client → Server | Subscribe to active worker updates |
+| `active-workers:update` | Server → Client | Broadcast worker clock-in/out |
+| `subscribe:area-status` | Client → Server | Subscribe to area status |
+| `area-status:update` | Server → Client | Broadcast area status changes |
+| `new-report` | Server → Client | Broadcast new work report |
+| `new-task` | Server → Client | Broadcast new task assignment |
+| `maintenance-due` | Server → Client | Alert maintenance due soon |
+
+---
+
+## Deployment Checklist
+
+### Pre-Deployment
+
+- [ ] All unit tests passing (>80% coverage)
+- [ ] Integration tests for audit logging passing
+- [ ] Test email delivery in staging
+- [ ] Test scheduled reports execute correctly
+- [ ] Test bulk import with sample CSV (1000+ rows)
+- [ ] Test WebSocket connections (100+ concurrent)
+- [ ] Database indexes for audit logs created
+- [ ] SMTP credentials verified
+
+### Environment Variables
+
+```env
+# Email Configuration (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=sekar@dlh.surabaya.go.id
+SMTP_PASS=your-app-password
+SMTP_FROM="SEKAR System <sekar@dlh.surabaya.go.id>"
+
+# Report Scheduler
+ENABLE_SCHEDULED_REPORTS=true
+SCHEDULER_TIMEZONE=Asia/Jakarta
+REPORT_ERROR_EMAIL=admin@dlh.surabaya.go.id
+
+# Audit Logging
+AUDIT_LOG_RETENTION_DAYS=365
+AUDIT_LOG_EXPORT_BUCKET=sekar-audit-logs
+
+# WebSocket
+WEB_DASHBOARD_URL=https://dashboard.sekar.dlh.surabaya.go.id
+WEBSOCKET_PORT=3001
+WEBSOCKET_PATH=/realtime
+```
+
+### Deployment Steps
+
+1. **Database Migration**
+   ```bash
+   npm run migration:run
+   # Creates audit_logs, system_settings, scheduled_reports tables
+   ```
+
+2. **Seed System Settings**
+   ```bash
+   npm run seed:system-settings
+   # Default settings: maintenance windows, notification preferences
+   ```
+
+3. **Verify Endpoints**
+   ```bash
+   curl http://localhost:3000/api/audit-logs
+   curl http://localhost:3000/api/settings
+   curl http://localhost:3000/api/reports/scheduled
+   ```
+
+4. **Test Email Delivery**
+   ```bash
+   curl -X POST http://localhost:3000/api/test/send-email \
+     -H "Authorization: Bearer $ADMIN_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "to": "admin@dlh.surabaya.go.id",
+       "subject": "SEKAR Test Email",
+       "body": "Testing email service"
+     }'
+   ```
+
+5. **Test Bulk Import**
+   ```bash
+   curl -X POST http://localhost:3000/api/users/bulk-import \
+     -H "Authorization: Bearer $ADMIN_TOKEN" \
+     -F "file=@users-import.csv"
+   ```
+
+6. **Test WebSocket Connection**
+   ```bash
+   # Use wscat or similar tool
+   wscat -c ws://localhost:3001/realtime
+   > {"event": "subscribe:active-workers"}
+   ```
+
+### Post-Deployment
+
+- [ ] Verify audit logs being created for admin actions
+- [ ] Verify scheduled reports execute at correct times
+- [ ] Monitor email delivery rates
+- [ ] Test bulk operations with large datasets
+- [ ] Monitor WebSocket connection stability
+- [ ] Set up CloudWatch alarms for failures
+- [ ] Review audit log retention policy
+
+### Rollback Plan
+
+1. Disable scheduler: Set `ENABLE_SCHEDULED_REPORTS=false`
+2. Disable WebSocket: Stop WebSocket server
+3. Revert database migration: `npm run migration:revert`
+4. Redeploy previous version
+5. Restore backed-up audit logs if needed
+
+---
+
+## Bulk Operation Examples
+
+### Bulk User Import
+
+**CSV Format:**
+```csv
+username,full_name,role,password
+worker4,Pekerja Empat,worker,worker123
+worker5,Pekerja Lima,worker,worker123
+supervisor2,Supervisor Dua,supervisor,supervisor123
+```
+
+**Request:**
+```http
+POST /api/users/bulk-import
+Authorization: Bearer {admin_token}
+Content-Type: multipart/form-data
+
+file: users.csv
+```
+
+**Response:**
+```json
+{
+  "total": 3,
+  "successful": 2,
+  "failed": 1,
+  "errors": [
+    {
+      "row": 3,
+      "field": "username",
+      "message": "Username 'worker4' already exists"
+    }
+  ],
+  "created_user_ids": [
+    "uuid-worker5",
+    "uuid-supervisor2"
+  ]
+}
+```
+
+### Bulk User Export
+
+**Request:**
+```http
+GET /api/users/export?format=csv&role=worker
+Authorization: Bearer {admin_token}
+```
+
+**Response Headers:**
+```
+Content-Type: text/csv
+Content-Disposition: attachment; filename="users-export-2026-01-21.csv"
+```
+
+**Response Body (CSV):**
+```csv
+id,username,full_name,role,is_active,created_at
+uuid-1,worker1,Pekerja Satu,worker,true,2026-01-09T10:00:00.000Z
+uuid-2,worker2,Pekerja Dua,worker,true,2026-01-10T10:00:00.000Z
+```
+
+### Bulk Delete
+
+**Request:**
+```http
+DELETE /api/users/bulk-delete
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "user_ids": [
+    "uuid-worker4",
+    "uuid-worker5"
+  ],
+  "reason": "Accounts no longer needed"
+}
+```
+
+**Response:**
+```json
+{
+  "deleted": 2,
+  "failed": 0,
+  "audit_log_id": "audit-uuid"
+}
+```
+
+---
+
+## API Response Examples
+
+### GET /audit-logs
+
+**Request:**
+```http
+GET /api/audit-logs?user_id=admin-uuid&action=delete&from_date=2026-01-01&to_date=2026-01-31&page=1&limit=20
+Authorization: Bearer {admin_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "audit-uuid",
+      "user": {
+        "id": "admin-uuid",
+        "fullName": "Admin Satu"
+      },
+      "action": "delete",
+      "entityType": "users",
+      "entityId": "user-uuid",
+      "entityName": "Worker Ten",
+      "oldValue": {
+        "username": "worker10",
+        "full_name": "Worker Ten",
+        "is_active": true
+      },
+      "newValue": {
+        "is_active": false,
+        "deleted_at": "2026-01-20T10:00:00.000Z"
+      },
+      "changedFields": ["is_active", "deleted_at"],
+      "ipAddress": "192.168.1.100",
+      "userAgent": "Mozilla/5.0...",
+      "createdAt": "2026-01-20T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 543,
+    "totalPages": 28
+  }
+}
+```
+
+### GET /settings
+
+**Response (200 OK):**
+```json
+{
+  "settings": [
+    {
+      "key": "maintenance_window_start",
+      "value": "22:00",
+      "description": "Daily maintenance window start time (HH:MM)",
+      "valueType": "string",
+      "category": "system",
+      "updatedBy": {
+        "id": "admin-uuid",
+        "fullName": "Admin Satu"
+      },
+      "updatedAt": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "key": "max_shift_hours",
+      "value": "12",
+      "description": "Maximum shift duration in hours",
+      "valueType": "number",
+      "category": "shifts",
+      "updatedAt": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "key": "enable_notifications",
+      "value": "true",
+      "description": "Enable email notifications",
+      "valueType": "boolean",
+      "category": "notifications",
+      "updatedAt": "2026-01-01T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+### POST /reports/scheduled (Create Scheduled Report)
+
+**Request:**
+```json
+{
+  "name": "Weekly Attendance Report",
+  "reportType": "attendance",
+  "outputFormat": "pdf",
+  "scheduleCron": "0 8 * * MON",
+  "scheduleDescription": "Every Monday at 8 AM",
+  "emailRecipients": [
+    "supervisor@dlh.surabaya.go.id",
+    "admin@dlh.surabaya.go.id"
+  ],
+  "emailSubject": "SEKAR Weekly Attendance - Week {{week}}",
+  "filters": {
+    "date_range": "last_7_days"
+  }
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "schedule-uuid",
+  "name": "Weekly Attendance Report",
+  "reportType": "attendance",
+  "outputFormat": "pdf",
+  "scheduleCron": "0 8 * * MON",
+  "scheduleDescription": "Every Monday at 8 AM",
+  "emailRecipients": [
+    "supervisor@dlh.surabaya.go.id",
+    "admin@dlh.surabaya.go.id"
+  ],
+  "emailSubject": "SEKAR Weekly Attendance - Week {{week}}",
+  "isActive": true,
+  "nextRunAt": "2026-01-27T08:00:00.000Z",
+  "createdBy": {
+    "id": "admin-uuid",
+    "fullName": "Admin Satu"
+  },
+  "createdAt": "2026-01-21T10:00:00.000Z"
+}
+```
+
+---
+
+**Last Updated:** 2026-01-21
