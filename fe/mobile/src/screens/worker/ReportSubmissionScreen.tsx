@@ -17,14 +17,15 @@ import {
   FlatList,
   TextInput as RNTextInput,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DeviceInfo from 'react-native-device-info';
-import { ErrorBanner } from '../../components/common';
+import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard, NBTextInput } from '../../components/nb';
-import { theme } from '../../constants/theme';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { createReport } from '../../services/api/reportsApi';
@@ -96,6 +97,8 @@ export function ReportSubmissionScreen(): JSX.Element {
   const formRef = useRef<FormState>(form);
   // Use ref to store latest saveDraft function to prevent stale closures
   const saveDraftRef = useRef<() => Promise<void>>();
+  // Photo list ref for auto-scroll
+  const photoListRef = useRef<FlatList>(null);
 
   // Update form ref whenever form changes
   useEffect(() => {
@@ -240,6 +243,11 @@ export function ReportSubmissionScreen(): JSX.Element {
           photos: [...prev.photos, photo],
         }));
         setErrors((prev) => ({ ...prev, photos: undefined }));
+
+        // Auto-scroll to the right to show the newly added photo
+        setTimeout(() => {
+          photoListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       }
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Gagal mengambil foto');
@@ -433,10 +441,20 @@ export function ReportSubmissionScreen(): JSX.Element {
             await mediaService.deletePhoto(photo.uri);
           }
 
+          // Reset photo list scroll position to left
+          setTimeout(() => {
+            photoListRef.current?.scrollToOffset({ offset: 0, animated: false });
+          }, 100);
+
+          // Refresh GPS location for next report
+          getCurrentLocation();
+
           Alert.alert('Berhasil', 'Laporan berhasil dikirim!', [
             {
               text: 'OK',
-              onPress: () => navigation.goBack(),
+              onPress: () => {
+                navigation.navigate('TasksReports', { activeTab: 'reports' });
+              },
             },
           ]);
         }
@@ -455,13 +473,23 @@ export function ReportSubmissionScreen(): JSX.Element {
           location: null,
         });
 
+        // Reset photo list scroll position to left
+        setTimeout(() => {
+          photoListRef.current?.scrollToOffset({ offset: 0, animated: false });
+        }, 100);
+
+        // Refresh GPS location for next report
+        getCurrentLocation();
+
         Alert.alert(
           'Mode Offline',
           'Laporan disimpan dan akan dikirim saat online.',
           [
             {
               text: 'OK',
-              onPress: () => navigation.goBack(),
+              onPress: () => {
+                navigation.navigate('TasksReports', { activeTab: 'reports' });
+              },
             },
           ]
         );
@@ -517,6 +545,8 @@ export function ReportSubmissionScreen(): JSX.Element {
       <TouchableOpacity
         style={styles.addPhotoButton}
         onPress={handleAddPhotoFromCamera}
+        testID="add-photo-button"
+        accessibilityLabel="Tambah foto"
       >
         <Text style={styles.addPhotoIcon}>+</Text>
         <Text style={styles.addPhotoText}>Foto</Text>
@@ -525,22 +555,26 @@ export function ReportSubmissionScreen(): JSX.Element {
   }, [form.photos.length, handleAddPhotoFromCamera]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Buat Laporan Kerja</Text>
-        </View>
-
-        {/* Error banner */}
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Error banner */}
         {reportError && (
-          <ErrorBanner
+          <NBAlert
+            variant="danger"
             message={reportError}
+            dismissible
             onDismiss={() => dispatch(setError(''))}
+            testID="report-submission-error"
           />
         )}
 
@@ -555,10 +589,12 @@ export function ReportSubmissionScreen(): JSX.Element {
 
         {/* Photos section */}
         <NBCard variant="elevated" style={styles.section}>
-          <Text style={styles.sectionTitle}>📸 Foto/Video (Maks 5)</Text>
+          <Text style={styles.sectionTitle}>📸 FOTO LAPORAN</Text>
+          <Text style={styles.sectionSubtitle}>Tambahkan 1-5 foto pekerjaan yang dilakukan</Text>
           {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
 
           <FlatList
+            ref={photoListRef}
             data={form.photos}
             renderItem={renderPhotoItem}
             keyExtractor={(item) => item.id}
@@ -568,24 +604,15 @@ export function ReportSubmissionScreen(): JSX.Element {
             style={styles.photoList}
           />
 
-          {form.photos.length === 0 && (
-            <TouchableOpacity
-              style={styles.emptyPhotoButton}
-              onPress={handleAddPhotoFromCamera}
-            >
-              <Text style={styles.emptyPhotoIcon}>📷</Text>
-              <Text style={styles.emptyPhotoText}>Ambil Foto</Text>
-            </TouchableOpacity>
-          )}
         </NBCard>
 
         {/* Description */}
-        <NBCard variant="elevated" style={styles.section}>
+        <View style={styles.descriptionSection}>
           <NBTextInput
-            label="📝 Deskripsi Pekerjaan"
-            placeholder="Jelaskan pekerjaan yang telah dilakukan..."
+            label="📝 DESKRIPSI PEKERJAAN"
+            placeholder="Contoh: Menyiram tanaman di area A, memangkas rumput liar..."
             multiline
-            numberOfLines={4}
+            numberOfLines={6}
             maxLength={500}
             value={form.description}
             onChangeText={(text) => {
@@ -594,12 +621,14 @@ export function ReportSubmissionScreen(): JSX.Element {
             }}
             error={errors.description}
             hint={`${form.description.length}/500 karakter`}
+            style={styles.descriptionInput}
+            textAlignVertical="top"
           />
-        </NBCard>
+        </View>
 
         {/* Work type */}
         <NBCard variant="elevated" style={styles.section}>
-          <Text style={styles.sectionTitle}>🏷 Jenis Pekerjaan</Text>
+          <Text style={styles.sectionTitle}>🏷️ JENIS PEKERJAAN</Text>
           {errors.workType && <Text style={styles.errorText}>{errors.workType}</Text>}
 
           {WORK_TYPES.map((type) => (
@@ -629,12 +658,12 @@ export function ReportSubmissionScreen(): JSX.Element {
 
         {/* GPS location */}
         <NBCard variant="elevated" style={styles.section}>
-          <Text style={styles.sectionTitle}>📍 Lokasi</Text>
+          <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
           {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
 
           {isLoadingLocation ? (
             <View style={styles.locationLoading}>
-              <ActivityIndicator color={theme.colors.primary} />
+              <ActivityIndicator color={nbColors.primary} />
               <Text style={styles.locationLoadingText}>Mendapatkan lokasi...</Text>
             </View>
           ) : form.location ? (
@@ -651,7 +680,6 @@ export function ReportSubmissionScreen(): JSX.Element {
               title="Dapatkan Lokasi GPS"
               onPress={getCurrentLocation}
               variant="secondary"
-              fullWidth
             />
           )}
         </NBCard>
@@ -662,192 +690,215 @@ export function ReportSubmissionScreen(): JSX.Element {
           onPress={handleSubmit}
           loading={isSubmitting}
           disabled={isSubmitting}
-          fullWidth
-          style={styles.submitButton}
         />
       </ScrollView>
     </SafeAreaView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: 'transparent', // Let NBBackgroundPattern handle background
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: theme.spacing.md,
-    paddingBottom: theme.spacing.xl,
+    padding: nbSpacing.md,                   // 16px - MATCH Home screen exactly
+    paddingBottom: nbSpacing.xl * 2,         // 48px (comfortable bottom space)
+    flexGrow: 1,
+    justifyContent: 'center',                // Centers content with title removed
   },
   header: {
-    marginBottom: theme.spacing.md,
+    marginBottom: nbSpacing.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.textPrimary,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.black,
   },
   section: {
-    marginBottom: theme.spacing.md,
+    marginBottom: nbSpacing.md,              // Match Home screen card margin (16px)
+    padding: 12,                             // Match Home screen card padding (12px - compact & consistent)
+  },
+  descriptionSection: {
+    marginBottom: nbSpacing.md,              // Same margin as other sections (16px)
+    // NO padding - NBTextInput has its own internal padding
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
+    fontSize: nbTypography.fontSize.lg,      // base → lg (16px → 20px)
+    fontWeight: nbTypography.fontWeight.extrabold,  // semibold → extrabold
+    color: nbColors.black,
+    marginBottom: nbSpacing.md,              // sm → md (12px)
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',              // NB loves caps for hierarchy
+  },
+  sectionSubtitle: {
+    fontSize: nbTypography.fontSize.sm,      // 14px
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
+    marginBottom: nbSpacing.md,
+    marginTop: -nbSpacing.xs,                // Pull up closer to title
+  },
+  descriptionInput: {
+    minHeight: 140,                          // Increased from 4 lines to 6 lines (better for longer descriptions)
   },
   offlineWarning: {
-    backgroundColor: theme.colors.warning + '20',
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.warning,
-    marginBottom: theme.spacing.md,
+    backgroundColor: nbColors.warningLight,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.warning,
+    marginBottom: nbSpacing.md,
+    ...nbShadows.sm,
   },
   offlineWarningText: {
-    color: theme.colors.warning,
-    fontSize: 14,
+    color: nbColors.warning,
+    fontSize: nbTypography.fontSize.sm,
   },
   photoList: {
-    marginTop: theme.spacing.sm,
+    marginTop: nbSpacing.sm,
   },
   photoItem: {
-    marginRight: theme.spacing.sm,
+    marginRight: nbSpacing.sm,
     position: 'relative',
   },
   photoThumbnail: {
     width: 160, // Increased from 120 to 160dp for better visibility outdoors
     height: 160, // Increased from 120 to 160dp for better visibility outdoors
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderRadius: 0, // Sharp corners for NB
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
   },
   removePhotoButton: {
     position: 'absolute',
     top: -12,
     right: -12,
-    backgroundColor: theme.colors.error,
+    backgroundColor: nbColors.danger,
     width: 48, // Increased from 24 to 48dp for glove-friendly touch target
     height: 48, // Increased from 24 to 48dp for glove-friendly touch target
     borderRadius: 24,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     alignItems: 'center',
     justifyContent: 'center',
-    // Add shadow for better visibility outdoors
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
+    ...nbShadows.sm, // Hard-edge shadow for better visibility outdoors
   },
   removePhotoText: {
-    color: theme.colors.white,
+    color: nbColors.white,
     fontSize: 24, // Increased from 16 to 24 for better visibility
-    fontWeight: 'bold',
+    fontWeight: nbTypography.fontWeight.bold,
   },
   addPhotoButton: {
     width: 160, // Matched to thumbnail size
     height: 160, // Matched to thumbnail size
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderRadius: 0, // Sharp corners for NB
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: nbColors.gray[50],
   },
   addPhotoIcon: {
     fontSize: 32,
-    color: theme.colors.textSecondary,
+    color: nbColors.gray[600],
   },
   addPhotoText: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    marginTop: theme.spacing.xs,
+    color: nbColors.gray[600],
+    fontSize: nbTypography.fontSize.xs,
+    marginTop: nbSpacing.xs,
   },
   emptyPhotoButton: {
     height: 120,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderRadius: 0, // Sharp corners for NB
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: nbColors.gray[50],
   },
   emptyPhotoIcon: {
     fontSize: 48,
   },
   emptyPhotoText: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
-    marginTop: theme.spacing.sm,
+    color: nbColors.gray[600],
+    fontSize: nbTypography.fontSize.sm,
+    marginTop: nbSpacing.sm,
   },
   descriptionInput: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    fontSize: 16,
-    color: theme.colors.textPrimary,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    borderRadius: 0, // Sharp corners for NB
+    padding: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.black,
     minHeight: 100,
   },
   characterCounter: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: theme.spacing.xs,
+    marginTop: nbSpacing.xs,
   },
   characterCountText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray[500],
   },
   workTypeOption: {
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: theme.spacing.sm,
+    padding: nbSpacing.md,
+    borderRadius: 0, // Sharp corners for NB
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    marginBottom: nbSpacing.sm,
+    backgroundColor: nbColors.white,
   },
   workTypeOptionSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary + '10',
+    borderColor: nbColors.primary,
+    backgroundColor: nbColors.primary + '10',
+    ...nbShadows.sm, // Hard-edge shadow for selected state
   },
   workTypeOptionText: {
-    fontSize: 16,
-    color: theme.colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.black,
+    textAlign: 'left',
   },
   workTypeOptionTextSelected: {
-    color: theme.colors.primary,
-    fontWeight: '600',
+    color: nbColors.primary,
+    fontWeight: nbTypography.fontWeight.semibold,
   },
   locationLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.md,
+    padding: nbSpacing.md,
   },
   locationLoadingText: {
-    marginLeft: theme.spacing.sm,
-    color: theme.colors.textSecondary,
+    marginLeft: nbSpacing.sm,
+    color: nbColors.gray[600],
   },
   locationInfo: {
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
+    padding: nbSpacing.lg,                   // md → lg (20px for better readability)
+    backgroundColor: nbColors.accentSky + '15', // Cyan tint background (15% opacity)
+    borderRadius: 0,                         // Sharp corners for NB
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,                         // Hard-edge shadow for emphasis
   },
   locationText: {
-    fontSize: 16,
-    color: theme.colors.textPrimary,
-    fontWeight: '500',
+    fontSize: nbTypography.fontSize.lg,      // base → lg (18px for better visibility)
+    color: nbColors.black,
+    fontWeight: nbTypography.fontWeight.bold, // medium → bold
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', // Monospace for coordinates
   },
   locationAccuracy: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+    fontSize: nbTypography.fontSize.base,    // sm → base (16px for better visibility)
+    color: nbColors.gray[700],               // Darker for better contrast
+    fontWeight: nbTypography.fontWeight.medium,
+    marginTop: nbSpacing.sm,                 // xs → sm (more separation)
   },
   errorText: {
-    color: theme.colors.error,
-    fontSize: 14,
-    marginTop: theme.spacing.xs,
-  },
-  submitButton: {
-    marginTop: theme.spacing.md,
+    color: nbColors.danger,
+    fontSize: nbTypography.fontSize.sm,
+    marginTop: nbSpacing.xs,
   },
 });

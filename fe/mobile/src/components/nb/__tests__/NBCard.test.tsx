@@ -88,6 +88,41 @@ describe('NBCard', () => {
     });
   });
 
+  describe('variants', () => {
+    it('renders default variant', () => {
+      const { getByTestId } = render(
+        <NBCard testID="default-card">
+          <Text>Default card</Text>
+        </NBCard>,
+      );
+      expect(getByTestId('default-card')).toBeTruthy();
+    });
+
+    it('renders elevated variant', () => {
+      const { getByTestId } = render(
+        <NBCard variant="elevated" testID="elevated-card">
+          <Text>Elevated card</Text>
+        </NBCard>,
+      );
+      expect(getByTestId('elevated-card')).toBeTruthy();
+    });
+
+    it('renders interactive elevated card', () => {
+      const { getByTestId } = render(
+        <NBCard
+          variant="elevated"
+          interactive
+          onPress={mockOnPress}
+          testID="elevated-interactive-card"
+        >
+          <Text>Elevated interactive</Text>
+        </NBCard>,
+      );
+      fireEvent.press(getByTestId('elevated-interactive-card'));
+      expect(mockOnPress).toHaveBeenCalled();
+    });
+  });
+
   describe('accessibility', () => {
     it('is accessible', () => {
       const { getByTestId } = render(

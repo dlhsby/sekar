@@ -5,9 +5,10 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Platform, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { WorkerTabParamList } from '../types/navigation.types';
-import { colors } from '../constants/theme';
+import { nbColors, nbBorders, nbShadows, nbTypography } from '../constants/nbTokens';
 import { WorkerHomeScreen } from '../screens/worker/WorkerHomeScreen';
 import { ClockInOutScreen } from '../screens/worker/ClockInOutScreen';
 import { ReportSubmissionScreen } from '../screens/worker/ReportSubmissionScreen';
@@ -17,6 +18,7 @@ import { ShiftHistoryScreen } from '../screens/worker/ShiftHistoryScreen';
 import { TaskDetailScreen } from '../screens/worker/TaskDetailScreen';
 import { TaskCompleteScreen } from '../screens/worker/TaskCompleteScreen';
 import ReportDetailScreen from '../screens/supervisor/ReportDetailScreen';
+import { WorkerHomeHeader } from '../components/navigation/WorkerHomeHeader';
 
 const Tab = createBottomTabNavigator<WorkerTabParamList>();
 
@@ -24,15 +26,40 @@ function WorkerNavigator(): React.JSX.Element {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray500,
+        tabBarActiveTintColor: nbColors.primary,
+        tabBarInactiveTintColor: nbColors.gray[600],
         headerShown: true,
+        headerStyle: {
+          height: 76, // Further reduced for proportional balance
+          backgroundColor: nbColors.white,
+          borderBottomWidth: nbBorders.thick, // Neo Brutalism border
+          borderBottomColor: nbColors.black,
+          // Hard-edge shadow for Neo Brutalism
+          ...nbShadows.md,
+          elevation: 0, // Remove default Android elevation
+        },
+        headerTitleStyle: {
+          fontSize: nbTypography.fontSize['2xl'],
+          fontWeight: nbTypography.fontWeight.bold,
+          color: nbColors.black,
+        },
+        headerTitleAlign: 'left' as const, // Align custom component to left
+        headerTitleContainerStyle: {
+          width: '100%', // Full width for custom component
+          left: 0,
+          right: 0,
+        },
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: styles.tabBarItem,
+        tabBarIconStyle: styles.tabBarIcon,
       }}>
       <Tab.Screen
         name="WorkerHome"
         component={WorkerHomeScreen}
         options={{
-          title: 'Home',
+          headerTitle: () => <WorkerHomeHeader />,
+          tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home" color={color} size={size} />
           ),
@@ -42,7 +69,8 @@ function WorkerNavigator(): React.JSX.Element {
         name="ClockInOut"
         component={ClockInOutScreen}
         options={{
-          title: 'Absensi',
+          headerTitle: () => <WorkerHomeHeader />,
+          tabBarLabel: 'Absensi',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="clock-outline"
@@ -55,8 +83,17 @@ function WorkerNavigator(): React.JSX.Element {
       <Tab.Screen
         name="Report"
         component={ReportSubmissionScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'Buat Laporan',
+          headerLeft: () => (
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={28}
+              color={nbColors.black}
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 16 }}
+            />
+          ),
           // Hidden from tab bar - accessed via buttons on Home or ReportsList
           tabBarButton: () => null,
           tabBarIcon: ({ color, size }) => (
@@ -66,13 +103,14 @@ function WorkerNavigator(): React.JSX.Element {
               size={size}
             />
           ),
-        }}
+        })}
       />
       <Tab.Screen
         name="TasksReports"
         component={TasksReportsScreen}
         options={{
-          title: 'Tugas & Laporan',
+          headerTitle: () => <WorkerHomeHeader />,
+          tabBarLabel: 'Tugas & Laporan',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="clipboard-text-multiple"
@@ -86,7 +124,8 @@ function WorkerNavigator(): React.JSX.Element {
         name="Profile"
         component={ProfileScreen}
         options={{
-          title: 'Profil',
+          headerTitle: () => <WorkerHomeHeader />,
+          tabBarLabel: 'Profil',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" color={color} size={size} />
           ),
@@ -159,6 +198,32 @@ function WorkerNavigator(): React.JSX.Element {
     </Tab.Navigator>
   );
 }
+
+// Neo Brutalism Tab Bar Styling
+const styles = StyleSheet.create({
+  tabBar: {
+    height: 65, // Optimal height for icons + labels
+    backgroundColor: nbColors.white, // White - matches top navigation
+    borderTopWidth: nbBorders.thick, // 4px thick border - Neo Brutalism
+    borderTopColor: nbColors.black,
+    // Hard-edge shadow for Neo Brutalism
+    ...nbShadows.md,
+    paddingBottom: Platform.OS === 'ios' ? 4 : 4,
+    paddingTop: 6,
+  },
+  tabBarLabel: {
+    fontSize: nbTypography.fontSize.xs, // 12px
+    fontWeight: nbTypography.fontWeight.semibold, // Bold labels
+    marginTop: -2,
+    marginBottom: 2,
+  },
+  tabBarItem: {
+    paddingVertical: 2,
+  },
+  tabBarIcon: {
+    marginTop: 4,
+  },
+});
 
 export default WorkerNavigator;
 

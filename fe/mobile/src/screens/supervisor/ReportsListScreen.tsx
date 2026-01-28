@@ -15,12 +15,19 @@ import {
   Modal,
   Platform,
 } from 'react-native';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
-import { NBButton } from '../../components/nb';
+import {
+  nbColors,
+  nbTypography,
+  nbSpacing,
+  nbBorderRadius,
+  nbShadows,
+  nbBorders,
+} from '../../constants/nbTokens';
+import { NBButton, NBCard } from '../../components/nb';
 import { formatDate } from '../../utils/dateUtils';
 import { getReports } from '../../services/api/supervisorApi';
 import ReportCard, { type ReportCardData } from '../../components/supervisor/ReportCard';
-import ErrorBanner from '../../components/common/ErrorBanner';
+import { NBAlert } from '../../components/nb';
 import type { ReportsFilter } from '../../types/api.types';
 import type { SupervisorTabScreenProps } from '../../types/navigation.types';
 
@@ -202,7 +209,16 @@ function ReportsListScreen({
 
   return (
     <View style={styles.container}>
-      {error && <ErrorBanner message={error} onRetry={loadReports} />}
+      {error && (
+        <NBAlert
+          variant="danger"
+          title="Gagal Memuat Laporan"
+          message={error}
+          actionLabel="Coba Lagi"
+          onAction={loadReports}
+          testID="reports-list-error"
+        />
+      )}
 
       {renderHeader()}
 
@@ -215,15 +231,15 @@ function ReportsListScreen({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            colors={[nbColors.primary]}
+            tintColor={nbColors.primary}
           />
         }
         ListEmptyComponent={renderListEmpty}
         ListFooterComponent={
           loading && !refreshing ? (
             <View style={styles.loaderContainer}>
-              <ActivityIndicator size="small" color={colors.primary} />
+              <ActivityIndicator size="small" color={nbColors.primary} />
             </View>
           ) : null
         }
@@ -241,7 +257,7 @@ function ReportsListScreen({
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setShowFilterModal(false)}>
-          <View style={styles.modalContent}>
+          <NBCard style={styles.modalContent} testID="filter-modal-card">
             <Text style={styles.modalTitle}>Filter Jenis Laporan</Text>
             {REPORT_TYPE_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -273,7 +289,7 @@ function ReportsListScreen({
               style={styles.modalCloseButton}
               testID="close-modal-button"
             />
-          </View>
+          </NBCard>
         </TouchableOpacity>
       </Modal>
     </View>
@@ -283,134 +299,152 @@ function ReportsListScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: nbColors.gray[100],
   },
   filterBar: {
     flexDirection: 'row',
-    padding: spacing.md,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    padding: nbSpacing.md,
+    backgroundColor: nbColors.white,
+    borderBottomWidth: nbBorders.default,
+    borderBottomColor: nbColors.black,
   },
   filterButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.gray100,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    marginRight: spacing.sm,
+    backgroundColor: nbColors.gray[100],
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    borderRadius: nbBorderRadius.none,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
+    marginRight: nbSpacing.sm,
   },
   filterButtonText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
   },
   filterButtonIcon: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: nbColors.gray[500],
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.gray100,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
+    backgroundColor: nbColors.gray[100],
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    borderRadius: nbBorderRadius.none,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
   },
   dateButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: nbColors.primary,
+    borderColor: nbColors.black,
   },
   dateButtonText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
   },
   clearIcon: {
-    marginLeft: spacing.xs,
+    marginLeft: nbSpacing.xs,
     fontSize: 16,
-    color: colors.white,
+    color: nbColors.white,
   },
   listContent: {
-    paddingVertical: spacing.sm,
+    paddingVertical: nbSpacing.sm,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing['3xl'],
+    paddingVertical: nbSpacing['3xl'],
   },
   emptyText: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[500],
+    marginBottom: nbSpacing.xs,
   },
   emptySubtext: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textHint,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[400],
   },
   loaderContainer: {
-    paddingVertical: spacing.lg,
+    paddingVertical: nbSpacing.lg,
     alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.lg,
-    paddingHorizontal: spacing.md,
+    backgroundColor: nbColors.white,
+    borderTopLeftRadius: nbBorderRadius.none,
+    borderTopRightRadius: nbBorderRadius.none,
+    borderTopWidth: nbBorders.thick,
+    borderLeftWidth: nbBorders.default,
+    borderRightWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    paddingTop: nbSpacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? nbSpacing.xl : nbSpacing.lg,
+    paddingHorizontal: nbSpacing.md,
   },
   modalTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.md,
     textAlign: 'center',
   },
   modalOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.xs,
+    paddingVertical: nbSpacing.md,
+    paddingHorizontal: nbSpacing.md,
+    borderRadius: nbBorderRadius.none,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.gray[200],
+    marginBottom: nbSpacing.xs,
+    backgroundColor: nbColors.white,
   },
   modalOptionSelected: {
-    backgroundColor: colors.primaryLight + '20',
+    backgroundColor: nbColors.gray[50],
+    borderColor: nbColors.primary,
+    borderWidth: nbBorders.default,
   },
   modalOptionText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[700],
   },
   modalOptionTextSelected: {
-    color: colors.primary,
-    fontWeight: typography.fontWeight.semibold,
+    color: nbColors.primary,
+    fontWeight: nbTypography.fontWeight.bold,
   },
   checkmark: {
     fontSize: 20,
-    color: colors.primary,
+    color: nbColors.primary,
+    fontWeight: nbTypography.fontWeight.bold,
   },
   modalCloseButton: {
-    marginTop: spacing.md,
-    backgroundColor: colors.gray200,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    marginTop: nbSpacing.md,
+    backgroundColor: nbColors.gray[200],
+    paddingVertical: nbSpacing.md,
+    borderRadius: nbBorderRadius.none,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     alignItems: 'center',
+    ...nbShadows.sm,
   },
   modalCloseButtonText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.black,
+    fontWeight: nbTypography.fontWeight.bold,
   },
 });
 

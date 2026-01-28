@@ -12,6 +12,7 @@ import * as tasksApi from '../../../services/api/tasksApi';
 // Mock navigation
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
+const mockSetOptions = jest.fn();
 
 jest.mock('@react-navigation/native', () => {
   const actualNav = jest.requireActual('@react-navigation/native');
@@ -20,6 +21,7 @@ jest.mock('@react-navigation/native', () => {
     useNavigation: () => ({
       navigate: mockNavigate,
       goBack: mockGoBack,
+      setOptions: mockSetOptions,
     }),
     useRoute: () => ({
       params: { taskId: 'task-123' },
@@ -113,7 +115,8 @@ describe('TaskDetailScreen', () => {
 
     const { findByText } = renderWithNav(<TaskDetailScreen />);
 
-    expect(await findByText('Tugas tidak ditemukan')).toBeTruthy();
+    expect(await findByText('Tugas Tidak Ditemukan')).toBeTruthy();
+    expect(await findByText('Tugas yang Anda cari tidak ditemukan atau telah dihapus')).toBeTruthy();
   });
 
   it('navigates back when back button is pressed', async () => {

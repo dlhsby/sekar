@@ -24,6 +24,7 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
+  nbBorderRadius,
   nbTypography,
   nbTouchTarget,
 } from '../../constants/nbTokens';
@@ -99,8 +100,28 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
     const getBorderColor = () => {
       if (error) {return nbColors.danger;}
       if (success) {return nbColors.success;}
-      if (isFocused) {return nbColors.primary;}
+      if (isFocused) {return nbColors.accentGrass;} // Bright grass green for visibility
       return nbColors.black;
+    };
+
+    // Determine border width based on state (thicker when focused)
+    const getBorderWidth = () => {
+      if (isFocused) {return nbBorders.thick;} // 4px when focused
+      return nbBorders.default; // 3px default
+    };
+
+    // Custom shadow for focused state (colored shadow for NB impact)
+    const getFocusedShadow = () => {
+      if (isFocused && !isDisabled) {
+        return {
+          shadowColor: nbColors.accentGrass, // Bright green shadow
+          shadowOffset: { width: 6, height: 6 },
+          shadowOpacity: 1,
+          shadowRadius: 0,
+          elevation: 6,
+        };
+      }
+      return {};
     };
 
     const isDisabled = editable === false;
@@ -123,10 +144,27 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
           onBlur={handleBlur}
           placeholderTextColor={nbColors.gray[400]}
           testID={testID ? `${testID}-input` : undefined}
+          accessibilityLabel={
+            textInputProps.accessibilityLabel ||
+            label ||
+            textInputProps.placeholder
+          }
+          accessibilityHint={
+            textInputProps.accessibilityHint ||
+            (!error ? helperText : undefined)
+          }
+          accessibilityState={{
+            disabled: isDisabled,
+            ...textInputProps.accessibilityState,
+          }}
           style={[
             styles.input,
-            !isDisabled && nbShadows.sm,
-            { borderColor: getBorderColor() },
+            !isDisabled && !isFocused && nbShadows.sm, // Default shadow when not focused
+            getFocusedShadow(), // Colored shadow when focused
+            {
+              borderColor: getBorderColor(),
+              borderWidth: getBorderWidth(),
+            },
             isDisabled && styles.disabled,
             inputStyle,
           ]}
@@ -169,8 +207,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
-    borderColor: nbColors.black,
+    // borderWidth and borderColor now dynamic (see getBorderWidth/getBorderColor)
+    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.regular,
     color: nbColors.black,

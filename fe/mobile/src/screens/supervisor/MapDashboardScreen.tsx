@@ -17,7 +17,14 @@ import {
   InteractionManager,
 } from 'react-native';
 import MapView, { Circle, PROVIDER_GOOGLE } from 'react-native-maps';
-import { colors, typography, spacing, borderRadius, shadows, touchTarget } from '../../constants/theme';
+import {
+  nbColors,
+  nbTypography,
+  nbSpacing,
+  nbShadows,
+  nbBorders,
+  nbTouchTarget,
+} from '../../constants/nbTokens';
 import { NBButton, NBCard } from '../../components/nb';
 import { WorkerMarker } from '../../components/supervisor/WorkerMarker';
 import { WorkerInfoCard } from '../../components/supervisor/WorkerInfoCard';
@@ -366,7 +373,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   if (loading || !mapReady) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={nbColors.primary} />
         <Text style={styles.loadingText}>Memuat peta...</Text>
       </View>
     );
@@ -407,7 +414,7 @@ export function MapDashboardScreen(): React.JSX.Element {
             key={circle.key}
             center={circle.center}
             radius={circle.radius}
-            strokeColor={colors.primary}
+            strokeColor={nbColors.primary}
             strokeWidth={2}
             fillColor="rgba(46, 125, 50, 0.1)"
           />
@@ -454,15 +461,15 @@ export function MapDashboardScreen(): React.JSX.Element {
           {/* Status row */}
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+              <View style={[styles.statusDot, { backgroundColor: nbColors.success }]} />
               <Text style={styles.summaryText}>{statusSummary.active}</Text>
             </View>
             <View style={styles.summaryItem}>
-              <View style={[styles.statusDot, { backgroundColor: colors.warning }]} />
+              <View style={[styles.statusDot, { backgroundColor: nbColors.warning }]} />
               <Text style={styles.summaryText}>{statusSummary.warning}</Text>
             </View>
             <View style={styles.summaryItem}>
-              <View style={[styles.statusDot, { backgroundColor: colors.error }]} />
+              <View style={[styles.statusDot, { backgroundColor: nbColors.danger }]} />
               <Text style={styles.summaryText}>{statusSummary.outside}</Text>
             </View>
             <View style={styles.summarySeparator} />
@@ -471,11 +478,11 @@ export function MapDashboardScreen(): React.JSX.Element {
           {/* Role breakdown row (Phase 2) */}
           <View style={styles.roleRow}>
             <View style={styles.roleItem}>
-              <MaterialCommunityIcons name="account-hard-hat" size={16} color={colors.primary} />
+              <MaterialCommunityIcons name="account-hard-hat" size={16} color={nbColors.primary} />
               <Text style={styles.roleText}>Satgas: {roleCounts.workers}</Text>
             </View>
             <View style={styles.roleItem}>
-              <MaterialCommunityIcons name="shield-account" size={16} color={colors.secondaryDark} />
+              <MaterialCommunityIcons name="shield-account" size={16} color={nbColors.navy} />
               <Text style={styles.roleText}>Linmas: {roleCounts.linmas}</Text>
             </View>
           </View>
@@ -524,8 +531,8 @@ export function MapDashboardScreen(): React.JSX.Element {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
+              colors={[nbColors.primary]}
+              tintColor={nbColors.primary}
             />
           }
         >
@@ -536,13 +543,17 @@ export function MapDashboardScreen(): React.JSX.Element {
           ) : (
             filteredWorkers.map(worker => {
               const status = calculateWorkerStatus(worker, areas);
-              const statusColor =
-                status === 'active' ? colors.success :
-                status === 'warning' ? colors.warning :
-                colors.error;
+              let statusColor: string;
+              if (status === 'active') {
+                statusColor = nbColors.success;
+              } else if (status === 'warning') {
+                statusColor = nbColors.warning;
+              } else {
+                statusColor = nbColors.danger;
+              }
               const isLinmas = worker.role === 'Linmas';
               const roleIcon = isLinmas ? 'shield-account' : 'account-hard-hat';
-              const roleColor = isLinmas ? colors.secondaryDark : colors.primary;
+              const roleColor = isLinmas ? nbColors.navy : nbColors.primary;
 
               return (
                 <TouchableOpacity
@@ -580,52 +591,56 @@ export function MapDashboardScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: nbColors.gray[50],
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: spacing.lg,
+    backgroundColor: nbColors.gray[50],
+    padding: nbSpacing.lg,
   },
   map: {
     flex: 1,
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[500],
   },
   errorText: {
-    fontSize: typography.fontSize.base,
-    color: colors.error,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.danger,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: nbSpacing.md,
   },
   retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    backgroundColor: nbColors.primary,
+    paddingHorizontal: nbSpacing.lg,
+    paddingVertical: nbSpacing.md,
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
   },
   retryButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.white,
   },
   topControls: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 20,
-    left: spacing.md,
-    right: spacing.md,
+    left: nbSpacing.md,
+    right: nbSpacing.md,
   },
   summaryCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...shadows.md,
+    backgroundColor: nbColors.white,
+    borderRadius: 0,
+    padding: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.md,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -634,122 +649,128 @@ const styles = StyleSheet.create({
   summaryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: nbSpacing.md,
   },
   statusDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
-    marginRight: spacing.xs,
+    borderRadius: 6, // Keep circular for status dots
+    marginRight: nbSpacing.xs,
   },
   summaryText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[700],
   },
   summarySeparator: {
     flex: 1,
   },
   summaryTotal: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[700],
   },
   roleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.gray200,
+    marginTop: nbSpacing.sm,
+    paddingTop: nbSpacing.sm,
+    borderTopWidth: nbBorders.thin,
+    borderTopColor: nbColors.gray[300],
   },
   roleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: spacing.lg,
+    marginRight: nbSpacing.lg,
   },
   roleText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginLeft: spacing.xs,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[500],
+    marginLeft: nbSpacing.xs,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: nbSpacing.sm,
   },
   actionButton: {
     flex: 1,
-    backgroundColor: colors.white,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
+    backgroundColor: nbColors.white,
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    borderRadius: 0,
     alignItems: 'center',
-    minHeight: touchTarget.minHeight,
+    minHeight: nbTouchTarget.minHeight,
     justifyContent: 'center',
-    ...shadows.sm,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   actionButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.primary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.primary,
   },
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.lg,
-    borderTopRightRadius: borderRadius.lg,
-    ...shadows.lg,
+    backgroundColor: nbColors.white,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderTopWidth: nbBorders.default,
+    borderTopColor: nbColors.black,
+    ...nbShadows.lg,
   },
   workerList: {
     maxHeight: 100,
   },
   workerListContent: {
-    padding: spacing.md,
-    gap: spacing.sm,
+    padding: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
   workerListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.gray100,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    marginRight: spacing.sm,
+    backgroundColor: nbColors.gray[100],
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    borderRadius: 0,
+    marginRight: nbSpacing.sm,
     minWidth: 150,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
   },
   workerStatusDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
-    marginRight: spacing.xs,
+    borderRadius: 5, // Keep circular for status dots
+    marginRight: nbSpacing.xs,
   },
   workerRoleIcon: {
-    marginRight: spacing.sm,
+    marginRight: nbSpacing.sm,
   },
   workerListItemContent: {
     flex: 1,
   },
   workerListName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[700],
     marginBottom: 2,
   },
   workerListArea: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[500],
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    paddingVertical: nbSpacing.lg,
   },
   emptyStateText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[500],
   },
 });

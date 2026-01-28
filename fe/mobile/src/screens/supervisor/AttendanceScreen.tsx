@@ -12,12 +12,17 @@ import {
   SectionList,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
-import { NBCard } from '../../components/nb';
+import {
+  nbColors,
+  nbTypography,
+  nbSpacing,
+  nbBorders,
+  nbShadows,
+} from '../../constants/nbTokens';
+import { NBCard, NBButton } from '../../components/nb';
 import { getAttendance } from '../../services/api/supervisorApi';
 import { formatDate } from '../../utils/dateUtils';
 import AttendanceCard from '../../components/supervisor/AttendanceCard';
@@ -210,30 +215,28 @@ export default function AttendanceScreen() {
 
       {/* Date Navigator */}
       <View style={styles.dateNavigator}>
-        <TouchableOpacity
-          style={styles.dateNavButton}
+        <NBButton
+          title="◀"
           onPress={goToPreviousDay}
-          activeOpacity={0.7}>
-          <Text style={styles.dateNavButtonText}>◀</Text>
-        </TouchableOpacity>
+          variant="secondary"
+          size="sm"
+          style={styles.dateNavButton}
+          testID="date-nav-prev"
+        />
 
         <View style={styles.dateDisplay}>
           <Text style={styles.dateText}>{formatDateIndonesian(selectedDate)}</Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.dateNavButton, isTodaySelected && styles.dateNavButtonDisabled]}
+        <NBButton
+          title="▶"
           onPress={goToNextDay}
-          activeOpacity={0.7}
-          disabled={isTodaySelected}>
-          <Text
-            style={[
-              styles.dateNavButtonText,
-              isTodaySelected && styles.dateNavButtonTextDisabled,
-            ]}>
-            ▶
-          </Text>
-        </TouchableOpacity>
+          variant="secondary"
+          size="sm"
+          disabled={isTodaySelected}
+          style={styles.dateNavButton}
+          testID="date-nav-next"
+        />
       </View>
 
       {/* Summary Cards */}
@@ -253,7 +256,7 @@ export default function AttendanceScreen() {
       {/* Loading State */}
       {loading && (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={nbColors.primary} />
           <Text style={styles.loadingText}>Memuat data kehadiran...</Text>
         </View>
       )}
@@ -270,7 +273,7 @@ export default function AttendanceScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={[colors.primary]}
+              colors={[nbColors.primary]}
             />
           }
           ListEmptyComponent={renderSectionEmpty}
@@ -293,136 +296,126 @@ export default function AttendanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: nbColors.gray[100],
   },
   header: {
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: nbColors.white,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+    borderBottomWidth: nbBorders.default,
+    borderBottomColor: nbColors.black,
   },
   headerTitle: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
   },
   dateNavigator: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: nbColors.white,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+    borderBottomWidth: nbBorders.default,
+    borderBottomColor: nbColors.black,
   },
   dateNavButton: {
     width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primaryLight,
-  },
-  dateNavButtonDisabled: {
-    backgroundColor: colors.gray300,
-  },
-  dateNavButtonText: {
-    fontSize: typography.fontSize.lg,
-    color: colors.white,
-    fontWeight: typography.fontWeight.bold,
-  },
-  dateNavButtonTextDisabled: {
-    color: colors.textDisabled,
   },
   dateDisplay: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: spacing.md,
+    marginHorizontal: nbSpacing.md,
   },
   dateText: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
   },
   summaryContainer: {
     flexDirection: 'row',
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: nbSpacing.md,
+    gap: nbSpacing.md,
   },
   summaryCard: {
     flex: 1,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
+    padding: nbSpacing.md,
+    borderRadius: 0,
     alignItems: 'center',
-    ...shadows.md,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.md,
   },
   summaryCardPresent: {
-    backgroundColor: '#4CAF50', // Green
+    backgroundColor: nbColors.successLight,
   },
   summaryCardAbsent: {
-    backgroundColor: '#F44336', // Red
+    backgroundColor: nbColors.dangerLight,
   },
   summaryCount: {
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.white,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize['3xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
+    marginBottom: nbSpacing.xs,
   },
   summaryLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.white,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: nbSpacing.xl,
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
   listContent: {
-    padding: spacing.md,
+    padding: nbSpacing.md,
   },
   sectionHeader: {
-    backgroundColor: colors.gray200,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.sm,
-    marginBottom: spacing.sm,
+    backgroundColor: nbColors.gray[200],
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
+    borderRadius: 0,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
+    marginBottom: nbSpacing.sm,
   },
   sectionHeaderText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[600],
     letterSpacing: 0.5,
   },
   emptyState: {
-    padding: spacing.xl,
+    padding: nbSpacing.xl,
     alignItems: 'center',
   },
   emptyStateText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
     textAlign: 'center',
   },
   noteContainer: {
-    backgroundColor: '#E3F2FD', // Light blue
-    padding: spacing.md,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    borderRadius: borderRadius.md,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.info,
+    backgroundColor: nbColors.gray[50],
+    padding: nbSpacing.md,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    borderRadius: 0,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
+    borderLeftWidth: nbBorders.thick,
+    borderLeftColor: nbColors.primary,
   },
   noteText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: typography.fontSize.sm * 1.5,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[600],
+    lineHeight: nbTypography.fontSize.sm * 1.5,
   },
 });

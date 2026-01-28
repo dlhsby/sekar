@@ -8,10 +8,12 @@ import {
   SafeAreaView,
   AccessibilityInfo,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
-import { SyncStatusIndicator, LoadingSpinner, ErrorBanner } from '../../components/common';
+import { LoadingSpinner } from '../../components/common';
+import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard } from '../../components/nb';
-import { theme } from '../../constants/theme';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { shiftsApi, reportsApi } from '../../services/api';
 import { setCurrentShift, setError } from '../../store/slices/shiftSlice';
@@ -206,33 +208,28 @@ export function WorkerHomeScreen(): JSX.Element {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Halo, {user?.full_name}! 👋</Text>
-          <Text style={styles.role}>Pekerja</Text>
-        </View>
-        <SyncStatusIndicator
-          isOnline={isOnline}
-          isSyncing={isSyncing}
-          pendingCount={pendingCount}
-        />
-      </View>
-
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}  // #FDFD96 pastel yellow (avoiding "everything green")
+      patternColor={nbColors.primary}        // #7FBC8C medium green
+      opacity={0.06}                          // Slightly less visible on yellow
+    >
+      <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
+            colors={[nbColors.primary]}
           />
         }>
         {/* Location Warning Banner - show when GPS/permission unavailable during active shift */}
         {currentShift && !isLocationAvailable && (
-          <ErrorBanner
+          <NBAlert
+            variant="warning"
             message={
               !permissionGranted
                 ? 'Izin lokasi dicabut. Pelacakan lokasi tidak aktif.'
@@ -240,8 +237,7 @@ export function WorkerHomeScreen(): JSX.Element {
                   ? 'GPS tidak aktif. Pelacakan lokasi tidak aktif.'
                   : 'Lokasi tidak tersedia. Periksa pengaturan GPS.'
             }
-            variant="warning"
-            actionText="Perbaiki"
+            actionLabel="Perbaiki"
             onAction={() => {
               if (!permissionGranted) {
                 showPermissionAlert();
@@ -251,7 +247,8 @@ export function WorkerHomeScreen(): JSX.Element {
                 refreshLocationStatus();
               }
             }}
-            style={styles.locationWarning}
+            style={{ marginBottom: nbSpacing.md }}
+            testID="worker-home-location-warning"
           />
         )}
 
@@ -314,33 +311,34 @@ export function WorkerHomeScreen(): JSX.Element {
             </View>
           </View>
           {todayReportsCount > 0 && (
-            <NBButton
-              title="Lihat Semua Laporan"
-              onPress={handleViewReports}
-              variant="secondary"
-              fullWidth
-              style={styles.viewAllButton}
-            />
+            <View style={styles.viewReportsButtonContainer}>
+              <NBButton
+                title="Lihat Semua Laporan"
+                onPress={handleViewReports}
+                variant="secondary"
+                fullWidth
+                icon="arrow-right"
+              />
+            </View>
           )}
         </NBCard>
 
-        {/* Quick Actions */}
+        {/* Action Buttons */}
         <View style={styles.actions}>
           <NBButton
             title={currentShift ? 'Clock Out' : 'Clock In'}
             onPress={handleClockInOut}
             variant="primary"
             fullWidth
-            style={styles.primaryAction}
+            style={{ marginBottom: nbSpacing.sm }}
             testID="clock-button"
           />
           {currentShift && (
             <NBButton
               title="Buat Laporan Baru"
               onPress={handleNewReport}
-              variant="secondary"
+              variant="info"
               fullWidth
-              style={styles.secondaryAction}
               testID="new-report-button"
             />
           )}
@@ -355,99 +353,92 @@ export function WorkerHomeScreen(): JSX.Element {
           </NBCard>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  greeting: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
-  },
-  role: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+    backgroundColor: 'transparent', // Let NBBackgroundPattern handle background
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: nbSpacing.md, // Reduced padding
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   shiftCard: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: nbSpacing.md, // Reduced margin
+    padding: 12, // Minimal padding - very compact
   },
   cardTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
+    fontSize: nbTypography.fontSize.base, // 16px - compact
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.sm, // Minimal spacing
   },
   timer: {
-    fontSize: 48,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.primary,
+    fontSize: 40, // Very compact
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.accentGrass, // Bright green for active timer
     textAlign: 'center',
-    marginVertical: theme.spacing.lg,
+    marginVertical: nbSpacing.md, // Minimal vertical space
+    letterSpacing: 1,
   },
   shiftInfo: {
-    marginTop: theme.spacing.md,
+    marginTop: nbSpacing.md,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.sm,
+    marginBottom: nbSpacing.sm,
   },
   infoLabel: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.gray900, // Improved contrast from gray600 for outdoor visibility
-    fontWeight: theme.typography.fontWeight.medium,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
   },
   infoValue: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.black,
   },
   noShiftText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
     textAlign: 'center',
-    marginVertical: theme.spacing.lg,
+    marginVertical: nbSpacing.lg,
   },
   assignedArea: {
-    marginTop: theme.spacing.md,
-    paddingTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    marginTop: nbSpacing.md,
+    paddingTop: nbSpacing.md,
+    borderTopWidth: nbBorders.default,
+    borderTopColor: nbColors.black,
   },
   assignedAreaLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.gray900, // Improved contrast from gray600 for outdoor visibility
-    fontWeight: theme.typography.fontWeight.medium,
-    marginBottom: theme.spacing.xs,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
+    marginBottom: nbSpacing.xs,
   },
   assignedAreaValue: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.primary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.primary,
   },
   summaryCard: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: nbSpacing.md, // Reduced margin
+    padding: 12, // Minimal padding - very compact
+  },
+  viewReportsButtonContainer: {
+    marginTop: nbSpacing.md, // Minimal spacing
+    paddingTop: nbSpacing.sm, // Minimal separation
+    borderTopWidth: nbBorders.thin,
+    borderTopColor: nbColors.gray[200], // Subtle divider
   },
   summaryRow: {
     flexDirection: 'row',
@@ -459,45 +450,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryDivider: {
-    width: 1,
+    width: nbBorders.default,
     height: 40,
-    backgroundColor: theme.colors.border,
+    backgroundColor: nbColors.black,
   },
   summaryValue: {
-    fontSize: 32,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.primary,
+    fontSize: 28, // Very compact
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.accentSky, // Bright sky blue for stats
+    letterSpacing: 0,
   },
   summaryLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.gray900, // Improved contrast from gray600 for outdoor visibility
-    fontWeight: theme.typography.fontWeight.medium,
-    marginTop: theme.spacing.xs,
-  },
-  viewAllButton: {
-    marginTop: theme.spacing.lg,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
+    marginTop: nbSpacing.xs,
   },
   actions: {
-    marginTop: theme.spacing.md,
-  },
-  primaryAction: {
-    marginBottom: theme.spacing.md,
-  },
-  secondaryAction: {
-    marginBottom: theme.spacing.md,
+    marginTop: nbSpacing.sm, // Minimal spacing from summary card
   },
   warningCard: {
-    backgroundColor: theme.colors.warning + '20', // 20% opacity
-    borderColor: theme.colors.warning,
-    borderWidth: 1,
-    marginTop: theme.spacing.md,
-  },
-  locationWarning: {
-    marginBottom: theme.spacing.md,
+    backgroundColor: nbColors.warningLight + '20', // 20% opacity
+    borderColor: nbColors.warning,
+    borderWidth: nbBorders.default,
+    borderRadius: 0,
+    marginTop: nbSpacing.md,
   },
   warningText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.warning,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.warning,
     textAlign: 'center',
   },
 });

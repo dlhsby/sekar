@@ -75,6 +75,8 @@ const mockTask = {
 describe('TaskCompleteScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-spy on Alert.alert after clearAllMocks
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
   });
 

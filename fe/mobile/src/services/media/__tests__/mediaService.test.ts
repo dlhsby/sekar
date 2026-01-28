@@ -145,6 +145,53 @@ describe('MediaService', () => {
 
       await expect(mediaService.capturePhoto()).rejects.toThrow('Foto terlalu besar');
     });
+
+    it('should throw error if no assets returned', async () => {
+      mockLaunchCamera.mockResolvedValue({
+        assets: [],
+      } as any);
+
+      await expect(mediaService.capturePhoto()).rejects.toThrow('Tidak ada foto yang diambil');
+    });
+
+    it('should handle permission error', async () => {
+      mockLaunchCamera.mockResolvedValue({
+        errorCode: 'permission',
+        errorMessage: 'Permission denied',
+      } as any);
+
+      await expect(mediaService.capturePhoto()).rejects.toThrow('Izin kamera/galeri ditolak');
+    });
+
+    it('should handle others error code', async () => {
+      mockLaunchCamera.mockResolvedValue({
+        errorCode: 'others',
+        errorMessage: 'Other error',
+      } as any);
+
+      await expect(mediaService.capturePhoto()).rejects.toThrow('Terjadi kesalahan saat mengakses kamera/galeri');
+    });
+
+    it('should handle unknown error code', async () => {
+      mockLaunchCamera.mockResolvedValue({
+        errorCode: 'unknown_error',
+        errorMessage: 'Unknown error',
+      } as any);
+
+      await expect(mediaService.capturePhoto()).rejects.toThrow('Kesalahan: unknown_error');
+    });
+
+    it('should handle generic error', async () => {
+      mockLaunchCamera.mockRejectedValue(new Error('Camera crashed'));
+
+      await expect(mediaService.capturePhoto()).rejects.toThrow('Kesalahan kamera: Camera crashed');
+    });
+
+    it('should handle non-Error exceptions', async () => {
+      mockLaunchCamera.mockRejectedValue('String error');
+
+      await expect(mediaService.capturePhoto()).rejects.toThrow('Kesalahan kamera: Kesalahan tidak diketahui');
+    });
   });
 
   describe('pickFromGallery', () => {
@@ -198,6 +245,8 @@ describe('MediaService', () => {
     it('should respect maxPhotos limit', async () => {
       const maxPhotos = 3;
 
+      mockLaunchImageLibrary.mockResolvedValue({ didCancel: true } as any);
+
       await mediaService.pickFromGallery(maxPhotos);
 
       expect(mockLaunchImageLibrary).toHaveBeenCalledWith(
@@ -205,6 +254,65 @@ describe('MediaService', () => {
           selectionLimit: maxPhotos,
         })
       );
+    });
+
+    it('should return empty array if no assets returned', async () => {
+      mockLaunchImageLibrary.mockResolvedValue({
+        assets: [],
+      } as any);
+
+      const photos = await mediaService.pickFromGallery();
+
+      expect(photos).toEqual([]);
+    });
+
+    it('should throw error on gallery failure', async () => {
+      mockLaunchImageLibrary.mockResolvedValue({
+        errorCode: 'permission',
+        errorMessage: 'Permission denied',
+      } as any);
+
+      await expect(mediaService.pickFromGallery()).rejects.toThrow('Kesalahan galeri');
+    });
+
+    it('should handle generic gallery error', async () => {
+      mockLaunchImageLibrary.mockRejectedValue(new Error('Gallery crashed'));
+
+      await expect(mediaService.pickFromGallery()).rejects.toThrow('Kesalahan galeri: Gallery crashed');
+    });
+
+    it('should skip photos with no URI', async () => {
+      mockLaunchImageLibrary.mockResolvedValue({
+        assets: [
+          {
+            uri: 'file:///path/to/photo1.jpg',
+            fileName: 'photo1.jpg',
+            fileSize: 1024 * 1024,
+          },
+          {
+            // No URI
+            fileName: 'photo2.jpg',
+            fileSize: 1024 * 1024,
+          },
+        ],
+      } as any);
+
+      mockImageResizer.mockResolvedValue({
+        uri: 'file:///path/to/compressed.jpg',
+        name: 'compressed.jpg',
+        width: 1200,
+        height: 1200,
+      } as any);
+
+      mockStat.mockResolvedValue({
+        size: 500 * 1024,
+        isFile: () => true,
+      } as any);
+
+      const photos = await mediaService.pickFromGallery();
+
+      // Should only return 1 photo (the one with URI)
+      expect(photos).toHaveLength(1);
     });
   });
 
@@ -272,6 +380,87 @@ describe('MediaService', () => {
       expect(compressed.size).toBeLessThanOrEqual(1024 * 1024); // 1MB target
       expect(mockImageResizer).toHaveBeenCalledTimes(2);
       expect(mockUnlink).toHaveBeenCalled();
+    });
+
+    it('should throw error when disk space is low', async () => {
+      mockGetFSInfo.mockResolvedValue({
+        freeSpace: 10 * 1024 * 1024, // Only 10MB (less than 50MB required)
+        totalSpace: 1000 * 1024 * 1024,
+      });
+
+      await expect(mediaService.compressPhoto('file:///path/to/photo.jpg'))
+        .rejects.toThrow('Penyimpanan penuh');
+    });
+
+    it('should handle disk space check failure', async () => {
+      mockGetFSInfo.mockRejectedValue(new Error('Cannot check disk space'));
+
+      await expect(mediaService.compressPhoto('file:///path/to/photo.jpg'))
+        .rejects.toThrow('Gagal memeriksa ruang penyimpanan');
+    });
+
+    it('should rethrow localized disk full error from checkDiskSpace', async () => {
+      mockGetFSInfo.mockRejectedValue(
+        new Error('Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.')
+      );
+
+      await expect(mediaService.compressPhoto('file:///path/to/photo.jpg'))
+        .rejects.toThrow('Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.');
+    });
+
+    it('should handle disk full during unlink in compression loop', async () => {
+      // First compression - too large
+      mockImageResizer.mockResolvedValueOnce({
+        uri: 'file:///path/to/compressed1.jpg',
+        name: 'compressed1.jpg',
+        width: 1200,
+        height: 1200,
+      } as any);
+
+      mockStat.mockResolvedValueOnce({
+        size: 1200 * 1024, // 1.2MB (over 1MB target)
+        isFile: () => true,
+      } as any);
+
+      // Unlink fails with disk full
+      const diskFullError = new Error('No space left');
+      (diskFullError as any).code = 'ENOSPC';
+      mockUnlink.mockRejectedValueOnce(diskFullError);
+
+      await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
+        .rejects.toThrow('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+    });
+
+    it('should handle disk full error during compression', async () => {
+      const diskFullError = new Error('ENOSPC: no space left');
+      (diskFullError as any).code = 'ENOSPC';
+      mockImageResizer.mockRejectedValue(diskFullError);
+
+      await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
+        .rejects.toThrow('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+    });
+
+    it('should rethrow localized storage errors from compression', async () => {
+      mockImageResizer.mockRejectedValue(
+        new Error('Penyimpanan penuh. Bebaskan ruang dan coba lagi.')
+      );
+
+      await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
+        .rejects.toThrow('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+    });
+
+    it('should handle generic compression error', async () => {
+      mockImageResizer.mockRejectedValue(new Error('Compression failed'));
+
+      await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
+        .rejects.toThrow('Kompresi gagal: Compression failed');
+    });
+
+    it('should handle non-Error compression exception', async () => {
+      mockImageResizer.mockRejectedValue('String error');
+
+      await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
+        .rejects.toThrow('Kompresi gagal: Kesalahan tidak diketahui');
     });
   });
 

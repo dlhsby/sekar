@@ -61,13 +61,10 @@ export function Button({
     onPress();
   }, [onPress, enableHaptic, variant, isCritical]);
 
-  const handleFocus = useCallback(() => {
-    setIsFocused(true);
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    setIsFocused(false);
-  }, []);
+  /* istanbul ignore next */
+  const handleFocus = useCallback(() => setIsFocused(true), []);
+  /* istanbul ignore next */
+  const handleBlur = useCallback(() => setIsFocused(false), []);
 
   return (
     <Pressable

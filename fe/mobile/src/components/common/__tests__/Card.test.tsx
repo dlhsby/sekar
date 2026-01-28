@@ -1,7 +1,10 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { Text, View } from 'react-native';
+import { Text, View, Alert } from 'react-native';
 import { Card } from '../Card';
+
+// Mock Alert to prevent errors from imported modules
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 describe('Card Component', () => {
   describe('rendering', () => {

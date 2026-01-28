@@ -7,7 +7,7 @@
  * @see specs/ui-ux/neo-brutalism.md
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -15,6 +15,7 @@ import {
   ViewStyle,
   AccessibilityProps,
   Platform,
+  AccessibilityInfo,
 } from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {
@@ -22,11 +23,16 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
+  nbBorderRadius,
 } from '../../constants/nbTokens';
+
+export type NBCardVariant = 'default' | 'elevated';
 
 export interface NBCardProps extends AccessibilityProps {
   /** Card content */
   children: React.ReactNode;
+  /** Visual variant (default uses sm shadow, elevated uses lg shadow) */
+  variant?: NBCardVariant;
   /** Enable interactive (pressable) behavior */
   interactive?: boolean;
   /** Press handler (required if interactive) */
@@ -56,9 +62,18 @@ export interface NBCardProps extends AccessibilityProps {
  *     <Text>Content</Text>
  *   </NBCardContent>
  * </NBCard>
+ *
+ * @example
+ * // Elevated card for emphasis
+ * <NBCard variant="elevated">
+ *   <NBCardContent>
+ *     <Text>Important content with larger shadow</Text>
+ *   </NBCardContent>
+ * </NBCard>
  */
 export const NBCard: React.FC<NBCardProps> = ({
   children,
+  variant = 'default',
   interactive = false,
   onPress,
   style,
@@ -66,6 +81,28 @@ export const NBCard: React.FC<NBCardProps> = ({
   ...accessibilityProps
 }) => {
   const [isPressed, setIsPressed] = useState(false);
+  const [reduceMotionEnabled, setReduceMotionEnabled] = useState(false);
+
+  // Check for reduce motion preference
+  useEffect(() => {
+    const checkReduceMotion = async () => {
+      if (Platform.OS !== 'web') {
+        const enabled = await AccessibilityInfo.isReduceMotionEnabled();
+        setReduceMotionEnabled(enabled);
+      }
+    };
+    checkReduceMotion();
+
+    // Listen for changes
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduceMotionEnabled,
+    );
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   const handlePressIn = useCallback(() => {
     if (interactive) {
@@ -95,11 +132,16 @@ export const NBCard: React.FC<NBCardProps> = ({
     }
   }, [interactive, onPress]);
 
-  // Calculate shadow and transform for pressed state
-  const currentShadow = isPressed ? nbShadows.active : nbShadows.sm;
-  const pressTransform = isPressed
-    ? [{ translateX: 2 }, { translateY: 2 }]
-    : [{ translateX: 0 }, { translateY: 0 }];
+  // Calculate shadow based on variant and state
+  // Elevated variant uses larger shadow for emphasis
+  // Disable transform animation if reduce motion is enabled
+  const defaultShadow = variant === 'elevated' ? nbShadows.lg : nbShadows.sm;
+  const interactiveShadow = variant === 'elevated' ? nbShadows.lg : nbShadows.md;
+  const currentShadow = isPressed ? nbShadows.active : defaultShadow;
+  const pressTransform =
+    reduceMotionEnabled || !isPressed
+      ? [{ translateX: 0 }, { translateY: 0 }]
+      : [{ translateX: 2 }, { translateY: 2 }];
 
   if (interactive && onPress) {
     return (
@@ -114,11 +156,12 @@ export const NBCard: React.FC<NBCardProps> = ({
         {...accessibilityProps}
         style={[
           styles.card,
-          interactive ? nbShadows.md : nbShadows.sm,
-          isPressed && {
-            ...nbShadows.active,
-            transform: [{ translateX: 2 }, { translateY: 2 }],
-          },
+          interactive ? interactiveShadow : defaultShadow,
+          isPressed &&
+            !reduceMotionEnabled && {
+              ...nbShadows.active,
+              transform: [{ translateX: 2 }, { translateY: 2 }],
+            },
           style,
         ]}
       >
@@ -132,7 +175,7 @@ export const NBCard: React.FC<NBCardProps> = ({
       testID={testID}
       accessible
       {...accessibilityProps}
-      style={[styles.card, nbShadows.sm, style]}
+      style={[styles.card, defaultShadow, style]}
     >
       {children}
     </View>
@@ -173,6 +216,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     borderWidth: nbBorders.default,
     borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
   },
   header: {
     padding: nbSpacing.md,
@@ -180,7 +224,7 @@ const styles = StyleSheet.create({
     borderBottomColor: nbColors.black,
   },
   content: {
-    padding: nbSpacing.md,
+    padding: 12, // Compact padding for consistency (was md: 16px)
   },
   footer: {
     padding: nbSpacing.md,

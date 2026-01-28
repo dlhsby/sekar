@@ -2,6 +2,10 @@
  * SkeletonLoader Component
  * Provides shimmer loading animation for better perceived performance
  * Use instead of basic spinners to reduce perceived load time by 20-30%
+ *
+ * @deprecated Use NBSkeleton from components/nb instead.
+ * This Material Design component will be removed in a future version.
+ * Migration: import { NBSkeleton } from '../../components/nb'
  */
 
 import React, { useEffect, useRef } from 'react';

@@ -16,13 +16,23 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBadge } from '../../components/nb';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {
+  NBButton,
+  NBCard,
+  NBCardHeader,
+  NBCardContent,
+  NBBadge,
+  NBBackgroundPattern,
+  NBAlert,
+} from '../../components/nb';
+import { nbColors, nbSpacing, nbTypography, nbShadows, nbBorders } from '../../constants/nbTokens';
 
-const fontSizes = typography.fontSize;
+const fontSizes = nbTypography.fontSize;
 import { formatDateTime, formatRelativeTime } from '../../utils/dateUtils';
 import * as tasksApi from '../../services/api/tasksApi';
 import type { WorkerTabParamList } from '../../types/navigation.types';
@@ -122,6 +132,22 @@ export function TaskDetailScreen(): React.JSX.Element {
     fetchTask();
   }, [fetchTask]);
 
+  // Set up header with back button to Tasks List
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('TasksReports', { activeTab: 'tasks' })}
+          style={styles.backButton}
+          accessibilityLabel="Kembali ke Daftar Tugas"
+          accessibilityRole="button"
+        >
+          <Icon name="arrow-left" size={24} color={nbColors.black} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     fetchTask();
@@ -202,24 +228,39 @@ export function TaskDetailScreen(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Memuat tugas...</Text>
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={nbColors.primary} />
+          <Text style={styles.loadingText}>Memuat tugas...</Text>
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
   if (!task) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Tugas tidak ditemukan</Text>
-        <NBButton
-          title="Kembali"
-          variant="secondary"
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        />
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.container}>
+          <NBAlert
+            variant="danger"
+            title="Tugas Tidak Ditemukan"
+            message="Tugas yang Anda cari tidak ditemukan atau telah dihapus"
+            actionLabel="Kembali"
+            onAction={() => navigation.goBack()}
+            testID="task-detail-error"
+          />
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
@@ -229,13 +270,19 @@ export function TaskDetailScreen(): React.JSX.Element {
   const showComplete = task.status === 'in_progress';
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-      }
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
     >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        }
+      >
       {/* Header Card */}
       <NBCard style={styles.card}>
         <NBCardHeader>
@@ -361,14 +408,12 @@ export function TaskDetailScreen(): React.JSX.Element {
               onPress={handleAccept}
               disabled={isSubmitting}
               loading={isSubmitting}
-              style={styles.actionButton}
             />
             <NBButton
               title="Tolak Tugas"
               variant="danger"
               onPress={handleDecline}
               disabled={isSubmitting}
-              style={styles.actionButton}
             />
           </>
         )}
@@ -380,7 +425,6 @@ export function TaskDetailScreen(): React.JSX.Element {
             onPress={handleStart}
             disabled={isSubmitting}
             loading={isSubmitting}
-            style={styles.actionButton}
           />
         )}
 
@@ -390,7 +434,6 @@ export function TaskDetailScreen(): React.JSX.Element {
             variant="success"
             onPress={handleComplete}
             disabled={isSubmitting}
-            style={styles.actionButton}
           />
         )}
 
@@ -398,80 +441,69 @@ export function TaskDetailScreen(): React.JSX.Element {
           title="Kembali"
           variant="secondary"
           onPress={() => navigation.goBack()}
-          style={styles.actionButton}
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   contentContainer: {
-    padding: spacing.md,
+    paddingVertical: nbSpacing.md,
+    paddingBottom: nbSpacing.xl,
+  },
+  backButton: {
+    marginLeft: nbSpacing.md,
+    padding: nbSpacing.xs,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: fontSizes.md,
-    color: colors.textSecondary,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: spacing.lg,
-  },
-  errorText: {
-    fontSize: fontSizes.lg,
-    color: colors.danger,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  backButton: {
-    marginTop: spacing.md,
+    marginTop: nbSpacing.md,
+    fontSize: fontSizes.base,
+    color: nbColors.gray[600],
   },
   card: {
-    marginBottom: spacing.md,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
   },
   headerRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: nbSpacing.sm,
   },
   title: {
     fontSize: fontSizes.xl,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.sm,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.sm,
   },
   description: {
-    fontSize: fontSizes.md,
-    color: colors.textSecondary,
-    lineHeight: 22,
+    fontSize: fontSizes.base,
+    color: nbColors.gray[600],
+    lineHeight: fontSizes.base * nbTypography.lineHeight.normal,
   },
   sectionTitle: {
     fontSize: fontSizes.lg,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
+    marginBottom: nbSpacing.sm,
   },
   detailLabel: {
     width: 120,
     fontSize: fontSizes.sm,
-    color: colors.textSecondary,
-    fontWeight: '500',
+    color: nbColors.gray[600],
+    fontWeight: nbTypography.fontWeight.medium,
   },
   detailValueContainer: {
     flex: 1,
@@ -479,27 +511,25 @@ const styles = StyleSheet.create({
   detailValue: {
     flex: 1,
     fontSize: fontSizes.sm,
-    color: colors.text,
+    color: nbColors.black,
   },
   relativeTime: {
     fontSize: fontSizes.xs,
-    color: colors.textSecondary,
+    color: nbColors.gray[600],
     marginTop: 2,
   },
   deadlinePast: {
-    color: colors.danger,
+    color: nbColors.danger,
   },
   declineReason: {
-    fontSize: fontSizes.md,
-    color: colors.danger,
+    fontSize: fontSizes.base,
+    color: nbColors.danger,
     fontStyle: 'italic',
   },
   actionContainer: {
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  actionButton: {
-    marginBottom: spacing.xs,
+    marginHorizontal: nbSpacing.md,
+    marginTop: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
 });
 

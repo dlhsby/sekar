@@ -1,16 +1,14 @@
 /**
  * Login Screen
  * Authentication screen for username/password login
+ * Uses Neo Brutalism design system
  */
 
 import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -18,8 +16,15 @@ import {
   type TextInput as TextInputType,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors, typography, spacing } from '../../constants/theme';
-import { NBButton, NBTextInput } from '../../components/nb';
+import {
+  nbColors,
+  nbTypography,
+  nbSpacing,
+  nbShadows,
+  nbBorders,
+  nbBorderRadius,
+} from '../../constants/nbTokens';
+import { NBButton, NBTextInput, NBPasswordInput, NBBackgroundPattern } from '../../components/nb';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setLoading, setUser, setError } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
@@ -31,7 +36,6 @@ import type { LoginResponse } from '../../types/api.types';
 function LoginScreen(): React.JSX.Element {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
@@ -126,19 +130,25 @@ function LoginScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}>
-        <View style={styles.content}>
+    <NBBackgroundPattern
+      pattern="grid"
+      backgroundColor={nbColors.background}  // #FDFD96 pastel yellow
+      patternColor={nbColors.primary}        // #7FBC8C medium green
+      opacity={0.06}                          // Slightly less visible on yellow
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}>
+          <View style={styles.content}>
           {/* Logo/Title */}
           <View style={styles.header}>
-            {/* Logo icon container */}
+            {/* Logo icon container - Neo Brutalism style */}
             <View style={styles.logoContainer}>
               <MaterialCommunityIcons
                 name="leaf"
                 size={56}
-                color={colors.white}
+                color={nbColors.white}
               />
             </View>
             <Text style={styles.title}>SEKAR</Text>
@@ -166,50 +176,36 @@ function LoginScreen(): React.JSX.Element {
               returnKeyType="next"
               onSubmitEditing={() => passwordInputRef.current?.focus()}
               blurOnSubmit={false}
+              testID="username-input"
             />
 
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <View style={[styles.passwordInputWrapper, passwordError && styles.inputError]}>
-                <TextInput
-                  ref={passwordInputRef}
-                  style={styles.passwordInput}
-                  placeholder="Masukkan password"
-                  placeholderTextColor={colors.textHint}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setPasswordError('');
-                  }}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                  returnKeyType="go"
-                  onSubmitEditing={handleLogin}
-                />
-                <TouchableOpacity
-                  style={styles.passwordToggle}
-                  onPress={() => setShowPassword(!showPassword)}
-                  accessibilityLabel={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                  accessibilityRole="button"
-                >
-                  <MaterialCommunityIcons
-                    name={showPassword ? 'eye' : 'eye-off'}
-                    size={24}
-                    color={showPassword ? colors.primary : colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
-              {passwordError ? (
-                <Text style={styles.errorText}>{passwordError}</Text>
-              ) : null}
-            </View>
+            {/* Password Input - Using NBPasswordInput */}
+            <NBPasswordInput
+              ref={passwordInputRef}
+              label="Password"
+              placeholder="Masukkan password"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setPasswordError('');
+              }}
+              error={passwordError}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isLoading}
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
+              testID="password-input"
+            />
 
             {/* Error Message */}
             {error ? (
               <View style={styles.errorContainer}>
+                <MaterialCommunityIcons
+                  name="alert-circle"
+                  size={20}
+                  color={nbColors.danger}
+                />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
@@ -222,7 +218,7 @@ function LoginScreen(): React.JSX.Element {
               disabled={isLoading}
               fullWidth
               variant="primary"
-              style={styles.button}
+              testID="login-button"
             />
           </View>
 
@@ -233,142 +229,93 @@ function LoginScreen(): React.JSX.Element {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent', // Let NBBackgroundPattern handle background
   },
   container: {
     flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: nbSpacing.lg,
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing['2xl'],
+    marginBottom: nbSpacing['2xl'],
   },
+  // Neo Brutalism logo container: minimal rounded corners, thick border, hard-edge shadow
+  // Nature theme: green from Neo Brutalism palette
   logoContainer: {
     width: 96,
     height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primary,
+    borderRadius: nbBorderRadius.minimal, // 2px - softened NB style
+    backgroundColor: nbColors.primary, // Medium green #7FBC8C
+    borderWidth: nbBorders.default, // 3px
+    borderColor: nbColors.black,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    // Shadow for elevation
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    marginBottom: nbSpacing.lg,
+    // Hard-edge shadow - NB style
+    ...nbShadows.md,
   },
   title: {
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize['3xl'],
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.primary, // Forest green title
+    marginBottom: nbSpacing.xs,
     letterSpacing: 2,
   },
   subtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
     textAlign: 'center',
   },
   organization: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textHint,
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.gray[500],
     textAlign: 'center',
-    marginTop: spacing.xs,
+    marginTop: nbSpacing.xs,
   },
   form: {
-    marginBottom: spacing.xl,
+    marginBottom: nbSpacing.xl,
   },
-  inputContainer: {
-    marginBottom: spacing.lg,
-  },
-  label: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: typography.fontSize.base,
-    backgroundColor: colors.white,
-    color: colors.textPrimary,
-  },
-  passwordInputWrapper: {
+  // Neo Brutalism error container: sharp corners, thick border
+  errorContainer: {
+    marginBottom: nbSpacing.md,
+    padding: nbSpacing.md,
+    backgroundColor: nbColors.white,
+    borderRadius: 0, // Sharp corners
+    borderWidth: nbBorders.default, // 3px
+    borderColor: nbColors.danger,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-  },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-  },
-  passwordToggle: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  errorContainer: {
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.error + '10',
-    borderRadius: 8,
+    gap: nbSpacing.sm,
+    ...nbShadows.sm,
   },
   errorText: {
-    color: colors.error,
-    fontSize: typography.fontSize.sm,
-    marginTop: spacing.xs,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-    marginTop: spacing.md,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: colors.white,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    color: nbColors.danger,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    flex: 1,
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    paddingVertical: nbSpacing.lg,
   },
   footerText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.gray[500],
   },
 });
 
 export default LoginScreen;
-

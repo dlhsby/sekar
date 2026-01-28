@@ -23,10 +23,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Geolocation from 'react-native-geolocation-service';
-import { NBButton, NBCard, NBCardHeader, NBCardContent } from '../../components/nb';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
 
-const fontSizes = typography.fontSize;
+const fontSizes = nbTypography.fontSize;
 import * as tasksApi from '../../services/api/tasksApi';
 import type { WorkerTabParamList } from '../../types/navigation.types';
 import type { Task } from '../../types/models.types';
@@ -196,28 +196,48 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Memuat...</Text>
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={nbColors.primary} />
+          <Text style={styles.loadingText}>Memuat...</Text>
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
   if (!task) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Tugas tidak ditemukan</Text>
-        <NBButton title="Kembali" variant="secondary" onPress={() => navigation.goBack()} />
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Tugas tidak ditemukan</Text>
+          <NBButton title="Kembali" variant="secondary" onPress={() => navigation.goBack()} />
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      keyboardShouldPersistTaps="handled"
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
     >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
       {/* Task Info */}
       <NBCard style={styles.card}>
         <NBCardHeader>
@@ -245,7 +265,6 @@ export function TaskCompleteScreen(): React.JSX.Element {
                 variant="secondary"
                 size="sm"
                 onPress={handleTakePhoto}
-                style={styles.retakeButton}
               />
             </View>
           ) : (
@@ -265,7 +284,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
         <NBCardContent>
           {isGettingLocation ? (
             <View style={styles.locationLoading}>
-              <ActivityIndicator size="sm" color={colors.primary} />
+              <ActivityIndicator size="small" color={nbColors.primary} />
               <Text style={styles.locationLoadingText}>
                 Mendapatkan lokasi...
               </Text>
@@ -288,7 +307,6 @@ export function TaskCompleteScreen(): React.JSX.Element {
                 variant="secondary"
                 size="sm"
                 onPress={getLocation}
-                style={styles.refreshLocationButton}
               />
             </View>
           ) : (
@@ -313,7 +331,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
             value={notes}
             onChangeText={setNotes}
             placeholder="Tambahkan catatan penyelesaian..."
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={nbColors.gray[400]}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -329,7 +347,6 @@ export function TaskCompleteScreen(): React.JSX.Element {
           onPress={handleSubmit}
           disabled={isSubmitting || !photoUri || !location}
           loading={isSubmitting}
-          style={styles.submitButton}
         />
         <NBButton
           title="Batal"
@@ -338,59 +355,62 @@ export function TaskCompleteScreen(): React.JSX.Element {
           disabled={isSubmitting}
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   contentContainer: {
-    padding: spacing.md,
+    paddingVertical: nbSpacing.md,
+    paddingBottom: nbSpacing.xl,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: fontSizes.md,
-    color: colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: fontSizes.base,
+    color: nbColors.gray[600],
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: spacing.lg,
+    backgroundColor: 'transparent',
+    paddingHorizontal: nbSpacing.lg,
   },
   errorText: {
     fontSize: fontSizes.lg,
-    color: colors.danger,
-    marginBottom: spacing.md,
+    color: nbColors.danger,
+    marginBottom: nbSpacing.md,
     textAlign: 'center',
   },
   card: {
-    marginBottom: spacing.md,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
   },
   sectionTitle: {
     fontSize: fontSizes.lg,
     fontWeight: '600',
-    color: colors.text,
+    color: nbColors.black,
   },
   taskTitle: {
-    fontSize: fontSizes.md,
+    fontSize: fontSizes.base,
     fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
+    color: nbColors.black,
+    marginBottom: nbSpacing.xs,
   },
   taskArea: {
     fontSize: fontSizes.sm,
-    color: colors.textSecondary,
+    color: nbColors.gray[600],
   },
   photoContainer: {
     alignItems: 'center',
@@ -398,78 +418,71 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: 200,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.sm,
-  },
-  retakeButton: {
-    alignSelf: 'center',
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    marginBottom: nbSpacing.sm,
   },
   photoPlaceholder: {
     alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
+    padding: nbSpacing.lg,
+    backgroundColor: nbColors.gray[50],
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
     borderStyle: 'dashed',
-    borderColor: colors.border,
+    borderColor: nbColors.black,
   },
   photoPlaceholderText: {
-    fontSize: fontSizes.md,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
+    fontSize: fontSizes.base,
+    color: nbColors.gray[500],
+    marginBottom: nbSpacing.md,
   },
   locationLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.sm,
+    padding: nbSpacing.sm,
   },
   locationLoadingText: {
-    marginLeft: spacing.sm,
+    marginLeft: nbSpacing.sm,
     fontSize: fontSizes.sm,
-    color: colors.textSecondary,
+    color: nbColors.gray[500],
   },
   locationInfo: {
-    padding: spacing.sm,
+    padding: nbSpacing.sm,
   },
   locationText: {
     fontSize: fontSizes.sm,
-    color: colors.text,
+    color: nbColors.black,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   locationAccuracy: {
     fontSize: fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  refreshLocationButton: {
-    marginTop: spacing.sm,
-    alignSelf: 'flex-start',
+    color: nbColors.gray[500],
+    marginTop: nbSpacing.xs,
   },
   locationError: {
     alignItems: 'center',
-    padding: spacing.md,
+    padding: nbSpacing.md,
   },
   locationErrorText: {
     fontSize: fontSizes.sm,
-    color: colors.danger,
-    marginBottom: spacing.sm,
+    color: nbColors.danger,
+    marginBottom: nbSpacing.sm,
   },
   notesInput: {
-    borderWidth: 3,
-    borderColor: colors.black,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     borderRadius: 0,
-    padding: spacing.md,
-    fontSize: fontSizes.md,
-    color: colors.text,
-    backgroundColor: colors.white,
+    padding: nbSpacing.md,
+    fontSize: fontSizes.base,
+    color: nbColors.black,
+    backgroundColor: nbColors.white,
     minHeight: 100,
   },
   actionContainer: {
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  submitButton: {
-    marginBottom: spacing.xs,
+    marginHorizontal: nbSpacing.md,
+    marginTop: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
 });
 

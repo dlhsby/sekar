@@ -22,6 +22,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
+  nbBorderRadius,
   nbTypography,
   nbTouchTarget,
 } from '../../constants/nbTokens';
@@ -163,7 +164,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderWidth: nbBorders.default,
     borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
     backgroundColor: nbColors.white,
+    overflow: 'hidden', // Clip child elements to rounded border
   },
   tab: {
     flex: 1,
@@ -208,7 +211,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.gray[200],
     paddingHorizontal: nbSpacing.xs,
     paddingVertical: 2,
-    borderRadius: 2,
+    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
     minWidth: 20,
     alignItems: 'center',
     justifyContent: 'center',

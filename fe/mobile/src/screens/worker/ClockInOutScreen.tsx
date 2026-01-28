@@ -13,8 +13,14 @@ import { useNavigation } from '@react-navigation/native';
 import Geolocation from 'react-native-geolocation-service';
 import { launchCamera } from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
-import { NBButton, NBCard } from '../../components/nb';
-import { theme } from '../../constants/theme';
+import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
+import {
+  nbColors,
+  nbTypography,
+  nbSpacing,
+  nbShadows,
+  nbBorders,
+} from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../../services/api/shiftsApi';
@@ -22,6 +28,7 @@ import { setCurrentShift } from '../../store/slices/shiftSlice';
 import { calculateDistance, isWithinBoundary as checkWithinBoundary } from '../../utils/gpsUtils';
 import { requestClockInPermissions } from '../../services/permissions';
 import { locationTracker } from '../../services/location/locationTracker';
+import { formatTime } from '../../utils/dateUtils';
 
 interface LocationState {
   latitude: number | null;
@@ -34,12 +41,13 @@ interface LocationState {
 /**
  * Clock In/Out Screen
  * Handles worker clock-in with GPS validation and selfie, and clock-out
+ * Uses Neo Brutalism design system
  */
 export function ClockInOutScreen(): JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
-  const { assignedArea } = useAppSelector((state) => state.auth);
+  const { assignedArea, user } = useAppSelector((state) => state.auth);
   const { currentShift } = useAppSelector((state) => state.shift);
   const { isOnline } = useAppSelector((state) => state.offline);
 
@@ -54,6 +62,7 @@ export function ClockInOutScreen(): JSX.Element {
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithinBoundary, setIsWithinBoundary] = useState(false);
+  const [timer, setTimer] = useState('00:00:00');
 
   const isClockIn = !currentShift; // If no current shift, it's clock-in mode
 
@@ -224,6 +233,32 @@ export function ClockInOutScreen(): JSX.Element {
       }
     };
   }, [assignedArea]);
+
+  // Update timer every second when clocked in
+  useEffect(() => {
+    if (!currentShift) {
+      setTimer('00:00:00');
+      return;
+    }
+
+    const updateTimer = () => {
+      const elapsed = Date.now() - new Date(currentShift.clock_in_time).getTime();
+      const hours = Math.floor(elapsed / 3600000);
+      const minutes = Math.floor((elapsed % 3600000) / 60000);
+      const seconds = Math.floor((elapsed % 60000) / 1000);
+
+      setTimer(
+        `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+      );
+    };
+
+    updateTimer(); // Initial update
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentShift?.id]);
+
+  const pad = (num: number): string => String(num).padStart(2, '0');
 
   const handleCaptureSelfie = async () => {
     try {
@@ -403,37 +438,56 @@ export function ClockInOutScreen(): JSX.Element {
   // Check if user has assigned area
   if (!assignedArea) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>Anda belum ditugaskan ke area manapun</Text>
-          <Text style={styles.subtitle}>Hubungi supervisor untuk penugasan area</Text>
-          <NBButton
-            title="Kembali"
-            onPress={() => navigation.goBack()}
-            variant="primary"
-            fullWidth
-            style={styles.retryButton}
-          />
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.container}>
+          <View style={styles.centerContent}>
+            <Text style={styles.errorText}>Anda belum ditugaskan ke area manapun</Text>
+            <Text style={styles.subtitle}>Hubungi supervisor untuk penugasan area</Text>
+            <NBButton
+              title="Kembali"
+              onPress={() => navigation.goBack()}
+              variant="primary"
+              fullWidth
+            />
+          </View>
         </View>
-      </SafeAreaView>
+      </NBBackgroundPattern>
     );
   }
 
   // Loading state
   if (location.loading && !location.latitude) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Mendapatkan lokasi Anda...</Text>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.container}>
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color={nbColors.primary} />
+            <Text style={styles.loadingText}>Mendapatkan lokasi Anda...</Text>
+          </View>
         </View>
-      </SafeAreaView>
+      </NBBackgroundPattern>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <View style={styles.container}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Offline Banner for Clock-in (at the very top) */}
         {!isOnline && isClockIn && (
           <View style={styles.offlineBanner}>
@@ -446,12 +500,21 @@ export function ClockInOutScreen(): JSX.Element {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{isClockIn ? 'Clock In' : 'Clock Out'}</Text>
-          <Text style={styles.subtitle}>
-            {isClockIn
-              ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
-              : 'Konfirmasi lokasi untuk mengakhiri shift'}
-          </Text>
+          {isClockIn ? (
+            <>
+              <Text style={styles.title}>Clock In</Text>
+              <Text style={styles.headerSubtitle}>
+                Ambil foto diri dan konfirmasi lokasi untuk memulai shift
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.title}>Clock Out</Text>
+              <Text style={styles.headerSubtitle}>
+                Konfirmasi lokasi untuk mengakhiri shift
+              </Text>
+            </>
+          )}
         </View>
 
         {/* Area Info Card */}
@@ -495,7 +558,6 @@ export function ClockInOutScreen(): JSX.Element {
                 onPress={getCurrentLocation}
                 variant="secondary"
                 fullWidth
-                style={styles.retryButton}
               />
             </View>
           ) : location.latitude && location.longitude ? (
@@ -552,21 +614,38 @@ export function ClockInOutScreen(): JSX.Element {
                     isWithinBoundary ? styles.statusTextSuccess : styles.statusTextError,
                   ]}>
                   {isWithinBoundary
-                    ? 'Dalam batas - Anda dapat clock in'
+                    ? isClockIn
+                      ? 'Dalam batas - Anda dapat clock in'
+                      : 'Dalam batas - Anda dapat clock out'
                     : 'Di luar batas - Mendekat ke area'}
                 </Text>
               </View>
               <NBButton
                 title="Perbarui Lokasi"
                 onPress={getCurrentLocation}
-                variant="secondary"
+                variant="info"
                 fullWidth
-                style={styles.refreshButton}
                 disabled={location.loading}
               />
+
+              {/* Clock-in info when clocked in - Below Perbarui Lokasi button */}
+              {!isClockIn && currentShift && (
+                <View style={styles.clockInInfo}>
+                  <View style={styles.timerContainer}>
+                    <Text style={styles.timerLabel}>Waktu Shift:</Text>
+                    <Text style={styles.timerValue}>{timer}</Text>
+                  </View>
+                  <View style={styles.clockInTimeRow}>
+                    <Text style={styles.clockInLabel}>Clock In:</Text>
+                    <Text style={styles.clockInTime}>
+                      {formatTime(currentShift.clock_in_time)}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
           ) : (
-            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <ActivityIndicator size="small" color={nbColors.primary} />
           )}
         </NBCard>
 
@@ -582,7 +661,6 @@ export function ClockInOutScreen(): JSX.Element {
                   onPress={handleCaptureSelfie}
                   variant="secondary"
                   fullWidth
-                  style={styles.retakeButton}
                 />
               </View>
             ) : (
@@ -593,7 +671,6 @@ export function ClockInOutScreen(): JSX.Element {
                   onPress={handleCaptureSelfie}
                   variant="primary"
                   fullWidth
-                  style={styles.captureButton}
                 />
               </View>
             )}
@@ -610,26 +687,27 @@ export function ClockInOutScreen(): JSX.Element {
         )}
 
         {/* Clock In/Out Button */}
-        <NBButton
-          title={isClockIn ? 'Clock In' : 'Clock Out'}
-          onPress={isClockIn ? handleClockIn : handleClockOut}
-          variant="primary"
-          fullWidth
-          style={styles.submitButton}
-          loading={isSubmitting}
-          disabled={
-            isSubmitting ||
-            location.loading ||
-            !location.latitude ||
-            !location.longitude ||
-            (isClockIn && (!isWithinBoundary || !selfieUri || !isOnline))
-          }
-          accessibilityHint={
-            isClockIn
-              ? 'Mulai shift kerja dengan verifikasi foto diri dan lokasi'
-              : 'Akhiri shift kerja saat ini'
-          }
-        />
+        <View style={styles.submitButtonContainer}>
+          <NBButton
+            title={isClockIn ? 'Clock In' : 'Clock Out'}
+            onPress={isClockIn ? handleClockIn : handleClockOut}
+            variant="primary"
+            fullWidth
+            loading={isSubmitting}
+            disabled={
+              isSubmitting ||
+              location.loading ||
+              !location.latitude ||
+              !location.longitude ||
+              (isClockIn && (!isWithinBoundary || !selfieUri || !isOnline))
+            }
+            accessibilityHint={
+              isClockIn
+                ? 'Mulai shift kerja dengan verifikasi foto diri dan lokasi'
+                : 'Akhiri shift kerja saat ini'
+            }
+          />
+        </View>
 
         {/* Offline Warning for Clock-out */}
         {!isOnline && !isClockIn && (
@@ -640,207 +718,263 @@ export function ClockInOutScreen(): JSX.Element {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+        </View>
+      </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: 'transparent',
   },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.xl,
+    padding: nbSpacing.xl,
   },
   loadingText: {
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.fontSize.base,
-    color: theme.colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: theme.spacing.lg,
+    paddingVertical: nbSpacing.md, // 16px vertical padding
+    paddingBottom: nbSpacing.xl, // Extra bottom padding for scroll comfort
   },
   header: {
-    marginBottom: theme.spacing.lg,
+    marginHorizontal: nbSpacing.md, // 16px - consistent edge spacing
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
   },
   title: {
-    fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.black,
+    marginBottom: 2, // 2px - reduced from 4px
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
+  },
+  headerSubtitle: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.gray[600],
+    lineHeight: 18, // Reduced from 20
   },
   card: {
-    marginBottom: theme.spacing.lg,
+    marginHorizontal: nbSpacing.md, // 16px - consistent edge spacing
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
+    padding: 10, // 10px - reduced from 12px
   },
   cardTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
+    fontSize: nbTypography.fontSize.base, // 16px
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.xs, // 4px - reduced from 8px
   },
   areaName: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.xs,
+    fontSize: nbTypography.fontSize.xl,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.primary,
+    marginBottom: 2, // 2px - reduced from 4px
   },
   areaAddress: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.gray[600],
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.sm,
+    marginBottom: 6, // 6px - reduced from 8px
   },
   infoLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.gray900, // Improved contrast from gray600 (#757575) to gray900 (#212121) for outdoor visibility
-    fontWeight: theme.typography.fontWeight.medium,
-    // Add text shadow for sunlight readability
-    textShadowColor: 'rgba(255, 255, 255, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
   },
   infoValue: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.textPrimary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
   },
+  // Neo Brutalism boundary status: sharp corners
   boundaryStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.sm,
-    backgroundColor: theme.colors.background,
+    marginTop: nbSpacing.sm, // 8px - reduced from 16px
+    marginBottom: nbSpacing.xs, // 4px - reduced from 8px
+    padding: nbSpacing.sm,
+    borderRadius: 0, // Sharp corners - NB style
+    backgroundColor: nbColors.gray[50],
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
   },
   statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: theme.spacing.sm,
+    width: 12,
+    height: 12,
+    borderRadius: 0, // Sharp square - NB style
+    marginRight: nbSpacing.sm,
+    borderWidth: 2,
+    borderColor: nbColors.black,
   },
   statusDotSuccess: {
-    backgroundColor: theme.colors.success,
+    backgroundColor: nbColors.success,
   },
   statusDotError: {
-    backgroundColor: theme.colors.error,
+    backgroundColor: nbColors.danger,
   },
   statusText: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
     flex: 1,
   },
   statusTextSuccess: {
-    color: theme.colors.success,
+    color: nbColors.success,
   },
   statusTextError: {
-    color: theme.colors.error,
+    color: nbColors.danger,
   },
   errorText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.error,
-    marginBottom: theme.spacing.md,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.danger,
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
   },
-  retryButton: {
-    marginTop: theme.spacing.sm,
-  },
-  refreshButton: {
-    marginTop: theme.spacing.sm,
-  },
+  // Neo Brutalism selfie image: sharp corners, thick border
   selfieImage: {
     width: '100%',
-    height: 300,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
-    backgroundColor: theme.colors.gray200,
+    height: 250, // 250px - reduced from 300px for more content
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
+    backgroundColor: nbColors.gray[200],
   },
   selfiePrompt: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.gray[600],
     textAlign: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
   },
-  captureButton: {
-    marginTop: theme.spacing.sm,
+  submitButtonContainer: {
+    marginHorizontal: nbSpacing.md, // 16px - consistent edge spacing
+    marginTop: nbSpacing.xs, // 4px - reduced from 8px
   },
-  retakeButton: {
-    marginTop: theme.spacing.sm,
-  },
-  submitButton: {
-    marginTop: theme.spacing.md,
-  },
+  // Neo Brutalism warning box: sharp corners, thick border
   offlineWarning: {
-    marginTop: theme.spacing.md,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.warning + '20',
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.warning,
+    marginHorizontal: nbSpacing.md, // 16px - consistent edge spacing
+    marginTop: nbSpacing.sm, // 8px - reduced from 16px
+    padding: nbSpacing.sm, // 8px - reduced from 16px
+    backgroundColor: nbColors.white,
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.warning,
+    ...nbShadows.sm,
   },
   offlineWarningText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.warning,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.warning,
     textAlign: 'center',
   },
-  // Persistent offline banner at top
+  // Neo Brutalism offline banner: sharp corners, solid background
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.error,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    backgroundColor: nbColors.danger,
+    padding: nbSpacing.sm, // 8px - reduced from 16px
+    marginBottom: nbSpacing.sm, // 8px - reduced from 16px
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   offlineBannerIcon: {
     fontSize: 20,
-    marginRight: theme.spacing.sm,
+    marginRight: nbSpacing.sm,
   },
   offlineBannerText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.white,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.white,
+    fontWeight: nbTypography.fontWeight.bold,
     flex: 1,
   },
-  // GPS accuracy warning box
+  // Neo Brutalism warning box: sharp corners, thick border
   warningBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: theme.spacing.md,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.warning + '20',
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.warning,
+    marginTop: nbSpacing.sm, // 8px - reduced from 16px
+    padding: nbSpacing.sm, // 8px - reduced from 16px
+    backgroundColor: nbColors.white,
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.warning,
+    ...nbShadows.sm,
   },
   warningIcon: {
     fontSize: 20,
-    marginRight: theme.spacing.sm,
+    marginRight: nbSpacing.sm,
   },
   warningText: {
     flex: 1,
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.gray900, // High contrast for outdoor visibility
-    fontWeight: theme.typography.fontWeight.medium,
-    // Add text shadow for extreme sunlight readability
-    textShadowColor: 'rgba(255, 255, 255, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
+  },
+  // Clock-in info display (compact) - Below Perbarui Lokasi button
+  clockInInfo: {
+    marginTop: nbSpacing.sm, // 8px - reduced from 16px
+    padding: 6, // 6px - reduced from 8px for compactness
+    backgroundColor: nbColors.gray[50],
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.thin, // 1px border
+    borderColor: nbColors.black,
+  },
+  timerContainer: {
+    alignItems: 'center',
+    marginBottom: 2, // 2px - reduced from 4px
+  },
+  timerLabel: {
+    fontSize: nbTypography.fontSize.xs, // 12px
+    fontWeight: nbTypography.fontWeight.medium, // 500
+    color: nbColors.gray[600],
+    marginBottom: 1, // 1px - reduced from 2px
+  },
+  timerValue: {
+    fontSize: nbTypography.fontSize.xl, // 20px - prominent timer
+    fontWeight: nbTypography.fontWeight.extrabold, // 800
+    color: nbColors.accentGrass, // Bright green for active timer
+    letterSpacing: 1,
+  },
+  clockInTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 2, // 2px - reduced from 4px
+    borderTopWidth: 1, // 1px separator line
+    borderTopColor: nbColors.gray[300],
+  },
+  clockInLabel: {
+    fontSize: nbTypography.fontSize.xs, // 12px
+    fontWeight: nbTypography.fontWeight.medium, // 500
+    color: nbColors.gray[600],
+  },
+  clockInTime: {
+    fontSize: nbTypography.fontSize.sm, // 14px
+    fontWeight: nbTypography.fontWeight.semibold, // 600
+    color: nbColors.black,
   },
 });
 

@@ -7,7 +7,7 @@
  * @see specs/ui-ux/neo-brutalism.md
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -17,6 +17,7 @@ import {
   TextStyle,
   AccessibilityProps,
   Platform,
+  AccessibilityInfo,
 } from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {
@@ -24,6 +25,7 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
+  nbBorderRadius,
   nbTypography,
   nbTouchTarget,
   nbAnimation,
@@ -32,6 +34,7 @@ import {
 export type NBButtonVariant =
   | 'primary'
   | 'secondary'
+  | 'info'
   | 'success'
   | 'danger'
   | 'ghost';
@@ -73,6 +76,11 @@ const variantStyles: Record<
   secondary: {
     bg: nbColors.white,
     text: nbColors.black,
+    border: nbColors.black,
+  },
+  info: {
+    bg: nbColors.accentSky, // Sky blue - for secondary actions
+    text: nbColors.white,
     border: nbColors.black,
   },
   success: {
@@ -127,6 +135,28 @@ export const NBButton: React.FC<NBButtonProps> = ({
   ...accessibilityProps
 }) => {
   const [isPressed, setIsPressed] = useState(false);
+  const [reduceMotionEnabled, setReduceMotionEnabled] = useState(false);
+
+  // Check for reduce motion preference
+  useEffect(() => {
+    const checkReduceMotion = async () => {
+      if (Platform.OS !== 'web') {
+        const enabled = await AccessibilityInfo.isReduceMotionEnabled();
+        setReduceMotionEnabled(enabled);
+      }
+    };
+    checkReduceMotion();
+
+    // Listen for changes
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduceMotionEnabled,
+    );
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   const variantStyle = variantStyles[variant];
   const sizeStyle = sizeStyles[size];
@@ -162,10 +192,12 @@ export const NBButton: React.FC<NBButtonProps> = ({
   }, [isDisabled, onPress]);
 
   // Calculate shadow and transform for pressed state
+  // Disable transform animation if reduce motion is enabled
   const currentShadow = isPressed ? nbShadows.active : nbShadows.md;
-  const pressTransform = isPressed
-    ? [{ translateX: 2 }, { translateY: 2 }]
-    : [{ translateX: 0 }, { translateY: 0 }];
+  const pressTransform =
+    reduceMotionEnabled || !isPressed
+      ? [{ translateX: 0 }, { translateY: 0 }]
+      : [{ translateX: 2 }, { translateY: 2 }];
 
   return (
     <TouchableOpacity
@@ -226,6 +258,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: nbTouchTarget.minWidth,
+    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
   },
   text: {
     fontWeight: nbTypography.fontWeight.semibold,

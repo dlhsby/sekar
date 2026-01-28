@@ -153,11 +153,11 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
 
     // Wait for component to mount
     await waitFor(() => {
-      expect(getByPlaceholderText(/Jelaskan pekerjaan/)).toBeTruthy();
+      expect(getByPlaceholderText(/Contoh:/)).toBeTruthy();
     });
 
     // Type description to trigger auto-save
-    const descriptionInput = getByPlaceholderText(/Jelaskan pekerjaan/);
+    const descriptionInput = getByPlaceholderText(/Contoh:/);
     fireEvent.changeText(descriptionInput, 'Test description for auto-save');
 
     // Advance time but not to 30 seconds yet
@@ -189,10 +189,10 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
     );
 
     await waitFor(() => {
-      expect(getByPlaceholderText(/Jelaskan pekerjaan/)).toBeTruthy();
+      expect(getByPlaceholderText(/Contoh:/)).toBeTruthy();
     });
 
-    const descriptionInput = getByPlaceholderText(/Jelaskan pekerjaan/);
+    const descriptionInput = getByPlaceholderText(/Contoh:/);
 
     // Type first text
     act(() => {
@@ -239,10 +239,10 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
     );
 
     await waitFor(() => {
-      expect(getByPlaceholderText(/Jelaskan pekerjaan/)).toBeTruthy();
+      expect(getByPlaceholderText(/Contoh:/)).toBeTruthy();
     });
 
-    const descriptionInput = getByPlaceholderText(/Jelaskan pekerjaan/);
+    const descriptionInput = getByPlaceholderText(/Contoh:/);
 
     // Type description (>10 characters to trigger auto-save)
     act(() => {
@@ -281,10 +281,10 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
     );
 
     await waitFor(() => {
-      expect(getByPlaceholderText(/Jelaskan pekerjaan/)).toBeTruthy();
+      expect(getByPlaceholderText(/Contoh:/)).toBeTruthy();
     });
 
-    const descriptionInput = getByPlaceholderText(/Jelaskan pekerjaan/);
+    const descriptionInput = getByPlaceholderText(/Contoh:/);
 
     // Type very short description (less than 5 chars)
     act(() => {
@@ -306,7 +306,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
   it('should auto-save when photos are added (even without description)', async () => {
     const setItemSpy = jest.spyOn(AsyncStorage, 'setItem');
 
-    const { getByText } = render(
+    const { getByTestId } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ReportSubmissionScreen />
@@ -314,13 +314,13 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
       </Provider>
     );
 
-    // Wait for component
+    // Wait for component - verify form elements loaded (no title in body anymore)
     await waitFor(() => {
-      expect(getByText(/Buat Laporan Kerja/)).toBeTruthy();
+      expect(getByTestId('add-photo-button')).toBeTruthy();
     });
 
-    // Press "Ambil Foto" button (camera button) - no gallery option anymore
-    const cameraButton = getByText('Ambil Foto');
+    // Press add photo button - no gallery option anymore
+    const cameraButton = getByTestId('add-photo-button');
     await act(async () => {
       fireEvent.press(cameraButton);
     });
@@ -440,11 +440,11 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
     );
 
     await waitFor(() => {
-      expect(getByPlaceholderText(/Jelaskan pekerjaan/)).toBeTruthy();
+      expect(getByPlaceholderText(/Contoh:/)).toBeTruthy();
     });
 
     // Fill form
-    const descriptionInput = getByPlaceholderText(/Jelaskan pekerjaan/);
+    const descriptionInput = getByPlaceholderText(/Contoh:/);
     fireEvent.changeText(descriptionInput, 'Test report description');
 
     // Select work type
@@ -481,10 +481,10 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
     );
 
     await waitFor(() => {
-      expect(getByPlaceholderText(/Jelaskan pekerjaan/)).toBeTruthy();
+      expect(getByPlaceholderText(/Contoh:/)).toBeTruthy();
     });
 
-    const descriptionInput = getByPlaceholderText(/Jelaskan pekerjaan/);
+    const descriptionInput = getByPlaceholderText(/Contoh:/);
 
     // Simulate rapid typing
     act(() => {
@@ -521,7 +521,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
       // Mock sufficient disk space (5GB)
       DeviceInfo.getFreeDiskStorage.mockResolvedValue(5 * 1024 * 1024 * 1024);
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -533,8 +533,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });
@@ -553,7 +553,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
 
       const alertSpy = jest.spyOn(Alert, 'alert');
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -565,8 +565,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });
@@ -591,7 +591,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
 
       const alertSpy = jest.spyOn(Alert, 'alert');
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -603,8 +603,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });
@@ -624,7 +624,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
 
       const mediaService = require('../../../services/media').mediaService;
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -636,8 +636,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });
@@ -656,7 +656,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
       const mediaService = require('../../../services/media').mediaService;
       const alertSpy = jest.spyOn(Alert, 'alert');
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -668,8 +668,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });
@@ -687,7 +687,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
 
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -699,8 +699,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });
@@ -722,7 +722,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       const mediaService = require('../../../services/media').mediaService;
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -734,8 +734,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });
@@ -756,7 +756,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
 
       const alertSpy = jest.spyOn(Alert, 'alert');
 
-      const { getByText } = render(
+      const { getByTestId } = render(
         <Provider store={store}>
           <NavigationContainer>
             <ReportSubmissionScreen />
@@ -768,8 +768,8 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
         expect(getCurrentPositionMock).toHaveBeenCalled();
       });
 
-      // Click "Ambil Foto" button
-      const photoButton = getByText('Ambil Foto');
+      // Click add photo button
+      const photoButton = getByTestId('add-photo-button');
       await act(async () => {
         fireEvent.press(photoButton);
       });

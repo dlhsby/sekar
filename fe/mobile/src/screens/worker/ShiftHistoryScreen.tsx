@@ -11,15 +11,26 @@ import {
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { EmptyState, SkeletonLoader } from '../../components/common';
-import { NBCard } from '../../components/nb';
+import { NBCard, NBEmptyState, NBBackgroundPattern } from '../../components/nb';
 import { getMyShifts } from '../../services/api/shiftsApi';
 import { getToken, getRefreshToken } from '../../services/storage/secureStorage';
 import { isTokenExpired, getTokenTimeRemaining } from '../../utils/tokenUtils';
-import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorderRadius,
+  nbShadows,
+  nbBorders,
+} from '../../constants/nbTokens';
 import type { CurrentShiftResponse } from '../../types/api.types';
+
+interface ShiftHistoryScreenProps {
+  navigation: any;
+}
 
 /**
  * Format date to Indonesian format
@@ -54,7 +65,7 @@ function calculateDuration(
   endTime: string | null | undefined
 ): { hours: number; minutes: number; formatted: string } {
   if (!endTime) {
-    return { hours: 0, minutes: 0, formatted: 'Belum selesai' };
+    return { hours: 0, minutes: 0, formatted: '—' }; // Em dash for active shift
   }
 
   const start = new Date(startTime).getTime();
@@ -131,7 +142,7 @@ function ShiftCard({ shift }: ShiftCardProps): React.JSX.Element {
               styles.statusText,
               isActive ? styles.statusTextActive : styles.statusTextCompleted,
             ]}>
-            {isActive ? 'Aktif' : 'Selesai'}
+            {isActive ? 'AKTIF' : 'SELESAI'}
           </Text>
         </View>
       </View>
@@ -141,11 +152,11 @@ function ShiftCard({ shift }: ShiftCardProps): React.JSX.Element {
           <MaterialCommunityIcons
             name="login"
             size={18}
-            color={colors.success}
+            color={nbColors.success}
             style={styles.timeIcon}
           />
           <View>
-            <Text style={styles.timeLabel}>Clock In</Text>
+            <Text style={styles.timeLabel}>CLOCK IN</Text>
             <Text style={styles.timeValue}>{formatTime(shift.clock_in_time)}</Text>
           </View>
         </View>
@@ -156,11 +167,11 @@ function ShiftCard({ shift }: ShiftCardProps): React.JSX.Element {
           <MaterialCommunityIcons
             name="logout"
             size={18}
-            color={isActive ? colors.gray400 : colors.error}
+            color={isActive ? nbColors.gray[400] : nbColors.danger}
             style={styles.timeIcon}
           />
           <View>
-            <Text style={styles.timeLabel}>Clock Out</Text>
+            <Text style={styles.timeLabel}>CLOCK OUT</Text>
             <Text style={[styles.timeValue, isActive && styles.timeValueInactive]}>
               {shift.clock_out_time ? formatTime(shift.clock_out_time) : '--:--'}
             </Text>
@@ -173,11 +184,11 @@ function ShiftCard({ shift }: ShiftCardProps): React.JSX.Element {
           <MaterialCommunityIcons
             name="timer-outline"
             size={18}
-            color={colors.primary}
+            color={nbColors.primary}
             style={styles.timeIcon}
           />
           <View>
-            <Text style={styles.timeLabel}>Durasi</Text>
+            <Text style={styles.timeLabel}>DURASI</Text>
             <Text style={[styles.timeValue, styles.durationValue]}>
               {duration.formatted}
             </Text>
@@ -201,7 +212,7 @@ function DateHeader({ date }: DateHeaderProps): React.JSX.Element {
       <MaterialCommunityIcons
         name="calendar"
         size={16}
-        color={colors.textSecondary}
+        color={nbColors.gray[500]}
         style={styles.dateIcon}
       />
       <Text style={styles.dateText}>{formatDate(date)}</Text>
@@ -212,11 +223,27 @@ function DateHeader({ date }: DateHeaderProps): React.JSX.Element {
 /**
  * Shift History Screen Component
  */
-export function ShiftHistoryScreen(): React.JSX.Element {
+export function ShiftHistoryScreen({ navigation }: ShiftHistoryScreenProps): React.JSX.Element {
   const [shifts, setShifts] = useState<CurrentShiftResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Set up header with back button to Profile
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Profile')}
+          style={styles.backButton}
+          accessibilityLabel="Kembali ke Profil"
+          accessibilityRole="button"
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   /**
    * Load shifts from API
@@ -288,9 +315,17 @@ export function ShiftHistoryScreen(): React.JSX.Element {
    */
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <SkeletonLoader type="list" count={5} />
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={nbColors.primary} />
+          <Text style={styles.loadingText}>Memuat riwayat shift...</Text>
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
@@ -299,14 +334,23 @@ export function ShiftHistoryScreen(): React.JSX.Element {
    */
   if (error) {
     return (
-      <View style={styles.container}>
-        <EmptyState
-          variant="error"
-          description={error}
-          ctaLabel="Coba Lagi"
-          onCtaPress={loadShifts}
-        />
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.container}>
+          <NBEmptyState
+            variant="error"
+            title="Gagal Memuat Data"
+            description={error}
+            ctaLabel="Coba Lagi"
+            onCTA={loadShifts}
+            testID="shift-history-error"
+          />
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
@@ -315,9 +359,21 @@ export function ShiftHistoryScreen(): React.JSX.Element {
    */
   if (shifts.length === 0) {
     return (
-      <View style={styles.container}>
-        <EmptyState variant="shifts" />
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.container}>
+          <NBEmptyState
+            variant="noData"
+            title="Belum Ada Riwayat Shift"
+            description="Riwayat shift Anda akan muncul di sini setelah Anda menyelesaikan shift"
+            testID="shift-history-empty"
+          />
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
@@ -345,57 +401,76 @@ export function ShiftHistoryScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Summary Header */}
-      <NBCard variant="elevated" style={styles.summaryCard}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>{shifts.length}</Text>
-          <Text style={styles.summaryLabel}>Total Shift</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>
-            {shifts.reduce((acc, shift) => {
-              if (!shift.clock_out_time) {return acc;}
-              const duration = calculateDuration(
-                shift.clock_in_time,
-                shift.clock_out_time
-              );
-              return acc + duration.hours + duration.minutes / 60;
-            }, 0).toFixed(1)}
-          </Text>
-          <Text style={styles.summaryLabel}>Total Jam</Text>
-        </View>
-      </NBCard>
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <View style={styles.container}>
+        {/* Summary Header */}
+        <NBCard variant="elevated" style={styles.summaryCard}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{shifts.length}</Text>
+            <Text style={styles.summaryLabel}>TOTAL SHIFT</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>
+              {shifts.reduce((acc, shift) => {
+                if (!shift.clock_out_time) {return acc;}
+                const duration = calculateDuration(
+                  shift.clock_in_time,
+                  shift.clock_out_time
+                );
+                return acc + duration.hours + duration.minutes / 60;
+              }, 0).toFixed(1)}
+            </Text>
+            <Text style={styles.summaryLabel}>TOTAL JAM</Text>
+          </View>
+        </NBCard>
 
-      {/* Shifts List */}
-      <FlatList
-        data={groupedShifts}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.date}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+        {/* Shifts List */}
+        <FlatList
+          data={groupedShifts}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.date}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={[nbColors.primary]}
+              tintColor={nbColors.primary}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: 'transparent', // NBBackgroundPattern provides the background
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  loadingText: {
+    marginTop: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
   listContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing.xl,
+    flexGrow: 1,
   },
 
   // Summary Card
@@ -403,95 +478,107 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
+    backgroundColor: nbColors.white,
+    marginHorizontal: nbSpacing.md,
+    marginTop: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
+    paddingVertical: 12, // Compact style (was lg: 24px)
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   summaryItem: {
     flex: 1,
     alignItems: 'center',
   },
   summaryDivider: {
-    width: 1,
+    width: nbBorders.default, // 3px for NB consistency
     height: 40,
-    backgroundColor: colors.border,
+    backgroundColor: nbColors.black, // Bold divider for NB
   },
   summaryValue: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.primary,
+    marginBottom: nbSpacing.xs,
   },
   summaryLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[600],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Date Header
   dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
+    paddingVertical: nbSpacing.md,
+    paddingHorizontal: nbSpacing.xs,
   },
   dateIcon: {
-    marginRight: spacing.sm,
+    marginRight: nbSpacing.sm,
   },
   dateText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[700],
   },
 
   // Shift Card
   shiftCard: {
-    marginBottom: spacing.sm,
-    padding: spacing.md,
+    marginBottom: nbSpacing.sm,
+    padding: 12, // Compact style (was md: 16px)
   },
   shiftHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.md,
+    marginBottom: nbSpacing.md,
   },
   areaInfo: {
     flex: 1,
-    marginRight: spacing.sm,
+    marginRight: nbSpacing.sm,
   },
   areaName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs / 2,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[700],
+    marginBottom: nbSpacing.xs / 2,
   },
   areaType: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[500],
   },
   statusBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs / 2,
-    borderRadius: borderRadius.full,
+    width: 70, // Fixed width for consistency
+    paddingVertical: nbSpacing.xs / 2,
+    borderRadius: 0, // Sharp corners for NB badges
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    alignItems: 'center', // Center text horizontally
+    justifyContent: 'center', // Center text vertically
   },
   statusActive: {
-    backgroundColor: colors.successLight || `${colors.success}20`,
+    backgroundColor: nbColors.success, // Green fill for active
   },
   statusCompleted: {
-    backgroundColor: colors.gray200,
+    backgroundColor: nbColors.gray[200], // Light gray for completed
   },
   statusText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'center', // Center text
   },
   statusTextActive: {
-    color: colors.success,
+    color: nbColors.white, // White text on green background
   },
   statusTextCompleted: {
-    color: colors.textSecondary,
+    color: nbColors.gray[600], // Dark gray text on light gray
   },
 
   // Time Row
@@ -506,29 +593,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeIcon: {
-    marginRight: spacing.xs,
+    marginRight: nbSpacing.xs,
   },
   timeDivider: {
-    width: 1,
+    width: nbBorders.thin, // 2px for subtle divider
     height: 32,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.sm,
+    backgroundColor: nbColors.black, // Bold divider for NB
+    marginHorizontal: nbSpacing.sm,
   },
   timeLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[600],
     marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   timeValue: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[700],
   },
   timeValueInactive: {
-    color: colors.gray400,
+    color: nbColors.gray[400],
   },
   durationValue: {
-    color: colors.primary,
+    color: nbColors.primary,
+  },
+  backButton: {
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
   },
 });
 

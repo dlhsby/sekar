@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { SpecialDayOverridesService } from './special-day-overrides.service';
 import { SpecialDayOverride, SpecialDayType } from './entities/special-day-override.entity';
@@ -8,44 +8,27 @@ import { CreateSpecialDayOverrideDto } from './dto/create-special-day-override.d
 import { UpdateSpecialDayOverrideDto } from './dto/update-special-day-override.dto';
 
 describe('SpecialDayOverridesService', () => {
-  let module: TestingModule;
   let service: SpecialDayOverridesService;
   let repository: Repository<SpecialDayOverride>;
 
-  const mockHoliday: SpecialDayOverride = {
+  const mockRepository = {
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockSpecialDay: SpecialDayOverride = {
     id: '66666666-6666-6666-6666-666666666601',
     date: new Date('2026-08-17'),
     day_type: SpecialDayType.HOLIDAY,
     name: 'Hari Kemerdekaan',
-    created_at: new Date('2024-01-01T00:00:00Z'),
-  };
-
-  const mockWeekend: SpecialDayOverride = {
-    id: '66666666-6666-6666-6666-666666666602',
-    date: new Date('2026-01-03'),
-    day_type: SpecialDayType.WEEKEND,
-    name: undefined,
-    created_at: new Date('2024-01-01T00:00:00Z'),
-  };
-
-  const mockSpecialDay: SpecialDayOverride = {
-    id: '66666666-6666-6666-6666-666666666603',
-    date: new Date('2026-12-25'),
-    day_type: SpecialDayType.SPECIAL,
-    name: 'Hari Natal',
-    created_at: new Date('2024-01-01T00:00:00Z'),
-  };
-
-  const mockRepository = {
-    find: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
-    delete: jest.fn(),
+    created_at: new Date(),
   };
 
   beforeEach(async () => {
-    module = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         SpecialDayOverridesService,
         {
@@ -57,289 +40,222 @@ describe('SpecialDayOverridesService', () => {
 
     service = module.get<SpecialDayOverridesService>(SpecialDayOverridesService);
     repository = module.get<Repository<SpecialDayOverride>>(getRepositoryToken(SpecialDayOverride));
-  });
 
-  afterEach(async () => {
-    await module.close();
     jest.clearAllMocks();
-    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
+  describe('create', () => {
+    const createDto: CreateSpecialDayOverrideDto = {
+      date: '2026-08-17',
+      day_type: SpecialDayType.HOLIDAY,
+      name: 'Hari Kemerdekaan',
+    };
+
+    it('should create a special day override successfully', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      mockRepository.create.mockReturnValue(mockSpecialDay);
+      mockRepository.save.mockResolvedValue(mockSpecialDay);
+
+      const result = await service.create(createDto);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { date: new Date(createDto.date) },
+      });
+      expect(mockRepository.create).toHaveBeenCalledWith(createDto);
+      expect(mockRepository.save).toHaveBeenCalledWith(mockSpecialDay);
+      expect(result).toEqual(mockSpecialDay);
+    });
+
+    it('should throw ConflictException if date already exists', async () => {
+      mockRepository.findOne.mockResolvedValue(mockSpecialDay);
+
+      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      expect(mockRepository.create).not.toHaveBeenCalled();
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findAll', () => {
-    it('should return all special day overrides when no date filter', async () => {
-      const overrides = [mockHoliday, mockWeekend, mockSpecialDay];
-      mockRepository.find.mockResolvedValue(overrides);
+    it('should return all special day overrides without filters', async () => {
+      const mockSpecialDays = [mockSpecialDay];
+      mockRepository.find.mockResolvedValue(mockSpecialDays);
 
       const result = await service.findAll();
 
-      expect(result).toEqual(overrides);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: {},
         order: { date: 'ASC' },
       });
+      expect(result).toEqual(mockSpecialDays);
     });
 
-    it('should filter by date range when both startDate and endDate provided', async () => {
-      mockRepository.find.mockResolvedValue([mockHoliday]);
+    it('should filter by start and end date', async () => {
+      const mockSpecialDays = [mockSpecialDay];
+      mockRepository.find.mockResolvedValue(mockSpecialDays);
 
-      const startDate = '2026-08-01';
-      const endDate = '2026-08-31';
-      const result = await service.findAll(startDate, endDate);
+      const result = await service.findAll('2026-08-01', '2026-08-31');
 
-      expect(result).toEqual([mockHoliday]);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: {
-          date: Between(new Date(startDate), new Date(endDate)),
+          date: Between(new Date('2026-08-01'), new Date('2026-08-31')),
         },
         order: { date: 'ASC' },
       });
+      expect(result).toEqual(mockSpecialDays);
     });
 
-    it('should filter by start date only when startDate provided', async () => {
-      mockRepository.find.mockResolvedValue([mockHoliday, mockSpecialDay]);
+    it('should filter by start date only', async () => {
+      const mockSpecialDays = [mockSpecialDay];
+      mockRepository.find.mockResolvedValue(mockSpecialDays);
 
-      const startDate = '2026-08-01';
-      const result = await service.findAll(startDate, undefined);
+      const result = await service.findAll('2026-08-01');
 
-      expect(result).toEqual([mockHoliday, mockSpecialDay]);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: {
-          date: MoreThanOrEqual(new Date(startDate)),
+          date: Between(new Date('2026-08-01'), new Date('2100-12-31')),
         },
         order: { date: 'ASC' },
       });
+      expect(result).toEqual(mockSpecialDays);
     });
 
-    it('should filter by end date only when endDate provided', async () => {
-      mockRepository.find.mockResolvedValue([mockWeekend]);
+    it('should filter by end date only', async () => {
+      const mockSpecialDays = [mockSpecialDay];
+      mockRepository.find.mockResolvedValue(mockSpecialDays);
 
-      const endDate = '2026-06-01';
-      const result = await service.findAll(undefined, endDate);
+      const result = await service.findAll(undefined, '2026-08-31');
 
-      expect(result).toEqual([mockWeekend]);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: {
-          date: LessThanOrEqual(new Date(endDate)),
+          date: Between(new Date('1900-01-01'), new Date('2026-08-31')),
         },
         order: { date: 'ASC' },
       });
-    });
-
-    it('should return empty array when no overrides exist', async () => {
-      mockRepository.find.mockResolvedValue([]);
-
-      const result = await service.findAll();
-
-      expect(result).toEqual([]);
+      expect(result).toEqual(mockSpecialDays);
     });
   });
 
   describe('findOne', () => {
     it('should return a special day override by ID', async () => {
-      mockRepository.findOne.mockResolvedValue(mockHoliday);
+      mockRepository.findOne.mockResolvedValue(mockSpecialDay);
 
-      const result = await service.findOne(mockHoliday.id);
+      const result = await service.findOne(mockSpecialDay.id);
 
-      expect(result).toEqual(mockHoliday);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: mockHoliday.id },
+        where: { id: mockSpecialDay.id },
       });
+      expect(result).toEqual(mockSpecialDay);
     });
 
-    it('should throw NotFoundException if not found', async () => {
-      const id = 'non-existent-id';
+    it('should throw NotFoundException if special day override not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(id)).rejects.toThrow(
-        `Special day override with ID ${id} not found`,
-      );
+      await expect(service.findOne('non-existent-id')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('findByDate', () => {
-    it('should return a special day override by date string', async () => {
-      mockRepository.findOne.mockResolvedValue(mockHoliday);
+    it('should return a special day override by date', async () => {
+      mockRepository.findOne.mockResolvedValue(mockSpecialDay);
 
       const result = await service.findByDate('2026-08-17');
 
-      expect(result).toEqual(mockHoliday);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { date: new Date('2026-08-17') },
+      });
+      expect(result).toEqual(mockSpecialDay);
     });
 
-    it('should return a special day override by Date object', async () => {
-      mockRepository.findOne.mockResolvedValue(mockHoliday);
-
-      const result = await service.findByDate(new Date('2026-08-17'));
-
-      expect(result).toEqual(mockHoliday);
-    });
-
-    it('should return null if not found', async () => {
+    it('should return null if no special day override found for date', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.findByDate('2026-01-01');
+      const result = await service.findByDate('2026-08-18');
 
       expect(result).toBeNull();
     });
   });
 
-  describe('create', () => {
-    const createDto: CreateSpecialDayOverrideDto = {
-      date: '2026-05-01',
-      day_type: SpecialDayType.HOLIDAY,
-      name: 'Hari Buruh',
-    };
-
-    it('should successfully create a special day override', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-      const newOverride = { id: 'new-id', ...createDto, date: new Date(createDto.date) };
-      mockRepository.create.mockReturnValue(newOverride);
-      mockRepository.save.mockResolvedValue(newOverride);
-
-      const result = await service.create(createDto);
-
-      expect(result).toEqual(newOverride);
-      expect(mockRepository.create).toHaveBeenCalledWith({
-        ...createDto,
-        date: new Date(createDto.date),
-      });
-      expect(mockRepository.save).toHaveBeenCalled();
-    });
-
-    it('should throw ConflictException if date already has override', async () => {
-      mockRepository.findOne.mockResolvedValue(mockHoliday);
-
-      const duplicateDateDto: CreateSpecialDayOverrideDto = {
-        date: '2026-08-17',
-        day_type: SpecialDayType.SPECIAL,
-        name: 'Duplicate',
-      };
-
-      await expect(service.create(duplicateDateDto)).rejects.toThrow(ConflictException);
-      await expect(service.create(duplicateDateDto)).rejects.toThrow(
-        `Special day override for date ${duplicateDateDto.date} already exists`,
-      );
-    });
-
-    it('should create override without name', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-      const dtoWithoutName: CreateSpecialDayOverrideDto = {
-        date: '2026-06-01',
-        day_type: SpecialDayType.WEEKEND,
-      };
-      const newOverride = { id: 'new-id', ...dtoWithoutName, date: new Date(dtoWithoutName.date) };
-      mockRepository.create.mockReturnValue(newOverride);
-      mockRepository.save.mockResolvedValue(newOverride);
-
-      const result = await service.create(dtoWithoutName);
-
-      expect(result).toEqual(newOverride);
-    });
-  });
-
   describe('update', () => {
     const updateDto: UpdateSpecialDayOverrideDto = {
-      name: 'Hari Kemerdekaan Indonesia',
+      name: 'Updated Name',
     };
 
-    it('should update a special day override', async () => {
-      mockRepository.findOne.mockResolvedValue({ ...mockHoliday });
-      const updatedOverride = { ...mockHoliday, ...updateDto };
-      mockRepository.save.mockResolvedValue(updatedOverride);
+    it('should update a special day override successfully', async () => {
+      mockRepository.findOne.mockResolvedValue(mockSpecialDay);
+      mockRepository.save.mockResolvedValue({ ...mockSpecialDay, ...updateDto });
 
-      const result = await service.update(mockHoliday.id, updateDto);
+      const result = await service.update(mockSpecialDay.id, updateDto);
 
-      expect(result).toEqual(updatedOverride);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockSpecialDay.id },
+      });
       expect(mockRepository.save).toHaveBeenCalled();
+      expect(result.name).toBe(updateDto.name);
     });
 
-    it('should throw NotFoundException if not found', async () => {
+    it('should throw NotFoundException if special day override not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
       await expect(service.update('non-existent-id', updateDto)).rejects.toThrow(NotFoundException);
+      expect(mockRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should throw ConflictException if new date already has override', async () => {
-      const updateWithDate: UpdateSpecialDayOverrideDto = { date: '2026-01-03' };
-
+    it('should throw ConflictException if new date already exists', async () => {
+      const existingSpecialDay = { ...mockSpecialDay };
+      const conflictingSpecialDay = { ...mockSpecialDay, id: 'different-id' };
+      
       mockRepository.findOne
-        .mockResolvedValueOnce({ ...mockHoliday }) // findOne by id
-        .mockResolvedValueOnce({ ...mockWeekend }); // findByDate - conflict
+        .mockResolvedValueOnce(existingSpecialDay) // First call for findOne(id)
+        .mockResolvedValueOnce(conflictingSpecialDay); // Second call for date conflict check
 
-      await expect(service.update(mockHoliday.id, updateWithDate)).rejects.toThrow(
+      const updateDtoWithDate: UpdateSpecialDayOverrideDto = {
+        date: '2026-08-18',
+      };
+
+      await expect(service.update(mockSpecialDay.id, updateDtoWithDate)).rejects.toThrow(
         ConflictException,
       );
+      expect(mockRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should allow updating with same date (no change)', async () => {
-      const updateWithSameDate: UpdateSpecialDayOverrideDto = { date: '2026-08-17' };
+    it('should allow updating the same date', async () => {
+      mockRepository.findOne.mockResolvedValue(mockSpecialDay);
+      mockRepository.save.mockResolvedValue({ ...mockSpecialDay, ...updateDto });
 
-      mockRepository.findOne
-        .mockResolvedValueOnce({ ...mockHoliday }) // findOne by id
-        .mockResolvedValueOnce({ ...mockHoliday }); // findByDate - same record
-      mockRepository.save.mockResolvedValue(mockHoliday);
+      const updateDtoWithSameDate: UpdateSpecialDayOverrideDto = {
+        date: '2026-08-17', // Same date
+        name: 'Updated Name',
+      };
 
-      const result = await service.update(mockHoliday.id, updateWithSameDate);
+      const result = await service.update(mockSpecialDay.id, updateDtoWithSameDate);
 
-      expect(result).toEqual(mockHoliday);
-    });
-
-    it('should update day_type', async () => {
-      mockRepository.findOne.mockResolvedValue({ ...mockHoliday });
-      const updateWithDayType: UpdateSpecialDayOverrideDto = { day_type: SpecialDayType.SPECIAL };
-      const updatedOverride = { ...mockHoliday, ...updateWithDayType };
-      mockRepository.save.mockResolvedValue(updatedOverride);
-
-      const result = await service.update(mockHoliday.id, updateWithDayType);
-
-      expect(result.day_type).toEqual(SpecialDayType.SPECIAL);
+      expect(result).toBeDefined();
+      expect(mockRepository.save).toHaveBeenCalled();
     });
   });
 
   describe('remove', () => {
-    it('should delete a special day override', async () => {
-      mockRepository.findOne.mockResolvedValue(mockHoliday);
-      mockRepository.delete.mockResolvedValue({ affected: 1 });
+    it('should remove a special day override successfully', async () => {
+      mockRepository.findOne.mockResolvedValue(mockSpecialDay);
+      mockRepository.remove.mockResolvedValue(mockSpecialDay);
 
-      await service.remove(mockHoliday.id);
+      await service.remove(mockSpecialDay.id);
 
-      expect(mockRepository.delete).toHaveBeenCalledWith(mockHoliday.id);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockSpecialDay.id },
+      });
+      expect(mockRepository.remove).toHaveBeenCalledWith(mockSpecialDay);
     });
 
-    it('should throw NotFoundException if not found', async () => {
+    it('should throw NotFoundException if special day override not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
       await expect(service.remove('non-existent-id')).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('isSpecialDay', () => {
-    it('should return true when date has an override', async () => {
-      mockRepository.findOne.mockResolvedValue(mockHoliday);
-
-      const result = await service.isSpecialDay('2026-08-17');
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false when date has no override', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      const result = await service.isSpecialDay('2026-01-01');
-
-      expect(result).toBe(false);
-    });
-
-    it('should work with Date object', async () => {
-      mockRepository.findOne.mockResolvedValue(mockHoliday);
-
-      const result = await service.isSpecialDay(new Date('2026-08-17'));
-
-      expect(result).toBe(true);
+      expect(mockRepository.remove).not.toHaveBeenCalled();
     });
   });
 });

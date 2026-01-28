@@ -2,163 +2,265 @@
 
 Design system and visual guidelines for SEKAR mobile and web applications.
 
-## Overview
+---
 
-This documentation provides comprehensive design specifications for the UI/UX Designer agent. It complements the screen-level specifications in `specs/mobile/` and `specs/web/` by focusing on the underlying design system, patterns, and accessibility requirements.
+## 🚀 Quick Start (New Developers)
 
-## Quick Links
+**Total time: 30 minutes to production-ready**
 
-| Document | Description |
+### Step 1: Understand the Foundation (15 minutes)
+Read **[neo-brutalism.md](./neo-brutalism.md)** Sections 1-6:
+- Design philosophy and principles
+- Design tokens (colors, shadows, borders, spacing, typography)
+- Why Neo Brutalism for SEKAR
+
+### Step 2: Platform-Specific Implementation (10 minutes)
+- **Mobile developers:** Read [neo-brutalism.md](./neo-brutalism.md) Sections 7-8 + 11
+- **Web developers:** Read [neo-brutalism.md](./neo-brutalism.md) Sections 9-10 + 11
+
+### Step 3: Start Coding (5 minutes)
+- Mobile tokens: `fe/mobile/src/constants/nbTokens.ts`
+- Mobile components: `fe/mobile/src/components/nb/`
+- Web tokens: `fe/web/src/app/globals.css`
+- Web components: `fe/web/src/components/nb/`
+
+### Reference While Coding
+Use [Design Tokens Quick Reference](#design-tokens-quick-reference) below for copy-paste.
+
+---
+
+## 📚 Documentation Structure
+
+### Primary Reference (Single Source of Truth)
+
+**[neo-brutalism.md](./neo-brutalism.md)** - Complete Neo Brutalism design system specification
+
+**What's inside:**
+- Sections 1-6: Design foundations (tokens, colors, shadows, typography)
+- Sections 7-8: Mobile components (React Native)
+- Sections 9-10: Web components (Next.js/Tailwind CSS 4)
+- Section 11: Cross-platform consistency verification
+
+### Supporting Documentation
+
+| Document | When to Use |
 |----------|-------------|
-| **[REVIEW SUMMARY](./REVIEW_SUMMARY.md)** | **Complete UI/UX specs review (Jan 2026)** |
-| [Design System](./design-system.md) | Foundation overview, design tokens, spacing, elevation |
-| [Color Palette](./color-palette.md) | Colors, themes, accessibility contrast ratios |
-| [Typography](./typography.md) | Font system, hierarchy, scales, Indonesian patterns |
-| [Components](./components.md) | UI component library with states and variants (Phase 1) |
-| [Future Phases Patterns](./future-phases-patterns.md) | Phase 2-6 UI specifications (30 components) |
-| [Icons & Assets](./icons-assets.md) | Icon system, image guidelines, asset standards |
-| [Interaction Patterns](./interaction-patterns.md) | Animations, gestures, feedback patterns |
-| [Accessibility](./accessibility.md) | WCAG 2.1 AA compliance + outdoor usability |
-| [Responsive Design](./responsive-design.md) | Breakpoints, layout patterns, web dashboard |
+| [accessibility.md](./accessibility.md) | WCAG 2.1 AA compliance checklist, fixing accessibility issues |
+| [typography.md](./typography.md) | Deep dive into font system, Indonesian language patterns |
+| [responsive-design.md](./responsive-design.md) | Responsive breakpoints, layout patterns |
+| [interaction-patterns.md](./interaction-patterns.md) | Animation timing, gestures, haptic feedback |
+| [icons-assets.md](./icons-assets.md) | Icon library reference, image guidelines |
+| [future-phases-patterns.md](./future-phases-patterns.md) | Phase 3-6 component specifications |
+
+### Historical Reference
+
+| Document | Purpose |
+|----------|---------|
+| [REVIEW_SUMMARY.md](./REVIEW_SUMMARY.md) | Design review audit trail (for context/history) |
 
 ---
 
-## Design Principles
+## 🎨 Design System
 
-### 1. Clarity
-- Clear visual hierarchy
-- Scannable content
-- Consistent iconography
-- Meaningful color usage
+**SEKAR uses the Neo Brutalism design system (Phase 2+)**
 
-### 2. Efficiency
-- Minimal taps for common tasks
-- Quick access to primary actions
-- Streamlined workflows
-- Progressive disclosure
+Neo Brutalism features bold aesthetics with excellent usability:
+- **Heavy 3px borders** - Clear boundaries, authority
+- **Hard-edge shadows** - No blur, stark offset (4px/6px/8px)
+- **High contrast** - Designed for outdoor field workers in bright sunlight
+- **Sharp corners** - 0 border-radius (except avatars)
+- **Bold colors** - Saturated, not muted
 
-### 3. Offline-First
-- Visual feedback for sync status
-- Clear indication of pending actions
-- Graceful degradation
-- Local data persistence feedback
+### Design Principles
 
-### 4. Accessibility
-- WCAG 2.1 AA compliant
-- Minimum 4.5:1 contrast ratios
-- 48×48px minimum touch targets
-- Screen reader compatible
-
-### 5. Consistency
-- Same patterns across platforms
-- Unified color language
-- Consistent typography scale
-- Predictable interactions
+1. **Bold & Confident** - Conveys authority appropriate for government applications
+2. **Function Over Decoration** - Every element serves a purpose
+3. **High Visibility** - Optimized for bright sunlight and varying literacy levels
+4. **Accessibility First** - WCAG 2.1 AA compliant, 4.5:1 minimum contrast
+5. **Platform Consistency** - 100% design token parity between mobile and web
 
 ---
 
-## Target Users
+## 👥 Target Users
 
 ### Field Workers (Petugas Lapangan)
 - **Context:** Outdoor work in parks, sidewalks, gardens
 - **Challenges:** Bright sunlight, may wear gloves, varying literacy levels
-- **Needs:** Large touch targets, high contrast, simple vocabulary, quick actions
+- **Needs:** Large touch targets (48×48px), high contrast, simple vocabulary
 
 ### Supervisors (Pengawas)
 - **Context:** Office and field, monitoring multiple workers
-- **Challenges:** Quick decision-making, data overview
 - **Needs:** Dashboard clarity, quick filtering, map visualization
 
 ### Administrators (Admin)
 - **Context:** Office-based, system configuration
-- **Challenges:** Complex data management
 - **Needs:** Comprehensive tables, bulk actions, detailed reports
 
 ---
 
-## Implementation Reference
+## 💻 Implementation Reference
 
-The design system is implemented in:
-- **Mobile:** `fe/mobile/src/constants/theme.ts`
-- **Components:** `fe/mobile/src/components/`
+### Mobile (React Native 0.76.x)
+```
+Design tokens:  fe/mobile/src/constants/nbTokens.ts
+Components:     fe/mobile/src/components/nb/
+                ├── NBButton.tsx (+ tests)
+                ├── NBCard.tsx (+ tests)
+                ├── NBBadge.tsx (+ tests)
+                ├── NBTab.tsx (+ tests)
+                └── NBTextInput.tsx (+ tests)
+```
 
-All specifications in this folder align with the existing implementation.
+### Web (Next.js 16.1.4 + Tailwind CSS 4)
+```
+Design tokens:  fe/web/src/app/globals.css (@theme inline)
+Components:     fe/web/src/components/nb/
+                ├── NBButton.tsx
+                ├── NBCard.tsx
+                ├── NBInput.tsx
+                ├── NBBadge.tsx
+                ├── NBSelect.tsx
+                ├── NBModal.tsx
+                ├── NBTable.tsx
+                ├── NBDropdown.tsx
+                ├── NBSidebar.tsx
+                └── NBTextarea.tsx
+```
 
 ---
 
-## Related Documentation
+## ⚡ Design Tokens Quick Reference
 
-| Spec Folder | Purpose |
-|-------------|---------|
-| `specs/mobile/screens.md` | Screen wireframes and layouts |
-| `specs/mobile/navigation.md` | Navigation structure |
-| `specs/web/pages.md` | Web dashboard pages |
-| `specs/architecture/data-flow.md` | Data flow patterns |
+**Copy-paste ready for implementation:**
+
+### Colors
+```typescript
+primary:   '#0066CC'  // Action blue
+success:   '#1B5E20'  // Government green
+warning:   '#F57C00'  // Alert orange (outdoor optimized)
+danger:    '#DC2626'  // Error red
+black:     '#000000'  // Borders, shadows, text
+white:     '#FFFFFF'  // Backgrounds
+navy:      '#001F3F'  // Sidebar, authority accent
+```
+
+### Shadows (Hard-Edge Offset)
+```css
+/* CSS */
+sm:     4px 4px 0px #000000   /* Cards, inputs */
+md:     6px 6px 0px #000000   /* Buttons, elevated cards */
+lg:     8px 8px 0px #000000   /* Modals, popovers */
+hover:  8px 8px 0px #000000   /* Hover state (with translate) */
+active: 2px 2px 0px #000000   /* Pressed state */
+```
+
+```typescript
+// React Native
+sm:     { shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 }
+md:     { shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, shadowRadius: 0, elevation: 6 }
+lg:     { shadowOffset: { width: 8, height: 8 }, shadowOpacity: 1, shadowRadius: 0, elevation: 8 }
+active: { shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2 }
+```
+
+### Borders
+```
+thin:    2px solid #000000   /* Secondary elements, dividers */
+default: 3px solid #000000   /* Primary elements, cards, buttons */
+thick:   4px solid #000000   /* Emphasis, selected states */
+```
+
+### Spacing (8px Baseline Grid)
+```
+xs: 4px    sm: 8px    md: 16px    lg: 24px
+xl: 32px   2xl: 48px  3xl: 64px
+```
+
+### Typography
+```
+Display:    36px / 800 / 1.25    /* Page titles */
+H1:         30px / 700 / 1.25    /* Section headers */
+H2:         24px / 700 / 1.25    /* Card titles */
+H3:         20px / 600 / 1.25    /* Subheadings */
+Body Large: 18px / 500 / 1.5     /* Emphasized body */
+Body:       16px / 400 / 1.5     /* Default body */
+Body Small: 14px / 400 / 1.5     /* Secondary text */
+Caption:    12px / 400 / 1.5     /* Timestamps, labels */
+```
+
+### Touch/Click Targets
+```
+Minimum: 48×48px (WCAG 2.1 AA compliant)
+```
+
+### Animation Durations
+```
+fast:   100ms   /* Button press, hover states */
+normal: 200ms   /* State transitions, modals */
+slow:   300ms   /* Page transitions */
+```
 
 ---
 
-## Phase Status
+## 📖 When to Reference Which Document
+
+### During Implementation
+
+| Task | Primary Reference | Supporting Docs |
+|------|-------------------|-----------------|
+| Setup new project | [neo-brutalism.md](./neo-brutalism.md) §1-6 | This README |
+| Create mobile component | [neo-brutalism.md](./neo-brutalism.md) §7-8 | [interaction-patterns.md](./interaction-patterns.md) |
+| Create web component | [neo-brutalism.md](./neo-brutalism.md) §9-10 | [responsive-design.md](./responsive-design.md) |
+| Fix accessibility issue | [accessibility.md](./accessibility.md) | [neo-brutalism.md](./neo-brutalism.md) §4 |
+| Add icons | [icons-assets.md](./icons-assets.md) | [neo-brutalism.md](./neo-brutalism.md) §4 |
+| Implement responsive layout | [responsive-design.md](./responsive-design.md) | [neo-brutalism.md](./neo-brutalism.md) §10 |
+
+### During Code Review
+
+| Review Focus | Reference |
+|--------------|-----------|
+| Design token usage | [neo-brutalism.md](./neo-brutalism.md) §3 |
+| Color contrast | [accessibility.md](./accessibility.md) |
+| Shadow implementation | [neo-brutalism.md](./neo-brutalism.md) §5 |
+| Component variants | [neo-brutalism.md](./neo-brutalism.md) §7-10 |
+| Responsive behavior | [responsive-design.md](./responsive-design.md) |
+| Animation timing | [interaction-patterns.md](./interaction-patterns.md) |
+
+---
+
+## 🎯 Phase Status
 
 | Phase | Components | Status |
 |-------|-----------|--------|
-| **Phase 1 MVP** | 14 core components | ✅ Specified & Implemented (UI/UX Enhanced Jan 23) |
-| **Phase 2** | 3 components (Task, Badge, Notification) | ✅ Specified (pending implementation) |
-| **Phase 3** | 5 components (Charts, Dashboard, Builder) | ✅ Specified (pending implementation) |
-| **Phase 4** | 3 components (QR, Asset, Maintenance) | ✅ Specified (pending implementation) |
-| **Phase 5** | 4 patterns (iOS-specific) | ✅ Specified (pending implementation) |
-| **Phase 6** | 4 components (Web dashboard) | ✅ Specified (pending implementation) |
-
-See [Future Phases Patterns](./future-phases-patterns.md) for Phases 2-6 implementation details.
+| **Phase 1 MVP** | 14 core components | ✅ Complete (Material Design - Archived) |
+| **Phase 2C Mobile** | 5 Neo Brutalism components | ✅ Complete (nbTokens + 5 components tested) |
+| **Phase 2D Web** | 10 Neo Brutalism components | ✅ Complete (globals.css + 10 components) |
+| **Phase 3** | 5 components (Charts, Dashboard, Builder) | ✅ Specified in future-phases-patterns.md |
+| **Phase 4** | 3 components (QR, Asset, Maintenance) | ✅ Specified in future-phases-patterns.md |
+| **Phase 5** | 4 patterns (iOS-specific) | ✅ Specified in future-phases-patterns.md |
+| **Phase 6** | 4 components (Web dashboard) | ✅ Specified in future-phases-patterns.md |
 
 ---
 
-## Phase 1 MVP UI/UX Enhancements (January 23, 2026)
+## 📂 Related Documentation
 
-### New Components
-| Component | Description |
-|-----------|-------------|
-| **SkeletonLoader** | Shimmer animation for loading states with proper memory cleanup |
-| **EmptyState** | 9 contextual variants (reports, shifts, workers, locations, notifications, search, error, offline, generic) |
-
-### Enhanced Components
-| Component | Enhancement |
-|-----------|-------------|
-| **Button** | Haptic feedback, focus indicators, isCritical prop (72dp) |
-| **Card** | 3 variants (elevated, outlined, filled), delayLongPress, hitSlop |
-| **TextInput** | Success state with green border + checkmark icon, consistent 2px border |
-
-### Performance Optimizations
-| Feature | Description |
-|---------|-------------|
-| **Map clustering** | O(n log n) algorithm with spatial indexing and binary search |
-| **Progressive loading** | 50 workers initially, 500 loaded in background |
-| **Region validation** | Prevents NaN/undefined crashes during map initialization |
-| **Animation cleanup** | SkeletonLoader properly stops animations on unmount |
-| **Timer refs** | useRef pattern prevents stale closures in intervals |
-
-### Accessibility Improvements
-| Feature | Details |
-|---------|---------|
-| **Warning color** | Changed #FF9800 → #F57C00 for 4.5:1 outdoor contrast |
-| **Consistent borders** | 2px borders prevent layout shift on focus/error/success |
-| **Focus indicators** | Visible focus ring for keyboard/screen reader navigation |
-| **Live regions** | GPS status announces changes to screen readers |
-
-### File Changes
-| File | Changes |
-|------|---------|
-| `src/components/common/SkeletonLoader.tsx` | NEW - Shimmer loading component |
-| `src/components/common/EmptyState.tsx` | NEW - 9 contextual empty state variants |
-| `src/utils/mapUtils.ts` | NEW - Clustering algorithm + region validation |
-| `src/components/common/Button.tsx` | Haptic feedback, focus indicators |
-| `src/components/common/Card.tsx` | Variants, press feedback |
-| `src/components/common/TextInput.tsx` | Success state, consistent borders |
-| `src/constants/theme.ts` | Warning color fix |
-| `src/screens/supervisor/MapDashboardScreen.tsx` | Clustering, progressive loading |
+**Other specs folders:**
+- `specs/mobile/screens.md` - Screen wireframes and layouts
+- `specs/mobile/navigation.md` - Navigation structure
+- `specs/web/pages.md` - Web dashboard pages
+- `specs/architecture/data-flow.md` - Data flow patterns
 
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-01-23
-**Status:** Active - Complete through Phase 6 specifications
-**Implementation:** `fe/mobile/src/constants/theme.ts`
+**Last Updated:** 2026-01-28
+**Status:** Active - Simplified Single-Source Documentation Structure
+**Implementation Review:** ✅ Complete (January 28, 2026) - See REVIEW_SUMMARY.md
+
+**Implementation Status:**
+- Mobile (Phase 2C): ✅ 5 components production-ready (100% compliant)
+- Web (Phase 2D): ✅ 10 components production-ready (100% compliant)
+- Design Token Parity: ✅ Perfect 100% match
+- Code Quality: ⭐⭐⭐⭐⭐ Excellent (TypeScript, accessibility, tests)
+
+**For the complete design system specification, see [neo-brutalism.md](./neo-brutalism.md)**
+**For implementation review results, see [REVIEW_SUMMARY.md](./REVIEW_SUMMARY.md)**

@@ -40,6 +40,11 @@ jest.mock('../../../hooks', () => ({
   })),
 }));
 
+// Mock NBBackgroundPattern to avoid SVG rendering issues in tests
+jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
+  NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 // Helper to create test store with optional shift
 const createTestStore = (currentShift: any = null) => {
   // Mock reportsApi to return empty array
@@ -115,6 +120,8 @@ const createShift = (clockInTime: Date) => ({
 describe('WorkerHomeScreen Timer Management', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    // Re-spy on Alert.alert to ensure it's available
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -333,6 +340,8 @@ describe('WorkerHomeScreen Timer Management', () => {
 describe('WorkerHomeScreen Accessibility (Issue 8)', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    // Re-spy on Alert.alert to ensure it's available
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   });
 
   afterEach(() => {

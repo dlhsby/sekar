@@ -22,7 +22,7 @@ export type WorkerTabParamList = {
   WorkerHome: undefined;
   ClockInOut: undefined;
   Report: undefined;
-  TasksReports: undefined;
+  TasksReports: { activeTab?: 'tasks' | 'reports' } | undefined;
   ReportDetail: { reportId: string; isWorkerView?: boolean };
   Profile: undefined;
   ShiftHistory: undefined;

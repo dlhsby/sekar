@@ -37,11 +37,12 @@ export async function getTasks(
 
 /**
  * Get my assigned tasks (Worker/Linmas)
+ * Note: Backend returns Task[] directly, not TasksListResponse
  */
 export async function getMyTasks(
   filters?: { status?: string; page?: number; limit?: number },
-): Promise<ApiResponse<TasksListResponse>> {
-  return get<TasksListResponse>('/tasks/my-tasks', filters);
+): Promise<ApiResponse<Task[]>> {
+  return get<Task[]>('/tasks/my-tasks', filters);
 }
 
 /**

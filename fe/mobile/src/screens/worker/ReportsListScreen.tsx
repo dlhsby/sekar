@@ -17,7 +17,14 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WorkerTabScreenProps } from '../../types/navigation.types';
-import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorderRadius,
+  nbShadows,
+  nbBorders,
+} from '../../constants/nbTokens';
 import { NBButton } from '../../components/nb';
 import { ReportListItem } from '../../components/worker/ReportListItem';
 import { getMyReports } from '../../services/api/reportsApi';
@@ -309,7 +316,7 @@ export function ReportsListScreen({
     if (isLoading) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={nbColors.primary} />
           <Text style={styles.loadingText}>Memuat laporan...</Text>
         </View>
       );
@@ -324,7 +331,6 @@ export function ReportsListScreen({
             title="Coba Lagi"
             onPress={() => loadReports()}
             variant="danger"
-            style={styles.retryButton}
           />
         </View>
       );
@@ -378,8 +384,8 @@ export function ReportsListScreen({
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            colors={[nbColors.primary]}
+            tintColor={nbColors.primary}
           />
         }
       />
@@ -390,7 +396,6 @@ export function ReportsListScreen({
           onPress={handleCreateReport}
           variant="primary"
           fullWidth
-          style={styles.fixedCreateButton}
           accessibilityLabel="Buat Laporan Baru"
           accessibilityHint="Membuat laporan kerja baru"
         />
@@ -402,135 +407,118 @@ export function ReportsListScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: nbColors.gray[100],
   },
   listContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.lg, // Reduced since we have fixed button at bottom
+    padding: nbSpacing.md,
+    paddingBottom: nbSpacing.lg, // Reduced since we have fixed button at bottom
     flexGrow: 1,
   },
   header: {
-    marginBottom: spacing.md,
+    marginBottom: nbSpacing.md,
   },
   title: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[700],
+    marginBottom: nbSpacing.md,
   },
   cacheWarning: {
-    backgroundColor: colors.warning + '20',
-    borderLeftWidth: 3,
-    borderLeftColor: colors.warning,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    borderRadius: borderRadius.sm,
+    backgroundColor: nbColors.warningLight + '20',
+    borderLeftWidth: nbBorders.default,
+    borderLeftColor: nbColors.black,
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    borderRadius: 0,
   },
   cacheWarningText: {
-    color: colors.warning,
-    fontSize: typography.fontSize.sm,
+    color: nbColors.warning,
+    fontSize: nbTypography.fontSize.sm,
   },
   filterContainer: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: nbSpacing.sm,
     flexWrap: 'wrap',
   },
   filterButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    borderRadius: nbBorderRadius.full,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
   },
   filterButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: nbColors.primary,
+    borderColor: nbColors.black,
   },
   filterButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
   },
   filterButtonTextActive: {
-    color: colors.white,
+    color: nbColors.white,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing['3xl'],
-    paddingHorizontal: spacing.xl,
+    paddingVertical: nbSpacing['3xl'],
+    paddingHorizontal: nbSpacing.xl,
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
   errorIcon: {
     fontSize: 64,
-    marginBottom: spacing.md,
+    marginBottom: nbSpacing.md,
   },
   errorText: {
-    fontSize: typography.fontSize.base,
-    color: colors.error,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.danger,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: nbSpacing.lg,
   },
   emptyIcon: {
     fontSize: 64,
-    marginBottom: spacing.md,
+    marginBottom: nbSpacing.md,
   },
   emptyTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
+    fontSize: nbTypography.fontSize.xl,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[700],
+    marginBottom: nbSpacing.sm,
   },
   emptyDescription: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: nbSpacing.lg,
   },
   bottomButtonContainer: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.backgroundSecondary,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+    backgroundColor: nbColors.gray[100],
+    borderTopWidth: nbBorders.default,
+    borderTopColor: nbColors.black,
   },
   fixedCreateButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    ...shadows.md,
+    // Removed - let NBButton use its own NB styles
   },
   createButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    marginTop: spacing.md,
-    ...shadows.sm,
+    // Removed - let NBButton use its own NB styles
   },
   createButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.white,
-    textAlign: 'center',
+    // Removed - let NBButton use its own NB styles
   },
   retryButton: {
-    backgroundColor: colors.error,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
+    // Removed - let NBButton use its own NB styles
   },
   retryButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.white,
+    // Removed - let NBButton use its own NB styles
   },
 });

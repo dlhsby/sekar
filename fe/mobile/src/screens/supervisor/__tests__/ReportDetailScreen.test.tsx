@@ -155,7 +155,7 @@ describe('ReportDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('Deskripsi')).toBeTruthy();
+        expect(getByText('📝 DESKRIPSI')).toBeTruthy();
         expect(getByText('Task completed: Cleaned the park area thoroughly')).toBeTruthy();
       });
     });
@@ -166,7 +166,7 @@ describe('ReportDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('Foto (2)')).toBeTruthy();
+        expect(getByText(/📸 FOTO LAPORAN \(2\)/)).toBeTruthy();
         expect(getByText('Ketuk foto untuk memperbesar')).toBeTruthy();
       });
     });
@@ -187,7 +187,7 @@ describe('ReportDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('Lokasi')).toBeTruthy();
+        expect(getByText('📍 LOKASI GPS')).toBeTruthy();
         expect(getByText(/📍 -7.250445, 112.768845/)).toBeTruthy();
         expect(getByTestId('open-maps-button')).toBeTruthy();
       });
@@ -219,7 +219,7 @@ describe('ReportDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('✓ Sudah Ditinjau')).toBeTruthy();
+        expect(getByText('✓ SUDAH DITINJAU')).toBeTruthy();
       });
     });
 
@@ -229,7 +229,7 @@ describe('ReportDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(queryByText('✓ Sudah Ditinjau')).toBeNull();
+        expect(queryByText('✓ SUDAH DITINJAU')).toBeNull();
       });
     });
   });

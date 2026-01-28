@@ -16,11 +16,9 @@ import {
   Pressable,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Button } from './Button';
-import { TextInput } from './TextInput';
-import { ErrorBanner } from './ErrorBanner';
+import { NBButton, NBTextInput, NBAlert } from '../nb';
 import { changePassword } from '../../services/api/usersApi';
-import { theme } from '../../constants/theme';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows, nbBorderRadius } from '../../constants/nbTokens';
 
 interface ChangePasswordModalProps {
   visible: boolean;
@@ -194,7 +192,7 @@ export function ChangePasswordModal({
                   <MaterialCommunityIcons
                     name="close"
                     size={24}
-                    color={theme.colors.textSecondary}
+                    color={nbColors.gray[600]}
                   />
                 </TouchableOpacity>
               </View>
@@ -205,20 +203,28 @@ export function ChangePasswordModal({
                   <MaterialCommunityIcons
                     name="check-circle"
                     size={20}
-                    color={theme.colors.success}
+                    color={nbColors.success}
                   />
                   <Text style={styles.successText}>Password berhasil diubah!</Text>
                 </View>
               )}
 
               {/* Error Banner */}
-              {error && <ErrorBanner message={error} onDismiss={() => setError('')} />}
+              {error && (
+                <NBAlert
+                  variant="danger"
+                  message={error}
+                  dismissible
+                  onDismiss={() => setError('')}
+                  testID="change-password-error"
+                />
+              )}
 
               {/* Form */}
               <View style={styles.form}>
                 {/* Current Password */}
                 <View style={styles.inputContainer}>
-                  <TextInput
+                  <NBTextInput
                     label="Password Saat Ini"
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
@@ -227,7 +233,6 @@ export function ChangePasswordModal({
                     error={validationErrors.currentPassword}
                     editable={!isLoading && !success}
                     autoCapitalize="none"
-                    accessibilityHint="Masukkan password Anda saat ini"
                   />
                   <TouchableOpacity
                     style={styles.eyeButton}
@@ -242,14 +247,14 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showCurrentPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={theme.colors.textSecondary}
+                      color={nbColors.gray[600]}
                     />
                   </TouchableOpacity>
                 </View>
 
                 {/* New Password */}
                 <View style={styles.inputContainer}>
-                  <TextInput
+                  <NBTextInput
                     label="Password Baru"
                     value={newPassword}
                     onChangeText={setNewPassword}
@@ -258,7 +263,6 @@ export function ChangePasswordModal({
                     error={validationErrors.newPassword}
                     editable={!isLoading && !success}
                     autoCapitalize="none"
-                    accessibilityHint="Masukkan password baru minimal 6 karakter"
                   />
                   <TouchableOpacity
                     style={styles.eyeButton}
@@ -273,14 +277,14 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showNewPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={theme.colors.textSecondary}
+                      color={nbColors.gray[600]}
                     />
                   </TouchableOpacity>
                 </View>
 
                 {/* Confirm Password */}
                 <View style={styles.inputContainer}>
-                  <TextInput
+                  <NBTextInput
                     label="Konfirmasi Password Baru"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -289,7 +293,6 @@ export function ChangePasswordModal({
                     error={validationErrors.confirmPassword}
                     editable={!isLoading && !success}
                     autoCapitalize="none"
-                    accessibilityHint="Ketik ulang password baru untuk konfirmasi"
                   />
                   <TouchableOpacity
                     style={styles.eyeButton}
@@ -304,7 +307,7 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showConfirmPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={theme.colors.textSecondary}
+                      color={nbColors.gray[600]}
                     />
                   </TouchableOpacity>
                 </View>
@@ -312,21 +315,20 @@ export function ChangePasswordModal({
 
               {/* Action Buttons */}
               <View style={styles.actions}>
-                <Button
+                <NBButton
                   title={success ? 'Berhasil!' : 'Ubah Password'}
                   onPress={handleSubmit}
                   disabled={isLoading || success}
                   loading={isLoading}
                   variant="primary"
-                  accessibilityHint="Simpan password baru Anda"
+                  fullWidth
                 />
-                <Button
+                <NBButton
                   title="Batal"
                   onPress={handleClose}
                   disabled={isLoading || success}
-                  variant="outline"
-                  style={styles.cancelButton}
-                  accessibilityHint="Batalkan perubahan password"
+                  variant="secondary"
+                  fullWidth
                 />
               </View>
             </ScrollView>
@@ -340,7 +342,7 @@ export function ChangePasswordModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: theme.colors.overlay,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   keyboardAvoidingView: {
@@ -348,62 +350,69 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: theme.colors.white,
-    borderTopLeftRadius: theme.borderRadius.xl,
-    borderTopRightRadius: theme.borderRadius.xl,
+    backgroundColor: nbColors.white,
+    borderTopLeftRadius: 0, // Sharp corners - NB style
+    borderTopRightRadius: 0, // Sharp corners - NB style
+    borderTopWidth: nbBorders.default,
+    borderLeftWidth: nbBorders.default,
+    borderRightWidth: nbBorders.default,
+    borderColor: nbColors.black,
     maxHeight: '90%',
-    ...theme.shadows.lg,
+    ...nbShadows.lg,
   },
   scrollContent: {
-    padding: theme.spacing.lg,
+    padding: nbSpacing.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: nbSpacing.lg,
+    paddingBottom: nbSpacing.md,
+    borderBottomWidth: nbBorders.default,
+    borderBottomColor: nbColors.black,
   },
   title: {
-    fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.textPrimary,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
   },
   closeButton: {
-    padding: theme.spacing.xs,
+    padding: nbSpacing.xs,
   },
   successBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.success + '20', // 20% opacity
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
+    backgroundColor: nbColors.successLight,
+    padding: nbSpacing.md,
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.success,
+    marginBottom: nbSpacing.md,
   },
   successText: {
-    marginLeft: theme.spacing.sm,
-    fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.success,
+    marginLeft: nbSpacing.sm,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.success,
     flex: 1,
   },
   form: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: nbSpacing.lg,
   },
   inputContainer: {
     position: 'relative',
+    marginBottom: nbSpacing.md,
   },
   eyeButton: {
     position: 'absolute',
-    right: theme.spacing.md,
+    right: nbSpacing.md,
     top: 38, // Label height + spacing + padding to center vertically
-    padding: theme.spacing.xs,
+    padding: nbSpacing.xs,
     zIndex: 10,
   },
   actions: {
-    gap: theme.spacing.md,
-  },
-  cancelButton: {
-    marginTop: 0,
+    gap: nbSpacing.md,
   },
 });
 

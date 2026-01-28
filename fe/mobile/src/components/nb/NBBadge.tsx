@@ -12,6 +12,7 @@ import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import {
   nbColors,
   nbBorders,
+  nbBorderRadius,
   nbSpacing,
   nbTypography,
 } from '../../constants/nbTokens';
@@ -143,6 +144,7 @@ export const NBBadge: React.FC<NBBadgeProps> = ({
 const styles = StyleSheet.create({
   badge: {
     borderWidth: nbBorders.thin,
+    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
     alignSelf: 'flex-start',
   },
   text: {

@@ -18,7 +18,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { NBButton, NBCard } from '../../components/nb';
+import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
 import { logout } from '../../store/slices/authSlice';
 import { resetState as resetShiftState } from '../../store/slices/shiftSlice';
 import { resetState as resetReportState } from '../../store/slices/reportSlice';
@@ -35,7 +35,7 @@ import {
 } from '../../services/sync/offlineQueue';
 import { syncManager } from '../../services/sync/syncManager';
 import { locationTracker } from '../../services/location/locationTracker';
-import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { nbColors, nbSpacing, nbTypography, nbBorderRadius, nbShadows, nbBorders } from '../../constants/nbTokens';
 import { ChangePasswordModal } from '../../components/common';
 import type { RootState } from '../../store/store';
 import type { Shift } from '../../types/models.types';
@@ -485,27 +485,40 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
   // Show loading state
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Memuat profil...</Text>
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={nbColors.primary} />
+          <Text style={styles.loadingText}>Memuat profil...</Text>
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
   const hasPendingItems = syncStatus.pendingCount > 0 || syncStatus.failedCount > 0;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          colors={[colors.primary]}
-          tintColor={colors.primary}
-        />
-      }>
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[nbColors.primary]}
+            tintColor={nbColors.primary}
+          />
+        }>
       {/* Profile Header */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
@@ -619,14 +632,14 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <MaterialCommunityIcons
             name="lock-outline"
             size={24}
-            color={colors.textSecondary}
+            color={nbColors.gray[600]}
             style={styles.menuIcon}
           />
           <Text style={styles.menuText}>Ubah Password</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={colors.textSecondary}
+            color={nbColors.gray[600]}
           />
         </TouchableOpacity>
 
@@ -639,14 +652,14 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <MaterialCommunityIcons
             name="clock-outline"
             size={24}
-            color={colors.textSecondary}
+            color={nbColors.gray[600]}
             style={styles.menuIcon}
           />
           <Text style={styles.menuText}>Riwayat Shift</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={colors.textSecondary}
+            color={nbColors.gray[600]}
           />
         </TouchableOpacity>
 
@@ -659,26 +672,27 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <MaterialCommunityIcons
             name="information-outline"
             size={24}
-            color={colors.textSecondary}
+            color={nbColors.gray[600]}
             style={styles.menuIcon}
           />
           <Text style={styles.menuText}>Tentang Aplikasi</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={colors.textSecondary}
+            color={nbColors.gray[600]}
           />
         </TouchableOpacity>
       </NBCard>
 
       {/* Logout Button */}
-      <NBButton
-        title="Keluar"
-        onPress={handleLogout}
-        variant="danger"
-        fullWidth
-        style={styles.logoutButton}
-      />
+      <View style={styles.logoutButtonContainer}>
+        <NBButton
+          title="Keluar"
+          onPress={handleLogout}
+          variant="danger"
+          fullWidth
+        />
+      </View>
 
       {/* Bottom spacing */}
       <View style={styles.bottomSpacer} />
@@ -689,175 +703,189 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         onClose={() => setIsChangePasswordModalVisible(false)}
       />
     </ScrollView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: 'transparent',
   },
   contentContainer: {
-    paddingVertical: spacing.lg,
+    paddingVertical: nbSpacing.md, // 16px - reduced from lg (24px)
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: 'transparent',
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
 
   // Header styles
   header: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
-    backgroundColor: colors.white,
-    marginBottom: spacing.md,
+    paddingVertical: nbSpacing.md, // 16px - reduced from xl (32px)
+    backgroundColor: nbColors.white,
+    marginBottom: nbSpacing.md,
+    borderBottomWidth: nbBorders.default,
+    borderBottomColor: nbColors.black,
+    ...nbShadows.md,
   },
   avatarContainer: {
-    marginBottom: spacing.md,
+    marginBottom: nbSpacing.md,
   },
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
+    borderRadius: nbBorderRadius.full,
+    backgroundColor: nbColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.md,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.md,
   },
   avatarText: {
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.white,
+    fontSize: nbTypography.fontSize['3xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
   },
   fullName: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.xl,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[900],
+    marginBottom: nbSpacing.xs,
   },
   username: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
+    marginBottom: nbSpacing.sm,
   },
   roleBadge: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    backgroundColor: colors.primaryLight,
-    borderRadius: borderRadius.full,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.xs,
+    backgroundColor: nbColors.primary,
+    borderRadius: 0, // Sharp corners - Neo Brutalism style
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
   },
   roleBadgeText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.white,
   },
 
   // Card styles
   card: {
-    backgroundColor: colors.white,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
+    backgroundColor: nbColors.white,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    padding: nbSpacing.md,
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   cardTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[900],
+    marginBottom: nbSpacing.md,
   },
 
   // Sync status styles
   syncStatusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    marginBottom: nbSpacing.xs,
   },
   syncLabel: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
   syncValue: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray[900],
   },
   syncWarning: {
-    color: colors.warning,
+    color: nbColors.warning,
   },
   syncError: {
-    color: colors.error,
+    color: nbColors.danger,
   },
   syncButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: spacing.md,
-    gap: spacing.sm,
+    marginTop: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
   syncButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
+    backgroundColor: nbColors.primary,
+    borderRadius: 0,
     minWidth: 80,
     alignItems: 'center',
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
   },
   syncButtonDisabled: {
     opacity: 0.6,
   },
   syncButtonSecondary: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
   },
   syncButtonDanger: {
-    backgroundColor: colors.error,
+    backgroundColor: nbColors.danger,
   },
   syncButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.white,
   },
   syncButtonTextSecondary: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.primary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.primary,
   },
 
   // Area info styles
   areaInfo: {
-    paddingTop: spacing.xs,
+    paddingTop: nbSpacing.xs,
   },
   areaName: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[900],
+    marginBottom: nbSpacing.xs,
   },
   areaType: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[600],
+    marginBottom: nbSpacing.xs,
   },
   areaAddress: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[600],
+    lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.normal,
   },
   noArea: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[500],
     fontStyle: 'italic',
     textAlign: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: nbSpacing.md,
   },
 
   // Statistics styles
@@ -865,99 +893,95 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: nbSpacing.md,
   },
   statBox: {
     flex: 1,
     alignItems: 'center',
   },
   statDivider: {
-    width: 1,
+    width: nbBorders.default,
     height: 40,
-    backgroundColor: colors.border,
+    backgroundColor: nbColors.black,
   },
   statValue: {
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize['3xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.primary,
+    marginBottom: nbSpacing.xs,
   },
   statLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[600],
     textAlign: 'center',
   },
   reportsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    paddingTop: nbSpacing.md,
+    borderTopWidth: nbBorders.default,
+    borderTopColor: nbColors.black,
   },
   reportsLabel: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
   reportsValue: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.gray[900],
   },
 
   // Menu styles
   menuContainer: {
-    backgroundColor: colors.white,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    borderRadius: borderRadius.lg,
+    backgroundColor: nbColors.white,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    borderRadius: 0,
     overflow: 'hidden',
-    ...shadows.sm,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: nbSpacing.md,
+    paddingHorizontal: nbSpacing.md,
   },
   menuIcon: {
-    marginRight: spacing.md,
+    marginRight: nbSpacing.md,
   },
   menuText: {
     flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[900],
   },
   menuArrow: {
-    fontSize: typography.fontSize['2xl'],
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: nbTypography.fontSize['2xl'],
+    color: nbColors.gray[600],
+    fontWeight: nbTypography.fontWeight.bold,
   },
   menuDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: spacing.md + spacing.md + 24, // icon width (24) + margins
+    height: nbBorders.default,
+    backgroundColor: nbColors.black,
+    marginLeft: nbSpacing.md + nbSpacing.md + 24, // icon width (24) + margins
   },
 
   // Logout button styles
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.error,
-    marginHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
+  logoutButtonContainer: {
+    paddingHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
   },
   logoutText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
   },
 
   // Bottom spacer
   bottomSpacer: {
-    height: spacing.xl,
+    height: nbSpacing.xl + nbSpacing.lg, // Increased bottom spacing to prevent overflow
   },
 });

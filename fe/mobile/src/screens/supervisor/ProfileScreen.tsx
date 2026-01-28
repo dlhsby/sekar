@@ -33,11 +33,17 @@ import {
   clearFailedItems,
 } from '../../services/sync/offlineQueue';
 import { syncManager } from '../../services/sync/syncManager';
-import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import {
+  nbColors,
+  nbTypography,
+  nbSpacing,
+  nbBorderRadius,
+  nbShadows,
+  nbBorders,
+} from '../../constants/nbTokens';
 import { ChangePasswordModal } from '../../components/common';
 import { NBButton, NBCard } from '../../components/nb';
 import type { RootState } from '../../store/store';
-import type { ApiResponse } from '../../types/api.types';
 
 /**
  * Area status from API
@@ -79,7 +85,7 @@ interface SyncStatus {
 /**
  * Profile Screen Component for Supervisors
  */
-export function ProfileScreen({ navigation }: any): React.JSX.Element {
+export function ProfileScreen({ navigation: _navigation }: any): React.JSX.Element {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -92,7 +98,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
     totalAreasMonitored: 0,
     reportsReviewedThisMonth: 0,
   });
-  const [profileData, setProfileData] = useState<any>(null);
+  const [_profileData, setProfileData] = useState<any>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     pendingCount: 0,
     failedCount: 0,
@@ -431,7 +437,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={nbColors.primary} />
         <Text style={styles.loadingText}>Memuat profil...</Text>
       </View>
     );
@@ -448,8 +454,8 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
-          colors={[colors.primary]}
-          tintColor={colors.primary}
+          colors={[nbColors.primary]}
+          tintColor={nbColors.primary}
         />
       }>
       {/* Profile Header */}
@@ -580,118 +586,128 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: nbColors.gray[100],
   },
   contentContainer: {
-    paddingVertical: spacing.lg,
+    paddingVertical: nbSpacing.lg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: nbColors.gray[100],
   },
   loadingText: {
-    marginTop: spacing.md,
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
 
   // Header styles
   header: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
-    backgroundColor: colors.white,
-    marginBottom: spacing.md,
+    paddingVertical: nbSpacing.xl,
+    backgroundColor: nbColors.white,
+    marginBottom: nbSpacing.md,
+    borderBottomWidth: nbBorders.default,
+    borderBottomColor: nbColors.black,
   },
   avatarContainer: {
-    marginBottom: spacing.md,
+    marginBottom: nbSpacing.md,
   },
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
+    borderRadius: nbBorderRadius.full,
+    backgroundColor: nbColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.md,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.md,
   },
   avatarText: {
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.white,
+    fontSize: nbTypography.fontSize['3xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
   },
   fullName: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.xl,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.xs,
   },
   username: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
+    marginBottom: nbSpacing.sm,
   },
   roleBadge: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    backgroundColor: colors.primaryLight,
-    borderRadius: borderRadius.full,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.xs,
+    backgroundColor: nbColors.primary,
+    borderRadius: nbBorderRadius.full,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
   },
   roleBadgeText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.white,
   },
 
   // Card styles
   card: {
-    backgroundColor: colors.white,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
+    backgroundColor: nbColors.white,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    padding: nbSpacing.md,
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   cardTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.md,
   },
 
   // Sync status styles
   syncStatusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    marginBottom: nbSpacing.xs,
   },
   syncLabel: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
   },
   syncValue: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
   },
   syncWarning: {
-    color: colors.warning,
+    color: nbColors.warning,
   },
   syncError: {
-    color: colors.error,
+    color: nbColors.danger,
   },
   syncButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: spacing.md,
-    gap: spacing.sm,
+    marginTop: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
   syncButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
+    backgroundColor: nbColors.primary,
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     minWidth: 80,
     alignItems: 'center',
   },
@@ -699,84 +715,86 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   syncButtonSecondary: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
   },
   syncButtonDanger: {
-    backgroundColor: colors.error,
+    backgroundColor: nbColors.danger,
   },
   syncButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.white,
   },
   syncButtonTextSecondary: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.primary,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.primary,
   },
 
   // Statistics styles
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: nbSpacing.sm,
   },
   statsIcon: {
-    fontSize: typography.fontSize.xl,
-    marginRight: spacing.sm,
+    fontSize: nbTypography.fontSize.xl,
+    marginRight: nbSpacing.sm,
     width: 28,
   },
   statsLabel: {
     flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.black,
   },
   statsValue: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary,
+    fontSize: nbTypography.fontSize.xl,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.primary,
   },
   statDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: spacing.sm + 28,
+    height: nbBorders.thin,
+    backgroundColor: nbColors.black,
+    marginLeft: nbSpacing.sm + 28,
   },
 
   // Menu styles
   menuContainer: {
-    backgroundColor: colors.white,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    borderRadius: borderRadius.lg,
+    backgroundColor: nbColors.white,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     overflow: 'hidden',
-    ...shadows.sm,
+    ...nbShadows.sm,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: nbSpacing.md,
+    paddingHorizontal: nbSpacing.md,
   },
   menuIcon: {
-    fontSize: typography.fontSize.xl,
-    marginRight: spacing.md,
+    fontSize: nbTypography.fontSize.xl,
+    marginRight: nbSpacing.md,
   },
   menuText: {
     flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.black,
   },
   menuArrow: {
-    fontSize: typography.fontSize['2xl'],
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: nbTypography.fontSize['2xl'],
+    color: nbColors.gray[600],
+    fontWeight: nbTypography.fontWeight.bold,
   },
   menuDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: spacing.md + spacing.md + typography.fontSize.xl,
+    height: nbBorders.thin,
+    backgroundColor: nbColors.black,
+    marginLeft: nbSpacing.md + nbSpacing.md + nbTypography.fontSize.xl,
   },
 
   // Logout button styles
@@ -784,24 +802,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.error,
-    marginHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
+    backgroundColor: nbColors.danger,
+    marginHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   logoutIcon: {
-    fontSize: typography.fontSize.xl,
-    marginRight: spacing.sm,
+    fontSize: nbTypography.fontSize.xl,
+    marginRight: nbSpacing.sm,
   },
   logoutText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
   },
 
   // Bottom spacer
   bottomSpacer: {
-    height: spacing.xl,
+    height: nbSpacing.xl,
   },
 });

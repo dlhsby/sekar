@@ -1,0 +1,102 @@
+# SEKAR Web Dashboard - Development Docker Compose
+# Development environment with hot-reload
+
+version: '3.9'
+
+services:
+  # Web Dashboard (Development with hot-reload)
+  web-dev:
+    image: node:20-alpine
+    container_name: sekar-web-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_VERSION=v1
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - sekar-network
+    restart: unless-stopped
+    depends_on:
+      - backend-dev
+
+  # Backend API (Development)
+  backend-dev:
+    image: node:20-alpine
+    container_name: sekar-backend-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run start:dev"
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_HOST=postgres-dev
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=sekar_db
+      - JWT_SECRET=dev-secret-key-change-in-production
+      - JWT_EXPIRATION=7d
+      - CORS_ORIGIN=http://localhost:3001
+      - DATABASE_SYNCHRONIZE=true
+    volumes:
+      - ../../../be:/app
+      - /app/node_modules
+    networks:
+      - sekar-network
+    restart: unless-stopped
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+
+  # PostgreSQL Database (Development)
+  postgres-dev:
+    image: postgres:14-alpine
+    container_name: sekar-postgres-dev
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sekar_db
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    networks:
+      - sekar-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Adminer (Database Management)
+  adminer:
+    image: adminer:latest
+    container_name: sekar-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres-dev
+    networks:
+      - sekar-network
+    restart: unless-stopped
+    depends_on:
+      - postgres-dev
+
+networks:
+  sekar-network:
+    driver: bridge
+
+volumes:
+  postgres-dev-data:
+    driver: local

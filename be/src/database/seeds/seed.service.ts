@@ -63,6 +63,15 @@ export class SeedService {
 
     // Now delete all records (tables should exist now)
     // Clear in reverse FK order to avoid constraint violations
+    // IMPORTANT: Delete tasks first (if table exists) as it references areas, area_types, and users
+    try {
+      await this.userRepository.manager.query('DELETE FROM tasks');
+      console.log('  ✓ Cleared tasks table');
+    } catch (error) {
+      // Table may not exist if Phase 2 not deployed
+      console.log('  ⚠️  No tasks to clear (table may not exist - Phase 2 feature)');
+    }
+
     try {
       await this.locationLogRepository.createQueryBuilder().delete().execute();
     } catch (error) {
@@ -360,23 +369,36 @@ export class SeedService {
       throw new Error('Areas not found. Ensure areas are seeded first.');
     }
 
+    // Create timestamps relative to current time
+    // Active shift should be 2 hours ago so worker can clock out
     const now = new Date();
+    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(8, 0, 0, 0);
+
+    const yesterdayEnd = new Date(yesterday);
+    yesterdayEnd.setHours(16, 0, 0, 0);
+
     const twoDaysAgo = new Date(now);
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    twoDaysAgo.setHours(8, 15, 0, 0);
+
+    const twoDaysAgoEnd = new Date(twoDaysAgo);
+    twoDaysAgoEnd.setHours(16, 30, 0, 0);
 
     const shifts = [
       // Completed shifts from yesterday
       {
         worker_id: worker1.id,
         area_id: area1.id,
-        clock_in_time: new Date(yesterday.setHours(8, 0, 0, 0)),
+        clock_in_time: yesterday,
         clock_in_gps_lat: -7.2905,
         clock_in_gps_lng: 112.7398,
         clock_in_photo_url:
           'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker1-abc123.jpg',
-        clock_out_time: new Date(yesterday.setHours(16, 0, 0, 0)),
+        clock_out_time: yesterdayEnd,
         clock_out_gps_lat: -7.2906,
         clock_out_gps_lng: 112.7399,
         workerName: worker1.username,
@@ -385,12 +407,12 @@ export class SeedService {
       {
         worker_id: worker2.id,
         area_id: area2.id,
-        clock_in_time: new Date(yesterday.setHours(7, 30, 0, 0)),
+        clock_in_time: new Date(yesterday.getTime() - 30 * 60 * 1000), // 7:30 AM
         clock_in_gps_lat: -7.2844,
         clock_in_gps_lng: 112.7915,
         clock_in_photo_url:
           'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker2-def456.jpg',
-        clock_out_time: new Date(yesterday.setHours(15, 30, 0, 0)),
+        clock_out_time: new Date(yesterdayEnd.getTime() - 30 * 60 * 1000), // 3:30 PM
         clock_out_gps_lat: -7.2845,
         clock_out_gps_lng: 112.7916,
         workerName: worker2.username,
@@ -400,22 +422,22 @@ export class SeedService {
       {
         worker_id: worker3.id,
         area_id: area3.id,
-        clock_in_time: new Date(twoDaysAgo.setHours(8, 15, 0, 0)),
+        clock_in_time: twoDaysAgo,
         clock_in_gps_lat: -7.3037,
         clock_in_gps_lng: 112.7375,
         clock_in_photo_url:
           'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/07/clock-in/worker3-ghi789.jpg',
-        clock_out_time: new Date(twoDaysAgo.setHours(16, 30, 0, 0)),
+        clock_out_time: twoDaysAgoEnd,
         clock_out_gps_lat: -7.3038,
         clock_out_gps_lng: 112.7376,
         workerName: worker3.username,
         areaName: area3.name,
       },
-      // Active shift for today (worker1 clocked in, not yet clocked out)
+      // Active shift for today (worker1 clocked in 2 hours ago, can clock out now)
       {
         worker_id: worker1.id,
         area_id: area1.id,
-        clock_in_time: new Date(now.setHours(8, 5, 0, 0)),
+        clock_in_time: twoHoursAgo,
         clock_in_gps_lat: -7.2905,
         clock_in_gps_lng: 112.7398,
         clock_in_photo_url:

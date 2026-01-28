@@ -120,6 +120,26 @@ jest.mock('react-native-haptic-feedback', () => ({
   },
 }));
 
+// Mock react-native-svg
+jest.mock('react-native-svg', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+
+  const PatternComponent = (props) => React.createElement(View, props, props.children);
+
+  return {
+    __esModule: true,
+    default: (props) => React.createElement(View, props, props.children),
+    Svg: (props) => React.createElement(View, props, props.children),
+    Rect: (props) => React.createElement(View, props),
+    Circle: (props) => React.createElement(View, props),
+    Line: (props) => React.createElement(View, props),
+    G: (props) => React.createElement(View, props, props.children),
+    Defs: (props) => React.createElement(View, props, props.children),
+    Pattern: PatternComponent,
+  };
+});
+
 // Mock @react-native-firebase/messaging (Phase 2 - FCM)
 jest.mock('@react-native-firebase/messaging', () => {
   const messaging = jest.fn(() => ({
@@ -170,6 +190,9 @@ global.API_VERSION = 'v1';
 global.GOOGLE_MAPS_API_KEY = 'mock-google-maps-key';
 global.APP_ENV = 'test';
 
+// Store Alert mock reference to prevent it from being cleared
+const Alert = require('react-native').Alert;
+
 // Global cleanup hooks to prevent worker process leaks and mock pollution
 afterEach(() => {
   // Clear all mock call counts and instances
@@ -177,6 +200,19 @@ afterEach(() => {
 
   // Clear all timers
   jest.clearAllTimers();
+
+  // Re-setup Alert mock if it was cleared (belt and suspenders approach)
+  if (!Alert || !Alert.alert || typeof Alert.alert !== 'function') {
+    const RN = require('react-native');
+    RN.Alert = {
+      alert: jest.fn((title, message, buttons) => {
+        if (buttons && buttons.length > 0 && buttons[0].onPress) {
+          buttons[0].onPress();
+        }
+      }),
+      prompt: jest.fn(),
+    };
+  }
 
   // NOTE: Do NOT call jest.restoreAllMocks() here as it undoes jest.spyOn() mocks
   // set up in individual test files and can cause cross-test pollution

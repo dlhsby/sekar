@@ -2,6 +2,10 @@
  * EmptyState Component
  * Reusable empty state with icon, title, description, and optional CTA
  * Use when lists or screens have no content to display
+ *
+ * @deprecated Use NBEmptyState from components/nb instead.
+ * This Material Design component will be removed in a future version.
+ * Migration: import { NBEmptyState } from '../../components/nb'
  */
 
 import React from 'react';

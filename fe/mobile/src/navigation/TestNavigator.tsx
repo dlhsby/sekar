@@ -1,3 +1,10 @@
+/* istanbul ignore file */
+/**
+ * Test Navigator
+ *
+ * Simple test utility for navigation testing.
+ * This file is excluded from coverage as it's a test helper.
+ */
 import React from 'react';
 import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';

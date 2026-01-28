@@ -21,6 +21,11 @@ jest.mock('../../../services/shift', () => ({
   loadAndSyncCurrentShift: jest.fn().mockResolvedValue(undefined),
 }));
 
+// Mock NBBackgroundPattern to avoid SVG rendering issues in tests
+jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
+  NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 // Helper to create test store
 const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>) => {
   return configureStore({

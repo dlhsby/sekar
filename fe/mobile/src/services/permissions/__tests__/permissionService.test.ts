@@ -16,13 +16,6 @@ import {
   requestClockInPermissions,
 } from '../permissionService';
 
-// Mock react-native
-jest.mock('react-native', () => ({
-  Platform: { OS: 'android' },
-  Alert: { alert: jest.fn() },
-  Linking: { openSettings: jest.fn() },
-}));
-
 // Mock react-native-permissions is already done in jest.setup.js
 
 describe('permissionService', () => {
@@ -30,6 +23,9 @@ describe('permissionService', () => {
     // Use resetAllMocks to also clear mockResolvedValueOnce queues
     jest.resetAllMocks();
     (Platform as any).OS = 'android';
+    // Re-spy on Alert.alert and Linking.openSettings after resetAllMocks clears them
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(Linking, 'openSettings').mockResolvedValue();
   });
 
   describe('requestLocationPermission', () => {

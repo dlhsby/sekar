@@ -17,10 +17,7 @@ jest.mock('react-native-device-info');
 jest.mock('../../api/locationApi');
 jest.mock('../../sync/offlineQueue');
 jest.mock('../../permissions/permissionService');
-jest.mock('react-native', () => ({
-  Platform: { OS: 'android' },
-  Alert: { alert: jest.fn() },
-}));
+// Don't mock react-native here - jest.setup.js handles it
 
 
 describe('LocationTracker', () => {
@@ -44,6 +41,9 @@ describe('LocationTracker', () => {
 
     // Add global error listener to prevent unhandled errors
     locationTracker.on('error', jest.fn());
+
+    // Re-spy on Alert.alert after clearAllMocks clears it
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     // Default mocks
     (permissionService.checkLocationPermission as jest.Mock).mockResolvedValue(true);

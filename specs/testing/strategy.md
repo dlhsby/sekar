@@ -547,6 +547,12 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 ---
 
-*Last Updated: January 2026*
-*Current Test Status: 256 backend tests (100% coverage), 62 mobile tests*
+*Last Updated: January 26, 2026*
+*Current Test Status:*
+- **Backend**: 401 tests passing, 84.23% coverage
+- **Mobile**: 2,000+ tests passing, 80.31% overall coverage (lines: 3224/4014)
+  - Statements: 80.04% (3306/4130)
+  - Branches: 75.17% (1732/2304)
+  - Functions: 80.96% (740/914)
+
 *Project: SEKAR - Worker Tracking System*

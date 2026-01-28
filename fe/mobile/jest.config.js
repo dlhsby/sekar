@@ -1,7 +1,7 @@
 module.exports = {
   preset: 'react-native',
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|react-redux|@react-navigation|react-native-vector-icons|react-native-geolocation-service|react-native-image-picker|react-native-permissions|react-native-fs|@reduxjs|immer)/)',
+    'node_modules/(?!(react-native|@react-native|react-redux|@react-navigation|react-native-vector-icons|react-native-geolocation-service|react-native-image-picker|react-native-permissions|react-native-fs|@reduxjs|immer|react-native-svg)/)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {

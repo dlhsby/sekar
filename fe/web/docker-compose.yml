@@ -1,0 +1,92 @@
+# SEKAR Web Dashboard - Docker Compose
+# Local development environment
+
+version: '3.9'
+
+services:
+  # Web Dashboard (Next.js)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sekar-web
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_VERSION=v1
+      - NEXT_TELEMETRY_DISABLED=1
+    networks:
+      - sekar-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Backend API (from ../../../be)
+  backend:
+    build:
+      context: ../../../be
+      dockerfile: Dockerfile
+    container_name: sekar-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=sekar_db
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-key-change-in-production}
+      - JWT_EXPIRATION=7d
+      - CORS_ORIGIN=http://localhost:3001
+    networks:
+      - sekar-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: sekar-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sekar_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sekar-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  sekar-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
