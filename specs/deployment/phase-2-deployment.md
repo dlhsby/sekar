@@ -1,1367 +1,1475 @@
-# Phase 2 Deployment Guide - Enhanced Features
+# Phase 2 Deployment Guide - Complete
 
-Deployment procedures for Phase 2 enhanced features including Firebase Cloud Messaging (FCM), task management, background notifications, and KMZ area import.
-
-## Overview
-
-Phase 2 introduces:
-- **Firebase Cloud Messaging (FCM)** for push notifications
-- **Task Management** with assignments and tracking
-- **Background Notifications** for shift reminders and task assignments
-- **KMZ Area Import** for bulk area creation from GPS files
-- **Area Revision History** for audit trails
-- **GitHub Actions CI/CD** for automated testing and deployment
+**SEKAR Phase 2 Production Deployment**
+**Last Updated:** February 2, 2026
+**Status:** Production Ready
+**Estimated Time:** 2-3 hours (including monitoring)
 
 ---
 
-## 1. Pre-Deployment Checklist
+## Quick Reference
 
-### Code Readiness
-- [ ] All Phase 2 features tested in development
-- [ ] Unit tests passing (>80% coverage)
-- [ ] E2E tests passing
-- [ ] Database migrations verified
-- [ ] API documentation updated (Swagger)
-- [ ] Mobile app builds successfully
+**What's Different from Phase 1:**
+- ✅ **Automated CI/CD** - GitHub Actions replaces manual ECR deployment
+- ✅ **Zero-Downtime** - Rolling updates via Docker Compose
+- ✅ **Unified Seeder** - Single `npm run seed` for all phases
+- ✅ **Automatic Migrations** - Runs during deployment
+- ✅ **Backup Tagging** - Auto-backup before production deployment
 
-### Infrastructure Readiness
-- [ ] Firebase project created
-- [ ] FCM credentials generated
-- [ ] Environment variables configured (dev, staging, prod)
-- [ ] Database backup taken
-- [ ] S3 bucket permissions verified
-- [ ] CloudWatch alarms configured for new endpoints
-- [ ] Redis/ElastiCache cluster provisioned
-
-### CI/CD Readiness
-- [ ] GitHub Actions workflows tested
-- [ ] GitHub Secrets verified (AWS, EC2, Android)
-- [ ] ECR repository accessible
-- [ ] EC2 instances reachable via SSH
-- [ ] Docker and Docker Compose updated on EC2
-
-### Team Readiness
-- [ ] Team briefed on new features
+**Prerequisites:**
+- [ ] GitHub Secrets configured (11 secrets required)
+- [ ] Firebase project created with FCM
+- [ ] All tests passing (845/845, 90.77% coverage)
+- [ ] Migration tested locally
 - [ ] Deployment window scheduled
-- [ ] Rollback plan reviewed
-- [ ] On-call rotation confirmed
+
+**Key Changes:**
+- 6 new database tables (rayons, shift_definitions, tasks, etc.)
+- 43 new API endpoints (83 total)
+- Phase 2 environment variables
+- Firebase/FCM integration (optional, can disable)
 
 ---
 
-## 2. GitHub Actions CI/CD Workflows
+## Part 1: Pre-Deployment Setup (45 min)
 
-Phase 2 leverages automated CI/CD pipelines for consistent, repeatable deployments.
+### 1.1 Verify Local Environment (15 min)
 
-### 2.1 Backend Workflow (`.github/workflows/backend-ci-cd.yml`)
+**IMPORTANT:** Migrations are designed for production upgrades (adding Phase 2 to existing Phase 1). For fresh local testing, follow this sequence:
 
-**Pipeline Stages:**
-1. **Lint** - ESLint and Prettier checks
-2. **Test** - Unit tests with PostgreSQL service (coverage >80%)
-3. **Security** - npm audit and secret scanning
-4. **Build** - TypeScript compilation
-5. **Deploy** - Environment-specific deployment to EC2
-
-**Branch Strategy:**
-- `develop` → Deploys to Development environment
-- `staging` → Deploys to Staging environment
-- `main` → Deploys to Production (with manual approval)
-
-**Deployment Process:**
-```yaml
-# Automated on push to branch
-1. Build Docker image
-2. Tag with branch-specific tag (dev-latest, staging-latest, latest)
-3. Push to ECR (ap-southeast-3)
-4. SSH to EC2
-5. Login to ECR
-6. Pull latest image
-7. Run migrations (if schema changes)
-8. Restart containers with zero-downtime
-9. Verify health check
-```
-
-**Key Features:**
-- **Zero-downtime deployment** via Docker Compose graceful shutdown
-- **Automatic backup** of current production image before deployment
-- **Health checks** after deployment
-- **Smoke tests** for production deployments
-- **Build artifacts** retained for 7 days
-
-### 2.2 Mobile Workflow (`.github/workflows/mobile-ci-cd.yml`)
-
-**Pipeline Stages:**
-1. **Lint** - ESLint and TypeScript checks
-2. **Test** - Jest unit tests
-3. **Build APK** - Environment-specific builds
-4. **Sign APK** - Production signing with keystore
-5. **Release** - GitHub Release for production builds
-
-**Build Matrix:**
-- `develop` → Debug APK (unsigned)
-- `staging` → Signed Release APK
-- `main` → Signed Release APK + GitHub Release
-
-**Deployment Process:**
-```yaml
-# Automated on push to branch
-1. Lint and test code
-2. Create .env with environment-specific API_BASE_URL
-3. Build Android APK (debug or release)
-4. Sign APK with keystore (staging/prod only)
-5. Upload to GitHub Artifacts
-6. Create GitHub Release (prod only)
-```
-
-**Key Features:**
-- **Automatic version code increment** for production builds
-- **Signed APK** for staging and production
-- **GitHub Releases** for easy distribution
-- **Artifact retention** (14 days dev, 30 days staging, 90 days prod)
-
-### 2.3 Required GitHub Secrets
-
-Configure these in **Settings → Secrets and variables → Actions**:
-
-| Secret Name | Value | Used By | Description |
-|------------|-------|---------|-------------|
-| `AWS_ACCESS_KEY_ID` | `<iam-user-key>` | Backend | AWS credentials for ECR |
-| `AWS_SECRET_ACCESS_KEY` | `<iam-user-secret>` | Backend | AWS credentials for ECR |
-| `EC2_HOST` | `<elastic-ip>` | Backend | Production EC2 IP |
-| `EC2_HOST_DEV` | `<dev-elastic-ip>` | Backend | Development EC2 IP |
-| `EC2_HOST_STAGING` | `<staging-elastic-ip>` | Backend | Staging EC2 IP |
-| `EC2_USER` | `ec2-user` | Backend | EC2 SSH username |
-| `EC2_SSH_KEY` | `<private-key>` | Backend | SSH private key (raw text) |
-| `ANDROID_SIGNING_KEY` | `<base64-keystore>` | Mobile | Android signing keystore |
-| `ANDROID_KEY_ALIAS` | `sekar-key` | Mobile | Keystore alias |
-| `ANDROID_KEYSTORE_PASSWORD` | `<password>` | Mobile | Keystore password |
-| `ANDROID_KEY_PASSWORD` | `<password>` | Mobile | Key password |
-| `GOOGLE_MAPS_API_KEY` | `<api-key>` | Mobile | Google Maps API key |
-
-**IAM User Permissions (sekar-cicd-user):**
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ecr:GetAuthorizationToken",
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage",
-        "ecr:PutImage",
-        "ecr:InitiateLayerUpload",
-        "ecr:UploadLayerPart",
-        "ecr:CompleteLayerUpload",
-        "ecr:DescribeImages",
-        "ecr:ListImages"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-### 2.4 Manual Deployment Trigger
-
-For hotfixes or manual deployments:
-
-```bash
-# Via GitHub UI
-1. Go to Actions tab
-2. Select workflow (Backend CI/CD or Mobile CI/CD)
-3. Click "Run workflow"
-4. Select branch
-5. Click "Run workflow"
-
-# Or push a tag to trigger release
-git tag -a v2.0.0-rc1 -m "Phase 2 Release Candidate 1"
-git push origin v2.0.0-rc1
-```
-
----
-
-## 3. Firebase Cloud Messaging (FCM) Setup
-
-### Firebase Project Creation
-
-**Step 1: Create Firebase Project**
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add Project"
-3. Enter project name: `SEKAR-Production`
-4. Enable Google Analytics (optional)
-5. Complete project creation
-
-**Step 2: Register Android App**
-1. In Firebase project, click "Add App" → Android
-2. Enter Android package name: `com.wahyutrip.sekar`
-3. Download `google-services.json`
-4. Place in `fe/mobile/android/app/google-services.json`
-5. **Important:** Add `google-services.json` to `.gitignore`
-
-**Step 3: Generate FCM Server Key**
-1. Go to Project Settings → Cloud Messaging
-2. Copy "Server Key" (legacy)
-3. Store in AWS Secrets Manager (see below)
-
-**Step 4: Enable FCM API**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Select your Firebase project
-3. Enable "Firebase Cloud Messaging API"
-
-### AWS Secrets Manager Configuration
-
-**Create Secret for FCM Credentials:**
-```bash
-aws secretsmanager create-secret \
-  --name sekar/fcm/server-key \
-  --description "Firebase Cloud Messaging Server Key" \
-  --secret-string '{"server_key":"YOUR_FCM_SERVER_KEY_HERE"}' \
-  --region ap-southeast-3
-```
-
-**Retrieve Secret (for verification):**
-```bash
-aws secretsmanager get-secret-value \
-  --secret-id sekar/fcm/server-key \
-  --region ap-southeast-3 \
-  --query SecretString \
-  --output text | jq -r '.server_key'
-```
-
-### Mobile App Configuration
-
-**Android: google-services.json**
-```json
-{
-  "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER",
-    "project_id": "sekar-production",
-    "storage_bucket": "sekar-production.appspot.com"
-  },
-  "client": [
-    {
-      "client_info": {
-        "mobilesdk_app_id": "YOUR_MOBILE_SDK_APP_ID",
-        "android_client_info": {
-          "package_name": "com.wahyutrip.sekar"
-        }
-      },
-      "api_key": [
-        {
-          "current_key": "YOUR_API_KEY"
-        }
-      ]
-    }
-  ]
-}
-```
-
-**iOS: GoogleService-Info.plist (Phase 5)**
-- Will be added in Phase 5 during iOS development
-
----
-
-## 4. Environment Variables - Phase 2 Additions
-
-### Backend (.env additions)
-
-Add these to existing `.env` file:
-
-```bash
-# Firebase Cloud Messaging
-FCM_SERVER_KEY=<from-aws-secrets-manager>
-FCM_ENABLED=true
-
-# Notification Settings
-NOTIFICATION_RETRY_ATTEMPTS=3
-NOTIFICATION_RETRY_DELAY=5000  # milliseconds
-NOTIFICATION_BATCH_SIZE=100    # max devices per batch
-
-# Task Management
-TASK_AUTO_ASSIGN_ENABLED=true
-TASK_DEADLINE_WARNING_HOURS=24  # hours before deadline to send reminder
-
-# Background Jobs (Bull Queue - Phase 2+)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=  # empty for development
-REDIS_DB=0
-
-# KMZ Import
-KMZ_MAX_FILE_SIZE=10485760  # 10 MB in bytes
-KMZ_MAX_POLYGONS=100        # max polygons per KMZ file
-```
-
-### Mobile App (.env additions)
-
-Add these to existing `.env` file:
-
-```bash
-# Firebase Cloud Messaging (from google-services.json)
-FCM_SENDER_ID=YOUR_PROJECT_NUMBER
-
-# Notification Settings
-NOTIFICATION_SOUND_ENABLED=true
-NOTIFICATION_VIBRATE_ENABLED=true
-```
-
-### EC2 Environment Configuration
-
-Update `.env.production` on EC2 instances:
-
-**Development Environment:**
-```bash
-# SSH to dev EC2
-ssh -i sekar-key.pem ec2-user@<dev-elastic-ip>
-cd ~/sekar
-nano .env.production
-
-# Add Phase 2 variables
-FCM_SERVER_KEY=<from-secrets-manager>
-FCM_ENABLED=true
-REDIS_HOST=sekar-redis-dev.xxxxx.ng.0001.apse3.cache.amazonaws.com
-REDIS_PORT=6379
-# ... (add all Phase 2 variables)
-
-# Restart to apply changes
-docker-compose down && docker-compose up -d
-```
-
-**Staging Environment:**
-```bash
-# SSH to staging EC2
-ssh -i sekar-key.pem ec2-user@<staging-elastic-ip>
-cd ~/sekar
-nano .env.production
-
-# Add Phase 2 variables (same as dev but with staging Redis endpoint)
-FCM_SERVER_KEY=<from-secrets-manager>
-FCM_ENABLED=true
-REDIS_HOST=sekar-redis-staging.xxxxx.ng.0001.apse3.cache.amazonaws.com
-REDIS_PORT=6379
-```
-
-**Production Environment:**
-```bash
-# SSH to prod EC2
-ssh -i sekar-key.pem ec2-user@<prod-elastic-ip>
-cd ~/sekar
-nano .env.production
-
-# Add Phase 2 variables (production Redis cluster)
-FCM_SERVER_KEY=<from-secrets-manager>
-FCM_ENABLED=true
-REDIS_HOST=sekar-redis-prod.xxxxx.ng.0001.apse3.cache.amazonaws.com
-REDIS_PORT=6379
-```
-
----
-
-## 5. Redis/ElastiCache Setup (for Bull Queue)
-
-### ElastiCache Redis Configuration
-
-**Development Environment:**
-```bash
-aws elasticache create-cache-cluster \
-  --cache-cluster-id sekar-redis-dev \
-  --engine redis \
-  --cache-node-type cache.t3.micro \
-  --num-cache-nodes 1 \
-  --engine-version 7.0 \
-  --cache-subnet-group-name sekar-cache-subnet-group \
-  --security-group-ids sg-xxxxx \
-  --region ap-southeast-3 \
-  --tags Key=Environment,Value=Development Key=Project,Value=SEKAR
-```
-
-**Production Environment:**
-```bash
-aws elasticache create-replication-group \
-  --replication-group-id sekar-redis-prod \
-  --replication-group-description "SEKAR Production Redis Cluster" \
-  --engine redis \
-  --cache-node-type cache.t3.small \
-  --num-cache-clusters 2 \
-  --automatic-failover-enabled \
-  --engine-version 7.0 \
-  --cache-subnet-group-name sekar-cache-subnet-group \
-  --security-group-ids sg-xxxxx \
-  --at-rest-encryption-enabled \
-  --transit-encryption-enabled \
-  --region ap-southeast-3 \
-  --tags Key=Environment,Value=Production Key=Project,Value=SEKAR
-```
-
-### Security Group for Redis
-
-**Inbound Rules:**
-| Type | Protocol | Port | Source | Description |
-|------|----------|------|--------|-------------|
-| Redis | TCP | 6379 | sekar-ec2-sg | From application servers |
-
-**Create Security Group:**
-```bash
-aws ec2 create-security-group \
-  --group-name sekar-redis-sg \
-  --description "Security group for SEKAR Redis cluster" \
-  --vpc-id vpc-xxxxx \
-  --region ap-southeast-3
-
-aws ec2 authorize-security-group-ingress \
-  --group-id sg-xxxxx \
-  --protocol tcp \
-  --port 6379 \
-  --source-group sekar-ec2-sg \
-  --region ap-southeast-3
-```
-
-### Bull Queue Dashboard (Optional)
-
-**Install Bull Board for queue monitoring:**
-```bash
-cd be
-npm install @bull-board/express
-```
-
-**Access dashboard at:** `http://sekar.wahyutrip.com/admin/queues`
-- Requires Admin role
-- Shows pending/active/completed/failed jobs
-- Allows manual job retry
-
----
-
-## 6. Database Migrations
-
-### Migration Files to Execute
-
-Phase 2 introduces new tables and columns:
-
-**Migration 1: Tasks Table**
-```sql
--- File: be/src/database/migrations/1705500000000-CreateTasksTable.ts
-CREATE TABLE tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  type VARCHAR(50) NOT NULL, -- 'cleaning', 'maintenance', 'inspection'
-  status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'assigned', 'in_progress', 'completed', 'cancelled'
-  priority VARCHAR(20) NOT NULL DEFAULT 'normal', -- 'low', 'normal', 'high', 'urgent'
-  deadline TIMESTAMP WITH TIME ZONE,
-  estimated_duration INTEGER, -- minutes
-  assigned_to UUID REFERENCES users(id),
-  assigned_by UUID REFERENCES users(id),
-  area_id UUID REFERENCES areas(id),
-  completed_at TIMESTAMP WITH TIME ZONE,
-  completion_notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  deleted_at TIMESTAMP WITH TIME ZONE
-);
-
-CREATE INDEX idx_tasks_assigned_to ON tasks(assigned_to);
-CREATE INDEX idx_tasks_area_id ON tasks(area_id);
-CREATE INDEX idx_tasks_status ON tasks(status);
-CREATE INDEX idx_tasks_deadline ON tasks(deadline);
-```
-
-**Migration 2: Notifications Table**
-```sql
--- File: be/src/database/migrations/1705500001000-CreateNotificationsTable.ts
-CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id),
-  title VARCHAR(255) NOT NULL,
-  body TEXT NOT NULL,
-  type VARCHAR(50) NOT NULL, -- 'shift_reminder', 'task_assigned', 'shift_ending', 'report_approved'
-  data JSONB, -- additional metadata
-  read BOOLEAN DEFAULT FALSE,
-  sent BOOLEAN DEFAULT FALSE,
-  fcm_message_id VARCHAR(255), -- FCM response message ID
-  error TEXT, -- error if send failed
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  sent_at TIMESTAMP WITH TIME ZONE,
-  read_at TIMESTAMP WITH TIME ZONE
-);
-
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(read);
-CREATE INDEX idx_notifications_sent ON notifications(sent);
-CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
-```
-
-**Migration 3: FCM Tokens Table**
-```sql
--- File: be/src/database/migrations/1705500002000-CreateFcmTokensTable.ts
-CREATE TABLE fcm_tokens (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id),
-  token TEXT NOT NULL UNIQUE,
-  device_id VARCHAR(255),
-  device_type VARCHAR(50), -- 'android', 'ios'
-  app_version VARCHAR(20),
-  os_version VARCHAR(20),
-  active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  last_used_at TIMESTAMP WITH TIME ZONE
-);
-
-CREATE INDEX idx_fcm_tokens_user_id ON fcm_tokens(user_id);
-CREATE INDEX idx_fcm_tokens_token ON fcm_tokens(token);
-CREATE INDEX idx_fcm_tokens_active ON fcm_tokens(active);
-```
-
-**Migration 4: Area Revisions Table**
-```sql
--- File: be/src/database/migrations/1705500003000-CreateAreaRevisionsTable.ts
-CREATE TABLE area_revisions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  area_id UUID NOT NULL REFERENCES areas(id),
-  name VARCHAR(255) NOT NULL,
-  coordinates JSONB NOT NULL,
-  target_time INTEGER,
-  description TEXT,
-  changed_by UUID NOT NULL REFERENCES users(id),
-  change_type VARCHAR(50) NOT NULL, -- 'created', 'updated', 'deleted'
-  changes JSONB, -- detailed change log
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX idx_area_revisions_area_id ON area_revisions(area_id);
-CREATE INDEX idx_area_revisions_created_at ON area_revisions(created_at DESC);
-```
-
-### Run Migrations
-
-**Development:**
-```bash
-cd be
-npm run typeorm migration:run
-```
-
-**Staging/Production (via SSH):**
-```bash
-# SSH to EC2
-ssh -i sekar-key.pem ec2-user@<elastic-ip>
-cd ~/sekar
-
-# Run migrations BEFORE restarting app (zero-downtime)
-docker-compose run --rm backend npm run migration:run:prod
-
-# Verify migrations applied
-docker-compose run --rm backend npm run migration:show:prod
-
-# Then restart app with new code
-docker-compose up -d
-```
-
-**Via GitHub Actions (Automated):**
-
-Add migration step to deployment script by updating EC2 `.env.production`:
-
-```bash
-# On EC2, create migration script
-cat > ~/sekar/migrate.sh << 'EOF'
-#!/bin/bash
-cd ~/sekar
-docker-compose run --rm backend npm run migration:run:prod
-EOF
-
-chmod +x ~/sekar/migrate.sh
-```
-
-Update backend workflow to run migrations:
-```yaml
-# In .github/workflows/backend-ci-cd.yml
-# Add before "Restart with zero-downtime"
-- name: Run database migrations
-  run: |
-    cd ~/sekar
-    ./migrate.sh || echo "No migrations to run"
-```
-
-### Verify Migrations
-
-```sql
--- Connect to database
-psql -h sekar-prod-db.xxxxx.ap-southeast-3.rds.amazonaws.com -U sekar_admin -d sekar_db
-
--- Check new tables exist
-\dt
-
--- Verify table structure
-\d tasks
-\d notifications
-\d fcm_tokens
-\d area_revisions
-
--- Check indexes
-\di
-
--- Sample query
-SELECT COUNT(*) FROM tasks;
-SELECT COUNT(*) FROM notifications;
-```
-
----
-
-## 7. Deployment Procedure
-
-### Step 1: Pre-Deployment Verification (1 hour before deployment)
-
-**Checklist:**
-```bash
+\`\`\`bash
 # 1. Verify all tests pass
 cd be
 npm test
-npm run test:e2e
+# Expected: 845/845 passing, 90.77% coverage
 
-cd ../fe/mobile
-npm test
+# 2. Fresh database setup
+cd ../infra
+./stop.sh
+./start.sh  # Fresh PostgreSQL, empty sekar_db
+cd ../be
 
-# 2. Verify builds succeed
-cd ../../be
-npm run build
-
-cd ../fe/mobile
-cd android && ./gradlew assembleRelease
-
-# 3. Create database backup
-aws rds create-db-snapshot \
-  --db-instance-identifier sekar-prod-db \
-  --db-snapshot-identifier sekar-prod-db-pre-phase2-$(date +%Y%m%d-%H%M%S) \
-  --region ap-southeast-3
-
-# 4. Verify backup created
-aws rds describe-db-snapshots \
-  --db-instance-identifier sekar-prod-db \
-  --region ap-southeast-3 \
-  --query 'DBSnapshots[0].[DBSnapshotIdentifier,Status]'
-
-# 5. Notify team in Slack
-# Post in #sekar-deployments: "Phase 2 deployment starting in 1 hour. Backup created: sekar-prod-db-pre-phase2-20260121-140000"
-```
-
-### Step 2: Deploy Backend (Automated via GitHub Actions)
-
-**Push to GitHub (triggers CI/CD):**
-```bash
-git checkout develop
-git pull origin develop
-git tag -a v2.0.0-rc1 -m "Phase 2 Release Candidate 1"
-git push origin v2.0.0-rc1
-
-# Merge to staging
-git checkout staging
-git merge develop
-git push origin staging
-
-# Wait for CI/CD to complete (check GitHub Actions)
-# GitHub Actions will:
-# 1. Run lint, tests, security scans
-# 2. Build Docker image
-# 3. Push to ECR with tag "staging-latest"
-# 4. SSH to staging EC2
-# 5. Pull latest image
-# 6. Restart containers
-
-# Monitor deployment in GitHub Actions
-# https://github.com/<org>/sekar/actions
-
-# Verify deployment
-curl http://staging.sekar.wahyutrip.com/api/health
-curl http://staging.sekar.wahyutrip.com/api/docs | grep -i "task"
-```
-
-**Run migrations in staging (via SSH):**
-```bash
-# SSH to staging EC2
-ssh -i sekar-key.pem ec2-user@<staging-elastic-ip>
-
-# Run migrations
-cd ~/sekar
-docker-compose run --rm backend npm run migration:run:prod
+# 3. Enable synchronize temporarily (creates tables from entities)
+sed -i 's/DATABASE_SYNCHRONIZE=false/DATABASE_SYNCHRONIZE=true/' .env
 
 # Verify
-docker-compose run --rm backend sh -c "
-  PGPASSWORD=\$DATABASE_PASSWORD psql \
-    -h \$DATABASE_HOST \
-    -U \$DATABASE_USER \
-    -d \$DATABASE_NAME \
-    -c '\dt'
-"
-```
+grep DATABASE_SYNCHRONIZE .env
+# Should show: DATABASE_SYNCHRONIZE=true
 
-### Step 3: Smoke Tests (15 minutes)
+# 4. Run unified seeder (creates ALL tables + data)
+npm run seed
+# Expected:
+# ✅ Phase 1 seeding complete
+# ✅ Phase 2 seeding complete
+# ✅ Tasks seeding complete
 
-**Backend API Tests:**
-```bash
-# Test new endpoints
-API_URL="http://staging.sekar.wahyutrip.com"
+# 5. Verify 16 tables created
+docker exec -it sekar-postgres psql -U postgres -d sekar_db -c "\\dt" | grep -E "users|areas|rayons"
+# Should show: users, areas, shifts, reports, rayons, shift_definitions, etc.
 
-# 1. Test task creation
-curl -X POST $API_URL/api/v1/tasks \
-  -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Test cleanup task",
-    "description": "Cleanup area A",
-    "type": "cleaning",
-    "areaId": "uuid-here",
-    "assignedTo": "uuid-here",
-    "deadline": "2026-01-22T10:00:00Z"
-  }'
+# 6. Switch to production mode (migrations only)
+sed -i 's/DATABASE_SYNCHRONIZE=true/DATABASE_SYNCHRONIZE=false/' .env
 
-# 2. Test notification sending
-curl -X POST $API_URL/api/v1/notifications/send \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userId": "uuid-here",
-    "title": "Test Notification",
-    "body": "This is a test",
-    "type": "task_assigned"
-  }'
+# 7. Mark migrations as executed (tables already exist from seeder)
+docker exec -i sekar-postgres psql -U postgres -d sekar_db << 'SQL'
+INSERT INTO typeorm_migrations (timestamp, name)
+VALUES
+  (1737006000000, 'AddProductionIndexesAndConstraints1737006000000'),
+  (1737720000000, 'Phase2DatabaseSchema1737720000000')
+ON CONFLICT DO NOTHING;
+SQL
 
-# 3. Test KMZ import
-curl -X POST $API_URL/api/v1/areas/import-kmz \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -F "file=@test-areas.kmz"
-```
+# 8. Verify no pending migrations
+npm run migration:run
+# Expected: "No migrations are pending"
 
-### Step 4: Deploy Mobile App (Automated via GitHub Actions)
+# 9. Start backend and test
+npm run start:dev &
+sleep 5
+curl http://localhost:3000/api/health
+# Expected: {"status":"ok","database":"connected"}
+\`\`\`
 
-**GitHub Actions automatically builds and signs APK:**
-
-```bash
-# Mobile workflow triggers on push to staging/main
-# 1. Builds release APK
-# 2. Signs with Android keystore
-# 3. Uploads to GitHub Artifacts
-
-# Download APK from GitHub Actions
-# Go to: https://github.com/<org>/sekar/actions
-# Select the latest mobile workflow run
-# Download "sekar-staging-signed.apk" artifact
-
-# Or distribute via Firebase (manual for staging)
-cd fe/mobile
-firebase appdistribution:distribute \
-  android/app/build/outputs/apk/release/app-release-signed.apk \
-  --app <firebase-app-id> \
-  --groups "qa-team" \
-  --release-notes "Phase 2 staging build"
-```
-
-### Step 5: UAT Testing (2-3 days in staging)
-
-**QA Test Cases:**
-
-**1. Push Notifications**
-- [ ] Worker receives notification when task is assigned
-- [ ] Tapping notification opens task detail screen
-- [ ] Notification appears in in-app notification list
-- [ ] Notification badge count updates correctly
-- [ ] Worker can mark notifications as read
-
-**2. Task Management**
-- [ ] Supervisor can create new task
-- [ ] Supervisor can assign task to worker
-- [ ] Worker sees assigned tasks on dashboard
-- [ ] Worker can start task (status → in_progress)
-- [ ] Worker can complete task with notes
-- [ ] Supervisor can view task completion status
-- [ ] Task deadline shows warning when approaching
-
-**3. KMZ Import**
-- [ ] Admin can upload KMZ file
-- [ ] Areas are created from KMZ polygons
-- [ ] Area coordinates are correctly parsed
-- [ ] Import errors are handled gracefully
-- [ ] Import summary shows success/failure counts
-
-**4. Area Revision History**
-- [ ] Area changes are tracked
-- [ ] Revision history shows who made changes
-- [ ] Revision history shows what changed
-- [ ] Admin can view revision timeline
-
-### Step 6: Production Deployment (During low-traffic window)
-
-**Recommended Time:** Sunday 02:00-04:00 WIB (low worker activity)
-
-**Deployment Steps (Automated):**
-```bash
-# 1. Create production backup
-aws rds create-db-snapshot \
-  --db-instance-identifier sekar-prod-db \
-  --db-snapshot-identifier sekar-prod-db-pre-phase2-$(date +%Y%m%d-%H%M%S) \
-  --region ap-southeast-3
-
-# 2. Merge to main (triggers production deployment via GitHub Actions)
-git checkout main
-git merge staging
-git tag -a v2.0.0 -m "Phase 2 Production Release"
-git push origin main
-git push origin v2.0.0
-
-# 3. Monitor deployment in GitHub Actions
-# GitHub Actions will:
-# - Run full test suite
-# - Build and tag image with commit SHA
-# - Push to ECR with tags: <sha> and "latest"
-# - Create backup tag of current production image
-# - SSH to production EC2
-# - Pull latest image
-# - Restart containers (zero-downtime)
-# - Run smoke tests
-
-# 4. Run migrations in production (via SSH)
-ssh -i sekar-key.pem ec2-user@<prod-elastic-ip>
-cd ~/sekar
-docker-compose run --rm backend npm run migration:run:prod
-exit
-
-# 5. Verify deployment
-curl http://sekar.wahyutrip.com/api/health
-curl http://sekar.wahyutrip.com/api/docs | grep -i "task"
-
-# 6. Monitor logs for errors
-ssh -i sekar-key.pem ec2-user@<prod-elastic-ip>
-cd ~/sekar
-docker-compose logs -f backend
-```
-
-### Step 7: Post-Deployment Verification (30 minutes)
+**Why This Approach:**
+- **Fresh setup:** Seeder creates all tables at once (faster, simpler)
+- **Production:** Migrations upgrade existing Phase 1 → Phase 2
+- **Both migrations marked as executed** because tables were created by seeder
 
 **Checklist:**
+- [x] All 845 tests passing
+- [x] Coverage ≥90% (90.77%)
+- [x] No console.log or debug code
+- [x] 16 tables exist in database
+- [x] Both migrations marked as executed
+- [x] `npm run migration:run` shows "No migrations are pending"
+- [x] Health check returns OK
+
+---
+
+### 1.2 Set Up GitHub Secrets (30 min)
+
+**Required for CI/CD Automation**
+
+GitHub Secrets store sensitive credentials used by CI/CD workflows. This section guides you step-by-step through creating and adding 11 required secrets.
+
+**⚠️ RECOMMENDATION: Use Environment Secrets (Not Repository Secrets)**
+
+Environment secrets provide better security and organization for multi-environment deployments:
+- ✅ Different values per environment (dev/staging/prod)
+- ✅ Protection rules for production deployments
+- ✅ Scoped access control
+- ✅ Clear organization
+
+---
+
+#### Navigate to GitHub Environment Settings
+
+**1. Open your repository in GitHub:**
+```
+https://github.com/your-username/sekar
+```
+
+**2. Create Environments:**
+- Click **"Settings"** tab (top navigation)
+- Scroll down left sidebar → Click **"Environments"**
+- Click **"New environment"**
+- Create three environments:
+  - `development` (for develop branch)
+  - `staging` (for staging branch)
+  - `production` (for main branch)
+
+**3. Configure Production Protection (Recommended):**
+- Click **"production"** environment
+- Enable **"Required reviewers"**
+- Add yourself and/or team members as reviewers
+- Enable **"Wait timer"** (optional, e.g., 5 minutes)
+- This prevents accidental production deployments
+
+**4. For each environment, you'll add secrets using "Add secret" button**
+
+**Note:** Repository secrets are still useful for values that are the same across all environments (like `AWS_REGION`). Use environment secrets for values that differ per environment.
+
+---
+
+#### AWS & ECR Secrets (Existing IAM User)
+
+**Note:** The `sekar-cicd-user` IAM user was created in Phase 1 deployment. If you haven't set it up yet, see `specs/deployment/phase-1-deployment.md` section 2.4.
+
+**Verify IAM User Exists:**
+
+**⚠️ IMPORTANT:** You need **admin/root credentials** to verify IAM users. If you get "AccessDenied", you're likely using `sekar-cicd-user` credentials (which is correct - it shouldn't have IAM permissions).
+
+**Method 1: AWS Console (Recommended)**
+```
+1. Go to: https://console.aws.amazon.com/iam/home#/users
+2. Login with your root/admin account
+3. Search for "sekar-cicd-user"
+4. If found: Click user → View "Permissions" tab
+```
+
+**Method 2: AWS CLI (with admin profile)**
 ```bash
-# 1. Health check
-curl http://sekar.wahyutrip.com/api/health
+# Check current identity
+aws sts get-caller-identity
 
-# 2. Check Docker logs for errors
-ssh -i sekar-key.pem ec2-user@<prod-elastic-ip>
+# If you're using sekar-cicd-user, switch to admin profile
+aws iam get-user --user-name sekar-cicd-user --profile admin
+
+# List attached policies
+aws iam list-attached-user-policies --user-name sekar-cicd-user --profile admin
+```
+
+**Expected policies:**
+- `AmazonEC2ContainerRegistryPowerUser`
+- `AmazonS3FullAccess`
+
+**If you see "AccessDenied: User sekar-cicd-user is not authorized":**
+This is **correct behavior** - the CI/CD user doesn't need IAM permissions. The error message actually confirms the user exists (shows the ARN). You can proceed to the next step.
+
+**If user doesn't exist, create it:**
+```bash
+# Create IAM user
+aws iam create-user --user-name sekar-cicd-user
+
+# Attach ECR policy (for pushing Docker images)
+aws iam attach-user-policy \
+  --user-name sekar-cicd-user \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+
+# Attach S3 policy (for media uploads)
+aws iam attach-user-policy \
+  --user-name sekar-cicd-user \
+  --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
+```
+
+**Generate Access Keys (if not already done):**
+
+**⚠️ Use admin/root credentials for this command:**
+```bash
+# Switch to admin profile (or use root account)
+aws configure --profile admin
+# Then generate access keys
+aws iam create-access-key --user-name sekar-cicd-user --profile admin
+
+# Or if you only have one profile with admin rights:
+aws iam create-access-key --user-name sekar-cicd-user
+```
+
+**Save the output:**
+```json
+{
+  "AccessKey": {
+    "AccessKeyId": "AKIA...",        ← Save this
+    "SecretAccessKey": "wJa...",     ← Save this (shown once only!)
+    "Status": "Active"
+  }
+}
+```
+
+**⚠️ IMPORTANT:** The `SecretAccessKey` is shown **once only**. Save it immediately! If you lose it, you must delete and create a new access key.
+
+**Add to GitHub Environment Secrets:**
+
+**For EACH environment (development, staging, production):**
+
+**Secret 1: AWS_ACCESS_KEY_ID** (Environment Secret)
+1. Go to Settings → Environments → Select environment (e.g., `production`)
+2. Click **"Add environment secret"**
+3. Name: `AWS_ACCESS_KEY_ID`
+4. Value: Paste the `AccessKeyId` for this environment
+5. Click **"Add secret"**
+6. Repeat for `development` and `staging` (can use same IAM user or different ones)
+
+**Secret 2: AWS_SECRET_ACCESS_KEY** (Environment Secret)
+1. Click **"Add environment secret"**
+2. Name: `AWS_SECRET_ACCESS_KEY`
+3. Value: Paste the `SecretAccessKey` for this environment
+4. Click **"Add secret"**
+5. Repeat for other environments
+
+**Secret 3: AWS_REGION** (Repository Secret - Same for All Environments)
+1. Go to Settings → Secrets and variables → Actions
+2. Click **"New repository secret"**
+3. Name: `AWS_REGION`
+4. Value: `ap-southeast-3`
+5. Click **"Add secret"**
+
+**Note:** If using the same AWS account/IAM user for all environments, you can use repository secrets for AWS credentials. However, environment secrets are recommended if you have separate AWS accounts or want additional security layers.
+
+**Verify AWS secrets:**
+```bash
+# Test ECR login with these credentials
+export AWS_ACCESS_KEY_ID=<your-access-key-id>
+export AWS_SECRET_ACCESS_KEY=<your-secret-access-key>
+aws ecr describe-repositories --region ap-southeast-3
+
+# Expected: Should list your sekar-backend repository
+```
+
+---
+
+#### EC2 SSH Secrets
+
+**For EACH environment (different EC2 instances per environment):**
+
+**Secret 4: EC2_HOST** (Environment Secret)
+1. Get your EC2 Elastic IP for each environment:
+   ```bash
+   # Development EC2
+   aws ec2 describe-addresses --region ap-southeast-3 \
+     --filters "Name=tag:Name,Values=sekar-dev" \
+     --query 'Addresses[0].PublicIp' --output text
+
+   # Staging EC2
+   aws ec2 describe-addresses --region ap-southeast-3 \
+     --filters "Name=tag:Name,Values=sekar-staging" \
+     --query 'Addresses[0].PublicIp' --output text
+
+   # Production EC2
+   aws ec2 describe-addresses --region ap-southeast-3 \
+     --filters "Name=tag:Name,Values=sekar-prod" \
+     --query 'Addresses[0].PublicIp' --output text
+   ```
+2. For each environment (development, staging, production):
+   - Go to Settings → Environments → Select environment
+   - Click **"Add environment secret"**
+   - Name: `EC2_HOST`
+   - Value: Paste the IP address for this environment
+   - Click **"Add secret"**
+
+**Secret 5: EC2_USER** (Repository Secret - Same for All)
+1. Go to Settings → Secrets and variables → Actions
+2. Click **"New repository secret"**
+3. Name: `EC2_USER`
+4. Value: `ec2-user` (default for Amazon Linux)
+5. Click **"Add secret"**
+
+**Secret 6: EC2_SSH_KEY** (Environment Secret - Different Keys per Environment)
+1. Get your SSH private key content for each environment:
+   ```bash
+   # Development key
+   cat ~/.ssh/sekar-dev-key.pem
+
+   # Staging key
+   cat ~/.ssh/sekar-staging-key.pem
+
+   # Production key
+   cat ~/.ssh/sekar-prod-key.pem
+   ```
+2. For each environment:
+   - Go to Settings → Environments → Select environment
+   - Click **"Add environment secret"**
+   - Name: `EC2_SSH_KEY`
+   - Value: Paste the entire key content (with BEGIN/END lines)
+   - Click **"Add secret"**
+
+**Note:** If using the same EC2 instance for all environments (NOT recommended for production), you can use repository secrets instead.
+
+**Verify EC2 SSH access:**
+```bash
+# Test SSH connection
+ssh -i ~/.ssh/sekar-key.pem ec2-user@<your-ec2-ip> "echo 'SSH works'"
+# Expected: "SSH works"
+```
+
+---
+
+#### Android Signing Secrets
+
+**Generate Android Keystore (if not already done):**
+```bash
+# Navigate to a secure location
+cd ~/sekar-credentials
+mkdir -p android-signing
+cd android-signing
+
+# Create keystore for signing APK
+keytool -genkeypair -v \
+  -storetype PKCS12 \
+  -keystore sekar-release.keystore \
+  -alias sekar-key \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+
+# You'll be prompted for:
+# - Keystore password (create strong password, save it!)
+# - Key password (can be same as keystore password)
+# - Your name, organization, etc. (fill as needed)
+```
+
+**Save the passwords securely!** You'll need them in the next steps.
+
+**Convert keystore to base64:**
+```bash
+# Create base64 version (single line, no line breaks)
+base64 sekar-release.keystore | tr -d '\n' > keystore.base64
+
+# Verify it's a single line
+wc -l keystore.base64
+# Expected: 0 (no newlines)
+
+# View content
+cat keystore.base64
+```
+
+**Secret 7: ANDROID_SIGNING_KEY** (Repository Secret - Same Keystore for All Builds)
+1. Go to Settings → Secrets and variables → Actions
+2. Click **"New repository secret"**
+3. Name: `ANDROID_SIGNING_KEY`
+4. Value: Paste the entire content from `keystore.base64` (should be ~3000+ characters)
+5. Click **"Add secret"**
+
+**Secret 8: ANDROID_KEY_ALIAS** (Repository Secret)
+1. Click **"New repository secret"**
+2. Name: `ANDROID_KEY_ALIAS`
+3. Value: `sekar-key` (the alias you used in keytool command)
+4. Click **"Add secret"**
+
+**Secret 9: ANDROID_KEYSTORE_PASSWORD** (Repository Secret)
+1. Click **"New repository secret"**
+2. Name: `ANDROID_KEYSTORE_PASSWORD`
+3. Value: Paste the keystore password you created
+4. Click **"Add secret"**
+
+**Secret 10: ANDROID_KEY_PASSWORD** (Repository Secret)
+1. Click **"New repository secret"**
+2. Name: `ANDROID_KEY_PASSWORD`
+3. Value: Paste the key password (often same as keystore password)
+4. Click **"Add secret"**
+
+**Note:** Android signing uses the same keystore for all builds because apps signed with different keys cannot update each other on the Play Store.
+
+**Verify keystore:**
+```bash
+# List keystore contents
+keytool -list -v -keystore sekar-release.keystore
+# Enter password when prompted
+# Expected: Shows alias "sekar-key", validity dates, etc.
+```
+
+---
+
+#### API Keys
+
+**Secret 11: GOOGLE_MAPS_API_KEY**
+
+**Create Google Maps API Key:**
+1. Go to: https://console.cloud.google.com/google/maps-apis/credentials
+2. Click **"Create Credentials"** → **"API key"**
+3. Copy the generated API key
+4. Click **"Edit API key"** (pencil icon)
+5. Under **"API restrictions"**:
+   - Select **"Restrict key"**
+   - Search and enable: **"Maps SDK for Android"**
+6. Under **"Application restrictions"** (optional but recommended):
+   - Select **"Android apps"**
+   - Click **"Add an item"**
+   - Package name: `com.wahyutrip.sekar`
+   - SHA-1 certificate fingerprint: Get from your keystore (see below)
+7. Click **"Save"**
+
+**Get SHA-1 fingerprint from your keystore:**
+```bash
+keytool -list -v -keystore sekar-release.keystore | grep SHA1
+# Copy the SHA1 value and paste in Google Console
+```
+
+**Add to GitHub:**
+
+**Option A: Same API Key for All Environments (Repository Secret)**
+1. Go to Settings → Secrets and variables → Actions
+2. Click **"New repository secret"**
+3. Name: `GOOGLE_MAPS_API_KEY`
+4. Value: Paste your Google Maps API key (e.g., `AIzaSyD...`)
+5. Click **"Add secret"**
+
+**Option B: Different API Keys per Environment (Environment Secret - Recommended)**
+1. Create separate API keys in Google Cloud Console for each environment
+2. For each environment (development, staging, production):
+   - Go to Settings → Environments → Select environment
+   - Click **"Add environment secret"**
+   - Name: `GOOGLE_MAPS_API_KEY`
+   - Value: Paste the API key for this environment
+   - Click **"Add secret"**
+
+**Recommendation:** Use separate API keys with proper restrictions per environment for better security and quota management.
+
+**Verify API key:**
+```bash
+# Test API key with a simple request
+curl "https://maps.googleapis.com/maps/api/geocode/json?address=Surabaya&key=<your-api-key>"
+# Expected: Should return JSON with Surabaya coordinates
+```
+
+---
+
+#### Verification Checklist
+
+**Verify all secrets are added:**
+
+**Repository Secrets** (Settings → Secrets and variables → Actions):
+| Secret Name | Status |
+|------------|--------|
+| AWS_REGION | ✅ Added |
+| EC2_USER | ✅ Added |
+| ANDROID_SIGNING_KEY | ✅ Added |
+| ANDROID_KEY_ALIAS | ✅ Added |
+| ANDROID_KEYSTORE_PASSWORD | ✅ Added |
+| ANDROID_KEY_PASSWORD | ✅ Added |
+
+**Environment Secrets** (Settings → Environments → [environment] → Secrets):
+
+For **development** environment:
+| Secret Name | Status |
+|------------|--------|
+| AWS_ACCESS_KEY_ID | ✅ Added |
+| AWS_SECRET_ACCESS_KEY | ✅ Added |
+| EC2_HOST | ✅ Added |
+| EC2_SSH_KEY | ✅ Added |
+| GOOGLE_MAPS_API_KEY | ✅ Added (optional) |
+
+For **staging** environment:
+| Secret Name | Status |
+|------------|--------|
+| AWS_ACCESS_KEY_ID | ✅ Added |
+| AWS_SECRET_ACCESS_KEY | ✅ Added |
+| EC2_HOST | ✅ Added |
+| EC2_SSH_KEY | ✅ Added |
+| GOOGLE_MAPS_API_KEY | ✅ Added (optional) |
+
+For **production** environment:
+| Secret Name | Status |
+|------------|--------|
+| AWS_ACCESS_KEY_ID | ✅ Added |
+| AWS_SECRET_ACCESS_KEY | ✅ Added |
+| EC2_HOST | ✅ Added |
+| EC2_SSH_KEY | ✅ Added |
+| GOOGLE_MAPS_API_KEY | ✅ Added (optional) |
+
+**Test GitHub Actions can access secrets:**
+```bash
+# Commit a small change to trigger CI/CD
+cd /path/to/sekar
+git checkout -b test-secrets
+echo "# Test secrets" >> README.md
+git add README.md
+git commit -m "test: verify GitHub secrets"
+git push origin test-secrets
+
+# Go to: GitHub → Actions tab
+# Check if workflows start running (they should fail if secrets are wrong)
+```
+
+**Common Issues:**
+
+**Issue 1: AWS secret rejected**
+```
+Error: The security token included in the request is invalid
+```
+**Fix:** Regenerate access keys, ensure no extra spaces when copying
+
+**Issue 2: SSH connection failed**
+```
+Error: Permission denied (publickey)
+```
+**Fix:** Verify entire SSH key copied including BEGIN/END lines, check EC2_HOST is correct IP
+
+**Issue 3: Android signing failed**
+```
+Error: Keystore was tampered with, or password was incorrect
+```
+**Fix:** Verify base64 conversion has no line breaks (`tr -d '\n'`), check passwords are correct
+
+**Complete Secrets Reference Table:**
+
+| Secret Name | Type | Example Value | Description |
+|------------|------|---------------|-------------|
+| `AWS_ACCESS_KEY_ID` | Environment | `AKIAIOSFODNN7...` | AWS IAM access key (20 chars) - Different per environment |
+| `AWS_SECRET_ACCESS_KEY` | Environment | `wJalrXUtnFEMI...` | AWS IAM secret key (40 chars) - Different per environment |
+| `AWS_REGION` | Repository | `ap-southeast-3` | AWS region (Jakarta) - Same for all |
+| `EC2_HOST` | Environment | `13.229.123.45` | EC2 Elastic IP - Different per environment |
+| `EC2_USER` | Repository | `ec2-user` | EC2 SSH username - Same for all |
+| `EC2_SSH_KEY` | Environment | `-----BEGIN RSA...` | SSH private key - Different per environment |
+| `ANDROID_SIGNING_KEY` | Repository | `MIIJKQIBAzCC...` | Base64 keystore - Same for all (Play Store requirement) |
+| `ANDROID_KEY_ALIAS` | Repository | `sekar-key` | Keystore alias - Same for all |
+| `ANDROID_KEYSTORE_PASSWORD` | Repository | `******` | Keystore password - Same for all |
+| `ANDROID_KEY_PASSWORD` | Repository | `******` | Key password - Same for all |
+| `GOOGLE_MAPS_API_KEY` | Env/Repo | `AIzaSyD...` | Google Maps API key - Can be same or different |
+
+**Security Best Practices:**
+
+1. **Never commit secrets to git** - Use `.gitignore` for `.keystore`, `.pem`, credentials
+2. **Use strong passwords** - Minimum 16 characters for keystore/key passwords
+3. **Rotate credentials regularly** - Consider rotating AWS keys every 90 days
+4. **Restrict API keys** - Use application and API restrictions on Google Maps key
+5. **Backup keystore securely** - Loss of keystore = can't update app on Play Store
+
+---
+
+### 1.3 Set Up Firebase/FCM (15 min)
+
+**Note:** FCM is optional. You can deploy with \`FCM_ENABLED=false\` and enable later.
+
+#### Create Firebase Project
+
+**1. Firebase Console:**
+\`\`\`
+1. Go to: https://console.firebase.google.com/
+2. Click "Add Project"
+3. Project name: "SEKAR-Production"
+4. Disable Google Analytics (optional)
+5. Click "Create Project"
+\`\`\`
+
+**2. Register Android App:**
+\`\`\`
+1. In Firebase project → "Add App" → Android
+2. Android package name: com.wahyutrip.sekar
+3. Download google-services.json
+4. Place in: fe/mobile/android/app/google-services.json
+5. Add to .gitignore: **/google-services.json
+\`\`\`
+
+**3. Generate Service Account Key:**
+\`\`\`
+1. Firebase Console → Project Settings → Service Accounts
+2. Click "Generate New Private Key"
+3. Download JSON file (firebase-service-account.json)
+4. Store securely (needed for deployment)
+\`\`\`
+
+**4. Enable FCM API:**
+\`\`\`
+1. Go to: https://console.cloud.google.com/
+2. Select your Firebase project
+3. APIs & Services → Enable "Firebase Cloud Messaging API"
+\`\`\`
+
+---
+
+## Part 2: Deployment Execution (30 min)
+
+### 2.1 Create Database Backup (5 min)
+
+**CRITICAL:** Always backup before deployment.
+
+\`\`\`bash
+# SSH to production EC2
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>
+
+# Create backup directory
+mkdir -p ~/backups/\$(date +%Y%m%d)
+
+# Backup database
+docker exec sekar-postgres pg_dump -U postgres sekar_db > \\
+  ~/backups/\$(date +%Y%m%d)/sekar_db_pre_phase2_\$(date +%H%M%S).sql
+
+# Verify backup (should be >1MB)
+ls -lh ~/backups/\$(date +%Y%m%d)/
+# Expected: -rw-r--r-- 1 ec2-user ec2-user 5.2M Feb  2 14:30 sekar_db_pre_phase2_143045.sql
+\`\`\`
+
+**Checklist:**
+- [ ] Backup file created
+- [ ] File size >1MB (verify not empty)
+- [ ] Backup path saved for rollback
+
+---
+
+### 2.2 Update Environment Variables (10 min)
+
+**Edit production .env file:**
+
+\`\`\`bash
+# SSH to production
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>
 cd ~/sekar
-docker-compose logs --tail=100 backend | grep -i error
+nano .env
+\`\`\`
 
-# 3. Verify new tables
-docker-compose run --rm backend sh -c "
-  PGPASSWORD=\$DATABASE_PASSWORD psql \
-    -h \$DATABASE_HOST \
-    -U \$DATABASE_USER \
-    -d \$DATABASE_NAME \
-    -c 'SELECT COUNT(*) FROM tasks; SELECT COUNT(*) FROM notifications;'
-"
+**Add Phase 2 variables:**
 
-# 4. Test FCM notification sending (via Swagger or API)
-curl -X POST http://sekar.wahyutrip.com/api/v1/notifications/send \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userId": "<test-user-id>",
-    "title": "Production Test",
-    "body": "Testing FCM in production",
-    "type": "shift_reminder"
-  }'
+\`\`\`env
+# ============================================
+# PHASE 2 ADDITIONS
+# ============================================
 
-# 5. Monitor CloudWatch alarms (no new alarms should trigger)
+# Firebase Cloud Messaging
+FCM_ENABLED=true
+FIREBASE_SERVICE_ACCOUNT_PATH=./config/firebase-service-account.json
 
-# 6. Check error rate in CloudWatch dashboard
-# Should remain < 1%
+# Notification Settings
+NOTIFICATION_RETRY_ATTEMPTS=3
+NOTIFICATION_BATCH_SIZE=100
 
-# 7. Verify mobile app can register FCM token
-# Install APK on test device, login, check backend logs for FCM token registration
-```
+# Task Management
+TASK_AUTO_ASSIGN_ENABLED=false
+TASK_DEADLINE_WARNING_HOURS=24
 
----
+# KMZ Import
+KMZ_MAX_FILE_SIZE_MB=10
+KMZ_MAX_POLYGONS=100
 
-## 8. Monitoring - Phase 2 Additions
+# Database (CRITICAL - verify these)
+DATABASE_SYNCHRONIZE=false
+DATABASE_MIGRATIONS_RUN=false
 
-### New CloudWatch Metrics
+# AWS S3 (verify existing values)
+AWS_ENDPOINT_URL=
+AWS_S3_FORCE_PATH_STYLE=false
+AWS_ACCESS_KEY_ID=<your-key>
+AWS_SECRET_ACCESS_KEY=<your-secret>
+AWS_S3_BUCKET=sekar-media-prod
+AWS_REGION=ap-southeast-3
 
-**Custom Metrics to Add:**
-```typescript
-// Backend: Log Phase 2 metrics
-await logMetric('TaskCreated', 1, 'Count');
-await logMetric('TaskAssigned', 1, 'Count');
-await logMetric('TaskCompleted', 1, 'Count');
-await logMetric('NotificationSent', 1, 'Count');
-await logMetric('NotificationFailed', 1, 'Count');
-await logMetric('FCMTokenRegistered', 1, 'Count');
-await logMetric('KMZImportSuccess', 1, 'Count');
-await logMetric('KMZImportFailed', 1, 'Count');
-await logMetric('KMZImportDuration', 5234, 'Milliseconds');
-```
+# JWT (verify existing)
+JWT_SECRET=<production-secret-at-least-32-chars>
+JWT_EXPIRATION=7d
+\`\`\`
 
-### New CloudWatch Alarms
+**Save:** Ctrl+X, Y, Enter
 
-**Alarm 1: High Notification Failure Rate**
-```yaml
-AlarmName: SEKAR-Prod-NotificationFailureHigh
-MetricName: NotificationFailed
-Namespace: SEKAR/API
-Statistic: Sum
-Period: 300  # 5 minutes
-EvaluationPeriods: 2
-Threshold: 10
-ComparisonOperator: GreaterThanThreshold
-Actions:
-  - arn:aws:sns:ap-southeast-3:ACCOUNT_ID:sekar-warning-alerts
-```
-
-**Alarm 2: Redis Connection Failures**
-```yaml
-AlarmName: SEKAR-Prod-RedisConnectionFailed
-MetricName: CacheHits
-Namespace: AWS/ElastiCache
-Statistic: Sum
-Period: 300
-EvaluationPeriods: 1
-Threshold: 0
-ComparisonOperator: LessThanThreshold
-Dimensions:
-  - Name: CacheClusterId
-    Value: sekar-redis-prod
-Actions:
-  - arn:aws:sns:ap-southeast-3:ACCOUNT_ID:sekar-high-alerts
-```
-
-**Alarm 3: Bull Queue Processing Delays**
-```yaml
-# Custom metric from Bull queue
-AlarmName: SEKAR-Prod-QueueDelayHigh
-MetricName: QueueWaitTime
-Namespace: SEKAR/Queue
-Statistic: Average
-Period: 300
-EvaluationPeriods: 2
-Threshold: 60000  # 60 seconds
-ComparisonOperator: GreaterThanThreshold
-Actions:
-  - arn:aws:sns:ap-southeast-3:ACCOUNT_ID:sekar-warning-alerts
-```
-
-### Updated Dashboard
-
-Add new row to `SEKAR-Application-Metrics` dashboard:
-
-**Row: Phase 2 Features**
-| Widget | Type | Metric | Period |
-|--------|------|--------|--------|
-| Tasks Created Today | Number | `SEKAR/API/TaskCreated` | 1 day |
-| Notifications Sent Today | Number | `SEKAR/API/NotificationSent` | 1 day |
-| Notification Failure Rate | Line | `SEKAR/API/NotificationFailed / NotificationSent * 100` | 5 min |
-| FCM Token Registrations | Number | `SEKAR/API/FCMTokenRegistered` | 1 day |
+**If disabling FCM:**
+\`\`\`env
+FCM_ENABLED=false
+# Skip Firebase config upload
+\`\`\`
 
 ---
 
-## 9. Rollback Procedure
+### 2.3 Upload Firebase Configuration (5 min)
+
+**Skip if \`FCM_ENABLED=false\`**
+
+\`\`\`bash
+# From local machine
+scp -i ~/.ssh/sekar-prod.pem \\
+  /path/to/firebase-service-account.json \\
+  ec2-user@<ELASTIC_IP>:~/sekar/config/
+
+# Verify upload
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>
+ls -l ~/sekar/config/firebase-service-account.json
+# Expected: -rw-r--r-- 1 ec2-user ec2-user 2419 Feb  2 14:35 firebase-service-account.json
+\`\`\`
+
+---
+
+### 2.4 Deploy via GitHub Actions (5-8 min)
+
+**Option A: Automatic Deployment** (Recommended)
+
+\`\`\`bash
+# On local machine
+cd /path/to/sekar
+
+# Ensure on main branch
+git checkout main
+git pull origin main
+
+# Merge latest changes from develop
+git merge develop
+
+# Push to trigger CI/CD
+git push origin main
+
+# GitHub Actions will automatically:
+# 1. Run lint (2 min)
+# 2. Run 845 tests with PostgreSQL (3 min)
+# 3. Run security scan (npm audit, secret scanning)
+# 4. Build Docker image
+# 5. Push to ECR with "latest" and "backup-TIMESTAMP" tags
+# 6. SSH to production EC2
+# 7. Pull latest image
+# 8. Run database migration
+# 9. Restart containers with zero-downtime
+# 10. Run smoke tests
+\`\`\`
+
+**Option B: Manual Trigger**
+
+\`\`\`
+1. Go to: https://github.com/<YOUR_ORG>/sekar/actions
+2. Select "Backend CI/CD" workflow
+3. Click "Run workflow"
+4. Branch: main
+5. Environment: production
+6. Click "Run workflow"
+\`\`\`
+
+---
+
+### 2.5 Monitor Deployment (5 min)
+
+**Watch GitHub Actions:**
+
+\`\`\`
+Pipeline Stages (5-8 minutes total):
+
+✓ Lint and Format Check         (2 min)
+✓ Unit Tests                     (3 min)  ← 845 tests
+✓ Security Scan                  (1 min)  ← npm audit, secrets
+✓ Build                          (1 min)
+✓ Deploy to Production:
+  ├─ Login to ECR
+  ├─ Create backup tag          ← Rollback point
+  ├─ Pull latest image
+  ├─ Run migrations             ← CRITICAL
+  ├─ Restart containers         ← Zero-downtime
+  └─ Show logs
+✓ Smoke Tests                    (30s)
+\`\`\`
+
+**If migration fails:** Deployment aborts, no changes applied.
+
+**Monitor logs:**
+\`\`\`bash
+# In separate terminal
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>
+cd ~/sekar
+docker-compose logs -f backend
+\`\`\`
+
+---
+
+## Part 3: Verification (15 min)
+
+### 3.1 Health Checks (2 min)
+
+\`\`\`bash
+# API Health
+curl http://<SERVER_IP>:3000/api/health
+# Expected: {"status":"ok","database":"connected"}
+
+# Swagger Documentation
+# Open browser: http://<SERVER_IP>:3000/api/docs
+# Expected: 83 endpoints (40 Phase 1 + 43 Phase 2)
+\`\`\`
+
+---
+
+### 3.2 Test Authentication (2 min)
+
+\`\`\`bash
+# Login
+curl -X POST http://<SERVER_IP>:3000/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"username":"admin","password":"admin123"}'
+
+# Save the access_token
+TOKEN="<jwt_token_from_response>"
+\`\`\`
+
+---
+
+### 3.3 Test Phase 2 Endpoints (5 min)
+
+\`\`\`bash
+# Rayons
+curl http://<SERVER_IP>:3000/api/rayons \\
+  -H "Authorization: Bearer \$TOKEN"
+# Expected: [] (empty, no data seeded yet)
+
+# Activity Types
+curl http://<SERVER_IP>:3000/api/activity-types \\
+  -H "Authorization: Bearer \$TOKEN"
+# Expected: [] (empty)
+
+# Tasks
+curl http://<SERVER_IP>:3000/api/tasks \\
+  -H "Authorization: Bearer \$TOKEN"
+# Expected: [] (empty)
+
+# Notifications
+curl http://<SERVER_IP>:3000/api/notifications/my \\
+  -H "Authorization: Bearer \$TOKEN"
+# Expected: [] (empty)
+
+# All returning 200 = SUCCESS
+# Returning 404 = Deployment issue, check logs
+\`\`\`
+
+---
+
+### 3.4 Verify Database Migration (3 min)
+
+\`\`\`bash
+# SSH to production
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>
+
+# Connect to database
+docker exec -it sekar-postgres psql -U postgres -d sekar_db
+
+# Check migration status
+SELECT * FROM migrations ORDER BY timestamp DESC LIMIT 1;
+# Expected: Phase2DatabaseSchema1737720000000 | <timestamp>
+
+# Verify 16 tables exist
+\\dt
+# Expected:
+# - 10 Phase 1 tables: users, areas, shifts, reports, etc.
+# - 6 Phase 2 tables: rayons, shift_definitions, activity_types,
+#                     special_day_overrides, area_staff_requirements, worker_schedules
+
+# Exit PostgreSQL
+\\q
+exit
+\`\`\`
+
+---
+
+### 3.5 Monitor Application Logs (3 min)
+
+\`\`\`bash
+# SSH to production
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>
+cd ~/sekar
+
+# Watch for errors
+docker-compose logs --tail=100 backend | grep -E "(ERROR|WARN)"
+
+# Should see:
+# ✓ "Nest application successfully started"
+# ✓ "Mapped {/api/rayons, GET}" (and other Phase 2 routes)
+# ✗ NO ERROR messages
+
+# Watch logs for 5 minutes
+docker-compose logs -f backend
+# Press Ctrl+C to exit
+\`\`\`
+
+---
+
+## Part 4: Post-Deployment (1 hour)
+
+### 4.1 Immediate Testing (30 min)
+
+**Mobile App:**
+\`\`\`bash
+# 1. Install latest APK from GitHub Releases
+# Download from: https://github.com/<ORG>/sekar/releases/latest
+
+# 2. Login with test credentials
+# Username: worker1 / Password: worker123
+
+# 3. Test GPS tracking
+# - Start shift
+# - Verify location updates
+# - Submit test report with photo
+
+# 4. Test notifications (if FCM enabled)
+# - Allow notification permissions when prompted
+# - Send test notification from Swagger
+\`\`\`
+
+**Web Dashboard:**
+\`\`\`bash
+# Open browser: http://<SERVER_IP>:3001
+
+# 1. Login
+# Username: admin / Password: admin123
+
+# 2. Navigate to new pages
+# - Rayons page (should load, empty)
+# - Tasks page (should load, empty)
+# - Monitoring page (should show real-time stats)
+
+# 3. Verify no console errors (F12 → Console)
+\`\`\`
+
+---
+
+### 4.2 Data Setup (30 min)
+
+**IMPORTANT:** Use UI, not seeders for production data.
+
+**1. Import Production Areas (if KMZ available):**
+\`\`\`bash
+# Via Swagger UI or curl
+curl -X POST http://<SERVER_IP>:3000/api/areas/import-kmz \\
+  -H "Authorization: Bearer \$TOKEN" \\
+  -F "file=@production-areas.kmz"
+
+# Expected response: { "imported": 45, "failed": 0, "total": 45 }
+\`\`\`
+
+**2. Create Rayons via Admin UI:**
+\`\`\`
+1. Login to web dashboard as admin
+2. Navigate to: Rayons → Create New
+3. Create 7 rayons:
+   - Rayon 1 (North)
+   - Rayon 2 (South)
+   - Rayon 3 (East)
+   - Rayon 4 (West)
+   - Rayon 5 (Central)
+   - Rayon 6 (Industrial)
+   - Rayon 7 (Parks)
+4. Assign areas to each rayon
+\`\`\`
+
+**3. Create Shift Definitions:**
+\`\`\`
+1. Navigate to: Settings → Shift Definitions
+2. Create default shifts:
+   - Morning Shift: 07:00 - 15:00
+   - Afternoon Shift: 15:00 - 23:00
+3. Configure for each rayon
+\`\`\`
+
+---
+
+## Part 5: Troubleshooting
+
+### Issue 1: Migration Fails
+
+**Symptoms:**
+- "relation 'reports' does not exist" (fresh database)
+- "relation 'rayons' already exists" (after running seeder)
+
+**Diagnosis:**
+\`\`\`bash
+# Check if this is production or local
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>  # Production
+# OR
+docker-compose logs backend | grep -i migration     # Local
+
+# Check what tables exist
+docker exec -it sekar-postgres psql -U postgres -d sekar_db -c "\\dt"
+\`\`\`
+
+**Common Causes:**
+
+**A. Fresh Database (Local Testing)**
+- Migrations expect existing Phase 1 tables
+- **Solution:** Follow section 1.1 - use seeder + mark migrations as executed
+
+\`\`\`bash
+# Enable synchronize, run seeder, then mark migrations
+sed -i 's/DATABASE_SYNCHRONIZE=false/DATABASE_SYNCHRONIZE=true/' .env
+npm run seed
+sed -i 's/DATABASE_SYNCHRONIZE=true/DATABASE_SYNCHRONIZE=false/' .env
+
+# Mark both migrations as executed
+docker exec -i sekar-postgres psql -U postgres -d sekar_db << 'SQL'
+INSERT INTO typeorm_migrations (timestamp, name)
+VALUES
+  (1737006000000, 'AddProductionIndexesAndConstraints1737006000000'),
+  (1737720000000, 'Phase2DatabaseSchema1737720000000')
+ON CONFLICT DO NOTHING;
+SQL
+\`\`\`
+
+**B. Production Deployment**
+1. **Table already exists** → Migration ran before, revert and retry
+2. **Foreign key constraint** → Check data integrity
+3. **Permission denied** → Verify DATABASE_USER has CREATE TABLE rights
+
+\`\`\`bash
+# Production: Revert and re-run
+docker-compose run --rm backend npm run migration:revert:prod
+docker-compose run --rm backend npm run migration:run:prod
+\`\`\`
+
+---
+
+### Issue 2: Health Check Returns 500
+
+**Symptoms:** \`curl http://IP:3000/api/health\` returns error
+
+**Diagnosis:**
+\`\`\`bash
+docker-compose logs --tail=100 backend
+\`\`\`
+
+**Common Causes:**
+1. **Database connection failed** → Check DATABASE_* env vars
+2. **Missing env vars** → Verify .env file complete
+3. **Port conflict** → Verify port 3000 not in use
+
+**Resolution:**
+\`\`\`bash
+# Check environment
+docker-compose exec backend printenv | grep DATABASE
+
+# Restart application
+docker-compose restart backend
+\`\`\`
+
+---
+
+### Issue 3: FCM Notifications Not Working
+
+**Symptoms:** No notifications received on mobile
+
+**Diagnosis:**
+\`\`\`bash
+# Verify FCM enabled
+grep FCM_ENABLED ~/sekar/.env
+
+# Verify service account exists
+ls -l ~/sekar/config/firebase-service-account.json
+
+# Check logs for FCM errors
+docker-compose logs backend | grep -i firebase
+\`\`\`
+
+**Resolution:**
+\`\`\`bash
+# Test notification manually via Swagger
+# http://IP:3000/api/docs → POST /api/notifications/send
+
+# Check mobile app has FCM token registered
+# Backend logs should show: "FCM token registered for user: ..."
+\`\`\`
+
+---
+
+### Issue 4: Endpoints Return 401 Unauthorized
+
+**Symptoms:** All API calls return 401
+
+**Diagnosis:**
+\`\`\`bash
+# Verify JWT_SECRET set
+grep JWT_SECRET ~/sekar/.env
+\`\`\`
+
+**Resolution:**
+\`\`\`bash
+# Re-login to get fresh token
+curl -X POST http://<SERVER_IP>:3000/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"username":"admin","password":"admin123"}'
+
+# Use new token for subsequent requests
+\`\`\`
+
+---
+
+### Issue 5: Containers Not Starting
+
+**Symptoms:** \`docker ps\` shows no containers running
+
+**Diagnosis:**
+\`\`\`bash
+docker-compose logs
+docker-compose ps -a
+\`\`\`
+
+**Common Causes:**
+1. **Invalid .env syntax** → Check for unquoted special characters
+2. **Port already in use** → Check \`lsof -i:3000\`
+3. **Out of disk space** → Check \`df -h\`
+
+**Resolution:**
+\`\`\`bash
+# Fix .env syntax
+nano .env
+
+# Stop conflicting processes
+sudo lsof -ti:3000 | xargs kill -9
+
+# Clean up disk space
+docker system prune -a
+
+# Restart
+docker-compose up -d
+\`\`\`
+
+---
+
+## Part 6: Rollback Procedure
 
 ### When to Rollback
 
-**Critical Issues:**
-- API completely unresponsive
-- Database migration failed and can't be fixed
-- High error rate (> 10%) persists after 15 minutes
-- FCM notifications causing app crashes
-- Data loss detected
+**Rollback immediately if:**
+- ✗ API completely unresponsive
+- ✗ Migration failed and can't be fixed quickly
+- ✗ Error rate >10% persists after 15 minutes
+- ✗ Data loss detected
+- ✗ Critical security vulnerability introduced
 
-**Minor Issues (don't rollback):**
-- Slow performance (optimize instead)
-- Single endpoint failing (can be fixed without rollback)
-- Minor UI glitches
+**DON'T rollback for:**
+- ✓ Slow performance (optimize instead)
+- ✓ Single endpoint failing (can be fixed)
+- ✓ Minor UI glitches
+- ✓ Non-critical errors
+
+---
 
 ### Rollback Steps
 
-**Step 1: Rollback Backend (via ECR)**
+**Step 1: Stop Current Deployment**
 
-```bash
-# SSH to EC2
-ssh -i sekar-key.pem ec2-user@<prod-elastic-ip>
+\`\`\`bash
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>
 cd ~/sekar
+docker-compose down
+\`\`\`
 
-# List available images in ECR
-aws ecr describe-images \
-  --repository-name sekar-backend \
-  --region ap-southeast-3 \
-  --query 'sort_by(imageDetails,& imagePushedAt)[*].[imageTags[0],imagePushedAt]' \
-  --output table
+**Step 2: Revert Migration (if needed)**
 
-# Option 1: Use backup tag created by GitHub Actions
-# GitHub Actions automatically creates backup-YYYYMMDD-HHMMSS tag before deployment
+\`\`\`bash
+# Revert Phase 2 migration
+docker-compose run --rm backend npm run migration:revert:prod
 
-# Update docker-compose.yml to use backup tag
-nano docker-compose.yml
-# Change image to: <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:backup-20260121-020000
+# Verify reversion
+docker exec -it sekar-postgres psql -U postgres -d sekar_db
+SELECT * FROM migrations ORDER BY timestamp DESC LIMIT 1;
+# Should NOT show Phase2DatabaseSchema1737720000000
+\\q
+\`\`\`
 
-# Pull and restart
-aws ecr get-login-password --region ap-southeast-3 | \
-  docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com
-docker-compose pull
-docker-compose up -d
+**Step 3: Restore Previous Image**
 
-# Option 2: Use previous commit SHA tag
-# Update docker-compose.yml to use specific commit SHA
-nano docker-compose.yml
-# Change image to: <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:<previous-commit-sha>
+GitHub Actions created backup tag before deployment:
 
-docker-compose pull
-docker-compose up -d
-```
+\`\`\`bash
+# List backup tags
+aws ecr describe-images \\
+  --repository-name sekar-backend \\
+  --region ap-southeast-3 \\
+  --query 'imageDetails[?contains(imageTags[0], \`backup\`)].imageTags[0]' \\
+  --output text
 
-**Step 2: Revert Database (if needed)**
+# Expected: backup-20260202-140530
 
-```bash
-# Only if migrations caused data loss
-# Restore from backup taken before deployment
+# Pull backup image
+docker pull <ECR_REGISTRY>/sekar-backend:backup-20260202-140530
 
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier sekar-prod-db-restored \
-  --db-snapshot-identifier sekar-prod-db-pre-phase2-20260121-140000 \
-  --region ap-southeast-3
-
-# After restore completes, update DNS or connection strings
-# This will cause downtime - coordinate with team
-```
-
-**Step 3: Disable Phase 2 Features (Quick Mitigation)**
-
-```bash
-# Quick mitigation: disable features via environment variables
-ssh -i sekar-key.pem ec2-user@<prod-elastic-ip>
-cd ~/sekar
-nano .env.production
-
-# Disable Phase 2 features
-FCM_ENABLED=false
-TASK_AUTO_ASSIGN_ENABLED=false
+# Tag as latest
+docker tag <ECR_REGISTRY>/sekar-backend:backup-20260202-140530 \\
+  <ECR_REGISTRY>/sekar-backend:latest
 
 # Restart
-docker-compose down && docker-compose up -d
-```
+docker-compose up -d
+
+# Wait and verify
+sleep 30
+curl http://<SERVER_IP>:3000/api/health
+\`\`\`
 
 **Step 4: Verify Rollback**
 
-```bash
-# Check health
-curl http://sekar.wahyutrip.com/api/health
+\`\`\`bash
+# Should return Phase 1 functionality only
+curl http://<SERVER_IP>:3000/api/docs
+# Endpoint count should be ~40 (not 83)
 
-# Check error rate (should be < 1%)
-ssh -i sekar-key.pem ec2-user@<prod-elastic-ip>
-cd ~/sekar
-docker-compose logs --tail=100 backend | grep -i error
+# Phase 2 endpoints should return 404
+curl http://<SERVER_IP>:3000/api/rayons \\
+  -H "Authorization: Bearer \$TOKEN"
+# Expected: 404 Not Found (as expected after rollback)
 
-# Verify Phase 1 features still work
-curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
-```
+# Phase 1 endpoints should work
+curl http://<SERVER_IP>:3000/api/areas \\
+  -H "Authorization: Bearer \$TOKEN"
+# Expected: 200 with areas data
+\`\`\`
 
-**Step 5: Post-Rollback Analysis**
-- Review logs to identify root cause
-- Document what went wrong
-- Fix issues in development
-- Re-test thoroughly before next deployment attempt
-- Schedule post-mortem meeting
+**Rollback Complete ✓**
 
 ---
 
-## 10. Testing Checklist
+## Appendices
 
-### Backend API Testing
+### Appendix A: Complete GitHub Secrets Reference
 
-**Task Management Endpoints:**
-- [ ] POST /api/v1/tasks - Create new task
-- [ ] GET /api/v1/tasks - List all tasks (with filters)
-- [ ] GET /api/v1/tasks/:id - Get task details
-- [ ] PATCH /api/v1/tasks/:id - Update task
-- [ ] PATCH /api/v1/tasks/:id/assign - Assign task to worker
-- [ ] PATCH /api/v1/tasks/:id/start - Start task
-- [ ] PATCH /api/v1/tasks/:id/complete - Complete task
-- [ ] DELETE /api/v1/tasks/:id - Delete task (soft delete)
+| Secret | Type | Required | How to Get |
+|--------|------|----------|-----------|
+| \`AWS_ACCESS_KEY_ID\` | Environment | ✓ | Create IAM user per environment or use same for all |
+| \`AWS_SECRET_ACCESS_KEY\` | Environment | ✓ | From IAM access key creation |
+| \`AWS_REGION\` | Repository | ✓ | Always \`ap-southeast-3\` for Jakarta region |
+| \`EC2_HOST\` | Environment | ✓ | Elastic IP for each environment's EC2 instance |
+| \`EC2_USER\` | Repository | ✓ | Always \`ec2-user\` for Amazon Linux |
+| \`EC2_SSH_KEY\` | Environment | ✓ | Content of \`~/.ssh/sekar-{env}-key.pem\` |
+| \`ANDROID_SIGNING_KEY\` | Repository | ✓ | \`keytool -genkeypair\`, then \`base64 keystore\` |
+| \`ANDROID_KEY_ALIAS\` | Repository | ✓ | Alias used in keytool (e.g., \`sekar-key\`) |
+| \`ANDROID_KEYSTORE_PASSWORD\` | Repository | ✓ | Password set during keytool |
+| \`ANDROID_KEY_PASSWORD\` | Repository | ✓ | Same as keystore password usually |
+| \`GOOGLE_MAPS_API_KEY\` | Env/Repo | ✓ | Google Cloud Console → APIs & Services |
 
-**Notification Endpoints:**
-- [ ] POST /api/v1/notifications/send - Send push notification
-- [ ] POST /api/v1/fcm-tokens/register - Register FCM token
-- [ ] GET /api/v1/notifications - List notifications for user
-- [ ] PATCH /api/v1/notifications/:id/read - Mark as read
-- [ ] GET /api/v1/notifications/unread-count - Get unread count
+**Secret Types:**
+- **Repository Secret:** Same value across all environments (Settings → Secrets and variables → Actions)
+- **Environment Secret:** Different value per environment (Settings → Environments → [env] → Secrets)
 
-**KMZ Import Endpoints:**
-- [ ] POST /api/v1/areas/import-kmz - Import areas from KMZ file
-- [ ] GET /api/v1/areas/import-history - View import history
-
-**Area Revision Endpoints:**
-- [ ] GET /api/v1/areas/:id/revisions - Get revision history
-- [ ] GET /api/v1/areas/revisions/:id - Get specific revision
-
-### Mobile App Testing
-
-**Push Notifications:**
-- [ ] App requests notification permissions on first launch
-- [ ] FCM token is registered with backend after login
-- [ ] Notifications appear when app is in foreground
-- [ ] Notifications appear when app is in background
-- [ ] Notifications appear when app is closed
-- [ ] Tapping notification opens correct screen
-- [ ] Notification badge count updates
-- [ ] Notifications list shows all received notifications
-- [ ] Mark notification as read works
-- [ ] Clear all notifications works
-
-**Task Management:**
-- [ ] Worker sees "My Tasks" tab on dashboard
-- [ ] Task list shows assigned tasks
-- [ ] Task detail screen shows all information
-- [ ] Start task button works (status updates)
-- [ ] Complete task form validates input
-- [ ] Complete task submits successfully
-- [ ] Task completion shows success message
-- [ ] Completed tasks show in separate tab
-
-**Supervisor Features:**
-- [ ] Supervisor sees "Tasks" section in menu
-- [ ] Create task form validates input
-- [ ] Create task submits successfully
-- [ ] Assign task to worker works
-- [ ] View all tasks with filters works
-- [ ] View task status updates in real-time
-
-### Performance Testing
-
-**Load Test Scenarios:**
-```bash
-# Install Apache Bench
-sudo apt-get install apache2-utils
-
-# Test notification sending
-ab -n 100 -c 10 \
-  -H "Authorization: Bearer $TOKEN" \
-  -p notification-payload.json \
-  -T application/json \
-  http://staging.sekar.wahyutrip.com/api/v1/notifications/send
-
-# Test task creation
-ab -n 50 -c 5 \
-  -H "Authorization: Bearer $TOKEN" \
-  -p task-payload.json \
-  -T application/json \
-  http://staging.sekar.wahyutrip.com/api/v1/tasks
-```
-
-**Expected Performance:**
-- Task creation: < 300ms (P95)
-- Notification sending: < 500ms (P95)
-- KMZ import (100 polygons): < 10s (P95)
-- Task list retrieval: < 200ms (P95)
+**Recommended Strategy:**
+- Use **Environment Secrets** for credentials that differ per environment (AWS keys, EC2 hosts, SSH keys)
+- Use **Repository Secrets** for values that are the same everywhere (Android signing, AWS region, EC2 user)
+- This provides better security, protection rules for production, and clearer organization
 
 ---
 
-## 11. Documentation Updates
+### Appendix B: Phase 2 Environment Variables
 
-### API Documentation (Swagger)
+**New variables to add to production .env:**
 
-Verify Swagger UI includes all Phase 2 endpoints:
-- http://sekar.wahyutrip.com/api/docs#/Tasks
-- http://sekar.wahyutrip.com/api/docs#/Notifications
-- http://sekar.wahyutrip.com/api/docs#/Areas (KMZ import)
+\`\`\`env
+# Firebase/FCM
+FCM_ENABLED=true
+FIREBASE_SERVICE_ACCOUNT_PATH=./config/firebase-service-account.json
 
-### User Documentation
+# Notifications
+NOTIFICATION_RETRY_ATTEMPTS=3
+NOTIFICATION_BATCH_SIZE=100
 
-Update user guides:
-- [ ] Worker mobile app guide (task management, notifications)
-- [ ] Supervisor guide (task assignment, KMZ import)
-- [ ] Admin guide (notification settings, FCM configuration)
+# Tasks
+TASK_AUTO_ASSIGN_ENABLED=false
+TASK_DEADLINE_WARNING_HOURS=24
 
-### Developer Documentation
+# KMZ Import
+KMZ_MAX_FILE_SIZE_MB=10
+KMZ_MAX_POLYGONS=100
 
-Update technical docs:
-- [ ] API contracts in `specs/api/contracts.md`
-- [ ] Database schema in `specs/database/schema.md`
-- [ ] Architecture decisions (ADRs) if any new patterns introduced
-- [ ] Environment variables in `CLAUDE.md`
+# Database (CRITICAL)
+DATABASE_SYNCHRONIZE=false
+DATABASE_MIGRATIONS_RUN=false
+\`\`\`
 
----
-
-## 12. Communication Plan
-
-### Pre-Deployment Announcement (3 days before)
-
-**Email to:** All stakeholders, supervisors
-**Subject:** SEKAR Phase 2 Deployment - New Features Coming
-
-**Content:**
-```
-Dear SEKAR Users,
-
-We're excited to announce the Phase 2 deployment scheduled for Sunday, January 26, 2026 at 02:00 WIB.
-
-New Features:
-✅ Push Notifications - Receive real-time alerts for tasks and shift reminders
-✅ Task Management - Supervisors can assign and track tasks
-✅ Area Import - Bulk import areas from KMZ files
-✅ Revision History - Track changes to area boundaries
-
-Expected Downtime: 30 minutes (02:00 - 02:30 WIB)
-
-What You Need to Do:
-- Workers: Update mobile app when prompted
-- Supervisors: Allow notification permissions when asked
-- No action needed for existing data (all data will be preserved)
-
-Questions? Contact support@sekar.dlhsurabaya.go.id
-
-Thank you,
-SEKAR Development Team
-```
-
-### Deployment Day Updates
-
-**Slack Channel: #sekar-deployments**
-```
-02:00 WIB - Deployment started
-02:05 WIB - Database backup completed
-02:10 WIB - GitHub Actions deployment in progress
-02:15 WIB - Docker image pushed to ECR
-02:20 WIB - Migrations running
-02:25 WIB - Smoke tests passing
-02:30 WIB - ✅ Deployment complete, all systems operational
-```
-
-### Post-Deployment Announcement
-
-**Email to:** All users
-**Subject:** SEKAR Phase 2 Live - New Features Available
-
-**Content:**
-```
-SEKAR Phase 2 is now live!
-
-🔔 Push Notifications
-You'll now receive notifications for:
-- Task assignments
-- Shift reminders (30 min before)
-- Shift ending alerts
-- Report status updates
-
-📋 Task Management
-Supervisors can now:
-- Create and assign tasks
-- Set deadlines and priorities
-- Track task completion
-
-Workers can:
-- View assigned tasks
-- Start and complete tasks
-- Add completion notes
-
-🗺️ Area Import (Supervisors/Admin)
-Import multiple areas at once from KMZ files
-
-Update Your App:
-Download v2.0.0 from GitHub Releases:
-https://github.com/<org>/sekar/releases/latest
-
-Need Help?
-Check the user guide: [link]
-Contact support: support@sekar.dlhsurabaya.go.id
-
-Thank you,
-SEKAR Development Team
-```
+**FCM disabled configuration:**
+\`\`\`env
+FCM_ENABLED=false
+# Skip all Firebase setup
+\`\`\`
 
 ---
 
-## 13. Success Criteria
+### Appendix C: CI/CD Pipeline Details
 
-Phase 2 deployment is considered successful when:
+**Backend Workflow (\`.github/workflows/backend-ci-cd.yml\`):**
+
+**Triggers:**
+- Push to \`develop\` → Deploy to Development
+- Push to \`staging\` → Deploy to Staging
+- Push to \`main\` → Deploy to Production (creates backup tag)
+
+**Pipeline Stages:**
+1. **Lint** - ESLint + Prettier (2 min)
+2. **Test** - Jest with PostgreSQL service (3 min, 845 tests)
+3. **Security** - npm audit + secret scanning (1 min)
+4. **Build** - TypeScript compilation + Docker image (1 min)
+5. **Deploy** - ECR push + EC2 SSH + migration + restart (2 min)
+
+**Key Features:**
+- Zero-downtime via Docker Compose graceful shutdown
+- Automatic backup tag: \`backup-YYYYMMDD-HHMMSS\`
+- Migration runs before restart
+- Smoke tests after deployment
+- Artifact retention: 7 days
+
+**Mobile Workflow (\`.github/workflows/mobile-ci-cd.yml\`):**
+
+**Triggers:**
+- Push to \`develop\` → Debug APK
+- Push to \`staging\` → Signed Release APK
+- Push to \`main\` → Signed Release APK + GitHub Release
+
+**Build Process:**
+1. Lint + Test (Jest)
+2. Create \`.env\` with environment-specific \`API_BASE_URL\`
+3. Build APK (debug or release)
+4. Sign APK with keystore (staging/prod only)
+5. Upload to GitHub Artifacts
+6. Create GitHub Release (prod only)
+
+---
+
+### Appendix D: Migration & Seeder Notes
+
+**Database Migrations:**
+
+**Phase 2 adds 6 tables:**
+1. \`rayons\` - Geographic sectors (7 rayons)
+2. \`shift_definitions\` - Configurable shift times
+3. \`activity_types\` - Work categories
+4. \`special_day_overrides\` - Holiday exceptions
+5. \`area_staff_requirements\` - Staffing rules
+6. \`worker_schedules\` - Shift assignments
+
+**Phase 2 modifies 4 tables:**
+- \`areas\` - Adds \`boundary\` (GeoJSON), \`rayon_id\`
+- \`shifts\` - Adds \`area_id\`, \`worker_id\`
+- \`reports\` - Adds \`task_id\`
+- \`users\` - Adds indexes for role filtering
+
+**Seeder Strategy:**
+
+**Development/Staging:**
+\`\`\`bash
+npm run seed  # Creates test data
+\`\`\`
+
+**Production:**
+- ✗ **NEVER run \`npm run seed\` on production**
+- ✓ Import areas via KMZ (API endpoint)
+- ✓ Create rayons via admin UI
+- ✓ Create shift definitions via admin UI
+- ✓ Let users create tasks naturally
+
+**Why no production seeding:**
+- Seeders create test users with weak passwords
+- Seeders create unrealistic data
+- Production data should be organic and real
+
+---
+
+## Success Criteria
+
+**✅ Deployment successful when all true:**
 
 **Technical Metrics:**
-- [ ] All health checks passing
-- [ ] Error rate < 1%
-- [ ] API response time P95 < 500ms
-- [ ] Zero critical alarms triggered
-- [ ] All database migrations completed
-- [ ] Redis cluster healthy
-- [ ] FCM notifications delivering successfully
+- [ ] Health check returns \`{"status":"ok","database":"connected"}\`
+- [ ] Swagger shows 83 endpoints (40 + 43)
+- [ ] Phase 2 endpoints return 200 (empty arrays OK)
+- [ ] 16 tables in database (verified with \`\\dt\`)
+- [ ] Migration \`Phase2DatabaseSchema1737720000000\` in migrations table
+- [ ] No ERROR logs for 30 minutes
 
 **Functional Metrics:**
-- [ ] 100% of Phase 1 features still working
-- [ ] Task creation and assignment working
-- [ ] Push notifications delivering to devices
-- [ ] KMZ import processing files correctly
-- [ ] Area revision history tracking changes
+- [ ] Authentication works (JWT token generated)
+- [ ] Phase 1 features work (areas, shifts, reports)
+- [ ] Mobile app connects successfully
+- [ ] Web dashboard loads without errors
+- [ ] 845 tests passed in CI/CD
 
-**User Metrics (first week after deployment):**
-- [ ] > 80% of workers installed app update
-- [ ] > 90% of workers allowed notification permissions
-- [ ] > 10 tasks created by supervisors
-- [ ] > 50 push notifications sent
-- [ ] Zero user-reported critical bugs
-
-**Performance Metrics:**
-- [ ] Notification delivery rate > 95%
-- [ ] Task creation success rate > 99%
-- [ ] KMZ import success rate > 90%
-- [ ] Mobile app crash rate < 1%
+**Optional (if FCM enabled):**
+- [ ] FCM token registration works
+- [ ] Test notification delivers to device
+- [ ] Notifications appear in mobile app list
 
 ---
 
-## 14. Known Issues and Workarounds
+## Quick Command Reference
 
-### Issue 1: FCM Token Not Registering
+\`\`\`bash
+# Backup database
+docker exec sekar-postgres pg_dump -U postgres sekar_db > backup.sql
 
-**Symptoms:** User doesn't receive push notifications
-**Cause:** App doesn't have notification permissions
-**Workaround:**
-1. Go to phone Settings → Apps → SEKAR → Permissions
-2. Enable Notifications
-3. Restart SEKAR app
-4. Login again
+# Run migration
+docker-compose run --rm backend npm run migration:run:prod
 
-### Issue 2: KMZ Import Fails with Large Files
+# Check migration status
+docker exec -it sekar-postgres psql -U postgres -d sekar_db \\
+  -c "SELECT * FROM migrations ORDER BY timestamp DESC LIMIT 1;"
 
-**Symptoms:** Import times out or fails for files > 5MB
-**Cause:** Default timeout too short
-**Workaround:**
-- Split large KMZ files into smaller chunks (< 50 polygons each)
-- Or increase timeout (requires backend update)
+# View logs
+docker-compose logs -f backend
 
-### Issue 3: Bull Queue Not Processing Jobs
+# Restart application
+docker-compose restart backend
 
-**Symptoms:** Notifications delayed or not sent
-**Cause:** Redis connection issue
-**Diagnosis:**
-```bash
-# Check Redis connectivity
-redis-cli -h sekar-redis-prod.xxxxx.ng.0001.apse3.cache.amazonaws.com ping
+# Check health
+curl http://<IP>:3000/api/health
 
-# Check Bull queue status via API
-curl http://sekar.wahyutrip.com/admin/queues \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-```
-**Resolution:**
-- Restart backend application: `docker-compose restart backend`
-- Check Redis security group allows traffic from app servers
+# Login
+curl -X POST http://<IP>:3000/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"username":"admin","password":"admin123"}'
 
----
+# Test Phase 2 endpoint
+curl http://<IP>:3000/api/rayons -H "Authorization: Bearer \$TOKEN"
 
-## 15. Support Contacts
-
-| Role | Contact | Responsibility |
-|------|---------|----------------|
-| **DevOps Lead** | ahmad@dlhsurabaya.go.id | Infrastructure, deployment |
-| **Backend Lead** | budi@dlhsurabaya.go.id | API, database, integrations |
-| **Mobile Lead** | citra@dlhsurabaya.go.id | Mobile app, notifications |
-| **QA Lead** | dani@dlhsurabaya.go.id | Testing, bug reports |
-| **Product Manager** | eka@dlhsurabaya.go.id | Requirements, priorities |
-| **On-Call** | +6281234567890 | Emergency escalation |
+# Rollback to backup
+docker pull <ECR>/sekar-backend:backup-<TIMESTAMP>
+docker tag <ECR>/sekar-backend:backup-<TIMESTAMP> <ECR>/sekar-backend:latest
+docker-compose up -d
+\`\`\`
 
 ---
 
-**Document Owner:** DevOps Engineer
-**Last Updated:** 2026-01-25
-**Status:** Active - Phase 2
-**Related Docs:** [`infrastructure.md`](./infrastructure.md), [`phase-1-deployment.md`](./phase-1-deployment.md), [`monitoring.md`](./monitoring.md)
+## Additional Resources
+
+- **Complete Status:** \`/specs/COMPLETION_STATUS.md\`
+- **Phase 2 Details:** \`/specs/phases/phase-2-enhanced/STATUS.md\`
+- **API Contracts:** \`/specs/api/contracts.md\`
+- **Database Schema:** \`/specs/database/schema.md\`
+- **AWS S3 Setup:** \`/specs/deployment/aws-s3-setup.md\`
+- **Infrastructure:** \`/specs/deployment/infrastructure-setup.md\`
+- **GitHub Actions:** \`.github/workflows/backend-ci-cd.yml\`
+
+---
+
+## Notes
+
+**Important Reminders:**
+- Always backup before deployment
+- Never run seeders on production
+- Test migration locally first
+- Monitor logs for at least 30 minutes post-deployment
+- Have rollback plan ready
+- FCM setup is optional (can disable with \`FCM_ENABLED=false\`)
+- GitHub Actions handles zero-downtime deployment
+- Backup image automatically created before production deployment
+
+**Support:**
+- **GitHub Actions:** https://github.com/<YOUR_ORG>/sekar/actions
+- **Swagger UI:** http://<SERVER_IP>:3000/api/docs
+- **Production Server:** \`ssh -i ~/.ssh/sekar-prod.pem ec2-user@<ELASTIC_IP>\`
+
+---
+
+**Last Updated:** February 2, 2026
+**Version:** Phase 2 Enhanced Features
+**Status:** Production Ready ✅
