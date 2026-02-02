@@ -20,6 +20,17 @@ on:
     branches: [main, staging, develop]
     paths:
       - 'be/**'
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
 
 env:
   NODE_VERSION: '24'
@@ -265,11 +276,25 @@ jobs:
             aws ecr get-login-password --region ap-southeast-3 | \
               docker login --username AWS --password-stdin $ECR_REGISTRY
 
+            # Create backup tag (for rollback)
+            CURRENT_IMAGE=$(docker-compose images -q backend)
+            if [ ! -z "$CURRENT_IMAGE" ]; then
+              docker tag $CURRENT_IMAGE $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S)
+              docker push $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S) || true
+            fi
+
             # Update docker-compose to use dev-latest tag
             sed -i "s|:latest|:dev-latest|g" docker-compose.yml
 
             # Pull latest image
             docker-compose pull
+
+            # Run database migrations (CRITICAL!)
+            echo "Running database migrations..."
+            docker-compose run --rm backend npm run migration:run:prod || {
+              echo "Migration failed! Aborting deployment."
+              exit 1
+            }
 
             # Restart with zero-downtime
             docker-compose up -d
@@ -341,11 +366,25 @@ jobs:
             aws ecr get-login-password --region ap-southeast-3 | \
               docker login --username AWS --password-stdin $ECR_REGISTRY
 
+            # Create backup tag (for rollback)
+            CURRENT_IMAGE=$(docker-compose images -q backend)
+            if [ ! -z "$CURRENT_IMAGE" ]; then
+              docker tag $CURRENT_IMAGE $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S)
+              docker push $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S) || true
+            fi
+
             # Update docker-compose to use staging-latest tag
             sed -i "s|:latest|:staging-latest|g" docker-compose.yml
 
             # Pull latest image
             docker-compose pull
+
+            # Run database migrations (CRITICAL!)
+            echo "Running database migrations..."
+            docker-compose run --rm backend npm run migration:run:prod || {
+              echo "Migration failed! Aborting deployment."
+              exit 1
+            }
 
             # Restart with zero-downtime
             docker-compose up -d
@@ -430,6 +469,13 @@ jobs:
 
             # Pull latest image
             docker-compose pull
+
+            # Run database migrations (CRITICAL!)
+            echo "Running database migrations..."
+            docker-compose run --rm backend npm run migration:run:prod || {
+              echo "Migration failed! Aborting deployment."
+              exit 1
+            }
 
             # Restart with zero-downtime
             docker-compose up -d

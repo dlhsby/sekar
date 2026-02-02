@@ -45,7 +45,7 @@ npm install
 npm run start:dev          # http://localhost:3000
 npm test                   # Run tests
 npm run test:cov           # With coverage (>80% required)
-npm run seed               # Create test users
+npm run seed               # Seed all data (Phase 1 + Phase 2 + Tasks)
 ```
 
 **Test Users:** `admin/admin123`, `supervisor1/supervisor123`, `worker1/worker123`

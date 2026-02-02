@@ -43,8 +43,24 @@ npm run start:dev       # Start with hot-reload
 npm test                # Run tests
 npm run test:cov        # Tests with coverage
 npm run lint            # Lint code
-npm run seed            # Seed test data
+npm run seed            # Seed all data (Phase 1 + Phase 2 + Tasks)
 ```
+
+## Seeding Database
+
+For fresh development setup (recommended):
+```bash
+npm run seed  # Seeds Phase 1 + Phase 2 + Tasks
+```
+
+For selective seeding (testing):
+```bash
+npm run seed:phase1  # Phase 1 only (users, areas)
+npm run seed:phase2  # Phase 2 only (rayons, activities)
+npm run seed:tasks   # Tasks only (clears tasks table)
+```
+
+⚠️ **Warning:** Seeders clear existing data. Never run on production!
 
 ## Documentation
 
