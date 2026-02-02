@@ -114,6 +114,25 @@ function LoginScreen(): React.JSX.Element {
       // Update Redux state with user and assigned area
       dispatch(setUser({ user: loginData.user, area: assignedArea }));
 
+      // Register FCM token after successful login
+      try {
+        const fcmService = (await import('../../services/notifications/fcmService')).default;
+        const token = await fcmService.getToken();
+        if (token) {
+          const success = await fcmService.registerToken(token);
+          if (success) {
+            console.log('[Login] ✅ FCM token registered successfully');
+          } else {
+            console.error('[Login] ❌ FCM token registration returned false');
+          }
+        } else {
+          console.warn('[Login] ⚠️ No FCM token available');
+        }
+      } catch (err) {
+        console.error('[Login] ❌ FCM token registration exception:', err);
+        // Don't block login if FCM fails
+      }
+
       // Load current shift for workers only (supervisors/admins don't have shifts)
       // This ensures the home screen shows correct shift status immediately after login
       if (loginData.user.role === 'worker') {

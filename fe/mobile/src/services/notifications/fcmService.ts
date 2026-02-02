@@ -16,6 +16,8 @@
 
 import { Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import messaging from '@react-native-firebase/messaging';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import type { Notification } from '../../types/models.types';
 import { registerDevice, unregisterDevice } from '../api/notificationsApi';
 import type { Store } from '@reduxjs/toolkit';
@@ -96,17 +98,26 @@ class FCMService {
     this.reduxStore = store;
 
     try {
-      // Dynamically import Firebase Messaging
-      // This allows the service to be created even if Firebase is not installed yet
-      const firebaseMessaging = await import('@react-native-firebase/messaging');
-      this.messaging = firebaseMessaging.default;
+      // Get Firebase Messaging instance
+      this.messaging = messaging();
 
       console.log('[FCM] Initializing Firebase Cloud Messaging');
 
-      // Request permission on initialization
-      const permission = await this.requestPermission();
+      // Create notification channel for Android
+      if (Platform.OS === 'android') {
+        await notifee.createChannel({
+          id: 'sekar-notifications',
+          name: 'SEKAR Notifications',
+          importance: AndroidImportance.HIGH,
+          sound: 'default',
+        });
+        console.log('[FCM] Notification channel created');
+      }
 
-      if (permission === NotificationPermission.AUTHORIZED || permission === NotificationPermission.PROVISIONAL) {
+      // Check permission status (don't request - PermissionManager handles that)
+      const permission = await this.checkPermission();
+
+      if (permission) {
         // Get and register token
         const token = await this.getToken();
         if (token) {
@@ -116,6 +127,11 @@ class FCMService {
         // Setup message handlers
         this.setupMessageHandlers();
         this.setupTokenRefreshListener();
+
+        this.permissionStatus = NotificationPermission.AUTHORIZED;
+      } else {
+        console.log('[FCM] Permission not granted yet. Will initialize after permission is granted.');
+        this.permissionStatus = NotificationPermission.DENIED;
       }
 
       this.initialized = true;
@@ -147,8 +163,8 @@ class FCMService {
 
       const authStatus = await this.messaging.requestPermission();
       const enabled =
-        authStatus === this.messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === this.messaging.AuthorizationStatus.PROVISIONAL;
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       this.permissionStatus = enabled
         ? NotificationPermission.AUTHORIZED
@@ -215,13 +231,19 @@ class FCMService {
     try {
       console.log('[FCM] Registering token with backend');
 
-      const deviceId = await DeviceInfo.getUniqueId();
       const platform = Platform.OS as 'android' | 'ios';
+      const deviceId = await DeviceInfo.getUniqueId();
+      const deviceName = await DeviceInfo.getDeviceName();
+      const deviceModel = await DeviceInfo.getModel();
+      const appVersion = await DeviceInfo.getVersion();
 
       const response = await registerDevice({
         fcm_token: token,
-        device_id: deviceId,
         platform,
+        device_id: deviceId,
+        device_name: deviceName,
+        device_model: deviceModel,
+        app_version: appVersion,
       });
 
       if (response.error) {
@@ -309,6 +331,25 @@ class FCMService {
 
         const notification = this.convertToNotification(remoteMessage);
 
+        // Display notification in system tray when app is in foreground
+        try {
+          await notifee.displayNotification({
+            title: remoteMessage.notification?.title || 'SEKAR',
+            body: remoteMessage.notification?.body || '',
+            android: {
+              channelId: 'sekar-notifications',
+              smallIcon: 'ic_launcher',
+              pressAction: {
+                id: 'default',
+              },
+            },
+            data: remoteMessage.data,
+          });
+          console.log('[FCM] Foreground notification displayed in tray');
+        } catch (error) {
+          console.warn('[FCM] Failed to display foreground notification:', error);
+        }
+
         // Dispatch to Redux
         if (this.reduxStore) {
           this.reduxStore.dispatch(addNotification(notification));
@@ -319,14 +360,8 @@ class FCMService {
       }
     );
 
-    // Background message handler (must be set outside component lifecycle)
-    // Note: This handler should ideally be set in index.js before app registration
-    this.messaging.setBackgroundMessageHandler(async (remoteMessage: RemoteMessage) => {
-      console.log('[FCM] Background notification received:', remoteMessage);
-
-      // Background handler is limited - cannot dispatch to Redux
-      // Notification will be processed when app is opened
-    });
+    // Background message handler is set in index.js before app registration
+    // See index.js for the setBackgroundMessageHandler implementation
   }
 
   /**
@@ -460,8 +495,8 @@ class FCMService {
     try {
       const authStatus = await this.messaging.hasPermission();
       const enabled =
-        authStatus === this.messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === this.messaging.AuthorizationStatus.PROVISIONAL;
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       this.permissionStatus = enabled
         ? NotificationPermission.AUTHORIZED
@@ -472,6 +507,24 @@ class FCMService {
       console.error('[FCM] Permission check failed:', error);
       return false;
     }
+  }
+
+  /**
+   * Public method to setup notification handlers (called from App.tsx)
+   * This is a no-op since handlers are already set up in initialize()
+   */
+  setupNotificationHandlers(): void {
+    if (!this.initialized) {
+      console.warn('[FCM] Service not initialized yet');
+      return;
+    }
+
+    if (!this.messaging) {
+      console.warn('[FCM] Messaging not available');
+      return;
+    }
+
+    console.log('[FCM] Notification handlers are already set up');
   }
 
   /**

@@ -13,6 +13,7 @@ import { getToken, getUser, clearAll } from '../services/storage/secureStorage';
 import { getMe } from '../services/api/authApi';
 import { getCurrentShift } from '../services/api/shiftsApi';
 import { locationTracker } from '../services/location/locationTracker';
+import { permissionManager } from '../services/permissions/PermissionManager';
 import { colors } from '../constants/theme';
 import type { AppDispatch } from '../store/store';
 import type { CurrentShiftResponse } from '../types/api.types';
@@ -42,10 +43,17 @@ async function loadShiftForWorker(userRole: string, dispatch: AppDispatch): Prom
       const shift = response.data as CurrentShiftResponse;
       dispatch(setCurrentShift(shift));
 
-      // Start location tracking for the active shift
+      // Start location tracking only if permission onboarding is complete
       if (shift.id) {
-        console.log('[AuthProvider] Active shift found, starting location tracking');
-        await locationTracker.initialize(String(shift.id));
+        const onboardingComplete = await permissionManager.hasCompletedOnboarding();
+        const hasLocationPermission = await permissionManager.checkLocationPermission();
+
+        if (onboardingComplete && hasLocationPermission) {
+          console.log('[AuthProvider] Active shift found and permissions granted, starting location tracking');
+          await locationTracker.initialize(String(shift.id));
+        } else {
+          console.log('[AuthProvider] Active shift found but permissions not complete, skipping location tracking');
+        }
       }
     } else {
       // No active shift (404 or no data)

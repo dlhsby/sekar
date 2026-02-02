@@ -1,22 +1,30 @@
 // Mock Alert before any other mocks to ensure it's available
 // This mock is hoisted to the top automatically by Jest
+
+// Store the implementation separately so we can restore it
+const alertImplementation = (title, message, buttons) => {
+  if (buttons && buttons.length > 0 && buttons[0].onPress) {
+    buttons[0].onPress();
+  }
+};
+const promptImplementation = () => {};
+
 jest.mock('react-native', () => {
   const RN = jest.requireActual('react-native');
 
-  // Create mock functions
-  const mockAlert = jest.fn((title, message, buttons) => {
-    if (buttons && buttons.length > 0 && buttons[0].onPress) {
-      buttons[0].onPress();
-    }
-  });
-
-  const mockPrompt = jest.fn();
+  // Create mock functions with our implementation
+  const mockAlert = jest.fn(alertImplementation);
+  const mockPrompt = jest.fn(promptImplementation);
 
   // Add Alert to RN without spreading (which triggers getters)
   RN.Alert = {
     alert: mockAlert,
     prompt: mockPrompt,
   };
+
+  // Store references globally so beforeEach can access them
+  global.__ALERT_MOCK__ = mockAlert;
+  global.__PROMPT_MOCK__ = mockPrompt;
 
   return RN;
 });
@@ -190,29 +198,38 @@ global.API_VERSION = 'v1';
 global.GOOGLE_MAPS_API_KEY = 'mock-google-maps-key';
 global.APP_ENV = 'test';
 
-// Store Alert mock reference to prevent it from being cleared
-const Alert = require('react-native').Alert;
+// Global setup hook to ensure Alert mock is always available
+beforeEach(() => {
+  // CRITICAL: Restore Alert mock implementation before each test
+  // This runs before EVERY test, ensuring the mock is always functional
+  // even after jest.clearAllMocks() has been called
+
+  if (global.__ALERT_MOCK__ && global.__PROMPT_MOCK__) {
+    // Restore the implementation if it was cleared
+    global.__ALERT_MOCK__.mockImplementation(alertImplementation);
+    global.__PROMPT_MOCK__.mockImplementation(promptImplementation);
+
+    // Also ensure RN.Alert is set up correctly
+    const RN = require('react-native');
+    if (!RN.Alert || typeof RN.Alert.alert !== 'function') {
+      RN.Alert = {
+        alert: global.__ALERT_MOCK__,
+        prompt: global.__PROMPT_MOCK__,
+      };
+    } else {
+      RN.Alert.alert = global.__ALERT_MOCK__;
+      RN.Alert.prompt = global.__PROMPT_MOCK__;
+    }
+  }
+});
 
 // Global cleanup hooks to prevent worker process leaks and mock pollution
 afterEach(() => {
-  // Clear all mock call counts and instances
-  jest.clearAllMocks();
-
   // Clear all timers
   jest.clearAllTimers();
 
-  // Re-setup Alert mock if it was cleared (belt and suspenders approach)
-  if (!Alert || !Alert.alert || typeof Alert.alert !== 'function') {
-    const RN = require('react-native');
-    RN.Alert = {
-      alert: jest.fn((title, message, buttons) => {
-        if (buttons && buttons.length > 0 && buttons[0].onPress) {
-          buttons[0].onPress();
-        }
-      }),
-      prompt: jest.fn(),
-    };
-  }
+  // IMPORTANT: Do NOT call jest.clearAllMocks() here as it breaks the global Alert mock
+  // Individual test files should clear their specific mocks manually
 
   // NOTE: Do NOT call jest.restoreAllMocks() here as it undoes jest.spyOn() mocks
   // set up in individual test files and can cause cross-test pollution

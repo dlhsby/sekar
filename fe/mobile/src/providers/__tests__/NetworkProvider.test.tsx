@@ -5,13 +5,16 @@
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react-native';
-import { View, Text } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import NetInfo from '@react-native-community/netinfo';
 import { NetworkProvider } from '../NetworkProvider';
 import offlineReducer from '../../store/slices/offlineSlice';
 import { syncManager } from '../../services/sync';
+
+// Mock Alert (must be before any imports that use it)
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 // Mock NetInfo
 jest.mock('@react-native-community/netinfo', () => ({

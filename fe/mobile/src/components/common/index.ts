@@ -13,3 +13,5 @@ export {
 } from './SkeletonLoader';
 export { EmptyState } from './EmptyState';
 export { ChangePasswordModal } from './ChangePasswordModal';
+export { ErrorBoundary } from './ErrorBoundary';
+export { PermissionRequestModal } from './PermissionRequestModal';

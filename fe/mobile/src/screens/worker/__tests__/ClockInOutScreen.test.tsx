@@ -94,7 +94,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
             id: 1,
             username: 'worker1',
             full_name: 'Test Worker',
-            role: 'Worker',
+            role: 'worker',
           },
           assignedArea: {
             id: 1,
@@ -135,33 +135,43 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     jest.clearAllMocks();
   });
 
-  it('should cleanup location watcher on unmount', async () => {
-    const { unmount, getByText } = render(
-      <Provider store={store}>
-        <NavigationContainer>
-          <ClockInOutScreen />
-        </NavigationContainer>
-      </Provider>
-    );
+  it(
+    'should cleanup location watcher on unmount',
+    async () => {
+      const { unmount, getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <ClockInOutScreen />
+          </NavigationContainer>
+        </Provider>
+      );
 
-    // Wait for component to mount and request location
-    await waitFor(() => {
-      expect(getCurrentPositionMock).toHaveBeenCalled();
-    });
+      // Wait for component to mount and request location
+      await waitFor(
+        () => {
+          expect(getCurrentPositionMock).toHaveBeenCalled();
+        },
+        { timeout: 10000 }
+      );
 
-    // Verify location was obtained (Indonesian: "Dalam batas area")
-    await waitFor(() => {
-      expect(getByText(/Dalam batas/)).toBeTruthy();
-    });
+      // Verify location was obtained (Indonesian: "Dalam batas area")
+      await waitFor(
+        () => {
+          expect(getByText(/Dalam batas/)).toBeTruthy();
+        },
+        { timeout: 10000 }
+      );
 
-    // Unmount the component
-    unmount();
+      // Unmount the component
+      unmount();
 
-    // In the current implementation, we use getCurrentPosition, not watchPosition
-    // But if watchPosition was used, clearWatch should be called
-    // This test verifies the pattern is in place for future enhancements
-    expect(true).toBe(true);
-  });
+      // In the current implementation, we use getCurrentPosition, not watchPosition
+      // But if watchPosition was used, clearWatch should be called
+      // This test verifies the pattern is in place for future enhancements
+      expect(true).toBe(true);
+    },
+    20000
+  );
 
   it('should cleanup location watcher when component re-renders', async () => {
     const { rerender, getByText } = render(

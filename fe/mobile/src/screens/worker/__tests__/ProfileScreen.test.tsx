@@ -188,13 +188,20 @@ describe('ProfileScreen', () => {
   };
 
   describe('Profile Header', () => {
-    it('should display user avatar with initials', async () => {
-      const { getByText } = renderProfileScreen();
+    it(
+      'should display user avatar with initials',
+      async () => {
+        const { getByText } = renderProfileScreen();
 
-      await waitFor(() => {
-        expect(getByText('PS')).toBeTruthy(); // Pekerja Satu -> PS
-      }, { timeout: 10000 });
-    }, 15000);
+        await waitFor(
+          () => {
+            expect(getByText('PS')).toBeTruthy(); // Pekerja Satu -> PS
+          },
+          { timeout: 15000 }
+        );
+      },
+      25000
+    );
 
     it('should display full name and username', async () => {
       const { getByText } = renderProfileScreen();

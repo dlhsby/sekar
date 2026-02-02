@@ -7,6 +7,8 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { ReportCard, ReportCardData } from '../ReportCard';
 
+// Alert mocked in jest.setup.js
+
 // Mock dateUtils
 jest.mock('../../../utils/dateUtils', () => ({
   getRelativeTime: jest.fn((date: string) => {

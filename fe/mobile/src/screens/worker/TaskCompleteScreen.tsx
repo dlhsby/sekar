@@ -7,7 +7,7 @@
  * - GPS location verification
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,13 +18,17 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  TouchableOpacity,
+  FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Geolocation from 'react-native-geolocation-service';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { mediaService, type Photo } from '../../services/media';
+import { requestCameraPermission } from '../../services/permissions';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const fontSizes = nbTypography.fontSize;
 import * as tasksApi from '../../services/api/tasksApi';
@@ -48,34 +52,13 @@ export function TaskCompleteScreen(): React.JSX.Element {
   const [task, setTask] = useState<Task | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState<LocationData | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const photoListRef = useRef<FlatList>(null);
 
-  // Fetch task details
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        const response = await tasksApi.getTaskById(taskId);
-        if (response.data) {
-          setTask(response.data);
-          // Auto-get location when task loads
-          getLocation();
-        }
-      } catch (error) {
-        console.error('Failed to fetch task:', error);
-        Alert.alert('Error', 'Gagal memuat detail tugas', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTask();
-  }, [taskId, navigation]);
-
+  // Define getLocation BEFORE useEffect that uses it
   const getLocation = useCallback(() => {
     setIsGettingLocation(true);
     Geolocation.getCurrentPosition(
@@ -104,59 +87,101 @@ export function TaskCompleteScreen(): React.JSX.Element {
     );
   }, []);
 
-  const handleTakePhoto = useCallback(() => {
-    Alert.alert('Pilih Sumber', 'Pilih sumber foto:', [
-      {
-        text: 'Kamera',
-        onPress: async () => {
-          try {
-            const result = await launchCamera({
-              mediaType: 'photo',
-              quality: 0.8,
-              maxWidth: 1920,
-              maxHeight: 1080,
-              saveToPhotos: false,
-            });
+  // Fetch task details
+  useEffect(() => {
+    const fetchTask = async () => {
+      try {
+        const response = await tasksApi.getTaskById(taskId);
+        if (response.data) {
+          setTask(response.data);
+          // Auto-get location when task loads
+          getLocation();
+        }
+      } catch (error) {
+        console.error('Failed to fetch task:', error);
+        Alert.alert('Error', 'Gagal memuat detail tugas', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-            if (result.assets && result.assets[0]?.uri) {
-              setPhotoUri(result.assets[0].uri);
-            }
-          } catch (error) {
-            console.error('Camera error:', error);
-            Alert.alert('Error', 'Gagal mengakses kamera');
-          }
-        },
-      },
-      {
-        text: 'Galeri',
-        onPress: async () => {
-          try {
-            const result = await launchImageLibrary({
-              mediaType: 'photo',
-              quality: 0.8,
-              maxWidth: 1920,
-              maxHeight: 1080,
-            });
+    fetchTask();
+  }, [taskId, navigation, getLocation]);
 
-            if (result.assets && result.assets[0]?.uri) {
-              setPhotoUri(result.assets[0].uri);
-            }
-          } catch (error) {
-            console.error('Gallery error:', error);
-            Alert.alert('Error', 'Gagal mengakses galeri');
-          }
-        },
-      },
-      { text: 'Batal', style: 'cancel' },
-    ]);
+  const handleAddPhotoFromCamera = useCallback(async () => {
+    // Check photo limit
+    if (!mediaService.validatePhotoCount(photos.length)) {
+      Alert.alert(
+        'Maksimal Foto',
+        `Anda hanya dapat menambahkan maksimal ${mediaService.getMaxPhotos()} foto.`
+      );
+      return;
+    }
+
+    // Request camera permission
+    const permissionResult = await requestCameraPermission();
+    if (!permissionResult.granted) {
+      if (permissionResult.message) {
+        Alert.alert('Izin Kamera', permissionResult.message);
+      }
+      return;
+    }
+
+    try {
+      const photo = await mediaService.capturePhoto(false);
+      if (photo) {
+        setPhotos((prev) => [...prev, photo]);
+
+        // Auto-scroll to show newly added photo
+        setTimeout(() => {
+          photoListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Gagal mengambil foto');
+    }
+  }, [photos.length]);
+
+  const handleRemovePhoto = useCallback((photoId: string) => {
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
   }, []);
+
+  const clearForm = useCallback(() => {
+    setPhotos([]);
+    setNotes('');
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    if (photos.length > 0 || notes.trim().length > 0) {
+      Alert.alert(
+        'Batalkan Tugas?',
+        'Data yang telah diisi akan hilang. Lanjutkan?',
+        [
+          { text: 'Tidak', style: 'cancel' },
+          {
+            text: 'Ya, Batalkan',
+            style: 'destructive',
+            onPress: () => {
+              clearForm();
+              navigation.goBack();
+            },
+          },
+        ]
+      );
+    } else {
+      navigation.goBack();
+    }
+  }, [photos.length, notes, clearForm, navigation]);
 
   const handleSubmit = useCallback(async () => {
     if (!task) {return;}
 
     // Validation
-    if (!photoUri) {
-      Alert.alert('Error', 'Foto bukti penyelesaian wajib diambil');
+    if (photos.length === 0) {
+      Alert.alert('Error', 'Minimal 1 foto bukti penyelesaian wajib diambil');
       return;
     }
 
@@ -168,21 +193,21 @@ export function TaskCompleteScreen(): React.JSX.Element {
     setIsSubmitting(true);
     try {
       await tasksApi.completeTask(task.id, {
-        completion_photo_url: photoUri, // Will be uploaded in real implementation
+        completion_photo_url: photos[0].uri, // First photo as primary
         completion_notes: notes.trim() || undefined,
         gps_lat: location.latitude,
         gps_lng: location.longitude,
       });
 
+      // Clear form on success
+      clearForm();
+
       Alert.alert('Berhasil', 'Tugas berhasil diselesaikan', [
         {
           text: 'OK',
           onPress: () => {
-            // Navigate back to home, removing the task screens from stack
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'WorkerHome' }],
-            });
+            // Navigate back to task detail
+            navigation.goBack();
           },
         },
       ]);
@@ -192,7 +217,59 @@ export function TaskCompleteScreen(): React.JSX.Element {
     } finally {
       setIsSubmitting(false);
     }
-  }, [task, photoUri, notes, location, navigation]);
+  }, [task, photos, notes, location, navigation, clearForm]);
+
+  // Set navigation header with back button
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={handleCancel}
+          style={styles.headerBackButton}
+          accessibilityLabel="Kembali"
+          accessibilityRole="button"
+        >
+          <MaterialCommunityIcons
+            name="arrow-left"
+            size={28}
+            color={nbColors.black}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, handleCancel]);
+
+  const renderPhotoItem = useCallback(({ item }: { item: Photo }) => (
+    <View style={styles.photoItem}>
+      <Image source={{ uri: item.uri }} style={styles.photoThumbnail} />
+      <TouchableOpacity
+        style={styles.removePhotoButton}
+        onPress={() => handleRemovePhoto(item.id)}
+        accessibilityRole="button"
+        accessibilityLabel="Hapus foto"
+      >
+        <Text style={styles.removePhotoText}>✕</Text>
+      </TouchableOpacity>
+    </View>
+  ), [handleRemovePhoto]);
+
+  const renderAddPhotoButton = useCallback(() => {
+    if (!mediaService.validatePhotoCount(photos.length)) {
+      return null;
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.addPhotoButton}
+        onPress={handleAddPhotoFromCamera}
+        testID="add-photo-button"
+        accessibilityLabel="Tambah foto dari kamera"
+      >
+        <Text style={styles.addPhotoIcon}>+</Text>
+        <Text style={styles.addPhotoText}>Foto</Text>
+      </TouchableOpacity>
+    );
+  }, [photos.length, handleAddPhotoFromCamera]);
 
   if (isLoading) {
     return (
@@ -254,68 +331,49 @@ export function TaskCompleteScreen(): React.JSX.Element {
       {/* Photo Evidence */}
       <NBCard style={styles.card}>
         <NBCardHeader>
-          <Text style={styles.sectionTitle}>Foto Bukti *</Text>
+          <Text style={styles.sectionTitle}>📸 FOTO BUKTI PENYELESAIAN *</Text>
+          <Text style={styles.sectionSubtitle}>Tambahkan 1-5 foto hasil pekerjaan</Text>
         </NBCardHeader>
         <NBCardContent>
-          {photoUri ? (
-            <View style={styles.photoContainer}>
-              <Image source={{ uri: photoUri }} style={styles.photo} />
-              <NBButton
-                title="Ganti Foto"
-                variant="secondary"
-                size="sm"
-                onPress={handleTakePhoto}
-              />
-            </View>
-          ) : (
-            <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoPlaceholderText}>Belum ada foto</Text>
-              <NBButton title="Ambil Foto" variant="primary" onPress={handleTakePhoto} />
-            </View>
-          )}
+          <FlatList
+            ref={photoListRef}
+            data={photos}
+            renderItem={renderPhotoItem}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            ListFooterComponent={renderAddPhotoButton}
+            style={styles.photoList}
+          />
         </NBCardContent>
       </NBCard>
 
       {/* Location Status */}
       <NBCard style={styles.card}>
         <NBCardHeader>
-          <Text style={styles.sectionTitle}>Lokasi GPS</Text>
+          <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
         </NBCardHeader>
         <NBCardContent>
           {isGettingLocation ? (
             <View style={styles.locationLoading}>
-              <ActivityIndicator size="small" color={nbColors.primary} />
-              <Text style={styles.locationLoadingText}>
-                Mendapatkan lokasi...
-              </Text>
+              <ActivityIndicator color={nbColors.primary} />
+              <Text style={styles.locationLoadingText}>Mendapatkan lokasi...</Text>
             </View>
           ) : location ? (
             <View style={styles.locationInfo}>
               <Text style={styles.locationText}>
-                Lat: {location.latitude.toFixed(6)}
+                {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
               </Text>
-              <Text style={styles.locationText}>
-                Lng: {location.longitude.toFixed(6)}
+              <Text style={styles.locationAccuracy}>
+                Akurasi: ±{Math.round(location.accuracy || 0)}m
               </Text>
-              {location.accuracy && (
-                <Text style={styles.locationAccuracy}>
-                  Akurasi: {Math.round(location.accuracy)}m
-                </Text>
-              )}
-              <NBButton
-                title="Perbarui Lokasi"
-                variant="secondary"
-                size="sm"
-                onPress={getLocation}
-              />
             </View>
           ) : (
-            <View style={styles.locationError}>
-              <Text style={styles.locationErrorText}>
-                Lokasi tidak tersedia
-              </Text>
-              <NBButton title="Dapatkan Lokasi" variant="primary" size="sm" onPress={getLocation} />
-            </View>
+            <NBButton
+              title="Dapatkan Lokasi GPS"
+              onPress={getLocation}
+              variant="secondary"
+            />
           )}
         </NBCardContent>
       </NBCard>
@@ -345,13 +403,13 @@ export function TaskCompleteScreen(): React.JSX.Element {
           title="Selesaikan Tugas"
           variant="success"
           onPress={handleSubmit}
-          disabled={isSubmitting || !photoUri || !location}
+          disabled={isSubmitting || photos.length === 0 || !location}
           loading={isSubmitting}
         />
         <NBButton
           title="Batal"
           variant="secondary"
-          onPress={() => navigation.goBack()}
+          onPress={handleCancel}
           disabled={isSubmitting}
         />
       </View>
@@ -368,6 +426,9 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingVertical: nbSpacing.md,
     paddingBottom: nbSpacing.xl,
+  },
+  headerBackButton: {
+    marginLeft: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -398,9 +459,18 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
   },
   sectionTitle: {
-    fontSize: fontSizes.lg,
-    fontWeight: '600',
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
+    marginBottom: nbSpacing.xs,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  sectionSubtitle: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
+    marginBottom: nbSpacing.md,
   },
   taskTitle: {
     fontSize: fontSizes.base,
@@ -412,62 +482,95 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: nbColors.gray[600],
   },
-  photoContainer: {
-    alignItems: 'center',
+  photoList: {
+    marginTop: nbSpacing.sm,
   },
-  photo: {
-    width: '100%',
-    height: 200,
+  photoItem: {
+    marginRight: nbSpacing.sm,
+    position: 'relative',
+  },
+  photoThumbnail: {
+    width: 160,
+    height: 160,
     borderRadius: 0,
     borderWidth: nbBorders.default,
     borderColor: nbColors.black,
-    marginBottom: nbSpacing.sm,
   },
-  photoPlaceholder: {
+  removePhotoButton: {
+    position: 'absolute',
+    top: -12,
+    right: -12,
+    backgroundColor: nbColors.danger,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     alignItems: 'center',
-    padding: nbSpacing.lg,
-    backgroundColor: nbColors.gray[50],
+    justifyContent: 'center',
+    ...nbShadows.sm,
+  },
+  removePhotoText: {
+    color: nbColors.white,
+    fontSize: 24,
+    fontWeight: nbTypography.fontWeight.bold,
+  },
+  addPhotoButton: {
+    width: 160,
+    height: 160,
     borderRadius: 0,
     borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
     borderStyle: 'dashed',
-    borderColor: nbColors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.gray[50],
   },
-  photoPlaceholderText: {
-    fontSize: fontSizes.base,
-    color: nbColors.gray[500],
-    marginBottom: nbSpacing.md,
+  addPhotoIcon: {
+    fontSize: 32,
+    color: nbColors.gray[600],
+  },
+  addPhotoText: {
+    color: nbColors.gray[600],
+    fontSize: nbTypography.fontSize.xs,
+    marginTop: nbSpacing.xs,
   },
   locationLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: nbSpacing.sm,
+    justifyContent: 'center',
+    padding: nbSpacing.lg,
+    backgroundColor: nbColors.gray[50],
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   locationLoadingText: {
-    marginLeft: nbSpacing.sm,
-    fontSize: fontSizes.sm,
-    color: nbColors.gray[500],
+    marginLeft: nbSpacing.md,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
+    fontWeight: nbTypography.fontWeight.medium,
   },
   locationInfo: {
-    padding: nbSpacing.sm,
+    padding: nbSpacing.lg,
+    backgroundColor: withAlpha(nbColors.accentSky, 0.15), // Cyan tint 15% opacity
+    borderRadius: 0,
+    borderWidth: nbBorders.default,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
   locationText: {
-    fontSize: fontSizes.sm,
+    fontSize: nbTypography.fontSize.lg,
     color: nbColors.black,
+    fontWeight: nbTypography.fontWeight.bold,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   locationAccuracy: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray[500],
-    marginTop: nbSpacing.xs,
-  },
-  locationError: {
-    alignItems: 'center',
-    padding: nbSpacing.md,
-  },
-  locationErrorText: {
-    fontSize: fontSizes.sm,
-    color: nbColors.danger,
-    marginBottom: nbSpacing.sm,
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[700],
+    fontWeight: nbTypography.fontWeight.medium,
+    marginTop: nbSpacing.sm,
   },
   notesInput: {
     borderWidth: nbBorders.default,

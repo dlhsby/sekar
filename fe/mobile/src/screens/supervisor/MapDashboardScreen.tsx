@@ -310,8 +310,8 @@ export function MapDashboardScreen(): React.JSX.Element {
 
   // Memoized: Calculate role counts (Phase 2 enhancement)
   const roleCounts = useMemo(() => {
-    const workers = filteredWorkers.filter(w => !w.role || w.role === 'Worker').length;
-    const linmas = filteredWorkers.filter(w => w.role === 'Linmas').length;
+    const workers = filteredWorkers.filter(w => !w.role || w.role === 'worker').length;
+    const linmas = filteredWorkers.filter(w => w.role === 'linmas').length;
     return { workers, linmas };
   }, [filteredWorkers]);
 
@@ -551,7 +551,7 @@ export function MapDashboardScreen(): React.JSX.Element {
               } else {
                 statusColor = nbColors.danger;
               }
-              const isLinmas = worker.role === 'Linmas';
+              const isLinmas = worker.role === 'linmas';
               const roleIcon = isLinmas ? 'shield-account' : 'account-hard-hat';
               const roleColor = isLinmas ? nbColors.navy : nbColors.primary;
 

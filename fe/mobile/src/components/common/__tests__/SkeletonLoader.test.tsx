@@ -3,9 +3,11 @@
  * Tests shimmer animation, variants, memory cleanup, and accessibility
  */
 
+// Alert mocked globally in jest.setup.js
+
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { Animated, Alert } from 'react-native';
+import { Animated } from 'react-native';
 import {
   SkeletonLoader,
   SkeletonCard,
@@ -13,9 +15,6 @@ import {
   SkeletonReportItem,
   SkeletonSummaryCard,
 } from '../SkeletonLoader';
-
-// Mock Alert to prevent errors from imported modules
-jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 describe('SkeletonLoader Component', () => {
   // Mock Animated.loop and timing to track animation lifecycle

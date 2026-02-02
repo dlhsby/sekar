@@ -13,7 +13,7 @@ import { colors, typography, shadows } from '../../constants/theme';
 import type { ActiveWorkerData } from '../../types/api.types';
 
 export type WorkerStatus = 'active' | 'warning' | 'outside';
-export type WorkerRole = 'Worker' | 'Linmas';
+export type WorkerRole = 'worker' | 'linmas';
 
 interface WorkerMarkerProps {
   worker: ActiveWorkerData;
@@ -54,9 +54,9 @@ function getInitials(fullName: string): string {
  */
 function getRoleIcon(role?: WorkerRole): string {
   switch (role) {
-    case 'Linmas':
+    case 'linmas':
       return 'shield-account'; // Security shield icon
-    case 'Worker':
+    case 'worker':
     default:
       return 'account-hard-hat'; // Worker with hard hat
   }
@@ -67,9 +67,9 @@ function getRoleIcon(role?: WorkerRole): string {
  */
 function getRoleLabel(role?: WorkerRole): string {
   switch (role) {
-    case 'Linmas':
+    case 'linmas':
       return 'Linmas';
-    case 'Worker':
+    case 'worker':
     default:
       return 'Satgas';
   }
@@ -88,7 +88,7 @@ export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMa
   const roleIcon = getRoleIcon(worker.role);
   const roleLabel = getRoleLabel(worker.role);
   const isCluster = clusterCount !== undefined && clusterCount > 1;
-  const isLinmas = worker.role === 'Linmas';
+  const isLinmas = worker.role === 'linmas';
 
   return (
     <Marker

@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor, Alert } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -13,6 +13,22 @@ import authReducer from '../../store/slices/authSlice';
 import shiftReducer from '../../store/slices/shiftSlice';
 import reportReducer from '../../store/slices/reportSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
+
+// Ensure Alert is properly mocked before any tests run
+beforeAll(() => {
+  // @ts-ignore - Alert mock
+  if (!Alert || !Alert.alert || typeof Alert.alert !== 'function') {
+    const RN = require('react-native');
+    RN.Alert = {
+      alert: jest.fn((title, message, buttons) => {
+        if (buttons && buttons.length > 0 && buttons[0].onPress) {
+          buttons[0].onPress();
+        }
+      }),
+      prompt: jest.fn(),
+    };
+  }
+});
 
 // Mock all screens
 jest.mock('../../screens/worker/WorkerHomeScreen', () => ({

@@ -4,15 +4,15 @@
  * token refresh, interceptors, and network error handling
  */
 
+import axios from 'axios';
 import apiClient, { get, post, put, del } from '../apiClient';
 import MockAdapter from 'axios-mock-adapter';
 import { ApiErrorCode } from '../../../constants/errorCodes';
 import type { ApiError } from '../../../types/api.types';
 import * as secureStorage from '../../storage/secureStorage';
-import { Alert } from 'react-native';
+import config from '../../../constants/config';
 
-// Mock Alert to prevent errors from imported modules
-jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+// Alert is mocked globally in jest.setup.js
 
 // Mock secure storage
 jest.mock('../../storage/secureStorage');
@@ -21,10 +21,21 @@ const mockSecureStorage = secureStorage as jest.Mocked<typeof secureStorage>;
 
 describe('API Client', () => {
   let mock: MockAdapter;
+  let axiosMock: MockAdapter;
 
   beforeEach(() => {
     mock = new MockAdapter(apiClient);
+    axiosMock = new MockAdapter(axios); // Mock raw axios for refresh calls
     jest.clearAllMocks();
+
+    // Restore Alert mock after clearAllMocks (which clears it)
+    const RN = require('react-native');
+    if (global.__ALERT_MOCK__ && global.__PROMPT_MOCK__) {
+      RN.Alert = {
+        alert: global.__ALERT_MOCK__,
+        prompt: global.__PROMPT_MOCK__,
+      };
+    }
 
     // Default token mock
     mockSecureStorage.getToken.mockResolvedValue('valid-token');
@@ -33,6 +44,7 @@ describe('API Client', () => {
 
   afterEach(() => {
     mock.restore();
+    axiosMock.restore();
   });
 
   describe('Request Interceptor', () => {
@@ -239,13 +251,153 @@ describe('API Client', () => {
       jest.useRealTimers();
       // Reset any retry flags
       mock.reset();
+      axiosMock.reset();
       mock = new MockAdapter(apiClient);
+      axiosMock = new MockAdapter(axios);
     });
 
     afterEach(() => {
       jest.clearAllTimers();
       jest.useRealTimers();
     });
+
+    it('should successfully refresh token and retry request', async () => {
+      mockSecureStorage.getRefreshToken.mockResolvedValue('valid-refresh-token');
+      mockSecureStorage.setToken.mockResolvedValue(undefined);
+      mockSecureStorage.setRefreshToken.mockResolvedValue(undefined);
+
+      let callCount = 0;
+      mock.onGet('/protected').reply(() => {
+        callCount++;
+        if (callCount === 1) {
+          return [401, {
+            statusCode: 401,
+            code: 'AUTH_TOKEN_EXPIRED',
+            message: 'Token expired',
+          }];
+        }
+        return [200, { data: 'success' }];
+      });
+
+      // Refresh succeeds - use same pattern as passing tests
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(200, {
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+      });
+
+      const response = await apiClient.get('/protected');
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({ data: 'success' });
+      expect(mockSecureStorage.setToken).toHaveBeenCalledWith('new-access-token');
+      expect(mockSecureStorage.setRefreshToken).toHaveBeenCalledWith('new-refresh-token');
+      expect(callCount).toBe(2); // Called twice
+    }, 15000);
+
+    it('should handle refresh with only access token (no new refresh token)', async () => {
+      mockSecureStorage.getRefreshToken.mockResolvedValue('valid-refresh-token');
+      mockSecureStorage.setToken.mockResolvedValue(undefined);
+
+      let callCount = 0;
+      mock.onGet('/protected').reply(() => {
+        callCount++;
+        if (callCount === 1) {
+          return [401, {
+            statusCode: 401,
+            code: 'AUTH_TOKEN_EXPIRED',
+            message: 'Token expired',
+          }];
+        }
+        return [200, { data: 'success' }];
+      });
+
+      // Refresh succeeds but only returns access_token (no new refresh_token)
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(200, {
+        access_token: 'new-access-token',
+        // No refresh_token in response
+      });
+
+      const response = await apiClient.get('/protected');
+
+      expect(response.status).toBe(200);
+      expect(mockSecureStorage.setToken).toHaveBeenCalledWith('new-access-token');
+      expect(mockSecureStorage.setRefreshToken).not.toHaveBeenCalled();
+    }, 15000);
+
+    it('should handle multiple concurrent 401s during token refresh', async () => {
+      mockSecureStorage.getRefreshToken.mockResolvedValue('valid-refresh-token');
+      mockSecureStorage.setToken.mockResolvedValue(undefined);
+
+      let callCount1 = 0;
+      let callCount2 = 0;
+
+      // Both requests: first call fails with 401, second succeeds
+      mock.onGet('/protected1').reply(() => {
+        callCount1++;
+        if (callCount1 === 1) {
+          return [401, {
+            statusCode: 401,
+            code: 'AUTH_TOKEN_EXPIRED',
+            message: 'Token expired',
+          }];
+        }
+        return [200, { data: 'success1' }];
+      });
+
+      mock.onGet('/protected2').reply(() => {
+        callCount2++;
+        if (callCount2 === 1) {
+          return [401, {
+            statusCode: 401,
+            code: 'AUTH_TOKEN_EXPIRED',
+            message: 'Token expired',
+          }];
+        }
+        return [200, { data: 'success2' }];
+      });
+
+      // Refresh succeeds
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(200, {
+        access_token: 'new-access-token',
+      });
+
+      // Fire both requests concurrently
+      const [response1, response2] = await Promise.all([
+        apiClient.get('/protected1'),
+        apiClient.get('/protected2'),
+      ]);
+
+      expect(response1.data).toEqual({ data: 'success1' });
+      expect(response2.data).toEqual({ data: 'success2' });
+      // Refresh should only be called once
+      expect(mockSecureStorage.setToken).toHaveBeenCalledTimes(1);
+    }, 15000);
+
+    it('should prevent infinite retry loop with _retry flag', async () => {
+      // Mock clearAll to prevent navigation side effects
+      mockSecureStorage.clearAll.mockResolvedValue(undefined);
+
+      mock.onGet('/protected').reply(401, {
+        statusCode: 401,
+        code: 'AUTH_TOKEN_EXPIRED',
+        message: 'Token expired',
+      });
+
+      // Refresh returns success but subsequent request also fails with 401
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(200, {
+        access_token: 'invalid-token',
+      });
+
+      try {
+        await apiClient.get('/protected');
+        fail('Should have thrown an error');
+      } catch (error) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(mockSecureStorage.clearAll).toHaveBeenCalled();
+        const apiError = error as ApiError;
+        expect(apiError.status).toBe(401);
+      }
+    }, 15000);
 
     it('should clear auth and reject if token refresh fails', async () => {
       mock.onGet('/protected').reply(401, {
@@ -255,7 +407,7 @@ describe('API Client', () => {
       });
 
       // Refresh fails
-      mock.onPost('/auth/refresh').reply(401, {
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(401, {
         statusCode: 401,
         code: 'AUTH_REFRESH_TOKEN_EXPIRED',
         message: 'Refresh token expired',
@@ -303,7 +455,7 @@ describe('API Client', () => {
       });
 
       // Refresh throws error
-      mock.onPost('/auth/refresh').networkError();
+      axiosMock.onPost(new RegExp('/auth/refresh$')).networkError();
 
       try {
         await apiClient.get('/protected');
@@ -315,6 +467,43 @@ describe('API Client', () => {
         const apiError = error as ApiError;
         expect(apiError.status).toBe(401);
       }
+    }, 15000);
+
+    it('should handle concurrent requests when refresh fails', async () => {
+      mockSecureStorage.getRefreshToken.mockResolvedValue('valid-refresh-token');
+
+      // Both requests fail with 401
+      mock.onGet('/protected1').reply(401, {
+        statusCode: 401,
+        code: 'AUTH_TOKEN_EXPIRED',
+        message: 'Token expired',
+      });
+      mock.onGet('/protected2').reply(401, {
+        statusCode: 401,
+        code: 'AUTH_TOKEN_EXPIRED',
+        message: 'Token expired',
+      });
+
+      // Refresh fails
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(401, {
+        statusCode: 401,
+        code: 'AUTH_REFRESH_TOKEN_EXPIRED',
+        message: 'Refresh token expired',
+      });
+
+      // Start both requests concurrently
+      const promise1 = apiClient.get('/protected1').catch(e => e);
+      const promise2 = apiClient.get('/protected2').catch(e => e);
+
+      const [error1, error2] = await Promise.all([promise1, promise2]);
+
+      // Both should fail
+      expect(error1.status).toBe(401);
+      expect(error2.status).toBe(401);
+
+      // Wait for clearAll to be called
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(mockSecureStorage.clearAll).toHaveBeenCalled();
     }, 15000);
 
     // FIXME: This test causes infinite retry loop after UI revamp
@@ -329,7 +518,7 @@ describe('API Client', () => {
       });
 
       // Refresh returns but without token
-      mock.onPost('/auth/refresh').reply(200, {
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(200, {
         // No access_token in response
         message: 'Invalid response',
       });
@@ -340,6 +529,21 @@ describe('API Client', () => {
       } catch (error) {
         const apiError = error as ApiError;
         expect(apiError.status).toBe(401);
+      }
+    });
+  });
+
+  describe('Request Interceptor Error Handling', () => {
+    it('should reject request if token retrieval fails', async () => {
+      mockSecureStorage.getToken.mockRejectedValue(new Error('Storage read error'));
+
+      try {
+        await apiClient.get('/test');
+        fail('Should have thrown an error');
+      } catch (error) {
+        // The error gets wrapped in an API error object
+        expect(error).toBeDefined();
+        expect(typeof error).toBe('object');
       }
     });
   });

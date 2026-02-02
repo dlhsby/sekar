@@ -48,6 +48,12 @@ export const nbColors = {
   // NEUTRAL PALETTE
   black: '#000000', // Borders, shadows, primary text
   white: '#FFFFFF', // Pure white for maximum contrast
+  navy: '#001F3F', // Trust/authority accent (per specs/ui-ux/neo-brutalism.md line 156)
+
+  // OVERLAY/MODAL COLORS
+  overlay: 'rgba(0, 0, 0, 0.5)', // Standard modal overlay
+  overlayLight: 'rgba(0, 0, 0, 0.3)', // Light overlay
+  overlayDark: 'rgba(0, 0, 0, 0.7)', // Dark overlay
 
   // GRAY SCALE (kept for UI flexibility)
   gray: {
@@ -265,3 +271,44 @@ export const nbTheme = {
 export type NBTheme = typeof nbTheme;
 export type NBShadowSize = keyof typeof nbShadows;
 export type NBSpacingSize = keyof typeof nbSpacing;
+
+/**
+ * Helper function to add alpha transparency to hex colors
+ *
+ * @param color - Hex color string (e.g., '#7FBC8C', '7FBC8C', '#FFF')
+ *                Supports both 6-digit and 3-digit hex formats
+ * @param alpha - Alpha value between 0 and 1 (will be clamped)
+ * @returns RGBA color string (e.g., 'rgba(127, 188, 140, 0.5)')
+ *
+ * @example
+ * withAlpha('#7FBC8C', 0.5) // 'rgba(127, 188, 140, 0.5)'
+ * withAlpha('#FFF', 0.3)    // 'rgba(255, 255, 255, 0.3)'
+ */
+export function withAlpha(color: string, alpha: number): string {
+  // Validate and clamp alpha to 0-1 range
+  if (alpha < 0 || alpha > 1) {
+    console.warn(`withAlpha: alpha must be between 0 and 1, got ${alpha}`);
+    alpha = Math.max(0, Math.min(1, alpha));
+  }
+
+  // Remove # if present
+  let hex = color.replace('#', '');
+
+  // Expand 3-digit hex to 6-digit (e.g., 'FFF' -> 'FFFFFF')
+  if (hex.length === 3) {
+    hex = hex.split('').map(char => char + char).join('');
+  }
+
+  // Validate hex format
+  if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+    console.error(`withAlpha: Invalid hex color "${color}"`);
+    return `rgba(0, 0, 0, ${alpha})`; // Fallback to black
+  }
+
+  // Parse RGB values
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}

@@ -11,13 +11,14 @@ import Geolocation from 'react-native-geolocation-service';
 import DeviceInfo from 'react-native-device-info';
 import { Alert } from 'react-native';
 
+// Alert mocked globally in jest.setup.js
+
 // Mock dependencies
 jest.mock('react-native-geolocation-service');
 jest.mock('react-native-device-info');
 jest.mock('../../api/locationApi');
 jest.mock('../../sync/offlineQueue');
 jest.mock('../../permissions/permissionService');
-// Don't mock react-native here - jest.setup.js handles it
 
 
 describe('LocationTracker', () => {
@@ -35,15 +36,20 @@ describe('LocationTracker', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Don't use jest.clearAllMocks() as it clears the global Alert mock
+    // Clear specific mocks manually
+    (permissionService.checkLocationPermission as jest.Mock).mockClear();
+    (permissionService.requestLocationPermission as jest.Mock).mockClear();
+    (DeviceInfo.getBatteryLevel as jest.Mock).mockClear();
+    (Geolocation.getCurrentPosition as jest.Mock).mockClear();
+    (locationApi.uploadLocationBatch as jest.Mock).mockClear();
+    (offlineQueue.addToQueue as jest.Mock).mockClear();
+
     jest.useFakeTimers();
     locationTracker.cleanup();
 
     // Add global error listener to prevent unhandled errors
     locationTracker.on('error', jest.fn());
-
-    // Re-spy on Alert.alert after clearAllMocks clears it
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     // Default mocks
     (permissionService.checkLocationPermission as jest.Mock).mockResolvedValue(true);

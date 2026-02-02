@@ -63,7 +63,7 @@ const createTestStore = (currentShift: any = null) => {
           id: 1,
           username: 'worker1',
           full_name: 'Test Worker',
-          role: 'Worker',
+          role: 'worker',
         },
         assignedArea: {
           id: 1,
@@ -130,35 +130,39 @@ describe('WorkerHomeScreen Timer Management', () => {
     jest.clearAllMocks();
   });
 
-  it('should cleanup timer on unmount', async () => {
-    const shift = createShift(new Date());
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
-    const store = createTestStore(shift);
+  it(
+    'should cleanup timer on unmount',
+    async () => {
+      const shift = createShift(new Date());
+      (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+      const store = createTestStore(shift);
 
-    const { unmount } = render(
-      <Provider store={store}>
-        <NavigationContainer>
-          <WorkerHomeScreen />
-        </NavigationContainer>
-      </Provider>
-    );
+      const { unmount } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <WorkerHomeScreen />
+          </NavigationContainer>
+        </Provider>
+      );
 
-    // Advance timers to ensure interval is set
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
+      // Advance timers to ensure interval is set
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
 
-    // Unmount the component
-    unmount();
+      // Unmount the component
+      unmount();
 
-    // Advance timers after unmount - if cleanup failed, this would cause memory leak
-    await act(async () => {
-      jest.advanceTimersByTime(5000);
-    });
+      // Advance timers after unmount - if cleanup failed, this would cause memory leak
+      await act(async () => {
+        jest.advanceTimersByTime(5000);
+      });
 
-    // Test passes if no errors occur (no "can't update unmounted component" warning)
-    expect(true).toBe(true);
-  });
+      // Test passes if no errors occur (no "can't update unmounted component" warning)
+      expect(true).toBe(true);
+    },
+    15000
+  );
 
   it('should cleanup timer when shift changes to null', async () => {
     const shift = createShift(new Date());

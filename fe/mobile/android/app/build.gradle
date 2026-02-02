@@ -1,6 +1,8 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+// FCM: Uncomment when google-services.json is added (see specs/deployment/firebase-fcm-setup.md)
+apply plugin: "com.google.gms.google-services"
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
 
 /**

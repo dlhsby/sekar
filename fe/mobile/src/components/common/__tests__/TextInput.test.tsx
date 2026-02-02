@@ -2,6 +2,15 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { TextInput } from '../TextInput';
 
+// Ensure Alert is properly mocked
+beforeAll(() => {
+  const RN = require('react-native');
+  if (!RN.Alert) {
+    RN.Alert = {};
+  }
+  RN.Alert.alert = jest.fn();
+});
+
 describe('TextInput Component', () => {
   describe('rendering', () => {
     it('should render with label', () => {

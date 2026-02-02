@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import RootNavigator from '../RootNavigator';
@@ -14,10 +13,7 @@ import shiftReducer from '../../store/slices/shiftSlice';
 import reportReducer from '../../store/slices/reportSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
 
-// Mock Alert to prevent errors in dependent components
-beforeEach(() => {
-  jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-});
+// Alert mocked globally in jest.setup.js
 
 // Mock all screens
 jest.mock('../../screens/auth/LoginScreen', () => {

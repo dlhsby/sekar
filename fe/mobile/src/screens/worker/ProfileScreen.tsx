@@ -32,6 +32,7 @@ import {
   clearQueueForCurrentUser,
   retryFailedItems,
   clearFailedItems,
+  clearOrphanedItems,
 } from '../../services/sync/offlineQueue';
 import { syncManager } from '../../services/sync/syncManager';
 import { locationTracker } from '../../services/location/locationTracker';
@@ -410,6 +411,12 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       // Clear tokens
       await EncryptedStorage.removeItem('auth_token');
       await EncryptedStorage.removeItem('refresh_token');
+
+      // Clear queue items for current user
+      await clearQueueForCurrentUser();
+      
+      // Clear orphaned items from previous sessions
+      await clearOrphanedItems();
 
       // Clear non-auth Redux states first
       dispatch(resetShiftState());

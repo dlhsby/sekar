@@ -194,7 +194,7 @@ describe('notificationsApi', () => {
       const broadcastData = {
         title: 'Worker Update',
         body: 'New task available.',
-        target_roles: ['Worker' as const, 'Linmas' as const],
+        target_roles: ['worker' as const, 'linmas' as const],
       };
       const mockResponse = { data: { sent_count: 50 } };
       mockPost.mockResolvedValue(mockResponse);

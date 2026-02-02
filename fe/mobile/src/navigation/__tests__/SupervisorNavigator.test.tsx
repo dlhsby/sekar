@@ -5,14 +5,10 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import SupervisorNavigator from '../SupervisorNavigator';
 
-// Mock Alert before each test to prevent cross-test pollution
-beforeEach(() => {
-  Alert.alert = jest.fn();
-});
+// Alert mocked globally in jest.setup.js
 
 // Mock all screens
 jest.mock('../../screens/supervisor/MapDashboardScreen', () => {

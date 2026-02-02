@@ -29,7 +29,7 @@ const mockWorker: ActiveWorkerData = {
   id: 1,
   username: 'worker1',
   full_name: 'John Doe',
-  role: 'Worker',
+  role: 'worker',
   shift: {
     id: 101,
     clock_in_time: '2026-01-17T08:00:00.000Z',
@@ -50,7 +50,7 @@ const mockLinmasWorker: ActiveWorkerData = {
   id: 2,
   username: 'linmas1',
   full_name: 'Jane Smith',
-  role: 'Linmas',
+  role: 'linmas',
 };
 
 const mockWorkerNoLocation: ActiveWorkerData = {

@@ -147,7 +147,7 @@ export interface ActiveWorkerData {
   id: string; // UUID (updated to match backend)
   username: string;
   full_name: string;
-  role?: 'Worker' | 'Linmas'; // Phase 2 - optional for backwards compatibility
+  role?: 'worker' | 'linmas'; // Phase 2 - optional for backwards compatibility
   shift: ActiveWorkerShift;
   latest_location: ActiveWorkerLocation | null;
 }
@@ -325,8 +325,11 @@ export interface CurrentShiftDefinitionResponse extends ShiftDefinition {
 // Notifications API
 export interface RegisterDeviceRequest {
   fcm_token: string;
-  device_id: string;
   platform: 'android' | 'ios';
+  device_id?: string;
+  device_name?: string;
+  device_model?: string;
+  app_version?: string;
 }
 
 export interface NotificationsFilter {

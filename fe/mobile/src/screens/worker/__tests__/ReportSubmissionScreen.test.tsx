@@ -93,7 +93,7 @@ describe('ReportSubmissionScreen Draft Auto-Save', () => {
             id: 1,
             username: 'worker1',
             full_name: 'Test Worker',
-            role: 'Worker',
+            role: 'worker',
           },
           assignedArea: {
             id: 1,

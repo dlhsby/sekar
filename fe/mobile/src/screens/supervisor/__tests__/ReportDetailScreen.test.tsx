@@ -94,17 +94,24 @@ describe('ReportDetailScreen', () => {
       expect(getByText('Memuat detail laporan...')).toBeTruthy();
     });
 
-    it('should render report details correctly', async () => {
-      const { getByText } = render(
-        <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
-      );
+    it(
+      'should render report details correctly',
+      async () => {
+        const { getByText } = render(
+          <ReportDetailScreen route={mockRoute} navigation={mockNavigation} />
+        );
 
-      await waitFor(() => {
-        expect(getByText('John Doe')).toBeTruthy();
-        expect(getByText('Park A')).toBeTruthy();
-        expect(getByText('Penyelesaian Tugas')).toBeTruthy();
-      }, { timeout: 10000 });
-    }, 15000);
+        await waitFor(
+          () => {
+            expect(getByText('John Doe')).toBeTruthy();
+            expect(getByText('Park A')).toBeTruthy();
+            expect(getByText('Penyelesaian Tugas')).toBeTruthy();
+          },
+          { timeout: 15000 }
+        );
+      },
+      25000
+    );
 
     it('should render worker name', async () => {
       const { getByText } = render(

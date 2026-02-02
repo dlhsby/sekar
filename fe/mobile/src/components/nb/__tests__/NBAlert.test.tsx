@@ -7,7 +7,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { NBAlert } from '../NBAlert';
 
-// Haptic feedback mocked in jest.setup.js
+// Alert and Haptic feedback mocked in jest.setup.js
 
 describe('NBAlert', () => {
   const mockOnDismiss = jest.fn();

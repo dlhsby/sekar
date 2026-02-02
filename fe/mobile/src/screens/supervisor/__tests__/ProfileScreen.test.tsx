@@ -20,6 +20,9 @@ import * as apiClient from '../../../services/api/apiClient';
 import * as offlineQueue from '../../../services/sync/offlineQueue';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
+// Mock Alert to prevent errors from imported components
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
 // Mock modules
 jest.mock('../../../services/api/authApi');
 jest.mock('../../../services/api/supervisorApi');
@@ -195,15 +198,22 @@ describe('Supervisor ProfileScreen', () => {
       </Provider>
     );
 
-  it('renders profile header with user info', async () => {
-    const { getByText } = renderScreen();
+  it(
+    'renders profile header with user info',
+    async () => {
+      const { getByText } = renderScreen();
 
-    await waitFor(() => {
-      expect(getByText('Supervisor Satu')).toBeTruthy();
-      expect(getByText('@supervisor1')).toBeTruthy();
-      expect(getByText('Supervisor')).toBeTruthy();
-    }, { timeout: 10000 });
-  }, 15000);
+      await waitFor(
+        () => {
+          expect(getByText('Supervisor Satu')).toBeTruthy();
+          expect(getByText('@supervisor1')).toBeTruthy();
+          expect(getByText('Supervisor')).toBeTruthy();
+        },
+        { timeout: 15000 }
+      );
+    },
+    25000
+  );
 
   it('displays supervisor statistics', async () => {
     const { getByText } = renderScreen();

@@ -47,7 +47,7 @@ const createMockStore = (authState = {}, offlineState = {}) => {
 describe('WorkerHomeHeader', () => {
   it('renders greeting with user name', () => {
     const store = createMockStore({
-      user: { id: '1', full_name: 'John Doe', username: 'john', role: 'Worker' },
+      user: { id: '1', full_name: 'John Doe', username: 'john', role: 'worker' },
     });
 
     const { getByText } = render(
@@ -62,7 +62,7 @@ describe('WorkerHomeHeader', () => {
 
   it('shows online indicator when online', () => {
     const store = createMockStore(
-      { user: { id: '1', full_name: 'John', username: 'john', role: 'Worker' } },
+      { user: { id: '1', full_name: 'John', username: 'john', role: 'worker' } },
       { isOnline: true }
     );
 
@@ -77,7 +77,7 @@ describe('WorkerHomeHeader', () => {
 
   it('shows offline indicator when offline', () => {
     const store = createMockStore(
-      { user: { id: '1', full_name: 'John', username: 'john', role: 'Worker' } },
+      { user: { id: '1', full_name: 'John', username: 'john', role: 'worker' } },
       { isOnline: false }
     );
 
@@ -92,7 +92,7 @@ describe('WorkerHomeHeader', () => {
 
   it('shows syncing indicator when syncing', () => {
     const store = createMockStore(
-      { user: { id: '1', full_name: 'John', username: 'john', role: 'Worker' } },
+      { user: { id: '1', full_name: 'John', username: 'john', role: 'worker' } },
       { isOnline: true, isSyncing: true }
     );
 
@@ -107,7 +107,7 @@ describe('WorkerHomeHeader', () => {
 
   it('shows pending count when not syncing but has pending items', () => {
     const store = createMockStore(
-      { user: { id: '1', full_name: 'John', username: 'john', role: 'Worker' } },
+      { user: { id: '1', full_name: 'John', username: 'john', role: 'worker' } },
       { isOnline: true, isSyncing: false, pendingCount: 5 }
     );
 

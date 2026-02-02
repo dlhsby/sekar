@@ -24,8 +24,8 @@ import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DeviceInfo from 'react-native-device-info';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
-import { NBButton, NBCard, NBTextInput } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { NBButton, NBCard, NBCardHeader, NBCardContent, NBTextInput } from '../../components/nb';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { createReport } from '../../services/api/reportsApi';
@@ -588,22 +588,24 @@ export function ReportSubmissionScreen(): JSX.Element {
         )}
 
         {/* Photos section */}
-        <NBCard variant="elevated" style={styles.section}>
-          <Text style={styles.sectionTitle}>📸 FOTO LAPORAN</Text>
-          <Text style={styles.sectionSubtitle}>Tambahkan 1-5 foto pekerjaan yang dilakukan</Text>
-          {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
-
-          <FlatList
-            ref={photoListRef}
-            data={form.photos}
-            renderItem={renderPhotoItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            ListFooterComponent={renderAddPhotoButton}
-            style={styles.photoList}
-          />
-
+        <NBCard style={styles.card}>
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>📸 FOTO LAPORAN</Text>
+            <Text style={styles.sectionSubtitle}>Tambahkan 1-5 foto pekerjaan yang dilakukan</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
+            <FlatList
+              ref={photoListRef}
+              data={form.photos}
+              renderItem={renderPhotoItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              ListFooterComponent={renderAddPhotoButton}
+              style={styles.photoList}
+            />
+          </NBCardContent>
         </NBCard>
 
         {/* Description */}
@@ -627,61 +629,67 @@ export function ReportSubmissionScreen(): JSX.Element {
         </View>
 
         {/* Work type */}
-        <NBCard variant="elevated" style={styles.section}>
-          <Text style={styles.sectionTitle}>🏷️ JENIS PEKERJAAN</Text>
-          {errors.workType && <Text style={styles.errorText}>{errors.workType}</Text>}
-
-          {WORK_TYPES.map((type) => (
-            <TouchableOpacity
-              key={type.value}
-              style={[
-                styles.workTypeOption,
-                form.workType === type.value && styles.workTypeOptionSelected,
-              ]}
-              onPress={() => {
-                setForm((prev) => ({ ...prev, workType: type.value }));
-                setErrors((prev) => ({ ...prev, workType: undefined }));
-              }}
-            >
-              <Text
+        <NBCard style={styles.card}>
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>🏷️ JENIS PEKERJAAN</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            {errors.workType && <Text style={styles.errorText}>{errors.workType}</Text>}
+            {WORK_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type.value}
                 style={[
-                  styles.workTypeOptionText,
-                  form.workType === type.value && styles.workTypeOptionTextSelected,
+                  styles.workTypeOption,
+                  form.workType === type.value && styles.workTypeOptionSelected,
                 ]}
+                onPress={() => {
+                  setForm((prev) => ({ ...prev, workType: type.value }));
+                  setErrors((prev) => ({ ...prev, workType: undefined }));
+                }}
               >
-                {form.workType === type.value ? '✓ ' : ''}
-                {type.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.workTypeOptionText,
+                    form.workType === type.value && styles.workTypeOptionTextSelected,
+                  ]}
+                >
+                  {form.workType === type.value ? '✓ ' : ''}
+                  {type.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </NBCardContent>
         </NBCard>
 
         {/* GPS location */}
-        <NBCard variant="elevated" style={styles.section}>
-          <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
-          {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
-
-          {isLoadingLocation ? (
-            <View style={styles.locationLoading}>
-              <ActivityIndicator color={nbColors.primary} />
-              <Text style={styles.locationLoadingText}>Mendapatkan lokasi...</Text>
-            </View>
-          ) : form.location ? (
-            <View style={styles.locationInfo}>
-              <Text style={styles.locationText}>
-                {form.location.latitude.toFixed(6)}, {form.location.longitude.toFixed(6)}
-              </Text>
-              <Text style={styles.locationAccuracy}>
-                Akurasi: ±{Math.round(form.location.accuracy)}m
-              </Text>
-            </View>
-          ) : (
-            <NBButton
-              title="Dapatkan Lokasi GPS"
-              onPress={getCurrentLocation}
-              variant="secondary"
-            />
-          )}
+        <NBCard style={styles.card}>
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            {errors.location && <Text style={styles.errorText}>{errors.errorText}</Text>}
+            {isLoadingLocation ? (
+              <View style={styles.locationLoading}>
+                <ActivityIndicator color={nbColors.primary} />
+                <Text style={styles.locationLoadingText}>Mendapatkan lokasi...</Text>
+              </View>
+            ) : form.location ? (
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationText}>
+                  {form.location.latitude.toFixed(6)}, {form.location.longitude.toFixed(6)}
+                </Text>
+                <Text style={styles.locationAccuracy}>
+                  Akurasi: ±{Math.round(form.location.accuracy)}m
+                </Text>
+              </View>
+            ) : (
+              <NBButton
+                title="Dapatkan Lokasi GPS"
+                onPress={getCurrentLocation}
+                variant="secondary"
+              />
+            )}
+          </NBCardContent>
         </NBCard>
 
         {/* Submit button */}
@@ -719,19 +727,18 @@ const styles = StyleSheet.create({
     fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
   },
-  section: {
-    marginBottom: nbSpacing.md,              // Match Home screen card margin (16px)
-    padding: 12,                             // Match Home screen card padding (12px - compact & consistent)
+  card: {
+    marginBottom: nbSpacing.md,              // Match TaskCompleteScreen card margin (16px)
   },
   descriptionSection: {
     marginBottom: nbSpacing.md,              // Same margin as other sections (16px)
     // NO padding - NBTextInput has its own internal padding
   },
   sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,      // base → lg (16px → 20px)
-    fontWeight: nbTypography.fontWeight.extrabold,  // semibold → extrabold
+    fontSize: nbTypography.fontSize.lg,      // lg (20px) for prominence
+    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
-    marginBottom: nbSpacing.md,              // sm → md (12px)
+    marginBottom: nbSpacing.xs,              // Small margin below title
     letterSpacing: 0.5,
     textTransform: 'uppercase',              // NB loves caps for hierarchy
   },
@@ -739,8 +746,7 @@ const styles = StyleSheet.create({
     fontSize: nbTypography.fontSize.sm,      // 14px
     fontWeight: nbTypography.fontWeight.medium,
     color: nbColors.gray[600],
-    marginBottom: nbSpacing.md,
-    marginTop: -nbSpacing.xs,                // Pull up closer to title
+    // No margin - let NBCardContent handle spacing
   },
   descriptionInput: {
     minHeight: 140,                          // Increased from 4 lines to 6 lines (better for longer descriptions)
@@ -855,7 +861,7 @@ const styles = StyleSheet.create({
   },
   workTypeOptionSelected: {
     borderColor: nbColors.primary,
-    backgroundColor: nbColors.primary + '10',
+    backgroundColor: withAlpha(nbColors.primary, 0.1),
     ...nbShadows.sm, // Hard-edge shadow for selected state
   },
   workTypeOptionText: {
@@ -878,7 +884,7 @@ const styles = StyleSheet.create({
   },
   locationInfo: {
     padding: nbSpacing.lg,                   // md → lg (20px for better readability)
-    backgroundColor: nbColors.accentSky + '15', // Cyan tint background (15% opacity)
+    backgroundColor: withAlpha(nbColors.accentSky, 0.15), // Cyan tint background (15% opacity)
     borderRadius: 0,                         // Sharp corners for NB
     borderWidth: nbBorders.default,
     borderColor: nbColors.black,
@@ -899,6 +905,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: nbColors.danger,
     fontSize: nbTypography.fontSize.sm,
-    marginTop: nbSpacing.xs,
+    marginBottom: nbSpacing.sm, // Space below error message
   },
 });

@@ -9,6 +9,9 @@ import { Alert } from 'react-native';
 import AttendanceScreen from '../AttendanceScreen';
 import * as supervisorApi from '../../../services/api/supervisorApi';
 
+// Mock Alert to prevent errors from imported components
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
 // Mock the API
 jest.mock('../../../services/api/supervisorApi');
 

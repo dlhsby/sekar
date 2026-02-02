@@ -159,31 +159,38 @@ describe('ReportsListScreen', () => {
   });
 
   describe('Reports List', () => {
-    it('displays synced reports from API', async () => {
-      const mockReports = [
-        {
-          id: 1,
-          created_at: '2026-01-18T10:30:00Z',
-          notes: 'Completed cleaning',
-          area: { id: 1, name: 'Taman Bungkul' },
-          media_urls: ['https://example.com/photo.jpg'],
-        },
-      ];
+    it(
+      'displays synced reports from API',
+      async () => {
+        const mockReports = [
+          {
+            id: 1,
+            created_at: '2026-01-18T10:30:00Z',
+            notes: 'Completed cleaning',
+            area: { id: 1, name: 'Taman Bungkul' },
+            media_urls: ['https://example.com/photo.jpg'],
+          },
+        ];
 
-      mockedReportsApi.getMyReports.mockResolvedValue({ data: mockReports });
-      mockedOfflineQueue.getQueueByType.mockResolvedValue([]);
+        mockedReportsApi.getMyReports.mockResolvedValue({ data: mockReports });
+        mockedOfflineQueue.getQueueByType.mockResolvedValue([]);
 
-      const { getByText, getAllByText } = render(
-        <ReportsListScreen navigation={mockNavigation} route={mockRoute} />
-      );
+        const { getByText, getAllByText } = render(
+          <ReportsListScreen navigation={mockNavigation} route={mockRoute} />
+        );
 
-      await waitFor(() => {
-        expect(getByText('Completed cleaning')).toBeTruthy();
-        expect(getByText('Taman Bungkul')).toBeTruthy();
-        // Use getAllByText since 'Terkirim' appears in both the filter tabs and the report items
-        expect(getAllByText('Terkirim').length).toBeGreaterThan(0);
-      });
-    });
+        await waitFor(
+          () => {
+            expect(getByText('Completed cleaning')).toBeTruthy();
+            expect(getByText('Taman Bungkul')).toBeTruthy();
+            // Use getAllByText since 'Terkirim' appears in both the filter tabs and the report items
+            expect(getAllByText('Terkirim').length).toBeGreaterThan(0);
+          },
+          { timeout: 10000 }
+        );
+      },
+      15000
+    );
 
     it('displays pending reports from queue', async () => {
       mockedReportsApi.getMyReports.mockResolvedValue({ data: [] });

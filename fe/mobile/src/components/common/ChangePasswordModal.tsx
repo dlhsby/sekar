@@ -233,6 +233,7 @@ export function ChangePasswordModal({
                     error={validationErrors.currentPassword}
                     editable={!isLoading && !success}
                     autoCapitalize="none"
+                    accessibilityHint="Masukkan password Anda saat ini"
                   />
                   <TouchableOpacity
                     style={styles.eyeButton}
@@ -263,6 +264,7 @@ export function ChangePasswordModal({
                     error={validationErrors.newPassword}
                     editable={!isLoading && !success}
                     autoCapitalize="none"
+                    accessibilityHint="Masukkan password baru minimal 6 karakter"
                   />
                   <TouchableOpacity
                     style={styles.eyeButton}
@@ -293,6 +295,7 @@ export function ChangePasswordModal({
                     error={validationErrors.confirmPassword}
                     editable={!isLoading && !success}
                     autoCapitalize="none"
+                    accessibilityHint="Ketik ulang password baru untuk konfirmasi"
                   />
                   <TouchableOpacity
                     style={styles.eyeButton}
@@ -322,6 +325,7 @@ export function ChangePasswordModal({
                   loading={isLoading}
                   variant="primary"
                   fullWidth
+                  testID="change-password-submit"
                 />
                 <NBButton
                   title="Batal"
@@ -342,7 +346,7 @@ export function ChangePasswordModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: nbColors.overlay,
     justifyContent: 'flex-end',
   },
   keyboardAvoidingView: {

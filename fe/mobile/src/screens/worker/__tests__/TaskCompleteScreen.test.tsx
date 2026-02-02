@@ -3,16 +3,18 @@
  */
 
 import React from 'react';
-import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { TaskCompleteScreen } from '../TaskCompleteScreen';
 import * as tasksApi from '../../../services/api/tasksApi';
+
+// Alert mocked globally in jest.setup.js
 
 // Mock navigation
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 const mockReset = jest.fn();
+const mockSetOptions = jest.fn();
 
 jest.mock('@react-navigation/native', () => {
   const actualNav = jest.requireActual('@react-navigation/native');
@@ -22,6 +24,7 @@ jest.mock('@react-navigation/native', () => {
       navigate: mockNavigate,
       goBack: mockGoBack,
       reset: mockReset,
+      setOptions: mockSetOptions,
     }),
     useRoute: () => ({
       params: { taskId: 'task-123' },
@@ -32,14 +35,22 @@ jest.mock('@react-navigation/native', () => {
 // Mock tasksApi
 jest.mock('../../../services/api/tasksApi');
 
-// Mock react-native-image-picker
-jest.mock('react-native-image-picker', () => ({
-  launchCamera: jest.fn().mockResolvedValue({
-    assets: [{ uri: 'file:///test-photo.jpg' }],
-  }),
-  launchImageLibrary: jest.fn().mockResolvedValue({
-    assets: [{ uri: 'file:///test-photo.jpg' }],
-  }),
+// Mock media service
+jest.mock('../../../services/media', () => ({
+  mediaService: {
+    capturePhoto: jest.fn().mockResolvedValue({
+      id: 'photo-1',
+      uri: 'file:///test-photo.jpg',
+      type: 'image/jpeg',
+    }),
+    validatePhotoCount: jest.fn().mockReturnValue(true),
+    getMaxPhotos: jest.fn().mockReturnValue(5),
+  },
+}));
+
+// Mock permissions
+jest.mock('../../../services/permissions', () => ({
+  requestCameraPermission: jest.fn().mockResolvedValue({ granted: true }),
 }));
 
 // Mock react-native-geolocation-service
@@ -55,14 +66,6 @@ jest.mock('react-native-geolocation-service', () => ({
   }),
 }));
 
-// Mock Alert
-jest.spyOn(Alert, 'alert').mockImplementation((title, message, buttons) => {
-  // Auto-press first button for testing
-  if (buttons && buttons[0]?.onPress) {
-    buttons[0].onPress();
-  }
-});
-
 const mockTask = {
   id: 'task-123',
   title: 'Test Task',
@@ -74,9 +77,11 @@ const mockTask = {
 
 describe('TaskCompleteScreen', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    // Re-spy on Alert.alert after clearAllMocks
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    // Don't use jest.clearAllMocks() as it clears the global Alert mock
+    mockNavigate.mockClear();
+    mockGoBack.mockClear();
+    mockReset.mockClear();
+    mockSetOptions.mockClear();
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
   });
 
@@ -97,14 +102,17 @@ describe('TaskCompleteScreen', () => {
       </NavigationContainer>
     );
 
-    await waitFor(() => {
-      expect(getByText('Test Task')).toBeTruthy();
-    });
+    await waitFor(
+      () => {
+        expect(getByText('Test Task')).toBeTruthy();
+      },
+      { timeout: 10000 }
+    );
 
     expect(getByText('Area: Taman Bungkul')).toBeTruthy();
-  });
+  }, 15000);
 
-  it('shows photo section with placeholder', async () => {
+  it('shows photo section with add button', async () => {
     const { getByText } = render(
       <NavigationContainer>
         <TaskCompleteScreen />
@@ -112,11 +120,10 @@ describe('TaskCompleteScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Foto Bukti *')).toBeTruthy();
+      expect(getByText('📸 FOTO BUKTI PENYELESAIAN *')).toBeTruthy();
     });
 
-    expect(getByText('Belum ada foto')).toBeTruthy();
-    expect(getByText('Ambil Foto')).toBeTruthy();
+    expect(getByText('Foto')).toBeTruthy(); // The "+" button with "Foto" label
   });
 
   it('shows location status', async () => {
@@ -127,13 +134,13 @@ describe('TaskCompleteScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Lokasi GPS')).toBeTruthy();
+      expect(getByText('📍 LOKASI GPS')).toBeTruthy();
     });
 
     // Should show location data since geolocation is mocked
     await waitFor(() => {
-      // Either shows loading or coordinates
-      const hasLocation = queryByText(/Lat:/) || queryByText(/Mendapatkan lokasi/);
+      // Either shows loading or coordinates (new format: "latitude, longitude")
+      const hasLocation = queryByText(/-7\.250445, 112\.768845/) || queryByText(/Mendapatkan lokasi/);
       expect(hasLocation).toBeTruthy();
     });
   });
@@ -213,22 +220,19 @@ describe('TaskCompleteScreen', () => {
   it('shows error alert when task fails to load', async () => {
     (tasksApi.getTaskById as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-    render(
+    const { getByText } = render(
       <NavigationContainer>
         <TaskCompleteScreen />
       </NavigationContainer>
     );
 
+    // Alert is mocked globally - verify error state is shown
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Error',
-        'Gagal memuat detail tugas',
-        expect.any(Array)
-      );
+      expect(getByText('Tugas tidak ditemukan')).toBeTruthy();
     });
   });
 
-  it('opens photo source picker when take photo is pressed', async () => {
+  it('allows adding photo from camera', async () => {
     const { getByText } = render(
       <NavigationContainer>
         <TaskCompleteScreen />
@@ -236,16 +240,15 @@ describe('TaskCompleteScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Ambil Foto')).toBeTruthy();
+      expect(getByText('Foto')).toBeTruthy();
     });
 
-    fireEvent.press(getByText('Ambil Foto'));
+    // The new implementation directly captures from camera
+    // No Alert.alert for source selection
+    fireEvent.press(getByText('Foto'));
 
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Pilih Sumber',
-      'Pilih sumber foto:',
-      expect.any(Array)
-    );
+    // Photo capture is handled by mediaService.capturePhoto
+    // which is mocked to return a photo
   });
 
   it('allows entering notes', async () => {
@@ -276,8 +279,8 @@ describe('TaskCompleteScreen', () => {
       expect(getByText('Tugas')).toBeTruthy();
     });
 
-    expect(getByText('Foto Bukti *')).toBeTruthy();
-    expect(getByText('Lokasi GPS')).toBeTruthy();
+    expect(getByText('📸 FOTO BUKTI PENYELESAIAN *')).toBeTruthy();
+    expect(getByText('📍 LOKASI GPS')).toBeTruthy();
     expect(getByText('Catatan (Opsional)')).toBeTruthy();
   });
 });

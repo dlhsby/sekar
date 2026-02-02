@@ -219,12 +219,13 @@ const styles = StyleSheet.create({
     borderRadius: nbBorderRadius.minimal, // 2px - softened NB
   },
   header: {
-    padding: nbSpacing.md,
+    padding: nbSpacing.sm, // Reduced from md (16px) to sm (8px) for less vertical padding
+    paddingHorizontal: nbSpacing.md, // Keep horizontal padding at 16px
     borderBottomWidth: nbBorders.thin,
     borderBottomColor: nbColors.black,
   },
   content: {
-    padding: 12, // Compact padding for consistency (was md: 16px)
+    padding: nbSpacing.md, // Use token for consistency
   },
   footer: {
     padding: nbSpacing.md,

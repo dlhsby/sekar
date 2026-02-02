@@ -1,14 +1,16 @@
 /**
  * Supervisor Navigator
  * Bottom tab navigation for supervisor role with stack navigation for reports
+ * Uses Neo Brutalism design tokens for consistent styling
  */
 
 import React from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { SupervisorTabParamList } from '../types/navigation.types';
-import { colors } from '../constants/theme';
+import { nbColors, nbBorders, nbShadows, nbTypography } from '../constants/nbTokens';
 
 // Import screens
 import ReportsListScreen from '../screens/supervisor/ReportsListScreen';
@@ -24,7 +26,18 @@ const Stack = createNativeStackNavigator();
  */
 function ReportsStackNavigator() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: nbColors.white,
+        },
+        headerTitleStyle: {
+          fontSize: nbTypography.fontSize.xl,
+          fontWeight: nbTypography.fontWeight.bold,
+          color: nbColors.black,
+        },
+        headerTintColor: nbColors.black,
+      }}>
       <Stack.Screen
         name="ReportsListMain"
         component={ReportsListScreen}
@@ -43,9 +56,26 @@ function SupervisorNavigator(): React.JSX.Element {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray500,
-        headerShown: false,
+        tabBarActiveTintColor: nbColors.primary,
+        tabBarInactiveTintColor: nbColors.gray[600],
+        headerShown: true,
+        headerStyle: {
+          height: 76,
+          backgroundColor: nbColors.white,
+          borderBottomWidth: nbBorders.thick,
+          borderBottomColor: nbColors.black,
+          ...nbShadows.md,
+          elevation: 0,
+        },
+        headerTitleStyle: {
+          fontSize: nbTypography.fontSize['2xl'],
+          fontWeight: nbTypography.fontWeight.bold,
+          color: nbColors.black,
+        },
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: styles.tabBarItem,
+        tabBarIconStyle: styles.tabBarIcon,
       }}>
       <Tab.Screen
         name="MapDashboard"
@@ -63,6 +93,7 @@ function SupervisorNavigator(): React.JSX.Element {
         component={ReportsStackNavigator}
         options={{
           title: 'Laporan',
+          headerShown: false, // Stack navigator has its own header
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="file-document-multiple"
@@ -101,6 +132,31 @@ function SupervisorNavigator(): React.JSX.Element {
     </Tab.Navigator>
   );
 }
+
+// Neo Brutalism Tab Bar Styling
+const styles = StyleSheet.create({
+  tabBar: {
+    height: 65,
+    backgroundColor: nbColors.white,
+    borderTopWidth: nbBorders.thick,
+    borderTopColor: nbColors.black,
+    ...nbShadows.md,
+    paddingBottom: Platform.OS === 'ios' ? 4 : 4,
+    paddingTop: 6,
+  },
+  tabBarLabel: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.semibold,
+    marginTop: -2,
+    marginBottom: 2,
+  },
+  tabBarItem: {
+    paddingVertical: 2,
+  },
+  tabBarIcon: {
+    marginTop: 4,
+  },
+});
 
 export default SupervisorNavigator;
 

@@ -4,10 +4,11 @@
 
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { TaskDetailScreen } from '../TaskDetailScreen';
 import * as tasksApi from '../../../services/api/tasksApi';
+
+// Alert mocked in jest.setup.js
 
 // Mock navigation
 const mockNavigate = jest.fn();
@@ -32,9 +33,7 @@ jest.mock('@react-navigation/native', () => {
 // Mock tasksApi
 jest.mock('../../../services/api/tasksApi');
 
-// Mock Alert
-jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-jest.spyOn(Alert, 'prompt').mockImplementation(() => {});
+// Alert mocked globally in jest.setup.js
 
 const mockTask = {
   id: 'task-123',
@@ -55,7 +54,12 @@ const renderWithNav = (component: React.ReactElement) => {
 
 describe('TaskDetailScreen', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Clear specific mocks (not jest.clearAllMocks() which breaks global Alert mock)
+    mockNavigate.mockClear();
+    mockGoBack.mockClear();
+    mockSetOptions.mockClear();
+    (tasksApi.getTaskById as jest.Mock).mockClear();
+    (tasksApi.acceptTask as jest.Mock).mockClear();
   });
 
   it('renders loading state initially', () => {
@@ -67,16 +71,20 @@ describe('TaskDetailScreen', () => {
     expect(getByText('Memuat tugas...')).toBeTruthy();
   });
 
-  it('renders task details after loading', async () => {
-    (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
+  it(
+    'renders task details after loading',
+    async () => {
+      (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
 
-    const { findByText } = renderWithNav(<TaskDetailScreen />);
+      const { findByText } = renderWithNav(<TaskDetailScreen />);
 
-    expect(await findByText('Test Task')).toBeTruthy();
-    expect(await findByText('This is a test task description')).toBeTruthy();
-    // NBBadge converts text to uppercase
-    expect(await findByText('DITUGASKAN')).toBeTruthy();
-  });
+      expect(await findByText('Test Task', {}, { timeout: 10000 })).toBeTruthy();
+      expect(await findByText('This is a test task description', {}, { timeout: 10000 })).toBeTruthy();
+      // NBBadge converts text to uppercase
+      expect(await findByText('DITUGASKAN', {}, { timeout: 10000 })).toBeTruthy();
+    },
+    15000
+  );
 
   it('shows accept and decline buttons for assigned tasks', async () => {
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });

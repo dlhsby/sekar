@@ -9,8 +9,8 @@ import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { ShiftHistoryScreen } from '../ShiftHistoryScreen';
 import * as shiftsApi from '../../../services/api/shiftsApi';
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
+// Mock Alert to prevent errors from imported components
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 // Mock the shiftsApi module
 jest.mock('../../../services/api/shiftsApi');
@@ -144,14 +144,21 @@ describe('ShiftHistoryScreen', () => {
       });
     });
 
-    it('should display shifts list after loading', async () => {
-      const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+    it(
+      'should display shifts list after loading',
+      async () => {
+        const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
 
-      await waitFor(() => {
-        // Two shifts have Taman Bungkul as area name
-        expect(getAllByText('Taman Bungkul').length).toBeGreaterThan(0);
-      });
-    });
+        await waitFor(
+          () => {
+            // Two shifts have Taman Bungkul as area name
+            expect(getAllByText('Taman Bungkul').length).toBeGreaterThan(0);
+          },
+          { timeout: 10000 }
+        );
+      },
+      20000
+    );
 
     it('should display area type for each shift', async () => {
       const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);

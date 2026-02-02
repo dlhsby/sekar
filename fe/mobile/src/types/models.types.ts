@@ -3,17 +3,15 @@
  * TypeScript interfaces for all data models used in the app
  */
 
-// User roles (Phase 2 expanded)
+// User roles - matches backend UserRole enum exactly (lowercase)
 export type UserRole =
-  | 'Admin'
-  | 'TopManagement'
-  | 'KepalaRayon'
-  | 'KoordinatorLapangan'
-  | 'Worker'
-  | 'Linmas';
-
-// Legacy role types for compatibility
-export type LegacyUserRole = 'worker' | 'supervisor';
+  | 'worker'
+  | 'supervisor'
+  | 'admin'
+  | 'top_management'
+  | 'kepala_rayon'
+  | 'koordinator_lapangan'
+  | 'linmas';
 
 // Area types
 export type AreaTypeCode = 'park' | 'pedestrian' | 'mini_garden' | 'street';

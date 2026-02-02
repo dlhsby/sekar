@@ -3,6 +3,8 @@
  * Unit tests for horizontal photo gallery with fullscreen modal
  */
 
+// Alert is mocked globally in jest.setup.js - no need to mock here
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { PhotoGallery } from '../PhotoGallery';

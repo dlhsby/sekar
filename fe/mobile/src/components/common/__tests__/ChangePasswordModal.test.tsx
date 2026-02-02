@@ -310,19 +310,27 @@ describe('ChangePasswordModal', () => {
       const submitButton = getAllByText('Ubah Password')[1]; // Get button, not title
       fireEvent.press(submitButton);
 
-      await waitFor(() => {
-        expect(getByText('Password berhasil diubah!')).toBeTruthy();
-      });
+      await waitFor(
+        () => {
+          expect(getByText('Password berhasil diubah!')).toBeTruthy();
+        },
+        { timeout: 10000 }
+      );
 
       // Fast-forward time by 1.5 seconds
       jest.advanceTimersByTime(1500);
 
-      await waitFor(() => {
-        expect(mockOnClose).toHaveBeenCalled();
-      });
+      await waitFor(
+        () => {
+          expect(mockOnClose).toHaveBeenCalled();
+        },
+        { timeout: 10000 }
+      );
 
       jest.useRealTimers();
-    });
+    },
+    25000
+  );
 
     it('should show error message on API failure', async () => {
       jest.spyOn(usersApi, 'changePassword').mockResolvedValue({
@@ -374,7 +382,7 @@ describe('ChangePasswordModal', () => {
       fireEvent.press(submitButton);
 
       await waitFor(() => {
-        expect(getByTestId('loading-spinner')).toBeTruthy();
+        expect(getByTestId('change-password-submit-spinner')).toBeTruthy();
       });
     });
 

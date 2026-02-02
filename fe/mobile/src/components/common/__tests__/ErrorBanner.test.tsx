@@ -2,6 +2,8 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ErrorBanner } from '../ErrorBanner';
 
+// Alert mocked globally in jest.setup.js
+
 describe('ErrorBanner Component', () => {
   describe('Basic rendering', () => {
     it('should render error message', () => {

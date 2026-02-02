@@ -1,0 +1,579 @@
+/**
+ * Permission Manager Service
+ *
+ * Comprehensive permission management for SEKAR mobile app.
+ * Handles requesting and checking all app permissions in the correct order:
+ * 1. Notification Permission (POST_NOTIFICATIONS on Android 13+)
+ * 2. Location Permission (ACCESS_FINE_LOCATION)
+ * 3. Background Location Permission (ACCESS_BACKGROUND_LOCATION on Android 10+)
+ * 4. Camera Permission (lazy - only when needed)
+ *
+ * Features:
+ * - Sequential permission requests with user-friendly explanations
+ * - Permission status persistence to avoid re-requesting
+ * - MIUI-specific guidance for background location
+ * - Fallback handling for denied permissions
+ */
+
+import { Platform, Linking } from 'react-native';
+import {
+  check,
+  request,
+  PERMISSIONS,
+  RESULTS,
+  PermissionStatus,
+  checkNotifications,
+  requestNotifications,
+} from 'react-native-permissions';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+/**
+ * Permission types supported by the app
+ */
+export enum PermissionType {
+  NOTIFICATIONS = 'notifications',
+  LOCATION = 'location',
+  BACKGROUND_LOCATION = 'background_location',
+  CAMERA = 'camera',
+}
+
+/**
+ * Permission status result
+ */
+export interface PermissionResult {
+  granted: boolean;
+  status: PermissionStatus;
+  canRequest: boolean; // Whether we can request permission (not blocked)
+  message?: string;
+}
+
+/**
+ * All permissions status
+ */
+export interface AllPermissionsStatus {
+  notifications: PermissionResult;
+  location: PermissionResult;
+  backgroundLocation: PermissionResult;
+  camera: PermissionResult;
+}
+
+/**
+ * Storage keys for permission status
+ */
+const STORAGE_KEYS = {
+  NOTIFICATIONS_REQUESTED: '@permissions/notifications_requested',
+  LOCATION_REQUESTED: '@permissions/location_requested',
+  BACKGROUND_LOCATION_REQUESTED: '@permissions/background_location_requested',
+  CAMERA_REQUESTED: '@permissions/camera_requested',
+  ONBOARDING_COMPLETED: '@permissions/onboarding_completed',
+} as const;
+
+/**
+ * Permission Manager Class
+ *
+ * Singleton service to manage all app permissions
+ */
+class PermissionManager {
+  private static instance: PermissionManager;
+
+  private constructor() {
+    // Private constructor for singleton
+  }
+
+  /**
+   * Get singleton instance
+   */
+  public static getInstance(): PermissionManager {
+    if (!PermissionManager.instance) {
+      PermissionManager.instance = new PermissionManager();
+    }
+    return PermissionManager.instance;
+  }
+
+  /**
+   * Check if permission onboarding has been completed
+   */
+  async isOnboardingCompleted(): Promise<boolean> {
+    try {
+      const completed = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+      return completed === 'true';
+    } catch (error) {
+      console.error('[PermissionManager] Failed to check onboarding status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if permission onboarding has been completed
+   */
+  async hasCompletedOnboarding(): Promise<boolean> {
+    try {
+      const completed = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+      return completed === 'true';
+    } catch (error) {
+      console.error('[PermissionManager] Failed to check onboarding status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Mark permission onboarding as completed
+   */
+  async setOnboardingCompleted(): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
+    } catch (error) {
+      console.error('[PermissionManager] Failed to set onboarding completed:', error);
+    }
+  }
+
+  /**
+   * Reset onboarding status (for testing)
+   */
+  async resetOnboarding(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+    } catch (error) {
+      console.error('[PermissionManager] Failed to reset onboarding:', error);
+    }
+  }
+
+  /**
+   * Check notification permission status
+   */
+  async checkNotificationPermission(): Promise<PermissionResult> {
+    try {
+      const { status } = await checkNotifications();
+
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED || status === RESULTS.LIMITED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Notifikasi diizinkan'
+          : 'Notifikasi diperlukan untuk menerima informasi tugas dan absensi',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to check notification permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal memeriksa izin notifikasi',
+      };
+    }
+  }
+
+  /**
+   * Request notification permission
+   */
+  async requestNotificationPermission(): Promise<PermissionResult> {
+    try {
+      console.log('[PermissionManager] Requesting notification permission');
+
+      // Check if already requested before
+      const alreadyRequested = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_REQUESTED);
+
+      const { status } = await requestNotifications(['alert', 'badge', 'sound']);
+
+      // Mark as requested
+      if (!alreadyRequested) {
+        await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS_REQUESTED, 'true');
+      }
+
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED || status === RESULTS.LIMITED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Notifikasi berhasil diizinkan'
+          : status === RESULTS.BLOCKED
+          ? 'Notifikasi diblokir. Buka Pengaturan untuk mengizinkan'
+          : 'Notifikasi ditolak. Anda tidak akan menerima pemberitahuan penting',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to request notification permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal meminta izin notifikasi',
+      };
+    }
+  }
+
+  /**
+   * Check location permission status
+   */
+  async checkLocationPermission(): Promise<PermissionResult> {
+    try {
+      const permission =
+        Platform.OS === 'ios'
+          ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+          : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
+
+      const status = await check(permission);
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Lokasi diizinkan'
+          : 'Lokasi diperlukan untuk absensi dan pelacakan shift',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to check location permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal memeriksa izin lokasi',
+      };
+    }
+  }
+
+  /**
+   * Request location permission (fine location)
+   */
+  async requestLocationPermission(): Promise<PermissionResult> {
+    try {
+      console.log('[PermissionManager] Requesting location permission');
+
+      const permission =
+        Platform.OS === 'ios'
+          ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+          : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
+
+      // Check if already requested before
+      const alreadyRequested = await AsyncStorage.getItem(STORAGE_KEYS.LOCATION_REQUESTED);
+
+      const status = await request(permission);
+
+      // Mark as requested
+      if (!alreadyRequested) {
+        await AsyncStorage.setItem(STORAGE_KEYS.LOCATION_REQUESTED, 'true');
+      }
+
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Lokasi berhasil diizinkan'
+          : status === RESULTS.BLOCKED
+          ? 'Lokasi diblokir. Buka Pengaturan untuk mengizinkan'
+          : 'Lokasi ditolak. Fitur absensi tidak akan berfungsi',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to request location permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal meminta izin lokasi',
+      };
+    }
+  }
+
+  /**
+   * Check background location permission status (Android 10+)
+   */
+  async checkBackgroundLocationPermission(): Promise<PermissionResult> {
+    // Background location only needed on Android
+    if (Platform.OS === 'ios') {
+      return {
+        granted: true,
+        status: RESULTS.GRANTED,
+        canRequest: false,
+        message: 'iOS menggunakan foreground location',
+      };
+    }
+
+    // Only available on Android 10+ (API 29+)
+    if (Platform.Version < 29) {
+      return {
+        granted: true,
+        status: RESULTS.GRANTED,
+        canRequest: false,
+        message: 'Background location tidak diperlukan pada Android 9 dan lebih lama',
+      };
+    }
+
+    try {
+      const status = await check(PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION);
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Lokasi latar belakang diizinkan'
+          : 'Izinkan "Sepanjang waktu" untuk pelacakan shift yang akurat',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to check background location permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal memeriksa izin lokasi latar belakang',
+      };
+    }
+  }
+
+  /**
+   * Request background location permission (Android 10+)
+   * MUST be requested AFTER foreground location is granted
+   */
+  async requestBackgroundLocationPermission(): Promise<PermissionResult> {
+    // Background location only needed on Android
+    if (Platform.OS === 'ios') {
+      return {
+        granted: true,
+        status: RESULTS.GRANTED,
+        canRequest: false,
+        message: 'iOS menggunakan foreground location',
+      };
+    }
+
+    // Only available on Android 10+ (API 29+)
+    if (Platform.Version < 29) {
+      return {
+        granted: true,
+        status: RESULTS.GRANTED,
+        canRequest: false,
+        message: 'Background location tidak diperlukan pada Android 9 dan lebih lama',
+      };
+    }
+
+    try {
+      console.log('[PermissionManager] Requesting background location permission');
+
+      // Verify foreground location is granted first
+      const foregroundStatus = await this.checkLocationPermission();
+      if (!foregroundStatus.granted) {
+        return {
+          granted: false,
+          status: RESULTS.DENIED,
+          canRequest: false,
+          message: 'Lokasi foreground harus diizinkan terlebih dahulu',
+        };
+      }
+
+      // Check if already requested before
+      const alreadyRequested = await AsyncStorage.getItem(
+        STORAGE_KEYS.BACKGROUND_LOCATION_REQUESTED
+      );
+
+      const status = await request(PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION);
+
+      // Mark as requested
+      if (!alreadyRequested) {
+        await AsyncStorage.setItem(STORAGE_KEYS.BACKGROUND_LOCATION_REQUESTED, 'true');
+      }
+
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Lokasi latar belakang berhasil diizinkan'
+          : status === RESULTS.BLOCKED
+          ? 'Lokasi latar belakang diblokir. Buka Pengaturan → Izin → Lokasi → Izinkan sepanjang waktu'
+          : 'Lokasi latar belakang ditolak. Pelacakan shift mungkin tidak akurat',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to request background location permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal meminta izin lokasi latar belakang',
+      };
+    }
+  }
+
+  /**
+   * Check camera permission status
+   */
+  async checkCameraPermission(): Promise<PermissionResult> {
+    try {
+      const permission =
+        Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;
+
+      const status = await check(permission);
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Kamera diizinkan'
+          : 'Kamera diperlukan untuk foto laporan kerja',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to check camera permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal memeriksa izin kamera',
+      };
+    }
+  }
+
+  /**
+   * Request camera permission
+   */
+  async requestCameraPermission(): Promise<PermissionResult> {
+    try {
+      console.log('[PermissionManager] Requesting camera permission');
+
+      const permission =
+        Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;
+
+      // Check if already requested before
+      const alreadyRequested = await AsyncStorage.getItem(STORAGE_KEYS.CAMERA_REQUESTED);
+
+      const status = await request(permission);
+
+      // Mark as requested
+      if (!alreadyRequested) {
+        await AsyncStorage.setItem(STORAGE_KEYS.CAMERA_REQUESTED, 'true');
+      }
+
+      const granted = status === RESULTS.GRANTED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Kamera berhasil diizinkan'
+          : status === RESULTS.BLOCKED
+          ? 'Kamera diblokir. Buka Pengaturan untuk mengizinkan'
+          : 'Kamera ditolak. Anda tidak dapat mengambil foto laporan',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to request camera permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal meminta izin kamera',
+      };
+    }
+  }
+
+  /**
+   * Check all permissions status
+   */
+  async checkAllPermissions(): Promise<AllPermissionsStatus> {
+    const [notifications, location, backgroundLocation, camera] = await Promise.all([
+      this.checkNotificationPermission(),
+      this.checkLocationPermission(),
+      this.checkBackgroundLocationPermission(),
+      this.checkCameraPermission(),
+    ]);
+
+    return {
+      notifications,
+      location,
+      backgroundLocation,
+      camera,
+    };
+  }
+
+  /**
+   * Request all critical permissions sequentially
+   * (Notifications → Location → Background Location)
+   * Camera is requested lazily when needed
+   *
+   * @returns Array of results for each step
+   */
+  async requestAllCriticalPermissions(): Promise<{
+    notifications: PermissionResult;
+    location: PermissionResult;
+    backgroundLocation: PermissionResult;
+    allGranted: boolean;
+  }> {
+    // Step 1: Request notification permission
+    const notifications = await this.requestNotificationPermission();
+
+    // Step 2: Request location permission
+    const location = await this.requestLocationPermission();
+
+    // Step 3: Request background location (only if foreground granted and Android 10+)
+    let backgroundLocation: PermissionResult;
+    if (location.granted && Platform.OS === 'android' && Platform.Version >= 29) {
+      backgroundLocation = await this.requestBackgroundLocationPermission();
+    } else {
+      backgroundLocation = await this.checkBackgroundLocationPermission();
+    }
+
+    const allGranted =
+      notifications.granted && location.granted && backgroundLocation.granted;
+
+    return {
+      notifications,
+      location,
+      backgroundLocation,
+      allGranted,
+    };
+  }
+
+  /**
+   * Open app settings
+   */
+  async openSettings(): Promise<void> {
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      console.error('[PermissionManager] Failed to open settings:', error);
+    }
+  }
+
+  /**
+   * Check if we should show permission request (not already completed or blocked)
+   */
+  async shouldShowPermissionRequest(): Promise<boolean> {
+    const completed = await this.isOnboardingCompleted();
+    if (completed) {
+      return false;
+    }
+
+    // Check if critical permissions are already granted
+    const { notifications, location, backgroundLocation } = await this.checkAllPermissions();
+
+    return !(
+      notifications.granted &&
+      location.granted &&
+      backgroundLocation.granted
+    );
+  }
+}
+
+/**
+ * Singleton instance
+ */
+export const permissionManager = PermissionManager.getInstance();
