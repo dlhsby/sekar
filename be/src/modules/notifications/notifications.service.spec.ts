@@ -26,6 +26,7 @@ describe('NotificationsService', () => {
     user_id: 'user-uuid',
     fcm_token: 'fcm-token-123',
     platform: DevicePlatform.ANDROID,
+    device_id: 'test-device-id-123',
     device_name: 'Test Device',
     is_active: true,
     last_used_at: new Date(),
@@ -202,6 +203,13 @@ describe('NotificationsService', () => {
       expect(notificationRepository.create).toHaveBeenCalled();
       expect(notificationRepository.save).toHaveBeenCalled();
       expect(result).toEqual(mockNotification);
+    });
+
+    it('should throw NotFoundException when user does not exist', async () => {
+      usersService.findOne.mockRejectedValue(new NotFoundException('User not found'));
+
+      await expect(service.sendToUser(sendDto)).rejects.toThrow(NotFoundException);
+      expect(notificationRepository.create).not.toHaveBeenCalled();
     });
   });
 

@@ -4,7 +4,13 @@
 
 **Estimated Time:** 20 minutes (after Firebase project is created)
 
-**Status:** Phase 2E - Pending Implementation
+**Status:** ✅ IMPLEMENTED (January 31, 2026) - Backend uses HTTP v1 API with Firebase Admin SDK
+
+**Implementation Summary:**
+- ✅ Backend: Firebase Admin SDK integrated with real FCM implementation
+- ✅ Mobile: Firebase packages installed, background handler configured
+- ✅ Service Account: Downloaded and configured in `be/config/firebase-service-account.json`
+- ✅ Environment: FCM_ENABLED=true in backend .env
 
 ---
 
@@ -577,3 +583,19 @@ console.log('[FCM] Error:', error);
 **Estimated Completion Time:** 20 minutes (after Firebase project created)
 
 **Status:** Ready for implementation - Awaiting Firebase project creation in Firebase Console
+
+---
+
+## ✅ Fixed: Foreground Notifications (January 31, 2026)
+
+**Issue:** Notifications received but not showing in device tray when app is in foreground.
+
+**Root Cause:** Firebase doesn't auto-display foreground notifications. Must use `@notifee/react-native`.
+
+**Fix Applied:**
+1. Added `notifee` import to `fcmService.ts`
+2. Created Android notification channel on initialization
+3. Added `notifee.displayNotification()` in foreground message handler
+
+**After rebuilding, foreground notifications now appear in system tray.**
+

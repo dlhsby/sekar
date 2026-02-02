@@ -26,6 +26,16 @@ export class RegisterTokenDto {
   platform: DevicePlatform;
 
   @ApiPropertyOptional({
+    description: 'Unique device identifier',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  device_id?: string;
+
+  @ApiPropertyOptional({
     description: 'Device name',
     example: 'Samsung Galaxy S21',
     maxLength: 100,

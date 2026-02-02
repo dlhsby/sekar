@@ -601,6 +601,128 @@ Legend: ✅ Implemented | ❌ Not applicable | 🔜 Planned
 
 ---
 
+## Mobile-Specific Adaptations
+
+The mobile implementation has intentional deviations from the web spec to optimize for outdoor use and DLH Surabaya branding.
+
+### Background Colors (Mobile)
+
+The mobile app uses nature-themed pastel backgrounds for DLH Surabaya branding:
+
+| Token | Mobile Value | Web Value | Reason |
+|-------|--------------|-----------|--------|
+| `background` | `#FDFD96` (Pastel yellow) | `#FFFFFF` (White) | Outdoor visibility in bright sunlight |
+| `backgroundSecondary` | `#B5D2AD` (Pastel green) | `#F5F5F5` (Gray) | Parks/environment theme branding |
+| `backgroundMint` | `#DAF5F0` (Light mint) | `#E8F5E9` (Light green) | Alternative light background |
+
+These deviations improve outdoor visibility for field workers using the app in bright sunlight.
+
+### Border Radius (Mobile)
+
+Mobile uses `borderRadius.minimal = 2px` as default instead of 0px:
+
+| Element | Mobile Radius | Web Radius | Notes |
+|---------|---------------|------------|-------|
+| Cards | 2px | 0px | Slight rounding improves tap feedback |
+| Buttons | 2px | 0px | Maintains NB aesthetics while improving UX |
+| Inputs | 2px | 0px | Better touch target definition |
+| Badges | 2px | 0px | Subtle differentiation from containers |
+
+This slight rounding improves tap feedback while maintaining Neo Brutalism aesthetics.
+
+### Mobile-Only Components
+
+| Component | Purpose | Notes |
+|-----------|---------|-------|
+| `NBBackgroundPattern` | Decorative patterns for screens | dot/grid/checkerboard/stripes variants |
+| `NBPasswordInput` | Password with visibility toggle | Extends NBTextInput with eye icon |
+| `NBAlert` | Alert banners with actions | 4 variants: danger/warning/success/info |
+| `NBListTile` | Pressable list items | Supports leading/trailing icons |
+
+### Touch Target Guidelines
+
+Mobile components ensure minimum touch targets for accessibility:
+
+```typescript
+// Minimum touch target size (48x48px per WCAG 2.1)
+export const nbTouchTarget = {
+  minHeight: 48,
+  minWidth: 48,
+};
+```
+
+### Background Patterns
+
+`NBBackgroundPattern` provides geometric textures that maintain flat color aesthetics:
+
+**Pattern Types:**
+- `grid` - 40x40px squares with 2px lines (professional, used on Login)
+- `checkerboard` - 20x20px alternating squares (bold, for dashboards)
+- `dots` - 30x30px spaced circles (subtle, for empty states)
+- `stripes` - 20px diagonal lines (dynamic, for alerts)
+- `none` - Solid color only
+
+**Usage Example:**
+```tsx
+<NBBackgroundPattern
+  pattern="grid"
+  backgroundColor="#FEF9ED"
+  patternColor="#2D5016"  // Forest green
+  opacity={0.04}          // 4% - very subtle
+>
+  <ScreenContent />
+</NBBackgroundPattern>
+```
+
+**Opacity Guidelines:**
+- 0.02 - Barely visible (professional screens)
+- 0.03-0.04 - Subtle (default, used on Login)
+- 0.05 - Noticeable (playful sections)
+- 0.08+ - Too strong, avoid
+
+**Why Patterns, Not Gradients:**
+- ❌ Gradients violate NB's flat color principle
+- ✅ Geometric patterns add visual interest while maintaining hard edges
+- ✅ Low opacity preserves accessibility (text contrast: 17.8:1)
+
+### Input Focus States
+
+Mobile inputs use high-contrast focus indicators for outdoor visibility:
+
+```typescript
+// Focus state for NBTextInput and NBPasswordInput
+focusedInput: {
+  borderColor: nbColors.primary,     // #2D5016 forest green
+  borderWidth: 3,
+  shadowColor: nbColors.accentGrass, // #7CB342 bright green
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.5,
+  shadowRadius: 8,
+  elevation: 4,
+}
+```
+
+**Features:**
+- Bright green shadow glow for clear visibility
+- 3px border thickness (thicker than unfocused 2px)
+- Keyboard navigation: Enter key moves username → password → submit
+- Accessible in bright sunlight for field workers
+
+### Platform-Specific Styling
+
+```typescript
+// Mobile-specific shadow (elevation for Android)
+nbShadows.sm = {
+  shadowColor: '#000000',
+  shadowOffset: { width: 4, height: 4 },
+  shadowOpacity: 1,
+  shadowRadius: 0,
+  elevation: 4, // Android-specific
+};
+```
+
+---
+
 ## Layout Patterns
 
 ### Dashboard Shell (Web)

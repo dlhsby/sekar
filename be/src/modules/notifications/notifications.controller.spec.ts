@@ -8,6 +8,8 @@ import { RegisterTokenDto } from './dto/register-token.dto';
 import { UnregisterTokenDto } from './dto/unregister-token.dto';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto';
 import { NotificationFilterDto } from './dto/notification-filter.dto';
+import { SendNotificationDto } from './dto/send-notification.dto';
+import { NotFoundException } from '@nestjs/common';
 
 describe('NotificationsController', () => {
   let controller: NotificationsController;
@@ -49,6 +51,7 @@ describe('NotificationsController', () => {
           useValue: {
             registerToken: jest.fn(),
             unregisterToken: jest.fn(),
+            sendToUser: jest.fn(),
             broadcast: jest.fn(),
             getUserNotifications: jest.fn(),
             getUnreadCount: jest.fn(),
@@ -93,6 +96,49 @@ describe('NotificationsController', () => {
       await controller.unregisterToken(dto, mockUser as User);
 
       expect(notificationsService.unregisterToken).toHaveBeenCalledWith(dto.fcm_token, mockUser.id);
+    });
+  });
+
+  describe('send', () => {
+    it('should send notification to specific user', async () => {
+      const dto: SendNotificationDto = {
+        user_id: 'target-user-uuid',
+        title: 'Task Assigned',
+        body: 'You have a new task',
+        type: NotificationType.TASK_ASSIGNED,
+        data: { task_id: 'task-uuid' },
+      };
+      notificationsService.sendToUser.mockResolvedValue(mockNotification as Notification);
+
+      const result = await controller.send(dto);
+
+      expect(notificationsService.sendToUser).toHaveBeenCalledWith(dto);
+      expect(result).toEqual(mockNotification);
+    });
+
+    it('should send notification with minimal data', async () => {
+      const dto: SendNotificationDto = {
+        user_id: 'target-user-uuid',
+        title: 'Alert',
+        body: 'Important message',
+      };
+      notificationsService.sendToUser.mockResolvedValue(mockNotification as Notification);
+
+      const result = await controller.send(dto);
+
+      expect(notificationsService.sendToUser).toHaveBeenCalledWith(dto);
+      expect(result).toBeDefined();
+    });
+
+    it('should throw NotFoundException when user not found', async () => {
+      const dto: SendNotificationDto = {
+        user_id: 'nonexistent-user-uuid',
+        title: 'Test',
+        body: 'Test body',
+      };
+      notificationsService.sendToUser.mockRejectedValue(new NotFoundException('User not found'));
+
+      await expect(controller.send(dto)).rejects.toThrow(NotFoundException);
     });
   });
 

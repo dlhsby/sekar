@@ -4535,19 +4535,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/notifications/register",
+              "raw": "{{baseUrl}}/notifications/register-token",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "notifications",
-                "register"
+                "register-token"
               ]
             },
             "description": "Register device FCM token for push notifications",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"test-fcm-token-12345\",\n  \"deviceType\": \"android\"\n}"
+              "raw": "{\n  \"fcm_token\": \"dGhpcyBpcyBhIHRlc3QgdG9rZW4...\",\n  \"platform\": \"android\",\n  \"device_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"device_name\": \"Samsung Galaxy S21\",\n  \"device_model\": \"SM-G991B\",\n  \"app_version\": \"1.0.0\"\n}"
             }
           },
           "response": []

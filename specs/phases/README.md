@@ -9,13 +9,13 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 | Phase | Name | Duration | Status | Focus |
 |-------|------|----------|--------|-------|
 | 1 | [MVP - Core Tracking](./phase-1-mvp/) | 2 weeks | ✅ COMPLETE | Clock-in/out, Reports, GPS |
-| 2 | [Enhanced Features](./phase-2-enhanced/) | 2 weeks | Not Started | Tasks, Notifications, KMZ |
-| 3 | [Analytics & Reporting](./phase-3-analytics/) | 3 weeks | Not Started | Report Builder, Scheduler |
-| 4 | [Asset Management](./phase-4-assets/) | 3 weeks | Not Started | Assets, QR Codes, Maintenance |
-| 5 | [iOS & Advanced](./phase-5-ios/) | 3 weeks | Not Started | iOS, Biometrics, Fraud Detection |
-| 6 | [Web Dashboard](./phase-6-web/) | 3 weeks | Not Started | Full CRUD, Bulk Ops, Audit |
+| 2 | [Enhanced Features](./phase-2-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
+| 3 | [Polishing & E2E Testing](./phase-3-polishing/) | 2-3 weeks | Not Started | Manual Testing, E2E, Polish |
+| 4 | [Finishing & Advanced Features](./phase-4-finishing/) | 6-8 weeks | Not Started | Analytics, Assets, iOS |
 
-**Total Duration:** ~16 weeks
+**Total Duration:** ~14-17 weeks
+
+> **Note:** Phase structure was reorganized on January 30, 2026. Previous phases 3-6 were consolidated into new phases 3-4. Archived folders contain original detailed specifications.
 
 ### Quick Reference
 
@@ -26,7 +26,7 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 
 ## Document Structure
 
-Each phase folder contains 7 standardized documents:
+Each phase folder contains standardized documents:
 
 | File | Purpose | Audience |
 |------|---------|----------|
@@ -47,8 +47,8 @@ Each phase folder contains 7 standardized documents:
 Core worker tracking system with GPS-verified attendance and work reporting.
 
 **Verified Metrics:**
-- Backend: 37 endpoints, 401 tests, 84.23% coverage
-- Mobile: 12 screens, 12 components, 894 tests, 100% pass rate
+- Backend: 40 endpoints, 401 tests, 84.23% coverage
+- Mobile: 14 screens, 14 components, 1,086 tests, 100% pass rate
 - Error Codes: 31 standardized codes
 
 ### Key Deliverables
@@ -70,15 +70,23 @@ Core worker tracking system with GPS-verified attendance and work reporting.
 
 ## Phase 2: Enhanced Features
 
-**Duration:** 2 weeks | **Status:** Not Started
+**Duration:** 2 weeks | **Status:** ✅ COMPLETE (Jan 20-27, 2026)
 
-Task assignment system, push notifications, and KMZ boundary import.
+Task assignment system, push notifications, KMZ import, and full web dashboard.
+
+**Verified Metrics:**
+- Backend: 83 endpoints (+43), 845 tests, 84.23% coverage
+- Mobile: 17 screens (+3), 2,057 tests, 100% pass rate, WCAG 2.1 AA
+- Web: 18 pages, 11 NB components, Next.js 16.1.4
+- DevOps: 3 CI/CD pipelines, 1,215 lines
 
 ### Key Deliverables
+- Rayons (7), Shift Definitions (3), Activity Types (10)
 - Task module with assignment workflow
-- FCM push notifications
+- FCM push notifications (backend ready, mobile packages added)
 - KMZ file import for area boundaries
-- Basic web dashboard structure
+- Full web dashboard with Neo Brutalism design
+- WebSocket real-time events
 
 ### Documents
 - [Overview](./phase-2-enhanced/README.md)
@@ -91,120 +99,68 @@ Task assignment system, push notifications, and KMZ boundary import.
 
 ---
 
-## Phase 3: Analytics & Reporting
+## Phase 3: Polishing & E2E Testing
 
-**Duration:** 3 weeks | **Status:** Not Started
+**Duration:** 2-3 weeks | **Status:** Not Started
 
-Advanced analytics dashboards and automated report generation.
+Comprehensive testing, UI polish, and production readiness verification.
+
+### Key Deliverables
+- Detox E2E tests for mobile (20+ critical flows)
+- Playwright E2E tests for web (15+ flows)
+- Complete manual testing checklist
+- UI/UX polish and consistency audit
+- Performance optimization
+- Documentation finalization
+
+### Documents
+- [Overview](./phase-3-polishing/README.md)
+- [Status](./phase-3-polishing/STATUS.md)
+- [E2E Testing](./phase-3-polishing/e2e-testing.md)
+- [Manual Testing](./phase-3-polishing/manual-testing.md)
+- [Polishing](./phase-3-polishing/polishing.md)
+
+---
+
+## Phase 4: Advanced Features
+
+**Duration:** 6-8 weeks | **Status:** Not Started
+
+Consolidated phase containing Analytics, Asset Management, and iOS platform support.
+
+### Sub-Phases
+- **4A: Analytics & Reporting** (2 weeks) - Performance metrics, dashboards, automated reports
+- **4B: Asset Management** (2 weeks) - QR codes, maintenance scheduling, inventory
+- **4C: iOS Platform** (2-4 weeks) - iOS build, Apple Sign-In, App Store submission
 
 ### Key Deliverables
 - Custom report builder with templates
 - Scheduled report generation (PDF/Excel)
-- Analytics charts and KPIs
-- Performance scoring system
+- Asset registry with QR codes
+- Maintenance scheduling
+- iOS app with feature parity
+- Apple Sign-In, Siri Shortcuts
 
 ### Documents
-- [Overview](./phase-3-analytics/README.md)
-- [Status](./phase-3-analytics/STATUS.md)
-- [Backend Guide](./phase-3-analytics/backend.md)
-- [Mobile Guide](./phase-3-analytics/mobile.md)
-- [Web Guide](./phase-3-analytics/web.md)
-- [Timeline](./phase-3-analytics/timeline.md)
-- [Testing](./phase-3-analytics/testing.md)
+- [Overview](./phase-4-finishing/README.md)
+- [Status](./phase-4-finishing/STATUS.md)
+- [Analytics Backend](./phase-4-finishing/analytics-backend.md)
+- [Analytics Web](./phase-4-finishing/analytics-web.md)
+- [Assets Backend](./phase-4-finishing/assets-backend.md)
+- [Assets Mobile](./phase-4-finishing/assets-mobile.md)
+- [iOS Backend](./phase-4-finishing/ios-backend.md)
+- [iOS Mobile](./phase-4-finishing/ios-mobile.md)
 
 ---
 
-## Phase 4: Asset Management
+## Archived Phases
 
-**Duration:** 3 weeks | **Status:** Not Started
+The following folders contain original specifications before the January 30, 2026 restructuring:
 
-Park asset tracking with QR codes and maintenance scheduling.
-
-### Key Deliverables
-- Asset module with categories and locations
-- QR code generation and scanning
-- Maintenance scheduling and history
-- Asset condition reporting
-
-### Documents
-- [Overview](./phase-4-assets/README.md)
-- [Status](./phase-4-assets/STATUS.md)
-- [Backend Guide](./phase-4-assets/backend.md)
-- [Mobile Guide](./phase-4-assets/mobile.md)
-- [Web Guide](./phase-4-assets/web.md)
-- [Timeline](./phase-4-assets/timeline.md)
-- [Testing](./phase-4-assets/testing.md)
-
----
-
-## Phase 5: iOS & Advanced Features
-
-**Duration:** 3 weeks | **Status:** Not Started
-
-iOS platform support, biometric authentication, and fraud detection.
-
-### Key Deliverables
-- iOS build with Apple Sign-In
-- Face ID / Touch ID authentication
-- Mock location detection
-- Multi-language support (Indonesian/English)
-- Siri Shortcuts integration
-
-### Documents
-- [Overview](./phase-5-ios/README.md)
-- [Status](./phase-5-ios/STATUS.md)
-- [Backend Guide](./phase-5-ios/backend.md)
-- [Mobile Guide](./phase-5-ios/mobile.md)
-- [Web Guide](./phase-5-ios/web.md)
-- [Timeline](./phase-5-ios/timeline.md)
-- [Testing](./phase-5-ios/testing.md)
-
----
-
-## Phase 6: Web Dashboard
-
-**Duration:** 3 weeks | **Status:** Not Started
-
-Full-featured web dashboard for supervisors and administrators.
-
-### Key Deliverables
-- Complete CRUD for all entities
-- Bulk import/export operations
-- Advanced report builder
-- Audit logging system
-- System settings management
-
-### Documents
-- [Overview](./phase-6-web/README.md)
-- [Status](./phase-6-web/STATUS.md)
-- [Backend Guide](./phase-6-web/backend.md)
-- [Mobile Guide](./phase-6-web/mobile.md)
-- [Web Guide](./phase-6-web/web.md)
-- [Timeline](./phase-6-web/timeline.md)
-- [Testing](./phase-6-web/testing.md)
-
----
-
-## Getting Started
-
-### For New Developers
-
-1. **Read Phase 1 Overview** - Understand the MVP scope
-2. **Check Your Role's Guide** - Find your implementation guide (backend.md, mobile.md, or web.md)
-3. **Review Timeline** - Understand day-by-day expectations
-4. **Check Testing Requirements** - Know acceptance criteria before coding
-
-### For Project Managers
-
-1. **Track Progress via STATUS.md** - Each phase has a checklist
-2. **Review Timelines** - Plan resources and dependencies
-3. **Monitor Test Coverage** - Ensure quality gates are met
-
-### For QA Engineers
-
-1. **Read Testing Guides** - Each phase has test plans
-2. **Prepare Test Data** - Use seeds and fixtures
-3. **Track Test Coverage** - >80% required for backend
+- `phase-3-analytics-ARCHIVED/` - Original Phase 3 (merged into Phase 4A)
+- `phase-4-assets-ARCHIVED/` - Original Phase 4 (merged into Phase 4B)
+- `phase-5-ios-ARCHIVED/` - Original Phase 5 (merged into Phase 4C)
+- `phase-6-web-ARCHIVED/` - Original Phase 6 (merged into Phase 2D)
 
 ---
 
@@ -213,38 +169,31 @@ Full-featured web dashboard for supervisors and administrators.
 ```
                 Phase 1 (MVP)
                      |
+                     v
+            Phase 2 (Enhanced)
+                     |
+                     v
+         Phase 3 (Polishing & E2E)
+                     |
         +------------+------------+
-        |                         |
-        v                         v
-Phase 2 (Enhanced)          Phase 6 (Web)
-        |                    [Independent]
-        v
-Phase 3 (Analytics)
-        |
-        v
-Phase 4 (Assets)
-        |
-        v
-Phase 5 (iOS)
+        |            |            |
+        v            v            v
+    Phase 4A     Phase 4B     Phase 4C
+   (Analytics)   (Assets)      (iOS)
 ```
 
 **Critical Dependencies:**
-- **Phase 1 → All:** Phase 1 MVP must complete before any other phase
-- **Phase 2 → Phase 3:** Phase 3 analytics needs Phase 2 notification infrastructure
-- **Phase 3 → Phase 4:** Phase 4 can run parallel to Phase 3, but easier after analytics baseline
-- **Phase 4 → Phase 5:** Phase 5 iOS requires Phase 4 asset management (QR codes)
-
-**Independent Paths:**
-- **Phase 6 Web** can start immediately after Phase 2 (does NOT depend on Phase 3, 4, or 5)
-- **Phase 6** only needs: Basic API (Phase 1) + Tasks/Notifications (Phase 2)
-- This allows web and iOS development to proceed in parallel
+- **Phase 1 → Phase 2:** Phase 1 MVP must complete before Phase 2
+- **Phase 2 → Phase 3:** Phase 2 features need testing in Phase 3
+- **Phase 3 → Phase 4:** Polishing should complete before adding new features
+- **Phase 4 sub-phases:** Can run in parallel with separate teams
 
 **Recommended Sequence:**
-1. **Phase 1** (Weeks 1-2) - MVP foundation
-2. **Phase 2** (Weeks 3-4) - Enhanced features
-3. **Phase 3 + Phase 6** (Weeks 5-7) - Can run in parallel with separate teams
-4. **Phase 4** (Weeks 8-10) - Asset management
-5. **Phase 5** (Weeks 11-13) - iOS platform
+1. **Phase 1** (Weeks 1-2) - MVP foundation ✅
+2. **Phase 2** (Weeks 3-4) - Enhanced features + Web ✅
+3. **Phase 3** (Weeks 5-7) - Polishing & E2E Testing
+4. **Phase 4A+4B** (Weeks 8-11) - Analytics + Assets (parallel)
+5. **Phase 4C** (Weeks 12-15) - iOS platform
 
 ---
 
@@ -260,4 +209,4 @@ Phase 5 (iOS)
 
 ---
 
-**Last Updated:** 2026-01-21
+**Last Updated:** 2026-01-30

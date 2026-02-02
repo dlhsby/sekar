@@ -20,6 +20,7 @@ import { RegisterTokenDto } from './dto/register-token.dto';
 import { UnregisterTokenDto } from './dto/unregister-token.dto';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto';
 import { NotificationFilterDto } from './dto/notification-filter.dto';
+import { SendNotificationDto } from './dto/send-notification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -31,8 +32,9 @@ import { User, UserRole } from '../users/entities/user.entity';
  *
  * Provides endpoints for:
  * - Device token registration/unregistration
- * - Listing user notifications
+ * - Sending notifications to specific users (Admin/Supervisor)
  * - Broadcasting notifications (Admin only)
+ * - Listing user notifications
  * - Marking notifications as read
  */
 @ApiTags('Notifications')
@@ -72,6 +74,25 @@ export class NotificationsController {
   @ApiResponse({ status: 404, description: 'Token not found' })
   async unregisterToken(@Body() dto: UnregisterTokenDto, @GetUser() user: User): Promise<void> {
     return this.notificationsService.unregisterToken(dto.fcm_token, user.id);
+  }
+
+  /**
+   * Send notification to a specific user
+   */
+  @Post('send')
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @ApiOperation({ summary: 'Send notification to a specific user (Admin/Supervisor only)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Notification sent successfully',
+    type: Notification,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin/Supervisor only' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async send(@Body() dto: SendNotificationDto): Promise<Notification> {
+    return this.notificationsService.sendToUser(dto);
   }
 
   /**

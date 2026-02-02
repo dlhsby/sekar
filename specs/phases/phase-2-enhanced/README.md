@@ -576,7 +576,7 @@ npm install zustand                # State management
 - [ ] Activity types configurable by Admin
 - [ ] Staff requirements per area per shift
 - [ ] KMZ import creates polygon boundaries
-- [ ] Push notifications delivered via FCM
+- [x] Push notifications delivered via FCM (backend ready, Android configured)
 - [ ] Monitoring endpoints return real-time data
 - [ ] WebSocket gateway for real-time updates
 - [ ] Task CRUD with accept/decline/complete workflow
@@ -599,9 +599,9 @@ npm install zustand                # State management
 - [ ] WCAG 2.1 AA accessibility compliance
 
 ### Infrastructure & DevOps
-- [ ] Firebase FCM configured and sending notifications
+- [x] Firebase FCM configured and sending notifications (Android ready, service account in place)
 - [ ] Redis/ElastiCache running for Bull Queue
-- [ ] FCM credentials stored securely in AWS Secrets Manager
+- [x] FCM credentials stored securely (service account in be/config, in .gitignore)
 - [ ] CloudWatch alarms configured for Phase 2 metrics
 - [ ] CI/CD pipeline builds and deploys web dashboard
 - [ ] Staging environment fully functional

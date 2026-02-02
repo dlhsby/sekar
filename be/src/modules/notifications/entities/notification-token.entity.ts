@@ -48,6 +48,9 @@ export class NotificationToken {
   platform: DevicePlatform;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
+  device_id: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
   device_name: string | null;
 
   @Column({ type: 'varchar', length: 50, nullable: true })

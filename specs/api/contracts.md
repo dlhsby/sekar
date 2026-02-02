@@ -3299,6 +3299,51 @@ Content-Type: application/json
 
 ### Notifications Module (Phase 2)
 
+**Overview:** The SEKAR notification system provides a dual approach for maximum user engagement:
+
+1. **Push Notifications (FCM)** - Immediate alerts via device notification tray when app is backgrounded/closed
+2. **In-App Notification Inbox** - Persistent notification history with mark-as-read and filtering capabilities
+
+**Architecture:**
+
+```
+Backend Notification Flow:
+Admin/Supervisor → POST /notifications/send
+                 ↓
+         Create notification in DB
+                 ↓
+         Send FCM push (async) → Device notification tray
+                 ↓
+         Notification stored for inbox retrieval
+```
+
+**Push vs Inbox:**
+
+| Feature | Push Notification (FCM) | In-App Inbox (API) |
+|---------|------------------------|-------------------|
+| **Delivery** | Immediate, works when app closed | Requires app open + API call |
+| **Persistence** | Clears from tray after tap | Permanent history in database |
+| **Management** | No read/unread status | Mark as read, filter, search |
+| **Use Case** | Urgent alerts (task assigned, shift reminder) | Historical review, batch actions |
+
+**Valid Notification Types:**
+- `system` - General system notifications
+- `task_assigned` - New task assigned
+- `task_updated` - Task details changed
+- `task_completed` - Task marked complete
+- `task_declined` - Task declined by worker
+- `shift_reminder` - Upcoming shift reminder
+- `report_submitted` - New report submitted
+- `announcement` - General announcements
+
+**Important Notes:**
+- **No pagination** on `GET /notifications` - Returns all user's notifications with optional filters
+- FCM push delivery is **asynchronous** - `is_sent` field tracks delivery status
+- Unread count updates in real-time as notifications are marked as read
+- All endpoints require authentication (JWT token)
+
+---
+
 #### POST /api/v1/notifications/register-token
 
 Register FCM token for push notifications.
@@ -3311,22 +3356,40 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "token": "fcm_token_here",
-  "device_type": "android"
+  "fcm_token": "dGhpcyBpcyBhIHRlc3QgdG9rZW4...",
+  "platform": "android",
+  "device_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "device_name": "Samsung Galaxy S21",
+  "device_model": "SM-G991B",
+  "app_version": "1.0.0"
 }
 ```
 
 **Request Body Schema:**
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| `token` | string | Yes | FCM registration token |
-| `device_type` | string | Yes | 'android' or 'ios' |
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `fcm_token` | string | Yes | Max 500 chars | FCM device token |
+| `platform` | enum | Yes | 'android', 'ios', 'web' | Device platform |
+| `device_id` | string | No | Max 100 chars | Unique device identifier |
+| `device_name` | string | No | Max 100 chars | Device name (e.g., "Samsung Galaxy S21") |
+| `device_model` | string | No | Max 50 chars | Device model (e.g., "SM-G991B") |
+| `app_version` | string | No | Max 50 chars | App version (e.g., "1.0.0") |
 
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "device_type": "android"
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "6d3dd17e-497e-48b7-bc23-9f46be19dfd3",
+  "fcm_token": "dGhpcyBpcyBhIHRlc3QgdG9rZW4...",
+  "platform": "android",
+  "device_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "device_name": "Samsung Galaxy S21",
+  "device_model": "SM-G991B",
+  "app_version": "1.0.0",
+  "is_active": true,
+  "last_used_at": "2026-01-31T10:30:00.000Z",
+  "created_at": "2026-01-31T10:30:00.000Z",
+  "updated_at": "2026-01-31T10:30:00.000Z"
 }
 ```
 
@@ -3408,6 +3471,116 @@ Mark notification as read.
 
 ---
 
+#### POST /api/v1/notifications/send
+
+Send notification to a specific user.
+
+**Roles:** Admin, Supervisor
+
+**Request:**
+```http
+POST /api/v1/notifications/send HTTP/1.1
+Host: localhost:3000
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "user_id": "user-uuid",
+  "title": "Task Assigned",
+  "body": "You have been assigned a new task: Clean Taman Bungkul",
+  "type": "task_assigned",
+  "data": {
+    "task_id": "task-uuid",
+    "action": "open_task"
+  }
+}
+```
+
+**Request Body Schema:**
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `user_id` | UUID | Yes | Valid user ID |
+| `title` | string | Yes | Max 200 characters |
+| `body` | string | Yes | Notification message |
+| `type` | string | No | NotificationType enum (default: 'system') |
+| `data` | object | No | Additional JSON payload |
+
+**Response (201 Created):**
+```json
+{
+  "id": "notification-uuid",
+  "user_id": "user-uuid",
+  "title": "Task Assigned",
+  "body": "You have been assigned a new task: Clean Taman Bungkul",
+  "type": "task_assigned",
+  "data": {
+    "task_id": "task-uuid",
+    "action": "open_task"
+  },
+  "is_read": false,
+  "is_sent": false,
+  "send_attempts": 0,
+  "created_at": "2026-01-31T10:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- **400 Bad Request:** Invalid input data
+- **401 Unauthorized:** Missing or invalid token
+- **403 Forbidden:** Insufficient permissions (not Admin/Supervisor)
+- **404 Not Found:** User not found
+
+---
+
+#### POST /api/v1/notifications/broadcast
+
+Broadcast notification to multiple users by role.
+
+**Roles:** Admin only
+
+**Request:**
+```http
+POST /api/v1/notifications/broadcast HTTP/1.1
+Host: localhost:3000
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "title": "System Maintenance",
+  "body": "The system will be under maintenance on Sunday",
+  "type": "announcement",
+  "target_roles": ["Worker", "Supervisor"],
+  "data": {
+    "priority": "high",
+    "maintenance_date": "2026-02-02"
+  }
+}
+```
+
+**Request Body Schema:**
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `title` | string | Yes | Max 200 characters |
+| `body` | string | Yes | Notification message |
+| `type` | string | No | NotificationType enum (default: 'announcement') |
+| `target_roles` | string[] | No | Array of UserRole enum (empty = all users) |
+| `data` | object | No | Additional JSON payload |
+
+**Response (201 Created):**
+```json
+{
+  "sent": 45,
+  "failed": 2
+}
+```
+
+**Error Responses:**
+- **400 Bad Request:** Invalid input data
+- **401 Unauthorized:** Missing or invalid token
+- **403 Forbidden:** Insufficient permissions (not Admin)
+
+---
+
 #### GET /api/v1/notifications/unread-count
 
 Get unread notification count.
@@ -3416,6 +3589,66 @@ Get unread notification count.
 ```json
 {
   "unread_count": 5
+}
+```
+
+---
+
+#### Comparison: Send vs Broadcast
+
+| Feature | POST /send | POST /broadcast |
+|---------|------------|-----------------|
+| **Target** | Single user by ID | Multiple users by role |
+| **Authorization** | Admin, Supervisor | Admin only |
+| **Use Case** | Task assignment, personal alerts | Announcements, system messages |
+| **Request** | `user_id` (UUID) | `target_roles` (array) |
+| **Response** | Notification object | `{sent, failed}` counts |
+
+#### Usage Examples
+
+**Example 1: Task Assignment Notification**
+```json
+POST /api/v1/notifications/send
+{
+  "user_id": "worker-uuid",
+  "title": "New Task Assigned",
+  "body": "You have been assigned: Clean Taman Bungkul",
+  "type": "task_assigned",
+  "data": {
+    "task_id": "task-uuid",
+    "action": "open_task",
+    "priority": "high"
+  }
+}
+```
+
+**Example 2: Shift Reminder**
+```json
+POST /api/v1/notifications/send
+{
+  "user_id": "worker-uuid",
+  "title": "Shift Reminder",
+  "body": "Your shift starts in 30 minutes",
+  "type": "shift_reminder",
+  "data": {
+    "shift_id": "shift-uuid",
+    "start_time": "2026-01-31T13:00:00Z"
+  }
+}
+```
+
+**Example 3: System Announcement (Broadcast)**
+```json
+POST /api/v1/notifications/broadcast
+{
+  "title": "System Maintenance",
+  "body": "The system will be under maintenance on Sunday 2PM-4PM",
+  "type": "announcement",
+  "target_roles": ["Worker", "Supervisor"],
+  "data": {
+    "priority": "high",
+    "maintenance_date": "2026-02-02"
+  }
 }
 ```
 

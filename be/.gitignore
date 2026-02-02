@@ -39,5 +39,8 @@ lerna-debug.log*
 .env.local
 .env.production
 
+# Firebase
+config/firebase-service-account.json
+
 # Other
 .cache

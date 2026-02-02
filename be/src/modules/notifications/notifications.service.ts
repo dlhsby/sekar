@@ -9,6 +9,7 @@ import { NotificationFilterDto } from './dto/notification-filter.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/entities/user.entity';
+import { getMessaging, isFirebaseInitialized } from '../../config/firebase.config';
 
 /**
  * Service for managing notifications and FCM tokens
@@ -48,6 +49,7 @@ export class NotificationsService {
       // If token exists for same user, update it
       if (existingToken.user_id === userId) {
         existingToken.platform = dto.platform;
+        existingToken.device_id = dto.device_id || null;
         existingToken.device_name = dto.device_name || null;
         existingToken.device_model = dto.device_model || null;
         existingToken.app_version = dto.app_version || null;
@@ -60,6 +62,7 @@ export class NotificationsService {
       // If token exists for different user, reassign it
       existingToken.user_id = userId;
       existingToken.platform = dto.platform;
+      existingToken.device_id = dto.device_id || null;
       existingToken.device_name = dto.device_name || null;
       existingToken.device_model = dto.device_model || null;
       existingToken.app_version = dto.app_version || null;
@@ -74,6 +77,7 @@ export class NotificationsService {
       user_id: userId,
       fcm_token: dto.fcm_token,
       platform: dto.platform,
+      device_id: dto.device_id || null,
       device_name: dto.device_name || null,
       device_model: dto.device_model || null,
       app_version: dto.app_version || null,
@@ -321,8 +325,8 @@ export class NotificationsService {
   /**
    * Send push notification via FCM
    *
-   * Note: This is a placeholder implementation.
-   * In production, integrate with Firebase Admin SDK.
+   * Sends notifications using Firebase Cloud Messaging HTTP v1 API.
+   * Handles partial failures and automatically deactivates invalid tokens.
    *
    * @param notification - Notification to send
    */
@@ -337,12 +341,66 @@ export class NotificationsService {
     notification.send_attempts++;
 
     try {
-      // TODO: Implement actual FCM sending
-      // For now, simulate success
-      await this.simulateFcmSend(tokens, notification);
+      // Check if Firebase is initialized
+      if (!isFirebaseInitialized()) {
+        this.logger.warn('Firebase not initialized. Using simulated FCM send.');
+        await this.simulateFcmSend(tokens, notification);
+        notification.is_sent = true;
+        notification.sent_at = new Date();
+        notification.error_message = null;
+        await this.notificationRepository.save(notification);
+        return;
+      }
 
-      notification.is_sent = true;
+      // Send via Firebase Admin SDK
+      const messaging = getMessaging();
+      const fcmTokens = tokens.map((t) => t.fcm_token);
+
+      // Prepare FCM message
+      const message = {
+        notification: {
+          title: notification.title,
+          body: notification.body,
+        },
+        data: notification.data ? this.sanitizeDataForFcm(notification.data) : {},
+        tokens: fcmTokens,
+      };
+
+      // Send multicast message
+      const response = await messaging.sendEachForMulticast(message);
+
+      this.logger.log(
+        `FCM send result: ${response.successCount}/${fcmTokens.length} successful`,
+      );
+
+      // Handle partial failures
+      if (response.failureCount > 0) {
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            const errorCode = resp.error?.code;
+            this.logger.error(
+              `Failed to send to token ${fcmTokens[idx].substring(0, 20)}...: ${errorCode}`,
+            );
+
+            // Deactivate invalid tokens
+            if (
+              errorCode === 'messaging/invalid-registration-token' ||
+              errorCode === 'messaging/registration-token-not-registered'
+            ) {
+              this.tokenRepository.update(
+                { fcm_token: fcmTokens[idx] },
+                { is_active: false },
+              );
+              this.logger.log(`Deactivated invalid token: ${fcmTokens[idx].substring(0, 20)}...`);
+            }
+          }
+        });
+      }
+
+      // Mark notification as sent if at least one message was delivered
+      notification.is_sent = response.successCount > 0;
       notification.sent_at = new Date();
+      notification.fcm_message_id = response.responses[0]?.messageId || null;
       notification.error_message = null;
 
       await this.notificationRepository.save(notification);
@@ -365,23 +423,23 @@ export class NotificationsService {
   }
 
   /**
-   * Simulate FCM send (placeholder for actual implementation)
+   * Sanitize data for FCM (all values must be strings)
+   */
+  private sanitizeDataForFcm(data: any): Record<string, string> {
+    const sanitized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(data)) {
+      sanitized[key] = typeof value === 'string' ? value : JSON.stringify(value);
+    }
+    return sanitized;
+  }
+
+  /**
+   * Simulate FCM send (fallback when Firebase is not initialized)
    */
   private async simulateFcmSend(
     tokens: NotificationToken[],
     notification: Notification,
   ): Promise<void> {
-    // In production, use Firebase Admin SDK:
-    // const messaging = admin.messaging();
-    // await messaging.sendMulticast({
-    //   tokens: tokens.map(t => t.fcm_token),
-    //   notification: {
-    //     title: notification.title,
-    //     body: notification.body,
-    //   },
-    //   data: notification.data as Record<string, string>,
-    // });
-
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 100));
 

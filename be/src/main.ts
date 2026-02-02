@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ApiVersionInterceptor } from './common/interceptors/api-version.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { initializeFirebase } from './config/firebase.config';
 import * as os from 'os';
 import * as bodyParser from 'body-parser';
 
@@ -30,6 +31,18 @@ function getLocalIpAddress(): string {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Initialize Firebase Admin SDK (for FCM push notifications)
+  try {
+    initializeFirebase();
+  } catch (error) {
+    console.warn('⚠️  Firebase Admin SDK not initialized. Push notifications disabled.');
+    if (process.env.FCM_ENABLED === 'true') {
+      console.error('   Error details:', error.message);
+    } else {
+      console.warn('   To enable FCM, set FCM_ENABLED=true and provide service account JSON.');
+    }
+  }
 
   // Increase body size limit for base64 photo uploads (15MB max for 5 photos at ~3MB each)
   app.use(bodyParser.json({ limit: '15mb' }));

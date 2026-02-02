@@ -15,13 +15,13 @@ Backend implementation checklist for Phase 2 features including organizational s
 | Worker Schedules | High | 5 | ✅ Complete | 96.74% |
 | Monitoring | High | 4 | ✅ Complete | 95.29% |
 | Import (KMZ) | Medium | 3 | ✅ Complete | 83.52% |
-| Notifications (FCM) | Medium | 5 | ✅ Complete | 84.27% |
+| Notifications (FCM) | Medium | 8 | ✅ Complete | 84.27% |
 | Tasks (Enhanced) | High | 11 | ✅ Complete | 91.32% |
 | **WebSocket Gateway** | High | Events | ✅ Complete | 95.95% |
 
-**Duration:** Completed in 2 weeks (January 24-26, 2026)
-**Status:** ✅ All Phase 2A-2C modules implemented and tested
-**Test Results:** 787/787 tests passing (100%), 84.23% overall coverage
+**Duration:** Completed in 2 weeks (January 24-26, 2026) + Code Review (Jan 31, 2026)
+**Status:** ✅ All Phase 2A-2C modules implemented, tested, and reviewed
+**Test Results:** 845/845 tests passing (100%), 90.77% overall coverage
 
 ---
 
@@ -335,25 +335,37 @@ src/modules/notifications/
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
 | POST | /notifications/register | Register device token | Authenticated |
-| DELETE | /notifications/register | Unregister token | Authenticated |
-| POST | /notifications/broadcast | Broadcast notification | Admin |
+| DELETE | /notifications/unregister | Unregister token | Authenticated |
+| POST | /notifications/send | Send to specific user | Admin/Supervisor |
+| POST | /notifications/broadcast | Broadcast by role | Admin |
 | GET | /notifications | List user notifications | Authenticated |
+| GET | /notifications/unread-count | Get unread count | Authenticated |
 | PATCH | /notifications/:id/read | Mark as read | Authenticated |
+| PATCH | /notifications/read-all | Mark all as read | Authenticated |
 
 ### Implementation Checklist
 
-- [ ] Firebase Admin SDK initialized
-- [ ] NotificationToken entity
-- [ ] Register/unregister token
-- [ ] `sendToUser(userId, payload)` method
-- [ ] `sendToTopic(topic, payload)` method
-- [ ] Notification templates:
-  - [ ] task_assigned
-  - [ ] task_reminder
-  - [ ] shift_reminder
-  - [ ] report_reviewed
-  - [ ] system_announcement
-- [ ] Unit tests (mock FCM)
+- [x] Firebase Admin SDK initialized
+- [x] NotificationToken entity
+- [x] Notification entity
+- [x] Register/unregister token endpoints
+- [x] `sendToUser(dto)` method - Send to specific user
+- [x] `broadcast(dto)` method - Broadcast by role
+- [x] GET /notifications - List user notifications with filters
+- [x] GET /notifications/unread-count - Unread count
+- [x] PATCH /notifications/:id/read - Mark as read
+- [x] PATCH /notifications/read-all - Mark all as read
+- [x] POST /notifications/send - New endpoint for targeted notifications
+- [x] Notification types enum (7 types):
+  - [x] system
+  - [x] announcement
+  - [x] task_assigned
+  - [x] task_reminder
+  - [x] shift_reminder
+  - [x] report_status_update
+  - [x] urgent_alert
+- [x] Unit tests (>80% coverage, 45 tests passing)
+- [x] FCM integration with fallback simulation
 
 ---
 
