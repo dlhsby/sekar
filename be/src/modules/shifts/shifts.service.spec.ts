@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
 import { AreasService } from '../areas/areas.service';
@@ -16,10 +16,10 @@ import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 describe('ShiftsService', () => {
   let module: TestingModule;
   let service: ShiftsService;
-  let repository: Repository<Shift>;
-  let areasService: AreasService;
-  let workerAssignmentsService: WorkerAssignmentsService;
-  let s3Service: S3Service;
+  let repository: jest.Mocked<Repository<Shift>>;
+  let areasService: jest.Mocked<AreasService>;
+  let workerAssignmentsService: jest.Mocked<WorkerAssignmentsService>;
+  let s3Service: jest.Mocked<S3Service>;
 
   const mockWorker = {
     id: 'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
@@ -107,10 +107,12 @@ describe('ShiftsService', () => {
     }).compile();
 
     service = module.get<ShiftsService>(ShiftsService);
-    repository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
-    areasService = module.get<AreasService>(AreasService);
-    workerAssignmentsService = module.get<WorkerAssignmentsService>(WorkerAssignmentsService);
-    s3Service = module.get<S3Service>(S3Service);
+    repository = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
+    areasService = module.get(AreasService) as jest.Mocked<AreasService>;
+    workerAssignmentsService = module.get(
+      WorkerAssignmentsService,
+    ) as jest.Mocked<WorkerAssignmentsService>;
+    s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
   });
 
   afterEach(async () => {

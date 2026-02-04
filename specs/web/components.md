@@ -1,24 +1,83 @@
 # Web Component Library
 
-Component library specifications for SEKAR web dashboard (Phase 6).
+Component library specifications for SEKAR web dashboard using **Neo Brutalism** design system.
 
 ## Overview
 
-The web dashboard uses **React with TypeScript** and **Tailwind CSS** for styling. Components are designed using **shadcn/ui** primitives with custom styling to match SEKAR's design system.
+The web dashboard uses **React 19 with TypeScript** and **Tailwind CSS v4** for styling. Components are built using **shadcn/ui** primitives with custom Neo Brutalism styling to match SEKAR's design system.
+
+**Key Design Principles:**
+- **Bold borders**: 3px solid black
+- **Hard-edge shadows**: No blur, pure offset (4px/6px/8px)
+- **Sharp corners**: 0 border-radius
+- **48px touch targets**: Accessible interactive elements
+- **High contrast**: Black text, strong colors
 
 ---
 
 ## Component Library Stack
 
 ```bash
-# UI Primitives
-npm install @radix-ui/react-*
-npm install tailwindcss
-npm install class-variance-authority clsx tailwind-merge
+# Core dependencies
+npm install react react-dom next
+npm install tailwindcss @tailwindcss/postcss
 
-# shadcn/ui components
-npx shadcn-ui@latest init
-npx shadcn-ui@latest add button card input table
+# UI primitives
+npm install @radix-ui/react-dialog @radix-ui/react-select @radix-ui/react-dropdown-menu
+npm install @radix-ui/react-label @radix-ui/react-slot
+
+# Utilities
+npm install class-variance-authority clsx tailwind-merge lucide-react
+
+# Forms & Validation
+npm install react-hook-form @hookform/resolvers zod
+
+# Data Fetching
+npm install @tanstack/react-query axios
+```
+
+---
+
+## Design Tokens
+
+### Colors
+
+```css
+/* Primary */
+--color-nb-primary: #0066CC;
+--color-nb-primary-hover: #0052A3;
+--color-nb-primary-active: #003D7A;
+
+/* Status */
+--color-nb-success: #1B5E20;
+--color-nb-warning: #F57C00;
+--color-nb-danger: #DC2626;
+
+/* Neutral */
+--color-nb-black: #000000;
+--color-nb-white: #FFFFFF;
+--color-nb-navy: #001F3F;
+
+/* Gray Scale */
+--color-nb-gray-50: #FAFAFA;
+--color-nb-gray-100: #F5F5F5;
+--color-nb-gray-200: #EEEEEE;
+--color-nb-gray-300: #E0E0E0;
+--color-nb-gray-400: #BDBDBD;
+--color-nb-gray-500: #9E9E9E;
+--color-nb-gray-600: #666666;
+--color-nb-gray-700: #424242;
+--color-nb-gray-800: #303030;
+--color-nb-gray-900: #212121;
+```
+
+### Shadows
+
+```css
+--shadow-nb-sm: 4px 4px 0px #000000;     /* Cards */
+--shadow-nb-md: 6px 6px 0px #000000;     /* Buttons, inputs */
+--shadow-nb-lg: 8px 8px 0px #000000;     /* Modals, dropdowns */
+--shadow-nb-active: 2px 2px 0px #000000; /* Pressed state */
 ```
 
 ---
@@ -27,472 +86,414 @@ npx shadcn-ui@latest add button card input table
 
 ### Button
 
-Variants matching mobile design system.
+Primary interactive element with Neo Brutalism styling.
 
 ```tsx
-// components/ui/button.tsx
-import { cva, type VariantProps } from 'class-variance-authority';
+import { Button } from '@/components/ui';
 
+// Variants
+<Button variant="default">Primary Action</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="success">Confirm</Button>
+<Button variant="warning">Caution</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
+
+// Sizes
+<Button size="sm">Small</Button>
+<Button size="default">Default (48px height)</Button>
+<Button size="lg">Large</Button>
+<Button size="icon">Icon Only</Button>
+
+// States
+<Button loading>Loading...</Button>
+<Button disabled>Disabled</Button>
+<Button fullWidth>Full Width</Button>
+
+// With icons
+<Button leftIcon={<Plus className="w-5 h-5" />}>Add New</Button>
+<Button rightIcon={<ArrowRight className="w-5 h-5" />}>Next</Button>
+```
+
+**Implementation:**
+```tsx
 const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50',
+  `inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold
+   border-3 border-nb-black transition-all duration-100
+   disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none
+   focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50`,
   {
     variants: {
       variant: {
-        default: 'bg-primary-600 text-white hover:bg-primary-700',
-        secondary: 'bg-transparent text-primary-600 border border-primary-600 hover:bg-primary-50',
-        outline: 'bg-transparent border border-gray-300 hover:bg-gray-50',
-        ghost: 'bg-transparent hover:bg-gray-100',
-        danger: 'bg-red-600 text-white hover:bg-red-700',
+        default: 'bg-nb-primary text-nb-white hover:bg-nb-primary-hover',
+        secondary: 'bg-nb-white text-nb-black hover:bg-nb-gray-50',
+        destructive: 'bg-nb-danger text-nb-white hover:opacity-90',
+        success: 'bg-nb-success text-nb-white hover:opacity-90',
+        // ...
       },
       size: {
-        sm: 'h-9 px-3 text-sm',
-        md: 'h-10 px-4 text-base',
-        lg: 'h-11 px-6 text-lg',
+        sm: 'h-10 px-4 text-sm min-w-[48px]',
+        default: 'h-12 px-6 text-base min-w-[48px] min-h-[48px]',
+        lg: 'h-14 px-8 text-lg min-w-[48px]',
+        icon: 'h-12 w-12 min-w-[48px] min-h-[48px]',
       },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'md',
     },
   }
 );
-
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  loading?: boolean;
-}
-
-export const Button = ({ variant, size, loading, children, ...props }: ButtonProps) => {
-  return (
-    <button className={buttonVariants({ variant, size })} {...props}>
-      {loading && <Spinner className="mr-2" />}
-      {children}
-    </button>
-  );
-};
 ```
 
 ### Card
 
-Container for grouped content.
+Container for grouped content with NB styling.
 
 ```tsx
-// components/ui/card.tsx
-export const Card = ({ children, className, ...props }: CardProps) => {
-  return (
-    <div
-      className={cn('rounded-lg border border-gray-200 bg-white p-6 shadow-sm', className)}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-};
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
 
-export const CardHeader = ({ children, className }: CardHeaderProps) => {
-  return <div className={cn('mb-4 flex items-center justify-between', className)}>{children}</div>;
-};
+// Variants
+<Card variant="default">...</Card>    {/* 3px border, small shadow */}
+<Card variant="elevated">...</Card>   {/* 3px border, medium shadow */}
+<Card variant="outlined">...</Card>   {/* 3px border, no shadow */}
+<Card variant="filled">...</Card>     {/* No border, gray background */}
 
-export const CardTitle = ({ children, className }: CardTitleProps) => {
-  return <h3 className={cn('text-xl font-semibold text-gray-900', className)}>{children}</h3>;
-};
+// Interactive (hover/press animations)
+<Card interactive>Clickable Card</Card>
 
-export const CardContent = ({ children, className }: CardContentProps) => {
-  return <div className={cn('text-gray-700', className)}>{children}</div>;
-};
+// Full structure
+<Card>
+  <CardHeader>
+    <CardTitle>Card Title</CardTitle>
+    <CardDescription>Description text</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <p>Card content here</p>
+  </CardContent>
+  <CardFooter>
+    <Button>Action</Button>
+  </CardFooter>
+</Card>
 ```
 
-### Table
+### Input
 
-Data table with sorting and pagination.
+Text input with NB styling and states.
 
 ```tsx
-// components/ui/table.tsx
-export const Table = ({ children, className }: TableProps) => {
-  return (
-    <div className="overflow-x-auto">
-      <table className={cn('min-w-full divide-y divide-gray-200', className)}>
-        {children}
-      </table>
-    </div>
-  );
-};
+import { Input } from '@/components/ui';
 
-export const TableHeader = ({ children }: TableHeaderProps) => {
-  return <thead className="bg-gray-50">{children}</thead>;
-};
+// Basic
+<Input placeholder="Enter text..." />
 
-export const TableBody = ({ children }: TableBodyProps) => {
-  return <tbody className="divide-y divide-gray-200 bg-white">{children}</tbody>;
-};
+// Sizes
+<Input size="sm" />
+<Input size="default" />  {/* 48px height */}
+<Input size="lg" />
 
-export const TableRow = ({ children, className }: TableRowProps) => {
-  return <tr className={cn('hover:bg-gray-50', className)}>{children}</tr>;
-};
+// States
+<Input state="default" />
+<Input state="error" />
+<Input state="success" />
+<Input error="Error message" />
 
-export const TableHead = ({ children, className }: TableHeadProps) => {
-  return (
-    <th
-      className={cn(
-        'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500',
-        className
-      )}
-    >
-      {children}
-    </th>
-  );
-};
-
-export const TableCell = ({ children, className }: TableCellProps) => {
-  return <td className={cn('whitespace-nowrap px-6 py-4 text-sm text-gray-900', className)}>{children}</td>;
-};
+// With icons
+<Input leftIcon={<Search />} placeholder="Search..." />
+<Input rightIcon={<Eye />} type="password" />
 ```
 
 ### Badge
 
-Status indicators and tags.
+Status indicators with NB styling.
 
 ```tsx
-// components/ui/badge.tsx
-const badgeVariants = cva(
-  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-  {
-    variants: {
-      variant: {
-        success: 'bg-green-100 text-green-800',
-        warning: 'bg-yellow-100 text-yellow-800',
-        error: 'bg-red-100 text-red-800',
-        info: 'bg-blue-100 text-blue-800',
-        default: 'bg-gray-100 text-gray-800',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+import { Badge } from '@/components/ui';
 
-export const Badge = ({ variant, children }: BadgeProps) => {
-  return <span className={badgeVariants({ variant })}>{children}</span>;
-};
+// Variants
+<Badge variant="default">Primary</Badge>
+<Badge variant="secondary">Secondary</Badge>
+<Badge variant="success">Success</Badge>
+<Badge variant="warning">Warning</Badge>
+<Badge variant="destructive">Error</Badge>
+<Badge variant="outline">Outline</Badge>
+
+// Sizes
+<Badge size="sm">Small</Badge>
+<Badge size="default">Default</Badge>
+<Badge size="lg">Large</Badge>
+
+// With icon and remove
+<Badge icon={<Check />}>Complete</Badge>
+<Badge onRemove={() => {}}>Removable</Badge>
 ```
 
----
+### Select
 
-## Domain-Specific Components
-
-### WorkerStatusBadge
+Dropdown select with NB styling.
 
 ```tsx
-// components/WorkerStatusBadge.tsx
-interface WorkerStatusBadgeProps {
-  status: 'online' | 'offline';
-}
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui';
 
-export const WorkerStatusBadge = ({ status }: WorkerStatusBadgeProps) => {
-  return (
-    <Badge variant={status === 'online' ? 'success' : 'default'}>
-      <span className={cn('mr-1.5 h-2 w-2 rounded-full', {
-        'bg-green-600': status === 'online',
-        'bg-gray-400': status === 'offline',
-      })} />
-      {status === 'online' ? 'Online' : 'Offline'}
-    </Badge>
-  );
-};
+<Select value={value} onValueChange={setValue}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select option" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="option1">Option 1</SelectItem>
+    <SelectItem value="option2">Option 2</SelectItem>
+    <SelectItem value="option3">Option 3</SelectItem>
+  </SelectContent>
+</Select>
 ```
 
-### AttendanceTable
+### Dialog
+
+Modal dialogs with NB styling.
 
 ```tsx
-// components/AttendanceTable.tsx
-interface AttendanceTableProps {
-  data: AttendanceRecord[];
-  onRowClick?: (record: AttendanceRecord) => void;
-}
+import {
+  Dialog, DialogTrigger, DialogContent,
+  DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from '@/components/ui';
 
-export const AttendanceTable = ({ data, onRowClick }: AttendanceTableProps) => {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nama</TableHead>
-          <TableHead>Area</TableHead>
-          <TableHead>Jam Masuk</TableHead>
-          <TableHead>Jam Keluar</TableHead>
-          <TableHead>Total Jam</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((record) => (
-          <TableRow
-            key={record.id}
-            onClick={() => onRowClick?.(record)}
-            className="cursor-pointer"
-          >
-            <TableCell className="font-medium">{record.worker_name}</TableCell>
-            <TableCell>{record.area_name}</TableCell>
-            <TableCell>{formatTime(record.clock_in_time)}</TableCell>
-            <TableCell>{formatTime(record.clock_out_time)}</TableCell>
-            <TableCell>{formatDuration(record.hours_worked)}</TableCell>
-            <TableCell>
-              <WorkerStatusBadge status={record.is_active ? 'online' : 'offline'} />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-};
-```
-
-### ReportCard
-
-```tsx
-// components/ReportCard.tsx
-interface ReportCardProps {
-  report: Report;
-  onClick?: () => void;
-}
-
-export const ReportCard = ({ report, onClick }: ReportCardProps) => {
-  return (
-    <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={onClick}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{report.report_type}</CardTitle>
-          <Badge variant={getReportTypeBadgeVariant(report.report_type)}>
-            {formatReportType(report.report_type)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-2 text-sm text-gray-600">{report.notes}</p>
-        <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <MapPinIcon className="h-4 w-4" />
-            {report.area_name}
-          </span>
-          <span className="flex items-center gap-1">
-            <ClockIcon className="h-4 w-4" />
-            {formatTimestamp(report.created_at)}
-          </span>
-        </div>
-        {report.photo_url && (
-          <img
-            src={report.photo_url}
-            alt="Report"
-            className="mt-3 h-32 w-full rounded object-cover"
-          />
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-```
-
-### MapComponent
-
-```tsx
-// components/MapComponent.tsx
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-
-interface MapComponentProps {
-  workers: WorkerLocation[];
-  center?: [number, number];
-}
-
-export const MapComponent = ({ workers, center = [-7.2756, 112.7138] }: MapComponentProps) => {
-  return (
-    <MapContainer center={center} zoom={13} className="h-full w-full">
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      />
-      {workers.map((worker) => (
-        <Marker key={worker.id} position={[worker.gps_lat, worker.gps_lng]}>
-          <Popup>
-            <div>
-              <p className="font-medium">{worker.name}</p>
-              <p className="text-sm text-gray-600">{worker.area_name}</p>
-              <p className="text-xs text-gray-500">
-                Last update: {formatTimestamp(worker.last_ping_time)}
-              </p>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
-};
-```
-
----
-
-## Layout Components
-
-### DashboardLayout
-
-```tsx
-// components/layout/DashboardLayout.tsx
-export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogTrigger asChild>
+    <Button>Open Dialog</Button>
+  </DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Dialog Title</DialogTitle>
+      <DialogDescription>Dialog description text</DialogDescription>
+    </DialogHeader>
+    <div className="py-4">
+      {/* Content */}
     </div>
-  );
-};
+    <DialogFooter>
+      <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+      <Button onClick={handleSubmit}>Confirm</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 ```
+
+### Table
+
+Data table with NB styling.
+
+```tsx
+import {
+  Table, TableHeader, TableBody, TableFooter,
+  TableHead, TableRow, TableCell, TableCaption
+} from '@/components/ui';
+
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Status</TableHead>
+      <TableHead>Actions</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {data.map((row) => (
+      <TableRow key={row.id}>
+        <TableCell>{row.name}</TableCell>
+        <TableCell><Badge>{row.status}</Badge></TableCell>
+        <TableCell>
+          <Button size="sm" variant="secondary">Edit</Button>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+```
+
+---
+
+## Form Components
+
+### FormInput
+
+Input with integrated label, error, and helper text.
+
+```tsx
+import { FormInput } from '@/components/ui';
+
+<FormInput
+  label="Email Address"
+  type="email"
+  placeholder="you@example.com"
+  error={errors.email?.message}
+  helperText="We'll never share your email"
+  required
+  {...register('email')}
+/>
+```
+
+### FormSelect
+
+Select with integrated label and options array.
+
+```tsx
+import { FormSelect } from '@/components/ui';
+
+<FormSelect
+  label="Select Role"
+  options={[
+    { value: 'admin', label: 'Administrator' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'worker', label: 'Worker' },
+  ]}
+  value={role}
+  onChange={setRole}
+  error={errors.role?.message}
+/>
+```
+
+---
+
+## Loading & Empty States
+
+### Skeleton
+
+Loading placeholders with NB styling and shimmer animation.
+
+```tsx
+import { Skeleton, SkeletonCard, SkeletonTable, SkeletonList } from '@/components/ui';
+
+// Variants
+<Skeleton variant="text" />
+<Skeleton variant="heading" />
+<Skeleton variant="card" />
+<Skeleton variant="avatar" />
+<Skeleton variant="button" />
+<Skeleton variant="listItem" />
+
+// Multiple items
+<Skeleton variant="text" count={3} gap="sm" />
+
+// Preset composites
+<SkeletonCard />              {/* Card loading state */}
+<SkeletonTable rows={5} />    {/* Table loading state */}
+<SkeletonList items={3} />    {/* List loading state */}
+```
+
+### EmptyState
+
+Empty and error state displays.
+
+```tsx
+import { EmptyState } from '@/components/ui';
+
+// Predefined variants
+<EmptyState variant="noData" />
+<EmptyState variant="noResults" />
+<EmptyState variant="error" />
+<EmptyState variant="offline" />
+<EmptyState variant="maintenance" />
+<EmptyState variant="noPermission" />
+<EmptyState variant="emptyFolder" />
+<EmptyState variant="allDone" />
+<EmptyState variant="search" />
+
+// Custom content
+<EmptyState
+  variant="noData"
+  title="No Users Found"
+  description="Start by adding your first user."
+  action={{
+    label: 'Add User',
+    onClick: handleAddUser,
+    variant: 'default',
+  }}
+  secondaryAction={{
+    label: 'Learn More',
+    onClick: handleLearnMore,
+  }}
+/>
+
+// Custom icon
+import { Inbox } from 'lucide-react';
+<EmptyState icon={Inbox} title="Empty Inbox" />
+```
+
+---
+
+## Navigation Components
 
 ### Sidebar
 
+Navigation sidebar with role-based filtering.
+
 ```tsx
-// components/layout/Sidebar.tsx
-export const Sidebar = () => {
-  const pathname = usePathname();
+import { Sidebar, SidebarProvider, SidebarTrigger } from '@/components/ui';
 
-  const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: HomeIcon },
-    { href: '/workers', label: 'Pekerja', icon: UsersIcon },
-    { href: '/reports', label: 'Laporan', icon: FileTextIcon },
-    { href: '/attendance', label: 'Absensi', icon: ClipboardIcon },
-    { href: '/map', label: 'Peta', icon: MapIcon },
-  ];
-
-  return (
-    <aside className="w-64 border-r border-gray-200 bg-white">
-      <div className="flex h-16 items-center border-b border-gray-200 px-6">
-        <h1 className="text-xl font-bold text-primary-600">SEKAR</h1>
-      </div>
-      <nav className="p-4">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'mb-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-              pathname === item.href
-                ? 'bg-primary-50 text-primary-600'
-                : 'text-gray-700 hover:bg-gray-100'
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-    </aside>
-  );
-};
+<SidebarProvider defaultOpen={true}>
+  <Sidebar
+    items={[
+      { id: 'home', label: 'Dashboard', href: '/dashboard', icon: <Home /> },
+      { id: 'users', label: 'Users', href: '/users', icon: <Users />, roles: ['admin'] },
+      // ...
+    ]}
+    user={{ name: 'John Doe', role: 'Admin' }}
+    title="SEKAR"
+    subtitle="Dashboard Admin"
+  />
+</SidebarProvider>
 ```
 
-### Header
+### DropdownMenu
+
+Action menus with NB styling.
 
 ```tsx
-// components/layout/Header.tsx
-export const Header = () => {
-  const { user } = useAuth();
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator
+} from '@/components/ui';
 
-  return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <div className="flex-1">
-        <input
-          type="search"
-          placeholder="Cari pekerja, area, laporan..."
-          className="w-full max-w-md rounded-md border border-gray-300 px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-        />
-      </div>
-      <div className="flex items-center gap-4">
-        <button className="relative">
-          <BellIcon className="h-6 w-6 text-gray-600" />
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-            3
-          </span>
-        </button>
-        <div className="flex items-center gap-2">
-          <Avatar>
-            <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium">{user?.name}</span>
-        </div>
-      </div>
-    </header>
-  );
-};
-```
-
----
-
-## Component Composition Patterns
-
-### Empty State
-
-```tsx
-// components/EmptyState.tsx
-export const EmptyState = ({ icon: Icon, title, description, action }: EmptyStateProps) => {
-  return (
-    <div className="flex flex-col items-center justify-center py-12">
-      <Icon className="mb-4 h-16 w-16 text-gray-400" />
-      <h3 className="mb-2 text-lg font-medium text-gray-900">{title}</h3>
-      <p className="mb-6 text-sm text-gray-600">{description}</p>
-      {action}
-    </div>
-  );
-};
-```
-
-### Loading Skeleton
-
-```tsx
-// components/SkeletonLoader.tsx
-export const TableSkeleton = () => {
-  return (
-    <div className="space-y-3">
-      {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex gap-4">
-          <Skeleton className="h-12 w-1/4" />
-          <Skeleton className="h-12 w-1/4" />
-          <Skeleton className="h-12 w-1/4" />
-          <Skeleton className="h-12 w-1/4" />
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const Skeleton = ({ className }: SkeletonProps) => {
-  return <div className={cn('animate-pulse rounded-md bg-gray-200', className)} />;
-};
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="icon">
+      <MoreVertical />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end">
+    <DropdownMenuItem onClick={handleEdit}>
+      <Pencil className="mr-2 h-4 w-4" /> Edit
+    </DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem destructive onClick={handleDelete}>
+      <Trash className="mr-2 h-4 w-4" /> Delete
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
 ```
 
 ---
 
 ## Responsive Design
 
-All components are responsive by default using Tailwind's breakpoint system:
+Mobile-first responsive patterns:
 
 ```tsx
-// Mobile-first responsive classes
-<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+// Grid layouts
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
   {/* Cards */}
 </div>
 
-// Responsive table
-<div className="overflow-x-auto md:overflow-visible">
+// Sidebar visibility
+<Sidebar className="fixed lg:static" />
+<SidebarTrigger className="lg:hidden" />
+
+// Table scrolling
+<div className="overflow-x-auto">
   <Table />
 </div>
 
-// Mobile sidebar toggle
-<button className="md:hidden">
-  <MenuIcon />
-</button>
+// Responsive spacing
+<div className="p-4 lg:p-6">
+  {/* Content */}
+</div>
 ```
 
 ---
@@ -501,35 +502,32 @@ All components are responsive by default using Tailwind's breakpoint system:
 
 All components follow WCAG 2.1 AA standards:
 
-- Semantic HTML elements
-- ARIA labels and roles
-- Keyboard navigation support
-- Focus indicators
-- Screen reader compatible
+- **48px minimum touch targets** - All buttons and interactive elements
+- **4.5:1 contrast ratio** - Text against backgrounds
+- **Focus indicators** - 4px outline on focus-visible
+- **Keyboard navigation** - Full support
+- **ARIA labels** - Screen reader compatible
+- **Reduced motion** - Respects prefers-reduced-motion
 
 ```tsx
-// Accessible button
-<button
-  aria-label="Close dialog"
-  aria-pressed={isPressed}
-  aria-disabled={isDisabled}
->
-  <XIcon />
-</button>
+// Focus ring utility class
+.nb-focus-ring {
+  @apply focus-visible:outline focus-visible:outline-4
+         focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2;
+}
 
-// Accessible table
-<table role="table">
-  <thead role="rowgroup">
-    <tr role="row">
-      <th role="columnheader" scope="col">Name</th>
-    </tr>
-  </thead>
-</table>
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 ```
 
 ---
 
 **Document Owner:** Web Developer
-**Last Updated:** 2026-01-16
-**Status:** Planned - Phase 6
-**Dependencies:** `react`, `tailwindcss`, `@radix-ui/*`, `shadcn/ui`, `react-leaflet`
+**Last Updated:** 2026-02-03
+**Status:** Implemented - Phase 2
+**Dependencies:** `react`, `tailwindcss`, `@radix-ui/*`, `class-variance-authority`, `lucide-react`

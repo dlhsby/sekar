@@ -207,7 +207,7 @@ describe('SpecialDayOverridesService', () => {
     it('should throw ConflictException if new date already exists', async () => {
       const existingSpecialDay = { ...mockSpecialDay };
       const conflictingSpecialDay = { ...mockSpecialDay, id: 'different-id' };
-      
+
       mockRepository.findOne
         .mockResolvedValueOnce(existingSpecialDay) // First call for findOne(id)
         .mockResolvedValueOnce(conflictingSpecialDay); // Second call for date conflict check

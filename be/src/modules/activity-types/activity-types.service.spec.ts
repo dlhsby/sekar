@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, ArrayContains } from 'typeorm';
+import { ArrayContains } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ActivityTypesService } from './activity-types.service';
 import { ActivityType } from './entities/activity-type.entity';

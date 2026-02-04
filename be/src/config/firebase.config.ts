@@ -28,11 +28,13 @@ export function initializeFirebase(): admin.app.App {
   }
 
   // Get service account path from environment
-  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './config/firebase-service-account.json';
+  const serviceAccountPath =
+    process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './config/firebase-service-account.json';
   const absolutePath = join(process.cwd(), serviceAccountPath);
 
   try {
     // Load service account JSON
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const serviceAccount = require(absolutePath);
 
     // Validate service account structure
@@ -47,18 +49,22 @@ export function initializeFirebase(): admin.app.App {
     });
 
     // Use console.log during bootstrap (before NestJS logger is ready)
-    console.log(`✅ Firebase Admin SDK initialized successfully (Project: ${serviceAccount.project_id})`);
-    logger.log(`Firebase Admin SDK initialized successfully (Project: ${serviceAccount.project_id})`);
+    console.log(
+      `✅ Firebase Admin SDK initialized successfully (Project: ${serviceAccount.project_id})`,
+    );
+    logger.log(
+      `Firebase Admin SDK initialized successfully (Project: ${serviceAccount.project_id})`,
+    );
     return firebaseApp;
   } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
       logger.error(
         `Firebase service account file not found at: ${absolutePath}\n` +
-        'Please download the service account JSON from Firebase Console:\n' +
-        '1. Go to Firebase Console → Project Settings → Service Accounts\n' +
-        '2. Click "Generate new private key"\n' +
-        `3. Save the file to: ${absolutePath}\n` +
-        '4. Ensure the file is in .gitignore'
+          'Please download the service account JSON from Firebase Console:\n' +
+          '1. Go to Firebase Console → Project Settings → Service Accounts\n' +
+          '2. Click "Generate new private key"\n' +
+          `3. Save the file to: ${absolutePath}\n` +
+          '4. Ensure the file is in .gitignore',
       );
     } else {
       logger.error('Failed to initialize Firebase Admin SDK:', error.message);

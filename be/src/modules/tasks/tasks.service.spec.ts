@@ -521,10 +521,7 @@ describe('TasksService', () => {
     });
 
     it('should count ACCEPTED tasks as inProgress', async () => {
-      const tasks = [
-        { status: TaskStatus.ACCEPTED },
-        { status: TaskStatus.IN_PROGRESS },
-      ];
+      const tasks = [{ status: TaskStatus.ACCEPTED }, { status: TaskStatus.IN_PROGRESS }];
       taskRepository.find.mockResolvedValue(tasks as Task[]);
 
       const result = await service.getAreaTaskStats('area-uuid');
@@ -533,10 +530,7 @@ describe('TasksService', () => {
     });
 
     it('should handle DECLINED tasks', async () => {
-      const tasks = [
-        { status: TaskStatus.DECLINED },
-        { status: TaskStatus.DECLINED },
-      ];
+      const tasks = [{ status: TaskStatus.DECLINED }, { status: TaskStatus.DECLINED }];
       taskRepository.find.mockResolvedValue(tasks as Task[]);
 
       const result = await service.getAreaTaskStats('area-uuid');
@@ -678,7 +672,11 @@ describe('TasksService', () => {
 
     it('should assign declined task successfully', async () => {
       const declinedTask = { ...mockTask, status: TaskStatus.DECLINED };
-      const assignedTask = { ...declinedTask, status: TaskStatus.ASSIGNED, assigned_to: 'worker-uuid' };
+      const assignedTask = {
+        ...declinedTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'worker-uuid',
+      };
       const worker = { ...mockUser, id: 'worker-uuid' };
 
       taskRepository.findOne
@@ -778,13 +776,11 @@ describe('TasksService', () => {
         completion_photo_url: 'https://example.com/photo.jpg',
       };
 
-      taskRepository.findOne
-        .mockResolvedValueOnce(inProgressTask as Task)
-        .mockResolvedValueOnce({
-          ...inProgressTask,
-          status: TaskStatus.COMPLETED,
-          completion_photo_url: completeDto.completion_photo_url,
-        } as Task);
+      taskRepository.findOne.mockResolvedValueOnce(inProgressTask as Task).mockResolvedValueOnce({
+        ...inProgressTask,
+        status: TaskStatus.COMPLETED,
+        completion_photo_url: completeDto.completion_photo_url,
+      } as Task);
       taskRepository.save.mockResolvedValue({} as Task);
 
       await service.complete('task-uuid', 'user-uuid', completeDto);

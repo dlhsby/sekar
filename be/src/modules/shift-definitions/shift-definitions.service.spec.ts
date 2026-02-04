@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ShiftDefinitionsService } from './shift-definitions.service';
 import { ShiftDefinition } from './entities/shift-definition.entity';
 
 describe('ShiftDefinitionsService', () => {
   let module: TestingModule;
   let service: ShiftDefinitionsService;
-  let shiftDefinitionRepository: Repository<ShiftDefinition>;
+  let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
 
   const mockShift1: ShiftDefinition = {
     id: '22222222-2222-2222-2222-222222222201',
@@ -64,9 +64,7 @@ describe('ShiftDefinitionsService', () => {
     }).compile();
 
     service = module.get<ShiftDefinitionsService>(ShiftDefinitionsService);
-    shiftDefinitionRepository = module.get<Repository<ShiftDefinition>>(
-      getRepositoryToken(ShiftDefinition),
-    );
+    shiftDefinitionRepository = module.get(getRepositoryToken(ShiftDefinition));
   });
 
   afterEach(async () => {

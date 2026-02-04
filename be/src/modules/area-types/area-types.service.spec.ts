@@ -11,7 +11,7 @@ import { UpdateAreaTypeDto } from './dto/update-area-type.dto';
 describe('AreaTypesService', () => {
   let module: TestingModule;
   let service: AreaTypesService;
-  let repository: Repository<AreaType>;
+  let repository: jest.Mocked<Repository<AreaType>>;
 
   const mockAreaType: AreaType = {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -86,7 +86,7 @@ describe('AreaTypesService', () => {
     }).compile();
 
     service = module.get<AreaTypesService>(AreaTypesService);
-    repository = module.get<Repository<AreaType>>(getRepositoryToken(AreaType));
+    repository = module.get(getRepositoryToken(AreaType)) as jest.Mocked<Repository<AreaType>>;
   });
 
   afterEach(async () => {

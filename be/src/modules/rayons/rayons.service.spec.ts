@@ -11,8 +11,8 @@ import { UpdateRayonDto } from './dto/update-rayon.dto';
 describe('RayonsService', () => {
   let module: TestingModule;
   let service: RayonsService;
-  let rayonRepository: Repository<Rayon>;
-  let areaRepository: Repository<Area>;
+  let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let areaRepository: jest.Mocked<Repository<Area>>;
 
   const mockRayon: Rayon = {
     id: '11111111-1111-1111-1111-111111111101',
@@ -59,8 +59,8 @@ describe('RayonsService', () => {
     }).compile();
 
     service = module.get<RayonsService>(RayonsService);
-    rayonRepository = module.get<Repository<Rayon>>(getRepositoryToken(Rayon));
-    areaRepository = module.get<Repository<Area>>(getRepositoryToken(Area));
+    rayonRepository = module.get(getRepositoryToken(Rayon)) as jest.Mocked<Repository<Rayon>>;
+    areaRepository = module.get(getRepositoryToken(Area)) as jest.Mocked<Repository<Area>>;
   });
 
   afterEach(async () => {

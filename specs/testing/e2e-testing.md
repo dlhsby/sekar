@@ -2,31 +2,46 @@
 
 Comprehensive end-to-end tests using Playwright for the SEKAR web dashboard application.
 
+**Last Updated:** February 3, 2026
+**Status:** Enhanced with Mock API System
+
 ## Test Structure
 
 ```
 e2e/
+├── fixtures/
+│   └── mock-api.ts                  # Mock API responses and route handlers
 ├── auth.setup.ts                    # Authentication helpers and test users
 ├── 01-authentication.spec.ts        # Login, logout, session management
 ├── 02-user-management.spec.ts       # User CRUD operations
 ├── 03-task-management.spec.ts       # Task creation and workflows
 ├── 04-reports-review.spec.ts        # Reports viewing and review
 ├── 05-navigation-dashboard.spec.ts  # Navigation, dashboard, UX
-└── README.md                        # This file
+└── 06-areas-management.spec.ts      # Areas CRUD operations
 ```
 
-## Prerequisites
+## Mock API System
 
-1. **Backend API running** at `http://localhost:3000`
-2. **Test users seeded** in database:
-   - `admin@sekar.com` / `admin123` (Admin role)
-   - `koordinator@sekar.com` / `koordinator123` (KoordinatorLapangan role)
-   - `kepala@sekar.com` / `kepala123` (KepalaRayon role)
-   - `worker@sekar.com` / `worker123` (Worker role)
+E2E tests use a mock API system that intercepts all API calls, providing:
+
+- **No Backend Required**: Tests run without backend server
+- **Fast Execution**: Instant responses, no network delays
+- **Deterministic Results**: Same data every run
+- **CI/CD Ready**: Works in any environment
+
+### Test Users (Mock)
+
+| Key | Username | Password | Role |
+|-----|----------|----------|------|
+| admin | admin | admin123 | admin |
+| koordinator | koordinator_bungkul | password123 | koordinator_lapangan |
+| kepalaRayon | kepala_rayon_selatan | password123 | kepala_rayon |
+| worker | worker1 | worker123 | worker |
+| topManagement | top_management1 | password123 | top_management |
 
 ## Running Tests
 
-### Run all E2E tests
+### Run all E2E tests (uses mock API)
 ```bash
 npm run test:e2e
 ```
@@ -48,9 +63,13 @@ npx playwright test --project=firefox
 npx playwright test --project=webkit
 ```
 
-### Run tests in headed mode (see browser)
+### Run against real backend
 ```bash
-npx playwright test --headed
+# Terminal 1: Start backend
+cd be && npm run start:dev
+
+# Terminal 2: Run tests with real API
+USE_REAL_API=true npm run test:e2e
 ```
 
 ### Debug tests
@@ -68,8 +87,8 @@ npx playwright show-report
 Configured in `playwright.config.ts`:
 
 - **Test Directory:** `./e2e`
-- **Base URL:** `http://localhost:3000`
-- **Browsers:** Chrome, Firefox, Safari, Mobile Chrome, Mobile Safari
+- **Base URL:** `http://localhost:3001`
+- **Browsers:** Chrome, Firefox, Safari
 - **Screenshots:** Captured on failure
 - **Traces:** Captured on first retry
 - **Retries:** 2 retries in CI, 0 locally
@@ -91,9 +110,6 @@ Configured in `playwright.config.ts`:
 - ✅ Create new user
 - ✅ Field validation on create
 - ✅ Email format validation
-- ✅ Edit existing user
-- ✅ Delete user with confirmation
-- ✅ Pagination
 - ✅ Access control (Admin only)
 
 ### 3. Task Management (03-task-management.spec.ts)
@@ -103,9 +119,7 @@ Configured in `playwright.config.ts`:
 - ✅ Create new task
 - ✅ Field validation
 - ✅ Search tasks
-- ✅ Pagination
-- ✅ Cancel task creation
-- ✅ Access control (Admin, KepalaRayon, Koordinator)
+- ✅ Access control (Admin, Koordinator)
 
 ### 4. Reports Review (04-reports-review.spec.ts)
 - ✅ Display reports list
@@ -113,12 +127,7 @@ Configured in `playwright.config.ts`:
 - ✅ Filter by date range
 - ✅ Search by worker/area
 - ✅ View report detail
-- ✅ Review unreviewed reports
-- ✅ Display photo and GPS data
-- ✅ Statistics display
-- ✅ Pagination
-- ✅ Navigation back from detail
-- ✅ Access control (Admin, TopManagement, KepalaRayon, Koordinator)
+- ✅ Access control (Admin, Koordinator)
 
 ### 5. Navigation & Dashboard (05-navigation-dashboard.spec.ts)
 - ✅ Sidebar menu display
@@ -126,26 +135,45 @@ Configured in `playwright.config.ts`:
 - ✅ Active menu highlighting
 - ✅ Mobile menu toggle
 - ✅ Dashboard statistics cards
-- ✅ Quick action buttons
 - ✅ Role-specific dashboards
 - ✅ Breadcrumbs on nested pages
 - ✅ Browser back button navigation
 - ✅ Responsive design (tablet, mobile)
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Accessibility (heading hierarchy, keyboard navigation, ARIA labels)
+- ✅ Accessibility (heading, keyboard, ARIA)
+
+### 6. Areas Management (06-areas-management.spec.ts)
+- ✅ Display areas list
+- ✅ Navigate to area detail
+- ✅ Navigate to create form
+- ✅ Field validation
+- ✅ Navigate to edit form
+- ✅ Delete confirmation modal
+- ✅ Filter by rayon
+- ✅ Search by name
+- ✅ Access control (Admin, TopManagement)
+- ✅ Responsive design
+- ✅ Accessibility
 
 ## Writing New Tests
 
 ### Test Structure Template
+
 ```typescript
 import { test, expect } from '@playwright/test';
-import { login, testUsers } from './auth.setup';
+import { quickLogin, testUsers } from './auth.setup';
+import { setupMockApi } from './fixtures/mock-api';
 
 test.describe('Feature Name', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, testUsers.admin);
+    // Setup mock API for the user role
+    await setupMockApi(page, 'admin');
+
+    // Quick login (sets cookies, bypasses form)
+    await quickLogin(page, testUsers.admin);
+
+    // Navigate to page
     await page.goto('/your-page');
+    await page.waitForLoadState('networkidle', { timeout: 5000 });
   });
 
   test('should do something', async ({ page }) => {
@@ -163,33 +191,81 @@ test.describe('Feature Name', () => {
 
 ### Best Practices
 
-1. **Use data-testid** for stable selectors:
+1. **Always use mock API** for consistent tests:
    ```typescript
-   await page.locator('[data-testid="submit-button"]').click();
+   await setupMockApi(page, 'admin');
+   await quickLogin(page, testUsers.admin);
    ```
 
-2. **Wait for network idle** after navigation:
-   ```typescript
-   await page.waitForLoadState('networkidle');
-   ```
-
-3. **Use fallback selectors** for robustness:
+2. **Use fallback selectors** for robustness:
    ```typescript
    const button = page.locator('button:has-text("Submit")')
      .or(page.locator('[data-testid="submit"]'));
    ```
 
-4. **Check element exists before interacting**:
+3. **Check element exists before interacting**:
    ```typescript
    if (await button.count() > 0) {
      await button.click();
    }
    ```
 
-5. **Set appropriate timeouts**:
+4. **Set appropriate timeouts**:
    ```typescript
+   await page.waitForLoadState('networkidle', { timeout: 5000 });
    await expect(element).toBeVisible({ timeout: 5000 });
    ```
+
+5. **Use flexible assertions** for varying content:
+   ```typescript
+   const hasTitle =
+     (await page.locator('h1:has-text("Users")').count()) > 0 ||
+     (await page.locator('h1:has-text("Pengguna")').count()) > 0;
+   expect(hasTitle).toBeTruthy();
+   ```
+
+## Mock API Details
+
+### Files
+
+- `e2e/fixtures/mock-api.ts` - Mock data and route handlers
+- `e2e/auth.setup.ts` - Authentication helpers using mocks
+
+### Available Mock Endpoints
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| /api/v1/auth/login | POST | User login |
+| /api/v1/auth/refresh | POST | Token refresh |
+| /api/v1/auth/me | GET | Current user |
+| /api/v1/users | GET, POST | User list/create |
+| /api/v1/users/:id | GET, PUT, DELETE | User detail/update/delete |
+| /api/v1/tasks | GET, POST | Task list/create |
+| /api/v1/tasks/:id | GET, PUT, DELETE | Task detail/update/delete |
+| /api/v1/reports | GET | Report list |
+| /api/v1/reports/:id | GET, PATCH | Report detail/update |
+| /api/v1/areas | GET, POST | Area list/create |
+| /api/v1/areas/:id | GET, PUT, DELETE | Area detail/update/delete |
+| /api/v1/rayons | GET | Rayon list |
+| /api/v1/monitoring | GET | Monitoring data |
+| /api/v1/dashboard/stats | GET | Dashboard statistics |
+
+### Adding New Mock Endpoints
+
+```typescript
+// In mock-api.ts setupMockApi function
+await page.route('**/api/v1/your-endpoint**', async (route) => {
+  const method = route.request().method();
+
+  if (method === 'GET') {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: yourMockData }),
+    });
+  }
+});
+```
 
 ## Debugging Failed Tests
 
@@ -234,44 +310,26 @@ Tests run automatically in CI with:
     path: playwright-report/
 ```
 
-## Maintenance
-
-### Update test users
-Edit `auth.setup.ts` if test user credentials change in the backend.
-
-### Add new test file
-1. Create file: `e2e/06-new-feature.spec.ts`
-2. Follow naming convention: `##-feature-name.spec.ts`
-3. Import auth helpers: `import { login, testUsers } from './auth.setup';`
-4. Write tests following existing patterns
-
-### Update Playwright
-```bash
-npm install -D @playwright/test@latest
-npx playwright install
-```
-
 ## Troubleshooting
 
 ### Tests fail with "timeout"
-- Increase timeout in test: `{ timeout: 10000 }`
-- Check backend is running: `curl http://localhost:3000/api/health`
-- Check network: `await page.waitForLoadState('networkidle')`
+- Check selector: `await page.locator('selector').count()`
+- Increase timeout: `{ timeout: 10000 }`
+- Add wait: `await page.waitForLoadState('networkidle')`
 
 ### Tests fail with "element not found"
-- Check selector: `await page.locator('selector').count()`
 - Use Playwright Inspector: `npx playwright test --debug`
 - Add fallback selectors: `.or(page.locator('alternative'))`
+- Check mock API is setup: `await setupMockApi(page, 'admin')`
 
 ### Tests pass locally but fail in CI
-- Check CI has test users seeded
-- Verify environment variables are set
+- Ensure mock API is used (not real backend)
 - Check for timing issues (add waits)
-- Review CI logs for API errors
+- Review CI logs for errors
 
 ## Resources
 
 - [Playwright Documentation](https://playwright.dev)
 - [Best Practices](https://playwright.dev/docs/best-practices)
 - [Debugging Guide](https://playwright.dev/docs/debug)
-- [API Reference](https://playwright.dev/docs/api/class-playwright)
+- [fe/web/TEST_SETUP.md](../../fe/web/TEST_SETUP.md) - Complete testing guide

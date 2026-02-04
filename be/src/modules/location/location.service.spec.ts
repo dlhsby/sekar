@@ -10,9 +10,9 @@ import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
 describe('LocationService', () => {
   let module: TestingModule;
   let service: LocationService;
+  let shiftsRepository: jest.Mocked<Repository<Shift>>;
+  let dataSource: jest.Mocked<DataSource>;
   let locationLogsRepository: Repository<LocationLog>;
-  let shiftsRepository: Repository<Shift>;
-  let dataSource: DataSource;
 
   const mockLocationLogsRepository = {
     create: jest.fn(),
@@ -61,8 +61,8 @@ describe('LocationService', () => {
 
     service = module.get<LocationService>(LocationService);
     locationLogsRepository = module.get<Repository<LocationLog>>(getRepositoryToken(LocationLog));
-    shiftsRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
-    dataSource = module.get<DataSource>(DataSource);
+    shiftsRepository = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
+    dataSource = module.get(DataSource) as jest.Mocked<DataSource>;
   });
 
   afterEach(async () => {

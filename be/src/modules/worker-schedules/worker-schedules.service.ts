@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThanOrEqual, IsNull, Or } from 'typeorm';
+import { Repository, IsNull, Or, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { WorkerSchedule } from './entities/worker-schedule.entity';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';

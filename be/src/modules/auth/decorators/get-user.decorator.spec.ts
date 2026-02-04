@@ -1,4 +1,4 @@
-import { ExecutionContext } from '@nestjs/common';
+import {} from '@nestjs/common';
 import { GetUser } from './get-user.decorator';
 
 describe('GetUser Decorator', () => {

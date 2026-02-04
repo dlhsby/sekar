@@ -12,9 +12,9 @@ import { UpdateAreaStaffRequirementDto } from './dto/update-area-staff-requireme
 describe('AreaStaffRequirementsService', () => {
   let module: TestingModule;
   let service: AreaStaffRequirementsService;
-  let requirementRepository: Repository<AreaStaffRequirement>;
-  let areasService: AreasService;
-  let shiftDefinitionsService: ShiftDefinitionsService;
+  let requirementRepository: jest.Mocked<Repository<AreaStaffRequirement>>;
+  let areasService: jest.Mocked<AreasService>;
+  let shiftDefinitionsService: jest.Mocked<ShiftDefinitionsService>;
 
   const mockShiftDefinition = {
     id: '22222222-2222-2222-2222-222222222201',
@@ -94,11 +94,11 @@ describe('AreaStaffRequirementsService', () => {
     }).compile();
 
     service = module.get<AreaStaffRequirementsService>(AreaStaffRequirementsService);
-    requirementRepository = module.get<Repository<AreaStaffRequirement>>(
-      getRepositoryToken(AreaStaffRequirement),
-    );
-    areasService = module.get<AreasService>(AreasService);
-    shiftDefinitionsService = module.get<ShiftDefinitionsService>(ShiftDefinitionsService);
+    requirementRepository = module.get(getRepositoryToken(AreaStaffRequirement));
+    areasService = module.get(AreasService) as jest.Mocked<AreasService>;
+    shiftDefinitionsService = module.get(
+      ShiftDefinitionsService,
+    ) as jest.Mocked<ShiftDefinitionsService>;
   });
 
   afterEach(async () => {

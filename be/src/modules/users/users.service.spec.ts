@@ -17,7 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 describe('UsersService', () => {
   let module: TestingModule;
   let service: UsersService;
-  let userRepository: Repository<User>;
+  let userRepository: jest.Mocked<Repository<User>>;
   let authService: AuthService;
 
   const mockUser: User = {
@@ -60,7 +60,7 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get<UsersService>(UsersService);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = module.get(getRepositoryToken(User)) as jest.Mocked<Repository<User>>;
     authService = module.get<AuthService>(AuthService);
   });
 
@@ -331,7 +331,7 @@ describe('UsersService', () => {
 
     it('should throw BadRequestException if new password is same as current', async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation((password: string, hash: string) => {
+      jest.spyOn(bcrypt, 'compare').mockImplementation((_password: string, _hash: string) => {
         return Promise.resolve(true as never); // Both current and new password match
       });
 

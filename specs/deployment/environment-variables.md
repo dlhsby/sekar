@@ -336,8 +336,8 @@ NEXTAUTH_URL=https://dashboard.sekar.DLH-sby.go.id
 NEXTAUTH_SECRET=<random-32-byte-string>
 JWT_SECRET=<same-as-backend>
 
-# Google Maps
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-key>
+# Mapbox (Interactive Maps)
+NEXT_PUBLIC_MAPBOX_TOKEN=<your-mapbox-token>
 
 # Sentry (Error Tracking)
 NEXT_PUBLIC_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx

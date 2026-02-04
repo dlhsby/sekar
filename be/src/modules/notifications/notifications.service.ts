@@ -1,14 +1,13 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, FindOptionsWhere } from 'typeorm';
-import { NotificationToken, DevicePlatform } from './entities/notification-token.entity';
+import { Repository, FindOptionsWhere } from 'typeorm';
+import { NotificationToken } from './entities/notification-token.entity';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { RegisterTokenDto } from './dto/register-token.dto';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto';
 import { NotificationFilterDto } from './dto/notification-filter.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { UsersService } from '../users/users.service';
-import { UserRole } from '../users/entities/user.entity';
 import { getMessaging, isFirebaseInitialized } from '../../config/firebase.config';
 
 /**
@@ -369,9 +368,7 @@ export class NotificationsService {
       // Send multicast message
       const response = await messaging.sendEachForMulticast(message);
 
-      this.logger.log(
-        `FCM send result: ${response.successCount}/${fcmTokens.length} successful`,
-      );
+      this.logger.log(`FCM send result: ${response.successCount}/${fcmTokens.length} successful`);
 
       // Handle partial failures
       if (response.failureCount > 0) {
@@ -387,10 +384,7 @@ export class NotificationsService {
               errorCode === 'messaging/invalid-registration-token' ||
               errorCode === 'messaging/registration-token-not-registered'
             ) {
-              this.tokenRepository.update(
-                { fcm_token: fcmTokens[idx] },
-                { is_active: false },
-              );
+              this.tokenRepository.update({ fcm_token: fcmTokens[idx] }, { is_active: false });
               this.logger.log(`Deactivated invalid token: ${fcmTokens[idx].substring(0, 20)}...`);
             }
           }

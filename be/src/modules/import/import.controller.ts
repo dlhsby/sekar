@@ -56,6 +56,7 @@ export class ImportController {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
       fileFilter: (req, file, cb) => {
         const validExtensions = ['.kmz', '.kml'];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const ext = file.originalname.toLowerCase().slice(-4);
         if (validExtensions.some((v) => file.originalname.toLowerCase().endsWith(v))) {
           cb(null, true);

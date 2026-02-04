@@ -42,24 +42,40 @@ async function seedTasks() {
     const [area1, area2, area3] = areas.map((a: any) => a.id);
 
     // Get activity type IDs (optional - Phase 2 feature)
-    const activityTypes = await queryRunner.query(`SELECT id, code FROM activity_types WHERE is_active = TRUE LIMIT 5`);
+    const activityTypes = await queryRunner.query(
+      `SELECT id, code FROM activity_types WHERE is_active = TRUE LIMIT 5`,
+    );
     let wateringType = null;
     let plantingType = null;
     let pruningType = null;
     let cleaningType = null;
 
     if (activityTypes.length > 0) {
-      wateringType = activityTypes.find((at: any) => at.code === 'WATERING')?.id || activityTypes[0].id;
-      plantingType = activityTypes.find((at: any) => at.code === 'PLANTING')?.id || activityTypes[1]?.id || activityTypes[0].id;
-      pruningType = activityTypes.find((at: any) => at.code === 'PRUNING')?.id || activityTypes[2]?.id || activityTypes[0].id;
-      cleaningType = activityTypes.find((at: any) => at.code === 'CLEANING')?.id || activityTypes[3]?.id || activityTypes[0].id;
+      wateringType =
+        activityTypes.find((at: any) => at.code === 'WATERING')?.id || activityTypes[0].id;
+      plantingType =
+        activityTypes.find((at: any) => at.code === 'PLANTING')?.id ||
+        activityTypes[1]?.id ||
+        activityTypes[0].id;
+      pruningType =
+        activityTypes.find((at: any) => at.code === 'PRUNING')?.id ||
+        activityTypes[2]?.id ||
+        activityTypes[0].id;
+      cleaningType =
+        activityTypes.find((at: any) => at.code === 'CLEANING')?.id ||
+        activityTypes[3]?.id ||
+        activityTypes[0].id;
       console.log('  ✓ Found activity types');
     } else {
-      console.log('  ⚠️  No activity types found (Phase 2 feature) - tasks will be created without activity types');
+      console.log(
+        '  ⚠️  No activity types found (Phase 2 feature) - tasks will be created without activity types',
+      );
     }
 
     // Get user IDs (creator - fallback to supervisor or admin if no koordinator)
-    let creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'koordinator_lapangan' LIMIT 1`);
+    let creator = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'koordinator_lapangan' LIMIT 1`,
+    );
     if (creator.length === 0) {
       creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'supervisor' LIMIT 1`);
     }
@@ -99,7 +115,8 @@ async function seedTasks() {
     yesterday.setDate(yesterday.getDate() - 1);
 
     // Task 1: PENDING - High Priority Watering
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -118,10 +135,13 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [tomorrow.toISOString(), area1, wateringType, creatorId]);
+    `,
+      [tomorrow.toISOString(), area1, wateringType, creatorId],
+    );
 
     // Task 2: ASSIGNED - Medium Priority Planting
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -141,10 +161,13 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [nextWeek.toISOString(), area2, plantingType, worker1Id, creatorId]);
+    `,
+      [nextWeek.toISOString(), area2, plantingType, worker1Id, creatorId],
+    );
 
     // Task 3: ACCEPTED - Urgent Pruning
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -165,10 +188,13 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [tomorrow.toISOString(), area3, pruningType, worker2Id, creatorId]);
+    `,
+      [tomorrow.toISOString(), area3, pruningType, worker2Id, creatorId],
+    );
 
     // Task 4: IN_PROGRESS - Cleaning
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -190,10 +216,13 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [now.toISOString(), area1, cleaningType, worker3Id, creatorId]);
+    `,
+      [now.toISOString(), area1, cleaningType, worker3Id, creatorId],
+    );
 
     // Task 5: COMPLETED - Watering Task
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -221,10 +250,13 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [yesterday.toISOString(), area2, wateringType, worker1Id, creatorId]);
+    `,
+      [yesterday.toISOString(), area2, wateringType, worker1Id, creatorId],
+    );
 
     // Task 6: DECLINED - Pruning Task
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -247,10 +279,13 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [nextWeek.toISOString(), area3, pruningType, worker2Id, creatorId]);
+    `,
+      [nextWeek.toISOString(), area3, pruningType, worker2Id, creatorId],
+    );
 
     // Task 7: PENDING - Another High Priority
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -269,10 +304,13 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [tomorrow.toISOString(), area1, cleaningType, creatorId]);
+    `,
+      [tomorrow.toISOString(), area1, cleaningType, creatorId],
+    );
 
     // Task 8: ASSIGNED - Low Priority
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
         area_id, activity_type_id, assigned_to, created_by,
@@ -292,7 +330,9 @@ async function seedTasks() {
         NOW(),
         NOW()
       )
-    `, [nextWeek.toISOString(), area2, wateringType, worker3Id, creatorId]);
+    `,
+      [nextWeek.toISOString(), area2, wateringType, worker3Id, creatorId],
+    );
 
     console.log('  ✓ Created 8 tasks with various statuses:');
     console.log('    - 2 PENDING tasks');
@@ -317,7 +357,6 @@ async function seedTasks() {
     console.log('   - IN_PROGRESS: Tasks currently being worked on');
     console.log('   - COMPLETED: Finished tasks');
     console.log('   - DECLINED: Tasks rejected by worker');
-
   } catch (error) {
     console.error('❌ Error seeding tasks:', error);
     throw error;

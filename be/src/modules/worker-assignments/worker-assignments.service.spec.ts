@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { LocationLog } from '../location/entities/location-log.entity';
+import { Area } from '../areas/entities/area.entity';
+import { User } from '../users/entities/user.entity';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { WorkerAssignmentsService } from './worker-assignments.service';
 import { WorkerAssignment } from './entities/worker-assignment.entity';
@@ -12,6 +15,10 @@ import { AssignWorkerDto } from './dto/assign-worker.dto';
 describe('WorkerAssignmentsService', () => {
   let module: TestingModule;
   let service: WorkerAssignmentsService;
+  let usersRepository: jest.Mocked<Repository<User>>;
+  let areasRepository: jest.Mocked<Repository<Area>>;
+  let workerAssignmentsRepository: jest.Mocked<Repository<WorkerAssignment>>;
+  let locationLogsRepository: jest.Mocked<Repository<LocationLog>>;
   let repository: Repository<WorkerAssignment>;
   let usersService: UsersService;
   let areasService: AreasService;
@@ -88,7 +95,9 @@ describe('WorkerAssignmentsService', () => {
     }).compile();
 
     service = module.get<WorkerAssignmentsService>(WorkerAssignmentsService);
-    repository = module.get<Repository<WorkerAssignment>>(getRepositoryToken(WorkerAssignment));
+    repository = module.get<Repository<WorkerAssignment>>(
+      getRepositoryToken(WorkerAssignment),
+    ) as jest.Mocked<Repository<WorkerAssignment>>;
     usersService = module.get<UsersService>(UsersService);
     areasService = module.get<AreasService>(AreasService);
   });

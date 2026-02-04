@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AreasController } from './areas.controller';
 import { AreasService } from './areas.service';
 import { Area } from './entities/area.entity';
+import { User } from '../users/entities/user.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { NotFoundException } from '@nestjs/common';
@@ -10,6 +13,7 @@ describe('AreasController', () => {
   let module: TestingModule;
   let controller: AreasController;
   let service: AreasService;
+  let userRepository: jest.Mocked<Repository<User>>;
 
   const mockAreaType = {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',

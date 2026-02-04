@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { WorkerSchedulesService } from './worker-schedules.service';
 import { WorkerSchedule } from './entities/worker-schedule.entity';
@@ -13,9 +14,9 @@ import { UserRole } from '../users/entities/user.entity';
 describe('WorkerSchedulesService', () => {
   let module: TestingModule;
   let service: WorkerSchedulesService;
-  let usersService: UsersService;
-  let areasService: AreasService;
-  let shiftDefinitionsService: ShiftDefinitionsService;
+  let usersService: jest.Mocked<UsersService>;
+  let areasService: jest.Mocked<AreasService>;
+  let shiftDefinitionsService: jest.Mocked<ShiftDefinitionsService>;
 
   const mockWorkerUser = {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -119,9 +120,11 @@ describe('WorkerSchedulesService', () => {
     }).compile();
 
     service = module.get<WorkerSchedulesService>(WorkerSchedulesService);
-    usersService = module.get<UsersService>(UsersService);
-    areasService = module.get<AreasService>(AreasService);
-    shiftDefinitionsService = module.get<ShiftDefinitionsService>(ShiftDefinitionsService);
+    usersService = module.get(UsersService) as jest.Mocked<UsersService>;
+    areasService = module.get(AreasService) as jest.Mocked<AreasService>;
+    shiftDefinitionsService = module.get(
+      ShiftDefinitionsService,
+    ) as jest.Mocked<ShiftDefinitionsService>;
   });
 
   afterEach(async () => {

@@ -1,36 +1,22 @@
-# SEKAR Backend CI/CD Pipeline
-# Triggered on: push to main/staging/develop, PRs to these branches
+# SEKAR Backend CI/CD - Production Only
+# Automated secret management with GitHub Secrets
+# Triggered on: push to main branch
 #
 # Pipeline stages:
 # 1. Lint - ESLint and Prettier checks
 # 2. Test - Unit tests with PostgreSQL service
 # 3. Security - npm audit and secret scanning
-# 4. Build - TypeScript compilation
-# 5. Deploy - SSH deploy to EC2 (environment-specific)
+# 4. Build - Build and push Docker image to ECR
+# 5. Deploy - SSH deploy to production EC2 with automated .env generation
 
-name: Backend CI/CD
+name: Backend CI/CD - Production
 
 on:
   push:
-    branches: [main, staging, develop]
+    branches: [main]
     paths:
       - 'be/**'
       - '.github/workflows/backend-ci-cd.yml'
-  pull_request:
-    branches: [main, staging, develop]
-    paths:
-      - 'be/**'
-  workflow_dispatch:  # Manual trigger
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - development
-          - staging
-          - production
 
 env:
   NODE_VERSION: '24'
@@ -107,18 +93,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm test
-        env:
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          DATABASE_USER: postgres
-          DATABASE_PASSWORD: postgres
-          DATABASE_NAME: sekar_test
-          JWT_SECRET: test-secret-key-for-ci-minimum-32-characters
-          JWT_REFRESH_SECRET: test-refresh-secret-key-for-ci-min-32-chars
-          NODE_ENV: test
-
       - name: Run tests with coverage
         run: npm run test:cov
         env:
@@ -127,8 +101,8 @@ jobs:
           DATABASE_USER: postgres
           DATABASE_PASSWORD: postgres
           DATABASE_NAME: sekar_test
-          JWT_SECRET: test-secret-key-for-ci-minimum-32-characters
-          JWT_REFRESH_SECRET: test-refresh-secret-key-for-ci-min-32-chars
+          JWT_SECRET: test-secret-key-minimum-32-characters
+          JWT_REFRESH_SECRET: test-refresh-secret-key-minimum-32
           NODE_ENV: test
 
       - name: Upload coverage reports
@@ -175,7 +149,7 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=moderate
         continue-on-error: true
 
       - name: Check for secrets in code
@@ -187,51 +161,12 @@ jobs:
         continue-on-error: true
 
   # ==========================================================================
-  # Job 4: Build Application
+  # Job 4: Build and Push Docker Image
   # ==========================================================================
   build:
-    name: Build Application
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
     needs: [test, security]
-    defaults:
-      run:
-        working-directory: ./be
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: be/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application
-        run: npm run build
-
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-build
-          path: be/dist
-          retention-days: 7
-
-  # ==========================================================================
-  # Job 5: Deploy to Development (develop branch)
-  # ==========================================================================
-  deploy-dev:
-    name: Deploy to Development
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment:
-      name: development
-      url: http://dev.sekar.wahyutrip.com
 
     steps:
       - name: Checkout code
@@ -242,176 +177,33 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-3
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push image to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sekar-backend
-          IMAGE_TAG: dev-${{ github.sha }}
         working-directory: ./be
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:dev-latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:dev-latest
-
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        with:
-          host: ${{ secrets.EC2_HOST_DEV }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY
-          script: |
-            cd ~/sekar
-
-            # Login to ECR
-            aws ecr get-login-password --region ap-southeast-3 | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
-
-            # Create backup tag (for rollback)
-            CURRENT_IMAGE=$(docker-compose images -q backend)
-            if [ ! -z "$CURRENT_IMAGE" ]; then
-              docker tag $CURRENT_IMAGE $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S)
-              docker push $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S) || true
-            fi
-
-            # Update docker-compose to use dev-latest tag
-            sed -i "s|:latest|:dev-latest|g" docker-compose.yml
-
-            # Pull latest image
-            docker-compose pull
-
-            # Run database migrations (CRITICAL!)
-            echo "Running database migrations..."
-            docker-compose run --rm backend npm run migration:run:prod || {
-              echo "Migration failed! Aborting deployment."
-              exit 1
-            }
-
-            # Restart with zero-downtime
-            docker-compose up -d
-
-            # Wait for startup
-            sleep 30
-
-            # Show logs
-            docker-compose logs --tail=50 backend
-
-      - name: Verify deployment
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          sleep 30
-          curl -f http://dev.sekar.wahyutrip.com/api/health || echo "Health check pending..."
-        continue-on-error: true
+          docker build -t $ECR_REGISTRY/sekar-backend:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/sekar-backend:$IMAGE_TAG $ECR_REGISTRY/sekar-backend:latest
+          docker push $ECR_REGISTRY/sekar-backend:$IMAGE_TAG
+          docker push $ECR_REGISTRY/sekar-backend:latest
 
   # ==========================================================================
-  # Job 6: Deploy to Staging (staging branch)
+  # Job 5: Deploy to Production EC2
   # ==========================================================================
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
-    environment:
-      name: staging
-      url: http://staging.sekar.wahyutrip.com
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-3
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push image to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sekar-backend
-          IMAGE_TAG: staging-${{ github.sha }}
-        working-directory: ./be
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:staging-latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:staging-latest
-
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        with:
-          host: ${{ secrets.EC2_HOST_STAGING }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY
-          script: |
-            cd ~/sekar
-
-            # Login to ECR
-            aws ecr get-login-password --region ap-southeast-3 | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
-
-            # Create backup tag (for rollback)
-            CURRENT_IMAGE=$(docker-compose images -q backend)
-            if [ ! -z "$CURRENT_IMAGE" ]; then
-              docker tag $CURRENT_IMAGE $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S)
-              docker push $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S) || true
-            fi
-
-            # Update docker-compose to use staging-latest tag
-            sed -i "s|:latest|:staging-latest|g" docker-compose.yml
-
-            # Pull latest image
-            docker-compose pull
-
-            # Run database migrations (CRITICAL!)
-            echo "Running database migrations..."
-            docker-compose run --rm backend npm run migration:run:prod || {
-              echo "Migration failed! Aborting deployment."
-              exit 1
-            }
-
-            # Restart with zero-downtime
-            docker-compose up -d
-
-            # Wait for startup
-            sleep 30
-
-            # Show logs
-            docker-compose logs --tail=50 backend
-
-      - name: Run smoke tests
-        run: |
-          sleep 30
-          curl -f http://staging.sekar.wahyutrip.com/api/health || echo "Health check pending..."
-        continue-on-error: true
-
-  # ==========================================================================
-  # Job 7: Deploy to Production (main branch - with manual approval)
-  # ==========================================================================
-  deploy-prod:
+  deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
-      url: http://sekar.wahyutrip.com
+      url: http://api.sekar.wahyutrip.com
 
     steps:
       - name: Checkout code
@@ -422,89 +214,120 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-3
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sekar-backend
-          IMAGE_TAG: ${{ github.sha }}
-        working-directory: ./be
-        run: |
-          # Build and tag
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-          # Push both tags
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      - name: Deploy to EC2 via SSH
+      - name: Deploy to Production EC2
         uses: appleboy/ssh-action@v1.0.3
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          # Environment variables - will be expanded into .env.production
+          NODE_ENV: production
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
+          FCM_PRIVATE_KEY: ${{ secrets.FCM_PRIVATE_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY,IMAGE_TAG
+          envs: ECR_REGISTRY,NODE_ENV,DATABASE_HOST,DATABASE_PASSWORD,JWT_SECRET,JWT_REFRESH_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,CORS_ORIGIN,FCM_PROJECT_ID,FCM_CLIENT_EMAIL,FCM_PRIVATE_KEY
           script: |
-            cd ~/sekar
+            cd ~/sekar/backend
 
-            # Login to ECR
-            aws ecr get-login-password --region ap-southeast-3 | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
+            # Auto-generate .env.production from GitHub Secrets
+            cat > .env.production << 'ENVEOF'
+            NODE_ENV=${NODE_ENV}
+            PORT=3000
+            DATABASE_HOST=${DATABASE_HOST}
+            DATABASE_PORT=5432
+            DATABASE_USER=postgres
+            DATABASE_PASSWORD=${DATABASE_PASSWORD}
+            DATABASE_NAME=sekar_db
+            DATABASE_SYNCHRONIZE=false
+            DATABASE_MIGRATIONS_RUN=false
+            DATABASE_SSL=true
+            JWT_SECRET=${JWT_SECRET}
+            JWT_EXPIRATION=15m
+            JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+            JWT_REFRESH_EXPIRATION=7d
+            AWS_REGION=ap-southeast-3
+            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            AWS_S3_BUCKET=${AWS_S3_BUCKET}
+            CORS_ORIGIN=${CORS_ORIGIN}
+            RATE_LIMIT_TTL=60
+            RATE_LIMIT_MAX=100
+            RATE_LIMIT_LOGIN_MAX=5
+            FCM_ENABLED=true
+            FCM_PROJECT_ID=${FCM_PROJECT_ID}
+            FCM_CLIENT_EMAIL=${FCM_CLIENT_EMAIL}
+            FCM_PRIVATE_KEY=${FCM_PRIVATE_KEY}
+            NOTIFICATION_RETRY_ATTEMPTS=3
+            TASK_AUTO_ASSIGN_ENABLED=false
+            TASK_DEADLINE_WARNING_HOURS=24
+            KMZ_MAX_FILE_SIZE_MB=10
+            KMZ_MAX_POLYGONS=100
+            ENVEOF
 
-            # Create backup tag in ECR (for easy rollback)
-            CURRENT_IMAGE=$(docker-compose images -q backend)
-            if [ ! -z "$CURRENT_IMAGE" ]; then
-              docker tag $CURRENT_IMAGE $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S)
-              docker push $ECR_REGISTRY/sekar-backend:backup-$(date +%Y%m%d-%H%M%S) || true
+            # Expand variables using envsubst
+            envsubst < .env.production > .env.production.tmp
+            mv .env.production.tmp .env.production
+
+            # Set restrictive permissions
+            chmod 600 .env.production
+
+            # Verify .env created
+            if [ ! -f .env.production ]; then
+              echo "ERROR: Failed to create .env.production"
+              exit 1
             fi
 
-            # Pull latest image
-            docker-compose pull
+            echo "✅ Backend .env.production created"
 
-            # Run database migrations (CRITICAL!)
-            echo "Running database migrations..."
-            docker-compose run --rm backend npm run migration:run:prod || {
-              echo "Migration failed! Aborting deployment."
+            # Login to ECR
+            aws ecr get-login-password --region ap-southeast-3 | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            # Pull latest image
+            docker pull $ECR_REGISTRY/sekar-backend:latest
+
+            # Run migrations
+            docker-compose -f docker-compose.prod.yml run --rm backend npm run migration:run:prod || {
+              echo "ERROR: Migration failed"
               exit 1
             }
 
-            # Restart with zero-downtime
-            docker-compose up -d
+            # Deploy with zero-downtime
+            docker-compose -f docker-compose.prod.yml up -d backend
 
-            # Wait for startup
-            sleep 30
+            # Wait for health check
+            echo "Waiting for backend health check..."
+            sleep 10
+            curl -f http://localhost:3000/api/health || {
+              echo "ERROR: Health check failed"
+              exit 1
+            }
 
-            # Show logs
-            docker-compose logs --tail=50 backend
-
-      - name: Run smoke tests
-        run: |
-          chmod +x scripts/smoke-tests.sh || true
-          ./scripts/smoke-tests.sh http://sekar.wahyutrip.com || true
-
-          # Basic health check fallback
-          curl -f http://sekar.wahyutrip.com/api/health
-        continue-on-error: true
+            echo "✅ Backend deployment successful"
 
       - name: Notify deployment result
         env:
           COMMIT_SHA: ${{ github.sha }}
-          BRANCH_REF: ${{ github.ref }}
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             echo "::notice::Backend deployed to production successfully!"
+            echo "API: http://api.sekar.wahyutrip.com"
+            echo "Version: $COMMIT_SHA"
           else
             echo "::error::Backend deployment to production failed!"
           fi
-          echo "Version: $COMMIT_SHA"
-          echo "Branch: $BRANCH_REF"
-          echo "ECR Image: ${{ steps.login-ecr.outputs.registry }}/sekar-backend:$COMMIT_SHA"

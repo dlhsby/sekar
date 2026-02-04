@@ -34,10 +34,17 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# Environment variables
+# Environment variables (NEVER COMMIT!)
 .env
-.env.local
+.env.*
 .env.production
+.env.development
+.env.staging
+.env.local
+
+# Keep template for documentation
+!.env.template
+!.env.example
 
 # Firebase
 config/firebase-service-account.json

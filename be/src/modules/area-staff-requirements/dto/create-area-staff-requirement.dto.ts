@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID, IsInt, Min, Max, IsEnum, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsInt, Min, Max, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DayType, StaffRole } from '../entities/area-staff-requirement.entity';
 

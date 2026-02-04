@@ -1,25 +1,21 @@
-# SEKAR Web Dashboard CI/CD Pipeline
-# Triggered on: push to main/staging/develop, PRs to these branches
+# SEKAR Web Dashboard CI/CD - Production Only
+# Automated secret management with GitHub Secrets
+# Triggered on: push to main branch
 #
 # Pipeline stages:
 # 1. Lint - ESLint and TypeScript checks
 # 2. Test - Jest unit tests with Next.js
-# 3. Build - Next.js production build
-# 4. Docker - Build and push Docker image to ECR
-# 5. Deploy - SSH deploy to EC2 (environment-specific)
+# 3. Build - Build and push Docker image to ECR with production config
+# 4. Deploy - SSH deploy to production EC2
 
-name: Web CI/CD
+name: Web Dashboard CI/CD - Production
 
 on:
   push:
-    branches: [main, staging, develop]
+    branches: [main]
     paths:
       - 'fe/web/**'
       - '.github/workflows/web-ci-cd.yml'
-  pull_request:
-    branches: [main, staging, develop]
-    paths:
-      - 'fe/web/**'
 
 env:
   NODE_VERSION: '24'
@@ -100,70 +96,13 @@ jobs:
           name: web-coverage
         continue-on-error: true
 
-      - name: Check coverage threshold
-        run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
-            echo "Coverage: $COVERAGE%"
-            if (( $(echo "$COVERAGE < 70" | bc -l) )); then
-              echo "::warning::Coverage $COVERAGE% is below 70% threshold"
-            fi
-          fi
-
   # ==========================================================================
-  # Job 3: Build Application
+  # Job 3: Build and Push Docker Image
   # ==========================================================================
   build:
-    name: Build Application
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
     needs: test
-    defaults:
-      run:
-        working-directory: ./fe/web
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: fe/web/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js application
-        run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
-          NEXT_PUBLIC_WS_URL: ws://localhost:3000
-          NEXT_PUBLIC_MAPBOX_TOKEN: placeholder
-          NEXT_PUBLIC_APP_NAME: SEKAR
-          NEXT_PUBLIC_APP_VERSION: 2.0.0
-
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: |
-            fe/web/.next
-            fe/web/public
-          retention-days: 7
-
-  # ==========================================================================
-  # Job 4: Deploy to Development (develop branch)
-  # ==========================================================================
-  deploy-dev:
-    name: Deploy to Development
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment:
-      name: development
-      url: http://dev.sekar.wahyutrip.com
 
     steps:
       - name: Checkout code
@@ -174,158 +113,37 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-3
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push image to ECR
+        working-directory: ./fe/web
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sekar-web
-          IMAGE_TAG: dev-${{ github.sha }}
-        working-directory: ./fe/web
+          IMAGE_TAG: ${{ github.sha }}
+          NEXT_PUBLIC_API_URL: http://api.sekar.wahyutrip.com
+          NEXT_PUBLIC_WS_URL: ws://api.sekar.wahyutrip.com
+          MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
         run: |
           docker build \
-            --build-arg NEXT_PUBLIC_API_URL=http://dev.sekar.wahyutrip.com/api/v1 \
-            --build-arg NEXT_PUBLIC_WS_URL=ws://dev.sekar.wahyutrip.com \
-            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.MAPBOX_TOKEN }} \
-            --build-arg NEXT_PUBLIC_APP_NAME=SEKAR \
-            --build-arg NEXT_PUBLIC_APP_VERSION=2.0.0-dev \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:dev-latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:dev-latest
-
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        with:
-          host: ${{ secrets.EC2_HOST_DEV }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY
-          script: |
-            cd ~/sekar
-
-            # Login to ECR
-            aws ecr get-login-password --region ap-southeast-3 | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
-
-            # Update docker-compose to use dev-latest tag for web
-            sed -i "s|sekar-web:latest|sekar-web:dev-latest|g" docker-compose.yml
-
-            # Pull latest web image
-            docker-compose pull web
-
-            # Restart web service with zero-downtime
-            docker-compose up -d web
-
-            # Wait for startup
-            sleep 15
-
-            # Show logs
-            docker-compose logs --tail=30 web
-
-      - name: Verify deployment
-        run: |
-          sleep 20
-          curl -I http://dev.sekar.wahyutrip.com || echo "Web dashboard loading..."
-        continue-on-error: true
+            --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+            --build-arg NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL \
+            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=$MAPBOX_TOKEN \
+            -t $ECR_REGISTRY/sekar-web:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/sekar-web:$IMAGE_TAG $ECR_REGISTRY/sekar-web:latest
+          docker push $ECR_REGISTRY/sekar-web:$IMAGE_TAG
+          docker push $ECR_REGISTRY/sekar-web:latest
 
   # ==========================================================================
-  # Job 5: Deploy to Staging (staging branch)
+  # Job 4: Deploy to Production EC2
   # ==========================================================================
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
-    environment:
-      name: staging
-      url: http://staging.sekar.wahyutrip.com
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-3
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push image to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sekar-web
-          IMAGE_TAG: staging-${{ github.sha }}
-        working-directory: ./fe/web
-        run: |
-          docker build \
-            --build-arg NEXT_PUBLIC_API_URL=http://staging.sekar.wahyutrip.com/api/v1 \
-            --build-arg NEXT_PUBLIC_WS_URL=ws://staging.sekar.wahyutrip.com \
-            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.MAPBOX_TOKEN }} \
-            --build-arg NEXT_PUBLIC_APP_NAME=SEKAR \
-            --build-arg NEXT_PUBLIC_APP_VERSION=2.0.0-staging \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:staging-latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:staging-latest
-
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        with:
-          host: ${{ secrets.EC2_HOST_STAGING }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY
-          script: |
-            cd ~/sekar
-
-            # Login to ECR
-            aws ecr get-login-password --region ap-southeast-3 | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
-
-            # Update docker-compose to use staging-latest tag for web
-            sed -i "s|sekar-web:latest|sekar-web:staging-latest|g" docker-compose.yml
-
-            # Pull latest web image
-            docker-compose pull web
-
-            # Restart web service with zero-downtime
-            docker-compose up -d web
-
-            # Wait for startup
-            sleep 15
-
-            # Show logs
-            docker-compose logs --tail=30 web
-
-      - name: Run smoke tests
-        run: |
-          sleep 20
-          curl -I http://staging.sekar.wahyutrip.com || echo "Web dashboard loading..."
-          curl -f http://staging.sekar.wahyutrip.com || echo "Smoke test pending..."
-        continue-on-error: true
-
-  # ==========================================================================
-  # Job 6: Deploy to Production (main branch - with manual approval)
-  # ==========================================================================
-  deploy-prod:
+  deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: production
       url: http://sekar.wahyutrip.com
@@ -339,95 +157,51 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-3
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sekar-web
-          IMAGE_TAG: ${{ github.sha }}
-        working-directory: ./fe/web
-        run: |
-          # Build with production config
-          docker build \
-            --build-arg NEXT_PUBLIC_API_URL=http://sekar.wahyutrip.com/api/v1 \
-            --build-arg NEXT_PUBLIC_WS_URL=ws://sekar.wahyutrip.com \
-            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.MAPBOX_TOKEN }} \
-            --build-arg NEXT_PUBLIC_APP_NAME=SEKAR \
-            --build-arg NEXT_PUBLIC_APP_VERSION=2.0.0 \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-
-          # Tag as latest
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-          # Push both tags
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      - name: Deploy to EC2 via SSH
+      - name: Deploy to Production EC2
         uses: appleboy/ssh-action@v1.0.3
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY,IMAGE_TAG
+          envs: ECR_REGISTRY
           script: |
-            cd ~/sekar
+            cd ~/sekar/web
 
             # Login to ECR
-            aws ecr get-login-password --region ap-southeast-3 | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
+            aws ecr get-login-password --region ap-southeast-3 | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-            # Create backup tag in ECR (for easy rollback)
-            CURRENT_IMAGE=$(docker-compose images -q web)
-            if [ ! -z "$CURRENT_IMAGE" ]; then
-              docker tag $CURRENT_IMAGE $ECR_REGISTRY/sekar-web:backup-$(date +%Y%m%d-%H%M%S)
-              docker push $ECR_REGISTRY/sekar-web:backup-$(date +%Y%m%d-%H%M%S) || true
-            fi
+            # Pull latest image
+            docker pull $ECR_REGISTRY/sekar-web:latest
 
-            # Pull latest web image
-            docker-compose pull web
+            # Deploy with zero-downtime
+            docker-compose -f docker-compose.prod.yml up -d web
 
-            # Restart web service with zero-downtime
-            docker-compose up -d web
+            # Wait for health check
+            echo "Waiting for web dashboard health check..."
+            sleep 10
+            curl -f http://localhost:3001 || {
+              echo "ERROR: Web health check failed"
+              exit 1
+            }
 
-            # Wait for startup
-            sleep 20
-
-            # Show logs
-            docker-compose logs --tail=30 web
-
-      - name: Run smoke tests
-        run: |
-          sleep 20
-
-          # Test homepage
-          curl -f http://sekar.wahyutrip.com || echo "Homepage check failed"
-
-          # Test login page
-          curl -f http://sekar.wahyutrip.com/login || echo "Login page check failed"
-
-          # Check if Next.js is responding
-          curl -I http://sekar.wahyutrip.com | grep -i "next"
-        continue-on-error: true
+            echo "✅ Web deployment successful"
 
       - name: Notify deployment result
         env:
           COMMIT_SHA: ${{ github.sha }}
-          BRANCH_REF: ${{ github.ref }}
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             echo "::notice::Web dashboard deployed to production successfully!"
+            echo "URL: http://sekar.wahyutrip.com"
+            echo "Version: $COMMIT_SHA"
           else
             echo "::error::Web dashboard deployment to production failed!"
           fi
-          echo "Version: $COMMIT_SHA"
-          echo "Branch: $BRANCH_REF"
-          echo "ECR Image: ${{ steps.login-ecr.outputs.registry }}/sekar-web:$COMMIT_SHA"

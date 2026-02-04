@@ -163,7 +163,9 @@ describe('SpecialDayOverridesController', () => {
         date: '2026-08-18',
       };
       mockService.update.mockRejectedValue(
-        new ConflictException(`Special day override for date ${updateDtoWithDate.date} already exists`),
+        new ConflictException(
+          `Special day override for date ${updateDtoWithDate.date} already exists`,
+        ),
       );
 
       await expect(controller.update(mockSpecialDay.id, updateDtoWithDate)).rejects.toThrow(

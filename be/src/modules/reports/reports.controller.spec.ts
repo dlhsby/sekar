@@ -5,7 +5,7 @@ import { Report, ReportType } from './entities/report.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
-import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { ReportsFilterDto } from './dto/reports-filter.dto';
 
 describe('ReportsController', () => {

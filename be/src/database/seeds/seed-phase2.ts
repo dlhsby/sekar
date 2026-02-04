@@ -186,10 +186,8 @@ async function seedPhase2() {
     // ==========================================
     console.log('👤 Seeding Additional Users with Phase 2 roles...');
 
-    // Hash for password "password123" using bcrypt
-    const passwordHash = '$2b$10$5QCJ5xqKXqKXqKXqKXqKXuYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY';
-    // Note: In production, use proper password hashing. This is a placeholder.
-    // The actual seed should use AuthService.hashPassword()
+    // Bcrypt hash for password "password123" with 10 salt rounds
+    const passwordHash = '$2b$10$i2N897RRT33OoHXWMHiDoOGQKl/gG.yxg3OvRN53PZZKMeFjkPUTm';
 
     await queryRunner.query(`
       INSERT INTO users (id, username, password_hash, full_name, phone, role, rayon_id, is_active) VALUES

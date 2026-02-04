@@ -659,7 +659,7 @@ npm run start:dev
 
 ### Automated with Script
 
-`local-start.sh` (project root):
+`scripts/local-dev-start.sh`:
 
 ```bash
 #!/bin/bash

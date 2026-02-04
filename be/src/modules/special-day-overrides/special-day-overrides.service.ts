@@ -88,7 +88,9 @@ export class SpecialDayOverridesService {
       });
 
       if (existing) {
-        throw new ConflictException(`Special day override for date ${updateDto.date} already exists`);
+        throw new ConflictException(
+          `Special day override for date ${updateDto.date} already exists`,
+        );
       }
     }
 
