@@ -9,13 +9,14 @@
 import { useAuth } from '@/lib/auth/hooks';
 import { useRayon, useRayonStats, useRayonAreas } from '@/lib/api/rayons';
 import RayonStatsCards from '@/components/rayons/RayonStatsCards';
-import { NBCard, NBCardHeader, NBCardContent, NBBadge, NBTable, NBInput } from '@/components/nb';
-import { NBTableColumn } from '@/components/nb/NBTable';
+import { Card, CardHeader, CardContent, Badge, FormInput, Button, DataTable } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeft, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Area } from '@/types/models';
 import { formatArea } from '@/lib/utils/geo';
+import type { ColumnDef } from '@/components/ui/data-table';
 
 interface RayonDetailPageProps {
   params: {
@@ -65,11 +66,11 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   const pagination = areasData?.meta;
 
   // Table columns
-  const columns: NBTableColumn<Area>[] = [
+  const columns: ColumnDef<Area>[] = [
     {
       key: 'name',
-      title: 'Nama Area',
-      render: (_value: unknown, area: Area) => (
+      header: 'Nama Area',
+      cell: (area) => (
         <Link
           href={`/areas/${area.id}`}
           className="text-nb-primary font-semibold hover:underline"
@@ -80,29 +81,29 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     },
     {
       key: 'code',
-      title: 'Kode',
-      render: (_value: unknown, area: Area) => (
-        <NBBadge variant="primary" size="sm">
+      header: 'Kode',
+      cell: (area) => (
+        <Badge variant="default" size="sm">
           {area.code}
-        </NBBadge>
+        </Badge>
       ),
     },
     {
       key: 'area_type',
-      title: 'Tipe',
-      render: (_value: unknown, area: Area) => area.area_type?.name || '-',
+      header: 'Tipe',
+      cell: (area) => area.area_type?.name || '-',
     },
     {
       key: 'coverage_area',
-      title: 'Luas Tutupan',
-      render: (_value: unknown, area: Area) =>
+      header: 'Luas Tutupan',
+      cell: (area) =>
         area.coverage_area ? formatArea(area.coverage_area) : '-',
     },
     {
       key: 'description',
-      title: 'Deskripsi',
-      render: (_value: unknown, area: Area) => (
-        <span className="text-sm text-gray-600 line-clamp-1">
+      header: 'Deskripsi',
+      cell: (area) => (
+        <span className="text-sm text-nb-gray-600 line-clamp-1">
           {area.description || '-'}
         </span>
       ),
@@ -131,33 +132,22 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
 
       {/* Back Button */}
       <div className="mb-6">
-        <Link
-          href="/rayons"
-          className="inline-flex items-center text-nb-primary font-semibold hover:underline"
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/rayons')}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          <svg
-            className="w-4 h-4 mr-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
           Kembali ke Daftar Rayon
-        </Link>
+        </Button>
       </div>
 
       {/* Rayon Info Header */}
       {rayonLoading ? (
         <div className="mb-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-8 bg-nb-gray-200 w-1/3 mb-2"></div>
+            <div className="h-4 bg-nb-gray-200 w-1/4 mb-4"></div>
           </div>
         </div>
       ) : rayon ? (
@@ -167,13 +157,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
               <h1 className="text-3xl font-bold text-nb-black mb-2">
                 {rayon.name}
               </h1>
-              <NBBadge variant="primary" size="lg">
+              <Badge variant="default" size="lg">
                 {rayon.code}
-              </NBBadge>
+              </Badge>
             </div>
           </div>
           {rayon.description && (
-            <p className="text-gray-600 max-w-3xl">
+            <p className="text-nb-gray-600 max-w-3xl">
               {rayon.description}
             </p>
           )}
@@ -188,24 +178,24 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
 
       {/* Areas List */}
       <div>
-        <NBCard variant="elevated">
-          <NBCardHeader>
+        <Card variant="elevated">
+          <CardHeader>
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-nb-black">
                 Daftar Area di Rayon Ini
               </h2>
               {stats && (
-                <NBBadge variant="primary">
+                <Badge variant="default">
                   {stats.total_areas} Area
-                </NBBadge>
+                </Badge>
               )}
             </div>
-          </NBCardHeader>
+          </CardHeader>
 
-          <NBCardContent>
+          <CardContent>
             {/* Search */}
             <div className="mb-4">
-              <NBInput
+              <FormInput
                 label="Cari Area"
                 type="text"
                 placeholder="Cari area berdasarkan nama atau kode..."
@@ -214,61 +204,51 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
                   setSearch(e.target.value);
                   setPage(1); // Reset to first page
                 }}
-                leftIcon={
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                }
+                leftIcon={<Search className="w-5 h-5" />}
               />
             </div>
 
             {/* Table */}
-            <NBTable<Area>
+            <DataTable<Area>
               columns={columns}
               data={areas}
               loading={areasLoading}
-              emptyText="Tidak ada area di rayon ini"
+              emptyMessage="Tidak ada area di rayon ini"
             />
 
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-black">
-                <div className="text-sm text-gray-600">
+              <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
+                <div className="text-sm text-nb-gray-600">
                   Halaman {pagination.page} dari {pagination.totalPages} (
                   {pagination.total} total area)
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={pagination.page === 1}
-                    className="px-4 py-2 border-3 border-black bg-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                    leftIcon={<ChevronLeft className="w-4 h-4" />}
                   >
                     Sebelumnya
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() =>
                       setPage(p => Math.min(pagination.totalPages, p + 1))
                     }
                     disabled={pagination.page === pagination.totalPages}
-                    className="px-4 py-2 border-3 border-black bg-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                    rightIcon={<ChevronRight className="w-4 h-4" />}
                   >
                     Selanjutnya
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
-          </NBCardContent>
-        </NBCard>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

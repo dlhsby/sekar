@@ -7,7 +7,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NBButton, NBInput, NBSelect } from '@/components/nb';
+import { Plus, LayoutGrid, Table as TableIcon, Search } from 'lucide-react';
+import {
+  Button,
+  FormInput,
+  FormSelect,
+  Card,
+  CardContent,
+  Skeleton,
+  SkeletonCard,
+  EmptyState,
+} from '@/components/ui';
 import { AreaCard } from '@/components/areas/AreaCard';
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
 import { useAreas } from '@/lib/api/areas';
@@ -24,8 +34,8 @@ export default function AreasPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filters, setFilters] = useState<AreaFilters>({
     search: '',
-    rayon_id: '',
-    area_type_id: '',
+    rayon_id: 'all',
+    area_type_id: 'all',
     page: 1,
     limit: 12,
   });
@@ -35,7 +45,11 @@ export default function AreasPage() {
   }>({ isOpen: false, area: null });
 
   // Fetch data
-  const { data: areasData, isLoading, error } = useAreas(filters);
+  const { data: areasData, isLoading, error } = useAreas({
+    ...filters,
+    rayon_id: filters.rayon_id !== 'all' ? filters.rayon_id : undefined,
+    area_type_id: filters.area_type_id !== 'all' ? filters.area_type_id : undefined,
+  });
   const { data: rayonsData } = useRayons();
   const { data: areaTypes } = useAreaTypes();
 
@@ -78,24 +92,25 @@ export default function AreasPage() {
       <div className="space-y-6">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between">
-          <div className="h-10 w-48 bg-gray-200 border-4 border-black rounded animate-pulse" />
-          <div className="h-12 w-32 bg-gray-200 border-4 border-black rounded animate-pulse" />
+          <Skeleton variant="heading" className="w-48" />
+          <Skeleton variant="button" className="w-32" />
         </div>
 
         {/* Filters Skeleton */}
-        <div className="flex gap-3">
-          <div className="h-12 flex-1 bg-gray-200 border-4 border-black rounded animate-pulse" />
-          <div className="h-12 w-48 bg-gray-200 border-4 border-black rounded animate-pulse" />
-          <div className="h-12 w-48 bg-gray-200 border-4 border-black rounded animate-pulse" />
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex gap-3">
+              <Skeleton className="h-12 flex-1" />
+              <Skeleton className="h-12 w-48" />
+              <Skeleton className="h-12 w-48" />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Grid Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="h-96 bg-gray-200 border-4 border-black rounded-lg animate-pulse"
-            />
+            <SkeletonCard key={i} />
           ))}
         </div>
       </div>
@@ -106,16 +121,14 @@ export default function AreasPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="bg-red-100 border-4 border-black p-8 rounded-lg text-center max-w-md">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h3 className="font-bold text-lg mb-2">Error Memuat Data</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            {error instanceof Error ? error.message : 'Terjadi kesalahan'}
-          </p>
-          <NBButton onClick={() => window.location.reload()} variant="primary">
-            Coba Lagi
-          </NBButton>
-        </div>
+        <EmptyState
+          variant="error"
+          description={error instanceof Error ? error.message : 'Terjadi kesalahan saat memuat data.'}
+          action={{
+            label: 'Coba Lagi',
+            onClick: () => window.location.reload(),
+          }}
+        />
       </div>
     );
   }
@@ -129,110 +142,118 @@ export default function AreasPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-black">Area Kerja</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-nb-gray-600 mt-1">
             Kelola area kerja dan batas wilayah
           </p>
         </div>
 
         {isAdmin && (
-          <NBButton onClick={handleCreateNew} variant="primary">
-            ➕ Tambah Area
-          </NBButton>
+          <Button onClick={handleCreateNew} leftIcon={<Plus className="w-5 h-5" />}>
+            Tambah Area
+          </Button>
         )}
       </div>
 
       {/* Filters */}
-      <div className="bg-white border-4 border-black p-4 rounded-lg">
-        <div className="flex gap-3 flex-wrap items-end">
-          {/* Search */}
-          <div className="flex-1 min-w-[200px]">
-            <NBInput
-              label="Cari Area"
-              placeholder="🔍 Cari nama atau kode area..."
-              value={filters.search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-            />
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex gap-3 flex-wrap items-end">
+            {/* Search */}
+            <div className="flex-1 min-w-[200px]">
+              <FormInput
+                label="Cari Area"
+                placeholder="Cari nama atau kode area..."
+                value={filters.search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                leftIcon={<Search className="w-5 h-5" />}
+              />
+            </div>
+
+            {/* Rayon Filter */}
+            <div className="w-48">
+              <FormSelect
+                label="Filter Rayon"
+                options={[
+                  { value: 'all', label: 'Semua Rayon' },
+                  ...(rayonsData?.map((rayon) => ({
+                    value: rayon.id,
+                    label: rayon.name,
+                  })) || []),
+                ]}
+                value={filters.rayon_id}
+                onChange={(value) => handleRayonChange(value)}
+              />
+            </div>
+
+            {/* Area Type Filter */}
+            <div className="w-48">
+              <FormSelect
+                label="Filter Tipe"
+                options={[
+                  { value: 'all', label: 'Semua Tipe' },
+                  ...(areaTypes?.map((type) => ({
+                    value: type.id,
+                    label: type.name,
+                  })) || []),
+                ]}
+                value={filters.area_type_id}
+                onChange={(value) => handleAreaTypeChange(value)}
+              />
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setViewMode('grid')}
+                variant={viewMode === 'grid' ? 'default' : 'secondary'}
+                size="sm"
+              >
+                <LayoutGrid className="w-4 h-4 mr-1" />
+                Grid
+              </Button>
+              <Button
+                onClick={() => setViewMode('table')}
+                variant={viewMode === 'table' ? 'default' : 'secondary'}
+                size="sm"
+              >
+                <TableIcon className="w-4 h-4 mr-1" />
+                Tabel
+              </Button>
+            </div>
           </div>
 
-          {/* Rayon Filter */}
-          <div className="w-48">
-            <NBSelect
-              label="Filter Rayon"
-              options={[
-                { value: '', label: 'Semua Rayon', disabled: false },
-                ...(rayonsData?.map((rayon) => ({
-                  value: rayon.id,
-                  label: rayon.name,
-                  disabled: false,
-                })) || []),
-              ]}
-              value={filters.rayon_id}
-              onChange={(value) => handleRayonChange(value as string)}
-            />
+          {/* Results count */}
+          <div className="mt-3 text-sm text-nb-gray-600">
+            Menampilkan <strong>{areas.length}</strong> dari{' '}
+            <strong>{totalAreas}</strong> area
           </div>
-
-          {/* Area Type Filter */}
-          <div className="w-48">
-            <NBSelect
-              label="Filter Tipe"
-              options={[
-                { value: '', label: 'Semua Tipe', disabled: false },
-                ...(areaTypes?.map((type) => ({
-                  value: type.id,
-                  label: type.name,
-                  disabled: false,
-                })) || []),
-              ]}
-              value={filters.area_type_id}
-              onChange={(value) => handleAreaTypeChange(value as string)}
-            />
-          </div>
-
-          {/* View Toggle */}
-          <div className="flex gap-2">
-            <NBButton
-              onClick={() => setViewMode('grid')}
-              variant={viewMode === 'grid' ? 'primary' : 'secondary'}
-              size="sm"
-            >
-              🔲 Grid
-            </NBButton>
-            <NBButton
-              onClick={() => setViewMode('table')}
-              variant={viewMode === 'table' ? 'primary' : 'secondary'}
-              size="sm"
-            >
-              📋 Tabel
-            </NBButton>
-          </div>
-        </div>
-
-        {/* Results count */}
-        <div className="mt-3 text-sm text-gray-600">
-          Menampilkan <strong>{areas.length}</strong> dari{' '}
-          <strong>{totalAreas}</strong> area
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Content */}
       {areas.length === 0 ? (
         // Empty state
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center max-w-md">
-            <div className="text-6xl mb-4">🗺️</div>
-            <h3 className="font-bold text-xl mb-2">Belum Ada Area</h3>
-            <p className="text-gray-600 mb-6">
-              {filters.search || filters.rayon_id || filters.area_type_id
-                ? 'Tidak ada area yang sesuai dengan filter.'
-                : 'Mulai dengan menambahkan area kerja pertama.'}
-            </p>
-            {isAdmin && !filters.search && !filters.rayon_id && !filters.area_type_id && (
-              <NBButton onClick={handleCreateNew} variant="primary">
-                ➕ Tambah Area Pertama
-              </NBButton>
-            )}
-          </div>
-        </div>
+        <EmptyState
+          variant={filters.search || (filters.rayon_id !== 'all') || (filters.area_type_id !== 'all') ? 'noResults' : 'noData'}
+          title={
+            filters.search || (filters.rayon_id !== 'all') || (filters.area_type_id !== 'all')
+              ? 'Area Tidak Ditemukan'
+              : 'Belum Ada Area'
+          }
+          description={
+            filters.search || (filters.rayon_id !== 'all') || (filters.area_type_id !== 'all')
+              ? 'Tidak ada area yang sesuai dengan filter. Coba ubah kriteria pencarian.'
+              : 'Mulai dengan menambahkan area kerja pertama.'
+          }
+          action={
+            isAdmin && !filters.search && (filters.rayon_id === 'all') && (filters.area_type_id === 'all')
+              ? {
+                  label: 'Tambah Area Pertama',
+                  onClick: handleCreateNew,
+                }
+              : undefined
+          }
+        />
       ) : viewMode === 'grid' ? (
         // Grid view
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -249,9 +270,11 @@ export default function AreasPage() {
         </div>
       ) : (
         // Table view (TODO: implement table view)
-        <div className="bg-white border-4 border-black p-8 rounded-lg text-center">
-          <p className="text-gray-600">Table view coming soon...</p>
-        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-nb-gray-600">Table view coming soon...</p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Delete Modal */}
@@ -260,7 +283,6 @@ export default function AreasPage() {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, area: null })}
         onSuccess={() => {
-          // Refresh will happen automatically due to query invalidation
           setDeleteModal({ isOpen: false, area: null });
         }}
       />

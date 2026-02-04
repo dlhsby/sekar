@@ -2,14 +2,18 @@
 @import "mapbox-gl/dist/mapbox-gl.css";
 @import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
-/* Neo Brutalism Design System for SEKAR Web Dashboard */
-/* Tailwind CSS 4 Configuration using @theme directive */
+/* ============================================
+   SEKAR Web Dashboard - Neo Brutalism Design System
+   Tailwind CSS v4 - CSS-First Configuration
+   ============================================ */
 
-@theme inline {
-  /* ============================================
-     COLOR SYSTEM - Neo Brutalism Palette
-     Matches Phase 2C Mobile Implementation
-     ============================================ */
+/* ============================================
+   TAILWIND CSS V4 THEME
+   All custom design tokens defined here
+   ============================================ */
+
+@theme {
+  /* ===== COLOR SYSTEM - Neo Brutalism Palette ===== */
 
   /* Primary Actions */
   --color-nb-primary: #0066CC;
@@ -28,6 +32,7 @@
   --color-nb-black: #000000;
   --color-nb-white: #FFFFFF;
   --color-nb-navy: #001F3F;
+  --color-nb-navy-light: #003366;
 
   /* Gray Scale */
   --color-nb-gray-50: #FAFAFA;
@@ -41,84 +46,220 @@
   --color-nb-gray-800: #303030;
   --color-nb-gray-900: #212121;
 
-  /* ============================================
-     BOX SHADOWS - Hard-edge Offset Shadows
-     No blur, pure Neo Brutalism aesthetic
-     ============================================ */
+  /* shadcn-ui compatible colors */
+  --color-background: #FAFAFA;
+  --color-foreground: #000000;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #000000;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #000000;
+  --color-primary: #0066CC;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F5F5F5;
+  --color-secondary-foreground: #000000;
+  --color-muted: #EEEEEE;
+  --color-muted-foreground: #666666;
+  --color-accent: #F5F5F5;
+  --color-accent-foreground: #000000;
+  --color-destructive: #DC2626;
+  --color-destructive-foreground: #FFFFFF;
+  --color-success: #1B5E20;
+  --color-success-foreground: #FFFFFF;
+  --color-warning: #F57C00;
+  --color-warning-foreground: #000000;
+  --color-border: #000000;
+  --color-input: #000000;
+  --color-ring: #0066CC;
 
-  --shadow-nb-sm: 4px 4px 0px var(--color-nb-black);
-  --shadow-nb-md: 6px 6px 0px var(--color-nb-black);
-  --shadow-nb-lg: 8px 8px 0px var(--color-nb-black);
-  --shadow-nb-hover: 8px 8px 0px var(--color-nb-black);
-  --shadow-nb-active: 2px 2px 0px var(--color-nb-black);
+  /* Sidebar colors */
+  --color-sidebar: #001F3F;
+  --color-sidebar-foreground: #FFFFFF;
+  --color-sidebar-primary: #FFFFFF;
+  --color-sidebar-primary-foreground: #001F3F;
+  --color-sidebar-accent: #003366;
+  --color-sidebar-accent-foreground: #FFFFFF;
+  --color-sidebar-border: #003366;
+
+  /* Chart colors */
+  --color-chart-1: #0066CC;
+  --color-chart-2: #1B5E20;
+  --color-chart-3: #F57C00;
+  --color-chart-4: #DC2626;
+  --color-chart-5: #9E9E9E;
+
+  /* ===== BOX SHADOWS - Hard-edge Offset Shadows ===== */
+  --shadow-nb-sm: 4px 4px 0px #000000;
+  --shadow-nb-md: 6px 6px 0px #000000;
+  --shadow-nb-lg: 8px 8px 0px #000000;
+  --shadow-nb-xl: 12px 12px 0px #000000;
+  --shadow-nb-hover: 8px 8px 0px #000000;
+  --shadow-nb-active: 2px 2px 0px #000000;
   --shadow-nb-none: 0px 0px 0px transparent;
 
-  /* ============================================
-     BORDER WIDTHS
-     ============================================ */
+  /* Colored shadows for status states */
+  --shadow-nb-primary: 4px 4px 0px #0066CC;
+  --shadow-nb-success: 4px 4px 0px #1B5E20;
+  --shadow-nb-warning: 4px 4px 0px #F57C00;
+  --shadow-nb-danger: 4px 4px 0px #DC2626;
 
-  --width-3: 3px;
+  /* ===== TYPOGRAPHY ===== */
+  --font-family-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
-  /* ============================================
-     TYPOGRAPHY
-     Font Family & Scale
-     ============================================ */
+  /* ===== SPACING ===== */
+  --spacing-touch: 48px;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  /* ===== SIZING ===== */
+  --width-sidebar: 256px;
+  --width-sidebar-collapsed: 64px;
 
-  /* Font Sizes with Line Heights */
-  --font-size-xs: 12px;
-  --line-height-xs: 18px;
-  --font-size-sm: 14px;
-  --line-height-sm: 21px;
-  --font-size-base: 16px;
-  --line-height-base: 24px;
-  --font-size-lg: 18px;
-  --line-height-lg: 27px;
-  --font-size-xl: 20px;
-  --line-height-xl: 25px;
-  --font-size-2xl: 24px;
-  --line-height-2xl: 30px;
-  --font-size-3xl: 30px;
-  --line-height-3xl: 38px;
-  --font-size-4xl: 36px;
-  --line-height-4xl: 45px;
+  /* ===== ANIMATIONS ===== */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-shimmer: shimmer 2s infinite;
 
-  /* Font Weights */
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-extrabold: 800;
+  /* ===== BREAKPOINTS (reference) ===== */
+  /* sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px */
 
-  /* ============================================
-     SPACING SCALE - 8px Baseline Grid
-     ============================================ */
+  /* ===== RADIUS - Neo Brutalism uses sharp edges ===== */
+  --radius-none: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
 
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
+/* ============================================
+   KEYFRAME ANIMATIONS
+   ============================================ */
 
-  /* ============================================
-     SIZING
-     ============================================ */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
 
-  --size-touch: 48px; /* Minimum touch target */
-  --width-content: 1440px; /* Max content width */
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
 
-  /* ============================================
-     TRANSITIONS
-     ============================================ */
+@keyframes shimmer {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.3; }
+}
 
-  --duration-fast: 100ms;
-  --duration-normal: 200ms;
-  --duration-slow: 300ms;
-  --ease-nb: ease-out;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   CSS VARIABLES FOR SHADCN COMPATIBILITY
+   Using HSL format for color manipulation
+   ============================================ */
+
+@layer base {
+  :root {
+    /* shadcn-ui HSL variables for CSS color functions */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 210 100% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 122 72% 24%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 27 98% 49%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+    --ring: 210 100% 40%;
+
+    /* Neo Brutalism: No rounded corners */
+    --radius: 0rem;
+
+    /* Sidebar HSL */
+    --sidebar-background: 210 100% 12%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 210 100% 12%;
+    --sidebar-accent: 210 100% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 210 100% 25%;
+    --sidebar-ring: 210 100% 40%;
+
+    /* Chart HSL */
+    --chart-1: 210 100% 40%;
+    --chart-2: 122 72% 24%;
+    --chart-3: 27 98% 49%;
+    --chart-4: 0 84% 50%;
+    --chart-5: 0 0% 62%;
+  }
+
+  .dark {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 62%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 122 72% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 27 98% 49%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 0 0% 30%;
+    --input: 0 0% 30%;
+    --ring: 210 100% 50%;
+
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 210 100% 50%;
+  }
 }
 
 /* ============================================
@@ -135,11 +276,7 @@ html {
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-base);
+  @apply m-0 p-0 font-sans text-base leading-relaxed;
   color: var(--color-nb-black);
   background-color: var(--color-nb-gray-50);
 }
@@ -175,27 +312,74 @@ body {
    Custom utilities for Neo Brutalism
    ============================================ */
 
-.nb-focus-ring {
-  @apply focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2;
-}
+@layer utilities {
+  /* Border width 3px - NB signature */
+  .border-3 {
+    border-width: 3px;
+  }
 
-.nb-shadow-press {
-  box-shadow: var(--shadow-nb-active);
-  transform: translate(2px, 2px);
-}
+  /* Touch-friendly minimum sizes */
+  .min-h-touch {
+    min-height: 48px;
+  }
 
-.nb-shadow-hover-anim {
-  transition: all var(--duration-fast) var(--ease-nb);
-}
+  .min-w-touch {
+    min-width: 48px;
+  }
 
-.nb-shadow-hover-anim:hover {
-  box-shadow: var(--shadow-nb-hover);
-  transform: translate(-2px, -2px);
-}
+  /* NB Focus Ring utility */
+  .nb-focus-ring {
+    @apply focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2;
+  }
 
-.nb-shadow-hover-anim:active {
-  box-shadow: var(--shadow-nb-active);
-  transform: translate(2px, 2px);
+  /* NB Shadow utilities with press animation */
+  .nb-shadow-press {
+    box-shadow: var(--shadow-nb-active);
+    transform: translate(2px, 2px);
+  }
+
+  .nb-shadow-hover-anim {
+    transition: all 100ms ease-out;
+  }
+
+  .nb-shadow-hover-anim:hover {
+    box-shadow: var(--shadow-nb-hover);
+    transform: translate(-2px, -2px);
+  }
+
+  .nb-shadow-hover-anim:active {
+    box-shadow: var(--shadow-nb-active);
+    transform: translate(2px, 2px);
+  }
+
+  /* NB interactive card animation */
+  .nb-interactive {
+    @apply cursor-pointer transition-all duration-100;
+    @apply hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5;
+    @apply active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5;
+  }
+
+  /* Sidebar width utilities */
+  .w-sidebar {
+    width: 256px;
+  }
+
+  .w-sidebar-collapsed {
+    width: 64px;
+  }
+
+  .ml-sidebar {
+    margin-left: 256px;
+  }
+
+  /* Animation utilities */
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
 }
 
 /* ============================================
@@ -218,4 +402,61 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-nb-gray-500);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-nb-gray-400) var(--color-nb-gray-100);
+}
+
+/* ============================================
+   COMPONENT BASE STYLES
+   Default styling for common elements
+   ============================================ */
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl;
+  }
+
+  h2 {
+    @apply text-3xl;
+  }
+
+  h3 {
+    @apply text-2xl;
+  }
+
+  h4 {
+    @apply text-xl;
+  }
+
+  h5 {
+    @apply text-lg;
+  }
+
+  h6 {
+    @apply text-base;
+  }
+
+  a {
+    @apply text-nb-primary hover:underline;
+  }
+
+  /* Remove default button styling */
+  button {
+    @apply cursor-pointer;
+  }
+
+  /* Form element resets for NB styling */
+  input,
+  textarea,
+  select {
+    @apply font-sans;
+  }
 }

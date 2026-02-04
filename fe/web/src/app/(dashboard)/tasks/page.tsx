@@ -8,34 +8,37 @@
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useTasks, type TaskStatus, type TaskPriority } from '@/lib/api/tasks';
-import { NBCard, NBCardHeader, NBCardContent, NBBadge, NBTable, NBSelect, NBButton } from '@/components/nb';
-import { NBTableColumn } from '@/components/nb/NBTable';
+import {
+  Card, CardHeader, CardContent, Badge, DataTable, FormSelect, Button
+} from '@/components/ui';
+import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Task } from '@/lib/api/tasks';
+
+// Access control
+const ALLOWED_ROLES = ['admin', 'kepala_rayon', 'koordinator_lapangan'];
 
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
-  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('');
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [page, setPage] = useState(1);
   const limit = 20;
 
-  // Access control
-  const allowedRoles = ['Admin', 'KepalaRayon', 'KoordinatorLapangan'];
-
   useEffect(() => {
-    if (!authLoading && user && !allowedRoles.includes(user.role)) {
+    if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 
   // Fetch tasks
   const { data: tasksData, isLoading } = useTasks({
-    status: statusFilter || undefined,
-    priority: priorityFilter || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    priority: priorityFilter !== 'all' ? priorityFilter : undefined,
     page,
     limit,
   });
@@ -53,7 +56,7 @@ export default function TasksPage() {
   }
 
   // Access denied
-  if (!allowedRoles.includes(user.role)) {
+  if (!ALLOWED_ROLES.includes(user.role)) {
     return null;
   }
 
@@ -62,7 +65,7 @@ export default function TasksPage() {
 
   // Status options
   const statusOptions = [
-    { value: '', label: 'Semua Status' },
+    { value: 'all', label: 'Semua Status' },
     { value: 'pending', label: 'Pending' },
     { value: 'assigned', label: 'Ditugaskan' },
     { value: 'accepted', label: 'Diterima' },
@@ -74,7 +77,7 @@ export default function TasksPage() {
 
   // Priority options
   const priorityOptions = [
-    { value: '', label: 'Semua Prioritas' },
+    { value: 'all', label: 'Semua Prioritas' },
     { value: 'low', label: 'Rendah' },
     { value: 'normal', label: 'Normal' },
     { value: 'high', label: 'Tinggi' },
@@ -82,37 +85,37 @@ export default function TasksPage() {
   ];
 
   // Status badge colors
-  const statusBadges: Record<TaskStatus, 'neutral' | 'primary' | 'success' | 'warning' | 'danger'> = {
-    pending: 'neutral',
-    assigned: 'primary',
-    accepted: 'primary',
+  const statusBadges: Record<TaskStatus, 'secondary' | 'default' | 'success' | 'warning' | 'destructive'> = {
+    pending: 'secondary',
+    assigned: 'default',
+    accepted: 'default',
     in_progress: 'warning',
     completed: 'success',
-    declined: 'danger',
-    cancelled: 'neutral',
+    declined: 'destructive',
+    cancelled: 'secondary',
   };
 
   // Priority badge colors
-  const priorityBadges: Record<TaskPriority, 'neutral' | 'success' | 'warning' | 'danger'> = {
-    low: 'neutral',
+  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> = {
+    low: 'secondary',
     normal: 'success',
     high: 'warning',
-    urgent: 'danger',
+    urgent: 'destructive',
   };
 
   // Table columns
-  const columns: NBTableColumn<Task>[] = [
+  const columns: ColumnDef<Task>[] = [
     {
       key: 'title',
-      title: 'Judul Tugas',
-      render: (_value: unknown, task: Task) => (
+      header: 'Judul Tugas',
+      cell: (task) => (
         <div className="font-semibold text-nb-black">{task.title}</div>
       ),
     },
     {
       key: 'assigned_to',
-      title: 'Ditugaskan Ke',
-      render: (_value: unknown, task: Task) => (
+      header: 'Ditugaskan Ke',
+      cell: (task) => (
         <div className="text-sm">
           {task.assigned_to ? task.assigned_to.full_name : '-'}
         </div>
@@ -120,33 +123,33 @@ export default function TasksPage() {
     },
     {
       key: 'area',
-      title: 'Area',
-      render: (_value: unknown, task: Task) => (
+      header: 'Area',
+      cell: (task) => (
         <div className="text-sm">{task.area ? task.area.name : '-'}</div>
       ),
     },
     {
       key: 'priority',
-      title: 'Prioritas',
-      render: (_value: unknown, task: Task) => (
-        <NBBadge variant={priorityBadges[task.priority]} size="sm">
+      header: 'Prioritas',
+      cell: (task) => (
+        <Badge variant={priorityBadges[task.priority]} size="sm">
           {priorityOptions.find((p) => p.value === task.priority)?.label || task.priority}
-        </NBBadge>
+        </Badge>
       ),
     },
     {
       key: 'status',
-      title: 'Status',
-      render: (_value: unknown, task: Task) => (
-        <NBBadge variant={statusBadges[task.status]} size="sm">
+      header: 'Status',
+      cell: (task) => (
+        <Badge variant={statusBadges[task.status]} size="sm">
           {statusOptions.find((s) => s.value === task.status)?.label || task.status}
-        </NBBadge>
+        </Badge>
       ),
     },
     {
       key: 'due_date',
-      title: 'Tenggat',
-      render: (_value: unknown, task: Task) => (
+      header: 'Tenggat',
+      cell: (task) => (
         <div className="text-sm">
           {task.due_date
             ? new Date(task.due_date).toLocaleDateString('id-ID')
@@ -156,8 +159,8 @@ export default function TasksPage() {
     },
     {
       key: 'actions',
-      title: 'Aksi',
-      render: (_value: unknown, task: Task) => (
+      header: 'Aksi',
+      cell: (task) => (
         <Link
           href={`/tasks/${task.id}`}
           className="text-nb-primary font-semibold hover:underline"
@@ -178,125 +181,130 @@ export default function TasksPage() {
             Kelola penugasan pekerja
           </p>
         </div>
-        <NBButton onClick={() => router.push('/tasks/new')} variant="primary">
-          ➕ Buat Tugas Baru
-        </NBButton>
+        <Button onClick={() => router.push('/tasks/new')} leftIcon={<Plus className="w-5 h-5" />}>
+          Buat Tugas Baru
+        </Button>
       </div>
 
       {/* Filters */}
-      <NBCard variant="elevated">
-        <NBCardContent>
+      <Card variant="elevated">
+        <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Status Filter */}
-            <NBSelect
+            <FormSelect
               label="Filter Status"
               value={statusFilter}
-              onChange={(value) => setStatusFilter(value as TaskStatus | '')}
+              onChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
               options={statusOptions}
             />
 
             {/* Priority Filter */}
-            <NBSelect
+            <FormSelect
               label="Filter Prioritas"
               value={priorityFilter}
-              onChange={(value) => setPriorityFilter(value as TaskPriority | '')}
+              onChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
               options={priorityOptions}
             />
           </div>
 
           {/* Clear Filters */}
-          {(statusFilter || priorityFilter) && (
-            <button
+          {(statusFilter !== 'all' || priorityFilter !== 'all') && (
+            <Button
+              variant="secondary"
               onClick={() => {
-                setStatusFilter('');
-                setPriorityFilter('');
+                setStatusFilter('all');
+                setPriorityFilter('all');
               }}
-              className="mt-4 px-4 py-2 border-3 border-black bg-white font-semibold hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+              className="mt-4"
             >
               Reset Filter
-            </button>
+            </Button>
           )}
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <NBCard variant="elevated">
-          <NBCardContent>
-            <div className="text-sm font-semibold text-gray-600 mb-2">Total Tugas</div>
+        <Card variant="elevated">
+          <CardContent>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Total Tugas</div>
             <div className="text-3xl font-black text-nb-black">
               {pagination?.total || 0}
             </div>
-          </NBCardContent>
-        </NBCard>
-        <NBCard variant="elevated">
-          <NBCardContent>
-            <div className="text-sm font-semibold text-gray-600 mb-2">Pending</div>
+          </CardContent>
+        </Card>
+        <Card variant="elevated">
+          <CardContent>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Pending</div>
             <div className="text-3xl font-black text-nb-warning">
               {tasks.filter((t) => t.status === 'pending' || t.status === 'assigned').length}
             </div>
-          </NBCardContent>
-        </NBCard>
-        <NBCard variant="elevated">
-          <NBCardContent>
-            <div className="text-sm font-semibold text-gray-600 mb-2">Sedang Dikerjakan</div>
+          </CardContent>
+        </Card>
+        <Card variant="elevated">
+          <CardContent>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Sedang Dikerjakan</div>
             <div className="text-3xl font-black text-nb-primary">
               {tasks.filter((t) => t.status === 'in_progress').length}
             </div>
-          </NBCardContent>
-        </NBCard>
-        <NBCard variant="elevated">
-          <NBCardContent>
-            <div className="text-sm font-semibold text-gray-600 mb-2">Selesai</div>
+          </CardContent>
+        </Card>
+        <Card variant="elevated">
+          <CardContent>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Selesai</div>
             <div className="text-3xl font-black text-nb-success">
               {tasks.filter((t) => t.status === 'completed').length}
             </div>
-          </NBCardContent>
-        </NBCard>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Table */}
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      <Card variant="elevated">
+        <CardHeader>
           <h2 className="text-xl font-bold text-nb-black">Daftar Tugas</h2>
-        </NBCardHeader>
-        <NBCardContent>
-          <NBTable<Task>
+        </CardHeader>
+        <CardContent>
+          <DataTable<Task>
             columns={columns}
             data={tasks}
             loading={isLoading}
-            emptyText="Tidak ada tugas"
+            emptyMessage="Tidak ada tugas"
           />
 
           {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-black">
-              <div className="text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
+              <div className="text-sm text-nb-gray-600">
                 Halaman {pagination.page} dari {pagination.totalPages} (
                 {pagination.total} total tugas)
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={pagination.page === 1}
-                  className="px-4 py-2 border-3 border-black bg-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                  leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
                   Sebelumnya
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() =>
                     setPage((p) => Math.min(pagination.totalPages, p + 1))
                   }
                   disabled={pagination.page === pagination.totalPages}
-                  className="px-4 py-2 border-3 border-black bg-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                  rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
                   Selanjutnya
-                </button>
+                </Button>
               </div>
             </div>
           )}
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
     </div>
   );
 }

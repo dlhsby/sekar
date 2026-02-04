@@ -9,7 +9,8 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import { Map } from './Map';
-import { NBButton } from '@/components/nb';
+import { Button } from '@/components/ui';
+import { Pencil, Trash2, X } from 'lucide-react';
 import {
   calculatePolygonArea,
   formatArea,
@@ -58,7 +59,8 @@ export function PolygonEditor({
         onAreaChange(calculatedArea);
       }
     }
-  }, [initialPolygon, onAreaChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPolygon]);
 
   // Handle map load
   const handleMapLoad = (map: mapboxgl.Map) => {
@@ -224,47 +226,55 @@ export function PolygonEditor({
       {/* Toolbar */}
       {!readonly && (
         <div className="flex items-center gap-3 flex-wrap">
-          <NBButton
+          <Button
             onClick={handleDrawPolygon}
-            variant={mode === 'draw' ? 'primary' : 'secondary'}
+            variant={mode === 'draw' ? 'default' : 'secondary'}
             size="sm"
             disabled={mode === 'draw'}
+            leftIcon={<Pencil className="w-4 h-4" />}
           >
-            ✏️ {currentPolygon ? 'Gambar Ulang' : 'Gambar Polygon'}
-          </NBButton>
+            {currentPolygon ? 'Gambar Ulang' : 'Gambar Polygon'}
+          </Button>
 
           {currentPolygon && (
             <>
-              <NBButton
+              <Button
                 onClick={handleEditPolygon}
-                variant={mode === 'edit' ? 'primary' : 'secondary'}
+                variant={mode === 'edit' ? 'default' : 'secondary'}
                 size="sm"
                 disabled={mode === 'edit'}
+                leftIcon={<Pencil className="w-4 h-4" />}
               >
-                ✏️ Edit Polygon
-              </NBButton>
+                Edit Polygon
+              </Button>
 
-              <NBButton
+              <Button
                 onClick={handleDeletePolygon}
-                variant="danger"
+                variant="destructive"
                 size="sm"
+                leftIcon={<Trash2 className="w-4 h-4" />}
               >
-                🗑️ Hapus Polygon
-              </NBButton>
+                Hapus Polygon
+              </Button>
             </>
           )}
 
           {mode !== 'view' && (
-            <NBButton onClick={handleCancel} variant="secondary" size="sm">
-              ✖️ Batal
-            </NBButton>
+            <Button
+              onClick={handleCancel}
+              variant="secondary"
+              size="sm"
+              leftIcon={<X className="w-4 h-4" />}
+            >
+              Batal
+            </Button>
           )}
         </div>
       )}
 
       {/* Area display */}
       {currentPolygon && area > 0 && (
-        <div className="bg-amber-100 border-4 border-black p-4 rounded-lg">
+        <div className="bg-amber-100 border-3 border-nb-black p-4">
           <div className="flex items-center gap-2">
             <span className="font-bold">Luas Area:</span>
             <span className="text-2xl font-black">{formatArea(area)}</span>
@@ -283,7 +293,7 @@ export function PolygonEditor({
 
       {/* Instructions */}
       {!readonly && (
-        <div className="bg-gray-100 border-4 border-black p-4 rounded-lg">
+        <div className="bg-nb-gray-100 border-3 border-nb-black p-4">
           <h4 className="font-bold mb-2">Petunjuk:</h4>
           <ul className="text-sm space-y-1 list-disc list-inside">
             <li>Klik tombol "Gambar Polygon" untuk mulai menggambar</li>

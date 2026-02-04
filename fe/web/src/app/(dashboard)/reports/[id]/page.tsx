@@ -8,10 +8,11 @@
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useReport, useReviewReport } from '@/lib/api/reports';
-import { NBCard, NBCardHeader, NBCardContent, NBBadge, NBButton } from '@/components/nb';
+import { Card, CardHeader, CardContent, Badge, Button } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 
 interface ReportDetailPageProps {
   params: {
@@ -19,16 +20,16 @@ interface ReportDetailPageProps {
   };
 }
 
+// Access control
+const ALLOWED_ROLES = ['Admin', 'TopManagement', 'KepalaRayon', 'KoordinatorLapangan'];
+
 export default function ReportDetailPage({ params }: ReportDetailPageProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [reviewing, setReviewing] = useState(false);
 
-  // Access control
-  const allowedRoles = ['Admin', 'TopManagement', 'KepalaRayon', 'KoordinatorLapangan'];
-
   useEffect(() => {
-    if (!authLoading && user && !allowedRoles.includes(user.role)) {
+    if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
@@ -49,7 +50,7 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
   }
 
   // Access denied
-  if (!allowedRoles.includes(user.role)) {
+  if (!ALLOWED_ROLES.includes(user.role)) {
     return null;
   }
 
@@ -93,15 +94,14 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
 
       {/* Back Button */}
       <div className="mb-6">
-        <Link
-          href="/reports"
-          className="inline-flex items-center text-nb-primary font-semibold hover:underline"
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/reports')}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
           Kembali ke Daftar Laporan
-        </Link>
+        </Button>
       </div>
 
       {/* Header */}
@@ -109,81 +109,81 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
         <div>
           <h1 className="text-3xl font-bold text-nb-black mb-2">Detail Laporan</h1>
           <div className="flex items-center gap-2">
-            <NBBadge variant={report.is_reviewed ? 'success' : 'neutral'} size="lg">
+            <Badge variant={report.is_reviewed ? 'success' : 'secondary'} size="lg">
               {report.is_reviewed ? 'Ditinjau' : 'Belum Ditinjau'}
-            </NBBadge>
+            </Badge>
           </div>
         </div>
         {!report.is_reviewed && (
-          <NBButton onClick={handleReview} variant="primary" loading={reviewing}>
+          <Button onClick={handleReview} loading={reviewing} leftIcon={<CheckCircle className="w-4 h-4" />}>
             Tandai Sudah Ditinjau
-          </NBButton>
+          </Button>
         )}
       </div>
 
       {/* Report Info */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Basic Info */}
-        <NBCard variant="elevated">
-          <NBCardHeader>
+        <Card variant="elevated">
+          <CardHeader>
             <h2 className="text-xl font-bold text-nb-black">Informasi Laporan</h2>
-          </NBCardHeader>
-          <NBCardContent>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-semibold text-gray-600">Pekerja</div>
+                <div className="text-sm font-semibold text-nb-gray-600">Pekerja</div>
                 <div className="font-bold text-nb-black">{report.worker.full_name}</div>
-                <div className="text-sm text-gray-600">{report.worker.username}</div>
+                <div className="text-sm text-nb-gray-600">{report.worker.username}</div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-gray-600">Area</div>
+                <div className="text-sm font-semibold text-nb-gray-600">Area</div>
                 <div className="font-bold text-nb-black">{report.area.name}</div>
-                <div className="text-sm text-gray-600">{report.area.areaType.name}</div>
+                <div className="text-sm text-nb-gray-600">{report.area.areaType.name}</div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-gray-600">Tanggal & Waktu</div>
+                <div className="text-sm font-semibold text-nb-gray-600">Tanggal & Waktu</div>
                 <div className="font-bold text-nb-black">
                   {new Date(report.created_at).toLocaleString('id-ID')}
                 </div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-gray-600">Lokasi GPS</div>
+                <div className="text-sm font-semibold text-nb-gray-600">Lokasi GPS</div>
                 <div className="font-mono text-sm">
                   {report.gps_lat}, {report.gps_lng}
                 </div>
               </div>
             </div>
-          </NBCardContent>
-        </NBCard>
+          </CardContent>
+        </Card>
 
         {/* Photo */}
         {report.photo_url && (
-          <NBCard variant="elevated">
-            <NBCardHeader>
+          <Card variant="elevated">
+            <CardHeader>
               <h2 className="text-xl font-bold text-nb-black">Foto Laporan</h2>
-            </NBCardHeader>
-            <NBCardContent>
-              <div className="bg-gray-100 border-3 border-black rounded-lg overflow-hidden">
+            </CardHeader>
+            <CardContent>
+              <div className="bg-nb-gray-100 border-3 border-nb-black overflow-hidden">
                 <img
                   src={report.photo_url}
                   alt="Report Photo"
                   className="w-full h-auto"
                 />
               </div>
-            </NBCardContent>
-          </NBCard>
+            </CardContent>
+          </Card>
         )}
       </div>
 
       {/* Description */}
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      <Card variant="elevated">
+        <CardHeader>
           <h2 className="text-xl font-bold text-nb-black">Deskripsi</h2>
-        </NBCardHeader>
-        <NBCardContent>
-          <p className="text-gray-700">{report.description}</p>
-        </NBCardContent>
-      </NBCard>
+        </CardHeader>
+        <CardContent>
+          <p className="text-nb-gray-700">{report.description}</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -7,7 +7,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NBButton } from '@/components/nb';
+import { X } from 'lucide-react';
+import { Button, Card, CardContent } from '@/components/ui';
 import { AreaForm } from '@/components/forms/AreaForm';
 import { useCreateArea } from '@/lib/api/areas';
 import { useAuth } from '@/lib/auth/hooks';
@@ -50,37 +51,41 @@ export default function NewAreaPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black">Tambah Area Baru</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-nb-gray-600 mt-1">
             Gambar batas area di peta dan lengkapi informasi
           </p>
         </div>
 
-        <NBButton onClick={handleCancel} variant="secondary">
-          ✖️ Batal
-        </NBButton>
+        <Button onClick={handleCancel} variant="secondary" leftIcon={<X className="w-5 h-5" />}>
+          Batal
+        </Button>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-100 border-4 border-black p-4 rounded-lg">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">❌</span>
-            <div>
-              <h4 className="font-bold mb-1">Error</h4>
-              <p className="text-sm">{error}</p>
+        <Card className="border-nb-danger">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">❌</span>
+              <div>
+                <h4 className="font-bold mb-1">Error</h4>
+                <p className="text-sm">{error}</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Form */}
-      <div className="bg-white border-4 border-black p-6 rounded-lg">
-        <AreaForm
-          mode="create"
-          onSubmit={handleSubmit}
-          isLoading={createArea.isPending}
-        />
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <AreaForm
+            mode="create"
+            onSubmit={handleSubmit}
+            isLoading={createArea.isPending}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -6,7 +6,15 @@
  */
 
 import { useState } from 'react';
-import { NBModal, NBButton } from '@/components/nb';
+import { AlertTriangle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+} from '@/components/ui';
 import { useDeleteArea } from '@/lib/api/areas';
 import type { Area } from '@/types/models';
 
@@ -44,76 +52,84 @@ export function DeleteAreaModal({
     }
   };
 
-  if (!area) return null;
+  const handleClose = () => {
+    if (!deleteArea.isPending) {
+      setError(null);
+      onClose();
+    }
+  };
 
   return (
-    <NBModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Hapus Area"
-      size="md"
-    >
-      <div className="space-y-4">
-        {/* Warning */}
-        <div className="bg-red-100 border-4 border-black p-4 rounded-lg">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">⚠️</span>
-            <div>
-              <h4 className="font-bold mb-1">Peringatan!</h4>
-              <p className="text-sm">
-                Anda akan menghapus area <strong>{area.name}</strong>.
-                Tindakan ini tidak dapat dibatalkan.
-              </p>
+    <Dialog open={isOpen && !!area} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Hapus Area</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Warning Icon */}
+          <div className="flex justify-center">
+            <div className="w-12 h-12 rounded-full bg-nb-danger/10 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-nb-danger" />
             </div>
           </div>
-        </div>
 
-        {/* Area Details */}
-        <div className="bg-gray-100 border-4 border-black p-4 rounded-lg space-y-2">
-          <div className="flex justify-between">
-            <span className="font-bold">Nama:</span>
-            <span>{area.name}</span>
+          {/* Warning Message */}
+          <div className="text-center">
+            <p className="text-sm text-nb-gray-700">
+              Anda akan menghapus area <strong>{area?.name}</strong>.
+            </p>
+            <p className="text-sm text-nb-gray-600 mt-2">
+              Tindakan ini tidak dapat dibatalkan.
+            </p>
           </div>
-          <div className="flex justify-between">
-            <span className="font-bold">Kode:</span>
-            <span className="font-mono">{area.code}</span>
-          </div>
-          {area.rayon && (
+
+          {/* Area Details */}
+          <div className="bg-nb-gray-100 border-3 border-nb-black p-4 space-y-2">
             <div className="flex justify-between">
-              <span className="font-bold">Rayon:</span>
-              <span>{area.rayon.name}</span>
+              <span className="font-bold">Nama:</span>
+              <span>{area?.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold">Kode:</span>
+              <span className="font-mono">{area?.code}</span>
+            </div>
+            {area?.rayon && (
+              <div className="flex justify-between">
+                <span className="font-bold">Rayon:</span>
+                <span>{area.rayon.name}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
+              <p className="text-sm text-nb-danger font-medium">{error}</p>
             </div>
           )}
         </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-100 border-4 border-black p-4 rounded-lg">
-            <p className="text-sm font-bold text-red-800">{error}</p>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <NBButton
-            onClick={onClose}
+        <DialogFooter className="flex gap-3 sm:gap-3">
+          <Button
             variant="secondary"
-            className="flex-1"
+            onClick={handleClose}
             disabled={deleteArea.isPending}
+            className="flex-1"
           >
             Batal
-          </NBButton>
-          <NBButton
+          </Button>
+          <Button
+            variant="destructive"
             onClick={handleDelete}
-            variant="danger"
-            className="flex-1"
             loading={deleteArea.isPending}
             disabled={deleteArea.isPending}
+            className="flex-1"
           >
-            {deleteArea.isPending ? 'Menghapus...' : 'Ya, Hapus'}
-          </NBButton>
-        </div>
-      </div>
-    </NBModal>
+            Hapus
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

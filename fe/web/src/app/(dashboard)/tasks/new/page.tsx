@@ -10,33 +10,35 @@ import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
 import { useAreas } from '@/lib/api/areas';
-import { NBCard, NBCardHeader, NBCardContent, NBInput, NBSelect, NBButton } from '@/components/nb';
+import { Card, CardHeader, CardContent, FormInput, FormSelect, Button, Textarea } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { getErrorMessage } from '@/lib/api/client';
+
+// Access control
+const ALLOWED_ROLES = ['admin', 'kepala_rayon', 'koordinator_lapangan'];
 
 export default function CreateTaskPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [assignedTo, setAssignedTo] = useState('');
-  const [areaId, setAreaId] = useState('');
+  const [assignedTo, setAssignedTo] = useState('none');
+  const [areaId, setAreaId] = useState('none');
   const [priority, setPriority] = useState<TaskPriority>('normal');
   const [dueDate, setDueDate] = useState('');
   const [error, setError] = useState('');
 
-  // Access control
-  const allowedRoles = ['Admin', 'KepalaRayon', 'KoordinatorLapangan'];
-
   useEffect(() => {
-    if (!authLoading && user && !allowedRoles.includes(user.role)) {
+    if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 
   // Fetch workers and areas
-  const { data: usersData } = useUsers({ role: 'Worker', limit: 1000 });
+  const { data: usersData } = useUsers({ role: 'worker', limit: 1000 });
   const { data: areasData } = useAreas({ limit: 1000 });
 
   const createMutation = useCreateTask();
@@ -54,14 +56,14 @@ export default function CreateTaskPage() {
       await createMutation.mutateAsync({
         title,
         description: description || undefined,
-        assigned_to: assignedTo || undefined,
-        area_id: areaId || undefined,
+        assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
+        area_id: areaId !== 'none' ? areaId : undefined,
         priority,
         due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
       });
       router.push('/tasks');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal membuat tugas');
+    } catch (err) {
+      setError(getErrorMessage(err));
     }
   };
 
@@ -76,7 +78,7 @@ export default function CreateTaskPage() {
     );
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  if (!ALLOWED_ROLES.includes(user.role)) {
     return null;
   }
 
@@ -105,28 +107,40 @@ export default function CreateTaskPage() {
         </ol>
       </nav>
 
+      {/* Back Button */}
+      <div className="mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/tasks')}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+        >
+          Kembali ke Daftar Tugas
+        </Button>
+      </div>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-nb-black">Buat Tugas Baru</h1>
-        <p className="text-gray-600 mt-1">Tugaskan pekerjaan kepada pekerja</p>
+        <p className="text-nb-gray-600 mt-1">Tugaskan pekerjaan kepada pekerja</p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <NBCard variant="elevated">
-          <NBCardHeader>
+        <Card variant="elevated">
+          <CardHeader>
             <h2 className="text-xl font-bold text-nb-black">Informasi Tugas</h2>
-          </NBCardHeader>
-          <NBCardContent>
+          </CardHeader>
+          <CardContent>
             {error && (
-              <div className="mb-4 p-4 bg-red-100 border-3 border-black rounded-lg">
+              <div className="mb-4 p-4 bg-red-100 border-3 border-nb-black">
                 <p className="text-red-700 font-semibold">{error}</p>
               </div>
             )}
 
             <div className="space-y-4">
               {/* Title */}
-              <NBInput
+              <FormInput
                 label="Judul Tugas"
                 type="text"
                 placeholder="Contoh: Penyiraman Area Timur"
@@ -136,26 +150,21 @@ export default function CreateTaskPage() {
               />
 
               {/* Description */}
-              <div>
-                <label className="block text-sm font-semibold text-nb-black mb-2">
-                  Deskripsi
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border-3 border-black rounded-lg font-medium focus:outline-none focus:ring-3 focus:ring-nb-primary focus:ring-offset-0"
-                  rows={4}
-                  placeholder="Detail tugas yang harus dikerjakan..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
+              <Textarea
+                label="Deskripsi"
+                rows={4}
+                placeholder="Detail tugas yang harus dikerjakan..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
 
               {/* Worker Select */}
-              <NBSelect
+              <FormSelect
                 label="Ditugaskan Ke (Opsional)"
                 value={assignedTo}
                 onChange={(value) => setAssignedTo(value as string)}
                 options={[
-                  { value: '', label: 'Belum ditugaskan' },
+                  { value: 'none', label: 'Belum ditugaskan' },
                   ...users.map((u) => ({
                     value: u.id,
                     label: `${u.name} (${u.email})`,
@@ -164,12 +173,12 @@ export default function CreateTaskPage() {
               />
 
               {/* Area Select */}
-              <NBSelect
+              <FormSelect
                 label="Area (Opsional)"
                 value={areaId}
                 onChange={(value) => setAreaId(value as string)}
                 options={[
-                  { value: '', label: 'Pilih Area' },
+                  { value: 'none', label: 'Pilih Area' },
                   ...areas.map((a) => ({
                     value: a.id,
                     label: `${a.name} (${a.code})`,
@@ -178,7 +187,7 @@ export default function CreateTaskPage() {
               />
 
               {/* Priority */}
-              <NBSelect
+              <FormSelect
                 label="Prioritas"
                 value={priority}
                 onChange={(value) => setPriority(value as TaskPriority)}
@@ -186,7 +195,7 @@ export default function CreateTaskPage() {
               />
 
               {/* Due Date */}
-              <NBInput
+              <FormInput
                 label="Tenggat Waktu (Opsional)"
                 type="datetime-local"
                 value={dueDate}
@@ -196,19 +205,19 @@ export default function CreateTaskPage() {
 
             {/* Actions */}
             <div className="flex gap-3 mt-6">
-              <NBButton type="submit" variant="primary" loading={createMutation.isPending}>
+              <Button type="submit" loading={createMutation.isPending}>
                 Buat Tugas
-              </NBButton>
-              <NBButton
+              </Button>
+              <Button
                 type="button"
                 variant="secondary"
                 onClick={() => router.push('/tasks')}
               >
                 Batal
-              </NBButton>
+              </Button>
             </div>
-          </NBCardContent>
-        </NBCard>
+          </CardContent>
+        </Card>
       </form>
     </div>
   );

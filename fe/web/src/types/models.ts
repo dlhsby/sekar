@@ -6,14 +6,15 @@
 /**
  * User Role Type
  * Must match backend UserRole enum
+ * IMPORTANT: Always use lowercase values matching backend
  */
 export type UserRole =
-  | 'Admin'
-  | 'TopManagement'
-  | 'KepalaRayon'
-  | 'KoordinatorLapangan'
-  | 'Worker'
-  | 'Linmas';
+  | 'admin'
+  | 'top_management'
+  | 'kepala_rayon'
+  | 'koordinator_lapangan'
+  | 'worker'
+  | 'linmas';
 
 /**
  * User Interface

@@ -6,15 +6,18 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/hooks';
 import { useSchedules, useDeleteSchedule } from '@/lib/api/schedules';
 import { WorkerSchedule } from '@/types/models';
-import { NBCard, NBCardHeader, NBCardContent, NBTable, NBButton, NBInput, NBSelect, NBModal, NBBadge } from '@/components/nb';
-import { NBTableColumn } from '@/components/nb/NBTable';
+import {
+  Card, CardHeader, CardContent, DataTable, Button, FormInput, FormSelect,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Badge
+} from '@/components/ui';
+import type { ColumnDef } from '@/components/ui/data-table';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 
@@ -24,8 +27,8 @@ export default function SchedulesPage() {
   
   // Filters
   const [search, setSearch] = useState('');
-  const [areaFilter, setAreaFilter] = useState('');
-  const [shiftFilter, setShiftFilter] = useState('');
+  const [areaFilter, setAreaFilter] = useState('all');
+  const [shiftFilter, setShiftFilter] = useState('all');
   const [page, setPage] = useState(1);
   const limit = 20;
 
@@ -36,8 +39,8 @@ export default function SchedulesPage() {
   // Fetch data
   const { data: schedulesData, isLoading } = useSchedules({
     search,
-    area_id: areaFilter || undefined,
-    shift_definition_id: shiftFilter || undefined,
+    area_id: areaFilter !== 'all' ? areaFilter : undefined,
+    shift_definition_id: shiftFilter !== 'all' ? shiftFilter : undefined,
     page,
     limit,
   });
@@ -48,7 +51,7 @@ export default function SchedulesPage() {
 
   // Access control
   useEffect(() => {
-    if (!authLoading && user && !['Admin', 'KoordinatorLapangan'].includes(user.role)) {
+    if (!authLoading && user && !['admin', 'koordinator_lapangan'].includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
@@ -64,7 +67,7 @@ export default function SchedulesPage() {
     );
   }
 
-  if (!['Admin', 'KoordinatorLapangan'].includes(user.role)) {
+  if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
     return null;
   }
 
@@ -99,16 +102,16 @@ export default function SchedulesPage() {
   };
 
   // Table columns
-  const columns: NBTableColumn<WorkerSchedule>[] = [
+  const columns: ColumnDef<WorkerSchedule>[] = [
     {
       key: 'user',
-      title: 'Pekerja',
-      render: (_value: unknown, schedule: WorkerSchedule) => (
+      header: 'Pekerja',
+      cell: (schedule) => (
         <div>
           <div className="font-semibold text-nb-black">
             {schedule.user?.name || '-'}
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-nb-gray-600">
             {schedule.user?.email || ''}
           </div>
         </div>
@@ -116,36 +119,36 @@ export default function SchedulesPage() {
     },
     {
       key: 'area',
-      title: 'Area',
-      render: (_value: unknown, schedule: WorkerSchedule) => (
+      header: 'Area',
+      cell: (schedule) => (
         <div>
           <div className="font-medium">{schedule.area?.name || '-'}</div>
-          <div className="text-sm text-gray-600">{schedule.area?.code || ''}</div>
+          <div className="text-sm text-nb-gray-600">{schedule.area?.code || ''}</div>
         </div>
       ),
     },
     {
       key: 'shift',
-      title: 'Shift',
-      render: (_value: unknown, schedule: WorkerSchedule) => {
+      header: 'Shift',
+      cell: (schedule) => {
         const shift = schedule.shift_definition;
         if (!shift) return '-';
-        
-        const shiftColors: Record<string, string> = {
-          SHIFT1: 'primary',
+
+        const shiftColors: Record<string, 'default' | 'success' | 'warning'> = {
+          SHIFT1: 'default',
           SHIFT2: 'success',
           SHIFT3: 'warning',
         };
-        
+
         return (
           <div>
-            <NBBadge 
-              variant={shiftColors[shift.code] as any || 'primary'}
+            <Badge
+              variant={shiftColors[shift.code] || 'default'}
               size="sm"
             >
               {shift.name}
-            </NBBadge>
-            <div className="text-xs text-gray-600 mt-1">
+            </Badge>
+            <div className="text-xs text-nb-gray-600 mt-1">
               {shift.start_time} - {shift.end_time}
             </div>
           </div>
@@ -154,35 +157,34 @@ export default function SchedulesPage() {
     },
     {
       key: 'effective_date',
-      title: 'Tanggal Mulai',
-      render: (_value: unknown, schedule: WorkerSchedule) =>
-        formatDate(schedule.effective_date),
+      header: 'Tanggal Mulai',
+      cell: (schedule) => formatDate(schedule.effective_date),
     },
     {
       key: 'end_date',
-      title: 'Tanggal Selesai',
-      render: (_value: unknown, schedule: WorkerSchedule) =>
+      header: 'Tanggal Selesai',
+      cell: (schedule) =>
         schedule.end_date ? formatDate(schedule.end_date) : (
-          <span className="text-gray-500 italic">Berlangsung</span>
+          <span className="text-nb-gray-500 italic">Berlangsung</span>
         ),
     },
     {
       key: 'actions',
-      title: 'Aksi',
-      render: (_value: unknown, schedule: WorkerSchedule) => (
+      header: 'Aksi',
+      cell: (schedule) => (
         <div className="flex gap-2">
           <Link href={`/schedules/${schedule.id}/edit`}>
-            <NBButton variant="secondary" size="sm">
-              Edit
-            </NBButton>
+            <Button variant="secondary" size="sm">
+              <Edit className="w-4 h-4" />
+            </Button>
           </Link>
-          <NBButton
-            variant="danger"
+          <Button
+            variant="destructive"
             size="sm"
             onClick={() => handleDeleteClick(schedule)}
           >
-            Hapus
-          </NBButton>
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
       ),
     },
@@ -196,23 +198,23 @@ export default function SchedulesPage() {
           <h1 className="text-3xl font-bold text-nb-black mb-2">
             Manajemen Jadwal
           </h1>
-          <p className="text-gray-600">
+          <p className="text-nb-gray-600">
             Kelola jadwal kerja pekerja per area dan shift
           </p>
         </div>
         <Link href="/schedules/new">
-          <NBButton variant="primary" size="lg">
-            + Buat Jadwal Baru
-          </NBButton>
+          <Button size="lg" leftIcon={<Plus className="w-5 h-5" />}>
+            Buat Jadwal Baru
+          </Button>
         </Link>
       </div>
 
       {/* Filters */}
-      <NBCard variant="elevated" className="mb-6">
-        <NBCardContent>
+      <Card variant="elevated" className="mb-6">
+        <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
-            <NBInput
+            <FormInput
               label="Cari Pekerja"
               type="text"
               placeholder="Nama pekerja..."
@@ -224,7 +226,7 @@ export default function SchedulesPage() {
             />
 
             {/* Area Filter */}
-            <NBSelect
+            <FormSelect
               label="Filter Area"
               value={areaFilter}
               onChange={(value) => {
@@ -232,7 +234,7 @@ export default function SchedulesPage() {
                 setPage(1);
               }}
               options={[
-                { value: '', label: 'Semua Area' },
+                { value: 'all', label: 'Semua Area' },
                 ...(areas?.data || []).map((area) => ({
                   value: area.id,
                   label: `${area.name} (${area.code})`,
@@ -241,7 +243,7 @@ export default function SchedulesPage() {
             />
 
             {/* Shift Filter */}
-            <NBSelect
+            <FormSelect
               label="Filter Shift"
               value={shiftFilter}
               onChange={(value) => {
@@ -249,7 +251,7 @@ export default function SchedulesPage() {
                 setPage(1);
               }}
               options={[
-                { value: '', label: 'Semua Shift' },
+                { value: 'all', label: 'Semua Shift' },
                 ...(shifts || []).map((shift) => ({
                   value: shift.id,
                   label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
@@ -257,94 +259,98 @@ export default function SchedulesPage() {
               ]}
             />
           </div>
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Table */}
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      <Card variant="elevated">
+        <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-nb-black">
               Daftar Jadwal
             </h2>
             {pagination && (
-              <NBBadge variant="primary">
+              <Badge variant="default">
                 {pagination.total} Jadwal
-              </NBBadge>
+              </Badge>
             )}
           </div>
-        </NBCardHeader>
+        </CardHeader>
 
-        <NBCardContent>
-          <NBTable<WorkerSchedule>
+        <CardContent>
+          <DataTable<WorkerSchedule>
             columns={columns}
             data={schedules}
             loading={isLoading}
-            emptyText="Belum ada jadwal terdaftar"
+            emptyMessage="Belum ada jadwal terdaftar"
           />
 
           {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-black">
-              <div className="text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
+              <div className="text-sm text-nb-gray-600">
                 Halaman {pagination.page} dari {pagination.totalPages} (
                 {pagination.total} total jadwal)
               </div>
               <div className="flex gap-2">
-                <NBButton
+                <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={pagination.page === 1}
+                  leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
                   Sebelumnya
-                </NBButton>
-                <NBButton
+                </Button>
+                <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                   disabled={pagination.page === pagination.totalPages}
+                  rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
                   Selanjutnya
-                </NBButton>
+                </Button>
               </div>
             </div>
           )}
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Delete Confirmation Modal */}
-      <NBModal
-        isOpen={deleteModalOpen}
-        onClose={() => {
+      <Dialog open={deleteModalOpen} onOpenChange={(open) => {
+        if (!open) {
           setDeleteModalOpen(false);
           setScheduleToDelete(null);
-        }}
-        title="Hapus Jadwal"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-gray-700">
-            Apakah Anda yakin ingin menghapus jadwal ini?
-          </p>
-          {scheduleToDelete && (
-            <div className="p-4 border-3 border-black bg-gray-50">
-              <div className="font-semibold">{scheduleToDelete.user?.name}</div>
-              <div className="text-sm text-gray-600">
-                {scheduleToDelete.area?.name} •{' '}
-                {scheduleToDelete.shift_definition?.name}
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Hapus Jadwal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-nb-gray-700">
+              Apakah Anda yakin ingin menghapus jadwal ini?
+            </p>
+            {scheduleToDelete && (
+              <div className="p-4 border-3 border-nb-black bg-nb-gray-50">
+                <div className="font-semibold">{scheduleToDelete.user?.name}</div>
+                <div className="text-sm text-nb-gray-600">
+                  {scheduleToDelete.area?.name} •{' '}
+                  {scheduleToDelete.shift_definition?.name}
+                </div>
+                <div className="text-sm text-nb-gray-600">
+                  {formatDate(scheduleToDelete.effective_date)}
+                  {scheduleToDelete.end_date && ` - ${formatDate(scheduleToDelete.end_date)}`}
+                </div>
               </div>
-              <div className="text-sm text-gray-600">
-                {formatDate(scheduleToDelete.effective_date)}
-                {scheduleToDelete.end_date && ` - ${formatDate(scheduleToDelete.end_date)}`}
-              </div>
-            </div>
-          )}
-          <p className="text-sm text-gray-600">
-            Tindakan ini tidak dapat dibatalkan.
-          </p>
-          <div className="flex gap-2 justify-end">
-            <NBButton
+            )}
+            <p className="text-sm text-nb-gray-600">
+              Tindakan ini tidak dapat dibatalkan.
+            </p>
+          </div>
+          <DialogFooter className="flex gap-3 sm:gap-3">
+            <Button
               variant="secondary"
               onClick={() => {
                 setDeleteModalOpen(false);
@@ -352,17 +358,17 @@ export default function SchedulesPage() {
               }}
             >
               Batal
-            </NBButton>
-            <NBButton
-              variant="danger"
+            </Button>
+            <Button
+              variant="destructive"
               onClick={handleDeleteConfirm}
               loading={deleteMutation.isPending}
             >
               Hapus Jadwal
-            </NBButton>
-          </div>
-        </div>
-      </NBModal>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

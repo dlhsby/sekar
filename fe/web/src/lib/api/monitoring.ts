@@ -79,7 +79,7 @@ export interface AreaMonitoringStats {
 export interface LiveWorker {
   user_id: string;
   full_name: string;
-  role: 'Worker' | 'Linmas';
+  role: 'worker' | 'linmas';
   area_id: string;
   area_name: string;
   shift_id: string;

@@ -12,31 +12,33 @@ import { useCreateSchedule } from '@/lib/api/schedules';
 import { useUsers } from '@/lib/api/users';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { NBCard, NBCardHeader, NBCardContent, NBButton, NBInput, NBSelect } from '@/components/nb';
+import { Card, CardHeader, CardContent, Button, FormInput, FormSelect } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { getErrorMessage } from '@/lib/api/client';
 
 export default function CreateSchedulePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   // Form state
-  const [userId, setUserId] = useState('');
-  const [areaId, setAreaId] = useState('');
-  const [shiftId, setShiftId] = useState('');
+  const [userId, setUserId] = useState('none');
+  const [areaId, setAreaId] = useState('none');
+  const [shiftId, setShiftId] = useState('none');
   const [effectiveDate, setEffectiveDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
 
   // Fetch options
-  const { data: usersData } = useUsers({ role: 'Worker', limit: 1000 });
+  const { data: usersData } = useUsers({ role: 'worker', limit: 1000 });
   const { data: areasData } = useAreas({ limit: 1000 });
   const { data: shifts } = useShiftDefinitions();
   const createMutation = useCreateSchedule();
 
   // Access control
   useEffect(() => {
-    if (!authLoading && user && !['Admin', 'KoordinatorLapangan'].includes(user.role)) {
+    if (!authLoading && user && !['admin', 'koordinator_lapangan'].includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
@@ -47,7 +49,7 @@ export default function CreateSchedulePage() {
     </div>;
   }
 
-  if (!['Admin', 'KoordinatorLapangan'].includes(user.role)) {
+  if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
     return null;
   }
 
@@ -59,7 +61,7 @@ export default function CreateSchedulePage() {
     setError('');
 
     // Validation
-    if (!userId || !areaId || !shiftId || !effectiveDate) {
+    if (userId === 'none' || areaId === 'none' || shiftId === 'none' || !effectiveDate) {
       setError('Semua field wajib diisi');
       return;
     }
@@ -72,10 +74,10 @@ export default function CreateSchedulePage() {
         effective_date: effectiveDate,
         end_date: endDate || undefined,
       });
-      
+
       router.push('/schedules');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal membuat jadwal');
+    } catch (err) {
+      setError(getErrorMessage(err));
     }
   };
 
@@ -89,19 +91,31 @@ export default function CreateSchedulePage() {
               Jadwal
             </Link>
           </li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-600">Buat Baru</li>
+          <li className="text-nb-gray-400">/</li>
+          <li className="text-nb-gray-600">Buat Baru</li>
         </ol>
       </nav>
 
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      {/* Back Button */}
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/schedules')}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+        >
+          Kembali ke Daftar Jadwal
+        </Button>
+      </div>
+
+      <Card variant="elevated">
+        <CardHeader>
           <h1 className="text-2xl font-bold text-nb-black">
             Buat Jadwal Baru
           </h1>
-        </NBCardHeader>
+        </CardHeader>
 
-        <NBCardContent>
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
@@ -111,13 +125,13 @@ export default function CreateSchedulePage() {
             )}
 
             {/* Worker Select */}
-            <NBSelect
+            <FormSelect
               label="Pekerja"
               required
               value={userId}
               onChange={(value) => setUserId(value as string)}
               options={[
-                { value: '', label: 'Pilih Pekerja' },
+                { value: 'none', label: 'Pilih Pekerja' },
                 ...users.map((u) => ({
                   value: u.id,
                   label: `${u.name} (${u.email})`,
@@ -127,13 +141,13 @@ export default function CreateSchedulePage() {
             />
 
             {/* Area Select */}
-            <NBSelect
+            <FormSelect
               label="Area"
               required
               value={areaId}
               onChange={(value) => setAreaId(value as string)}
               options={[
-                { value: '', label: 'Pilih Area' },
+                { value: 'none', label: 'Pilih Area' },
                 ...areas.map((a) => ({
                   value: a.id,
                   label: `${a.name} (${a.code})`,
@@ -143,13 +157,13 @@ export default function CreateSchedulePage() {
             />
 
             {/* Shift Select */}
-            <NBSelect
+            <FormSelect
               label="Shift"
               required
               value={shiftId}
               onChange={(value) => setShiftId(value as string)}
               options={[
-                { value: '', label: 'Pilih Shift' },
+                { value: 'none', label: 'Pilih Shift' },
                 ...(shifts || []).map((s) => ({
                   value: s.id,
                   label: `${s.name} (${s.start_time} - ${s.end_time})`,
@@ -159,7 +173,7 @@ export default function CreateSchedulePage() {
             />
 
             {/* Effective Date */}
-            <NBInput
+            <FormInput
               label="Tanggal Mulai"
               type="date"
               required
@@ -169,7 +183,7 @@ export default function CreateSchedulePage() {
             />
 
             {/* End Date */}
-            <NBInput
+            <FormInput
               label="Tanggal Selesai (Opsional)"
               type="date"
               value={endDate}
@@ -180,21 +194,20 @@ export default function CreateSchedulePage() {
             {/* Actions */}
             <div className="flex gap-4 justify-end pt-4">
               <Link href="/schedules">
-                <NBButton variant="secondary" type="button">
+                <Button variant="secondary" type="button">
                   Batal
-                </NBButton>
+                </Button>
               </Link>
-              <NBButton
-                variant="primary"
+              <Button
                 type="submit"
                 loading={createMutation.isPending}
               >
                 Buat Jadwal
-              </NBButton>
+              </Button>
             </div>
           </form>
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
     </div>
   );
 }

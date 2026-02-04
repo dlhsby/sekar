@@ -1,50 +1,51 @@
 'use client';
 
 import { HTMLAttributes, useState } from 'react';
-import {
-  BellIcon,
-  Bars3Icon,
-  UserCircleIcon,
-  Cog6ToothIcon,
-  ArrowRightOnRectangleIcon,
-} from '@heroicons/react/24/outline';
+import { Bell, Menu, User, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
 import { useAuth } from '@/lib/auth/hooks';
-import { NBDropdown } from '@/components/nb/NBDropdown';
-import { NBBadge } from '@/components/nb/NBBadge';
-import { NBModal } from '@/components/nb/NBModal';
-import { NBButton } from '@/components/nb/NBButton';
+import {
+  Button,
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui';
 import { Breadcrumb } from './Breadcrumb';
 
 export interface HeaderProps extends HTMLAttributes<HTMLElement> {
-  /** Show breadcrumb navigation */
   showBreadcrumb?: boolean;
 }
 
 /**
  * Dashboard Header Component
- * 
- * Features:
+ *
+ * Neo Brutalism styled header with:
+ * - Mobile hamburger menu trigger
+ * - Desktop sidebar toggle
  * - Breadcrumb navigation
- * - Notification bell with badge count
- * - User menu dropdown (Profile, Settings, Logout)
- * - Mobile hamburger menu button
- * - Responsive design
- * - Accessible (ARIA labels, keyboard navigation)
- * 
- * @example
- * ```tsx
- * <Header />
- * ```
+ * - Notification bell with badge
+ * - User dropdown menu
  */
-export function Header({ className, showBreadcrumb = true, ...props }: HeaderProps) {
+export function Header({
+  className,
+  showBreadcrumb = true,
+  ...props
+}: HeaderProps) {
   const { toggleSidebar, toggleMobileMenu } = useUIStore();
   const { user, logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Notification count (TODO: fetch from backend in Phase 2E)
+  // Notification count (TODO: fetch from backend)
   const notificationCount = 3;
 
   const handleLogout = async () => {
@@ -57,37 +58,6 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
       setIsLoggingOut(false);
     }
   };
-
-  const userMenuItems = [
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: <UserCircleIcon className="h-5 w-5" />,
-      onClick: () => {
-        console.log('Navigate to profile');
-        // TODO: Navigate to profile page in Phase 2D-5
-      },
-    },
-    {
-      id: 'settings',
-      label: 'Pengaturan',
-      icon: <Cog6ToothIcon className="h-5 w-5" />,
-      onClick: () => {
-        console.log('Navigate to settings');
-        // TODO: Navigate to settings page in Phase 2D-5
-      },
-      divider: true,
-    },
-    {
-      id: 'logout',
-      label: 'Keluar',
-      icon: <ArrowRightOnRectangleIcon className="h-5 w-5" />,
-      onClick: () => {
-        setShowLogoutModal(true);
-      },
-      danger: true,
-    },
-  ];
 
   return (
     <header
@@ -102,33 +72,26 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
         {/* Left section: Mobile menu + Breadcrumb */}
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Mobile hamburger menu */}
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="icon"
             onClick={toggleMobileMenu}
-            className={cn(
-              'lg:hidden p-2 hover:bg-nb-gray-100 active:bg-nb-gray-200',
-              'border-2 border-nb-black transition-colors duration-100',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-primary focus-visible:outline-offset-2'
-            )}
+            className="lg:hidden"
             aria-label="Open navigation menu"
-            aria-expanded={false}
           >
-            <Bars3Icon className="h-6 w-6 text-nb-black" />
-          </button>
+            <Menu className="h-5 w-5" />
+          </Button>
 
-          {/* Desktop sidebar toggle (optional, can be removed if sidebar is always visible) */}
-          <button
-            type="button"
+          {/* Desktop sidebar toggle */}
+          <Button
+            variant="outline"
+            size="icon"
             onClick={toggleSidebar}
-            className={cn(
-              'hidden lg:flex p-2 hover:bg-nb-gray-100 active:bg-nb-gray-200',
-              'border-2 border-nb-black transition-colors duration-100',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-primary focus-visible:outline-offset-2'
-            )}
+            className="hidden lg:flex"
             aria-label="Toggle sidebar"
           >
-            <Bars3Icon className="h-6 w-6 text-nb-black" />
-          </button>
+            <Menu className="h-5 w-5" />
+          </Button>
 
           {/* Breadcrumb */}
           {showBreadcrumb && (
@@ -141,88 +104,102 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
         {/* Right section: Notifications + User menu */}
         <div className="flex items-center gap-3">
           {/* Notification bell */}
-          <button
-            type="button"
-            className={cn(
-              'relative p-2 hover:bg-nb-gray-100 active:bg-nb-gray-200',
-              'border-2 border-nb-black transition-colors duration-100',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-primary focus-visible:outline-offset-2'
-            )}
-            aria-label={`Notifications ${notificationCount > 0 ? `(${notificationCount} unread)` : ''}`}
-            onClick={() => {
-              console.log('Open notifications');
-              // TODO: Open notifications panel in Phase 2D-4
-            }}
-          >
-            <BellIcon className="h-6 w-6 text-nb-black" />
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={`Notifications ${notificationCount > 0 ? `(${notificationCount} unread)` : ''}`}
+              onClick={() => {
+                console.log('Open notifications');
+              }}
+            >
+              <Bell className="h-5 w-5" />
+            </Button>
             {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1">
-                <NBBadge variant="danger" size="sm">
+              <span className="absolute -top-2 -right-2 pointer-events-none">
+                <Badge variant="destructive" size="sm">
                   {notificationCount > 99 ? '99+' : notificationCount}
-                </NBBadge>
+                </Badge>
               </span>
             )}
-          </button>
+          </div>
 
           {/* User menu dropdown */}
           {user && (
-            <NBDropdown
-              trigger={
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <button
                   type="button"
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2',
-                    'border-2 border-nb-black bg-nb-white',
-                    'hover:bg-nb-gray-100 active:bg-nb-gray-200',
-                    'transition-colors duration-100',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-primary focus-visible:outline-offset-2'
+                    'flex items-center gap-2 px-3 py-2 min-h-touch',
+                    'border-3 border-nb-black bg-nb-white shadow-nb-sm',
+                    'hover:bg-nb-gray-50 active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
+                    'transition-all duration-100',
+                    'focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2'
                   )}
                   aria-label="User menu"
                 >
-                  {/* Avatar */}
-                  <div className="h-8 w-8 rounded-full bg-nb-navy text-nb-white font-bold flex items-center justify-center text-sm border-2 border-nb-black">
+                  <div className="h-8 w-8 bg-nb-navy text-nb-white font-bold flex items-center justify-center text-sm border-2 border-nb-black">
                     {user.full_name.charAt(0).toUpperCase()}
                   </div>
-                  {/* User name (desktop only) */}
                   <span className="hidden lg:block font-bold text-sm text-nb-black">
                     {user.full_name}
                   </span>
                 </button>
-              }
-              items={userMenuItems}
-              position="bottom-right"
-            />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Pengaturan
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  destructive
+                  onClick={() => setShowLogoutModal(true)}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Keluar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
 
       {/* Logout Confirmation Modal */}
-      <NBModal
-        isOpen={showLogoutModal}
-        onClose={() => setShowLogoutModal(false)}
-        title="Konfirmasi Keluar"
-      >
-        <div className="space-y-4">
-          <p className="text-nb-gray-700">Apakah Anda yakin ingin keluar dari aplikasi?</p>
-          <div className="flex gap-3 justify-end">
-            <NBButton
+      <Dialog open={showLogoutModal} onOpenChange={setShowLogoutModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Keluar</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-nb-gray-700">
+              Apakah Anda yakin ingin keluar dari aplikasi?
+            </p>
+          </div>
+          <DialogFooter className="flex gap-3 sm:gap-3">
+            <Button
               variant="secondary"
               onClick={() => setShowLogoutModal(false)}
               disabled={isLoggingOut}
             >
               Batal
-            </NBButton>
-            <NBButton
-              variant="danger"
+            </Button>
+            <Button
+              variant="destructive"
               onClick={handleLogout}
               loading={isLoggingOut}
               disabled={isLoggingOut}
             >
               Keluar
-            </NBButton>
-          </div>
-        </div>
-      </NBModal>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

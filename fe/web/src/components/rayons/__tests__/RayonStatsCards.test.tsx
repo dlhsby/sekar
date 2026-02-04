@@ -1,0 +1,71 @@
+/**
+ * Unit Tests: RayonStatsCards
+ * Tests rayon statistics cards component
+ */
+
+import { render, screen } from '@testing-library/react';
+import RayonStatsCards from '../RayonStatsCards';
+import type { RayonStats } from '@/types/models';
+
+describe('RayonStatsCards', () => {
+  const mockStats: RayonStats = {
+    rayon_id: 'rayon-1',
+    total_areas: 15,
+    total_workers: 50,
+    active_workers: 45,
+    total_coverage_area: 150000,
+  };
+
+  it('should render total areas stat', () => {
+    render(<RayonStatsCards stats={mockStats} />);
+
+    expect(screen.getByText('15')).toBeInTheDocument();
+    expect(screen.getByText(/total area/i)).toBeInTheDocument();
+  });
+
+  it('should render total workers stat', () => {
+    render(<RayonStatsCards stats={mockStats} />);
+
+    expect(screen.getByText('50')).toBeInTheDocument();
+    expect(screen.getByText(/total pekerja/i)).toBeInTheDocument();
+  });
+
+  it('should render active workers stat', () => {
+    render(<RayonStatsCards stats={mockStats} />);
+
+    expect(screen.getByText('45')).toBeInTheDocument();
+    expect(screen.getByText(/pekerja aktif/i)).toBeInTheDocument();
+  });
+
+  it('should render coverage area stat with formatting', () => {
+    render(<RayonStatsCards stats={mockStats} />);
+
+    // formatArea converts 150000 to "15.00 ha"
+    expect(screen.getByText(/15\.00 ha/i)).toBeInTheDocument();
+    expect(screen.getByText(/luas tutupan/i)).toBeInTheDocument();
+  });
+
+  it('should render loading state', () => {
+    render(<RayonStatsCards loading />);
+
+    // Check for skeleton loading cards
+    const loadingCards = document.querySelectorAll('.animate-pulse');
+    expect(loadingCards.length).toBeGreaterThan(0);
+  });
+
+  it('should render empty state when stats not provided', () => {
+    render(<RayonStatsCards />);
+
+    expect(screen.getByText(/statistik tidak tersedia/i)).toBeInTheDocument();
+  });
+
+  it('should render all 4 stat cards in grid', () => {
+    render(<RayonStatsCards stats={mockStats} />);
+
+    // Component renders 4 cards: Total Area, Total Pekerja, Pekerja Aktif, Luas Tutupan
+    expect(screen.getByText(/total area/i)).toBeInTheDocument();
+    expect(screen.getByText(/total pekerja/i)).toBeInTheDocument();
+    expect(screen.getByText(/pekerja aktif/i)).toBeInTheDocument();
+    expect(screen.getByText(/luas tutupan/i)).toBeInTheDocument();
+  });
+});

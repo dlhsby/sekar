@@ -36,6 +36,7 @@ export function Map({
 }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +52,7 @@ export function Map({
 
     try {
       // Initialize map
-      map.current = new mapboxgl.Map({
+      const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: mapStyles[style],
         center,
@@ -59,25 +60,28 @@ export function Map({
         attributionControl: false,
       });
 
+      map.current = newMap;
+
       // Add navigation controls
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
       // Add attribution
-      map.current.addControl(
+      newMap.addControl(
         new mapboxgl.AttributionControl({ compact: true }),
         'bottom-right'
       );
 
       // Handle load event
-      map.current.on('load', () => {
+      newMap.on('load', () => {
         setIsLoaded(true);
-        if (map.current && onLoad) {
-          onLoad(map.current);
+        setMapInstance(newMap);
+        if (onLoad) {
+          onLoad(newMap);
         }
       });
 
       // Handle errors
-      map.current.on('error', (e) => {
+      newMap.on('error', (e) => {
         console.error('Mapbox error:', e);
         setError('Gagal memuat peta. Periksa koneksi internet Anda.');
       });
@@ -91,24 +95,26 @@ export function Map({
       if (map.current) {
         map.current.remove();
         map.current = null;
+        setMapInstance(null);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
   // Update map style when style prop changes
   useEffect(() => {
-    if (map.current && isLoaded) {
-      map.current.setStyle(mapStyles[style]);
+    if (mapInstance && isLoaded) {
+      mapInstance.setStyle(mapStyles[style]);
     }
-  }, [style, isLoaded]);
+  }, [style, isLoaded, mapInstance]);
 
   // Update center and zoom when props change
   useEffect(() => {
-    if (map.current && isLoaded) {
-      map.current.setCenter(center);
-      map.current.setZoom(zoom);
+    if (mapInstance && isLoaded) {
+      mapInstance.setCenter(center);
+      mapInstance.setZoom(zoom);
     }
-  }, [center, zoom, isLoaded]);
+  }, [center, zoom, isLoaded, mapInstance]);
 
   // Error state
   if (error) {
@@ -141,7 +147,7 @@ export function Map({
       )}
 
       {/* Children render function */}
-      {isLoaded && map.current && children?.(map.current)}
+      {isLoaded && mapInstance && children?.(mapInstance)}
     </div>
   );
 }

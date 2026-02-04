@@ -12,9 +12,11 @@ import { useSchedule, useUpdateSchedule } from '@/lib/api/schedules';
 import { useUsers } from '@/lib/api/users';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { NBCard, NBCardHeader, NBCardContent, NBButton, NBInput, NBSelect } from '@/components/nb';
+import { Card, CardHeader, CardContent, Button, FormInput, FormSelect } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { getErrorMessage } from '@/lib/api/client';
 
 interface EditSchedulePageProps {
   params: {
@@ -27,36 +29,36 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
   const router = useRouter();
   
   // Form state
+  // Fetch data
+  const { data: schedule, isLoading: scheduleLoading } = useSchedule(params.id);
+  const { data: usersData } = useUsers({ role: 'worker', limit: 1000 });
+  const { data: areasData } = useAreas({ limit: 1000 });
+  const { data: shifts } = useShiftDefinitions();
+  const updateMutation = useUpdateSchedule(params.id);
+
+  // Initialize state from schedule data (only on first render when schedule loads)
   const [userId, setUserId] = useState('');
   const [areaId, setAreaId] = useState('');
   const [shiftId, setShiftId] = useState('');
   const [effectiveDate, setEffectiveDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
-  const [initialized, setInitialized] = useState(false);
 
-  // Fetch data
-  const { data: schedule, isLoading: scheduleLoading } = useSchedule(params.id);
-  const { data: usersData } = useUsers({ role: 'Worker', limit: 1000 });
-  const { data: areasData } = useAreas({ limit: 1000 });
-  const { data: shifts } = useShiftDefinitions();
-  const updateMutation = useUpdateSchedule(params.id);
-
-  // Initialize form with schedule data
+  // Initialize form with schedule data once loaded
   useEffect(() => {
-    if (schedule && !initialized) {
+    if (schedule && userId === '') {
       setUserId(schedule.user_id);
       setAreaId(schedule.area_id);
       setShiftId(schedule.shift_definition_id);
       setEffectiveDate(schedule.effective_date.split('T')[0]);
       setEndDate(schedule.end_date ? schedule.end_date.split('T')[0] : '');
-      setInitialized(true);
     }
-  }, [schedule, initialized]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule]);
 
   // Access control
   useEffect(() => {
-    if (!authLoading && user && !['Admin', 'KoordinatorLapangan'].includes(user.role)) {
+    if (!authLoading && user && !['admin', 'koordinator_lapangan'].includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
@@ -67,7 +69,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
     </div>;
   }
 
-  if (!['Admin', 'KoordinatorLapangan'].includes(user.role)) {
+  if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
     return null;
   }
 
@@ -98,10 +100,10 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
         effective_date: effectiveDate,
         end_date: endDate || undefined,
       });
-      
+
       router.push('/schedules');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal memperbarui jadwal');
+    } catch (err) {
+      setError(getErrorMessage(err));
     }
   };
 
@@ -115,19 +117,31 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
               Jadwal
             </Link>
           </li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-600">Edit</li>
+          <li className="text-nb-gray-400">/</li>
+          <li className="text-nb-gray-600">Edit</li>
         </ol>
       </nav>
 
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      {/* Back Button */}
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/schedules')}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+        >
+          Kembali ke Daftar Jadwal
+        </Button>
+      </div>
+
+      <Card variant="elevated">
+        <CardHeader>
           <h1 className="text-2xl font-bold text-nb-black">
             Edit Jadwal
           </h1>
-        </NBCardHeader>
+        </CardHeader>
 
-        <NBCardContent>
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
@@ -137,13 +151,13 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
             )}
 
             {/* Worker Select */}
-            <NBSelect
+            <FormSelect
               label="Pekerja"
               required
               value={userId}
               onChange={(value) => setUserId(value as string)}
               options={[
-                { value: '', label: 'Pilih Pekerja' },
+                { value: 'none', label: 'Pilih Pekerja' },
                 ...users.map((u) => ({
                   value: u.id,
                   label: `${u.name} (${u.email})`,
@@ -153,13 +167,13 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
             />
 
             {/* Area Select */}
-            <NBSelect
+            <FormSelect
               label="Area"
               required
               value={areaId}
               onChange={(value) => setAreaId(value as string)}
               options={[
-                { value: '', label: 'Pilih Area' },
+                { value: 'none', label: 'Pilih Area' },
                 ...areas.map((a) => ({
                   value: a.id,
                   label: `${a.name} (${a.code})`,
@@ -169,13 +183,13 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
             />
 
             {/* Shift Select */}
-            <NBSelect
+            <FormSelect
               label="Shift"
               required
               value={shiftId}
               onChange={(value) => setShiftId(value as string)}
               options={[
-                { value: '', label: 'Pilih Shift' },
+                { value: 'none', label: 'Pilih Shift' },
                 ...(shifts || []).map((s) => ({
                   value: s.id,
                   label: `${s.name} (${s.start_time} - ${s.end_time})`,
@@ -185,7 +199,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
             />
 
             {/* Effective Date */}
-            <NBInput
+            <FormInput
               label="Tanggal Mulai"
               type="date"
               required
@@ -195,7 +209,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
             />
 
             {/* End Date */}
-            <NBInput
+            <FormInput
               label="Tanggal Selesai (Opsional)"
               type="date"
               value={endDate}
@@ -206,21 +220,20 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
             {/* Actions */}
             <div className="flex gap-4 justify-end pt-4">
               <Link href="/schedules">
-                <NBButton variant="secondary" type="button">
+                <Button variant="secondary" type="button">
                   Batal
-                </NBButton>
+                </Button>
               </Link>
-              <NBButton
-                variant="primary"
+              <Button
                 type="submit"
                 loading={updateMutation.isPending}
               >
                 Simpan Perubahan
-              </NBButton>
+              </Button>
             </div>
           </form>
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -5,7 +5,8 @@
  * Displays area information in grid view
  */
 
-import { NBCard, NBBadge, NBButton } from '@/components/nb';
+import { Eye, Edit, Trash2 } from 'lucide-react';
+import { Card, Badge, Button, CardContent } from '@/components/ui';
 import { formatArea } from '@/lib/utils/geo';
 import { getStaticMapUrl } from '@/lib/utils/static-map';
 import type { Area } from '@/types/models';
@@ -34,9 +35,9 @@ export function AreaCard({
   );
 
   return (
-    <NBCard variant="elevated" className="overflow-hidden">
+    <Card variant="elevated" className="overflow-hidden">
       {/* Map Preview */}
-      <div className="relative w-full h-48 bg-gray-100 border-b-4 border-black">
+      <div className="relative w-full h-48 bg-nb-gray-100 border-b-3 border-nb-black">
         <img
           src={mapUrl}
           alt={`Peta ${area.name}`}
@@ -45,75 +46,75 @@ export function AreaCard({
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-3">
+      <CardContent className="space-y-3">
         {/* Title */}
         <div>
           <h3 className="font-bold text-lg leading-tight mb-1">{area.name}</h3>
-          <p className="text-sm text-gray-600 font-mono">{area.code}</p>
+          <p className="text-sm text-nb-gray-600 font-mono">{area.code}</p>
         </div>
 
         {/* Badges */}
         <div className="flex items-center gap-2 flex-wrap">
           {area.rayon && (
-            <NBBadge variant="primary" size="sm">
+            <Badge variant="default" size="sm">
               📍 {area.rayon.name}
-            </NBBadge>
+            </Badge>
           )}
           {area.area_type && (
-            <NBBadge
+            <Badge
               variant={area.area_type.category === 'ACTIVE' ? 'success' : 'warning'}
               size="sm"
             >
               {area.area_type.name}
-            </NBBadge>
+            </Badge>
           )}
         </div>
 
         {/* Coverage Area */}
         {area.coverage_area && (
-          <div className="bg-amber-100 border-2 border-black px-3 py-2 rounded">
-            <div className="text-xs font-bold text-gray-700 mb-1">Luas Area</div>
+          <div className="bg-nb-warning/20 border-2 border-nb-black px-3 py-2">
+            <div className="text-xs font-bold text-nb-gray-700 mb-1">Luas Area</div>
             <div className="text-xl font-black">{formatArea(area.coverage_area)}</div>
           </div>
         )}
 
         {/* Description */}
         {area.description && (
-          <p className="text-sm text-gray-600 line-clamp-2">{area.description}</p>
+          <p className="text-sm text-nb-gray-600 line-clamp-2">{area.description}</p>
         )}
 
         {/* Actions */}
         {showActions && (
           <div className="flex gap-2 pt-2">
-            <NBButton
+            <Button
               onClick={() => onView?.(area)}
-              variant="primary"
               size="sm"
               className="flex-1"
+              leftIcon={<Eye className="w-4 h-4" />}
             >
-              👁️ Lihat
-            </NBButton>
+              Lihat
+            </Button>
             {onEdit && (
-              <NBButton
+              <Button
                 onClick={() => onEdit(area)}
                 variant="secondary"
                 size="sm"
               >
-                ✏️
-              </NBButton>
+                <Edit className="w-4 h-4" />
+              </Button>
             )}
             {onDelete && (
-              <NBButton
+              <Button
                 onClick={() => onDelete(area)}
-                variant="danger"
+                variant="destructive"
                 size="sm"
               >
-                🗑️
-              </NBButton>
+                <Trash2 className="w-4 h-4" />
+              </Button>
             )}
           </div>
         )}
-      </div>
-    </NBCard>
+      </CardContent>
+    </Card>
   );
 }

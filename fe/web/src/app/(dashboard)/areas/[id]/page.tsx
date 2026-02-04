@@ -7,7 +7,8 @@
 
 import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { NBButton, NBBadge, NBCard } from '@/components/nb';
+import { ArrowLeft, Edit, Trash2, Users } from 'lucide-react';
+import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { Map } from '@/components/maps/Map';
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
 import { useArea } from '@/lib/api/areas';
@@ -77,11 +78,11 @@ export default function AreaDetailPage({
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-12 w-64 bg-gray-200 border-4 border-black rounded animate-pulse" />
-        <div className="h-96 bg-gray-200 border-4 border-black rounded-lg animate-pulse" />
+        <div className="h-12 w-64 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
+        <div className="h-96 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
         <div className="grid grid-cols-2 gap-6">
-          <div className="h-48 bg-gray-200 border-4 border-black rounded-lg animate-pulse" />
-          <div className="h-48 bg-gray-200 border-4 border-black rounded-lg animate-pulse" />
+          <div className="h-48 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
+          <div className="h-48 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
         </div>
       </div>
     );
@@ -91,16 +92,18 @@ export default function AreaDetailPage({
   if (error || !area) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="bg-red-100 border-4 border-black p-8 rounded-lg text-center max-w-md">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h3 className="font-bold text-lg mb-2">Area Tidak Ditemukan</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Area yang Anda cari tidak ditemukan atau telah dihapus.
-          </p>
-          <NBButton onClick={() => router.push('/areas')} variant="primary">
-            Kembali ke Daftar Area
-          </NBButton>
-        </div>
+        <Card className="border-nb-danger">
+          <CardContent className="p-8 text-center max-w-md">
+            <div className="text-4xl mb-4">⚠️</div>
+            <h3 className="font-bold text-lg mb-2">Area Tidak Ditemukan</h3>
+            <p className="text-sm text-nb-gray-600 mb-4">
+              Area yang Anda cari tidak ditemukan atau telah dihapus.
+            </p>
+            <Button onClick={() => router.push('/areas')}>
+              Kembali ke Daftar Area
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -111,30 +114,31 @@ export default function AreaDetailPage({
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <NBButton
+            <Button
               onClick={() => router.push('/areas')}
               variant="secondary"
               size="sm"
+              leftIcon={<ArrowLeft className="w-4 h-4" />}
             >
-              ← Kembali
-            </NBButton>
+              Kembali
+            </Button>
           </div>
           <h1 className="text-3xl font-black">{area.name}</h1>
-          <p className="text-gray-600 mt-1 font-mono">{area.code}</p>
+          <p className="text-nb-gray-600 mt-1 font-mono">{area.code}</p>
 
           {/* Badges */}
           <div className="flex items-center gap-2 mt-3">
             {area.rayon && (
-              <NBBadge variant="primary">📍 {area.rayon.name}</NBBadge>
+              <Badge variant="default">📍 {area.rayon.name}</Badge>
             )}
             {area.area_type && (
-              <NBBadge
+              <Badge
                 variant={
                   area.area_type.category === 'ACTIVE' ? 'success' : 'warning'
                 }
               >
                 {area.area_type.name}
-              </NBBadge>
+              </Badge>
             )}
           </div>
         </div>
@@ -142,80 +146,82 @@ export default function AreaDetailPage({
         {/* Actions */}
         {isAdmin && (
           <div className="flex gap-3">
-            <NBButton
+            <Button
               onClick={() => router.push(`/areas/${area.id}/edit`)}
               variant="secondary"
+              leftIcon={<Edit className="w-4 h-4" />}
             >
-              ✏️ Edit
-            </NBButton>
-            <NBButton
+              Edit
+            </Button>
+            <Button
               onClick={() => setDeleteModal(true)}
-              variant="danger"
+              variant="destructive"
+              leftIcon={<Trash2 className="w-4 h-4" />}
             >
-              🗑️ Hapus
-            </NBButton>
+              Hapus
+            </Button>
           </div>
         )}
       </div>
 
       {/* Map */}
-      <NBCard variant="elevated" className="overflow-hidden">
-        <div className="bg-gray-100 border-b-4 border-black p-4">
+      <Card variant="elevated" className="overflow-hidden">
+        <CardHeader className="bg-nb-gray-100">
           <h2 className="font-bold text-lg">Peta Area</h2>
-        </div>
-        <div className="p-4">
+        </CardHeader>
+        <CardContent className="p-4">
           <Map
             center={[area.center_longitude, area.center_latitude]}
             zoom={15}
             className="h-[500px]"
             onLoad={handleMapLoad}
           />
-        </div>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Information Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Basic Info */}
-        <NBCard variant="elevated">
-          <div className="bg-gray-100 border-b-4 border-black p-4">
+        <Card variant="elevated">
+          <CardHeader className="bg-nb-gray-100">
             <h2 className="font-bold text-lg">Informasi Dasar</h2>
-          </div>
-          <div className="p-4 space-y-3">
+          </CardHeader>
+          <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Nama:</span>
+              <span className="font-bold text-nb-gray-700">Nama:</span>
               <span>{area.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Kode:</span>
+              <span className="font-bold text-nb-gray-700">Kode:</span>
               <span className="font-mono">{area.code}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Rayon:</span>
+              <span className="font-bold text-nb-gray-700">Rayon:</span>
               <span>{area.rayon?.name || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Tipe Area:</span>
+              <span className="font-bold text-nb-gray-700">Tipe Area:</span>
               <span>{area.area_type?.name || '-'}</span>
             </div>
             {area.description && (
               <div>
-                <div className="font-bold text-gray-700 mb-1">Deskripsi:</div>
-                <p className="text-sm text-gray-600">{area.description}</p>
+                <div className="font-bold text-nb-gray-700 mb-1">Deskripsi:</div>
+                <p className="text-sm text-nb-gray-600">{area.description}</p>
               </div>
             )}
-          </div>
-        </NBCard>
+          </CardContent>
+        </Card>
 
         {/* Coverage Info */}
-        <NBCard variant="elevated">
-          <div className="bg-gray-100 border-b-4 border-black p-4">
+        <Card variant="elevated">
+          <CardHeader className="bg-nb-gray-100">
             <h2 className="font-bold text-lg">Informasi Luas</h2>
-          </div>
-          <div className="p-4 space-y-4">
+          </CardHeader>
+          <CardContent className="space-y-4">
             {/* Coverage Area */}
             {area.coverage_area && (
-              <div className="bg-amber-100 border-4 border-black p-4 rounded-lg">
-                <div className="text-sm font-bold text-gray-700 mb-1">
+              <div className="bg-nb-warning/20 border-3 border-nb-black p-4">
+                <div className="text-sm font-bold text-nb-gray-700 mb-1">
                   Luas Area
                 </div>
                 <div className="text-3xl font-black">
@@ -226,10 +232,10 @@ export default function AreaDetailPage({
 
             {/* Center Coordinates */}
             <div>
-              <div className="font-bold text-gray-700 mb-2">
+              <div className="font-bold text-nb-gray-700 mb-2">
                 Koordinat Pusat:
               </div>
-              <div className="bg-gray-100 border-4 border-black p-3 rounded font-mono text-sm">
+              <div className="bg-nb-gray-100 border-3 border-nb-black p-3 font-mono text-sm">
                 {formatCoordinates(area.center_longitude, area.center_latitude)}
               </div>
             </div>
@@ -237,31 +243,31 @@ export default function AreaDetailPage({
             {/* Radius (if applicable) */}
             {area.radius_meters && (
               <div className="flex justify-between">
-                <span className="font-bold text-gray-700">Radius:</span>
+                <span className="font-bold text-nb-gray-700">Radius:</span>
                 <span>{area.radius_meters} meter</span>
               </div>
             )}
-          </div>
-        </NBCard>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Staff Requirements Section (placeholder) */}
-      <NBCard variant="outlined">
-        <div className="bg-gray-100 border-b-4 border-black p-4">
+      <Card variant="outlined">
+        <CardHeader className="bg-nb-gray-100">
           <h2 className="font-bold text-lg">Kebutuhan Tenaga Kerja</h2>
-        </div>
-        <div className="p-8 text-center text-gray-500">
+        </CardHeader>
+        <CardContent className="p-8 text-center text-nb-gray-500">
           <p className="mb-4">
             Fitur kebutuhan tenaga kerja akan tersedia setelah staff
             requirements diimplementasikan.
           </p>
           {isAdmin && (
-            <NBButton variant="secondary" disabled>
-              ➕ Atur Kebutuhan Staff
-            </NBButton>
+            <Button variant="secondary" disabled leftIcon={<Users className="w-4 h-4" />}>
+              Atur Kebutuhan Staff
+            </Button>
           )}
-        </div>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Delete Modal */}
       <DeleteAreaModal

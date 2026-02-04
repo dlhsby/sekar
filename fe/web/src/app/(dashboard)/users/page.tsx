@@ -2,20 +2,22 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NBTable, NBTableColumn } from '@/components/nb/NBTable';
-import { NBInput } from '@/components/nb/NBInput';
-import { NBSelect } from '@/components/nb/NBSelect';
-import { NBButton } from '@/components/nb/NBButton';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import {
+  Button,
+  Card,
+  CardContent,
+  FormInput,
+  FormSelect,
+  DataTable,
+  DataTableColumn,
+  SkeletonTable,
+  EmptyState,
+} from '@/components/ui';
 import { RoleBadge } from '@/components/users/RoleBadge';
 import { DeleteUserModal } from '@/components/users/DeleteUserModal';
 import { useUsers } from '@/lib/api/users';
 import { User, UserRole } from '@/types/models';
-import {
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
 
 /**
  * Users List Page
@@ -35,7 +37,7 @@ export default function UsersPage() {
 
   // Filters state
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('__ALL__');
   const [page, setPage] = useState(1);
   const limit = 20;
 
@@ -45,24 +47,24 @@ export default function UsersPage() {
   // Fetch users with filters
   const { data, isLoading, error } = useUsers({
     search: search || undefined,
-    role: roleFilter as UserRole | undefined,
+    role: roleFilter === '__ALL__' ? undefined : (roleFilter as UserRole),
     page,
     limit,
   });
 
   // Role filter options
   const roleOptions = [
-    { value: '', label: 'Semua Role' },
-    { value: 'Admin', label: 'Admin' },
-    { value: 'TopManagement', label: 'Top Management' },
-    { value: 'KepalaRayon', label: 'Kepala Rayon' },
-    { value: 'KoordinatorLapangan', label: 'Koordinator Lapangan' },
-    { value: 'Worker', label: 'Worker' },
-    { value: 'Linmas', label: 'Linmas' },
+    { value: '__ALL__', label: 'Semua Role' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'top_management', label: 'Top Management' },
+    { value: 'kepala_rayon', label: 'Kepala Rayon' },
+    { value: 'koordinator_lapangan', label: 'Koordinator Lapangan' },
+    { value: 'worker', label: 'Worker' },
+    { value: 'linmas', label: 'Linmas' },
   ];
 
   // Table columns
-  const columns: NBTableColumn<User>[] = [
+  const columns: DataTableColumn<User>[] = [
     {
       key: 'name',
       title: 'Nama',
@@ -93,7 +95,7 @@ export default function UsersPage() {
       align: 'center',
       render: (_, row) => (
         <div className="flex items-center justify-center gap-2">
-          <NBButton
+          <Button
             variant="secondary"
             size="sm"
             onClick={(e) => {
@@ -102,10 +104,10 @@ export default function UsersPage() {
             }}
             aria-label={`Edit ${row.name}`}
           >
-            <PencilIcon className="w-4 h-4" />
-          </NBButton>
-          <NBButton
-            variant="danger"
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="destructive"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
@@ -113,8 +115,8 @@ export default function UsersPage() {
             }}
             aria-label={`Delete ${row.name}`}
           >
-            <TrashIcon className="w-4 h-4" />
-          </NBButton>
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
       ),
     },
@@ -123,17 +125,16 @@ export default function UsersPage() {
   // Handle delete success
   const handleDeleteSuccess = () => {
     setUserToDelete(null);
-    // Success toast would go here
   };
 
   // Handle clear filters
   const handleClearFilters = () => {
     setSearch('');
-    setRoleFilter('');
+    setRoleFilter('__ALL__');
     setPage(1);
   };
 
-  const hasFilters = search || roleFilter;
+  const hasFilters = search || (roleFilter && roleFilter !== '__ALL__');
   const users = data?.data || [];
   const totalPages = data?.meta.totalPages || 1;
   const total = data?.meta.total || 0;
@@ -148,69 +149,83 @@ export default function UsersPage() {
             Kelola data user dan hak akses
           </p>
         </div>
-        <NBButton
-          variant="primary"
+        <Button
           onClick={() => router.push('/users/new')}
-          leftIcon={<PlusIcon className="w-5 h-5" />}
+          leftIcon={<Plus className="w-5 h-5" />}
         >
           Tambah User
-        </NBButton>
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="bg-nb-white border-3 border-nb-black shadow-nb-sm p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="md:col-span-2">
-            <NBInput
-              label="Cari User"
-              placeholder="Cari berdasarkan nama atau email..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="md:col-span-2">
+              <FormInput
+                label="Cari User"
+                placeholder="Cari berdasarkan nama atau email..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                leftIcon={<Search className="w-5 h-5" />}
+              />
+            </div>
+
+            {/* Role Filter */}
+            <FormSelect
+              label="Filter Role"
+              options={roleOptions}
+              value={roleFilter}
+              onChange={(value) => {
+                setRoleFilter(value);
                 setPage(1);
               }}
-              leftIcon={<MagnifyingGlassIcon className="w-5 h-5" />}
             />
           </div>
 
-          {/* Role Filter */}
-          <NBSelect
-            label="Filter Role"
-            options={roleOptions}
-            value={roleFilter}
-            onChange={(value) => {
-              setRoleFilter(value as string);
-              setPage(1);
-            }}
-          />
-        </div>
+          {/* Clear Filters */}
+          {hasFilters && (
+            <div className="mt-4">
+              <Button variant="secondary" size="sm" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Clear Filters */}
-        {hasFilters && (
-          <div className="mt-4">
-            <NBButton variant="secondary" size="sm" onClick={handleClearFilters}>
-              Clear Filters
-            </NBButton>
-          </div>
-        )}
-      </div>
+      {/* Loading State */}
+      {isLoading && (
+        <Card>
+          <CardContent className="p-6">
+            <SkeletonTable rows={5} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Error State */}
-      {error && (
-        <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
-          <p className="text-sm text-nb-danger font-medium">
-            Gagal memuat data user. Silakan coba lagi.
-          </p>
-        </div>
+      {!isLoading && error && (
+        <EmptyState
+          variant="error"
+          title="Gagal memuat data user"
+          description="Terjadi kesalahan saat mengambil data. Silakan coba lagi."
+          action={{
+            label: 'Coba Lagi',
+            onClick: () => window.location.reload(),
+          }}
+        />
       )}
 
       {/* Table */}
-      <div className="bg-nb-white border-3 border-nb-black shadow-nb-sm">
-        <NBTable
+      {!isLoading && !error && (
+        <DataTable
           columns={columns}
           data={users}
-          loading={isLoading}
+          loading={false}
           emptyText={
             hasFilters
               ? 'Tidak ada user yang sesuai dengan filter'
@@ -218,37 +233,39 @@ export default function UsersPage() {
           }
           rowKey="id"
         />
+      )}
 
-        {/* Pagination */}
-        {!isLoading && users.length > 0 && (
-          <div className="px-6 py-4 border-t-2 border-nb-black flex items-center justify-between">
+      {/* Pagination */}
+      {!isLoading && users.length > 0 && (
+        <Card>
+          <CardContent className="px-6 py-4 flex items-center justify-between">
             <div className="text-sm text-nb-gray-600">
               Menampilkan {users.length} dari {total} user
             </div>
             <div className="flex items-center gap-2">
-              <NBButton
+              <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
                 Previous
-              </NBButton>
+              </Button>
               <span className="text-sm font-medium px-3">
                 Halaman {page} dari {totalPages}
               </span>
-              <NBButton
+              <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
                 Next
-              </NBButton>
+              </Button>
             </div>
-          </div>
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delete Confirmation Modal */}
       <DeleteUserModal

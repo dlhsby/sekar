@@ -38,15 +38,15 @@ export interface NavItem {
  * Items are filtered based on the current user's role.
  * 
  * Roles:
- * - Admin: Full access to all features
- * - TopManagement: Monitoring, reports, analytics
- * - KepalaRayon: Rayon-level monitoring, reports, tasks
- * - KoordinatorLapangan: Area-level monitoring, schedules, tasks
- * 
+ * - admin: Full access to all features
+ * - top_management: Monitoring, reports, analytics
+ * - kepala_rayon: Rayon-level monitoring, reports, tasks
+ * - koordinator_lapangan: Area-level monitoring, schedules, tasks
+ *
  * @example
  * ```tsx
- * const userRole = 'Admin';
- * const filteredNav = navigationItems.filter(item => 
+ * const userRole = 'admin';
+ * const filteredNav = navigationItems.filter(item =>
  *   item.roles.includes('*') || item.roles.includes(userRole)
  * );
  * ```
@@ -57,63 +57,63 @@ export const navigationItems: NavItem[] = [
     label: 'Dashboard',
     href: '/dashboard',
     icon: HomeIcon,
-    roles: ['Admin', 'TopManagement', 'KepalaRayon', 'KoordinatorLapangan'],
+    roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
   },
   {
     id: 'monitoring',
     label: 'Monitoring',
     href: '/monitoring',
     icon: MapIcon,
-    roles: ['Admin', 'TopManagement', 'KepalaRayon', 'KoordinatorLapangan'],
+    roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
   },
   {
     id: 'users',
     label: 'Users',
     href: '/users',
     icon: UsersIcon,
-    roles: ['Admin'], // Admin only
+    roles: ['admin'], // Admin only
   },
   {
     id: 'areas',
     label: 'Areas',
     href: '/areas',
     icon: MapPinIcon,
-    roles: ['Admin', 'TopManagement'],
+    roles: ['admin', 'top_management'],
   },
   {
     id: 'rayons',
     label: 'Rayons',
     href: '/rayons',
     icon: BuildingOfficeIcon,
-    roles: ['Admin', 'TopManagement'],
+    roles: ['admin', 'top_management'],
   },
   {
     id: 'schedules',
     label: 'Schedules',
     href: '/schedules',
     icon: CalendarIcon,
-    roles: ['Admin', 'KoordinatorLapangan'],
+    roles: ['admin', 'koordinator_lapangan'],
   },
   {
     id: 'reports',
     label: 'Reports',
     href: '/reports',
     icon: DocumentTextIcon,
-    roles: ['Admin', 'TopManagement', 'KepalaRayon', 'KoordinatorLapangan'],
+    roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
   },
   {
     id: 'tasks',
     label: 'Tasks',
     href: '/tasks',
     icon: ClipboardDocumentListIcon,
-    roles: ['Admin', 'KepalaRayon', 'KoordinatorLapangan'],
+    roles: ['admin', 'kepala_rayon', 'koordinator_lapangan'],
   },
   {
     id: 'settings',
     label: 'Settings',
     href: '/dashboard/settings',
     icon: Cog6ToothIcon,
-    roles: ['Admin'],
+    roles: ['admin'],
   },
 ];
 

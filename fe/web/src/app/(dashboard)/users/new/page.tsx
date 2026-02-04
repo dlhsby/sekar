@@ -1,11 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { UserForm } from '@/components/forms/UserForm';
 import { useCreateUser } from '@/lib/api/users';
 import { CreateUserDto } from '@/types/models';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { NBButton } from '@/components/nb/NBButton';
+import { Button, Card, CardContent } from '@/components/ui';
 
 /**
  * New User Page
@@ -42,15 +42,15 @@ export default function NewUserPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <NBButton
+        <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push('/users')}
-          leftIcon={<ArrowLeftIcon className="w-4 h-4" />}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
           className="mb-4"
         >
           Kembali ke Daftar User
-        </NBButton>
+        </Button>
         <h1 className="text-3xl font-black">Tambah User Baru</h1>
         <p className="text-sm text-nb-gray-600 mt-1">
           Lengkapi form di bawah untuk membuat user baru
@@ -58,14 +58,16 @@ export default function NewUserPage() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-nb-white border-3 border-nb-black shadow-nb-sm p-6">
-        <UserForm
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          loading={createUserMutation.isPending}
-          submitText="Buat User"
-        />
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <UserForm
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            loading={createUserMutation.isPending}
+            submitText="Buat User"
+          />
+        </CardContent>
+      </Card>
 
       {/* Error Display */}
       {createUserMutation.isError && (

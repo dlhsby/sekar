@@ -1,26 +1,26 @@
 'use client';
 
-import { useUser } from '@/lib/auth/hooks';
-import { NBCard, NBCardHeader, NBCardContent } from '@/components/nb/NBCard';
-import { NBBadge } from '@/components/nb/NBBadge';
 import {
-  UsersIcon,
-  MapPinIcon,
-  MapIcon,
-  BuildingOfficeIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  DocumentTextIcon,
-} from '@heroicons/react/24/outline';
+  Users,
+  MapPin,
+  Map,
+  Building2,
+  CheckCircle,
+  Clock,
+  FileText,
+} from 'lucide-react';
+import { useUser } from '@/lib/auth/hooks';
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Badge,
+} from '@/components/ui';
 
 /**
  * Dashboard Home Page
  *
- * Role-based dashboard content:
- * - Admin: City-wide statistics and all resources
- * - TopManagement: All rayons overview and analytics
- * - KepalaRayon: Rayon-specific statistics
- * - KoordinatorLapangan: Area-specific statistics
+ * Role-based dashboard content
  */
 export default function DashboardPage() {
   const user = useUser();
@@ -30,31 +30,31 @@ export default function DashboardPage() {
     switch (role) {
       case 'admin':
         return [
-          { label: 'Total Users', value: '156', icon: UsersIcon, color: 'primary' as const },
-          { label: 'Active Areas', value: '42', icon: MapPinIcon, color: 'success' as const },
-          { label: 'Total Rayons', value: '8', icon: BuildingOfficeIcon, color: 'warning' as const },
-          { label: 'Reports Today', value: '23', icon: DocumentTextIcon, color: 'neutral' as const },
+          { label: 'Total Users', value: '156', Icon: Users, color: 'default' as const },
+          { label: 'Active Areas', value: '42', Icon: MapPin, color: 'success' as const },
+          { label: 'Total Rayons', value: '8', Icon: Building2, color: 'warning' as const },
+          { label: 'Reports Today', value: '23', Icon: FileText, color: 'secondary' as const },
         ];
       case 'top_management':
         return [
-          { label: 'All Rayons', value: '8', icon: BuildingOfficeIcon, color: 'primary' as const },
-          { label: 'Active Workers', value: '124', icon: UsersIcon, color: 'success' as const },
-          { label: 'Areas Covered', value: '42', icon: MapPinIcon, color: 'warning' as const },
-          { label: 'Reports Today', value: '23', icon: DocumentTextIcon, color: 'neutral' as const },
+          { label: 'All Rayons', value: '8', Icon: Building2, color: 'default' as const },
+          { label: 'Active Workers', value: '124', Icon: Users, color: 'success' as const },
+          { label: 'Areas Covered', value: '42', Icon: MapPin, color: 'warning' as const },
+          { label: 'Reports Today', value: '23', Icon: FileText, color: 'secondary' as const },
         ];
       case 'kepala_rayon':
         return [
-          { label: 'My Rayon Areas', value: '12', icon: MapPinIcon, color: 'primary' as const },
-          { label: 'Active Workers', value: '28', icon: UsersIcon, color: 'success' as const },
-          { label: 'Tasks Pending', value: '5', icon: ClockIcon, color: 'warning' as const },
-          { label: 'Reports Today', value: '8', icon: DocumentTextIcon, color: 'neutral' as const },
+          { label: 'My Rayon Areas', value: '12', Icon: MapPin, color: 'default' as const },
+          { label: 'Active Workers', value: '28', Icon: Users, color: 'success' as const },
+          { label: 'Tasks Pending', value: '5', Icon: Clock, color: 'warning' as const },
+          { label: 'Reports Today', value: '8', Icon: FileText, color: 'secondary' as const },
         ];
       case 'koordinator_lapangan':
         return [
-          { label: 'My Areas', value: '5', icon: MapPinIcon, color: 'primary' as const },
-          { label: 'Team Workers', value: '12', icon: UsersIcon, color: 'success' as const },
-          { label: 'Tasks Today', value: '7', icon: CheckCircleIcon, color: 'warning' as const },
-          { label: 'Reports Today', value: '4', icon: DocumentTextIcon, color: 'neutral' as const },
+          { label: 'My Areas', value: '5', Icon: MapPin, color: 'default' as const },
+          { label: 'Team Workers', value: '12', Icon: Users, color: 'success' as const },
+          { label: 'Tasks Today', value: '7', Icon: CheckCircle, color: 'warning' as const },
+          { label: 'Reports Today', value: '4', Icon: FileText, color: 'secondary' as const },
         ];
       default:
         return [];
@@ -114,34 +114,34 @@ export default function DashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => {
-          const Icon = stat.icon;
+          const { Icon } = stat;
           return (
-            <NBCard key={stat.label} variant="elevated">
-              <NBCardContent className="space-y-3">
+            <Card key={stat.label} variant="elevated">
+              <CardContent className="space-y-3 p-6">
                 <div className="flex items-start justify-between">
-                  <NBBadge variant={stat.color} size="sm">
+                  <Badge variant={stat.color} size="sm">
                     {stat.label}
-                  </NBBadge>
+                  </Badge>
                   <Icon className="h-6 w-6 text-nb-gray-400" />
                 </div>
                 <p className="text-4xl font-extrabold text-nb-black">{stat.value}</p>
-              </NBCardContent>
-            </NBCard>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
       {/* Recent Activity */}
-      <NBCard variant="elevated" className="mb-8">
-        <NBCardHeader>
+      <Card variant="elevated" className="mb-8">
+        <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-extrabold text-nb-black">Recent Activity</h2>
-            <NBBadge variant="neutral" size="sm">
+            <Badge variant="secondary" size="sm">
               Live
-            </NBBadge>
+            </Badge>
           </div>
-        </NBCardHeader>
-        <NBCardContent>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-4">
             {recentActivity.map((activity, index) => (
               <div
@@ -150,13 +150,13 @@ export default function DashboardPage() {
               >
                 <div className="flex-shrink-0 mt-1">
                   {activity.type === 'success' && (
-                    <CheckCircleIcon className="h-5 w-5 text-nb-success" />
+                    <CheckCircle className="h-5 w-5 text-nb-success" />
                   )}
                   {activity.type === 'warning' && (
-                    <ClockIcon className="h-5 w-5 text-nb-warning" />
+                    <Clock className="h-5 w-5 text-nb-warning" />
                   )}
                   {activity.type === 'neutral' && (
-                    <DocumentTextIcon className="h-5 w-5 text-nb-gray-400" />
+                    <FileText className="h-5 w-5 text-nb-gray-400" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -166,72 +166,72 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions (role-based) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {user?.role === 'admin' && (
           <>
-            <NBCard variant="outlined" interactive className="hover:border-nb-primary">
-              <NBCardContent className="text-center py-8">
-                <UsersIcon className="h-12 w-12 mx-auto mb-3 text-nb-primary" />
+            <Card variant="outlined" interactive className="hover:border-nb-primary">
+              <CardContent className="text-center py-8">
+                <Users className="h-12 w-12 mx-auto mb-3 text-nb-primary" />
                 <h3 className="font-bold text-lg text-nb-black">Manage Users</h3>
                 <p className="text-nb-gray-600 text-sm mt-1">
                   Create, edit, and manage user accounts
                 </p>
-              </NBCardContent>
-            </NBCard>
-            <NBCard variant="outlined" interactive className="hover:border-nb-success">
-              <NBCardContent className="text-center py-8">
-                <BuildingOfficeIcon className="h-12 w-12 mx-auto mb-3 text-nb-success" />
+              </CardContent>
+            </Card>
+            <Card variant="outlined" interactive className="hover:border-nb-success">
+              <CardContent className="text-center py-8">
+                <Building2 className="h-12 w-12 mx-auto mb-3 text-nb-success" />
                 <h3 className="font-bold text-lg text-nb-black">Manage Rayons</h3>
                 <p className="text-nb-gray-600 text-sm mt-1">
                   Configure rayons and hierarchies
                 </p>
-              </NBCardContent>
-            </NBCard>
-            <NBCard variant="outlined" interactive className="hover:border-nb-warning">
-              <NBCardContent className="text-center py-8">
-                <MapPinIcon className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
+              </CardContent>
+            </Card>
+            <Card variant="outlined" interactive className="hover:border-nb-warning">
+              <CardContent className="text-center py-8">
+                <MapPin className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
                 <h3 className="font-bold text-lg text-nb-black">Manage Areas</h3>
                 <p className="text-nb-gray-600 text-sm mt-1">
                   Create and configure service areas
                 </p>
-              </NBCardContent>
-            </NBCard>
+              </CardContent>
+            </Card>
           </>
         )}
 
         {user?.role !== 'admin' && (
           <>
-            <NBCard variant="outlined" interactive className="hover:border-nb-primary">
-              <NBCardContent className="text-center py-8">
-                <MapIcon className="h-12 w-12 mx-auto mb-3 text-nb-primary" />
+            <Card variant="outlined" interactive className="hover:border-nb-primary">
+              <CardContent className="text-center py-8">
+                <Map className="h-12 w-12 mx-auto mb-3 text-nb-primary" />
                 <h3 className="font-bold text-lg text-nb-black">View Monitoring</h3>
                 <p className="text-nb-gray-600 text-sm mt-1">
                   Track worker locations in real-time
                 </p>
-              </NBCardContent>
-            </NBCard>
-            <NBCard variant="outlined" interactive className="hover:border-nb-success">
-              <NBCardContent className="text-center py-8">
-                <DocumentTextIcon className="h-12 w-12 mx-auto mb-3 text-nb-success" />
+              </CardContent>
+            </Card>
+            <Card variant="outlined" interactive className="hover:border-nb-success">
+              <CardContent className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto mb-3 text-nb-success" />
                 <h3 className="font-bold text-lg text-nb-black">View Reports</h3>
                 <p className="text-nb-gray-600 text-sm mt-1">
                   Review submitted work reports
                 </p>
-              </NBCardContent>
-            </NBCard>
-            <NBCard variant="outlined" interactive className="hover:border-nb-warning">
-              <NBCardContent className="text-center py-8">
-                <ClockIcon className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
+              </CardContent>
+            </Card>
+            <Card variant="outlined" interactive className="hover:border-nb-warning">
+              <CardContent className="text-center py-8">
+                <Clock className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
                 <h3 className="font-bold text-lg text-nb-black">View Schedules</h3>
                 <p className="text-nb-gray-600 text-sm mt-1">
                   Check team schedules and shifts
                 </p>
-              </NBCardContent>
-            </NBCard>
+              </CardContent>
+            </Card>
           </>
         )}
       </div>

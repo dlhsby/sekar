@@ -16,38 +16,38 @@ import {
 } from '@/lib/api/monitoring';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
-import { NBCard, NBCardHeader, NBCardContent, NBBadge, NBSelect } from '@/components/nb';
+import { Card, CardHeader, CardContent, Badge, FormSelect, Button } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+// Access control: Admin + TopManagement + KepalaRayon + KoordinatorLapangan
+const ALLOWED_ROLES = ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'];
 
 export default function MonitoringPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [rayonFilter, setRayonFilter] = useState('');
-  const [areaFilter, setAreaFilter] = useState('');
-
-  // Access control: Admin + TopManagement + KepalaRayon + KoordinatorLapangan
-  const allowedRoles = ['Admin', 'TopManagement', 'KepalaRayon', 'KoordinatorLapangan'];
+  const [rayonFilter, setRayonFilter] = useState('all');
+  const [areaFilter, setAreaFilter] = useState('all');
 
   useEffect(() => {
-    if (!authLoading && user && !allowedRoles.includes(user.role)) {
+    if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 
   // Fetch filter options
   const { data: rayonsData } = useRayons();
-  const { data: areasData } = useAreas({ rayon_id: rayonFilter });
+  const { data: areasData } = useAreas({ rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined });
 
   // Fetch appropriate stats based on filters and role
   const { data: cityStats, isLoading: cityLoading } = useCityStats();
-  const { data: rayonStats, isLoading: rayonLoading } = useRayonMonitoring(rayonFilter);
-  const { data: areaStats, isLoading: areaLoading } = useAreaMonitoring(areaFilter);
+  const { data: rayonStats, isLoading: rayonLoading } = useRayonMonitoring(rayonFilter !== 'all' ? rayonFilter : '');
+  const { data: areaStats, isLoading: areaLoading } = useAreaMonitoring(areaFilter !== 'all' ? areaFilter : '');
 
   // Fetch live workers
   const filters: LiveWorkersFilters = {};
-  if (rayonFilter) filters.rayon_id = rayonFilter;
-  if (areaFilter) filters.area_id = areaFilter;
+  if (rayonFilter && rayonFilter !== 'all') filters.rayon_id = rayonFilter;
+  if (areaFilter && areaFilter !== 'all') filters.area_id = areaFilter;
   
   const { data: liveWorkersData, isLoading: workersLoading } = useLiveWorkers(filters);
 
@@ -64,20 +64,20 @@ export default function MonitoringPage() {
   }
 
   // Access denied
-  if (!allowedRoles.includes(user.role)) {
+  if (!ALLOWED_ROLES.includes(user.role)) {
     return null;
   }
 
   // Determine which stats to display
-  const displayStats = areaFilter
+  const displayStats = (areaFilter && areaFilter !== 'all')
     ? areaStats
-    : rayonFilter
+    : (rayonFilter && rayonFilter !== 'all')
     ? rayonStats
     : cityStats;
 
-  const displayLoading = areaFilter
+  const displayLoading = (areaFilter && areaFilter !== 'all')
     ? areaLoading
-    : rayonFilter
+    : (rayonFilter && rayonFilter !== 'all')
     ? rayonLoading
     : cityLoading;
 
@@ -102,20 +102,20 @@ export default function MonitoringPage() {
       </div>
 
       {/* Filters */}
-      <NBCard variant="elevated">
-        <NBCardContent>
+      <Card variant="elevated">
+        <CardContent>
           <div className="flex gap-4">
             {/* Rayon Filter */}
             <div className="flex-1">
-              <NBSelect
+              <FormSelect
                 label="Filter Rayon"
                 value={rayonFilter}
                 onChange={(value) => {
                   setRayonFilter(value as string);
-                  setAreaFilter(''); // Reset area when rayon changes
+                  setAreaFilter('all'); // Reset area when rayon changes
                 }}
                 options={[
-                  { value: '', label: 'Semua Rayon' },
+                  { value: 'all', label: 'Semua Rayon' },
                   ...(rayonsData || []).map((rayon) => ({
                     value: rayon.id,
                     label: rayon.name,
@@ -126,36 +126,37 @@ export default function MonitoringPage() {
 
             {/* Area Filter */}
             <div className="flex-1">
-              <NBSelect
+              <FormSelect
                 label="Filter Area"
                 value={areaFilter}
                 onChange={(value) => setAreaFilter(value as string)}
                 options={[
-                  { value: '', label: 'Semua Area' },
+                  { value: 'all', label: 'Semua Area' },
                   ...(areasData?.data || []).map((area) => ({
                     value: area.id,
                     label: `${area.name} (${area.code})`,
                   })),
                 ]}
-                disabled={!rayonFilter}
+                disabled={rayonFilter === 'all'}
               />
             </div>
 
             {/* Clear Filters */}
-            {(rayonFilter || areaFilter) && (
-              <button
+            {(rayonFilter !== 'all' || areaFilter !== 'all') && (
+              <Button
+                variant="secondary"
                 onClick={() => {
-                  setRayonFilter('');
-                  setAreaFilter('');
+                  setRayonFilter('all');
+                  setAreaFilter('all');
                 }}
-                className="self-end px-4 py-2 border-3 border-black bg-white font-semibold hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                className="self-end"
               >
                 Reset Filter
-              </button>
+              </Button>
             )}
           </div>
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Statistics Cards */}
       {displayLoading ? (
@@ -163,158 +164,158 @@ export default function MonitoringPage() {
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="h-32 bg-gray-200 border-4 border-black rounded-lg animate-pulse"
+              className="h-32 bg-nb-gray-200 border-3 border-nb-black animate-pulse"
             />
           ))}
         </div>
       ) : displayStats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Workers Online */}
-          <NBCard variant="elevated">
-            <NBCardContent>
-              <div className="text-sm font-semibold text-gray-600 mb-2">
+          <Card variant="elevated">
+            <CardContent>
+              <div className="text-sm font-semibold text-nb-gray-600 mb-2">
                 Pekerja Online
               </div>
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-black text-nb-success">
-                  {areaFilter
+                  {(areaFilter && areaFilter !== 'all')
                     ? areaStats?.current_shift.active_workers
-                    : rayonFilter
+                    : (rayonFilter && rayonFilter !== 'all')
                     ? rayonStats?.summary.workers_online
                     : cityStats?.summary.workers_online}
                 </div>
-                <div className="text-gray-600">
+                <div className="text-nb-gray-600">
                   /{' '}
-                  {areaFilter
+                  {(areaFilter && areaFilter !== 'all')
                     ? areaStats?.current_shift.assigned_workers
-                    : rayonFilter
+                    : (rayonFilter && rayonFilter !== 'all')
                     ? rayonStats?.summary.total_workers
                     : cityStats?.summary.total_workers}
                 </div>
               </div>
-            </NBCardContent>
-          </NBCard>
+            </CardContent>
+          </Card>
 
           {/* Linmas Online */}
-          <NBCard variant="elevated">
-            <NBCardContent>
-              <div className="text-sm font-semibold text-gray-600 mb-2">
+          <Card variant="elevated">
+            <CardContent>
+              <div className="text-sm font-semibold text-nb-gray-600 mb-2">
                 Linmas Online
               </div>
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-black text-nb-primary">
-                  {areaFilter
+                  {(areaFilter && areaFilter !== 'all')
                     ? areaStats?.current_shift.active_linmas
-                    : rayonFilter
+                    : (rayonFilter && rayonFilter !== 'all')
                     ? rayonStats?.summary.linmas_online
                     : cityStats?.summary.linmas_online}
                 </div>
-                <div className="text-gray-600">
+                <div className="text-nb-gray-600">
                   /{' '}
-                  {areaFilter
+                  {(areaFilter && areaFilter !== 'all')
                     ? areaStats?.current_shift.assigned_linmas
-                    : rayonFilter
+                    : (rayonFilter && rayonFilter !== 'all')
                     ? rayonStats?.summary.total_linmas
                     : cityStats?.summary.total_linmas}
                 </div>
               </div>
-            </NBCardContent>
-          </NBCard>
+            </CardContent>
+          </Card>
 
           {/* Active Shifts */}
-          {!areaFilter && (
-            <NBCard variant="elevated">
-              <NBCardContent>
-                <div className="text-sm font-semibold text-gray-600 mb-2">
+          {(!areaFilter || areaFilter === 'all') && (
+            <Card variant="elevated">
+              <CardContent>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">
                   Shift Aktif
                 </div>
                 <div className="text-3xl font-black text-nb-warning">
-                  {rayonFilter
+                  {(rayonFilter && rayonFilter !== 'all')
                     ? rayonStats?.summary.active_shifts
                     : cityStats?.summary.active_shifts}
                 </div>
-              </NBCardContent>
-            </NBCard>
+              </CardContent>
+            </Card>
           )}
 
           {/* Reports Today */}
-          {!areaFilter && (
-            <NBCard variant="elevated">
-              <NBCardContent>
-                <div className="text-sm font-semibold text-gray-600 mb-2">
+          {(!areaFilter || areaFilter === 'all') && (
+            <Card variant="elevated">
+              <CardContent>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">
                   Laporan Hari Ini
                 </div>
                 <div className="text-3xl font-black text-nb-black">
-                  {rayonFilter
+                  {(rayonFilter && rayonFilter !== 'all')
                     ? rayonStats?.summary.reports_today
                     : cityStats?.summary.reports_today}
                 </div>
-              </NBCardContent>
-            </NBCard>
+              </CardContent>
+            </Card>
           )}
 
           {/* Area-specific: Shift Info */}
-          {areaFilter && areaStats && (
-            <NBCard variant="elevated">
-              <NBCardContent>
-                <div className="text-sm font-semibold text-gray-600 mb-2">
+          {areaFilter && areaFilter !== 'all' && areaStats && (
+            <Card variant="elevated">
+              <CardContent>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">
                   Shift Saat Ini
                 </div>
                 <div className="font-black text-nb-black">
                   {areaStats.current_shift.definition.name}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-nb-gray-600">
                   {areaStats.current_shift.definition.start_time} -{' '}
                   {areaStats.current_shift.definition.end_time}
                 </div>
-              </NBCardContent>
-            </NBCard>
+              </CardContent>
+            </Card>
           )}
         </div>
       ) : null}
 
       {/* Map Placeholder */}
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      <Card variant="elevated">
+        <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-nb-black">Peta Live</h2>
-            <NBBadge variant="success">
+            <Badge variant="success">
               {onlineWorkers.length} Online
-            </NBBadge>
+            </Badge>
           </div>
-        </NBCardHeader>
-        <NBCardContent>
-          <div className="bg-gray-100 border-3 border-black rounded-lg h-96 flex items-center justify-center">
+        </CardHeader>
+        <CardContent>
+          <div className="bg-nb-gray-100 border-3 border-nb-black h-96 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">🗺️</div>
-              <p className="text-gray-600 font-semibold mb-2">
+              <p className="text-nb-gray-600 font-semibold mb-2">
                 Peta Monitoring Real-Time
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-nb-gray-500">
                 Integrasi Mapbox akan ditambahkan di sini
               </p>
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-nb-gray-400 mt-2">
                 {workers.length} pekerja terdeteksi ({onlineWorkers.length} online,{' '}
                 {offlineWorkers.length} offline)
               </p>
             </div>
           </div>
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Workers List */}
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      <Card variant="elevated">
+        <CardHeader>
           <h2 className="text-xl font-bold text-nb-black">Daftar Pekerja Aktif</h2>
-        </NBCardHeader>
-        <NBCardContent>
+        </CardHeader>
+        <CardContent>
           {workersLoading ? (
-            <div className="text-center py-8 text-gray-600">Memuat data pekerja...</div>
+            <div className="text-center py-8 text-nb-gray-600">Memuat data pekerja...</div>
           ) : workers.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-4">👷</div>
-              <p className="text-gray-600 font-semibold">Tidak ada pekerja aktif</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-nb-gray-600 font-semibold">Tidak ada pekerja aktif</p>
+              <p className="text-sm text-nb-gray-500 mt-2">
                 Tidak ada pekerja yang sedang clock-in saat ini
               </p>
             </div>
@@ -323,7 +324,7 @@ export default function MonitoringPage() {
               {workers.map((worker) => (
                 <div
                   key={worker.user_id}
-                  className="flex items-center justify-between p-4 border-3 border-black rounded-lg bg-white hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-4 border-3 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
                 >
                   {/* Worker Info */}
                   <div className="flex items-center gap-4">
@@ -331,14 +332,14 @@ export default function MonitoringPage() {
                       className={`h-3 w-3 rounded-full ${
                         worker.status === 'online'
                           ? 'bg-nb-success'
-                          : 'bg-gray-400'
+                          : 'bg-nb-gray-400'
                       }`}
                     />
                     <div>
                       <div className="font-bold text-nb-black">
                         {worker.full_name}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-nb-gray-600">
                         {worker.area_name}
                       </div>
                     </div>
@@ -346,27 +347,27 @@ export default function MonitoringPage() {
 
                   {/* Status Badges */}
                   <div className="flex items-center gap-2">
-                    <NBBadge
-                      variant={worker.role === 'Worker' ? 'primary' : 'warning'}
+                    <Badge
+                      variant={worker.role === 'worker' ? 'default' : 'warning'}
                       size="sm"
                     >
                       {worker.role}
-                    </NBBadge>
-                    <NBBadge variant={worker.status === 'online' ? 'success' : 'neutral'} size="sm">
+                    </Badge>
+                    <Badge variant={worker.status === 'online' ? 'success' : 'secondary'} size="sm">
                       {worker.status === 'online' ? 'Online' : 'Offline'}
-                    </NBBadge>
+                    </Badge>
                     {worker.battery_level < 20 && (
-                      <NBBadge variant="danger" size="sm">
+                      <Badge variant="destructive" size="sm">
                         🔋 {worker.battery_level}%
-                      </NBBadge>
+                      </Badge>
                     )}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Last Updated */}
       {liveWorkersData && (

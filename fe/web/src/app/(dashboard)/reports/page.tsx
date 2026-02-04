@@ -8,35 +8,36 @@
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useReports, type ReportType } from '@/lib/api/reports';
-import { NBCard, NBCardHeader, NBCardContent, NBBadge, NBTable, NBInput, NBSelect } from '@/components/nb';
-import { NBTableColumn } from '@/components/nb/NBTable';
+import { Card, CardHeader, CardContent, Badge, DataTable, FormInput, FormSelect, Button } from '@/components/ui';
+import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { WorkReport } from '@/lib/api/reports';
+
+// Access control
+const ALLOWED_ROLES = ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'];
 
 export default function ReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState('');
-  const [reportTypeFilter, setReportTypeFilter] = useState<ReportType | ''>('');
+  const [reportTypeFilter, setReportTypeFilter] = useState<ReportType | 'all'>('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [page, setPage] = useState(1);
   const limit = 20;
 
-  // Access control
-  const allowedRoles = ['Admin', 'TopManagement', 'KepalaRayon', 'KoordinatorLapangan'];
-
   useEffect(() => {
-    if (!authLoading && user && !allowedRoles.includes(user.role)) {
+    if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 
   // Fetch reports
   const { data: reportsData, isLoading } = useReports({
-    report_type: reportTypeFilter || undefined,
+    report_type: reportTypeFilter !== 'all' ? reportTypeFilter : undefined,
     from_date: fromDate || undefined,
     to_date: toDate || undefined,
     page,
@@ -56,7 +57,7 @@ export default function ReportsPage() {
   }
 
   // Access denied
-  if (!allowedRoles.includes(user.role)) {
+  if (!ALLOWED_ROLES.includes(user.role)) {
     return null;
   }
 
@@ -73,40 +74,40 @@ export default function ReportsPage() {
 
   // Report type options
   const reportTypes: { value: string; label: string }[] = [
-    { value: '', label: 'Semua Tipe' },
+    { value: 'all', label: 'Semua Tipe' },
     { value: 'task_completion', label: 'Penyelesaian Tugas' },
     { value: 'incident', label: 'Insiden' },
     { value: 'maintenance_request', label: 'Permintaan Perawatan' },
   ];
 
   // Report type badge colors
-  const reportTypeBadges: Record<ReportType, 'success' | 'danger' | 'warning'> = {
+  const reportTypeBadges: Record<ReportType, 'success' | 'destructive' | 'warning'> = {
     task_completion: 'success',
-    incident: 'danger',
+    incident: 'destructive',
     maintenance_request: 'warning',
   };
 
   // Table columns
-  const columns: NBTableColumn<WorkReport>[] = [
+  const columns: ColumnDef<WorkReport>[] = [
     {
       key: 'worker',
-      title: 'Pekerja',
-      render: (_value: unknown, report: WorkReport) => (
+      header: 'Pekerja',
+      cell: (report) => (
         <div>
           <div className="font-semibold text-nb-black">
             {report.worker.full_name}
           </div>
-          <div className="text-xs text-gray-600">{report.worker.username}</div>
+          <div className="text-xs text-nb-gray-600">{report.worker.username}</div>
         </div>
       ),
     },
     {
       key: 'area',
-      title: 'Area',
-      render: (_value: unknown, report: WorkReport) => (
+      header: 'Area',
+      cell: (report) => (
         <div>
           <div className="font-semibold">{report.area.name}</div>
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-nb-gray-600">
             {report.area.areaType.name}
           </div>
         </div>
@@ -114,35 +115,35 @@ export default function ReportsPage() {
     },
     {
       key: 'report_type',
-      title: 'Tipe',
-      render: (_value: unknown, report: WorkReport) => (
-        <NBBadge variant={reportTypeBadges[report.report_type]} size="sm">
+      header: 'Tipe',
+      cell: (report) => (
+        <Badge variant={reportTypeBadges[report.report_type]} size="sm">
           {reportTypes.find((t) => t.value === report.report_type)?.label || report.report_type}
-        </NBBadge>
+        </Badge>
       ),
     },
     {
       key: 'description',
-      title: 'Deskripsi',
-      render: (_value: unknown, report: WorkReport) => (
-        <span className="text-sm text-gray-600 line-clamp-2">
+      header: 'Deskripsi',
+      cell: (report) => (
+        <span className="text-sm text-nb-gray-600 line-clamp-2">
           {report.description}
         </span>
       ),
     },
     {
       key: 'is_reviewed',
-      title: 'Status',
-      render: (_value: unknown, report: WorkReport) => (
-        <NBBadge variant={report.is_reviewed ? 'success' : 'neutral'} size="sm">
+      header: 'Status',
+      cell: (report) => (
+        <Badge variant={report.is_reviewed ? 'success' : 'secondary'} size="sm">
           {report.is_reviewed ? 'Ditinjau' : 'Belum Ditinjau'}
-        </NBBadge>
+        </Badge>
       ),
     },
     {
       key: 'created_at',
-      title: 'Tanggal',
-      render: (_value: unknown, report: WorkReport) => (
+      header: 'Tanggal',
+      cell: (report) => (
         <div className="text-sm">
           {new Date(report.created_at).toLocaleDateString('id-ID')}
         </div>
@@ -150,8 +151,8 @@ export default function ReportsPage() {
     },
     {
       key: 'actions',
-      title: 'Aksi',
-      render: (_value: unknown, report: WorkReport) => (
+      header: 'Aksi',
+      cell: (report) => (
         <Link
           href={`/reports/${report.id}`}
           className="text-nb-primary font-semibold hover:underline"
@@ -173,11 +174,11 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <NBCard variant="elevated">
-        <NBCardContent>
+      <Card variant="elevated">
+        <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
-            <NBInput
+            <FormInput
               label="Cari Pekerja/Area"
               type="text"
               placeholder="Nama pekerja atau area..."
@@ -186,15 +187,15 @@ export default function ReportsPage() {
             />
 
             {/* Report Type Filter */}
-            <NBSelect
+            <FormSelect
               label="Tipe Laporan"
               value={reportTypeFilter}
-              onChange={(value) => setReportTypeFilter(value as ReportType | '')}
+              onChange={(value) => setReportTypeFilter(value as ReportType | 'all')}
               options={reportTypes}
             />
 
             {/* From Date */}
-            <NBInput
+            <FormInput
               label="Dari Tanggal"
               type="date"
               value={fromDate}
@@ -202,7 +203,7 @@ export default function ReportsPage() {
             />
 
             {/* To Date */}
-            <NBInput
+            <FormInput
               label="Sampai Tanggal"
               type="date"
               value={toDate}
@@ -211,100 +212,105 @@ export default function ReportsPage() {
           </div>
 
           {/* Clear Filters */}
-          {(search || reportTypeFilter || fromDate || toDate) && (
-            <button
+          {(search || reportTypeFilter !== 'all' || fromDate || toDate) && (
+            <Button
+              variant="secondary"
               onClick={() => {
                 setSearch('');
-                setReportTypeFilter('');
+                setReportTypeFilter('all');
                 setFromDate('');
                 setToDate('');
               }}
-              className="mt-4 px-4 py-2 border-3 border-black bg-white font-semibold hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+              className="mt-4"
             >
               Reset Filter
-            </button>
+            </Button>
           )}
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <NBCard variant="elevated">
-          <NBCardContent>
-            <div className="text-sm font-semibold text-gray-600 mb-2">
+        <Card variant="elevated">
+          <CardContent>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">
               Total Laporan
             </div>
             <div className="text-3xl font-black text-nb-black">
               {pagination?.total || 0}
             </div>
-          </NBCardContent>
-        </NBCard>
+          </CardContent>
+        </Card>
 
-        <NBCard variant="elevated">
-          <NBCardContent>
-            <div className="text-sm font-semibold text-gray-600 mb-2">
+        <Card variant="elevated">
+          <CardContent>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">
               Belum Ditinjau
             </div>
             <div className="text-3xl font-black text-nb-warning">
               {reports.filter((r) => !r.is_reviewed).length}
             </div>
-          </NBCardContent>
-        </NBCard>
+          </CardContent>
+        </Card>
 
-        <NBCard variant="elevated">
-          <NBCardContent>
-            <div className="text-sm font-semibold text-gray-600 mb-2">
+        <Card variant="elevated">
+          <CardContent>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">
               Sudah Ditinjau
             </div>
             <div className="text-3xl font-black text-nb-success">
               {reports.filter((r) => r.is_reviewed).length}
             </div>
-          </NBCardContent>
-        </NBCard>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Table */}
-      <NBCard variant="elevated">
-        <NBCardHeader>
+      <Card variant="elevated">
+        <CardHeader>
           <h2 className="text-xl font-bold text-nb-black">Daftar Laporan</h2>
-        </NBCardHeader>
-        <NBCardContent>
-          <NBTable<WorkReport>
+        </CardHeader>
+        <CardContent>
+          <DataTable<WorkReport>
             columns={columns}
             data={filteredReports}
             loading={isLoading}
-            emptyText="Tidak ada laporan"
+            emptyMessage="Tidak ada laporan"
           />
 
           {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-black">
-              <div className="text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
+              <div className="text-sm text-nb-gray-600">
                 Halaman {pagination.page} dari {pagination.totalPages} (
                 {pagination.total} total laporan)
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={pagination.page === 1}
-                  className="px-4 py-2 border-3 border-black bg-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                  leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
                   Sebelumnya
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() =>
                     setPage((p) => Math.min(pagination.totalPages, p + 1))
                   }
                   disabled={pagination.page === pagination.totalPages}
-                  className="px-4 py-2 border-3 border-black bg-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                  rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
                   Selanjutnya
-                </button>
+                </Button>
               </div>
             </div>
           )}
-        </NBCardContent>
-      </NBCard>
+        </CardContent>
+      </Card>
     </div>
   );
 }

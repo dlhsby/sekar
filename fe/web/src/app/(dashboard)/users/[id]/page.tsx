@@ -1,11 +1,12 @@
 'use client';
 
+import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { UserForm } from '@/components/forms/UserForm';
 import { useUser, useUpdateUser } from '@/lib/api/users';
 import { UpdateUserDto } from '@/types/models';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { NBButton } from '@/components/nb/NBButton';
+import { Button, Card, CardContent } from '@/components/ui';
 
 interface EditUserPageProps {
   params: Promise<{ id: string }>;
@@ -56,17 +57,19 @@ export default function EditUserPage({ params }: EditUserPageProps) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="animate-pulse">
-          <div className="h-8 w-48 bg-nb-gray-200 mb-4" />
-          <div className="bg-nb-white border-3 border-nb-black shadow-nb-sm p-6">
-            <div className="space-y-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i}>
-                  <div className="h-4 w-24 bg-nb-gray-200 mb-2" />
-                  <div className="h-12 bg-nb-gray-200" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <div className="h-8 w-48 bg-nb-gray-200 border-3 border-nb-black mb-4" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i}>
+                    <div className="h-4 w-24 bg-nb-gray-200 mb-2" />
+                    <div className="h-12 bg-nb-gray-200" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -76,14 +79,14 @@ export default function EditUserPage({ params }: EditUserPageProps) {
   if (error || !user) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <NBButton
+        <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push('/users')}
-          leftIcon={<ArrowLeftIcon className="w-4 h-4" />}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
           Kembali ke Daftar User
-        </NBButton>
+        </Button>
         <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
           <p className="text-sm text-nb-danger font-medium">
             {error ? 'Gagal memuat data user.' : 'User tidak ditemukan.'}
@@ -97,15 +100,15 @@ export default function EditUserPage({ params }: EditUserPageProps) {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <NBButton
+        <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push('/users')}
-          leftIcon={<ArrowLeftIcon className="w-4 h-4" />}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
           className="mb-4"
         >
           Kembali ke Daftar User
-        </NBButton>
+        </Button>
         <h1 className="text-3xl font-black">Edit User</h1>
         <p className="text-sm text-nb-gray-600 mt-1">
           Edit data user <span className="font-semibold">{user.name}</span>
@@ -113,15 +116,17 @@ export default function EditUserPage({ params }: EditUserPageProps) {
       </div>
 
       {/* Form Card */}
-      <div className="bg-nb-white border-3 border-nb-black shadow-nb-sm p-6">
-        <UserForm
-          initialData={user}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          loading={updateUserMutation.isPending}
-          submitText="Simpan Perubahan"
-        />
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <UserForm
+            initialData={user}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            loading={updateUserMutation.isPending}
+            submitText="Simpan Perubahan"
+          />
+        </CardContent>
+      </Card>
 
       {/* Error Display */}
       {updateUserMutation.isError && (
@@ -136,6 +141,3 @@ export default function EditUserPage({ params }: EditUserPageProps) {
     </div>
   );
 }
-
-// Need to import React for use()
-import * as React from 'react';

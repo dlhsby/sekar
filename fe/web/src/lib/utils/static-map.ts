@@ -30,11 +30,6 @@ export function getStaticMapUrl(
 
   // Add polygon overlay if provided
   if (polygon && polygon.coordinates?.[0]) {
-    const coords = polygon.coordinates[0];
-    const path = coords
-      .map(([lng, lat]) => `${lng},${lat}`)
-      .join(',');
-
     // Add polygon as GeoJSON overlay
     // Format: geojson({...})
     const geojson = encodeURIComponent(JSON.stringify({

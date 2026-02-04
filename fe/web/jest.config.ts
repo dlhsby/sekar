@@ -1,5 +1,5 @@
 import type { Config } from 'jest';
-import nextJest from 'next/jest';
+import nextJest from 'next/jest.js';
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.ts and .env files in your test environment
@@ -15,11 +15,17 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
+  testPathIgnorePatterns: ['/node_modules/', '/e2e/', '/.next/'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/__tests__/**',
+    '!src/app/**/page.tsx',           // Exclude Next.js pages (tested via E2E)
+    '!src/app/**/layout.tsx',         // Exclude Next.js layouts
+    '!src/app/**/loading.tsx',        // Exclude Next.js loading states
+    '!src/app/**/error.tsx',          // Exclude Next.js error pages
+    '!src/app/**/not-found.tsx',      // Exclude Next.js not-found pages
   ],
   coverageThreshold: {
     global: {

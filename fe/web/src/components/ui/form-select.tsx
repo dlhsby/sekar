@@ -1,0 +1,87 @@
+'use client';
+
+import * as React from 'react';
+
+import { cn } from '@/lib/utils/cn';
+import { Label } from './label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
+
+export interface FormSelectOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+export interface FormSelectProps {
+  label: string;
+  options: FormSelectOption[];
+  value?: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  helperText?: string;
+  disabled?: boolean;
+  className?: string;
+  required?: boolean;
+}
+
+const FormSelect: React.FC<FormSelectProps> = ({
+  label,
+  options,
+  value = '',
+  onChange,
+  placeholder = 'Select...',
+  error,
+  helperText,
+  disabled = false,
+  className,
+  required = false,
+}) => {
+  const id = React.useId();
+
+  return (
+    <div className={cn('space-y-1', className)}>
+      <Label htmlFor={id}>
+        {label}
+        {required && <span className="text-nb-danger ml-1">*</span>}
+      </Label>
+
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger id={id} error={!!error}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {error && (
+        <p className="text-sm text-nb-danger font-medium" role="alert">
+          {error}
+        </p>
+      )}
+
+      {!error && helperText && (
+        <p className="text-sm text-nb-gray-600">{helperText}</p>
+      )}
+    </div>
+  );
+};
+
+FormSelect.displayName = 'FormSelect';
+
+export { FormSelect };

@@ -7,7 +7,8 @@
 
 import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { NBButton } from '@/components/nb';
+import { X } from 'lucide-react';
+import { Button, Card, CardContent } from '@/components/ui';
 import { AreaForm } from '@/components/forms/AreaForm';
 import { useArea, useUpdateArea } from '@/lib/api/areas';
 import { useAuth } from '@/lib/auth/hooks';
@@ -54,8 +55,8 @@ export default function EditAreaPage({
   if (loadingArea) {
     return (
       <div className="space-y-6">
-        <div className="h-12 w-64 bg-gray-200 border-4 border-black rounded animate-pulse" />
-        <div className="h-96 bg-gray-200 border-4 border-black rounded-lg animate-pulse" />
+        <div className="h-12 w-64 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
+        <div className="h-96 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
       </div>
     );
   }
@@ -64,16 +65,18 @@ export default function EditAreaPage({
   if (!area) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="bg-red-100 border-4 border-black p-8 rounded-lg text-center max-w-md">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h3 className="font-bold text-lg mb-2">Area Tidak Ditemukan</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Area yang Anda cari tidak ditemukan.
-          </p>
-          <NBButton onClick={() => router.push('/areas')} variant="primary">
-            Kembali ke Daftar Area
-          </NBButton>
-        </div>
+        <Card className="border-nb-danger">
+          <CardContent className="p-8 text-center max-w-md">
+            <div className="text-4xl mb-4">⚠️</div>
+            <h3 className="font-bold text-lg mb-2">Area Tidak Ditemukan</h3>
+            <p className="text-sm text-nb-gray-600 mb-4">
+              Area yang Anda cari tidak ditemukan.
+            </p>
+            <Button onClick={() => router.push('/areas')}>
+              Kembali ke Daftar Area
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -84,38 +87,42 @@ export default function EditAreaPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black">Edit Area</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-nb-gray-600 mt-1">
             Perbarui informasi area: <strong>{area.name}</strong>
           </p>
         </div>
 
-        <NBButton onClick={handleCancel} variant="secondary">
-          ✖️ Batal
-        </NBButton>
+        <Button onClick={handleCancel} variant="secondary" leftIcon={<X className="w-5 h-5" />}>
+          Batal
+        </Button>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-100 border-4 border-black p-4 rounded-lg">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">❌</span>
-            <div>
-              <h4 className="font-bold mb-1">Error</h4>
-              <p className="text-sm">{error}</p>
+        <Card className="border-nb-danger">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">❌</span>
+              <div>
+                <h4 className="font-bold mb-1">Error</h4>
+                <p className="text-sm">{error}</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Form */}
-      <div className="bg-white border-4 border-black p-6 rounded-lg">
-        <AreaForm
-          mode="edit"
-          initialData={area}
-          onSubmit={handleSubmit}
-          isLoading={updateArea.isPending}
-        />
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <AreaForm
+            mode="edit"
+            initialData={area}
+            onSubmit={handleSubmit}
+            isLoading={updateArea.isPending}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -11,10 +11,17 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  timeout: 30000, // 30 seconds per test
+  expect: {
+    timeout: 5000, // 5 seconds for assertions
+  },
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || 'http://localhost:3001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    video: process.env.CI ? 'retain-on-failure' : 'off',
+    actionTimeout: 10000, // 10 seconds for actions
+    navigationTimeout: 15000, // 15 seconds for navigation
   },
 
   projects: [
@@ -41,9 +48,12 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: process.env.SKIP_SERVER
+    ? undefined
+    : {
+        command: 'PORT=3001 npm run dev',
+        url: 'http://localhost:3001',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000, // 2 minutes for server startup
+      },
 });

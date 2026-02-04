@@ -4,9 +4,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { NBInput } from '@/components/nb/NBInput';
-import { NBSelect } from '@/components/nb/NBSelect';
-import { NBButton } from '@/components/nb/NBButton';
+import { FormInput, FormSelect, Button } from '@/components/ui';
 import { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 
@@ -19,19 +17,19 @@ const userSchema = z
     email: z.string().email('Format email tidak valid'),
     password: z.string().min(6, 'Password minimal 6 karakter').optional().or(z.literal('')),
     role: z.enum([
-      'Admin',
-      'TopManagement',
-      'KepalaRayon',
-      'KoordinatorLapangan',
-      'Worker',
-      'Linmas',
+      'admin',
+      'top_management',
+      'kepala_rayon',
+      'koordinator_lapangan',
+      'worker',
+      'linmas',
     ]),
     rayon_id: z.string().uuid().optional().or(z.literal('')),
   })
   .refine(
     (data) => {
-      // Rayon required if KepalaRayon
-      if (data.role === 'KepalaRayon') {
+      // Rayon required if kepala_rayon
+      if (data.role === 'kepala_rayon') {
         return !!data.rayon_id;
       }
       return true;
@@ -42,7 +40,7 @@ const userSchema = z
     }
   )
   .refine(
-    (data) => {
+    () => {
       // Password required on create (no initial user)
       // This will be checked at component level
       return true;
@@ -118,7 +116,7 @@ export function UserForm({
       name: initialData?.name || '',
       email: initialData?.email || '',
       password: '',
-      role: initialData?.role || 'Worker',
+      role: initialData?.role || 'worker',
       rayon_id: initialData?.rayon_id || '',
     },
   });
@@ -126,9 +124,9 @@ export function UserForm({
   // Watch role to show/hide rayon field
   const selectedRole = watch('role');
 
-  // Clear rayon_id when role changes away from KepalaRayon
+  // Clear rayon_id when role changes away from kepala_rayon
   useEffect(() => {
-    if (selectedRole !== 'KepalaRayon') {
+    if (selectedRole !== 'kepala_rayon') {
       setValue('rayon_id', '');
     }
   }, [selectedRole, setValue]);
@@ -156,12 +154,12 @@ export function UserForm({
 
   // Role options
   const roleOptions = [
-    { value: 'Admin', label: 'Admin' },
-    { value: 'TopManagement', label: 'Top Management' },
-    { value: 'KepalaRayon', label: 'Kepala Rayon' },
-    { value: 'KoordinatorLapangan', label: 'Koordinator Lapangan' },
-    { value: 'Worker', label: 'Worker' },
-    { value: 'Linmas', label: 'Linmas' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'top_management', label: 'Top Management' },
+    { value: 'kepala_rayon', label: 'Kepala Rayon' },
+    { value: 'koordinator_lapangan', label: 'Koordinator Lapangan' },
+    { value: 'worker', label: 'Worker' },
+    { value: 'linmas', label: 'Linmas' },
   ];
 
   // Rayon options
@@ -173,7 +171,7 @@ export function UserForm({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Name Field */}
-      <NBInput
+      <FormInput
         label="Nama Lengkap"
         placeholder="Masukkan nama lengkap"
         error={errors.name?.message}
@@ -183,7 +181,7 @@ export function UserForm({
       />
 
       {/* Email Field */}
-      <NBInput
+      <FormInput
         label="Email"
         type="email"
         placeholder="Masukkan email"
@@ -194,7 +192,7 @@ export function UserForm({
       />
 
       {/* Password Field */}
-      <NBInput
+      <FormInput
         label="Password"
         type="password"
         placeholder={isEditMode ? 'Kosongkan jika tidak ingin mengubah' : 'Masukkan password'}
@@ -206,7 +204,7 @@ export function UserForm({
       />
 
       {/* Role Field */}
-      <NBSelect
+      <FormSelect
         label="Role"
         options={roleOptions}
         value={selectedRole}
@@ -217,8 +215,8 @@ export function UserForm({
       />
 
       {/* Rayon Field (conditional) */}
-      {selectedRole === 'KepalaRayon' && (
-        <NBSelect
+      {selectedRole === 'kepala_rayon' && (
+        <FormSelect
           label="Rayon"
           options={rayonOptions}
           value={watch('rayon_id') || ''}
@@ -227,13 +225,12 @@ export function UserForm({
           error={errors.rayon_id?.message}
           required
           disabled={isSubmitting || loading || rayonsLoading}
-          searchable
         />
       )}
 
       {/* Actions */}
       <div className="flex gap-3 pt-4">
-        <NBButton
+        <Button
           type="button"
           variant="secondary"
           onClick={onCancel}
@@ -241,16 +238,15 @@ export function UserForm({
           className="flex-1"
         >
           Batal
-        </NBButton>
-        <NBButton
+        </Button>
+        <Button
           type="submit"
-          variant="primary"
           loading={isSubmitting || loading}
           disabled={isSubmitting || loading}
           className="flex-1"
         >
           {submitText}
-        </NBButton>
+        </Button>
       </div>
     </form>
   );

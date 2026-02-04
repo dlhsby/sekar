@@ -1,7 +1,8 @@
 'use client';
 
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { NBButton } from '@/components/nb/NBButton';
+import { Button } from '@/components/ui';
+import { AlertTriangle, RefreshCw, LogOut } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -64,19 +65,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
               {/* Error icon */}
               <div className="flex justify-center mb-6">
                 <div className="h-16 w-16 bg-nb-danger text-nb-white rounded-full flex items-center justify-center border-3 border-nb-black">
-                  <svg
-                    className="h-10 w-10"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
+                  <AlertTriangle className="h-10 w-10" />
                 </div>
               </div>
 
@@ -102,12 +91,21 @@ export class AuthErrorBoundary extends Component<Props, State> {
 
               {/* Action buttons */}
               <div className="flex flex-col gap-3">
-                <NBButton variant="primary" onClick={this.handleRetry} fullWidth>
+                <Button
+                  onClick={this.handleRetry}
+                  className="w-full"
+                  leftIcon={<RefreshCw className="w-4 h-4" />}
+                >
                   Coba Lagi
-                </NBButton>
-                <NBButton variant="secondary" onClick={this.handleLogout} fullWidth>
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={this.handleLogout}
+                  className="w-full"
+                  leftIcon={<LogOut className="w-4 h-4" />}
+                >
                   Keluar
-                </NBButton>
+                </Button>
               </div>
             </div>
           </div>

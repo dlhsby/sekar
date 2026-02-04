@@ -1,9 +1,10 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { authApi, User, LoginCredentials } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
+import { clearAuthCookies, setAuthCookie } from '@/lib/utils/cookies';
 
 interface AuthContextValue {
   /** Current authenticated user or null */
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   /**
    * Check for existing session on mount
@@ -65,16 +67,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(currentUser);
     } catch {
       // No valid session, user needs to login
+      // Clear any stale cookies to prevent redirect loops
+      clearAuthCookies();
       setUser(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Check auth on mount
+  // Check auth on mount, but skip on login page to prevent redirect loops
   useEffect(() => {
+    // Skip auth check on login page - no need to verify tokens when user is trying to login
+    // This prevents the redirect loop: login → checkAuth → 401 → redirect to login → repeat
+    if (pathname === '/login') {
+      setLoading(false);
+      return;
+    }
     checkAuth();
-  }, [checkAuth]);
+  }, [checkAuth, pathname]);
 
   /**
    * Login with username and password
@@ -85,9 +95,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(true);
         setError(null);
 
-        // Call login API
-        // Backend sets httpOnly cookies with tokens
+        // Call login API - backend returns tokens in response body
         const response = await authApi.login(credentials);
+
+        // Store tokens in cookies
+        setAuthCookie('access_token', response.access_token, { maxAge: 7 * 24 * 60 * 60 }); // 7 days
+        setAuthCookie('refresh_token', response.refresh_token, { maxAge: 30 * 24 * 60 * 60 }); // 30 days
+
         setUser(response.user);
 
         // Redirect to dashboard
@@ -114,6 +128,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call logout API
       // Backend clears httpOnly cookies
       await authApi.logout();
+      // Also clear from client side to ensure no stale cookies
+      clearAuthCookies();
       setUser(null);
 
       // Redirect to login

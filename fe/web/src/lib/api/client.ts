@@ -1,4 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { clearAuthCookies, getCookie, setAuthCookie } from '@/lib/utils/cookies';
+import type { User } from '@/types/models';
 
 /**
  * API Client for SEKAR Backend
@@ -14,15 +16,40 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important for cookies (refresh token)
 });
 
 // Track if we're currently refreshing to prevent multiple refresh calls
 let isRefreshing = false;
+// Track if we're currently redirecting to prevent multiple redirects
+let isRedirecting = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
   reject: (reason?: unknown) => void;
 }> = [];
+
+/**
+ * Check if we're currently on the login page
+ * Prevents redirect loops when already on login
+ */
+const isOnLoginPage = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname === '/login' || window.location.pathname.startsWith('/login');
+};
+
+/**
+ * Safely redirect to login page
+ * Prevents multiple redirects and redirect loops
+ */
+const redirectToLogin = (): void => {
+  if (typeof window === 'undefined') return;
+  if (isRedirecting) return;
+  if (isOnLoginPage()) return;
+
+  isRedirecting = true;
+  clearAuthCookies();
+  // Use replace to avoid creating history entry (back button won't loop)
+  window.location.replace('/login');
+};
 
 /**
  * Process queued requests after token refresh
@@ -41,12 +68,15 @@ const processQueue = (error: Error | null = null) => {
 
 /**
  * Request Interceptor
- * Adds credentials to every request (access token handled via httpOnly cookie)
+ * Adds Authorization header with access token from cookie
  */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Access token is sent via httpOnly cookie automatically with withCredentials: true
-    // No need to manually add Authorization header
+    // Get access token from cookie and add to Authorization header
+    const accessToken = getCookie('access_token');
+    if (accessToken && config.headers) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
 
     return config;
   },
@@ -74,10 +104,8 @@ apiClient.interceptors.response.use(
       // Check if this is the refresh endpoint itself failing
       if (originalRequest.url?.includes('/auth/refresh')) {
         // Refresh token is invalid or expired
-        // Clear auth state and redirect to login
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        // Clear auth cookies and redirect to login (unless already on login page)
+        redirectToLogin();
         return Promise.reject(error);
       }
 
@@ -98,8 +126,25 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        // Get refresh token from cookie
+        const refreshToken = getCookie('refresh_token');
+
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
         // Attempt to refresh the token
-        await apiClient.post('/auth/refresh');
+        const response = await apiClient.post<{
+          access_token: string;
+          refresh_token: string;
+          user: User;
+        }>('/auth/refresh', {
+          refresh_token: refreshToken,
+        });
+
+        // Store new tokens in cookies
+        setAuthCookie('access_token', response.data.access_token, { maxAge: 7 * 24 * 60 * 60 }); // 7 days
+        setAuthCookie('refresh_token', response.data.refresh_token, { maxAge: 30 * 24 * 60 * 60 }); // 30 days
 
         // Token refresh successful
         isRefreshing = false;
@@ -112,10 +157,8 @@ apiClient.interceptors.response.use(
         isRefreshing = false;
         processQueue(refreshError as Error);
 
-        // Redirect to login
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        // Clear auth cookies and redirect to login (unless already on login page)
+        redirectToLogin();
 
         return Promise.reject(refreshError);
       }

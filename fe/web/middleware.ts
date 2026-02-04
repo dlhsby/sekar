@@ -13,12 +13,9 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
 
   // Public paths (login page)
+  // Always allow access to login page regardless of token presence
+  // The login page will handle clearing stale cookies and redirecting if truly authenticated
   if (pathname.startsWith('/login')) {
-    if (token) {
-      // Already logged in, redirect to dashboard
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    // Not logged in, allow access to login
     return NextResponse.next();
   }
 
