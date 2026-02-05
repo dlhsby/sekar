@@ -856,7 +856,52 @@ if (JailMonkey.isJailBroken()) {
 
 ---
 
+## DEP-SEC: Dependency Security
+
+### Latest Audit: February 5, 2026
+
+| Component | Vulnerabilities | Status |
+|-----------|----------------|--------|
+| Backend | 3 high (nested deps) | ⚠️ Acceptable risk |
+| Web | 0 | ✅ Secure |
+| Mobile | 6 high (nested deps) | ⚠️ Acceptable risk |
+
+### Known Issues
+
+**fast-xml-parser DoS (CVE: GHSA-37qj-frw5-hhjh)**
+- **Backend:** Via firebase-admin → @google-cloud/storage (3 instances)
+- **Mobile:** Via @react-native-community/cli (6 instances, dev-only)
+- **Risk:** Low - nested dev dependencies, not exploitable in production
+- **Status:** Awaiting upstream fixes (Google, React Native teams)
+- **Decision:** Approved for production deployment
+
+### Dependency Management
+
+**Automated Updates (Dependabot):**
+- Patch updates: Weekly (auto-approved)
+- Minor/major updates: Manual quarterly review
+- React Native ecosystem: Major versions locked
+
+**Security Monitoring:**
+- Weekly: `npm audit` across all components
+- GitHub Dependabot: Security alerts enabled
+- Upstream tracking: firebase-admin, React Native CLI
+
+**Update Policy:**
+```bash
+# Check for vulnerabilities
+npm audit
+
+# Apply security patches only
+npm audit fix
+
+# Force updates (breaking changes)
+npm audit fix --force  # Use with caution
+```
+
+---
+
 **Document Owner:** Software Architect
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-02-05
 **Status:** Active
 **Related Docs:** [`system-overview.md`](./system-overview.md), [`data-flow.md`](./data-flow.md), [`../api/authentication.md`](../api/authentication.md)

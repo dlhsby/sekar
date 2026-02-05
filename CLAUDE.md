@@ -247,8 +247,8 @@ API_VERSION=v1
 - **Mobile:** React Native 0.83.1, React 19.2.4, React Navigation 7.x
 - **Dependabot:** Enabled (patch-only updates weekly, prevents breaking changes)
 - **Security:** 0 vulnerabilities (web), nested dev deps only (backend/mobile)
-- **See:** `SECURITY-AUDIT.md` for vulnerability assessment
-- **See:** `fe/mobile/UPGRADE_REPORT.md` for React Native 0.83 upgrade details
+- **See:** `specs/architecture/security.md` (DEP-SEC section) for vulnerability assessment
+- **See:** `specs/mobile/dependency-updates.md` for React Native 0.83 upgrade + policy
 
 ---
 
@@ -318,8 +318,8 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **Phase 3** | `specs/phases/phase-3-polishing/STATUS.md` | Polishing & E2E Testing |
 | **API Docs** | `specs/api/contracts.md` | All 83 endpoints |
 | **Errors** | `specs/api/error-handling.md` | 31 error codes |
-| **Security** | `SECURITY-AUDIT.md` | Vulnerability assessment (Feb 5, 2026) |
-| **Mobile Upgrade** | `fe/mobile/UPGRADE_REPORT.md` | React Native 0.83.1 upgrade details |
+| **Security** | `specs/architecture/security.md` | Security architecture + dependency audit |
+| **Mobile Updates** | `specs/mobile/dependency-updates.md` | React Native 0.83.1 upgrade + policy |
 | **AWS S3** | `specs/deployment/aws-s3-setup.md` | Media storage setup |
 | **WSL2** | `specs/deployment/wsl2-network-setup.md` | Mobile testing network |
 | **Infrastructure** | `specs/deployment/infrastructure-setup.md` | Docker services |
