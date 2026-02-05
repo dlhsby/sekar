@@ -89,7 +89,7 @@ jobs:
           NEXT_PUBLIC_MAPBOX_TOKEN: test-token
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./fe/web/coverage/lcov.info
           flags: web
