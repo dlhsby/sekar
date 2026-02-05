@@ -106,18 +106,45 @@ export function useReports(filters?: ReportFilters) {
   return useQuery({
     queryKey: reportsKeys.list(filters),
     queryFn: async () => {
-      const response = await apiClient.get<WorkReport[]>('/reports', {
+      // API returns paginated response: { data: WorkReport[], meta: { total, page, limit } }
+      const response = await apiClient.get<{
+        data: WorkReport[];
+        meta: { total: number; page: number; limit: number };
+      }>('/reports', {
         params: filters,
       });
-      
-      // Transform to paginated response format
+
+      // Parse response: backend should return { data: [], meta: {} }
+      // If array is returned directly, wrap it in expected structure
+      if (Array.isArray(response.data)) {
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.warn('Reports API returned array instead of { data, meta } structure');
+        }
+        return {
+          data: response.data,
+          meta: {
+            total: response.data.length,
+            page: filters?.page || 1,
+            limit: filters?.limit || 20,
+            totalPages: 1,
+          },
+        };
+      }
+
+      // Expected structure
+      const data = response.data.data || [];
+      const meta = response.data.meta || {
+        total: 0,
+        page: filters?.page || 1,
+        limit: filters?.limit || 20,
+      };
+
       return {
-        data: response.data,
+        data,
         meta: {
-          total: response.data.length,
-          page: filters?.page || 1,
-          limit: filters?.limit || 20,
-          totalPages: Math.ceil(response.data.length / (filters?.limit || 20)),
+          ...meta,
+          totalPages: Math.ceil(meta.total / meta.limit),
         },
       };
     },

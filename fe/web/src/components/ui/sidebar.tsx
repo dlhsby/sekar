@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X } from 'lucide-react';
+import { X, ChevronDown, ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
@@ -82,6 +82,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
   ) => {
     const pathname = usePathname();
     const activePath = currentPath || pathname;
+    const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
 
     const filteredItems = items.filter((item) => {
       if (!item.roles || item.roles.length === 0) return true;
@@ -89,9 +90,57 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       return item.roles.includes(userRole);
     });
 
-    const renderItem = (item: SidebarItem) => {
+    // Auto-expand parent items if their child is active
+    React.useEffect(() => {
+      const itemsToExpand: string[] = [];
+
+      // Filter items inline to avoid dependency issues
+      const visibleItems = items.filter((item) => {
+        if (!item.roles || item.roles.length === 0) return true;
+        if (item.roles.includes('*')) return true;
+        return item.roles.includes(userRole);
+      });
+
+      visibleItems.forEach((item) => {
+        if (item.children) {
+          const hasActiveChild = item.children.some(
+            (child) => child.href !== '#' && (activePath === child.href || activePath?.startsWith(child.href + '/'))
+          );
+          if (hasActiveChild) {
+            itemsToExpand.push(item.id);
+          }
+        }
+      });
+
+      // Only update if there are items to expand and they're not already expanded
+      if (itemsToExpand.length > 0) {
+        setExpandedItems((prev) => {
+          const newItems = [...new Set([...prev, ...itemsToExpand])];
+          // Only update if the array actually changed
+          if (newItems.length !== prev.length || !newItems.every(id => prev.includes(id))) {
+            return newItems;
+          }
+          return prev;
+        });
+      }
+    }, [activePath, items, userRole]);
+
+    const toggleExpanded = (itemId: string) => {
+      setExpandedItems((prev) =>
+        prev.includes(itemId)
+          ? prev.filter((id) => id !== itemId)
+          : [...prev, itemId]
+      );
+    };
+
+    const renderItem = (item: SidebarItem, depth = 0) => {
+      const hasChildren = item.children && item.children.length > 0;
+      const isExpanded = expandedItems.includes(item.id);
       const isActive =
-        activePath === item.href || activePath?.startsWith(item.href + '/');
+        item.href !== '#' && (activePath === item.href || activePath?.startsWith(item.href + '/'));
+      const hasActiveChild = hasChildren && item.children?.some(
+        (child) => child.href !== '#' && (activePath === child.href || activePath?.startsWith(child.href + '/'))
+      );
 
       const content = (
         <>
@@ -100,19 +149,48 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
               {item.icon}
             </span>
           )}
-          <span>{item.label}</span>
+          <span className="flex-1">{item.label}</span>
+          {hasChildren && (
+            <span className="w-5 h-5 flex-shrink-0">
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </span>
+          )}
         </>
       );
 
       const baseClasses = cn(
         'flex items-center gap-3 px-4 py-3 font-medium transition-colors duration-100 w-full',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2',
-        isActive
-          ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-          : 'text-sidebar-foreground/80 hover:bg-sidebar-accent active:bg-sidebar-accent/80'
+        depth > 0 && 'pl-12', // Indent child items
+        isActive || hasActiveChild
+          ? 'bg-nb-white text-nb-navy'
+          : 'text-nb-white/90 hover:bg-nb-navy-light active:bg-nb-navy-light/80'
       );
 
-      if (item.href) {
+      if (hasChildren) {
+        return (
+          <div key={item.id}>
+            <button
+              type="button"
+              onClick={() => toggleExpanded(item.id)}
+              className={cn(baseClasses, 'text-left')}
+            >
+              {content}
+            </button>
+            {isExpanded && (
+              <div className="space-y-1">
+                {item.children?.map((child) => renderItem(child, depth + 1))}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      if (item.href && item.href !== '#') {
         return (
           <Link key={item.id} href={item.href} className={baseClasses}>
             {content}
@@ -154,20 +232,23 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
         <aside
           ref={ref}
           className={cn(
-            'w-64 bg-sidebar-background text-sidebar-foreground flex flex-col border-r-3 border-nb-black',
+            'w-64 bg-nb-navy text-nb-white flex flex-col border-r-3 border-nb-black',
             'fixed lg:static inset-y-0 left-0 z-40',
-            'transition-transform duration-300 lg:translate-x-0',
-            !isOpen && '-translate-x-full',
+            'transition-transform duration-300',
+            // Desktop: translate based on isOpen state
+            'lg:translate-x-0',
+            // Mobile: translate when closed
+            !isOpen && 'max-lg:-translate-x-full',
             className
           )}
           {...props}
         >
           {/* Logo/Header */}
-          <div className="p-6 border-b-2 border-sidebar-border flex-shrink-0">
+          <div className="p-6 border-b-2 border-nb-navy-light flex-shrink-0">
             {logo || (
               <>
                 <h1 className="text-2xl font-extrabold">{title}</h1>
-                <p className="text-sidebar-foreground/60 text-sm mt-1">
+                <p className="text-nb-white/70 text-sm mt-1">
                   {subtitle}
                 </p>
               </>
@@ -185,7 +266,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 
           {/* User info */}
           {user && (
-            <div className="p-4 border-t-2 border-sidebar-border flex-shrink-0">
+            <div className="p-4 border-t-2 border-nb-navy-light flex-shrink-0">
               <div className="flex items-center gap-3">
                 {user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -195,13 +276,13 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
                     className="w-10 h-10 rounded-full border-2 border-sidebar-foreground"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-sidebar-primary text-sidebar-primary-foreground font-bold flex items-center justify-center border-2 border-sidebar-foreground">
+                  <div className="w-10 h-10 rounded-full bg-nb-white text-nb-navy font-bold flex items-center justify-center border-2 border-nb-white">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm truncate">{user.name}</p>
-                  <p className="text-sidebar-foreground/80 text-xs truncate">
+                  <p className="text-nb-white/80 text-xs truncate">
                     {user.role}
                   </p>
                 </div>
@@ -215,7 +296,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="lg:hidden absolute top-4 right-4 text-sidebar-foreground hover:bg-sidebar-accent border-transparent"
+              className="lg:hidden absolute top-4 right-4 text-nb-white hover:bg-nb-navy-light border-transparent"
               aria-label="Close sidebar"
             >
               <X className="h-5 w-5" />

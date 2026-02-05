@@ -20,9 +20,9 @@ export function middleware(request: NextRequest) {
   }
 
   // Protected paths (dashboard and all data management routes)
-  const protectedPaths = ['/dashboard', '/users', '/areas', '/rayons', '/schedules', '/monitoring', '/reports', '/tasks'];
+  const protectedPaths = ['/', '/users', '/areas', '/rayons', '/schedules', '/monitoring', '/reports', '/tasks', '/settings'];
   const isProtected = protectedPaths.some(path => pathname.startsWith(path));
-  
+
   if (isProtected) {
     if (!token) {
       // Not logged in, redirect to login with redirect parameter
@@ -32,16 +32,6 @@ export function middleware(request: NextRequest) {
     }
     // Logged in, allow access
     return NextResponse.next();
-  }
-
-  // Root path redirect
-  if (pathname === '/') {
-    if (token) {
-      // Logged in, redirect to dashboard
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    // Not logged in, redirect to login
-    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // All other paths, allow access

@@ -101,11 +101,18 @@ apiClient.interceptors.response.use(
 
     // Check if error is 401 (Unauthorized) and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Check if this is the refresh endpoint itself failing
-      if (originalRequest.url?.includes('/auth/refresh')) {
-        // Refresh token is invalid or expired
-        // Clear auth cookies and redirect to login (unless already on login page)
-        redirectToLogin();
+      // Check if this is the login or refresh endpoint itself failing
+      // Don't try to refresh token for these endpoints
+      if (
+        originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/refresh')
+      ) {
+        // Login failed or refresh token is invalid/expired
+        // For refresh endpoint: redirect to login
+        if (originalRequest.url?.includes('/auth/refresh')) {
+          redirectToLogin();
+        }
+        // For login endpoint: just pass the error through (invalid credentials)
         return Promise.reject(error);
       }
 

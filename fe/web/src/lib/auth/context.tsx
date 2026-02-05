@@ -104,8 +104,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         setUser(response.user);
 
-        // Redirect to dashboard
-        router.push('/dashboard');
+        // Redirect to dashboard home
+        router.push('/');
       } catch (err) {
         const errorMessage = getErrorMessage(err);
         setError(errorMessage);
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      console.error('Logout error:', errorMessage);
+      // Error already captured in state, no need to log
     } finally {
       setLoading(false);
     }
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      console.error('Refresh user error:', errorMessage);
+      // Error already captured in state, no need to log
     }
   }, []);
 

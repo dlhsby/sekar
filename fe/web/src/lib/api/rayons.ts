@@ -3,7 +3,7 @@
  * TanStack Query hooks for rayon data fetching
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { Rayon, RayonStats, Area, AreaFilters, PaginatedResponse } from '@/types/models';
 
@@ -93,11 +93,18 @@ export function useRayonAreas(id: string, filters?: AreaFilters) {
 export function useRayonsWithStats() {
   const { data: rayons, isLoading: rayonsLoading } = useRayons();
 
-  // Fetch stats for each rayon in parallel
-  const statsQueries = (rayons || []).map(rayon =>
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useRayonStats(rayon.id)
-  );
+  // Fetch stats for each rayon in parallel using useQueries
+  const statsQueries = useQueries({
+    queries: (rayons || []).map(rayon => ({
+      queryKey: rayonKeys.stats(rayon.id),
+      queryFn: async () => {
+        const response = await apiClient.get<RayonStats>(`/rayons/${rayon.id}/stats`);
+        return response.data;
+      },
+      enabled: !!rayon.id,
+      staleTime: 5 * 60 * 1000, // 5 minutes - stats change more frequently
+    })),
+  });
 
   return {
     rayons: rayons || [],

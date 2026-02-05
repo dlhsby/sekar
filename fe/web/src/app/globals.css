@@ -342,6 +342,22 @@ body {
     transition: all 100ms ease-out;
   }
 
+  /* Page transition animations */
+  .animate-fade-in {
+    animation: fadeIn 200ms ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .nb-shadow-hover-anim:hover {
     box-shadow: var(--shadow-nb-hover);
     transform: translate(-2px, -2px);

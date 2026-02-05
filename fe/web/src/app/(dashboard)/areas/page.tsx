@@ -134,7 +134,7 @@ export default function AreasPage() {
   }
 
   const areas = areasData?.data || [];
-  const totalAreas = areasData?.meta.total || 0;
+  const totalAreas = areasData?.meta?.total ?? 0;
 
   return (
     <div className="space-y-6">

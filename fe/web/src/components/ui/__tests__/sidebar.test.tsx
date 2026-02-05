@@ -166,21 +166,21 @@ describe('Sidebar Component', () => {
       render(<Sidebar items={mockItems} userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-sidebar-primary', 'text-sidebar-primary-foreground');
+      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-navy');
     });
 
     it('should highlight active item with custom currentPath prop', () => {
       render(<Sidebar items={mockItems} currentPath="/tasks" />);
 
       const tasksLink = screen.getByText('Tugas').closest('a');
-      expect(tasksLink).toHaveClass('bg-sidebar-primary', 'text-sidebar-primary-foreground');
+      expect(tasksLink).toHaveClass('bg-nb-white', 'text-nb-navy');
     });
 
     it('should highlight active item for nested paths', () => {
       render(<Sidebar items={mockItems} currentPath="/users/123" userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-sidebar-primary', 'text-sidebar-primary-foreground');
+      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-navy');
     });
   });
 
@@ -276,14 +276,14 @@ describe('Sidebar Component', () => {
       const { container } = render(<Sidebar items={mockItems} isOpen={false} />);
 
       const sidebar = container.querySelector('aside');
-      expect(sidebar).toHaveClass('-translate-x-full');
+      expect(sidebar).toHaveClass('max-lg:-translate-x-full');
     });
 
     it('should show sidebar when isOpen is true', () => {
       const { container } = render(<Sidebar items={mockItems} isOpen={true} />);
 
       const sidebar = container.querySelector('aside');
-      expect(sidebar).not.toHaveClass('-translate-x-full');
+      expect(sidebar).not.toHaveClass('max-lg:-translate-x-full');
     });
   });
 
@@ -331,11 +331,11 @@ describe('Sidebar Component', () => {
       const { container } = render(<Sidebar items={mockItems} user={mockUser} />);
 
       // Header border
-      const header = container.querySelector('.border-b-2.border-sidebar-border');
+      const header = container.querySelector('.border-b-2.border-nb-navy-light');
       expect(header).toBeInTheDocument();
 
       // User section border
-      const userSection = container.querySelector('.border-t-2.border-sidebar-border');
+      const userSection = container.querySelector('.border-t-2.border-nb-navy-light');
       expect(userSection).toBeInTheDocument();
     });
   });

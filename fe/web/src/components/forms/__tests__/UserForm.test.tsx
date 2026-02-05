@@ -359,21 +359,31 @@ describe('UserForm', () => {
     });
 
     it('should show placeholder when rayons are loading', () => {
-      const user = userEvent.setup();
       (useRayons as jest.Mock).mockReturnValue({
         data: [],
         isLoading: true,
       });
 
-      render(<UserForm {...defaultProps} />);
+      // Render with kepala_rayon role to show rayon field
+      render(
+        <UserForm
+          {...defaultProps}
+          initialData={{
+            id: '1',
+            name: 'Test User',
+            username: 'testuser',
+            email: 'test@example.com',
+            role: 'kepala_rayon' as const,
+            rayon_id: '',
+          }}
+        />
+      );
 
-      // Change to kepala_rayon to show rayon field
-      user.click(screen.getByLabelText(/role/i));
-      user.click(screen.getByText('Kepala Rayon'));
-
-      waitFor(() => {
-        expect(screen.getByText(/memuat/i)).toBeInTheDocument();
-      });
+      // Rayon field should be visible and disabled while loading
+      expect(screen.getByLabelText(/rayon/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/rayon/i)).toBeDisabled();
+      // The placeholder text "Memuat..." should be visible
+      expect(screen.getByText(/memuat/i)).toBeInTheDocument();
     });
   });
 

@@ -1,9 +1,0 @@
-# Page snapshot
-
-```yaml
-- generic [active] [ref=e1]:
-  - generic [ref=e3]: Memuat dashboard...
-  - button "Open Next.js Dev Tools" [ref=e9] [cursor=pointer]:
-    - img [ref=e10]
-  - alert [ref=e13]
-```
