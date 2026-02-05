@@ -221,7 +221,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Deploy to Production EC2
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           # Environment variables - will be expanded into .env.production
