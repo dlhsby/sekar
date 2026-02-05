@@ -104,7 +104,6 @@ describe('AuthService', () => {
     });
 
     it('should throw ApiException with AUTH_ACCOUNT_INACTIVE code when user is inactive', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const inactiveUser = { ...mockUser, is_active: false };
       mockUserRepository.findOne.mockResolvedValue(inactiveUser);
 

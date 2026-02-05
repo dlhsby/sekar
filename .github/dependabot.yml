@@ -1,0 +1,120 @@
+# Dependabot Configuration - Patch-Only Updates
+# Automatically creates pull requests for security patches and bug fixes only
+# Major and minor version updates are handled manually during quarterly reviews
+#
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  # Backend (NestJS) - PATCH ONLY
+  - package-ecosystem: "npm"
+    directory: "/be"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "backend"
+      - "auto-merge-candidate"
+    commit-message:
+      prefix: "chore(deps-be)"
+    # PATCH UPDATES ONLY - Major and minor updates disabled
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    groups:
+      backend-patches:
+        patterns:
+          - "*"
+        update-types: ["patch"]
+
+  # Web (Next.js) - PATCH ONLY
+  - package-ecosystem: "npm"
+    directory: "/fe/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "web"
+      - "auto-merge-candidate"
+    commit-message:
+      prefix: "chore(deps-web)"
+    # PATCH UPDATES ONLY
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    groups:
+      web-patches:
+        patterns:
+          - "*"
+        update-types: ["patch"]
+
+  # Mobile (React Native) - PATCH ONLY (strictest)
+  - package-ecosystem: "npm"
+    directory: "/fe/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "mobile"
+      - "requires-manual-testing"
+    commit-message:
+      prefix: "chore(deps-mobile)"
+    # PATCH UPDATES ONLY + Lock React Native ecosystem major versions
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Additional locks for React Native ecosystem
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@react-navigation/*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      mobile-patches:
+        patterns:
+          - "*"
+        update-types: ["patch"]
+
+  # GitHub Actions - Monthly updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps-actions)"
+
+  # Docker base images - Monthly updates
+  - package-ecosystem: "docker"
+    directory: "/be"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    open-pull-requests-limit: 1
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(deps-docker)"

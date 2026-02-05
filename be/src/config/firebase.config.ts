@@ -34,7 +34,7 @@ export function initializeFirebase(): admin.app.App {
 
   try {
     // Load service account JSON
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const serviceAccount = require(absolutePath);
 
     // Validate service account structure
