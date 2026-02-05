@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-**Last Updated:** February 2, 2026
-**Status:** Phase 2 Complete ✅ | Phase 3 Next (Polishing & E2E Testing)
+**Last Updated:** February 5, 2026
+**Status:** Phase 2 Complete ✅ | Dependencies Updated (RN 0.83.1) | Phase 3 Next
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -29,9 +29,9 @@ This file provides guidance to Claude Code when working with this repository.
 **Core Features:** Real-time GPS tracking, digital clock-in/out with photo verification, work reports with multimedia evidence, supervisor dashboards, 7 Rayon organizational structure, shift scheduling, task workflow, push notifications.
 
 **Tech Stack:**
-- **Backend:** NestJS 11.x, TypeScript, PostgreSQL 14+, TypeORM, JWT, WebSocket, AWS S3
-- **Mobile:** React Native 0.76.x, Redux Toolkit, FCM, Neo Brutalism UI (WCAG 2.1 AA)
-- **Web:** Next.js 16.1.4, React 19, TailwindCSS 4.x, Mapbox GL
+- **Backend:** NestJS 11.1.13, TypeScript 5.9.3, PostgreSQL 14+, TypeORM, JWT, WebSocket, AWS S3, Jest 30
+- **Mobile:** React Native 0.83.1, React 19.2.4, Redux Toolkit, FCM, Neo Brutalism UI (WCAG 2.1 AA)
+- **Web:** Next.js 16.1.6, React 19.2.3, TailwindCSS 4.x, Mapbox GL, Playwright 1.58.1
 - **Runtime:** Node.js >=24.13.0, npm >=10.0.0
 
 ---
@@ -240,6 +240,16 @@ API_VERSION=v1
 - **Connection Pool:** 15 connections/instance in production
 - **Soft Delete:** Users use `deleted_at` timestamp
 
+### Dependency Management
+- **Last Update:** February 5, 2026 (All components updated)
+- **Backend:** TypeScript 5.9, ESLint 9, Jest 30, NestJS 11.1.13
+- **Web:** Next.js 16.1.6, React 19.2.3, Playwright 1.58.1
+- **Mobile:** React Native 0.83.1, React 19.2.4, React Navigation 7.x
+- **Dependabot:** Enabled (patch-only updates weekly, prevents breaking changes)
+- **Security:** 0 vulnerabilities (web), nested dev deps only (backend/mobile)
+- **See:** `SECURITY-AUDIT.md` for vulnerability assessment
+- **See:** `fe/mobile/UPGRADE_REPORT.md` for React Native 0.83 upgrade details
+
 ---
 
 ## Development Phases
@@ -308,6 +318,8 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **Phase 3** | `specs/phases/phase-3-polishing/STATUS.md` | Polishing & E2E Testing |
 | **API Docs** | `specs/api/contracts.md` | All 83 endpoints |
 | **Errors** | `specs/api/error-handling.md` | 31 error codes |
+| **Security** | `SECURITY-AUDIT.md` | Vulnerability assessment (Feb 5, 2026) |
+| **Mobile Upgrade** | `fe/mobile/UPGRADE_REPORT.md` | React Native 0.83.1 upgrade details |
 | **AWS S3** | `specs/deployment/aws-s3-setup.md` | Media storage setup |
 | **WSL2** | `specs/deployment/wsl2-network-setup.md` | Mobile testing network |
 | **Infrastructure** | `specs/deployment/infrastructure-setup.md` | Docker services |
