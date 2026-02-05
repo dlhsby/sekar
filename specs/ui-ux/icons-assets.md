@@ -1,6 +1,8 @@
 # Icons & Assets
 
-Icon system, image guidelines, and visual asset specifications.
+**Version:** 2.0.0 (Modern Neo Brutalism)
+
+Icon system, image guidelines, and visual asset specifications for SEKAR applications.
 
 ## Icon System
 
@@ -33,17 +35,18 @@ const iconSizes = {
 };
 ```
 
-### Icon Colors
+### Icon Colors (Neo Brutalism 2.0)
 
-| Context | Color | Usage |
-|---------|-------|-------|
-| Primary action | `colors.primary` | Active tabs, CTAs |
-| Default | `colors.textSecondary` | Inactive icons |
-| Disabled | `colors.textDisabled` | Disabled states |
-| On primary | `colors.white` | Icons on primary bg |
-| Success | `colors.success` | Success indicators |
-| Error | `colors.error` | Error indicators |
-| Warning | `colors.warning` | Warning indicators |
+| Context | Color | Hex | Usage |
+|---------|-------|-----|-------|
+| Primary action | `colors.primary` | `#7FBC8C` | Active tabs, CTAs |
+| Default | `colors.textSecondary` | `#57534E` | Inactive icons |
+| Disabled | `colors.textDisabled` | `#A8A29E` | Disabled states |
+| On primary | `colors.white` | `#FFFFFF` | Icons on primary bg |
+| Success | `colors.success` | `#7FBC8C` | Success indicators |
+| Danger | `colors.danger` | `#FF6B6B` | Error indicators |
+| Warning | `colors.warning` | `#E3A018` | Warning indicators |
+| Info | `colors.info` | `#69D2E7` | Information indicators |
 
 ---
 
@@ -107,16 +110,16 @@ const iconSizes = {
 
 ### Status & Indicators
 
-| Function | Icon Name | Preview |
-|----------|-----------|---------|
-| Success | `check-circle` | ✓ |
-| Error | `alert-circle` | ⚠ |
-| Warning | `alert` | ⚠ |
-| Info | `information` | ℹ |
-| Online | `circle-medium` | ● |
-| Offline | `circle-outline` | ○ |
-| Sync | `sync` | ↻ |
-| Sync Off | `sync-off` | ✕ |
+| Function | Icon Name | Color | Preview |
+|----------|-----------|-------|---------|
+| Success | `check-circle` | `#7FBC8C` | ✓ |
+| Error | `alert-circle` | `#FF6B6B` | ⚠ |
+| Warning | `alert` | `#E3A018` | ⚠ |
+| Info | `information` | `#69D2E7` | ℹ |
+| Online | `circle-medium` | `#7FBC8C` | ● |
+| Offline | `circle-outline` | `#A8A29E` | ○ |
+| Sync | `sync` | `#E3A018` | ↻ |
+| Sync Off | `sync-off` | `#FF6B6B` | ✕ |
 
 ### User & Profile
 
@@ -128,13 +131,13 @@ const iconSizes = {
 | Worker | `account-hard-hat` | 👷 |
 | Supervisor | `account-tie` | 👔 |
 
-### Condition Indicators
+### Condition Indicators (Field Reports)
 
 | Condition | Icon Name | Color |
 |-----------|-----------|-------|
-| Baik (Good) | `emoticon-happy-outline` | `success` |
-| Cukup (Fair) | `emoticon-neutral-outline` | `warning` |
-| Buruk (Poor) | `emoticon-sad-outline` | `error` |
+| Baik (Good) | `emoticon-happy-outline` | `#7FBC8C` (success) |
+| Cukup (Fair) | `emoticon-neutral-outline` | `#E3A018` (warning) |
+| Buruk (Poor) | `emoticon-sad-outline` | `#FF6B6B` (danger) |
 
 ---
 
@@ -146,11 +149,11 @@ const iconSizes = {
 <MaterialCommunityIcons
   name="map-marker"
   size={24}
-  color={colors.primary}
+  color={colors.primary}  // #7FBC8C
 />
 ```
 
-### Icon Button
+### Icon Button (Neo Brutalism 2.0)
 
 ```tsx
 <TouchableOpacity
@@ -158,13 +161,22 @@ const iconSizes = {
     width: 48,
     height: 48,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: colors.bgSurface,    // #FFFFFF
+    borderRadius: 6,                       // NB 2.0 radius
+    borderWidth: 2,
+    borderColor: colors.black,             // #1C1917
+    shadowColor: colors.black,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 4,
   }}
 >
   <MaterialCommunityIcons
     name="camera"
     size={24}
-    color={colors.textPrimary}
+    color={colors.textPrimary}            // #1C1917
   />
 </TouchableOpacity>
 ```
@@ -176,9 +188,9 @@ const iconSizes = {
   <MaterialCommunityIcons
     name="clock-outline"
     size={20}
-    color={colors.textSecondary}
+    color={colors.textSecondary}          // #57534E
   />
-  <Text style={{ marginLeft: 8 }}>08:30 WIB</Text>
+  <Text style={{ marginLeft: 8, color: colors.textPrimary }}>08:30 WIB</Text>
 </View>
 ```
 
@@ -232,7 +244,7 @@ Style guidelines:
 - **Style:** Flat, minimal, 2-3 colors max
 - **Size:** 120×120px (mobile), 200×200px (web)
 - **Format:** SVG (web), PNG @2x (mobile)
-- **Colors:** Primary green + gray tones
+- **Colors:** Primary green (#7FBC8C) + stone tones (#57534E, #A8A29E)
 
 | State | Description |
 |-------|-------------|
@@ -245,34 +257,39 @@ Style guidelines:
 ### Placeholder Images
 
 ```typescript
-// Default avatar
+// Default avatar (NB 2.0 styling)
 <View style={{
   width: 48,
   height: 48,
-  borderRadius: 24,
-  backgroundColor: colors.gray200,
+  borderRadius: 9999,                      // Full circle
+  backgroundColor: colors.gray200,         // #E7E5E4
+  borderWidth: 2,
+  borderColor: colors.black,               // #1C1917
   justifyContent: 'center',
   alignItems: 'center',
 }}>
   <MaterialCommunityIcons
     name="account"
     size={24}
-    color={colors.textSecondary}
+    color={colors.textSecondary}           // #57534E
   />
 </View>
 
-// Image placeholder
+// Image placeholder (NB 2.0 styling)
 <View style={{
   width: '100%',
   aspectRatio: 4/3,
-  backgroundColor: colors.gray100,
+  backgroundColor: colors.gray100,         // #F5F5F4
+  borderRadius: 6,
+  borderWidth: 2,
+  borderColor: colors.black,               // #1C1917
   justifyContent: 'center',
   alignItems: 'center',
 }}>
   <MaterialCommunityIcons
     name="image-outline"
     size={48}
-    color={colors.gray400}
+    color={colors.gray400}                 // #A8A29E
   />
 </View>
 ```
@@ -293,11 +310,13 @@ Style guidelines:
 | Android Adaptive | 108×108dp (with safe zone) | PNG |
 | Play Store | 512×512px | PNG |
 
-### App Icon Design
+### App Icon Design (Neo Brutalism 2.0)
 
-- Primary color: `#2E7D32` (Green)
+- Primary color: `#7FBC8C` (Nature Green)
+- Secondary: `#1A4D2E` (Dark Forest Green)
 - Symbol: Stylized park/tree icon or location marker
-- Background: White or gradient
+- Border: 2px black stroke (NB 2.0 style)
+- Background: White or pastel yellow (#FDFD96)
 - No text in icon
 
 ### Splash Screen
@@ -316,7 +335,9 @@ Style guidelines:
 │                                    │
 │                                    │
 └────────────────────────────────────┘
-    Background: #FFFFFF or #2E7D32
+    Background: #FDFD96 (pastel yellow)
+    Logo color: #7FBC8C (primary green)
+    Text: #1C1917 (stone-900)
 ```
 
 ---
@@ -346,7 +367,7 @@ import FastImage from 'react-native-fast-image';
 
 <FastImage
   source={{ uri: photoUrl, priority: FastImage.priority.normal }}
-  style={{ width: 100, height: 100 }}
+  style={{ width: 100, height: 100, borderRadius: 6 }}
   resizeMode={FastImage.resizeMode.cover}
 />
 
@@ -366,14 +387,20 @@ import FastImage from 'react-native-fast-image';
 <TouchableOpacity
   accessibilityLabel="Ambil foto"
   accessibilityRole="button"
+  style={{
+    width: 48,
+    height: 48,
+    // ... NB 2.0 styling
+  }}
 >
-  <MaterialCommunityIcons name="camera" size={24} />
+  <MaterialCommunityIcons name="camera" size={24} color={colors.primary} />
 </TouchableOpacity>
 
 // Decorative icons can be hidden
 <MaterialCommunityIcons
   name="map-marker"
   size={20}
+  color={colors.primary}
   accessibilityElementsHidden={true}
   importantForAccessibility="no-hide-descendants"
 />
@@ -384,10 +411,12 @@ import FastImage from 'react-native-fast-image';
 - Always pair icons with text labels when possible
 - Never rely on icons alone for critical actions
 - Use consistent icon meanings throughout the app
+- Ensure icon color meets WCAG 2.1 AA contrast ratios (minimum 3:1 for UI elements)
 
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-01-16
-**Status:** Active
+**Last Updated:** 2026-02-05
+**Status:** Active - Updated for Neo Brutalism 2.0
 **Icon Library:** `react-native-vector-icons/MaterialCommunityIcons`
+**Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

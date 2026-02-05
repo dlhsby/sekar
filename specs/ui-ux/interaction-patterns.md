@@ -1,6 +1,8 @@
 # Interaction Patterns
 
-Animation, gesture, and feedback specifications for SEKAR applications.
+**Version:** 2.0.0 (Modern Neo Brutalism)
+
+Animation, gesture, and feedback specifications for SEKAR applications, updated for Neo Brutalism 2.0.
 
 ## Touch Gestures (Mobile)
 
@@ -33,32 +35,37 @@ const PULL_RESISTANCE = 2.5; // dampening factor
 
 ## Animation System
 
-### Duration Scale
+### Duration Scale (Neo Brutalism 2.0)
+
+Updated for snappier, more responsive feel.
 
 | Name | Duration | Usage |
 |------|----------|-------|
-| `instant` | 100ms | Micro-feedback, icon changes |
-| `fast` | 200ms | Button states, small transitions |
-| `normal` | 300ms | Screen transitions, modals |
-| `slow` | 500ms | Complex animations, celebrations |
+| `instant` | 80ms | Micro-feedback, badges, icons |
+| `fast` | 150ms | Button press, hover states |
+| `normal` | 250ms | State transitions, modals |
+| `slow` | 400ms | Page transitions, complex animations |
 
 ```typescript
 const animationDurations = {
-  instant: 100,
-  fast: 200,
-  normal: 300,
-  slow: 500,
+  instant: 80,   // Snappier micro-feedback
+  fast: 150,     // Button states
+  normal: 250,   // Modals, transitions
+  slow: 400,     // Page transitions
 };
 ```
 
 ### Easing Functions
 
+Updated with bounce easing from [Neo-brutalism-CSS](https://github.com/Walikuperek/Neo-brutalism-CSS).
+
 | Name | Function | Usage |
 |------|----------|-------|
-| `easeOut` | cubic-bezier(0.0, 0, 0.2, 1) | Entering elements |
-| `easeIn` | cubic-bezier(0.4, 0, 1, 1) | Exiting elements |
+| `easeOut` | cubic-bezier(0.0, 0, 0.2, 1) | Elements entering |
+| `easeIn` | cubic-bezier(0.4, 0, 1, 1) | Elements exiting |
 | `easeInOut` | cubic-bezier(0.4, 0, 0.2, 1) | Moving elements |
-| `spring` | damping: 15, stiffness: 150 | Bouncy effects |
+| `bounce` | cubic-bezier(0.68, -0.55, 0.265, 1.55) | Playful bounce effects |
+| `spring` | damping: 15, stiffness: 150 | Spring physics |
 
 ```typescript
 import { Easing } from 'react-native-reanimated';
@@ -67,7 +74,42 @@ const easings = {
   easeOut: Easing.out(Easing.cubic),
   easeIn: Easing.in(Easing.cubic),
   easeInOut: Easing.inOut(Easing.cubic),
+  bounce: Easing.bezier(0.68, -0.55, 0.265, 1.55),  // Playful overshoot
 };
+```
+
+### Shadow Interaction Pattern (neobrutalism.dev)
+
+The `boxShadowX/boxShadowY` pattern from [neobrutalism.dev](https://www.neobrutalism.dev/):
+
+```typescript
+const interactionValues = {
+  boxShadowX: 4,          // Horizontal shadow offset
+  boxShadowY: 4,          // Vertical shadow offset
+  hoverTranslateX: -2,    // Move left on hover (half of shadow)
+  hoverTranslateY: -2,    // Move up on hover
+  pressTranslateX: 2,     // Move right on press
+  pressTranslateY: 2,     // Move down on press
+  pressScale: 0.98,       // Optional slight shrink
+};
+```
+
+**CSS Implementation:**
+```css
+.nb-interactive {
+  box-shadow: var(--shadow-md);
+  transition: all 150ms ease-out;
+}
+
+.nb-interactive:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translate(-2px, -2px);
+}
+
+.nb-interactive:active {
+  box-shadow: var(--shadow-active);
+  transform: translate(2px, 2px);
+}
 ```
 
 ---
@@ -454,7 +496,37 @@ animatedStyle = useAnimatedStyle(() => ({
 
 ---
 
+---
+
+## Background Pattern Guidelines
+
+When using background patterns (grid, dots, diagonal), follow these guidelines:
+
+### Usage Locations
+
+| Location | Pattern | Opacity |
+|----------|---------|---------|
+| Dashboard background | Grid | 3% |
+| Login screen | Dots | 3-4% |
+| Empty states | Dots | 3% |
+| Hero sections | Diagonal | 2-3% |
+| Cards/Modals | None | - |
+
+### Pattern Animation
+
+Patterns should remain static. Do not animate pattern backgrounds as it:
+- Increases cognitive load
+- Reduces battery life on mobile
+- Can cause motion discomfort
+
+### Reduced Motion
+
+When `prefers-reduced-motion` is enabled, patterns should remain visible (they are static and not problematic).
+
+---
+
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-01-16
-**Status:** Active
+**Last Updated:** 2026-02-05
+**Status:** Active - Updated for Neo Brutalism 2.0
 **Animation Library:** `react-native-reanimated`, `expo-haptics`
+**Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

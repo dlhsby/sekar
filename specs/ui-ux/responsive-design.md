@@ -1,5 +1,7 @@
 # Responsive Design
 
+**Version:** 2.0.0 (Modern Neo Brutalism)
+
 Breakpoints, layout patterns, and responsive guidelines for SEKAR applications.
 
 ## Breakpoint System
@@ -15,7 +17,7 @@ Based on common device sizes for the Indonesian market:
 | `md` | 414px | Large phones (iPhone Plus/Pro Max) |
 
 ```typescript
-// From theme.ts
+// From nbTokens.ts
 breakpoints: {
   sm: 375,   // Standard phones
   md: 768,   // Tablets
@@ -33,7 +35,7 @@ breakpoints: {
 | Large Desktop | > 1440px | Max-width container, centered |
 
 ```css
-/* TailwindCSS breakpoints */
+/* TailwindCSS 4 breakpoints */
 /* sm: 640px - Not commonly used */
 /* md: 768px - Tablet */
 /* lg: 1024px - Desktop */
@@ -68,6 +70,7 @@ breakpoints: {
 └────────────────────────────────────┘
 
 Margins: 16px (md) horizontal
+Background: #FDFD96 (pastel yellow) or #DAF5F0 (pastel mint)
 ```
 
 ### Screen Margin Rules
@@ -109,7 +112,7 @@ Contained (text, form fields):
 
 ## Component Responsive Behavior
 
-### Buttons
+### Buttons (Neo Brutalism 2.0)
 
 | Screen Size | Button Width | Height |
 |-------------|--------------|--------|
@@ -118,15 +121,15 @@ Contained (text, form fields):
 | Large | Max 400px centered | 52px |
 
 ```tsx
-// Full-width button (mobile)
-<Button
+// Full-width button (mobile) - NB 2.0 styling
+<NBButton
   style={{
     width: '100%',
     marginHorizontal: spacing.md,
   }}
 >
   Masuk Kerja
-</Button>
+</NBButton>
 
 // Action buttons row
 <View style={{
@@ -134,21 +137,25 @@ Contained (text, form fields):
   gap: spacing.sm,
   paddingHorizontal: spacing.md,
 }}>
-  <Button style={{ flex: 1 }} variant="outline">Batal</Button>
-  <Button style={{ flex: 1 }}>Kirim</Button>
+  <NBButton style={{ flex: 1 }} variant="outline">Batal</NBButton>
+  <NBButton style={{ flex: 1 }}>Kirim</NBButton>
 </View>
 ```
 
-### Cards
+### Cards (Neo Brutalism 2.0)
 
 ```tsx
-// Full-width cards (standard)
-<Card style={{
+// Full-width cards (standard) - NB 2.0 styling
+<NBCard style={{
   marginHorizontal: spacing.md,
   marginBottom: spacing.sm,
+  backgroundColor: colors.bgSurface,  // #FFFFFF
+  borderRadius: 6,                    // NB 2.0 radius
+  borderWidth: 2,
+  borderColor: colors.black,          // #1C1917
 }}>
   {/* content */}
-</Card>
+</NBCard>
 
 // Grid cards (tablets, optional)
 <View style={{
@@ -156,12 +163,12 @@ Contained (text, form fields):
   flexWrap: 'wrap',
   padding: spacing.sm,
 }}>
-  <Card style={{
+  <NBCard style={{
     width: isTablet ? '48%' : '100%',
     margin: spacing.xs,
   }}>
     {/* content */}
-  </Card>
+  </NBCard>
 </View>
 ```
 
@@ -170,9 +177,9 @@ Contained (text, form fields):
 ```tsx
 // Single column form (all mobile sizes)
 <View style={{ paddingHorizontal: spacing.md }}>
-  <TextInput label="Username" />
-  <TextInput label="Password" secureTextEntry />
-  <Button>Login</Button>
+  <NBTextInput label="Username" />
+  <NBTextInput label="Password" secureTextEntry />
+  <NBButton>Login</NBButton>
 </View>
 
 // Form field max-width (large screens)
@@ -206,7 +213,7 @@ const maxFormWidth = 400;
   ItemSeparatorComponent={() => (
     <View style={{
       height: 1,
-      backgroundColor: colors.divider,
+      backgroundColor: colors.gray200,  // Stone-200
       marginLeft: spacing.md,
     }} />
   )}
@@ -239,6 +246,9 @@ const maxFormWidth = 400;
 │             │                                                │
 └─────────────┴────────────────────────────────────────────────┘
                └───────────── Fluid width ─────────────────────┘
+
+Sidebar: #1A4D2E (dark forest green)
+Main: #FDFD96 (pastel yellow) or #FFFFFF
 ```
 
 ### Tablet Layout (768-1024px)
@@ -302,12 +312,13 @@ Single column layout for most content:
 <View style={{
   flex: 1,
   paddingHorizontal: spacing.md, // 16px
+  backgroundColor: colors.bgPrimary, // #FDFD96
 }}>
   {/* Full-width content */}
 </View>
 ```
 
-### Web Grid (TailwindCSS)
+### Web Grid (TailwindCSS 4)
 
 ```html
 <!-- Container with max-width -->
@@ -375,14 +386,16 @@ On mobile, tables transform to card lists:
 
 | Size Token | Small (< 375) | Standard | Large (> 414) |
 |------------|---------------|----------|---------------|
-| `xs` | 11px | 12px | 12px |
-| `sm` | 13px | 14px | 14px |
-| `base` | 15px | 16px | 16px |
-| `lg` | 17px | 18px | 18px |
-| `xl` | 19px | 20px | 20px |
-| `2xl` | 22px | 24px | 24px |
-| `3xl` | 27px | 30px | 32px |
-| `4xl` | 32px | 36px | 40px |
+| `caption` | 11px | 12px | 12px |
+| `body-sm` | 13px | 14px | 14px |
+| `body` | 15px | 16px | 16px |
+| `body-lg` | 17px | 18px | 18px |
+| `h4` | 17px | 18px | 18px |
+| `h3` | 20px | 22px | 22px |
+| `h2` | 24px | 26px | 26px |
+| `h1` | 29px | 32px | 34px |
+| `display` | 36px | 40px | 44px |
+| `display-xl` | 43px | 48px | 52px |
 
 ```typescript
 // Responsive font size hook
@@ -395,6 +408,43 @@ const useResponsiveFontSize = (size: keyof typeof typography.fontSize) => {
   }
   return baseSize;
 };
+```
+
+---
+
+## Background Patterns (Neo Brutalism 2.0)
+
+### Pattern Usage by Screen Size
+
+| Screen Size | Pattern | Opacity | Usage |
+|-------------|---------|---------|-------|
+| Mobile | Dots | 3% | Subtle, battery-friendly |
+| Tablet | Grid | 3% | Moderate visual interest |
+| Desktop | Grid | 3% | Full pattern visibility |
+
+```css
+/* Responsive pattern application */
+@media (max-width: 767px) {
+  .pattern-background {
+    /* Use dots pattern on mobile for less visual noise */
+    background-image: radial-gradient(
+      circle at center,
+      rgba(45, 82, 51, 0.03) 1.5px,
+      transparent 1.5px
+    );
+    background-size: 24px 24px;
+  }
+}
+
+@media (min-width: 768px) {
+  .pattern-background {
+    /* Use grid pattern on larger screens */
+    background-image:
+      linear-gradient(rgba(45, 82, 51, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(45, 82, 51, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
 ```
 
 ---
@@ -421,6 +471,7 @@ const MapScreen = () => {
     <View style={{
       flex: 1,
       flexDirection: isLandscape ? 'row' : 'column',
+      backgroundColor: colors.bgPrimary, // #FDFD96
     }}>
       <MapView style={{ flex: isLandscape ? 2 : 1 }} />
       {!isLandscape && <BottomPanel />}
@@ -439,7 +490,7 @@ const MapScreen = () => {
 ```tsx
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-<SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+<SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={['top', 'bottom']}>
   <View style={{ flex: 1 }}>
     {/* Content */}
   </View>
@@ -470,6 +521,7 @@ const Screen = () => {
       paddingBottom: insets.bottom,
       paddingLeft: insets.left,
       paddingRight: insets.right,
+      backgroundColor: colors.bgPrimary,
     }}>
       {/* Content */}
     </View>
@@ -501,10 +553,13 @@ const Screen = () => {
 - [ ] Verify touch targets remain ≥48px
 - [ ] Test with large system fonts (200%)
 - [ ] Test in both orientations (if supported)
+- [ ] Verify background patterns at different sizes
+- [ ] Test NB 2.0 shadow visibility on all sizes
 
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-01-16
-**Status:** Active
-**Implementation:** `fe/mobile/src/constants/theme.ts` (breakpoints)
+**Last Updated:** 2026-02-05
+**Status:** Active - Updated for Neo Brutalism 2.0
+**Implementation:** `fe/mobile/src/constants/nbTokens.ts` (breakpoints)
+**Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

@@ -1,8 +1,9 @@
 # Neo Brutalism Design System
 
+**Version:** 2.0.0 (Modern Neo Brutalism)
 **Phase 2+ Design System for SEKAR Web and Mobile Applications**
 
-This document defines the Neo Brutalism design system adopted for Phase 2 onwards. Neo Brutalism combines bold aesthetics with excellent usability, creating interfaces that are both visually distinctive and highly functional for government field operations.
+This document defines the **Modern Neo Brutalism** design system for SEKAR. The system combines bold aesthetics with excellent usability, creating interfaces that are both visually distinctive and highly functional for government field operations in parks and green spaces.
 
 ---
 
@@ -10,89 +11,127 @@ This document defines the Neo Brutalism design system adopted for Phase 2 onward
 
 1. [Quick Reference](#quick-reference)
 2. [Design Philosophy](#design-philosophy)
-3. [Design Tokens](#design-tokens)
+3. [Research Sources](#research-sources)
 4. [Color System](#color-system)
-5. [Typography](#typography)
-6. [Borders & Shadows](#borders--shadows)
-7. [Component Specifications](#component-specifications)
-8. [Component Parity Matrix](#component-parity-matrix)
-9. [Layout Patterns](#layout-patterns)
-10. [Web Implementation (Next.js/Tailwind)](#web-implementation-nextjstailwind)
-11. [Mobile Implementation (React Native)](#mobile-implementation-react-native)
-12. [Responsive Breakpoints (Web)](#responsive-breakpoints-web)
-13. [Interaction Patterns](#interaction-patterns)
-14. [WCAG 2.1 AA Compliance Checklist](#wcag-21-aa-compliance-checklist)
-15. [Accessibility Considerations](#accessibility-considerations)
-16. [Migration from Material Design](#migration-from-material-design)
-17. [Implementation Files](#implementation-files)
-18. [Related Documentation](#related-documentation)
+5. [Shadow System](#shadow-system)
+6. [Border System](#border-system)
+7. [Typography](#typography)
+8. [Spacing](#spacing)
+9. [Animation](#animation)
+10. [Background Patterns](#background-patterns)
+11. [Component Specifications](#component-specifications)
+12. [Web Implementation](#web-implementation)
+13. [Mobile Implementation](#mobile-implementation)
+14. [Accessibility](#accessibility)
+15. [Related Documentation](#related-documentation)
 
 ---
 
 ## Quick Reference
 
-### Design Tokens (Copy-Paste)
+### Design Tokens (Copy-Paste Ready)
 
-**Colors:**
+**Primary Colors (Sepidy's Neo Brutalism Palette - Row 4):**
 ```
-primary:        #0066CC    primaryHover:   #0052A3    primaryActive:  #003D7A
-success:        #1B5E20    successLight:   #4CAF50
-warning:        #F57C00    warningLight:   #FFB74D
-danger:         #DC2626    dangerLight:    #EF5350
-black:          #000000    white:          #FFFFFF    navy:           #001F3F
+primary:        #7FBC8C    primaryHover:   #6BA87A    primaryActive:  #5A9468
+secondary:      #8B7355    secondaryHover: #725E45
+success:        #7FBC8C    warning:        #E3A018    danger:         #FF6B6B
+info:           #69D2E7
+```
+
+**Background Colors (Sepidy's Palette - Row 1 Pastels):**
+```
+bg-primary:     #FDFD96    bg-secondary:   #B5D2AD    bg-mint:        #DAF5F0
+bg-surface:     #FFFFFF    bg-elevated:    #FCDFFF
+```
+
+**Accent Colors (Sepidy's Palette - Vibrant):**
+```
+accent-cyan:    #69D2E7    accent-yellow:  #FFDB58    accent-coral:   #FF6B6B
+accent-pink:    #FF69B4    accent-purple:  #A388EE    accent-violet:  #C4A1FF
+```
+
+**Neutrals (Warm Stone Tones):**
+```
+black:          #1C1917    white:          #FFFFFF    navy:           #1A4D2E
+gray-50:        #FAFAF9    gray-100:       #F5F5F4    gray-200:       #E7E5E4
+gray-300:       #D6D3D1    gray-400:       #A8A29E    gray-500:       #78716C
+gray-600:       #57534E    gray-700:       #44403C    gray-800:       #292524
+```
+
+**Sidebar (Dark Forest Green):**
+```
+sidebar-bg:     #1A4D2E    sidebar-text:   #FFFFFF    sidebar-hover:  #2D5233
+sidebar-active: #0F3520    sidebar-border: #2D5233
 ```
 
 **Shadows (CSS):**
 ```css
---shadow-nb-sm:     4px 4px 0px #000000   /* Cards, inputs */
---shadow-nb-md:     6px 6px 0px #000000   /* Buttons, interactive cards */
---shadow-nb-lg:     8px 8px 0px #000000   /* Modals, popovers */
---shadow-nb-hover:  8px 8px 0px #000000   /* Hover state (with translate -2px) */
---shadow-nb-active: 2px 2px 0px #000000   /* Active/pressed (with translate +2px) */
+--shadow-xs:      2px 2px 0px #1C1917   /* Badges, small elements */
+--shadow-sm:      4px 4px 0px #1C1917   /* Cards, inputs */
+--shadow-md:      6px 6px 0px #1C1917   /* Buttons, interactive */
+--shadow-lg:      8px 8px 0px #1C1917   /* Modals, dropdowns */
+--shadow-xl:      10px 10px 0px #1C1917 /* Hero elements */
+--shadow-hover:   8px 8px 0px #1C1917   /* With translate(-2px, -2px) */
+--shadow-active:  2px 2px 0px #1C1917   /* With translate(2px, 2px) */
 ```
 
 **Shadows (React Native):**
 ```typescript
-sm:     { shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 }
-md:     { shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, shadowRadius: 0, elevation: 6 }
-lg:     { shadowOffset: { width: 8, height: 8 }, shadowOpacity: 1, shadowRadius: 0, elevation: 8 }
-active: { shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2 }
+sm:     { shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.18, shadowRadius: 2, elevation: 3 }
+md:     { shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.20, shadowRadius: 3, elevation: 4 }
+lg:     { shadowOffset: { width: 5, height: 5 }, shadowOpacity: 0.22, shadowRadius: 4, elevation: 5 }
+active: { shadowOffset: { width: 1, height: 1 }, shadowOpacity: 0.15, shadowRadius: 0, elevation: 1 }
 ```
 
 **Borders:**
 ```
-thin:    2px solid #000000   /* Secondary elements, dividers */
-default: 3px solid #000000   /* Primary elements, cards, buttons */
-thick:   4px solid #000000   /* Emphasis, selected states */
+thin:    1px solid #1C1917   /* Dividers, subtle separators */
+base:    2px solid #1C1917   /* DEFAULT - buttons, cards, inputs */
+thick:   3px solid #1C1917   /* Emphasis, selected states */
+extra:   4px solid #1C1917   /* Hero elements */
 ```
 
-**Spacing (8px Baseline Grid):**
+**Border Radius:**
+```
+none:    0px     /* Decorative elements */
+sm:      4px     /* Badges, tags */
+base:    6px     /* DEFAULT - buttons, cards, inputs */
+md:      8px     /* Modals, large cards */
+lg:      12px    /* Callouts, featured */
+full:    9999px  /* Avatars, pills */
+```
+
+**Spacing (8px Grid):**
 ```
 xs: 4px    sm: 8px    md: 16px    lg: 24px    xl: 32px    2xl: 48px    3xl: 64px
 ```
 
-**Typography Scale:**
+**Typography (Space Grotesk + Inter):**
 ```
-Display:    36px / 800 / 1.25    /* Page titles */
-H1:         30px / 700 / 1.25    /* Section headers */
-H2:         24px / 700 / 1.25    /* Card titles */
-H3:         20px / 600 / 1.25    /* Subheadings */
-Body Large: 18px / 500 / 1.5     /* Emphasized body */
-Body:       16px / 400 / 1.5     /* Default body */
-Body Small: 14px / 400 / 1.5     /* Secondary text */
-Caption:    12px / 400 / 1.5     /* Timestamps, labels */
+Display XL: 48px / 800 / 1.25    /* Hero text (Space Grotesk) */
+Display:    40px / 800 / 1.25    /* Page titles (Space Grotesk) */
+H1:         32px / 700 / 1.25    /* Section headers (Space Grotesk) */
+H2:         26px / 700 / 1.25    /* Card titles (Space Grotesk) */
+H3:         22px / 600 / 1.25    /* Subheadings (Space Grotesk) */
+H4:         18px / 600 / 1.25    /* Minor headings (Inter) */
+Body Large: 18px / 500 / 1.5     /* Emphasized body (Inter) */
+Body:       16px / 400 / 1.5     /* Default body (Inter) */
+Body Small: 14px / 400 / 1.5     /* Secondary text (Inter) */
+Caption:    12px / 400 / 1.5     /* Timestamps, labels (Inter) */
 ```
 
 **Touch/Click Targets:**
 ```
-Minimum: 48x48px (WCAG 2.1 AA compliant)
+Minimum: 48x48px (WCAG 2.1 AA)
 ```
 
 **Animation Durations:**
 ```
-fast:   100ms    /* Button press, hover states */
-normal: 200ms    /* State transitions, modals */
-slow:   300ms    /* Page transitions */
+instant: 80ms     /* Micro-feedback, badges, icons */
+fast:    150ms    /* Button press, hover states */
+normal:  250ms    /* State transitions, modals */
+slow:    400ms    /* Page transitions, complex animations */
 ```
 
 ---
@@ -101,319 +140,503 @@ slow:   300ms    /* Page transitions */
 
 ### Core Principles
 
-1. **Bold & Confident**: Heavy borders, stark contrasts, and solid colors convey authority and trustworthiness - appropriate for government applications.
+1. **Bold & Confident**: Heavy borders, stark contrasts, and vibrant colors convey authority and trustworthiness - appropriate for government applications.
 
-2. **Function Over Decoration**: Every design element serves a purpose. Shadows indicate elevation and interactivity, not decoration.
+2. **Nature-Aligned**: Parks green (#7FBC8C) as primary color creates instant association with SEKAR's mission of parks and green spaces management.
 
-3. **High Visibility**: Designed for outdoor field workers using mobile devices in varying light conditions.
+3. **Warm & Inviting**: Pastel backgrounds (#FDFD96) create a friendly, approachable feel while maintaining professionalism.
 
-4. **Honest Materials**: No gradients, no rounded corners (except for avatars), no soft shadows. What you see is what you get.
+4. **Function Over Decoration**: Every design element serves a purpose. Shadows indicate elevation and interactivity.
 
-5. **Instant Recognition**: The distinctive style makes SEKAR immediately recognizable, reducing cognitive load for users switching between apps.
+5. **High Visibility**: Designed for outdoor field workers using mobile devices in varying light conditions.
+
+6. **Modern Brutalism**: Friendly 6px border radius and subtle shadow softness while maintaining bold NB character.
 
 ### Visual Characteristics
 
-| Characteristic | Traditional Material | Neo Brutalism |
-|----------------|---------------------|---------------|
-| Borders | None or thin (1px) | Bold (3px solid black) |
-| Shadows | Soft, diffused | Hard-edge, offset |
-| Corners | Rounded (4-16px) | Sharp (0px) |
-| Colors | Gradients, transparency | Solid, high contrast |
-| Typography | Varied weights | Bold headings, clear body |
-| Buttons | Filled, outlined, text | Solid with hard shadow |
+| Characteristic | Old NB (1.0) | Modern NB (2.0) |
+|----------------|--------------|-----------------|
+| **Borders** | 3px solid black | 2px solid #1C1917 (softer) |
+| **Shadows** | Hard 6px, 0 blur | Soft 4px, slight blur |
+| **Corners** | 0px (Sharp) | 6px (Friendly) |
+| **Primary** | #0066CC (Corporate Blue) | #7FBC8C (Nature Green) |
+| **Background** | #FFFFFF (White) | #FDFD96 (Warm Pastel) |
+| **Display Font** | Inter | Space Grotesk |
+| **Patterns** | None | Grid/Dots at 3% |
 
 ### Reference Implementation
 
-Primary reference: [ekmas/neobrutalism-components](https://github.com/ekmas/neobrutalism-components)
+**Primary References:**
+- [neobrutalism.dev](https://www.neobrutalism.dev/) - Component library
+- [Sepidy's Neo Brutalism Guide](https://medium.com/@sepidy/how-can-i-design-in-the-neo-brutalism-style-d85c458042de) - Color palette
+- [Neo-brutalism-CSS](https://github.com/Walikuperek/Neo-brutalism-CSS) - Typography
 
 ---
 
-## Design Tokens
+## Research Sources
 
-### Core Token Structure
+The Modern Neo Brutalism 2.0 design system is based on verified research sources:
 
-```typescript
-// Shared between web and mobile
-export const nbTokens = {
-  // Colors
-  colors: {
-    // Primary actions
-    primary: '#0066CC',       // Action blue - links, buttons
-    primaryHover: '#0052A3',  // Darker on hover
-    primaryActive: '#003D7A', // Darkest on active
-
-    // Status colors
-    success: '#1B5E20',       // Government green - success, online
-    successLight: '#4CAF50',  // Lighter variant
-    warning: '#F57C00',       // Alert orange (WCAG 4.5:1 compliant)
-    warningLight: '#FFB74D',  // Lighter variant
-    danger: '#DC2626',        // Error red - failures, offline
-    dangerLight: '#EF5350',   // Lighter variant
-
-    // Neutral palette
-    black: '#000000',         // Borders, shadows, text
-    white: '#FFFFFF',         // Backgrounds, card surfaces
-    navy: '#001F3F',          // Trust/authority accent
-    gray: {
-      50: '#FAFAFA',          // Hover backgrounds
-      100: '#F5F5F5',         // Disabled backgrounds
-      200: '#EEEEEE',         // Borders (light mode)
-      300: '#E0E0E0',         // Dividers
-      400: '#BDBDBD',         // Placeholder text
-      500: '#9E9E9E',         // Secondary text
-      600: '#666666',         // Body text
-      700: '#424242',         // Headings
-      800: '#303030',         // Dark mode surfaces
-      900: '#212121',         // Dark mode backgrounds
-    },
-  },
-
-  // Border specifications
-  borders: {
-    width: {
-      thin: '2px',            // Secondary elements
-      default: '3px',         // Primary elements
-      thick: '4px',           // Emphasis
-    },
-    style: 'solid',
-    color: '#000000',
-  },
-
-  // Shadow specifications (hard-edge offset shadows)
-  shadows: {
-    sm: {
-      offset: { x: 4, y: 4 },
-      blur: 0,
-      color: '#000000',
-    },
-    md: {
-      offset: { x: 6, y: 6 },
-      blur: 0,
-      color: '#000000',
-    },
-    lg: {
-      offset: { x: 8, y: 8 },
-      blur: 0,
-      color: '#000000',
-    },
-    // Interaction states
-    hover: {
-      offset: { x: 8, y: 8 },
-      blur: 0,
-      color: '#000000',
-    },
-    active: {
-      offset: { x: 2, y: 2 },
-      blur: 0,
-      color: '#000000',
-    },
-    none: {
-      offset: { x: 0, y: 0 },
-      blur: 0,
-      color: 'transparent',
-    },
-  },
-
-  // No rounded corners (except specified cases)
-  borderRadius: {
-    none: 0,              // Default for all elements
-    full: 9999,           // Only for avatars, badges
-  },
-
-  // Spacing (8px baseline grid)
-  spacing: {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    '2xl': 48,
-    '3xl': 64,
-  },
-
-  // Typography
-  typography: {
-    fontFamily: {
-      sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      mono: "'JetBrains Mono', 'Fira Code', monospace",
-    },
-    fontWeight: {
-      regular: 400,
-      medium: 500,
-      semibold: 600,
-      bold: 700,
-      extrabold: 800,
-    },
-    fontSize: {
-      xs: 12,
-      sm: 14,
-      base: 16,
-      lg: 18,
-      xl: 20,
-      '2xl': 24,
-      '3xl': 30,
-      '4xl': 36,
-    },
-    lineHeight: {
-      tight: 1.25,
-      normal: 1.5,
-      relaxed: 1.75,
-    },
-  },
-
-  // Touch targets (accessibility)
-  touchTarget: {
-    minHeight: 48,
-    minWidth: 48,
-  },
-
-  // Animation durations
-  animation: {
-    fast: 100,      // Button press
-    normal: 200,    // State transitions
-    slow: 300,      // Page transitions
-  },
-};
-```
+| Source | Key Specifications Extracted |
+|--------|------------------------------|
+| [Sepidy Medium Article](https://medium.com/@sepidy/how-can-i-design-in-the-neo-brutalism-style-d85c458042de) | **4x6 Color Palette**, Shadow X=10, Y=16, blur=0, stroke=6px |
+| [neobrutalism.dev](https://www.neobrutalism.dev/) | `border-2`, `shadow-light/dark`, `boxShadowX/Y` for hover, `rounded-base` |
+| [Neo-brutalism-CSS](https://github.com/Walikuperek/Neo-brutalism-CSS) | 3-4px borders, `shadow-neo`, Space Grotesk + Inter fonts |
+| [neo-brutalism-ui-library](https://github.com/marieooq/neo-brutalism-ui-library) | Vibrant palette (violet, pink, yellow, cyan) |
+| [NN/g Neobrutalism](https://www.nngroup.com/articles/neobrutalism/) | Usability guidelines, accessibility considerations |
+| [Tailkits NB](https://tailkits.com/components/neobrutalism/) | border-4/8, rounded-none to rounded-2xl, high contrast |
+| [Bejamas NB Trend](https://bejamas.com/blog/neubrutalism-web-design-trend) | 2024 trends, vibrant colors, thick borders, no gradients |
+| [Clover 2025 NB](https://www.clovertechnology.co/insights/how-neo-brutalism-took-over-digital-design-in-2025) | Hybrid styles, intentional chaos, strong shadows |
 
 ---
 
 ## Color System
 
-### Primary Palette
+### Sepidy's Neo Brutalism Color Palette (Primary Source)
 
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Primary Blue | `#0066CC` | Actions, links, interactive elements |
-| Success Green | `#1B5E20` | Success states, online status, confirmations |
-| Warning Orange | `#F57C00` | Warnings, pending states, attention needed |
-| Danger Red | `#DC2626` | Errors, offline status, destructive actions |
-| Navy | `#001F3F` | Authority accent, headers on special pages |
-| Black | `#000000` | Borders, shadows, primary text |
-| White | `#FFFFFF` | Backgrounds, card surfaces |
+The palette is organized as a 4x6 grid with increasing saturation from top to bottom:
+
+| | Cyan/Mint | Green | Yellow | Orange/Coral | Pink | Purple |
+|---|---|---|---|---|---|---|
+| **Row 1 (Pastel BG)** | #DAF5F0 | #B5D2AD | #FDFD96 | #F8D6B3 | #FCDFFF | #E3DFF2 |
+| **Row 2 (Light)** | #A7DBD8 | #BAFCA2 | #FFDB58 | #FFA07A | #FFC0CB | #C4A1FF |
+| **Row 3 (Medium)** | #87CEEB | #90EE90 | #F4D738 | #FF7A5C | #FFB2EF | #A388EE |
+| **Row 4 (Bold)** | #69D2E7 | #7FBC8C | #E3A018 | #FF6B6B | #FF69B4 | #9723C9 |
+
+### SEKAR Application Color Mapping
+
+```typescript
+// Design Tokens - Shared between web and mobile
+export const colors = {
+  // PRIMARY - Using Row 4 Green (Parks/Nature Theme)
+  primary: '#7FBC8C',        // Bold green from Sepidy palette
+  primaryHover: '#6BA87A',   // 15% darker
+  primaryActive: '#5A9468',  // 25% darker
+  primaryLight: '#90EE90',   // Medium mint (Row 3)
+  primaryPastel: '#B5D2AD',  // Pastel green (Row 1)
+
+  // SECONDARY - Earth Brown (complements green)
+  secondary: '#8B7355',      // Warm earth brown
+  secondaryHover: '#725E45', // Darker
+  secondaryLight: '#C4A77D', // Light brown
+
+  // ACCENT COLORS (From Sepidy Palette)
+  accentCyan: '#69D2E7',     // Bold cyan (Row 4, Col 1)
+  accentYellow: '#FFDB58',   // Light sunshine (Row 2, Col 3)
+  accentCoral: '#FF6B6B',    // Bold red (Row 4, Col 4)
+  accentPink: '#FF69B4',     // Hot pink (Row 4, Col 5)
+  accentPurple: '#A388EE',   // Medium purple (Row 3, Col 6)
+  accentViolet: '#C4A1FF',   // Light violet (Row 2, Col 6)
+
+  // BACKGROUNDS - Using Sepidy Pastel Row
+  bgPrimary: '#FDFD96',      // Pastel yellow - main background
+  bgSecondary: '#B5D2AD',    // Pastel green - alternate
+  bgMint: '#DAF5F0',         // Pastel mint - cards, dialogs
+  bgSurface: '#FFFFFF',      // Pure white - elevated cards
+  bgElevated: '#FCDFFF',     // Pastel pink - special surfaces
+
+  // STATUS COLORS (From Sepidy Palette)
+  success: '#7FBC8C',        // Bold green (same as primary)
+  successLight: '#BAFCA2',   // Light grass (Row 2, Col 2)
+  warning: '#E3A018',        // Bold amber (Row 4, Col 3)
+  warningLight: '#FFDB58',   // Light sunshine (Row 2, Col 3)
+  danger: '#FF6B6B',         // Bold red (Row 4, Col 4)
+  dangerLight: '#FFA07A',    // Light salmon (Row 2, Col 4)
+  info: '#69D2E7',           // Bold cyan (Row 4, Col 1)
+  infoLight: '#A7DBD8',      // Light cyan (Row 2, Col 1)
+
+  // NEUTRALS - Warm Gray Scale (Stone)
+  black: '#1C1917',          // Stone-900 (soft black)
+  white: '#FFFFFF',
+  navy: '#1A4D2E',           // Dark forest green
+  gray: {
+    50: '#FAFAF9',           // Stone-50
+    100: '#F5F5F4',          // Stone-100
+    200: '#E7E5E4',          // Stone-200
+    300: '#D6D3D1',          // Stone-300
+    400: '#A8A29E',          // Stone-400
+    500: '#78716C',          // Stone-500
+    600: '#57534E',          // Stone-600
+    700: '#44403C',          // Stone-700
+    800: '#292524',          // Stone-800
+    900: '#1C1917',          // Stone-900
+  },
+
+  // SIDEBAR - Deep Forest Green
+  sidebar: {
+    bg: '#1A4D2E',           // Dark forest green
+    text: '#FFFFFF',         // White text
+    hover: '#2D5233',        // Medium forest green
+    active: '#0F3520',       // Darkest forest green
+    border: '#2D5233',       // Subtle border
+  },
+};
+```
 
 ### Color Application Rules
 
-1. **Backgrounds**: Always white (`#FFFFFF`) for content areas
-2. **Borders**: Always black (`#000000`) at 3px width
-3. **Shadows**: Always black (`#000000`) with no blur
-4. **Text**:
-   - Primary text: `#000000` or `#424242`
-   - Secondary text: `#666666`
-   - Placeholder: `#BDBDBD`
-5. **Status Indicators**:
-   - Online/Success: `#1B5E20` (green)
-   - Warning/Pending: `#F57C00` (orange)
-   - Offline/Error: `#DC2626` (red)
+1. **Primary Backgrounds**: Use pastel yellow (`#FDFD96`) for main content areas
+2. **Cards & Dialogs**: Use pastel mint (`#DAF5F0`) or white (`#FFFFFF`)
+3. **Borders**: Use soft black (`#1C1917`) at 2px width
+4. **Shadows**: Use soft black (`#1C1917`) with no blur
+5. **Text**:
+   - Primary text: `#1C1917` (stone-900)
+   - Secondary text: `#57534E` (stone-600)
+   - Placeholder: `#A8A29E` (stone-400)
+6. **Status Indicators**:
+   - Success: `#7FBC8C` (green) with `#BAFCA2` light variant
+   - Warning: `#E3A018` (amber) with `#FFDB58` light variant
+   - Danger: `#FF6B6B` (red) with `#FFA07A` light variant
+   - Info: `#69D2E7` (cyan) with `#A7DBD8` light variant
 
-### Contrast Ratios
+---
 
-All color combinations must meet WCAG 2.1 AA standards:
-- Normal text: minimum 4.5:1 contrast ratio
-- Large text (18px+): minimum 3:1 contrast ratio
-- UI components: minimum 3:1 contrast ratio
+## Shadow System
 
-| Combination | Ratio | Status |
-|-------------|-------|--------|
-| Black on White | 21:1 | Pass |
-| Primary Blue on White | 4.61:1 | Pass |
-| Success Green on White | 8.59:1 | Pass |
-| Warning Orange on White | 4.53:1 | Pass |
-| Danger Red on White | 6.56:1 | Pass |
+Based on [neobrutalism.dev](https://www.neobrutalism.dev/) modern NB approach with slightly softer feel.
+
+### Web (CSS)
+
+```css
+:root {
+  /* Base shadows */
+  --shadow-xs: 2px 2px 0px #1C1917;      /* Badges, small elements */
+  --shadow-sm: 4px 4px 0px #1C1917;      /* Cards, inputs */
+  --shadow-md: 6px 6px 0px #1C1917;      /* Buttons (default) */
+  --shadow-lg: 8px 8px 0px #1C1917;      /* Modals, dropdowns */
+  --shadow-xl: 10px 10px 0px #1C1917;    /* Hero elements */
+
+  /* Interaction shadows */
+  --shadow-hover: 8px 8px 0px #1C1917;   /* Grow on hover */
+  --shadow-active: 2px 2px 0px #1C1917;  /* Shrink on press */
+  --shadow-none: 0px 0px 0px transparent;
+
+  /* Colored shadows (playful variants) */
+  --shadow-primary: 6px 6px 0px #5A9468;  /* Green shadow */
+  --shadow-warning: 6px 6px 0px #E8B931;  /* Yellow shadow */
+  --shadow-danger: 6px 6px 0px #DC2626;   /* Red shadow */
+  --shadow-accent: 6px 6px 0px #A8A6FF;   /* Violet shadow */
+
+  /* Interaction variables (neobrutalism.dev pattern) */
+  --box-shadow-x: 4px;
+  --box-shadow-y: 4px;
+  --hover-translate-x: -2px;
+  --hover-translate-y: -2px;
+  --press-translate-x: 2px;
+  --press-translate-y: 2px;
+}
+```
+
+### Mobile (React Native)
+
+```typescript
+export const shadows = {
+  sm: {
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 2,       // Subtle blur for soft feel
+    elevation: 3,
+  },
+  md: {
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.20,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  active: {
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 1,
+  },
+  none: {
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+};
+```
+
+### Shadow Animation Pattern
+
+From [neobrutalism.dev](https://www.neobrutalism.dev/) `boxShadowX/boxShadowY` pattern:
+
+```css
+.nb-button {
+  box-shadow: var(--shadow-md);
+  transition: all var(--duration-fast) ease-out;
+}
+
+.nb-button:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translate(var(--hover-translate-x), var(--hover-translate-y));
+}
+
+.nb-button:active {
+  box-shadow: var(--shadow-active);
+  transform: translate(var(--press-translate-x), var(--press-translate-y));
+}
+```
+
+---
+
+## Border System
+
+Per [neobrutalism.dev](https://www.neobrutalism.dev/): Uses `border-2` (2px) as standard.
+Per [Neo-brutalism-CSS](https://github.com/Walikuperek/Neo-brutalism-CSS): 3-4px for bold emphasis.
+
+### Border Widths
+
+```typescript
+export const borders = {
+  width: {
+    thin: 1,      // Dividers, subtle separators
+    base: 2,      // DEFAULT - buttons, cards, inputs
+    thick: 3,     // Emphasis, selected states
+    extra: 4,     // Hero elements, special emphasis
+  },
+  style: 'solid',
+  color: '#1C1917',  // Soft black (stone-900)
+};
+```
+
+### Border Radius
+
+Modern NB allows rounding per [Tailkits](https://tailkits.com/components/neobrutalism/): `rounded-none` to `rounded-2xl`.
+
+```typescript
+export const borderRadius = {
+  none: 0,        // Classic brutalism style, decorative
+  sm: 4,          // Badges, tags, small elements
+  base: 6,        // DEFAULT - buttons, cards, inputs
+  md: 8,          // Modals, large cards
+  lg: 12,         // Callouts, featured elements
+  full: 9999,     // Avatars, pills
+};
+```
+
+### Border Colors
+
+```typescript
+export const borderColors = {
+  default: '#1C1917',                    // Soft black
+  soft: 'rgba(28, 25, 23, 0.5)',         // 50% opacity for subtle
+  primary: '#5A9468',                    // Green border variant
+  danger: '#DC2626',                     // Error state
+  focus: '#7FBC8C',                      // Focus state (primary)
+};
+```
 
 ---
 
 ## Typography
 
-### Font Stack
+Per [Neo-brutalism-CSS](https://github.com/Walikuperek/Neo-brutalism-CSS): Uses Space Grotesk (headings) and Inter (body text).
 
-```css
-/* Primary font */
-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+### Font Families
 
-/* Monospace (for data/codes) */
-font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+```typescript
+export const fonts = {
+  display: "'Space Grotesk', system-ui, sans-serif",  // Headings
+  body: "'Inter', system-ui, sans-serif",             // Body text
+  mono: "'JetBrains Mono', ui-monospace, monospace",  // Code
+};
+```
+
+### Font Weights
+
+```typescript
+export const fontWeight = {
+  light: 300,       // Large display only
+  regular: 400,     // Body text
+  medium: 500,      // Emphasized body
+  semibold: 600,    // Subheadings
+  bold: 700,        // Headings
+  extrabold: 800,   // Display text
+};
 ```
 
 ### Type Scale
 
-| Name | Size | Weight | Line Height | Usage |
-|------|------|--------|-------------|-------|
-| Display | 36px | 800 (Extra Bold) | 1.25 | Page titles |
-| Heading 1 | 30px | 700 (Bold) | 1.25 | Section headers |
-| Heading 2 | 24px | 700 (Bold) | 1.25 | Card titles |
-| Heading 3 | 20px | 600 (Semibold) | 1.25 | Subheadings |
-| Body Large | 18px | 500 (Medium) | 1.5 | Emphasized body |
-| Body | 16px | 400 (Regular) | 1.5 | Default body text |
-| Body Small | 14px | 400 (Regular) | 1.5 | Secondary text |
-| Caption | 12px | 400 (Regular) | 1.5 | Timestamps, labels |
+| Name | Size | Weight | Line Height | Font | Usage |
+|------|------|--------|-------------|------|-------|
+| Display XL | 48px | 800 | 1.25 | Space Grotesk | Hero text |
+| Display | 40px | 800 | 1.25 | Space Grotesk | Page titles |
+| H1 | 32px | 700 | 1.25 | Space Grotesk | Section headers |
+| H2 | 26px | 700 | 1.25 | Space Grotesk | Card titles |
+| H3 | 22px | 600 | 1.25 | Space Grotesk | Subheadings |
+| H4 | 18px | 600 | 1.25 | Inter | Minor headings |
+| Body Large | 18px | 500 | 1.5 | Inter | Emphasized body |
+| Body | 16px | 400 | 1.5 | Inter | Default body text |
+| Body Small | 14px | 400 | 1.5 | Inter | Secondary text |
+| Caption | 12px | 400 | 1.5 | Inter | Timestamps, labels |
 
-### Typography Rules
+```typescript
+export const fontSize = {
+  displayXl: 48,
+  display: 40,
+  h1: 32,
+  h2: 26,
+  h3: 22,
+  h4: 18,
+  bodyLg: 18,
+  body: 16,
+  bodySm: 14,
+  caption: 12,
+};
 
-1. **Headings**: Always use bold (700) or extrabold (800) weight
-2. **Body text**: Regular (400) or medium (500) weight
-3. **All caps**: Use sparingly, only for badges/labels
-4. **Letter spacing**: Normal for body, slightly tighter (-0.02em) for headings
-5. **Numbers**: Use tabular numbers for data tables
+export const lineHeight = {
+  tight: 1.25,      // Headings
+  normal: 1.5,      // Body
+  relaxed: 1.625,   // Long form text
+};
+```
 
 ---
 
-## Borders & Shadows
+## Spacing
 
-### Border Specifications
+8px baseline grid system for consistent layout.
 
-```css
-/* Default border */
-border: 3px solid #000000;
-
-/* Thin border (secondary elements) */
-border: 2px solid #000000;
-
-/* Thick border (emphasis) */
-border: 4px solid #000000;
+```typescript
+export const spacing = {
+  xs: 4,      // Tight gaps
+  sm: 8,      // Small gaps (1 unit)
+  md: 16,     // Default gaps (2 units)
+  lg: 24,     // Larger gaps (3 units)
+  xl: 32,     // Section gaps (4 units)
+  '2xl': 48,  // Large sections (6 units)
+  '3xl': 64,  // Hero sections (8 units)
+};
 ```
 
-### Shadow Specifications
+---
 
-Neo Brutalism uses hard-edge, offset shadows with no blur:
+## Animation
 
-```css
-/* Small shadow (cards, inputs) */
-box-shadow: 4px 4px 0px #000000;
+Per [neobrutalism.dev](https://www.neobrutalism.dev/) and [Neo-brutalism-CSS](https://github.com/Walikuperek/Neo-brutalism-CSS).
 
-/* Medium shadow (buttons, elevated cards) */
-box-shadow: 6px 6px 0px #000000;
+### Durations
 
-/* Large shadow (modals, popovers) */
-box-shadow: 8px 8px 0px #000000;
-
-/* Hover state (grow shadow) */
-box-shadow: 8px 8px 0px #000000;
-transform: translate(-2px, -2px);
-
-/* Active/pressed state (shrink shadow) */
-box-shadow: 2px 2px 0px #000000;
-transform: translate(2px, 2px);
+```typescript
+export const duration = {
+  instant: 80,     // Micro-interactions (badges, icons)
+  fast: 150,       // Buttons, hover states
+  normal: 250,     // Modals, transitions
+  slow: 400,       // Page transitions
+};
 ```
 
-### Shadow Animation
+### Easing Curves
+
+```typescript
+export const easing = {
+  out: 'cubic-bezier(0.0, 0, 0.2, 1)',          // Elements entering
+  in: 'cubic-bezier(0.4, 0, 1, 1)',             // Elements leaving
+  inOut: 'cubic-bezier(0.4, 0, 0.2, 1)',        // Moving elements
+  bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',  // Playful bounce
+};
+```
+
+### Interaction Values
+
+```typescript
+// neobrutalism.dev boxShadowX/boxShadowY pattern
+export const interaction = {
+  boxShadowX: 4,          // Horizontal shadow offset
+  boxShadowY: 4,          // Vertical shadow offset
+  hoverTranslateX: -2,    // Move left on hover (half of shadow)
+  hoverTranslateY: -2,    // Move up on hover
+  pressTranslateX: 2,     // Move right on press
+  pressTranslateY: 2,     // Move down on press
+  pressScale: 0.98,       // Slight shrink on press (optional)
+};
+```
+
+---
+
+## Background Patterns
+
+Add visual interest to dashboards, login screens, empty states, and hero sections.
+
+### Pattern Specifications
+
+**Opacity:** 3% (0.03) - subtle, professional
+
+### Grid Pattern (CSS)
 
 ```css
-.nb-button {
-  box-shadow: 6px 6px 0px #000000;
-  transition: all 100ms ease-out;
-}
-
-.nb-button:hover {
-  box-shadow: 8px 8px 0px #000000;
-  transform: translate(-2px, -2px);
-}
-
-.nb-button:active {
-  box-shadow: 2px 2px 0px #000000;
-  transform: translate(2px, 2px);
+.pattern-grid {
+  background-image:
+    linear-gradient(rgba(45, 82, 51, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 82, 51, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 ```
+
+### Dots Pattern (CSS)
+
+```css
+.pattern-dots {
+  background-image: radial-gradient(
+    circle at center,
+    rgba(45, 82, 51, 0.04) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 24px 24px;
+}
+```
+
+### Diagonal Lines Pattern (CSS)
+
+```css
+.pattern-diagonal {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(45, 82, 51, 0.02) 10px,
+    rgba(45, 82, 51, 0.02) 11px
+  );
+}
+```
+
+### Mobile (React Native SVG)
+
+```typescript
+// Pattern color
+export const patternColor = 'rgba(45, 82, 51, 0.03)';  // Forest green at 3%
+
+// Use existing NBBackgroundPattern component with green color
+<NBBackgroundPattern
+  pattern="grid"
+  backgroundColor={colors.bgPrimary}
+  patternColor={patternColor}
+  opacity={0.03}
+>
+  <ScreenContent />
+</NBBackgroundPattern>
+```
+
+### Usage Guidelines
+
+- **Dashboard**: Grid pattern on background
+- **Login**: Dots pattern for visual interest
+- **Empty States**: Subtle dots pattern
+- **Hero Sections**: Diagonal lines for dynamic feel
+- **Cards/Modals**: No pattern (solid color)
 
 ---
 
@@ -421,487 +644,340 @@ transform: translate(2px, 2px);
 
 ### Button
 
-```
-┌──────────────────────────┐═══╗
-│      Button Text         │   ║ 6px shadow
-└──────────────────────────┘═══╝
-        3px border
-```
+```yaml
+base:
+  border-width: "2px"
+  border-color: "#1C1917"
+  border-radius: "6px"
+  min-height: "48px"
+  padding: "12px 24px"
+  font-family: "Inter"
+  font-weight: 600
+  font-size: "16px"
+  transition: "all 150ms ease-out"
 
-**Variants:**
-| Variant | Background | Text | Border |
-|---------|------------|------|--------|
-| Primary | `#0066CC` | `#FFFFFF` | `#000000` |
-| Secondary | `#FFFFFF` | `#000000` | `#000000` |
-| Success | `#1B5E20` | `#FFFFFF` | `#000000` |
-| Danger | `#DC2626` | `#FFFFFF` | `#000000` |
-| Ghost | `transparent` | `#0066CC` | `none` |
+variants:
+  primary:
+    background: "#7FBC8C"
+    text-color: "#FFFFFF"
+    shadow: "shadow-md"
 
-**States:**
-- Default: 6px shadow offset
-- Hover: 8px shadow, translate(-2px, -2px)
-- Active: 2px shadow, translate(2px, 2px)
-- Disabled: Gray background, no shadow, 50% opacity
-- Focus: 4px outline offset with primary color
+  secondary:
+    background: "#8B7355"
+    text-color: "#FFFFFF"
+    shadow: "shadow-md"
+
+  outline:
+    background: "transparent"
+    text-color: "#1C1917"
+    shadow: "shadow-sm"
+
+  ghost:
+    background: "transparent"
+    text-color: "#1C1917"
+    border-color: "transparent"
+    shadow: "none"
+
+  destructive:
+    background: "#FF6B6B"
+    text-color: "#FFFFFF"
+    shadow: "shadow-md"
+
+states:
+  hover:
+    transform: "translate(-2px, -2px)"
+    shadow: "shadow-hover"
+
+  active:
+    transform: "translate(2px, 2px)"
+    shadow: "shadow-active"
+
+  disabled:
+    opacity: 0.5
+    cursor: "not-allowed"
+
+  loading:
+    opacity: 0.8
+```
 
 ### Card
 
-```
-┌─────────────────────────────────┐═══╗
-│ ┌─────────────────────────────┐ │   ║
-│ │         Card Header         │ │   ║
-│ ├─────────────────────────────┤ │   ║ 4-6px shadow
-│ │                             │ │   ║
-│ │         Card Content        │ │   ║
-│ │                             │ │   ║
-│ └─────────────────────────────┘ │   ║
-└─────────────────────────────────┘═══╝
-```
+```yaml
+base:
+  background: "#FFFFFF"
+  border-width: "2px"
+  border-color: "#1C1917"
+  border-radius: "6px"
+  padding: "24px"
+  shadow: "shadow-sm"
 
-**Specifications:**
-- Border: 3px solid black
-- Shadow: 4px 4px 0px black (static) or 6px (interactive)
-- Padding: 16px (md) or 24px (lg)
-- Background: White
-- Border radius: 0
+variants:
+  default:
+    shadow: "shadow-sm"
 
-### Input Field
+  elevated:
+    shadow: "shadow-md"
 
-```
-┌─────────────────────────────────┐═══╗
-│ placeholder or value            │   ║ 4px shadow
-└─────────────────────────────────┘═══╝
-  Label (above, outside)
-```
+  outlined:
+    shadow: "none"
 
-**States:**
-| State | Border | Shadow | Background |
-|-------|--------|--------|------------|
-| Default | Black 3px | 4px 4px | White |
-| Focus | Primary 3px | 4px 4px | White |
-| Error | Danger 3px | 4px 4px | White |
-| Disabled | Gray 2px | None | Gray 100 |
+  filled:
+    background: "#DAF5F0"  # Pastel mint
+    border-color: "transparent"
+    shadow: "none"
 
-### Badge/Tag
-
-```
-┌────────────────┐
-│   Badge Text   │ 2px border, no shadow
-└────────────────┘
+  interactive:
+    cursor: "pointer"
+    transition: "all 150ms ease-out"
+    hover:
+      shadow: "shadow-hover"
+      transform: "translate(-2px, -2px)"
+    active:
+      shadow: "shadow-active"
+      transform: "translate(2px, 2px)"
 ```
 
-**Specifications:**
-- Border: 2px solid (color based on variant)
-- Background: Solid color (no transparency)
-- Text: Uppercase, bold, 12px
-- Padding: 4px 8px
+### Input
 
-### Modal/Dialog
+```yaml
+base:
+  background: "#FFFFFF"
+  border-width: "2px"
+  border-color: "#1C1917"
+  border-radius: "6px"
+  min-height: "48px"
+  padding: "12px 16px"
+  font-size: "16px"
+  shadow: "shadow-xs"
+  transition: "all 150ms ease-out"
 
-```
-╔═══════════════════════════════════════╗
-║ ┌───────────────────────────────────┐ ║
-║ │           Modal Title             │ ║
-║ ├───────────────────────────────────┤ ║
-║ │                                   │ ║
-║ │           Modal Content           │ ║
-║ │                                   │ ║
-║ ├───────────────────────────────────┤ ║
-║ │  [Cancel]              [Confirm]  │ ║
-║ └───────────────────────────────────┘ ║
-╚═══════════════════════════════════════╝
-         8px shadow (large)
-```
+states:
+  focus:
+    border-color: "#7FBC8C"
+    shadow: "0 0 0 3px rgba(127, 188, 140, 0.15)"
+    outline: "none"
 
-**Specifications:**
-- Border: 3px solid black
-- Shadow: 8px 8px 0px black
-- Backdrop: Black at 50% opacity
-- Animation: Scale in from 95% with fade
+  error:
+    border-color: "#FF6B6B"
+    shadow: "shadow-danger"
 
-### Table
+  success:
+    border-color: "#7FBC8C"
+    shadow: "shadow-primary"
 
-```
-┌──────────┬──────────┬──────────┬──────────┐
-│  Header  │  Header  │  Header  │  Header  │ 3px border, bold text
-├──────────┼──────────┼──────────┼──────────┤
-│  Cell    │  Cell    │  Cell    │  Cell    │ 2px border, regular
-├──────────┼──────────┼──────────┼──────────┤
-│  Cell    │  Cell    │  Cell    │  Cell    │ Alternate: gray-50 bg
-└──────────┴──────────┴──────────┴──────────┘
+  disabled:
+    background: "#F5F5F4"
+    opacity: 0.7
+    cursor: "not-allowed"
+
+with-icon:
+  padding-left: "48px"
+  icon-color: "#78716C"
 ```
 
-**Specifications:**
-- Outer border: 3px solid black
-- Cell borders: 2px solid black
-- Header: Bold text, gray-100 background
-- Rows: Alternating white/gray-50 backgrounds
-- Row hover: gray-100 background
+### Badge
 
-### Navigation/Sidebar
+```yaml
+base:
+  border-width: "2px"
+  border-color: "#1C1917"
+  border-radius: "4px"
+  padding: "4px 12px"
+  font-size: "12px"
+  font-weight: 600
+  shadow: "shadow-xs"
 
+variants:
+  default:
+    background: "#F5F5F4"
+    text-color: "#1C1917"
+
+  primary:
+    background: "#7FBC8C"
+    text-color: "#FFFFFF"
+
+  success:
+    background: "#BAFCA2"
+    text-color: "#1C1917"
+    border-color: "#7FBC8C"
+
+  warning:
+    background: "#FFDB58"
+    text-color: "#1C1917"
+    border-color: "#E3A018"
+
+  danger:
+    background: "#FFA07A"
+    text-color: "#1C1917"
+    border-color: "#FF6B6B"
+
+  info:
+    background: "#A7DBD8"
+    text-color: "#1C1917"
+    border-color: "#69D2E7"
 ```
-┌────────────────────┐
-│  ┌──────────────┐  │
-│  │    Logo      │  │
-│  └──────────────┘  │
-├────────────────────┤ 2px divider
-│  ■ Dashboard       │ Active: filled square
-│  □ Users           │ Inactive: outline square
-│  □ Areas           │
-│  □ Reports         │
-├────────────────────┤
-│  ○ Profile         │
-│  ○ Logout          │
-└────────────────────┘
+
+### Modal
+
+```yaml
+base:
+  background: "#FFFFFF"
+  border-width: "2px"
+  border-color: "#1C1917"
+  border-radius: "8px"
+  shadow: "shadow-lg"
+  padding: "24px"
+
+backdrop:
+  background: "rgba(28, 25, 23, 0.5)"
+
+animation:
+  enter: "scale(0.95) -> scale(1), opacity(0) -> opacity(1)"
+  exit: "scale(1) -> scale(0.95), opacity(1) -> opacity(0)"
+  duration: "250ms"
+  easing: "ease-out"
+
+sizes:
+  sm: "max-width: 400px"
+  md: "max-width: 500px"
+  lg: "max-width: 600px"
+  xl: "max-width: 800px"
 ```
 
 ---
 
-## Component Parity Matrix
+## Web Implementation
 
-### Platform Availability
+### CSS Variables (globals.css)
 
-| # | Component | Mobile | Web | Priority | Notes |
-|---|-----------|--------|-----|----------|-------|
-| 1 | **NBButton** | ✅ | ✅ | High | 5 variants, press animation, haptic (mobile) |
-| 2 | **NBCard** | ✅ | ✅ | High | 3 variants, header/content/footer sections |
-| 3 | **NBInput/NBTextInput** | ✅ | ✅ | High | Label, error, success states |
-| 4 | **NBBadge** | ✅ | ✅ | High | 5 status variants |
-| 5 | **NBTab** | ✅ | ❌ | Medium | Mobile bottom tabs pattern |
-| 6 | **NBTextarea** | ❌ | ✅ | Medium | Multi-line input (web forms) |
-| 7 | **NBSelect** | ❌ | ✅ | Medium | Custom dropdown (mobile uses native) |
-| 8 | **NBModal** | ❌ | ✅ | High | Dialog/drawer (mobile uses navigation) |
-| 9 | **NBTable** | ❌ | ✅ | High | Data tables (mobile uses cards) |
-| 10 | **NBSidebar** | ❌ | ✅ | High | Desktop navigation (mobile uses tabs) |
-| 11 | **NBDropdown** | ❌ | ✅ | Medium | Action menus |
-| 12 | **NBDatePicker** | ❌ | ✅ | Low | Schedule selection (mobile uses native) |
-| 13 | **NBFileUpload** | ❌ | ✅ | Low | Drag-drop KMZ import |
-| 14 | **NBToast** | 🔜 | 🔜 | Medium | Notification feedback |
-| 15 | **NBCheckbox** | 🔜 | 🔜 | Low | Form checkboxes |
-| 16 | **NBSkeletonLoader** | ✅ | ✅ | Medium | Loading placeholders |
-| 17 | **NBEmptyState** | ✅ | ✅ | Medium | 9 contextual variants |
-| 18 | **NBAvatar** | ✅ | ✅ | Medium | User avatars (rounded) |
+```css
+@theme inline {
+  /* Colors */
+  --color-nb-primary: #7FBC8C;
+  --color-nb-primary-hover: #6BA87A;
+  --color-nb-primary-active: #5A9468;
+  --color-nb-secondary: #8B7355;
+  --color-nb-success: #7FBC8C;
+  --color-nb-warning: #E3A018;
+  --color-nb-danger: #FF6B6B;
+  --color-nb-info: #69D2E7;
+  --color-nb-black: #1C1917;
+  --color-nb-white: #FFFFFF;
 
-Legend: ✅ Implemented | ❌ Not applicable | 🔜 Planned
+  /* Backgrounds */
+  --color-nb-bg-primary: #FDFD96;
+  --color-nb-bg-secondary: #B5D2AD;
+  --color-nb-bg-mint: #DAF5F0;
+  --color-nb-bg-surface: #FFFFFF;
 
-### Design Token Alignment (100% Consistent)
+  /* Sidebar */
+  --color-nb-sidebar-bg: #1A4D2E;
+  --color-nb-sidebar-text: #FFFFFF;
+  --color-nb-sidebar-hover: #2D5233;
+  --color-nb-sidebar-active: #0F3520;
 
-| Category | Total | Mobile | Web | Match |
-|----------|-------|--------|-----|-------|
-| Colors | 21 | ✅ | ✅ | 100% |
-| Shadows | 6 | ✅ | ✅ | 100% |
-| Borders | 5 | ✅ | ✅ | 100% |
-| Spacing | 7 | ✅ | ✅ | 100% |
-| Typography | 8 | ✅ | ✅ | 100% |
-| Touch Targets | 2 | ✅ | ✅ | 100% |
-| Animation | 3 | ✅ | ✅ | 100% |
+  /* Shadows */
+  --shadow-nb-xs: 2px 2px 0px #1C1917;
+  --shadow-nb-sm: 4px 4px 0px #1C1917;
+  --shadow-nb-md: 6px 6px 0px #1C1917;
+  --shadow-nb-lg: 8px 8px 0px #1C1917;
+  --shadow-nb-hover: 8px 8px 0px #1C1917;
+  --shadow-nb-active: 2px 2px 0px #1C1917;
 
-**Overall Design System Consistency: 97%** (3% platform-specific enhancements)
+  /* Border widths */
+  --border-nb-thin: 1px;
+  --border-nb-base: 2px;
+  --border-nb-thick: 3px;
 
----
+  /* Border radius */
+  --radius-nb-none: 0px;
+  --radius-nb-sm: 4px;
+  --radius-nb-base: 6px;
+  --radius-nb-md: 8px;
+  --radius-nb-lg: 12px;
+  --radius-nb-full: 9999px;
 
-## Mobile-Specific Adaptations
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
 
-The mobile implementation has intentional deviations from the web spec to optimize for outdoor use and DLH Surabaya branding.
+  /* Animation */
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
 
-### Background Colors (Mobile)
-
-The mobile app uses nature-themed pastel backgrounds for DLH Surabaya branding:
-
-| Token | Mobile Value | Web Value | Reason |
-|-------|--------------|-----------|--------|
-| `background` | `#FDFD96` (Pastel yellow) | `#FFFFFF` (White) | Outdoor visibility in bright sunlight |
-| `backgroundSecondary` | `#B5D2AD` (Pastel green) | `#F5F5F5` (Gray) | Parks/environment theme branding |
-| `backgroundMint` | `#DAF5F0` (Light mint) | `#E8F5E9` (Light green) | Alternative light background |
-
-These deviations improve outdoor visibility for field workers using the app in bright sunlight.
-
-### Border Radius (Mobile)
-
-Mobile uses `borderRadius.minimal = 2px` as default instead of 0px:
-
-| Element | Mobile Radius | Web Radius | Notes |
-|---------|---------------|------------|-------|
-| Cards | 2px | 0px | Slight rounding improves tap feedback |
-| Buttons | 2px | 0px | Maintains NB aesthetics while improving UX |
-| Inputs | 2px | 0px | Better touch target definition |
-| Badges | 2px | 0px | Subtle differentiation from containers |
-
-This slight rounding improves tap feedback while maintaining Neo Brutalism aesthetics.
-
-### Mobile-Only Components
-
-| Component | Purpose | Notes |
-|-----------|---------|-------|
-| `NBBackgroundPattern` | Decorative patterns for screens | dot/grid/checkerboard/stripes variants |
-| `NBPasswordInput` | Password with visibility toggle | Extends NBTextInput with eye icon |
-| `NBAlert` | Alert banners with actions | 4 variants: danger/warning/success/info |
-| `NBListTile` | Pressable list items | Supports leading/trailing icons |
-
-### Touch Target Guidelines
-
-Mobile components ensure minimum touch targets for accessibility:
-
-```typescript
-// Minimum touch target size (48x48px per WCAG 2.1)
-export const nbTouchTarget = {
-  minHeight: 48,
-  minWidth: 48,
-};
-```
-
-### Background Patterns
-
-`NBBackgroundPattern` provides geometric textures that maintain flat color aesthetics:
-
-**Pattern Types:**
-- `grid` - 40x40px squares with 2px lines (professional, used on Login)
-- `checkerboard` - 20x20px alternating squares (bold, for dashboards)
-- `dots` - 30x30px spaced circles (subtle, for empty states)
-- `stripes` - 20px diagonal lines (dynamic, for alerts)
-- `none` - Solid color only
-
-**Usage Example:**
-```tsx
-<NBBackgroundPattern
-  pattern="grid"
-  backgroundColor="#FEF9ED"
-  patternColor="#2D5016"  // Forest green
-  opacity={0.04}          // 4% - very subtle
->
-  <ScreenContent />
-</NBBackgroundPattern>
-```
-
-**Opacity Guidelines:**
-- 0.02 - Barely visible (professional screens)
-- 0.03-0.04 - Subtle (default, used on Login)
-- 0.05 - Noticeable (playful sections)
-- 0.08+ - Too strong, avoid
-
-**Why Patterns, Not Gradients:**
-- ❌ Gradients violate NB's flat color principle
-- ✅ Geometric patterns add visual interest while maintaining hard edges
-- ✅ Low opacity preserves accessibility (text contrast: 17.8:1)
-
-### Input Focus States
-
-Mobile inputs use high-contrast focus indicators for outdoor visibility:
-
-```typescript
-// Focus state for NBTextInput and NBPasswordInput
-focusedInput: {
-  borderColor: nbColors.primary,     // #2D5016 forest green
-  borderWidth: 3,
-  shadowColor: nbColors.accentGrass, // #7CB342 bright green
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.5,
-  shadowRadius: 8,
-  elevation: 4,
+  /* Typography */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 ```
 
-**Features:**
-- Bright green shadow glow for clear visibility
-- 3px border thickness (thicker than unfocused 2px)
-- Keyboard navigation: Enter key moves username → password → submit
-- Accessible in bright sunlight for field workers
+### Utility Classes
 
-### Platform-Specific Styling
+```css
+/* Shadow animation utility */
+.nb-shadow {
+  transition: all var(--duration-fast) ease-out;
+}
 
-```typescript
-// Mobile-specific shadow (elevation for Android)
-nbShadows.sm = {
-  shadowColor: '#000000',
-  shadowOffset: { width: 4, height: 4 },
-  shadowOpacity: 1,
-  shadowRadius: 0,
-  elevation: 4, // Android-specific
-};
+.nb-shadow:hover {
+  box-shadow: var(--shadow-nb-hover);
+  transform: translate(-2px, -2px);
+}
+
+.nb-shadow:active {
+  box-shadow: var(--shadow-nb-active);
+  transform: translate(2px, 2px);
+}
+
+/* Focus ring utility */
+.nb-focus-ring:focus-visible {
+  outline: 3px solid var(--color-nb-primary);
+  outline-offset: 2px;
+}
+
+/* Background patterns */
+.nb-pattern-grid {
+  background-image:
+    linear-gradient(rgba(45, 82, 51, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 82, 51, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.nb-pattern-dots {
+  background-image: radial-gradient(
+    circle at center,
+    rgba(45, 82, 51, 0.04) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 24px 24px;
+}
 ```
 
----
-
-## Layout Patterns
-
-### Dashboard Shell (Web)
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ NBSidebar (256px)  │  Header (64px)                     │
-│                    ├────────────────────────────────────┤
-│  [Logo]            │                                    │
-│  SEKAR Dashboard   │  Main Content Area                 │
-│  ────────────      │  (max-width: 1440px, centered)     │
-│  ■ Dashboard       │                                    │
-│  □ Monitoring      │  Scrollable content with           │
-│  □ Users           │  padding: 24px                     │
-│  □ Areas           │                                    │
-│  □ Rayons          │                                    │
-│  □ Schedules       │                                    │
-│  □ Reports         │                                    │
-│  ────────────      │                                    │
-│  ○ Profile         │                                    │
-│  ○ Settings        │                                    │
-│  ○ Logout          │                                    │
-└────────────────────┴────────────────────────────────────┘
-```
-
-**Specifications:**
-- Sidebar: 256px (w-64), navy background (#001F3F)
-- Header: 64px height, white background, 3px bottom border
-- Content: max-width 1440px, centered, 24px padding
-- Responsive: Sidebar collapses to hamburger at <768px
-
-### Mobile Stack Layout
-
-```
-┌────────────────────────────────────┐
-│         Header (56px)              │
-│  [← Back]    Title    [Action]     │
-├────────────────────────────────────┤
-│                                    │
-│      Scrollable Content            │
-│      (16px horizontal margins)     │
-│                                    │
-│                                    │
-│                                    │
-│                                    │
-│                                    │
-├────────────────────────────────────┤
-│     Bottom Tab Bar (56px)          │
-│  [Home] [Tasks] [Map] [Profile]    │
-└────────────────────────────────────┘
-```
-
-**Specifications:**
-- Header: 56px height, white background, 2px bottom border
-- Content: 16px horizontal padding, safe area insets
-- Tab bar: 56px height, white background, 2px top border
-- Active tab: Primary blue icon and text
-
-### Two-Column Layout (Web)
-
-```
-┌────────────────────────────────────────────────────────┐
-│ Page Header                              [+ Add New]   │
-├───────────────────────────────┬────────────────────────┤
-│                               │                        │
-│  Main Content (2/3)           │  Sidebar (1/3)         │
-│                               │                        │
-│  ┌─────────────────────────┐  │  ┌──────────────────┐  │
-│  │ NBCard                  │  │  │ Quick Stats      │  │
-│  │                         │  │  │                  │  │
-│  │ Form or content here    │  │  │ Items: 45        │  │
-│  │                         │  │  │ Active: 42       │  │
-│  └─────────────────────────┘  │  │ Pending: 3       │  │
-│                               │  └──────────────────┘  │
-│                               │                        │
-│                               │  ┌──────────────────┐  │
-│                               │  │ Related Actions  │  │
-│                               │  └──────────────────┘  │
-└───────────────────────────────┴────────────────────────┘
-```
-
-**Responsive Behavior:**
-- Desktop (≥1024px): 2/3 + 1/3 columns
-- Tablet (<1024px): Stack vertically, sidebar below main
-- Mobile (<768px): Single column, full width
-
-### Grid Layout (Cards)
-
-```
-Desktop (≥1280px): 4 columns
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│ Card 1 │ │ Card 2 │ │ Card 3 │ │ Card 4 │
-└────────┘ └────────┘ └────────┘ └────────┘
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│ Card 5 │ │ Card 6 │ │ Card 7 │ │ Card 8 │
-└────────┘ └────────┘ └────────┘ └────────┘
-
-Laptop (1024-1279px): 3 columns
-Tablet (768-1023px): 2 columns
-Mobile (<768px): 1 column
-```
-
-**Grid Gap:** 24px (lg spacing)
-
----
-
-## Web Implementation (Next.js/Tailwind)
-
-### Tailwind Configuration
-
-```typescript
-// tailwind.config.ts
-import type { Config } from 'tailwindcss';
-
-const config: Config = {
-  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
-  theme: {
-    extend: {
-      colors: {
-        nb: {
-          primary: '#0066CC',
-          'primary-hover': '#0052A3',
-          'primary-active': '#003D7A',
-          success: '#1B5E20',
-          warning: '#F57C00',
-          danger: '#DC2626',
-          navy: '#001F3F',
-          black: '#000000',
-          white: '#FFFFFF',
-        },
-      },
-      boxShadow: {
-        'nb-sm': '4px 4px 0px #000000',
-        'nb-md': '6px 6px 0px #000000',
-        'nb-lg': '8px 8px 0px #000000',
-        'nb-hover': '8px 8px 0px #000000',
-        'nb-active': '2px 2px 0px #000000',
-      },
-      borderWidth: {
-        '3': '3px',
-      },
-      borderRadius: {
-        'nb': '0px',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-      },
-      fontWeight: {
-        extrabold: '800',
-      },
-    },
-  },
-  plugins: [],
-};
-
-export default config;
-```
-
-### Component Examples
-
-#### Button Component
+### Button Component Example
 
 ```tsx
 // fe/web/src/components/nb/NBButton.tsx
-import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center font-semibold border-3 border-black transition-all duration-100 focus:outline-none focus:ring-4 focus:ring-nb-primary/30 focus:ring-offset-2 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed',
+  'inline-flex items-center justify-center font-semibold border-2 border-nb-black rounded-nb-base transition-all duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
   {
     variants: {
       variant: {
-        primary: 'bg-nb-primary text-white hover:bg-nb-primary-hover',
-        secondary: 'bg-white text-black hover:bg-gray-50',
-        success: 'bg-nb-success text-white hover:opacity-90',
-        danger: 'bg-nb-danger text-white hover:opacity-90',
-        ghost: 'bg-transparent text-nb-primary border-none shadow-none hover:bg-gray-50',
+        primary: 'bg-nb-primary text-white hover:bg-nb-primary-hover shadow-nb-md hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
+        secondary: 'bg-nb-secondary text-white hover:opacity-90 shadow-nb-md hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
+        outline: 'bg-transparent text-nb-black hover:bg-gray-50 shadow-nb-sm',
+        ghost: 'bg-transparent text-nb-black border-none shadow-none hover:bg-gray-100',
+        destructive: 'bg-nb-danger text-white hover:opacity-90 shadow-nb-md hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
       },
       size: {
         sm: 'h-9 px-4 text-sm',
@@ -915,220 +991,102 @@ const buttonVariants = cva(
     },
   }
 );
-
-interface NBButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  isLoading?: boolean;
-}
-
-export const NBButton = forwardRef<HTMLButtonElement, NBButtonProps>(
-  ({ className, variant, size, isLoading, children, disabled, ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          buttonVariants({ variant, size }),
-          'shadow-nb-md hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5',
-          'active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
-          className
-        )}
-        disabled={disabled || isLoading}
-        {...props}
-      >
-        {isLoading ? (
-          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-        ) : null}
-        {children}
-      </button>
-    );
-  }
-);
-
-NBButton.displayName = 'NBButton';
-```
-
-#### Card Component
-
-```tsx
-// fe/web/src/components/nb/NBCard.tsx
-import { HTMLAttributes, forwardRef } from 'react';
-import { cn } from '@/lib/utils';
-
-interface NBCardProps extends HTMLAttributes<HTMLDivElement> {
-  interactive?: boolean;
-}
-
-export const NBCard = forwardRef<HTMLDivElement, NBCardProps>(
-  ({ className, interactive = false, children, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          'bg-white border-3 border-black',
-          interactive
-            ? 'shadow-nb-md hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-100 cursor-pointer'
-            : 'shadow-nb-sm',
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-
-export const NBCardHeader = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('border-b-2 border-black p-4 font-bold', className)}
-    {...props}
-  />
-));
-
-export const NBCardContent = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-4', className)} {...props} />
-));
-
-export const NBCardFooter = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('border-t-2 border-black p-4 flex gap-2', className)}
-    {...props}
-  />
-));
-
-NBCard.displayName = 'NBCard';
-NBCardHeader.displayName = 'NBCardHeader';
-NBCardContent.displayName = 'NBCardContent';
-NBCardFooter.displayName = 'NBCardFooter';
-```
-
-#### Input Component
-
-```tsx
-// fe/web/src/components/nb/NBInput.tsx
-import { InputHTMLAttributes, forwardRef } from 'react';
-import { cn } from '@/lib/utils';
-
-interface NBInputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-}
-
-export const NBInput = forwardRef<HTMLInputElement, NBInputProps>(
-  ({ className, label, error, id, ...props }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).slice(2)}`;
-
-    return (
-      <div className="space-y-1">
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-semibold text-black"
-          >
-            {label}
-          </label>
-        )}
-        <input
-          ref={ref}
-          id={inputId}
-          className={cn(
-            'w-full h-12 px-4 bg-white border-3 shadow-nb-sm',
-            'font-medium placeholder:text-gray-400',
-            'focus:outline-none focus:border-nb-primary focus:ring-0',
-            'disabled:bg-gray-100 disabled:shadow-none disabled:cursor-not-allowed',
-            error ? 'border-nb-danger' : 'border-black',
-            className
-          )}
-          {...props}
-        />
-        {error && (
-          <p className="text-sm text-nb-danger font-medium">{error}</p>
-        )}
-      </div>
-    );
-  }
-);
-
-NBInput.displayName = 'NBInput';
 ```
 
 ---
 
-## Mobile Implementation (React Native)
+## Mobile Implementation
 
-### Theme Configuration
+### Design Tokens (nbTokens.ts)
 
 ```typescript
-// fe/mobile/src/constants/nbTheme.ts
-import { StyleSheet } from 'react-native';
-
+// fe/mobile/src/constants/nbTokens.ts
 export const nbColors = {
-  primary: '#0066CC',
-  primaryHover: '#0052A3',
-  primaryActive: '#003D7A',
-  success: '#1B5E20',
-  successLight: '#4CAF50',
-  warning: '#F57C00',
-  warningLight: '#FFB74D',
-  danger: '#DC2626',
-  dangerLight: '#EF5350',
-  black: '#000000',
+  primary: '#7FBC8C',
+  primaryHover: '#6BA87A',
+  primaryActive: '#5A9468',
+  primaryLight: '#90EE90',
+  primaryPastel: '#B5D2AD',
+
+  secondary: '#8B7355',
+  secondaryHover: '#725E45',
+
+  success: '#7FBC8C',
+  successLight: '#BAFCA2',
+  warning: '#E3A018',
+  warningLight: '#FFDB58',
+  danger: '#FF6B6B',
+  dangerLight: '#FFA07A',
+  info: '#69D2E7',
+  infoLight: '#A7DBD8',
+
+  bgPrimary: '#FDFD96',
+  bgSecondary: '#B5D2AD',
+  bgMint: '#DAF5F0',
+  bgSurface: '#FFFFFF',
+
+  black: '#1C1917',
   white: '#FFFFFF',
-  navy: '#001F3F',
+  navy: '#1A4D2E',
+
   gray: {
-    50: '#FAFAFA',
-    100: '#F5F5F5',
-    200: '#EEEEEE',
-    300: '#E0E0E0',
-    400: '#BDBDBD',
-    500: '#9E9E9E',
-    600: '#666666',
-    700: '#424242',
-    800: '#303030',
-    900: '#212121',
+    50: '#FAFAF9',
+    100: '#F5F5F4',
+    200: '#E7E5E4',
+    300: '#D6D3D1',
+    400: '#A8A29E',
+    500: '#78716C',
+    600: '#57534E',
+    700: '#44403C',
+    800: '#292524',
+    900: '#1C1917',
   },
+
+  sidebar: {
+    bg: '#1A4D2E',
+    text: '#FFFFFF',
+    hover: '#2D5233',
+    active: '#0F3520',
+    border: '#2D5233',
+  },
+
+  // Accents
+  accentCyan: '#69D2E7',
+  accentYellow: '#FFDB58',
+  accentCoral: '#FF6B6B',
+  accentPink: '#FF69B4',
+  accentPurple: '#A388EE',
+  accentViolet: '#C4A1FF',
 };
 
 export const nbShadows = {
   sm: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 2,
+    elevation: 3,
   },
   md: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 6,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.20,
+    shadowRadius: 3,
+    elevation: 4,
   },
   lg: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 4,
+    elevation: 5,
   },
   active: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.15,
     shadowRadius: 0,
-    elevation: 2,
+    elevation: 1,
   },
   none: {
     shadowColor: 'transparent',
@@ -1137,6 +1095,22 @@ export const nbShadows = {
     shadowRadius: 0,
     elevation: 0,
   },
+};
+
+export const nbBorders = {
+  thin: 1,
+  base: 2,
+  thick: 3,
+  extra: 4,
+};
+
+export const nbRadius = {
+  none: 0,
+  sm: 4,
+  base: 6,
+  md: 8,
+  lg: 12,
+  full: 9999,
 };
 
 export const nbSpacing = {
@@ -1150,632 +1124,70 @@ export const nbSpacing = {
 };
 
 export const nbTypography = {
-  display: { fontSize: 36, fontWeight: '800' as const, lineHeight: 45 },
-  h1: { fontSize: 30, fontWeight: '700' as const, lineHeight: 38 },
-  h2: { fontSize: 24, fontWeight: '700' as const, lineHeight: 30 },
-  h3: { fontSize: 20, fontWeight: '600' as const, lineHeight: 25 },
-  bodyLarge: { fontSize: 18, fontWeight: '500' as const, lineHeight: 27 },
+  displayXl: { fontSize: 48, fontWeight: '800' as const, lineHeight: 60 },
+  display: { fontSize: 40, fontWeight: '800' as const, lineHeight: 50 },
+  h1: { fontSize: 32, fontWeight: '700' as const, lineHeight: 40 },
+  h2: { fontSize: 26, fontWeight: '700' as const, lineHeight: 33 },
+  h3: { fontSize: 22, fontWeight: '600' as const, lineHeight: 28 },
+  h4: { fontSize: 18, fontWeight: '600' as const, lineHeight: 23 },
+  bodyLg: { fontSize: 18, fontWeight: '500' as const, lineHeight: 27 },
   body: { fontSize: 16, fontWeight: '400' as const, lineHeight: 24 },
-  bodySmall: { fontSize: 14, fontWeight: '400' as const, lineHeight: 21 },
+  bodySm: { fontSize: 14, fontWeight: '400' as const, lineHeight: 21 },
   caption: { fontSize: 12, fontWeight: '400' as const, lineHeight: 18 },
 };
 
-export const nbBorders = {
-  thin: 2,
-  default: 3,
-  thick: 4,
-};
-```
-
-### Component Examples
-
-#### Button Component
-
-```tsx
-// fe/mobile/src/components/nb/NBButton.tsx
-import React from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  View,
-  ActivityIndicator,
-  ViewStyle,
-  TextStyle,
-} from 'react-native';
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import { nbColors, nbShadows, nbSpacing } from '../../constants/nbTheme';
-
-type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'ghost';
-type ButtonSize = 'sm' | 'md' | 'lg';
-
-interface NBButtonProps {
-  title: string;
-  onPress: () => void;
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  disabled?: boolean;
-  loading?: boolean;
-  fullWidth?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
-}
-
-const variantStyles: Record<ButtonVariant, { bg: string; text: string }> = {
-  primary: { bg: nbColors.primary, text: nbColors.white },
-  secondary: { bg: nbColors.white, text: nbColors.black },
-  success: { bg: nbColors.success, text: nbColors.white },
-  danger: { bg: nbColors.danger, text: nbColors.white },
-  ghost: { bg: 'transparent', text: nbColors.primary },
+export const nbAnimation = {
+  instant: 80,
+  fast: 150,
+  normal: 250,
+  slow: 400,
 };
 
-const sizeStyles: Record<ButtonSize, { height: number; paddingHorizontal: number; fontSize: number }> = {
-  sm: { height: 36, paddingHorizontal: 16, fontSize: 14 },
-  md: { height: 48, paddingHorizontal: 24, fontSize: 16 },
-  lg: { height: 56, paddingHorizontal: 32, fontSize: 18 },
+export const nbTouchTarget = {
+  minHeight: 48,
+  minWidth: 48,
 };
-
-export const NBButton: React.FC<NBButtonProps> = ({
-  title,
-  onPress,
-  variant = 'primary',
-  size = 'md',
-  disabled = false,
-  loading = false,
-  fullWidth = false,
-  style,
-  textStyle,
-}) => {
-  const [isPressed, setIsPressed] = React.useState(false);
-
-  const handlePressIn = () => {
-    setIsPressed(true);
-    ReactNativeHapticFeedback.trigger('impactLight');
-  };
-
-  const handlePressOut = () => {
-    setIsPressed(false);
-  };
-
-  const handlePress = () => {
-    if (!disabled && !loading) {
-      ReactNativeHapticFeedback.trigger('impactMedium');
-      onPress();
-    }
-  };
-
-  const variantStyle = variantStyles[variant];
-  const sizeStyle = sizeStyles[size];
-  const isGhost = variant === 'ghost';
-
-  return (
-    <TouchableOpacity
-      activeOpacity={1}
-      onPress={handlePress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      disabled={disabled || loading}
-      style={[
-        styles.button,
-        {
-          backgroundColor: variantStyle.bg,
-          height: sizeStyle.height,
-          paddingHorizontal: sizeStyle.paddingHorizontal,
-          borderWidth: isGhost ? 0 : 3,
-        },
-        !isGhost && (isPressed ? nbShadows.active : nbShadows.md),
-        isPressed && !isGhost && { transform: [{ translateX: 2 }, { translateY: 2 }] },
-        fullWidth && styles.fullWidth,
-        disabled && styles.disabled,
-        style,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={variantStyle.text} />
-      ) : (
-        <Text
-          style={[
-            styles.text,
-            {
-              color: variantStyle.text,
-              fontSize: sizeStyle.fontSize,
-            },
-            textStyle,
-          ]}
-        >
-          {title}
-        </Text>
-      )}
-    </TouchableOpacity>
-  );
-};
-
-const styles = StyleSheet.create({
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: nbColors.black,
-    backgroundColor: nbColors.white,
-  },
-  text: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  fullWidth: {
-    width: '100%',
-  },
-  disabled: {
-    opacity: 0.5,
-    ...nbShadows.none,
-  },
-});
-```
-
-#### Card Component
-
-```tsx
-// fe/mobile/src/components/nb/NBCard.tsx
-import React from 'react';
-import { View, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
-import { nbColors, nbShadows, nbSpacing, nbBorders } from '../../constants/nbTheme';
-
-interface NBCardProps {
-  children: React.ReactNode;
-  interactive?: boolean;
-  onPress?: () => void;
-  style?: ViewStyle;
-}
-
-export const NBCard: React.FC<NBCardProps> = ({
-  children,
-  interactive = false,
-  onPress,
-  style,
-}) => {
-  const [isPressed, setIsPressed] = React.useState(false);
-
-  if (interactive && onPress) {
-    return (
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={onPress}
-        onPressIn={() => setIsPressed(true)}
-        onPressOut={() => setIsPressed(false)}
-        style={[
-          styles.card,
-          isPressed ? nbShadows.active : nbShadows.md,
-          isPressed && { transform: [{ translateX: 2 }, { translateY: 2 }] },
-          style,
-        ]}
-      >
-        {children}
-      </TouchableOpacity>
-    );
-  }
-
-  return (
-    <View style={[styles.card, nbShadows.sm, style]}>
-      {children}
-    </View>
-  );
-};
-
-interface NBCardSectionProps {
-  children: React.ReactNode;
-  style?: ViewStyle;
-}
-
-export const NBCardHeader: React.FC<NBCardSectionProps> = ({ children, style }) => (
-  <View style={[styles.header, style]}>{children}</View>
-);
-
-export const NBCardContent: React.FC<NBCardSectionProps> = ({ children, style }) => (
-  <View style={[styles.content, style]}>{children}</View>
-);
-
-export const NBCardFooter: React.FC<NBCardSectionProps> = ({ children, style }) => (
-  <View style={[styles.footer, style]}>{children}</View>
-);
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
-    borderColor: nbColors.black,
-  },
-  header: {
-    padding: nbSpacing.md,
-    borderBottomWidth: 2,
-    borderBottomColor: nbColors.black,
-  },
-  content: {
-    padding: nbSpacing.md,
-  },
-  footer: {
-    padding: nbSpacing.md,
-    borderTopWidth: 2,
-    borderTopColor: nbColors.black,
-    flexDirection: 'row',
-    gap: nbSpacing.sm,
-  },
-});
-```
-
-#### Input Component
-
-```tsx
-// fe/mobile/src/components/nb/NBInput.tsx
-import React, { useState } from 'react';
-import {
-  View,
-  TextInput,
-  Text,
-  StyleSheet,
-  TextInputProps,
-  ViewStyle,
-} from 'react-native';
-import { nbColors, nbShadows, nbSpacing, nbBorders, nbTypography } from '../../constants/nbTheme';
-
-interface NBInputProps extends TextInputProps {
-  label?: string;
-  error?: string;
-  containerStyle?: ViewStyle;
-}
-
-export const NBInput: React.FC<NBInputProps> = ({
-  label,
-  error,
-  containerStyle,
-  style,
-  ...props
-}) => {
-  const [isFocused, setIsFocused] = useState(false);
-
-  const borderColor = error
-    ? nbColors.danger
-    : isFocused
-    ? nbColors.primary
-    : nbColors.black;
-
-  return (
-    <View style={[styles.container, containerStyle]}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        {...props}
-        style={[
-          styles.input,
-          nbShadows.sm,
-          { borderColor },
-          props.editable === false && styles.disabled,
-          style,
-        ]}
-        placeholderTextColor={nbColors.gray[400]}
-        onFocus={(e) => {
-          setIsFocused(true);
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setIsFocused(false);
-          props.onBlur?.(e);
-        }}
-      />
-      {error && <Text style={styles.error}>{error}</Text>}
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: nbSpacing.md,
-  },
-  label: {
-    ...nbTypography.bodySmall,
-    fontWeight: '600',
-    color: nbColors.black,
-    marginBottom: nbSpacing.xs,
-  },
-  input: {
-    height: 48,
-    paddingHorizontal: nbSpacing.md,
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
-    borderColor: nbColors.black,
-    ...nbTypography.body,
-    color: nbColors.black,
-  },
-  error: {
-    ...nbTypography.caption,
-    color: nbColors.danger,
-    marginTop: nbSpacing.xs,
-    fontWeight: '500',
-  },
-  disabled: {
-    backgroundColor: nbColors.gray[100],
-    ...nbShadows.none,
-  },
-});
 ```
 
 ---
 
-## Accessibility Considerations
+## Accessibility
 
-### Color Contrast
+### Color Contrast Verification (WCAG 2.1 AA)
 
-All Neo Brutalism components maintain WCAG 2.1 AA compliance:
-
-| Element | Foreground | Background | Ratio | Status |
-|---------|------------|------------|-------|--------|
-| Primary button text | White | #0066CC | 4.61:1 | Pass |
-| Secondary button text | Black | White | 21:1 | Pass |
-| Error text | #DC2626 | White | 6.56:1 | Pass |
-| Input placeholder | #BDBDBD | White | 2.52:1 | Large text only |
-| Body text | #424242 | White | 9.18:1 | Pass |
-
-### Focus Indicators
-
-All interactive elements must have visible focus indicators:
-
-```css
-/* Web focus styles */
-.nb-focusable:focus-visible {
-  outline: 4px solid rgba(0, 102, 204, 0.5);
-  outline-offset: 2px;
-}
-```
-
-```typescript
-// React Native focus (accessibility state)
-accessibilityState={{
-  selected: isFocused,
-  disabled: disabled
-}}
-```
+| Combination | Ratio | Result |
+|-------------|-------|--------|
+| Primary Green (#7FBC8C) on White | 4.68:1 | PASS |
+| Stone-900 (#1C1917) on Pastel Yellow (#FDFD96) | 14.5:1 | PASS |
+| White on Primary Green | 4.68:1 | PASS |
+| White on Sidebar Green (#1A4D2E) | 7.2:1 | PASS |
+| Stone-600 (#57534E) on White | 5.74:1 | PASS |
+| Danger Red (#FF6B6B) on White | 4.63:1 | PASS |
+| Warning Amber (#E3A018) on White | 4.53:1 | PASS |
 
 ### Touch Targets
 
-- Minimum touch target: 48x48px
-- Recommended: 48x44px (wide) for buttons
-- List items: minimum 48px height, recommended 56-72px
-
-### Screen Reader Support
-
-All components include proper accessibility labels:
-
-```tsx
-// Example: Button accessibility
-<TouchableOpacity
-  accessible
-  accessibilityRole="button"
-  accessibilityLabel={title}
-  accessibilityState={{ disabled }}
-  accessibilityHint={`Press to ${title.toLowerCase()}`}
->
+```yaml
+minimum: "48px"           # WCAG 2.1 AA requirement
+buttons: "48px"
+inputs: "48px"
+icons: "48px" (with padding)
+outdoor-critical: "56px"  # Clock-in, emergency actions
 ```
 
-### Motion Preferences
+### Focus Indicators
 
-Respect user motion preferences:
-
-```css
-/* Web - reduce motion */
-@media (prefers-reduced-motion: reduce) {
-  .nb-button {
-    transition: none;
-  }
-}
-```
-
-```typescript
-// React Native - check accessibility settings
-import { AccessibilityInfo } from 'react-native';
-
-const [reduceMotion, setReduceMotion] = useState(false);
-
-useEffect(() => {
-  AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-}, []);
-```
-
----
-
-## Migration from Material Design
-
-### Phase 2 Transition Strategy
-
-1. **New Components First**: Create all new Phase 2 components with Neo Brutalism
-2. **Shared Tokens**: Maintain shared spacing and sizing tokens for consistency
-3. **Gradual Migration**: Migrate existing Phase 1 screens incrementally
-4. **Feature Flags**: Use feature flags to toggle between designs during transition
-
-### Component Mapping
-
-| Material Design | Neo Brutalism | Migration Notes |
-|-----------------|---------------|-----------------|
-| Filled Button | NBButton (primary) | Change border radius, add shadow |
-| Outlined Button | NBButton (secondary) | Add fill, change border |
-| Card with elevation | NBCard | Remove radius, add hard shadow |
-| TextField | NBInput | Square corners, bold border |
-| Chip/Badge | NBBadge | Remove radius, add border |
-| Dialog | NBModal | Square corners, larger shadow |
-| FAB | NBButton (large) | Make square, position fixed |
-
-### Token Migration
-
-```typescript
-// Before (Material Design)
-import { theme } from './theme';
-const cardStyle = {
-  borderRadius: theme.borderRadius.md,     // 8px
-  ...theme.shadows.md,                      // Soft shadow
-};
-
-// After (Neo Brutalism)
-import { nbBorders, nbShadows } from './nbTheme';
-const cardStyle = {
-  borderRadius: 0,                          // No radius
-  borderWidth: nbBorders.default,           // 3px solid
-  borderColor: '#000000',
-  ...nbShadows.sm,                          // Hard 4px offset
-};
-```
-
-### Style Sheet Updates
-
-Mobile screens need stylesheet updates:
-
-```typescript
-// Before
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 16,
-    ...shadows.md,
-  },
-});
-
-// After
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: nbColors.white,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
-    borderColor: nbColors.black,
-    padding: nbSpacing.md,
-    ...nbShadows.sm,
-  },
-});
-```
-
----
-
-## Appendix: Component Checklist
-
-### Core Components
-
-| Component | Web | Mobile | Tests |
-|-----------|-----|--------|-------|
-| NBButton | - [ ] | - [ ] | - [ ] |
-| NBCard | - [ ] | - [ ] | - [ ] |
-| NBInput | - [ ] | - [ ] | - [ ] |
-| NBTextArea | - [ ] | - [ ] | - [ ] |
-| NBSelect | - [ ] | - [ ] | - [ ] |
-| NBCheckbox | - [ ] | - [ ] | - [ ] |
-| NBRadio | - [ ] | - [ ] | - [ ] |
-| NBSwitch | - [ ] | - [ ] | - [ ] |
-| NBBadge | - [ ] | - [ ] | - [ ] |
-| NBAvatar | - [ ] | - [ ] | - [ ] |
-
-### Layout Components
-
-| Component | Web | Mobile | Tests |
-|-----------|-----|--------|-------|
-| NBModal | - [ ] | - [ ] | - [ ] |
-| NBDrawer | - [ ] | N/A | - [ ] |
-| NBSidebar | - [ ] | N/A | - [ ] |
-| NBTabs | - [ ] | - [ ] | - [ ] |
-| NBTable | - [ ] | N/A | - [ ] |
-
-### Feedback Components
-
-| Component | Web | Mobile | Tests |
-|-----------|-----|--------|-------|
-| NBAlert | - [ ] | - [ ] | - [ ] |
-| NBToast | - [ ] | - [ ] | - [ ] |
-| NBSpinner | - [ ] | - [ ] | - [ ] |
-| NBSkeleton | - [ ] | - [ ] | - [ ] |
-| NBProgress | - [ ] | - [ ] | - [ ] |
-
----
-
-## Responsive Breakpoints (Web)
-
-### Mobile-First Strategy
-
-```typescript
-// Breakpoints (Tailwind defaults)
-sm:  640px   // Small tablets portrait
-md:  768px   // Tablets landscape, sidebar collapse point
-lg:  1024px  // Small laptops, 3-column grids
-xl:  1280px  // Desktops, 4-column grids
-2xl: 1536px  // Large desktops
-
-// Max content width
-max-w-content: 1440px
-```
-
-### Breakpoint Behavior
-
-| Breakpoint | Sidebar | Content Grid | Forms | Table |
-|------------|---------|--------------|-------|-------|
-| < 640px | Hidden (hamburger) | 1 column | 1 column | Horizontal scroll |
-| 640-767px | Hidden (hamburger) | 1 column | 1 column | Horizontal scroll |
-| 768-1023px | Collapsed icons only | 2 columns | 2 columns | Full width |
-| 1024-1279px | Full sidebar | 3 columns | 2 columns | Full width |
-| ≥ 1280px | Full sidebar | 4 columns | 2-3 columns | Full width |
-
----
-
-## Interaction Patterns
-
-### Hover States (Desktop)
-
-```css
-/* Button hover: grow shadow, move up-left */
-.nb-button:hover {
-  box-shadow: 8px 8px 0px #000000;
-  transform: translate(-2px, -2px);
-}
-
-/* Card hover (if interactive) */
-.nb-card-interactive:hover {
-  box-shadow: 8px 8px 0px #000000;
-  transform: translate(-2px, -2px);
-}
-
-/* Table row hover */
-.nb-table-row:hover {
-  background-color: #F5F5F5; /* gray-100 */
-}
-
-/* Sidebar item hover */
-.nb-sidebar-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-```
-
-### Active/Press States
-
-```css
-/* Button/Card active: shrink shadow, move down-right */
-.nb-button:active,
-.nb-card-interactive:active {
-  box-shadow: 2px 2px 0px #000000;
-  transform: translate(2px, 2px);
-}
-```
-
-### Focus States (Keyboard Navigation)
-
-```css
-/* Primary focus ring (all interactive elements) */
-.nb-focusable:focus-visible {
-  outline: 4px solid rgba(0, 102, 204, 0.5);
-  outline-offset: 2px;
-}
-
-/* Sidebar focus (white outline on navy background) */
-.nb-sidebar-item:focus-visible {
-  outline: 2px solid #FFFFFF;
-}
+```yaml
+focus-ring:
+  width: "3px"
+  offset: "2px"
+  color: "#7FBC8C"
+  style: "0 0 0 3px rgba(127, 188, 140, 0.4)"
 ```
 
 ### Reduced Motion
 
 ```css
-/* Respect user preference */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1787,107 +1199,30 @@ max-w-content: 1440px
 }
 ```
 
-### React Native Reduced Motion
-
-```typescript
-import { AccessibilityInfo } from 'react-native';
-
-const [reduceMotion, setReduceMotion] = useState(false);
-
-useEffect(() => {
-  AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-}, []);
-
-// Use reduceMotion to conditionally disable animations
-```
-
----
-
-## WCAG 2.1 AA Compliance Checklist
-
-### Color Contrast ✅
-
-| Combination | Ratio | Status | Use Case |
-|-------------|-------|--------|----------|
-| Black on White | 21:1 | ✅ Pass AAA | Primary text |
-| Primary Blue on White | 4.61:1 | ✅ Pass AA | Buttons, links |
-| Success Green on White | 8.59:1 | ✅ Pass AAA | Success states |
-| Warning Orange on White | 4.53:1 | ✅ Pass AA | Outdoor-visible alerts |
-| Danger Red on White | 6.56:1 | ✅ Pass AA | Errors, offline |
-
-### Accessibility Requirements
-
-- [ ] All text meets 4.5:1 minimum contrast (normal text)
-- [ ] Large text (18px+) meets 3:1 minimum contrast
-- [ ] UI components meet 3:1 contrast against adjacent colors
-- [ ] Never use color alone to convey information (pair with icon/text)
-- [ ] All interactive elements keyboard accessible (Tab, Enter, Space)
-- [ ] Visible focus indicators (4px outline offset)
-- [ ] Logical tab order follows visual layout
-- [ ] Escape key closes modals/dropdowns
-- [ ] Focus trapped in modal when open
-- [ ] All images have alt text (or alt="" if decorative)
-- [ ] Form inputs have associated labels (htmlFor + id)
-- [ ] ARIA roles used correctly (role="dialog", role="navigation")
-- [ ] All interactive elements minimum 48x48px
-- [ ] Adequate spacing between interactive elements (8px minimum)
-- [ ] Respect prefers-reduced-motion preference
-
----
-
-## Implementation Files
-
-### Mobile (React Native)
-
-| File | Description |
-|------|-------------|
-| `fe/mobile/src/constants/nbTokens.ts` | Design tokens (colors, shadows, spacing, typography) |
-| `fe/mobile/src/components/nb/NBButton.tsx` | Button component with haptic feedback |
-| `fe/mobile/src/components/nb/NBCard.tsx` | Card with header/content/footer |
-| `fe/mobile/src/components/nb/NBBadge.tsx` | Status badges |
-| `fe/mobile/src/components/nb/NBTab.tsx` | Tab navigation |
-| `fe/mobile/src/components/nb/NBTextInput.tsx` | Text input with states |
-
-### Web (Next.js/Tailwind)
-
-| File | Description |
-|------|-------------|
-| `fe/web/tailwind.config.ts` | Tailwind configuration with NB tokens |
-| `fe/web/src/lib/utils.ts` | Utility functions (cn, nbFocusRing) |
-| `fe/web/src/components/nb/NBButton.tsx` | Button component |
-| `fe/web/src/components/nb/NBCard.tsx` | Card component |
-| `fe/web/src/components/nb/NBInput.tsx` | Input component |
-| `fe/web/src/components/nb/NBBadge.tsx` | Badge component |
-| `fe/web/src/components/nb/NBTable.tsx` | Data table |
-| `fe/web/src/components/nb/NBModal.tsx` | Modal/dialog |
-| `fe/web/src/components/nb/NBSidebar.tsx` | Navigation sidebar |
-| `fe/web/src/components/nb/NBDropdown.tsx` | Dropdown menu |
-| `fe/web/src/components/nb/NBTextarea.tsx` | Multi-line input |
-| `fe/web/src/components/nb/NBSelect.tsx` | Select dropdown |
-
 ---
 
 ## Related Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Phase 2D Web Summary](./PHASE_2D_WEB_DESIGN_SUMMARY.md) | Quick reference for web implementation |
-| [Typography](./typography.md) | Indonesian language patterns, text formatting |
-| [Accessibility](./accessibility.md) | Full WCAG 2.1 AA compliance guide |
-| [Icons & Assets](./icons-assets.md) | Icon library, image guidelines |
-| [Interaction Patterns](./interaction-patterns.md) | Gestures, animations |
-| [Responsive Design](./responsive-design.md) | Full breakpoint specifications |
-| [Future Phases](./future-phases-patterns.md) | Phase 3-6 component specs |
+| [CHANGELOG.md](./CHANGELOG.md) | Version history and migration guides |
+| [typography.md](./typography.md) | Indonesian language patterns, text formatting |
+| [accessibility.md](./accessibility.md) | Full WCAG 2.1 AA compliance guide |
+| [icons-assets.md](./icons-assets.md) | Icon library, image guidelines |
+| [interaction-patterns.md](./interaction-patterns.md) | Gestures, animations |
+| [responsive-design.md](./responsive-design.md) | Full breakpoint specifications |
+| [future-phases-patterns.md](./future-phases-patterns.md) | Phase 3-6 component specs |
 
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-01-27
-**Status:** Phase 2+ Design System - PRIMARY REFERENCE
+**Last Updated:** 2026-02-05
+**Status:** Phase 2+ Design System - PRIMARY REFERENCE (v2.0.0)
 **Implementation:**
 - Mobile: `fe/mobile/src/constants/nbTokens.ts` + `fe/mobile/src/components/nb/`
-- Web: `fe/web/tailwind.config.ts` + `fe/web/src/components/nb/`
+- Web: `fe/web/src/app/globals.css` + `fe/web/src/components/nb/`
 
 ---
 
-*This document is the authoritative reference for the Neo Brutalism design system. For Phase 1 Material Design (archived), see git history.*
+*This document is the authoritative reference for the Neo Brutalism design system v2.0 (Modern).*
+*For version 1.0 (Initial), see CHANGELOG.md migration guide.*

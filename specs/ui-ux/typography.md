@@ -1,61 +1,81 @@
 # Typography System
 
-Complete typography specifications for SEKAR applications.
+**Version:** 2.0.0 (Modern Neo Brutalism)
+
+Complete typography specifications for SEKAR applications, updated for Neo Brutalism 2.0.
 
 ## Font Strategy
 
-SEKAR uses system fonts for optimal performance, native feel, and broad language support (Indonesian locale).
+SEKAR uses **Space Grotesk** for display/headings and **Inter** for body text, based on [Neo-brutalism-CSS](https://github.com/Walikuperek/Neo-brutalism-CSS) recommendations.
 
 ### Font Families
 
-| Platform | Regular | Medium | Bold |
-|----------|---------|--------|------|
-| iOS | SF Pro Text | SF Pro Text Medium | SF Pro Text Bold |
-| Android | Roboto | Roboto Medium | Roboto Bold |
-| Web | -apple-system, BlinkMacSystemFont, Segoe UI, Roboto | Same with weight | Same with weight |
+| Usage | Font | Weight Range | Fallback |
+|-------|------|--------------|----------|
+| **Display/Headings** | Space Grotesk | 600-800 | system-ui, sans-serif |
+| **Body Text** | Inter | 400-600 | system-ui, sans-serif |
+| **Monospace** | JetBrains Mono | 400-500 | ui-monospace, monospace |
 
 ```typescript
 fontFamily: {
-  regular: 'System',
-  medium: 'System',
-  bold: 'System',
+  display: "'Space Grotesk', system-ui, sans-serif",  // Headings
+  body: "'Inter', system-ui, sans-serif",             // Body text
+  mono: "'JetBrains Mono', ui-monospace, monospace",  // Code, IDs
 }
 ```
 
-### Monospace (Optional)
+### Platform-Specific Rendering
+
+| Platform | Display | Body | Notes |
+|----------|---------|------|-------|
+| **iOS** | Space Grotesk (bundled) | Inter (bundled) | Use expo-font or custom fonts |
+| **Android** | Space Grotesk (bundled) | Inter (bundled) | Use expo-font or custom fonts |
+| **Web** | Space Grotesk (Google Fonts) | Inter (Google Fonts) | Load via next/font |
+
+### Monospace Usage
 
 For timestamps, IDs, and code-like content:
-- iOS: SF Mono
-- Android: Roboto Mono
-- Web: Consolas, Monaco, monospace
+```typescript
+fontMono: "'JetBrains Mono', ui-monospace, monospace"
+```
+
+Use for:
+- Report IDs: `#LAP-2026-001234`
+- Timestamps: `08:30 WIB`
+- Coordinates: `-7.2891, 112.7508`
+- Code snippets
 
 ---
 
 ## Type Scale
 
-Based on the implemented theme with adjusted roles for field worker readability.
+Updated for Neo Brutalism 2.0 with Space Grotesk for display text and Inter for body text.
 
-| Name | Size | Line Height | Weight | Mobile Usage |
-|------|------|-------------|--------|--------------|
-| `xs` | 12px | 16px (1.33) | Regular | Timestamps, badge labels |
-| `sm` | 14px | 20px (1.43) | Regular | Helper text, captions |
-| `base` | 16px | 24px (1.5) | Regular | Body text (default) |
-| `lg` | 18px | 28px (1.55) | Medium | Emphasized body, large labels |
-| `xl` | 20px | 28px (1.4) | Semi-Bold | Subheadings, card titles |
-| `2xl` | 24px | 32px (1.33) | Bold | Section headers |
-| `3xl` | 30px | 38px (1.27) | Bold | Screen titles |
-| `4xl` | 36px | 44px (1.22) | Bold | Hero text, dashboard metrics |
+| Name | Size | Line Height | Weight | Font | Usage |
+|------|------|-------------|--------|------|-------|
+| `display-xl` | 48px | 1.25 (60px) | 800 | Space Grotesk | Hero text |
+| `display` | 40px | 1.25 (50px) | 800 | Space Grotesk | Page titles |
+| `h1` | 32px | 1.25 (40px) | 700 | Space Grotesk | Section headers |
+| `h2` | 26px | 1.25 (33px) | 700 | Space Grotesk | Card titles |
+| `h3` | 22px | 1.25 (28px) | 600 | Space Grotesk | Subheadings |
+| `h4` | 18px | 1.25 (23px) | 600 | Inter | Minor headings |
+| `body-lg` | 18px | 1.5 (27px) | 500 | Inter | Emphasized body |
+| `body` | 16px | 1.5 (24px) | 400 | Inter | Default body text |
+| `body-sm` | 14px | 1.5 (21px) | 400 | Inter | Secondary text |
+| `caption` | 12px | 1.5 (18px) | 400 | Inter | Timestamps, labels |
 
 ```typescript
 fontSize: {
-  xs: 12,
-  sm: 14,
-  base: 16,
-  lg: 18,
-  xl: 20,
-  '2xl': 24,
-  '3xl': 30,
-  '4xl': 36,
+  displayXl: 48,  // Hero text (Space Grotesk 800)
+  display: 40,    // Page titles (Space Grotesk 800)
+  h1: 32,         // Section headers (Space Grotesk 700)
+  h2: 26,         // Card titles (Space Grotesk 700)
+  h3: 22,         // Subheadings (Space Grotesk 600)
+  h4: 18,         // Minor headings (Inter 600)
+  bodyLg: 18,     // Emphasized body (Inter 500)
+  body: 16,       // Default body (Inter 400)
+  bodySm: 14,     // Secondary text (Inter 400)
+  caption: 12,    // Timestamps, labels (Inter 400)
 }
 ```
 
@@ -63,19 +83,25 @@ fontSize: {
 
 ## Font Weights
 
+Extended weight scale for Neo Brutalism 2.0.
+
 | Weight | Value | Usage |
 |--------|-------|-------|
+| Light | 300 | Large display text only (optional) |
 | Regular | 400 | Body text, labels |
 | Medium | 500 | Emphasized body, buttons |
-| Semi-Bold | 600 | Subheadings, important labels |
-| Bold | 700 | Headings, titles |
+| Semi-Bold | 600 | Subheadings, H3, H4 |
+| Bold | 700 | Headings H1, H2 |
+| Extra Bold | 800 | Display text, hero headings |
 
 ```typescript
 fontWeight: {
-  regular: '400',
-  medium: '500',
-  semibold: '600',
-  bold: '700',
+  light: '300',      // Large display only
+  regular: '400',    // Body text
+  medium: '500',     // Emphasized body, buttons
+  semibold: '600',   // Subheadings
+  bold: '700',       // H1, H2
+  extrabold: '800',  // Display, hero text
 }
 ```
 
@@ -625,6 +651,9 @@ When adding new text content:
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-01-16
-**Status:** Active
-**Implementation:** `fe/mobile/src/constants/theme.ts`
+**Last Updated:** 2026-02-05
+**Status:** Active - Updated for Neo Brutalism 2.0
+**Implementation:**
+- Mobile: `fe/mobile/src/constants/nbTokens.ts`
+- Web: `fe/web/src/app/globals.css`
+**Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

@@ -1,5 +1,7 @@
 # UI/UX Design Specifications
 
+**Version:** 2.0.0 (Modern Neo Brutalism)
+
 Design system and visual guidelines for SEKAR mobile and web applications.
 
 ---
@@ -12,11 +14,11 @@ Design system and visual guidelines for SEKAR mobile and web applications.
 Read **[neo-brutalism.md](./neo-brutalism.md)** Sections 1-6:
 - Design philosophy and principles
 - Design tokens (colors, shadows, borders, spacing, typography)
-- Why Neo Brutalism for SEKAR
+- Sepidy's 4x6 color palette
 
 ### Step 2: Platform-Specific Implementation (10 minutes)
-- **Mobile developers:** Read [neo-brutalism.md](./neo-brutalism.md) Sections 7-8 + 11
-- **Web developers:** Read [neo-brutalism.md](./neo-brutalism.md) Sections 9-10 + 11
+- **Mobile developers:** Read [neo-brutalism.md](./neo-brutalism.md) Sections 12-13
+- **Web developers:** Read [neo-brutalism.md](./neo-brutalism.md) Sections 11-12
 
 ### Step 3: Start Coding (5 minutes)
 - Mobile tokens: `fe/mobile/src/constants/nbTokens.ts`
@@ -33,51 +35,48 @@ Use [Design Tokens Quick Reference](#design-tokens-quick-reference) below for co
 
 ### Primary Reference (Single Source of Truth)
 
-**[neo-brutalism.md](./neo-brutalism.md)** - Complete Neo Brutalism design system specification
+**[neo-brutalism.md](./neo-brutalism.md)** - Complete Neo Brutalism 2.0 design system specification
 
 **What's inside:**
-- Sections 1-6: Design foundations (tokens, colors, shadows, typography)
-- Sections 7-8: Mobile components (React Native)
-- Sections 9-10: Web components (Next.js/Tailwind CSS 4)
-- Section 11: Cross-platform consistency verification
+- Sections 1-3: Philosophy, research sources
+- Sections 4-10: Design tokens (Sepidy's palette, shadows, borders, typography, animation, patterns)
+- Sections 11-13: Component specs, web/mobile implementation
+- Section 14: Accessibility guidelines
 
 ### Supporting Documentation
 
 | Document | When to Use |
 |----------|-------------|
+| [CHANGELOG.md](./CHANGELOG.md) | Version history, migration guides 1.0 → 2.0 |
 | [accessibility.md](./accessibility.md) | WCAG 2.1 AA compliance checklist, fixing accessibility issues |
-| [typography.md](./typography.md) | Deep dive into font system, Indonesian language patterns |
+| [typography.md](./typography.md) | Deep dive into Space Grotesk + Inter, Indonesian language patterns |
 | [responsive-design.md](./responsive-design.md) | Responsive breakpoints, layout patterns |
-| [interaction-patterns.md](./interaction-patterns.md) | Animation timing, gestures, haptic feedback |
+| [interaction-patterns.md](./interaction-patterns.md) | Animation timing, gestures, haptic feedback, bounce easing |
 | [icons-assets.md](./icons-assets.md) | Icon library reference, image guidelines |
 | [future-phases-patterns.md](./future-phases-patterns.md) | Phase 3-6 component specifications |
-
-### Historical Reference
-
-| Document | Purpose |
-|----------|---------|
-| [REVIEW_SUMMARY.md](./REVIEW_SUMMARY.md) | Design review audit trail (for context/history) |
 
 ---
 
 ## 🎨 Design System
 
-**SEKAR uses the Neo Brutalism design system (Phase 2+)**
+**SEKAR uses the Neo Brutalism 2.0 design system (Phase 2+)**
 
-Neo Brutalism features bold aesthetics with excellent usability:
-- **Heavy 3px borders** - Clear boundaries, authority
-- **Hard-edge shadows** - No blur, stark offset (4px/6px/8px)
+Modern Neo Brutalism features bold aesthetics with excellent usability:
+- **2px borders** - Clean, modern (neobrutalism.dev standard)
+- **Hard-edge shadows** - Stark offset (4px/6px/8px), soft black (#1C1917)
+- **6px border radius** - Friendly, approachable feel
 - **High contrast** - Designed for outdoor field workers in bright sunlight
-- **Sharp corners** - 0 border-radius (except avatars)
-- **Bold colors** - Saturated, not muted
+- **Warm pastel backgrounds** - Inviting feel (#FDFD96 pastel yellow)
+- **Nature green primary** - Parks/green spaces identity (#7FBC8C)
 
 ### Design Principles
 
 1. **Bold & Confident** - Conveys authority appropriate for government applications
-2. **Function Over Decoration** - Every element serves a purpose
-3. **High Visibility** - Optimized for bright sunlight and varying literacy levels
-4. **Accessibility First** - WCAG 2.1 AA compliant, 4.5:1 minimum contrast
-5. **Platform Consistency** - 100% design token parity between mobile and web
+2. **Nature-Aligned** - Parks green primary creates parks/environment association
+3. **Warm & Inviting** - Pastel backgrounds feel friendly yet professional
+4. **Function Over Decoration** - Every element serves a purpose
+5. **High Visibility** - Optimized for bright sunlight and outdoor use
+6. **Platform Consistency** - 100% design token parity between mobile and web
 
 ---
 
@@ -133,40 +132,74 @@ Components:     fe/web/src/components/nb/
 
 **Copy-paste ready for implementation:**
 
-### Colors
+### Colors (Sepidy's Neo Brutalism Palette)
+
 ```typescript
-primary:   '#0066CC'  // Action blue
-success:   '#1B5E20'  // Government green
-warning:   '#F57C00'  // Alert orange (outdoor optimized)
-danger:    '#DC2626'  // Error red
-black:     '#000000'  // Borders, shadows, text
-white:     '#FFFFFF'  // Backgrounds
-navy:      '#001F3F'  // Sidebar, authority accent
+// Primary (Row 4 Green - Parks/Nature Theme)
+primary:        '#7FBC8C'    // Bold nature green
+primaryHover:   '#6BA87A'    // 15% darker
+primaryActive:  '#5A9468'    // 25% darker
+
+// Secondary (Earth Brown)
+secondary:      '#8B7355'    // Warm earth brown
+secondaryHover: '#725E45'    // Darker
+
+// Status Colors (Sepidy Palette)
+success:        '#7FBC8C'    // Same as primary
+warning:        '#E3A018'    // Bold amber (Row 4)
+danger:         '#FF6B6B'    // Bold red (Row 4)
+info:           '#69D2E7'    // Bold cyan (Row 4)
+
+// Backgrounds (Sepidy Palette - Row 1 Pastels)
+bgPrimary:      '#FDFD96'    // Pastel yellow - main background
+bgSecondary:    '#B5D2AD'    // Pastel green - alternate
+bgMint:         '#DAF5F0'    // Pastel mint - cards, dialogs
+bgSurface:      '#FFFFFF'    // Pure white - elevated cards
+
+// Sidebar (Dark Forest Green)
+sidebarBg:      '#1A4D2E'    // Dark forest green
+sidebarText:    '#FFFFFF'    // White text
+sidebarHover:   '#2D5233'    // Medium forest green
+
+// Neutrals (Warm Stone Tones)
+black:          '#1C1917'    // Stone-900 (soft black)
+white:          '#FFFFFF'
 ```
 
 ### Shadows (Hard-Edge Offset)
 ```css
 /* CSS */
-sm:     4px 4px 0px #000000   /* Cards, inputs */
-md:     6px 6px 0px #000000   /* Buttons, elevated cards */
-lg:     8px 8px 0px #000000   /* Modals, popovers */
-hover:  8px 8px 0px #000000   /* Hover state (with translate) */
-active: 2px 2px 0px #000000   /* Pressed state */
+--shadow-xs:     2px 2px 0px #1C1917   /* Badges */
+--shadow-sm:     4px 4px 0px #1C1917   /* Cards, inputs */
+--shadow-md:     6px 6px 0px #1C1917   /* Buttons */
+--shadow-lg:     8px 8px 0px #1C1917   /* Modals */
+--shadow-hover:  8px 8px 0px #1C1917   /* With translate(-2px) */
+--shadow-active: 2px 2px 0px #1C1917   /* With translate(+2px) */
 ```
 
 ```typescript
 // React Native
-sm:     { shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 }
-md:     { shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, shadowRadius: 0, elevation: 6 }
-lg:     { shadowOffset: { width: 8, height: 8 }, shadowOpacity: 1, shadowRadius: 0, elevation: 8 }
-active: { shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2 }
+sm:     { shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.18, shadowRadius: 2, elevation: 3 }
+md:     { shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.20, shadowRadius: 3, elevation: 4 }
+lg:     { shadowOffset: { width: 5, height: 5 }, shadowOpacity: 0.22, shadowRadius: 4, elevation: 5 }
+active: { shadowOffset: { width: 1, height: 1 }, shadowOpacity: 0.15, shadowRadius: 0, elevation: 1 }
 ```
 
 ### Borders
 ```
-thin:    2px solid #000000   /* Secondary elements, dividers */
-default: 3px solid #000000   /* Primary elements, cards, buttons */
-thick:   4px solid #000000   /* Emphasis, selected states */
+thin:    1px solid #1C1917   /* Dividers */
+base:    2px solid #1C1917   /* DEFAULT - buttons, cards, inputs */
+thick:   3px solid #1C1917   /* Emphasis */
+```
+
+### Border Radius
+```
+none:    0px     /* Decorative elements */
+sm:      4px     /* Badges, tags */
+base:    6px     /* DEFAULT - buttons, cards, inputs */
+md:      8px     /* Modals */
+lg:      12px    /* Callouts */
+full:    9999px  /* Avatars, pills */
 ```
 
 ### Spacing (8px Baseline Grid)
@@ -175,28 +208,56 @@ xs: 4px    sm: 8px    md: 16px    lg: 24px
 xl: 32px   2xl: 48px  3xl: 64px
 ```
 
-### Typography
+### Typography (Space Grotesk + Inter)
 ```
-Display:    36px / 800 / 1.25    /* Page titles */
-H1:         30px / 700 / 1.25    /* Section headers */
-H2:         24px / 700 / 1.25    /* Card titles */
-H3:         20px / 600 / 1.25    /* Subheadings */
-Body Large: 18px / 500 / 1.5     /* Emphasized body */
-Body:       16px / 400 / 1.5     /* Default body */
-Body Small: 14px / 400 / 1.5     /* Secondary text */
-Caption:    12px / 400 / 1.5     /* Timestamps, labels */
+Display XL: 48px / 800 / 1.25    /* Hero text (Space Grotesk) */
+Display:    40px / 800 / 1.25    /* Page titles (Space Grotesk) */
+H1:         32px / 700 / 1.25    /* Section headers (Space Grotesk) */
+H2:         26px / 700 / 1.25    /* Card titles (Space Grotesk) */
+H3:         22px / 600 / 1.25    /* Subheadings (Space Grotesk) */
+H4:         18px / 600 / 1.25    /* Minor headings (Inter) */
+Body Large: 18px / 500 / 1.5     /* Emphasized body (Inter) */
+Body:       16px / 400 / 1.5     /* Default body (Inter) */
+Body Small: 14px / 400 / 1.5     /* Secondary text (Inter) */
+Caption:    12px / 400 / 1.5     /* Timestamps (Inter) */
 ```
 
 ### Touch/Click Targets
 ```
-Minimum: 48×48px (WCAG 2.1 AA compliant)
+Minimum: 48×48px (WCAG 2.1 AA)
 ```
 
 ### Animation Durations
 ```
-fast:   100ms   /* Button press, hover states */
-normal: 200ms   /* State transitions, modals */
-slow:   300ms   /* Page transitions */
+instant: 80ms     /* Micro-feedback */
+fast:    150ms    /* Button press, hover states */
+normal:  250ms    /* State transitions, modals */
+slow:    400ms    /* Page transitions */
+```
+
+### Easing Curves
+```
+easeOut:   cubic-bezier(0.0, 0, 0.2, 1)           /* Elements entering */
+easeIn:    cubic-bezier(0.4, 0, 1, 1)             /* Elements exiting */
+easeInOut: cubic-bezier(0.4, 0, 0.2, 1)           /* Moving elements */
+bounce:    cubic-bezier(0.68, -0.55, 0.265, 1.55) /* Playful bounce */
+```
+
+### Background Patterns
+```css
+/* Grid Pattern (3% opacity) */
+background-image:
+  linear-gradient(rgba(45, 82, 51, 0.03) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(45, 82, 51, 0.03) 1px, transparent 1px);
+background-size: 32px 32px;
+
+/* Dots Pattern (3-4% opacity) */
+background-image: radial-gradient(
+  circle at center,
+  rgba(45, 82, 51, 0.04) 1.5px,
+  transparent 1.5px
+);
+background-size: 24px 24px;
 ```
 
 ---
@@ -208,20 +269,22 @@ slow:   300ms   /* Page transitions */
 | Task | Primary Reference | Supporting Docs |
 |------|-------------------|-----------------|
 | Setup new project | [neo-brutalism.md](./neo-brutalism.md) §1-6 | This README |
-| Create mobile component | [neo-brutalism.md](./neo-brutalism.md) §7-8 | [interaction-patterns.md](./interaction-patterns.md) |
-| Create web component | [neo-brutalism.md](./neo-brutalism.md) §9-10 | [responsive-design.md](./responsive-design.md) |
-| Fix accessibility issue | [accessibility.md](./accessibility.md) | [neo-brutalism.md](./neo-brutalism.md) §4 |
-| Add icons | [icons-assets.md](./icons-assets.md) | [neo-brutalism.md](./neo-brutalism.md) §4 |
-| Implement responsive layout | [responsive-design.md](./responsive-design.md) | [neo-brutalism.md](./neo-brutalism.md) §10 |
+| Create mobile component | [neo-brutalism.md](./neo-brutalism.md) §12-13 | [interaction-patterns.md](./interaction-patterns.md) |
+| Create web component | [neo-brutalism.md](./neo-brutalism.md) §11-12 | [responsive-design.md](./responsive-design.md) |
+| Fix accessibility issue | [accessibility.md](./accessibility.md) | [neo-brutalism.md](./neo-brutalism.md) §14 |
+| Add icons | [icons-assets.md](./icons-assets.md) | - |
+| Implement responsive layout | [responsive-design.md](./responsive-design.md) | - |
+| Add animations | [interaction-patterns.md](./interaction-patterns.md) | - |
+| Check migration guide | [CHANGELOG.md](./CHANGELOG.md) | - |
 
 ### During Code Review
 
 | Review Focus | Reference |
 |--------------|-----------|
-| Design token usage | [neo-brutalism.md](./neo-brutalism.md) §3 |
+| Design token usage | [neo-brutalism.md](./neo-brutalism.md) §4-10 |
 | Color contrast | [accessibility.md](./accessibility.md) |
 | Shadow implementation | [neo-brutalism.md](./neo-brutalism.md) §5 |
-| Component variants | [neo-brutalism.md](./neo-brutalism.md) §7-10 |
+| Component variants | [neo-brutalism.md](./neo-brutalism.md) §11 |
 | Responsive behavior | [responsive-design.md](./responsive-design.md) |
 | Animation timing | [interaction-patterns.md](./interaction-patterns.md) |
 
@@ -232,8 +295,8 @@ slow:   300ms   /* Page transitions */
 | Phase | Components | Status |
 |-------|-----------|--------|
 | **Phase 1 MVP** | 14 core components | ✅ Complete (Material Design - Archived) |
-| **Phase 2C Mobile** | 5 Neo Brutalism components | ✅ Complete (nbTokens + 5 components tested) |
-| **Phase 2D Web** | 10 Neo Brutalism components | ✅ Complete (globals.css + 10 components) |
+| **Phase 2C Mobile** | 5 Neo Brutalism components | ✅ Complete (needs token update for v2.0) |
+| **Phase 2D Web** | 10 Neo Brutalism components | ✅ Complete (needs token update for v2.0) |
 | **Phase 3** | 5 components (Charts, Dashboard, Builder) | ✅ Specified in future-phases-patterns.md |
 | **Phase 4** | 3 components (QR, Asset, Maintenance) | ✅ Specified in future-phases-patterns.md |
 | **Phase 5** | 4 patterns (iOS-specific) | ✅ Specified in future-phases-patterns.md |
@@ -252,15 +315,9 @@ slow:   300ms   /* Page transitions */
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-02-05
 **Status:** Active - Simplified Single-Source Documentation Structure
-**Implementation Review:** ✅ Complete (January 28, 2026) - See REVIEW_SUMMARY.md
-
-**Implementation Status:**
-- Mobile (Phase 2C): ✅ 5 components production-ready (100% compliant)
-- Web (Phase 2D): ✅ 10 components production-ready (100% compliant)
-- Design Token Parity: ✅ Perfect 100% match
-- Code Quality: ⭐⭐⭐⭐⭐ Excellent (TypeScript, accessibility, tests)
+**Design System Version:** 2.0.0 (Modern Neo Brutalism)
 
 **For the complete design system specification, see [neo-brutalism.md](./neo-brutalism.md)**
-**For implementation review results, see [REVIEW_SUMMARY.md](./REVIEW_SUMMARY.md)**
+**For version history and migration guides, see [CHANGELOG.md](./CHANGELOG.md)**
