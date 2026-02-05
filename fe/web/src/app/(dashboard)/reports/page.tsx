@@ -19,14 +19,24 @@ import type { WorkReport } from '@/lib/api/reports';
 // Access control
 const ALLOWED_ROLES = ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'];
 
+interface ReportFilters {
+  search: string;
+  reportType: ReportType | 'all';
+  fromDate: string;
+  toDate: string;
+  page: number;
+}
+
 export default function ReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [reportTypeFilter, setReportTypeFilter] = useState<ReportType | 'all'>('all');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
-  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<ReportFilters>({
+    search: '',
+    reportType: 'all',
+    fromDate: '',
+    toDate: '',
+    page: 1,
+  });
   const limit = 20;
 
   useEffect(() => {
@@ -37,10 +47,10 @@ export default function ReportsPage() {
 
   // Fetch reports
   const { data: reportsData, isLoading } = useReports({
-    report_type: reportTypeFilter !== 'all' ? reportTypeFilter : undefined,
-    from_date: fromDate || undefined,
-    to_date: toDate || undefined,
-    page,
+    report_type: filters.reportType !== 'all' ? filters.reportType : undefined,
+    from_date: filters.fromDate || undefined,
+    to_date: filters.toDate || undefined,
+    page: filters.page,
     limit,
   });
 
@@ -65,12 +75,14 @@ export default function ReportsPage() {
   const pagination = reportsData?.meta;
 
   // Filter reports by search (client-side for simplicity)
-  const filteredReports = reports.filter((report) =>
-    search
-      ? report.worker.full_name.toLowerCase().includes(search.toLowerCase()) ||
-        report.area.name.toLowerCase().includes(search.toLowerCase())
-      : true
-  );
+  const filteredReports = Array.isArray(reports)
+    ? reports.filter((report) =>
+        filters.search
+          ? report.worker.full_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+            report.area.name.toLowerCase().includes(filters.search.toLowerCase())
+          : true
+      )
+    : [];
 
   // Report type options
   const reportTypes: { value: string; label: string }[] = [
@@ -182,15 +194,15 @@ export default function ReportsPage() {
               label="Cari Pekerja/Area"
               type="text"
               placeholder="Nama pekerja atau area..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
             />
 
             {/* Report Type Filter */}
             <FormSelect
               label="Tipe Laporan"
-              value={reportTypeFilter}
-              onChange={(value) => setReportTypeFilter(value as ReportType | 'all')}
+              value={filters.reportType}
+              onChange={(value) => setFilters(prev => ({ ...prev, reportType: value as ReportType | 'all' }))}
               options={reportTypes}
             />
 
@@ -198,28 +210,31 @@ export default function ReportsPage() {
             <FormInput
               label="Dari Tanggal"
               type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
+              value={filters.fromDate}
+              onChange={(e) => setFilters(prev => ({ ...prev, fromDate: e.target.value }))}
             />
 
             {/* To Date */}
             <FormInput
               label="Sampai Tanggal"
               type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
+              value={filters.toDate}
+              onChange={(e) => setFilters(prev => ({ ...prev, toDate: e.target.value }))}
             />
           </div>
 
           {/* Clear Filters */}
-          {(search || reportTypeFilter !== 'all' || fromDate || toDate) && (
+          {(filters.search || filters.reportType !== 'all' || filters.fromDate || filters.toDate) && (
             <Button
               variant="secondary"
               onClick={() => {
-                setSearch('');
-                setReportTypeFilter('all');
-                setFromDate('');
-                setToDate('');
+                setFilters({
+                  search: '',
+                  reportType: 'all',
+                  fromDate: '',
+                  toDate: '',
+                  page: 1,
+                });
               }}
               className="mt-4"
             >
@@ -289,7 +304,7 @@ export default function ReportsPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => setFilters(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
                   disabled={pagination.page === 1}
                   leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
@@ -298,9 +313,7 @@ export default function ReportsPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() =>
-                    setPage((p) => Math.min(pagination.totalPages, p + 1))
-                  }
+                  onClick={() => setFilters(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
                   disabled={pagination.page === pagination.totalPages}
                   rightIcon={<ChevronRight className="w-4 h-4" />}
                 >

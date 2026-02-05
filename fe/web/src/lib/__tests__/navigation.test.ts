@@ -13,18 +13,25 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      expect(navigationItems).toHaveLength(9);
+      expect(navigationItems).toHaveLength(6);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
-      expect(navIds).toContain('users');
-      expect(navIds).toContain('areas');
-      expect(navIds).toContain('rayons');
-      expect(navIds).toContain('schedules');
-      expect(navIds).toContain('reports');
       expect(navIds).toContain('tasks');
+      expect(navIds).toContain('reports');
+      expect(navIds).toContain('data');
       expect(navIds).toContain('settings');
+
+      // Check nested items under 'data'
+      const dataItem = navigationItems.find(item => item.id === 'data');
+      expect(dataItem?.children).toBeDefined();
+      expect(dataItem?.children?.length).toBe(4);
+      const childIds = dataItem?.children?.map(child => child.id);
+      expect(childIds).toContain('users');
+      expect(childIds).toContain('areas');
+      expect(childIds).toContain('rayons');
+      expect(childIds).toContain('schedules');
     });
 
     it('should have correct structure for each navigation item', () => {
@@ -49,8 +56,12 @@ describe('Navigation Utilities', () => {
       );
 
       expect(adminOnlyItems.length).toBeGreaterThan(0);
-      expect(adminOnlyItems.find((item) => item.id === 'users')).toBeDefined();
       expect(adminOnlyItems.find((item) => item.id === 'settings')).toBeDefined();
+
+      // Check nested admin-only routes under 'data'
+      const dataItem = navigationItems.find(item => item.id === 'data');
+      const usersItem = dataItem?.children?.find(child => child.id === 'users');
+      expect(usersItem?.roles).toEqual(['admin']);
     });
   });
 
@@ -60,8 +71,12 @@ describe('Navigation Utilities', () => {
 
       expect(filtered).toHaveLength(navigationItems.length);
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'users')).toBeDefined();
       expect(filtered.find((item) => item.id === 'settings')).toBeDefined();
+
+      // Check nested users item under 'data'
+      const dataItem = filtered.find((item) => item.id === 'data');
+      expect(dataItem).toBeDefined();
+      expect(dataItem?.children?.find(child => child.id === 'users')).toBeDefined();
     });
 
     it('should filter out admin-only items for top_management', () => {
@@ -69,13 +84,18 @@ describe('Navigation Utilities', () => {
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'areas')).toBeDefined();
       expect(filtered.find((item) => item.id === 'reports')).toBeDefined();
 
+      // Check nested items under 'data'
+      const dataItem = filtered.find((item) => item.id === 'data');
+      expect(dataItem).toBeDefined();
+      expect(dataItem?.children?.find(child => child.id === 'areas')).toBeDefined();
+      expect(dataItem?.children?.find(child => child.id === 'rayons')).toBeDefined();
+
       // Should NOT include admin-only routes
-      expect(filtered.find((item) => item.id === 'users')).toBeUndefined();
+      expect(dataItem?.children?.find(child => child.id === 'users')).toBeUndefined();
       expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'schedules')).toBeUndefined();
+      expect(dataItem?.children?.find(child => child.id === 'schedules')).toBeUndefined();
     });
 
     it('should return appropriate items for kepala_rayon', () => {
@@ -86,11 +106,10 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'reports')).toBeDefined();
       expect(filtered.find((item) => item.id === 'tasks')).toBeDefined();
 
-      // Should NOT include
-      expect(filtered.find((item) => item.id === 'users')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'areas')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'rayons')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'schedules')).toBeUndefined();
+      // Should NOT include 'data' submenu (no accessible children)
+      expect(filtered.find((item) => item.id === 'data')).toBeUndefined();
+      // Settings is admin-only
+      expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
     });
 
     it('should return appropriate items for koordinator_lapangan', () => {
@@ -101,14 +120,18 @@ describe('Navigation Utilities', () => {
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'schedules')).toBeDefined();
       expect(filtered.find((item) => item.id === 'reports')).toBeDefined();
       expect(filtered.find((item) => item.id === 'tasks')).toBeDefined();
 
+      // Check nested items under 'data'
+      const dataItem = filtered.find((item) => item.id === 'data');
+      expect(dataItem).toBeDefined();
+      expect(dataItem?.children?.find(child => child.id === 'schedules')).toBeDefined();
+
       // Should NOT include
-      expect(filtered.find((item) => item.id === 'users')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'areas')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'rayons')).toBeUndefined();
+      expect(dataItem?.children?.find(child => child.id === 'users')).toBeUndefined();
+      expect(dataItem?.children?.find(child => child.id === 'areas')).toBeUndefined();
+      expect(dataItem?.children?.find(child => child.id === 'rayons')).toBeUndefined();
     });
 
     it('should return empty array for worker role', () => {

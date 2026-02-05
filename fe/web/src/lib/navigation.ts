@@ -8,6 +8,7 @@ import {
   DocumentTextIcon,
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
+  FolderIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 
@@ -55,7 +56,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
-    href: '/dashboard',
+    href: '/',
     icon: HomeIcon,
     roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
   },
@@ -67,32 +68,11 @@ export const navigationItems: NavItem[] = [
     roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
   },
   {
-    id: 'users',
-    label: 'Users',
-    href: '/users',
-    icon: UsersIcon,
-    roles: ['admin'], // Admin only
-  },
-  {
-    id: 'areas',
-    label: 'Areas',
-    href: '/areas',
-    icon: MapPinIcon,
-    roles: ['admin', 'top_management'],
-  },
-  {
-    id: 'rayons',
-    label: 'Rayons',
-    href: '/rayons',
-    icon: BuildingOfficeIcon,
-    roles: ['admin', 'top_management'],
-  },
-  {
-    id: 'schedules',
-    label: 'Schedules',
-    href: '/schedules',
-    icon: CalendarIcon,
-    roles: ['admin', 'koordinator_lapangan'],
+    id: 'tasks',
+    label: 'Tasks',
+    href: '/tasks',
+    icon: ClipboardDocumentListIcon,
+    roles: ['admin', 'kepala_rayon', 'koordinator_lapangan'],
   },
   {
     id: 'reports',
@@ -102,16 +82,46 @@ export const navigationItems: NavItem[] = [
     roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
   },
   {
-    id: 'tasks',
-    label: 'Tasks',
-    href: '/tasks',
-    icon: ClipboardDocumentListIcon,
-    roles: ['admin', 'kepala_rayon', 'koordinator_lapangan'],
+    id: 'data',
+    label: 'Data',
+    href: '#', // No direct href, this is a submenu parent
+    icon: FolderIcon,
+    roles: ['admin', 'top_management', 'koordinator_lapangan'],
+    children: [
+      {
+        id: 'users',
+        label: 'Users',
+        href: '/users',
+        icon: UsersIcon,
+        roles: ['admin'], // Admin only
+      },
+      {
+        id: 'areas',
+        label: 'Areas',
+        href: '/areas',
+        icon: MapPinIcon,
+        roles: ['admin', 'top_management'],
+      },
+      {
+        id: 'rayons',
+        label: 'Rayons',
+        href: '/rayons',
+        icon: BuildingOfficeIcon,
+        roles: ['admin', 'top_management'],
+      },
+      {
+        id: 'schedules',
+        label: 'Schedules',
+        href: '/schedules',
+        icon: CalendarIcon,
+        roles: ['admin', 'koordinator_lapangan'],
+      },
+    ],
   },
   {
     id: 'settings',
     label: 'Settings',
-    href: '/dashboard/settings',
+    href: '/settings',
     icon: Cog6ToothIcon,
     roles: ['admin'],
   },
@@ -130,11 +140,29 @@ export const filterNavigationByRole = (
   items: NavItem[],
   userRole: string
 ): NavItem[] => {
-  return items.filter((item) => {
-    if (!item.roles || item.roles.length === 0) return true;
-    if (item.roles.includes('*')) return true;
-    return item.roles.includes(userRole);
-  });
+  return items
+    .filter((item) => {
+      if (!item.roles || item.roles.length === 0) return true;
+      if (item.roles.includes('*')) return true;
+      return item.roles.includes(userRole);
+    })
+    .map((item) => {
+      // If item has children, filter them recursively
+      if (item.children) {
+        return {
+          ...item,
+          children: filterNavigationByRole(item.children, userRole),
+        };
+      }
+      return item;
+    })
+    .filter((item) => {
+      // Remove parent items with no accessible children
+      if (item.children) {
+        return item.children.length > 0;
+      }
+      return true;
+    });
 };
 
 /**

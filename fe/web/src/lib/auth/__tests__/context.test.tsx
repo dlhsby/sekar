@@ -161,7 +161,7 @@ describe('Auth Context', () => {
         'refresh-token',
         { maxAge: 30 * 24 * 60 * 60 }
       );
-      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+      expect(mockPush).toHaveBeenCalledWith('/');
     });
 
     it('should set error on login failure', async () => {

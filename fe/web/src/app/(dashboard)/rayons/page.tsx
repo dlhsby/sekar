@@ -19,8 +19,8 @@ export default function RayonsPage() {
 
   // Access control: Only Admin and TopManagement
   useEffect(() => {
-    if (!authLoading && user && !['Admin', 'TopManagement'].includes(user.role)) {
-      router.push('/dashboard');
+    if (!authLoading && user && !['admin', 'top_management'].includes(user.role)) {
+      router.push('/');
     }
   }, [user, authLoading, router]);
 
@@ -36,7 +36,7 @@ export default function RayonsPage() {
   }
 
   // Access denied for non-authorized roles
-  if (!['Admin', 'TopManagement'].includes(user.role)) {
+  if (!['admin', 'top_management'].includes(user.role)) {
     return null;
   }
 

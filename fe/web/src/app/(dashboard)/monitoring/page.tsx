@@ -31,7 +31,7 @@ export default function MonitoringPage() {
 
   useEffect(() => {
     if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [user, authLoading, router]);
 
@@ -179,18 +179,18 @@ export default function MonitoringPage() {
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-black text-nb-success">
                   {(areaFilter && areaFilter !== 'all')
-                    ? areaStats?.current_shift.active_workers
+                    ? (areaStats?.current_shift?.active_workers ?? 0)
                     : (rayonFilter && rayonFilter !== 'all')
-                    ? rayonStats?.summary.workers_online
-                    : cityStats?.summary.workers_online}
+                    ? (rayonStats?.summary?.workers_online ?? 0)
+                    : (cityStats?.summary?.workers_online ?? 0)}
                 </div>
                 <div className="text-nb-gray-600">
                   /{' '}
                   {(areaFilter && areaFilter !== 'all')
-                    ? areaStats?.current_shift.assigned_workers
+                    ? (areaStats?.current_shift?.assigned_workers ?? 0)
                     : (rayonFilter && rayonFilter !== 'all')
-                    ? rayonStats?.summary.total_workers
-                    : cityStats?.summary.total_workers}
+                    ? (rayonStats?.summary?.total_workers ?? 0)
+                    : (cityStats?.summary?.total_workers ?? 0)}
                 </div>
               </div>
             </CardContent>
@@ -205,18 +205,18 @@ export default function MonitoringPage() {
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-black text-nb-primary">
                   {(areaFilter && areaFilter !== 'all')
-                    ? areaStats?.current_shift.active_linmas
+                    ? (areaStats?.current_shift?.active_linmas ?? 0)
                     : (rayonFilter && rayonFilter !== 'all')
-                    ? rayonStats?.summary.linmas_online
-                    : cityStats?.summary.linmas_online}
+                    ? (rayonStats?.summary?.linmas_online ?? 0)
+                    : (cityStats?.summary?.linmas_online ?? 0)}
                 </div>
                 <div className="text-nb-gray-600">
                   /{' '}
                   {(areaFilter && areaFilter !== 'all')
-                    ? areaStats?.current_shift.assigned_linmas
+                    ? (areaStats?.current_shift?.assigned_linmas ?? 0)
                     : (rayonFilter && rayonFilter !== 'all')
-                    ? rayonStats?.summary.total_linmas
-                    : cityStats?.summary.total_linmas}
+                    ? (rayonStats?.summary?.total_linmas ?? 0)
+                    : (cityStats?.summary?.total_linmas ?? 0)}
                 </div>
               </div>
             </CardContent>
@@ -231,8 +231,8 @@ export default function MonitoringPage() {
                 </div>
                 <div className="text-3xl font-black text-nb-warning">
                   {(rayonFilter && rayonFilter !== 'all')
-                    ? rayonStats?.summary.active_shifts
-                    : cityStats?.summary.active_shifts}
+                    ? (rayonStats?.summary?.active_shifts ?? 0)
+                    : (cityStats?.summary?.active_shifts ?? 0)}
                 </div>
               </CardContent>
             </Card>
@@ -247,8 +247,8 @@ export default function MonitoringPage() {
                 </div>
                 <div className="text-3xl font-black text-nb-black">
                   {(rayonFilter && rayonFilter !== 'all')
-                    ? rayonStats?.summary.reports_today
-                    : cityStats?.summary.reports_today}
+                    ? (rayonStats?.summary?.reports_today ?? 0)
+                    : (cityStats?.summary?.reports_today ?? 0)}
                 </div>
               </CardContent>
             </Card>
@@ -321,49 +321,51 @@ export default function MonitoringPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {workers.map((worker) => (
-                <div
-                  key={worker.user_id}
-                  className="flex items-center justify-between p-4 border-3 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
-                >
-                  {/* Worker Info */}
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`h-3 w-3 rounded-full ${
-                        worker.status === 'online'
-                          ? 'bg-nb-success'
-                          : 'bg-nb-gray-400'
-                      }`}
-                    />
-                    <div>
-                      <div className="font-bold text-nb-black">
-                        {worker.full_name}
-                      </div>
-                      <div className="text-sm text-nb-gray-600">
-                        {worker.area_name}
+              {workers.map((worker, index) => {
+                return (
+                  <div
+                    key={worker.user_id || `worker-${index}`}
+                    className="flex items-center justify-between p-4 border-3 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
+                  >
+                    {/* Worker Info */}
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`h-3 w-3 rounded-full ${
+                          worker.status === 'online'
+                            ? 'bg-nb-success'
+                            : 'bg-nb-gray-400'
+                        }`}
+                      />
+                      <div>
+                        <div className="font-bold text-nb-black">
+                          {worker.full_name}
+                        </div>
+                        <div className="text-sm text-nb-gray-600">
+                          {worker.area_name}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Status Badges */}
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={worker.role === 'worker' ? 'default' : 'warning'}
-                      size="sm"
-                    >
-                      {worker.role}
-                    </Badge>
-                    <Badge variant={worker.status === 'online' ? 'success' : 'secondary'} size="sm">
-                      {worker.status === 'online' ? 'Online' : 'Offline'}
-                    </Badge>
-                    {worker.battery_level < 20 && (
-                      <Badge variant="destructive" size="sm">
-                        🔋 {worker.battery_level}%
+                    {/* Status Badges */}
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={worker.role === 'worker' ? 'default' : 'warning'}
+                        size="sm"
+                      >
+                        {worker.role}
                       </Badge>
-                    )}
+                      <Badge variant={worker.status === 'online' ? 'success' : 'secondary'} size="sm">
+                        {worker.status === 'online' ? 'Online' : 'Offline'}
+                      </Badge>
+                      {worker.battery_level < 20 && (
+                        <Badge variant="destructive" size="sm">
+                          🔋 {worker.battery_level}%
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

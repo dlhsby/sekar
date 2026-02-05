@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Eye, EyeOff } from 'lucide-react';
 import { FormInput, Button, Card, CardContent } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
@@ -39,9 +40,10 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { login, user, loading: authLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Get redirect URL from query params (if any)
-  const redirect = searchParams.get('redirect') || '/dashboard';
+  const redirect = searchParams.get('redirect') || '/';
 
   // Clear stale cookies on mount to break redirect loops
   useEffect(() => {
@@ -77,7 +79,11 @@ export default function LoginPage() {
       await login(data);
       // Login function will handle redirect
     } catch (err) {
-      const errorMessage = getErrorMessage(err);
+      let errorMessage = getErrorMessage(err);
+      // Translate common error messages to Indonesian
+      if (errorMessage === 'Invalid credentials') {
+        errorMessage = 'Username atau Password salah';
+      }
       setError(errorMessage);
     }
   };
@@ -132,15 +138,29 @@ export default function LoginPage() {
                 {...register('username')}
               />
 
-              {/* Password field */}
-              <FormInput
-                label="Password"
-                type="password"
-                placeholder="Masukkan password"
-                error={errors.password?.message}
-                disabled={isSubmitting}
-                {...register('password')}
-              />
+              {/* Password field with toggle */}
+              <div className="relative">
+                <FormInput
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Masukkan password"
+                  error={errors.password?.message}
+                  disabled={isSubmitting}
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-[38px] text-nb-gray-500 hover:text-nb-black transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
 
               {/* Submit button */}
               <Button
@@ -153,19 +173,6 @@ export default function LoginPage() {
                 {isSubmitting ? 'Masuk...' : 'Masuk'}
               </Button>
             </form>
-
-            {/* Info message for testing */}
-            <div className="mt-6 p-4 bg-nb-gray-100 border-2 border-nb-black">
-              <p className="text-sm text-nb-black font-semibold mb-2">
-                Akun Testing:
-              </p>
-              <div className="text-xs text-nb-black space-y-1 font-medium">
-                <p>Admin: admin / admin123</p>
-                <p>Top Mgmt: top_management1 / password123</p>
-                <p>Kepala Rayon: kepala_rayon_selatan / password123</p>
-                <p>Koordinator: koordinator_bungkul / password123</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
