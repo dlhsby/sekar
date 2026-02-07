@@ -25,7 +25,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Geolocation from 'react-native-geolocation-service';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { mediaService, type Photo } from '../../services/media';
 import { requestCameraPermission } from '../../services/permissions';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -492,8 +492,8 @@ const styles = StyleSheet.create({
   photoThumbnail: {
     width: 160,
     height: 160,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   removePhotoButton: {
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center',
     justifyContent: 'center',
@@ -518,8 +518,8 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     width: 160,
     height: 160,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -541,8 +541,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: nbSpacing.lg,
     backgroundColor: nbColors.gray[50],
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -555,8 +555,8 @@ const styles = StyleSheet.create({
   locationInfo: {
     padding: nbSpacing.lg,
     backgroundColor: withAlpha(nbColors.accentSky, 0.15), // Cyan tint 15% opacity
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -573,9 +573,9 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm,
   },
   notesInput: {
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     padding: nbSpacing.md,
     fontSize: fontSizes.base,
     color: nbColors.black,

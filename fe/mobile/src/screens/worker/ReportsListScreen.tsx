@@ -425,12 +425,12 @@ const styles = StyleSheet.create({
   },
   cacheWarning: {
     backgroundColor: nbColors.warningLight + '20',
-    borderLeftWidth: nbBorders.default,
+    borderLeftWidth: nbBorders.base,
     borderLeftColor: nbColors.black,
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.sm,
   },
   cacheWarningText: {
     color: nbColors.warning,
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.full,
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   filterButtonActive: {
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
     backgroundColor: nbColors.gray[100],
-    borderTopWidth: nbBorders.default,
+    borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
   },
   fixedCreateButton: {

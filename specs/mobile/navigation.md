@@ -5,9 +5,11 @@ Complete navigation structure and routing for SEKAR React Native mobile applicat
 ## Overview
 
 ### Navigation Library
-- **Primary:** React Navigation 6.x
+- **Primary:** React Navigation 7.x
 - **Stack:** @react-navigation/native-stack (native navigation)
 - **Tabs:** @react-navigation/bottom-tabs (bottom tab bar)
+
+> **Design System:** Tab bar and header styling use Neo Brutalism 2.0 tokens from `specs/ui-ux/neo-brutalism.md`
 
 ### Navigation Structure
 

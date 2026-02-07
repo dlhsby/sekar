@@ -77,6 +77,9 @@ const mockTask = {
 
 describe('TaskCompleteScreen', () => {
   beforeEach(() => {
+    // Use real timers for integration-style tests that don't test timing behavior
+    // Fake timers cause waitFor() to hang as they block the microtask queue
+    jest.useRealTimers();
     // Don't use jest.clearAllMocks() as it clears the global Alert mock
     mockNavigate.mockClear();
     mockGoBack.mockClear();
@@ -85,7 +88,12 @@ describe('TaskCompleteScreen', () => {
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
   });
 
+  afterEach(() => {
+    // Cleanup is simpler with real timers
+  });
+
   it('renders loading state initially', () => {
+    (tasksApi.getTaskById as jest.Mock).mockImplementation(() => new Promise(() => {}));
     const { getByText } = render(
       <NavigationContainer>
         <TaskCompleteScreen />

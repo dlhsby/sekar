@@ -40,9 +40,9 @@ jest.mock('react-native-permissions', () => ({
   },
 }));
 jest.mock('@react-native-async-storage/async-storage');
-jest.mock('react-native/Libraries/Linking/Linking', () => ({
-  openSettings: jest.fn(),
-}));
+
+// Mock Linking.openSettings
+jest.spyOn(Linking, 'openSettings').mockImplementation(jest.fn().mockResolvedValue(undefined));
 
 describe('PermissionManager', () => {
   beforeEach(() => {

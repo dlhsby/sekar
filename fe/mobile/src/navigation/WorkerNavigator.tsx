@@ -18,6 +18,7 @@ import { ShiftHistoryScreen } from '../screens/worker/ShiftHistoryScreen';
 import { TaskDetailScreen } from '../screens/worker/TaskDetailScreen';
 import { TaskCompleteScreen } from '../screens/worker/TaskCompleteScreen';
 import ReportDetailScreen from '../screens/supervisor/ReportDetailScreen';
+import { SettingsScreen } from '../screens/common/SettingsScreen';
 import { WorkerHomeHeader } from '../components/navigation/WorkerHomeHeader';
 
 const Tab = createBottomTabNavigator<WorkerTabParamList>();
@@ -192,6 +193,18 @@ function WorkerNavigator(): React.JSX.Element {
               color={color}
               size={size}
             />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Pengaturan',
+          // Hidden from tab bar - accessed via Profile menu
+          tabBarButton: () => null,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="cog" color={color} size={size} />
           ),
         }}
       />

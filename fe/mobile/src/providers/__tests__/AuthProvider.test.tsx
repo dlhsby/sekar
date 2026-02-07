@@ -15,6 +15,7 @@ import * as secureStorage from '../../services/storage/secureStorage';
 import * as authApi from '../../services/api/authApi';
 import * as shiftsApi from '../../services/api/shiftsApi';
 import { locationTracker } from '../../services/location/locationTracker';
+import { permissionManager } from '../../services/permissions/PermissionManager';
 
 // Mock dependencies
 jest.mock('../../services/storage/secureStorage');
@@ -25,14 +26,18 @@ jest.mock('../../services/location/locationTracker', () => ({
     initialize: jest.fn(),
   },
 }));
-
-// Mock console methods to reduce test output noise
-const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
-const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
-const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
+jest.mock('../../services/permissions/PermissionManager', () => ({
+  permissionManager: {
+    hasCompletedOnboarding: jest.fn(),
+    checkLocationPermission: jest.fn(),
+  },
+}));
 
 describe('AuthProvider', () => {
   let store: any;
+  let mockConsoleLog: jest.SpyInstance;
+  let mockConsoleWarn: jest.SpyInstance;
+  let mockConsoleError: jest.SpyInstance;
 
   const mockWorkerUser = {
     id: 1,
@@ -63,6 +68,11 @@ describe('AuthProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Re-apply console spies after clearAllMocks
+    mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
+    mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
+    mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
+
     // Create store with auth and shift reducers
     store = configureStore({
       reducer: {
@@ -75,9 +85,13 @@ describe('AuthProvider', () => {
     (secureStorage.getToken as jest.Mock).mockResolvedValue(null);
     (secureStorage.getUser as jest.Mock).mockResolvedValue(null);
     (secureStorage.clearAll as jest.Mock).mockResolvedValue(undefined);
+
+    // Default: permissions granted (allows location tracking)
+    (permissionManager.hasCompletedOnboarding as jest.Mock).mockResolvedValue(true);
+    (permissionManager.checkLocationPermission as jest.Mock).mockResolvedValue(true);
   });
 
-  afterAll(() => {
+  afterEach(() => {
     mockConsoleLog.mockRestore();
     mockConsoleWarn.mockRestore();
     mockConsoleError.mockRestore();
@@ -474,7 +488,7 @@ describe('AuthProvider', () => {
       });
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        '[AuthProvider] Active shift found, starting location tracking'
+        '[AuthProvider] Active shift found and permissions granted, starting location tracking'
       );
     });
 
@@ -503,6 +517,39 @@ describe('AuthProvider', () => {
 
       await waitFor(() => {
         expect(store.getState().shift.currentShift).toEqual(shiftWithoutId);
+      });
+
+      expect(locationTracker.initialize).not.toHaveBeenCalled();
+    });
+
+    it('should not start location tracking when permissions are denied', async () => {
+      const mockToken = 'valid-token';
+
+      (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (authApi.getMe as jest.Mock).mockResolvedValue({
+        data: mockWorkerUser,
+      });
+      (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({
+        data: mockShift,
+      });
+
+      // Mock permissions as denied
+      (permissionManager.hasCompletedOnboarding as jest.Mock).mockResolvedValue(false);
+      (permissionManager.checkLocationPermission as jest.Mock).mockResolvedValue(false);
+
+      render(
+        <Provider store={store}>
+          <AuthProvider>
+            <View testID="app-content">
+              <Text>App Content</Text>
+            </View>
+          </AuthProvider>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(store.getState().shift.currentShift).toEqual(mockShift);
       });
 
       expect(locationTracker.initialize).not.toHaveBeenCalled();

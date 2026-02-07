@@ -113,6 +113,11 @@ const renderScreen = (store: any) => {
 };
 
 describe('ClockInOutScreen - Comprehensive Tests', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.clearAllTimers();
+  });
+
   beforeEach(() => {
     // Clear specific mocks
     mockNavigation.goBack.mockClear();

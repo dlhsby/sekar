@@ -49,11 +49,16 @@ describe('AttendanceScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
     // Setup Alert spy in beforeEach to prevent cross-test pollution
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     (supervisorApi.getAttendance as jest.Mock).mockResolvedValue({
       data: mockAttendanceData,
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
   });
 
   describe('rendering', () => {

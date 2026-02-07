@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { shiftsApi, reportsApi } from '../../services/api';
 import { setCurrentShift, setError } from '../../store/slices/shiftSlice';
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   assignedArea: {
     marginTop: nbSpacing.md,
     paddingTop: nbSpacing.md,
-    borderTopWidth: nbBorders.default,
+    borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
   },
   assignedAreaLabel: {
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryDivider: {
-    width: nbBorders.default,
+    width: nbBorders.base,
     height: 40,
     backgroundColor: nbColors.black,
   },
@@ -472,8 +472,8 @@ const styles = StyleSheet.create({
   warningCard: {
     backgroundColor: nbColors.warningLight + '20', // 20% opacity
     borderColor: nbColors.warning,
-    borderWidth: nbBorders.default,
-    borderRadius: 0,
+    borderWidth: nbBorders.base,
+    borderRadius: nbBorderRadius.base,
     marginTop: nbSpacing.md,
   },
   warningText: {

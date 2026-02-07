@@ -29,7 +29,7 @@ export const nbColors = {
   accentFlower: '#FF69B4', // Hot pink (row 4, col 5) - special events
 
   // BACKGROUNDS: Neo Brutalism Pastels (row 1 from palette)
-  background: '#FDFD96', // Pastel yellow (row 1, col 3) - main background (avoiding "everything green")
+  background: '#F0F9F6', // Very soft mint - main background (softer, less harsh on eyes)
   backgroundSecondary: '#B5D2AD', // Pastel green (row 1, col 2) - secondary surfaces
   backgroundMint: '#DAF5F0', // Very light mint (row 1, col 1) - alternative light background
   surface: '#FFFFFF', // Pure white for cards (maximum contrast)
@@ -46,9 +46,9 @@ export const nbColors = {
   infoLight: '#A7DBD8', // Light cyan (row 2, col 1) - light background
 
   // NEUTRAL PALETTE
-  black: '#000000', // Borders, shadows, primary text
+  black: '#1C1917', // Warm stone black - borders, shadows, primary text (NB 2.0)
   white: '#FFFFFF', // Pure white for maximum contrast
-  navy: '#001F3F', // Trust/authority accent (per specs/ui-ux/neo-brutalism.md line 156)
+  navy: '#1A4D2E', // Dark forest green - sidebar, trust/authority (NB 2.0)
 
   // OVERLAY/MODAL COLORS
   overlay: 'rgba(0, 0, 0, 0.5)', // Standard modal overlay
@@ -71,44 +71,51 @@ export const nbColors = {
 };
 
 /**
- * Shadow specifications (hard-edge offset shadows)
- * Neo Brutalism uses no blur for stark, bold appearance
+ * Shadow specifications (soft-edge shadows)
+ * NB 2.0 uses subtle blur for softer, more refined appearance
  */
 export const nbShadows = {
+  xs: {
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1,
+    elevation: 2,
+  },
   sm: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4, // Android approximation
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 2,
+    elevation: 3,
   },
   md: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 6,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.20,
+    shadowRadius: 3,
+    elevation: 4,
   },
   lg: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 4,
+    elevation: 5,
   },
   hover: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 4,
+    elevation: 5,
   },
   active: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 2,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1, // Minimal blur for consistency with soft-edge system
+    elevation: 1,
   },
   none: {
     shadowColor: 'transparent',
@@ -121,26 +128,28 @@ export const nbShadows = {
 
 /**
  * Border specifications
- * Bold black borders are a key characteristic of Neo Brutalism
+ * NB 2.0 uses refined border widths with warm stone black
  */
 export const nbBorders = {
-  thin: 2, // Secondary elements
-  default: 3, // Primary elements
-  thick: 4, // Emphasis
-  color: '#000000',
+  thin: 1, // Subtle borders
+  base: 2, // Primary elements (renamed from 'default')
+  thick: 3, // Emphasis
+  extra: 4, // Heavy emphasis
+  color: '#1C1917', // Warm stone black (NB 2.0)
   style: 'solid' as const,
 };
 
 /**
  * Border radius
- * Neo Brutalism uses sharp corners, but minimal rounding (2px) improves mobile UX
- * while maintaining NB character
+ * NB 2.0 uses slightly softer corners for improved mobile UX
  */
 export const nbBorderRadius = {
-  none: 0,      // Pure NB (strict mode) - use for dividers, borders
-  minimal: 2,   // Softened NB (recommended default) - buttons, cards, inputs
-  sm: 4,        // Small elements only - badges, pills, small chips
-  full: 9999,   // Avatars and status indicators
+  none: 0, // Pure NB (strict mode) - dividers, borders
+  sm: 4, // Small elements - badges, pills, small chips
+  base: 6, // Primary elements - buttons, cards, inputs (renamed from 'minimal')
+  md: 8, // Medium elements - modals, larger cards
+  lg: 12, // Large elements - hero sections
+  full: 9999, // Avatars and status indicators
 };
 
 /**

@@ -483,8 +483,8 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.md,
     marginBottom: nbSpacing.sm,
     paddingVertical: 12, // Compact style (was lg: 24px)
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryDivider: {
-    width: nbBorders.default, // 3px for NB consistency
+    width: nbBorders.base, // 3px for NB consistency
     height: 40,
     backgroundColor: nbColors.black, // Bold divider for NB
   },
@@ -555,8 +555,8 @@ const styles = StyleSheet.create({
   statusBadge: {
     width: 70, // Fixed width for consistency
     paddingVertical: nbSpacing.xs / 2,
-    borderRadius: 0, // Sharp corners for NB badges
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.sm,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center', // Center text horizontally
     justifyContent: 'center', // Center text vertically

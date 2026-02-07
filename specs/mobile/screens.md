@@ -6,12 +6,12 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 
 ### Screen Summary
 
-**Total: 14 screens implemented | 12 reusable components**
+**Total: 17 screens implemented | 10 NB reusable components**
 
 | Stack | Screen | Status | Priority | Phase |
 |-------|--------|--------|----------|-------|
 | **Auth** | Login | ✅ Complete | P0 | 1 |
-| **Auth** | Register | 📋 Planned | P2 | 2 |
+| **Auth** | Register | ✅ Complete | P1 | 2 |
 | **Worker** | Home | ✅ Complete | P0 | 1 |
 | **Worker** | Clock In/Out | ✅ Complete | P0 | 1 |
 | **Worker** | Report Submission | ✅ Complete | P0 | 1 |
@@ -22,15 +22,23 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 | **Supervisor** | Reports List | ✅ Complete | P0 | 1 |
 | **Supervisor** | Report Detail | ✅ Complete | P0 | 1 |
 | **Supervisor** | Attendance | ✅ Complete | P1 | 1 |
+| **Tasks** | Task Detail | ✅ Complete | P1 | 2 |
+| **Tasks** | Task Complete | ✅ Complete | P1 | 2 |
+| **Tasks** | Tasks Reports | ✅ Complete | P2 | 2 |
+| **Common** | Notifications | ✅ Complete | P2 | 2 |
+| **Common** | Settings | ✅ Complete | P2 | 2 |
 
-### Component Summary
+### Component Summary (NB 2.0)
 
 | Category | Components | Count |
 |----------|------------|-------|
-| **Common** | Button, TextInput, Card, LoadingSpinner, ErrorBanner, EmptyState | 6 |
-| **Supervisor** | WorkerCard, ReportCard, AttendanceCard, MapMarker, FilterSheet | 5 |
-| **Worker** | PhotoPicker | 1 |
-| **Total** | | **12** |
+| **NB Core** | NBButton, NBCard, NBTextInput, NBPasswordInput | 4 |
+| **NB Feedback** | NBAlert, NBBadge, NBSkeleton, NBEmptyState | 4 |
+| **NB Navigation** | NBTab, NBBackgroundPattern | 2 |
+| **Total** | | **10** |
+
+> **Design System:** Neo Brutalism 2.0 - See `specs/ui-ux/neo-brutalism.md`
+> **Phase 2B Updates:** See `specs/phases/phase-2-b-ui-ux-revamp/mobile.md`
 
 ---
 
@@ -2566,6 +2574,23 @@ fontSize: {
 ---
 
 **Document Owner:** Mobile Developer
-**Last Updated:** 2026-01-21
-**Status:** Phase 1 MVP Complete - 14 screens, 12 components, 831 tests
-**Related Docs:** [`navigation.md`](./navigation.md), [`state-management.md`](./state-management.md), [`offline-sync.md`](./offline-sync.md)
+**Last Updated:** 2026-02-05
+**Status:** Phase 2 Complete - 17 screens, 10 NB components, 2,141 tests (80.31% coverage)
+**Design System:** Neo Brutalism 2.0 (see `specs/ui-ux/neo-brutalism.md`)
+**Related Docs:** [`navigation.md`](./navigation.md), [`state-management.md`](./state-management.md), [`offline-sync.md`](./offline-sync.md), [`design-tokens.md`](./design-tokens.md)
+
+---
+
+## NB 2.0 Design Token Migration
+
+**Key Token Changes (Phase 2B):**
+
+| Token | Current | NB 2.0 Required |
+|-------|---------|-----------------|
+| `nbBorders.default` | 3px | 2px |
+| `nbBorders.thin` | 2px | 1px |
+| `nbBorderRadius.minimal` | 2px | 6px (base) |
+| `nbShadows.sm.shadowOpacity` | 1.0 | 0.18 |
+| `nbShadows.sm.shadowRadius` | 0 | 2 |
+
+**See:** `specs/phases/phase-2-b-ui-ux-revamp/mobile.md` for complete screen-by-screen migration checklist.

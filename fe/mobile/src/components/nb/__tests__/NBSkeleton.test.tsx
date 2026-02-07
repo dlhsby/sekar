@@ -128,6 +128,26 @@ describe('NBSkeleton', () => {
     });
   });
 
+  describe('accessibility (NB 2.0)', () => {
+    it('has accessibilityRole progressbar', () => {
+      const { getByTestId } = render(<NBSkeleton testID="skeleton" />);
+      const skeleton = getByTestId('skeleton');
+      expect(skeleton.props.accessibilityRole).toBe('progressbar');
+    });
+
+    it('has accessibilityState busy true', () => {
+      const { getByTestId } = render(<NBSkeleton testID="skeleton" />);
+      const skeleton = getByTestId('skeleton');
+      expect(skeleton.props.accessibilityState).toEqual({ busy: true });
+    });
+
+    it('has accessibilityLabel', () => {
+      const { getByTestId } = render(<NBSkeleton testID="skeleton" />);
+      const skeleton = getByTestId('skeleton');
+      expect(skeleton.props.accessibilityLabel).toBe('Loading content');
+    });
+  });
+
   describe('complete examples', () => {
     it('renders text loading placeholders', () => {
       const { getByTestId } = render(

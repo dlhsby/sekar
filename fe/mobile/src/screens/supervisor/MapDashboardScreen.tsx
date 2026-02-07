@@ -23,9 +23,10 @@ import {
   nbSpacing,
   nbShadows,
   nbBorders,
+  nbBorderRadius,
   nbTouchTarget,
 } from '../../constants/nbTokens';
-import { NBButton, NBCard } from '../../components/nb';
+import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
 import { WorkerMarker } from '../../components/supervisor/WorkerMarker';
 import { WorkerInfoCard } from '../../components/supervisor/WorkerInfoCard';
 import { MapErrorBoundary } from '../../components/supervisor/MapErrorBoundary';
@@ -372,35 +373,56 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Loading state - show while data is loading OR map is not ready
   if (loading || !mapReady) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={nbColors.primary} />
-        <Text style={styles.loadingText}>Memuat peta...</Text>
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={nbColors.primary} />
+          <Text style={styles.loadingText}>Memuat peta...</Text>
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
   // Error state
   if (error && workers.length === 0) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <NBButton
-          title="Coba Lagi"
-          onPress={() => fetchWorkers()}
-          variant="primary"
-          style={styles.retryButton}
-        />
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <NBButton
+            title="Coba Lagi"
+            onPress={() => fetchWorkers()}
+            variant="primary"
+            style={styles.retryButton}
+          />
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Map with Error Boundary */}
-      <MapErrorBoundary onReset={() => fetchWorkers()}>
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <View style={styles.container}>
+        {/* Map with Error Boundary */}
+        <MapErrorBoundary onReset={() => fetchWorkers()}>
         <MapView
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
+          userInterfaceStyle="light"
           style={styles.map}
           initialRegion={initialRegion}
           showsUserLocation={false}
@@ -585,19 +607,20 @@ export function MapDashboardScreen(): React.JSX.Element {
         onClose={handleCloseInfoCard}
       />
     </View>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: 'transparent',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: 'transparent',
     padding: nbSpacing.lg,
   },
   map: {
@@ -618,8 +641,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     paddingHorizontal: nbSpacing.lg,
     paddingVertical: nbSpacing.md,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   retryButtonText: {
@@ -635,10 +658,10 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: nbColors.white,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     padding: nbSpacing.md,
     marginBottom: nbSpacing.sm,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -697,11 +720,11 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     alignItems: 'center',
     minHeight: nbTouchTarget.minHeight,
     justifyContent: 'center',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -718,7 +741,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
-    borderTopWidth: nbBorders.default,
+    borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
     ...nbShadows.lg,
   },
@@ -735,7 +758,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.gray[100],
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.sm,
     marginRight: nbSpacing.sm,
     minWidth: 150,
     borderWidth: nbBorders.thin,

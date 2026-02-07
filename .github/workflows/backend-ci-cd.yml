@@ -167,6 +167,7 @@ jobs:
     name: Build and Push to ECR
     runs-on: ubuntu-latest
     needs: [test, security]
+    environment: production
 
     steps:
       - name: Checkout code

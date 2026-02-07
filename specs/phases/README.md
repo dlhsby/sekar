@@ -9,13 +9,14 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 | Phase | Name | Duration | Status | Focus |
 |-------|------|----------|--------|-------|
 | 1 | [MVP - Core Tracking](./phase-1-mvp/) | 2 weeks | ✅ COMPLETE | Clock-in/out, Reports, GPS |
-| 2 | [Enhanced Features](./phase-2-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
+| 2A | [Enhanced Features](./phase-2-a-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
+| 2B | [UI/UX Revamp](./phase-2-b-ui-ux-revamp/) | 3-4 weeks | 🟡 IN PROGRESS | Neo Brutalism 2.0, Design Tokens |
 | 3 | [Polishing & E2E Testing](./phase-3-polishing/) | 2-3 weeks | Not Started | Manual Testing, E2E, Polish |
 | 4 | [Finishing & Advanced Features](./phase-4-finishing/) | 6-8 weeks | Not Started | Analytics, Assets, iOS |
 
-**Total Duration:** ~14-17 weeks
+**Total Duration:** ~17-21 weeks
 
-> **Note:** Phase structure was reorganized on January 30, 2026. Previous phases 3-6 were consolidated into new phases 3-4. Archived folders contain original detailed specifications.
+> **Note:** Phase structure was reorganized on January 30, 2026. Previous phases 3-6 were consolidated into new phases 3-4. Phase 2 was split into 2A (Enhanced) and 2B (UI/UX) on February 5, 2026.
 
 ### Quick Reference
 
@@ -68,7 +69,7 @@ Core worker tracking system with GPS-verified attendance and work reporting.
 
 ---
 
-## Phase 2: Enhanced Features
+## Phase 2A: Enhanced Features
 
 **Duration:** 2 weeks | **Status:** ✅ COMPLETE (Jan 20-27, 2026)
 
@@ -89,13 +90,37 @@ Task assignment system, push notifications, KMZ import, and full web dashboard.
 - WebSocket real-time events
 
 ### Documents
-- [Overview](./phase-2-enhanced/README.md)
-- [Status](./phase-2-enhanced/STATUS.md)
-- [Backend Guide](./phase-2-enhanced/backend.md)
-- [Mobile Guide](./phase-2-enhanced/mobile.md)
-- [Web Guide](./phase-2-enhanced/web.md)
-- [Timeline](./phase-2-enhanced/timeline.md)
-- [Testing](./phase-2-enhanced/testing.md)
+- [Overview](./phase-2-a-enhanced/README.md)
+- [Status](./phase-2-a-enhanced/STATUS.md)
+- [Backend Guide](./phase-2-a-enhanced/backend.md)
+- [Mobile Guide](./phase-2-a-enhanced/mobile.md)
+- [Web Guide](./phase-2-a-enhanced/web.md)
+- [Timeline](./phase-2-a-enhanced/timeline.md)
+- [Testing](./phase-2-a-enhanced/testing.md)
+
+---
+
+## Phase 2B: UI/UX Revamp
+
+**Duration:** 3-4 weeks | **Status:** 🟡 IN PROGRESS (Feb 2026)
+
+Neo Brutalism 2.0 design system application across web and mobile platforms.
+
+### Key Deliverables
+- Design token updates (colors, borders, shadows, radius)
+- 26 component updates (16 web + 10 mobile)
+- 22 web page styling updates
+- 17 mobile screen styling updates
+- Accessibility compliance verification
+- Mobile-web design parity
+
+### Documents
+- [Overview](./phase-2-b-ui-ux-revamp/README.md)
+- [Status](./phase-2-b-ui-ux-revamp/STATUS.md)
+- [Components](./phase-2-b-ui-ux-revamp/components.md)
+- [Web Pages](./phase-2-b-ui-ux-revamp/web.md)
+- [Mobile Screens](./phase-2-b-ui-ux-revamp/mobile.md)
+- [Timeline](./phase-2-b-ui-ux-revamp/timeline.md)
 
 ---
 
@@ -170,7 +195,10 @@ The following folders contain original specifications before the January 30, 202
                 Phase 1 (MVP)
                      |
                      v
-            Phase 2 (Enhanced)
+           Phase 2A (Enhanced)
+                     |
+                     v
+           Phase 2B (UI/UX Revamp)
                      |
                      v
          Phase 3 (Polishing & E2E)
@@ -183,17 +211,19 @@ The following folders contain original specifications before the January 30, 202
 ```
 
 **Critical Dependencies:**
-- **Phase 1 → Phase 2:** Phase 1 MVP must complete before Phase 2
-- **Phase 2 → Phase 3:** Phase 2 features need testing in Phase 3
+- **Phase 1 → Phase 2A:** Phase 1 MVP must complete before Phase 2A
+- **Phase 2A → Phase 2B:** Phase 2A implementation provides components to revamp
+- **Phase 2B → Phase 3:** Design consistency required before E2E testing
 - **Phase 3 → Phase 4:** Polishing should complete before adding new features
 - **Phase 4 sub-phases:** Can run in parallel with separate teams
 
 **Recommended Sequence:**
 1. **Phase 1** (Weeks 1-2) - MVP foundation ✅
-2. **Phase 2** (Weeks 3-4) - Enhanced features + Web ✅
-3. **Phase 3** (Weeks 5-7) - Polishing & E2E Testing
-4. **Phase 4A+4B** (Weeks 8-11) - Analytics + Assets (parallel)
-5. **Phase 4C** (Weeks 12-15) - iOS platform
+2. **Phase 2A** (Weeks 3-4) - Enhanced features + Web ✅
+3. **Phase 2B** (Weeks 5-8) - UI/UX Revamp 🟡
+4. **Phase 3** (Weeks 9-11) - Polishing & E2E Testing
+5. **Phase 4A+4B** (Weeks 12-15) - Analytics + Assets (parallel)
+6. **Phase 4C** (Weeks 16-19) - iOS platform
 
 ---
 
@@ -209,4 +239,4 @@ The following folders contain original specifications before the January 30, 202
 
 ---
 
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-02-05

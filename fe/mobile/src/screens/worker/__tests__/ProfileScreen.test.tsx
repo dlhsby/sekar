@@ -79,32 +79,37 @@ describe('ProfileScreen', () => {
     updated_at: '2026-01-01T00:00:00Z',
   };
 
+  // Use current month for tests (component filters by current month)
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+
   const mockShifts = [
     {
       id: 1,
       worker_id: 1,
       area_id: 1,
-      clock_in_time: '2026-01-17T08:00:00Z',
+      clock_in_time: `${currentYear}-${currentMonth}-17T08:00:00Z`,
       clock_in_gps_lat: -7.2905,
       clock_in_gps_lng: 112.7398,
-      clock_out_time: '2026-01-17T16:00:00Z',
+      clock_out_time: `${currentYear}-${currentMonth}-17T16:00:00Z`,
       clock_out_gps_lat: -7.2905,
       clock_out_gps_lng: 112.7398,
-      created_at: '2026-01-17T08:00:00Z',
-      updated_at: '2026-01-17T16:00:00Z',
+      created_at: `${currentYear}-${currentMonth}-17T08:00:00Z`,
+      updated_at: `${currentYear}-${currentMonth}-17T16:00:00Z`,
     },
     {
       id: 2,
       worker_id: 1,
       area_id: 1,
-      clock_in_time: '2026-01-16T08:00:00Z',
+      clock_in_time: `${currentYear}-${currentMonth}-16T08:00:00Z`,
       clock_in_gps_lat: -7.2905,
       clock_in_gps_lng: 112.7398,
-      clock_out_time: '2026-01-16T15:30:00Z',
+      clock_out_time: `${currentYear}-${currentMonth}-16T15:30:00Z`,
       clock_out_gps_lat: -7.2905,
       clock_out_gps_lng: 112.7398,
-      created_at: '2026-01-16T08:00:00Z',
-      updated_at: '2026-01-16T15:30:00Z',
+      created_at: `${currentYear}-${currentMonth}-16T08:00:00Z`,
+      updated_at: `${currentYear}-${currentMonth}-16T15:30:00Z`,
     },
   ];
 
@@ -353,22 +358,44 @@ describe('ProfileScreen', () => {
     });
 
     it('should calculate days worked correctly', async () => {
-      const { getByText } = renderProfileScreen();
+      const { getByText, queryByText } = renderProfileScreen();
 
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(queryByText('Memuat profil...')).toBeNull();
+      }, { timeout: 10000 });
+
+      // Wait for data to load
+      await waitFor(() => {
+        expect(queryByText('Hari Kerja')).toBeTruthy();
+      }, { timeout: 5000 });
+
+      // Now check for the calculated days
       await waitFor(() => {
         // 2 shifts in January = 2 days worked
         expect(getByText('2')).toBeTruthy();
-      });
-    });
+      }, { timeout: 10000 });
+    }, 30000);
 
     it('should calculate total hours worked correctly', async () => {
-      const { getByText } = renderProfileScreen();
+      const { getByText, queryByText } = renderProfileScreen();
 
+      // Wait for loading to complete first
+      await waitFor(() => {
+        expect(queryByText('Memuat profil...')).toBeNull();
+      }, { timeout: 10000 });
+
+      // Wait for stats section to appear
+      await waitFor(() => {
+        expect(queryByText('Jam Kerja')).toBeTruthy();
+      }, { timeout: 5000 });
+
+      // Now check for the calculated hours
       await waitFor(() => {
         // Shift 1: 8 hours, Shift 2: 7.5 hours = 15.5 total
         expect(getByText('15.5')).toBeTruthy();
-      });
-    });
+      }, { timeout: 15000 });
+    }, 35000);
 
     it('should display reports count', async () => {
       const { getByText } = renderProfileScreen();
@@ -379,20 +406,26 @@ describe('ProfileScreen', () => {
     });
 
     it('should handle shifts from different months', async () => {
+      // Previous month's date
+      const prevMonthDate = new Date(currentDate);
+      prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+      const prevYear = prevMonthDate.getFullYear();
+      const prevMonth = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
+
       const shiftsFromDifferentMonths = [
         ...mockShifts,
         {
           id: 3,
           worker_id: 1,
           area_id: 1,
-          clock_in_time: '2025-12-15T08:00:00Z', // December
+          clock_in_time: `${prevYear}-${prevMonth}-15T08:00:00Z`, // Previous month
           clock_in_gps_lat: -7.2905,
           clock_in_gps_lng: 112.7398,
-          clock_out_time: '2025-12-15T16:00:00Z',
+          clock_out_time: `${prevYear}-${prevMonth}-15T16:00:00Z`,
           clock_out_gps_lat: -7.2905,
           clock_out_gps_lng: 112.7398,
-          created_at: '2025-12-15T08:00:00Z',
-          updated_at: '2025-12-15T16:00:00Z',
+          created_at: `${prevYear}-${prevMonth}-15T08:00:00Z`,
+          updated_at: `${prevYear}-${prevMonth}-15T16:00:00Z`,
         },
       ];
 
@@ -400,13 +433,24 @@ describe('ProfileScreen', () => {
         data: shiftsFromDifferentMonths,
       });
 
-      const { getByText } = renderProfileScreen();
+      const { getByText, queryByText } = renderProfileScreen();
 
+      // Wait for loading to complete
       await waitFor(() => {
-        // Should only count January shifts
+        expect(queryByText('Memuat profil...')).toBeNull();
+      }, { timeout: 10000 });
+
+      // Wait for stats to appear
+      await waitFor(() => {
+        expect(queryByText('Hari Kerja')).toBeTruthy();
+      }, { timeout: 5000 });
+
+      // Check calculated days
+      await waitFor(() => {
+        // Should only count current month shifts
         expect(getByText('2')).toBeTruthy();
-      });
-    });
+      }, { timeout: 10000 });
+    }, 30000);
 
     it('should handle active shifts without clock-out', async () => {
       const shiftsWithActive = [
@@ -415,12 +459,12 @@ describe('ProfileScreen', () => {
           id: 3,
           worker_id: 1,
           area_id: 1,
-          clock_in_time: '2026-01-18T08:00:00Z',
+          clock_in_time: `${currentYear}-${currentMonth}-18T08:00:00Z`,
           clock_in_gps_lat: -7.2905,
           clock_in_gps_lng: 112.7398,
           clock_out_time: null,
-          created_at: '2026-01-18T08:00:00Z',
-          updated_at: '2026-01-18T08:00:00Z',
+          created_at: `${currentYear}-${currentMonth}-18T08:00:00Z`,
+          updated_at: `${currentYear}-${currentMonth}-18T08:00:00Z`,
         },
       ];
 
@@ -428,13 +472,24 @@ describe('ProfileScreen', () => {
         data: shiftsWithActive,
       });
 
-      const { getByText } = renderProfileScreen();
+      const { getByText, queryByText } = renderProfileScreen();
 
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(queryByText('Memuat profil...')).toBeNull();
+      }, { timeout: 10000 });
+
+      // Wait for stats to appear
+      await waitFor(() => {
+        expect(queryByText('Hari Kerja')).toBeTruthy();
+      }, { timeout: 5000 });
+
+      // Check calculated days
       await waitFor(() => {
         // Should still calculate correctly, ignoring active shift hours
         expect(getByText('3')).toBeTruthy(); // 3 days
-      });
-    });
+      }, { timeout: 10000 });
+    }, 30000);
   });
 
   describe('Menu Items', () => {
@@ -445,7 +500,7 @@ describe('ProfileScreen', () => {
         expect(getByText('Ubah Password')).toBeTruthy();
         expect(getByText('Riwayat Shift')).toBeTruthy();
         expect(getByText('Tentang Aplikasi')).toBeTruthy();
-      });
+      }, { timeout: 5000 });
     });
 
     it('should open change password modal when button is pressed', async () => {

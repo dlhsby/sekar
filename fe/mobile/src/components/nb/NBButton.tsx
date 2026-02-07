@@ -218,7 +218,7 @@ export const NBButton: React.FC<NBButtonProps> = ({
           backgroundColor: variantStyle.bg,
           height: sizeStyle.height,
           paddingHorizontal: sizeStyle.paddingHorizontal,
-          borderWidth: isGhost ? 0 : nbBorders.default,
+          borderWidth: isGhost ? 0 : nbBorders.base,
           borderColor: variantStyle.border,
           transform: pressTransform,
         },
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: nbTouchTarget.minWidth,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
   },
   text: {
     fontWeight: nbTypography.fontWeight.semibold,

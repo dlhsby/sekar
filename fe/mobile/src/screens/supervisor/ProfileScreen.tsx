@@ -42,7 +42,7 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import { ChangePasswordModal } from '../../components/common';
-import { NBButton, NBCard } from '../../components/nb';
+import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
 import type { RootState } from '../../store/store';
 
 /**
@@ -85,7 +85,7 @@ interface SyncStatus {
 /**
  * Profile Screen Component for Supervisors
  */
-export function ProfileScreen({ navigation: _navigation }: any): React.JSX.Element {
+export function ProfileScreen({ navigation }: any): React.JSX.Element {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -436,28 +436,41 @@ export function ProfileScreen({ navigation: _navigation }: any): React.JSX.Eleme
   // Show loading state
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={nbColors.primary} />
-        <Text style={styles.loadingText}>Memuat profil...</Text>
-      </View>
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={nbColors.primary} />
+          <Text style={styles.loadingText}>Memuat profil...</Text>
+        </View>
+      </NBBackgroundPattern>
     );
   }
 
   const hasPendingItems = syncStatus.pendingCount > 0 || syncStatus.failedCount > 0;
 
   return (
-    <ScrollView
-      testID="ProfileScrollView"
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          colors={[nbColors.primary]}
-          tintColor={nbColors.primary}
-        />
-      }>
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <ScrollView
+        testID="ProfileScrollView"
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[nbColors.primary]}
+            tintColor={nbColors.primary}
+          />
+        }>
       {/* Profile Header */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
@@ -560,6 +573,17 @@ export function ProfileScreen({ navigation: _navigation }: any): React.JSX.Eleme
           <Text style={styles.menuText}>Tentang aplikasi</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
+
+        <View style={styles.menuDivider} />
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Settings')}
+          activeOpacity={0.7}>
+          <Text style={styles.menuIcon}>⚙️</Text>
+          <Text style={styles.menuText}>Pengaturan</Text>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
       </NBCard>
 
       {/* Logout Button */}
@@ -580,13 +604,14 @@ export function ProfileScreen({ navigation: _navigation }: any): React.JSX.Eleme
         onClose={() => setIsChangePasswordModalVisible(false)}
       />
     </ScrollView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: 'transparent',
   },
   contentContainer: {
     paddingVertical: nbSpacing.lg,
@@ -595,7 +620,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: 'transparent',
   },
   loadingText: {
     marginTop: nbSpacing.md,
@@ -609,7 +634,7 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.xl,
     backgroundColor: nbColors.white,
     marginBottom: nbSpacing.md,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
   },
   avatarContainer: {
@@ -622,7 +647,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -646,8 +671,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.primary,
-    borderRadius: nbBorderRadius.full,
-    borderWidth: nbBorders.thin,
+    borderRadius: nbBorderRadius.sm,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   roleBadgeText: {
@@ -662,8 +687,8 @@ const styles = StyleSheet.create({
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
     padding: nbSpacing.md,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -705,8 +730,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     backgroundColor: nbColors.primary,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     minWidth: 80,
     alignItems: 'center',
@@ -716,7 +741,7 @@ const styles = StyleSheet.create({
   },
   syncButtonSecondary: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   syncButtonDanger: {
@@ -765,8 +790,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     overflow: 'hidden',
     ...nbShadows.sm,
@@ -805,8 +830,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.danger,
     marginHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },

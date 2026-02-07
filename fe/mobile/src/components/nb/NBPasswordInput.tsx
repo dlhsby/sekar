@@ -120,7 +120,7 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
     // Determine border width based on state (thicker when focused)
     const getBorderWidth = () => {
       if (isFocused) {return nbBorders.thick;} // 4px when focused
-      return nbBorders.default; // 3px default
+      return nbBorders.base; // 3px default
     };
 
     // Custom shadow for focused state (colored shadow for NB impact)
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: nbColors.white,
     // borderWidth and borderColor now dynamic (see getBorderWidth/getBorderColor)
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
     minHeight: nbTouchTarget.minHeight,
   },
   input: {

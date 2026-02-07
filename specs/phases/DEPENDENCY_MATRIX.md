@@ -2,7 +2,7 @@
 
 **Document Owner:** Project Manager
 **Created:** 2026-01-21
-**Last Updated:** 2026-01-21
+**Last Updated:** 2026-02-05
 **Purpose:** Map dependencies across all development phases for effective planning and risk management
 
 ---
@@ -24,11 +24,10 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
 | Phase | Name | Duration | Status | Prerequisites |
 |-------|------|----------|--------|---------------|
 | 1 | MVP - Core Tracking | 2 weeks | **COMPLETE** | None |
-| 2 | Enhanced Features | 2-3 weeks | Not Started | Phase 1 100% |
-| 3 | Analytics & Reporting | 2 weeks | Not Started | Phase 2 deployed |
-| 4 | Asset Management | 2 weeks | Not Started | Phase 3 complete |
-| 5 | iOS & Advanced | 2 weeks | Not Started | Phase 4 complete |
-| 6 | Web Dashboard | 2 weeks | Not Started | Phase 2 complete |
+| 2A | Enhanced Features | 2 weeks | **COMPLETE** | Phase 1 100% |
+| 2B | UI/UX Revamp | 3-4 weeks | **IN PROGRESS** | Phase 2A complete |
+| 3 | Polishing & E2E Testing | 2-3 weeks | Not Started | Phase 2B complete |
+| 4 | Advanced Features | 6-8 weeks | Not Started | Phase 3 complete |
 
 ---
 
@@ -44,47 +43,40 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
                     │                                                 │
                     └───────────────────┬─────────────────────────────┘
                                         │
-                    ┌───────────────────┼───────────────────┐
-                    │                   │                   │
-                    ▼                   ▼                   │
-    ┌───────────────────────┐  ┌───────────────────────┐   │
-    │                       │  │                       │   │
-    │    PHASE 2            │  │    PHASE 6            │   │
-    │ Enhanced Features     │  │  Web Dashboard        │   │
-    │ Tasks, Notifications  │  │ (Can start after P2)  │   │
-    │ KMZ Import           │  │ Full CRUD, Reports    │   │
-    │                       │  │ Audit Logging         │   │
-    └───────────┬───────────┘  └───────────────────────┘   │
-                │                                          │
-                │                                          │
-                ▼                                          │
-    ┌───────────────────────┐                              │
-    │                       │                              │
-    │    PHASE 3            │                              │
-    │ Analytics & Reporting │                              │
-    │ Report Builder        │                              │
-    │ WebSocket, Scheduler  │                              │
-    │                       │                              │
-    └───────────┬───────────┘                              │
-                │                                          │
-                ▼                                          │
-    ┌───────────────────────┐                              │
-    │                       │                              │
-    │    PHASE 4            │                              │
-    │ Asset Management      │                              │
-    │ QR Codes, Maintenance │                              │
-    │                       │                              │
-    └───────────┬───────────┘                              │
-                │                                          │
-                ▼                                          │
-    ┌───────────────────────┐                              │
-    │                       │                              │
-    │    PHASE 5            │◄─────────────────────────────┘
-    │ iOS & Advanced        │  (iOS can use Phase 4 QR scanning)
-    │ Apple Sign-In, Siri   │
-    │ Biometrics, i18n      │
-    │                       │
-    └───────────────────────┘
+                                        ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │                                                 │
+                    │              PHASE 2A (Enhanced)                │
+                    │         COMPLETE - Features                     │
+                    │   Tasks, Notifications, KMZ, Web Dashboard      │
+                    │   83 endpoints, 2,141 tests                     │
+                    │                                                 │
+                    └───────────────────┬─────────────────────────────┘
+                                        │
+                                        ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │                                                 │
+                    │            PHASE 2B (UI/UX Revamp)              │
+                    │         IN PROGRESS - Design System             │
+                    │   Neo Brutalism 2.0, Design Tokens              │
+                    │   26 Components, 39 Pages/Screens               │
+                    │                                                 │
+                    └───────────────────┬─────────────────────────────┘
+                                        │
+                                        ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │                                                 │
+                    │         PHASE 3 (Polishing & E2E)               │
+                    │         NOT STARTED                             │
+                    │   Manual Testing, E2E Tests, Polish             │
+                    │                                                 │
+                    └───────────────────┬─────────────────────────────┘
+                                        │
+                        ┌───────────────┼───────────────┐
+                        │               │               │
+                        ▼               ▼               ▼
+                    Phase 4A        Phase 4B        Phase 4C
+                  (Analytics)      (Assets)         (iOS)
 ```
 
 ---
@@ -137,6 +129,46 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
 |-----------|----------|-------|
 | Tasks Module | Web Dashboard | Task management UI |
 | KMZ Import | Web Dashboard | Area boundary editor |
+
+---
+
+### Phase 2A (UI/UX Revamp) Dependencies
+
+**Requires from Phase 2:**
+
+| Dependency | Source | Type | Notes |
+|------------|--------|------|-------|
+| All web components | `fe/web/src/components/` | Hard | Components to update |
+| All mobile components | `fe/mobile/src/components/nb/` | Hard | Components to update |
+| Design token files | CSS/TypeScript | Hard | Token sources to update |
+| All web pages | `fe/web/src/app/` | Hard | Pages to update |
+| All mobile screens | `fe/mobile/src/screens/` | Hard | Screens to update |
+
+**Provides to Phase 3:**
+
+| Component | Consumer | Notes |
+|-----------|----------|-------|
+| Updated design tokens | E2E visual tests | Consistent styling |
+| Updated components | Manual testing | Visual consistency |
+| Accessibility fixes | E2E accessibility tests | WCAG compliance |
+| Mobile-web parity | Cross-platform testing | Consistent UX |
+
+**Key Deliverables:**
+
+| Deliverable | Quantity | Notes |
+|-------------|----------|-------|
+| Design token updates | 2 files | globals.css, nbTokens.ts |
+| Web component updates | 16 | NB components |
+| Mobile component updates | 10 | NB components |
+| Web page updates | 22 | Dashboard pages |
+| Mobile screen updates | 17 | App screens |
+| Accessibility fixes | 18 | ARIA, focus, roles |
+
+**Non-Breaking Updates:**
+- Visual-only changes (colors, borders, shadows, radius)
+- No API changes
+- No navigation changes
+- No database changes
 
 ---
 

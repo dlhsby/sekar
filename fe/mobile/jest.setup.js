@@ -15,6 +15,8 @@ jest.mock('react-native', () => {
   // Create mock functions with our implementation
   const mockAlert = jest.fn(alertImplementation);
   const mockPrompt = jest.fn(promptImplementation);
+  const mockVibrate = jest.fn();
+  const mockCancel = jest.fn();
 
   // Add Alert to RN without spreading (which triggers getters)
   RN.Alert = {
@@ -22,9 +24,16 @@ jest.mock('react-native', () => {
     prompt: mockPrompt,
   };
 
+  // Add Vibration mock
+  RN.Vibration = {
+    vibrate: mockVibrate,
+    cancel: mockCancel,
+  };
+
   // Store references globally so beforeEach can access them
   global.__ALERT_MOCK__ = mockAlert;
   global.__PROMPT_MOCK__ = mockPrompt;
+  global.__VIBRATION_MOCK__ = mockVibrate;
 
   return RN;
 });
@@ -172,6 +181,36 @@ jest.mock('@react-native-firebase/messaging', () => {
   return messaging;
 });
 
+// Mock @notifee/react-native (Phase 2 - Local Notifications)
+jest.mock('@notifee/react-native', () => ({
+  __esModule: true,
+  default: {
+    displayNotification: jest.fn().mockResolvedValue(undefined),
+    createChannel: jest.fn().mockResolvedValue('default'),
+    getInitialNotification: jest.fn().mockResolvedValue(null),
+    onBackgroundEvent: jest.fn(),
+    onForegroundEvent: jest.fn(() => jest.fn()),
+    cancelNotification: jest.fn().mockResolvedValue(undefined),
+    cancelAllNotifications: jest.fn().mockResolvedValue(undefined),
+    getBadgeCount: jest.fn().mockResolvedValue(0),
+    setBadgeCount: jest.fn().mockResolvedValue(undefined),
+    requestPermission: jest.fn().mockResolvedValue({ authorizationStatus: 1 }),
+  },
+  AndroidImportance: {
+    HIGH: 4,
+    DEFAULT: 3,
+    LOW: 2,
+    MIN: 1,
+    NONE: 0,
+  },
+  EventType: {
+    DISMISSED: 0,
+    PRESS: 1,
+    ACTION_PRESS: 2,
+    DELIVERED: 3,
+  },
+}));
+
 // Mock socket.io-client (Phase 2 - WebSocket)
 jest.mock('socket.io-client', () => {
   const mockSocket = {
@@ -198,7 +237,7 @@ global.API_VERSION = 'v1';
 global.GOOGLE_MAPS_API_KEY = 'mock-google-maps-key';
 global.APP_ENV = 'test';
 
-// Global setup hook to ensure Alert mock is always available
+// Global setup hook to ensure Alert and Vibration mocks are always available
 beforeEach(() => {
   // CRITICAL: Restore Alert mock implementation before each test
   // This runs before EVERY test, ensuring the mock is always functional
@@ -219,6 +258,18 @@ beforeEach(() => {
     } else {
       RN.Alert.alert = global.__ALERT_MOCK__;
       RN.Alert.prompt = global.__PROMPT_MOCK__;
+    }
+
+    // Also ensure RN.Vibration is set up correctly
+    if (global.__VIBRATION_MOCK__) {
+      if (!RN.Vibration || typeof RN.Vibration.vibrate !== 'function') {
+        RN.Vibration = {
+          vibrate: global.__VIBRATION_MOCK__,
+          cancel: jest.fn(),
+        };
+      } else {
+        RN.Vibration.vibrate = global.__VIBRATION_MOCK__;
+      }
     }
   }
 });

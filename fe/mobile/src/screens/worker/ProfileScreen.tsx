@@ -689,6 +689,26 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
             color={nbColors.gray[600]}
           />
         </TouchableOpacity>
+
+        <View style={styles.menuDivider} />
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Settings')}
+          activeOpacity={0.7}>
+          <MaterialCommunityIcons
+            name="cog-outline"
+            size={24}
+            color={nbColors.gray[600]}
+            style={styles.menuIcon}
+          />
+          <Text style={styles.menuText}>Pengaturan</Text>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={nbColors.gray[600]}
+          />
+        </TouchableOpacity>
       </NBCard>
 
       {/* Logout Button */}
@@ -742,7 +762,7 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.md, // 16px - reduced from xl (32px)
     backgroundColor: nbColors.white,
     marginBottom: nbSpacing.md,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -756,7 +776,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -780,8 +800,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.primary,
-    borderRadius: 0, // Sharp corners - Neo Brutalism style
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.sm,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   roleBadgeText: {
@@ -796,8 +816,8 @@ const styles = StyleSheet.create({
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
     padding: nbSpacing.md,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -839,10 +859,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     backgroundColor: nbColors.primary,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     minWidth: 80,
     alignItems: 'center',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   syncButtonDisabled: {
@@ -850,7 +870,7 @@ const styles = StyleSheet.create({
   },
   syncButtonSecondary: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   syncButtonDanger: {
@@ -907,7 +927,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statDivider: {
-    width: nbBorders.default,
+    width: nbBorders.base,
     height: 40,
     backgroundColor: nbColors.black,
   },
@@ -927,7 +947,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: nbSpacing.md,
-    borderTopWidth: nbBorders.default,
+    borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
   },
   reportsLabel: {
@@ -945,9 +965,9 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     overflow: 'hidden',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -971,7 +991,7 @@ const styles = StyleSheet.create({
     fontWeight: nbTypography.fontWeight.bold,
   },
   menuDivider: {
-    height: nbBorders.default,
+    height: nbBorders.base,
     backgroundColor: nbColors.black,
     marginLeft: nbSpacing.md + nbSpacing.md + 24, // icon width (24) + margins
   },

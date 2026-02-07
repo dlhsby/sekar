@@ -23,7 +23,7 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
-import { NBButton, NBCard } from '../../components/nb';
+import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
 import { formatDate } from '../../utils/dateUtils';
 import { getReports } from '../../services/api/supervisorApi';
 import ReportCard, { type ReportCardData } from '../../components/supervisor/ReportCard';
@@ -208,17 +208,23 @@ function ReportsListScreen({
   };
 
   return (
-    <View style={styles.container}>
-      {error && (
-        <NBAlert
-          variant="danger"
-          title="Gagal Memuat Laporan"
-          message={error}
-          actionLabel="Coba Lagi"
-          onAction={loadReports}
-          testID="reports-list-error"
-        />
-      )}
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <View style={styles.container}>
+        {error && (
+          <NBAlert
+            variant="danger"
+            title="Gagal Memuat Laporan"
+            message={error}
+            actionLabel="Coba Lagi"
+            onAction={loadReports}
+            testID="reports-list-error"
+          />
+        )}
 
       {renderHeader()}
 
@@ -293,19 +299,20 @@ function ReportsListScreen({
         </TouchableOpacity>
       </Modal>
     </View>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: 'transparent',
   },
   filterBar: {
     flexDirection: 'row',
     padding: nbSpacing.md,
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
   },
   filterButton: {
@@ -387,8 +394,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: nbBorderRadius.none,
     borderTopRightRadius: nbBorderRadius.none,
     borderTopWidth: nbBorders.thick,
-    borderLeftWidth: nbBorders.default,
-    borderRightWidth: nbBorders.default,
+    borderLeftWidth: nbBorders.base,
+    borderRightWidth: nbBorders.base,
     borderColor: nbColors.black,
     paddingTop: nbSpacing.lg,
     paddingBottom: Platform.OS === 'ios' ? nbSpacing.xl : nbSpacing.lg,
@@ -416,7 +423,7 @@ const styles = StyleSheet.create({
   modalOptionSelected: {
     backgroundColor: nbColors.gray[50],
     borderColor: nbColors.primary,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
   },
   modalOptionText: {
     fontSize: nbTypography.fontSize.base,
@@ -436,7 +443,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.gray[200],
     paddingVertical: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center',
     ...nbShadows.sm,

@@ -26,7 +26,7 @@ import {
   selectTasksError,
 } from '../../store/slices/tasksSlice';
 import { NBTab, NBBackgroundPattern, NBCard, NBBadge, NBEmptyState } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import type { WorkerTabScreenProps } from '../../types/navigation.types';
 import { getMyReports } from '../../services/api/reportsApi';
 import { getMyTasks } from '../../services/api/tasksApi';
@@ -404,9 +404,9 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     paddingHorizontal: nbSpacing.lg,
     paddingVertical: nbSpacing.sm,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     ...nbShadows.sm,
   },
   retryButtonText: {

@@ -20,6 +20,7 @@ import {
   nbSpacing,
   nbShadows,
   nbBorders,
+  nbBorderRadius,
 } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
@@ -814,7 +815,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     marginBottom: nbSpacing.xs, // 4px - reduced from 8px
     padding: nbSpacing.sm,
-    borderRadius: 0, // Sharp corners - NB style
+    borderRadius: nbBorderRadius.base,
     backgroundColor: nbColors.gray[50],
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
@@ -854,8 +855,8 @@ const styles = StyleSheet.create({
   selfieImage: {
     width: '100%',
     height: 250, // 250px - reduced from 300px for more content
-    borderRadius: 0, // Sharp corners - NB style
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm, // 8px - reduced from 16px
     backgroundColor: nbColors.gray[200],
@@ -877,8 +878,8 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     padding: nbSpacing.sm, // 8px - reduced from 16px
     backgroundColor: nbColors.white,
-    borderRadius: 0, // Sharp corners - NB style
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.warning,
     ...nbShadows.sm,
   },
@@ -896,8 +897,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.danger,
     padding: nbSpacing.sm, // 8px - reduced from 16px
     marginBottom: nbSpacing.sm, // 8px - reduced from 16px
-    borderRadius: 0, // Sharp corners - NB style
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -918,8 +919,8 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     padding: nbSpacing.sm, // 8px - reduced from 16px
     backgroundColor: nbColors.white,
-    borderRadius: 0, // Sharp corners - NB style
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.warning,
     ...nbShadows.sm,
   },
@@ -938,7 +939,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     padding: 6, // 6px - reduced from 8px for compactness
     backgroundColor: nbColors.gray[50],
-    borderRadius: 0, // Sharp corners - NB style
+    borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.thin, // 1px border
     borderColor: nbColors.black,
   },

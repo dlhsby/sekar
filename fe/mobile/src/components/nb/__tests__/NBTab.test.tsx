@@ -23,7 +23,7 @@ describe('NBTab', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockOnTabChange.mockClear();
   });
 
   describe('rendering', () => {
@@ -191,6 +191,19 @@ describe('NBTab', () => {
   });
 
   describe('accessibility', () => {
+    it('has tablist role on container (NB 2.0)', () => {
+      const { getByTestId } = render(
+        <NBTab
+          tabs={defaultTabs}
+          activeTab="tasks"
+          onTabChange={mockOnTabChange}
+          testID="tabs"
+        />,
+      );
+      const container = getByTestId('tabs');
+      expect(container.props.accessibilityRole).toBe('tablist');
+    });
+
     it('has tab accessibility role', () => {
       const { getByTestId } = render(
         <NBTab

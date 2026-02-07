@@ -1,6 +1,6 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** February 2, 2026
+**Last Updated:** February 6, 2026
 **Status:** Production Ready
 **Deployment Time:** 15-20 minutes (automated)
 
@@ -92,13 +92,29 @@ curl http://localhost:3000/api/health
 
 ### 1.2 Configure GitHub Secrets
 
-**All secrets are stored as GitHub repository secrets** and automatically injected during deployment.
+**All secrets are stored in the GitHub `production` environment** and automatically injected during deployment.
+
+> **Important: Environment vs Repository Secrets**
+>
+> Secrets must be configured in the **`production` environment**, not as repository-level secrets.
+> Both the `build` and `deploy` jobs reference `environment: production` in the workflow,
+> so they can only access secrets stored in that environment scope.
+>
+> If secrets are added as repository secrets instead, the build job will fail with:
+> `Error: Credentials could not be loaded, please check your action inputs`
+
+> **Deployment Branch Policy**
+>
+> The `production` environment requires the `main` branch to be authorized for deployment.
+> If deployments are blocked, verify that `main` is listed under:
+> Settings → Environments → production → Deployment branches → Add deployment branch rule
 
 **Navigate to GitHub Secrets:**
-1. Go to: https://github.com/wahyutrip/sekar/settings/secrets/actions
-2. Click "New repository secret" for each secret below
+1. Go to: https://github.com/wahyutrip/sekar/settings/environments
+2. Click on the **production** environment
+3. Under "Environment secrets", click "Add secret" for each secret below
 
-**Required: 16 Repository Secrets**
+**Required: 16 Environment Secrets (in `production` environment)**
 
 #### AWS Infrastructure (4 secrets)
 
@@ -216,7 +232,7 @@ Get from: https://account.mapbox.com/access-tokens/
 
 After adding all secrets, verify in GitHub:
 
-Settings → Secrets and variables → Actions → Repository secrets
+Settings → Environments → production → Environment secrets
 
 You should see exactly **16 secrets:**
 
@@ -469,6 +485,30 @@ curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
 
 ---
 
+### Issue 1b: "Credentials could not be loaded" in Build Job
+
+**Symptom:** Build and Push to ECR job fails at "Configure AWS credentials" with:
+```
+Error: Credentials could not be loaded, please check your action inputs:
+Could not load credentials from any providers
+```
+
+**Root Cause:** AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are stored in the `production` environment but the build job doesn't have `environment: production` set, so it can't access them.
+
+**Fix:**
+1. Ensure the build job in `.github/workflows/backend-ci-cd.yml` has `environment: production`:
+   ```yaml
+   build:
+     name: Build and Push to ECR
+     runs-on: ubuntu-latest
+     needs: [test, security]
+     environment: production    # Required to access environment secrets
+   ```
+2. Verify secrets exist in Settings → Environments → production (not just repository secrets)
+3. Verify `main` branch is authorized under the production environment's deployment branch policies
+
+---
+
 ### Issue 2: Backend .env.production Not Created
 
 **Symptom:** Deployment succeeds but backend fails to start
@@ -677,11 +717,11 @@ docker-compose -f docker-compose.prod.yml start backend
 
 To update any secret after deployment:
 
-1. Go to: https://github.com/wahyutrip/sekar/settings/secrets/actions
-2. Click on secret name
-3. Click "Update"
-4. Enter new value
-5. Click "Update secret"
+1. Go to: https://github.com/wahyutrip/sekar/settings/environments
+2. Click on **production** environment
+3. Find the secret under "Environment secrets"
+4. Click "Update"
+5. Enter new value and save
 6. Push to main branch to trigger re-deployment:
    ```bash
    git commit --allow-empty -m "chore: update production secrets"

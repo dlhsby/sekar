@@ -257,8 +257,8 @@ export const NBAlert: React.FC<NBAlertProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderWidth: nbBorders.default,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderWidth: nbBorders.base,
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
     paddingVertical: nbSpacing.md,
     paddingHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,

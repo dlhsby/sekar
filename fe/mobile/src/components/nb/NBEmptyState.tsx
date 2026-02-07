@@ -132,10 +132,20 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
     description !== undefined ? description : variantDescriptions[variant];
 
   return (
-    <View style={[styles.container, style]} testID={testID}>
+    <View
+      style={[styles.container, style]}
+      testID={testID}
+      accessibilityRole="alert"
+      accessibilityLabel={`${title}. ${displayDescription || ''}`}
+    >
       <View style={styles.card}>
         {/* Icon */}
-        <View style={styles.iconContainer} testID={`${testID}-icon-container`}>
+        <View
+          style={styles.iconContainer}
+          testID={`${testID}-icon-container`}
+          accessibilityElementsHidden={true}
+          importantForAccessibility="no-hide-descendants"
+        >
           {typeof displayIcon === 'string' ? (
             <Text style={styles.iconText}>{displayIcon}</Text>
           ) : (
@@ -144,7 +154,11 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
         </View>
 
         {/* Title */}
-        <Text style={[styles.title, titleStyle]} testID={`${testID}-title`}>
+        <Text
+          style={[styles.title, titleStyle]}
+          testID={`${testID}-title`}
+          accessibilityRole="header"
+        >
           {title}
         </Text>
 
@@ -183,9 +197,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
     paddingHorizontal: nbSpacing.xl,
     paddingVertical: nbSpacing['2xl'],
     alignItems: 'center',
@@ -195,9 +209,9 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginBottom: nbSpacing.lg,
     padding: nbSpacing.md,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
     backgroundColor: nbColors.gray[50],
     ...nbShadows.sm,
   },

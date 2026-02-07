@@ -21,6 +21,7 @@ import {
   nbTypography,
   nbSpacing,
   nbBorders,
+  nbBorderRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 import { NBButton, NBCard, NBBackgroundPattern, NBBadge } from '../../components/nb';
@@ -274,6 +275,7 @@ function ReportDetailScreen({ route, navigation }: ReportDetailScreenProps): JSX
                 </View>
                 <MapView
                   provider={PROVIDER_GOOGLE}
+                  userInterfaceStyle="light"
                   style={styles.map}
                   initialRegion={{
                     latitude: Number(report.gps_lat),
@@ -408,9 +410,9 @@ const styles = StyleSheet.create({
   },
   inAppMapContainer: {
     marginTop: nbSpacing.md,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     overflow: 'hidden',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   mapHeader: {

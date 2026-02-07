@@ -25,7 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DeviceInfo from 'react-native-device-info';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBTextInput } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { createReport } from '../../services/api/reportsApi';
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
   },
   offlineWarning: {
     backgroundColor: nbColors.warningLight,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.warning,
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
@@ -772,8 +772,8 @@ const styles = StyleSheet.create({
   photoThumbnail: {
     width: 160, // Increased from 120 to 160dp for better visibility outdoors
     height: 160, // Increased from 120 to 160dp for better visibility outdoors
-    borderRadius: 0, // Sharp corners for NB
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   removePhotoButton: {
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
     width: 48, // Increased from 24 to 48dp for glove-friendly touch target
     height: 48, // Increased from 24 to 48dp for glove-friendly touch target
     borderRadius: 24,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center',
     justifyContent: 'center',
@@ -798,8 +798,8 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     width: 160, // Matched to thumbnail size
     height: 160, // Matched to thumbnail size
-    borderRadius: 0, // Sharp corners for NB
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -817,8 +817,8 @@ const styles = StyleSheet.create({
   },
   emptyPhotoButton: {
     height: 120,
-    borderRadius: 0, // Sharp corners for NB
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -834,9 +834,9 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm,
   },
   descriptionInput: {
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: 0, // Sharp corners for NB
+    borderRadius: nbBorderRadius.base,
     padding: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
     color: nbColors.black,
@@ -853,8 +853,8 @@ const styles = StyleSheet.create({
   },
   workTypeOption: {
     padding: nbSpacing.md,
-    borderRadius: 0, // Sharp corners for NB
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm,
     backgroundColor: nbColors.white,
@@ -885,8 +885,8 @@ const styles = StyleSheet.create({
   locationInfo: {
     padding: nbSpacing.lg,                   // md → lg (20px for better readability)
     backgroundColor: withAlpha(nbColors.accentSky, 0.15), // Cyan tint background (15% opacity)
-    borderRadius: 0,                         // Sharp corners for NB
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,                         // Hard-edge shadow for emphasis
   },

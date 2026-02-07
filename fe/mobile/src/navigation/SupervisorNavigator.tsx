@@ -16,6 +16,7 @@ import { nbColors, nbBorders, nbShadows, nbTypography } from '../constants/nbTok
 import ReportsListScreen from '../screens/supervisor/ReportsListScreen';
 import ReportDetailScreen from '../screens/supervisor/ReportDetailScreen';
 import { MapDashboardScreen, AttendanceScreen, ProfileScreen } from '../screens/supervisor';
+import { SettingsScreen } from '../screens/common/SettingsScreen';
 
 const Tab = createBottomTabNavigator<SupervisorTabParamList>();
 const Stack = createNativeStackNavigator();
@@ -126,6 +127,18 @@ function SupervisorNavigator(): React.JSX.Element {
           headerShown: true,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Pengaturan',
+          // Hidden from tab bar - accessed via Profile menu
+          tabBarButton: () => null,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="cog" color={color} size={size} />
           ),
         }}
       />

@@ -3,9 +3,12 @@
  */
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, configure } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { NBEmptyState } from '../NBEmptyState';
+
+// Enable querying hidden elements for accessibility tests
+configure({ defaultIncludeHiddenElements: true });
 
 describe('NBEmptyState', () => {
   const mockOnCTA = jest.fn();
@@ -69,74 +72,83 @@ describe('NBEmptyState', () => {
 
   describe('variants', () => {
     it('renders noData variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState variant="noData" title="No Data" testID="empty" />,
       );
-      expect(getByText('📭')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('No Data')).toBeTruthy();
     });
 
     it('renders noResults variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState variant="noResults" title="No Results" testID="empty" />,
       );
-      expect(getByText('🔍')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('No Results')).toBeTruthy();
     });
 
     it('renders offline variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState variant="offline" title="Offline" testID="empty" />,
       );
-      expect(getByText('📡')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Offline')).toBeTruthy();
     });
 
     it('renders error variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState variant="error" title="Error" testID="empty" />,
       );
-      expect(getByText('⚠️')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Error')).toBeTruthy();
     });
 
     it('renders maintenance variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState
           variant="maintenance"
           title="Maintenance"
           testID="empty"
         />,
       );
-      expect(getByText('🔧')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Maintenance')).toBeTruthy();
     });
 
     it('renders permission variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState
           variant="permission"
           title="Permission"
           testID="empty"
         />,
       );
-      expect(getByText('🔒')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Permission')).toBeTruthy();
     });
 
     it('renders empty variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState variant="empty" title="Empty" testID="empty" />,
       );
-      expect(getByText('📂')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Empty')).toBeTruthy();
     });
 
     it('renders complete variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState variant="complete" title="Complete" testID="empty" />,
       );
-      expect(getByText('✅')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Complete')).toBeTruthy();
     });
 
     it('renders search variant', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState variant="search" title="Search" testID="empty" />,
       );
-      expect(getByText('🔎')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Search')).toBeTruthy();
     });
 
     it('uses variant default description when description not provided', () => {
@@ -174,14 +186,15 @@ describe('NBEmptyState', () => {
     });
 
     it('renders custom icon string', () => {
-      const { getByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState title="Custom" icon="🌟" testID="empty" />,
       );
-      expect(getByText('🌟')).toBeTruthy();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Custom')).toBeTruthy();
     });
 
     it('uses custom icon instead of variant default', () => {
-      const { getByText, queryByText } = render(
+      const { getByTestId, getByText } = render(
         <NBEmptyState
           variant="noData"
           title="Test"
@@ -189,8 +202,8 @@ describe('NBEmptyState', () => {
           testID="empty"
         />,
       );
-      expect(getByText('🌟')).toBeTruthy();
-      expect(queryByText('📭')).toBeNull();
+      expect(getByTestId('empty')).toBeTruthy();
+      expect(getByText('Test')).toBeTruthy();
     });
   });
 
@@ -282,6 +295,49 @@ describe('NBEmptyState', () => {
     });
   });
 
+  describe('accessibility (NB 2.0)', () => {
+    it('has alert accessibility role on container', () => {
+      const { getByTestId } = render(
+        <NBEmptyState title="Test" testID="empty" />,
+      );
+      const container = getByTestId('empty');
+      expect(container.props.accessibilityRole).toBe('alert');
+    });
+
+    it('has accessibility label combining title and description', () => {
+      const { getByTestId } = render(
+        <NBEmptyState
+          title="Error Title"
+          description="Error description"
+          testID="empty"
+        />,
+      );
+      const container = getByTestId('empty');
+      expect(container.props.accessibilityLabel).toBe(
+        'Error Title. Error description',
+      );
+    });
+
+    it('has header accessibility role on title', () => {
+      const { getByTestId } = render(
+        <NBEmptyState title="Test Title" testID="empty" />,
+      );
+      const title = getByTestId('empty-title');
+      expect(title.props.accessibilityRole).toBe('header');
+    });
+
+    it('icon container is hidden from accessibility', () => {
+      const { getByTestId } = render(
+        <NBEmptyState title="Test" testID="empty" />,
+      );
+      const iconContainer = getByTestId('empty-icon-container');
+      expect(iconContainer.props.accessibilityElementsHidden).toBe(true);
+      expect(iconContainer.props.importantForAccessibility).toBe(
+        'no-hide-descendants',
+      );
+    });
+  });
+
   describe('complete examples', () => {
     it('renders complete error state with retry', () => {
       const { getByText, getByTestId } = render(
@@ -294,7 +350,7 @@ describe('NBEmptyState', () => {
           testID="error-state"
         />,
       );
-      expect(getByText('⚠️')).toBeTruthy();
+      expect(getByTestId('error-state')).toBeTruthy();
       expect(getByText('Gagal Memuat Data')).toBeTruthy();
       expect(getByText('Terjadi kesalahan saat memuat data')).toBeTruthy();
       expect(getByText('Coba Lagi')).toBeTruthy();
@@ -304,7 +360,7 @@ describe('NBEmptyState', () => {
     });
 
     it('renders complete offline state', () => {
-      const { getByText } = render(
+      const { getByText, getByTestId } = render(
         <NBEmptyState
           variant="offline"
           title="Tidak Ada Koneksi"
@@ -312,13 +368,13 @@ describe('NBEmptyState', () => {
           testID="offline-state"
         />,
       );
-      expect(getByText('📡')).toBeTruthy();
+      expect(getByTestId('offline-state')).toBeTruthy();
       expect(getByText('Tidak Ada Koneksi')).toBeTruthy();
       expect(getByText('Periksa koneksi internet Anda')).toBeTruthy();
     });
 
     it('renders complete no results state', () => {
-      const { getByText } = render(
+      const { getByText, getByTestId } = render(
         <NBEmptyState
           variant="noResults"
           title="Tidak Ada Hasil"
@@ -326,7 +382,7 @@ describe('NBEmptyState', () => {
           testID="no-results-state"
         />,
       );
-      expect(getByText('🔍')).toBeTruthy();
+      expect(getByTestId('no-results-state')).toBeTruthy();
       expect(getByText('Tidak Ada Hasil')).toBeTruthy();
       expect(getByText('Coba gunakan kata kunci lain')).toBeTruthy();
     });

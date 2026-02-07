@@ -39,6 +39,8 @@ export interface NBBadgeProps {
   textStyle?: TextStyle;
   /** Test ID for testing */
   testID?: string;
+  /** Accessibility label override */
+  accessibilityLabel?: string;
 }
 
 // Color mappings
@@ -107,6 +109,7 @@ export const NBBadge: React.FC<NBBadgeProps> = ({
   style,
   textStyle,
   testID,
+  accessibilityLabel,
 }) => {
   const colorStyle = colorStyles[color];
   const sizeStyle = sizeStyles[size];
@@ -114,6 +117,8 @@ export const NBBadge: React.FC<NBBadgeProps> = ({
   return (
     <View
       testID={testID}
+      accessibilityRole="text"
+      accessibilityLabel={accessibilityLabel || `${color} badge: ${text}`}
       style={[
         styles.badge,
         {
@@ -144,7 +149,7 @@ export const NBBadge: React.FC<NBBadgeProps> = ({
 const styles = StyleSheet.create({
   badge: {
     borderWidth: nbBorders.thin,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.sm, // 4px - NB 2.0 badge radius
     alignSelf: 'flex-start',
   },
   text: {
