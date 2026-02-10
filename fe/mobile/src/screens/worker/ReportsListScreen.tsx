@@ -178,7 +178,6 @@ export function ReportsListScreen({
    */
   useEffect(() => {
     loadReports();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -187,7 +186,6 @@ export function ReportsListScreen({
   useFocusEffect(
     useCallback(() => {
       loadReports();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -215,7 +213,6 @@ export function ReportsListScreen({
     await new Promise(resolve => setTimeout(resolve, 1000));
     // Reload reports
     await loadReports(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -239,7 +236,6 @@ export function ReportsListScreen({
     } catch (err: any) {
       console.error('[ReportsListScreen] Error retrying report:', err);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**

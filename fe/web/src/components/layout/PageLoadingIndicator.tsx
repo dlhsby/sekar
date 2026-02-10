@@ -15,9 +15,11 @@ export function PageLoadingIndicator() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Start loading animation
-    setLoading(true);
-    setProgress(0);
+    // Start loading animation (async to avoid cascading renders)
+    const startTimer = setTimeout(() => {
+      setLoading(true);
+      setProgress(0);
+    }, 0);
 
     // Simulate progress
     const timer1 = setTimeout(() => setProgress(30), 50);
@@ -34,6 +36,7 @@ export function PageLoadingIndicator() {
     }, 500);
 
     return () => {
+      clearTimeout(startTimer);
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);

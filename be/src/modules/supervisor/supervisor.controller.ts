@@ -5,9 +5,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { ActiveWorkersResponseDto, ActiveWorkerDto } from './dto/active-workers-response.dto';
+import { ActiveWorkerDto } from './dto/active-workers-response.dto';
 import { AreaStatusResponseDto } from './dto/area-status-response.dto';
-import { AttendanceResponseDto } from './dto/attendance-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 

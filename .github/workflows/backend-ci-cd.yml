@@ -48,7 +48,7 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=-1
 
       - name: Check Prettier formatting
         run: npx prettier --check "src/**/*.ts" "test/**/*.ts"

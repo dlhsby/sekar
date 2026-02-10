@@ -160,6 +160,7 @@ describe('Sidebar Component', () => {
 
   describe('Active State', () => {
     it('should highlight active item based on current path', () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { usePathname } = require('next/navigation');
       usePathname.mockReturnValue('/users');
 

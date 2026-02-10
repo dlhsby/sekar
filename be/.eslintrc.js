@@ -32,6 +32,7 @@ module.exports = {
       files: ['*.spec.ts', '*.e2e-spec.ts'],
       rules: {
         '@typescript-eslint/no-unused-vars': 'off',
+        '@typescript-eslint/no-explicit-any': 'off', // Allow any in test files for mocks
       },
     },
   ],

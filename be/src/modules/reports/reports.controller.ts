@@ -24,7 +24,6 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { CreateReportDto } from './dto/create-report.dto';
 import { CreateReportJsonDto } from './dto/create-report-json.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { Report, ReportType } from './entities/report.entity';

@@ -24,9 +24,11 @@ jest.mock('next/navigation', () => ({
 
 // Mock next/link
 jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => {
+  const MockLink = ({ children, href }: { children: React.ReactNode; href: string }) => {
     return <a href={href}>{children}</a>;
   };
+  MockLink.displayName = 'MockLink';
+  return MockLink;
 });
 
 // Mock auth hook
@@ -135,9 +137,11 @@ function createWrapper() {
       mutations: { retry: false },
     },
   });
-  return ({ children }: { children: React.ReactNode }) => (
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  Wrapper.displayName = 'TestWrapper';
+  return Wrapper;
 }
 
 describe('ReportsPage Component', () => {

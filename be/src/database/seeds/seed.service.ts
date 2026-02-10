@@ -67,50 +67,50 @@ export class SeedService {
     try {
       await this.userRepository.manager.query('DELETE FROM tasks');
       console.log('  ✓ Cleared tasks table');
-    } catch (error) {
+    } catch (_error) {
       // Table may not exist if Phase 2 not deployed
       console.log('  ⚠️  No tasks to clear (table may not exist - Phase 2 feature)');
     }
 
     try {
       await this.locationLogRepository.createQueryBuilder().delete().execute();
-    } catch (error) {
+    } catch (_error) {
       console.log('  ⚠️  No location_logs to clear (table may be empty)');
     }
 
     try {
       await this.reportRepository.createQueryBuilder().delete().execute();
-    } catch (error) {
+    } catch (_error) {
       console.log('  ⚠️  No reports to clear (table may be empty)');
     }
 
     try {
       await this.shiftRepository.createQueryBuilder().delete().execute();
-    } catch (error) {
+    } catch (_error) {
       console.log('  ⚠️  No shifts to clear (table may be empty)');
     }
 
     try {
       await this.workerAssignmentRepository.createQueryBuilder().delete().execute();
-    } catch (error) {
+    } catch (_error) {
       console.log('  ⚠️  No worker_assignments to clear (table may be empty)');
     }
 
     try {
       await this.areaRepository.createQueryBuilder().delete().execute();
-    } catch (error) {
+    } catch (_error) {
       console.log('  ⚠️  No areas to clear (table may be empty)');
     }
 
     try {
       await this.areaTypeRepository.createQueryBuilder().delete().execute();
-    } catch (error) {
+    } catch (_error) {
       console.log('  ⚠️  No area_types to clear (table may be empty)');
     }
 
     try {
       await this.userRepository.createQueryBuilder().delete().execute();
-    } catch (error) {
+    } catch (_error) {
       console.log('  ⚠️  No users to clear (table may be empty)');
     }
   }

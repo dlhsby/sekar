@@ -204,7 +204,7 @@ export class S3Service {
         }
 
         return parts.join('/');
-      } catch (error) {
+      } catch (_error) {
         this.logger.error(`Failed to parse URL: ${url}`);
         return null;
       }
@@ -230,7 +230,7 @@ export class S3Service {
 
     try {
       return await this.getPresignedUrl(key, expiresIn);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(`Failed to generate presigned URL for ${url}, returning original URL`);
       return url;
     }
