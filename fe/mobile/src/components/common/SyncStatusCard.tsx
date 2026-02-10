@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   syncLabel: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   syncValue: {
     fontSize: nbTypography.fontSize.base,

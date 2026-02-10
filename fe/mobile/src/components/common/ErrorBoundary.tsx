@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
     marginBottom: nbSpacing.lg,
     lineHeight: nbTypography.fontSize.base * nbTypography.lineHeight.relaxed,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   errorStack: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontFamily: 'monospace',
     marginTop: nbSpacing.xs,
   },

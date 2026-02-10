@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     ...nbTextStyles.bodySmall,
     marginTop: nbSpacing.xs,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   progressContainer: {
     flexDirection: 'row',
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: nbBorderRadius.full,
-    backgroundColor: nbColors.gray[300],
+    backgroundColor: nbColors.gray['300'],
     borderWidth: nbBorders.thin,
     borderColor: nbBorders.color,
   },
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   },
   stepDescription: {
     ...nbTextStyles.body,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     textAlign: 'center',
     lineHeight: nbTypography.fontSize.base * nbTypography.lineHeight.relaxed,
   },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   },
   androidNoteText: {
     ...nbTextStyles.bodySmall,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     flex: 1,
     lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.relaxed,
   },
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...nbTextStyles.bodySmall,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     flex: 1,
     lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.normal,
   },

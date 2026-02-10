@@ -192,7 +192,7 @@ export function ChangePasswordModal({
                   <MaterialCommunityIcons
                     name="close"
                     size={24}
-                    color={nbColors.gray[600]}
+                    color={nbColors.gray['600']}
                   />
                 </TouchableOpacity>
               </View>
@@ -248,7 +248,7 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showCurrentPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={nbColors.gray[600]}
+                      color={nbColors.gray['600']}
                     />
                   </TouchableOpacity>
                 </View>
@@ -279,7 +279,7 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showNewPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={nbColors.gray[600]}
+                      color={nbColors.gray['600']}
                     />
                   </TouchableOpacity>
                 </View>
@@ -310,7 +310,7 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showConfirmPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={nbColors.gray[600]}
+                      color={nbColors.gray['600']}
                     />
                   </TouchableOpacity>
                 </View>

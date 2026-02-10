@@ -18,3 +18,7 @@ export { PermissionRequestModal } from './PermissionRequestModal';
 export { ProfileHeader } from './ProfileHeader';
 export { ProfileMenu, type MenuItem } from './ProfileMenu';
 export { SyncStatusCard, type SyncStatus } from './SyncStatusCard';
+export { CollapsibleCard } from './CollapsibleCard';
+export { StatusIndicator } from './StatusIndicator';
+export { CountdownTimer } from './CountdownTimer';
+export { ShiftCard } from './ShiftCard';

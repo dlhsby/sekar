@@ -104,14 +104,14 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
             <MaterialCommunityIcons
               name={item.icon}
               size={24}
-              color={nbColors.gray[600]}
+              color={nbColors.gray['600']}
               style={styles.menuIcon}
             />
             <Text style={styles.menuText}>{item.label}</Text>
             <MaterialCommunityIcons
               name="chevron-right"
               size={24}
-              color={nbColors.gray[600]}
+              color={nbColors.gray['600']}
             />
           </TouchableOpacity>
 

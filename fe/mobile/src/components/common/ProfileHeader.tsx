@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginBottom: nbSpacing.sm,
   },
   roleBadge: {
