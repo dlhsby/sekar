@@ -270,7 +270,7 @@ jobs:
             RATE_LIMIT_TTL=60
             RATE_LIMIT_MAX=100
             RATE_LIMIT_LOGIN_MAX=5
-            FCM_ENABLED=true
+            FCM_ENABLED=false
             FCM_PROJECT_ID=${FCM_PROJECT_ID}
             FCM_CLIENT_EMAIL=${FCM_CLIENT_EMAIL}
             FCM_PRIVATE_KEY=${FCM_PRIVATE_KEY}
@@ -336,7 +336,7 @@ jobs:
             RATE_LIMIT_TTL=60
             RATE_LIMIT_MAX=100
             RATE_LIMIT_LOGIN_MAX=5
-            FCM_ENABLED=true
+            FCM_ENABLED=false
             FCM_PROJECT_ID=${FCM_PROJECT_ID}
             FCM_CLIENT_EMAIL=${FCM_CLIENT_EMAIL}
             FCM_PRIVATE_KEY=${FCM_PRIVATE_KEY}
