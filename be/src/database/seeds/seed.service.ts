@@ -224,7 +224,6 @@ export class SeedService {
     const areas = [
       {
         name: 'Taman Bungkul',
-        code: 'TBK-001',
         area_type_id: parkType.id,
         gps_lat: -7.2905,
         gps_lng: 112.7398,
@@ -234,7 +233,6 @@ export class SeedService {
       },
       {
         name: 'Jalan Raya Darmo',
-        code: 'JRD-001',
         area_type_id: pedestrianType.id,
         gps_lat: -7.2844,
         gps_lng: 112.7915,
@@ -244,7 +242,6 @@ export class SeedService {
       },
       {
         name: 'Taman Harmoni',
-        code: 'THM-001',
         area_type_id: parkType.id,
         gps_lat: -7.3037,
         gps_lng: 112.7375,

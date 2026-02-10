@@ -59,14 +59,12 @@ export class InitialSchema1737000000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE areas (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        name VARCHAR(200) NOT NULL,
-        code VARCHAR(50) NOT NULL UNIQUE,
-        description TEXT,
+        name VARCHAR(100) NOT NULL,
         area_type_id UUID NOT NULL,
-        address TEXT,
         gps_lat DECIMAL(10, 8) NOT NULL,
         gps_lng DECIMAL(11, 8) NOT NULL,
         radius_meters INTEGER DEFAULT 100,
+        address TEXT,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
