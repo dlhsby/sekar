@@ -78,5 +78,7 @@ npm run seed:tasks   # Tasks only (clears tasks table)
 - **Tests:** 845 passing
 - **Coverage:** 90.77%
 - **Features:** JWT auth, role-based access, WebSocket, FCM notifications, S3 uploads
-# Backend deployment test - Tue Feb 10 10:16:48 +07 2026
-# Deployment verification complete - Tue Feb 10 10:34:53 +07 2026
+# Backend deployment successful - Mon Feb 10 11:17:00 +07 2026
+# Production URL: http://api.sekar.wahyutrip.com
+# Health Check: http://api.sekar.wahyutrip.com/api/v1/health
+# API Docs: http://api.sekar.wahyutrip.com/api/v1/docs
