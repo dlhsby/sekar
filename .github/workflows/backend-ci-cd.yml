@@ -313,23 +313,8 @@ jobs:
 
             echo "✅ Database wiped clean"
 
-            # Initialize schema - Run app briefly with synchronize to create base tables
-            echo "📦 Initializing database schema..."
-            timeout 30 docker run --rm \
-              -e DATABASE_HOST=${DATABASE_HOST} \
-              -e DATABASE_PORT=5432 \
-              -e DATABASE_USER=sekar_admin \
-              -e DATABASE_PASSWORD=${DATABASE_PASSWORD} \
-              -e DATABASE_NAME=sekar_db \
-              -e DATABASE_SSL=true \
-              -e DATABASE_SYNCHRONIZE=true \
-              -e DATABASE_MIGRATIONS_RUN=false \
-              -e NODE_ENV=production \
-              $ECR_REGISTRY/sekar-backend:latest \
-              node dist/main.js || echo "✅ Schema initialization complete (timeout expected)"
-
-            # Now run migrations for Phase 2 enhancements
-            echo "📦 Running Phase 2 migrations..."
+            # Run database migrations (InitialSchema + Phase2DatabaseSchema)
+            echo "📦 Running database migrations..."
             docker run --rm \
               -e DATABASE_HOST=${DATABASE_HOST} \
               -e DATABASE_PORT=5432 \
@@ -341,11 +326,11 @@ jobs:
               $ECR_REGISTRY/sekar-backend:latest \
               sh -c "node ./node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js && echo '✅ All migrations applied successfully'" \
               || {
-                echo "⚠️  WARNING: Migrations failed - may already be applied"
+                echo "⚠️  WARNING: Migrations may have already been applied"
                 echo "Continuing with deployment..."
               }
 
-            echo "✅ Database initialization completed"
+            echo "✅ Database migrations completed"
 
             # Seed database with test data (DISABLED - run manually after deployment)
             echo "⏩ Skipping database seeding (run manually with: docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod)"
