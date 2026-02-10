@@ -1,7 +1,7 @@
 # Phase 2B: UI/UX Revamp - Status Tracking
 
-**Last Updated:** February 6, 2026
-**Overall Progress:** 108/126 tasks (86%)
+**Last Updated:** February 9, 2026
+**Overall Progress:** 126/126 tasks (100%)
 
 ---
 
@@ -10,12 +10,12 @@
 | Category | Complete | Total | Progress |
 |----------|----------|-------|----------|
 | Token Updates | 8 | 8 | ██████████ 100% |
-| Web Components | 10 | 16 | ██████░░░░ 63% |
+| Web Components | 16 | 16 | ██████████ 100% |
 | Mobile Components | 10 | 10 | ██████████ 100% |
-| Web Pages | 18 | 22 | ████████░░ 82% |
+| Web Pages | 22 | 22 | ██████████ 100% |
 | Mobile Screens | 17 | 17 | ██████████ 100% |
-| Accessibility | 14 | 18 | ████████░░ 78% |
-| Documentation | 14 | 18 | ████████░░ 78% |
+| Accessibility | 18 | 18 | ██████████ 100% |
+| Documentation | 18 | 18 | ██████████ 100% |
 | Verification | 17 | 17 | ██████████ 100% |
 
 ---
@@ -48,26 +48,26 @@
 ### Web Components (16)
 
 #### P1 - Critical Path
-- [ ] **NBButton** - border-3→2, add rounded-nb-base
-- [ ] **NBCard** - border-3→2, add rounded-nb-base, update subcomponents
-- [ ] **NBInput** - border-3→2, add rounded-nb-base
-- [ ] **NBSelect** - trigger/content border-3→2, add rounded-nb-base
-- [ ] **NBSidebar** - border-r-3→2, bg navy→forest green, update hover/active
-- [ ] **NBDialog** - border-3→2, add rounded-nb-md, header/footer borders
-- [ ] **NBTable** - outer border-3→2, header border-b-3→2
-- [ ] **NBDataTable** - inherits NBTable changes
-- [ ] **NBFormInput** - inherits NBInput changes
-- [ ] **NBFormSelect** - inherits NBSelect changes
+- [x] **NBButton** - border-3→2, add rounded-nb-base
+- [x] **NBCard** - border-3→2, add rounded-nb-base, update subcomponents
+- [x] **NBInput** - border-3→2, add rounded-nb-base
+- [x] **NBSelect** - trigger/content border-3→2, add rounded-nb-base
+- [x] **NBSidebar** - border-r-3→2, bg navy→forest green, update hover/active
+- [x] **NBDialog** - border-3→2, add rounded-nb-md, header/footer borders
+- [x] **NBTable** - outer border-3→2, header border-b-3→2
+- [x] **NBDataTable** - inherits NBTable changes
+- [x] **NBFormInput** - inherits NBInput changes
+- [x] **NBFormSelect** - inherits NBSelect changes
 
 #### P2 - Supporting Components
-- [ ] **NBTextarea** - border-3→2, add rounded-nb-base
-- [ ] **NBBadge** - add rounded-nb-sm, add shadow-nb-xs
-- [ ] **NBDropdownMenu** - border-3→2, add rounded-nb-base
-- [ ] **NBEmptyState** - border-3→2, add rounded-nb-base, icon styling
+- [x] **NBTextarea** - border-3→2, add rounded-nb-base
+- [x] **NBBadge** - add rounded-nb-sm, add shadow-nb-xs
+- [x] **NBDropdownMenu** - border-3→2, add rounded-nb-base
+- [x] **NBEmptyState** - border-3→2, add rounded-nb-base, icon styling
 
 #### P3 - Polish
-- [ ] **NBSkeleton** - add rounded-nb-sm, add shadow-nb-xs
-- [ ] **NBLabel** - add explicit text-nb-black color
+- [x] **NBSkeleton** - add rounded-nb-sm, add shadow-nb-xs
+- [x] **NBLabel** - add explicit text-nb-black color
 
 ### Mobile Components (10) ✅ ALL VERIFIED
 
@@ -92,18 +92,18 @@
 ## Phase 3: Accessibility Fixes
 
 ### Web Critical (P0)
-- [ ] Settings page: Add role="switch" to all toggles
-- [ ] Monitoring page: Add aria-label to all status dots
-- [ ] Report Detail page: Add alt text to all photos
-- [ ] All dialogs: Add aria-labelledby linking to title
+- [x] Settings page: Add role="switch" to all toggles
+- [x] Monitoring page: Add aria-label to all status dots
+- [x] Report Detail page: Add alt text to all photos
+- [x] All dialogs: Add aria-labelledby linking to title
 
 ### Web High Priority (P1)
-- [ ] All forms: Add aria-live="polite" to error regions
-- [ ] All tables: Add aria-sort to sortable headers
-- [ ] All pagination: Add aria-label for context
-- [ ] Sidebar: Add aria-expanded to collapsible items
-- [ ] Dashboard: Add aria-label to stat card icons
-- [ ] Rayons: Fix loading spinner accessibility
+- [x] All forms: Add aria-live="polite" to error regions
+- [x] All tables: Add aria-sort to sortable headers
+- [x] All pagination: Add aria-label for context
+- [x] Sidebar: Add aria-expanded to collapsible items
+- [x] Dashboard: Add aria-label to stat card icons
+- [x] Rayons: Fix loading spinner accessibility
 
 ### Mobile Accessibility ✅ ALL VERIFIED
 - [x] NBBadge: Add accessibilityRole="text", accessibilityLabel ✓
@@ -118,48 +118,48 @@
 ### Web Pages (22)
 
 #### Authentication (1)
-- [ ] Login - Apply card NB styling, focus ring, error aria-live
+- [x] Login - Apply card NB styling, focus ring, error aria-live
 
 #### Dashboard (1)
-- [ ] Dashboard Home - Apply stat card styling, aria-labels
+- [x] Dashboard Home - Apply stat card styling, aria-labels
 
 #### Areas (4)
-- [ ] Areas List - Fix hardcoded widths, inconsistent gap
-- [ ] Area Detail - Fix h-[500px], map alt text
-- [ ] Area Edit - Fix max-w-7xl
-- [ ] Area New - Fix max-w-7xl
+- [x] Areas List - Fix hardcoded widths, inconsistent gap
+- [x] Area Detail - Fix h-[500px], map alt text
+- [x] Area Edit - Fix max-w-7xl
+- [x] Area New - Fix max-w-7xl
 
 #### Rayons (2)
-- [ ] Rayons List - Fix text-gray→text-nb-gray, loading spinner a11y
-- [ ] Rayon Detail - Fix breadcrumb aria-label, hardcoded spacing
+- [x] Rayons List - Fix text-gray→text-nb-gray, loading spinner a11y
+- [x] Rayon Detail - Fix breadcrumb aria-label, hardcoded spacing
 
 #### Tasks (2)
-- [ ] Tasks List - Fix filter aria-pressed, stat cards aria-label
-- [ ] Task New - Fix bg-red-100→bg-nb-danger-light, hardcoded padding
+- [x] Tasks List - Fix filter aria-pressed, stat cards aria-label
+- [x] Task New - Fix bg-red-100→bg-nb-danger-light, hardcoded padding
 
 #### Reports (2)
-- [ ] Reports List - Fix date filters aria-label, search aria-live
-- [ ] Report Detail - Fix photo alt text, GPS aria-label
+- [x] Reports List - Fix date filters aria-label, search aria-live
+- [x] Report Detail - Fix photo alt text, GPS aria-label
 
 #### Monitoring (1)
-- [ ] Monitoring - Fix status dots aria-label, aria-live for updates
+- [x] Monitoring - Fix status dots aria-label, aria-live for updates
 
 #### Users (3)
-- [ ] Users List - Fix table aria-sort, pagination aria-live
-- [ ] User New - Fix form error aria-live
-- [ ] User Edit - Fix loading state aria-label
+- [x] Users List - Fix table aria-sort, pagination aria-live
+- [x] User New - Fix form error aria-live
+- [x] User Edit - Fix loading state aria-label
 
 #### Schedules (3)
-- [ ] Schedules List - Fix dialog aria-labelledby
-- [ ] Schedule New - Fix bg-red-50→token, helper text
-- [ ] Schedule Edit - Same as Schedule New
+- [x] Schedules List - Fix dialog aria-labelledby
+- [x] Schedule New - Fix bg-red-50→token, helper text
+- [x] Schedule Edit - Same as Schedule New
 
 #### Settings (1)
-- [ ] Settings - Fix toggle role="switch", hardcoded dimensions
+- [x] Settings - Fix toggle role="switch", hardcoded dimensions
 
 #### Layouts (2)
-- [ ] Dashboard Layout - Fix sidebar toggle aria-expanded
-- [ ] Root Layout - Verify lang="id" (✅ already set)
+- [x] Dashboard Layout - Fix sidebar toggle aria-expanded
+- [x] Root Layout - Verify lang="id" (✅ already set)
 
 ### Mobile Screens (17) ✅ ALL VERIFIED
 
@@ -207,14 +207,14 @@
 - [x] `specs/mobile/component-library.md`
 
 ### Updated Documents
-- [ ] `specs/web/pages.md` - Add NB styling per page
-- [ ] `specs/web/components.md` - Update token references
-- [ ] `specs/web/forms.md` - Add validation UI specs
-- [ ] `specs/web/data-tables.md` - Add NB table specs
-- [ ] `specs/web/authentication.md` - Add login UI spec
-- [ ] `specs/mobile/screens.md` - Add token mappings
-- [ ] `specs/mobile/navigation.md` - Add header/tab styling
-- [ ] `specs/mobile/permissions.md` - Add modal styling
+- [x] `specs/web/pages.md` - Add NB styling per page
+- [x] `specs/web/components.md` - Update token references
+- [x] `specs/web/forms.md` - Add validation UI specs
+- [x] `specs/web/data-tables.md` - Add NB table specs
+- [x] `specs/web/authentication.md` - Add login UI spec
+- [x] `specs/mobile/screens.md` - Add token mappings
+- [x] `specs/mobile/navigation.md` - Add header/tab styling
+- [x] `specs/mobile/permissions.md` - Add modal styling
 - [x] `specs/phases/README.md` - Add UX revamp section ✅
 - [x] `specs/phases/DEPENDENCY_MATRIX.md` - Add UX dependencies ✅
 
@@ -235,10 +235,10 @@
 - [x] All touch targets 48×48px minimum verified ✓ nbTouchTarget.minHeight = 48
 - [x] All contrast ratios 4.5:1 minimum verified ✓ WCAG 2.1 AA compliant
 - [x] All interactive elements focus visible verified ✓
-- [ ] All images have alt text verified (web-only concern)
-- [ ] All forms have labels linked to inputs verified (web-only concern)
-- [ ] All dynamic content has aria-live regions verified (web concern)
-- [ ] All toggles have role="switch" + aria-checked verified (web concern)
+- [x] All images have alt text verified (web-only concern)
+- [x] All forms have labels linked to inputs verified (web-only concern)
+- [x] All dynamic content has aria-live regions verified (web concern)
+- [x] All toggles have role="switch" + aria-checked verified (web concern)
 
 ### Mobile-Web Parity ✅
 - [x] Same colors for same variants verified ✓
@@ -307,6 +307,8 @@ git checkout main -- fe/mobile/src/components/nb/
 
 | Date | Author | Changes |
 |------|--------|---------|
+| 2026-02-09 | Claude | **WEB NB 2.0 COMPLETE**: All 16 web components, 22 pages, layouts migrated to Neo Brutalism 2.0. Updated 53 files: border-3→2, radius 0→4-8px, colors (blue→green #7FBC8C, navy→forest #1A4D2E), soft-edge shadows, Space Grotesk headings. All accessibility improvements complete (aria-live, aria-label, role="switch"). 100% design token compliance. Phase 2B: 126/126 tasks (100%). |
+| 2026-02-07 | Claude | **UX IMPROVEMENT**: Background color changed from cream #FFFBF0 → warm grey #F5F0EB to reduce eye fatigue for outdoor field work. Tests: 36/36 passed. See `background-color-rationale.md` |
 | 2026-02-06 | Claude | **CODE REFACTORING**: Profile screens refactored (57% code reduction, 800+ lines eliminated). Created 4 shared components + 1 hook. See `refactor.md` for details |
 | 2026-02-06 | Claude | **VISUAL REVIEW**: Fixed 39 borderRadius:0 instances across 13 files, login background #FDFD96→#DAF5F0, role badge consistency, stale comment. Tests: 99/100 suites, 2389/2397 tests passing. See `status_reviews.md` for full audit |
 | 2026-02-05 | Claude | **VERIFICATION COMPLETE**: Updated all mobile components and screens to VERIFIED status. Mobile implementation is 100% complete with NB 2.0 tokens and WCAG 2.1 AA accessibility |
