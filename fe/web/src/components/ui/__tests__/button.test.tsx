@@ -73,7 +73,11 @@ describe('Button Component', () => {
     });
 
     it('should render as icon button', () => {
-      render(<Button size="icon" aria-label="Icon button">⚙</Button>);
+      render(
+        <Button size="icon" aria-label="Icon button">
+          ⚙
+        </Button>
+      );
       const button = screen.getByRole('button');
       expect(button).toHaveClass('h-12', 'w-12');
     });

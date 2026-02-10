@@ -44,9 +44,11 @@ export default function CreateSchedulePage() {
   }, [user, authLoading, router]);
 
   if (authLoading || !user) {
-    return <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary"></div>
-    </div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary"></div>
+      </div>
+    );
   }
 
   if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
@@ -110,16 +112,18 @@ export default function CreateSchedulePage() {
 
       <Card variant="elevated">
         <CardHeader>
-          <h1 className="text-2xl font-bold text-nb-black">
-            Buat Jadwal Baru
-          </h1>
+          <h1 className="text-2xl font-bold text-nb-black">Buat Jadwal Baru</h1>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-4 border-2 border-nb-danger bg-nb-danger-light text-nb-danger" role="alert" aria-live="polite">
+              <div
+                className="p-4 border-2 border-nb-danger bg-nb-danger-light text-nb-danger"
+                role="alert"
+                aria-live="polite"
+              >
                 {error}
               </div>
             )}
@@ -137,7 +141,9 @@ export default function CreateSchedulePage() {
                   label: `${u.name} (${u.email})`,
                 })),
               ]}
-              helperText={<span className="text-nb-gray-600">Pilih pekerja yang akan dijadwalkan</span>}
+              helperText={
+                <span className="text-nb-gray-600">Pilih pekerja yang akan dijadwalkan</span>
+              }
             />
 
             {/* Area Select */}
@@ -188,7 +194,9 @@ export default function CreateSchedulePage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              helperText={<span className="text-nb-gray-600">Kosongkan jika jadwal berlangsung terus</span>}
+              helperText={
+                <span className="text-nb-gray-600">Kosongkan jika jadwal berlangsung terus</span>
+              }
             />
 
             {/* Actions */}
@@ -198,10 +206,7 @@ export default function CreateSchedulePage() {
                   Batal
                 </Button>
               </Link>
-              <Button
-                type="submit"
-                loading={createMutation.isPending}
-              >
+              <Button type="submit" loading={createMutation.isPending}>
                 Buat Jadwal
               </Button>
             </div>

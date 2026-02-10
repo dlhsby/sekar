@@ -143,9 +143,7 @@ export function useRayonMonitoring(rayonId: string) {
   return useQuery({
     queryKey: monitoringKeys.rayon(rayonId),
     queryFn: async () => {
-      const response = await apiClient.get<RayonMonitoringStats>(
-        `/monitoring/rayon/${rayonId}`
-      );
+      const response = await apiClient.get<RayonMonitoringStats>(`/monitoring/rayon/${rayonId}`);
       return response.data;
     },
     staleTime: 30 * 1000, // 30 seconds
@@ -162,9 +160,7 @@ export function useAreaMonitoring(areaId: string) {
   return useQuery({
     queryKey: monitoringKeys.area(areaId),
     queryFn: async () => {
-      const response = await apiClient.get<AreaMonitoringStats>(
-        `/monitoring/area/${areaId}`
-      );
+      const response = await apiClient.get<AreaMonitoringStats>(`/monitoring/area/${areaId}`);
       return response.data;
     },
     staleTime: 30 * 1000, // 30 seconds
@@ -181,10 +177,9 @@ export function useLiveWorkers(filters?: LiveWorkersFilters) {
   return useQuery({
     queryKey: monitoringKeys.liveWorkers(filters),
     queryFn: async () => {
-      const response = await apiClient.get<LiveWorkersResponse>(
-        '/monitoring/live-workers',
-        { params: filters }
-      );
+      const response = await apiClient.get<LiveWorkersResponse>('/monitoring/live-workers', {
+        params: filters,
+      });
       return response.data;
     },
     staleTime: 15 * 1000, // 15 seconds (very fresh data)

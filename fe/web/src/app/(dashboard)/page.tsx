@@ -1,21 +1,8 @@
 'use client';
 
-import {
-  Users,
-  MapPin,
-  Map,
-  Building2,
-  CheckCircle,
-  Clock,
-  FileText,
-} from 'lucide-react';
+import { Users, MapPin, Map, Building2, CheckCircle, Clock, FileText } from 'lucide-react';
 import { useUser } from '@/lib/auth/hooks';
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  Badge,
-} from '@/components/ui';
+import { Card, CardHeader, CardContent, Badge } from '@/components/ui';
 
 /**
  * Dashboard Home Page
@@ -65,26 +52,62 @@ export default function DashboardPage() {
   const getRecentActivity = (role: string) => {
     const activities = {
       admin: [
-        { text: 'New user "Budi Santoso" created', time: '5 minutes ago', type: 'success' as const },
-        { text: 'Rayon "Surabaya Timur" configuration updated', time: '15 minutes ago', type: 'neutral' as const },
-        { text: 'System backup completed successfully', time: '1 hour ago', type: 'success' as const },
+        {
+          text: 'New user "Budi Santoso" created',
+          time: '5 minutes ago',
+          type: 'success' as const,
+        },
+        {
+          text: 'Rayon "Surabaya Timur" configuration updated',
+          time: '15 minutes ago',
+          type: 'neutral' as const,
+        },
+        {
+          text: 'System backup completed successfully',
+          time: '1 hour ago',
+          type: 'success' as const,
+        },
         { text: '23 new reports submitted today', time: '2 hours ago', type: 'neutral' as const },
       ],
       top_management: [
-        { text: 'Rayon "Surabaya Pusat" achieved 95% completion', time: '30 minutes ago', type: 'success' as const },
-        { text: 'Weekly performance report generated', time: '1 hour ago', type: 'neutral' as const },
+        {
+          text: 'Rayon "Surabaya Pusat" achieved 95% completion',
+          time: '30 minutes ago',
+          type: 'success' as const,
+        },
+        {
+          text: 'Weekly performance report generated',
+          time: '1 hour ago',
+          type: 'neutral' as const,
+        },
         { text: 'New area "Taman Bungkul" added', time: '2 hours ago', type: 'neutral' as const },
-        { text: '124 workers active across all rayons', time: '3 hours ago', type: 'success' as const },
+        {
+          text: '124 workers active across all rayons',
+          time: '3 hours ago',
+          type: 'success' as const,
+        },
       ],
       kepala_rayon: [
-        { text: 'Worker "Ahmad" completed area cleaning', time: '10 minutes ago', type: 'success' as const },
+        {
+          text: 'Worker "Ahmad" completed area cleaning',
+          time: '10 minutes ago',
+          type: 'success' as const,
+        },
         { text: 'New task assigned to team', time: '25 minutes ago', type: 'neutral' as const },
         { text: 'Area inspection report submitted', time: '1 hour ago', type: 'neutral' as const },
         { text: '5 pending tasks require review', time: '2 hours ago', type: 'warning' as const },
       ],
       koordinator_lapangan: [
-        { text: 'Worker "Siti" clocked in at Area Kenjeran', time: '5 minutes ago', type: 'success' as const },
-        { text: 'Daily schedule created for team', time: '30 minutes ago', type: 'neutral' as const },
+        {
+          text: 'Worker "Siti" clocked in at Area Kenjeran',
+          time: '5 minutes ago',
+          type: 'success' as const,
+        },
+        {
+          text: 'Daily schedule created for team',
+          time: '30 minutes ago',
+          type: 'neutral' as const,
+        },
         { text: 'Area maintenance completed', time: '1 hour ago', type: 'success' as const },
         { text: '7 tasks scheduled for today', time: '2 hours ago', type: 'neutral' as const },
       ],
@@ -154,12 +177,8 @@ export default function DashboardPage() {
                   {activity.type === 'success' && (
                     <CheckCircle className="h-5 w-5 text-nb-success" />
                   )}
-                  {activity.type === 'warning' && (
-                    <Clock className="h-5 w-5 text-nb-warning" />
-                  )}
-                  {activity.type === 'neutral' && (
-                    <FileText className="h-5 w-5 text-nb-gray-400" />
-                  )}
+                  {activity.type === 'warning' && <Clock className="h-5 w-5 text-nb-warning" />}
+                  {activity.type === 'neutral' && <FileText className="h-5 w-5 text-nb-gray-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-nb-black font-medium">{activity.text}</p>
@@ -188,18 +207,14 @@ export default function DashboardPage() {
               <CardContent className="text-center py-8">
                 <Building2 className="h-12 w-12 mx-auto mb-3 text-nb-success" />
                 <h3 className="font-bold text-lg text-nb-black">Manage Rayons</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">
-                  Configure rayons and hierarchies
-                </p>
+                <p className="text-nb-gray-600 text-sm mt-1">Configure rayons and hierarchies</p>
               </CardContent>
             </Card>
             <Card variant="outlined" interactive className="hover:border-nb-warning">
               <CardContent className="text-center py-8">
                 <MapPin className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
                 <h3 className="font-bold text-lg text-nb-black">Manage Areas</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">
-                  Create and configure service areas
-                </p>
+                <p className="text-nb-gray-600 text-sm mt-1">Create and configure service areas</p>
               </CardContent>
             </Card>
           </>
@@ -211,27 +226,21 @@ export default function DashboardPage() {
               <CardContent className="text-center py-8">
                 <Map className="h-12 w-12 mx-auto mb-3 text-nb-primary" />
                 <h3 className="font-bold text-lg text-nb-black">View Monitoring</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">
-                  Track worker locations in real-time
-                </p>
+                <p className="text-nb-gray-600 text-sm mt-1">Track worker locations in real-time</p>
               </CardContent>
             </Card>
             <Card variant="outlined" interactive className="hover:border-nb-success">
               <CardContent className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto mb-3 text-nb-success" />
                 <h3 className="font-bold text-lg text-nb-black">View Reports</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">
-                  Review submitted work reports
-                </p>
+                <p className="text-nb-gray-600 text-sm mt-1">Review submitted work reports</p>
               </CardContent>
             </Card>
             <Card variant="outlined" interactive className="hover:border-nb-warning">
               <CardContent className="text-center py-8">
                 <Clock className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
                 <h3 className="font-bold text-lg text-nb-black">View Schedules</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">
-                  Check team schedules and shifts
-                </p>
+                <p className="text-nb-gray-600 text-sm mt-1">Check team schedules and shifts</p>
               </CardContent>
             </Card>
           </>

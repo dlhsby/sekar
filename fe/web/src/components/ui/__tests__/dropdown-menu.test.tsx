@@ -177,12 +177,8 @@ describe('DropdownMenu Component', () => {
         <DropdownMenu>
           <DropdownMenuTrigger>Open Menu</DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuCheckboxItem checked={false}>
-              Option 1
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem checked={true}>
-              Option 2
-            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem checked={false}>Option 1</DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem checked={true}>Option 2</DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -199,9 +195,7 @@ describe('DropdownMenu Component', () => {
         <DropdownMenu>
           <DropdownMenuTrigger>Open Menu</DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuCheckboxItem checked={true}>
-              Checked Option
-            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem checked={true}>Checked Option</DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -220,10 +214,7 @@ describe('DropdownMenu Component', () => {
         <DropdownMenu>
           <DropdownMenuTrigger>Open Menu</DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuCheckboxItem
-              checked={false}
-              onCheckedChange={handleCheckedChange}
-            >
+            <DropdownMenuCheckboxItem checked={false} onCheckedChange={handleCheckedChange}>
               Toggle Me
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
@@ -245,12 +236,8 @@ describe('DropdownMenu Component', () => {
           <DropdownMenuTrigger>Open Menu</DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuRadioGroup value="option1">
-              <DropdownMenuRadioItem value="option1">
-                Option 1
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="option2">
-                Option 2
-              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="option1">Option 1</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="option2">Option 2</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -271,12 +258,8 @@ describe('DropdownMenu Component', () => {
           <DropdownMenuTrigger>Open Menu</DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuRadioGroup value="option1" onValueChange={handleValueChange}>
-              <DropdownMenuRadioItem value="option1">
-                Option 1
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="option2">
-                Option 2
-              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="option1">Option 1</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="option2">Option 2</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -9,7 +9,15 @@
 import { useAuth } from '@/lib/auth/hooks';
 import { useRayon, useRayonStats, useRayonAreas } from '@/lib/api/rayons';
 import RayonStatsCards from '@/components/rayons/RayonStatsCards';
-import { Card, CardHeader, CardContent, Badge, FormInput, Button, DataTable } from '@/components/ui';
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Badge,
+  FormInput,
+  Button,
+  DataTable,
+} from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -71,10 +79,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       key: 'name',
       header: 'Nama Area',
       cell: (area) => (
-        <Link
-          href={`/areas/${area.id}`}
-          className="text-nb-primary font-semibold hover:underline"
-        >
+        <Link href={`/areas/${area.id}`} className="text-nb-primary font-semibold hover:underline">
           {area.name}
         </Link>
       ),
@@ -96,16 +101,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     {
       key: 'coverage_area',
       header: 'Luas Tutupan',
-      cell: (area) =>
-        area.coverage_area ? formatArea(area.coverage_area) : '-',
+      cell: (area) => (area.coverage_area ? formatArea(area.coverage_area) : '-'),
     },
     {
       key: 'description',
       header: 'Deskripsi',
       cell: (area) => (
-        <span className="text-sm text-nb-gray-600 line-clamp-1">
-          {area.description || '-'}
-        </span>
+        <span className="text-sm text-nb-gray-600 line-clamp-1">{area.description || '-'}</span>
       ),
     },
   ];
@@ -116,10 +118,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       <nav className="mb-6 text-sm" aria-label="Navigasi breadcrumb">
         <ol className="flex items-center space-x-2">
           <li>
-            <Link
-              href="/rayons"
-              className="text-nb-primary hover:underline font-semibold"
-            >
+            <Link href="/rayons" className="text-nb-primary hover:underline font-semibold">
               Rayon
             </Link>
           </li>
@@ -154,19 +153,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-nb-black mb-2">
-                {rayon.name}
-              </h1>
+              <h1 className="text-3xl font-bold text-nb-black mb-2">{rayon.name}</h1>
               <Badge variant="default" size="lg">
                 {rayon.code}
               </Badge>
             </div>
           </div>
-          {rayon.description && (
-            <p className="text-nb-gray-600 max-w-3xl">
-              {rayon.description}
-            </p>
-          )}
+          {rayon.description && <p className="text-nb-gray-600 max-w-3xl">{rayon.description}</p>}
         </div>
       ) : null}
 
@@ -181,14 +174,8 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-nb-black">
-                Daftar Area di Rayon Ini
-              </h2>
-              {stats && (
-                <Badge variant="default">
-                  {stats.total_areas} Area
-                </Badge>
-              )}
+              <h2 className="text-xl font-bold text-nb-black">Daftar Area di Rayon Ini</h2>
+              {stats && <Badge variant="default">{stats.total_areas} Area</Badge>}
             </div>
           </CardHeader>
 
@@ -220,14 +207,14 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
             {pagination && pagination.totalPages > 1 && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
                 <div className="text-sm text-nb-gray-600">
-                  Halaman {pagination.page} dari {pagination.totalPages} (
-                  {pagination.total} total area)
+                  Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} total
+                  area)
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={pagination.page === 1}
                     leftIcon={<ChevronLeft className="w-4 h-4" />}
                   >
@@ -236,9 +223,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() =>
-                      setPage(p => Math.min(pagination.totalPages, p + 1))
-                    }
+                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                     disabled={pagination.page === pagination.totalPages}
                     rightIcon={<ChevronRight className="w-4 h-4" />}
                   >

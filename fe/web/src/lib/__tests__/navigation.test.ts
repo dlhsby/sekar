@@ -24,10 +24,10 @@ describe('Navigation Utilities', () => {
       expect(navIds).toContain('settings');
 
       // Check nested items under 'data'
-      const dataItem = navigationItems.find(item => item.id === 'data');
+      const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children).toBeDefined();
       expect(dataItem?.children?.length).toBe(4);
-      const childIds = dataItem?.children?.map(child => child.id);
+      const childIds = dataItem?.children?.map((child) => child.id);
       expect(childIds).toContain('users');
       expect(childIds).toContain('areas');
       expect(childIds).toContain('rayons');
@@ -59,8 +59,8 @@ describe('Navigation Utilities', () => {
       expect(adminOnlyItems.find((item) => item.id === 'settings')).toBeDefined();
 
       // Check nested admin-only routes under 'data'
-      const dataItem = navigationItems.find(item => item.id === 'data');
-      const usersItem = dataItem?.children?.find(child => child.id === 'users');
+      const dataItem = navigationItems.find((item) => item.id === 'data');
+      const usersItem = dataItem?.children?.find((child) => child.id === 'users');
       expect(usersItem?.roles).toEqual(['admin']);
     });
   });
@@ -76,7 +76,7 @@ describe('Navigation Utilities', () => {
       // Check nested users item under 'data'
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem).toBeDefined();
-      expect(dataItem?.children?.find(child => child.id === 'users')).toBeDefined();
+      expect(dataItem?.children?.find((child) => child.id === 'users')).toBeDefined();
     });
 
     it('should filter out admin-only items for top_management', () => {
@@ -89,13 +89,13 @@ describe('Navigation Utilities', () => {
       // Check nested items under 'data'
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem).toBeDefined();
-      expect(dataItem?.children?.find(child => child.id === 'areas')).toBeDefined();
-      expect(dataItem?.children?.find(child => child.id === 'rayons')).toBeDefined();
+      expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeDefined();
+      expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeDefined();
 
       // Should NOT include admin-only routes
-      expect(dataItem?.children?.find(child => child.id === 'users')).toBeUndefined();
+      expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();
       expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
-      expect(dataItem?.children?.find(child => child.id === 'schedules')).toBeUndefined();
+      expect(dataItem?.children?.find((child) => child.id === 'schedules')).toBeUndefined();
     });
 
     it('should return appropriate items for kepala_rayon', () => {
@@ -113,10 +113,7 @@ describe('Navigation Utilities', () => {
     });
 
     it('should return appropriate items for koordinator_lapangan', () => {
-      const filtered = filterNavigationByRole(
-        navigationItems,
-        'koordinator_lapangan'
-      );
+      const filtered = filterNavigationByRole(navigationItems, 'koordinator_lapangan');
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
@@ -126,12 +123,12 @@ describe('Navigation Utilities', () => {
       // Check nested items under 'data'
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem).toBeDefined();
-      expect(dataItem?.children?.find(child => child.id === 'schedules')).toBeDefined();
+      expect(dataItem?.children?.find((child) => child.id === 'schedules')).toBeDefined();
 
       // Should NOT include
-      expect(dataItem?.children?.find(child => child.id === 'users')).toBeUndefined();
-      expect(dataItem?.children?.find(child => child.id === 'areas')).toBeUndefined();
-      expect(dataItem?.children?.find(child => child.id === 'rayons')).toBeUndefined();
+      expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();
+      expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeUndefined();
+      expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeUndefined();
     });
 
     it('should return empty array for worker role', () => {

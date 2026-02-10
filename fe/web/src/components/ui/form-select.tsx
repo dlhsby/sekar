@@ -4,13 +4,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils/cn';
 import { Label } from './label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 
 export interface FormSelectOption {
   value: string;
@@ -58,11 +52,7 @@ const FormSelect: React.FC<FormSelectProps> = ({
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
-            <SelectItem
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled}
-            >
+            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </SelectItem>
           ))}
@@ -75,9 +65,7 @@ const FormSelect: React.FC<FormSelectProps> = ({
         </p>
       )}
 
-      {!error && helperText && (
-        <p className="text-sm text-nb-gray-600">{helperText}</p>
-      )}
+      {!error && helperText && <p className="text-sm text-nb-gray-600">{helperText}</p>}
     </div>
   );
 };

@@ -35,11 +35,7 @@ export interface HeaderProps extends HTMLAttributes<HTMLElement> {
  * - Notification bell with badge
  * - User dropdown menu
  */
-export function Header({
-  className,
-  showBreadcrumb = true,
-  ...props
-}: HeaderProps) {
+export function Header({ className, showBreadcrumb = true, ...props }: HeaderProps) {
   const { toggleSidebar, toggleMobileMenu } = useUIStore();
   const { user, logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -61,11 +57,7 @@ export function Header({
 
   return (
     <header
-      className={cn(
-        'bg-nb-white border-b-2 border-nb-black',
-        'sticky top-0 z-30',
-        className
-      )}
+      className={cn('bg-nb-white border-b-2 border-nb-black', 'sticky top-0 z-30', className)}
       {...props}
     >
       <div className="flex items-center justify-between h-16 px-4 lg:px-6">
@@ -157,10 +149,7 @@ export function Header({
                   Pengaturan
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  destructive
-                  onClick={() => setShowLogoutModal(true)}
-                >
+                <DropdownMenuItem destructive onClick={() => setShowLogoutModal(true)}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Keluar
                 </DropdownMenuItem>
@@ -177,9 +166,7 @@ export function Header({
             <DialogTitle>Konfirmasi Keluar</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-nb-gray-700">
-              Apakah Anda yakin ingin keluar dari aplikasi?
-            </p>
+            <p className="text-nb-gray-700">Apakah Anda yakin ingin keluar dari aplikasi?</p>
           </div>
           <DialogFooter className="flex gap-3 sm:gap-3">
             <Button

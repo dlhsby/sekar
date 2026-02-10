@@ -10,7 +10,15 @@ import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
 import { useAreas } from '@/lib/api/areas';
-import { Card, CardHeader, CardContent, FormInput, FormSelect, Button, Textarea } from '@/components/ui';
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  FormInput,
+  FormSelect,
+  Button,
+  Textarea,
+} from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -208,11 +216,7 @@ export default function CreateTaskPage() {
               <Button type="submit" loading={createMutation.isPending}>
                 Buat Tugas
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => router.push('/tasks')}
-              >
+              <Button type="button" variant="secondary" onClick={() => router.push('/tasks')}>
                 Batal
               </Button>
             </div>

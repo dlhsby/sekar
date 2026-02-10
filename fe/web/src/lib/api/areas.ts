@@ -3,12 +3,7 @@
  * Handles communication with /areas endpoints
  */
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  type UseQueryOptions,
-} from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import { apiClient } from './client';
 import type {
   Area,
@@ -41,9 +36,7 @@ async function fetchAreas(filters: AreaFilters = {}): Promise<PaginatedResponse<
   if (filters.page) params.append('page', filters.page.toString());
   if (filters.limit) params.append('limit', filters.limit.toString());
 
-  const response = await apiClient.get<PaginatedResponse<Area>>(
-    `/areas?${params.toString()}`
-  );
+  const response = await apiClient.get<PaginatedResponse<Area>>(`/areas?${params.toString()}`);
   return response.data;
 }
 
@@ -95,10 +88,7 @@ export function useAreas(
 /**
  * Hook to fetch a single area
  */
-export function useArea(
-  id: string,
-  options?: Omit<UseQueryOptions<Area>, 'queryKey' | 'queryFn'>
-) {
+export function useArea(id: string, options?: Omit<UseQueryOptions<Area>, 'queryKey' | 'queryFn'>) {
   return useQuery({
     queryKey: areaKeys.detail(id),
     queryFn: () => fetchArea(id),
@@ -129,8 +119,7 @@ export function useUpdateArea() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateAreaDto }) =>
-      updateArea(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateAreaDto }) => updateArea(id, data),
     onSuccess: (_, variables) => {
       // Invalidate the specific area and all lists
       queryClient.invalidateQueries({ queryKey: areaKeys.detail(variables.id) });

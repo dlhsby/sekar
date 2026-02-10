@@ -34,11 +34,7 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
   }
 
   if (!stats) {
-    return (
-      <div className="text-center py-8 text-nb-gray-500">
-        Statistik tidak tersedia
-      </div>
-    );
+    return <div className="text-center py-8 text-nb-gray-500">Statistik tidak tersedia</div>;
   }
 
   const statCards = [
@@ -85,12 +81,8 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
               <div className="flex items-center justify-between mb-2">
                 <div className={colors.text}>{card.icon}</div>
               </div>
-              <div className={`text-3xl font-bold ${colors.text} mb-1`}>
-                {card.value}
-              </div>
-              <div className="text-sm font-medium text-nb-gray-600">
-                {card.label}
-              </div>
+              <div className={`text-3xl font-bold ${colors.text} mb-1`}>{card.value}</div>
+              <div className="text-sm font-medium text-nb-gray-600">{card.label}</div>
             </div>
           </Card>
         );

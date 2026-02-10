@@ -6,14 +6,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '../card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../card';
 import '@testing-library/jest-dom';
 
 describe('Card Component', () => {

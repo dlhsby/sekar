@@ -86,9 +86,7 @@ export default function UsersPage() {
       key: 'rayon',
       title: 'Rayon',
       render: (_, row) => (
-        <span className="text-sm">
-          {row.rayon ? `${row.rayon.name} (${row.rayon.code})` : '-'}
-        </span>
+        <span className="text-sm">{row.rayon ? `${row.rayon.name} (${row.rayon.code})` : '-'}</span>
       ),
     },
     {
@@ -147,14 +145,9 @@ export default function UsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black">Users</h1>
-          <p className="text-sm text-nb-gray-600 mt-1">
-            Kelola data user dan hak akses
-          </p>
+          <p className="text-sm text-nb-gray-600 mt-1">Kelola data user dan hak akses</p>
         </div>
-        <Button
-          onClick={() => router.push('/users/new')}
-          leftIcon={<Plus className="w-5 h-5" />}
-        >
+        <Button onClick={() => router.push('/users/new')} leftIcon={<Plus className="w-5 h-5" />}>
           Tambah User
         </Button>
       </div>

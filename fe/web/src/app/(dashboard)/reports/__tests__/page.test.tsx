@@ -313,7 +313,9 @@ describe('ReportsPage Component', () => {
       const user = userEvent.setup();
       render(<ReportsPage />, { wrapper: createWrapper() });
 
-      const searchInput = screen.getByPlaceholderText(/nama pekerja atau area/i) as HTMLInputElement;
+      const searchInput = screen.getByPlaceholderText(
+        /nama pekerja atau area/i
+      ) as HTMLInputElement;
       await user.type(searchInput, 'test');
 
       expect(searchInput.value).toBe('test');

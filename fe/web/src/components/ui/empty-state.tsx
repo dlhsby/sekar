@@ -12,7 +12,7 @@ import {
   FolderOpen,
   CheckCircle,
   SearchX,
-  type LucideIcon
+  type LucideIcon,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
@@ -97,8 +97,7 @@ const variantConfig: Record<
 };
 
 export interface EmptyStateProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof emptyStateVariants> {
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof emptyStateVariants> {
   /**
    * Predefined variant with icon, title, and description
    */
@@ -167,11 +166,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
     }, [variant]);
 
     return (
-      <div
-        ref={ref}
-        className={cn(emptyStateVariants({ size }), className)}
-        {...props}
-      >
+      <div ref={ref} className={cn(emptyStateVariants({ size }), className)} {...props}>
         {/* Icon Container */}
         <div
           className={cn(
@@ -192,10 +187,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         {(action || secondaryAction) && (
           <div className="flex flex-wrap items-center justify-center gap-3">
             {action && (
-              <Button
-                variant={action.variant || 'default'}
-                onClick={action.onClick}
-              >
+              <Button variant={action.variant || 'default'} onClick={action.onClick}>
                 {action.label}
               </Button>
             )}

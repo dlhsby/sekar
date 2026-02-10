@@ -37,18 +37,24 @@ export default function MonitoringPage() {
 
   // Fetch filter options
   const { data: rayonsData } = useRayons();
-  const { data: areasData } = useAreas({ rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined });
+  const { data: areasData } = useAreas({
+    rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined,
+  });
 
   // Fetch appropriate stats based on filters and role
   const { data: cityStats, isLoading: cityLoading } = useCityStats();
-  const { data: rayonStats, isLoading: rayonLoading } = useRayonMonitoring(rayonFilter !== 'all' ? rayonFilter : '');
-  const { data: areaStats, isLoading: areaLoading } = useAreaMonitoring(areaFilter !== 'all' ? areaFilter : '');
+  const { data: rayonStats, isLoading: rayonLoading } = useRayonMonitoring(
+    rayonFilter !== 'all' ? rayonFilter : ''
+  );
+  const { data: areaStats, isLoading: areaLoading } = useAreaMonitoring(
+    areaFilter !== 'all' ? areaFilter : ''
+  );
 
   // Fetch live workers
   const filters: LiveWorkersFilters = {};
   if (rayonFilter && rayonFilter !== 'all') filters.rayon_id = rayonFilter;
   if (areaFilter && areaFilter !== 'all') filters.area_id = areaFilter;
-  
+
   const { data: liveWorkersData, isLoading: workersLoading } = useLiveWorkers(filters);
 
   // Loading state
@@ -69,17 +75,19 @@ export default function MonitoringPage() {
   }
 
   // Determine which stats to display
-  const displayStats = (areaFilter && areaFilter !== 'all')
-    ? areaStats
-    : (rayonFilter && rayonFilter !== 'all')
-    ? rayonStats
-    : cityStats;
+  const displayStats =
+    areaFilter && areaFilter !== 'all'
+      ? areaStats
+      : rayonFilter && rayonFilter !== 'all'
+        ? rayonStats
+        : cityStats;
 
-  const displayLoading = (areaFilter && areaFilter !== 'all')
-    ? areaLoading
-    : (rayonFilter && rayonFilter !== 'all')
-    ? rayonLoading
-    : cityLoading;
+  const displayLoading =
+    areaFilter && areaFilter !== 'all'
+      ? areaLoading
+      : rayonFilter && rayonFilter !== 'all'
+        ? rayonLoading
+        : cityLoading;
 
   const workers = liveWorkersData?.workers || [];
   const onlineWorkers = workers.filter((w) => w.status === 'online');
@@ -162,10 +170,7 @@ export default function MonitoringPage() {
       {displayLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="h-32 bg-nb-gray-200 border-2 border-nb-black animate-pulse"
-            />
+            <div key={i} className="h-32 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
           ))}
         </div>
       ) : displayStats ? (
@@ -173,24 +178,22 @@ export default function MonitoringPage() {
           {/* Workers Online */}
           <Card variant="elevated">
             <CardContent>
-              <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-                Pekerja Online
-              </div>
+              <div className="text-sm font-semibold text-nb-gray-600 mb-2">Pekerja Online</div>
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-black text-nb-success">
-                  {(areaFilter && areaFilter !== 'all')
+                  {areaFilter && areaFilter !== 'all'
                     ? (areaStats?.current_shift?.active_workers ?? 0)
-                    : (rayonFilter && rayonFilter !== 'all')
-                    ? (rayonStats?.summary?.workers_online ?? 0)
-                    : (cityStats?.summary?.workers_online ?? 0)}
+                    : rayonFilter && rayonFilter !== 'all'
+                      ? (rayonStats?.summary?.workers_online ?? 0)
+                      : (cityStats?.summary?.workers_online ?? 0)}
                 </div>
                 <div className="text-nb-gray-600">
                   /{' '}
-                  {(areaFilter && areaFilter !== 'all')
+                  {areaFilter && areaFilter !== 'all'
                     ? (areaStats?.current_shift?.assigned_workers ?? 0)
-                    : (rayonFilter && rayonFilter !== 'all')
-                    ? (rayonStats?.summary?.total_workers ?? 0)
-                    : (cityStats?.summary?.total_workers ?? 0)}
+                    : rayonFilter && rayonFilter !== 'all'
+                      ? (rayonStats?.summary?.total_workers ?? 0)
+                      : (cityStats?.summary?.total_workers ?? 0)}
                 </div>
               </div>
             </CardContent>
@@ -199,24 +202,22 @@ export default function MonitoringPage() {
           {/* Linmas Online */}
           <Card variant="elevated">
             <CardContent>
-              <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-                Linmas Online
-              </div>
+              <div className="text-sm font-semibold text-nb-gray-600 mb-2">Linmas Online</div>
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-black text-nb-primary">
-                  {(areaFilter && areaFilter !== 'all')
+                  {areaFilter && areaFilter !== 'all'
                     ? (areaStats?.current_shift?.active_linmas ?? 0)
-                    : (rayonFilter && rayonFilter !== 'all')
-                    ? (rayonStats?.summary?.linmas_online ?? 0)
-                    : (cityStats?.summary?.linmas_online ?? 0)}
+                    : rayonFilter && rayonFilter !== 'all'
+                      ? (rayonStats?.summary?.linmas_online ?? 0)
+                      : (cityStats?.summary?.linmas_online ?? 0)}
                 </div>
                 <div className="text-nb-gray-600">
                   /{' '}
-                  {(areaFilter && areaFilter !== 'all')
+                  {areaFilter && areaFilter !== 'all'
                     ? (areaStats?.current_shift?.assigned_linmas ?? 0)
-                    : (rayonFilter && rayonFilter !== 'all')
-                    ? (rayonStats?.summary?.total_linmas ?? 0)
-                    : (cityStats?.summary?.total_linmas ?? 0)}
+                    : rayonFilter && rayonFilter !== 'all'
+                      ? (rayonStats?.summary?.total_linmas ?? 0)
+                      : (cityStats?.summary?.total_linmas ?? 0)}
                 </div>
               </div>
             </CardContent>
@@ -226,11 +227,9 @@ export default function MonitoringPage() {
           {(!areaFilter || areaFilter === 'all') && (
             <Card variant="elevated">
               <CardContent>
-                <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-                  Shift Aktif
-                </div>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">Shift Aktif</div>
                 <div className="text-3xl font-black text-nb-warning">
-                  {(rayonFilter && rayonFilter !== 'all')
+                  {rayonFilter && rayonFilter !== 'all'
                     ? (rayonStats?.summary?.active_shifts ?? 0)
                     : (cityStats?.summary?.active_shifts ?? 0)}
                 </div>
@@ -242,11 +241,9 @@ export default function MonitoringPage() {
           {(!areaFilter || areaFilter === 'all') && (
             <Card variant="elevated">
               <CardContent>
-                <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-                  Laporan Hari Ini
-                </div>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">Laporan Hari Ini</div>
                 <div className="text-3xl font-black text-nb-black">
-                  {(rayonFilter && rayonFilter !== 'all')
+                  {rayonFilter && rayonFilter !== 'all'
                     ? (rayonStats?.summary?.reports_today ?? 0)
                     : (cityStats?.summary?.reports_today ?? 0)}
                 </div>
@@ -258,9 +255,7 @@ export default function MonitoringPage() {
           {areaFilter && areaFilter !== 'all' && areaStats && (
             <Card variant="elevated">
               <CardContent>
-                <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-                  Shift Saat Ini
-                </div>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">Shift Saat Ini</div>
                 <div className="font-black text-nb-black">
                   {areaStats.current_shift.definition.name}
                 </div>
@@ -279,21 +274,15 @@ export default function MonitoringPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-nb-black">Peta Live</h2>
-            <Badge variant="success">
-              {onlineWorkers.length} Online
-            </Badge>
+            <Badge variant="success">{onlineWorkers.length} Online</Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="bg-nb-gray-100 border-2 border-nb-black h-96 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">🗺️</div>
-              <p className="text-nb-gray-600 font-semibold mb-2">
-                Peta Monitoring Real-Time
-              </p>
-              <p className="text-sm text-nb-gray-500">
-                Integrasi Mapbox akan ditambahkan di sini
-              </p>
+              <p className="text-nb-gray-600 font-semibold mb-2">Peta Monitoring Real-Time</p>
+              <p className="text-sm text-nb-gray-500">Integrasi Mapbox akan ditambahkan di sini</p>
               <p className="text-xs text-nb-gray-400 mt-2">
                 {workers.length} pekerja terdeteksi ({onlineWorkers.length} online,{' '}
                 {offlineWorkers.length} offline)
@@ -331,30 +320,24 @@ export default function MonitoringPage() {
                     <div className="flex items-center gap-4">
                       <div
                         className={`h-3 w-3 rounded-full ${
-                          worker.status === 'online'
-                            ? 'bg-nb-success'
-                            : 'bg-nb-gray-400'
+                          worker.status === 'online' ? 'bg-nb-success' : 'bg-nb-gray-400'
                         }`}
                       />
                       <div>
-                        <div className="font-bold text-nb-black">
-                          {worker.full_name}
-                        </div>
-                        <div className="text-sm text-nb-gray-600">
-                          {worker.area_name}
-                        </div>
+                        <div className="font-bold text-nb-black">{worker.full_name}</div>
+                        <div className="text-sm text-nb-gray-600">{worker.area_name}</div>
                       </div>
                     </div>
 
                     {/* Status Badges */}
                     <div className="flex items-center gap-2">
-                      <Badge
-                        variant={worker.role === 'worker' ? 'default' : 'warning'}
-                        size="sm"
-                      >
+                      <Badge variant={worker.role === 'worker' ? 'default' : 'warning'} size="sm">
                         {worker.role}
                       </Badge>
-                      <Badge variant={worker.status === 'online' ? 'success' : 'secondary'} size="sm">
+                      <Badge
+                        variant={worker.status === 'online' ? 'success' : 'secondary'}
+                        size="sm"
+                      >
                         {worker.status === 'online' ? 'Online' : 'Offline'}
                       </Badge>
                       {worker.battery_level < 20 && (
@@ -374,8 +357,7 @@ export default function MonitoringPage() {
       {/* Last Updated */}
       {liveWorkersData && (
         <div className="text-center text-sm text-nb-gray-500">
-          Terakhir diperbarui:{' '}
-          {new Date(liveWorkersData.timestamp).toLocaleString('id-ID')}
+          Terakhir diperbarui: {new Date(liveWorkersData.timestamp).toLocaleString('id-ID')}
         </div>
       )}
     </div>

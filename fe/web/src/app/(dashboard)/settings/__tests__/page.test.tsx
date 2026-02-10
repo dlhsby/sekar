@@ -639,7 +639,9 @@ describe('SettingsPage Component', () => {
       render(<SettingsPage />);
 
       expect(screen.getByRole('heading', { name: /^pengaturan$/i, level: 1 })).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /profil pengguna/i, level: 2 })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /profil pengguna/i, level: 2 })
+      ).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: /ubah password/i, level: 2 })).toBeInTheDocument();
     });
 

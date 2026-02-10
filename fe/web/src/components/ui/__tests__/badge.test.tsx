@@ -146,7 +146,11 @@ describe('Badge Component', () => {
     });
 
     it('should spread additional HTML attributes', () => {
-      render(<Badge id="my-badge" title="Badge Title">Props</Badge>);
+      render(
+        <Badge id="my-badge" title="Badge Title">
+          Props
+        </Badge>
+      );
       const badge = screen.getByText('Props');
       expect(badge).toHaveAttribute('id', 'my-badge');
       expect(badge).toHaveAttribute('title', 'Badge Title');

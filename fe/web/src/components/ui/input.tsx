@@ -29,7 +29,8 @@ const inputVariants = cva(
 );
 
 export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
+  extends
+    Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     VariantProps<typeof inputVariants> {
   error?: string;
   helperText?: string;
@@ -39,17 +40,7 @@ export interface InputProps
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
-    {
-      className,
-      type = 'text',
-      size,
-      state,
-      error,
-      helperText,
-      leftIcon,
-      rightIcon,
-      ...props
-    },
+    { className, type = 'text', size, state, error, helperText, leftIcon, rightIcon, ...props },
     ref
   ) => {
     const effectiveState = error ? 'error' : state;
@@ -83,10 +74,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {(error || helperText) && (
             <p
               id="input-helper"
-              className={cn(
-                'mt-1 text-sm',
-                error ? 'text-nb-danger' : 'text-nb-gray-600'
-              )}
+              className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
             >
               {error || helperText}
             </p>
@@ -108,10 +96,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {(error || helperText) && (
           <p
             id="input-helper"
-            className={cn(
-              'mt-1 text-sm',
-              error ? 'text-nb-danger' : 'text-nb-gray-600'
-            )}
+            className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
           >
             {error || helperText}
           </p>

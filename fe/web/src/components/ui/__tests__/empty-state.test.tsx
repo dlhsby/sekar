@@ -22,7 +22,9 @@ describe('EmptyState Component', () => {
       render(<EmptyState variant="noData" />);
 
       expect(screen.getByText('Belum Ada Data')).toBeInTheDocument();
-      expect(screen.getByText('Data akan muncul di sini setelah Anda menambahkannya.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Data akan muncul di sini setelah Anda menambahkannya.')
+      ).toBeInTheDocument();
     });
 
     it('should render icon container', () => {
@@ -126,20 +128,13 @@ describe('EmptyState Component', () => {
     });
 
     it('should override variant description with custom description', () => {
-      render(
-        <EmptyState
-          variant="error"
-          description="Something went wrong. Please try again."
-        />
-      );
+      render(<EmptyState variant="error" description="Something went wrong. Please try again." />);
 
       expect(screen.getByText('Something went wrong. Please try again.')).toBeInTheDocument();
     });
 
     it('should use custom icon', () => {
-      const { container } = render(
-        <EmptyState icon={AlertCircle} title="Custom Icon" />
-      );
+      const { container } = render(<EmptyState icon={AlertCircle} title="Custom Icon" />);
 
       const icon = container.querySelector('svg');
       expect(icon).toBeInTheDocument();
@@ -328,7 +323,13 @@ describe('EmptyState Component', () => {
       const { container } = render(<EmptyState />);
 
       const emptyState = container.firstChild;
-      expect(emptyState).toHaveClass('flex', 'flex-col', 'items-center', 'justify-center', 'text-center');
+      expect(emptyState).toHaveClass(
+        'flex',
+        'flex-col',
+        'items-center',
+        'justify-center',
+        'text-center'
+      );
     });
 
     it('should have proper spacing between elements', () => {
@@ -455,9 +456,7 @@ describe('EmptyState Component', () => {
     });
 
     it('should merge custom className with variant classes', () => {
-      const { container } = render(
-        <EmptyState className="my-8" />
-      );
+      const { container } = render(<EmptyState className="my-8" />);
 
       const emptyState = container.firstChild;
       expect(emptyState).toHaveClass('my-8', 'border-3', 'border-nb-black');

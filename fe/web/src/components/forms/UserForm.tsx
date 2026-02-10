@@ -39,13 +39,11 @@ const userSchema = z
       path: ['rayon_id'],
     }
   )
-  .refine(
-    () => {
-      // Password required on create (no initial user)
-      // This will be checked at component level
-      return true;
-    }
-  );
+  .refine(() => {
+    // Password required on create (no initial user)
+    // This will be checked at component level
+    return true;
+  });
 
 type UserFormData = z.infer<typeof userSchema>;
 

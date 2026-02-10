@@ -14,7 +14,7 @@ import { ComponentType } from 'react';
 
 /**
  * Navigation Item Interface
- * 
+ *
  * Defines the structure for sidebar navigation items
  */
 export interface NavItem {
@@ -34,10 +34,10 @@ export interface NavItem {
 
 /**
  * Navigation Items Configuration
- * 
+ *
  * Role-based navigation structure for the dashboard sidebar.
  * Items are filtered based on the current user's role.
- * 
+ *
  * Roles:
  * - admin: Full access to all features
  * - top_management: Monitoring, reports, analytics
@@ -129,17 +129,14 @@ export const navigationItems: NavItem[] = [
 
 /**
  * Filter Navigation Items by Role
- * 
+ *
  * Utility function to filter navigation items based on user role.
- * 
+ *
  * @param items - Navigation items to filter
  * @param userRole - Current user's role
  * @returns Filtered navigation items
  */
-export const filterNavigationByRole = (
-  items: NavItem[],
-  userRole: string
-): NavItem[] => {
+export const filterNavigationByRole = (items: NavItem[], userRole: string): NavItem[] => {
   return items
     .filter((item) => {
       if (!item.roles || item.roles.length === 0) return true;
@@ -167,12 +164,12 @@ export const filterNavigationByRole = (
 
 /**
  * Get Breadcrumb Path
- * 
+ *
  * Converts a route path to breadcrumb segments.
- * 
+ *
  * @param pathname - Current route path
  * @returns Array of breadcrumb segments
- * 
+ *
  * @example
  * ```tsx
  * getBreadcrumbPath('/dashboard/users/123')
@@ -189,7 +186,7 @@ export const getBreadcrumbPath = (pathname: string): { label: string; href: stri
 
   segments.forEach((segment, index) => {
     const href = '/' + segments.slice(0, index + 1).join('/');
-    
+
     // Try to find label from navigation items
     const navItem = navigationItems.find((item) => item.href === href);
     const label = navItem?.label || segment.charAt(0).toUpperCase() + segment.slice(1);

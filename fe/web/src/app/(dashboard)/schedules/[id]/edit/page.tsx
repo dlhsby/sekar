@@ -27,7 +27,7 @@ interface EditSchedulePageProps {
 export default function EditSchedulePage({ params }: EditSchedulePageProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   // Form state
   // Fetch data
   const { data: schedule, isLoading: scheduleLoading } = useSchedule(params.id);
@@ -64,9 +64,11 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
   }, [user, authLoading, router]);
 
   if (authLoading || scheduleLoading || !user) {
-    return <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary"></div>
-    </div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary"></div>
+      </div>
+    );
   }
 
   if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
@@ -74,9 +76,11 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
   }
 
   if (!schedule) {
-    return <div className="container mx-auto p-6">
-      <div className="text-center text-nb-gray-600">Jadwal tidak ditemukan</div>
-    </div>;
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center text-nb-gray-600">Jadwal tidak ditemukan</div>
+      </div>
+    );
   }
 
   const users = usersData?.data || [];
@@ -136,16 +140,18 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
 
       <Card variant="elevated">
         <CardHeader>
-          <h1 className="text-2xl font-bold text-nb-black">
-            Edit Jadwal
-          </h1>
+          <h1 className="text-2xl font-bold text-nb-black">Edit Jadwal</h1>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-4 border-2 border-nb-danger bg-nb-danger-light text-nb-danger" role="alert" aria-live="polite">
+              <div
+                className="p-4 border-2 border-nb-danger bg-nb-danger-light text-nb-danger"
+                role="alert"
+                aria-live="polite"
+              >
                 {error}
               </div>
             )}
@@ -163,7 +169,9 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
                   label: `${u.name} (${u.email})`,
                 })),
               ]}
-              helperText={<span className="text-nb-gray-600">Pilih pekerja yang akan dijadwalkan</span>}
+              helperText={
+                <span className="text-nb-gray-600">Pilih pekerja yang akan dijadwalkan</span>
+              }
             />
 
             {/* Area Select */}
@@ -214,7 +222,9 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              helperText={<span className="text-nb-gray-600">Kosongkan jika jadwal berlangsung terus</span>}
+              helperText={
+                <span className="text-nb-gray-600">Kosongkan jika jadwal berlangsung terus</span>
+              }
             />
 
             {/* Actions */}
@@ -224,10 +234,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
                   Batal
                 </Button>
               </Link>
-              <Button
-                type="submit"
-                loading={updateMutation.isPending}
-              >
+              <Button type="submit" loading={updateMutation.isPending}>
                 Simpan Perubahan
               </Button>
             </div>

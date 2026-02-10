@@ -44,9 +44,7 @@ describe('DataTable', () => {
   });
 
   it('should use header alias for column title', () => {
-    const columns: DataTableColumn<TestData>[] = [
-      { key: 'name', header: 'Full Name' },
-    ];
+    const columns: DataTableColumn<TestData>[] = [{ key: 'name', header: 'Full Name' }];
 
     render(<DataTable columns={columns} data={mockData} />);
 
@@ -96,17 +94,13 @@ describe('DataTable', () => {
   });
 
   it('should display custom empty message', () => {
-    render(
-      <DataTable columns={basicColumns} data={[]} emptyText="No users found" />
-    );
+    render(<DataTable columns={basicColumns} data={[]} emptyText="No users found" />);
 
     expect(screen.getByText('No users found')).toBeInTheDocument();
   });
 
   it('should support emptyMessage alias', () => {
-    render(
-      <DataTable columns={basicColumns} data={[]} emptyMessage="Nothing here" />
-    );
+    render(<DataTable columns={basicColumns} data={[]} emptyMessage="Nothing here" />);
 
     expect(screen.getByText('Nothing here')).toBeInTheDocument();
   });
@@ -114,9 +108,9 @@ describe('DataTable', () => {
   it('should display loading state with skeletons', () => {
     render(<DataTable columns={basicColumns} data={[]} loading />);
 
-    const skeletons = screen.getAllByRole('row').filter(row =>
-      row.querySelector('.animate-pulse')
-    );
+    const skeletons = screen
+      .getAllByRole('row')
+      .filter((row) => row.querySelector('.animate-pulse'));
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
@@ -140,9 +134,7 @@ describe('DataTable', () => {
 
   it('should call onSort when clicking sortable column', async () => {
     const onSort = jest.fn();
-    const columns: DataTableColumn<TestData>[] = [
-      { key: 'name', title: 'Name', sortable: true },
-    ];
+    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', sortable: true }];
 
     const user = userEvent.setup();
     render(<DataTable columns={columns} data={mockData} onSort={onSort} />);
@@ -154,9 +146,7 @@ describe('DataTable', () => {
 
   it('should toggle sort direction on multiple clicks', async () => {
     const onSort = jest.fn();
-    const columns: DataTableColumn<TestData>[] = [
-      { key: 'name', title: 'Name', sortable: true },
-    ];
+    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', sortable: true }];
 
     const user = userEvent.setup();
     render(<DataTable columns={columns} data={mockData} onSort={onSort} />);
@@ -238,13 +228,7 @@ describe('DataTable', () => {
     const onRowClick = jest.fn();
     const user = userEvent.setup();
 
-    render(
-      <DataTable
-        columns={basicColumns}
-        data={mockData}
-        onRowClick={onRowClick}
-      />
-    );
+    render(<DataTable columns={basicColumns} data={mockData} onRowClick={onRowClick} />);
 
     await user.click(screen.getByText('Alice'));
 
@@ -257,9 +241,7 @@ describe('DataTable', () => {
       { customId: 'b', name: 'Bob' },
     ];
 
-    const columns: DataTableColumn<typeof customData[0]>[] = [
-      { key: 'name', title: 'Name' },
-    ];
+    const columns: DataTableColumn<(typeof customData)[0]>[] = [{ key: 'name', title: 'Name' }];
 
     render(
       <DataTable
@@ -290,9 +272,7 @@ describe('DataTable', () => {
   });
 
   it('should apply custom width to columns', () => {
-    const columns: DataTableColumn<TestData>[] = [
-      { key: 'name', title: 'Name', width: '200px' },
-    ];
+    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', width: '200px' }];
 
     render(<DataTable columns={columns} data={mockData} />);
 
@@ -309,23 +289,14 @@ describe('DataTable', () => {
   });
 
   it('should show indeterminate checkbox state when some selected', () => {
-    render(
-      <DataTable
-        columns={basicColumns}
-        data={mockData}
-        selectable
-        selectedRows={['1']}
-      />
-    );
+    render(<DataTable columns={basicColumns} data={mockData} selectable selectedRows={['1']} />);
 
     const selectAll = screen.getByLabelText('Select all rows') as HTMLInputElement;
     expect(selectAll.indeterminate).toBe(true);
   });
 
   it('should alternate row colors', () => {
-    const { container } = render(
-      <DataTable columns={basicColumns} data={mockData} />
-    );
+    const { container } = render(<DataTable columns={basicColumns} data={mockData} />);
 
     const rows = container.querySelectorAll('tbody tr');
     expect(rows[0]).not.toHaveClass('bg-nb-gray-50');
@@ -335,9 +306,7 @@ describe('DataTable', () => {
 
   it('should not call onSort when clicking non-sortable column', async () => {
     const onSort = jest.fn();
-    const columns: DataTableColumn<TestData>[] = [
-      { key: 'name', title: 'Name', sortable: false },
-    ];
+    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', sortable: false }];
 
     const user = userEvent.setup();
     render(<DataTable columns={columns} data={mockData} onSort={onSort} />);

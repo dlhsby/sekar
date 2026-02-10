@@ -24,11 +24,7 @@ export { Badge, badgeVariants, type BadgeProps } from './badge';
 
 // Form Components
 export { FormInput, type FormInputProps } from './form-input';
-export {
-  FormSelect,
-  type FormSelectOption,
-  type FormSelectProps,
-} from './form-select';
+export { FormSelect, type FormSelectOption, type FormSelectProps } from './form-select';
 
 // Select
 export {
@@ -69,11 +65,7 @@ export {
   TableCell,
   TableCaption,
 } from './table';
-export {
-  DataTable,
-  type DataTableColumn,
-  type DataTableProps,
-} from './data-table';
+export { DataTable, type DataTableColumn, type DataTableProps } from './data-table';
 
 // Dropdown Menu
 export {

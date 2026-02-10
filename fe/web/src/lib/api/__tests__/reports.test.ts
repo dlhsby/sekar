@@ -75,16 +75,12 @@ describe('Reports API', () => {
     });
 
     it('should fetch reports with date range filter', async () => {
-      mockAxios
-        .onGet(/\/reports\?start_date=2026-02-01&end_date=2026-02-04/)
-        .reply(200, {
-          data: [mockReport],
-          meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
-        });
+      mockAxios.onGet(/\/reports\?start_date=2026-02-01&end_date=2026-02-04/).reply(200, {
+        data: [mockReport],
+        meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+      });
 
-      const response = await apiClient.get(
-        '/reports?start_date=2026-02-01&end_date=2026-02-04'
-      );
+      const response = await apiClient.get('/reports?start_date=2026-02-01&end_date=2026-02-04');
 
       expect(response.data.data).toHaveLength(1);
     });

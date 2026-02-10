@@ -94,7 +94,7 @@ describe('Schedules API', () => {
     it('should fetch schedules without filters', async () => {
       mockAxios.onGet('/schedules').reply(200, mockResponse);
 
-      const { result} = renderHook(() => useSchedules(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useSchedules(), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -158,7 +158,9 @@ describe('Schedules API', () => {
         date: '2026-02-05',
       };
 
-      mockAxios.onPost('/schedules', newSchedule).reply(201, { ...newSchedule, id: '2', status: 'scheduled' });
+      mockAxios
+        .onPost('/schedules', newSchedule)
+        .reply(201, { ...newSchedule, id: '2', status: 'scheduled' });
 
       const { result } = renderHook(() => useCreateSchedule(), { wrapper: createWrapper() });
 

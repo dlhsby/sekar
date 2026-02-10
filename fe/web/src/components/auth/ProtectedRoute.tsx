@@ -36,11 +36,7 @@ export interface ProtectedRouteProps {
  * </ProtectedRoute>
  * ```
  */
-export function ProtectedRoute({
-  children,
-  requiredRoles,
-  loadingFallback,
-}: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRoles, loadingFallback }: ProtectedRouteProps) {
   const { user, loading } = useRequireAuth(requiredRoles);
 
   // Show loading state

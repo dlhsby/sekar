@@ -34,10 +34,9 @@ export function useSchedules(filters?: ScheduleFilters) {
   return useQuery({
     queryKey: scheduleKeys.list(filters),
     queryFn: async () => {
-      const response = await apiClient.get<PaginatedResponse<WorkerSchedule>>(
-        '/schedules',
-        { params: filters }
-      );
+      const response = await apiClient.get<PaginatedResponse<WorkerSchedule>>('/schedules', {
+        params: filters,
+      });
       return response.data;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes - schedules change frequently

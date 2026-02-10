@@ -11,8 +11,19 @@ import { useAuth } from '@/lib/auth/hooks';
 import { useSchedules, useDeleteSchedule } from '@/lib/api/schedules';
 import { WorkerSchedule } from '@/types/models';
 import {
-  Card, CardHeader, CardContent, DataTable, Button, FormInput, FormSelect,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Badge
+  Card,
+  CardHeader,
+  CardContent,
+  DataTable,
+  Button,
+  FormInput,
+  FormSelect,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Badge,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import Link from 'next/link';
@@ -24,7 +35,7 @@ import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 export default function SchedulesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   // Filters
   const [search, setSearch] = useState('');
   const [areaFilter, setAreaFilter] = useState('all');
@@ -91,7 +102,7 @@ export default function SchedulesPage() {
 
   const handleDeleteConfirm = async () => {
     if (!scheduleToDelete) return;
-    
+
     try {
       await deleteMutation.mutateAsync(scheduleToDelete.id);
       setDeleteModalOpen(false);
@@ -108,12 +119,8 @@ export default function SchedulesPage() {
       header: 'Pekerja',
       cell: (schedule) => (
         <div>
-          <div className="font-semibold text-nb-black">
-            {schedule.user?.name || '-'}
-          </div>
-          <div className="text-sm text-nb-gray-600">
-            {schedule.user?.email || ''}
-          </div>
+          <div className="font-semibold text-nb-black">{schedule.user?.name || '-'}</div>
+          <div className="text-sm text-nb-gray-600">{schedule.user?.email || ''}</div>
         </div>
       ),
     },
@@ -142,10 +149,7 @@ export default function SchedulesPage() {
 
         return (
           <div>
-            <Badge
-              variant={shiftColors[shift.code] || 'default'}
-              size="sm"
-            >
+            <Badge variant={shiftColors[shift.code] || 'default'} size="sm">
               {shift.name}
             </Badge>
             <div className="text-xs text-nb-gray-600 mt-1">
@@ -164,7 +168,9 @@ export default function SchedulesPage() {
       key: 'end_date',
       header: 'Tanggal Selesai',
       cell: (schedule) =>
-        schedule.end_date ? formatDate(schedule.end_date) : (
+        schedule.end_date ? (
+          formatDate(schedule.end_date)
+        ) : (
           <span className="text-nb-gray-500 italic">Berlangsung</span>
         ),
     },
@@ -178,11 +184,7 @@ export default function SchedulesPage() {
               <Edit className="w-4 h-4" />
             </Button>
           </Link>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleDeleteClick(schedule)}
-          >
+          <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(schedule)}>
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
@@ -195,12 +197,8 @@ export default function SchedulesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-nb-black mb-2">
-            Manajemen Jadwal
-          </h1>
-          <p className="text-nb-gray-600">
-            Kelola jadwal kerja pekerja per area dan shift
-          </p>
+          <h1 className="text-3xl font-bold text-nb-black mb-2">Manajemen Jadwal</h1>
+          <p className="text-nb-gray-600">Kelola jadwal kerja pekerja per area dan shift</p>
         </div>
         <Link href="/schedules/new">
           <Button size="lg" leftIcon={<Plus className="w-5 h-5" />}>
@@ -266,14 +264,8 @@ export default function SchedulesPage() {
       <Card variant="elevated">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-nb-black">
-              Daftar Jadwal
-            </h2>
-            {pagination && (
-              <Badge variant="default">
-                {pagination.total} Jadwal
-              </Badge>
-            )}
+            <h2 className="text-xl font-bold text-nb-black">Daftar Jadwal</h2>
+            {pagination && <Badge variant="default">{pagination.total} Jadwal</Badge>}
           </div>
         </CardHeader>
 
@@ -289,14 +281,14 @@ export default function SchedulesPage() {
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
               <div className="text-sm text-nb-gray-600">
-                Halaman {pagination.page} dari {pagination.totalPages} (
-                {pagination.total} total jadwal)
+                Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} total
+                jadwal)
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={pagination.page === 1}
                   leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
@@ -305,7 +297,7 @@ export default function SchedulesPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                   disabled={pagination.page === pagination.totalPages}
                   rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
@@ -318,26 +310,26 @@ export default function SchedulesPage() {
       </Card>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteModalOpen} onOpenChange={(open) => {
-        if (!open) {
-          setDeleteModalOpen(false);
-          setScheduleToDelete(null);
-        }
-      }}>
+      <Dialog
+        open={deleteModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteModalOpen(false);
+            setScheduleToDelete(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md" aria-labelledby="schedule-dialog-title">
           <DialogHeader>
             <DialogTitle id="schedule-dialog-title">Hapus Jadwal</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <p className="text-nb-gray-700">
-              Apakah Anda yakin ingin menghapus jadwal ini?
-            </p>
+            <p className="text-nb-gray-700">Apakah Anda yakin ingin menghapus jadwal ini?</p>
             {scheduleToDelete && (
               <div className="p-4 border-2 border-nb-black bg-nb-gray-50">
                 <div className="font-semibold">{scheduleToDelete.user?.name}</div>
                 <div className="text-sm text-nb-gray-600">
-                  {scheduleToDelete.area?.name} •{' '}
-                  {scheduleToDelete.shift_definition?.name}
+                  {scheduleToDelete.area?.name} • {scheduleToDelete.shift_definition?.name}
                 </div>
                 <div className="text-sm text-nb-gray-600">
                   {formatDate(scheduleToDelete.effective_date)}
@@ -345,9 +337,7 @@ export default function SchedulesPage() {
                 </div>
               </div>
             )}
-            <p className="text-sm text-nb-gray-600">
-              Tindakan ini tidak dapat dibatalkan.
-            </p>
+            <p className="text-sm text-nb-gray-600">Tindakan ini tidak dapat dibatalkan.</p>
           </div>
           <DialogFooter className="flex gap-3 sm:gap-3">
             <Button

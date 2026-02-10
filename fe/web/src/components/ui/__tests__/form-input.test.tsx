@@ -233,11 +233,7 @@ describe('FormInput Component', () => {
       const TestComponent = () => {
         const [value, setValue] = React.useState('');
         return (
-          <FormInput
-            label="Controlled"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-          />
+          <FormInput label="Controlled" value={value} onChange={(e) => setValue(e.target.value)} />
         );
       };
 
@@ -279,14 +275,7 @@ describe('FormInput Component', () => {
 
   describe('Real-world Usage', () => {
     it('should render login form username field', () => {
-      render(
-        <FormInput
-          label="Username"
-          type="text"
-          placeholder="Masukkan username"
-          required
-        />
-      );
+      render(<FormInput label="Username" type="text" placeholder="Masukkan username" required />);
 
       expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Masukkan username')).toBeInTheDocument();

@@ -1,12 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import {
-  User,
-  UserFilters,
-  CreateUserDto,
-  UpdateUserDto,
-  PaginatedResponse,
-} from '@/types/models';
+import { User, UserFilters, CreateUserDto, UpdateUserDto, PaginatedResponse } from '@/types/models';
 
 /**
  * Query keys for users
@@ -30,9 +24,7 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<PaginatedResponse<
   if (filters.page) params.append('page', String(filters.page));
   if (filters.limit) params.append('limit', String(filters.limit));
 
-  const response = await apiClient.get<PaginatedResponse<User>>(
-    `/users?${params.toString()}`
-  );
+  const response = await apiClient.get<PaginatedResponse<User>>(`/users?${params.toString()}`);
   return response.data;
 };
 
@@ -55,13 +47,7 @@ const createUser = async (data: CreateUserDto): Promise<User> => {
 /**
  * Update existing user
  */
-const updateUser = async ({
-  id,
-  data,
-}: {
-  id: string;
-  data: UpdateUserDto;
-}): Promise<User> => {
+const updateUser = async ({ id, data }: { id: string; data: UpdateUserDto }): Promise<User> => {
   const response = await apiClient.patch<User>(`/users/${id}`, data);
   return response.data;
 };

@@ -49,9 +49,7 @@ export function SidebarProvider({
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
 
   return (
-    <SidebarContext.Provider value={{ isOpen, setIsOpen }}>
-      {children}
-    </SidebarContext.Provider>
+    <SidebarContext.Provider value={{ isOpen, setIsOpen }}>{children}</SidebarContext.Provider>
   );
 }
 
@@ -104,7 +102,9 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       visibleItems.forEach((item) => {
         if (item.children) {
           const hasActiveChild = item.children.some(
-            (child) => child.href !== '#' && (activePath === child.href || activePath?.startsWith(child.href + '/'))
+            (child) =>
+              child.href !== '#' &&
+              (activePath === child.href || activePath?.startsWith(child.href + '/'))
           );
           if (hasActiveChild) {
             itemsToExpand.push(item.id);
@@ -117,7 +117,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
         setExpandedItems((prev) => {
           const newItems = [...new Set([...prev, ...itemsToExpand])];
           // Only update if the array actually changed
-          if (newItems.length !== prev.length || !newItems.every(id => prev.includes(id))) {
+          if (newItems.length !== prev.length || !newItems.every((id) => prev.includes(id))) {
             return newItems;
           }
           return prev;
@@ -127,9 +127,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 
     const toggleExpanded = (itemId: string) => {
       setExpandedItems((prev) =>
-        prev.includes(itemId)
-          ? prev.filter((id) => id !== itemId)
-          : [...prev, itemId]
+        prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
       );
     };
 
@@ -138,9 +136,13 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       const isExpanded = expandedItems.includes(item.id);
       const isActive =
         item.href !== '#' && (activePath === item.href || activePath?.startsWith(item.href + '/'));
-      const hasActiveChild = hasChildren && item.children?.some(
-        (child) => child.href !== '#' && (activePath === child.href || activePath?.startsWith(child.href + '/'))
-      );
+      const hasActiveChild =
+        hasChildren &&
+        item.children?.some(
+          (child) =>
+            child.href !== '#' &&
+            (activePath === child.href || activePath?.startsWith(child.href + '/'))
+        );
 
       const content = (
         <>
@@ -254,9 +256,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             {logo || (
               <>
                 <h1 className="text-2xl font-extrabold">{title}</h1>
-                <p className="text-nb-white/70 text-sm mt-1">
-                  {subtitle}
-                </p>
+                <p className="text-nb-white/70 text-sm mt-1">{subtitle}</p>
               </>
             )}
           </div>
@@ -288,9 +288,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm truncate">{user.name}</p>
-                  <p className="text-nb-white/80 text-xs truncate">
-                    {user.role}
-                  </p>
+                  <p className="text-nb-white/80 text-xs truncate">{user.role}</p>
                 </div>
               </div>
             </div>
@@ -332,12 +330,7 @@ const SidebarTrigger = React.forwardRef<
       aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
       {...props}
     >
-      <svg
-        className="h-5 w-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"

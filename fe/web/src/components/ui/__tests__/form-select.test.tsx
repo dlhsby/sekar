@@ -20,13 +20,7 @@ describe('FormSelect Component', () => {
   describe('Basic Rendering', () => {
     it('should render label and select', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="User Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
-      );
+      render(<FormSelect label="User Role" options={mockOptions} onChange={handleChange} />);
 
       expect(screen.getByText('User Role')).toBeInTheDocument();
       expect(screen.getByRole('combobox')).toBeInTheDocument();
@@ -48,13 +42,7 @@ describe('FormSelect Component', () => {
 
     it('should render default placeholder when not provided', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
-      );
+      render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} />);
 
       expect(screen.getByText('Select...')).toBeInTheDocument();
     });
@@ -62,12 +50,7 @@ describe('FormSelect Component', () => {
     it('should render selected value', () => {
       const handleChange = jest.fn();
       render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          value="admin"
-          onChange={handleChange}
-        />
+        <FormSelect label="Role" options={mockOptions} value="admin" onChange={handleChange} />
       );
 
       expect(screen.getByText('Administrator')).toBeInTheDocument();
@@ -77,13 +60,7 @@ describe('FormSelect Component', () => {
   describe('Label', () => {
     it('should render label associated with select', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Select Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
-      );
+      render(<FormSelect label="Select Role" options={mockOptions} onChange={handleChange} />);
 
       const label = screen.getByText('Select Role');
       expect(label.tagName).toBe('LABEL');
@@ -91,27 +68,14 @@ describe('FormSelect Component', () => {
 
     it('should render required indicator when required', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-          required
-        />
-      );
+      render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} required />);
 
       expect(screen.getByText('*')).toBeInTheDocument();
     });
 
     it('should not render required indicator when not required', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
-      );
+      render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} />);
 
       expect(screen.queryByText('*')).not.toBeInTheDocument();
     });
@@ -214,14 +178,7 @@ describe('FormSelect Component', () => {
   describe('Disabled State', () => {
     it('should disable select when disabled prop is true', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-          disabled
-        />
-      );
+      render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} disabled />);
 
       const trigger = screen.getByRole('combobox');
       expect(trigger).toBeDisabled();
@@ -247,11 +204,7 @@ describe('FormSelect Component', () => {
     it('should have proper spacing between elements', () => {
       const handleChange = jest.fn();
       const { container } = render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
+        <FormSelect label="Role" options={mockOptions} onChange={handleChange} />
       );
 
       const wrapper = container.firstChild;
@@ -263,11 +216,7 @@ describe('FormSelect Component', () => {
     it('should have unique id linking label to select', () => {
       const handleChange = jest.fn();
       render(
-        <FormSelect
-          label="Accessible Select"
-          options={mockOptions}
-          onChange={handleChange}
-        />
+        <FormSelect label="Accessible Select" options={mockOptions} onChange={handleChange} />
       );
 
       const label = screen.getByText('Accessible Select');
@@ -296,13 +245,7 @@ describe('FormSelect Component', () => {
 
     it('should be focusable', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
-      );
+      render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} />);
 
       const trigger = screen.getByRole('combobox');
       trigger.focus();
@@ -335,13 +278,7 @@ describe('FormSelect Component', () => {
   describe('Neo Brutalism Styles', () => {
     it('should have proper border and shadow styles on trigger', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
-      );
+      render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} />);
 
       const trigger = screen.getByRole('combobox');
       expect(trigger).toHaveClass('border-3', 'border-nb-black', 'shadow-nb-sm', 'bg-nb-white');
@@ -349,13 +286,7 @@ describe('FormSelect Component', () => {
 
     it('should have proper height for touch targets', () => {
       const handleChange = jest.fn();
-      render(
-        <FormSelect
-          label="Role"
-          options={mockOptions}
-          onChange={handleChange}
-        />
-      );
+      render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} />);
 
       const trigger = screen.getByRole('combobox');
       expect(trigger).toHaveClass('h-12');

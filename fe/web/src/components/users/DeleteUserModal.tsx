@@ -23,12 +23,7 @@ interface DeleteUserModalProps {
 /**
  * Delete User Confirmation Modal
  */
-export function DeleteUserModal({
-  user,
-  isOpen,
-  onClose,
-  onSuccess,
-}: DeleteUserModalProps) {
+export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUserModalProps) {
   const [error, setError] = useState<string>('');
   const deleteUserMutation = useDeleteUser();
 
@@ -41,9 +36,7 @@ export function DeleteUserModal({
       onSuccess();
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Terjadi kesalahan saat menghapus user';
+        err instanceof Error ? err.message : 'Terjadi kesalahan saat menghapus user';
       setError(errorMessage);
     }
   };
@@ -73,12 +66,10 @@ export function DeleteUserModal({
           {/* Warning Message */}
           <div className="text-center">
             <p className="text-sm text-nb-gray-700">
-              Apakah Anda yakin ingin menghapus user{' '}
-              <span className="font-bold">{user?.name}</span>?
+              Apakah Anda yakin ingin menghapus user <span className="font-bold">{user?.name}</span>
+              ?
             </p>
-            <p className="text-sm text-nb-gray-600 mt-2">
-              Tindakan ini tidak dapat dibatalkan.
-            </p>
+            <p className="text-sm text-nb-gray-600 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
           </div>
 
           {/* Error Message */}

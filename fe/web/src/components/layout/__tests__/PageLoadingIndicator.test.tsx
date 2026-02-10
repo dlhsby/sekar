@@ -52,7 +52,15 @@ describe('PageLoadingIndicator Component', () => {
       render(<PageLoadingIndicator />);
 
       const progressBar = screen.getByRole('progressbar');
-      expect(progressBar).toHaveClass('fixed', 'top-0', 'left-0', 'right-0', 'h-1', 'bg-nb-primary', 'z-50');
+      expect(progressBar).toHaveClass(
+        'fixed',
+        'top-0',
+        'left-0',
+        'right-0',
+        'h-1',
+        'bg-nb-primary',
+        'z-50'
+      );
     });
   });
 
@@ -194,7 +202,11 @@ describe('PageLoadingIndicator Component', () => {
       unmount();
 
       // Verify no errors when advancing timers after unmount
-      expect(() => act(() => { jest.runAllTimers(); })).not.toThrow();
+      expect(() =>
+        act(() => {
+          jest.runAllTimers();
+        })
+      ).not.toThrow();
     });
 
     it('should cleanup timers when pathname changes rapidly', () => {
@@ -212,7 +224,11 @@ describe('PageLoadingIndicator Component', () => {
       rerender(<PageLoadingIndicator />);
 
       // Should not throw errors
-      expect(() => act(() => { jest.runAllTimers(); })).not.toThrow();
+      expect(() =>
+        act(() => {
+          jest.runAllTimers();
+        })
+      ).not.toThrow();
     });
   });
 

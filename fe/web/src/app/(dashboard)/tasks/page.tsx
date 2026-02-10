@@ -9,7 +9,13 @@
 import { useAuth } from '@/lib/auth/hooks';
 import { useTasks, type TaskStatus, type TaskPriority } from '@/lib/api/tasks';
 import {
-  Card, CardHeader, CardContent, Badge, DataTable, FormSelect, Button
+  Card,
+  CardHeader,
+  CardContent,
+  Badge,
+  DataTable,
+  FormSelect,
+  Button,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
@@ -85,7 +91,10 @@ export default function TasksPage() {
   ];
 
   // Status badge colors
-  const statusBadges: Record<TaskStatus, 'secondary' | 'default' | 'success' | 'warning' | 'destructive'> = {
+  const statusBadges: Record<
+    TaskStatus,
+    'secondary' | 'default' | 'success' | 'warning' | 'destructive'
+  > = {
     pending: 'secondary',
     assigned: 'default',
     accepted: 'default',
@@ -96,37 +105,32 @@ export default function TasksPage() {
   };
 
   // Priority badge colors
-  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> = {
-    low: 'secondary',
-    normal: 'success',
-    high: 'warning',
-    urgent: 'destructive',
-  };
+  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> =
+    {
+      low: 'secondary',
+      normal: 'success',
+      high: 'warning',
+      urgent: 'destructive',
+    };
 
   // Table columns
   const columns: ColumnDef<Task>[] = [
     {
       key: 'title',
       header: 'Judul Tugas',
-      cell: (task) => (
-        <div className="font-semibold text-nb-black">{task.title}</div>
-      ),
+      cell: (task) => <div className="font-semibold text-nb-black">{task.title}</div>,
     },
     {
       key: 'assigned_to',
       header: 'Ditugaskan Ke',
       cell: (task) => (
-        <div className="text-sm">
-          {task.assigned_to ? task.assigned_to.full_name : '-'}
-        </div>
+        <div className="text-sm">{task.assigned_to ? task.assigned_to.full_name : '-'}</div>
       ),
     },
     {
       key: 'area',
       header: 'Area',
-      cell: (task) => (
-        <div className="text-sm">{task.area ? task.area.name : '-'}</div>
-      ),
+      cell: (task) => <div className="text-sm">{task.area ? task.area.name : '-'}</div>,
     },
     {
       key: 'priority',
@@ -151,9 +155,7 @@ export default function TasksPage() {
       header: 'Tenggat',
       cell: (task) => (
         <div className="text-sm">
-          {task.due_date
-            ? new Date(task.due_date).toLocaleDateString('id-ID')
-            : '-'}
+          {task.due_date ? new Date(task.due_date).toLocaleDateString('id-ID') : '-'}
         </div>
       ),
     },
@@ -161,10 +163,7 @@ export default function TasksPage() {
       key: 'actions',
       header: 'Aksi',
       cell: (task) => (
-        <Link
-          href={`/tasks/${task.id}`}
-          className="text-nb-primary font-semibold hover:underline"
-        >
+        <Link href={`/tasks/${task.id}`} className="text-nb-primary font-semibold hover:underline">
           Detail
         </Link>
       ),
@@ -177,9 +176,7 @@ export default function TasksPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-nb-black">Tugas</h1>
-          <p className="text-nb-gray-600 mt-1">
-            Kelola penugasan pekerja
-          </p>
+          <p className="text-nb-gray-600 mt-1">Kelola penugasan pekerja</p>
         </div>
         <Button onClick={() => router.push('/tasks/new')} leftIcon={<Plus className="w-5 h-5" />}>
           Buat Tugas Baru
@@ -229,9 +226,7 @@ export default function TasksPage() {
         <Card variant="elevated">
           <CardContent>
             <div className="text-sm font-semibold text-nb-gray-600 mb-2">Total Tugas</div>
-            <div className="text-3xl font-black text-nb-black">
-              {pagination?.total || 0}
-            </div>
+            <div className="text-3xl font-black text-nb-black">{pagination?.total || 0}</div>
           </CardContent>
         </Card>
         <Card variant="elevated">
@@ -277,8 +272,8 @@ export default function TasksPage() {
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
               <div className="text-sm text-nb-gray-600">
-                Halaman {pagination.page} dari {pagination.totalPages} (
-                {pagination.total} total tugas)
+                Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} total
+                tugas)
               </div>
               <div className="flex gap-2">
                 <Button
@@ -293,9 +288,7 @@ export default function TasksPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() =>
-                    setPage((p) => Math.min(pagination.totalPages, p + 1))
-                  }
+                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                   disabled={pagination.page === pagination.totalPages}
                   rightIcon={<ChevronRight className="w-4 h-4" />}
                 >

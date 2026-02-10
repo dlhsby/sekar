@@ -23,8 +23,7 @@ const textareaVariants = cva(
 );
 
 export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    VariantProps<typeof textareaVariants> {
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement>, VariantProps<typeof textareaVariants> {
   label?: string;
   error?: string;
   helperText?: string;
@@ -50,9 +49,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     },
     ref
   ) => {
-    const [internalValue, setInternalValue] = React.useState(
-      (value as string) || ''
-    );
+    const [internalValue, setInternalValue] = React.useState((value as string) || '');
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
     const effectiveState = error ? 'error' : state;
@@ -72,11 +69,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     return (
       <div className="w-full">
-        {label && (
-          <label className="block text-sm font-semibold text-nb-black mb-2">
-            {label}
-          </label>
-        )}
+        {label && <label className="block text-sm font-semibold text-nb-black mb-2">{label}</label>}
         <textarea
           ref={(node) => {
             textareaRef.current = node;
@@ -95,19 +88,14 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           onChange={handleChange}
           maxLength={maxLength}
           aria-invalid={!!error}
-          aria-describedby={
-            error || helperText || showCount ? 'textarea-helper' : undefined
-          }
+          aria-describedby={error || helperText || showCount ? 'textarea-helper' : undefined}
           {...props}
         />
         <div className="flex justify-between mt-1">
           {(error || helperText) && (
             <p
               id="textarea-helper"
-              className={cn(
-                'text-sm',
-                error ? 'text-nb-danger' : 'text-nb-gray-600'
-              )}
+              className={cn('text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
             >
               {error || helperText}
             </p>

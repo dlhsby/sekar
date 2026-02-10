@@ -27,8 +27,7 @@ const skeletonVariants = cva(
 );
 
 export interface SkeletonProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof skeletonVariants> {
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof skeletonVariants> {
   /**
    * Number of skeleton items to render
    */
@@ -51,11 +50,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
       return (
         <div ref={ref} className={cn('flex flex-col', gapClasses[gap])}>
           {Array.from({ length: count }).map((_, index) => (
-            <div
-              key={index}
-              className={cn(skeletonVariants({ variant }), className)}
-              {...props}
-            />
+            <div key={index} className={cn(skeletonVariants({ variant }), className)} {...props} />
           ))}
         </div>
       );
@@ -77,29 +72,28 @@ Skeleton.displayName = 'Skeleton';
 /**
  * Card skeleton for loading card content
  */
-const SkeletonCard = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      'border-2 border-nb-black rounded-nb-base bg-nb-white shadow-nb-sm p-4 space-y-4',
-      className
-    )}
-    aria-label="Memuat kartu..."
-    role="status"
-    {...props}
-  >
-    <Skeleton variant="heading" />
-    <Skeleton variant="text" />
-    <Skeleton variant="text" className="w-3/4" />
-    <div className="flex gap-2 pt-2">
-      <Skeleton variant="button" />
-      <Skeleton variant="button" />
+const SkeletonCard = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        'border-2 border-nb-black rounded-nb-base bg-nb-white shadow-nb-sm p-4 space-y-4',
+        className
+      )}
+      aria-label="Memuat kartu..."
+      role="status"
+      {...props}
+    >
+      <Skeleton variant="heading" />
+      <Skeleton variant="text" />
+      <Skeleton variant="text" className="w-3/4" />
+      <div className="flex gap-2 pt-2">
+        <Skeleton variant="button" />
+        <Skeleton variant="button" />
+      </div>
     </div>
-  </div>
-));
+  )
+);
 SkeletonCard.displayName = 'SkeletonCard';
 
 /**
@@ -125,10 +119,7 @@ const SkeletonTable = React.forwardRef<
     </div>
     {/* Rows */}
     {Array.from({ length: rows }).map((_, index) => (
-      <div
-        key={index}
-        className="p-4 border-b-2 border-nb-gray-200 last:border-b-0 flex gap-4"
-      >
+      <div key={index} className="p-4 border-b-2 border-nb-gray-200 last:border-b-0 flex gap-4">
         <Skeleton className="h-4 w-1/4" />
         <Skeleton className="h-4 w-1/4" />
         <Skeleton className="h-4 w-1/4" />

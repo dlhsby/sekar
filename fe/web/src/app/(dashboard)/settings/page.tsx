@@ -112,15 +112,11 @@ export default function SettingsPage() {
               <div className="text-nb-black font-medium">{user.full_name}</div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-nb-gray-700 mb-1">
-                Username
-              </label>
+              <label className="block text-sm font-semibold text-nb-gray-700 mb-1">Username</label>
               <div className="text-nb-black font-medium">{user.username}</div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-nb-gray-700 mb-1">
-                Role
-              </label>
+              <label className="block text-sm font-semibold text-nb-gray-700 mb-1">Role</label>
               <div className="text-nb-black font-medium capitalize">{user.role}</div>
             </div>
             <p className="text-xs text-nb-gray-600 mt-4">
@@ -168,7 +164,11 @@ export default function SettingsPage() {
             )}
 
             {passwordError && (
-              <div className="p-4 bg-nb-danger-light border-2 border-nb-danger text-nb-danger rounded-none" role="alert" aria-live="polite">
+              <div
+                className="p-4 bg-nb-danger-light border-2 border-nb-danger text-nb-danger rounded-none"
+                role="alert"
+                aria-live="polite"
+              >
                 <p className="font-semibold">{passwordError}</p>
               </div>
             )}

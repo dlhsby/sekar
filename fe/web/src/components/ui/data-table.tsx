@@ -4,14 +4,7 @@ import * as React from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
 
 export interface DataTableColumn<T> {
   key: string;
@@ -68,8 +61,7 @@ export function DataTable<T extends Record<string, unknown>>({
   // Support both emptyText and emptyMessage
   const emptyStateText = emptyText || emptyMessage || 'No data available';
   const [sortColumn, setSortColumn] = React.useState<string | null>(null);
-  const [sortDirection, setSortDirection] =
-    React.useState<SortDirection>(null);
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>(null);
 
   const handleSort = (column: DataTableColumn<T>) => {
     if (!column.sortable) return;
@@ -109,8 +101,7 @@ export function DataTable<T extends Record<string, unknown>>({
   };
 
   const allSelected =
-    data.length > 0 &&
-    data.every((row) => selectedRows.includes(String(row[rowKey])));
+    data.length > 0 && data.every((row) => selectedRows.includes(String(row[rowKey])));
   const someSelected = selectedRows.length > 0 && !allSelected;
 
   return (
@@ -137,8 +128,7 @@ export function DataTable<T extends Record<string, unknown>>({
               <TableHead
                 key={column.key}
                 className={cn(
-                  column.sortable &&
-                    'cursor-pointer hover:bg-nb-gray-200 transition-colors',
+                  column.sortable && 'cursor-pointer hover:bg-nb-gray-200 transition-colors',
                   column.align === 'center' && 'text-center',
                   column.align === 'right' && 'text-right'
                 )}
@@ -209,8 +199,7 @@ export function DataTable<T extends Record<string, unknown>>({
                   key={id}
                   className={cn(
                     !isEven && 'bg-nb-gray-50',
-                    onRowClick &&
-                      'cursor-pointer hover:bg-nb-gray-100 transition-colors'
+                    onRowClick && 'cursor-pointer hover:bg-nb-gray-100 transition-colors'
                   )}
                   onClick={() => onRowClick?.(row)}
                   data-state={isSelected ? 'selected' : undefined}

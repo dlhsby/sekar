@@ -5,13 +5,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { useRouter, usePathname } from 'next/navigation';
-import {
-  useAuth,
-  useUser,
-  useRequireAuth,
-  useHasRole,
-  useIsAuthenticated,
-} from '../hooks';
+import { useAuth, useUser, useRequireAuth, useHasRole, useIsAuthenticated } from '../hooks';
 import * as authContext from '../context';
 import type { User } from '@/lib/api/auth';
 
@@ -132,9 +126,7 @@ describe('Auth Hooks', () => {
       renderHook(() => useRequireAuth());
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith(
-          expect.stringContaining('/login?redirect=')
-        );
+        expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('/login?redirect='));
       });
     });
 
@@ -168,9 +160,7 @@ describe('Auth Hooks', () => {
         );
       });
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Access denied')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Access denied'));
 
       consoleErrorSpy.mockRestore();
     });
@@ -231,9 +221,7 @@ describe('Auth Hooks', () => {
     it('should handle multiple role checks correctly', () => {
       mockAuthContext(mockWorker);
 
-      const { result } = renderHook(() =>
-        useHasRole(['worker', 'supervisor', 'admin'])
-      );
+      const { result } = renderHook(() => useHasRole(['worker', 'supervisor', 'admin']));
 
       expect(result.current).toBe(true);
     });

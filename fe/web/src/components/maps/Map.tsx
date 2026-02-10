@@ -46,7 +46,9 @@ export function Map({
     // Check if token is configured
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     if (!token || token === 'your-mapbox-token-here') {
-      setError('Mapbox token belum dikonfigurasi. Silakan tambahkan NEXT_PUBLIC_MAPBOX_TOKEN di .env.local');
+      setError(
+        'Mapbox token belum dikonfigurasi. Silakan tambahkan NEXT_PUBLIC_MAPBOX_TOKEN di .env.local'
+      );
       return;
     }
 
@@ -66,10 +68,7 @@ export function Map({
       newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
       // Add attribution
-      newMap.addControl(
-        new mapboxgl.AttributionControl({ compact: true }),
-        'bottom-right'
-      );
+      newMap.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
 
       // Handle load event
       newMap.on('load', () => {

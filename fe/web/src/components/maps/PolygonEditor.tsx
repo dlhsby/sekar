@@ -283,13 +283,7 @@ export function PolygonEditor({
       )}
 
       {/* Map */}
-      <Map
-        center={center}
-        zoom={zoom}
-        style={style}
-        className={className}
-        onLoad={handleMapLoad}
-      />
+      <Map center={center} zoom={zoom} style={style} className={className} onLoad={handleMapLoad} />
 
       {/* Instructions */}
       {!readonly && (

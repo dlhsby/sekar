@@ -45,7 +45,11 @@ export default function AreasPage() {
   }>({ isOpen: false, area: null });
 
   // Fetch data
-  const { data: areasData, isLoading, error } = useAreas({
+  const {
+    data: areasData,
+    isLoading,
+    error,
+  } = useAreas({
     ...filters,
     rayon_id: filters.rayon_id !== 'all' ? filters.rayon_id : undefined,
     area_type_id: filters.area_type_id !== 'all' ? filters.area_type_id : undefined,
@@ -123,7 +127,9 @@ export default function AreasPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <EmptyState
           variant="error"
-          description={error instanceof Error ? error.message : 'Terjadi kesalahan saat memuat data.'}
+          description={
+            error instanceof Error ? error.message : 'Terjadi kesalahan saat memuat data.'
+          }
           action={{
             label: 'Coba Lagi',
             onClick: () => window.location.reload(),
@@ -142,9 +148,7 @@ export default function AreasPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-black">Area Kerja</h1>
-          <p className="text-nb-gray-600 mt-1">
-            Kelola area kerja dan batas wilayah
-          </p>
+          <p className="text-nb-gray-600 mt-1">Kelola area kerja dan batas wilayah</p>
         </div>
 
         {isAdmin && (
@@ -224,8 +228,7 @@ export default function AreasPage() {
 
           {/* Results count */}
           <div className="mt-3 text-sm text-nb-gray-600">
-            Menampilkan <strong>{areas.length}</strong> dari{' '}
-            <strong>{totalAreas}</strong> area
+            Menampilkan <strong>{areas.length}</strong> dari <strong>{totalAreas}</strong> area
           </div>
         </CardContent>
       </Card>
@@ -234,19 +237,26 @@ export default function AreasPage() {
       {areas.length === 0 ? (
         // Empty state
         <EmptyState
-          variant={filters.search || (filters.rayon_id !== 'all') || (filters.area_type_id !== 'all') ? 'noResults' : 'noData'}
+          variant={
+            filters.search || filters.rayon_id !== 'all' || filters.area_type_id !== 'all'
+              ? 'noResults'
+              : 'noData'
+          }
           title={
-            filters.search || (filters.rayon_id !== 'all') || (filters.area_type_id !== 'all')
+            filters.search || filters.rayon_id !== 'all' || filters.area_type_id !== 'all'
               ? 'Area Tidak Ditemukan'
               : 'Belum Ada Area'
           }
           description={
-            filters.search || (filters.rayon_id !== 'all') || (filters.area_type_id !== 'all')
+            filters.search || filters.rayon_id !== 'all' || filters.area_type_id !== 'all'
               ? 'Tidak ada area yang sesuai dengan filter. Coba ubah kriteria pencarian.'
               : 'Mulai dengan menambahkan area kerja pertama.'
           }
           action={
-            isAdmin && !filters.search && (filters.rayon_id === 'all') && (filters.area_type_id === 'all')
+            isAdmin &&
+            !filters.search &&
+            filters.rayon_id === 'all' &&
+            filters.area_type_id === 'all'
               ? {
                   label: 'Tambah Area Pertama',
                   onClick: handleCreateNew,

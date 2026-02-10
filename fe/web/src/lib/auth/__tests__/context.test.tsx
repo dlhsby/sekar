@@ -151,16 +151,12 @@ describe('Auth Context', () => {
 
       expect(result.current.user).toEqual(mockUser);
       expect(result.current.error).toBeNull();
-      expect(mockCookieUtils.setAuthCookie).toHaveBeenCalledWith(
-        'access_token',
-        'access-token',
-        { maxAge: 7 * 24 * 60 * 60 }
-      );
-      expect(mockCookieUtils.setAuthCookie).toHaveBeenCalledWith(
-        'refresh_token',
-        'refresh-token',
-        { maxAge: 30 * 24 * 60 * 60 }
-      );
+      expect(mockCookieUtils.setAuthCookie).toHaveBeenCalledWith('access_token', 'access-token', {
+        maxAge: 7 * 24 * 60 * 60,
+      });
+      expect(mockCookieUtils.setAuthCookie).toHaveBeenCalledWith('refresh_token', 'refresh-token', {
+        maxAge: 30 * 24 * 60 * 60,
+      });
       expect(mockPush).toHaveBeenCalledWith('/');
     });
 
@@ -283,9 +279,7 @@ describe('Auth Context', () => {
         full_name: 'Updated Admin',
       };
 
-      mockAuthApi.getCurrentUser
-        .mockResolvedValueOnce(mockUser)
-        .mockResolvedValueOnce(updatedUser);
+      mockAuthApi.getCurrentUser.mockResolvedValueOnce(mockUser).mockResolvedValueOnce(updatedUser);
 
       const { result } = renderHook(() => useAuthContext(), {
         wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,

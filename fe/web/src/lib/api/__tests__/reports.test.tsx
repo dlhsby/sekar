@@ -127,7 +127,10 @@ describe('Reports API', () => {
 
     it('should fetch reports with filters', async () => {
       mockAxios.onGet('/reports').reply((config) => {
-        if (config.params?.worker_id === 'worker-1' && config.params?.report_type === 'task_completion') {
+        if (
+          config.params?.worker_id === 'worker-1' &&
+          config.params?.report_type === 'task_completion'
+        ) {
           return [200, [mockReport]];
         }
         return [404, { message: 'Not found' }];

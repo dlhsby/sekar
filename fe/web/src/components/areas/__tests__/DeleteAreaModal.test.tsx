@@ -30,7 +30,15 @@ describe('DeleteAreaModal', () => {
     },
     location: {
       type: 'Polygon' as const,
-      coordinates: [[[112.75, -7.25], [112.76, -7.25], [112.76, -7.26], [112.75, -7.26], [112.75, -7.25]]],
+      coordinates: [
+        [
+          [112.75, -7.25],
+          [112.76, -7.25],
+          [112.76, -7.26],
+          [112.75, -7.26],
+          [112.75, -7.25],
+        ],
+      ],
     },
     coverage_area_m2: 15000,
     created_at: '2026-01-01',
@@ -60,40 +68,25 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should not render when closed', () => {
-    render(
-      <DeleteAreaModal
-        isOpen={false}
-        area={mockArea}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={false} area={mockArea} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('should not render when area is null', () => {
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={null}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={null} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('should render modal when open with area', () => {
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /hapus area/i })).toBeInTheDocument();
@@ -101,14 +94,9 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should display area details', () => {
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getAllByText('Taman Bungkul').length).toBeGreaterThan(0);
     expect(screen.getByText('TB')).toBeInTheDocument();
@@ -116,14 +104,9 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should display warning message', () => {
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByText(/tindakan ini tidak dapat dibatalkan/i)).toBeInTheDocument();
   });
@@ -132,14 +115,9 @@ describe('DeleteAreaModal', () => {
     const onClose = jest.fn();
     const user = userEvent.setup();
 
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={onClose}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.click(screen.getByRole('button', { name: /batal/i }));
 
@@ -156,14 +134,9 @@ describe('DeleteAreaModal', () => {
     const onClose = jest.fn();
     const user = userEvent.setup();
 
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={onClose}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.click(screen.getByRole('button', { name: /^hapus$/i }));
 
@@ -184,12 +157,7 @@ describe('DeleteAreaModal', () => {
     const user = userEvent.setup();
 
     render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={onClose}
-        onSuccess={onSuccess}
-      />,
+      <DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} onSuccess={onSuccess} />,
       { wrapper: createWrapper() }
     );
 
@@ -210,14 +178,9 @@ describe('DeleteAreaModal', () => {
 
     const user = userEvent.setup();
 
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.click(screen.getByRole('button', { name: /^hapus$/i }));
 
@@ -232,14 +195,9 @@ describe('DeleteAreaModal', () => {
       isPending: true,
     });
 
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByRole('button', { name: /batal/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /^hapus$/i })).toBeDisabled();
@@ -254,14 +212,9 @@ describe('DeleteAreaModal', () => {
     const onClose = jest.fn();
     const user = userEvent.setup();
 
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={onClose}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.click(screen.getByRole('button', { name: /batal/i }));
 
@@ -277,14 +230,9 @@ describe('DeleteAreaModal', () => {
 
     const user = userEvent.setup();
 
-    render(
-      <DeleteAreaModal
-        isOpen={true}
-        area={mockArea}
-        onClose={jest.fn()}
-      />,
-      { wrapper: createWrapper() }
-    );
+    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.click(screen.getByRole('button', { name: /^hapus$/i }));
 

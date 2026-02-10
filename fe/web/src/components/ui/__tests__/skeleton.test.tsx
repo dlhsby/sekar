@@ -5,12 +5,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import {
-  Skeleton,
-  SkeletonCard,
-  SkeletonTable,
-  SkeletonList,
-} from '../skeleton';
+import { Skeleton, SkeletonCard, SkeletonTable, SkeletonList } from '../skeleton';
 import '@testing-library/jest-dom';
 
 describe('Skeleton Component', () => {
@@ -171,9 +166,7 @@ describe('Skeleton Component', () => {
     });
 
     it('should merge custom className with variant classes', () => {
-      const { container } = render(
-        <Skeleton variant="heading" className="w-full" />
-      );
+      const { container } = render(<Skeleton variant="heading" className="w-full" />);
 
       const skeleton = container.firstChild;
       expect(skeleton).toHaveClass('h-8', 'w-full');

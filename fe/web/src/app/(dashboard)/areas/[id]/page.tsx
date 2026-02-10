@@ -17,11 +17,7 @@ import { formatArea, formatCoordinates, polygonToFeature } from '@/lib/utils/geo
 import { polygonColors } from '@/lib/maps/styles';
 import type mapboxgl from 'mapbox-gl';
 
-export default function AreaDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function AreaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const { user } = useAuth();
@@ -99,9 +95,7 @@ export default function AreaDetailPage({
             <p className="text-sm text-nb-gray-600 mb-4">
               Area yang Anda cari tidak ditemukan atau telah dihapus.
             </p>
-            <Button onClick={() => router.push('/areas')}>
-              Kembali ke Daftar Area
-            </Button>
+            <Button onClick={() => router.push('/areas')}>Kembali ke Daftar Area</Button>
           </CardContent>
         </Card>
       </div>
@@ -128,15 +122,9 @@ export default function AreaDetailPage({
 
           {/* Badges */}
           <div className="flex items-center gap-2 mt-3">
-            {area.rayon && (
-              <Badge variant="default">📍 {area.rayon.name}</Badge>
-            )}
+            {area.rayon && <Badge variant="default">📍 {area.rayon.name}</Badge>}
             {area.area_type && (
-              <Badge
-                variant={
-                  area.area_type.category === 'ACTIVE' ? 'success' : 'warning'
-                }
-              >
+              <Badge variant={area.area_type.category === 'ACTIVE' ? 'success' : 'warning'}>
                 {area.area_type.name}
               </Badge>
             )}
@@ -223,20 +211,14 @@ export default function AreaDetailPage({
             {/* Coverage Area */}
             {area.coverage_area && (
               <div className="bg-nb-warning/20 border-2 border-nb-black p-4">
-                <div className="text-sm font-bold text-nb-gray-700 mb-1">
-                  Luas Area
-                </div>
-                <div className="text-3xl font-black">
-                  {formatArea(area.coverage_area)}
-                </div>
+                <div className="text-sm font-bold text-nb-gray-700 mb-1">Luas Area</div>
+                <div className="text-3xl font-black">{formatArea(area.coverage_area)}</div>
               </div>
             )}
 
             {/* Center Coordinates */}
             <div>
-              <div className="font-bold text-nb-gray-700 mb-2">
-                Koordinat Pusat:
-              </div>
+              <div className="font-bold text-nb-gray-700 mb-2">Koordinat Pusat:</div>
               <div className="bg-nb-gray-100 border-2 border-nb-black p-3 font-mono text-sm">
                 {formatCoordinates(area.center_longitude, area.center_latitude)}
               </div>
@@ -260,8 +242,7 @@ export default function AreaDetailPage({
         </CardHeader>
         <CardContent className="p-8 text-center text-nb-gray-500">
           <p className="mb-4">
-            Fitur kebutuhan tenaga kerja akan tersedia setelah staff
-            requirements diimplementasikan.
+            Fitur kebutuhan tenaga kerja akan tersedia setelah staff requirements diimplementasikan.
           </p>
           {isAdmin && (
             <Button variant="secondary" disabled leftIcon={<Users className="w-4 h-4" />}>

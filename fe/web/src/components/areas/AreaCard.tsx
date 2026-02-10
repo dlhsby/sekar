@@ -19,13 +19,7 @@ export interface AreaCardProps {
   showActions?: boolean;
 }
 
-export function AreaCard({
-  area,
-  onView,
-  onEdit,
-  onDelete,
-  showActions = true,
-}: AreaCardProps) {
+export function AreaCard({ area, onView, onEdit, onDelete, showActions = true }: AreaCardProps) {
   // Get map preview image
   const mapUrl = getStaticMapUrl(
     [area.center_longitude, area.center_latitude],
@@ -38,11 +32,7 @@ export function AreaCard({
     <Card variant="elevated" className="overflow-hidden">
       {/* Map Preview */}
       <div className="relative w-full h-48 bg-nb-gray-100 border-b-2 border-nb-black">
-        <img
-          src={mapUrl}
-          alt={`Peta ${area.name}`}
-          className="w-full h-full object-cover"
-        />
+        <img src={mapUrl} alt={`Peta ${area.name}`} className="w-full h-full object-cover" />
       </div>
 
       {/* Content */}
@@ -61,10 +51,7 @@ export function AreaCard({
             </Badge>
           )}
           {area.area_type && (
-            <Badge
-              variant={area.area_type.category === 'ACTIVE' ? 'success' : 'warning'}
-              size="sm"
-            >
+            <Badge variant={area.area_type.category === 'ACTIVE' ? 'success' : 'warning'} size="sm">
               {area.area_type.name}
             </Badge>
           )}
@@ -95,20 +82,12 @@ export function AreaCard({
               Lihat
             </Button>
             {onEdit && (
-              <Button
-                onClick={() => onEdit(area)}
-                variant="secondary"
-                size="sm"
-              >
+              <Button onClick={() => onEdit(area)} variant="secondary" size="sm">
                 <Edit className="w-4 h-4" />
               </Button>
             )}
             {onDelete && (
-              <Button
-                onClick={() => onDelete(area)}
-                variant="destructive"
-                size="sm"
-              >
+              <Button onClick={() => onDelete(area)} variant="destructive" size="sm">
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}

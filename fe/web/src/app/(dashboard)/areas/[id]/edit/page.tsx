@@ -14,11 +14,7 @@ import { useArea, useUpdateArea } from '@/lib/api/areas';
 import { useAuth } from '@/lib/auth/hooks';
 import type { UpdateAreaDto } from '@/types/models';
 
-export default function EditAreaPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function EditAreaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const { user } = useAuth();
@@ -69,12 +65,8 @@ export default function EditAreaPage({
           <CardContent className="p-8 text-center max-w-md">
             <div className="text-4xl mb-4">⚠️</div>
             <h3 className="font-bold text-lg mb-2">Area Tidak Ditemukan</h3>
-            <p className="text-sm text-nb-gray-600 mb-4">
-              Area yang Anda cari tidak ditemukan.
-            </p>
-            <Button onClick={() => router.push('/areas')}>
-              Kembali ke Daftar Area
-            </Button>
+            <p className="text-sm text-nb-gray-600 mb-4">Area yang Anda cari tidak ditemukan.</p>
+            <Button onClick={() => router.push('/areas')}>Kembali ke Daftar Area</Button>
           </CardContent>
         </Card>
       </div>

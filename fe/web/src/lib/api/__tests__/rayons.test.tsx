@@ -7,13 +7,7 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import {
-  rayonKeys,
-  useRayons,
-  useRayon,
-  useRayonStats,
-  useRayonAreas,
-} from '../rayons';
+import { rayonKeys, useRayons, useRayon, useRayonStats, useRayonAreas } from '../rayons';
 import type { Rayon, RayonStats, Area, PaginatedResponse } from '@/types/models';
 import { ReactNode } from 'react';
 
@@ -70,7 +64,13 @@ describe('Rayons API', () => {
         rayon_id: '1',
         boundary: {
           type: 'Polygon',
-          coordinates: [[[112.739, -7.289], [112.740, -7.289], [112.739, -7.289]]],
+          coordinates: [
+            [
+              [112.739, -7.289],
+              [112.74, -7.289],
+              [112.739, -7.289],
+            ],
+          ],
         },
         centroid_lat: -7.2885,
         centroid_lng: 112.7395,

@@ -27,12 +27,14 @@ const areaSchema = z.object({
   rayon_id: z.string().uuid('Rayon wajib dipilih'),
   area_type_id: z.string().uuid('Tipe area wajib dipilih'),
   description: z.string().optional(),
-  boundary_polygon: z.custom<GeoJSON.Polygon>(
-    (val) => {
-      return isValidPolygon(val as GeoJSON.Polygon);
-    },
-    { message: 'Batas area wajib digambar di peta' }
-  ).nullable(),
+  boundary_polygon: z
+    .custom<GeoJSON.Polygon>(
+      (val) => {
+        return isValidPolygon(val as GeoJSON.Polygon);
+      },
+      { message: 'Batas area wajib digambar di peta' }
+    )
+    .nullable(),
 });
 
 type AreaFormData = z.infer<typeof areaSchema>;
@@ -44,12 +46,7 @@ export interface AreaFormProps {
   mode: 'create' | 'edit';
 }
 
-export function AreaForm({
-  initialData,
-  onSubmit,
-  isLoading = false,
-  mode,
-}: AreaFormProps) {
+export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: AreaFormProps) {
   const [polygon, setPolygon] = useState<GeoJSON.Polygon | null>(
     initialData?.boundary_polygon || null
   );
@@ -163,7 +160,11 @@ export function AreaForm({
                 : []
           }
           value={watch('rayon_id') || 'none'}
-          onChange={(value) => setValue('rayon_id', value === 'none' ? '' : value as string, { shouldValidate: true })}
+          onChange={(value) =>
+            setValue('rayon_id', value === 'none' ? '' : (value as string), {
+              shouldValidate: true,
+            })
+          }
           error={errors.rayon_id?.message}
           required
           disabled={loadingRayons}
@@ -185,7 +186,11 @@ export function AreaForm({
                 : []
           }
           value={watch('area_type_id') || 'none'}
-          onChange={(value) => setValue('area_type_id', value === 'none' ? '' : value as string, { shouldValidate: true })}
+          onChange={(value) =>
+            setValue('area_type_id', value === 'none' ? '' : (value as string), {
+              shouldValidate: true,
+            })
+          }
           error={errors.area_type_id?.message}
           required
           disabled={loadingAreaTypes}
@@ -209,9 +214,7 @@ export function AreaForm({
         {errors.boundary_polygon && (
           <Card className="border-nb-danger">
             <CardContent className="p-4">
-              <p className="text-sm font-bold text-nb-danger">
-                {errors.boundary_polygon.message}
-              </p>
+              <p className="text-sm font-bold text-nb-danger">{errors.boundary_polygon.message}</p>
             </CardContent>
           </Card>
         )}
@@ -219,9 +222,7 @@ export function AreaForm({
         <PolygonEditor
           initialPolygon={initialData?.boundary_polygon}
           onChange={handlePolygonChange}
-          center={
-            centerCoords as [number, number] || undefined
-          }
+          center={(centerCoords as [number, number]) || undefined}
           zoom={centerCoords ? 15 : undefined}
         />
 

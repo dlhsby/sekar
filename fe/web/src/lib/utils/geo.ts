@@ -54,9 +54,7 @@ export function formatArea(squareMeters: number): string {
  * Calculate the centroid (geometric center) of a polygon
  * Returns [longitude, latitude]
  */
-export function calculatePolygonCenter(
-  polygon: GeoJSON.Polygon,
-): [number, number] {
+export function calculatePolygonCenter(polygon: GeoJSON.Polygon): [number, number] {
   if (!polygon?.coordinates?.[0] || polygon.coordinates[0].length < 4) {
     return [112.7521, -7.2575]; // Default to Surabaya center
   }
@@ -116,9 +114,7 @@ export function polygonToFeature(polygon: GeoJSON.Polygon): GeoJSON.Feature {
 /**
  * Extract polygon from Mapbox GL Draw feature
  */
-export function featureToPolygon(
-  feature: GeoJSON.Feature,
-): GeoJSON.Polygon | null {
+export function featureToPolygon(feature: GeoJSON.Feature): GeoJSON.Polygon | null {
   if (feature.geometry.type === 'Polygon') {
     return feature.geometry as GeoJSON.Polygon;
   }

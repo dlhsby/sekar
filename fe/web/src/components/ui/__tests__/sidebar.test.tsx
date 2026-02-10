@@ -59,13 +59,7 @@ describe('Sidebar Component', () => {
     });
 
     it('should render with custom title and subtitle', () => {
-      render(
-        <Sidebar
-          items={mockItems}
-          title="Custom Title"
-          subtitle="Custom Subtitle"
-        />
-      );
+      render(<Sidebar items={mockItems} title="Custom Title" subtitle="Custom Subtitle" />);
 
       expect(screen.getByText('Custom Title')).toBeInTheDocument();
       expect(screen.getByText('Custom Subtitle')).toBeInTheDocument();
@@ -148,9 +142,7 @@ describe('Sidebar Component', () => {
     });
 
     it('should show items with empty roles array to all users', () => {
-      const items: SidebarItem[] = [
-        { id: '1', label: 'Public Item', href: '/public', roles: [] },
-      ];
+      const items: SidebarItem[] = [{ id: '1', label: 'Public Item', href: '/public', roles: [] }];
 
       render(<Sidebar items={items} userRole="user" />);
 
@@ -204,9 +196,7 @@ describe('Sidebar Component', () => {
     it('should call onClick handler when button item clicked', async () => {
       const user = userEvent.setup();
       const handleClick = jest.fn();
-      const items: SidebarItem[] = [
-        { id: 'action', label: 'Action Item', onClick: handleClick },
-      ];
+      const items: SidebarItem[] = [{ id: 'action', label: 'Action Item', onClick: handleClick }];
 
       render(<Sidebar items={items} />);
 
@@ -215,9 +205,7 @@ describe('Sidebar Component', () => {
     });
 
     it('should render static items without href or onClick', () => {
-      const items: SidebarItem[] = [
-        { id: 'static', label: 'Static Item' },
-      ];
+      const items: SidebarItem[] = [{ id: 'static', label: 'Static Item' }];
 
       render(<Sidebar items={items} />);
 
@@ -343,9 +331,7 @@ describe('Sidebar Component', () => {
 
   describe('Custom Props', () => {
     it('should accept custom className', () => {
-      const { container } = render(
-        <Sidebar items={mockItems} className="custom-sidebar" />
-      );
+      const { container } = render(<Sidebar items={mockItems} className="custom-sidebar" />);
 
       const sidebar = container.querySelector('aside');
       expect(sidebar).toHaveClass('custom-sidebar');

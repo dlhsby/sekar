@@ -7,14 +7,7 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import {
-  userKeys,
-  useUsers,
-  useUser,
-  useCreateUser,
-  useUpdateUser,
-  useDeleteUser,
-} from '../users';
+import { userKeys, useUsers, useUser, useCreateUser, useUpdateUser, useDeleteUser } from '../users';
 import type { User, PaginatedResponse, CreateUserDto, UpdateUserDto } from '@/types/models';
 import { ReactNode } from 'react';
 
@@ -232,7 +225,9 @@ describe('Users API', () => {
         role: 'worker',
       };
 
-      mockAxios.onPost('/users').reply(201, { ...newUser, id: '10', status: 'active', created_at: '2026-02-04' });
+      mockAxios
+        .onPost('/users')
+        .reply(201, { ...newUser, id: '10', status: 'active', created_at: '2026-02-04' });
 
       const { result } = renderHook(() => useCreateUser(), { wrapper: createWrapper() });
 

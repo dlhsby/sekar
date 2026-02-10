@@ -2,7 +2,7 @@
 
 /**
  * Dashboard Loading State
- * 
+ *
  * Loading skeleton displayed during page transitions within the dashboard.
  * Features:
  * - Skeleton placeholders for dashboard content
@@ -22,10 +22,7 @@ export default function DashboardLoading() {
       {/* Stats cards skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="bg-nb-white border-2 border-nb-black shadow-nb-sm p-6"
-          >
+          <div key={i} className="bg-nb-white border-2 border-nb-black shadow-nb-sm p-6">
             <div className="h-6 w-24 bg-nb-gray-200 border-2 border-nb-black mb-3" />
             <div className="h-10 w-20 bg-nb-gray-300 border-2 border-nb-black" />
           </div>

@@ -23,7 +23,9 @@ jest.mock('@radix-ui/react-dialog', () => {
   const actual = jest.requireActual('@radix-ui/react-dialog');
   return {
     ...actual,
-    Portal: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-portal">{children}</div>,
+    Portal: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="dialog-portal">{children}</div>
+    ),
   };
 });
 

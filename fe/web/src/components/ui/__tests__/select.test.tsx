@@ -7,13 +7,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from '../select';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../select';
 import '@testing-library/jest-dom';
 
 describe('Select Component', () => {

@@ -60,9 +60,7 @@ describe('AuthErrorBoundary', () => {
       </AuthErrorBoundary>
     );
 
-    expect(
-      screen.getByText(/terjadi kesalahan saat memproses autentikasi/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/terjadi kesalahan saat memproses autentikasi/i)).toBeInTheDocument();
   });
 
   it('should have retry button', () => {

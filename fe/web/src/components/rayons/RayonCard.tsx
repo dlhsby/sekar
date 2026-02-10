@@ -37,17 +37,11 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
 
   return (
     <Link href={`/rayons/${rayon.id}`}>
-      <Card
-        variant="elevated"
-        interactive
-        className="h-full"
-      >
+      <Card variant="elevated" interactive className="h-full">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-xl font-bold text-nb-black mb-1">
-                {rayon.name}
-              </h3>
+              <h3 className="text-xl font-bold text-nb-black mb-1">{rayon.name}</h3>
               <Badge variant="default" size="sm">
                 {rayon.code}
               </Badge>
@@ -57,46 +51,32 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
 
         <CardContent>
           {rayon.description && (
-            <p className="text-nb-gray-600 text-sm mb-4 line-clamp-2">
-              {rayon.description}
-            </p>
+            <p className="text-nb-gray-600 text-sm mb-4 line-clamp-2">{rayon.description}</p>
           )}
 
           {stats && (
             <div className="grid grid-cols-2 gap-3">
               <div className="border-2 border-nb-black p-3 bg-nb-primary/10 rounded-nb-base">
-                <div className="text-2xl font-bold text-nb-primary">
-                  {stats.total_areas}
-                </div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">
-                  Jumlah Area
-                </div>
+                <div className="text-2xl font-bold text-nb-primary">{stats.total_areas}</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">Jumlah Area</div>
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-success/10 rounded-nb-base">
-                <div className="text-2xl font-bold text-nb-success">
-                  {stats.total_workers}
-                </div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">
-                  Total Pekerja
-                </div>
+                <div className="text-2xl font-bold text-nb-success">{stats.total_workers}</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">Total Pekerja</div>
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-gray-100 rounded-nb-base col-span-2">
                 <div className="text-lg font-bold text-nb-black">
                   {formatArea(stats.total_coverage_area || 0)}
                 </div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">
-                  Luas Tutupan Total
-                </div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">Luas Tutupan Total</div>
               </div>
             </div>
           )}
 
           {!stats && (
-            <div className="text-sm text-nb-gray-500 italic">
-              Statistik tidak tersedia
-            </div>
+            <div className="text-sm text-nb-gray-500 italic">Statistik tidak tersedia</div>
           )}
         </CardContent>
 

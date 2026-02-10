@@ -124,9 +124,7 @@ describe('Input Component', () => {
     });
 
     it('should prioritize error over helper text', () => {
-      render(
-        <Input error="Error" helperText="Helper" aria-label="Input" />
-      );
+      render(<Input error="Error" helperText="Helper" aria-label="Input" />);
       expect(screen.getByText('Error')).toBeInTheDocument();
       expect(screen.queryByText('Helper')).not.toBeInTheDocument();
     });
@@ -160,9 +158,7 @@ describe('Input Component', () => {
     it('should render both icons', () => {
       const leftIcon = <span data-testid="left-icon">←</span>;
       const rightIcon = <span data-testid="right-icon">→</span>;
-      render(
-        <Input leftIcon={leftIcon} rightIcon={rightIcon} aria-label="Input" />
-      );
+      render(<Input leftIcon={leftIcon} rightIcon={rightIcon} aria-label="Input" />);
       expect(screen.getByTestId('left-icon')).toBeInTheDocument();
       expect(screen.getByTestId('right-icon')).toBeInTheDocument();
     });

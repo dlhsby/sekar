@@ -16,7 +16,7 @@ export interface BreadcrumbProps extends HTMLAttributes<HTMLElement> {
 
 /**
  * Breadcrumb Navigation Component
- * 
+ *
  * Features:
  * - Auto-generates breadcrumbs from current route
  * - Clickable path segments (except last)
@@ -24,12 +24,12 @@ export interface BreadcrumbProps extends HTMLAttributes<HTMLElement> {
  * - Chevron separators
  * - Max width with ellipsis for long paths
  * - Accessible (ARIA labels)
- * 
+ *
  * @example
  * ```tsx
  * // Auto-generates from current path
  * <Breadcrumb />
- * 
+ *
  * // With custom max segments
  * <Breadcrumb maxSegments={3} />
  * ```
@@ -44,13 +44,10 @@ export function Breadcrumb({
   const breadcrumbs = getBreadcrumbPath(pathname);
 
   // Truncate if too many segments
-  const displayBreadcrumbs = breadcrumbs.length > maxSegments
-    ? [
-        breadcrumbs[0],
-        { label: '...', href: '' },
-        ...breadcrumbs.slice(-(maxSegments - 2)),
-      ]
-    : breadcrumbs;
+  const displayBreadcrumbs =
+    breadcrumbs.length > maxSegments
+      ? [breadcrumbs[0], { label: '...', href: '' }, ...breadcrumbs.slice(-(maxSegments - 2))]
+      : breadcrumbs;
 
   return (
     <nav

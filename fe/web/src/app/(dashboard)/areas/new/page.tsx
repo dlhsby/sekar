@@ -51,9 +51,7 @@ export default function NewAreaPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black">Tambah Area Baru</h1>
-          <p className="text-nb-gray-600 mt-1">
-            Gambar batas area di peta dan lengkapi informasi
-          </p>
+          <p className="text-nb-gray-600 mt-1">Gambar batas area di peta dan lengkapi informasi</p>
         </div>
 
         <Button onClick={handleCancel} variant="secondary" leftIcon={<X className="w-5 h-5" />}>
@@ -81,11 +79,7 @@ export default function NewAreaPage() {
       {/* Form */}
       <Card>
         <CardContent className="p-6">
-          <AreaForm
-            mode="create"
-            onSubmit={handleSubmit}
-            isLoading={createArea.isPending}
-          />
+          <AreaForm mode="create" onSubmit={handleSubmit} isLoading={createArea.isPending} />
         </CardContent>
       </Card>
     </div>

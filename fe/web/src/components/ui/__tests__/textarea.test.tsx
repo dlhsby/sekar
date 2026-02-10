@@ -96,12 +96,7 @@ describe('Textarea Component', () => {
     });
 
     it('should prioritize error over helper text', () => {
-      render(
-        <Textarea
-          helperText="This is helper"
-          error="This is error"
-        />
-      );
+      render(<Textarea helperText="This is helper" error="This is error" />);
       expect(screen.getByText('This is error')).toBeInTheDocument();
       expect(screen.queryByText('This is helper')).not.toBeInTheDocument();
     });

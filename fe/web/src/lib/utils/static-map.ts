@@ -12,7 +12,7 @@ export function getStaticMapUrl(
   center: [number, number],
   polygon?: GeoJSON.Polygon,
   width = 300,
-  height = 200,
+  height = 200
 ): string {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -32,16 +32,18 @@ export function getStaticMapUrl(
   if (polygon && polygon.coordinates?.[0]) {
     // Add polygon as GeoJSON overlay
     // Format: geojson({...})
-    const geojson = encodeURIComponent(JSON.stringify({
-      type: 'Feature',
-      properties: {
-        stroke: '#000',
-        'stroke-width': 3,
-        fill: '#fbbf24',
-        'fill-opacity': 0.3,
-      },
-      geometry: polygon,
-    }));
+    const geojson = encodeURIComponent(
+      JSON.stringify({
+        type: 'Feature',
+        properties: {
+          stroke: '#000',
+          'stroke-width': 3,
+          fill: '#fbbf24',
+          'fill-opacity': 0.3,
+        },
+        geometry: polygon,
+      })
+    );
 
     url += `geojson(${geojson})/`;
   }
@@ -64,7 +66,7 @@ export function getStaticMapUrl(
 export function getStaticMapWithMarker(
   center: [number, number],
   width = 300,
-  height = 200,
+  height = 200
 ): string {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 

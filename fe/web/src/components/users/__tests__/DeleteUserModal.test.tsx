@@ -147,12 +147,7 @@ describe('DeleteUserModal', () => {
 
   it('should handle null user gracefully', () => {
     render(
-      <DeleteUserModal
-        user={null}
-        isOpen={true}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-      />
+      <DeleteUserModal user={null} isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
     );
 
     expect(screen.getByText('Hapus User')).toBeInTheDocument();

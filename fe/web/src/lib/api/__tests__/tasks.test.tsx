@@ -83,7 +83,11 @@ describe('Tasks API', () => {
     it('should generate correct query keys', () => {
       expect(tasksKeys.all).toEqual(['tasks']);
       expect(tasksKeys.lists()).toEqual(['tasks', 'list']);
-      expect(tasksKeys.list({ status: 'pending' })).toEqual(['tasks', 'list', { status: 'pending' }]);
+      expect(tasksKeys.list({ status: 'pending' })).toEqual([
+        'tasks',
+        'list',
+        { status: 'pending' },
+      ]);
       expect(tasksKeys.details()).toEqual(['tasks', 'detail']);
       expect(tasksKeys.detail('1')).toEqual(['tasks', 'detail', '1']);
       expect(tasksKeys.my()).toEqual(['tasks', 'my']);
@@ -164,7 +168,9 @@ describe('Tasks API', () => {
         due_date: '2026-02-15',
       };
 
-      mockAxios.onPost('/tasks', newTask).reply(201, { ...mockTask, id: '2', title: 'New Task', status: 'pending' });
+      mockAxios
+        .onPost('/tasks', newTask)
+        .reply(201, { ...mockTask, id: '2', title: 'New Task', status: 'pending' });
 
       const { result } = renderHook(() => useCreateTask(), { wrapper: createWrapper() });
 
@@ -246,9 +252,7 @@ describe('Tasks API', () => {
       // Check that invalidateQueries was called with queryKeys containing tasks
       expect(invalidateSpy).toHaveBeenCalled();
       const calls = invalidateSpy.mock.calls;
-      const callsWithTasksKey = calls.filter(call =>
-        call[0]?.queryKey?.[0] === 'tasks'
-      );
+      const callsWithTasksKey = calls.filter((call) => call[0]?.queryKey?.[0] === 'tasks');
       expect(callsWithTasksKey.length).toBeGreaterThanOrEqual(1);
     });
   });
@@ -278,9 +282,7 @@ describe('Tasks API', () => {
       // Check that invalidateQueries was called with queryKeys containing tasks
       expect(invalidateSpy).toHaveBeenCalled();
       const calls = invalidateSpy.mock.calls;
-      const callsWithTasksKey = calls.filter(call =>
-        call[0]?.queryKey?.[0] === 'tasks'
-      );
+      const callsWithTasksKey = calls.filter((call) => call[0]?.queryKey?.[0] === 'tasks');
       expect(callsWithTasksKey.length).toBeGreaterThanOrEqual(1);
     });
   });

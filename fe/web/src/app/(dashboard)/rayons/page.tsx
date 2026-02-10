@@ -44,12 +44,8 @@ export default function RayonsPage() {
     <div className="container mx-auto p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-nb-black mb-2">
-          Manajemen Rayon
-        </h1>
-        <p className="text-nb-gray-600">
-          Kelola dan monitor 7 rayon di Kota Surabaya
-        </p>
+        <h1 className="text-3xl font-bold text-nb-black mb-2">Manajemen Rayon</h1>
+        <p className="text-nb-gray-600">Kelola dan monitor 7 rayon di Kota Surabaya</p>
       </div>
 
       {/* Loading State */}
@@ -69,14 +65,8 @@ export default function RayonsPage() {
       {!isLoading && rayons.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {rayons.map((rayon) => {
-            const rayonStats = stats.find(s => s.rayon_id === rayon.id);
-            return (
-              <RayonCard
-                key={rayon.id}
-                rayon={rayon}
-                stats={rayonStats}
-              />
-            );
+            const rayonStats = stats.find((s) => s.rayon_id === rayon.id);
+            return <RayonCard key={rayon.id} rayon={rayon} stats={rayonStats} />;
           })}
         </div>
       )}
@@ -97,12 +87,8 @@ export default function RayonsPage() {
               d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
             />
           </svg>
-          <h3 className="text-lg font-semibold text-nb-black mb-2">
-            Tidak Ada Rayon
-          </h3>
-          <p className="text-nb-gray-600">
-            Belum ada rayon yang terdaftar dalam sistem.
-          </p>
+          <h3 className="text-lg font-semibold text-nb-black mb-2">Tidak Ada Rayon</h3>
+          <p className="text-nb-gray-600">Belum ada rayon yang terdaftar dalam sistem.</p>
         </div>
       )}
     </div>

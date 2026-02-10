@@ -188,7 +188,7 @@ export interface ShiftDefinition {
   name: string;
   code: string;
   start_time: string; // HH:MM format
-  end_time: string;   // HH:MM format
+  end_time: string; // HH:MM format
   crosses_midnight: boolean;
   is_active: boolean;
   created_at: string;
@@ -207,7 +207,7 @@ export interface WorkerSchedule extends Record<string, unknown> {
   shift_definition_id: string;
   shift_definition?: ShiftDefinition;
   effective_date: string; // ISO date
-  end_date?: string;      // ISO date, null = ongoing
+  end_date?: string; // ISO date, null = ongoing
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -217,11 +217,11 @@ export interface WorkerSchedule extends Record<string, unknown> {
  * Schedule Filter Options
  */
 export interface ScheduleFilters {
-  search?: string;      // Worker name search
+  search?: string; // Worker name search
   area_id?: string;
   shift_definition_id?: string;
-  date_from?: string;   // ISO date
-  date_to?: string;     // ISO date
+  date_from?: string; // ISO date
+  date_to?: string; // ISO date
   page?: number;
   limit?: number;
 }
@@ -234,7 +234,7 @@ export interface CreateScheduleDto {
   area_id: string;
   shift_definition_id: string;
   effective_date: string; // ISO date
-  end_date?: string;      // ISO date, optional
+  end_date?: string; // ISO date, optional
 }
 
 /**

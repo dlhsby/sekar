@@ -128,9 +128,7 @@ describe('Cookie Utilities', () => {
     it('should encode special characters', () => {
       setAuthCookie('user_data', 'John Doe <john@example.com>');
 
-      expect(cookieStorage['user_data']).toBe(
-        encodeURIComponent('John Doe <john@example.com>')
-      );
+      expect(cookieStorage['user_data']).toBe(encodeURIComponent('John Doe <john@example.com>'));
     });
   });
 

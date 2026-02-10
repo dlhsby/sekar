@@ -3,13 +3,7 @@
  * Tests Mapbox map style configurations
  */
 
-import {
-  mapStyles,
-  surabayaCenter,
-  defaultZoom,
-  surabayaBounds,
-  polygonColors,
-} from '../styles';
+import { mapStyles, surabayaCenter, defaultZoom, surabayaBounds, polygonColors } from '../styles';
 
 describe('Map Styles', () => {
   it('should export mapStyles object', () => {

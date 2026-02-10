@@ -25,12 +25,7 @@ export interface DeleteAreaModalProps {
   onSuccess?: () => void;
 }
 
-export function DeleteAreaModal({
-  area,
-  isOpen,
-  onClose,
-  onSuccess,
-}: DeleteAreaModalProps) {
+export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteAreaModalProps) {
   const deleteArea = useDeleteArea();
   const [error, setError] = useState<string | null>(null);
 
@@ -79,9 +74,7 @@ export function DeleteAreaModal({
             <p className="text-sm text-nb-gray-700">
               Anda akan menghapus area <strong>{area?.name}</strong>.
             </p>
-            <p className="text-sm text-nb-gray-600 mt-2">
-              Tindakan ini tidak dapat dibatalkan.
-            </p>
+            <p className="text-sm text-nb-gray-600 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
           </div>
 
           {/* Area Details */}

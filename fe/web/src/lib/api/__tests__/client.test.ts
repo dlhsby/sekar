@@ -108,19 +108,13 @@ describe('API Client', () => {
 
   describe('getErrorMessage', () => {
     it('should extract message from API error response', () => {
-      const error = new AxiosError(
-        'Request failed',
-        'ERR_BAD_REQUEST',
-        undefined,
-        undefined,
-        {
-          status: 400,
-          statusText: 'Bad Request',
-          data: { message: 'Invalid credentials' },
-          headers: {},
-          config: {} as InternalAxiosRequestConfig,
-        }
-      );
+      const error = new AxiosError('Request failed', 'ERR_BAD_REQUEST', undefined, undefined, {
+        status: 400,
+        statusText: 'Bad Request',
+        data: { message: 'Invalid credentials' },
+        headers: {},
+        config: {} as InternalAxiosRequestConfig,
+      });
 
       expect(getErrorMessage(error)).toBe('Invalid credentials');
     });
@@ -158,19 +152,13 @@ describe('API Client', () => {
 
   describe('isApiError', () => {
     it('should return true for AxiosError with response', () => {
-      const error = new AxiosError(
-        'Request failed',
-        'ERR_BAD_REQUEST',
-        undefined,
-        undefined,
-        {
-          status: 400,
-          statusText: 'Bad Request',
-          data: { statusCode: 400, message: 'Bad Request', error: 'BadRequest' },
-          headers: {},
-          config: {} as InternalAxiosRequestConfig,
-        }
-      );
+      const error = new AxiosError('Request failed', 'ERR_BAD_REQUEST', undefined, undefined, {
+        status: 400,
+        statusText: 'Bad Request',
+        data: { statusCode: 400, message: 'Bad Request', error: 'BadRequest' },
+        headers: {},
+        config: {} as InternalAxiosRequestConfig,
+      });
 
       expect(isApiError(error)).toBe(true);
     });

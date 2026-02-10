@@ -115,7 +115,11 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
           </div>
         </div>
         {!report.is_reviewed && (
-          <Button onClick={handleReview} loading={reviewing} leftIcon={<CheckCircle className="w-4 h-4" />}>
+          <Button
+            onClick={handleReview}
+            loading={reviewing}
+            leftIcon={<CheckCircle className="w-4 h-4" />}
+          >
             Tandai Sudah Ditinjau
           </Button>
         )}
@@ -164,11 +168,7 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
             </CardHeader>
             <CardContent>
               <div className="bg-nb-gray-100 border-2 border-nb-black overflow-hidden">
-                <img
-                  src={report.photo_url}
-                  alt="Report Photo"
-                  className="w-full h-auto"
-                />
+                <img src={report.photo_url} alt="Report Photo" className="w-full h-auto" />
               </div>
             </CardContent>
           </Card>

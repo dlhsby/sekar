@@ -15,10 +15,7 @@ import { clearAuthCookies } from '@/lib/utils/cookies';
  * Login form schema with validation
  */
 const loginSchema = z.object({
-  username: z
-    .string()
-    .min(1, 'Username wajib diisi')
-    .max(50, 'Username maksimal 50 karakter'),
+  username: z.string().min(1, 'Username wajib diisi').max(50, 'Username maksimal 50 karakter'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
 });
 
@@ -155,11 +152,7 @@ export default function LoginPage() {
                   className="absolute right-3 top-[38px] text-nb-gray-500 hover:text-nb-black transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
 

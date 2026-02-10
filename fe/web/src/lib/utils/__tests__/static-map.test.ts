@@ -42,11 +42,11 @@ describe('Static Map Utilities', () => {
         type: 'Polygon',
         coordinates: [
           [
-            [112.739, -7.290],
-            [112.741, -7.290],
+            [112.739, -7.29],
+            [112.741, -7.29],
             [112.741, -7.288],
             [112.739, -7.288],
-            [112.739, -7.290],
+            [112.739, -7.29],
           ],
         ],
       };
@@ -62,9 +62,7 @@ describe('Static Map Utilities', () => {
       const center: [number, number] = [112.739208, -7.289659];
       const url = getStaticMapUrl(center);
 
-      expect(url).toBe(
-        'https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview'
-      );
+      expect(url).toBe('https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview');
     });
 
     it('should return placeholder with invalid token', () => {
@@ -72,9 +70,7 @@ describe('Static Map Utilities', () => {
       const center: [number, number] = [112.739208, -7.289659];
       const url = getStaticMapUrl(center);
 
-      expect(url).toBe(
-        'https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview'
-      );
+      expect(url).toBe('https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview');
     });
 
     it('should handle polygon with no coordinates', () => {
@@ -96,11 +92,11 @@ describe('Static Map Utilities', () => {
         type: 'Polygon',
         coordinates: [
           [
-            [112.739, -7.290],
-            [112.741, -7.290],
+            [112.739, -7.29],
+            [112.741, -7.29],
             [112.741, -7.288],
             [112.739, -7.288],
-            [112.739, -7.290],
+            [112.739, -7.29],
           ],
         ],
       };
@@ -138,9 +134,7 @@ describe('Static Map Utilities', () => {
       const center: [number, number] = [112.739208, -7.289659];
       const url = getStaticMapWithMarker(center);
 
-      expect(url).toBe(
-        'https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview'
-      );
+      expect(url).toBe('https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview');
     });
 
     it('should return placeholder with invalid token', () => {
@@ -148,9 +142,7 @@ describe('Static Map Utilities', () => {
       const center: [number, number] = [112.739208, -7.289659];
       const url = getStaticMapWithMarker(center);
 
-      expect(url).toBe(
-        'https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview'
-      );
+      expect(url).toBe('https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Map+Preview');
     });
 
     it('should use zoom level 14', () => {

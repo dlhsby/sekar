@@ -7,14 +7,7 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import {
-  areaKeys,
-  useAreas,
-  useArea,
-  useCreateArea,
-  useUpdateArea,
-  useDeleteArea,
-} from '../areas';
+import { areaKeys, useAreas, useArea, useCreateArea, useUpdateArea, useDeleteArea } from '../areas';
 import type { Area, PaginatedResponse, CreateAreaDto, UpdateAreaDto } from '@/types/models';
 import { ReactNode } from 'react';
 
@@ -74,8 +67,8 @@ describe('Areas API', () => {
             coordinates: [
               [
                 [112.739, -7.289],
-                [112.740, -7.289],
-                [112.740, -7.288],
+                [112.74, -7.289],
+                [112.74, -7.288],
                 [112.739, -7.288],
                 [112.739, -7.289],
               ],
@@ -185,8 +178,8 @@ describe('Areas API', () => {
         coordinates: [
           [
             [112.739, -7.289],
-            [112.740, -7.289],
-            [112.740, -7.288],
+            [112.74, -7.289],
+            [112.74, -7.288],
             [112.739, -7.288],
             [112.739, -7.289],
           ],
@@ -243,8 +236,8 @@ describe('Areas API', () => {
           coordinates: [
             [
               [112.739, -7.289],
-              [112.740, -7.289],
-              [112.740, -7.288],
+              [112.74, -7.289],
+              [112.74, -7.288],
               [112.739, -7.288],
               [112.739, -7.289],
             ],
@@ -300,7 +293,14 @@ describe('Areas API', () => {
         rayon_id: 'rayon-1',
         boundary: {
           type: 'Polygon',
-          coordinates: [[[112.739, -7.289], [112.740, -7.289], [112.740, -7.288], [112.739, -7.289]]],
+          coordinates: [
+            [
+              [112.739, -7.289],
+              [112.74, -7.289],
+              [112.74, -7.288],
+              [112.739, -7.289],
+            ],
+          ],
         },
       };
 
@@ -330,7 +330,16 @@ describe('Areas API', () => {
         area_type_id: 'type-1',
         area_type: { id: 'type-1', name: 'Taman', created_at: '2026-01-01' },
         rayon_id: 'rayon-1',
-        boundary: { type: 'Polygon', coordinates: [[[112.739, -7.289], [112.740, -7.289], [112.739, -7.289]]] },
+        boundary: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [112.739, -7.289],
+              [112.74, -7.289],
+              [112.739, -7.289],
+            ],
+          ],
+        },
         centroid_lat: -7.2885,
         centroid_lng: 112.7395,
         area_m2: 10000,

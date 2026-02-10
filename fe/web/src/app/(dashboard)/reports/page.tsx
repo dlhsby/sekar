@@ -8,7 +8,16 @@
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useReports, type ReportType } from '@/lib/api/reports';
-import { Card, CardHeader, CardContent, Badge, DataTable, FormInput, FormSelect, Button } from '@/components/ui';
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Badge,
+  DataTable,
+  FormInput,
+  FormSelect,
+  Button,
+} from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -106,9 +115,7 @@ export default function ReportsPage() {
       header: 'Pekerja',
       cell: (report) => (
         <div>
-          <div className="font-semibold text-nb-black">
-            {report.worker.full_name}
-          </div>
+          <div className="font-semibold text-nb-black">{report.worker.full_name}</div>
           <div className="text-xs text-nb-gray-600">{report.worker.username}</div>
         </div>
       ),
@@ -119,9 +126,7 @@ export default function ReportsPage() {
       cell: (report) => (
         <div>
           <div className="font-semibold">{report.area.name}</div>
-          <div className="text-xs text-nb-gray-600">
-            {report.area.areaType.name}
-          </div>
+          <div className="text-xs text-nb-gray-600">{report.area.areaType.name}</div>
         </div>
       ),
     },
@@ -138,9 +143,7 @@ export default function ReportsPage() {
       key: 'description',
       header: 'Deskripsi',
       cell: (report) => (
-        <span className="text-sm text-nb-gray-600 line-clamp-2">
-          {report.description}
-        </span>
+        <span className="text-sm text-nb-gray-600 line-clamp-2">{report.description}</span>
       ),
     },
     {
@@ -156,9 +159,7 @@ export default function ReportsPage() {
       key: 'created_at',
       header: 'Tanggal',
       cell: (report) => (
-        <div className="text-sm">
-          {new Date(report.created_at).toLocaleDateString('id-ID')}
-        </div>
+        <div className="text-sm">{new Date(report.created_at).toLocaleDateString('id-ID')}</div>
       ),
     },
     {
@@ -180,9 +181,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-nb-black">Laporan Kerja</h1>
-        <p className="text-nb-gray-600 mt-1">
-          Kelola dan tinjau laporan kerja dari pekerja
-        </p>
+        <p className="text-nb-gray-600 mt-1">Kelola dan tinjau laporan kerja dari pekerja</p>
       </div>
 
       {/* Filters */}
@@ -195,14 +194,16 @@ export default function ReportsPage() {
               type="text"
               placeholder="Nama pekerja atau area..."
               value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
             />
 
             {/* Report Type Filter */}
             <FormSelect
               label="Tipe Laporan"
               value={filters.reportType}
-              onChange={(value) => setFilters(prev => ({ ...prev, reportType: value as ReportType | 'all' }))}
+              onChange={(value) =>
+                setFilters((prev) => ({ ...prev, reportType: value as ReportType | 'all' }))
+              }
               options={reportTypes}
             />
 
@@ -211,7 +212,7 @@ export default function ReportsPage() {
               label="Dari Tanggal"
               type="date"
               value={filters.fromDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, fromDate: e.target.value }))}
+              onChange={(e) => setFilters((prev) => ({ ...prev, fromDate: e.target.value }))}
               aria-label="Filter tanggal mulai"
             />
 
@@ -220,12 +221,15 @@ export default function ReportsPage() {
               label="Sampai Tanggal"
               type="date"
               value={filters.toDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, toDate: e.target.value }))}
+              onChange={(e) => setFilters((prev) => ({ ...prev, toDate: e.target.value }))}
             />
           </div>
 
           {/* Clear Filters */}
-          {(filters.search || filters.reportType !== 'all' || filters.fromDate || filters.toDate) && (
+          {(filters.search ||
+            filters.reportType !== 'all' ||
+            filters.fromDate ||
+            filters.toDate) && (
             <Button
               variant="secondary"
               onClick={() => {
@@ -249,20 +253,14 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card variant="elevated">
           <CardContent>
-            <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-              Total Laporan
-            </div>
-            <div className="text-3xl font-black text-nb-black">
-              {pagination?.total || 0}
-            </div>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Total Laporan</div>
+            <div className="text-3xl font-black text-nb-black">{pagination?.total || 0}</div>
           </CardContent>
         </Card>
 
         <Card variant="elevated">
           <CardContent>
-            <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-              Belum Ditinjau
-            </div>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Belum Ditinjau</div>
             <div className="text-3xl font-black text-nb-warning">
               {reports.filter((r) => !r.is_reviewed).length}
             </div>
@@ -271,9 +269,7 @@ export default function ReportsPage() {
 
         <Card variant="elevated">
           <CardContent>
-            <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-              Sudah Ditinjau
-            </div>
+            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Sudah Ditinjau</div>
             <div className="text-3xl font-black text-nb-success">
               {reports.filter((r) => r.is_reviewed).length}
             </div>
@@ -303,14 +299,16 @@ export default function ReportsPage() {
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
               <div className="text-sm text-nb-gray-600">
-                Halaman {pagination.page} dari {pagination.totalPages} (
-                {pagination.total} total laporan)
+                Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} total
+                laporan)
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setFilters(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))
+                  }
                   disabled={pagination.page === 1}
                   leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
@@ -319,7 +317,12 @@ export default function ReportsPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setFilters(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
+                  onClick={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      page: Math.min(pagination.totalPages, prev.page + 1),
+                    }))
+                  }
                   disabled={pagination.page === pagination.totalPages}
                   rightIcon={<ChevronRight className="w-4 h-4" />}
                 >

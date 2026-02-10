@@ -69,7 +69,7 @@ export interface ReportFilters {
   shift_id?: string;
   report_type?: ReportType;
   from_date?: string; // YYYY-MM-DD
-  to_date?: string;   // YYYY-MM-DD
+  to_date?: string; // YYYY-MM-DD
   page?: number;
   limit?: number;
 }
@@ -189,9 +189,7 @@ export function useReviewReport() {
 
   return useMutation({
     mutationFn: async (reportId: string) => {
-      const response = await apiClient.patch<WorkReport>(
-        `/reports/${reportId}/review`
-      );
+      const response = await apiClient.patch<WorkReport>(`/reports/${reportId}/review`);
       return response.data;
     },
     onSuccess: () => {

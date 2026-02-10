@@ -18,7 +18,8 @@ export const rayonKeys = {
   details: () => [...rayonKeys.all, 'detail'] as const,
   detail: (id: string) => [...rayonKeys.details(), id] as const,
   stats: (id: string) => [...rayonKeys.detail(id), 'stats'] as const,
-  areas: (id: string, filters?: AreaFilters) => [...rayonKeys.detail(id), 'areas', filters] as const,
+  areas: (id: string, filters?: AreaFilters) =>
+    [...rayonKeys.detail(id), 'areas', filters] as const,
 };
 
 /**
@@ -95,7 +96,7 @@ export function useRayonsWithStats() {
 
   // Fetch stats for each rayon in parallel using useQueries
   const statsQueries = useQueries({
-    queries: (rayons || []).map(rayon => ({
+    queries: (rayons || []).map((rayon) => ({
       queryKey: rayonKeys.stats(rayon.id),
       queryFn: async () => {
         const response = await apiClient.get<RayonStats>(`/rayons/${rayon.id}/stats`);
@@ -108,8 +109,8 @@ export function useRayonsWithStats() {
 
   return {
     rayons: rayons || [],
-    stats: statsQueries.map(q => q.data).filter(Boolean) as RayonStats[],
-    isLoading: rayonsLoading || statsQueries.some(q => q.isLoading),
-    isError: statsQueries.some(q => q.isError),
+    stats: statsQueries.map((q) => q.data).filter(Boolean) as RayonStats[],
+    isLoading: rayonsLoading || statsQueries.some((q) => q.isLoading),
+    isError: statsQueries.some((q) => q.isError),
   };
 }

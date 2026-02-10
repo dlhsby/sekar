@@ -209,7 +209,7 @@ describe('Geo Utilities', () => {
     });
 
     it('should handle very precise coordinates', () => {
-      const formatted = formatCoordinates(112.752123456, -7.257543210);
+      const formatted = formatCoordinates(112.752123456, -7.25754321);
       expect(formatted).toContain('-7.257543');
       expect(formatted).toContain('112.752123');
     });
