@@ -99,61 +99,55 @@ export class InitialSchema1737000000000 implements MigrationInterface {
 
     // ==========================================
     // 4. worker_assignments table
-    // Spec: specs/database/schema.md line 133-154
+    // Spec: specs/database/schema.md - one-to-one worker to area mapping
     // ==========================================
     await queryRunner.query(`
       CREATE TABLE worker_assignments (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+        worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
         assigned_at TIMESTAMPTZ DEFAULT NOW(),
-        assigned_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
-        is_active BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW(),
-        deleted_at TIMESTAMPTZ,
 
-        CONSTRAINT uq_worker_area_active UNIQUE (user_id, area_id)
+        CONSTRAINT uq_worker_assignments_worker UNIQUE (worker_id)
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX idx_worker_assignments_user ON worker_assignments(user_id) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_worker_assignments_area ON worker_assignments(area_id) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_worker_assignments_active ON worker_assignments(is_active) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(`CREATE UNIQUE INDEX idx_worker_assignments_worker ON worker_assignments(worker_id);`);
+    await queryRunner.query(`CREATE INDEX idx_worker_assignments_area ON worker_assignments(area_id);`);
 
     console.log('  ✓ worker_assignments');
 
     // ==========================================
     // 5. shifts table
-    // Spec: specs/database/schema.md line 163-193
+    // Spec: specs/database/schema.md - clock-in/out records with GPS validation
     // ==========================================
     await queryRunner.query(`
       CREATE TABLE shifts (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
-        check_in_time TIMESTAMPTZ NOT NULL,
-        check_in_latitude DECIMAL(10, 8) NOT NULL,
-        check_in_longitude DECIMAL(11, 8) NOT NULL,
-        check_in_photo_url VARCHAR(500),
-        check_out_time TIMESTAMPTZ,
-        check_out_latitude DECIMAL(10, 8),
-        check_out_longitude DECIMAL(11, 8),
-        check_out_photo_url VARCHAR(500),
-        status VARCHAR(20) NOT NULL,
-        notes TEXT,
+        worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
+        clock_in_time TIMESTAMPTZ NOT NULL,
+        clock_in_gps_lat DECIMAL(10, 8),
+        clock_in_gps_lng DECIMAL(11, 8),
+        clock_in_photo_url TEXT,
+        clock_out_time TIMESTAMPTZ,
+        clock_out_gps_lat DECIMAL(10, 8),
+        clock_out_gps_lng DECIMAL(11, 8),
+        clock_out_photo_url TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         deleted_at TIMESTAMPTZ,
 
-        CONSTRAINT chk_shifts_status CHECK (status IN ('active', 'completed', 'cancelled'))
+        CONSTRAINT chk_shifts_times CHECK (clock_out_time IS NULL OR clock_out_time > clock_in_time),
+        CONSTRAINT chk_shifts_clock_in_lat CHECK (clock_in_gps_lat IS NULL OR clock_in_gps_lat BETWEEN -90 AND 90),
+        CONSTRAINT chk_shifts_clock_in_lng CHECK (clock_in_gps_lng IS NULL OR clock_in_gps_lng BETWEEN -180 AND 180)
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX idx_shifts_user ON shifts(user_id) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_shifts_area ON shifts(area_id) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_shifts_status ON shifts(status) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_shifts_check_in ON shifts(check_in_time) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(`CREATE INDEX idx_shifts_worker_date ON shifts(worker_id, clock_in_time DESC) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(`CREATE INDEX idx_shifts_area_date ON shifts(area_id, clock_in_time DESC) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(`CREATE INDEX idx_shifts_active ON shifts(worker_id) WHERE clock_out_time IS NULL AND deleted_at IS NULL;`);
+    await queryRunner.query(`CREATE INDEX idx_shifts_date_range ON shifts(clock_in_time DESC) WHERE deleted_at IS NULL;`);
 
     console.log('  ✓ shifts');
 
