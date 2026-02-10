@@ -5,7 +5,15 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, spacing, borderRadius, typography, shadows } from '../../constants/theme';
+import {
+  nbColors,
+  nbSpacing,
+  nbBorderRadius,
+  nbTypography,
+  nbShadows,
+  nbBorders,
+} from '../../constants/nbTokens';
+import { NBBadge } from '../nb/NBBadge';
 
 interface AttendanceCardProps {
   workerName: string;
@@ -109,9 +117,11 @@ export default function AttendanceCard({
           <>
             <Text style={styles.statusIconPresent}>✓</Text>
             {isLate && (
-              <View style={styles.lateBadge}>
-                <Text style={styles.lateBadgeText}>Terlambat</Text>
-              </View>
+              <NBBadge
+                text="Terlambat"
+                variant="warning"
+                size="sm"
+              />
             )}
           </>
         ) : (
@@ -127,14 +137,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
+    backgroundColor: nbColors.surface,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    padding: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
+    ...nbShadows.sm,
   },
   lateCard: {
-    backgroundColor: '#FFF9E6', // Light yellow background for late workers
+    backgroundColor: nbColors.warningLight,
+    borderColor: nbColors.warning,
+    borderWidth: nbBorders.thick,
   },
   leftSection: {
     flexDirection: 'row',
@@ -144,70 +158,61 @@ const styles = StyleSheet.create({
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.full,
+    borderRadius: nbBorderRadius.full,
+    borderWidth: nbBorders.base,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: nbSpacing.md,
   },
   avatarClockedIn: {
-    backgroundColor: '#E8F5E9', // Light green
+    backgroundColor: nbColors.successLight,
+    borderColor: nbColors.successDark,
   },
   avatarNotClockedIn: {
-    backgroundColor: '#FFEBEE', // Light red
+    backgroundColor: nbColors.dangerLight,
+    borderColor: nbColors.dangerDark,
   },
   avatarText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
   },
   infoSection: {
     flex: 1,
   },
   workerName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.xs,
   },
   detailText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray['600'],
     marginTop: 2,
   },
   absentText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray['600'],
     fontStyle: 'italic',
   },
   areaText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textHint,
-    marginTop: spacing.xs,
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray['500'],
+    marginTop: nbSpacing.xs,
   },
   statusSection: {
     alignItems: 'center',
-    marginLeft: spacing.sm,
+    marginLeft: nbSpacing.sm,
   },
   statusIconPresent: {
     fontSize: 28,
-    color: colors.success,
-    fontWeight: typography.fontWeight.bold,
+    color: nbColors.successDark,
+    fontWeight: nbTypography.fontWeight.bold,
   },
   statusIconAbsent: {
     fontSize: 28,
-    color: colors.error,
-    fontWeight: typography.fontWeight.bold,
-  },
-  lateBadge: {
-    backgroundColor: colors.warning,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-    marginTop: spacing.xs,
-  },
-  lateBadgeText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.white,
-    fontWeight: typography.fontWeight.medium,
+    color: nbColors.dangerDark,
+    fontWeight: nbTypography.fontWeight.bold,
   },
 });

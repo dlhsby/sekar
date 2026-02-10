@@ -133,7 +133,7 @@ describe('ErrorMessages', () => {
 
     it('should have Indonesian message for SHIFT_GPS_OUT_OF_BOUNDS', () => {
       expect(ErrorMessages[ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS]).toBe(
-        'Anda di luar area kerja. Mendekat ke area yang ditugaskan'
+        'Anda di luar area kerja. Mohon mendekat ke dalam area yang ditugaskan'
       );
     });
 

@@ -15,7 +15,13 @@ import {
   Text,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, borderRadius } from '../../constants/theme';
+import {
+  nbColors,
+  nbSpacing,
+  nbBorderRadius,
+  nbBorders,
+  nbShadows,
+} from '../../constants/nbTokens';
 
 interface PhotoGalleryProps {
   photos: string[];
@@ -91,7 +97,7 @@ export function PhotoGallery({ photos, testID }: PhotoGalleryProps): JSX.Element
               {imageLoading && (
                 <ActivityIndicator
                   size="large"
-                  color={colors.white}
+                  color={nbColors.surface}
                   style={styles.loader}
                 />
               )}
@@ -121,13 +127,16 @@ export function PhotoGallery({ photos, testID }: PhotoGalleryProps): JSX.Element
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: nbSpacing.sm,
   },
   thumbnailContainer: {
-    marginHorizontal: spacing.xs,
-    borderRadius: borderRadius.md,
+    marginHorizontal: nbSpacing.xs,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
     overflow: 'hidden',
-    backgroundColor: colors.gray200,
+    backgroundColor: nbColors.gray['200'],
+    ...nbShadows.sm,
   },
   thumbnail: {
     width: THUMBNAIL_SIZE,
@@ -136,13 +145,15 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.lg,
-    backgroundColor: colors.gray100,
-    borderRadius: borderRadius.md,
+    padding: nbSpacing.lg,
+    backgroundColor: nbColors.gray['100'],
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.gray['300'],
   },
   emptyText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: nbColors.gray['600'],
   },
   modalContainer: {
     flex: 1,
@@ -173,12 +184,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: nbColors.danger,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    ...nbShadows.md,
   },
   closeButtonText: {
-    color: colors.white,
+    color: nbColors.surface,
     fontSize: 24,
     fontWeight: 'bold',
   },

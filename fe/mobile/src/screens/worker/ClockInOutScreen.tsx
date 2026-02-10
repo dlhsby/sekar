@@ -20,7 +20,6 @@ import {
   nbSpacing,
   nbShadows,
   nbBorders,
-  nbBorderRadius,
 } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useAppDispatch, useAppSelector } from '../../store/store';
@@ -307,7 +306,7 @@ export function ClockInOutScreen(): JSX.Element {
     if (!isWithinBoundary) {
       Alert.alert(
         'Di Luar Batas',
-        `Anda tidak berada dalam radius ${assignedArea?.radius_meters ?? 100}m dari ${assignedArea?.name ?? 'area'}. Silakan mendekat untuk clock in.`,
+        `Anda tidak berada dalam radius ${assignedArea?.radius_meters ?? 100}m dari ${assignedArea?.name ?? 'area'}. Mohon mendekat ke dalam area untuk clock in.`,
       );
       return;
     }
@@ -618,7 +617,7 @@ export function ClockInOutScreen(): JSX.Element {
                     ? isClockIn
                       ? 'Dalam batas - Anda dapat clock in'
                       : 'Dalam batas - Anda dapat clock out'
-                    : 'Di luar batas - Mendekat ke area'}
+                    : 'Di luar batas - Mohon mendekat ke dalam area'}
                 </Text>
               </View>
               <NBButton
@@ -815,7 +814,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     marginBottom: nbSpacing.xs, // 4px - reduced from 8px
     padding: nbSpacing.sm,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: 0, // Sharp corners - NB style
     backgroundColor: nbColors.gray[50],
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
@@ -855,8 +854,8 @@ const styles = StyleSheet.create({
   selfieImage: {
     width: '100%',
     height: 250, // 250px - reduced from 300px for more content
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm, // 8px - reduced from 16px
     backgroundColor: nbColors.gray[200],
@@ -878,8 +877,8 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     padding: nbSpacing.sm, // 8px - reduced from 16px
     backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
     borderColor: nbColors.warning,
     ...nbShadows.sm,
   },
@@ -897,8 +896,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.danger,
     padding: nbSpacing.sm, // 8px - reduced from 16px
     marginBottom: nbSpacing.sm, // 8px - reduced from 16px
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -919,8 +918,8 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     padding: nbSpacing.sm, // 8px - reduced from 16px
     backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: 0, // Sharp corners - NB style
+    borderWidth: nbBorders.default,
     borderColor: nbColors.warning,
     ...nbShadows.sm,
   },
@@ -939,7 +938,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm, // 8px - reduced from 16px
     padding: 6, // 6px - reduced from 8px for compactness
     backgroundColor: nbColors.gray[50],
-    borderRadius: nbBorderRadius.base,
+    borderRadius: 0, // Sharp corners - NB style
     borderWidth: nbBorders.thin, // 1px border
     borderColor: nbColors.black,
   },

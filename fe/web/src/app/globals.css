@@ -13,97 +13,117 @@
    ============================================ */
 
 @theme {
-  /* ===== COLOR SYSTEM - Neo Brutalism Palette ===== */
+  /* ===== COLOR SYSTEM - Neo Brutalism 2.0 Palette ===== */
 
-  /* Primary Actions */
-  --color-nb-primary: #0066CC;
-  --color-nb-primary-hover: #0052A3;
-  --color-nb-primary-active: #003D7A;
+  /* Primary Actions - Parks Green */
+  --color-nb-primary: #7FBC8C;
+  --color-nb-primary-hover: #5A9468;
+  --color-nb-primary-active: #4A7D56;
 
-  /* Status Colors */
-  --color-nb-success: #1B5E20;
-  --color-nb-success-light: #4CAF50;
-  --color-nb-warning: #F57C00;
-  --color-nb-warning-light: #FFB74D;
-  --color-nb-danger: #DC2626;
-  --color-nb-danger-light: #EF5350;
+  /* Secondary Colors - Warm Earth Tones */
+  --color-nb-secondary: #8B7355;
+  --color-nb-secondary-dark: #6B5943;
 
-  /* Neutral Palette */
-  --color-nb-black: #000000;
+  /* Status Colors - Enhanced Palette */
+  --color-nb-success: #7FBC8C;
+  --color-nb-success-light: #BAFCA2;
+  --color-nb-success-border: #7FBC8C;
+  --color-nb-success-dark: #15803D;
+
+  --color-nb-warning: #E3A018;
+  --color-nb-warning-light: #FFDB58;
+  --color-nb-warning-border: #E3A018;
+
+  --color-nb-danger: #FF6B6B;
+  --color-nb-danger-light: #FFA07A;
+  --color-nb-danger-dark: #991B1B;
+
+  --color-nb-info: #A7DBD8;
+  --color-nb-info-light: #A7DBD8;
+  --color-nb-info-border: #69D2E7;
+
+  /* Neutral Palette - Soft Black & Warm Grays */
+  --color-nb-black: #1C1917;
   --color-nb-white: #FFFFFF;
-  --color-nb-navy: #001F3F;
-  --color-nb-navy-light: #003366;
+  --color-nb-background: #F5F0EB;
 
-  /* Gray Scale */
-  --color-nb-gray-50: #FAFAFA;
-  --color-nb-gray-100: #F5F5F5;
-  --color-nb-gray-200: #EEEEEE;
-  --color-nb-gray-300: #E0E0E0;
-  --color-nb-gray-400: #BDBDBD;
-  --color-nb-gray-500: #9E9E9E;
-  --color-nb-gray-600: #666666;
-  --color-nb-gray-700: #424242;
-  --color-nb-gray-800: #303030;
-  --color-nb-gray-900: #212121;
+  /* Sidebar Colors - Forest Green */
+  --color-nb-sidebar: #1A4D2E;
+  --color-nb-sidebar-hover: #2D5233;
+  --color-nb-sidebar-active: #0F3520;
+
+  /* Gray Scale - Warm Stone Grays */
+  --color-nb-gray-50: #FAFAF9;
+  --color-nb-gray-100: #F5F5F4;
+  --color-nb-gray-200: #E7E5E4;
+  --color-nb-gray-300: #D6D3D1;
+  --color-nb-gray-400: #A8A29E;
+  --color-nb-gray-500: #78716C;
+  --color-nb-gray-600: #57534E;
+  --color-nb-gray-700: #44403C;
+  --color-nb-gray-800: #292524;
+  --color-nb-gray-900: #1C1917;
 
   /* shadcn-ui compatible colors */
-  --color-background: #FAFAFA;
-  --color-foreground: #000000;
+  --color-background: #F5F0EB;
+  --color-foreground: #1C1917;
   --color-card: #FFFFFF;
-  --color-card-foreground: #000000;
+  --color-card-foreground: #1C1917;
   --color-popover: #FFFFFF;
-  --color-popover-foreground: #000000;
-  --color-primary: #0066CC;
+  --color-popover-foreground: #1C1917;
+  --color-primary: #7FBC8C;
   --color-primary-foreground: #FFFFFF;
-  --color-secondary: #F5F5F5;
-  --color-secondary-foreground: #000000;
-  --color-muted: #EEEEEE;
-  --color-muted-foreground: #666666;
-  --color-accent: #F5F5F5;
-  --color-accent-foreground: #000000;
-  --color-destructive: #DC2626;
+  --color-secondary: #F5F5F4;
+  --color-secondary-foreground: #1C1917;
+  --color-muted: #E7E5E4;
+  --color-muted-foreground: #57534E;
+  --color-accent: #F5F5F4;
+  --color-accent-foreground: #1C1917;
+  --color-destructive: #FF6B6B;
   --color-destructive-foreground: #FFFFFF;
-  --color-success: #1B5E20;
+  --color-success: #7FBC8C;
   --color-success-foreground: #FFFFFF;
-  --color-warning: #F57C00;
-  --color-warning-foreground: #000000;
-  --color-border: #000000;
-  --color-input: #000000;
-  --color-ring: #0066CC;
+  --color-warning: #E3A018;
+  --color-warning-foreground: #1C1917;
+  --color-border: #1C1917;
+  --color-input: #1C1917;
+  --color-ring: #7FBC8C;
 
   /* Sidebar colors */
-  --color-sidebar: #001F3F;
+  --color-sidebar: #1A4D2E;
   --color-sidebar-foreground: #FFFFFF;
   --color-sidebar-primary: #FFFFFF;
-  --color-sidebar-primary-foreground: #001F3F;
-  --color-sidebar-accent: #003366;
+  --color-sidebar-primary-foreground: #1A4D2E;
+  --color-sidebar-accent: #2D5233;
   --color-sidebar-accent-foreground: #FFFFFF;
-  --color-sidebar-border: #003366;
+  --color-sidebar-border: #2D5233;
 
   /* Chart colors */
-  --color-chart-1: #0066CC;
-  --color-chart-2: #1B5E20;
-  --color-chart-3: #F57C00;
-  --color-chart-4: #DC2626;
-  --color-chart-5: #9E9E9E;
+  --color-chart-1: #7FBC8C;
+  --color-chart-2: #E3A018;
+  --color-chart-3: #FF6B6B;
+  --color-chart-4: #A7DBD8;
+  --color-chart-5: #78716C;
 
-  /* ===== BOX SHADOWS - Hard-edge Offset Shadows ===== */
-  --shadow-nb-sm: 4px 4px 0px #000000;
-  --shadow-nb-md: 6px 6px 0px #000000;
-  --shadow-nb-lg: 8px 8px 0px #000000;
-  --shadow-nb-xl: 12px 12px 0px #000000;
-  --shadow-nb-hover: 8px 8px 0px #000000;
-  --shadow-nb-active: 2px 2px 0px #000000;
+  /* ===== BOX SHADOWS - Soft-edge Offset Shadows ===== */
+  --shadow-nb-xs: 2px 2px 1px rgba(28, 25, 23, 0.15);
+  --shadow-nb-sm: 4px 4px 2px rgba(28, 25, 23, 0.18);
+  --shadow-nb-md: 6px 6px 3px rgba(28, 25, 23, 0.20);
+  --shadow-nb-lg: 8px 8px 4px rgba(28, 25, 23, 0.22);
+  --shadow-nb-xl: 12px 12px 6px rgba(28, 25, 23, 0.25);
+  --shadow-nb-hover: 8px 8px 4px rgba(28, 25, 23, 0.22);
+  --shadow-nb-active: 2px 2px 1px rgba(28, 25, 23, 0.15);
   --shadow-nb-none: 0px 0px 0px transparent;
 
   /* Colored shadows for status states */
-  --shadow-nb-primary: 4px 4px 0px #0066CC;
-  --shadow-nb-success: 4px 4px 0px #1B5E20;
-  --shadow-nb-warning: 4px 4px 0px #F57C00;
-  --shadow-nb-danger: 4px 4px 0px #DC2626;
+  --shadow-nb-primary: 4px 4px 2px rgba(127, 188, 140, 0.3);
+  --shadow-nb-success: 4px 4px 2px rgba(127, 188, 140, 0.3);
+  --shadow-nb-warning: 4px 4px 2px rgba(227, 160, 24, 0.3);
+  --shadow-nb-danger: 4px 4px 2px rgba(255, 107, 107, 0.3);
 
   /* ===== TYPOGRAPHY ===== */
   --font-family-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-heading: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
   /* ===== SPACING ===== */
@@ -121,11 +141,16 @@
   /* ===== BREAKPOINTS (reference) ===== */
   /* sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px */
 
-  /* ===== RADIUS - Neo Brutalism uses sharp edges ===== */
+  /* ===== RADIUS - Neo Brutalism 2.0 Friendly Corners ===== */
   --radius-none: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-nb-sm: 4px;
+  --radius-nb-base: 6px;
+  --radius-nb-md: 8px;
+  --radius-nb-lg: 12px;
+  --radius-nb-xl: 16px;
 }
 
 /* ============================================
@@ -161,59 +186,59 @@
 @layer base {
   :root {
     /* shadcn-ui HSL variables for CSS color functions */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 0%;
+    --background: 30 13% 95%;
+    --foreground: 20 14% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 20 14% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 20 14% 11%;
 
-    --primary: 210 100% 40%;
+    --primary: 137 30% 64%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 30 13% 96%;
+    --secondary-foreground: 20 14% 11%;
 
-    --muted: 0 0% 93%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 25 10% 91%;
+    --muted-foreground: 25 11% 34%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 30 13% 96%;
+    --accent-foreground: 20 14% 11%;
 
-    --destructive: 0 84% 50%;
+    --destructive: 0 100% 71%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 122 72% 24%;
+    --success: 137 30% 64%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 27 98% 49%;
-    --warning-foreground: 0 0% 0%;
+    --warning: 39 87% 49%;
+    --warning-foreground: 20 14% 11%;
 
-    --border: 0 0% 0%;
-    --input: 0 0% 0%;
-    --ring: 210 100% 40%;
+    --border: 20 14% 11%;
+    --input: 20 14% 11%;
+    --ring: 137 30% 64%;
 
-    /* Neo Brutalism: No rounded corners */
-    --radius: 0rem;
+    /* Neo Brutalism 2.0: Friendly corners */
+    --radius: 0.375rem;
 
-    /* Sidebar HSL */
-    --sidebar-background: 210 100% 12%;
+    /* Sidebar HSL - Forest Green */
+    --sidebar-background: 145 46% 20%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 210 100% 12%;
-    --sidebar-accent: 210 100% 20%;
+    --sidebar-primary-foreground: 145 46% 20%;
+    --sidebar-accent: 145 33% 26%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 100% 25%;
-    --sidebar-ring: 210 100% 40%;
+    --sidebar-border: 145 33% 26%;
+    --sidebar-ring: 137 30% 64%;
 
     /* Chart HSL */
-    --chart-1: 210 100% 40%;
-    --chart-2: 122 72% 24%;
-    --chart-3: 27 98% 49%;
-    --chart-4: 0 84% 50%;
-    --chart-5: 0 0% 62%;
+    --chart-1: 137 30% 64%;
+    --chart-2: 39 87% 49%;
+    --chart-3: 0 100% 71%;
+    --chart-4: 183 32% 76%;
+    --chart-5: 21 11% 46%;
   }
 
   .dark {
@@ -278,7 +303,7 @@ html {
 body {
   @apply m-0 p-0 font-sans text-base leading-relaxed;
   color: var(--color-nb-black);
-  background-color: var(--color-nb-gray-50);
+  background-color: var(--color-nb-background);
 }
 
 /* ============================================
@@ -303,7 +328,7 @@ body {
    ============================================ */
 
 :focus-visible {
-  outline: 4px solid rgba(0, 102, 204, 0.5);
+  outline: 4px solid rgba(127, 188, 140, 0.4);
   outline-offset: 2px;
 }
 
@@ -433,6 +458,7 @@ body {
 
 @layer base {
   h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family-heading);
     @apply font-bold tracking-tight;
   }
 

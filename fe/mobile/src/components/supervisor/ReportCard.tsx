@@ -6,7 +6,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors, spacing, borderRadius, typography, shadows } from '../../constants/theme';
+import {
+  nbColors,
+  nbSpacing,
+  nbBorderRadius,
+  nbTypography,
+  nbShadows,
+  nbBorders,
+} from '../../constants/nbTokens';
+import { NBBadge } from '../nb/NBBadge';
 import { getRelativeTime } from '../../utils/dateUtils';
 
 // Report types mapping
@@ -17,9 +25,9 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
 };
 
 const REPORT_TYPE_COLORS: Record<string, string> = {
-  task_completion: '#22C55E', // green
-  incident: '#EF4444', // red
-  maintenance_request: '#F59E0B', // yellow
+  task_completion: nbColors.success, // #90EE90 light green
+  incident: nbColors.danger, // #FF6B6B coral red
+  maintenance_request: nbColors.warning, // #E3A018 amber
 };
 
 export interface ReportCardData {
@@ -61,9 +69,18 @@ export function ReportCard({ report, onPress, testID }: ReportCardProps): JSX.El
   };
 
   const reportTypeLabel = REPORT_TYPE_LABELS[report.report_type] || report.report_type;
-  const reportTypeColor = REPORT_TYPE_COLORS[report.report_type] || colors.gray500;
+  const reportTypeColor = REPORT_TYPE_COLORS[report.report_type] || nbColors.gray['500'];
   const relativeTime = getRelativeTime(report.created_at);
   const initials = getInitials(report.worker_name);
+
+  const getReportVariant = (type: string): 'success' | 'danger' | 'warning' | 'primary' => {
+    switch (type) {
+      case 'task_completion': return 'success';
+      case 'incident': return 'danger';
+      case 'maintenance_request': return 'warning';
+      default: return 'primary';
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -86,11 +103,11 @@ export function ReportCard({ report, onPress, testID }: ReportCardProps): JSX.El
             {report.area_name?.trim() || 'Area tidak tersedia'}
           </Text>
           <View style={styles.metaRow}>
-            <View style={[styles.badge, { backgroundColor: reportTypeColor }]}>
-              <Text style={styles.badgeText} numberOfLines={1}>
-                {reportTypeLabel}
-              </Text>
-            </View>
+            <NBBadge
+              text={reportTypeLabel}
+              variant={getReportVariant(report.report_type)}
+              size="sm"
+            />
           </View>
           <Text style={styles.timeText}>{relativeTime}</Text>
         </View>
@@ -107,7 +124,7 @@ export function ReportCard({ report, onPress, testID }: ReportCardProps): JSX.El
           />
         ) : report.thumbnail_url ? (
           <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-            <Icon name="image-off-outline" size={24} color={colors.gray400} />
+            <Icon name="image-off-outline" size={24} color={nbColors.gray['400']} />
           </View>
         ) : null}
 
@@ -127,15 +144,17 @@ export function ReportCard({ report, onPress, testID }: ReportCardProps): JSX.El
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginHorizontal: spacing.md,
-    marginVertical: spacing.xs,
+    backgroundColor: nbColors.surface,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    padding: nbSpacing.md,
+    marginHorizontal: nbSpacing.md,
+    marginVertical: nbSpacing.xs,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    ...shadows.md,
+    ...nbShadows.md,
   },
   leftSection: {
     flex: 1,
@@ -146,88 +165,77 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: nbColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: nbSpacing.md,
   },
   avatarText: {
-    color: colors.white,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
+    color: nbColors.surface,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.bold,
   },
   content: {
     flex: 1,
   },
   workerName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
+    marginBottom: nbSpacing.xs,
   },
   areaName: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray['600'],
+    marginBottom: nbSpacing.xs,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  badge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.sm,
-    maxWidth: 180,
-  },
-  badgeText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.white,
-    fontWeight: typography.fontWeight.medium,
+    marginBottom: nbSpacing.xs,
   },
   timeText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textHint,
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray['500'],
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: spacing.sm,
+    marginLeft: nbSpacing.sm,
   },
   thumbnail: {
     width: 50,
     height: 50,
-    borderRadius: borderRadius.sm,
-    marginRight: spacing.sm,
-    backgroundColor: colors.gray200,
+    borderRadius: nbBorderRadius.sm,
+    marginRight: nbSpacing.sm,
+    backgroundColor: nbColors.gray['200'],
   },
   thumbnailPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.gray100,
+    backgroundColor: nbColors.gray['100'],
     borderWidth: 1,
-    borderColor: colors.gray300,
+    borderColor: nbColors.gray['300'],
     borderStyle: 'dashed',
   },
   chevron: {
     fontSize: 28,
-    color: colors.gray400,
+    color: nbColors.gray['400'],
     fontWeight: '300',
   },
   reviewedBadge: {
     position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
+    top: nbSpacing.sm,
+    right: nbSpacing.sm,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.success,
+    backgroundColor: nbColors.successDark,
     justifyContent: 'center',
     alignItems: 'center',
   },
   reviewedText: {
-    color: colors.white,
+    color: nbColors.surface,
     fontSize: 14,
     fontWeight: 'bold',
   },
