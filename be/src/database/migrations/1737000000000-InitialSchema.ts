@@ -48,23 +48,22 @@ export class InitialSchema1737000000000 implements MigrationInterface {
 
     // ==========================================
     // 2. area_types table
-    // Spec: specs/database/schema.md line 76-95
+    // Spec: specs/database/schema.md - has code, name, description
     // ==========================================
     await queryRunner.query(`
       CREATE TABLE area_types (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        name VARCHAR(100) NOT NULL,
+        code VARCHAR(20) NOT NULL,
+        name VARCHAR(50) NOT NULL,
         description TEXT,
-        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        deleted_at TIMESTAMPTZ,
 
-        CONSTRAINT uq_area_types_name UNIQUE (name)
+        CONSTRAINT uq_area_types_code UNIQUE (code)
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX idx_area_types_active ON area_types(is_active) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(`CREATE UNIQUE INDEX idx_area_types_code ON area_types(code);`);
 
     console.log('  ✓ area_types');
 
