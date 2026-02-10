@@ -141,7 +141,12 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
       ALTER COLUMN role TYPE VARCHAR(30);
     `);
 
-    // Add constraint for new role values
+    // Drop existing role constraint and add new one with updated values
+    await queryRunner.query(`
+      ALTER TABLE users
+      DROP CONSTRAINT IF EXISTS chk_users_role;
+    `);
+
     await queryRunner.query(`
       ALTER TABLE users
       ADD CONSTRAINT chk_users_role CHECK (
