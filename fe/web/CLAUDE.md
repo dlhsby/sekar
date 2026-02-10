@@ -15,13 +15,42 @@ SEKAR Web Dashboard is a Next.js 16.1.4 application with React 19 using the **Ne
 - **State**: Zustand for UI state, AuthContext for auth
 - **Maps**: Mapbox GL JS
 
+## Environment Setup
+
+**First-time setup (REQUIRED):**
+
+```bash
+# 1. Copy the environment template
+cp .env.example .env
+
+# 2. Edit .env and add your Mapbox token
+# Get token from: https://account.mapbox.com/access-tokens/
+nano .env  # or use your preferred editor
+
+# 3. That's it! Ready to run
+npm run dev
+```
+
+**Environment files:**
+- `.env.example` - Single template with all variables (COMMITTED to git)
+  - Default values work for local development
+  - Comments show what to change for production
+- `.env` - Your actual environment (NEVER commit, in .gitignore)
+- `.env.production` - Production environment (NEVER commit, in .gitignore)
+
+**Security:**
+- ✅ Commit `.env.example` only (template with safe defaults)
+- ❌ NEVER commit `.env`, `.env.local`, or `.env.production` (contain secrets)
+- 🔑 All actual values and secrets go in `.env` (local) or `.env.production` (cloud)
+
 ## Quick Start
 
 ```bash
 npm install
-npm run dev                # http://localhost:3001
-npm run build             # Production build
-npm run test:e2e          # Playwright E2E tests
+cp .env.example .env        # First time only, then add your Mapbox token
+npm run dev                 # http://localhost:3001
+npm run build               # Production build
+npm run test:e2e            # Playwright E2E tests
 ```
 
 ## Neo Brutalism 2.0 Design System
