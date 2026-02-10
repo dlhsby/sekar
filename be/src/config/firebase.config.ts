@@ -11,6 +11,10 @@ const logger = new Logger('FirebaseConfig');
  * This function loads the Firebase service account credentials and initializes
  * the Firebase Admin SDK for sending push notifications via FCM HTTP v1 API.
  *
+ * Supports two methods:
+ * 1. Service account JSON file (development)
+ * 2. Environment variables (production CI/CD)
+ *
  * @returns The initialized Firebase app instance
  * @throws Error if service account file is missing or invalid
  */
@@ -27,19 +31,33 @@ export function initializeFirebase(): admin.app.App {
     throw new Error('FCM is disabled');
   }
 
-  // Get service account path from environment
-  const serviceAccountPath =
-    process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './config/firebase-service-account.json';
-  const absolutePath = join(process.cwd(), serviceAccountPath);
-
   try {
-    // Load service account JSON
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const serviceAccount = require(absolutePath);
+    let serviceAccount: any;
+
+    // Method 1: Try loading from environment variables (production)
+    if (process.env.FCM_PROJECT_ID && process.env.FCM_CLIENT_EMAIL && process.env.FCM_PRIVATE_KEY) {
+      logger.log('Loading Firebase credentials from environment variables');
+      serviceAccount = {
+        project_id: process.env.FCM_PROJECT_ID,
+        client_email: process.env.FCM_CLIENT_EMAIL,
+        // Replace \\n with actual newlines in private key
+        private_key: process.env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      };
+    }
+    // Method 2: Try loading from file (development)
+    else {
+      const serviceAccountPath =
+        process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './config/firebase-service-account.json';
+      const absolutePath = join(process.cwd(), serviceAccountPath);
+
+      logger.log(`Loading Firebase credentials from file: ${absolutePath}`);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      serviceAccount = require(absolutePath);
+    }
 
     // Validate service account structure
     if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
-      throw new Error('Invalid service account JSON: missing required fields');
+      throw new Error('Invalid service account: missing required fields (project_id, private_key, client_email)');
     }
 
     // Initialize Firebase Admin SDK
@@ -59,12 +77,16 @@ export function initializeFirebase(): admin.app.App {
   } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
       logger.error(
-        `Firebase service account file not found at: ${absolutePath}\n` +
-          'Please download the service account JSON from Firebase Console:\n' +
+        'Firebase service account file not found.\n' +
+          'For development: Download service account JSON from Firebase Console:\n' +
           '1. Go to Firebase Console → Project Settings → Service Accounts\n' +
           '2. Click "Generate new private key"\n' +
-          `3. Save the file to: ${absolutePath}\n` +
-          '4. Ensure the file is in .gitignore',
+          '3. Save to ./config/firebase-service-account.json\n' +
+          '4. Ensure the file is in .gitignore\n\n' +
+          'For production: Set environment variables:\n' +
+          '- FCM_PROJECT_ID\n' +
+          '- FCM_CLIENT_EMAIL\n' +
+          '- FCM_PRIVATE_KEY',
       );
     } else {
       logger.error('Failed to initialize Firebase Admin SDK:', error.message);

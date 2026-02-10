@@ -55,6 +55,11 @@ import { EventsModule } from './gateways/events.module';
       database: process.env.DATABASE_NAME || 'sekar_db',
       autoLoadEntities: true,
 
+      // SSL configuration for RDS
+      ssl: process.env.DATABASE_SSL === 'true'
+        ? { rejectUnauthorized: false }
+        : false,
+
       // Control synchronize via environment variable for flexibility
       synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
       logging: process.env.NODE_ENV === 'development',
@@ -68,7 +73,7 @@ import { EventsModule } from './gateways/events.module';
         // How long a connection can be idle before being released (ms)
         idleTimeoutMillis: process.env.NODE_ENV === 'production' ? 60000 : 30000,
         // Maximum time to wait for connection from pool (ms)
-        connectionTimeoutMillis: 3000,
+        connectionTimeoutMillis: 5000,
       },
 
       // TypeORM connection pool size (for backwards compatibility)

@@ -303,7 +303,7 @@ jobs:
             docker pull $ECR_REGISTRY/sekar-backend:latest
 
             # Wipe database clean (development phase - okay to reset)
-            echo "Cleaning database..."
+            echo "🧹 Cleaning database..."
             docker run --rm \
               -e PGPASSWORD=${DATABASE_PASSWORD} \
               postgres:14-alpine \
@@ -311,77 +311,55 @@ jobs:
               -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO sekar_admin; GRANT ALL ON SCHEMA public TO public;" \
               || echo "Database already clean or first run"
 
-            # Initialize base schema with TypeORM synchronize
-            echo "Initializing base schema..."
-            cat > .env.init << 'INITEOF'
-            NODE_ENV=production
-            PORT=3000
-            DATABASE_HOST=${DATABASE_HOST}
-            DATABASE_PORT=5432
-            DATABASE_USER=sekar_admin
-            DATABASE_PASSWORD=${DATABASE_PASSWORD}
-            DATABASE_NAME=sekar_db
-            DATABASE_SYNCHRONIZE=true
-            DATABASE_MIGRATIONS_RUN=false
-            DATABASE_SSL=true
-            JWT_SECRET=${JWT_SECRET}
-            JWT_EXPIRATION=15m
-            JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-            JWT_REFRESH_EXPIRATION=7d
-            AWS_REGION=ap-southeast-3
-            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-            AWS_S3_BUCKET=${AWS_S3_BUCKET}
-            CORS_ORIGIN=${CORS_ORIGIN}
-            RATE_LIMIT_TTL=60
-            RATE_LIMIT_MAX=100
-            RATE_LIMIT_LOGIN_MAX=5
-            FCM_ENABLED=false
-            FCM_PROJECT_ID=${FCM_PROJECT_ID}
-            FCM_CLIENT_EMAIL=${FCM_CLIENT_EMAIL}
-            FCM_PRIVATE_KEY=${FCM_PRIVATE_KEY}
-            NOTIFICATION_RETRY_ATTEMPTS=3
-            TASK_AUTO_ASSIGN_ENABLED=false
-            TASK_DEADLINE_WARNING_HOURS=24
-            KMZ_MAX_FILE_SIZE_MB=10
-            KMZ_MAX_POLYGONS=100
-            INITEOF
+            echo "✅ Database wiped clean"
 
-            # Expand variables
-            envsubst < .env.init > .env.init.expanded
-            mv .env.init.expanded .env.init
-            chmod 600 .env.init
+            # Run migrations directly (without starting the full application)
+            # This is more reliable than running the app with synchronize
+            echo "📦 Running database migrations..."
+            docker run --rm \
+              -e DATABASE_HOST=${DATABASE_HOST} \
+              -e DATABASE_PORT=5432 \
+              -e DATABASE_USER=sekar_admin \
+              -e DATABASE_PASSWORD=${DATABASE_PASSWORD} \
+              -e DATABASE_NAME=sekar_db \
+              -e DATABASE_SSL=true \
+              -e NODE_ENV=production \
+              $ECR_REGISTRY/sekar-backend:latest \
+              sh -c "node ./node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js && echo '✅ All migrations applied successfully'" \
+              || {
+                echo "❌ ERROR: Migration failed"
+                docker logs sekar-backend 2>&1 | tail -100 || true
+                exit 1
+              }
 
-            # Run backend briefly to create base schema (40 seconds for startup + sync)
-            echo "Starting backend to create schema..."
-            timeout 40 docker run --rm --env-file .env.init $ECR_REGISTRY/sekar-backend:latest node dist/main.js || true
-            sleep 2
-            rm -f .env.init
-            echo "✅ Base schema created"
-
-            # Run Phase 2 migrations (with 2-minute timeout)
-            echo "Running Phase 2 migrations..."
-            timeout 120 docker-compose -f docker-compose.prod.yml run --rm backend npm run migration:run:prod || {
-              echo "ERROR: Migration failed or timed out"
-              exit 1
-            }
+            echo "✅ Migrations completed successfully"
 
             # Seed database with test data (DISABLED - run manually after deployment)
-            echo "Skipping database seeding (run manually with: docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod)"
+            echo "⏩ Skipping database seeding (run manually with: docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod)"
             # docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod || {
             #   echo "WARNING: Seeding failed, continuing anyway"
             # }
 
             # Deploy with zero-downtime
+            echo "🚀 Starting backend container..."
             docker-compose -f docker-compose.prod.yml up -d backend
 
-            # Wait for health check
-            echo "Waiting for backend health check..."
-            sleep 10
-            curl -f http://localhost:3000/api/v1/health || {
-              echo "ERROR: Health check failed"
-              exit 1
-            }
+            # Wait for health check with retry logic
+            echo "⏳ Waiting for backend health check..."
+            for i in {1..30}; do
+              if curl -f http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+                echo "✅ Health check passed"
+                break
+              fi
+              echo "   Attempt $i/30: Health check not ready yet..."
+              sleep 2
+              if [ $i -eq 30 ]; then
+                echo "❌ ERROR: Health check failed after 60 seconds"
+                echo "📋 Container logs:"
+                docker-compose -f docker-compose.prod.yml logs --tail=50 backend
+                exit 1
+              fi
+            done
 
             echo "✅ Backend deployment successful"
 

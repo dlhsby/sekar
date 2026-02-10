@@ -28,18 +28,32 @@ const AppDataSource = new DataSource({
   password: process.env.DATABASE_PASSWORD || 'postgres',
   database: process.env.DATABASE_NAME || 'sekar_db',
 
+  // SSL configuration for RDS
+  ssl: process.env.DATABASE_SSL === 'true'
+    ? { rejectUnauthorized: false }
+    : false,
+
   // Entities - auto-discover all .entity.ts files
   entities: [join(__dirname, '..', 'modules', '**', 'entities', '*.entity.{ts,js}')],
 
   // Migrations
   migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
   migrationsTableName: 'typeorm_migrations',
+  migrationsTransactionMode: 'all', // Run all migrations in a single transaction
 
   // Logging
   logging: process.env.NODE_ENV === 'development',
 
   // Synchronize - should be false for migrations
   synchronize: false,
+
+  // Connection pool for migrations (smaller than application)
+  extra: {
+    max: 3, // Maximum 3 connections for migration CLI
+    min: 1,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  },
 });
 
 export default AppDataSource;
