@@ -64,14 +64,18 @@ export class InitialSchema1737000000000 implements MigrationInterface {
         description TEXT,
         area_type_id UUID NOT NULL,
         address TEXT,
-        latitude DECIMAL(10, 8),
-        longitude DECIMAL(11, 8),
+        gps_lat DECIMAL(10, 8) NOT NULL,
+        gps_lng DECIMAL(11, 8) NOT NULL,
+        radius_meters INTEGER DEFAULT 100,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         deleted_at TIMESTAMPTZ,
         CONSTRAINT fk_areas_area_type FOREIGN KEY (area_type_id)
-          REFERENCES area_types(id) ON DELETE RESTRICT
+          REFERENCES area_types(id) ON DELETE RESTRICT,
+        CONSTRAINT chk_areas_gps_lat CHECK (gps_lat BETWEEN -90 AND 90),
+        CONSTRAINT chk_areas_gps_lng CHECK (gps_lng BETWEEN -180 AND 180),
+        CONSTRAINT chk_areas_radius CHECK (radius_meters BETWEEN 1 AND 10000)
       );
     `);
 
