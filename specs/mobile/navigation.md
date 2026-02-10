@@ -1149,7 +1149,56 @@ function WorkerHomeScreen({ navigation }: Props) {
 
 ---
 
+---
+
+## Phase 2C: Navigation Restructure
+
+> **Full specification:** See [`specs/phases/phase-2-c-client-feedback/mobile.md`](../phases/phase-2-c-client-feedback/mobile.md)
+
+### Phase 2C Navigation Structure (Target)
+
+The Phase 2A/2B dual-navigator approach (WorkerTabs + SupervisorTabs) is replaced with a **unified navigator** that dynamically renders tabs based on user role.
+
+```
+Root
+├─ Auth Stack (Unauthenticated)
+│  └─ Login
+│
+└─ Main Stack (Authenticated - all 8 roles)
+   └─ MainTabs (dynamically configured per role)
+      ├─ Home (Tab) ─── [satgas, linmas, korlap, admin_data, kepala_rayon]
+      ├─ Aktivitas (Tab) ─── [satgas, linmas, korlap, admin_data]
+      ├─ Tugas (Tab) ─── [satgas, linmas, korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
+      ├─ Lembur (Tab) ─── [satgas, linmas]
+      ├─ Monitoring (Tab) ─── [korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
+      ├─ Profil (Tab) ─── [all roles]
+      │
+      ├─ ClockInOut (Modal)
+      ├─ AktivitasSubmission (Modal)
+      ├─ TaskDetail (Push)
+      ├─ TaskComplete (Push)
+      ├─ TaskCreate (Push)
+      ├─ OvertimeSubmit (Push)
+      ├─ OvertimeDetail (Push)
+      └─ OvertimeApproval (Push)
+```
+
+### Role-Tab Matrix
+
+| Role | Tab 1 | Tab 2 | Tab 3 | Tab 4 | Tab 5 |
+|------|-------|-------|-------|-------|-------|
+| satgas | Home | Aktivitas | Tugas | Lembur | Profil |
+| linmas | Home | Aktivitas | Tugas | Lembur | Profil |
+| korlap | Home | Aktivitas | Tugas | Monitoring | Profil |
+| admin_data | Home | Aktivitas | Profil | - | - |
+| kepala_rayon | Home | Tugas | Monitoring | Profil | - |
+| top_management | Monitoring | Tugas | Profil | - | - |
+| admin_system | Monitoring | Tugas | Profil | - | - |
+| superadmin | Monitoring | Tugas | Profil | - | - |
+
+---
+
 **Document Owner:** Mobile Developer
-**Last Updated:** 2026-01-16
-**Status:** Active - Phase 1 MVP
+**Last Updated:** 2026-02-10
+**Status:** Active - Phase 2C Planning
 **Related Docs:** [`screens.md`](./screens.md), [`state-management.md`](./state-management.md)

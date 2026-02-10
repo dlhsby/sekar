@@ -10,13 +10,14 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 |-------|------|----------|--------|-------|
 | 1 | [MVP - Core Tracking](./phase-1-mvp/) | 2 weeks | ✅ COMPLETE | Clock-in/out, Reports, GPS |
 | 2A | [Enhanced Features](./phase-2-a-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
-| 2B | [UI/UX Revamp](./phase-2-b-ui-ux-revamp/) | 3-4 weeks | 🟡 IN PROGRESS | Neo Brutalism 2.0, Design Tokens |
+| 2B | [UI/UX Revamp](./phase-2-b-ui-ux-revamp/) | 3-4 weeks | ✅ COMPLETE | Neo Brutalism 2.0, Design Tokens |
+| **2C** | **[Client Feedback](./phase-2-c-client-feedback/)** | **4-6 weeks** | **🟡 PLANNING** | **Role overhaul, Overtime, Aktivitas** |
 | 3 | [Polishing & E2E Testing](./phase-3-polishing/) | 2-3 weeks | Not Started | Manual Testing, E2E, Polish |
 | 4 | [Finishing & Advanced Features](./phase-4-finishing/) | 6-8 weeks | Not Started | Analytics, Assets, iOS |
 
-**Total Duration:** ~17-21 weeks
+**Total Duration:** ~21-27 weeks
 
-> **Note:** Phase structure was reorganized on January 30, 2026. Previous phases 3-6 were consolidated into new phases 3-4. Phase 2 was split into 2A (Enhanced) and 2B (UI/UX) on February 5, 2026.
+> **Note:** Phase structure was reorganized on January 30, 2026. Previous phases 3-6 were consolidated into new phases 3-4. Phase 2 was split into 2A (Enhanced), 2B (UI/UX), and 2C (Client Feedback) based on February 10, 2026 client meeting.
 
 ### Quick Reference
 
@@ -124,6 +125,32 @@ Neo Brutalism 2.0 design system application across web and mobile platforms.
 
 ---
 
+## Phase 2C: Client Feedback
+
+**Duration:** 4-6 weeks | **Status:** 🟡 PLANNING (Feb 2026)
+
+Breaking changes based on client feedback from February 10, 2026 meeting.
+
+### Key Deliverables
+- Role system overhaul (7 → 8 roles: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
+- GPS boundary removal (clock-in from anywhere)
+- Reports → Aktivitas rename with multi-photo (max 3, camera only)
+- Task hierarchy (downward assignment) with tagging (CC-like)
+- New overtime module (submit + korlap approval)
+- Activity types update (20 types across 4 roles)
+- Monitoring access scope changes
+
+### Documents
+- [Overview](./phase-2-c-client-feedback/README.md)
+- [Status](./phase-2-c-client-feedback/STATUS.md)
+- [Database Guide](./phase-2-c-client-feedback/database.md)
+- [Backend Guide](./phase-2-c-client-feedback/backend.md)
+- [Mobile Guide](./phase-2-c-client-feedback/mobile.md)
+- [Web Guide](./phase-2-c-client-feedback/web.md)
+- [Testing](./phase-2-c-client-feedback/testing.md)
+
+---
+
 ## Phase 3: Polishing & E2E Testing
 
 **Duration:** 2-3 weeks | **Status:** Not Started
@@ -201,6 +228,9 @@ The following folders contain original specifications before the January 30, 202
            Phase 2B (UI/UX Revamp)
                      |
                      v
+       Phase 2C (Client Feedback) ← CURRENT
+                     |
+                     v
          Phase 3 (Polishing & E2E)
                      |
         +------------+------------+
@@ -213,17 +243,19 @@ The following folders contain original specifications before the January 30, 202
 **Critical Dependencies:**
 - **Phase 1 → Phase 2A:** Phase 1 MVP must complete before Phase 2A
 - **Phase 2A → Phase 2B:** Phase 2A implementation provides components to revamp
-- **Phase 2B → Phase 3:** Design consistency required before E2E testing
+- **Phase 2B → Phase 2C:** Design system established before client feedback changes
+- **Phase 2C → Phase 3:** All breaking changes must be stable before E2E testing
 - **Phase 3 → Phase 4:** Polishing should complete before adding new features
 - **Phase 4 sub-phases:** Can run in parallel with separate teams
 
 **Recommended Sequence:**
 1. **Phase 1** (Weeks 1-2) - MVP foundation ✅
 2. **Phase 2A** (Weeks 3-4) - Enhanced features + Web ✅
-3. **Phase 2B** (Weeks 5-8) - UI/UX Revamp 🟡
-4. **Phase 3** (Weeks 9-11) - Polishing & E2E Testing
-5. **Phase 4A+4B** (Weeks 12-15) - Analytics + Assets (parallel)
-6. **Phase 4C** (Weeks 16-19) - iOS platform
+3. **Phase 2B** (Weeks 5-8) - UI/UX Revamp ✅
+4. **Phase 2C** (Weeks 9-14) - Client Feedback 🟡
+5. **Phase 3** (Weeks 15-17) - Polishing & E2E Testing
+6. **Phase 4A+4B** (Weeks 18-21) - Analytics + Assets (parallel)
+7. **Phase 4C** (Weeks 22-25) - iOS platform
 
 ---
 
@@ -239,4 +271,4 @@ The following folders contain original specifications before the January 30, 202
 
 ---
 
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-02-10

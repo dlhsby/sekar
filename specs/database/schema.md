@@ -3,8 +3,8 @@
 Complete PostgreSQL database schema for SEKAR system with production-ready optimizations.
 
 **Document Owner:** Database Engineer
-**Last Updated:** 2026-01-21
-**Status:** Phase 1 Complete | Phases 2-6 Fully Specified
+**Last Updated:** 2026-02-10
+**Status:** Phase 2B Complete + Deployed | Phase 2C Planned
 
 ---
 
@@ -2002,7 +2002,54 @@ Before deploying to production:
 
 ---
 
+---
+
+## Phase 2C: Schema Changes (Planned)
+
+> **Full specification:** See [`specs/phases/phase-2-c-client-feedback/database.md`](../phases/phase-2-c-client-feedback/database.md)
+
+### Role Enum Update
+```sql
+-- users.role CHECK constraint changes:
+-- Remove: 'worker', 'supervisor', 'admin', 'koordinator_lapangan'
+-- Add: 'satgas', 'korlap', 'admin_data', 'admin_system', 'superadmin'
+-- Keep: 'linmas', 'kepala_rayon', 'top_management'
+```
+
+### New Tables
+
+**task_tags** - Many-to-many tagging for tasks (CC-like)
+```sql
+task_tags (id UUID PK, task_id FK→tasks, user_id FK→users, created_at, UNIQUE(task_id, user_id))
+```
+
+**overtimes** - Overtime requests with approval workflow
+```sql
+overtimes (id UUID PK, user_id FK→users, area_id FK→areas, date DATE, start_time TIME,
+           end_time TIME, status VARCHAR(20), approved_by FK→users, approved_at, rejection_reason,
+           notes, created_at, updated_at)
+```
+
+**overtime_aktivitas** - Activities performed during overtime
+```sql
+overtime_aktivitas (id UUID PK, overtime_id FK→overtimes CASCADE, activity_type_id FK→activity_types,
+                    description TEXT, photo_urls TEXT[], gps_lat, gps_lng, created_at)
+```
+
+### Modified Tables
+
+| Table | Changes |
+|-------|---------|
+| `users` | Role CHECK constraint updated (8 roles) |
+| `work_reports` | Add photo_urls TEXT[], shift_id FK, remove review columns |
+| `tasks` | Add rayon_id FK→rayons, remove activity_type_id, remove GPS completion fields |
+| `activity_types` | Role constraint updated, new seed data (20 types for 4 roles) |
+| `worker_assignments` | Add deprecated BOOLEAN, migrated_to_schedule_id FK |
+
+---
+
 **Related Documents:**
 - [ERD](./erd.md) - Entity relationship diagrams
 - [Migrations](./migrations.md) - Migration strategy
 - [Seed Data](./seed-data.md) - Test data specifications
+- [Phase 2C Database](../phases/phase-2-c-client-feedback/database.md) - Phase 2C migration details

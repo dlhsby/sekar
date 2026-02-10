@@ -7,6 +7,7 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 ### Screen Summary
 
 **Total: 17 screens implemented | 10 NB reusable components**
+**Phase 2C Target: 22 screens (+5 new, 7 modified)**
 
 | Stack | Screen | Status | Priority | Phase |
 |-------|--------|--------|----------|-------|
@@ -27,6 +28,11 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 | **Tasks** | Tasks Reports | ✅ Complete | P2 | 2 |
 | **Common** | Notifications | ✅ Complete | P2 | 2 |
 | **Common** | Settings | ✅ Complete | P2 | 2 |
+| **Overtime** | Overtime List | ⏳ Planned | P1 | 2C |
+| **Overtime** | Overtime Submit | ⏳ Planned | P1 | 2C |
+| **Overtime** | Overtime Approval | ⏳ Planned | P1 | 2C |
+| **Overtime** | Overtime Detail | ⏳ Planned | P1 | 2C |
+| **Tasks** | Task Create | ⏳ Planned | P1 | 2C |
 
 ### Component Summary (NB 2.0)
 
@@ -2594,3 +2600,44 @@ fontSize: {
 | `nbShadows.sm.shadowRadius` | 0 | 2 |
 
 **See:** `specs/phases/phase-2-b-ui-ux-revamp/mobile.md` for complete screen-by-screen migration checklist.
+
+---
+
+## Phase 2C: Client Feedback Changes
+
+> **Full specification:** See [`specs/phases/phase-2-c-client-feedback/mobile.md`](../phases/phase-2-c-client-feedback/mobile.md)
+
+### New Screens (5)
+
+| ID | Screen | Description | Roles |
+|----|--------|-------------|-------|
+| OT-1 | OvertimeListScreen | List overtime requests with status filter | satgas, linmas, korlap |
+| OT-2 | OvertimeSubmitScreen | Submit overtime with embedded aktivitas | satgas, linmas |
+| OT-3 | OvertimeApprovalScreen | Review pending overtime requests | korlap |
+| OT-4 | OvertimeDetailScreen | Overtime detail with aktivitas photos | Owner + managers |
+| TC-1 | TaskCreateScreen | Create tasks with hierarchical assignment | korlap, kepala_rayon, top_mgmt, admin_sys, superadmin |
+
+### Modified Screens (7)
+
+| Screen | Changes |
+|--------|---------|
+| ClockInOutScreen | Remove GPS boundary UI, area auto-detect from schedule |
+| ReportSubmissionScreen → AktivitasSubmissionScreen | Rename, new flow (foto→jenis→deskripsi→lokasi), camera-only, max 3 photos |
+| TasksReportsScreen → TasksAktivitasScreen | Rename, add "Tag Saya" filter tab |
+| TaskDetailScreen | Add tagged users, rayon scope, simplified completion |
+| TaskCompleteScreen | Remove GPS capture, keep description + photo |
+| MapDashboardScreen | Updated role-based access (8 roles) |
+| RootNavigator | Unified tab config for 8 roles |
+
+### Role-Based Navigation (8 roles)
+
+| Role | Tabs |
+|------|------|
+| satgas | Home, Aktivitas, Tugas, Lembur, Profil |
+| linmas | Home, Aktivitas, Tugas, Lembur, Profil |
+| korlap | Home, Aktivitas, Tugas, Monitoring, Profil |
+| admin_data | Home, Aktivitas, Profil |
+| kepala_rayon | Home, Tugas, Monitoring, Profil |
+| top_management | Monitoring, Tugas, Profil |
+| admin_system | Monitoring, Tugas, Profil |
+| superadmin | Monitoring, Tugas, Profil |

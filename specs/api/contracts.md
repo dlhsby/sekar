@@ -8,13 +8,13 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 - **Swagger Documentation:** `/api/v1/docs`
 - **Authentication:** JWT Bearer token (15-min access + 7-day refresh with rotation)
 - **Content Type:** `application/json` (except file uploads: `multipart/form-data`)
-- **Total Endpoints:** 84 (41 Phase 1 + 43 Phase 2)
+- **Total Endpoints:** 84 (41 Phase 1 + 43 Phase 2) → **~92 target (Phase 2C: +8 new)**
 - **Backend:** NestJS 11.x, Node.js >=24.13.0, TypeScript 5.x
 - **Database:** PostgreSQL 14+ with TypeORM
 - **Testing:** 416 tests passing (99.06% coverage)
 - **Error Codes:** 31 standardized codes (see `error-handling.md`)
 - **Rate Limiting:** 100 req/min global, 5 req/min auth endpoints
-- **Last Updated:** January 24, 2026
+- **Last Updated:** February 10, 2026
 
 ## Table of Contents
 
@@ -4128,7 +4128,57 @@ Phase 2 implementation:
 - **Testing:** Jest (416 tests, 99.06% coverage)
 - **Rate Limiting:** @nestjs/throttler
 
+---
+
+## Phase 2C: Planned Endpoint Changes (February 2026)
+
+> **Full specification:** See [`specs/phases/phase-2-c-client-feedback/backend.md`](../phases/phase-2-c-client-feedback/backend.md)
+
+### New Endpoints (+8)
+
+| # | Method | Path | Description | Roles |
+|---|--------|------|-------------|-------|
+| 1 | `POST` | `/overtime` | Submit overtime request | satgas, linmas |
+| 2 | `GET` | `/overtime/my` | My overtime requests | satgas, linmas |
+| 3 | `GET` | `/overtime` | Pending overtime approvals | korlap |
+| 4 | `GET` | `/overtime/:id` | Overtime detail | Owner + managers |
+| 5 | `PATCH` | `/overtime/:id/approve` | Approve overtime | korlap |
+| 6 | `PATCH` | `/overtime/:id/reject` | Reject overtime | korlap |
+| 7 | `GET` | `/tasks/tagged` | Tasks where user is tagged | All authenticated |
+| 8 | `POST` | `/tasks/:id/tag` | Add tags to task | Task creator |
+
+### Modified Endpoints
+
+| Method | Path | Change |
+|--------|------|--------|
+| `POST` | `/aktivitas` | Renamed from `/reports`, mandatory activity_type_id, multi-photo (max 3), shift validation |
+| `GET` | `/aktivitas` | Renamed from `/reports`, scoped access by role |
+| `GET` | `/aktivitas/:id` | Renamed from `/reports/:id` |
+| `GET` | `/aktivitas/my` | Renamed from `/reports/my` |
+| `POST` | `/shifts/clock-in` | GPS boundary removed, 5 clockable roles |
+| `POST` | `/tasks` | Hierarchical assignment validation, rayon_id field |
+| `PATCH` | `/tasks/:id/complete` | Simplified: description + photo only (no GPS) |
+| `GET` | `/monitoring/*` | Updated role access (8 roles) |
+
+### Role Changes
+
+All endpoints using old role names must update:
+- `worker` → `satgas`
+- `koordinator_lapangan` → `korlap`
+- `supervisor` → `korlap`
+- `admin` → `admin_system` or `superadmin` (context-dependent)
+
+---
+
 ### Changelog
+
+**v2.0.0 - February 10, 2026 (Phase 2C Planning)**
+- Added 8 new endpoints (overtime module + task tagging)
+- Renamed /reports → /aktivitas routes
+- Updated role names (7→8 roles)
+- Documented hierarchical task assignment
+- GPS boundary removal from clock-in
+- Full specification: specs/phases/phase-2-c-client-feedback/backend.md
 
 **v1.3.0 - January 24, 2026**
 - Updated to Node.js v24.13.0 and NestJS 11.x
