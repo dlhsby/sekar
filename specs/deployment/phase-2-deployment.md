@@ -1,7 +1,7 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** February 10, 2026
-**Status:** Production Ready
+**Last Updated:** February 10, 2026 (Fresh Start)
+**Status:** Production Ready | Database Rebuilt from Spec
 **Deployment Time:** 15-20 minutes (automated)
 
 > **⚠️ IMPORTANT:** This guide references domain names that need to be set up manually.
@@ -29,6 +29,47 @@
 - [ ] Firebase project created with FCM
 - [ ] AWS infrastructure ready (EC2, RDS, S3, ECR)
 - [ ] All tests passing (845/845, 90.77% coverage)
+
+---
+
+## 🔥 Fresh Start Deployment (Feb 10, 2026)
+
+**What happened:** Complete database rebuild from specification to fix accumulated migration issues.
+
+### What Was Done
+
+1. ✅ **Dropped all tables** in production RDS (fresh slate)
+2. ✅ **Rebuilt InitialSchema** from `specs/database/schema.md` exactly
+3. ✅ **Verified entities match spec** (worker_id, gps_lat/gps_lng)
+4. ✅ **Backed up old migrations** to `.backup/` folder
+5. ✅ **Deployed fresh migrations** (InitialSchema + Phase2DatabaseSchema)
+
+### Key Fixes
+
+**InitialSchema now matches spec:**
+- ✅ work_reports: `worker_id`, `gps_lat`, `gps_lng`, `is_reviewed`, `condition`
+- ✅ location_logs: `worker_id`, `gps_lat`, `gps_lng`, `logged_at`, `accuracy_meters`
+- ✅ All 7 Phase 1 tables created correctly
+- ❌ No more incorrect fields (email, code, description removed)
+
+**Lessons Learned:**
+- ALWAYS check `specs/database/schema.md` before adding fields
+- Entities were already correct (Phase 2 had updated them)
+- Fresh start is better than accumulating fix migrations
+
+### After Fresh Start
+
+**Migrations are now clean:**
+```
+be/src/database/migrations/
+├── 1737000000000-InitialSchema.ts        # Phase 1: 7 tables
+├── 1737720000000-Phase2DatabaseSchema.ts # Phase 2: +9 tables, 4 updates
+└── .backup/                              # Old migrations (for reference)
+```
+
+**Database state:** Empty, ready for seeding.
+
+**Next steps:** Run seeding (below).
 
 ---
 
@@ -364,7 +405,76 @@ curl http://api.sekar.wahyutrip.com/api/health
 
 ---
 
-### 3.2 Verify Web Dashboard
+### 3.2 Run Database Seeding
+
+**IMPORTANT:** After fresh start or first deployment, database is empty. Run seeding to create test users and data.
+
+```bash
+# SSH to production server
+ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240
+
+# Navigate to backend directory
+cd ~/sekar/backend
+
+# Run production seeding (on running container)
+docker exec sekar-backend npm run seed:prod
+
+# Expected output:
+# 🌱 Seeding database...
+# 🗑️  Clearing existing data...
+# 👥 Seeding users...
+#   ✓ Created admin: admin
+#   ✓ Created supervisor: supervisor1
+#   ✓ Created supervisor: supervisor2
+#   ✓ Created worker: worker1
+#   ✓ Created worker: worker2
+#   ✓ Created worker: worker3
+# 🏷️  Seeding area types...
+#   ✓ Created area type: Taman
+#   ... (continues for all tables)
+# ✅ Seeding completed successfully!
+
+# Verify users were created
+docker exec sekar-backend node -e "
+const { Client } = require('pg');
+const client = new Client({
+  host: 'sekar-db.cdsoa0g42ump.ap-southeast-3.rds.amazonaws.com',
+  port: 5432,
+  user: 'sekar_admin',
+  password: process.env.DATABASE_PASSWORD,
+  database: 'sekar_db',
+  ssl: { rejectUnauthorized: false }
+});
+client.connect().then(() => {
+  return client.query('SELECT COUNT(*) FROM users');
+}).then(result => {
+  console.log('Users in database:', result.rows[0].count);
+  return client.end();
+});
+"
+# Expected: Users in database: 6
+
+# Test login
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+
+# Expected: JSON with access_token and refresh_token
+```
+
+**Test Users:**
+| Username | Password | Role |
+|----------|----------|------|
+| admin | admin123 | Admin |
+| supervisor1 | supervisor123 | Supervisor |
+| supervisor2 | supervisor123 | Supervisor |
+| worker1 | worker123 | Worker |
+| worker2 | worker123 | Worker |
+| worker3 | worker123 | Worker |
+
+---
+
+### 3.3 Verify Web Dashboard
 
 ```bash
 # Homepage check
