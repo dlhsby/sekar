@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   errorText: {
     fontSize: nbTypography.fontSize.base,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     width: 80,
     fontWeight: nbTypography.fontWeight.medium,
   },
@@ -370,12 +370,12 @@ const styles = StyleSheet.create({
   },
   reviewedTime: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginTop: 4,
   },
   hint: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[400],
+    color: nbColors.gray['400'],
     marginBottom: nbSpacing.sm,
   },
   description: {
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   noLocationText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontStyle: 'italic',
   },
   mapsButton: {
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     borderBottomWidth: nbBorders.thin,
     borderBottomColor: nbColors.black,
   },

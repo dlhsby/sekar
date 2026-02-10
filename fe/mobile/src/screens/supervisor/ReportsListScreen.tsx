@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
@@ -330,17 +330,17 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
   },
   filterButtonIcon: {
     fontSize: 12,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
   },
   clearIcon: {
@@ -373,12 +373,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: nbTypography.fontSize.lg,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     marginBottom: nbSpacing.xs,
   },
   emptySubtext: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[400],
+    color: nbColors.gray['400'],
   },
   loaderContainer: {
     paddingVertical: nbSpacing.lg,
@@ -416,18 +416,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
     borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray[200],
+    borderColor: nbColors.gray['200'],
     marginBottom: nbSpacing.xs,
     backgroundColor: nbColors.white,
   },
   modalOptionSelected: {
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
     borderColor: nbColors.primary,
     borderWidth: nbBorders.base,
   },
   modalOptionText: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
   },
   modalOptionTextSelected: {
     color: nbColors.primary,
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   modalCloseButton: {
     marginTop: nbSpacing.md,
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     paddingVertical: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
     borderWidth: nbBorders.base,

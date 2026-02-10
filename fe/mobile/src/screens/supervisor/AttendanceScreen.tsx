@@ -381,13 +381,13 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   listContent: {
     padding: nbSpacing.md,
   },
   sectionHeader: {
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     borderRadius: nbBorderRadius.sm,
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     letterSpacing: 0.5,
   },
   emptyState: {
@@ -407,11 +407,11 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
   },
   noteContainer: {
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
     padding: nbSpacing.md,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     lineHeight: nbTypography.fontSize.sm * 1.5,
   },
 });

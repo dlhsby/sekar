@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
 
   // Header styles
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginBottom: nbSpacing.sm,
   },
   roleBadge: {
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   },
   syncLabel: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   syncValue: {
     fontSize: nbTypography.fontSize.base,
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
   },
   menuArrow: {
     fontSize: nbTypography.fontSize['2xl'],
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontWeight: nbTypography.fontWeight.bold,
   },
   menuDivider: {

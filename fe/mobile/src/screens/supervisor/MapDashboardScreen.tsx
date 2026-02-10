@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
   errorText: {
     fontSize: nbTypography.fontSize.base,
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
   },
   summarySeparator: {
     flex: 1,
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   summaryTotal: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
   },
   roleRow: {
     flexDirection: 'row',
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm,
     paddingTop: nbSpacing.sm,
     borderTopWidth: nbBorders.thin,
-    borderTopColor: nbColors.gray[300],
+    borderTopColor: nbColors.gray['300'],
   },
   roleItem: {
     flexDirection: 'row',
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
   },
   roleText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     marginLeft: nbSpacing.xs,
   },
   actionButtons: {
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   workerListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.sm,
@@ -779,12 +779,12 @@ const styles = StyleSheet.create({
   workerListName: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     marginBottom: 2,
   },
   workerListArea: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
   emptyState: {
     flex: 1,
@@ -794,6 +794,6 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
 });

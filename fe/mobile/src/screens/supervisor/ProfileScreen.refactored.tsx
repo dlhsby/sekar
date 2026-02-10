@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
 
   // Card styles
