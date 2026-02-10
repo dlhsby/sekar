@@ -121,36 +121,42 @@ export class SeedService {
     const users = [
       {
         username: 'admin',
+        email: 'admin@sekar.com',
         password: 'admin123',
         full_name: 'System Administrator',
         role: UserRole.ADMIN,
       },
       {
         username: 'supervisor1',
+        email: 'supervisor1@sekar.com',
         password: 'supervisor123',
         full_name: 'Supervisor Satu',
         role: UserRole.SUPERVISOR,
       },
       {
         username: 'supervisor2',
+        email: 'supervisor2@sekar.com',
         password: 'supervisor123',
         full_name: 'Supervisor Dua',
         role: UserRole.SUPERVISOR,
       },
       {
         username: 'worker1',
+        email: 'worker1@sekar.com',
         password: 'worker123',
         full_name: 'Pekerja Satu',
         role: UserRole.WORKER,
       },
       {
         username: 'worker2',
+        email: 'worker2@sekar.com',
         password: 'worker123',
         full_name: 'Pekerja Dua',
         role: UserRole.WORKER,
       },
       {
         username: 'worker3',
+        email: 'worker3@sekar.com',
         password: 'worker123',
         full_name: 'Pekerja Tiga',
         role: UserRole.WORKER,
@@ -161,6 +167,7 @@ export class SeedService {
       const password_hash = await this.authService.hashPassword(userData.password);
       const user = this.userRepository.create({
         username: userData.username,
+        email: userData.email,
         password_hash,
         full_name: userData.full_name,
         role: userData.role,
