@@ -352,9 +352,10 @@ jobs:
             mv .env.init.expanded .env.init
             chmod 600 .env.init
 
-            # Run backend briefly to create base schema (30 seconds should be enough)
+            # Run backend briefly to create base schema (40 seconds for startup + sync)
             echo "Starting backend to create schema..."
-            timeout 30 docker run --rm --env-file .env.init $ECR_REGISTRY/sekar-backend:latest npm run start || true
+            timeout 40 docker run --rm --env-file .env.init $ECR_REGISTRY/sekar-backend:latest node dist/main.js || true
+            sleep 2
             rm -f .env.init
             echo "✅ Base schema created"
 
