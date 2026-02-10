@@ -58,6 +58,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
         description TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
+        deleted_at TIMESTAMPTZ,
 
         CONSTRAINT uq_area_types_code UNIQUE (code)
       );
