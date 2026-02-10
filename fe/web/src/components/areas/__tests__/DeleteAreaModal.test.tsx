@@ -27,8 +27,12 @@ describe('DeleteAreaModal', () => {
       id: 'rayon-1',
       name: 'Rayon Utara',
       code: 'RU',
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
     },
-    location: {
+    center_latitude: -7.255,
+    center_longitude: 112.755,
+    boundary_polygon: {
       type: 'Polygon' as const,
       coordinates: [
         [
@@ -40,8 +44,9 @@ describe('DeleteAreaModal', () => {
         ],
       ],
     },
-    coverage_area_m2: 15000,
+    coverage_area: 15000,
     created_at: '2026-01-01',
+    updated_at: '2026-01-01',
   };
 
   const createWrapper = () => {

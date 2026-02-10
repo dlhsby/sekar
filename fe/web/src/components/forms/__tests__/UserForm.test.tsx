@@ -62,6 +62,7 @@ describe('UserForm', () => {
         role: 'worker',
         status: 'active',
         created_at: '2026-01-01',
+        updated_at: '2026-01-01',
       };
 
       render(<UserForm {...defaultProps} initialData={initialData} />);
@@ -79,6 +80,7 @@ describe('UserForm', () => {
         role: 'admin',
         status: 'active',
         created_at: '2026-01-01',
+        updated_at: '2026-01-01',
       };
 
       render(<UserForm {...defaultProps} initialData={initialData} />);
@@ -262,6 +264,7 @@ describe('UserForm', () => {
         role: 'worker',
         status: 'active',
         created_at: '2026-01-01',
+        updated_at: '2026-01-01',
       };
 
       render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />);

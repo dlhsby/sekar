@@ -92,12 +92,12 @@ describe('ProtectedRoute', () => {
     });
 
     render(
-      <ProtectedRoute requiredRoles={['admin', 'supervisor']}>
+      <ProtectedRoute requiredRoles={['admin', 'koordinator_lapangan']}>
         <div>Staff Content</div>
       </ProtectedRoute>
     );
 
-    expect(useRequireAuth).toHaveBeenCalledWith(['admin', 'supervisor']);
+    expect(useRequireAuth).toHaveBeenCalledWith(['admin', 'koordinator_lapangan']);
     expect(screen.getByText('Staff Content')).toBeInTheDocument();
   });
 });

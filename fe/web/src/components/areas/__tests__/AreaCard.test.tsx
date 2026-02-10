@@ -22,22 +22,25 @@ describe('AreaCard', () => {
     id: '1',
     name: 'Taman Bungkul',
     code: 'TBG',
+    rayon_id: 'rayon-1',
+    area_type_id: 'type-1',
     area_type: {
       id: 'type-1',
       name: 'Taman',
       category: 'ACTIVE',
       code: 'TM',
       created_at: '2026-01-01',
+      updated_at: '2026-01-01',
     },
     rayon: {
       id: 'rayon-1',
       name: 'Rayon Selatan',
       code: 'RS',
       description: '',
-      color: '',
       created_at: '2026-01-01',
+      updated_at: '2026-01-01',
     },
-    boundary_polygon: null,
+    boundary_polygon: undefined,
     center_latitude: -7.2885,
     center_longitude: 112.7395,
     coverage_area: 15000,
@@ -129,7 +132,7 @@ describe('AreaCard', () => {
   });
 
   it('should render without rayon', () => {
-    const areaWithoutRayon = { ...mockArea, rayon: null };
+    const areaWithoutRayon = { ...mockArea, rayon: undefined };
 
     render(<AreaCard area={areaWithoutRayon} />);
 
@@ -138,7 +141,7 @@ describe('AreaCard', () => {
   });
 
   it('should render without area type', () => {
-    const areaWithoutType = { ...mockArea, area_type: null };
+    const areaWithoutType = { ...mockArea, area_type: undefined };
 
     render(<AreaCard area={areaWithoutType} />);
 

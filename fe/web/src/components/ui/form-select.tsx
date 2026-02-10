@@ -19,7 +19,7 @@ export interface FormSelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   error?: string;
-  helperText?: string;
+  helperText?: React.ReactNode;
   disabled?: boolean;
   className?: string;
   required?: boolean;

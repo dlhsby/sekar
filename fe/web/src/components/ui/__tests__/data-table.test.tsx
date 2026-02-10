@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DataTable, DataTableColumn } from '../data-table';
 
-interface TestData {
+interface TestData extends Record<string, unknown> {
   id: string;
   name: string;
   age: number;

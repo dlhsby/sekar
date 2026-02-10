@@ -11,6 +11,7 @@ export interface DataTableColumn<T> {
   title?: string;
   header?: string; // Alias for title
   sortable?: boolean;
+  'aria-sort'?: 'none' | 'ascending' | 'descending' | 'other';
   render?: (value: unknown, row: T) => React.ReactNode;
   cell?: (row: T) => React.ReactNode; // Alias for render
   width?: string;
