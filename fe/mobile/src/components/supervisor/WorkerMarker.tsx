@@ -9,7 +9,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Marker, Callout } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors, typography, shadows } from '../../constants/theme';
+import {
+  nbColors,
+  nbTypography,
+  nbShadows,
+  nbBorders,
+  nbBorderRadius,
+} from '../../constants/nbTokens';
 import type { ActiveWorkerData } from '../../types/api.types';
 
 export type WorkerStatus = 'active' | 'warning' | 'outside';
@@ -28,13 +34,13 @@ interface WorkerMarkerProps {
 function getMarkerColor(status: WorkerStatus): string {
   switch (status) {
     case 'active':
-      return colors.success;
+      return nbColors.successDark;
     case 'warning':
-      return colors.warning;
+      return nbColors.warning;
     case 'outside':
-      return colors.error;
+      return nbColors.dangerDark;
     default:
-      return colors.gray500;
+      return nbColors.gray['500'];
   }
 }
 
@@ -102,7 +108,7 @@ export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMa
       <View style={styles.markerContainer}>
         {isCluster ? (
           // Cluster marker
-          <View style={[styles.clusterMarker, { backgroundColor: colors.primary }]}>
+          <View style={[styles.clusterMarker, { backgroundColor: nbColors.primary }]}>
             <Text style={styles.clusterText}>{clusterCount}</Text>
           </View>
         ) : (
@@ -116,7 +122,7 @@ export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMa
               <MaterialCommunityIcons
                 name={roleIcon}
                 size={20}
-                color={colors.white}
+                color={nbColors.surface}
               />
             </View>
             <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
@@ -131,7 +137,7 @@ export function WorkerMarker({ worker, status, onPress, clusterCount }: WorkerMa
               <MaterialCommunityIcons
                 name={roleIcon}
                 size={16}
-                color={isLinmas ? colors.secondaryDark : colors.primary}
+                color={isLinmas ? nbColors.navy : nbColors.primary}
               />
               <Text style={[styles.calloutRole, isLinmas && styles.linmasRole]}>
                 {roleLabel}
@@ -157,17 +163,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: colors.white,
-    ...shadows.md,
+    borderColor: nbColors.surface,
+    ...nbShadows.md,
   },
   linmasMarker: {
     // Slightly different shape for Linmas (square-ish rounded)
     borderRadius: 12,
   },
   markerText: {
-    color: colors.white,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
+    color: nbColors.surface,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.bold,
   },
   markerArrow: {
     width: 0,
@@ -188,20 +194,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: colors.white,
-    ...shadows.lg,
+    borderColor: nbColors.surface,
+    ...nbShadows.lg,
   },
   clusterText: {
-    color: colors.white,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
+    color: nbColors.surface,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.bold,
   },
   calloutContainer: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
+    backgroundColor: nbColors.surface,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
     padding: 12,
     minWidth: 150,
-    ...shadows.lg,
+    ...nbShadows.lg,
   },
   calloutHeader: {
     flexDirection: 'row',
@@ -209,24 +217,24 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   calloutRole: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.primary,
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.primary,
     marginLeft: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   linmasRole: {
-    color: colors.secondaryDark,
+    color: nbColors.navy,
   },
   calloutName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
     marginBottom: 4,
   },
   calloutArea: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray['600'],
   },
 });

@@ -163,12 +163,12 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       );
 
       const baseClasses = cn(
-        'flex items-center gap-3 px-4 py-3 font-medium transition-colors duration-100 w-full',
+        'flex items-center gap-3 px-4 py-3 font-medium transition-colors duration-100 w-full rounded-nb-base',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2',
         depth > 0 && 'pl-12', // Indent child items
         isActive || hasActiveChild
-          ? 'bg-nb-white text-nb-navy'
-          : 'text-nb-white/90 hover:bg-nb-navy-light active:bg-nb-navy-light/80'
+          ? 'bg-nb-white text-nb-sidebar'
+          : 'text-nb-white/90 hover:bg-nb-sidebar-hover active:bg-nb-sidebar-hover/80'
       );
 
       if (hasChildren) {
@@ -178,6 +178,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
               type="button"
               onClick={() => toggleExpanded(item.id)}
               className={cn(baseClasses, 'text-left')}
+              aria-expanded={isExpanded}
             >
               {content}
             </button>
@@ -192,7 +193,12 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 
       if (item.href && item.href !== '#') {
         return (
-          <Link key={item.id} href={item.href} className={baseClasses}>
+          <Link
+            key={item.id}
+            href={item.href}
+            className={baseClasses}
+            aria-current={isActive ? 'page' : undefined}
+          >
             {content}
           </Link>
         );
@@ -232,7 +238,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
         <aside
           ref={ref}
           className={cn(
-            'w-64 bg-nb-navy text-nb-white flex flex-col border-r-3 border-nb-black',
+            'w-64 bg-nb-sidebar text-nb-sidebar flex flex-col border-r-2 border-nb-black',
             'fixed lg:static inset-y-0 left-0 z-40',
             'transition-transform duration-300',
             // Desktop: translate based on isOpen state
@@ -244,7 +250,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           {...props}
         >
           {/* Logo/Header */}
-          <div className="p-6 border-b-2 border-nb-navy-light flex-shrink-0">
+          <div className="p-6 border-b-2 border-nb-sidebar-hover flex-shrink-0">
             {logo || (
               <>
                 <h1 className="text-2xl font-extrabold">{title}</h1>
@@ -266,7 +272,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 
           {/* User info */}
           {user && (
-            <div className="p-4 border-t-2 border-nb-navy-light flex-shrink-0">
+            <div className="p-4 border-t-2 border-nb-sidebar-hover flex-shrink-0">
               <div className="flex items-center gap-3">
                 {user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -276,7 +282,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
                     className="w-10 h-10 rounded-full border-2 border-sidebar-foreground"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-nb-white text-nb-navy font-bold flex items-center justify-center border-2 border-nb-white">
+                  <div className="w-10 h-10 rounded-full bg-nb-white text-nb-sidebar font-bold flex items-center justify-center border-2 border-nb-white">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -296,7 +302,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="lg:hidden absolute top-4 right-4 text-nb-white hover:bg-nb-navy-light border-transparent"
+              className="lg:hidden absolute top-4 right-4 text-nb-white hover:bg-nb-sidebar-hover border-transparent"
               aria-label="Close sidebar"
             >
               <X className="h-5 w-5" />

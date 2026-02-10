@@ -69,10 +69,10 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
   ];
 
   const colorClasses: Record<string, { bg: string; text: string }> = {
-    blue: { bg: 'bg-blue-50', text: 'text-nb-primary' },
-    green: { bg: 'bg-green-50', text: 'text-nb-success' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-700' },
-    orange: { bg: 'bg-orange-50', text: 'text-nb-warning' },
+    blue: { bg: 'bg-nb-primary-light', text: 'text-nb-primary' },
+    green: { bg: 'bg-nb-success-light', text: 'text-nb-success' },
+    purple: { bg: 'bg-nb-gray-100', text: 'text-nb-gray-700' },
+    orange: { bg: 'bg-nb-warning/20', text: 'text-nb-warning' },
   };
 
   return (
@@ -81,7 +81,7 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
         const colors = colorClasses[card.color];
         return (
           <Card key={index} variant="elevated">
-            <div className={`p-4 ${colors.bg} border-3 border-nb-black`}>
+            <div className={`p-4 ${colors.bg} border-2 border-nb-black rounded-nb-base`}>
               <div className="flex items-center justify-between mb-2">
                 <div className={colors.text}>{card.icon}</div>
               </div>

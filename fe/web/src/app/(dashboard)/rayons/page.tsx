@@ -26,10 +26,10 @@ export default function RayonsPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[400px]" aria-busy="true">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nb-primary mx-auto mb-4"></div>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -47,7 +47,7 @@ export default function RayonsPage() {
         <h1 className="text-3xl font-bold text-nb-black mb-2">
           Manajemen Rayon
         </h1>
-        <p className="text-gray-600">
+        <p className="text-nb-gray-600">
           Kelola dan monitor 7 rayon di Kota Surabaya
         </p>
       </div>
@@ -85,7 +85,7 @@ export default function RayonsPage() {
       {!isLoading && rayons.length === 0 && (
         <div className="text-center py-16">
           <svg
-            className="mx-auto h-16 w-16 text-gray-400 mb-4"
+            className="mx-auto h-16 w-16 text-nb-gray-400 mb-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -97,10 +97,10 @@ export default function RayonsPage() {
               d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
             />
           </svg>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-nb-black mb-2">
             Tidak Ada Rayon
           </h3>
-          <p className="text-gray-600">
+          <p className="text-nb-gray-600">
             Belum ada rayon yang terdaftar dalam sistem.
           </p>
         </div>

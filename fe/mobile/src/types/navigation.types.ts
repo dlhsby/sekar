@@ -28,6 +28,7 @@ export type WorkerTabParamList = {
   ShiftHistory: undefined;
   TaskDetail: { taskId: string };
   TaskComplete: { taskId: string };
+  Settings: undefined;
 };
 
 export type WorkerTabScreenProps<T extends keyof WorkerTabParamList> =
@@ -43,6 +44,7 @@ export type SupervisorTabParamList = {
   ReportDetail: { reportId: string; isWorkerView?: boolean };
   Attendance: undefined;
   Profile: undefined;
+  Settings: undefined;
 };
 
 export type SupervisorTabScreenProps<T extends keyof SupervisorTabParamList> =

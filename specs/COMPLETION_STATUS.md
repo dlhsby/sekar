@@ -767,6 +767,33 @@ Comprehensive architectural and specification improvements to ensure production 
 - ✅ All critical modules now meet or exceed 80% threshold
 - ✅ Test pass rate: 99.07% (2,120 passing / 2,141 total)
 - ✅ Permission flow complete with comprehensive PermissionManager
+
+**Phase 2B: UI/UX Revamp (February 5-10, 2026) - ✅ COMPLETE**
+**Dates:** Feb 5-10, 2026 | **Tasks:** 126/126 (100%)
+
+**Achievements:**
+- ✅ Neo Brutalism 2.0 migration (mobile + web)
+- ✅ 53 web files updated (16 components, 22 pages, layouts)
+- ✅ 75+ mobile files updated (16 components, 18 screens)
+- ✅ 4 new common mobile components (CollapsibleCard, StatusIndicator, CountdownTimer, ShiftCard)
+- ✅ 3 new modal components (ShiftDetailModal, TaskDetailModal, LocationModal)
+- ✅ 6 supervisor components migrated to NB 2.0 (AttendanceCard, ReportCard, WorkerInfoCard, etc.)
+- ✅ Design token consolidation and documentation
+- ✅ WCAG 2.1 AA maintained on mobile
+- ✅ Mobile-web design parity achieved
+
+**Design System Changes:**
+- Borders: 3px → 2px (`nbBorders.base`)
+- Radius: 0-2px → 4-8px (`nbBorderRadius.sm/base/md`)
+- Shadows: Hard → Soft-edge with opacity (0.18-0.22) and blur (2-4px)
+- Colors: Primary #0066CC → #7FBC8C, Navy #001F3F → Forest #1A4D2E
+- Typography: Added Space Grotesk headings
+- Background: Cream #FFFBF0 → Warm grey #F5F0EB (eye fatigue reduction)
+
+**Verification:**
+- ✅ All 2,646 tests passing (mobile + web)
+- ✅ 100% design token compliance
+- ✅ Documentation consolidated in specs/phases/phase-2-b-ui-ux-revamp/
 - ✅ FCM notifications system verified (backend + mobile integration)
 
 ---

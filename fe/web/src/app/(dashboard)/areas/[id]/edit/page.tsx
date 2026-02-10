@@ -55,8 +55,8 @@ export default function EditAreaPage({
   if (loadingArea) {
     return (
       <div className="space-y-6">
-        <div className="h-12 w-64 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
-        <div className="h-96 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
+        <div className="h-12 w-64 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
+        <div className="h-96 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
       </div>
     );
   }
@@ -99,17 +99,19 @@ export default function EditAreaPage({
 
       {/* Error Display */}
       {error && (
-        <Card className="border-nb-danger">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">❌</span>
-              <div>
-                <h4 className="font-bold mb-1">Error</h4>
-                <p className="text-sm">{error}</p>
-              </div>
+        <div
+          className="p-4 bg-nb-danger-light border-2 border-nb-danger rounded-nb-md"
+          role="alert"
+          aria-live="polite"
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">❌</span>
+            <div>
+              <h4 className="font-bold mb-1">Error</h4>
+              <p className="text-sm">{error}</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Form */}

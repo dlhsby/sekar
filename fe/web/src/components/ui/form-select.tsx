@@ -70,7 +70,7 @@ const FormSelect: React.FC<FormSelectProps> = ({
       </Select>
 
       {error && (
-        <p className="text-sm text-nb-danger font-medium" role="alert">
+        <p className="text-sm text-nb-danger font-medium" role="alert" aria-live="polite">
           {error}
         </p>
       )}

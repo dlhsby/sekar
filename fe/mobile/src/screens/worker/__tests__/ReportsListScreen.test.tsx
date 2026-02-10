@@ -48,8 +48,13 @@ describe('ReportsListScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
     mockedSyncManager.forceSyncNow = jest.fn();
     (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null); // Reset cache mock
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
   });
 
   describe('Loading State', () => {

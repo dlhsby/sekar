@@ -7,7 +7,14 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors, typography, spacing, borderRadius } from '../../constants/theme';
+import {
+  nbColors,
+  nbTypography,
+  nbSpacing,
+  nbBorderRadius,
+  nbBorders,
+  nbShadows,
+} from '../../constants/nbTokens';
 
 interface Props {
   children: ReactNode;
@@ -69,7 +76,7 @@ export class MapErrorBoundary extends Component<Props, State> {
               <MaterialCommunityIcons
                 name="map-marker-alert-outline"
                 size={48}
-                color={colors.error}
+                color={nbColors.dangerDark}
               />
             </View>
 
@@ -97,7 +104,7 @@ export class MapErrorBoundary extends Component<Props, State> {
               <MaterialCommunityIcons
                 name="refresh"
                 size={20}
-                color={colors.white}
+                color={nbColors.surface}
                 style={styles.retryIcon}
               />
               <Text style={styles.retryButtonText}>Coba Lagi</Text>
@@ -116,68 +123,78 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: spacing.lg,
+    backgroundColor: nbColors.background,
+    padding: nbSpacing.lg,
   },
   errorCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
+    backgroundColor: nbColors.surface,
+    borderRadius: nbBorderRadius.lg,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    padding: nbSpacing.xl,
     alignItems: 'center',
     maxWidth: 400,
     width: '100%',
+    ...nbShadows.lg,
   },
   iconContainer: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: colors.errorLight || '#fee',
+    backgroundColor: nbColors.dangerLight,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.dangerDark,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: nbSpacing.lg,
   },
   title: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: nbTypography.fontSize.xl,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: nbSpacing.sm,
   },
   description: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
+    fontSize: nbTypography.fontSize.md,
+    color: nbColors.gray['600'],
     textAlign: 'center',
-    lineHeight: typography.fontSize.md * 1.5,
-    marginBottom: spacing.lg,
+    lineHeight: nbTypography.fontSize.md * 1.5,
+    marginBottom: nbSpacing.lg,
   },
   errorDetails: {
-    backgroundColor: colors.gray100,
-    borderRadius: borderRadius.sm,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    backgroundColor: nbColors.gray['100'],
+    borderRadius: nbBorderRadius.sm,
+    borderWidth: 1,
+    borderColor: nbColors.gray['300'],
+    padding: nbSpacing.md,
+    marginBottom: nbSpacing.lg,
     width: '100%',
   },
   errorText: {
-    fontSize: typography.fontSize.sm,
+    fontSize: nbTypography.fontSize.sm,
     fontFamily: 'monospace',
-    color: colors.error,
+    color: nbColors.dangerDark,
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
+    backgroundColor: nbColors.primary,
+    paddingVertical: nbSpacing.md,
+    paddingHorizontal: nbSpacing.lg,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
     minHeight: 48,
+    ...nbShadows.sm,
   },
   retryIcon: {
-    marginRight: spacing.sm,
+    marginRight: nbSpacing.sm,
   },
   retryButtonText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.white,
+    fontSize: nbTypography.fontSize.md,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.surface,
   },
 });
 

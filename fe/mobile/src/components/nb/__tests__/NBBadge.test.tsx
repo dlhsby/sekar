@@ -132,6 +132,55 @@ describe('NBBadge', () => {
     });
   });
 
+  describe('accessibility (NB 2.0)', () => {
+    it('has accessibilityRole text', () => {
+      const { getByTestId } = render(
+        <NBBadge text="status" testID="badge" />,
+      );
+      const badge = getByTestId('badge');
+      expect(badge.props.accessibilityRole).toBe('text');
+    });
+
+    it('has accessibilityLabel containing color and text', () => {
+      const { getByTestId } = render(
+        <NBBadge text="urgent" color="danger" testID="badge" />,
+      );
+      const badge = getByTestId('badge');
+      // Use pattern matching for flexibility with label format changes
+      expect(badge.props.accessibilityLabel).toContain('danger');
+      expect(badge.props.accessibilityLabel).toContain('urgent');
+    });
+
+    it('has correct accessibilityLabel for different colors', () => {
+      const { getByTestId: getSuccess } = render(
+        <NBBadge text="done" color="success" testID="success-badge" />,
+      );
+      const successLabel = getSuccess('success-badge').props.accessibilityLabel;
+      expect(successLabel).toContain('success');
+      expect(successLabel).toContain('done');
+
+      const { getByTestId: getWarning } = render(
+        <NBBadge text="pending" color="warning" testID="warning-badge" />,
+      );
+      const warningLabel = getWarning('warning-badge').props.accessibilityLabel;
+      expect(warningLabel).toContain('warning');
+      expect(warningLabel).toContain('pending');
+    });
+
+    it('allows custom accessibilityLabel override', () => {
+      const { getByTestId } = render(
+        <NBBadge
+          text="urgent"
+          color="danger"
+          accessibilityLabel="Custom label for badge"
+          testID="badge"
+        />,
+      );
+      const badge = getByTestId('badge');
+      expect(badge.props.accessibilityLabel).toBe('Custom label for badge');
+    });
+  });
+
   describe('use cases', () => {
     it('renders status badge', () => {
       const { getByText } = render(

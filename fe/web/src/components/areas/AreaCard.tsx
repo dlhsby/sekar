@@ -37,7 +37,7 @@ export function AreaCard({
   return (
     <Card variant="elevated" className="overflow-hidden">
       {/* Map Preview */}
-      <div className="relative w-full h-48 bg-nb-gray-100 border-b-3 border-nb-black">
+      <div className="relative w-full h-48 bg-nb-gray-100 border-b-2 border-nb-black">
         <img
           src={mapUrl}
           alt={`Peta ${area.name}`}

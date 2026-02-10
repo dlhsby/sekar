@@ -29,9 +29,6 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   return (props: any) => <Text>{props.name}</Text>;
 });
 
-// Mock Linking
-jest.spyOn(Linking, 'openURL').mockImplementation(() => Promise.resolve(true));
-
 // Mock navigation
 const mockNavigation = {
   goBack: jest.fn(),
@@ -76,9 +73,16 @@ describe('ReportDetailScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
+    // Re-apply Linking spy after clearAllMocks
+    jest.spyOn(Linking, 'openURL').mockImplementation(() => Promise.resolve(true));
     (supervisorApi.getReportDetails as jest.Mock).mockResolvedValue({
       data: mockReport,
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
   });
 
   describe('rendering', () => {

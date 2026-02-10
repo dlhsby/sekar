@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     backgroundColor: nbColors.primary,
-    borderWidth: nbBorders.default, // 3px
+    borderWidth: nbBorders.base, // 3px
     borderColor: nbColors.black,
     borderRadius: 0, // Sharp corners
     justifyContent: 'center',

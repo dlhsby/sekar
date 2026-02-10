@@ -1,6 +1,66 @@
-import { withAlpha } from '../nbTokens';
+import {
+  withAlpha,
+  nbColors,
+  nbBorders,
+  nbBorderRadius,
+  nbShadows,
+} from '../nbTokens';
 
 describe('nbTokens', () => {
+  describe('NB 2.0 token values', () => {
+    it('should have updated black color (warm stone)', () => {
+      expect(nbColors.black).toBe('#1C1917');
+    });
+
+    it('should have updated navy color (dark forest green)', () => {
+      expect(nbColors.navy).toBe('#1A4D2E');
+    });
+
+    it('should have renamed border values with base instead of default', () => {
+      expect(nbBorders.thin).toBe(1);
+      expect(nbBorders.base).toBe(2);
+      expect(nbBorders.thick).toBe(3);
+      expect(nbBorders.extra).toBe(4);
+      expect(nbBorders.color).toBe('#1C1917');
+    });
+
+    it('should have renamed border radius values with base instead of minimal', () => {
+      expect(nbBorderRadius.none).toBe(0);
+      expect(nbBorderRadius.sm).toBe(4);
+      expect(nbBorderRadius.base).toBe(6);
+      expect(nbBorderRadius.md).toBe(8);
+      expect(nbBorderRadius.lg).toBe(12);
+      expect(nbBorderRadius.full).toBe(9999);
+    });
+
+    it('should have soft-edge shadows (NB 2.0)', () => {
+      // xs shadow
+      expect(nbShadows.xs.shadowOpacity).toBe(0.15);
+      expect(nbShadows.xs.shadowRadius).toBe(1);
+      expect(nbShadows.xs.shadowOffset.width).toBe(2);
+
+      // sm shadow
+      expect(nbShadows.sm.shadowOpacity).toBe(0.18);
+      expect(nbShadows.sm.shadowRadius).toBe(2);
+      expect(nbShadows.sm.shadowOffset.width).toBe(3);
+
+      // md shadow
+      expect(nbShadows.md.shadowOpacity).toBe(0.20);
+      expect(nbShadows.md.shadowRadius).toBe(3);
+
+      // lg shadow
+      expect(nbShadows.lg.shadowOpacity).toBe(0.22);
+      expect(nbShadows.lg.shadowRadius).toBe(4);
+    });
+
+    it('should use warm stone black for shadow color', () => {
+      expect(nbShadows.sm.shadowColor).toBe('#1C1917');
+      expect(nbShadows.md.shadowColor).toBe('#1C1917');
+      expect(nbShadows.lg.shadowColor).toBe('#1C1917');
+    });
+  });
+
+
   describe('withAlpha', () => {
     it('should convert 6-digit hex to rgba', () => {
       expect(withAlpha('#7FBC8C', 0.5)).toBe('rgba(127, 188, 140, 0.5)');

@@ -25,7 +25,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Geolocation from 'react-native-geolocation-service';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { mediaService, type Photo } from '../../services/media';
 import { requestCameraPermission } from '../../services/permissions';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -389,7 +389,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
             value={notes}
             onChangeText={setNotes}
             placeholder="Tambahkan catatan penyelesaian..."
-            placeholderTextColor={nbColors.gray[400]}
+            placeholderTextColor={nbColors.gray['400']}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: fontSizes.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   errorContainer: {
     flex: 1,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginBottom: nbSpacing.md,
   },
   taskTitle: {
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   },
   taskArea: {
     fontSize: fontSizes.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   photoList: {
     marginTop: nbSpacing.sm,
@@ -492,8 +492,8 @@ const styles = StyleSheet.create({
   photoThumbnail: {
     width: 160,
     height: 160,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
   removePhotoButton: {
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center',
     justifyContent: 'center',
@@ -518,20 +518,20 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     width: 160,
     height: 160,
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
   },
   addPhotoIcon: {
     fontSize: 32,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   addPhotoText: {
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontSize: nbTypography.fontSize.xs,
     marginTop: nbSpacing.xs,
   },
@@ -540,23 +540,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: nbSpacing.lg,
-    backgroundColor: nbColors.gray[50],
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    backgroundColor: nbColors.gray['50'],
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
   locationLoadingText: {
     marginLeft: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontWeight: nbTypography.fontWeight.medium,
   },
   locationInfo: {
     padding: nbSpacing.lg,
     backgroundColor: withAlpha(nbColors.accentSky, 0.15), // Cyan tint 15% opacity
-    borderRadius: 0,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -568,14 +568,14 @@ const styles = StyleSheet.create({
   },
   locationAccuracy: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
     marginTop: nbSpacing.sm,
   },
   notesInput: {
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     padding: nbSpacing.md,
     fontSize: fontSizes.base,
     color: nbColors.black,

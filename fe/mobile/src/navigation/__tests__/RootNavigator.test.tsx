@@ -121,6 +121,32 @@ describe('RootNavigator', () => {
 
       expect(screen.getByTestId('worker-navigator')).toBeTruthy();
     });
+
+    it('should render WorkerNavigator for linmas role', () => {
+      const store = createTestStore({
+        auth: {
+          user: {
+            id: 4,
+            username: 'linmas1',
+            full_name: 'Test Linmas',
+            role: 'linmas',
+          },
+          assignedArea: null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      render(
+        <Provider store={store}>
+          <RootNavigator />
+        </Provider>
+      );
+
+      // Linmas should use WorkerNavigator (same features as worker)
+      expect(screen.getByTestId('worker-navigator')).toBeTruthy();
+    });
   });
 
   describe('supervisor authentication', () => {
@@ -172,6 +198,84 @@ describe('RootNavigator', () => {
       );
 
       // Admin should also go to supervisor navigator (not worker)
+      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
+    });
+
+    it('should render SupervisorNavigator for kepala_rayon role', () => {
+      const store = createTestStore({
+        auth: {
+          user: {
+            id: 5,
+            username: 'kepala_rayon1',
+            full_name: 'Test Kepala Rayon',
+            role: 'kepala_rayon',
+          },
+          assignedArea: null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      render(
+        <Provider store={store}>
+          <RootNavigator />
+        </Provider>
+      );
+
+      // Kepala Rayon (Rayon manager) should use supervisor navigator
+      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
+    });
+
+    it('should render SupervisorNavigator for koordinator_lapangan role', () => {
+      const store = createTestStore({
+        auth: {
+          user: {
+            id: 6,
+            username: 'koordinator1',
+            full_name: 'Test Koordinator Lapangan',
+            role: 'koordinator_lapangan',
+          },
+          assignedArea: null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      render(
+        <Provider store={store}>
+          <RootNavigator />
+        </Provider>
+      );
+
+      // Koordinator Lapangan (Field coordinator) should use supervisor navigator
+      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
+    });
+
+    it('should render SupervisorNavigator for top_management role', () => {
+      const store = createTestStore({
+        auth: {
+          user: {
+            id: 7,
+            username: 'topmanager1',
+            full_name: 'Test Top Management',
+            role: 'top_management',
+          },
+          assignedArea: null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      render(
+        <Provider store={store}>
+          <RootNavigator />
+        </Provider>
+      );
+
+      // Top Management (City-wide view) should use supervisor navigator
       expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
     });
   });

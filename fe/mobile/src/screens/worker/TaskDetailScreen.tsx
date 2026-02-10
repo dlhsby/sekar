@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: fontSizes.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   card: {
     marginHorizontal: nbSpacing.md,
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: fontSizes.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     lineHeight: fontSizes.base * nbTypography.lineHeight.normal,
   },
   sectionTitle: {
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   detailLabel: {
     width: 120,
     fontSize: fontSizes.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontWeight: nbTypography.fontWeight.medium,
   },
   detailValueContainer: {
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   },
   relativeTime: {
     fontSize: fontSizes.xs,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginTop: 2,
   },
   deadlinePast: {

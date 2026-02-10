@@ -1,17 +1,20 @@
 # Web Component Library
 
-Component library specifications for SEKAR web dashboard using **Neo Brutalism** design system.
+Component library specifications for SEKAR web dashboard using **Neo Brutalism 2.0** design system.
 
 ## Overview
 
 The web dashboard uses **React 19 with TypeScript** and **Tailwind CSS v4** for styling. Components are built using **shadcn/ui** primitives with custom Neo Brutalism styling to match SEKAR's design system.
 
-**Key Design Principles:**
-- **Bold borders**: 3px solid black
-- **Hard-edge shadows**: No blur, pure offset (4px/6px/8px)
-- **Sharp corners**: 0 border-radius
+**Key Design Principles (NB 2.0):**
+- **Bold borders**: 2px solid #1C1917 (soft black)
+- **Soft-edge shadows**: Slight opacity (0.18-0.22), small blur (2-4px)
+- **Friendly corners**: 6px border-radius (base)
 - **48px touch targets**: Accessible interactive elements
-- **High contrast**: Black text, strong colors
+- **High contrast**: #1C1917 text, nature-aligned colors
+- **Parks green primary**: #7FBC8C (nature theme)
+
+> **Reference:** See `specs/ui-ux/neo-brutalism.md` for the complete NB 2.0 design system specification.
 
 ---
 
@@ -40,44 +43,94 @@ npm install @tanstack/react-query axios
 
 ## Design Tokens
 
-### Colors
+> **Source of Truth:** `specs/ui-ux/neo-brutalism.md` - Neo Brutalism 2.0
+
+### Colors (NB 2.0)
 
 ```css
-/* Primary */
---color-nb-primary: #0066CC;
---color-nb-primary-hover: #0052A3;
---color-nb-primary-active: #003D7A;
+/* Primary - Parks Green (Sepidy Row 4) */
+--color-nb-primary: #7FBC8C;
+--color-nb-primary-hover: #6BA87A;
+--color-nb-primary-active: #5A9468;
 
-/* Status */
---color-nb-success: #1B5E20;
---color-nb-warning: #F57C00;
---color-nb-danger: #DC2626;
+/* Secondary - Earth Brown */
+--color-nb-secondary: #8B7355;
+--color-nb-secondary-hover: #725E45;
 
-/* Neutral */
---color-nb-black: #000000;
+/* Status (Sepidy Palette) */
+--color-nb-success: #7FBC8C;
+--color-nb-success-light: #BAFCA2;
+--color-nb-warning: #E3A018;
+--color-nb-warning-light: #FFDB58;
+--color-nb-danger: #FF6B6B;
+--color-nb-danger-light: #FFA07A;
+--color-nb-info: #69D2E7;
+--color-nb-info-light: #A7DBD8;
+
+/* Backgrounds (Sepidy Row 1 Pastels) */
+--color-nb-bg-primary: #FDFD96;
+--color-nb-bg-secondary: #B5D2AD;
+--color-nb-bg-mint: #DAF5F0;
+--color-nb-bg-surface: #FFFFFF;
+
+/* Neutrals - Warm Stone Tones */
+--color-nb-black: #1C1917;
 --color-nb-white: #FFFFFF;
---color-nb-navy: #001F3F;
 
-/* Gray Scale */
---color-nb-gray-50: #FAFAFA;
---color-nb-gray-100: #F5F5F5;
---color-nb-gray-200: #EEEEEE;
---color-nb-gray-300: #E0E0E0;
---color-nb-gray-400: #BDBDBD;
---color-nb-gray-500: #9E9E9E;
---color-nb-gray-600: #666666;
---color-nb-gray-700: #424242;
---color-nb-gray-800: #303030;
---color-nb-gray-900: #212121;
+/* Sidebar - Dark Forest Green */
+--color-nb-sidebar-bg: #1A4D2E;
+--color-nb-sidebar-text: #FFFFFF;
+--color-nb-sidebar-hover: #2D5233;
+--color-nb-sidebar-active: #0F3520;
+
+/* Gray Scale - Stone */
+--color-nb-gray-50: #FAFAF9;
+--color-nb-gray-100: #F5F5F4;
+--color-nb-gray-200: #E7E5E4;
+--color-nb-gray-300: #D6D3D1;
+--color-nb-gray-400: #A8A29E;
+--color-nb-gray-500: #78716C;
+--color-nb-gray-600: #57534E;
+--color-nb-gray-700: #44403C;
+--color-nb-gray-800: #292524;
+--color-nb-gray-900: #1C1917;
 ```
 
-### Shadows
+### Shadows (NB 2.0 - Soft-Edge)
 
 ```css
---shadow-nb-sm: 4px 4px 0px #000000;     /* Cards */
---shadow-nb-md: 6px 6px 0px #000000;     /* Buttons, inputs */
---shadow-nb-lg: 8px 8px 0px #000000;     /* Modals, dropdowns */
---shadow-nb-active: 2px 2px 0px #000000; /* Pressed state */
+/* Base shadows - Soft black with slight blur */
+--shadow-nb-xs: 2px 2px 0px rgba(28, 25, 23, 0.15);   /* Badges, small elements */
+--shadow-nb-sm: 4px 4px 0px rgba(28, 25, 23, 0.18);   /* Cards, inputs */
+--shadow-nb-md: 6px 6px 0px rgba(28, 25, 23, 0.20);   /* Buttons (default) */
+--shadow-nb-lg: 8px 8px 0px rgba(28, 25, 23, 0.22);   /* Modals, dropdowns */
+
+/* Interaction shadows */
+--shadow-nb-hover: 8px 8px 0px rgba(28, 25, 23, 0.22);  /* Grow on hover */
+--shadow-nb-active: 2px 2px 0px rgba(28, 25, 23, 0.15); /* Shrink on press */
+```
+
+### Borders (NB 2.0)
+
+```css
+/* Border widths */
+--border-nb-thin: 1px;   /* Dividers, subtle separators */
+--border-nb-base: 2px;   /* DEFAULT - buttons, cards, inputs */
+--border-nb-thick: 3px;  /* Emphasis, selected states */
+
+/* Border color */
+--border-nb-color: #1C1917;  /* Soft black (stone-900) */
+```
+
+### Border Radius (NB 2.0)
+
+```css
+--radius-nb-none: 0px;    /* Decorative elements */
+--radius-nb-sm: 4px;      /* Badges, tags */
+--radius-nb-base: 6px;    /* DEFAULT - buttons, cards, inputs */
+--radius-nb-md: 8px;      /* Modals, large cards */
+--radius-nb-lg: 12px;     /* Callouts, featured */
+--radius-nb-full: 9999px; /* Avatars, pills */
 ```
 
 ---
@@ -117,21 +170,24 @@ import { Button } from '@/components/ui';
 <Button rightIcon={<ArrowRight className="w-5 h-5" />}>Next</Button>
 ```
 
-**Implementation:**
+**Implementation (NB 2.0):**
 ```tsx
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold
-   border-3 border-nb-black transition-all duration-100
+   border-2 border-nb-black rounded-nb-base transition-all duration-150
+   shadow-nb-md hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5
+   active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5
    disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none
-   focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50`,
+   focus-visible:outline focus-visible:outline-3 focus-visible:outline-nb-primary/40`,
   {
     variants: {
       variant: {
-        default: 'bg-nb-primary text-nb-white hover:bg-nb-primary-hover',
-        secondary: 'bg-nb-white text-nb-black hover:bg-nb-gray-50',
-        destructive: 'bg-nb-danger text-nb-white hover:opacity-90',
-        success: 'bg-nb-success text-nb-white hover:opacity-90',
-        // ...
+        default: 'bg-nb-primary text-white hover:bg-nb-primary-hover',
+        secondary: 'bg-nb-secondary text-white hover:bg-nb-secondary-hover',
+        outline: 'bg-transparent text-nb-black hover:bg-gray-50 shadow-nb-sm',
+        ghost: 'bg-transparent text-nb-black border-transparent shadow-none',
+        destructive: 'bg-nb-danger text-white hover:opacity-90',
+        success: 'bg-nb-success text-white hover:opacity-90',
       },
       size: {
         sm: 'h-10 px-4 text-sm min-w-[48px]',
@@ -146,16 +202,16 @@ const buttonVariants = cva(
 
 ### Card
 
-Container for grouped content with NB styling.
+Container for grouped content with NB 2.0 styling.
 
 ```tsx
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
 
-// Variants
-<Card variant="default">...</Card>    {/* 3px border, small shadow */}
-<Card variant="elevated">...</Card>   {/* 3px border, medium shadow */}
-<Card variant="outlined">...</Card>   {/* 3px border, no shadow */}
-<Card variant="filled">...</Card>     {/* No border, gray background */}
+// Variants (NB 2.0: border-2, rounded-nb-base)
+<Card variant="default">...</Card>    {/* 2px border, shadow-sm, rounded-6px */}
+<Card variant="elevated">...</Card>   {/* 2px border, shadow-md, rounded-6px */}
+<Card variant="outlined">...</Card>   {/* 2px border, no shadow, rounded-6px */}
+<Card variant="filled">...</Card>     {/* bg-nb-bg-mint, no border, rounded-6px */}
 
 // Interactive (hover/press animations)
 <Card interactive>Clickable Card</Card>
@@ -528,6 +584,24 @@ All components follow WCAG 2.1 AA standards:
 ---
 
 **Document Owner:** Web Developer
-**Last Updated:** 2026-02-03
-**Status:** Implemented - Phase 2
+**Last Updated:** 2026-02-05
+**Status:** Phase 2 Complete | Phase 2B (UI/UX Revamp) Pending
+**Design System:** Neo Brutalism 2.0 (see `specs/ui-ux/neo-brutalism.md`)
 **Dependencies:** `react`, `tailwindcss`, `@radix-ui/*`, `class-variance-authority`, `lucide-react`
+
+---
+
+## NB 2.0 Migration Summary
+
+**Key Changes from NB 1.0:**
+
+| Property | NB 1.0 | NB 2.0 |
+|----------|--------|--------|
+| Primary Color | `#0066CC` | `#7FBC8C` |
+| Black | `#000000` | `#1C1917` |
+| Sidebar | `#001F3F` (navy) | `#1A4D2E` (forest green) |
+| Border Width | 3px | 2px |
+| Border Radius | 0px | 6px |
+| Shadow | Hard-edge (opacity 1) | Soft-edge (opacity 0.18-0.22) |
+
+**See:** `specs/phases/phase-2-b-ui-ux-revamp/components.md` for complete migration checklist.

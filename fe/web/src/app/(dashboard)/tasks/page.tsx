@@ -49,7 +49,7 @@ export default function TasksPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -177,7 +177,7 @@ export default function TasksPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-nb-black">Tugas</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-nb-gray-600 mt-1">
             Kelola penugasan pekerja
           </p>
         </div>
@@ -196,6 +196,7 @@ export default function TasksPage() {
               value={statusFilter}
               onChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
               options={statusOptions}
+              aria-label="Filter berdasarkan status"
             />
 
             {/* Priority Filter */}
@@ -224,7 +225,7 @@ export default function TasksPage() {
       </Card>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4" aria-label="Jumlah tugas per status">
         <Card variant="elevated">
           <CardContent>
             <div className="text-sm font-semibold text-nb-gray-600 mb-2">Total Tugas</div>

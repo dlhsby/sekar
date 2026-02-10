@@ -3,8 +3,12 @@
  * Tests for supervisor map dashboard screen
  */
 
+// Must be before imports - Jest hoists these
+jest.mock('../../../services/api/supervisorApi');
+jest.mock('../../../services/api/apiClient');
+
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
 import { InteractionManager } from 'react-native';
 import { MapDashboardScreen } from '../MapDashboardScreen';
 import * as supervisorApi from '../../../services/api/supervisorApi';
@@ -13,10 +17,6 @@ import type { ActiveWorkerData } from '../../../types/api.types';
 import type { Area } from '../../../types/models.types';
 
 // Alert mocked globally in jest.setup.js
-
-// Mock dependencies
-jest.mock('../../../services/api/supervisorApi');
-jest.mock('../../../services/api/apiClient');
 jest.mock('react-native-maps', () => {
   const { View } = require('react-native');
   return {
@@ -103,24 +103,23 @@ const mockArea2: Area = {
 describe('MapDashboardScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
+    // Use real timers for integration-style tests that don't test timing behavior
+    // Fake timers cause waitFor() to hang as they block the microtask queue
+    jest.useRealTimers();
 
-    // Mock InteractionManager to execute callbacks immediately
-    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation(
-      (callback: (() => void) | { gen: () => Generator }) => {
-        if (typeof callback === 'function') {
-          callback();
-        } else if (callback?.gen) {
-          // Handle generator function case
-          const gen = callback.gen();
-          let result = gen.next();
-          while (!result.done) {
-            result = gen.next();
-          }
+    // Re-apply InteractionManager spy AFTER clearAllMocks
+    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation((callback: any) => {
+      if (typeof callback === 'function') {
+        callback();
+      } else if (callback?.gen) {
+        const gen = callback.gen();
+        let result = gen.next();
+        while (!result.done) {
+          result = gen.next();
         }
-        return { cancel: jest.fn(), done: Promise.resolve() };
       }
-    );
+      return { cancel: jest.fn(), done: Promise.resolve() };
+    });
 
     // Default successful API responses
     (supervisorApi.getActiveWorkers as jest.Mock).mockResolvedValue({
@@ -136,10 +135,7 @@ describe('MapDashboardScreen', () => {
   });
 
   afterEach(() => {
-    // Clear all pending timers before switching to real timers
-    jest.clearAllTimers();
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    // Cleanup
   });
 
   describe('Initial Loading', () => {
@@ -160,15 +156,35 @@ describe('MapDashboardScreen', () => {
     });
 
     it('should display workers after loading', async () => {
+      // Use fake timers for this test to control InteractionManager timing
+      jest.useFakeTimers();
+
       const { getByText, queryByText } = render(<MapDashboardScreen />);
 
-      await waitFor(() => {
-        expect(queryByText('Memuat peta...')).toBeNull();
+      // Run InteractionManager callback and flush promises using async version
+      await act(async () => {
+        // Advance by a small amount to trigger InteractionManager
+        await jest.advanceTimersByTimeAsync(100);
       });
 
-      expect(getByText('Worker One')).toBeTruthy();
-      expect(getByText('Worker Two')).toBeTruthy();
-    });
+      // Wait for loading to complete and workers to appear
+      await waitFor(
+        () => {
+          expect(queryByText('Memuat peta...')).toBeNull();
+        },
+        { timeout: 5000 }
+      );
+
+      await waitFor(
+        () => {
+          expect(getByText('Worker One')).toBeTruthy();
+          expect(getByText('Worker Two')).toBeTruthy();
+        },
+        { timeout: 5000 }
+      );
+
+      jest.useRealTimers();
+    }, 15000);
   });
 
   describe('Status Summary', () => {
@@ -295,7 +311,7 @@ describe('MapDashboardScreen', () => {
 
       await waitFor(() => {
         expect(getByText('Gagal memuat data pekerja')).toBeTruthy();
-      });
+      }, { timeout: 5000 });
     });
 
     it('should show retry button on error', async () => {
@@ -337,6 +353,16 @@ describe('MapDashboardScreen', () => {
   });
 
   describe('Auto-refresh', () => {
+    beforeEach(() => {
+      // These tests specifically test timing behavior, so use fake timers
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
+
     it('should set up auto-refresh timer on mount', async () => {
       render(<MapDashboardScreen />);
 
@@ -344,8 +370,8 @@ describe('MapDashboardScreen', () => {
         expect(supervisorApi.getActiveWorkers).toHaveBeenCalledTimes(1);
       });
 
-      // Fast-forward 2 minutes
-      jest.advanceTimersByTime(120000);
+      // Fast-forward 2 minutes using async version
+      await jest.advanceTimersByTimeAsync(120000);
 
       // Should have called API again
       await waitFor(() => {
@@ -362,8 +388,8 @@ describe('MapDashboardScreen', () => {
 
       unmount();
 
-      // Fast-forward time after unmount
-      jest.advanceTimersByTime(120000);
+      // Fast-forward time after unmount using async version
+      await jest.advanceTimersByTimeAsync(120000);
 
       // Should not have called API again after unmount
       expect(supervisorApi.getActiveWorkers).toHaveBeenCalledTimes(1);
@@ -402,7 +428,7 @@ describe('MapDashboardScreen', () => {
         // Should still show both workers in list (worker appears twice in list)
         const workerElements = getAllByText('Worker One');
         expect(workerElements.length).toBeGreaterThan(0);
-      });
+      }, { timeout: 5000 });
     });
   });
 

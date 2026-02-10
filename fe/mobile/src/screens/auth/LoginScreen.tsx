@@ -151,9 +151,9 @@ function LoginScreen(): React.JSX.Element {
   return (
     <NBBackgroundPattern
       pattern="grid"
-      backgroundColor={nbColors.background}  // #FDFD96 pastel yellow
+      backgroundColor={nbColors.background}  // #F0F9F6 very soft mint
       patternColor={nbColors.primary}        // #7FBC8C medium green
-      opacity={0.06}                          // Slightly less visible on yellow
+      opacity={0.06}                          // Subtle pattern overlay
     >
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
@@ -274,9 +274,9 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 96,
     height: 96,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB style
+    borderRadius: nbBorderRadius.base, // 6px - NB 2.0 softened style
     backgroundColor: nbColors.primary, // Medium green #7FBC8C
-    borderWidth: nbBorders.default, // 3px
+    borderWidth: nbBorders.base, // 3px
     borderColor: nbColors.black,
     justifyContent: 'center',
     alignItems: 'center',
@@ -294,13 +294,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
   },
   organization: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     textAlign: 'center',
     marginTop: nbSpacing.xs,
   },
@@ -312,8 +312,8 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
     padding: nbSpacing.md,
     backgroundColor: nbColors.white,
-    borderRadius: 0, // Sharp corners
-    borderWidth: nbBorders.default, // 3px
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base, // 3px
     borderColor: nbColors.danger,
     flexDirection: 'row',
     alignItems: 'center',
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
 });
 

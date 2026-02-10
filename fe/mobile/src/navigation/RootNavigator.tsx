@@ -27,7 +27,7 @@ function RootNavigator(): React.JSX.Element {
         }}>
         {!isAuthenticated || !user ? (
           <Stack.Screen name="Login" component={LoginScreen} />
-        ) : user.role === 'worker' ? (
+        ) : user.role === 'worker' || user.role === 'linmas' ? (
           <Stack.Screen name="WorkerTabs" component={WorkerNavigator} />
         ) : (
           <Stack.Screen name="SupervisorTabs" component={SupervisorNavigator} />

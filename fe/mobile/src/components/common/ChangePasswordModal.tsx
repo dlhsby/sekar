@@ -192,7 +192,7 @@ export function ChangePasswordModal({
                   <MaterialCommunityIcons
                     name="close"
                     size={24}
-                    color={nbColors.gray[600]}
+                    color={nbColors.gray['600']}
                   />
                 </TouchableOpacity>
               </View>
@@ -248,7 +248,7 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showCurrentPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={nbColors.gray[600]}
+                      color={nbColors.gray['600']}
                     />
                   </TouchableOpacity>
                 </View>
@@ -279,7 +279,7 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showNewPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={nbColors.gray[600]}
+                      color={nbColors.gray['600']}
                     />
                   </TouchableOpacity>
                 </View>
@@ -310,7 +310,7 @@ export function ChangePasswordModal({
                     <MaterialCommunityIcons
                       name={showConfirmPassword ? 'eye-off' : 'eye'}
                       size={24}
-                      color={nbColors.gray[600]}
+                      color={nbColors.gray['600']}
                     />
                   </TouchableOpacity>
                 </View>
@@ -357,9 +357,9 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     borderTopLeftRadius: 0, // Sharp corners - NB style
     borderTopRightRadius: 0, // Sharp corners - NB style
-    borderTopWidth: nbBorders.default,
-    borderLeftWidth: nbBorders.default,
-    borderRightWidth: nbBorders.default,
+    borderTopWidth: nbBorders.base,
+    borderLeftWidth: nbBorders.base,
+    borderRightWidth: nbBorders.base,
     borderColor: nbColors.black,
     maxHeight: '90%',
     ...nbShadows.lg,
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: nbSpacing.lg,
     paddingBottom: nbSpacing.md,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
   },
   title: {
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.successLight,
     padding: nbSpacing.md,
     borderRadius: 0, // Sharp corners - NB style
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.success,
     marginBottom: nbSpacing.md,
   },

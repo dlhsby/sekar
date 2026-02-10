@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.lg,
     paddingBottom: nbSpacing.md,
     backgroundColor: nbColors.surface,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbBorders.color,
   },
   headerTitle: {
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     ...nbTextStyles.bodySmall,
     marginTop: nbSpacing.xs,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   progressContainer: {
     flexDirection: 'row',
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: nbBorderRadius.full,
-    backgroundColor: nbColors.gray[300],
+    backgroundColor: nbColors.gray['300'],
     borderWidth: nbBorders.thin,
     borderColor: nbBorders.color,
   },
@@ -467,8 +467,8 @@ const styles = StyleSheet.create({
   },
   stepCard: {
     backgroundColor: nbColors.surface,
-    borderRadius: nbBorderRadius.minimal,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbBorders.color,
     padding: nbSpacing.lg,
     alignItems: 'center',
@@ -477,8 +477,8 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 80,
     height: 80,
-    borderRadius: nbBorderRadius.minimal,
-    borderWidth: nbBorders.default,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
     borderColor: nbBorders.color,
     justifyContent: 'center',
     alignItems: 'center',
@@ -492,14 +492,14 @@ const styles = StyleSheet.create({
   },
   stepDescription: {
     ...nbTextStyles.body,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     textAlign: 'center',
     lineHeight: nbTypography.fontSize.base * nbTypography.lineHeight.relaxed,
   },
   androidNote: {
     flexDirection: 'row',
     backgroundColor: withAlpha(nbColors.info, 0.1),
-    borderRadius: nbBorderRadius.minimal,
+    borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.thin,
     borderColor: nbColors.info,
     padding: nbSpacing.md,
@@ -511,13 +511,13 @@ const styles = StyleSheet.create({
   },
   androidNoteText: {
     ...nbTextStyles.bodySmall,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     flex: 1,
     lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.relaxed,
   },
   requiredBadge: {
     backgroundColor: nbColors.danger,
-    borderRadius: nbBorderRadius.minimal,
+    borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.thin,
     borderColor: nbBorders.color,
     paddingHorizontal: nbSpacing.md,
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     backgroundColor: withAlpha(nbColors.accentSky, 0.1),
-    borderRadius: nbBorderRadius.minimal,
+    borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.thin,
     borderColor: nbColors.accentSky,
     padding: nbSpacing.md,
@@ -544,14 +544,14 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...nbTextStyles.bodySmall,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     flex: 1,
     lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.normal,
   },
   actions: {
     padding: nbSpacing.lg,
     backgroundColor: nbColors.surface,
-    borderTopWidth: nbBorders.default,
+    borderTopWidth: nbBorders.base,
     borderTopColor: nbBorders.color,
   },
   skipButton: {

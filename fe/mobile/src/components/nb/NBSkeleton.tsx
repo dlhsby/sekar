@@ -155,7 +155,13 @@ export const NBSkeleton: React.FC<NBSkeletonProps> = ({
   ));
 
   return (
-    <View style={[styles.container, style]} testID={testID}>
+    <View
+      style={[styles.container, style]}
+      testID={testID}
+      accessibilityRole="progressbar"
+      accessibilityState={{ busy: true }}
+      accessibilityLabel="Loading content"
+    >
       {items}
     </View>
   );
@@ -166,16 +172,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   skeleton: {
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.sm, // 4px - NB 2.0 skeleton radius
     overflow: 'hidden',
     position: 'relative',
   },
   shimmer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: nbColors.gray[300],
+    backgroundColor: nbColors.gray['300'],
   },
 });
 

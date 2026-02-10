@@ -306,7 +306,7 @@ export function ClockInOutScreen(): JSX.Element {
     if (!isWithinBoundary) {
       Alert.alert(
         'Di Luar Batas',
-        `Anda tidak berada dalam radius ${assignedArea?.radius_meters ?? 100}m dari ${assignedArea?.name ?? 'area'}. Silakan mendekat untuk clock in.`,
+        `Anda tidak berada dalam radius ${assignedArea?.radius_meters ?? 100}m dari ${assignedArea?.name ?? 'area'}. Mohon mendekat ke dalam area untuk clock in.`,
       );
       return;
     }
@@ -617,7 +617,7 @@ export function ClockInOutScreen(): JSX.Element {
                     ? isClockIn
                       ? 'Dalam batas - Anda dapat clock in'
                       : 'Dalam batas - Anda dapat clock out'
-                    : 'Di luar batas - Mendekat ke area'}
+                    : 'Di luar batas - Mohon mendekat ke dalam area'}
                 </Text>
               </View>
               <NBButton

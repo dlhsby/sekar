@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils/cn';
 
 const skeletonVariants = cva(
-  'bg-nb-gray-300 border-2 border-nb-black animate-shimmer',
+  'bg-nb-gray-300 border-2 border-nb-black rounded-nb-sm shadow-nb-xs animate-shimmer',
   {
     variants: {
       variant: {
@@ -65,6 +65,8 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
       <div
         ref={ref}
         className={cn(skeletonVariants({ variant }), className)}
+        aria-label="Memuat..."
+        role="status"
         {...props}
       />
     );
@@ -82,9 +84,11 @@ const SkeletonCard = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'border-3 border-nb-black bg-nb-white shadow-nb-sm p-4 space-y-4',
+      'border-2 border-nb-black rounded-nb-base bg-nb-white shadow-nb-sm p-4 space-y-4',
       className
     )}
+    aria-label="Memuat kartu..."
+    role="status"
     {...props}
   >
     <Skeleton variant="heading" />
@@ -107,11 +111,13 @@ const SkeletonTable = React.forwardRef<
 >(({ className, rows = 5, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('border-3 border-nb-black overflow-hidden', className)}
+    className={cn('border-2 border-nb-black rounded-nb-base overflow-hidden', className)}
+    aria-label="Memuat tabel..."
+    role="status"
     {...props}
   >
     {/* Header */}
-    <div className="bg-nb-gray-100 p-4 border-b-3 border-nb-black flex gap-4">
+    <div className="bg-nb-gray-100 p-4 border-b-2 border-nb-black flex gap-4">
       <Skeleton className="h-4 w-1/4" />
       <Skeleton className="h-4 w-1/4" />
       <Skeleton className="h-4 w-1/4" />
@@ -140,11 +146,17 @@ const SkeletonList = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { items?: number }
 >(({ className, items = 5, ...props }, ref) => (
-  <div ref={ref} className={cn('space-y-3', className)} {...props}>
+  <div
+    ref={ref}
+    className={cn('space-y-3', className)}
+    aria-label="Memuat daftar..."
+    role="status"
+    {...props}
+  >
     {Array.from({ length: items }).map((_, index) => (
       <div
         key={index}
-        className="border-3 border-nb-black bg-nb-white p-4 flex items-center gap-4"
+        className="border-2 border-nb-black rounded-nb-base bg-nb-white p-4 flex items-center gap-4"
       >
         <Skeleton variant="avatar" />
         <div className="flex-1 space-y-2">

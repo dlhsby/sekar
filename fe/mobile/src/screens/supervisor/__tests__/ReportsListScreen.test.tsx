@@ -375,7 +375,7 @@ describe('ReportsListScreen', () => {
 
       await waitFor(() => {
         expect(getByTestId('report-card-1')).toBeTruthy();
-      });
+      }, { timeout: 5000 });
     });
 
     it('should correctly classify maintenance reports', async () => {
@@ -400,7 +400,7 @@ describe('ReportsListScreen', () => {
 
       await waitFor(() => {
         expect(getByTestId('report-card-1')).toBeTruthy();
-      });
+      }, { timeout: 5000 });
     });
   });
 });

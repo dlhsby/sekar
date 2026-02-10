@@ -60,7 +60,7 @@ export default function ReportsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -180,7 +180,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-nb-black">Laporan Kerja</h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-nb-gray-600 mt-1">
           Kelola dan tinjau laporan kerja dari pekerja
         </p>
       </div>
@@ -212,6 +212,7 @@ export default function ReportsPage() {
               type="date"
               value={filters.fromDate}
               onChange={(e) => setFilters(prev => ({ ...prev, fromDate: e.target.value }))}
+              aria-label="Filter tanggal mulai"
             />
 
             {/* To Date */}
@@ -283,7 +284,12 @@ export default function ReportsPage() {
       {/* Table */}
       <Card variant="elevated">
         <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Daftar Laporan</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-nb-black">Daftar Laporan</h2>
+            <div aria-live="polite" aria-atomic="true" className="text-sm text-nb-gray-600">
+              {filteredReports.length} laporan ditemukan
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <DataTable<WorkReport>

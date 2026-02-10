@@ -99,7 +99,11 @@ export const NBTab: React.FC<NBTabProps> = ({
   );
 
   return (
-    <View style={[styles.container, style]} testID={testID}>
+    <View
+      style={[styles.container, style]}
+      testID={testID}
+      accessibilityRole="tablist"
+    >
       {tabs.map((tab, index) => {
         const isActive = tab.key === activeTab;
         const isFirst = index === 0;
@@ -162,9 +166,9 @@ export const NBTab: React.FC<NBTabProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
     backgroundColor: nbColors.white,
     overflow: 'hidden', // Clip child elements to rounded border
   },
@@ -174,7 +178,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: nbColors.white,
-    borderRightWidth: nbBorders.default,
+    borderRightWidth: nbBorders.base,
     borderRightColor: nbColors.black,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
@@ -208,10 +212,10 @@ const styles = StyleSheet.create({
     color: nbColors.white,
   },
   badge: {
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     paddingHorizontal: nbSpacing.xs,
     paddingVertical: 2,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
     minWidth: 20,
     alignItems: 'center',
     justifyContent: 'center',

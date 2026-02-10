@@ -64,7 +64,7 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
 
           {stats && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="border-3 border-nb-black p-3 bg-blue-50">
+              <div className="border-2 border-nb-black p-3 bg-nb-primary/10 rounded-nb-base">
                 <div className="text-2xl font-bold text-nb-primary">
                   {stats.total_areas}
                 </div>
@@ -73,7 +73,7 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
                 </div>
               </div>
 
-              <div className="border-3 border-nb-black p-3 bg-green-50">
+              <div className="border-2 border-nb-black p-3 bg-nb-success/10 rounded-nb-base">
                 <div className="text-2xl font-bold text-nb-success">
                   {stats.total_workers}
                 </div>
@@ -82,7 +82,7 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
                 </div>
               </div>
 
-              <div className="border-3 border-nb-black p-3 bg-purple-50 col-span-2">
+              <div className="border-2 border-nb-black p-3 bg-nb-gray-100 rounded-nb-base col-span-2">
                 <div className="text-lg font-bold text-nb-black">
                   {formatArea(stats.total_coverage_area || 0)}
                 </div>

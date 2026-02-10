@@ -122,7 +122,9 @@ export default function DashboardPage() {
                   <Badge variant={stat.color} size="sm">
                     {stat.label}
                   </Badge>
-                  <Icon className="h-6 w-6 text-nb-gray-400" />
+                  <div aria-label={`${stat.label} icon`}>
+                    <Icon className="h-6 w-6 text-nb-gray-400" />
+                  </div>
                 </div>
                 <p className="text-4xl font-extrabold text-nb-black">{stat.value}</p>
               </CardContent>

@@ -18,6 +18,7 @@ import { ShiftHistoryScreen } from '../screens/worker/ShiftHistoryScreen';
 import { TaskDetailScreen } from '../screens/worker/TaskDetailScreen';
 import { TaskCompleteScreen } from '../screens/worker/TaskCompleteScreen';
 import ReportDetailScreen from '../screens/supervisor/ReportDetailScreen';
+import { SettingsScreen } from '../screens/common/SettingsScreen';
 import { WorkerHomeHeader } from '../components/navigation/WorkerHomeHeader';
 
 const Tab = createBottomTabNavigator<WorkerTabParamList>();
@@ -66,14 +67,14 @@ function WorkerNavigator(): React.JSX.Element {
         }}
       />
       <Tab.Screen
-        name="ClockInOut"
-        component={ClockInOutScreen}
+        name="TasksReports"
+        component={TasksReportsScreen}
         options={{
           headerTitle: () => <WorkerHomeHeader />,
-          tabBarLabel: 'Absensi',
+          tabBarLabel: 'Tugas & Laporan',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
-              name="clock-outline"
+              name="clipboard-text-multiple"
               color={color}
               size={size}
             />
@@ -94,7 +95,7 @@ function WorkerNavigator(): React.JSX.Element {
               style={{ marginLeft: 16 }}
             />
           ),
-          // Hidden from tab bar - accessed via buttons on Home or ReportsList
+          // Hidden from tab bar - accessed via buttons on Home or TasksReports
           tabBarButton: () => null,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
@@ -106,14 +107,16 @@ function WorkerNavigator(): React.JSX.Element {
         })}
       />
       <Tab.Screen
-        name="TasksReports"
-        component={TasksReportsScreen}
+        name="ClockInOut"
+        component={ClockInOutScreen}
         options={{
           headerTitle: () => <WorkerHomeHeader />,
-          tabBarLabel: 'Tugas & Laporan',
+          // Hidden from tab bar - accessed programmatically via Home screen
+          tabBarButton: () => null,
+          tabBarLabel: 'Absensi',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
-              name="clipboard-text-multiple"
+              name="clock-outline"
               color={color}
               size={size}
             />
@@ -192,6 +195,18 @@ function WorkerNavigator(): React.JSX.Element {
               color={color}
               size={size}
             />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Pengaturan',
+          // Hidden from tab bar - accessed via Profile menu
+          tabBarButton: () => null,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="cog" color={color} size={size} />
           ),
         }}
       />

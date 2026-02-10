@@ -7,18 +7,20 @@ import {
   StyleSheet,
   SafeAreaView,
   AccessibilityInfo,
+  TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { ShiftDetailModal, TodayReportsModal, TodayWorkHoursModal } from '../../components/modals';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { shiftsApi, reportsApi } from '../../services/api';
-import { setCurrentShift, setError } from '../../store/slices/shiftSlice';
+import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
 import { setReports } from '../../store/slices/reportSlice';
-import { formatTime, formatDateTime, calculateDuration, isToday } from '../../utils/dateUtils';
+import { formatDateTime, calculateDuration, isToday } from '../../utils/dateUtils';
 import { useLocationPermission } from '../../hooks';
 
 /**
@@ -30,7 +32,7 @@ export function WorkerHomeScreen(): JSX.Element {
   const dispatch = useAppDispatch();
 
   const { user, assignedArea } = useAppSelector((state) => state.auth);
-  const { currentShift } = useAppSelector((state) => state.shift);
+  const { currentShift, shiftHistory } = useAppSelector((state) => state.shift);
   const { reports } = useAppSelector((state) => state.report);
   const { isOnline, isSyncing, pendingShiftsCount, pendingReportsCount } = useAppSelector(
     (state) => state.offline
@@ -42,6 +44,11 @@ export function WorkerHomeScreen(): JSX.Element {
 
   // Data states
   const [timer, setTimer] = useState('00:00:00');
+
+  // Modal states
+  const [shiftModalVisible, setShiftModalVisible] = useState(false);
+  const [reportsModalVisible, setReportsModalVisible] = useState(false);
+  const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
 
   // Issue 8: Track last announced minute for accessibility (announce every 5 minutes)
   const lastAnnouncedMinuteRef = useRef<number>(-1);
@@ -70,6 +77,11 @@ export function WorkerHomeScreen(): JSX.Element {
   const todayReportsCount = useMemo(() => {
     return reports.filter((report) => isToday(report.created_at)).length;
   }, [reports]);
+
+  // Filter today's shifts from shift history
+  const todayShifts = useMemo(() => {
+    return shiftHistory.filter((shift) => isToday(shift.clock_in_time));
+  }, [shiftHistory]);
 
   // Load current shift and reports on mount
   useEffect(() => {
@@ -118,7 +130,7 @@ export function WorkerHomeScreen(): JSX.Element {
 
   const loadInitialData = async () => {
     setLoading(true);
-    await Promise.all([loadCurrentShift(), loadTodayReports()]);
+    await Promise.all([loadCurrentShift(), loadShiftHistory(), loadTodayReports()]);
     setLoading(false);
   };
 
@@ -142,6 +154,23 @@ export function WorkerHomeScreen(): JSX.Element {
       // Don't clear shift state on network errors to preserve offline experience
       console.warn('[WorkerHomeScreen] Unexpected error loading shift:', error.message);
       dispatch(setError(error.message || 'Failed to load shift'));
+    }
+  };
+
+  const loadShiftHistory = async () => {
+    try {
+      const response = await shiftsApi.getMyShifts();
+
+      // Check if API returned an error
+      if (response.error) {
+        console.warn('[WorkerHomeScreen] Failed to load shift history:', response.error);
+        return; // Keep existing history
+      }
+
+      // Success - update with server data (array of shifts, last 50)
+      dispatch(setShiftHistory(response.data ?? []));
+    } catch (error: any) {
+      console.warn('[WorkerHomeScreen] Unexpected error loading shift history:', error.message);
     }
   };
 
@@ -173,7 +202,7 @@ export function WorkerHomeScreen(): JSX.Element {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadCurrentShift(), loadTodayReports()]);
+    await Promise.all([loadCurrentShift(), loadShiftHistory(), loadTodayReports()]);
     setRefreshing(false);
   }, []);
 
@@ -189,19 +218,38 @@ export function WorkerHomeScreen(): JSX.Element {
     navigation.navigate('TasksReports' as never);
   };
 
+  const handleReportPress = (report: any) => {
+    setReportsModalVisible(false);
+    navigation.navigate('ReportDetail', { reportId: report.id, isWorkerView: true });
+  };
+
   // Derived state - must be before any early returns to satisfy React's rules of hooks
   const pendingCount = pendingShiftsCount + pendingReportsCount;
 
-  // Memoize duration calculation - updates when timer's HH:MM changes (once per minute)
-  // This avoids recalculating on every second tick while still staying accurate
+  // Calculate total work hours from all today's shifts (including active shift)
+  // This updates every minute when there's an active shift (via timerMinutes dependency)
   const timerMinutes = timer.slice(0, 5); // Extract HH:MM from HH:MM:SS
-  const shiftDuration = useMemo(() => {
-    if (!currentShift) {return '0h';}
-    return calculateDuration(
-      new Date(currentShift.clock_in_time),
-      new Date()
-    ).formatted;
-  }, [currentShift?.clock_in_time, timerMinutes]);
+  const totalTodayDuration = useMemo(() => {
+    let totalMinutes = 0;
+
+    todayShifts.forEach((shift) => {
+      const endTime = shift.clock_out_time
+        ? new Date(shift.clock_out_time)
+        : new Date(); // Use current time for active shift
+
+      const duration = calculateDuration(
+        new Date(shift.clock_in_time),
+        endTime
+      );
+
+      totalMinutes += duration.totalMinutes;
+    });
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}j ${minutes}m`;
+  }, [todayShifts, timerMinutes]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -254,31 +302,38 @@ export function WorkerHomeScreen(): JSX.Element {
 
         {/* Current Shift Card */}
         {currentShift ? (
-          <NBCard variant="elevated" style={styles.shiftCard}>
-            <Text style={styles.cardTitle}>Shift Aktif</Text>
-            {/* Issue 8: Removed accessibilityLiveRegion to prevent constant announcements */}
-            {/* Announcements are now made every 5 minutes via AccessibilityInfo */}
-            <Text
-              style={styles.timer}
-              accessibilityLabel={`Waktu shift berjalan: ${timer}`}
-            >
-              {timer}
-            </Text>
-            <View style={styles.shiftInfo}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Area:</Text>
-                <Text style={styles.infoValue}>
-                  {currentShift.area?.name || 'Tidak diketahui'}
-                </Text>
+          <TouchableOpacity
+            onPress={() => setShiftModalVisible(true)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Shift Aktif"
+            accessibilityHint="Ketuk untuk melihat detail shift"
+          >
+            <NBCard variant="elevated" style={styles.shiftCard}>
+              <Text style={styles.cardTitle}>Shift Aktif</Text>
+              <Text
+                style={styles.timer}
+                accessibilityLabel={`Waktu shift berjalan: ${timer}`}
+              >
+                {timer}
+              </Text>
+              <View style={styles.shiftInfo}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Area:</Text>
+                  <Text style={styles.infoValue}>
+                    {currentShift.area?.name || 'Tidak diketahui'}
+                  </Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Mulai:</Text>
+                  <Text style={styles.infoValue}>
+                    {formatDateTime(currentShift.clock_in_time)}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Clock In:</Text>
-                <Text style={styles.infoValue}>
-                  {formatDateTime(currentShift.clock_in_time)}
-                </Text>
-              </View>
-            </View>
-          </NBCard>
+              <Text style={styles.tapHint}>Ketuk untuk detail lengkap</Text>
+            </NBCard>
+          </TouchableOpacity>
         ) : (
           <NBCard variant="elevated" style={styles.shiftCard}>
             <Text style={styles.cardTitle}>Belum Clock In</Text>
@@ -300,27 +355,30 @@ export function WorkerHomeScreen(): JSX.Element {
         <NBCard variant="elevated" style={styles.summaryCard}>
           <Text style={styles.cardTitle}>Ringkasan Hari Ini</Text>
           <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
+            <TouchableOpacity
+              style={styles.summaryItem}
+              onPress={() => setReportsModalVisible(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`${todayReportsCount} Laporan`}
+              accessibilityHint="Ketuk untuk melihat daftar laporan hari ini"
+            >
               <Text style={styles.summaryValue}>{todayReportsCount}</Text>
               <Text style={styles.summaryLabel}>Laporan</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{shiftDuration}</Text>
+            <TouchableOpacity
+              style={styles.summaryItem}
+              onPress={() => setWorkHoursModalVisible(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`${totalTodayDuration} Jam Kerja`}
+              accessibilityHint="Ketuk untuk melihat detail jam kerja hari ini"
+            >
+              <Text style={styles.summaryValue}>{totalTodayDuration}</Text>
               <Text style={styles.summaryLabel}>Jam Kerja</Text>
-            </View>
+            </TouchableOpacity>
           </View>
-          {todayReportsCount > 0 && (
-            <View style={styles.viewReportsButtonContainer}>
-              <NBButton
-                title="Lihat Semua Laporan"
-                onPress={handleViewReports}
-                variant="secondary"
-                fullWidth
-                icon="arrow-right"
-              />
-            </View>
-          )}
         </NBCard>
 
         {/* Action Buttons */}
@@ -354,6 +412,24 @@ export function WorkerHomeScreen(): JSX.Element {
         )}
       </ScrollView>
     </View>
+
+    {/* Modals */}
+    <ShiftDetailModal
+      visible={shiftModalVisible}
+      onClose={() => setShiftModalVisible(false)}
+      shift={currentShift}
+    />
+    <TodayReportsModal
+      visible={reportsModalVisible}
+      onClose={() => setReportsModalVisible(false)}
+      reports={reports.filter((report) => isToday(report.created_at))}
+      onReportPress={handleReportPress}
+    />
+    <TodayWorkHoursModal
+      visible={workHoursModalVisible}
+      onClose={() => setWorkHoursModalVisible(false)}
+      shifts={todayShifts}
+    />
     </NBBackgroundPattern>
   );
 }
@@ -384,7 +460,7 @@ const styles = StyleSheet.create({
   timer: {
     fontSize: 40, // Very compact
     fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.accentGrass, // Bright green for active timer
+    color: nbColors.warning, // Yellow (#E3A018) for better outdoor visibility
     textAlign: 'center',
     marginVertical: nbSpacing.md, // Minimal vertical space
     letterSpacing: 1,
@@ -399,7 +475,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
   },
   infoValue: {
@@ -409,19 +485,19 @@ const styles = StyleSheet.create({
   },
   noShiftText: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
     marginVertical: nbSpacing.lg,
   },
   assignedArea: {
     marginTop: nbSpacing.md,
     paddingTop: nbSpacing.md,
-    borderTopWidth: nbBorders.default,
+    borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
   },
   assignedAreaLabel: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
     marginBottom: nbSpacing.xs,
   },
@@ -438,7 +514,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.md, // Minimal spacing
     paddingTop: nbSpacing.sm, // Minimal separation
     borderTopWidth: nbBorders.thin,
-    borderTopColor: nbColors.gray[200], // Subtle divider
+    borderTopColor: nbColors.gray['200'], // Subtle divider
   },
   summaryRow: {
     flexDirection: 'row',
@@ -450,7 +526,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryDivider: {
-    width: nbBorders.default,
+    width: nbBorders.base,
     height: 40,
     backgroundColor: nbColors.black,
   },
@@ -462,9 +538,17 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
     marginTop: nbSpacing.xs,
+  },
+  tapHint: {
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray['500'],
+    fontWeight: nbTypography.fontWeight.regular,
+    textAlign: 'center',
+    marginTop: nbSpacing.sm,
+    fontStyle: 'italic',
   },
   actions: {
     marginTop: nbSpacing.sm, // Minimal spacing from summary card
@@ -472,8 +556,8 @@ const styles = StyleSheet.create({
   warningCard: {
     backgroundColor: nbColors.warningLight + '20', // 20% opacity
     borderColor: nbColors.warning,
-    borderWidth: nbBorders.default,
-    borderRadius: 0,
+    borderWidth: nbBorders.base,
+    borderRadius: nbBorderRadius.base,
     marginTop: nbSpacing.md,
   },
   warningText: {

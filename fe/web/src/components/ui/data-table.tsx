@@ -114,7 +114,7 @@ export function DataTable<T extends Record<string, unknown>>({
   const someSelected = selectedRows.length > 0 && !allSelected;
 
   return (
-    <div className={cn('border-3 border-nb-black shadow-nb-sm', className)}>
+    <div className={cn('border-2 border-nb-black rounded-nb-base shadow-nb-sm', className)}>
       <Table>
         <TableHeader>
           <TableRow className="bg-nb-gray-100 hover:bg-nb-gray-100">
@@ -144,6 +144,13 @@ export function DataTable<T extends Record<string, unknown>>({
                 )}
                 style={{ width: column.width }}
                 onClick={() => handleSort(column)}
+                aria-sort={
+                  column.sortable && sortColumn === column.key
+                    ? sortDirection === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined
+                }
               >
                 <div
                   className={cn(

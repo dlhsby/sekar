@@ -214,9 +214,9 @@ export const NBCardFooter: React.FC<NBCardSectionProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.minimal, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // 2px - softened NB
   },
   header: {
     padding: nbSpacing.sm, // Reduced from md (16px) to sm (8px) for less vertical padding

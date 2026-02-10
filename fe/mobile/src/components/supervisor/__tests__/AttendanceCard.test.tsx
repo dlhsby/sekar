@@ -153,13 +153,13 @@ describe('AttendanceCard', () => {
         />
       );
 
-      expect(screen.getByText('Terlambat')).toBeTruthy();
+      expect(screen.getByText('TERLAMBAT')).toBeTruthy();
     });
 
     it('should not render late badge when isLate is false', () => {
       render(<AttendanceCard {...defaultClockedInProps} isLate={false} />);
 
-      expect(screen.queryByText('Terlambat')).toBeNull();
+      expect(screen.queryByText('TERLAMBAT')).toBeNull();
     });
 
     it('should not render late badge when isLate is not provided (default false)', () => {

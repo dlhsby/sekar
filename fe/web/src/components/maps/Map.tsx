@@ -120,12 +120,12 @@ export function Map({
   if (error) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-100 border-4 border-black ${className}`}
+        className={`flex items-center justify-center bg-nb-gray-100 border-4 border-black ${className}`}
       >
         <div className="text-center p-8">
           <div className="text-4xl mb-4">🗺️</div>
           <h3 className="font-bold text-lg mb-2">Error Memuat Peta</h3>
-          <p className="text-sm text-gray-600">{error}</p>
+          <p className="text-sm text-nb-gray-600">{error}</p>
         </div>
       </div>
     );
@@ -138,7 +138,7 @@ export function Map({
 
       {/* Loading overlay */}
       {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 border-4 border-black rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-nb-gray-100 border-4 border-black rounded-lg">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-black border-t-transparent mb-4 mx-auto" />
             <p className="font-bold">Memuat peta...</p>

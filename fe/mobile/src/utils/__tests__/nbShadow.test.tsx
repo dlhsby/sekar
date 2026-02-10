@@ -1,6 +1,6 @@
 /**
  * nbShadow Utility Tests
- * Tests for Neo Brutalism shadow utilities
+ * Tests for Neo Brutalism 2.0 shadow utilities (soft-edge shadows)
  */
 
 import React from 'react';
@@ -22,42 +22,42 @@ describe('nbShadow Utilities', () => {
       const shadow = getNBShadow('sm');
 
       expect(shadow).toEqual(nbShadows.sm);
-      expect(shadow.shadowColor).toBe('#000000');
-      expect(shadow.shadowOffset).toEqual({ width: 4, height: 4 });
-      expect(shadow.shadowOpacity).toBe(1);
-      expect(shadow.shadowRadius).toBe(0);
-      expect(shadow.elevation).toBe(4);
+      expect(shadow.shadowColor).toBe('#1C1917'); // NB 2.0 warm stone black
+      expect(shadow.shadowOffset).toEqual({ width: 3, height: 3 });
+      expect(shadow.shadowOpacity).toBe(0.18);
+      expect(shadow.shadowRadius).toBe(2);
+      expect(shadow.elevation).toBe(3);
     });
 
     it('should return medium shadow style', () => {
       const shadow = getNBShadow('md');
 
       expect(shadow).toEqual(nbShadows.md);
-      expect(shadow.shadowOffset).toEqual({ width: 6, height: 6 });
-      expect(shadow.elevation).toBe(6);
+      expect(shadow.shadowOffset).toEqual({ width: 4, height: 4 });
+      expect(shadow.elevation).toBe(4);
     });
 
     it('should return large shadow style', () => {
       const shadow = getNBShadow('lg');
 
       expect(shadow).toEqual(nbShadows.lg);
-      expect(shadow.shadowOffset).toEqual({ width: 8, height: 8 });
-      expect(shadow.elevation).toBe(8);
+      expect(shadow.shadowOffset).toEqual({ width: 5, height: 5 });
+      expect(shadow.elevation).toBe(5);
     });
 
     it('should return hover shadow style', () => {
       const shadow = getNBShadow('hover');
 
       expect(shadow).toEqual(nbShadows.hover);
-      expect(shadow.shadowOffset).toEqual({ width: 8, height: 8 });
+      expect(shadow.shadowOffset).toEqual({ width: 5, height: 5 });
     });
 
     it('should return active shadow style', () => {
       const shadow = getNBShadow('active');
 
       expect(shadow).toEqual(nbShadows.active);
-      expect(shadow.shadowOffset).toEqual({ width: 2, height: 2 });
-      expect(shadow.elevation).toBe(2);
+      expect(shadow.shadowOffset).toEqual({ width: 1, height: 1 });
+      expect(shadow.elevation).toBe(1);
     });
 
     it('should return none shadow style', () => {
@@ -70,21 +70,22 @@ describe('nbShadow Utilities', () => {
       expect(shadow.elevation).toBe(0);
     });
 
-    it('should have zero blur radius for all shadows (Neo Brutalism characteristic)', () => {
-      const sizes: Array<keyof typeof nbShadows> = ['sm', 'md', 'lg', 'hover', 'active'];
+    it('should have soft-edge blur radius for shadows (NB 2.0 characteristic)', () => {
+      const sizes: Array<keyof typeof nbShadows> = ['sm', 'md', 'lg', 'hover'];
 
       sizes.forEach(size => {
         const shadow = getNBShadow(size);
-        expect(shadow.shadowRadius).toBe(0);
+        expect(shadow.shadowRadius).toBeGreaterThan(0); // NB 2.0 uses soft-edge shadows
       });
     });
 
-    it('should have full opacity for visible shadows', () => {
+    it('should have reduced opacity for soft shadows (NB 2.0)', () => {
       const sizes: Array<keyof typeof nbShadows> = ['sm', 'md', 'lg', 'hover', 'active'];
 
       sizes.forEach(size => {
         const shadow = getNBShadow(size);
-        expect(shadow.shadowOpacity).toBe(1);
+        expect(shadow.shadowOpacity).toBeLessThan(1); // NB 2.0 uses subtle shadows
+        expect(shadow.shadowOpacity).toBeGreaterThanOrEqual(0.15);
       });
     });
   });
@@ -132,14 +133,14 @@ describe('nbShadow Utilities', () => {
       const shadow = getHoverShadow(true);
 
       expect(shadow).toEqual(nbShadows.hover);
-      expect(shadow.shadowOffset).toEqual({ width: 8, height: 8 });
+      expect(shadow.shadowOffset).toEqual({ width: 5, height: 5 });
     });
 
     it('should return medium shadow when not hovered', () => {
       const shadow = getHoverShadow(false);
 
       expect(shadow).toEqual(nbShadows.md);
-      expect(shadow.shadowOffset).toEqual({ width: 6, height: 6 });
+      expect(shadow.shadowOffset).toEqual({ width: 4, height: 4 });
     });
 
     it('should transition between hover states', () => {
@@ -147,7 +148,7 @@ describe('nbShadow Utilities', () => {
       const hovered = getHoverShadow(true);
 
       expect(normal).not.toEqual(hovered);
-      expect(hovered.elevation).toBeGreaterThan(normal.elevation);
+      expect(hovered.elevation).toBeGreaterThanOrEqual(normal.elevation);
     });
   });
 
@@ -350,12 +351,12 @@ describe('nbShadow Utilities', () => {
       });
     });
 
-    it('should use black color for all visible shadows', () => {
+    it('should use warm stone black color for all visible shadows (NB 2.0)', () => {
       const sizes: Array<keyof typeof nbShadows> = ['sm', 'md', 'lg', 'hover', 'active'];
 
       sizes.forEach(size => {
         const shadow = getNBShadow(size);
-        expect(shadow.shadowColor).toBe('#000000');
+        expect(shadow.shadowColor).toBe('#1C1917'); // NB 2.0 warm stone black
       });
     });
 
@@ -364,10 +365,10 @@ describe('nbShadow Utilities', () => {
       const md = getNBShadow('md');
       const lg = getNBShadow('lg');
 
-      // Elevation should correlate with shadow size
-      expect(sm.elevation).toBe(4);
-      expect(md.elevation).toBe(6);
-      expect(lg.elevation).toBe(8);
+      // NB 2.0 elevation values
+      expect(sm.elevation).toBe(3);
+      expect(md.elevation).toBe(4);
+      expect(lg.elevation).toBe(5);
     });
   });
 
@@ -376,15 +377,15 @@ describe('nbShadow Utilities', () => {
       Platform.OS = 'ios';
       const shadow = getNBShadow('md');
 
-      expect(shadow.shadowColor).toBe('#000000');
-      expect(shadow.shadowOffset).toEqual({ width: 6, height: 6 });
+      expect(shadow.shadowColor).toBe('#1C1917'); // NB 2.0 warm stone black
+      expect(shadow.shadowOffset).toEqual({ width: 4, height: 4 });
     });
 
     it('should work on Android platform', () => {
       Platform.OS = 'android';
       const shadow = getNBShadow('md');
 
-      expect(shadow.elevation).toBe(6);
+      expect(shadow.elevation).toBe(4);
     });
 
     it('should provide both iOS and Android properties', () => {

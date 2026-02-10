@@ -8,6 +8,7 @@ import type { Shift } from '../../types/models.types';
 
 interface ShiftState {
   currentShift: Shift | null;
+  shiftHistory: Shift[]; // All shifts (last 50)
   isClockingIn: boolean;
   isClockingOut: boolean;
   error: string | null;
@@ -15,6 +16,7 @@ interface ShiftState {
 
 const initialState: ShiftState = {
   currentShift: null,
+  shiftHistory: [],
   isClockingIn: false,
   isClockingOut: false,
   error: null,
@@ -37,8 +39,15 @@ const shiftSlice = createSlice({
       state.error = null;
     },
 
+    setShiftHistory: (state, action: PayloadAction<Shift[]>) => {
+      state.shiftHistory = action.payload;
+      state.error = null;
+    },
+
     clockInSuccess: (state, action: PayloadAction<Shift>) => {
       state.currentShift = action.payload;
+      // Add new shift to history
+      state.shiftHistory = [action.payload, ...state.shiftHistory];
       state.isClockingIn = false;
       state.error = null;
     },
@@ -47,6 +56,7 @@ const shiftSlice = createSlice({
       state.currentShift = null;
       state.isClockingOut = false;
       state.error = null;
+      // Note: Shift history will be refreshed by the screen after clock out
     },
 
     setError: (state, action: PayloadAction<string>) => {
@@ -67,6 +77,7 @@ export const {
   setClockingIn,
   setClockingOut,
   setCurrentShift,
+  setShiftHistory,
   clockInSuccess,
   clockOutSuccess,
   setError,

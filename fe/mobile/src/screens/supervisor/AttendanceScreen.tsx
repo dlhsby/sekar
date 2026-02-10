@@ -20,9 +20,10 @@ import {
   nbTypography,
   nbSpacing,
   nbBorders,
+  nbBorderRadius,
   nbShadows,
 } from '../../constants/nbTokens';
-import { NBCard, NBButton } from '../../components/nb';
+import { NBCard, NBButton, NBBackgroundPattern } from '../../components/nb';
 import { getAttendance } from '../../services/api/supervisorApi';
 import { formatDate } from '../../utils/dateUtils';
 import AttendanceCard from '../../components/supervisor/AttendanceCard';
@@ -207,11 +208,17 @@ export default function AttendanceScreen() {
   const isTodaySelected = isToday(selectedDate);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Kehadiran</Text>
-      </View>
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Kehadiran</Text>
+        </View>
 
       {/* Date Navigator */}
       <View style={styles.dateNavigator}>
@@ -290,19 +297,20 @@ export default function AttendanceScreen() {
         </View>
       )}
     </SafeAreaView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: 'transparent',
   },
   header: {
     backgroundColor: nbColors.white,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
   },
   headerTitle: {
@@ -317,7 +325,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
   },
   dateNavButton: {
@@ -341,9 +349,9 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     padding: nbSpacing.md,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     alignItems: 'center',
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -373,16 +381,16 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   listContent: {
     padding: nbSpacing.md,
   },
   sectionHeader: {
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.sm,
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm,
@@ -390,7 +398,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     letterSpacing: 0.5,
   },
   emptyState: {
@@ -399,15 +407,15 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
   },
   noteContainer: {
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
     padding: nbSpacing.md,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
     borderLeftWidth: nbBorders.thick,
@@ -415,7 +423,7 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     lineHeight: nbTypography.fontSize.sm * 1.5,
   },
 });

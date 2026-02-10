@@ -10,7 +10,7 @@ export interface FormInputProps extends InputProps {
 }
 
 const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
-  ({ className, label, required, id, ...props }, ref) => {
+  ({ className, label, required, id, error, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id || generatedId;
 
@@ -20,7 +20,12 @@ const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
           {label}
           {required && <span className="text-nb-danger ml-1">*</span>}
         </Label>
-        <Input ref={ref} id={inputId} required={required} {...props} />
+        <Input ref={ref} id={inputId} required={required} error={error} {...props} />
+        {error && (
+          <p className="text-sm text-nb-danger font-medium" role="alert" aria-live="polite">
+            {error}
+          </p>
+        )}
       </div>
     );
   }

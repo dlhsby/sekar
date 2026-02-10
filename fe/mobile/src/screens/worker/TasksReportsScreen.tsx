@@ -26,7 +26,7 @@ import {
   selectTasksError,
 } from '../../store/slices/tasksSlice';
 import { NBTab, NBBackgroundPattern, NBCard, NBBadge, NBEmptyState } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import type { WorkerTabScreenProps } from '../../types/navigation.types';
 import { getMyReports } from '../../services/api/reportsApi';
 import { getMyTasks } from '../../services/api/tasksApi';
@@ -380,13 +380,13 @@ const styles = StyleSheet.create({
   },
   taskDescription: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     marginBottom: nbSpacing.sm,
     lineHeight: 20,
   },
   taskArea: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginBottom: nbSpacing.xs,
   },
   taskDeadline: {
@@ -404,9 +404,9 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     paddingHorizontal: nbSpacing.lg,
     paddingVertical: nbSpacing.sm,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: 0,
+    borderRadius: nbBorderRadius.base,
     ...nbShadows.sm,
   },
   retryButtonText: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   reportDescription: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     marginBottom: nbSpacing.sm,
     lineHeight: 20,
   },
@@ -452,11 +452,11 @@ const styles = StyleSheet.create({
   },
   reportMetaItem: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   reportTime: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     marginLeft: 'auto',
   },
   centerContent: {
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   emptyContainer: {
     flex: 1,
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: nbTypography.fontSize.xl,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
   },
 });

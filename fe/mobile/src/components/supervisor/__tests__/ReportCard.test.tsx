@@ -88,28 +88,28 @@ describe('ReportCard', () => {
       const report = { ...defaultReport, report_type: 'task_completion' as const };
       render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
 
-      expect(screen.getByText('Penyelesaian Tugas')).toBeTruthy();
+      expect(screen.getByText('PENYELESAIAN TUGAS')).toBeTruthy();
     });
 
     it('should render incident badge with correct label', () => {
       const report = { ...defaultReport, report_type: 'incident' as const };
       render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
 
-      expect(screen.getByText('Insiden')).toBeTruthy();
+      expect(screen.getByText('INSIDEN')).toBeTruthy();
     });
 
     it('should render maintenance_request badge with correct label', () => {
       const report = { ...defaultReport, report_type: 'maintenance_request' as const };
       render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
 
-      expect(screen.getByText('Permintaan Pemeliharaan')).toBeTruthy();
+      expect(screen.getByText('PERMINTAAN PEMELIHARAAN')).toBeTruthy();
     });
 
     it('should fallback to report_type if unknown type', () => {
       const report = { ...defaultReport, report_type: 'unknown_type' as any };
       render(<ReportCard report={report} onPress={mockOnPress} testID={testID} />);
 
-      expect(screen.getByText('unknown_type')).toBeTruthy();
+      expect(screen.getByText('UNKNOWN_TYPE')).toBeTruthy();
     });
   });
 
@@ -229,7 +229,7 @@ describe('ReportCard', () => {
 
       expect(screen.getByText('Test')).toBeTruthy();
       expect(screen.getByText('Area')).toBeTruthy();
-      expect(screen.getByText('Insiden')).toBeTruthy();
+      expect(screen.getByText('INSIDEN')).toBeTruthy();
     });
 
     it('should handle undefined worker_name gracefully', () => {

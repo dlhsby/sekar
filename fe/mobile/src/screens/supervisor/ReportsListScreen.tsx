@@ -23,7 +23,7 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
-import { NBButton, NBCard } from '../../components/nb';
+import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
 import { formatDate } from '../../utils/dateUtils';
 import { getReports } from '../../services/api/supervisorApi';
 import ReportCard, { type ReportCardData } from '../../components/supervisor/ReportCard';
@@ -208,17 +208,23 @@ function ReportsListScreen({
   };
 
   return (
-    <View style={styles.container}>
-      {error && (
-        <NBAlert
-          variant="danger"
-          title="Gagal Memuat Laporan"
-          message={error}
-          actionLabel="Coba Lagi"
-          onAction={loadReports}
-          testID="reports-list-error"
-        />
-      )}
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <View style={styles.container}>
+        {error && (
+          <NBAlert
+            variant="danger"
+            title="Gagal Memuat Laporan"
+            message={error}
+            actionLabel="Coba Lagi"
+            onAction={loadReports}
+            testID="reports-list-error"
+          />
+        )}
 
       {renderHeader()}
 
@@ -293,19 +299,20 @@ function ReportsListScreen({
         </TouchableOpacity>
       </Modal>
     </View>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: 'transparent',
   },
   filterBar: {
     flexDirection: 'row',
     padding: nbSpacing.md,
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.default,
+    borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
   },
   filterButton: {
@@ -313,7 +320,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
@@ -323,17 +330,17 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
   },
   filterButtonIcon: {
     fontSize: 12,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
@@ -346,7 +353,7 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     fontWeight: nbTypography.fontWeight.medium,
   },
   clearIcon: {
@@ -366,12 +373,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: nbTypography.fontSize.lg,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     marginBottom: nbSpacing.xs,
   },
   emptySubtext: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[400],
+    color: nbColors.gray['400'],
   },
   loaderContainer: {
     paddingVertical: nbSpacing.lg,
@@ -387,8 +394,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: nbBorderRadius.none,
     borderTopRightRadius: nbBorderRadius.none,
     borderTopWidth: nbBorders.thick,
-    borderLeftWidth: nbBorders.default,
-    borderRightWidth: nbBorders.default,
+    borderLeftWidth: nbBorders.base,
+    borderRightWidth: nbBorders.base,
     borderColor: nbColors.black,
     paddingTop: nbSpacing.lg,
     paddingBottom: Platform.OS === 'ios' ? nbSpacing.xl : nbSpacing.lg,
@@ -409,18 +416,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
     borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray[200],
+    borderColor: nbColors.gray['200'],
     marginBottom: nbSpacing.xs,
     backgroundColor: nbColors.white,
   },
   modalOptionSelected: {
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
     borderColor: nbColors.primary,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
   },
   modalOptionText: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
   },
   modalOptionTextSelected: {
     color: nbColors.primary,
@@ -433,10 +440,10 @@ const styles = StyleSheet.create({
   },
   modalCloseButton: {
     marginTop: nbSpacing.md,
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     paddingVertical: nbSpacing.md,
     borderRadius: nbBorderRadius.none,
-    borderWidth: nbBorders.default,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center',
     ...nbShadows.sm,

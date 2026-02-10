@@ -265,9 +265,10 @@ describe('LocationTracker', () => {
     it('should capture location at random interval between 5-10 minutes', async () => {
       const initialCalls = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
 
-      // Advance by 10 minutes to ensure at least one interval has passed
+      // Advance by 11 minutes to ensure at least one interval has passed
+      // (random interval is 5-10 min, so 11 min guarantees at least one trigger)
       // Use advanceTimersByTimeAsync to properly handle async timer callbacks
-      await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
+      await jest.advanceTimersByTimeAsync(11 * 60 * 1000);
 
       expect((Geolocation.getCurrentPosition as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
     });

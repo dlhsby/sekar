@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils/cn';
 import { Button, type ButtonProps } from './button';
 
 const emptyStateVariants = cva(
-  'flex flex-col items-center justify-center p-8 text-center border-3 border-nb-black bg-nb-white shadow-nb-sm',
+  'flex flex-col items-center justify-center p-8 text-center border-2 border-nb-black rounded-nb-base bg-nb-white shadow-nb-sm',
   {
     variants: {
       size: {
@@ -175,7 +175,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         {/* Icon Container */}
         <div
           className={cn(
-            'w-16 h-16 flex items-center justify-center border-3 border-nb-black bg-nb-gray-100 shadow-nb-sm mb-4',
+            'w-16 h-16 flex items-center justify-center border-2 border-nb-black rounded-nb-base bg-nb-gray-100 shadow-nb-sm mb-4',
             iconColorClass
           )}
         >
