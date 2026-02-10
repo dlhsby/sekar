@@ -7,6 +7,7 @@ import shiftReducer, {
   setClockingIn,
   setClockingOut,
   setCurrentShift,
+  setShiftHistory,
   clockInSuccess,
   clockOutSuccess,
   setError,
@@ -16,6 +17,7 @@ import shiftReducer, {
 describe('shiftSlice', () => {
   const initialState = {
     currentShift: null,
+    shiftHistory: [],
     isClockingIn: false,
     isClockingOut: false,
     error: null,
@@ -95,6 +97,7 @@ describe('shiftSlice', () => {
 
       expect(state.currentShift).toEqual(mockShift);
       expect(state.isClockingIn).toBe(false);
+      expect(state.shiftHistory).toContainEqual(mockShift);
     });
 
     it('should clear error on success', () => {
@@ -102,6 +105,20 @@ describe('shiftSlice', () => {
       const state = shiftReducer(errorState, clockInSuccess(mockShift));
 
       expect(state.error).toBeNull();
+    });
+
+    it('should add shift to history', () => {
+      const existingShift = { ...mockShift, id: 2 };
+      const stateWithHistory = {
+        ...initialState,
+        shiftHistory: [existingShift],
+        isClockingIn: true
+      };
+      const state = shiftReducer(stateWithHistory, clockInSuccess(mockShift));
+
+      expect(state.shiftHistory).toHaveLength(2);
+      expect(state.shiftHistory[0]).toEqual(mockShift);
+      expect(state.shiftHistory[1]).toEqual(existingShift);
     });
   });
 
@@ -162,6 +179,33 @@ describe('shiftSlice', () => {
 
       expect(state.isClockingIn).toBe(false);
       expect(state.isClockingOut).toBe(false);
+    });
+  });
+
+  describe('setShiftHistory', () => {
+    it('should set shift history', () => {
+      const shifts = [mockShift, { ...mockShift, id: 2 }];
+      const state = shiftReducer(initialState, setShiftHistory(shifts));
+
+      expect(state.shiftHistory).toEqual(shifts);
+      expect(state.shiftHistory).toHaveLength(2);
+    });
+
+    it('should clear error when setting history', () => {
+      const errorState = { ...initialState, error: 'Previous error' };
+      const state = shiftReducer(errorState, setShiftHistory([mockShift]));
+
+      expect(state.error).toBeNull();
+    });
+
+    it('should replace existing history', () => {
+      const oldShifts = [{ ...mockShift, id: 99 }];
+      const newShifts = [mockShift, { ...mockShift, id: 2 }];
+      const stateWithHistory = { ...initialState, shiftHistory: oldShifts };
+      const state = shiftReducer(stateWithHistory, setShiftHistory(newShifts));
+
+      expect(state.shiftHistory).toEqual(newShifts);
+      expect(state.shiftHistory).not.toContainEqual(oldShifts[0]);
     });
   });
 
