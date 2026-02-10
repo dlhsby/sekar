@@ -294,13 +294,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
   },
   organization: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     textAlign: 'center',
     marginTop: nbSpacing.xs,
   },
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
 });
 

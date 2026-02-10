@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
 
   // Card styles
@@ -442,16 +442,16 @@ const styles = StyleSheet.create({
   },
   areaType: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   areaAddress: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontStyle: 'italic',
   },
   noArea: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontStyle: 'italic',
   },
 
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
   },
   statDivider: {
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   },
   reportsLabel: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   reportsValue: {
     fontSize: nbTypography.fontSize.xl,

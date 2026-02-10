@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: nbTypography.fontSize.sm,      // 14px
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     // No margin - let NBCardContent handle spacing
   },
   descriptionInput: {
@@ -804,14 +804,14 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
   },
   addPhotoIcon: {
     fontSize: 32,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   addPhotoText: {
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontSize: nbTypography.fontSize.xs,
     marginTop: nbSpacing.xs,
   },
@@ -823,13 +823,13 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
   },
   emptyPhotoIcon: {
     fontSize: 48,
   },
   emptyPhotoText: {
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontSize: nbTypography.fontSize.sm,
     marginTop: nbSpacing.sm,
   },
@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
   },
   characterCountText: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
   },
   workTypeOption: {
     padding: nbSpacing.md,
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
   },
   locationLoadingText: {
     marginLeft: nbSpacing.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   locationInfo: {
     padding: nbSpacing.lg,                   // md → lg (20px for better readability)
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
   },
   locationAccuracy: {
     fontSize: nbTypography.fontSize.base,    // sm → base (16px for better visibility)
-    color: nbColors.gray[700],               // Darker for better contrast
+    color: nbColors.gray['700'],               // Darker for better contrast
     fontWeight: nbTypography.fontWeight.medium,
     marginTop: nbSpacing.sm,                 // xs → sm (more separation)
   },

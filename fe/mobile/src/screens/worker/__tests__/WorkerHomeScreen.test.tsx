@@ -79,7 +79,9 @@ const createTestStore = (currentShift: any = null) => {
       },
       shift: {
         currentShift,
-        isSubmitting: false,
+        shiftHistory: currentShift ? [currentShift] : [],
+        isClockingIn: false,
+        isClockingOut: false,
         error: null,
       },
       report: {
@@ -122,6 +124,8 @@ describe('WorkerHomeScreen Timer Management', () => {
     jest.useFakeTimers();
     // Re-spy on Alert.alert to ensure it's available
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    // Mock getMyShifts to return empty array by default
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [] });
   });
 
   afterEach(() => {
@@ -134,7 +138,8 @@ describe('WorkerHomeScreen Timer Management', () => {
     'should cleanup timer on unmount',
     async () => {
       const shift = createShift(new Date());
-      (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+      (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+      (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
       const store = createTestStore(shift);
 
       const { unmount } = render(
@@ -166,7 +171,8 @@ describe('WorkerHomeScreen Timer Management', () => {
 
   it('should cleanup timer when shift changes to null', async () => {
     const shift = createShift(new Date());
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
     let store = createTestStore(shift);
 
     const { rerender } = render(
@@ -183,7 +189,8 @@ describe('WorkerHomeScreen Timer Management', () => {
     });
 
     // Update store to remove shift
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(null);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [] });
     store = createTestStore(null);
 
     // Re-render with null shift
@@ -206,7 +213,8 @@ describe('WorkerHomeScreen Timer Management', () => {
 
   it('should not create multiple intervals when currentShift updates', async () => {
     const shift = createShift(new Date());
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
     const store = createTestStore(shift);
 
     const { rerender } = render(
@@ -244,7 +252,8 @@ describe('WorkerHomeScreen Timer Management', () => {
   it('should start timer interval when shift is present', async () => {
     // This test verifies that the timer interval is created when a shift exists
     const shift = createShift(new Date());
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
     const store = createTestStore(shift);
 
     // Spy on setInterval to verify it's called
@@ -270,7 +279,8 @@ describe('WorkerHomeScreen Timer Management', () => {
   });
 
   it('should display 00:00:00 when no shift is active', async () => {
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(null);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [] });
     const store = createTestStore(null);
 
     const { queryByText, getByText } = render(
@@ -300,7 +310,8 @@ describe('WorkerHomeScreen Timer Management', () => {
   it('should clear interval when shift becomes null', async () => {
     // This test verifies that clearInterval is called when shift changes to null
     const shift = createShift(new Date());
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
     let store = createTestStore(shift);
 
     const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
@@ -319,7 +330,8 @@ describe('WorkerHomeScreen Timer Management', () => {
     });
 
     // Now update to null shift
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(null);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [] });
     store = createTestStore(null);
 
     rerender(
@@ -363,7 +375,8 @@ describe('WorkerHomeScreen Accessibility (Issue 8)', () => {
     // Create a shift that started exactly 5 minutes ago (at 5 min mark)
     const clockInTime = new Date(Date.now() - 5 * 60 * 1000);
     const shift = createShift(clockInTime);
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
     const store = createTestStore(shift);
 
     render(
@@ -388,7 +401,8 @@ describe('WorkerHomeScreen Accessibility (Issue 8)', () => {
     // Create a shift that started exactly 5 minutes ago
     const clockInTime = new Date(Date.now() - 5 * 60 * 1000);
     const shift = createShift(clockInTime);
-    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue(shift);
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
     const store = createTestStore(shift);
 
     const mockAnnounce = jest.fn();

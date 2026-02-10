@@ -221,18 +221,18 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
           value={item.value}
           onValueChange={item.onToggle}
           trackColor={{
-            false: nbColors.gray[300],
+            false: nbColors.gray['300'],
             true: nbColors.primaryLight,
           }}
-          thumbColor={item.value ? nbColors.primary : nbColors.gray[100]}
-          ios_backgroundColor={nbColors.gray[300]}
+          thumbColor={item.value ? nbColors.primary : nbColors.gray['100']}
+          ios_backgroundColor={nbColors.gray['300']}
         />
       )}
       {item.type === 'button' && (
         <MaterialCommunityIcons
           name="chevron-right"
           size={24}
-          color={item.danger ? nbColors.danger : nbColors.gray[500]}
+          color={item.danger ? nbColors.danger : nbColors.gray['500']}
         />
       )}
     </TouchableOpacity>
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: nbSpacing.sm,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: nbBorderRadius.base,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
     justifyContent: 'center',
@@ -391,12 +391,12 @@ const styles = StyleSheet.create({
   },
   settingDescription: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginTop: 2,
   },
   divider: {
     height: 1,
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     marginLeft: nbSpacing.md + 40 + nbSpacing.sm, // Align with text after icon
   },
   appInfo: {
@@ -406,12 +406,12 @@ const styles = StyleSheet.create({
   },
   appInfoText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     marginBottom: nbSpacing.xs,
   },
   appInfoCopyright: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[400],
+    color: nbColors.gray['400'],
     textAlign: 'center',
   },
   alertOverlay: {

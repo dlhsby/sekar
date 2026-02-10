@@ -407,7 +407,7 @@ export function ReportsListScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
   },
   listContent: {
     padding: nbSpacing.md,
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: nbTypography.fontSize['2xl'],
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     marginBottom: nbSpacing.md,
   },
   cacheWarning: {
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   filterButtonTextActive: {
     color: nbColors.white,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   errorIcon: {
     fontSize: 64,
@@ -490,19 +490,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: nbTypography.fontSize.xl,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
     marginBottom: nbSpacing.sm,
   },
   emptyDescription: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
     marginBottom: nbSpacing.lg,
   },
   bottomButtonContainer: {
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
   },

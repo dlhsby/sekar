@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard, NBEmptyState, NBBackgroundPattern } from '../../components/nb';
+import { ShiftCard } from '../../components/common';
 import { getMyShifts } from '../../services/api/shiftsApi';
 import { getToken, getRefreshToken } from '../../services/storage/secureStorage';
 import { isTokenExpired, getTokenTimeRemaining } from '../../utils/tokenUtils';
@@ -110,94 +111,6 @@ function groupShiftsByDate(
     }));
 }
 
-/**
- * Shift Card Component
- */
-interface ShiftCardProps {
-  shift: CurrentShiftResponse;
-}
-
-function ShiftCard({ shift }: ShiftCardProps): React.JSX.Element {
-  const duration = calculateDuration(shift.clock_in_time, shift.clock_out_time);
-  const isActive = !shift.clock_out_time;
-
-  return (
-    <NBCard style={styles.shiftCard} variant="outlined">
-      <View style={styles.shiftHeader}>
-        <View style={styles.areaInfo}>
-          <Text style={styles.areaName} numberOfLines={1}>
-            {shift.area?.name || 'Area tidak diketahui'}
-          </Text>
-          {shift.area?.area_type?.name && (
-            <Text style={styles.areaType}>{shift.area.area_type.name}</Text>
-          )}
-        </View>
-        <View
-          style={[
-            styles.statusBadge,
-            isActive ? styles.statusActive : styles.statusCompleted,
-          ]}>
-          <Text
-            style={[
-              styles.statusText,
-              isActive ? styles.statusTextActive : styles.statusTextCompleted,
-            ]}>
-            {isActive ? 'AKTIF' : 'SELESAI'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.timeRow}>
-        <View style={styles.timeItem}>
-          <MaterialCommunityIcons
-            name="login"
-            size={18}
-            color={nbColors.success}
-            style={styles.timeIcon}
-          />
-          <View>
-            <Text style={styles.timeLabel}>CLOCK IN</Text>
-            <Text style={styles.timeValue}>{formatTime(shift.clock_in_time)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.timeDivider} />
-
-        <View style={styles.timeItem}>
-          <MaterialCommunityIcons
-            name="logout"
-            size={18}
-            color={isActive ? nbColors.gray[400] : nbColors.danger}
-            style={styles.timeIcon}
-          />
-          <View>
-            <Text style={styles.timeLabel}>CLOCK OUT</Text>
-            <Text style={[styles.timeValue, isActive && styles.timeValueInactive]}>
-              {shift.clock_out_time ? formatTime(shift.clock_out_time) : '--:--'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.timeDivider} />
-
-        <View style={styles.timeItem}>
-          <MaterialCommunityIcons
-            name="timer-outline"
-            size={18}
-            color={nbColors.primary}
-            style={styles.timeIcon}
-          />
-          <View>
-            <Text style={styles.timeLabel}>DURASI</Text>
-            <Text style={[styles.timeValue, styles.durationValue]}>
-              {duration.formatted}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </NBCard>
-  );
-}
 
 /**
  * Date Header Component
@@ -212,7 +125,7 @@ function DateHeader({ date }: DateHeaderProps): React.JSX.Element {
       <MaterialCommunityIcons
         name="calendar"
         size={16}
-        color={nbColors.gray[500]}
+        color={nbColors.gray['500']}
         style={styles.dateIcon}
       />
       <Text style={styles.dateText}>{formatDate(date)}</Text>
@@ -465,7 +378,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   listContent: {
     paddingHorizontal: nbSpacing.md,
@@ -506,7 +419,7 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -524,102 +437,9 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
+    color: nbColors.gray['700'],
   },
 
-  // Shift Card
-  shiftCard: {
-    marginBottom: nbSpacing.sm,
-    padding: 12, // Compact style (was md: 16px)
-  },
-  shiftHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: nbSpacing.md,
-  },
-  areaInfo: {
-    flex: 1,
-    marginRight: nbSpacing.sm,
-  },
-  areaName: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
-    marginBottom: nbSpacing.xs / 2,
-  },
-  areaType: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[500],
-  },
-  statusBadge: {
-    width: 70, // Fixed width for consistency
-    paddingVertical: nbSpacing.xs / 2,
-    borderRadius: nbBorderRadius.sm,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    alignItems: 'center', // Center text horizontally
-    justifyContent: 'center', // Center text vertically
-  },
-  statusActive: {
-    backgroundColor: nbColors.success, // Green fill for active
-  },
-  statusCompleted: {
-    backgroundColor: nbColors.gray[200], // Light gray for completed
-  },
-  statusText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'center', // Center text
-  },
-  statusTextActive: {
-    color: nbColors.white, // White text on green background
-  },
-  statusTextCompleted: {
-    color: nbColors.gray[600], // Dark gray text on light gray
-  },
-
-  // Time Row
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  timeItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeIcon: {
-    marginRight: nbSpacing.xs,
-  },
-  timeDivider: {
-    width: nbBorders.thin, // 2px for subtle divider
-    height: 32,
-    backgroundColor: nbColors.black, // Bold divider for NB
-    marginHorizontal: nbSpacing.sm,
-  },
-  timeLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[600],
-    marginBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  timeValue: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
-  },
-  timeValueInactive: {
-    color: nbColors.gray[400],
-  },
-  durationValue: {
-    color: nbColors.primary,
-  },
   backButton: {
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,

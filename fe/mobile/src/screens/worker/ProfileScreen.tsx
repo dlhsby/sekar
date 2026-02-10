@@ -639,14 +639,14 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <MaterialCommunityIcons
             name="lock-outline"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
             style={styles.menuIcon}
           />
           <Text style={styles.menuText}>Ubah Password</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
           />
         </TouchableOpacity>
 
@@ -659,14 +659,14 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <MaterialCommunityIcons
             name="clock-outline"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
             style={styles.menuIcon}
           />
           <Text style={styles.menuText}>Riwayat Shift</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
           />
         </TouchableOpacity>
 
@@ -679,14 +679,14 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <MaterialCommunityIcons
             name="information-outline"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
             style={styles.menuIcon}
           />
           <Text style={styles.menuText}>Tentang Aplikasi</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
           />
         </TouchableOpacity>
 
@@ -699,14 +699,14 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           <MaterialCommunityIcons
             name="cog-outline"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
             style={styles.menuIcon}
           />
           <Text style={styles.menuText}>Pengaturan</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={nbColors.gray[600]}
+            color={nbColors.gray['600']}
           />
         </TouchableOpacity>
       </NBCard>
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
 
   // Header styles
@@ -788,12 +788,12 @@ const styles = StyleSheet.create({
   fullName: {
     fontSize: nbTypography.fontSize.xl,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[900],
+    color: nbColors.gray['900'],
     marginBottom: nbSpacing.xs,
   },
   username: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginBottom: nbSpacing.sm,
   },
   roleBadge: {
@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[900],
+    color: nbColors.gray['900'],
     marginBottom: nbSpacing.md,
   },
 
@@ -836,12 +836,12 @@ const styles = StyleSheet.create({
   },
   syncLabel: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   syncValue: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[900],
+    color: nbColors.gray['900'],
   },
   syncWarning: {
     color: nbColors.warning,
@@ -894,22 +894,22 @@ const styles = StyleSheet.create({
   areaName: {
     fontSize: nbTypography.fontSize.lg,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[900],
+    color: nbColors.gray['900'],
     marginBottom: nbSpacing.xs,
   },
   areaType: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginBottom: nbSpacing.xs,
   },
   areaAddress: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.normal,
   },
   noArea: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[500],
+    color: nbColors.gray['500'],
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: nbSpacing.md,
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
   },
   reportsRow: {
@@ -952,12 +952,12 @@ const styles = StyleSheet.create({
   },
   reportsLabel: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
   },
   reportsValue: {
     fontSize: nbTypography.fontSize.lg,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray[900],
+    color: nbColors.gray['900'],
   },
 
   // Menu styles
@@ -983,11 +983,11 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[900],
+    color: nbColors.gray['900'],
   },
   menuArrow: {
     fontSize: nbTypography.fontSize['2xl'],
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     fontWeight: nbTypography.fontWeight.bold,
   },
   menuDivider: {

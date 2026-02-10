@@ -67,14 +67,14 @@ function WorkerNavigator(): React.JSX.Element {
         }}
       />
       <Tab.Screen
-        name="ClockInOut"
-        component={ClockInOutScreen}
+        name="TasksReports"
+        component={TasksReportsScreen}
         options={{
           headerTitle: () => <WorkerHomeHeader />,
-          tabBarLabel: 'Absensi',
+          tabBarLabel: 'Tugas & Laporan',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
-              name="clock-outline"
+              name="clipboard-text-multiple"
               color={color}
               size={size}
             />
@@ -95,7 +95,7 @@ function WorkerNavigator(): React.JSX.Element {
               style={{ marginLeft: 16 }}
             />
           ),
-          // Hidden from tab bar - accessed via buttons on Home or ReportsList
+          // Hidden from tab bar - accessed via buttons on Home or TasksReports
           tabBarButton: () => null,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
@@ -107,14 +107,16 @@ function WorkerNavigator(): React.JSX.Element {
         })}
       />
       <Tab.Screen
-        name="TasksReports"
-        component={TasksReportsScreen}
+        name="ClockInOut"
+        component={ClockInOutScreen}
         options={{
           headerTitle: () => <WorkerHomeHeader />,
-          tabBarLabel: 'Tugas & Laporan',
+          // Hidden from tab bar - accessed programmatically via Home screen
+          tabBarButton: () => null,
+          tabBarLabel: 'Absensi',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
-              name="clipboard-text-multiple"
+              name="clock-outline"
               color={color}
               size={size}
             />
