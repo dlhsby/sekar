@@ -1,9 +1,10 @@
 # Current Deployment Status
 
-**Last Updated:** February 10, 2026
+**Last Updated:** February 10, 2026 (Evening Update)
 **Backend Status:** ✅ Deployed & Healthy
-**Database:** ✅ 17 tables, seeded with test data
+**Database:** ✅ 16 tables, seeded with test data
 **Migration Strategy:** ✅ Fixed (proper migrations, no synchronize)
+**Production Operations:** ✅ Documented with seeding script
 
 ---
 
@@ -39,10 +40,55 @@ curl -X POST http://16.79.183.240:3000/api/v1/auth/login \
 - Migration order now:
   1. InitialSchema (1737000000000) - Base Phase 1 tables
   2. Phase2DatabaseSchema (1737720000000) - Phase 2 enhancements
+  3. RemoveEmailColumn (1738320000000) - Email field cleanup
 
 **Benefit:** Clean, reproducible deployments. Future deployments will use migrations only.
 
-### 2. ⚠️ Domain Setup (Partially Complete)
+### 2. ✅ Production Database Operations (NEW - Feb 10 Evening)
+
+**Problem:** Repeated deployment failures with "postgres service not running" and "relation does not exist" errors.
+
+**Root Cause:** Misunderstanding of production architecture. Production uses AWS RDS PostgreSQL, not a local Docker PostgreSQL container. The error "postgres service not running" was **expected** because `docker-compose.prod.yml` intentionally doesn't include a postgres service.
+
+**Solution:**
+- Created `/be/scripts/deploy-seed.sh` - Production seeding script that:
+  - Uses same connection method as migrations (temporary Docker container with RDS credentials)
+  - Validates environment variables and database connectivity
+  - Checks migration status and schema completeness
+  - Prevents duplicate data with user confirmation
+  - Provides clear success/error messages
+- Created `/specs/deployment/PRODUCTION_OPERATIONS.md` - Comprehensive operations manual with:
+  - Architecture explanation (RDS vs local PostgreSQL)
+  - Database operation procedures
+  - Troubleshooting guide for common issues
+  - Emergency procedures
+- Updated CI/CD workflow to reference new seeding script
+
+**How to Use:**
+```bash
+# SSH to EC2
+ssh -i ~/.ssh/sekar-prod.pem ec2-user@16.79.183.240
+
+# Navigate to backend directory
+cd ~/sekar/backend
+
+# Run seeding script
+./scripts/deploy-seed.sh
+```
+
+**Files Updated:**
+- `/be/scripts/deploy-seed.sh` (NEW)
+- `/specs/deployment/PRODUCTION_OPERATIONS.md` (NEW)
+- `/DEPLOYMENT_FIX.md` (NEW - root cause analysis)
+- `.github/workflows/backend-ci-cd.yml` (updated seeding comment)
+
+**Benefit:**
+- Clear separation between local dev (Docker PostgreSQL) and production (RDS)
+- Consistent database operations using standardized connection method
+- Self-validating script prevents common deployment errors
+- Comprehensive documentation prevents future confusion
+
+### 3. ⚠️ Domain Setup (Partially Complete)
 
 **Current State:**
 - ✅ `sekar.wahyutrip.com` → 16.79.183.240 (DNS configured, nginx configured)

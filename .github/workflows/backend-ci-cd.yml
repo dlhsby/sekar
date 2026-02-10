@@ -334,10 +334,9 @@ jobs:
             echo "✅ Database migrations completed"
 
             # Seed database with test data (DISABLED - run manually after deployment)
-            echo "⏩ Skipping database seeding (run manually with: docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod)"
-            # docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod || {
-            #   echo "WARNING: Seeding failed, continuing anyway"
-            # }
+            echo "⏩ Skipping database seeding (run manually with: cd ~/sekar/backend && ./scripts/deploy-seed.sh)"
+            # Seeding is disabled in CI/CD to prevent accidental data overwrites
+            # To seed production database, SSH to EC2 and run: ./scripts/deploy-seed.sh
 
             # Deploy with zero-downtime
             echo "🚀 Starting backend container..."
