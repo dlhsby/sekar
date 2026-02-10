@@ -142,7 +142,7 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
           editable={editable}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          placeholderTextColor={nbColors.gray[400]}
+          placeholderTextColor={nbColors.gray['400']}
           testID={testID ? `${testID}-input` : undefined}
           accessibilityLabel={
             textInputProps.accessibilityLabel ||
@@ -222,11 +222,11 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginTop: nbSpacing.xs,
   },
   disabled: {
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     ...nbShadows.none,
   },
 });

@@ -29,21 +29,24 @@ export const nbColors = {
   accentFlower: '#FF69B4', // Hot pink (row 4, col 5) - special events
 
   // BACKGROUNDS: Neo Brutalism Pastels (row 1 from palette)
-  background: '#F0F9F6', // Very soft mint - main background (softer, less harsh on eyes)
+  background: '#F5F0EB', // Warm stone grey - main background (reduces eye fatigue for outdoor use, maintains Neo Brutalism warmth)
   backgroundSecondary: '#B5D2AD', // Pastel green (row 1, col 2) - secondary surfaces
-  backgroundMint: '#DAF5F0', // Very light mint (row 1, col 1) - alternative light background
+  backgroundMint: '#DAF5F0', // Very light mint (row 1, col 1) - alternative light background (legacy)
   surface: '#FFFFFF', // Pure white for cards (maximum contrast)
   surfaceElevated: '#FCDFFF', // Light lavender (row 1, col 5) - elevated surfaces
 
   // STATUS COLORS (Neo Brutalism palette)
   success: '#90EE90', // Light green (row 3, col 2) - success states
   successLight: '#B5D2AD', // Pastel green (row 1, col 2) - light background
-  warning: '#E3A018', // Dark golden (row 4, col 3) - maintenance alerts
+  successDark: '#15803D', // Dark green - status indicator icons, high contrast text
+  warning: '#E3A018', // Dark golden (row 4, col 3) - maintenance alerts, timer
   warningLight: '#FDFD96', // Pastel yellow (row 1, col 3) - light background
   danger: '#FF6B6B', // Coral red (row 4, col 4) - urgent/error states
   dangerLight: '#FFA07A', // Light salmon (row 2, col 4) - light background
+  dangerDark: '#991B1B', // Dark red - status indicator icons, high contrast text
   info: '#69D2E7', // Cyan blue (row 4, col 1) - info states
   infoLight: '#A7DBD8', // Light cyan (row 2, col 1) - light background
+  grayMedium: '#A8A29E', // Medium warm grey - loading states, disabled text
 
   // NEUTRAL PALETTE
   black: '#1C1917', // Warm stone black - borders, shadows, primary text (NB 2.0)

@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   skeleton: {
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
     borderRadius: nbBorderRadius.sm, // 4px - NB 2.0 skeleton radius
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   shimmer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: nbColors.gray[300],
+    backgroundColor: nbColors.gray['300'],
   },
 });
 

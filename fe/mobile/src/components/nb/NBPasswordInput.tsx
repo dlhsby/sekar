@@ -168,7 +168,7 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
             secureTextEntry={!showPassword}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            placeholderTextColor={nbColors.gray[400]}
+            placeholderTextColor={nbColors.gray['400']}
             testID={testID ? `${testID}-input` : undefined}
             accessibilityLabel={
               textInputProps.accessibilityLabel ||
@@ -196,7 +196,7 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
             <MaterialCommunityIcons
               name={showPassword ? 'eye-off' : 'eye'}
               size={24}
-              color={isDisabled ? nbColors.gray[400] : nbColors.gray[600]}
+              color={isDisabled ? nbColors.gray['400'] : nbColors.gray['600']}
             />
           </TouchableOpacity>
         </View>
@@ -266,11 +266,11 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     marginTop: nbSpacing.xs,
   },
   disabled: {
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray['100'],
     ...nbShadows.none,
   },
 });

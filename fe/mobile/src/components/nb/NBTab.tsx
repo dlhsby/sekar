@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     color: nbColors.white,
   },
   badge: {
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray['200'],
     paddingHorizontal: nbSpacing.xs,
     paddingVertical: 2,
     borderRadius: nbBorderRadius.base, // 2px - softened NB

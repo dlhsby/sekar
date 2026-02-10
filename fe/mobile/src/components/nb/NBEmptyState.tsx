@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     borderRadius: nbBorderRadius.base, // 2px - softened NB
-    backgroundColor: nbColors.gray[50],
+    backgroundColor: nbColors.gray['50'],
     ...nbShadows.sm,
   },
   iconText: {
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   description: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+    color: nbColors.gray['600'],
     textAlign: 'center',
     lineHeight: nbTypography.fontSize.base * 1.5,
     marginBottom: nbSpacing.md,

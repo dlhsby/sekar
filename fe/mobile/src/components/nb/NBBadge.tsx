@@ -65,7 +65,7 @@ const colorStyles: Record<
   },
   danger: { bg: nbColors.danger, text: nbColors.white, border: nbColors.black },
   gray: {
-    bg: nbColors.gray[200],
+    bg: nbColors.gray['200'],
     text: nbColors.black,
     border: nbColors.black,
   },
