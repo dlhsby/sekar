@@ -1,16 +1,20 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** February 6, 2026
+**Last Updated:** February 10, 2026
 **Status:** Production Ready
 **Deployment Time:** 15-20 minutes (automated)
+
+> **⚠️ IMPORTANT:** This guide references domain names that need to be set up manually.
+> For current deployment status and actual URLs, see: `specs/deployment/DEPLOYMENT_STATUS.md`
 
 ---
 
 ## 📋 Quick Reference
 
-**Production URLs:**
-- API: http://api.sekar.wahyutrip.com
-- Web Dashboard: http://sekar.wahyutrip.com
+**Current Production URLs:**
+- API: http://16.79.183.240:3000 (or http://sekar.wahyutrip.com if nginx configured)
+- API (subdomain): http://api.sekar.wahyutrip.com ⚠️ NOT YET CONFIGURED (see DEPLOYMENT_STATUS.md)
+- Web Dashboard: http://sekar.wahyutrip.com ⚠️ NOT YET DEPLOYED
 
 **What's New in Phase 2:**
 - ✅ Automated secret management (GitHub Secrets → .env.production)
