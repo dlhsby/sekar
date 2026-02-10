@@ -15,7 +15,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 1
     labels:
       - "dependencies"
       - "backend"
@@ -40,7 +40,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 1
     labels:
       - "dependencies"
       - "web"
@@ -65,7 +65,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 1
     labels:
       - "dependencies"
       - "mobile"
@@ -89,7 +89,7 @@ updates:
           - "*"
         update-types: ["patch"]
 
-  # GitHub Actions - Monthly updates
+  # GitHub Actions - Monthly updates, PATCH ONLY
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -97,12 +97,21 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Jakarta"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 1
     labels:
       - "dependencies"
       - "github-actions"
     commit-message:
       prefix: "chore(deps-actions)"
+    # PATCH UPDATES ONLY
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    groups:
+      actions-patches:
+        patterns:
+          - "*"
+        update-types: ["patch"]
 
   # Docker base images - Monthly updates
   - package-ecosystem: "docker"
@@ -118,3 +127,7 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(deps-docker)"
+    groups:
+      docker-patches:
+        patterns:
+          - "*"
