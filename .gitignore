@@ -2,4 +2,4 @@ logs/
 
 # Infrastructure data (persistent volumes)
 infra/data/
-infra/localstack/
+infra/localstack/be/src/database/migrations/.backup/
