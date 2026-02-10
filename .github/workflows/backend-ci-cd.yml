@@ -252,7 +252,7 @@ jobs:
             PORT=3000
             DATABASE_HOST=${DATABASE_HOST}
             DATABASE_PORT=5432
-            DATABASE_USER=postgres
+            DATABASE_USER=sekar_admin
             DATABASE_PASSWORD=${DATABASE_PASSWORD}
             DATABASE_NAME=sekar_db
             DATABASE_SYNCHRONIZE=false
