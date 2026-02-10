@@ -157,9 +157,9 @@ export default function AreasPage() {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex gap-3 flex-wrap items-end">
+          <div className="flex gap-4 flex-wrap items-end">
             {/* Search */}
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-0">
               <FormInput
                 label="Cari Area"
                 placeholder="Cari nama atau kode area..."
@@ -170,7 +170,7 @@ export default function AreasPage() {
             </div>
 
             {/* Rayon Filter */}
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <FormSelect
                 label="Filter Rayon"
                 options={[
@@ -186,7 +186,7 @@ export default function AreasPage() {
             </div>
 
             {/* Area Type Filter */}
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <FormSelect
                 label="Filter Tipe"
                 options={[

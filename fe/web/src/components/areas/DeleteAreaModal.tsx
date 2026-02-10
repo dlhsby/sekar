@@ -85,7 +85,7 @@ export function DeleteAreaModal({
           </div>
 
           {/* Area Details */}
-          <div className="bg-nb-gray-100 border-3 border-nb-black p-4 space-y-2">
+          <div className="bg-nb-gray-100 border-2 border-nb-black p-4 space-y-2">
             <div className="flex justify-between">
               <span className="font-bold">Nama:</span>
               <span>{area?.name}</span>

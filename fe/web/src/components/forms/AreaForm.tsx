@@ -227,7 +227,7 @@ export function AreaForm({
 
         {/* Center Coordinates Display */}
         {centerCoords && (
-          <div className="bg-nb-gray-100 border-3 border-nb-black p-4">
+          <div className="bg-nb-gray-100 border-2 border-nb-black p-4">
             <div className="font-bold mb-2">Koordinat Pusat:</div>
             <div className="font-mono text-sm">
               {formatCoordinates(centerCoords[0], centerCoords[1])}

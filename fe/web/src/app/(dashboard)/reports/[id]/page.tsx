@@ -43,7 +43,7 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -59,7 +59,7 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
           <div className="text-5xl mb-4">📋</div>
-          <p className="text-gray-600 font-semibold">Laporan tidak ditemukan</p>
+          <p className="text-nb-gray-600 font-semibold">Laporan tidak ditemukan</p>
         </div>
       </div>
     );
@@ -87,8 +87,8 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
               Laporan
             </Link>
           </li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-600">Detail</li>
+          <li className="text-nb-gray-400">/</li>
+          <li className="text-nb-gray-600">Detail</li>
         </ol>
       </nav>
 
@@ -163,7 +163,7 @@ export default function ReportDetailPage({ params }: ReportDetailPageProps) {
               <h2 className="text-xl font-bold text-nb-black">Foto Laporan</h2>
             </CardHeader>
             <CardContent>
-              <div className="bg-nb-gray-100 border-3 border-nb-black overflow-hidden">
+              <div className="bg-nb-gray-100 border-2 border-nb-black overflow-hidden">
                 <img
                   src={report.photo_url}
                   alt="Report Photo"

@@ -61,10 +61,10 @@ export class AuthErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen bg-nb-gray-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md">
-            <div className="bg-nb-white border-3 border-nb-black shadow-nb-md p-8">
+            <div className="bg-nb-white border-2 border-nb-black shadow-nb-md p-8">
               {/* Error icon */}
               <div className="flex justify-center mb-6">
-                <div className="h-16 w-16 bg-nb-danger text-nb-white rounded-full flex items-center justify-center border-3 border-nb-black">
+                <div className="h-16 w-16 bg-nb-danger text-nb-white rounded-full flex items-center justify-center border-2 border-nb-black">
                   <AlertTriangle className="h-10 w-10" />
                 </div>
               </div>

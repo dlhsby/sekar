@@ -24,7 +24,7 @@ export default function DashboardLoading() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-nb-white border-3 border-nb-black shadow-nb-sm p-6"
+            className="bg-nb-white border-2 border-nb-black shadow-nb-sm p-6"
           >
             <div className="h-6 w-24 bg-nb-gray-200 border-2 border-nb-black mb-3" />
             <div className="h-10 w-20 bg-nb-gray-300 border-2 border-nb-black" />
@@ -33,7 +33,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Content card skeleton */}
-      <div className="bg-nb-white border-3 border-nb-black shadow-nb-sm">
+      <div className="bg-nb-white border-2 border-nb-black shadow-nb-sm">
         {/* Card header */}
         <div className="border-b-3 border-nb-black p-6">
           <div className="h-8 w-48 bg-nb-gray-200 border-2 border-nb-black" />

@@ -9,7 +9,7 @@ import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold
-   border-3 border-nb-black transition-all duration-100
+   border-2 border-nb-black rounded-nb-base transition-all duration-100
    disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none
    [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0
    ${nbFocusRing}`,
@@ -87,6 +87,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         ref={ref}
         disabled={disabled || loading}
+        aria-busy={loading}
         {...props}
       >
         {loading ? (

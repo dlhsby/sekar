@@ -3,13 +3,13 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils/cn';
 
-const cardVariants = cva('bg-card text-card-foreground', {
+const cardVariants = cva('bg-card text-card-foreground overflow-hidden', {
   variants: {
     variant: {
-      default: 'border-3 border-nb-black shadow-nb-sm',
-      elevated: 'border-3 border-nb-black shadow-nb-md',
-      outlined: 'border-3 border-nb-black shadow-none',
-      filled: 'border-0 shadow-none bg-nb-gray-50',
+      default: 'border-2 border-nb-black rounded-nb-base shadow-nb-sm',
+      elevated: 'border-2 border-nb-black rounded-nb-base shadow-nb-md',
+      outlined: 'border-2 border-nb-black rounded-nb-base shadow-none',
+      filled: 'border-0 rounded-nb-base shadow-none bg-nb-gray-50',
     },
     interactive: {
       true: 'cursor-pointer transition-all duration-100 hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',

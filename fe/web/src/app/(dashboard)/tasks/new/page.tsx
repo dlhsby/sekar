@@ -72,7 +72,7 @@ export default function CreateTaskPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -96,14 +96,14 @@ export default function CreateTaskPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Breadcrumb */}
       <nav className="mb-6 text-sm">
-        <ol className="flex items-center space-x-2">
+        <ol className="flex items-center gap-2">
           <li>
             <Link href="/tasks" className="text-nb-primary hover:underline font-semibold">
               Tugas
             </Link>
           </li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-600">Buat Baru</li>
+          <li className="text-nb-gray-400">/</li>
+          <li className="text-nb-gray-600">Buat Baru</li>
         </ol>
       </nav>
 
@@ -133,12 +133,12 @@ export default function CreateTaskPage() {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-4 bg-red-100 border-3 border-nb-black">
-                <p className="text-red-700 font-semibold">{error}</p>
+              <div className="mb-4 p-4 bg-nb-danger-light border-2 border-nb-black">
+                <p className="text-nb-danger font-semibold">{error}</p>
               </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Title */}
               <FormInput
                 label="Judul Tugas"

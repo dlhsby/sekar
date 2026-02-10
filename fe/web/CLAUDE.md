@@ -24,31 +24,45 @@ npm run build             # Production build
 npm run test:e2e          # Playwright E2E tests
 ```
 
-## Neo Brutalism Design System
+## Neo Brutalism 2.0 Design System
 
 ### Core Principles
-- **Bold borders**: 3px solid black (`border-3 border-nb-black`)
-- **Hard-edge shadows**: No blur, pure offset (`shadow-nb-md`, `shadow-nb-lg`)
-- **Sharp corners**: 0 border-radius
+- **Clean borders**: 2px solid black (`border-2 border-nb-black`)
+- **Soft-edge shadows**: Subtle blur with opacity (`shadow-nb-sm`, `shadow-nb-md`, `shadow-nb-lg`)
+- **Friendly corners**: 4-8px border radius (`rounded-nb-sm`, `rounded-nb-base`, `rounded-nb-md`)
 - **48px touch targets**: All interactive elements (`min-h-touch`)
-- **High contrast**: Black text, strong colors
+- **High contrast**: Soft black text (#1C1917), strong colors
+- **Space Grotesk headings**: Modern geometric font for h1-h6
 
 ### Color Tokens (use `bg-nb-*`, `text-nb-*`, `border-nb-*`)
 ```
-Primary:     nb-primary (#0066CC), nb-primary-hover (#0052A3)
-Success:     nb-success (#1B5E20), nb-success-light (#4CAF50)
-Warning:     nb-warning (#F57C00)
-Danger:      nb-danger (#DC2626)
-Neutral:     nb-black, nb-white, nb-navy (#001F3F)
-Gray scale:  nb-gray-50 through nb-gray-900
+Primary:     nb-primary (#7FBC8C), nb-primary-hover (#5A9468), nb-primary-active (#4A7D56)
+Success:     nb-success (#7FBC8C), nb-success-light (#BAFCA2)
+Warning:     nb-warning (#E3A018), nb-warning-light (#FFDB58)
+Danger:      nb-danger (#FF6B6B), nb-danger-light (#FFA07A)
+Info:        nb-info (#A7DBD8), nb-info-light (#A7DBD8)
+Neutral:     nb-black (#1C1917), nb-white (#FFFFFF), nb-background (#F5F0EB)
+Sidebar:     nb-sidebar (#1A4D2E), nb-sidebar-hover (#2D5233), nb-sidebar-active (#0F3520)
+Gray scale:  nb-gray-50 (#FAFAF9) through nb-gray-900 (#1C1917) - warm stone tones
 ```
 
-### Shadow Tokens
+### Shadow Tokens (Soft-edge with blur)
 ```
-shadow-nb-sm     → 4px 4px 0px black (cards)
-shadow-nb-md     → 6px 6px 0px black (buttons, inputs)
-shadow-nb-lg     → 8px 8px 0px black (modals, dropdowns)
-shadow-nb-active → 2px 2px 0px black (pressed state)
+shadow-nb-xs     → 2px 2px 1px rgba(28,25,23,0.15) (badges)
+shadow-nb-sm     → 4px 4px 2px rgba(28,25,23,0.18) (cards)
+shadow-nb-md     → 6px 6px 3px rgba(28,25,23,0.20) (buttons, inputs)
+shadow-nb-lg     → 8px 8px 4px rgba(28,25,23,0.22) (modals, dropdowns)
+shadow-nb-xl     → 12px 12px 6px rgba(28,25,23,0.25) (large modals)
+shadow-nb-active → 2px 2px 1px rgba(28,25,23,0.15) (pressed state)
+```
+
+### Border Radius Tokens
+```
+rounded-nb-sm   → 4px (badges, small elements)
+rounded-nb-base → 6px (buttons, cards, inputs)
+rounded-nb-md   → 8px (dialogs, large containers)
+rounded-nb-lg   → 12px (special containers)
+rounded-nb-xl   → 16px (extra large containers)
 ```
 
 ## Component Library

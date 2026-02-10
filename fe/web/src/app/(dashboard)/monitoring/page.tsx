@@ -57,7 +57,7 @@ export default function MonitoringPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -91,13 +91,13 @@ export default function MonitoringPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-nb-black">Monitoring Real-Time</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-nb-gray-600 mt-1">
             Pantau posisi pekerja dan status area secara langsung
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="h-3 w-3 rounded-full bg-nb-success animate-pulse"></div>
-          <span className="text-sm text-gray-600">Auto-refresh setiap 15 detik</span>
+          <span className="text-sm text-nb-gray-600">Auto-refresh setiap 15 detik</span>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ export default function MonitoringPage() {
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="h-32 bg-nb-gray-200 border-3 border-nb-black animate-pulse"
+              className="h-32 bg-nb-gray-200 border-2 border-nb-black animate-pulse"
             />
           ))}
         </div>
@@ -285,7 +285,7 @@ export default function MonitoringPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="bg-nb-gray-100 border-3 border-nb-black h-96 flex items-center justify-center">
+          <div className="bg-nb-gray-100 border-2 border-nb-black h-96 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">🗺️</div>
               <p className="text-nb-gray-600 font-semibold mb-2">
@@ -325,7 +325,7 @@ export default function MonitoringPage() {
                 return (
                   <div
                     key={worker.user_id || `worker-${index}`}
-                    className="flex items-center justify-between p-4 border-3 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
+                    className="flex items-center justify-between p-4 border-2 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
                   >
                     {/* Worker Info */}
                     <div className="flex items-center gap-4">
@@ -373,7 +373,7 @@ export default function MonitoringPage() {
 
       {/* Last Updated */}
       {liveWorkersData && (
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-sm text-nb-gray-500">
           Terakhir diperbarui:{' '}
           {new Date(liveWorkersData.timestamp).toLocaleString('id-ID')}
         </div>

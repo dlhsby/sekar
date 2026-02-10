@@ -62,7 +62,7 @@ export function Header({
   return (
     <header
       className={cn(
-        'bg-nb-white border-b-3 border-nb-black',
+        'bg-nb-white border-b-2 border-nb-black',
         'sticky top-0 z-30',
         className
       )}
@@ -96,7 +96,7 @@ export function Header({
           {/* Breadcrumb */}
           {showBreadcrumb && (
             <div className="hidden md:block flex-1 min-w-0">
-              <Breadcrumb />
+              <Breadcrumb aria-label="Navigasi breadcrumb" />
             </div>
           )}
         </div>
@@ -132,14 +132,14 @@ export function Header({
                   type="button"
                   className={cn(
                     'flex items-center gap-2 px-3 py-2 min-h-touch',
-                    'border-3 border-nb-black bg-nb-white shadow-nb-sm',
+                    'border-2 border-nb-black bg-nb-white shadow-nb-sm rounded-nb-base',
                     'hover:bg-nb-gray-50 active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
                     'transition-all duration-100',
                     'focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2'
                   )}
                   aria-label="User menu"
                 >
-                  <div className="h-8 w-8 bg-nb-navy text-nb-white font-bold flex items-center justify-center text-sm border-2 border-nb-black">
+                  <div className="h-8 w-8 bg-nb-sidebar text-nb-white font-bold flex items-center justify-center text-sm border-2 border-nb-black">
                     {user.full_name.charAt(0).toUpperCase()}
                   </div>
                   <span className="hidden lg:block font-bold text-sm text-nb-black">

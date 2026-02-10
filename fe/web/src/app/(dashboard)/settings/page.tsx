@@ -80,7 +80,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -162,13 +162,13 @@ export default function SettingsPage() {
             />
 
             {passwordSuccess && (
-              <div className="p-4 bg-nb-success-light border-3 border-nb-success text-nb-success rounded-none">
+              <div className="p-4 bg-nb-success-light border-2 border-nb-success text-nb-success rounded-none">
                 <p className="font-semibold">Password berhasil diubah!</p>
               </div>
             )}
 
             {passwordError && (
-              <div className="p-4 bg-red-50 border-3 border-nb-danger text-nb-danger rounded-none">
+              <div className="p-4 bg-nb-danger-light border-2 border-nb-danger text-nb-danger rounded-none" role="alert" aria-live="polite">
                 <p className="font-semibold">{passwordError}</p>
               </div>
             )}
@@ -223,10 +223,12 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={notifications}
                   onClick={() => setNotifications(!notifications)}
                   className={`
-                    relative inline-flex h-6 w-11 items-center rounded-none
-                    border-3 border-nb-black transition-colors
+                    relative inline-flex h-6 w-12 items-center rounded-none
+                    border-2 border-nb-black transition-colors
                     ${notifications ? 'bg-nb-primary' : 'bg-nb-gray-300'}
                   `}
                 >
@@ -256,18 +258,18 @@ export default function SettingsPage() {
           <h2 className="text-xl font-bold text-nb-black">Informasi Sistem</h2>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
+          <div className="space-y-2 text-sm divide-y divide-nb-black/10">
+            <div className="flex justify-between pb-2">
               <span className="text-nb-gray-600">Versi Aplikasi:</span>
               <span className="font-semibold text-nb-black">2.0.0 (Phase 2)</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between py-2">
               <span className="text-nb-gray-600">Environment:</span>
               <span className="font-semibold text-nb-black">
                 {process.env.NODE_ENV || 'development'}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between pt-2">
               <span className="text-nb-gray-600">Last Updated:</span>
               <span className="font-semibold text-nb-black">February 5, 2026</span>
             </div>

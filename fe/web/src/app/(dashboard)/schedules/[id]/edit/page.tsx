@@ -75,7 +75,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
 
   if (!schedule) {
     return <div className="container mx-auto p-6">
-      <div className="text-center text-gray-600">Jadwal tidak ditemukan</div>
+      <div className="text-center text-nb-gray-600">Jadwal tidak ditemukan</div>
     </div>;
   }
 
@@ -145,7 +145,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-4 border-3 border-nb-danger bg-red-50 text-nb-danger">
+              <div className="p-4 border-2 border-nb-danger bg-nb-danger-light text-nb-danger" role="alert" aria-live="polite">
                 {error}
               </div>
             )}
@@ -163,7 +163,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
                   label: `${u.name} (${u.email})`,
                 })),
               ]}
-              helperText="Pilih pekerja yang akan dijadwalkan"
+              helperText={<span className="text-nb-gray-600">Pilih pekerja yang akan dijadwalkan</span>}
             />
 
             {/* Area Select */}
@@ -179,7 +179,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
                   label: `${a.name} (${a.code})`,
                 })),
               ]}
-              helperText="Area penugasan pekerja"
+              helperText={<span className="text-nb-gray-600">Area penugasan pekerja</span>}
             />
 
             {/* Shift Select */}
@@ -195,7 +195,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
                   label: `${s.name} (${s.start_time} - ${s.end_time})`,
                 })),
               ]}
-              helperText="Jam kerja pekerja"
+              helperText={<span className="text-nb-gray-600">Jam kerja pekerja</span>}
             />
 
             {/* Effective Date */}
@@ -205,7 +205,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
               required
               value={effectiveDate}
               onChange={(e) => setEffectiveDate(e.target.value)}
-              helperText="Tanggal berlaku jadwal"
+              helperText={<span className="text-nb-gray-600">Tanggal berlaku jadwal</span>}
             />
 
             {/* End Date */}
@@ -214,7 +214,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              helperText="Kosongkan jika jadwal berlangsung terus"
+              helperText={<span className="text-nb-gray-600">Kosongkan jika jadwal berlangsung terus</span>}
             />
 
             {/* Actions */}

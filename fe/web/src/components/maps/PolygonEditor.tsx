@@ -274,7 +274,7 @@ export function PolygonEditor({
 
       {/* Area display */}
       {currentPolygon && area > 0 && (
-        <div className="bg-amber-100 border-3 border-nb-black p-4">
+        <div className="bg-nb-warning/20 border-2 border-nb-black p-4">
           <div className="flex items-center gap-2">
             <span className="font-bold">Luas Area:</span>
             <span className="text-2xl font-black">{formatArea(area)}</span>
@@ -293,7 +293,7 @@ export function PolygonEditor({
 
       {/* Instructions */}
       {!readonly && (
-        <div className="bg-nb-gray-100 border-3 border-nb-black p-4">
+        <div className="bg-nb-gray-100 border-2 border-nb-black p-4">
           <h4 className="font-bold mb-2">Petunjuk:</h4>
           <ul className="text-sm space-y-1 list-disc list-inside">
             <li>Klik tombol "Gambar Polygon" untuk mulai menggambar</li>

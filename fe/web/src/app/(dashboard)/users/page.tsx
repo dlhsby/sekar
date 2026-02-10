@@ -69,11 +69,13 @@ export default function UsersPage() {
       key: 'name',
       title: 'Nama',
       sortable: true,
+      'aria-sort': 'none' as const,
     },
     {
       key: 'email',
       title: 'Email',
       sortable: true,
+      'aria-sort': 'none' as const,
     },
     {
       key: 'role',
@@ -238,7 +240,7 @@ export default function UsersPage() {
       {/* Pagination */}
       {!isLoading && users.length > 0 && (
         <Card>
-          <CardContent className="px-6 py-4 flex items-center justify-between">
+          <CardContent className="px-6 py-4 flex items-center justify-between" aria-live="polite">
             <div className="text-sm text-nb-gray-600">
               Menampilkan {users.length} dari {total} user
             </div>

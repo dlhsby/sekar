@@ -78,11 +78,11 @@ export default function AreaDetailPage({
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-12 w-64 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
-        <div className="h-96 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
+        <div className="h-12 w-64 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
+        <div className="h-96 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
         <div className="grid grid-cols-2 gap-6">
-          <div className="h-48 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
-          <div className="h-48 bg-nb-gray-200 border-3 border-nb-black animate-pulse" />
+          <div className="h-48 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
+          <div className="h-48 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ export default function AreaDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
+          <nav aria-label="Navigasi breadcrumb" className="flex items-center gap-3 mb-2">
             <Button
               onClick={() => router.push('/areas')}
               variant="secondary"
@@ -122,7 +122,7 @@ export default function AreaDetailPage({
             >
               Kembali
             </Button>
-          </div>
+          </nav>
           <h1 className="text-3xl font-black">{area.name}</h1>
           <p className="text-nb-gray-600 mt-1 font-mono">{area.code}</p>
 
@@ -170,12 +170,14 @@ export default function AreaDetailPage({
           <h2 className="font-bold text-lg">Peta Area</h2>
         </CardHeader>
         <CardContent className="p-4">
-          <Map
-            center={[area.center_longitude, area.center_latitude]}
-            zoom={15}
-            className="h-[500px]"
-            onLoad={handleMapLoad}
-          />
+          <div aria-label="Peta area">
+            <Map
+              center={[area.center_longitude, area.center_latitude]}
+              zoom={15}
+              className="h-full md:h-[500px] min-h-[400px]"
+              onLoad={handleMapLoad}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -220,7 +222,7 @@ export default function AreaDetailPage({
           <CardContent className="space-y-4">
             {/* Coverage Area */}
             {area.coverage_area && (
-              <div className="bg-nb-warning/20 border-3 border-nb-black p-4">
+              <div className="bg-nb-warning/20 border-2 border-nb-black p-4">
                 <div className="text-sm font-bold text-nb-gray-700 mb-1">
                   Luas Area
                 </div>
@@ -235,7 +237,7 @@ export default function AreaDetailPage({
               <div className="font-bold text-nb-gray-700 mb-2">
                 Koordinat Pusat:
               </div>
-              <div className="bg-nb-gray-100 border-3 border-nb-black p-3 font-mono text-sm">
+              <div className="bg-nb-gray-100 border-2 border-nb-black p-3 font-mono text-sm">
                 {formatCoordinates(area.center_longitude, area.center_latitude)}
               </div>
             </div>

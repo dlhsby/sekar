@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-nb-primary focus:text-white focus:font-bold focus:border-3 focus:border-nb-black focus:shadow-nb-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-nb-primary focus:text-white focus:font-bold focus:border-2 focus:border-nb-black focus:shadow-nb-lg focus:rounded-nb-base"
       >
         Skip to main content
       </a>
@@ -101,6 +101,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               role: user.role,
             }}
             className="hidden lg:flex"
+            aria-expanded={sidebarOpen}
           />
         )}
 

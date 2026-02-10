@@ -91,7 +91,7 @@ export default function LoginPage() {
   // Show loading state while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-nb-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-nb-background flex items-center justify-center">
         <div className="text-nb-gray-600">Memeriksa autentikasi...</div>
       </div>
     );
@@ -103,7 +103,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-nb-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-nb-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card with Neo Brutalism styling */}
         <Card variant="elevated">
@@ -121,8 +121,9 @@ export default function LoginPage() {
               {/* Global error message */}
               {error && (
                 <div
-                  className="p-4 bg-nb-danger-light border-3 border-nb-danger"
+                  className="p-4 bg-nb-danger-light border-2 border-nb-danger rounded-nb-md"
                   role="alert"
+                  aria-live="polite"
                 >
                   <p className="text-sm text-nb-black font-medium">{error}</p>
                 </div>

@@ -119,7 +119,7 @@ export default function CreateSchedulePage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-4 border-3 border-nb-danger bg-red-50 text-nb-danger">
+              <div className="p-4 border-2 border-nb-danger bg-nb-danger-light text-nb-danger" role="alert" aria-live="polite">
                 {error}
               </div>
             )}
@@ -137,7 +137,7 @@ export default function CreateSchedulePage() {
                   label: `${u.name} (${u.email})`,
                 })),
               ]}
-              helperText="Pilih pekerja yang akan dijadwalkan"
+              helperText={<span className="text-nb-gray-600">Pilih pekerja yang akan dijadwalkan</span>}
             />
 
             {/* Area Select */}
@@ -153,7 +153,7 @@ export default function CreateSchedulePage() {
                   label: `${a.name} (${a.code})`,
                 })),
               ]}
-              helperText="Area penugasan pekerja"
+              helperText={<span className="text-nb-gray-600">Area penugasan pekerja</span>}
             />
 
             {/* Shift Select */}
@@ -169,7 +169,7 @@ export default function CreateSchedulePage() {
                   label: `${s.name} (${s.start_time} - ${s.end_time})`,
                 })),
               ]}
-              helperText="Jam kerja pekerja"
+              helperText={<span className="text-nb-gray-600">Jam kerja pekerja</span>}
             />
 
             {/* Effective Date */}
@@ -179,7 +179,7 @@ export default function CreateSchedulePage() {
               required
               value={effectiveDate}
               onChange={(e) => setEffectiveDate(e.target.value)}
-              helperText="Tanggal berlaku jadwal"
+              helperText={<span className="text-nb-gray-600">Tanggal berlaku jadwal</span>}
             />
 
             {/* End Date */}
@@ -188,7 +188,7 @@ export default function CreateSchedulePage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              helperText="Kosongkan jika jadwal berlangsung terus"
+              helperText={<span className="text-nb-gray-600">Kosongkan jika jadwal berlangsung terus</span>}
             />
 
             {/* Actions */}

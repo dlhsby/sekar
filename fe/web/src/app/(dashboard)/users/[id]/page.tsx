@@ -55,9 +55,9 @@ export default function EditUserPage({ params }: EditUserPageProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6" aria-label="Memuat data pengguna...">
         <div className="animate-pulse">
-          <div className="h-8 w-48 bg-nb-gray-200 border-3 border-nb-black mb-4" />
+          <div className="h-8 w-48 bg-nb-gray-200 border-2 border-nb-black mb-4" />
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
@@ -87,7 +87,7 @@ export default function EditUserPage({ params }: EditUserPageProps) {
         >
           Kembali ke Daftar User
         </Button>
-        <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
+        <div className="bg-nb-danger-light border-2 border-nb-danger px-4 py-3" role="alert">
           <p className="text-sm text-nb-danger font-medium">
             {error ? 'Gagal memuat data user.' : 'User tidak ditemukan.'}
           </p>
@@ -130,7 +130,7 @@ export default function EditUserPage({ params }: EditUserPageProps) {
 
       {/* Error Display */}
       {updateUserMutation.isError && (
-        <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
+        <div className="bg-nb-danger-light border-2 border-nb-danger px-4 py-3" role="alert" aria-live="polite">
           <p className="text-sm text-nb-danger font-medium">
             {updateUserMutation.error instanceof Error
               ? updateUserMutation.error.message

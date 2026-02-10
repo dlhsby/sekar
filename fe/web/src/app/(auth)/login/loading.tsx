@@ -8,7 +8,7 @@ export default function LoginLoading() {
     <div className="min-h-screen bg-nb-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card skeleton */}
-        <div className="bg-nb-white border-3 border-nb-black shadow-nb-md p-8">
+        <div className="bg-nb-white border-2 border-nb-black shadow-nb-md p-8">
           {/* Logo/Title skeleton */}
           <div className="text-center mb-8 space-y-2">
             <div className="h-10 w-32 bg-nb-gray-200 mx-auto animate-pulse" />
@@ -20,17 +20,17 @@ export default function LoginLoading() {
             {/* Username field skeleton */}
             <div className="space-y-1">
               <div className="h-5 w-20 bg-nb-gray-200 animate-pulse" />
-              <div className="h-12 w-full bg-nb-gray-100 border-3 border-nb-gray-300 animate-pulse" />
+              <div className="h-12 w-full bg-nb-gray-100 border-2 border-nb-gray-300 animate-pulse" />
             </div>
 
             {/* Password field skeleton */}
             <div className="space-y-1">
               <div className="h-5 w-20 bg-nb-gray-200 animate-pulse" />
-              <div className="h-12 w-full bg-nb-gray-100 border-3 border-nb-gray-300 animate-pulse" />
+              <div className="h-12 w-full bg-nb-gray-100 border-2 border-nb-gray-300 animate-pulse" />
             </div>
 
             {/* Button skeleton */}
-            <div className="h-12 w-full bg-nb-gray-300 border-3 border-nb-gray-400 animate-pulse" />
+            <div className="h-12 w-full bg-nb-gray-300 border-2 border-nb-gray-400 animate-pulse" />
           </div>
 
           {/* Info box skeleton */}

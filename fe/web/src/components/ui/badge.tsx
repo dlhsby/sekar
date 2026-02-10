@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 border-2 border-nb-black font-bold uppercase transition-colors',
+  'inline-flex items-center gap-1 border-2 border-nb-black rounded-nb-sm shadow-nb-xs font-semibold uppercase transition-colors',
   {
     variants: {
       variant: {

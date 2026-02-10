@@ -61,7 +61,7 @@ export default function SchedulesPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -324,16 +324,16 @@ export default function SchedulesPage() {
           setScheduleToDelete(null);
         }
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-labelledby="schedule-dialog-title">
           <DialogHeader>
-            <DialogTitle>Hapus Jadwal</DialogTitle>
+            <DialogTitle id="schedule-dialog-title">Hapus Jadwal</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-nb-gray-700">
               Apakah Anda yakin ingin menghapus jadwal ini?
             </p>
             {scheduleToDelete && (
-              <div className="p-4 border-3 border-nb-black bg-nb-gray-50">
+              <div className="p-4 border-2 border-nb-black bg-nb-gray-50">
                 <div className="font-semibold">{scheduleToDelete.user?.name}</div>
                 <div className="text-sm text-nb-gray-600">
                   {scheduleToDelete.area?.name} •{' '}

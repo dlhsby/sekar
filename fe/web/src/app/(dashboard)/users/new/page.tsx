@@ -71,7 +71,7 @@ export default function NewUserPage() {
 
       {/* Error Display */}
       {createUserMutation.isError && (
-        <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
+        <div className="bg-nb-danger-light border-2 border-nb-danger px-4 py-3" role="alert" aria-live="polite">
           <p className="text-sm text-nb-danger font-medium">
             {createUserMutation.error instanceof Error
               ? createUserMutation.error.message

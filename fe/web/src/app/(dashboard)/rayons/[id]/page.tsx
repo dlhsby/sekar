@@ -51,7 +51,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">Memuat...</p>
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   return (
     <div className="container mx-auto p-6">
       {/* Breadcrumb */}
-      <nav className="mb-6 text-sm">
+      <nav className="mb-6 text-sm" aria-label="Navigasi breadcrumb">
         <ol className="flex items-center space-x-2">
           <li>
             <Link
@@ -123,8 +123,8 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
               Rayon
             </Link>
           </li>
-          <li className="text-gray-400">/</li>
-          <li className="text-gray-600">
+          <li className="text-nb-gray-400">/</li>
+          <li className="text-nb-gray-600">
             {rayonLoading ? 'Memuat...' : rayon?.name || 'Detail'}
           </li>
         </ol>
