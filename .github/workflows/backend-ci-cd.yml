@@ -359,18 +359,18 @@ jobs:
             rm -f .env.init
             echo "✅ Base schema created"
 
-            # Run Phase 2 migrations
+            # Run Phase 2 migrations (with 2-minute timeout)
             echo "Running Phase 2 migrations..."
-            docker-compose -f docker-compose.prod.yml run --rm backend npm run migration:run:prod || {
-              echo "ERROR: Migration failed"
+            timeout 120 docker-compose -f docker-compose.prod.yml run --rm backend npm run migration:run:prod || {
+              echo "ERROR: Migration failed or timed out"
               exit 1
             }
 
-            # Seed database with test data
-            echo "Seeding database..."
-            docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod || {
-              echo "WARNING: Seeding failed, continuing anyway"
-            }
+            # Seed database with test data (DISABLED - run manually after deployment)
+            echo "Skipping database seeding (run manually with: docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod)"
+            # docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod || {
+            #   echo "WARNING: Seeding failed, continuing anyway"
+            # }
 
             # Deploy with zero-downtime
             docker-compose -f docker-compose.prod.yml up -d backend
