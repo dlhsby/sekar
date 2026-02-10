@@ -26,7 +26,6 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       CREATE TABLE users (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         username VARCHAR(50) NOT NULL UNIQUE,
-        email VARCHAR(100) UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
         full_name VARCHAR(100) NOT NULL,
         role VARCHAR(50) NOT NULL,
@@ -186,7 +185,6 @@ export class InitialSchema1737000000000 implements MigrationInterface {
 
     // Create indexes for performance
     await queryRunner.query(`CREATE INDEX idx_users_username ON users(username)`);
-    await queryRunner.query(`CREATE INDEX idx_users_email ON users(email)`);
     await queryRunner.query(`CREATE INDEX idx_users_role ON users(role)`);
     await queryRunner.query(`CREATE INDEX idx_areas_area_type_id ON areas(area_type_id)`);
     await queryRunner.query(`CREATE INDEX idx_worker_assignments_user_id ON worker_assignments(user_id)`);
