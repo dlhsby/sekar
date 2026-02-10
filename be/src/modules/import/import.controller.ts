@@ -24,6 +24,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 import { ImportService } from './import.service';
 import {
   KmzUploadResponseDto,
@@ -50,7 +51,7 @@ export class ImportController {
    * Upload and parse KMZ/KML file
    */
   @Post('kmz/upload')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
@@ -102,7 +103,7 @@ export class ImportController {
    * Get preview of parsed areas from upload session
    */
   @Get('kmz/preview/:sessionId')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Get preview of parsed areas' })
   @ApiResponse({
     status: 200,
@@ -123,7 +124,7 @@ export class ImportController {
    * Confirm import and create/update areas
    */
   @Post('kmz/confirm')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Confirm and execute import' })
   @ApiResponse({
     status: 201,

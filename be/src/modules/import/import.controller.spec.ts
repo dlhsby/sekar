@@ -15,7 +15,7 @@ describe('ImportController', () => {
     password_hash: 'hashed',
     full_name: 'Admin User',
     phone: '08123456789',
-    role: UserRole.ADMIN,
+    role: UserRole.SUPERADMIN,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -247,7 +247,7 @@ describe('ImportController', () => {
     it('should allow admin user to upload', async () => {
       service.uploadKmz.mockResolvedValue(mockUploadResponse);
 
-      const adminUser = { ...mockUser, role: UserRole.ADMIN };
+      const adminUser = { ...mockUser, role: UserRole.SUPERADMIN };
       const result = await controller.uploadKmz(mockFile, adminUser);
 
       expect(result).toEqual(mockUploadResponse);
@@ -256,7 +256,7 @@ describe('ImportController', () => {
     it('should allow admin user to preview', async () => {
       service.getPreview.mockResolvedValue(mockUploadResponse);
 
-      const adminUser = { ...mockUser, role: UserRole.ADMIN };
+      const adminUser = { ...mockUser, role: UserRole.SUPERADMIN };
       const result = await controller.getPreview('session-1', adminUser);
 
       expect(result).toEqual(mockUploadResponse);
@@ -265,7 +265,7 @@ describe('ImportController', () => {
     it('should allow admin user to confirm', async () => {
       service.confirmImport.mockResolvedValue(mockConfirmResponse);
 
-      const adminUser = { ...mockUser, role: UserRole.ADMIN };
+      const adminUser = { ...mockUser, role: UserRole.SUPERADMIN };
       const dto = {
         session_id: 'session-1',
         areas: [{ index: 0, action: 'create' as const }],

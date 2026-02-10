@@ -35,8 +35,8 @@ export class ShiftInfoDto {
   @ApiProperty({ description: 'Clock-in timestamp' })
   clock_in_time: Date;
 
-  @ApiProperty({ type: AreaInfoDto, description: 'Assigned area' })
-  area: AreaInfoDto;
+  @ApiProperty({ type: AreaInfoDto, description: 'Assigned area', nullable: true })
+  area: AreaInfoDto | null;
 }
 
 /**

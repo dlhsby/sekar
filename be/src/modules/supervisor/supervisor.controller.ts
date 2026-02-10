@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 import { ActiveWorkerDto } from './dto/active-workers-response.dto';
 import { AreaStatusResponseDto } from './dto/area-status-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
@@ -20,7 +21,7 @@ import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination
 @ApiBearerAuth()
 @Controller('supervisor')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+@Roles(...USER_MANAGERS, UserRole.KORLAP)
 export class SupervisorController {
   constructor(private readonly supervisorService: SupervisorService) {}
 

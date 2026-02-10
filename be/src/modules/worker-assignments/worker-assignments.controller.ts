@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for worker assignment operations
@@ -32,7 +33,7 @@ export class WorkerAssignmentsController {
    * @returns The created assignment
    */
   @Post(':id/assign')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP)
   @ApiOperation({
     summary: 'Assign worker to area',
     description:
@@ -85,7 +86,7 @@ export class WorkerAssignmentsController {
    * @param workerId - Worker user ID
    */
   @Delete(':id/assign')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP)
   @ApiOperation({
     summary: 'Remove worker assignment',
     description: "Remove a worker's area assignment. Admin and Supervisor only.",

@@ -25,7 +25,7 @@ describe('RolesGuard', () => {
 
   describe('canActivate', () => {
     it('should return true if no roles are required', () => {
-      const context = mockExecutionContext({ role: UserRole.WORKER });
+      const context = mockExecutionContext({ role: UserRole.SATGAS });
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
 
       const result = guard.canActivate(context);
@@ -38,8 +38,8 @@ describe('RolesGuard', () => {
     });
 
     it('should return true if user has required role', () => {
-      const context = mockExecutionContext({ role: UserRole.ADMIN });
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
+      const context = mockExecutionContext({ role: UserRole.SUPERADMIN });
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.SUPERADMIN]);
 
       const result = guard.canActivate(context);
 
@@ -47,10 +47,10 @@ describe('RolesGuard', () => {
     });
 
     it('should return true if user has one of the required roles', () => {
-      const context = mockExecutionContext({ role: UserRole.SUPERVISOR });
+      const context = mockExecutionContext({ role: UserRole.KORLAP });
       jest
         .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN, UserRole.SUPERVISOR]);
+        .mockReturnValue([UserRole.SUPERADMIN, UserRole.KORLAP]);
 
       const result = guard.canActivate(context);
 
@@ -58,8 +58,8 @@ describe('RolesGuard', () => {
     });
 
     it('should return false if user does not have required role', () => {
-      const context = mockExecutionContext({ role: UserRole.WORKER });
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
+      const context = mockExecutionContext({ role: UserRole.SATGAS });
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.SUPERADMIN]);
 
       const result = guard.canActivate(context);
 
@@ -67,10 +67,10 @@ describe('RolesGuard', () => {
     });
 
     it('should return false if user role does not match any required roles', () => {
-      const context = mockExecutionContext({ role: UserRole.WORKER });
+      const context = mockExecutionContext({ role: UserRole.SATGAS });
       jest
         .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN, UserRole.SUPERVISOR]);
+        .mockReturnValue([UserRole.SUPERADMIN, UserRole.KORLAP]);
 
       const result = guard.canActivate(context);
 
@@ -78,9 +78,9 @@ describe('RolesGuard', () => {
     });
 
     it('should handle admin-only access', () => {
-      const adminContext = mockExecutionContext({ role: UserRole.ADMIN });
-      const workerContext = mockExecutionContext({ role: UserRole.WORKER });
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
+      const adminContext = mockExecutionContext({ role: UserRole.SUPERADMIN });
+      const workerContext = mockExecutionContext({ role: UserRole.SATGAS });
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.SUPERADMIN]);
 
       expect(guard.canActivate(adminContext)).toBe(true);
       expect(guard.canActivate(workerContext)).toBe(false);
@@ -88,12 +88,12 @@ describe('RolesGuard', () => {
 
     it('should handle supervisor and admin access', () => {
       const supervisorContext = mockExecutionContext({
-        role: UserRole.SUPERVISOR,
+        role: UserRole.KORLAP,
       });
-      const workerContext = mockExecutionContext({ role: UserRole.WORKER });
+      const workerContext = mockExecutionContext({ role: UserRole.SATGAS });
       jest
         .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN, UserRole.SUPERVISOR]);
+        .mockReturnValue([UserRole.SUPERADMIN, UserRole.KORLAP]);
 
       expect(guard.canActivate(supervisorContext)).toBe(true);
       expect(guard.canActivate(workerContext)).toBe(false);

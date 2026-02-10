@@ -78,16 +78,16 @@ async function seedPhase2() {
     console.log('🔧 Seeding Activity Types...');
     await queryRunner.query(`
       INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
-        ('33333333-3333-3333-3333-333333333301', 'Penyiraman', 'WATERING', 'Menyiram tanaman dan taman', ARRAY['Worker'], TRUE),
-        ('33333333-3333-3333-3333-333333333302', 'Penanaman', 'PLANTING', 'Menanam tanaman baru', ARRAY['Worker'], TRUE),
-        ('33333333-3333-3333-3333-333333333303', 'Pemangkasan', 'PRUNING', 'Memangkas tanaman dan pohon', ARRAY['Worker'], TRUE),
-        ('33333333-3333-3333-3333-333333333304', 'Pembersihan', 'CLEANING', 'Membersihkan area dari sampah dan kotoran', ARRAY['Worker', 'Linmas'], TRUE),
-        ('33333333-3333-3333-3333-333333333305', 'Pemupukan', 'FERTILIZING', 'Memberi pupuk pada tanaman', ARRAY['Worker'], TRUE),
-        ('33333333-3333-3333-3333-333333333306', 'Perawatan Tanaman', 'PLANT_CARE', 'Perawatan umum tanaman', ARRAY['Worker'], TRUE),
-        ('33333333-3333-3333-3333-333333333307', 'Patroli Keamanan', 'SECURITY_PATROL', 'Patroli keamanan area', ARRAY['Linmas'], TRUE),
-        ('33333333-3333-3333-3333-333333333308', 'Laporan Insiden', 'INCIDENT_REPORT', 'Melaporkan insiden keamanan', ARRAY['Linmas'], TRUE),
-        ('33333333-3333-3333-3333-333333333309', 'Pemantauan Pengunjung', 'VISITOR_MONITORING', 'Memantau aktivitas pengunjung', ARRAY['Linmas'], TRUE),
-        ('33333333-3333-3333-3333-333333333310', 'Pengecekan Fasilitas', 'FACILITY_CHECK', 'Memeriksa kondisi fasilitas', ARRAY['Linmas'], TRUE)
+        ('33333333-3333-3333-3333-333333333301', 'Penyiraman', 'WATERING', 'Menyiram tanaman dan taman', ARRAY['satgas'], TRUE),
+        ('33333333-3333-3333-3333-333333333302', 'Penanaman', 'PLANTING', 'Menanam tanaman baru', ARRAY['satgas'], TRUE),
+        ('33333333-3333-3333-3333-333333333303', 'Pemangkasan', 'PRUNING', 'Memangkas tanaman dan pohon', ARRAY['satgas'], TRUE),
+        ('33333333-3333-3333-3333-333333333304', 'Pembersihan', 'CLEANING', 'Membersihkan area dari sampah dan kotoran', ARRAY['satgas', 'linmas'], TRUE),
+        ('33333333-3333-3333-3333-333333333305', 'Pemupukan', 'FERTILIZING', 'Memberi pupuk pada tanaman', ARRAY['satgas'], TRUE),
+        ('33333333-3333-3333-3333-333333333306', 'Perawatan Tanaman', 'PLANT_CARE', 'Perawatan umum tanaman', ARRAY['satgas'], TRUE),
+        ('33333333-3333-3333-3333-333333333307', 'Patroli Keamanan', 'SECURITY_PATROL', 'Patroli keamanan area', ARRAY['linmas'], TRUE),
+        ('33333333-3333-3333-3333-333333333308', 'Laporan Insiden', 'INCIDENT_REPORT', 'Melaporkan insiden keamanan', ARRAY['linmas'], TRUE),
+        ('33333333-3333-3333-3333-333333333309', 'Pemantauan Pengunjung', 'VISITOR_MONITORING', 'Memantau aktivitas pengunjung', ARRAY['linmas'], TRUE),
+        ('33333333-3333-3333-3333-333333333310', 'Pengecekan Fasilitas', 'FACILITY_CHECK', 'Memeriksa kondisi fasilitas', ARRAY['linmas'], TRUE)
       ON CONFLICT (code) DO NOTHING;
     `);
     console.log('  ✓ Created 10 Activity Types');
@@ -154,25 +154,25 @@ async function seedPhase2() {
       await queryRunner.query(`
         INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type) VALUES
           -- Shift 1 Weekday
-          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'worker', 6, 'WEEKDAY'),
+          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'satgas', 6, 'WEEKDAY'),
           ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'linmas', 2, 'WEEKDAY'),
           -- Shift 2 Weekday
-          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222202', 'worker', 9, 'WEEKDAY'),
+          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222202', 'satgas', 9, 'WEEKDAY'),
           ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222202', 'linmas', 2, 'WEEKDAY'),
           -- Shift 3 Weekday
-          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222203', 'worker', 0, 'WEEKDAY'),
+          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222203', 'satgas', 0, 'WEEKDAY'),
           ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222203', 'linmas', 4, 'WEEKDAY'),
           -- Shift 1 Weekend
-          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'worker', 8, 'WEEKEND'),
+          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'satgas', 8, 'WEEKEND'),
           ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'linmas', 3, 'WEEKEND'),
           -- Shift 2 Weekend
-          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222202', 'worker', 12, 'WEEKEND'),
+          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222202', 'satgas', 12, 'WEEKEND'),
           ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222202', 'linmas', 3, 'WEEKEND'),
           -- Shift 3 Weekend
-          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222203', 'worker', 0, 'WEEKEND'),
+          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222203', 'satgas', 0, 'WEEKEND'),
           ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222203', 'linmas', 5, 'WEEKEND'),
           -- Shift 1 Holiday
-          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'worker', 10, 'HOLIDAY'),
+          ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'satgas', 10, 'HOLIDAY'),
           ('${tamanBungkulId}', '22222222-2222-2222-2222-222222222201', 'linmas', 4, 'HOLIDAY')
         ON CONFLICT DO NOTHING;
       `);
@@ -190,17 +190,19 @@ async function seedPhase2() {
     const passwordHash = '$2b$10$i2N897RRT33OoHXWMHiDoOGQKl/gG.yxg3OvRN53PZZKMeFjkPUTm';
 
     await queryRunner.query(`
-      INSERT INTO users (id, username, password_hash, full_name, phone, role, rayon_id, is_active) VALUES
-        ('77777777-7777-7777-7777-777777777701', 'top_management1', '${passwordHash}', 'Kepala Dinas RTH', '081234567890', 'top_management', NULL, TRUE),
-        ('77777777-7777-7777-7777-777777777702', 'kepala_rayon_selatan', '${passwordHash}', 'Kepala Rayon Selatan', '081234567891', 'kepala_rayon', '11111111-1111-1111-1111-111111111101', TRUE),
-        ('77777777-7777-7777-7777-777777777703', 'kepala_rayon_utara', '${passwordHash}', 'Kepala Rayon Utara', '081234567892', 'kepala_rayon', '11111111-1111-1111-1111-111111111102', TRUE),
-        ('77777777-7777-7777-7777-777777777704', 'koordinator_bungkul', '${passwordHash}', 'Koordinator Taman Bungkul', '081234567893', 'koordinator_lapangan', NULL, TRUE),
-        ('77777777-7777-7777-7777-777777777705', 'linmas1', '${passwordHash}', 'Linmas Satu', '081234567894', 'linmas', NULL, TRUE),
-        ('77777777-7777-7777-7777-777777777706', 'linmas2', '${passwordHash}', 'Linmas Dua', '081234567895', 'linmas', NULL, TRUE),
-        ('77777777-7777-7777-7777-777777777707', 'worker4', '${passwordHash}', 'Pekerja Empat', '081234567896', 'worker', NULL, TRUE)
+      INSERT INTO users (id, username, password_hash, full_name, phone, role, rayon_id, area_id, is_active) VALUES
+        ('77777777-7777-7777-7777-777777777701', 'top_management1', '${passwordHash}', 'Kepala Dinas RTH', '081234567890', 'top_management', NULL, NULL, TRUE),
+        ('77777777-7777-7777-7777-777777777702', 'kepala_rayon_selatan', '${passwordHash}', 'Kepala Rayon Selatan', '081234567891', 'kepala_rayon', '11111111-1111-1111-1111-111111111101', NULL, TRUE),
+        ('77777777-7777-7777-7777-777777777703', 'kepala_rayon_utara', '${passwordHash}', 'Kepala Rayon Utara', '081234567892', 'kepala_rayon', '11111111-1111-1111-1111-111111111102', NULL, TRUE),
+        ('77777777-7777-7777-7777-777777777704', 'korlap_bungkul', '${passwordHash}', 'Korlap Taman Bungkul', '081234567893', 'korlap', NULL, '${tamanBungkulId}', TRUE),
+        ('77777777-7777-7777-7777-777777777705', 'linmas1', '${passwordHash}', 'Linmas Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
+        ('77777777-7777-7777-7777-777777777706', 'linmas2', '${passwordHash}', 'Linmas Dua', '081234567895', 'linmas', NULL, NULL, TRUE),
+        ('77777777-7777-7777-7777-777777777707', 'satgas4', '${passwordHash}', 'Satgas Empat', '081234567896', 'satgas', NULL, NULL, TRUE),
+        ('77777777-7777-7777-7777-777777777708', 'admin_data1', '${passwordHash}', 'Admin Data Satu', '081234567897', 'admin_data', NULL, NULL, TRUE),
+        ('77777777-7777-7777-7777-777777777709', 'admin_system1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
-    console.log('  ✓ Created 7 additional users with Phase 2 roles');
+    console.log('  ✓ Created 9 additional users with Phase 2C roles');
 
     // ==========================================
     // STEP 9: Seed Worker Schedules
@@ -209,7 +211,7 @@ async function seedPhase2() {
 
     // Get worker IDs
     const workerResult = await queryRunner.query(`
-      SELECT id, username FROM users WHERE role IN ('worker', 'linmas') LIMIT 10;
+      SELECT id, username FROM users WHERE role IN ('satgas', 'linmas') LIMIT 10;
     `);
 
     if (workerResult.length > 0 && tamanBungkulId) {
@@ -236,7 +238,7 @@ async function seedPhase2() {
     console.log('  - 3 Shift Definitions');
     console.log('  - 10 Activity Types');
     console.log('  - 4 Special Day Overrides');
-    console.log('  - 7 Additional Users (Phase 2 roles)');
+    console.log('  - 9 Additional Users (Phase 2C roles)');
     console.log('  - 14 Area Staff Requirements');
     console.log('  - 4 Worker Schedules');
     console.log('  - Updated Area Types with categories');

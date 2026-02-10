@@ -26,6 +26,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for notification management
@@ -80,7 +81,7 @@ export class NotificationsController {
    * Send notification to a specific user
    */
   @Post('send')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP)
   @ApiOperation({ summary: 'Send notification to a specific user (Admin/Supervisor only)' })
   @ApiResponse({
     status: 201,
@@ -99,7 +100,7 @@ export class NotificationsController {
    * Broadcast notification to users
    */
   @Post('broadcast')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Broadcast notification to multiple users (Admin only)' })
   @ApiResponse({
     status: 201,

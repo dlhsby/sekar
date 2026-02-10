@@ -1,19 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsUUID, Min, Max, MaxLength, Matches } from 'class-validator';
+import { IsNumber, IsString, IsUUID, IsOptional, Min, Max, MaxLength, Matches } from 'class-validator';
 
 /**
  * Clock-In DTO
  *
  * Data required for a worker to clock in to their shift.
- * Includes area ID, GPS coordinates for validation, and selfie photo.
+ * Phase 2C: area_id is optional (auto-detected from schedule if not provided).
+ * Includes GPS coordinates and selfie photo.
  */
 export class ClockInDto {
   @ApiProperty({
-    description: 'Area UUID where worker is clocking in',
+    description: 'Area UUID where worker is clocking in (optional - auto-detected from schedule if not provided)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+    required: false,
   })
+  @IsOptional()
   @IsUUID()
-  area_id: string;
+  area_id?: string;
 
   @ApiProperty({
     description: 'GPS latitude of worker location',

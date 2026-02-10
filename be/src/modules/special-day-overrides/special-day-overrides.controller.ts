@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 @ApiTags('special-day-overrides')
 @ApiBearerAuth()
@@ -29,7 +30,7 @@ export class SpecialDayOverridesController {
   constructor(private readonly specialDayOverridesService: SpecialDayOverridesService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Create a special day override (Admin only)' })
   @ApiResponse({
     status: 201,
@@ -74,7 +75,7 @@ export class SpecialDayOverridesController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Update a special day override (Admin only)' })
   @ApiResponse({
     status: 200,
@@ -93,7 +94,7 @@ export class SpecialDayOverridesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a special day override (Admin only)' })
   @ApiResponse({ status: 204, description: 'Special day override deleted successfully' })

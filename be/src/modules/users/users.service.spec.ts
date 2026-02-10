@@ -25,7 +25,7 @@ describe('UsersService', () => {
     username: 'testuser',
     password_hash: '$2b$10$hashedpassword',
     full_name: 'Test User',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -79,7 +79,7 @@ describe('UsersService', () => {
       username: 'newuser',
       password: 'password123',
       full_name: 'New User',
-      role: UserRole.WORKER,
+      role: UserRole.SATGAS,
     };
 
     it('should successfully create a user', async () => {

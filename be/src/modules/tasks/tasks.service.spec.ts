@@ -4,33 +4,36 @@ import { Repository } from 'typeorm';
 import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
+import { TaskTag } from './entities/task-tag.entity';
+import { CompleteTaskDto } from './dto/complete-task.dto';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
-import { ActivityTypesService } from '../activity-types/activity-types.service';
 import { User, UserRole } from '../users/entities/user.entity';
 
 describe('TasksService', () => {
   let service: TasksService;
   let taskRepository: jest.Mocked<Repository<Task>>;
+  let taskTagRepository: jest.Mocked<Repository<TaskTag>>;
   let usersService: jest.Mocked<UsersService>;
   let areasService: jest.Mocked<AreasService>;
-  let activityTypesService: jest.Mocked<ActivityTypesService>;
 
   const mockUser: Partial<User> = {
     id: 'user-uuid',
     username: 'testworker',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
+    is_active: true,
+  };
+
+  const mockCreator: Partial<User> = {
+    id: 'creator-uuid',
+    username: 'korlap1',
+    role: UserRole.KORLAP,
     is_active: true,
   };
 
   const mockArea = {
     id: 'area-uuid',
     name: 'Test Area',
-  };
-
-  const mockActivityType = {
-    id: 'activity-uuid',
-    name: 'Cleaning',
   };
 
   const mockTask: Partial<Task> = {
@@ -40,7 +43,6 @@ describe('TasksService', () => {
     status: TaskStatus.PENDING,
     priority: TaskPriority.MEDIUM,
     area_id: 'area-uuid',
-    activity_type_id: 'activity-uuid',
     assigned_to: null,
     created_by: 'creator-uuid',
     deadline: null,
@@ -74,6 +76,17 @@ describe('TasksService', () => {
           },
         },
         {
+          provide: getRepositoryToken(TaskTag),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
+        {
           provide: UsersService,
           useValue: {
             findOne: jest.fn(),
@@ -85,20 +98,14 @@ describe('TasksService', () => {
             findOne: jest.fn(),
           },
         },
-        {
-          provide: ActivityTypesService,
-          useValue: {
-            findOne: jest.fn(),
-          },
-        },
       ],
     }).compile();
 
     service = module.get<TasksService>(TasksService);
     taskRepository = module.get(getRepositoryToken(Task));
+    taskTagRepository = module.get(getRepositoryToken(TaskTag));
     usersService = module.get(UsersService);
     areasService = module.get(AreasService);
-    activityTypesService = module.get(ActivityTypesService);
   });
 
   afterEach(() => {
@@ -110,22 +117,21 @@ describe('TasksService', () => {
       title: 'New Task',
       description: 'Task description',
       area_id: 'area-uuid',
-      activity_type_id: 'activity-uuid',
       priority: TaskPriority.HIGH,
     };
 
     it('should create a task successfully', async () => {
       const createdTask = { ...mockTask, ...createDto, id: 'new-task-uuid' };
+      usersService.findOne.mockResolvedValue(mockCreator as User);
       areasService.findOne.mockResolvedValue(mockArea as any);
-      activityTypesService.findOne.mockResolvedValue(mockActivityType as any);
       taskRepository.create.mockReturnValue(createdTask as Task);
       taskRepository.save.mockResolvedValue(createdTask as Task);
       taskRepository.findOne.mockResolvedValue(createdTask as Task);
 
       const result = await service.create(createDto, 'creator-uuid');
 
+      expect(usersService.findOne).toHaveBeenCalledWith('creator-uuid');
       expect(areasService.findOne).toHaveBeenCalledWith('area-uuid');
-      expect(activityTypesService.findOne).toHaveBeenCalledWith('activity-uuid');
       expect(taskRepository.create).toHaveBeenCalled();
       expect(taskRepository.save).toHaveBeenCalled();
       expect(result).toEqual(createdTask);
@@ -143,9 +149,10 @@ describe('TasksService', () => {
         status: TaskStatus.ASSIGNED,
       };
 
+      usersService.findOne
+        .mockResolvedValueOnce(mockCreator as User)
+        .mockResolvedValueOnce(worker as User);
       areasService.findOne.mockResolvedValue(mockArea as any);
-      activityTypesService.findOne.mockResolvedValue(mockActivityType as any);
-      usersService.findOne.mockResolvedValue(worker as User);
       taskRepository.create.mockReturnValue(createdTask as Task);
       taskRepository.save.mockResolvedValue(createdTask as Task);
       taskRepository.findOne.mockResolvedValue(createdTask as Task);
@@ -157,6 +164,7 @@ describe('TasksService', () => {
     });
 
     it('should throw if area not found', async () => {
+      usersService.findOne.mockResolvedValue(mockCreator as User);
       areasService.findOne.mockRejectedValue(new NotFoundException());
 
       await expect(service.create(createDto, 'creator-uuid')).rejects.toThrow(NotFoundException);
@@ -164,11 +172,12 @@ describe('TasksService', () => {
 
     it('should throw if assigning to non-worker/linmas', async () => {
       const createDtoWithAssignee = { ...createDto, assigned_to: 'admin-uuid' };
-      const admin = { ...mockUser, id: 'admin-uuid', role: UserRole.ADMIN };
+      const admin = { ...mockUser, id: 'admin-uuid', role: UserRole.SUPERADMIN };
 
+      usersService.findOne
+        .mockResolvedValueOnce(mockCreator as User)
+        .mockResolvedValueOnce(admin as User);
       areasService.findOne.mockResolvedValue(mockArea as any);
-      activityTypesService.findOne.mockResolvedValue(mockActivityType as any);
-      usersService.findOne.mockResolvedValue(admin as User);
 
       await expect(service.create(createDtoWithAssignee, 'creator-uuid')).rejects.toThrow(
         BadRequestException,
@@ -184,7 +193,7 @@ describe('TasksService', () => {
 
       expect(taskRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'task-uuid' },
-        relations: ['area', 'activityType', 'assignee', 'creator'],
+        relations: ['area', 'rayon', 'assignee', 'creator', 'tags', 'tags.user'],
       });
       expect(result).toEqual(mockTask);
     });
@@ -278,7 +287,9 @@ describe('TasksService', () => {
       taskRepository.findOne
         .mockResolvedValueOnce(pendingTask as Task)
         .mockResolvedValueOnce(assignedTask as Task);
-      usersService.findOne.mockResolvedValue(worker as User);
+      usersService.findOne
+        .mockResolvedValueOnce(worker as User)
+        .mockResolvedValueOnce(mockCreator as User);
       taskRepository.save.mockResolvedValue(assignedTask as Task);
 
       const result = await service.assign('task-uuid', assignDto);
@@ -299,110 +310,26 @@ describe('TasksService', () => {
       const inactiveUser = { ...mockUser, is_active: false };
 
       taskRepository.findOne.mockResolvedValue(pendingTask as Task);
-      usersService.findOne.mockResolvedValue(inactiveUser as User);
+      usersService.findOne.mockResolvedValueOnce(inactiveUser as User);
 
       await expect(service.assign('task-uuid', assignDto)).rejects.toThrow(BadRequestException);
     });
   });
 
-  describe('accept', () => {
-    it('should accept an assigned task', async () => {
-      const assignedTask = {
-        ...mockTask,
-        status: TaskStatus.ASSIGNED,
-        assigned_to: 'user-uuid',
-      };
-      const acceptedTask = { ...assignedTask, status: TaskStatus.ACCEPTED };
-
-      taskRepository.findOne
-        .mockResolvedValueOnce(assignedTask as Task)
-        .mockResolvedValueOnce(acceptedTask as Task);
-      taskRepository.save.mockResolvedValue(acceptedTask as Task);
-
-      const result = await service.accept('task-uuid', 'user-uuid');
-
-      expect(taskRepository.save).toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException if not assigned to user', async () => {
-      const assignedTask = {
-        ...mockTask,
-        status: TaskStatus.ASSIGNED,
-        assigned_to: 'other-user-uuid',
-      };
-
-      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
-
-      await expect(service.accept('task-uuid', 'user-uuid')).rejects.toThrow(ForbiddenException);
-    });
-
-    it('should throw BadRequestException if not in assigned status', async () => {
-      const pendingTask = {
-        ...mockTask,
-        status: TaskStatus.PENDING,
-        assigned_to: 'user-uuid',
-      };
-
-      taskRepository.findOne.mockResolvedValue(pendingTask as Task);
-
-      await expect(service.accept('task-uuid', 'user-uuid')).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('decline', () => {
-    const declineDto = { reason: 'Too busy' };
-
-    it('should decline an assigned task', async () => {
-      const assignedTask = {
-        ...mockTask,
-        status: TaskStatus.ASSIGNED,
-        assigned_to: 'user-uuid',
-      };
-      const declinedTask = {
-        ...assignedTask,
-        status: TaskStatus.DECLINED,
-        decline_reason: 'Too busy',
-      };
-
-      taskRepository.findOne
-        .mockResolvedValueOnce(assignedTask as Task)
-        .mockResolvedValueOnce(declinedTask as Task);
-      taskRepository.save.mockResolvedValue(declinedTask as Task);
-
-      const result = await service.decline('task-uuid', 'user-uuid', declineDto);
-
-      expect(taskRepository.save).toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException if not assigned to user', async () => {
-      const assignedTask = {
-        ...mockTask,
-        status: TaskStatus.ASSIGNED,
-        assigned_to: 'other-user-uuid',
-      };
-
-      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
-
-      await expect(service.decline('task-uuid', 'user-uuid', declineDto)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-  });
-
   describe('start', () => {
-    it('should start an accepted task', async () => {
-      const acceptedTask = {
+    it('should start an assigned task', async () => {
+      const assignedTask = {
         ...mockTask,
-        status: TaskStatus.ACCEPTED,
+        status: TaskStatus.ASSIGNED,
         assigned_to: 'user-uuid',
       };
       const inProgressTask = {
-        ...acceptedTask,
+        ...assignedTask,
         status: TaskStatus.IN_PROGRESS,
       };
 
       taskRepository.findOne
-        .mockResolvedValueOnce(acceptedTask as Task)
+        .mockResolvedValueOnce(assignedTask as Task)
         .mockResolvedValueOnce(inProgressTask as Task);
       taskRepository.save.mockResolvedValue(inProgressTask as Task);
 
@@ -411,23 +338,22 @@ describe('TasksService', () => {
       expect(taskRepository.save).toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException if not accepted', async () => {
-      const assignedTask = {
+    it('should throw BadRequestException if not assigned', async () => {
+      const pendingTask = {
         ...mockTask,
-        status: TaskStatus.ASSIGNED,
+        status: TaskStatus.PENDING,
         assigned_to: 'user-uuid',
       };
 
-      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
+      taskRepository.findOne.mockResolvedValue(pendingTask as Task);
 
       await expect(service.start('task-uuid', 'user-uuid')).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('complete', () => {
-    const completeDto = {
-      gps_lat: -7.2575,
-      gps_lng: 112.7521,
+    const completeDto: CompleteTaskDto = {
+      completion_photo_url: 'https://example.com/photo.jpg',
       completion_notes: 'Done',
     };
 
@@ -440,8 +366,8 @@ describe('TasksService', () => {
       const completedTask = {
         ...inProgressTask,
         status: TaskStatus.COMPLETED,
-        completion_gps_lat: -7.2575,
-        completion_gps_lng: 112.7521,
+        completion_photo_url: 'https://example.com/photo.jpg',
+        completion_notes: 'Done',
       };
 
       taskRepository.findOne
@@ -455,13 +381,13 @@ describe('TasksService', () => {
     });
 
     it('should throw BadRequestException if not in progress', async () => {
-      const acceptedTask = {
+      const assignedTask = {
         ...mockTask,
-        status: TaskStatus.ACCEPTED,
+        status: TaskStatus.ASSIGNED,
         assigned_to: 'user-uuid',
       };
 
-      taskRepository.findOne.mockResolvedValue(acceptedTask as Task);
+      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
 
       await expect(service.complete('task-uuid', 'user-uuid', completeDto)).rejects.toThrow(
         BadRequestException,
@@ -516,47 +442,39 @@ describe('TasksService', () => {
         assigned: 1,
         inProgress: 1,
         completed: 1,
-        declined: 0,
       });
     });
 
-    it('should count ACCEPTED tasks as inProgress', async () => {
-      const tasks = [{ status: TaskStatus.ACCEPTED }, { status: TaskStatus.IN_PROGRESS }];
+    it('should count multiple in_progress tasks', async () => {
+      const tasks = [{ status: TaskStatus.IN_PROGRESS }, { status: TaskStatus.IN_PROGRESS }];
       taskRepository.find.mockResolvedValue(tasks as Task[]);
 
       const result = await service.getAreaTaskStats('area-uuid');
 
       expect(result.inProgress).toBe(2);
     });
-
-    it('should handle DECLINED tasks', async () => {
-      const tasks = [{ status: TaskStatus.DECLINED }, { status: TaskStatus.DECLINED }];
-      taskRepository.find.mockResolvedValue(tasks as Task[]);
-
-      const result = await service.getAreaTaskStats('area-uuid');
-
-      expect(result.declined).toBe(2);
-    });
   });
 
   describe('edge cases and filters', () => {
-    it('should create task without activity_type_id', async () => {
-      const createDtoWithoutActivity = {
+    it('should create task without assigned_to', async () => {
+      const createDtoWithoutAssignee = {
         title: 'New Task',
         description: 'Task description',
         area_id: 'area-uuid',
         priority: TaskPriority.HIGH,
       };
-      const createdTask = { ...mockTask, ...createDtoWithoutActivity, id: 'new-task-uuid' };
+      const createdTask = { ...mockTask, ...createDtoWithoutAssignee, id: 'new-task-uuid' };
 
+      usersService.findOne.mockResolvedValue(mockCreator as User);
       areasService.findOne.mockResolvedValue(mockArea as any);
       taskRepository.create.mockReturnValue(createdTask as Task);
       taskRepository.save.mockResolvedValue(createdTask as Task);
       taskRepository.findOne.mockResolvedValue(createdTask as Task);
 
-      const result = await service.create(createDtoWithoutActivity, 'creator-uuid');
+      const result = await service.create(createDtoWithoutAssignee, 'creator-uuid');
 
-      expect(activityTypesService.findOne).not.toHaveBeenCalled();
+      // Only called once for creator, not for assignee
+      expect(usersService.findOne).toHaveBeenCalledTimes(1);
       expect(result).toEqual(createdTask);
     });
 
@@ -627,19 +545,18 @@ describe('TasksService', () => {
       expect(areasService.findOne).toHaveBeenCalledWith('new-area-uuid');
     });
 
-    it('should update task with activity_type change', async () => {
-      const existingTask = { ...mockTask, activity_type_id: 'old-activity-uuid' };
+    it('should update task description', async () => {
+      const existingTask = { ...mockTask };
       const updateDto = {
-        activity_type_id: 'new-activity-uuid',
+        description: 'Updated description',
       };
 
       taskRepository.findOne.mockResolvedValue(existingTask as Task);
-      activityTypesService.findOne.mockResolvedValue({ id: 'new-activity-uuid' } as any);
       taskRepository.save.mockResolvedValue({ ...existingTask, ...updateDto } as Task);
 
       await service.update('task-uuid', updateDto);
 
-      expect(activityTypesService.findOne).toHaveBeenCalledWith('new-activity-uuid');
+      expect(taskRepository.save).toHaveBeenCalled();
     });
 
     it('should update task description to empty string', async () => {
@@ -656,33 +573,35 @@ describe('TasksService', () => {
       expect(taskRepository.save).toHaveBeenCalled();
     });
 
-    it('should update task with null activity_type_id', async () => {
-      const existingTask = { ...mockTask, activity_type_id: 'old-activity-uuid' };
+    it('should update task priority', async () => {
+      const existingTask = { ...mockTask };
       const updateDto = {
-        activity_type_id: null as any,
+        priority: TaskPriority.URGENT,
       };
 
       taskRepository.findOne.mockResolvedValue(existingTask as Task);
-      taskRepository.save.mockResolvedValue({ ...existingTask, activity_type_id: null } as Task);
+      taskRepository.save.mockResolvedValue({ ...existingTask, ...updateDto } as Task);
 
       await service.update('task-uuid', updateDto);
 
       expect(taskRepository.save).toHaveBeenCalled();
     });
 
-    it('should assign declined task successfully', async () => {
-      const declinedTask = { ...mockTask, status: TaskStatus.DECLINED };
+    it('should reassign pending task successfully', async () => {
+      const pendingTask = { ...mockTask, status: TaskStatus.PENDING };
       const assignedTask = {
-        ...declinedTask,
+        ...pendingTask,
         status: TaskStatus.ASSIGNED,
         assigned_to: 'worker-uuid',
       };
       const worker = { ...mockUser, id: 'worker-uuid' };
 
       taskRepository.findOne
-        .mockResolvedValueOnce(declinedTask as Task)
+        .mockResolvedValueOnce(pendingTask as Task)
         .mockResolvedValueOnce(assignedTask as Task);
-      usersService.findOne.mockResolvedValue(worker as User);
+      usersService.findOne
+        .mockResolvedValueOnce(worker as User)
+        .mockResolvedValueOnce(mockCreator as User);
       taskRepository.save.mockResolvedValue(assignedTask as Task);
 
       const result = await service.assign('task-uuid', { assigned_to: 'worker-uuid' });
@@ -692,10 +611,10 @@ describe('TasksService', () => {
 
     it('should throw BadRequestException if assigning to ADMIN', async () => {
       const pendingTask = { ...mockTask, status: TaskStatus.PENDING };
-      const admin = { ...mockUser, role: UserRole.ADMIN };
+      const admin = { ...mockUser, role: UserRole.SUPERADMIN };
 
       taskRepository.findOne.mockResolvedValue(pendingTask as Task);
-      usersService.findOne.mockResolvedValue(admin as User);
+      usersService.findOne.mockResolvedValueOnce(admin as User);
 
       await expect(service.assign('task-uuid', { assigned_to: 'admin-uuid' })).rejects.toThrow(
         BadRequestException,
@@ -712,8 +631,10 @@ describe('TasksService', () => {
       const linmas = { ...mockUser, id: 'linmas-uuid', role: UserRole.LINMAS };
       const createdTask = { ...mockTask, ...createDto, status: TaskStatus.ASSIGNED };
 
+      usersService.findOne
+        .mockResolvedValueOnce(mockCreator as User)
+        .mockResolvedValueOnce(linmas as User);
       areasService.findOne.mockResolvedValue(mockArea as any);
-      usersService.findOne.mockResolvedValue(linmas as User);
       taskRepository.create.mockReturnValue(createdTask as Task);
       taskRepository.save.mockResolvedValue(createdTask as Task);
       taskRepository.findOne.mockResolvedValue(createdTask as Task);
@@ -723,7 +644,7 @@ describe('TasksService', () => {
       expect(result.status).toBe(TaskStatus.ASSIGNED);
     });
 
-    it('should throw ForbiddenException when declining task not assigned to user', async () => {
+    it('should throw ForbiddenException when starting task not assigned to user', async () => {
       const assignedTask = {
         ...mockTask,
         status: TaskStatus.ASSIGNED,
@@ -731,20 +652,6 @@ describe('TasksService', () => {
       };
 
       taskRepository.findOne.mockResolvedValue(assignedTask as Task);
-
-      await expect(
-        service.decline('task-uuid', 'user-uuid', { reason: 'Too busy' }),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('should throw ForbiddenException when starting task not assigned to user', async () => {
-      const acceptedTask = {
-        ...mockTask,
-        status: TaskStatus.ACCEPTED,
-        assigned_to: 'other-user-uuid',
-      };
-
-      taskRepository.findOne.mockResolvedValue(acceptedTask as Task);
 
       await expect(service.start('task-uuid', 'user-uuid')).rejects.toThrow(ForbiddenException);
     });
@@ -759,7 +666,7 @@ describe('TasksService', () => {
       taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
 
       await expect(
-        service.complete('task-uuid', 'user-uuid', { gps_lat: -7.25, gps_lng: 112.75 }),
+        service.complete('task-uuid', 'user-uuid', { completion_photo_url: 'https://example.com/photo.jpg', completion_notes: 'Done' } as CompleteTaskDto),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -769,9 +676,7 @@ describe('TasksService', () => {
         status: TaskStatus.IN_PROGRESS,
         assigned_to: 'user-uuid',
       };
-      const completeDto = {
-        gps_lat: -7.2575,
-        gps_lng: 112.7521,
+      const completeDto: CompleteTaskDto = {
         completion_notes: 'Done',
         completion_photo_url: 'https://example.com/photo.jpg',
       };
@@ -806,6 +711,95 @@ describe('TasksService', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'task.status NOT IN (:...completedStatuses)',
         expect.any(Object),
+      );
+    });
+  });
+
+  describe('findTaggedTasks', () => {
+    it('should return tasks where user is tagged', async () => {
+      const mockTags = [
+        { task: { ...mockTask, id: 'task-1' } },
+        { task: { ...mockTask, id: 'task-2' } },
+      ];
+      taskTagRepository.find.mockResolvedValue(mockTags as any);
+
+      const result = await service.findTaggedTasks('user-uuid');
+
+      expect(taskTagRepository.find).toHaveBeenCalledWith({
+        where: { user_id: 'user-uuid' },
+        relations: ['task', 'task.area', 'task.rayon', 'task.creator', 'task.assignee'],
+      });
+      expect(result).toHaveLength(2);
+    });
+
+    it('should return empty array when user has no tags', async () => {
+      taskTagRepository.find.mockResolvedValue([]);
+
+      const result = await service.findTaggedTasks('user-uuid');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('addTag', () => {
+    it('should add a tag to a task', async () => {
+      const task = { ...mockTask, id: 'task-uuid', created_by: 'user-uuid' };
+      const taggedUser = { ...mockUser, id: 'tagged-uuid' };
+      const mockTag = { task_id: 'task-uuid', user_id: 'tagged-uuid' };
+
+      taskRepository.findOne.mockResolvedValue(task as Task);
+      taskTagRepository.findOne.mockResolvedValue(null);
+      usersService.findOne.mockResolvedValue(taggedUser as User);
+      taskTagRepository.create.mockReturnValue(mockTag as any);
+      taskTagRepository.save.mockResolvedValue(mockTag as any);
+
+      await service.addTag('task-uuid', 'user-uuid', 'tagged-uuid');
+
+      expect(taskTagRepository.create).toHaveBeenCalledWith({
+        task_id: 'task-uuid',
+        user_id: 'tagged-uuid',
+      });
+      expect(taskTagRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException if not task creator', async () => {
+      const task = { ...mockTask, id: 'task-uuid', created_by: 'other-user' };
+      taskRepository.findOne.mockResolvedValue(task as Task);
+
+      await expect(service.addTag('task-uuid', 'user-uuid', 'tagged-uuid')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw BadRequestException if user already tagged', async () => {
+      const task = { ...mockTask, id: 'task-uuid', created_by: 'user-uuid' };
+      const existingTag = { task_id: 'task-uuid', user_id: 'tagged-uuid' };
+
+      taskRepository.findOne.mockResolvedValue(task as Task);
+      taskTagRepository.findOne.mockResolvedValue(existingTag as any);
+
+      await expect(service.addTag('task-uuid', 'user-uuid', 'tagged-uuid')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('removeTag', () => {
+    it('should remove a tag from a task', async () => {
+      const mockTag = { task_id: 'task-uuid', user_id: 'tagged-uuid' };
+      taskTagRepository.findOne.mockResolvedValue(mockTag as any);
+      taskTagRepository.remove.mockResolvedValue(mockTag as any);
+
+      await service.removeTag('task-uuid', 'tagged-uuid');
+
+      expect(taskTagRepository.remove).toHaveBeenCalledWith(mockTag);
+    });
+
+    it('should throw NotFoundException if tag not found', async () => {
+      taskTagRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.removeTag('task-uuid', 'nonexistent-uuid')).rejects.toThrow(
+        NotFoundException,
       );
     });
   });

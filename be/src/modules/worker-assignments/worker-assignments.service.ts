@@ -48,7 +48,7 @@ export class WorkerAssignmentsService {
 
     // Validate worker exists and has worker role
     const worker = await this.usersService.findOne(workerId);
-    if (worker.role !== UserRole.WORKER) {
+    if (worker.role !== UserRole.SATGAS) {
       throw new BadRequestException('User must have worker role to be assigned to an area');
     }
 

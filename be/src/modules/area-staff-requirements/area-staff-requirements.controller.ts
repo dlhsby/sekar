@@ -27,6 +27,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for area staff requirement operations
@@ -176,7 +177,7 @@ export class AreaStaffRequirementsController {
    * @returns The created staff requirement
    */
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Create staff requirement',
     description: 'Create a new staff requirement for an area. Admin only.',
@@ -230,7 +231,7 @@ export class AreaStaffRequirementsController {
    * @returns The updated staff requirement
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Update staff requirement',
     description: 'Update an existing staff requirement. Admin only.',
@@ -287,7 +288,7 @@ export class AreaStaffRequirementsController {
    * @param id - Requirement ID (UUID)
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete staff requirement',

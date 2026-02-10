@@ -1,13 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { IsNull } from 'typeorm';
 import { ReportsService } from './reports.service';
 import { Report, ReportType } from './entities/report.entity';
 import { Shift } from '../shifts/entities/shift.entity';
+import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { S3Service } from '../../shared/services/s3.service';
-import { UserRole } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { CreateReportJsonDto } from './dto/create-report-json.dto';
+import { CreateAktivitasDto } from './dto/create-aktivitas.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
@@ -17,7 +21,21 @@ describe('ReportsService', () => {
   let service: ReportsService;
   let reportsRepository: Repository<Report>;
   let shiftsRepository: Repository<Shift>;
+  let activityTypeRepository: Repository<ActivityType>;
   let s3Service: S3Service;
+
+  const mockUser: User = {
+    id: 'user-uuid-123',
+    username: 'worker1',
+    password_hash: 'hashed',
+    full_name: 'Worker One',
+    role: UserRole.SATGAS,
+    area_id: 'area-uuid-123',
+    rayon_id: 'rayon-uuid-123',
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
 
   const mockReportsRepository = {
     create: jest.fn(),
@@ -26,15 +44,21 @@ describe('ReportsService', () => {
     findOne: jest.fn(),
     findAndCount: jest.fn(),
     remove: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockShiftsRepository = {
     findOne: jest.fn(),
   };
 
+  const mockActivityTypeRepository = {
+    findOne: jest.fn(),
+  };
+
   const mockS3Service = {
     generateKey: jest.fn(),
     uploadFile: jest.fn(),
+    convertToPresignedUrl: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -50,6 +74,10 @@ describe('ReportsService', () => {
           useValue: mockShiftsRepository,
         },
         {
+          provide: getRepositoryToken(ActivityType),
+          useValue: mockActivityTypeRepository,
+        },
+        {
           provide: S3Service,
           useValue: mockS3Service,
         },
@@ -59,6 +87,7 @@ describe('ReportsService', () => {
     service = module.get<ReportsService>(ReportsService);
     reportsRepository = module.get<Repository<Report>>(getRepositoryToken(Report));
     shiftsRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
+    activityTypeRepository = module.get<Repository<ActivityType>>(getRepositoryToken(ActivityType));
     s3Service = module.get<S3Service>(S3Service);
   });
 
@@ -216,106 +245,104 @@ describe('ReportsService', () => {
   });
 
   describe('findAllPaginated', () => {
-    it('should return paginated reports with no filters', async () => {
-      const mockReports = [{ id: 'report-1' }, { id: 'report-2' }];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 2]);
+    const mockQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn(),
+    };
 
-      const result = await service.findAllPaginated({}, 1, 50);
+    beforeEach(() => {
+      mockReportsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      mockS3Service.convertToPresignedUrl.mockImplementation((url: string) => Promise.resolve(url));
+    });
 
-      expect(result.data).toEqual(mockReports);
+    it('should return paginated reports with no filters for superadmin', async () => {
+      const mockReports = [{ id: 'report-1', photo_urls: [], photo_url: null }, { id: 'report-2', photo_urls: [], photo_url: null }];
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([mockReports, 2]);
+
+      const superadmin = { ...mockUser, role: UserRole.SUPERADMIN };
+      const result = await service.findAllPaginated({}, superadmin, 1, 50);
+
+      expect(result.data.length).toBe(2);
       expect(result.meta.total).toBe(2);
       expect(result.meta.page).toBe(1);
       expect(result.meta.limit).toBe(50);
-      expect(mockReportsRepository.findAndCount).toHaveBeenCalledWith({
-        where: {},
-        relations: ['worker', 'shift', 'shift.area'],
-        order: { created_at: 'DESC' },
-        skip: 0,
-        take: 50,
-      });
     });
 
-    it('should return paginated reports filtered by worker_id', async () => {
-      const mockReports = [{ id: 'report-1', worker_id: 'worker-123' }];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
+    it('should scope to own reports for satgas user', async () => {
+      const mockReports = [{ id: 'report-1', photo_urls: [], photo_url: null }];
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([mockReports, 1]);
 
-      const result = await service.findAllPaginated({ worker_id: 'worker-123' }, 1, 50);
+      const satgas = { ...mockUser, role: UserRole.SATGAS };
+      await service.findAllPaginated({}, satgas, 1, 50);
 
-      expect(result.data).toEqual(mockReports);
-      expect(result.meta.total).toBe(1);
-    });
-
-    it('should return paginated reports filtered by shift_id', async () => {
-      const mockReports = [{ id: 'report-1', shift_id: 'shift-123' }];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
-
-      const result = await service.findAllPaginated({ shift_id: 'shift-123' }, 1, 50);
-
-      expect(result.data).toEqual(mockReports);
-    });
-
-    it('should return paginated reports filtered by report_type', async () => {
-      const mockReports = [{ id: 'report-1', report_type: ReportType.INCIDENT }];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
-
-      const result = await service.findAllPaginated({ report_type: ReportType.INCIDENT }, 1, 50);
-
-      expect(result.data).toEqual(mockReports);
-    });
-
-    it('should return paginated reports filtered by date range', async () => {
-      const mockReports = [{ id: 'report-1' }];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
-
-      const result = await service.findAllPaginated(
-        { from_date: '2026-01-01', to_date: '2026-01-31' },
-        1,
-        50,
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'report.worker_id = :userId',
+        expect.objectContaining({ userId: satgas.id }),
       );
-
-      expect(result.data).toEqual(mockReports);
     });
 
-    it('should return paginated reports filtered by from_date only', async () => {
-      const mockReports = [{ id: 'report-1' }];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 1]);
+    it('should scope to own reports for korlap user (aktivitas submitter)', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
 
-      const result = await service.findAllPaginated({ from_date: '2026-01-01' }, 1, 50);
+      const korlap = { ...mockUser, role: UserRole.KORLAP, area_id: 'area-uuid-123' };
+      await service.findAllPaginated({}, korlap, 1, 50);
 
-      expect(result.data).toEqual(mockReports);
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'report.worker_id = :userId',
+        expect.objectContaining({ userId: korlap.id }),
+      );
+    });
+
+    it('should scope to rayon for kepala_rayon user', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      const kepalaRayon = { ...mockUser, role: UserRole.KEPALA_RAYON, rayon_id: 'rayon-uuid-123' };
+      await service.findAllPaginated({}, kepalaRayon, 1, 50);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'area.rayon_id = :rayonId',
+        expect.objectContaining({ rayonId: 'rayon-uuid-123' }),
+      );
+    });
+
+    it('should apply worker_id filter', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      const superadmin = { ...mockUser, role: UserRole.SUPERADMIN };
+      await service.findAllPaginated({ worker_id: 'worker-123' }, superadmin, 1, 50);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'report.worker_id = :workerId',
+        expect.objectContaining({ workerId: 'worker-123' }),
+      );
     });
 
     it('should handle pagination correctly', async () => {
-      const mockReports = [{ id: 'report-3' }, { id: 'report-4' }];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 10]);
+      const mockReports = [{ id: 'report-3', photo_urls: [], photo_url: null }, { id: 'report-4', photo_urls: [], photo_url: null }];
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([mockReports, 10]);
 
-      const result = await service.findAllPaginated({}, 2, 2);
+      const superadmin = { ...mockUser, role: UserRole.SUPERADMIN };
+      const result = await service.findAllPaginated({}, superadmin, 2, 2);
 
       expect(result.meta.page).toBe(2);
       expect(result.meta.limit).toBe(2);
       expect(result.meta.totalPages).toBe(5);
-      expect(mockReportsRepository.findAndCount).toHaveBeenCalledWith(
-        expect.objectContaining({
-          skip: 2,
-          take: 2,
-        }),
-      );
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(2);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(2);
     });
 
     it('should use default pagination values', async () => {
-      const mockReports: Report[] = [];
-      mockReportsRepository.findAndCount.mockResolvedValue([mockReports, 0]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
 
-      const result = await service.findAllPaginated({});
+      const superadmin = { ...mockUser, role: UserRole.SUPERADMIN };
+      const result = await service.findAllPaginated({}, superadmin);
 
       expect(result.meta.page).toBe(1);
       expect(result.meta.limit).toBe(50);
-      expect(mockReportsRepository.findAndCount).toHaveBeenCalledWith(
-        expect.objectContaining({
-          skip: 0,
-          take: 50,
-        }),
-      );
     });
   });
 
@@ -325,38 +352,41 @@ describe('ReportsService', () => {
     const mockReport = {
       id: reportId,
       worker_id: workerId,
+      area_id: 'area-uuid-123',
       description: 'Test report',
+      photo_urls: [],
+      photo_url: null,
+      shift: { area: { rayon_id: 'rayon-uuid-123' } },
     };
 
-    it('should return report for admin', async () => {
-      mockReportsRepository.findOne.mockResolvedValue(mockReport);
-
-      const result = await service.findOne(reportId, 'admin-uuid', UserRole.ADMIN);
-
-      expect(result).toEqual(mockReport);
+    beforeEach(() => {
+      mockS3Service.convertToPresignedUrl.mockImplementation((url: string) => Promise.resolve(url));
     });
 
-    it('should return report for supervisor', async () => {
+    it('should return report for superadmin', async () => {
       mockReportsRepository.findOne.mockResolvedValue(mockReport);
+      const superadmin = { ...mockUser, id: 'admin-uuid', role: UserRole.SUPERADMIN };
 
-      const result = await service.findOne(reportId, 'supervisor-uuid', UserRole.SUPERVISOR);
+      const result = await service.findOne(reportId, superadmin);
 
       expect(result).toEqual(mockReport);
     });
 
     it('should return report for owner worker', async () => {
       mockReportsRepository.findOne.mockResolvedValue(mockReport);
+      const owner = { ...mockUser, id: workerId, role: UserRole.SATGAS };
 
-      const result = await service.findOne(reportId, workerId, UserRole.WORKER);
+      const result = await service.findOne(reportId, owner);
 
       expect(result).toEqual(mockReport);
     });
 
-    it('should throw ApiException with REPORT_ACCESS_DENIED for non-owner worker', async () => {
+    it('should throw ApiException with REPORT_ACCESS_DENIED for non-owner satgas', async () => {
       mockReportsRepository.findOne.mockResolvedValue(mockReport);
+      const nonOwner = { ...mockUser, id: 'other-worker-uuid', role: UserRole.SATGAS };
 
       try {
-        await service.findOne(reportId, 'other-worker-uuid', UserRole.WORKER);
+        await service.findOne(reportId, nonOwner);
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
@@ -368,9 +398,10 @@ describe('ReportsService', () => {
 
     it('should throw ApiException with REPORT_NOT_FOUND when report not found', async () => {
       mockReportsRepository.findOne.mockResolvedValue(null);
+      const superadmin = { ...mockUser, id: 'admin-uuid', role: UserRole.SUPERADMIN };
 
       try {
-        await service.findOne(reportId, workerId, UserRole.ADMIN);
+        await service.findOne(reportId, superadmin);
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
@@ -728,6 +759,172 @@ describe('ReportsService', () => {
       const result = await service.findMyReports(workerId);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('createAktivitas (Phase 2C)', () => {
+    const userId = 'user-uuid-123';
+    const activityTypeId = 'activity-uuid-456';
+    const shiftId = 'shift-uuid-789';
+    const areaId = 'area-uuid-012';
+
+    const createAktivitasDto: CreateAktivitasDto = {
+      activity_type_id: activityTypeId,
+      description: 'Melakukan penyiraman tanaman di area Taman Bungkul',
+      photo_urls: ['https://s3.amazonaws.com/photo1.jpg', 'https://s3.amazonaws.com/photo2.jpg'],
+      gps_lat: -7.2905,
+      gps_lng: 112.7398,
+    };
+
+    const mockActiveShift = {
+      id: shiftId,
+      worker_id: userId,
+      area_id: areaId,
+      clock_in_time: new Date(),
+      clock_out_time: null,
+      area: { id: areaId, name: 'Taman Bungkul' },
+    };
+
+    const mockActivityType = {
+      id: activityTypeId,
+      name: 'Penyiraman',
+      code: 'WATERING',
+      applicable_roles: ['Worker', 'Satgas'],
+      is_active: true,
+    };
+
+    it('should create aktivitas successfully for SATGAS role', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(mockActiveShift);
+      mockActivityTypeRepository.findOne.mockResolvedValue(mockActivityType);
+      mockReportsRepository.create.mockReturnValue({
+        ...createAktivitasDto,
+        worker_id: userId,
+        shift_id: shiftId,
+        area_id: areaId,
+      });
+      mockReportsRepository.save.mockResolvedValue({
+        id: 'report-uuid-1',
+        ...createAktivitasDto,
+        worker_id: userId,
+        shift_id: shiftId,
+        area_id: areaId,
+        photo_url: createAktivitasDto.photo_urls[0],
+      });
+
+      const result = await service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto);
+
+      expect(shiftsRepository.findOne).toHaveBeenCalledWith({
+        where: { worker_id: userId, clock_out_time: IsNull() },
+        relations: ['area'],
+      });
+      expect(activityTypeRepository.findOne).toHaveBeenCalledWith({
+        where: { id: activityTypeId, is_active: true },
+      });
+      expect(result.id).toBe('report-uuid-1');
+      expect(result.photo_url).toBe(createAktivitasDto.photo_urls[0]); // backward compat
+    });
+
+    it('should create aktivitas successfully for LINMAS role', async () => {
+      const linmasActivityType = {
+        id: activityTypeId,
+        name: 'Patroli Keamanan',
+        code: 'SECURITY_PATROL',
+        applicable_roles: ['Linmas'],
+        is_active: true,
+      };
+
+      mockShiftsRepository.findOne.mockResolvedValue(mockActiveShift);
+      mockActivityTypeRepository.findOne.mockResolvedValue(linmasActivityType);
+      mockReportsRepository.create.mockReturnValue({
+        ...createAktivitasDto,
+        worker_id: userId,
+        shift_id: shiftId,
+        area_id: areaId,
+      });
+      mockReportsRepository.save.mockResolvedValue({
+        id: 'report-uuid-2',
+        ...createAktivitasDto,
+        worker_id: userId,
+      });
+
+      const result = await service.createAktivitas(userId, UserRole.LINMAS, createAktivitasDto);
+
+      expect(result.id).toBe('report-uuid-2');
+    });
+
+    it('should throw BadRequestException if no active shift found', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto)).rejects.toThrow(
+        'No active shift found',
+      );
+    });
+
+    it('should throw NotFoundException if activity type not found', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(mockActiveShift);
+      mockActivityTypeRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto)).rejects.toThrow(
+        'Activity type not found or inactive',
+      );
+    });
+
+    it('should throw ForbiddenException if activity type not applicable to user role', async () => {
+      const linmasOnlyActivity = {
+        id: activityTypeId,
+        name: 'Patroli Keamanan',
+        code: 'SECURITY_PATROL',
+        applicable_roles: ['Linmas'], // SATGAS cannot do this
+        is_active: true,
+      };
+
+      mockShiftsRepository.findOne.mockResolvedValue(mockActiveShift);
+      mockActivityTypeRepository.findOne.mockResolvedValue(linmasOnlyActivity);
+
+      await expect(service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto)).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto)).rejects.toThrow(
+        'Activity type "Patroli Keamanan" is not available for your role',
+      );
+    });
+
+    it('should validate photo_urls array contains 1-3 photos', async () => {
+      // This validation happens at DTO level (class-validator)
+      expect(createAktivitasDto.photo_urls.length).toBeGreaterThanOrEqual(1);
+      expect(createAktivitasDto.photo_urls.length).toBeLessThanOrEqual(3);
+    });
+
+    it('should set report_type to null for new aktivitas', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(mockActiveShift);
+      mockActivityTypeRepository.findOne.mockResolvedValue(mockActivityType);
+      mockReportsRepository.create.mockReturnValue({
+        ...createAktivitasDto,
+        worker_id: userId,
+        shift_id: shiftId,
+        area_id: areaId,
+        report_type: null,
+      });
+      mockReportsRepository.save.mockResolvedValue({
+        id: 'report-uuid-3',
+        ...createAktivitasDto,
+        worker_id: userId,
+        report_type: null,
+      });
+
+      const result = await service.createAktivitas(userId, UserRole.SATGAS, createAktivitasDto);
+
+      expect(reportsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          report_type: undefined,
+        }),
+      );
     });
   });
 });

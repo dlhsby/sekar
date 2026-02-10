@@ -43,19 +43,21 @@ export class Shift {
   worker: User;
 
   @ApiProperty({
-    description: 'Area UUID (foreign key to areas table)',
+    description: 'Area UUID (foreign key to areas table) - Phase 2C: optional (auto-detected)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+    nullable: true,
   })
-  @Column('uuid')
-  area_id: string;
+  @Column({ type: 'uuid', nullable: true })
+  area_id: string | null;
 
   @ApiProperty({
     description: 'Area details',
     type: () => Area,
+    nullable: true,
   })
-  @ManyToOne(() => Area, { eager: true, onDelete: 'RESTRICT' })
+  @ManyToOne(() => Area, { eager: true, nullable: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'area_id' })
-  area: Area;
+  area?: Area;
 
   @ApiProperty({
     description: 'Clock-in timestamp',

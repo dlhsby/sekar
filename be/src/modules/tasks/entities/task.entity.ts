@@ -6,12 +6,14 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
-import { ActivityType } from '../../activity-types/entities/activity-type.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
+import { TaskTag } from './task-tag.entity';
 
 /**
  * Task status enum
@@ -19,10 +21,8 @@ import { ActivityType } from '../../activity-types/entities/activity-type.entity
 export enum TaskStatus {
   PENDING = 'pending',
   ASSIGNED = 'assigned',
-  ACCEPTED = 'accepted',
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
-  DECLINED = 'declined',
 }
 
 /**
@@ -75,11 +75,11 @@ export class Task {
   deadline: Date | null;
 
   // Foreign keys
-  @Column({ name: 'area_id', type: 'uuid' })
-  area_id: string;
+  @Column({ name: 'area_id', type: 'uuid', nullable: true })
+  area_id: string | null;
 
-  @Column({ name: 'activity_type_id', type: 'uuid', nullable: true })
-  activity_type_id: string | null;
+  @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
+  rayon_id: string | null;
 
   @Column({ name: 'assigned_to', type: 'uuid', nullable: true })
   assigned_to: string | null;
@@ -97,26 +97,9 @@ export class Task {
   @Column({ type: 'timestamptz', nullable: true })
   completed_at: Date | null;
 
-  // GPS coordinates for completion verification
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
-  completion_gps_lat: number | null;
-
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
-  completion_gps_lng: number | null;
-
-  // Decline reason
-  @Column({ type: 'text', nullable: true })
-  decline_reason: string | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  declined_at: Date | null;
-
   // Assignment tracking
   @Column({ type: 'timestamptz', nullable: true })
   assigned_at: Date | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  accepted_at: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   started_at: Date | null;
@@ -132,13 +115,13 @@ export class Task {
   deleted_at: Date | null;
 
   // Relations
-  @ManyToOne(() => Area, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Area, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'area_id' })
-  area: Area;
+  area: Area | null;
 
-  @ManyToOne(() => ActivityType, { onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'activity_type_id' })
-  activityType: ActivityType;
+  @ManyToOne(() => Rayon, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'rayon_id' })
+  rayon: Rayon | null;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'assigned_to' })
@@ -147,4 +130,7 @@ export class Task {
   @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'created_by' })
   creator: User;
+
+  @OneToMany(() => TaskTag, (tag) => tag.task, { cascade: true })
+  tags: TaskTag[];
 }

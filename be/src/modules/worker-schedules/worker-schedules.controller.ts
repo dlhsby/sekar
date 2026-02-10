@@ -28,6 +28,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for worker schedule operations
@@ -204,7 +205,7 @@ export class WorkerSchedulesController {
    * @returns The created schedule
    */
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.KOORDINATOR_LAPANGAN)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP)
   @ApiOperation({
     summary: 'Create new schedule',
     description: 'Create a new worker schedule. Admin and KoordinatorLapangan only.',
@@ -251,7 +252,7 @@ export class WorkerSchedulesController {
    * @returns The updated schedule
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.KOORDINATOR_LAPANGAN)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP)
   @ApiOperation({
     summary: 'Update schedule',
     description: 'Update an existing schedule. Admin and KoordinatorLapangan only.',
@@ -302,7 +303,7 @@ export class WorkerSchedulesController {
    * @param id - Schedule ID (UUID)
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.KOORDINATOR_LAPANGAN)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete schedule',

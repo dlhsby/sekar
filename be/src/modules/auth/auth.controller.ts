@@ -7,7 +7,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 
 /**
@@ -237,8 +237,8 @@ export class AuthController {
       created_at: user.created_at,
     };
 
-    // If user is a worker, include assigned area with full details
-    if (user.role === 'worker') {
+    // If user is a field role, include assigned area with full details
+    if (user.role === UserRole.SATGAS || user.role === UserRole.LINMAS) {
       const assignment = await this.workerAssignmentsService.getWorkerAssignment(user.id);
 
       if (assignment && assignment.area) {

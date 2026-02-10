@@ -28,6 +28,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { ImportModule } from './modules/import/import.module';
 import { EventsModule } from './gateways/events.module';
+import { OvertimeModule } from './modules/overtime/overtime.module';
 
 @Module({
   imports: [
@@ -111,6 +112,7 @@ import { EventsModule } from './gateways/events.module';
     MonitoringModule, // Real-time monitoring and statistics
     ImportModule, // KMZ/KML import for areas
     EventsModule, // WebSocket real-time events
+    OvertimeModule, // Overtime submission and approval
   ],
   controllers: [AppController],
   providers: [

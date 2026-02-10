@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for rayon operations
@@ -175,7 +176,7 @@ export class RayonsController {
    * @returns The created rayon
    */
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Create new rayon',
     description: 'Create a new rayon with unique code and name. Admin only.',
@@ -215,7 +216,7 @@ export class RayonsController {
    * @returns The updated rayon
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Update rayon',
     description: 'Update an existing rayon. Admin only.',
@@ -263,7 +264,7 @@ export class RayonsController {
    * @param id - Rayon ID (UUID)
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete rayon',

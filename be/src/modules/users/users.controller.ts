@@ -31,6 +31,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from './entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { User } from './entities/user.entity';
+import { USER_MANAGERS } from './constants/role-groups';
 
 /**
  * User Management Controller
@@ -58,7 +59,7 @@ export class UsersController {
    * @throws UnauthorizedException if not admin
    */
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Create new user',
     description:
@@ -111,7 +112,7 @@ export class UsersController {
    * @returns Paginated users (without passwords)
    */
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
   @ApiOperation({
     summary: 'Get all users with pagination',
     description:
@@ -169,7 +170,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
   @ApiOperation({
     summary: 'Get user by ID',
     description:
@@ -229,7 +230,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Update user',
     description:
@@ -282,7 +283,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Delete user (soft delete)',
     description:

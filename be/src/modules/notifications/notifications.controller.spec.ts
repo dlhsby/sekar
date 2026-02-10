@@ -18,7 +18,7 @@ describe('NotificationsController', () => {
   const mockUser: Partial<User> = {
     id: 'user-uuid',
     username: 'testuser',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
   };
 
@@ -148,7 +148,7 @@ describe('NotificationsController', () => {
         title: 'Announcement',
         body: 'Test broadcast message',
         type: NotificationType.ANNOUNCEMENT,
-        target_roles: [UserRole.WORKER],
+        target_roles: [UserRole.SATGAS],
       };
       notificationsService.broadcast.mockResolvedValue({ sent: 10, failed: 0 });
 

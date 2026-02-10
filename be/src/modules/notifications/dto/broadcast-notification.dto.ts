@@ -46,7 +46,7 @@ export class BroadcastNotificationDto {
     description: 'Target roles to receive the notification (empty = all roles)',
     type: [String],
     enum: UserRole,
-    example: [UserRole.WORKER, UserRole.LINMAS],
+    example: [UserRole.SATGAS, UserRole.LINMAS],
   })
   @IsArray()
   @IsEnum(UserRole, { each: true })

@@ -154,6 +154,23 @@ describe('SupervisorService', () => {
       expect(result.meta.total).toBe(0);
     });
 
+    it('should handle workers with null area in paginated results', async () => {
+      const mockShift = {
+        id: 'shift-uuid-1',
+        worker: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
+        area: null,
+        clock_in_time: new Date(),
+        clock_out_time: null,
+      };
+
+      mockShiftsRepository.findAndCount.mockResolvedValue([[mockShift], 1]);
+      mockLocationLogsRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.getActiveWorkersPaginated(1, 50);
+
+      expect(result.data[0].shift.area).toBeNull();
+    });
+
     it('should handle pagination correctly with page 2', async () => {
       const mockShifts = [
         {
@@ -236,6 +253,23 @@ describe('SupervisorService', () => {
       expect(result.workers[0].latest_location).toBeNull();
     });
 
+    it('should handle workers with null area', async () => {
+      const mockShift = {
+        id: 'shift-uuid-1',
+        worker: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
+        area: null,
+        clock_in_time: new Date(),
+        clock_out_time: null,
+      };
+
+      mockShiftsRepository.find.mockResolvedValue([mockShift]);
+      mockLocationLogsRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.getActiveWorkers();
+
+      expect(result.workers[0].shift.area).toBeNull();
+    });
+
     it('should return empty array if no active workers', async () => {
       mockShiftsRepository.find.mockResolvedValue([]);
 
@@ -283,21 +317,21 @@ describe('SupervisorService', () => {
           id: 'worker-1',
           username: 'worker1',
           full_name: 'Worker One',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
         {
           id: 'worker-2',
           username: 'worker2',
           full_name: 'Worker Two',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
         {
           id: 'worker-3',
           username: 'worker3',
           full_name: 'Worker Three',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
       ];
@@ -322,7 +356,7 @@ describe('SupervisorService', () => {
           id: 'worker-1',
           username: 'worker1',
           full_name: 'Worker One',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
       ];
@@ -351,7 +385,7 @@ describe('SupervisorService', () => {
           id: 'worker-1',
           username: 'worker1',
           full_name: 'Worker One',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
       ];
@@ -376,21 +410,21 @@ describe('SupervisorService', () => {
           id: 'worker-1',
           username: 'worker1',
           full_name: 'Worker One',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
         {
           id: 'worker-2',
           username: 'worker2',
           full_name: 'Worker Two',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
         {
           id: 'worker-3',
           username: 'worker3',
           full_name: 'Worker Three',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
       ];
@@ -417,7 +451,7 @@ describe('SupervisorService', () => {
           id: 'worker-1',
           username: 'worker1',
           full_name: 'Worker One',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
       ];
@@ -445,7 +479,7 @@ describe('SupervisorService', () => {
         id: `worker-${i}`,
         username: `worker${i}`,
         full_name: `Worker ${i}`,
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
         is_active: true,
       }));
 
@@ -467,7 +501,7 @@ describe('SupervisorService', () => {
           id: 'worker-1',
           username: 'worker1',
           full_name: 'Worker One',
-          role: UserRole.WORKER,
+          role: UserRole.SATGAS,
           is_active: true,
         },
       ];

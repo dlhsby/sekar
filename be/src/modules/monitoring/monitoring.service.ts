@@ -266,12 +266,7 @@ export class MonitoringService {
 
     const activeTasks: TaskSummaryDto[] = tasks
       .filter((t) =>
-        [
-          TaskStatus.PENDING,
-          TaskStatus.ASSIGNED,
-          TaskStatus.ACCEPTED,
-          TaskStatus.IN_PROGRESS,
-        ].includes(t.status),
+        [TaskStatus.PENDING, TaskStatus.ASSIGNED, TaskStatus.IN_PROGRESS].includes(t.status),
       )
       .map((t) => ({
         id: t.id,

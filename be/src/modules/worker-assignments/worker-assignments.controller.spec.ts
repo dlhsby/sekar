@@ -17,7 +17,7 @@ describe('WorkerAssignmentsController', () => {
     worker: {
       id: 'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
       username: 'worker1',
-      role: UserRole.WORKER,
+      role: UserRole.SATGAS,
       full_name: 'Worker One',
     } as any,
     area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',

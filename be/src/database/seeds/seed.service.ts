@@ -123,37 +123,37 @@ export class SeedService {
         username: 'admin',
         password: 'admin123',
         full_name: 'System Administrator',
-        role: UserRole.ADMIN,
+        role: UserRole.SUPERADMIN,
       },
       {
         username: 'supervisor1',
         password: 'supervisor123',
         full_name: 'Supervisor Satu',
-        role: UserRole.SUPERVISOR,
+        role: UserRole.KORLAP,
       },
       {
         username: 'supervisor2',
         password: 'supervisor123',
         full_name: 'Supervisor Dua',
-        role: UserRole.SUPERVISOR,
+        role: UserRole.KORLAP,
       },
       {
         username: 'worker1',
         password: 'worker123',
         full_name: 'Pekerja Satu',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
       },
       {
         username: 'worker2',
         password: 'worker123',
         full_name: 'Pekerja Dua',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
       },
       {
         username: 'worker3',
         password: 'worker123',
         full_name: 'Pekerja Tiga',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
       },
     ];
 

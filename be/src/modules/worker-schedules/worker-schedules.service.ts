@@ -156,7 +156,7 @@ export class WorkerSchedulesService {
 
     // Verify user exists and is a Worker or Linmas
     const user = await this.usersService.findOne(createDto.user_id);
-    if (user.role !== UserRole.WORKER && user.role !== UserRole.LINMAS) {
+    if (user.role !== UserRole.SATGAS && user.role !== UserRole.LINMAS) {
       throw new BadRequestException(`User must be a Worker or Linmas to be assigned to a schedule`);
     }
 

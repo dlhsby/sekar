@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for area management
@@ -49,7 +50,7 @@ export class AreasController {
    * @returns The created area
    */
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Create new area',
     description:
@@ -155,7 +156,7 @@ export class AreasController {
    * @returns The updated area
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Update area',
     description: 'Update area details. Admin only. Cannot change area type (excluded from update).',
@@ -199,7 +200,7 @@ export class AreasController {
    * @param id - Area UUID
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Delete area',
     description:

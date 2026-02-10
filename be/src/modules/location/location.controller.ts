@@ -15,6 +15,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { CLOCKABLE_ROLES, USER_MANAGERS } from '../users/constants/role-groups';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
@@ -35,7 +36,7 @@ export class LocationController {
    * Workers send multiple GPS pings at once
    */
   @Post('batch')
-  @Roles(UserRole.WORKER)
+  @Roles(...CLOCKABLE_ROLES)
   @ApiOperation({ summary: 'Batch upload location logs (Worker only)' })
   @ApiResponse({
     status: 201,
@@ -61,7 +62,7 @@ export class LocationController {
    * Admin and Supervisor can view worker location history
    */
   @Get('worker/:workerId')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
   @ApiOperation({ summary: 'Get worker location history with pagination (Admin, Supervisor)' })
   @ApiParam({
     name: 'workerId',
@@ -138,7 +139,7 @@ export class LocationController {
    * Admin and Supervisor can view worker's most recent location
    */
   @Get('worker/:workerId/latest')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
   @ApiOperation({ summary: 'Get latest worker location (Admin, Supervisor)' })
   @ApiParam({
     name: 'workerId',

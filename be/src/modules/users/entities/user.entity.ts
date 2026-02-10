@@ -5,29 +5,35 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { Area } from '../../areas/entities/area.entity';
 
 /**
  * User Role Enum
  *
- * Phase 2: Extended to 6 roles with hierarchy:
- * - Admin: Full system access
- * - TopManagement: City-wide view (Kepala Dinas, Wali Kota, Kepala Bidang)
- * - KepalaRayon: Manages an entire Rayon
- * - KoordinatorLapangan: Manages specific Area (replaces Supervisor)
- * - Worker: Field worker (Satgas)
+ * Phase 2C: 8 roles with hierarchy:
+ * - Satgas: Field worker (formerly Worker)
  * - Linmas: Security officer
+ * - Korlap: Field coordinator, manages specific Area (formerly Supervisor/KoordinatorLapangan)
+ * - AdminData: Data entry and reporting
+ * - KepalaRayon: Manages an entire Rayon
+ * - TopManagement: City-wide view (Kepala Dinas, Wali Kota, Kepala Bidang)
+ * - AdminSystem: System configuration and management
+ * - Superadmin: Full system access (formerly Admin)
  */
 export enum UserRole {
-  WORKER = 'worker',
-  SUPERVISOR = 'supervisor', // Legacy, maps to koordinator_lapangan
-  ADMIN = 'admin',
-  TOP_MANAGEMENT = 'top_management',
-  KEPALA_RAYON = 'kepala_rayon',
-  KOORDINATOR_LAPANGAN = 'koordinator_lapangan',
+  SATGAS = 'satgas',
   LINMAS = 'linmas',
+  KORLAP = 'korlap',
+  ADMIN_DATA = 'admin_data',
+  KEPALA_RAYON = 'kepala_rayon',
+  TOP_MANAGEMENT = 'top_management',
+  ADMIN_SYSTEM = 'admin_system',
+  SUPERADMIN = 'superadmin',
 }
 
 @Entity('users')
@@ -52,7 +58,7 @@ export class User {
     type: 'varchar',
     length: 30,
     enum: UserRole,
-    default: UserRole.WORKER,
+    default: UserRole.SATGAS,
   })
   role: UserRole;
 
@@ -63,6 +69,17 @@ export class User {
   })
   @Column({ type: 'uuid', nullable: true })
   rayon_id?: string;
+
+  @ApiProperty({
+    description: 'Area ID for Korlap role',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  area_id?: string;
+
+  @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'area_id' })
+  area?: Area;
 
   @Column({ default: true })
   is_active: boolean;

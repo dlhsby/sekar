@@ -49,21 +49,21 @@ export class CreateTaskDto {
   @IsOptional()
   deadline?: string;
 
-  @ApiProperty({
-    description: 'Area ID where the task should be performed',
+  @ApiPropertyOptional({
+    description: 'Area ID where the task should be performed (optional)',
     example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
   })
   @IsUUID()
-  @IsNotEmpty()
-  area_id: string;
+  @IsOptional()
+  area_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Activity type ID for the task',
-    example: '33333333-3333-3333-3333-333333333301',
+    description: 'Rayon ID for rayon-scoped tasks (optional)',
+    example: 'r1r2r3r4-a5b6-7890-abcd-ef1234567890',
   })
   @IsUUID()
   @IsOptional()
-  activity_type_id?: string;
+  rayon_id?: string;
 
   @ApiPropertyOptional({
     description: 'User ID to assign the task to (optional at creation)',
@@ -72,4 +72,13 @@ export class CreateTaskDto {
   @IsUUID()
   @IsOptional()
   assigned_to?: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of user IDs to tag in this task',
+    example: ['u1u1u1u1-a2b3-4567-abcd-ef1234567890', 'u2u2u2u2-a2b3-4567-abcd-ef1234567890'],
+    type: [String],
+  })
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  tagged_user_ids?: string[];
 }

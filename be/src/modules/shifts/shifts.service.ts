@@ -1,6 +1,6 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, LessThanOrEqual } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { Shift } from './entities/shift.entity';
 import { ClockInDto } from './dto/clock-in.dto';
@@ -8,7 +8,6 @@ import { ClockOutDto } from './dto/clock-out.dto';
 import { AreasService } from '../areas/areas.service';
 import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 import { S3Service } from '../../shared/services/s3.service';
-import { GpsUtil } from '../../common/utils/gps.util';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -16,12 +15,15 @@ import {
   MINIMUM_SHIFT_DURATION_MS,
   MINIMUM_SHIFT_DURATION_MINUTES,
 } from '../../common/constants/shift.constants';
+import { WorkerSchedule } from '../worker-schedules/entities/worker-schedule.entity';
+import { WorkerAssignment } from '../worker-assignments/entities/worker-assignment.entity';
+import { Area } from '../areas/entities/area.entity';
 
 /**
  * Service for managing worker shifts
  *
- * Handles clock-in/out operations with GPS validation and photo uploads.
- * Ensures workers can only clock in to their assigned areas within GPS boundaries.
+ * Handles clock-in/out operations with GPS recording and photo uploads.
+ * Phase 2C: GPS boundary validation removed, area auto-detection added.
  */
 @Injectable()
 export class ShiftsService {
@@ -30,21 +32,58 @@ export class ShiftsService {
   constructor(
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
+    @InjectRepository(WorkerSchedule)
+    private readonly workerScheduleRepo: Repository<WorkerSchedule>,
+    @InjectRepository(WorkerAssignment)
+    private readonly workerAssignmentRepo: Repository<WorkerAssignment>,
     private readonly areasService: AreasService,
     private readonly workerAssignmentsService: WorkerAssignmentsService,
     private readonly s3Service: S3Service,
   ) {}
 
   /**
+   * Get active area for a worker
+   * Checks WorkerSchedule (primary) then WorkerAssignment (fallback)
+   *
+   * @param userId Worker UUID
+   * @returns Area entity or null if no assignment found
+   */
+  async getActiveArea(userId: string): Promise<Area | null> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1. Check WorkerSchedule (PRIMARY - uses user_id, effective_date)
+    const schedule = await this.workerScheduleRepo.findOne({
+      where: {
+        user_id: userId,
+        effective_date: LessThanOrEqual(today),
+      },
+      relations: ['area'],
+      order: { effective_date: 'DESC' },
+    });
+    if (schedule?.area) return schedule.area;
+
+    // 2. Fallback to WorkerAssignment (deprecated)
+    const assignment = await this.workerAssignmentRepo.findOne({
+      where: { worker_id: userId },
+      relations: ['area'],
+    });
+    if (assignment?.area) return assignment.area;
+
+    return null;
+  }
+
+  /**
    * Clock in to start a shift
+   * Phase 2C: GPS boundary validation removed, area auto-detection added
    *
    * @param workerId Worker UUID
-   * @param dto Clock-in data (area_id, GPS, selfie photo)
+   * @param dto Clock-in data (optional area_id, GPS, selfie photo)
    * @returns Created shift entity
-   * @throws BadRequestException if already clocked in, not assigned to area, or GPS outside boundary
+   * @throws BadRequestException if already clocked in
    */
   async clockIn(workerId: string, dto: ClockInDto): Promise<Shift> {
-    this.logger.log(`Worker ${workerId} attempting to clock in to area ${dto.area_id}`);
+    this.logger.log(`Worker ${workerId} attempting to clock in`);
 
     // 1. Check if worker already has an active shift
     const activeShift = await this.findActiveShift(workerId);
@@ -57,50 +96,16 @@ export class ShiftsService {
       );
     }
 
-    // 2. Verify worker is assigned to this area
-    const assignment = await this.workerAssignmentsService.getWorkerAssignment(workerId);
-    if (!assignment) {
-      throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        ApiErrorCode.SHIFT_NOT_ASSIGNED,
-        'Worker is not assigned to any area',
-      );
+    // 2. Get area: from DTO or auto-detect
+    let area: Area | null = null;
+    if (dto.area_id) {
+      area = await this.areasService.findOne(dto.area_id);
+    } else {
+      area = await this.getActiveArea(workerId);
     }
-    if (assignment.area_id !== dto.area_id) {
-      throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        ApiErrorCode.SHIFT_NOT_ASSIGNED,
-        `Worker is assigned to area ${assignment.area_id}, not ${dto.area_id}`,
-        { assignedAreaId: assignment.area_id, requestedAreaId: dto.area_id },
-      );
-    }
+    // area can be null - allow clock-in without area (GPS still recorded)
 
-    // 3. Validate GPS is within area boundary
-    const area = await this.areasService.findOne(dto.area_id);
-    const isWithin = GpsUtil.isWithinBoundary(
-      dto.gps_lat,
-      dto.gps_lng,
-      Number(area.gps_lat),
-      Number(area.gps_lng),
-      area.radius_meters,
-    );
-
-    if (!isWithin) {
-      const distance = GpsUtil.calculateDistance(
-        dto.gps_lat,
-        dto.gps_lng,
-        Number(area.gps_lat),
-        Number(area.gps_lng),
-      );
-      throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS,
-        `GPS location is ${Math.round(distance)}m away from area center. Must be within ${area.radius_meters}m`,
-        { distance: Math.round(distance), maxDistance: area.radius_meters },
-      );
-    }
-
-    // 4. Upload selfie to S3
+    // 3. Upload selfie to S3
     let photoUrl: string;
     try {
       const photoData = dto.selfie_photo.split(',')[1]; // Remove data:image/jpeg;base64, prefix
@@ -118,10 +123,10 @@ export class ShiftsService {
       );
     }
 
-    // 5. Create shift record
+    // 4. Create shift record
     const shift = this.shiftRepository.create({
       worker_id: workerId,
-      area_id: dto.area_id,
+      area_id: area?.id || null,
       clock_in_time: new Date(),
       clock_in_gps_lat: dto.gps_lat,
       clock_in_gps_lng: dto.gps_lng,
@@ -129,7 +134,9 @@ export class ShiftsService {
     });
 
     const savedShift = await this.shiftRepository.save(shift);
-    this.logger.log(`Worker ${workerId} clocked in successfully. Shift ID: ${savedShift.id}`);
+    this.logger.log(
+      `Worker ${workerId} clocked in successfully. Shift ID: ${savedShift.id}, Area: ${area?.name || 'None'}`,
+    );
 
     return savedShift;
   }

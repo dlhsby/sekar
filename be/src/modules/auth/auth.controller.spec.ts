@@ -15,7 +15,7 @@ describe('AuthController', () => {
     username: 'testuser',
     password_hash: 'hashedpassword',
     full_name: 'Test User',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -90,7 +90,7 @@ describe('AuthController', () => {
     it('should return current user info without assignment for non-worker', async () => {
       const adminUser: User = {
         ...mockUser,
-        role: UserRole.ADMIN,
+        role: UserRole.SUPERADMIN,
       };
 
       const result = await controller.getMe(adminUser);

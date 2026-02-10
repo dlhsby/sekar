@@ -8,16 +8,16 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
+import { TaskTag } from './entities/task-tag.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
-import { DeclineTaskDto } from './dto/decline-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
-import { ActivityTypesService } from '../activity-types/activity-types.service';
 import { User, UserRole } from '../users/entities/user.entity';
+import { VALID_TASK_ASSIGNMENTS } from '../users/constants/role-groups';
 
 /**
  * Service for managing tasks
@@ -32,9 +32,10 @@ export class TasksService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
+    @InjectRepository(TaskTag)
+    private readonly taskTagRepository: Repository<TaskTag>,
     private readonly usersService: UsersService,
     private readonly areasService: AreasService,
-    private readonly activityTypesService: ActivityTypesService,
   ) {}
 
   /**
@@ -47,32 +48,49 @@ export class TasksService {
   async create(createTaskDto: CreateTaskDto, creatorId: string): Promise<Task> {
     this.logger.log(`Creating task: ${createTaskDto.title}`);
 
-    // Validate area exists
-    await this.areasService.findOne(createTaskDto.area_id);
+    // Get creator to validate hierarchy
+    const creator = await this.usersService.findOne(creatorId);
 
-    // Validate activity type if provided
-    if (createTaskDto.activity_type_id) {
-      await this.activityTypesService.findOne(createTaskDto.activity_type_id);
+    // Validate area exists if provided
+    if (createTaskDto.area_id) {
+      await this.areasService.findOne(createTaskDto.area_id);
     }
 
-    // If assigning to a user, validate the user
+    // If assigning to a user, validate the user and hierarchy
     let initialStatus = TaskStatus.PENDING;
     if (createTaskDto.assigned_to) {
       const assignee = await this.usersService.findOne(createTaskDto.assigned_to);
       this.validateAssignee(assignee);
+      this.validateHierarchy(creator.role, assignee.role);
       initialStatus = TaskStatus.ASSIGNED;
     }
 
     const task = this.taskRepository.create({
-      ...createTaskDto,
-      status: initialStatus,
+      title: createTaskDto.title,
+      description: createTaskDto.description,
       priority: createTaskDto.priority || TaskPriority.MEDIUM,
       deadline: createTaskDto.deadline ? new Date(createTaskDto.deadline) : null,
+      area_id: createTaskDto.area_id || null,
+      rayon_id: createTaskDto.rayon_id || null,
+      assigned_to: createTaskDto.assigned_to || null,
+      status: initialStatus,
       created_by: creatorId,
       assigned_at: createTaskDto.assigned_to ? new Date() : null,
     });
 
     const savedTask = await this.taskRepository.save(task);
+
+    // Handle tagged users
+    if (createTaskDto.tagged_user_ids && createTaskDto.tagged_user_ids.length > 0) {
+      const tags = createTaskDto.tagged_user_ids.map((userId) =>
+        this.taskTagRepository.create({
+          task_id: savedTask.id,
+          user_id: userId,
+        }),
+      );
+      await this.taskTagRepository.save(tags);
+    }
+
     this.logger.log(`Task created with ID: ${savedTask.id}`);
 
     return this.findOne(savedTask.id);
@@ -95,15 +113,16 @@ export class TasksService {
       if (filters.created_by) where.created_by = filters.created_by;
       if (filters.status) where.status = filters.status;
       if (filters.priority) where.priority = filters.priority;
-      if (filters.activity_type_id) where.activity_type_id = filters.activity_type_id;
     }
 
     const queryBuilder = this.taskRepository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.activityType', 'activityType')
+      .leftJoinAndSelect('task.rayon', 'rayon')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.creator', 'creator')
+      .leftJoinAndSelect('task.tags', 'tags')
+      .leftJoinAndSelect('tags.user', 'taggedUser')
       .where(where);
 
     // Date range filters
@@ -147,7 +166,7 @@ export class TasksService {
 
     const task = await this.taskRepository.findOne({
       where: { id },
-      relations: ['area', 'activityType', 'assignee', 'creator'],
+      relations: ['area', 'rayon', 'assignee', 'creator', 'tags', 'tags.user'],
     });
 
     if (!task) {
@@ -171,13 +190,15 @@ export class TasksService {
     const queryBuilder = this.taskRepository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.activityType', 'activityType')
+      .leftJoinAndSelect('task.rayon', 'rayon')
       .leftJoinAndSelect('task.creator', 'creator')
+      .leftJoinAndSelect('task.tags', 'tags')
+      .leftJoinAndSelect('tags.user', 'taggedUser')
       .where('task.assigned_to = :userId', { userId });
 
     if (activeOnly) {
       queryBuilder.andWhere('task.status NOT IN (:...completedStatuses)', {
-        completedStatuses: [TaskStatus.COMPLETED, TaskStatus.DECLINED],
+        completedStatuses: [TaskStatus.COMPLETED],
       });
     }
 
@@ -205,22 +226,12 @@ export class TasksService {
       await this.areasService.findOne(updateTaskDto.area_id);
     }
 
-    // Validate activity type if being updated
-    if (
-      updateTaskDto.activity_type_id &&
-      updateTaskDto.activity_type_id !== task.activity_type_id
-    ) {
-      await this.activityTypesService.findOne(updateTaskDto.activity_type_id);
-    }
-
     // Update fields
     if (updateTaskDto.title) task.title = updateTaskDto.title;
     if (updateTaskDto.description !== undefined) task.description = updateTaskDto.description;
     if (updateTaskDto.priority) task.priority = updateTaskDto.priority;
     if (updateTaskDto.deadline) task.deadline = new Date(updateTaskDto.deadline);
-    if (updateTaskDto.area_id) task.area_id = updateTaskDto.area_id;
-    if (updateTaskDto.activity_type_id !== undefined)
-      task.activity_type_id = updateTaskDto.activity_type_id;
+    if (updateTaskDto.area_id !== undefined) task.area_id = updateTaskDto.area_id;
 
     await this.taskRepository.save(task);
     this.logger.log(`Task updated with ID: ${id}`);
@@ -240,10 +251,10 @@ export class TasksService {
 
     const task = await this.findOne(id);
 
-    // Can only assign pending or declined tasks
-    if (![TaskStatus.PENDING, TaskStatus.DECLINED].includes(task.status)) {
+    // Can only assign pending tasks
+    if (task.status !== TaskStatus.PENDING) {
       throw new BadRequestException(
-        `Cannot assign task with status "${task.status}". Task must be pending or declined.`,
+        `Cannot assign task with status "${task.status}". Task must be pending.`,
       );
     }
 
@@ -251,82 +262,16 @@ export class TasksService {
     const assignee = await this.usersService.findOne(assignTaskDto.assigned_to);
     this.validateAssignee(assignee);
 
+    // Validate hierarchy
+    const creator = await this.usersService.findOne(task.created_by);
+    this.validateHierarchy(creator.role, assignee.role);
+
     task.assigned_to = assignTaskDto.assigned_to;
     task.status = TaskStatus.ASSIGNED;
     task.assigned_at = new Date();
-    task.decline_reason = null;
-    task.declined_at = null;
 
     await this.taskRepository.save(task);
     this.logger.log(`Task ${id} assigned to user ${assignTaskDto.assigned_to}`);
-
-    return this.findOne(id);
-  }
-
-  /**
-   * Accept an assigned task (by worker)
-   *
-   * @param id - Task ID
-   * @param userId - ID of the user accepting the task
-   * @returns The updated task
-   */
-  async accept(id: string, userId: string): Promise<Task> {
-    this.logger.log(`User ${userId} accepting task ${id}`);
-
-    const task = await this.findOne(id);
-
-    // Verify the task is assigned to this user
-    if (task.assigned_to !== userId) {
-      throw new ForbiddenException('You can only accept tasks assigned to you');
-    }
-
-    // Can only accept assigned tasks
-    if (task.status !== TaskStatus.ASSIGNED) {
-      throw new BadRequestException(
-        `Cannot accept task with status "${task.status}". Task must be assigned.`,
-      );
-    }
-
-    task.status = TaskStatus.ACCEPTED;
-    task.accepted_at = new Date();
-
-    await this.taskRepository.save(task);
-    this.logger.log(`Task ${id} accepted by user ${userId}`);
-
-    return this.findOne(id);
-  }
-
-  /**
-   * Decline an assigned task (by worker)
-   *
-   * @param id - Task ID
-   * @param userId - ID of the user declining the task
-   * @param declineTaskDto - Decline reason
-   * @returns The updated task
-   */
-  async decline(id: string, userId: string, declineTaskDto: DeclineTaskDto): Promise<Task> {
-    this.logger.log(`User ${userId} declining task ${id}`);
-
-    const task = await this.findOne(id);
-
-    // Verify the task is assigned to this user
-    if (task.assigned_to !== userId) {
-      throw new ForbiddenException('You can only decline tasks assigned to you');
-    }
-
-    // Can only decline assigned tasks
-    if (task.status !== TaskStatus.ASSIGNED) {
-      throw new BadRequestException(
-        `Cannot decline task with status "${task.status}". Task must be assigned.`,
-      );
-    }
-
-    task.status = TaskStatus.DECLINED;
-    task.decline_reason = declineTaskDto.reason;
-    task.declined_at = new Date();
-
-    await this.taskRepository.save(task);
-    this.logger.log(`Task ${id} declined by user ${userId}`);
 
     return this.findOne(id);
   }
@@ -348,10 +293,10 @@ export class TasksService {
       throw new ForbiddenException('You can only start tasks assigned to you');
     }
 
-    // Can only start accepted tasks
-    if (task.status !== TaskStatus.ACCEPTED) {
+    // Can only start assigned tasks
+    if (task.status !== TaskStatus.ASSIGNED) {
       throw new BadRequestException(
-        `Cannot start task with status "${task.status}". Task must be accepted first.`,
+        `Cannot start task with status "${task.status}". Task must be assigned first.`,
       );
     }
 
@@ -390,10 +335,8 @@ export class TasksService {
     }
 
     task.status = TaskStatus.COMPLETED;
-    task.completion_photo_url = completeTaskDto.completion_photo_url || null;
-    task.completion_notes = completeTaskDto.completion_notes || null;
-    task.completion_gps_lat = completeTaskDto.gps_lat;
-    task.completion_gps_lng = completeTaskDto.gps_lng;
+    task.completion_photo_url = completeTaskDto.completion_photo_url;
+    task.completion_notes = completeTaskDto.completion_notes;
     task.completed_at = new Date();
 
     await this.taskRepository.save(task);
@@ -429,14 +372,16 @@ export class TasksService {
 
     const queryBuilder = this.taskRepository
       .createQueryBuilder('task')
-      .leftJoinAndSelect('task.activityType', 'activityType')
+      .leftJoinAndSelect('task.rayon', 'rayon')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.creator', 'creator')
+      .leftJoinAndSelect('task.tags', 'tags')
+      .leftJoinAndSelect('tags.user', 'taggedUser')
       .where('task.area_id = :areaId', { areaId });
 
     if (activeOnly) {
       queryBuilder.andWhere('task.status NOT IN (:...completedStatuses)', {
-        completedStatuses: [TaskStatus.COMPLETED, TaskStatus.DECLINED],
+        completedStatuses: [TaskStatus.COMPLETED],
       });
     }
 
@@ -458,7 +403,6 @@ export class TasksService {
     assigned: number;
     inProgress: number;
     completed: number;
-    declined: number;
   }> {
     const tasks = await this.taskRepository.find({
       where: { area_id: areaId },
@@ -471,7 +415,6 @@ export class TasksService {
       assigned: 0,
       inProgress: 0,
       completed: 0,
-      declined: 0,
     };
 
     for (const task of tasks) {
@@ -482,15 +425,11 @@ export class TasksService {
         case TaskStatus.ASSIGNED:
           stats.assigned++;
           break;
-        case TaskStatus.ACCEPTED:
         case TaskStatus.IN_PROGRESS:
           stats.inProgress++;
           break;
         case TaskStatus.COMPLETED:
           stats.completed++;
-          break;
-        case TaskStatus.DECLINED:
-          stats.declined++;
           break;
       }
     }
@@ -499,15 +438,119 @@ export class TasksService {
   }
 
   /**
-   * Validate that a user can be assigned tasks (Worker or Linmas only)
+   * Find tasks where a user is tagged
+   *
+   * @param userId - User ID
+   * @returns Array of tasks where user is tagged
+   */
+  async findTaggedTasks(userId: string): Promise<Task[]> {
+    this.logger.log(`Fetching tasks tagged for user: ${userId}`);
+
+    const tags = await this.taskTagRepository.find({
+      where: { user_id: userId },
+      relations: ['task', 'task.area', 'task.rayon', 'task.creator', 'task.assignee'],
+    });
+
+    return tags.map((tag) => tag.task);
+  }
+
+  /**
+   * Add a tag to a task
+   *
+   * @param taskId - Task ID
+   * @param userId - ID of the user adding the tag (for authorization)
+   * @param taggedUserId - ID of the user to tag
+   * @returns The updated task
+   */
+  async addTag(taskId: string, userId: string, taggedUserId: string): Promise<Task> {
+    this.logger.log(`Adding tag to task ${taskId}: user ${taggedUserId}`);
+
+    const task = await this.findOne(taskId);
+
+    // Verify the user has permission to add tags (task creator)
+    if (task.created_by !== userId) {
+      throw new ForbiddenException('Only the task creator can add tags');
+    }
+
+    // Check if tag already exists
+    const existingTag = await this.taskTagRepository.findOne({
+      where: { task_id: taskId, user_id: taggedUserId },
+    });
+
+    if (existingTag) {
+      throw new BadRequestException('User is already tagged in this task');
+    }
+
+    // Verify tagged user exists
+    await this.usersService.findOne(taggedUserId);
+
+    const tag = this.taskTagRepository.create({
+      task_id: taskId,
+      user_id: taggedUserId,
+    });
+
+    await this.taskTagRepository.save(tag);
+    this.logger.log(`Tag added to task ${taskId}`);
+
+    return this.findOne(taskId);
+  }
+
+  /**
+   * Remove a tag from a task
+   *
+   * @param taskId - Task ID
+   * @param taggedUserId - ID of the tagged user to remove
+   */
+  async removeTag(taskId: string, taggedUserId: string): Promise<void> {
+    this.logger.log(`Removing tag from task ${taskId}: user ${taggedUserId}`);
+
+    const tag = await this.taskTagRepository.findOne({
+      where: { task_id: taskId, user_id: taggedUserId },
+    });
+
+    if (!tag) {
+      throw new NotFoundException('Tag not found');
+    }
+
+    await this.taskTagRepository.remove(tag);
+    this.logger.log(`Tag removed from task ${taskId}`);
+  }
+
+  /**
+   * Validate that a user can be assigned tasks
    */
   private validateAssignee(user: User): void {
-    if (![UserRole.WORKER, UserRole.LINMAS].includes(user.role)) {
-      throw new BadRequestException('Tasks can only be assigned to Workers or Linmas');
+    const validRoles = [
+      UserRole.SATGAS,
+      UserRole.LINMAS,
+      UserRole.KORLAP,
+      UserRole.KEPALA_RAYON,
+    ];
+
+    if (!validRoles.includes(user.role)) {
+      throw new BadRequestException(
+        'Tasks can only be assigned to Satgas, Linmas, Korlap, or Kepala Rayon',
+      );
     }
 
     if (!user.is_active) {
       throw new BadRequestException('Cannot assign task to inactive user');
+    }
+  }
+
+  /**
+   * Validate task assignment hierarchy
+   *
+   * @param creatorRole - Role of the user creating/assigning the task
+   * @param assigneeRole - Role of the user being assigned the task
+   */
+  private validateHierarchy(creatorRole: UserRole, assigneeRole: UserRole): void {
+    const validAssignments = VALID_TASK_ASSIGNMENTS[creatorRole];
+
+    if (!validAssignments || !validAssignments.includes(assigneeRole)) {
+      throw new ForbiddenException(
+        `Users with role "${creatorRole}" cannot assign tasks to users with role "${assigneeRole}"`,
+      );
     }
   }
 }

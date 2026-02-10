@@ -22,7 +22,7 @@ describe('WorkerSchedulesService', () => {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     username: 'worker1',
     full_name: 'Test Worker',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
   };
 
@@ -30,7 +30,7 @@ describe('WorkerSchedulesService', () => {
     id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     username: 'supervisor1',
     full_name: 'Test Supervisor',
-    role: UserRole.SUPERVISOR,
+    role: UserRole.KORLAP,
     is_active: true,
   };
 

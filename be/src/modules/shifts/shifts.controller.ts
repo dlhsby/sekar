@@ -26,6 +26,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { CLOCKABLE_ROLES, USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Shifts Controller
@@ -41,7 +42,7 @@ export class ShiftsController {
   constructor(private readonly shiftsService: ShiftsService) {}
 
   @Post('clock-in')
-  @Roles(UserRole.WORKER)
+  @Roles(...CLOCKABLE_ROLES)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Clock in to start a shift',
@@ -72,7 +73,7 @@ export class ShiftsController {
   }
 
   @Post('clock-out')
-  @Roles(UserRole.WORKER)
+  @Roles(...CLOCKABLE_ROLES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Clock out to end a shift',
@@ -102,7 +103,7 @@ export class ShiftsController {
   }
 
   @Get('current')
-  @Roles(UserRole.WORKER)
+  @Roles(...CLOCKABLE_ROLES)
   @ApiOperation({
     summary: 'Get current active shift',
     description:
@@ -126,7 +127,7 @@ export class ShiftsController {
   }
 
   @Get('my-shifts')
-  @Roles(UserRole.WORKER)
+  @Roles(...CLOCKABLE_ROLES)
   @ApiOperation({
     summary: 'Get my shift history',
     description:
@@ -150,7 +151,7 @@ export class ShiftsController {
   }
 
   @Get('active')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
   @ApiOperation({
     summary: 'Get all active shifts with pagination',
     description:

@@ -16,7 +16,7 @@ describe('ShiftsController', () => {
   const mockWorker = {
     id: 'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
     username: 'worker1',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     full_name: 'Worker One',
     is_active: true,
     password_hash: 'hashed',
@@ -82,7 +82,7 @@ describe('ShiftsController', () => {
       selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
     };
 
-    it('should clock in a worker', async () => {
+    it('should clock in a worker with provided area_id', async () => {
       mockShiftsService.clockIn.mockResolvedValue(mockShift);
 
       const result = await controller.clockIn(mockWorker as any, clockInDto);
@@ -90,6 +90,20 @@ describe('ShiftsController', () => {
       expect(result).toEqual(mockShift);
       expect(service.clockIn).toHaveBeenCalledWith(mockWorker.id, clockInDto);
       expect(service.clockIn).toHaveBeenCalledTimes(1);
+    });
+
+    it('should clock in a worker with auto-detected area', async () => {
+      const dtoWithoutArea = {
+        gps_lat: -7.2905,
+        gps_lng: 112.7398,
+        selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
+      };
+      mockShiftsService.clockIn.mockResolvedValue(mockShift);
+
+      const result = await controller.clockIn(mockWorker as any, dtoWithoutArea);
+
+      expect(result).toEqual(mockShift);
+      expect(service.clockIn).toHaveBeenCalledWith(mockWorker.id, dtoWithoutArea);
     });
 
     it('should throw BadRequestException if already clocked in', async () => {
@@ -100,19 +114,9 @@ describe('ShiftsController', () => {
       );
     });
 
-    it('should throw BadRequestException if GPS outside boundary', async () => {
+    it('should throw BadRequestException if photo upload fails', async () => {
       mockShiftsService.clockIn.mockRejectedValue(
-        new BadRequestException('GPS location outside area boundary'),
-      );
-
-      await expect(controller.clockIn(mockWorker as any, clockInDto)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should throw BadRequestException if not assigned to area', async () => {
-      mockShiftsService.clockIn.mockRejectedValue(
-        new BadRequestException('Worker is not assigned to any area'),
+        new BadRequestException('Failed to upload selfie photo'),
       );
 
       await expect(controller.clockIn(mockWorker as any, clockInDto)).rejects.toThrow(

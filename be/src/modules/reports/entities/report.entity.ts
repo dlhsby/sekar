@@ -27,12 +27,6 @@ export enum ReportType {
   MAINTENANCE_REQUEST = 'maintenance_request',
 }
 
-export enum ReportCondition {
-  BAIK = 'Baik',
-  CUKUP = 'Cukup',
-  BURUK = 'Buruk',
-}
-
 /**
  * Work Report Entity
  *
@@ -53,9 +47,9 @@ export class Report {
   @Column({ type: 'uuid' })
   shift_id: string;
 
-  @ApiProperty({ description: 'Area UUID where work was performed' })
-  @Column({ type: 'uuid' })
-  area_id: string;
+  @ApiProperty({ description: 'Area UUID where work was performed', nullable: true })
+  @Column({ type: 'uuid', nullable: true })
+  area_id: string | null;
 
   // Phase 2 additions
   @ApiProperty({
@@ -66,8 +60,7 @@ export class Report {
   task_id?: string;
 
   @ApiProperty({
-    description: 'Activity type UUID',
-    required: false,
+    description: 'Activity type UUID (required for new aktivitas)',
   })
   @Column({ type: 'uuid', nullable: true })
   activity_type_id?: string;
@@ -76,12 +69,14 @@ export class Report {
     description: 'Report type',
     enum: ReportType,
     example: ReportType.TASK_COMPLETION,
+    required: false,
   })
   @Column({
     type: 'varchar',
     length: 50,
+    nullable: true,
   })
-  report_type: ReportType;
+  report_type?: ReportType;
 
   @ApiProperty({
     description: 'Report description',
@@ -91,16 +86,15 @@ export class Report {
   description: string;
 
   @ApiProperty({
-    description: 'Condition assessment of the area',
-    enum: ReportCondition,
-    example: ReportCondition.BAIK,
-    required: false,
+    description: 'S3 URLs of uploaded photos (1-3 photos)',
+    example: ['https://sekar-bucket.s3.amazonaws.com/reports/photo1.jpg', 'https://sekar-bucket.s3.amazonaws.com/reports/photo2.jpg'],
+    type: [String],
   })
-  @Column({ type: 'varchar', length: 20, nullable: true })
-  condition?: ReportCondition;
+  @Column('text', { array: true, default: '{}' })
+  photo_urls: string[];
 
   @ApiProperty({
-    description: 'S3 URL of uploaded photo',
+    description: 'S3 URL of uploaded photo (backward compatibility)',
     example: 'https://sekar-bucket.s3.amazonaws.com/reports/photo.jpg',
     required: false,
   })
@@ -114,18 +108,6 @@ export class Report {
   @ApiProperty({ description: 'GPS longitude where report was created', example: 112.7398 })
   @Column({ type: 'decimal', precision: 11, scale: 8 })
   gps_lng: number;
-
-  @ApiProperty({ description: 'Whether report has been reviewed by supervisor', default: false })
-  @Column({ default: false })
-  is_reviewed: boolean;
-
-  @ApiProperty({ description: 'Supervisor UUID who reviewed the report', required: false })
-  @Column({ type: 'uuid', nullable: true })
-  reviewed_by?: string;
-
-  @ApiProperty({ description: 'Timestamp when report was reviewed', required: false })
-  @Column({ type: 'timestamptz', nullable: true })
-  reviewed_at?: Date;
 
   @ApiProperty({ description: 'Report creation timestamp' })
   @CreateDateColumn({ type: 'timestamptz' })
@@ -153,19 +135,10 @@ export class Report {
   @JoinColumn({ name: 'shift_id' })
   shift: Shift;
 
-  @ApiProperty({ type: () => Area, description: 'Area where work was performed' })
-  @ManyToOne(() => Area, { eager: true, onDelete: 'RESTRICT' })
+  @ApiProperty({ type: () => Area, description: 'Area where work was performed', nullable: true })
+  @ManyToOne(() => Area, { eager: true, nullable: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'area_id' })
-  area: Area;
-
-  @ApiProperty({
-    type: () => User,
-    description: 'Supervisor who reviewed the report',
-    required: false,
-  })
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'reviewed_by' })
-  reviewer?: User;
+  area?: Area;
 
   // Phase 2 relations
   @ApiProperty({

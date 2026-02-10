@@ -16,7 +16,7 @@ describe('UsersController', () => {
     username: 'testuser',
     password_hash: 'hashedpassword',
     full_name: 'Test User',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -63,7 +63,7 @@ describe('UsersController', () => {
         username: 'newuser',
         password: 'password123',
         full_name: 'New User',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
       };
 
       mockUsersService.create.mockResolvedValue(mockUser);
@@ -151,7 +151,7 @@ describe('UsersController', () => {
         username: 'worker1',
         password_hash: 'hashedpassword',
         full_name: 'Worker One',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),

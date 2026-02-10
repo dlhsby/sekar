@@ -1,4 +1,12 @@
-import { IsString, IsEnum, MinLength, MaxLength, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsUUID,
+  MinLength,
+  MaxLength,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
 import { ValidationConstants } from '../../../common/constants/auth.constants';
@@ -10,11 +18,6 @@ import { ValidationConstants } from '../../../common/constants/auth.constants';
  * Password will be hashed before updating if provided.
  */
 export class UpdateUserDto {
-  /**
-   * User's updated full name.
-   *
-   * @example 'Pekerja Satu Updated'
-   */
   @ApiPropertyOptional({
     description: "User's full name",
     example: 'Pekerja Satu Updated',
@@ -27,12 +30,6 @@ export class UpdateUserDto {
   })
   full_name?: string;
 
-  /**
-   * User's new password.
-   * Will be hashed before updating.
-   *
-   * @example 'newsecurepassword123'
-   */
   @ApiPropertyOptional({
     description: 'New password (will be hashed)',
     example: 'newsecurepassword123',
@@ -45,28 +42,32 @@ export class UpdateUserDto {
   })
   password?: string;
 
-  /**
-   * User's updated role.
-   *
-   * @example 'supervisor'
-   */
   @ApiPropertyOptional({
     description: 'User role',
-    example: 'supervisor',
+    example: 'korlap',
     enum: UserRole,
   })
   @IsEnum(UserRole, {
-    message: 'Role must be one of: worker, supervisor, admin',
+    message:
+      'Role must be one of: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin',
   })
   @IsOptional()
   role?: UserRole;
 
-  /**
-   * Whether the user account is active.
-   * Inactive users cannot login.
-   *
-   * @example true
-   */
+  @ApiPropertyOptional({
+    description: 'Rayon ID (for kepala_rayon role)',
+  })
+  @IsUUID()
+  @IsOptional()
+  rayon_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Area ID (for korlap role)',
+  })
+  @IsUUID()
+  @IsOptional()
+  area_id?: string;
+
   @ApiPropertyOptional({
     description: 'Whether user account is active',
     example: true,

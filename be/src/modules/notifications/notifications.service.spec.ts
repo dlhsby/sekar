@@ -17,7 +17,7 @@ describe('NotificationsService', () => {
   const mockUser: Partial<User> = {
     id: 'user-uuid',
     username: 'testuser',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
   };
 
@@ -218,7 +218,7 @@ describe('NotificationsService', () => {
       title: 'Announcement',
       body: 'Test broadcast',
       type: NotificationType.ANNOUNCEMENT,
-      target_roles: [UserRole.WORKER],
+      target_roles: [UserRole.SATGAS],
     };
 
     it('should broadcast to users with specified roles', async () => {
@@ -233,7 +233,7 @@ describe('NotificationsService', () => {
 
       const result = await service.broadcast(broadcastDto);
 
-      expect(usersService.findByRoles).toHaveBeenCalledWith([UserRole.WORKER]);
+      expect(usersService.findByRoles).toHaveBeenCalledWith([UserRole.SATGAS]);
       expect(result).toHaveProperty('sent');
       expect(result).toHaveProperty('failed');
     });
@@ -485,7 +485,7 @@ describe('NotificationsService', () => {
         title: 'Announcement',
         body: 'Test broadcast',
         type: NotificationType.ANNOUNCEMENT,
-        target_roles: [UserRole.WORKER],
+        target_roles: [UserRole.SATGAS],
       };
 
       const targetUsers = [
@@ -516,7 +516,7 @@ describe('NotificationsService', () => {
         title: 'Announcement',
         body: 'Test broadcast',
         type: NotificationType.ANNOUNCEMENT,
-        target_roles: [UserRole.WORKER],
+        target_roles: [UserRole.SATGAS],
         data: { priority: 'high' },
       };
 

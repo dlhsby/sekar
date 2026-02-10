@@ -18,7 +18,7 @@ describe('JwtStrategy', () => {
     username: 'testuser',
     password_hash: 'hashed-password',
     full_name: 'Test User',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -113,7 +113,7 @@ describe('JwtStrategy', () => {
     const payload: JwtPayload = {
       sub: 'user-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
       username: 'testuser',
-      role: UserRole.WORKER,
+      role: UserRole.SATGAS,
     };
 
     it('should return user if found and active', async () => {
@@ -157,10 +157,10 @@ describe('JwtStrategy', () => {
       const adminPayload: JwtPayload = {
         sub: 'admin-uuid-2b3c4d5e-f6a7-8901-bcde-f12345678901',
         username: 'admin',
-        role: UserRole.ADMIN,
+        role: UserRole.SUPERADMIN,
       };
 
-      const adminUser = { ...mockUser, role: UserRole.ADMIN };
+      const adminUser = { ...mockUser, role: UserRole.SUPERADMIN };
       mockUserRepository.findOne.mockResolvedValue(adminUser);
 
       const result = await strategy.validate(adminPayload);
@@ -172,10 +172,10 @@ describe('JwtStrategy', () => {
       const supervisorPayload: JwtPayload = {
         sub: 'supervisor-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
         username: 'supervisor',
-        role: UserRole.SUPERVISOR,
+        role: UserRole.KORLAP,
       };
 
-      const supervisorUser = { ...mockUser, role: UserRole.SUPERVISOR };
+      const supervisorUser = { ...mockUser, role: UserRole.KORLAP };
       mockUserRepository.findOne.mockResolvedValue(supervisorUser);
 
       const result = await strategy.validate(supervisorPayload);

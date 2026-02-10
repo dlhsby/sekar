@@ -16,6 +16,7 @@ describe('ReportsController', () => {
   const mockReportsService = {
     create: jest.fn(),
     createFromJson: jest.fn(),
+    createAktivitas: jest.fn(),
     findAll: jest.fn(),
     findAllPaginated: jest.fn(),
     findOne: jest.fn(),
@@ -28,7 +29,7 @@ describe('ReportsController', () => {
     username: 'worker1',
     password_hash: 'hashed',
     full_name: 'Worker One',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -42,9 +43,9 @@ describe('ReportsController', () => {
     report_type: ReportType.TASK_COMPLETION,
     description: 'Completed cleaning',
     photo_url: 'https://s3.amazonaws.com/photo.jpg',
+    photo_urls: ['https://s3.amazonaws.com/photo.jpg'],
     gps_lat: -7.2905,
     gps_lng: 112.7398,
-    is_reviewed: false,
     created_at: new Date(),
     updated_at: new Date(),
     worker: mockWorker,
@@ -73,7 +74,26 @@ describe('ReportsController', () => {
     jest.restoreAllMocks();
   });
 
-  describe('create', () => {
+  describe('create (aktivitas)', () => {
+    const createDto: any = {
+      activity_type_id: 'activity-uuid-123',
+      description: 'Completed cleaning',
+      photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
+      gps_lat: -7.2905,
+      gps_lng: 112.7398,
+    };
+
+    it('should create aktivitas successfully', async () => {
+      mockReportsService.createAktivitas.mockResolvedValue(mockReport);
+
+      const result = await controller.create(createDto, mockWorker);
+
+      expect(service.createAktivitas).toHaveBeenCalledWith(mockWorker.id, mockWorker.role, createDto);
+      expect(result).toEqual(mockReport);
+    });
+  });
+
+  describe('createLegacy (backward compatibility)', () => {
     const createDto: CreateReportDto = {
       shift_id: 'shift-uuid-1',
       report_type: ReportType.TASK_COMPLETION,
@@ -85,7 +105,7 @@ describe('ReportsController', () => {
     it('should create report without photo', async () => {
       mockReportsService.createFromJson.mockResolvedValue(mockReport);
 
-      const result = await controller.create(createDto, undefined, mockWorker);
+      const result = await controller.createLegacy(createDto, undefined, mockWorker);
 
       expect(service.createFromJson).toHaveBeenCalledWith(createDto, mockWorker.id, undefined);
       expect(result).toEqual(mockReport);
@@ -103,7 +123,7 @@ describe('ReportsController', () => {
         photo_url: 'https://s3.amazonaws.com/photo.jpg',
       });
 
-      const result = await controller.create(createDto, mockFile, mockWorker);
+      const result = await controller.createLegacy(createDto, mockFile, mockWorker);
 
       expect(service.createFromJson).toHaveBeenCalledWith(createDto, mockWorker.id, mockFile);
       expect(result.photo_url).toBeDefined();
@@ -118,7 +138,7 @@ describe('ReportsController', () => {
       };
       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 50 });
+      const result = await controller.findAll({ page: 1, limit: 50 }, mockWorker);
 
       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
         {
@@ -128,6 +148,7 @@ describe('ReportsController', () => {
           from_date: undefined,
           to_date: undefined,
         },
+        mockWorker,
         1,
         50,
       );
@@ -141,7 +162,7 @@ describe('ReportsController', () => {
       };
       mockReportsService.findAllPaginated = jest.fn().mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 50, worker_id: 'worker-uuid-123' });
+      const result = await controller.findAll({ page: 1, limit: 50, worker_id: 'worker-uuid-123' }, mockWorker);
 
       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
         {
@@ -151,6 +172,7 @@ describe('ReportsController', () => {
           from_date: undefined,
           to_date: undefined,
         },
+        mockWorker,
         1,
         50,
       );
@@ -168,7 +190,7 @@ describe('ReportsController', () => {
         page: 1,
         limit: 50,
         report_type: ReportType.INCIDENT,
-      });
+      }, mockWorker);
 
       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
         {
@@ -178,6 +200,7 @@ describe('ReportsController', () => {
           from_date: undefined,
           to_date: undefined,
         },
+        mockWorker,
         1,
         50,
       );
@@ -196,7 +219,7 @@ describe('ReportsController', () => {
         limit: 50,
         from_date: '2026-01-01',
         to_date: '2026-01-31',
-      });
+      }, mockWorker);
 
       expect(mockReportsService.findAllPaginated).toHaveBeenCalledWith(
         {
@@ -206,6 +229,7 @@ describe('ReportsController', () => {
           from_date: '2026-01-01',
           to_date: '2026-01-31',
         },
+        mockWorker,
         1,
         50,
       );
@@ -219,7 +243,7 @@ describe('ReportsController', () => {
 
       const result = await controller.findOne('report-uuid-1', mockWorker);
 
-      expect(service.findOne).toHaveBeenCalledWith('report-uuid-1', mockWorker.id, mockWorker.role);
+      expect(service.findOne).toHaveBeenCalledWith('report-uuid-1', mockWorker);
       expect(result).toEqual(mockReport);
     });
   });

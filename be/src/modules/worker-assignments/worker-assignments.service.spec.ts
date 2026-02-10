@@ -26,7 +26,7 @@ describe('WorkerAssignmentsService', () => {
   const mockWorker = {
     id: 'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
     username: 'worker1',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     full_name: 'Worker One',
     is_active: true,
   };
@@ -34,7 +34,7 @@ describe('WorkerAssignmentsService', () => {
   const mockSupervisor = {
     id: 'supervisor-uuid-2b3c4d5e-f6a7-8901-bcde-f12345678901',
     username: 'supervisor1',
-    role: UserRole.SUPERVISOR,
+    role: UserRole.KORLAP,
     full_name: 'Supervisor One',
     is_active: true,
   };

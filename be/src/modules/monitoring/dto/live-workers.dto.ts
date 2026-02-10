@@ -14,8 +14,8 @@ export class LiveWorkerDto {
   @ApiProperty({ example: 'worker' })
   role: string;
 
-  @ApiProperty({ example: 'area-uuid' })
-  area_id: string;
+  @ApiProperty({ example: 'area-uuid', nullable: true })
+  area_id: string | null;
 
   @ApiProperty({ example: 'Taman Bungkul' })
   area_name: string;

@@ -1,17 +1,32 @@
-import { Injectable, Logger, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  HttpStatus,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, IsNull } from 'typeorm';
 import { Report } from './entities/report.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { CreateReportJsonDto } from './dto/create-report-json.dto';
+import { CreateAktivitasDto } from './dto/create-aktivitas.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { S3Service } from '../../shared/services/s3.service';
 import { Shift } from '../shifts/entities/shift.entity';
-import { UserRole } from '../users/entities/user.entity';
+import { ActivityType } from '../activity-types/entities/activity-type.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import {
+  AKTIVITAS_SUBMITTERS,
+  MONITORING_AREA,
+  MONITORING_RAYON,
+  MONITORING_CITY,
+} from '../users/constants/role-groups';
 
 /**
  * Reports Service
@@ -28,6 +43,8 @@ export class ReportsService {
     private reportsRepository: Repository<Report>,
     @InjectRepository(Shift)
     private shiftsRepository: Repository<Shift>,
+    @InjectRepository(ActivityType)
+    private activityTypeRepository: Repository<ActivityType>,
     private s3Service: S3Service,
   ) {}
 
@@ -186,6 +203,79 @@ export class ReportsService {
   }
 
   /**
+   * Create a new aktivitas (Phase 2C)
+   * Auto-detects active shift and validates activity type against user role
+   *
+   * @param userId UUID of the user creating the aktivitas
+   * @param userRole Role of the user
+   * @param dto Aktivitas creation data
+   * @returns Created report
+   */
+  async createAktivitas(userId: string, userRole: UserRole, dto: CreateAktivitasDto): Promise<Report> {
+    this.logger.log(`User ${userId} (${userRole}) creating aktivitas with activity type ${dto.activity_type_id}`);
+
+    // 1. Auto-detect active shift
+    const activeShift = await this.shiftsRepository.findOne({
+      where: { worker_id: userId, clock_out_time: IsNull() },
+      relations: ['area'],
+    });
+
+    if (!activeShift) {
+      throw new BadRequestException('No active shift found. Please clock in first before submitting aktivitas.');
+    }
+
+    // 2. Validate activity_type exists and is active
+    const activityType = await this.activityTypeRepository.findOne({
+      where: { id: dto.activity_type_id, is_active: true },
+    });
+
+    if (!activityType) {
+      throw new NotFoundException(`Activity type not found or inactive: ${dto.activity_type_id}`);
+    }
+
+    // 3. Validate activity type is applicable to user's role
+    // Note: applicable_roles in DB uses PascalCase (Worker, Linmas)
+    // UserRole enum values are UPPERCASE (SATGAS, LINMAS)
+    // We need to map the role properly
+    const roleMapping: Record<string, string[]> = {
+      [UserRole.SATGAS]: ['Worker', 'Satgas'], // Legacy support
+      [UserRole.LINMAS]: ['Linmas'],
+      [UserRole.KORLAP]: ['Worker', 'Satgas', 'Linmas', 'Korlap'], // Can do all field work
+      [UserRole.ADMIN_DATA]: ['Worker', 'Satgas', 'Linmas', 'AdminData'], // Can do all field work
+    };
+
+    const allowedRoleNames = roleMapping[userRole] || [];
+    const isRoleAllowed = allowedRoleNames.some((roleName) =>
+      activityType.applicable_roles.includes(roleName),
+    );
+
+    if (!isRoleAllowed) {
+      throw new ForbiddenException(
+        `Activity type "${activityType.name}" is not available for your role. Allowed roles: ${activityType.applicable_roles.join(', ')}`,
+      );
+    }
+
+    // 4. Create report
+    const report = this.reportsRepository.create({
+      worker_id: userId,
+      shift_id: activeShift.id,
+      area_id: activeShift.area_id,
+      activity_type_id: dto.activity_type_id,
+      description: dto.description,
+      photo_urls: dto.photo_urls,
+      photo_url: dto.photo_urls[0], // backward compat - use first photo
+      gps_lat: dto.gps_lat,
+      gps_lng: dto.gps_lng,
+      report_type: undefined, // Phase 2C: aktivitas doesn't use report_type
+    });
+
+    const savedReport = await this.reportsRepository.save(report);
+    this.logger.log(`Aktivitas created successfully: ${savedReport.id}`);
+
+    return savedReport;
+  }
+
+  /**
    * Find all reports with optional filters
    *
    * @param filters Query filters
@@ -226,9 +316,10 @@ export class ReportsService {
   }
 
   /**
-   * Find all reports with pagination and optional filters
+   * Find all reports with pagination, filters, and scope-based access (Phase 2C)
    *
    * @param filters Query filters
+   * @param user Requesting user with role, area_id, rayon_id
    * @param page Page number
    * @param limit Items per page
    * @returns Paginated reports
@@ -241,38 +332,68 @@ export class ReportsService {
       from_date?: string;
       to_date?: string;
     },
+    user: User,
     page: number = 1,
     limit: number = 50,
   ): Promise<PaginatedResponseDto<Report>> {
-    const where: any = {};
+    const queryBuilder = this.reportsRepository
+      .createQueryBuilder('report')
+      .leftJoinAndSelect('report.worker', 'worker')
+      .leftJoinAndSelect('report.shift', 'shift')
+      .leftJoinAndSelect('shift.area', 'area')
+      .leftJoinAndSelect('area.rayon', 'rayon');
 
+    // Scope-based filtering
+    if (AKTIVITAS_SUBMITTERS.includes(user.role as UserRole)) {
+      // Field workers only see their own reports
+      queryBuilder.andWhere('report.worker_id = :userId', { userId: user.id });
+    } else if (user.role === UserRole.KORLAP) {
+      // KORLAP sees reports from their area
+      queryBuilder.andWhere('report.area_id = :areaId', { areaId: user.area_id });
+    } else if (user.role === UserRole.KEPALA_RAYON) {
+      // KEPALA_RAYON sees reports from their rayon
+      queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: user.rayon_id });
+    }
+    // ADMIN_SYSTEM, SUPERADMIN, TOP_MANAGEMENT see all reports
+
+    // Apply additional filters
     if (filters.worker_id) {
-      where.worker_id = filters.worker_id;
+      queryBuilder.andWhere('report.worker_id = :workerId', { workerId: filters.worker_id });
     }
 
     if (filters.shift_id) {
-      where.shift_id = filters.shift_id;
+      queryBuilder.andWhere('report.shift_id = :shiftId', { shiftId: filters.shift_id });
     }
 
     if (filters.report_type) {
-      where.report_type = filters.report_type;
+      queryBuilder.andWhere('report.report_type = :reportType', { reportType: filters.report_type });
     }
 
     if (filters.from_date && filters.to_date) {
-      where.created_at = Between(new Date(filters.from_date), new Date(filters.to_date));
+      queryBuilder.andWhere('report.created_at BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(filters.from_date),
+        toDate: new Date(filters.to_date),
+      });
     } else if (filters.from_date) {
-      where.created_at = Between(new Date(filters.from_date), new Date());
+      queryBuilder.andWhere('report.created_at >= :fromDate', {
+        fromDate: new Date(filters.from_date),
+      });
     }
 
-    const [data, total] = await this.reportsRepository.findAndCount({
-      where,
-      relations: ['worker', 'shift', 'shift.area'],
-      order: { created_at: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    // Pagination
+    queryBuilder
+      .orderBy('report.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    return new PaginatedResponseDto(data, total, page, limit);
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    // Convert photo URLs to presigned URLs
+    const dataWithPresignedUrls = await Promise.all(
+      data.map((report) => this.convertPhotoUrlsToPresigned(report)),
+    );
+
+    return new PaginatedResponseDto(dataWithPresignedUrls, total, page, limit);
   }
 
   /**
@@ -300,21 +421,20 @@ export class ReportsService {
     });
 
     // Convert photo URLs to presigned URLs (24 hour expiry for mobile caching)
-    return Promise.all(reports.map((report) => this.convertPhotoUrlToPresigned(report)));
+    return Promise.all(reports.map((report) => this.convertPhotoUrlsToPresigned(report)));
   }
 
   /**
-   * Find report by ID with access control
+   * Find report by ID with scope-based access control (Phase 2C)
    *
    * @param id Report UUID
-   * @param userId UUID of the requesting user
-   * @param userRole Role of the requesting user
+   * @param user Requesting user with role, area_id, rayon_id
    * @returns Report details
    */
-  async findOne(id: string, userId: string, userRole: UserRole): Promise<Report> {
+  async findOne(id: string, user: User): Promise<Report> {
     const report = await this.reportsRepository.findOne({
       where: { id },
-      relations: ['worker', 'shift', 'shift.area'],
+      relations: ['worker', 'shift', 'shift.area', 'shift.area.rayon'],
     });
 
     if (!report) {
@@ -325,17 +445,39 @@ export class ReportsService {
       );
     }
 
-    // Workers can only see their own reports
-    if (userRole === UserRole.WORKER && report.worker_id !== userId) {
-      throw new ApiException(
-        HttpStatus.FORBIDDEN,
-        ApiErrorCode.REPORT_ACCESS_DENIED,
-        'You can only access your own reports',
-      );
+    // Scope-based access control
+    if (AKTIVITAS_SUBMITTERS.includes(user.role as UserRole)) {
+      // Field workers can only see their own reports
+      if (report.worker_id !== user.id) {
+        throw new ApiException(
+          HttpStatus.FORBIDDEN,
+          ApiErrorCode.REPORT_ACCESS_DENIED,
+          'You can only access your own reports',
+        );
+      }
+    } else if (user.role === UserRole.KORLAP) {
+      // KORLAP sees reports from their area
+      if (report.area_id !== user.area_id) {
+        throw new ApiException(
+          HttpStatus.FORBIDDEN,
+          ApiErrorCode.REPORT_ACCESS_DENIED,
+          'You can only access reports from your assigned area',
+        );
+      }
+    } else if (user.role === UserRole.KEPALA_RAYON) {
+      // KEPALA_RAYON sees reports from their rayon
+      if (report.shift?.area?.rayon_id !== user.rayon_id) {
+        throw new ApiException(
+          HttpStatus.FORBIDDEN,
+          ApiErrorCode.REPORT_ACCESS_DENIED,
+          'You can only access reports from your assigned rayon',
+        );
+      }
     }
+    // ADMIN_SYSTEM, SUPERADMIN, TOP_MANAGEMENT can see all reports
 
-    // Convert photo URL to presigned URL (24 hour expiry)
-    return this.convertPhotoUrlToPresigned(report);
+    // Convert photo URLs to presigned URLs (24 hour expiry)
+    return this.convertPhotoUrlsToPresigned(report);
   }
 
   /**
@@ -422,7 +564,7 @@ export class ReportsService {
   }
 
   /**
-   * Convert photo URL to presigned URL if needed
+   * Convert photo URL to presigned URL if needed (backward compatibility)
    * Handles s3:// URIs, http/https URLs, or null values
    *
    * @param report Report with potentially non-presigned photo URL
@@ -440,6 +582,39 @@ export class ReportsService {
     } catch (error) {
       this.logger.error(`Failed to convert photo URL for report ${report.id}: ${error.message}`);
       // Return original URL on error - better than blocking the entire request
+    }
+
+    return report;
+  }
+
+  /**
+   * Convert photo_urls array to presigned URLs (Phase 2C)
+   * Also converts photo_url for backward compatibility
+   *
+   * @param report Report with potentially non-presigned photo URLs
+   * @returns Report with presigned photo URLs (24 hour expiry for mobile caching)
+   */
+  private async convertPhotoUrlsToPresigned(report: Report): Promise<Report> {
+    // Convert photo_urls array
+    if (report.photo_urls && report.photo_urls.length > 0) {
+      try {
+        report.photo_urls = await Promise.all(
+          report.photo_urls.map((url) => this.s3Service.convertToPresignedUrl(url, 86400)),
+        );
+      } catch (error) {
+        this.logger.error(`Failed to convert photo_urls for report ${report.id}: ${error.message}`);
+        // Keep original URLs on error
+      }
+    }
+
+    // Convert photo_url for backward compatibility
+    if (report.photo_url) {
+      try {
+        report.photo_url = await this.s3Service.convertToPresignedUrl(report.photo_url, 86400);
+      } catch (error) {
+        this.logger.error(`Failed to convert photo_url for report ${report.id}: ${error.message}`);
+        // Keep original URL on error
+      }
     }
 
     return report;

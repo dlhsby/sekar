@@ -25,6 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { CreateReportJsonDto } from './dto/create-report-json.dto';
+import { CreateAktivitasDto } from './dto/create-aktivitas.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { Report, ReportType } from './entities/report.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -34,28 +35,61 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { ReportsFilterDto } from './dto/reports-filter.dto';
+import {
+  AKTIVITAS_SUBMITTERS,
+  MONITORING_AREA,
+  USER_MANAGERS,
+} from '../users/constants/role-groups';
 
 /**
- * Reports Controller
+ * Aktivitas Controller (formerly Reports)
  *
- * Handles HTTP requests for work report management.
- * Workers submit reports with photos during their shifts.
+ * Handles HTTP requests for work activity reports (aktivitas).
+ * Workers submit aktivitas with photos during their shifts.
+ *
+ * Phase 2C: Changed from 'reports' to 'aktivitas' to match Indonesian terminology.
+ * Note: Controller path is 'aktivitas', but internal entity is still 'Report' to avoid
+ * risky database migrations. Consider adding a route alias for backward compatibility.
  */
-@ApiTags('reports')
+@ApiTags('aktivitas')
 @ApiBearerAuth()
-@Controller('reports')
+@Controller('aktivitas')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   /**
-   * Create a new work report
-   * Worker can submit reports during active shift with optional photo
+   * Create a new aktivitas (Phase 2C)
+   * Auto-detects active shift, validates activity type against user role
    */
   @Post()
-  @Roles(UserRole.WORKER)
+  @Roles(...AKTIVITAS_SUBMITTERS)
+  @ApiOperation({ summary: 'Create aktivitas (Field workers: Satgas, Linmas, Korlap, AdminData)' })
+  @ApiBody({ type: CreateAktivitasDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Aktivitas created successfully',
+    type: Report,
+  })
+  @ApiResponse({ status: 400, description: 'No active shift found. Clock in first.' })
+  @ApiResponse({ status: 403, description: 'Activity type not available for your role' })
+  @ApiResponse({ status: 404, description: 'Activity type not found or inactive' })
+  async create(@Body() createAktivitasDto: CreateAktivitasDto, @GetUser() user: User): Promise<Report> {
+    return this.reportsService.createAktivitas(user.id, user.role, createAktivitasDto);
+  }
+
+  /**
+   * Create a new work report (Legacy endpoint for backward compatibility)
+   * Worker can submit reports during active shift with optional photo
+   * @deprecated Use POST /aktivitas instead
+   */
+  @Post('legacy')
+  @Roles(...AKTIVITAS_SUBMITTERS)
   @UseInterceptors(FileInterceptor('photo'))
-  @ApiOperation({ summary: 'Create work report (Worker only)' })
+  @ApiOperation({
+    summary: '[DEPRECATED] Create work report (Use POST /aktivitas instead)',
+    deprecated: true,
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -81,7 +115,7 @@ export class ReportsController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input or shift not active' })
   @ApiResponse({ status: 404, description: 'Shift not found' })
-  async create(
+  async createLegacy(
     @Body() createReportDto: CreateReportJsonDto,
     @UploadedFile(
       new ParseFilePipeBuilder()
@@ -98,12 +132,18 @@ export class ReportsController {
   }
 
   /**
-   * Get all reports with optional filters and pagination
-   * Admin and Supervisor can view all reports
+   * Get all aktivitas with optional filters and pagination (Phase 2C: Scope-based access)
+   * - Field workers (AKTIVITAS_SUBMITTERS): Own aktivitas only
+   * - KORLAP: Aktivitas from their area
+   * - KEPALA_RAYON: Aktivitas from their rayon
+   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All aktivitas
    */
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
-  @ApiOperation({ summary: 'List all reports with filters and pagination (Admin, Supervisor)' })
+  @Roles(...MONITORING_AREA, ...AKTIVITAS_SUBMITTERS)
+  @ApiOperation({
+    summary:
+      'List aktivitas with filters and pagination (Scope-based: Own/Area/Rayon/City)',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiQuery({ name: 'worker_id', required: false, type: String })
@@ -113,7 +153,7 @@ export class ReportsController {
   @ApiQuery({ name: 'to_date', required: false, type: String, description: 'ISO date string' })
   @ApiResponse({
     status: 200,
-    description: 'Paginated list of reports',
+    description: 'Paginated list of aktivitas (scope-filtered)',
     schema: {
       example: {
         data: [
@@ -121,9 +161,9 @@ export class ReportsController {
             id: 'report-uuid',
             worker_id: 'worker-uuid',
             shift_id: 'shift-uuid',
-            report_type: 'cleaning',
-            description: 'Cleaned the park',
-            photo_url: 'https://s3.amazonaws.com/...',
+            activity_type_id: 'activity-uuid',
+            description: 'Penyiraman tanaman area Taman Bungkul',
+            photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
             gps_lat: -7.250445,
             gps_lng: 112.768845,
             created_at: '2026-01-16T10:00:00.000Z',
@@ -138,7 +178,10 @@ export class ReportsController {
       },
     },
   })
-  async findAll(@Query() filterDto: ReportsFilterDto): Promise<PaginatedResponseDto<Report>> {
+  async findAll(
+    @Query() filterDto: ReportsFilterDto,
+    @GetUser() user: User,
+  ): Promise<PaginatedResponseDto<Report>> {
     return this.reportsService.findAllPaginated(
       {
         worker_id: filterDto.worker_id,
@@ -147,6 +190,7 @@ export class ReportsController {
         from_date: filterDto.from_date,
         to_date: filterDto.to_date,
       },
+      user,
       filterDto.page,
       filterDto.limit,
     );
@@ -157,7 +201,7 @@ export class ReportsController {
    * Worker can view their own reports
    */
   @Get('my-reports')
-  @Roles(UserRole.WORKER)
+  @Roles(...AKTIVITAS_SUBMITTERS)
   @ApiOperation({ summary: 'Get my reports (Worker only)' })
   @ApiQuery({
     name: 'date',
@@ -178,21 +222,24 @@ export class ReportsController {
   }
 
   /**
-   * Get report by ID
-   * Admin/Supervisor can view all, Worker can view own reports only
+   * Get aktivitas by ID (Phase 2C: Scope-based access)
+   * - Field workers: Own aktivitas only
+   * - KORLAP: Aktivitas from their area
+   * - KEPALA_RAYON: Aktivitas from their rayon
+   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All aktivitas
    */
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.WORKER)
-  @ApiOperation({ summary: 'Get report details (Admin, Supervisor, Owner)' })
+  @Roles(...MONITORING_AREA, ...AKTIVITAS_SUBMITTERS)
+  @ApiOperation({ summary: 'Get aktivitas details (Scope-based: Own/Area/Rayon/City)' })
   @ApiResponse({
     status: 200,
-    description: 'Report details',
+    description: 'Aktivitas details',
     type: Report,
   })
-  @ApiResponse({ status: 404, description: 'Report not found' })
-  @ApiResponse({ status: 403, description: 'Access denied' })
+  @ApiResponse({ status: 404, description: 'Aktivitas not found' })
+  @ApiResponse({ status: 403, description: 'Access denied (outside your scope)' })
   async findOne(@Param('id') id: string, @GetUser() user: User): Promise<Report> {
-    return this.reportsService.findOne(id, user.id, user.role);
+    return this.reportsService.findOne(id, user);
   }
 
   /**
@@ -200,7 +247,7 @@ export class ReportsController {
    * Worker can update own reports within 1 hour of creation
    */
   @Patch(':id')
-  @Roles(UserRole.WORKER)
+  @Roles(...AKTIVITAS_SUBMITTERS)
   @UseInterceptors(FileInterceptor('photo'))
   @ApiOperation({ summary: 'Update report (Worker, own reports, within 1 hour)' })
   @ApiConsumes('multipart/form-data')
@@ -246,7 +293,7 @@ export class ReportsController {
    * Admin only
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Delete report (Admin only)' })
   @ApiResponse({ status: 200, description: 'Report deleted successfully' })
   @ApiResponse({ status: 404, description: 'Report not found' })

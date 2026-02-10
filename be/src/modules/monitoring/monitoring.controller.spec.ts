@@ -98,7 +98,7 @@ describe('MonitoringController', () => {
     staff_requirements: [
       {
         id: 'req-1',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
         required_count: 6,
         current_count: 5,
         delta: -1,
@@ -109,7 +109,7 @@ describe('MonitoringController', () => {
       {
         id: 'user-1',
         full_name: 'Worker One',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
         is_online: true,
         last_lat: -7.2905,
         last_lng: 112.7398,
@@ -136,7 +136,7 @@ describe('MonitoringController', () => {
       {
         id: 'user-1',
         full_name: 'Worker One',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
         area_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
@@ -331,7 +331,7 @@ describe('MonitoringController', () => {
       const filters: LiveWorkersFilterDto = {
         area_id: 'area-1',
         rayon_id: 'rayon-1',
-        role: UserRole.WORKER,
+        role: UserRole.SATGAS,
       };
       service.getLiveWorkers.mockResolvedValue(mockLiveWorkers);
 

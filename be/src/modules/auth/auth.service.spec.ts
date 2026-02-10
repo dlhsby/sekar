@@ -20,7 +20,7 @@ describe('AuthService', () => {
     username: 'testuser',
     password_hash: '$2b$10$hashedpassword',
     full_name: 'Test User',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),

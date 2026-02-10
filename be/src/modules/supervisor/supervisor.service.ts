@@ -69,10 +69,9 @@ export class SupervisorService {
           shift: {
             id: shift.id,
             clock_in_time: shift.clock_in_time,
-            area: {
-              id: shift.area.id,
-              name: shift.area.name,
-            },
+            area: shift.area
+              ? { id: shift.area.id, name: shift.area.name }
+              : null,
           },
           latest_location: latestLocation
             ? {
@@ -128,10 +127,9 @@ export class SupervisorService {
           shift: {
             id: shift.id,
             clock_in_time: shift.clock_in_time,
-            area: {
-              id: shift.area.id,
-              name: shift.area.name,
-            },
+            area: shift.area
+              ? { id: shift.area.id, name: shift.area.name }
+              : null,
           },
           latest_location: latestLocation
             ? {
@@ -204,7 +202,7 @@ export class SupervisorService {
 
     // Get all active workers
     const allWorkers = await this.usersRepository.find({
-      where: { role: UserRole.WORKER, is_active: true },
+      where: { role: UserRole.SATGAS, is_active: true },
     });
 
     // Get workers who clocked in today
@@ -278,7 +276,7 @@ export class SupervisorService {
 
     // Get all active workers
     const allWorkers = await this.usersRepository.find({
-      where: { role: UserRole.WORKER, is_active: true },
+      where: { role: UserRole.SATGAS, is_active: true },
     });
 
     // Get workers who clocked in today

@@ -196,7 +196,7 @@ describe('EventsGateway', () => {
   });
 
   describe('handleDisconnect', () => {
-    it('should handle disconnect gracefully', async () => {
+    it('should handle disconnect for connected client', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'user-1',
         role: 'Worker',
@@ -205,8 +205,19 @@ describe('EventsGateway', () => {
       await gateway.handleConnection(mockClient);
       gateway.handleDisconnect(mockClient);
 
+      // Client removed from connected clients
+      const stats = gateway.getStats();
+      expect(stats.totalConnections).toBe(0);
+    });
+
+    it('should handle disconnect for unknown client', () => {
+      const unknownClient = {
+        id: 'unknown-client',
+      } as unknown as Socket;
+
       // Should not throw
-      expect(true).toBe(true);
+      gateway.handleDisconnect(unknownClient);
+      expect(gateway.getStats().totalConnections).toBe(0);
     });
   });
 
@@ -258,7 +269,7 @@ describe('EventsGateway', () => {
     const locationEvent: WorkerLocationEvent = {
       worker_id: 'worker-1',
       worker_name: 'Worker One',
-      role: UserRole.WORKER,
+      role: UserRole.SATGAS,
       shift_id: 'shift-1',
       area_id: 'area-1',
       area_name: 'Taman Bungkul',
@@ -306,7 +317,7 @@ describe('EventsGateway', () => {
     const clockInEvent: WorkerClockInEvent = {
       worker_id: 'worker-1',
       worker_name: 'Worker One',
-      role: UserRole.WORKER,
+      role: UserRole.SATGAS,
       shift_id: 'shift-1',
       area_id: 'area-1',
       area_name: 'Taman Bungkul',
@@ -323,6 +334,18 @@ describe('EventsGateway', () => {
       expect(mockServer.to).toHaveBeenCalledWith('rayon:rayon-1');
       expect(mockServer.to).toHaveBeenCalledWith('city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.WORKER_CLOCK_IN, clockInEvent);
+    });
+
+    it('should not emit to rayon room if rayon_id is null', () => {
+      const eventNoRayon = { ...clockInEvent, rayon_id: undefined };
+      mockServer.to.mockClear();
+
+      gateway.emitWorkerClockIn(eventNoRayon);
+
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('rayon:'),
+      );
+      expect(rayonCalls.length).toBe(0);
     });
   });
 
@@ -346,6 +369,18 @@ describe('EventsGateway', () => {
       expect(mockServer.to).toHaveBeenCalledWith('city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.WORKER_CLOCK_OUT, clockOutEvent);
     });
+
+    it('should not emit to rayon room if rayon_id is null', () => {
+      const eventNoRayon = { ...clockOutEvent, rayon_id: undefined };
+      mockServer.to.mockClear();
+
+      gateway.emitWorkerClockOut(eventNoRayon);
+
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('rayon:'),
+      );
+      expect(rayonCalls.length).toBe(0);
+    });
   });
 
   describe('emitAreaStaffing', () => {
@@ -368,6 +403,18 @@ describe('EventsGateway', () => {
       expect(mockServer.to).toHaveBeenCalledWith('rayon:rayon-1');
       expect(mockServer.to).toHaveBeenCalledWith('city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.AREA_STAFFING, staffingEvent);
+    });
+
+    it('should not emit to rayon room if rayon_id is null', () => {
+      const eventNoRayon = { ...staffingEvent, rayon_id: undefined };
+      mockServer.to.mockClear();
+
+      gateway.emitAreaStaffing(eventNoRayon);
+
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('rayon:'),
+      );
+      expect(rayonCalls.length).toBe(0);
     });
   });
 
@@ -393,6 +440,27 @@ describe('EventsGateway', () => {
       expect(mockServer.to).toHaveBeenCalledWith('city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.TASK_ASSIGNED, taskAssignedEvent);
     });
+
+    it('should not emit to rayon room if rayon_id is null', () => {
+      const eventNoRayon = { ...taskAssignedEvent, rayon_id: undefined };
+      mockServer.to.mockClear();
+
+      gateway.emitTaskAssigned(eventNoRayon);
+
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('rayon:'),
+      );
+      expect(rayonCalls.length).toBe(0);
+    });
+
+    it('should emit to assigned user directly', () => {
+      jwtService.verify.mockReturnValue({ sub: 'worker-1', role: 'Worker' });
+      gateway.handleConnection(mockClient);
+
+      gateway.emitTaskAssigned(taskAssignedEvent);
+
+      expect(mockServer.to).toHaveBeenCalledWith(mockClient.id);
+    });
   });
 
   describe('emitTaskCompleted', () => {
@@ -415,6 +483,18 @@ describe('EventsGateway', () => {
       expect(mockServer.to).toHaveBeenCalledWith('city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.TASK_COMPLETED, taskCompletedEvent);
     });
+
+    it('should not emit to rayon room if rayon_id is null', () => {
+      const eventNoRayon = { ...taskCompletedEvent, rayon_id: undefined };
+      mockServer.to.mockClear();
+
+      gateway.emitTaskCompleted(eventNoRayon);
+
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('rayon:'),
+      );
+      expect(rayonCalls.length).toBe(0);
+    });
   });
 
   describe('getStats', () => {
@@ -423,6 +503,26 @@ describe('EventsGateway', () => {
 
       expect(stats).toHaveProperty('totalConnections');
       expect(stats).toHaveProperty('rooms');
+      expect(stats.totalConnections).toBe(0);
+    });
+
+    it('should count rooms excluding client IDs', async () => {
+      jwtService.verify.mockReturnValue({ sub: 'user-1', role: 'Worker' });
+      await gateway.handleConnection(mockClient);
+
+      // Simulate rooms in adapter including named rooms and client IDs
+      const rooms = new Map<string, Set<string>>();
+      rooms.set('area:area-1', new Set(['client-1']));
+      rooms.set('city', new Set(['client-2']));
+      rooms.set('client-1', new Set(['client-1'])); // Client ID room — should be excluded
+      mockServer.sockets.adapter.rooms = rooms;
+
+      const stats = gateway.getStats();
+
+      expect(stats.totalConnections).toBe(1);
+      expect(stats.rooms['area:area-1']).toBe(1);
+      expect(stats.rooms['city']).toBe(1);
+      expect(stats.rooms['client-1']).toBeUndefined();
     });
   });
 });

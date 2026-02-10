@@ -68,7 +68,7 @@ describe('MonitoringService', () => {
     password_hash: 'hashed',
     full_name: 'Worker One',
     phone: '08123456789',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -124,22 +124,18 @@ describe('MonitoringService', () => {
     priority: TaskPriority.MEDIUM,
     deadline: new Date(),
     area_id: 'area-1',
-    activity_type_id: null,
+    rayon_id: null,
     assigned_to: null,
     created_by: 'user-1',
     completion_photo_url: null,
     completion_notes: null,
     completed_at: null,
-    completion_gps_lat: null,
-    completion_gps_lng: null,
-    decline_reason: null,
-    declined_at: null,
     assigned_at: null,
-    accepted_at: null,
     started_at: null,
     deleted_at: null,
     area: mockArea,
-    activityType: null as any,
+    rayon: null as any,
+    tags: [],
     assignee: null as any,
     creator: mockUser,
     created_at: new Date(),
@@ -558,9 +554,9 @@ describe('MonitoringService', () => {
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      await service.getLiveWorkers({ role: UserRole.WORKER });
+      await service.getLiveWorkers({ role: UserRole.SATGAS });
 
-      expect(qb.andWhere).toHaveBeenCalledWith('worker.role = :role', { role: UserRole.WORKER });
+      expect(qb.andWhere).toHaveBeenCalledWith('worker.role = :role', { role: UserRole.SATGAS });
     });
 
     it('should mark worker as online if location updated within 10 minutes', async () => {
@@ -729,8 +725,8 @@ describe('MonitoringService', () => {
       expect(result.shifts.length).toBe(1);
     });
 
-    it('should handle tasks with ACCEPTED status in active tasks filter', async () => {
-      const acceptedTask = { ...mockTask, status: TaskStatus.ACCEPTED };
+    it('should handle tasks with ASSIGNED status in active tasks filter', async () => {
+      const assignedTask = { ...mockTask, status: TaskStatus.ASSIGNED };
       const inProgressTask = { ...mockTask, id: 'task-2', status: TaskStatus.IN_PROGRESS };
 
       areaRepository.findOne.mockResolvedValue(mockArea);
@@ -738,13 +734,13 @@ describe('MonitoringService', () => {
       shiftRepository.find.mockResolvedValue([]);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
       staffRequirementRepository.find.mockResolvedValue([]);
-      taskRepository.find.mockResolvedValue([acceptedTask, inProgressTask]);
+      taskRepository.find.mockResolvedValue([assignedTask, inProgressTask]);
       reportRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
       expect(result.active_tasks.length).toBe(2);
-      // Only IN_PROGRESS tasks are counted in tasks_in_progress, ACCEPTED is separate
+      // Only IN_PROGRESS tasks are counted in tasks_in_progress
       expect(result.tasks_in_progress).toBe(1);
     });
 

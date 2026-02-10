@@ -27,6 +27,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for activity type operations
@@ -121,7 +122,7 @@ export class ActivityTypesController {
    * @returns The created activity type
    */
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Create new activity type',
     description: 'Create a new activity type with unique code. Admin only.',
@@ -161,7 +162,7 @@ export class ActivityTypesController {
    * @returns The updated activity type
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @ApiOperation({
     summary: 'Update activity type',
     description: 'Update an existing activity type. Admin only.',
@@ -212,7 +213,7 @@ export class ActivityTypesController {
    * @param id - Activity type ID (UUID)
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(...USER_MANAGERS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete activity type',

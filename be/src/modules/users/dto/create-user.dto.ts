@@ -2,10 +2,12 @@ import {
   IsString,
   IsNotEmpty,
   IsEnum,
+  IsUUID,
   MinLength,
   MaxLength,
   IsOptional,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
@@ -16,7 +18,7 @@ import { ValidationConstants } from '../../../common/constants/auth.constants';
  *
  * Validates incoming request data for user creation endpoint.
  * Username, password, and full_name are required.
- * Role defaults to 'worker' if not specified.
+ * Role defaults to 'satgas' if not specified.
  */
 export class CreateUserDto {
   /**
@@ -81,19 +83,36 @@ export class CreateUserDto {
 
   /**
    * User's role in the system.
-   * Defaults to 'worker' if not specified.
+   * Defaults to 'satgas' if not specified.
    *
-   * @example 'worker'
+   * @example 'satgas'
    */
   @ApiPropertyOptional({
-    description: 'User role (defaults to worker)',
-    example: 'worker',
+    description: 'User role (defaults to satgas)',
+    example: 'satgas',
     enum: UserRole,
-    default: UserRole.WORKER,
+    default: UserRole.SATGAS,
   })
   @IsEnum(UserRole, {
-    message: 'Role must be one of: worker, supervisor, admin',
+    message:
+      'Role must be one of: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin',
   })
   @IsOptional()
   role?: UserRole;
+
+  @ApiPropertyOptional({
+    description: 'Rayon ID (required for kepala_rayon role)',
+  })
+  @IsUUID()
+  @IsOptional()
+  @ValidateIf((o) => o.role === UserRole.KEPALA_RAYON)
+  rayon_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Area ID (required for korlap role)',
+  })
+  @IsUUID()
+  @IsOptional()
+  @ValidateIf((o) => o.role === UserRole.KORLAP)
+  area_id?: string;
 }

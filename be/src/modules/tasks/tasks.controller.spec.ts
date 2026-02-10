@@ -7,7 +7,6 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
-import { DeclineTaskDto } from './dto/decline-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
 
 describe('TasksController', () => {
@@ -17,7 +16,7 @@ describe('TasksController', () => {
   const mockUser: Partial<User> = {
     id: 'user-uuid',
     username: 'testworker',
-    role: UserRole.WORKER,
+    role: UserRole.SATGAS,
     is_active: true,
   };
 
@@ -28,7 +27,6 @@ describe('TasksController', () => {
     status: TaskStatus.PENDING,
     priority: TaskPriority.MEDIUM,
     area_id: 'area-uuid',
-    activity_type_id: 'activity-uuid',
     assigned_to: null,
     created_by: 'creator-uuid',
     deadline: null,
@@ -50,8 +48,6 @@ describe('TasksController', () => {
             update: jest.fn(),
             remove: jest.fn(),
             assign: jest.fn(),
-            accept: jest.fn(),
-            decline: jest.fn(),
             start: jest.fn(),
             complete: jest.fn(),
           },
@@ -201,43 +197,6 @@ describe('TasksController', () => {
     });
   });
 
-  describe('accept', () => {
-    it('should accept an assigned task', async () => {
-      const acceptedTask = {
-        ...mockTask,
-        status: TaskStatus.ACCEPTED,
-        assigned_to: mockUser.id,
-      };
-
-      tasksService.accept.mockResolvedValue(acceptedTask as Task);
-
-      const result = await controller.accept('task-uuid', mockUser as User);
-
-      expect(tasksService.accept).toHaveBeenCalledWith('task-uuid', mockUser.id);
-      expect(result).toEqual(acceptedTask);
-    });
-  });
-
-  describe('decline', () => {
-    it('should decline an assigned task', async () => {
-      const declineDto: DeclineTaskDto = {
-        reason: 'Too busy',
-      };
-      const declinedTask = {
-        ...mockTask,
-        status: TaskStatus.DECLINED,
-        decline_reason: 'Too busy',
-      };
-
-      tasksService.decline.mockResolvedValue(declinedTask as Task);
-
-      const result = await controller.decline('task-uuid', declineDto, mockUser as User);
-
-      expect(tasksService.decline).toHaveBeenCalledWith('task-uuid', mockUser.id, declineDto);
-      expect(result).toEqual(declinedTask);
-    });
-  });
-
   describe('start', () => {
     it('should start an accepted task', async () => {
       const startedTask = {
@@ -258,8 +217,6 @@ describe('TasksController', () => {
   describe('complete', () => {
     it('should complete a task with evidence', async () => {
       const completeDto: CompleteTaskDto = {
-        gps_lat: -7.2575,
-        gps_lng: 112.7521,
         completion_notes: 'Task completed successfully',
         completion_photo_url: 'https://example.com/photo.jpg',
       };

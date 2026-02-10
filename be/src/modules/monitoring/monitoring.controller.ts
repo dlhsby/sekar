@@ -9,6 +9,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import {
+  MONITORING_CITY,
+  MONITORING_RAYON,
+  MONITORING_AREA,
+} from '../users/constants/role-groups';
 
 /**
  * Controller for real-time monitoring
@@ -30,7 +35,7 @@ export class MonitoringController {
    * Get city-wide statistics
    */
   @Get('city')
-  @Roles(UserRole.ADMIN, UserRole.TOP_MANAGEMENT)
+  @Roles(...MONITORING_CITY)
   @ApiOperation({ summary: 'Get city-wide monitoring statistics' })
   @ApiResponse({
     status: 200,
@@ -47,7 +52,7 @@ export class MonitoringController {
    * Get rayon-level statistics
    */
   @Get('rayon/:id')
-  @Roles(UserRole.ADMIN, UserRole.TOP_MANAGEMENT, UserRole.KEPALA_RAYON)
+  @Roles(...MONITORING_RAYON)
   @ApiOperation({ summary: 'Get rayon-level monitoring statistics' })
   @ApiParam({ name: 'id', description: 'Rayon ID (UUID)' })
   @ApiResponse({
@@ -66,13 +71,7 @@ export class MonitoringController {
    * Get area-level statistics
    */
   @Get('area/:id')
-  @Roles(
-    UserRole.ADMIN,
-    UserRole.TOP_MANAGEMENT,
-    UserRole.KEPALA_RAYON,
-    UserRole.KOORDINATOR_LAPANGAN,
-    UserRole.SUPERVISOR,
-  )
+  @Roles(...MONITORING_AREA)
   @ApiOperation({ summary: 'Get area-level monitoring statistics' })
   @ApiParam({ name: 'id', description: 'Area ID (UUID)' })
   @ApiResponse({
@@ -91,13 +90,7 @@ export class MonitoringController {
    * Get live worker positions
    */
   @Get('live-workers')
-  @Roles(
-    UserRole.ADMIN,
-    UserRole.TOP_MANAGEMENT,
-    UserRole.KEPALA_RAYON,
-    UserRole.KOORDINATOR_LAPANGAN,
-    UserRole.SUPERVISOR,
-  )
+  @Roles(...MONITORING_AREA)
   @ApiOperation({ summary: 'Get real-time worker positions' })
   @ApiResponse({
     status: 200,
