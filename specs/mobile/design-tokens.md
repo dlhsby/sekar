@@ -1,6 +1,6 @@
 # Mobile Design Tokens Reference
 
-**Last Updated:** February 5, 2026
+**Last Updated:** February 7, 2026
 **Version:** Neo Brutalism 2.0
 **Source File:** `fe/mobile/src/constants/nbTokens.ts`
 
@@ -39,7 +39,7 @@ This document provides the complete design token reference for the SEKAR mobile 
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `nbColors.background` | #FDFD96 | Main app background |
+| `nbColors.background` | #F5F0EB | Main app background (warm stone grey - reduces eye fatigue) |
 | `nbColors.surface` | #FFFFFF | Card backgrounds |
 | `nbColors.surfaceAlt` | #F5F5F4 | Alternate surfaces |
 

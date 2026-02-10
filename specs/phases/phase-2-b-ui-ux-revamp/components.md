@@ -39,7 +39,7 @@ This document provides complete specifications for all NB components across web 
 | `nb-primary` | #7FBC8C | Primary actions, active states |
 | `nb-primary-dark` | #5A9468 | Hover/pressed states |
 | `nb-secondary` | #8B7355 | Secondary actions |
-| `nb-background` | #FDFD96 | Main backgrounds |
+| `nb-background` | #FFFBF0 | Main backgrounds (very soft cream) |
 | `nb-sidebar` | #1A4D2E | Sidebar background |
 | `nb-sidebar-hover` | #2D5233 | Sidebar hover state |
 | `nb-sidebar-active` | #0F3520 | Sidebar active state |

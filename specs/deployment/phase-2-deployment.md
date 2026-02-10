@@ -237,34 +237,34 @@ Settings → Environments → production → Environment secrets
 You should see exactly **16 secrets:**
 
 **AWS (4):**
-- [ ] AWS_ACCESS_KEY_ID
-- [ ] AWS_SECRET_ACCESS_KEY
-- [ ] AWS_S3_BUCKET
-- [ ] AWS_REGION
+- [x] AWS_ACCESS_KEY_ID
+- [x] AWS_SECRET_ACCESS_KEY
+- [x] AWS_S3_BUCKET
+- [x] AWS_REGION
 
 **EC2 (3):**
-- [ ] EC2_HOST
-- [ ] EC2_USER
-- [ ] EC2_SSH_KEY
+- [x] EC2_HOST
+- [x] EC2_USER
+- [x] EC2_SSH_KEY
 
 **Database (2):**
-- [ ] DATABASE_HOST
-- [ ] DATABASE_PASSWORD
+- [x] DATABASE_HOST
+- [x] DATABASE_PASSWORD
 
 **Auth (2):**
-- [ ] JWT_SECRET
-- [ ] JWT_REFRESH_SECRET
+- [x] JWT_SECRET
+- [x] JWT_REFRESH_SECRET
 
 **Security (1):**
-- [ ] CORS_ORIGIN
+- [x] CORS_ORIGIN
 
 **Firebase (3):**
-- [ ] FCM_PROJECT_ID
-- [ ] FCM_CLIENT_EMAIL
-- [ ] FCM_PRIVATE_KEY
+- [x] FCM_PROJECT_ID
+- [x] FCM_CLIENT_EMAIL
+- [x] FCM_PRIVATE_KEY
 
 **Maps (1):**
-- [ ] MAPBOX_TOKEN
+- [x] MAPBOX_TOKEN
 
 ---
 
