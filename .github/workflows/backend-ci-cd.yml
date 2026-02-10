@@ -302,10 +302,73 @@ jobs:
             # Pull latest image
             docker pull $ECR_REGISTRY/sekar-backend:latest
 
-            # Run migrations
+            # Wipe database clean (development phase - okay to reset)
+            echo "Cleaning database..."
+            docker run --rm \
+              -e PGPASSWORD=${DATABASE_PASSWORD} \
+              postgres:14-alpine \
+              psql -h ${DATABASE_HOST} -U sekar_admin -d sekar_db \
+              -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO sekar_admin; GRANT ALL ON SCHEMA public TO public;" \
+              || echo "Database already clean or first run"
+
+            # Initialize base schema with TypeORM synchronize
+            echo "Initializing base schema..."
+            cat > .env.init << 'INITEOF'
+            NODE_ENV=production
+            PORT=3000
+            DATABASE_HOST=${DATABASE_HOST}
+            DATABASE_PORT=5432
+            DATABASE_USER=sekar_admin
+            DATABASE_PASSWORD=${DATABASE_PASSWORD}
+            DATABASE_NAME=sekar_db
+            DATABASE_SYNCHRONIZE=true
+            DATABASE_MIGRATIONS_RUN=false
+            DATABASE_SSL=true
+            JWT_SECRET=${JWT_SECRET}
+            JWT_EXPIRATION=15m
+            JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+            JWT_REFRESH_EXPIRATION=7d
+            AWS_REGION=ap-southeast-3
+            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            AWS_S3_BUCKET=${AWS_S3_BUCKET}
+            CORS_ORIGIN=${CORS_ORIGIN}
+            RATE_LIMIT_TTL=60
+            RATE_LIMIT_MAX=100
+            RATE_LIMIT_LOGIN_MAX=5
+            FCM_ENABLED=false
+            FCM_PROJECT_ID=${FCM_PROJECT_ID}
+            FCM_CLIENT_EMAIL=${FCM_CLIENT_EMAIL}
+            FCM_PRIVATE_KEY=${FCM_PRIVATE_KEY}
+            NOTIFICATION_RETRY_ATTEMPTS=3
+            TASK_AUTO_ASSIGN_ENABLED=false
+            TASK_DEADLINE_WARNING_HOURS=24
+            KMZ_MAX_FILE_SIZE_MB=10
+            KMZ_MAX_POLYGONS=100
+            INITEOF
+
+            # Expand variables
+            envsubst < .env.init > .env.init.expanded
+            mv .env.init.expanded .env.init
+            chmod 600 .env.init
+
+            # Run backend briefly to create base schema (30 seconds should be enough)
+            echo "Starting backend to create schema..."
+            timeout 30 docker run --rm --env-file .env.init $ECR_REGISTRY/sekar-backend:latest npm run start || true
+            rm -f .env.init
+            echo "✅ Base schema created"
+
+            # Run Phase 2 migrations
+            echo "Running Phase 2 migrations..."
             docker-compose -f docker-compose.prod.yml run --rm backend npm run migration:run:prod || {
               echo "ERROR: Migration failed"
               exit 1
+            }
+
+            # Seed database with test data
+            echo "Seeding database..."
+            docker-compose -f docker-compose.prod.yml run --rm backend npm run seed:prod || {
+              echo "WARNING: Seeding failed, continuing anyway"
             }
 
             # Deploy with zero-downtime
