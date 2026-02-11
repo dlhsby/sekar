@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "1e98228b-6063-442d-a730-5cb0a62dc3dc",
     "name": "SEKAR API",
-    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 104\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n\n## Test Users\n- admin / admin123 (Admin)\n- supervisor1 / supervisor123 (Supervisor)\n- worker1,2,3 / worker123 (Worker)\n- top_management1 / password123 (TopManagement)\n- kepala_rayon_selatan / password123 (KepalaRayon)\n- koordinator_bungkul / password123 (KoordinatorLapangan)\n- linmas1,2 / password123 (Linmas)\n\n## Collection Structure\n\n### Phase 1 MVP\n- 00-11: Core endpoints (auth, users, areas, shifts, reports, location, supervisor)\n\n### Phase 2A - Backend Foundation\n- 12. Special Day Overrides (6 endpoints)\n- 13. Rayons (7 endpoints)\n- 14. Shift Definitions (3 endpoints)\n- 15. Activity Types (7 endpoints)\n- 16. Area Staff Requirements (6 endpoints)\n- 17. Worker Schedules (7 endpoints)\n\n### Phase 2B - Backend Core Features\n- 18. Tasks (11 endpoints)\n- 19. Notifications (7 endpoints)\n- 20. Monitoring (4 endpoints)\n- 21. KMZ Import (3 endpoints)\n\n## Status\n- ✅ Phase 1 MVP Complete\n- ✅ Phase 2A Backend Foundation Complete\n- ✅ Phase 2B Backend Core Features Complete",
+    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 113\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n\n## Test Users (Phase 2C - 8 roles)\n- superadmin / superadmin123 (Superadmin)\n- admin_system / admin123 (Admin System)\n- admin_data / admin123 (Admin Data)\n- korlap1 / password123 (Korlap)\n- satgas1,2,3 / password123 (Satgas)\n- linmas1 / password123 (Linmas)\n- kepala_rayon_selatan / password123 (Kepala Rayon)\n- top_management1 / password123 (Top Management)\n\n## Collection Structure\n\n### Phase 1 MVP\n- 00-11: Core endpoints (auth, users, areas, shifts, aktivitas, location, supervisor)\n\n### Phase 2A - Backend Foundation\n- 12-17: Special Day Overrides, Rayons, Shift Definitions, Activity Types, Area Staff, Worker Schedules\n\n### Phase 2B - Backend Core Features\n- 18. Tasks (12 endpoints)\n- 19. Notifications (7 endpoints)\n- 20. Monitoring (4 endpoints)\n- 21. KMZ Import (3 endpoints)\n\n### Phase 2C - Client Feedback\n- 22. Overtime (6 endpoints)\n\n## Status\n- ✅ Phase 1 MVP Complete\n- ✅ Phase 2A Backend Foundation Complete\n- ✅ Phase 2B Backend Core Features Complete\n- ✅ Phase 2C Client Feedback Complete",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -1856,10 +1856,10 @@
       ]
     },
     {
-      "name": "08. Reports - Worker Flow",
+      "name": "08. Aktivitas - Worker Flow",
       "item": [
         {
-          "name": "Create Report",
+          "name": "Create Aktivitas",
           "event": [
             {
               "listen": "prerequest",
@@ -1922,10 +1922,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"shift_id\": \"{{report_shift_id}}\",\n  \"report_type\": \"cleaning\",\n  \"description\": \"Completed cleaning task in the park area. All debris removed and plants watered.\",\n  \"gps_lat\": {{test_gps_lat}},\n  \"gps_lng\": {{test_gps_lng}},\n  \"photos\": [\"{{test_base64_photo}}\"]\n}"
+              "raw": "{\n  \"activity_type_id\": \"{{activity_type_id}}\",\n  \"description\": \"Completed cleaning task in the park area. All debris removed.\",\n  \"photo_urls\": [\n    \"https://s3.amazonaws.com/sekar-media-dev/photo1.jpg\"\n  ],\n  \"gps_lat\": -7.2905,\n  \"gps_lng\": 112.7398\n}"
             },
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -1933,13 +1933,14 @@
               "path": [
                 "api",
                 "{{version}}",
-                "reports"
+                "aktivitas"
               ]
-            }
+            },
+            "description": "Create aktivitas report (satgas, linmas, korlap, admin_data). Requires active shift."
           }
         },
         {
-          "name": "Get My Reports",
+          "name": "Get My Aktivitas",
           "event": [
             {
               "listen": "test",
@@ -1970,7 +1971,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/my-reports",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/my-reports",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -1978,14 +1979,15 @@
               "path": [
                 "api",
                 "{{version}}",
-                "reports",
+                "aktivitas",
                 "my-reports"
               ]
-            }
+            },
+            "description": "Get current user's aktivitas reports"
           }
         },
         {
-          "name": "Get Report by ID",
+          "name": "Get Aktivitas by ID",
           "event": [
             {
               "listen": "test",
@@ -2016,7 +2018,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/{{created_report_id}}",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2024,14 +2026,14 @@
               "path": [
                 "api",
                 "{{version}}",
-                "reports",
+                "aktivitas",
                 "{{created_report_id}}"
               ]
             }
           }
         },
         {
-          "name": "Update Report",
+          "name": "Update Aktivitas",
           "event": [
             {
               "listen": "test",
@@ -2071,7 +2073,7 @@
               "raw": "{\n  \"description\": \"Updated: Completed cleaning task in the park area. All debris removed and plants watered. Additional trimming done.\"\n}"
             },
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/{{created_report_id}}",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2079,7 +2081,7 @@
               "path": [
                 "api",
                 "{{version}}",
-                "reports",
+                "aktivitas",
                 "{{created_report_id}}"
               ]
             }
@@ -2088,10 +2090,10 @@
       ]
     },
     {
-      "name": "09. Reports - Admin/Supervisor",
+      "name": "09. Aktivitas - Admin/Korlap",
       "item": [
         {
-          "name": "Get All Reports",
+          "name": "Get All Aktivitas",
           "event": [
             {
               "listen": "test",
@@ -2123,7 +2125,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2131,13 +2133,14 @@
               "path": [
                 "api",
                 "{{version}}",
-                "reports"
+                "aktivitas"
               ]
-            }
+            },
+            "description": "Get all aktivitas (filtered by role scope: korlap→area, kepala_rayon→rayon, admin→city)"
           }
         },
         {
-          "name": "Delete Report",
+          "name": "Delete Aktivitas",
           "event": [
             {
               "listen": "test",
@@ -2160,7 +2163,7 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/reports/{{created_report_id}}",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/{{created_report_id}}",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2168,10 +2171,11 @@
               "path": [
                 "api",
                 "{{version}}",
-                "reports",
+                "aktivitas",
                 "{{created_report_id}}"
               ]
-            }
+            },
+            "description": "Delete aktivitas (admin_system, superadmin only)"
           }
         }
       ]
@@ -4112,7 +4116,7 @@
           "response": []
         },
         {
-          "name": "Get My Tasks (Worker)",
+          "name": "Get My Tasks",
           "event": [
             {
               "listen": "test",
@@ -4144,7 +4148,46 @@
                 "my-tasks"
               ]
             },
-            "description": "Get tasks assigned to current worker"
+            "description": "Get tasks assigned to current user (satgas, linmas, korlap, kepala_rayon)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tagged Tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test('Response is array', function() { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/tagged",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "tagged"
+              ]
+            },
+            "description": "Get tasks where current user is tagged (satgas, linmas, korlap, kepala_rayon)"
           },
           "response": []
         },
@@ -4186,7 +4229,7 @@
           "response": []
         },
         {
-          "name": "Create Task (Koordinator+)",
+          "name": "Create Task (Korlap+)",
           "event": [
             {
               "listen": "test",
@@ -4218,10 +4261,10 @@
                 "tasks"
               ]
             },
-            "description": "Create a new task",
+            "description": "Create a new task (korlap, kepala_rayon, top_management, admin_system, superadmin)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Test Task\",\n  \"description\": \"Test task created via Postman\",\n  \"priority\": \"medium\",\n  \"areaId\": \"{{created_area_id}}\",\n  \"activityTypeId\": \"{{activity_type_id}}\",\n  \"deadline\": \"2026-02-01T11:37:41.849Z\"\n}"
+              "raw": "{\n  \"title\": \"Test Task\",\n  \"description\": \"Test task created via Postman\",\n  \"priority\": \"medium\",\n  \"area_id\": \"{{created_area_id}}\",\n  \"deadline\": \"2026-02-15T17:00:00.000Z\",\n  \"tagged_user_ids\": []\n}"
             }
           },
           "response": []
@@ -4310,87 +4353,7 @@
           "response": []
         },
         {
-          "name": "Accept Task (Worker)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is successful', function() {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/accept",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tasks",
-                "{{created_task_id}}",
-                "accept"
-              ]
-            },
-            "description": "Worker accepts assigned task"
-          },
-          "response": []
-        },
-        {
-          "name": "Decline Task (Worker)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is successful', function() {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/decline",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tasks",
-                "{{created_task_id}}",
-                "decline"
-              ]
-            },
-            "description": "Worker declines assigned task",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Cannot complete due to other priorities\"\n}"
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Start Task (Worker)",
+          "name": "Start Task",
           "event": [
             {
               "listen": "test",
@@ -4423,12 +4386,12 @@
                 "start"
               ]
             },
-            "description": "Worker starts working on task"
+            "description": "Start working on task (satgas, linmas, korlap, kepala_rayon)"
           },
           "response": []
         },
         {
-          "name": "Complete Task (Worker)",
+          "name": "Complete Task",
           "event": [
             {
               "listen": "test",
@@ -4461,11 +4424,92 @@
                 "complete"
               ]
             },
-            "description": "Worker completes task with photo",
+            "description": "Complete task with photo and description (satgas, linmas, korlap, kepala_rayon)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"completionNotes\": \"Task completed successfully\",\n  \"completionPhotoBase64\": \"{{test_base64_photo}}\",\n  \"gpsLat\": -7.2905,\n  \"gpsLng\": 112.7398\n}"
+              "raw": "{\n  \"completion_photo_url\": \"https://s3.amazonaws.com/sekar-media-dev/task-completion.jpg\",\n  \"description\": \"Task completed successfully\"\n}"
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Tag User on Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/tag",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}",
+                "tag"
+              ]
+            },
+            "description": "Tag a user on a task (korlap+)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{worker_id}}\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Untag User from Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{created_task_id}}/tag/{{worker_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{created_task_id}}",
+                "tag",
+                "{{worker_id}}"
+              ]
+            },
+            "description": "Remove a tagged user from task (korlap+)"
           },
           "response": []
         },
@@ -5060,6 +5104,251 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{import_session_id}}\",\n  \"selectedAreas\": []\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "22. Overtime",
+      "item": [
+        {
+          "name": "Submit Overtime",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) { pm.environment.set('overtime_id', pm.response.json().id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overtime",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overtime"
+              ]
+            },
+            "description": "Submit overtime request (satgas, linmas only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-02-10\",\n  \"start_time\": \"17:00\",\n  \"end_time\": \"20:00\",\n  \"notes\": \"Extra cleaning work after regular shift\",\n  \"aktivitas\": [\n    {\n      \"activity_type_id\": \"{{activity_type_id}}\",\n      \"description\": \"Cleaned main park area and pathways\",\n      \"photo_urls\": [\n        \"https://s3.amazonaws.com/sekar-media-dev/overtime-photo.jpg\"\n      ],\n      \"gps_lat\": -7.250445,\n      \"gps_lng\": 112.768845\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Overtime",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test('Response is array', function() { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overtime/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overtime",
+                "my"
+              ]
+            },
+            "description": "Get current user's overtime submissions (satgas, linmas)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Pending Overtime",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test('Response is array', function() { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overtime",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overtime"
+              ]
+            },
+            "description": "Get pending overtime for approval (korlap: own area, admin_system/superadmin: all)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Overtime by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overtime/{{overtime_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overtime",
+                "{{overtime_id}}"
+              ]
+            },
+            "description": "Get overtime details by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Overtime",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test('Status is approved', function() { pm.expect(pm.response.json().status).to.eql('approved'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overtime/{{overtime_id}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overtime",
+                "{{overtime_id}}",
+                "approve"
+              ]
+            },
+            "description": "Approve overtime (korlap only, own area)"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Overtime",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});",
+                  "",
+                  "pm.test('Status is rejected', function() { pm.expect(pm.response.json().status).to.eql('rejected'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overtime/{{overtime_id}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overtime",
+                "{{overtime_id}}",
+                "reject"
+              ]
+            },
+            "description": "Reject overtime with reason (korlap only, own area)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Overtime was not pre-approved\"\n}"
             }
           },
           "response": []
