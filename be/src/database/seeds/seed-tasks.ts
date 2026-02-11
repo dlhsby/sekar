@@ -12,6 +12,16 @@ config();
  *
  * Usage: npm run seed:tasks
  */
+
+// Real UUID v4 IDs for tasks
+const TASK_1_ID = '099757d2-ab32-4384-83e7-22a35b0510ec';
+const TASK_2_ID = 'f69ce06b-d253-4455-bf11-6e695eb028f3';
+const TASK_3_ID = '809869e9-6ffd-4015-bb02-45d0ff71f344';
+const TASK_4_ID = '63abcff4-3294-4643-9eb4-c25127d5bfd0';
+const TASK_5_ID = 'a94b846b-ebbf-41df-bcbf-340187c50b5a';
+const TASK_6_ID = 'a1de5361-6619-454d-af2a-360fe5cc18bc';
+const TASK_7_ID = 'cee9877b-5d88-4528-b339-9bed9a8fb06b';
+const TASK_8_ID = '8ec6c9c4-981c-412d-a1e8-a6c2c80ed189';
 async function seedTasks() {
   console.log('🎯 Task Seeding Started...');
   console.log('');
@@ -93,7 +103,7 @@ async function seedTasks() {
         area_id, assigned_to, created_by,
         created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888801',
+        '${TASK_1_ID}',
         'Penyiraman Taman Pagi',
         'Menyiram seluruh area taman pada pagi hari. Fokus pada tanaman baru yang memerlukan perhatian ekstra.',
         'pending',
@@ -117,7 +127,7 @@ async function seedTasks() {
         area_id, assigned_to, created_by,
         assigned_at, created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888802',
+        '${TASK_2_ID}',
         'Penanaman Bunga Musiman',
         'Menanam bunga musiman di area taman. Total 50 pot bunga.',
         'assigned',
@@ -142,7 +152,7 @@ async function seedTasks() {
         area_id, assigned_to, created_by,
         assigned_at, created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888803',
+        '${TASK_3_ID}',
         'Pemangkasan Pohon Tinggi',
         'Memangkas dahan pohon yang menghalangi jalur pejalan kaki.',
         'assigned',
@@ -167,7 +177,7 @@ async function seedTasks() {
         area_id, assigned_to, created_by,
         assigned_at, started_at, created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888804',
+        '${TASK_4_ID}',
         'Pembersihan Area Playground',
         'Membersihkan area playground dari sampah dan dedaunan.',
         'in_progress',
@@ -195,7 +205,7 @@ async function seedTasks() {
         completion_notes, completion_photo_url,
         created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888805',
+        '${TASK_5_ID}',
         'Penyiraman Taman Sore',
         'Menyiram taman pada sore hari',
         'completed',
@@ -224,7 +234,7 @@ async function seedTasks() {
         area_id, assigned_to, created_by,
         assigned_at, started_at, created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888806',
+        '${TASK_6_ID}',
         'Pemangkasan Semak Belukar',
         'Memangkas semak belukar di area belakang taman',
         'in_progress',
@@ -250,7 +260,7 @@ async function seedTasks() {
         area_id, assigned_to, created_by,
         created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888807',
+        '${TASK_7_ID}',
         'Pembersihan Jalur Jogging',
         'Membersihkan jalur jogging dari dedaunan dan sampah',
         'pending',
@@ -274,7 +284,7 @@ async function seedTasks() {
         area_id, assigned_to, created_by,
         assigned_at, created_at, updated_at
       ) VALUES (
-        '88888888-8888-8888-8888-888888888808',
+        '${TASK_8_ID}',
         'Perawatan Rumput Taman',
         'Memeriksa dan merawat kondisi rumput di area taman',
         'assigned',
