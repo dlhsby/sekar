@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides comprehensive Entity Relationship Diagrams for the SEKAR database schema. The diagrams show all tables, relationships, cardinalities, and key constraints.
+This document provides comprehensive Entity Relationship Diagrams for the SEKAR database schema, updated to reflect **Phase 2C (Client Feedback)** changes including the 8-role system, overtime module, task tags, and schema modifications.
 
 **Notation:**
 - `1` = One (exactly one)
@@ -15,66 +15,139 @@ This document provides comprehensive Entity Relationship Diagrams for the SEKAR 
 
 ---
 
-## Complete ERD (All Tables)
+## Complete ERD (All Tables — Phase 2C)
 
 ```mermaid
 erDiagram
+    RAYONS ||--o{ AREAS : "contains"
+    RAYONS ||--o{ USERS : "manages"
+    RAYONS ||--o{ TASKS : "scoped_to"
+
     USERS ||--o{ WORKER_ASSIGNMENTS : "has_one"
-    USERS ||--o{ SHIFTS : "has_many"
-    USERS ||--o{ REPORTS : "creates"
+    USERS ||--o{ WORKER_SCHEDULES : "scheduled"
+    USERS ||--o{ SHIFTS : "works"
+    USERS ||--o{ WORK_REPORTS : "creates"
     USERS ||--o{ LOCATION_LOGS : "sends"
+    USERS ||--o{ TASKS : "assigned_to"
+    USERS ||--o{ TASKS : "created_by"
+    USERS ||--o{ TASK_TAGS : "tagged_in"
+    USERS ||--o{ OVERTIMES : "submits"
+    USERS ||--o{ NOTIFICATIONS : "receives"
 
     AREA_TYPES ||--o{ AREAS : "categorizes"
 
     AREAS ||--o{ WORKER_ASSIGNMENTS : "receives"
+    AREAS ||--o{ WORKER_SCHEDULES : "scheduled_at"
     AREAS ||--o{ SHIFTS : "location_for"
+    AREAS ||--o{ WORK_REPORTS : "report_at"
+    AREAS ||--o{ TASKS : "scoped_to"
+    AREAS ||--o{ OVERTIMES : "overtime_at"
+    AREAS ||--o{ AREA_STAFF_REQUIREMENTS : "requires"
+    AREAS o|--|| USERS : "korlap_area"
 
-    SHIFTS ||--o{ REPORTS : "contains"
+    SHIFTS ||--o{ WORK_REPORTS : "contains"
     SHIFTS ||--o{ LOCATION_LOGS : "tracks"
+
+    SHIFT_DEFINITIONS ||--o{ WORKER_SCHEDULES : "defines"
+    SHIFT_DEFINITIONS ||--o{ AREA_STAFF_REQUIREMENTS : "for_shift"
+
+    TASKS ||--o{ TASK_TAGS : "has_tags"
+    TASKS ||--o{ WORK_REPORTS : "completed_by"
+
+    ACTIVITY_TYPES ||--o{ WORK_REPORTS : "categorizes"
+    ACTIVITY_TYPES ||--o{ OVERTIME_AKTIVITAS : "categorizes"
+
+    OVERTIMES ||--o{ OVERTIME_AKTIVITAS : "contains"
 
     USERS {
         uuid id PK
         varchar username UK "NOT NULL, UNIQUE"
         varchar password_hash "NOT NULL"
         varchar full_name "NOT NULL"
-        varchar role "NOT NULL, CHECK(worker/supervisor/admin)"
+        varchar phone "NULL"
+        varchar role "NOT NULL, 8-role enum"
+        uuid rayon_id FK "NULL, for kepala_rayon"
+        uuid area_id FK "NULL, for korlap"
         boolean is_active "DEFAULT true"
-        timestamptz created_at "DEFAULT NOW()"
-        timestamptz updated_at "DEFAULT NOW()"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at "NULL, soft delete"
+    }
+
+    RAYONS {
+        uuid id PK
+        varchar name UK "NOT NULL"
+        varchar code UK "NOT NULL"
+        text description "NULL"
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     AREA_TYPES {
         uuid id PK
-        varchar code UK "NOT NULL, UNIQUE"
+        varchar code UK "NOT NULL"
         varchar name "NOT NULL"
         text description "NULL"
-        timestamptz created_at "DEFAULT NOW()"
+        varchar category "ACTIVE or PASSIVE"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at "NULL"
     }
 
     AREAS {
         uuid id PK
         varchar name "NOT NULL"
         uuid area_type_id FK "NOT NULL"
-        decimal gps_lat "NOT NULL, CHECK(-90 to 90)"
-        decimal gps_lng "NOT NULL, CHECK(-180 to 180)"
-        integer radius_meters "DEFAULT 100, CHECK(1-10000)"
+        uuid rayon_id FK "NULL"
+        decimal gps_lat "NOT NULL"
+        decimal gps_lng "NOT NULL"
+        integer radius_meters "DEFAULT 100"
         text address "NULL"
+        jsonb boundary_polygon "NULL"
+        decimal coverage_area "NULL"
         boolean is_active "DEFAULT true"
-        timestamptz created_at "DEFAULT NOW()"
-        timestamptz updated_at "DEFAULT NOW()"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at "NULL"
     }
 
     WORKER_ASSIGNMENTS {
         uuid id PK
         uuid worker_id FK "NOT NULL, UNIQUE"
         uuid area_id FK "NOT NULL"
-        timestamptz assigned_at "DEFAULT NOW()"
+        timestamptz assigned_at
+        boolean deprecated "DEFAULT false"
+        uuid migrated_to_schedule_id "NULL"
+    }
+
+    WORKER_SCHEDULES {
+        uuid id PK
+        uuid user_id FK "NOT NULL"
+        uuid area_id FK "NOT NULL"
+        uuid shift_definition_id FK "NOT NULL"
+        date effective_date "NOT NULL"
+        date end_date "NULL"
+        uuid created_by FK "NULL"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SHIFT_DEFINITIONS {
+        uuid id PK
+        varchar name UK "NOT NULL"
+        varchar code UK "NOT NULL"
+        time start_time "NOT NULL"
+        time end_time "NOT NULL"
+        boolean crosses_midnight "DEFAULT false"
+        boolean is_active "DEFAULT true"
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     SHIFTS {
         uuid id PK
         uuid worker_id FK "NOT NULL"
-        uuid area_id FK "NOT NULL"
+        uuid area_id FK "NULL, auto-detected"
         timestamptz clock_in_time "NOT NULL"
         decimal clock_in_gps_lat "NULL"
         decimal clock_in_gps_lng "NULL"
@@ -82,21 +155,94 @@ erDiagram
         timestamptz clock_out_time "NULL"
         decimal clock_out_gps_lat "NULL"
         decimal clock_out_gps_lng "NULL"
-        timestamptz created_at "DEFAULT NOW()"
-        timestamptz updated_at "DEFAULT NOW()"
+        text clock_out_photo_url "NULL"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at "NULL"
     }
 
-    REPORTS {
+    WORK_REPORTS {
         uuid id PK
         uuid worker_id FK "NOT NULL"
         uuid shift_id FK "NOT NULL"
-        varchar report_type "NOT NULL, CHECK(enum)"
+        uuid area_id FK "NULL"
+        uuid task_id FK "NULL"
+        uuid activity_type_id FK "NULL"
+        varchar report_type "NULL"
         text description "NOT NULL"
-        varchar photo_url "NULL"
-        decimal gps_lat "NOT NULL"
-        decimal gps_lng "NOT NULL"
-        timestamptz created_at "DEFAULT NOW()"
-        timestamptz updated_at "DEFAULT NOW()"
+        text_array photo_urls "NOT NULL, 1-3 URLs"
+        text photo_url "NULL, legacy"
+        decimal gps_lat "NULL"
+        decimal gps_lng "NULL"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at "NULL"
+    }
+
+    ACTIVITY_TYPES {
+        uuid id PK
+        varchar name "NOT NULL"
+        varchar code UK "NOT NULL"
+        text description "NULL"
+        text_array applicable_roles "NOT NULL"
+        boolean is_active "DEFAULT true"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    TASKS {
+        uuid id PK
+        varchar title "NOT NULL"
+        text description "NULL"
+        varchar status "pending/assigned/in_progress/completed"
+        varchar priority "low/medium/high/urgent"
+        timestamptz deadline "NULL"
+        uuid area_id FK "NULL"
+        uuid rayon_id FK "NULL"
+        uuid assigned_to FK "NULL"
+        uuid created_by FK "NOT NULL"
+        varchar completion_photo_url "NULL"
+        text completion_notes "NULL"
+        timestamptz completed_at "NULL"
+        timestamptz assigned_at "NULL"
+        timestamptz started_at "NULL"
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at "NULL"
+    }
+
+    TASK_TAGS {
+        uuid id PK
+        uuid task_id FK "NOT NULL"
+        uuid user_id FK "NOT NULL"
+        timestamptz created_at
+    }
+
+    OVERTIMES {
+        uuid id PK
+        uuid user_id FK "NOT NULL"
+        uuid area_id FK "NULL"
+        date date "NOT NULL"
+        time start_time "NOT NULL"
+        time end_time "NOT NULL"
+        varchar status "pending/approved/rejected"
+        uuid approved_by FK "NULL"
+        timestamptz approved_at "NULL"
+        text rejection_reason "NULL"
+        text notes "NULL"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    OVERTIME_AKTIVITAS {
+        uuid id PK
+        uuid overtime_id FK "NOT NULL"
+        uuid activity_type_id FK "NOT NULL"
+        text description "NOT NULL"
+        text_array photo_urls "NOT NULL, 1-3 URLs"
+        decimal gps_lat "NULL"
+        decimal gps_lng "NULL"
+        timestamptz created_at
     }
 
     LOCATION_LOGS {
@@ -106,629 +252,355 @@ erDiagram
         decimal gps_lat "NOT NULL"
         decimal gps_lng "NOT NULL"
         decimal accuracy_meters "NULL"
-        integer battery_level "NULL, CHECK(0-100)"
+        integer battery_level "NULL"
         timestamptz logged_at "NOT NULL"
+    }
+
+    AREA_STAFF_REQUIREMENTS {
+        uuid id PK
+        uuid area_id FK "NOT NULL"
+        uuid shift_definition_id FK "NOT NULL"
+        varchar role "NOT NULL"
+        integer required_count "DEFAULT 1"
+        varchar day_type "WEEKDAY/WEEKEND/HOLIDAY"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid user_id FK "NOT NULL"
+        varchar title "NOT NULL"
+        text body "NOT NULL"
+        varchar type "NOT NULL"
+        jsonb data "NULL"
+        timestamptz read_at "NULL"
+        timestamptz sent_at
+        timestamptz created_at
+    }
+
+    NOTIFICATION_TOKENS {
+        uuid id PK
+        uuid user_id FK "NOT NULL"
+        text token "NOT NULL"
+        varchar platform "NOT NULL"
+        varchar device_id "NULL"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SPECIAL_DAY_OVERRIDES {
+        uuid id PK
+        date date UK "NOT NULL"
+        varchar day_type "NOT NULL"
+        varchar name "NULL"
+        text description "NULL"
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 
 ---
 
-## Core Relationships Diagram
+## Role System (Phase 2C — 8 Roles)
 
-Focus on the primary relationships between users, areas, and assignments.
+```mermaid
+graph TD
+    SA[Superadmin] --> AS[Admin System]
+    AS --> AD[Admin Data]
+    SA --> TM[Top Management]
+    TM --> KR[Kepala Rayon]
+    KR --> KO[Korlap]
+    KO --> ST[Satgas]
+    KO --> LM[Linmas]
+```
+
+| Role | Enum Value | Scope | Description |
+|------|-----------|-------|-------------|
+| Superadmin | `superadmin` | System-wide | Full system access |
+| Admin System | `admin_system` | System-wide | System administration |
+| Admin Data | `admin_data` | System-wide | Data management |
+| Top Management | `top_management` | City-wide | City-wide dashboards |
+| Kepala Rayon | `kepala_rayon` | 1 Rayon | Rayon management (via rayon_id) |
+| Korlap | `korlap` | 1 Area | Area coordination (via area_id) |
+| Satgas | `satgas` | Assigned area | Field worker |
+| Linmas | `linmas` | Assigned area | Security officer |
+
+---
+
+## Core Relationships
+
+### User Assignments
 
 ```mermaid
 erDiagram
-    USERS ||--|| WORKER_ASSIGNMENTS : "assigned_to (1:1)"
-    WORKER_ASSIGNMENTS }o--|| AREAS : "works_at (∞:1)"
-    AREA_TYPES ||--o{ AREAS : "categorizes (1:∞)"
+    USERS ||--o| RAYONS : "kepala_rayon manages"
+    USERS ||--o| AREAS : "korlap manages"
+    USERS ||--o| WORKER_SCHEDULES : "satgas/linmas scheduled"
+    USERS ||--o| WORKER_ASSIGNMENTS : "legacy (deprecated)"
 
     USERS {
         uuid id
-        varchar username
         varchar role
-    }
-
-    WORKER_ASSIGNMENTS {
-        uuid worker_id "UNIQUE"
-        uuid area_id
-    }
-
-    AREAS {
-        uuid id
-        uuid area_type_id
-        varchar name
-    }
-
-    AREA_TYPES {
-        uuid id
-        varchar code
-        varchar name
+        uuid rayon_id "for kepala_rayon"
+        uuid area_id "for korlap"
     }
 ```
 
-**Cardinalities:**
-- **USERS ↔ WORKER_ASSIGNMENTS**: 1:1 (One worker has one assignment)
-- **WORKER_ASSIGNMENTS ↔ AREAS**: ∞:1 (Many assignments to one area)
-- **AREA_TYPES ↔ AREAS**: 1:∞ (One type has many areas)
+**Assignment Rules:**
+- **kepala_rayon** → assigned via `users.rayon_id`
+- **korlap** → assigned via `users.area_id`
+- **satgas/linmas** → assigned via `worker_schedules` (primary) or `worker_assignments` (deprecated fallback)
 
 ---
 
-## Shift and Tracking Diagram
+### Task Workflow
 
-Focus on shift lifecycle and associated tracking data.
+```mermaid
+stateDiagram-v2
+    [*] --> pending: Create task
+    pending --> assigned: Assign to worker
+    assigned --> in_progress: Worker starts
+    in_progress --> completed: Worker completes with photo
+```
+
+**Task Relationships:**
+- Task → Area (nullable for rayon-scoped)
+- Task → Rayon (nullable for area-scoped)
+- Task → User (assigned_to, created_by)
+- Task → TaskTag (1:∞, CC-like tagging)
+
+---
+
+### Overtime Workflow
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: Satgas/Linmas submits
+    pending --> approved: Korlap approves
+    pending --> rejected: Korlap rejects
+```
+
+**Overtime Relationships:**
+- Overtime → User (submitter, CASCADE)
+- Overtime → Area (nullable, SET NULL)
+- Overtime → User (approver, nullable)
+- Overtime → OvertimeAktivitas (1:∞, CASCADE)
+- OvertimeAktivitas → ActivityType
+
+---
+
+### Shift & Reports Flow
 
 ```mermaid
 erDiagram
     USERS ||--o{ SHIFTS : "works (1:∞)"
-    AREAS ||--o{ SHIFTS : "hosts (1:∞)"
-    SHIFTS ||--o{ REPORTS : "contains (1:∞)"
+    AREAS o|--o{ SHIFTS : "hosts (o:∞)"
+    SHIFTS ||--o{ WORK_REPORTS : "contains (1:∞)"
     SHIFTS ||--o{ LOCATION_LOGS : "tracks (1:∞)"
-
-    USERS {
-        uuid id
-        varchar full_name
-        varchar role
-    }
-
-    AREAS {
-        uuid id
-        varchar name
-        decimal gps_lat
-        decimal gps_lng
-    }
-
-    SHIFTS {
-        uuid id
-        uuid worker_id FK
-        uuid area_id FK
-        timestamptz clock_in_time
-        timestamptz clock_out_time "NULL=active"
-    }
-
-    REPORTS {
-        uuid id
-        uuid worker_id FK
-        uuid shift_id FK
-        varchar report_type
-        text description
-    }
-
-    LOCATION_LOGS {
-        uuid id
-        uuid worker_id FK
-        uuid shift_id FK
-        decimal gps_lat
-        decimal gps_lng
-        timestamptz logged_at
-    }
+    ACTIVITY_TYPES o|--o{ WORK_REPORTS : "categorizes"
+    TASKS o|--o{ WORK_REPORTS : "completed_by"
 ```
 
-**Cardinalities:**
-- **USERS ↔ SHIFTS**: 1:∞ (One worker has many shifts)
-- **AREAS ↔ SHIFTS**: 1:∞ (One area hosts many shifts)
-- **SHIFTS ↔ REPORTS**: 1:∞ (One shift has many reports)
-- **SHIFTS ↔ LOCATION_LOGS**: 1:∞ (One shift has many location logs)
-
----
-
-## Detailed Relationship Specifications
-
-### 1. Users → Worker Assignments (1:1)
-
-```
-users (1) ──── (1) worker_assignments
-  id      ────   worker_id [UNIQUE]
-```
-
-**Relationship Type:** One-to-One (enforced by UNIQUE constraint)
-
-**Details:**
-- One worker (user with role='worker') can have exactly ONE assignment
-- One assignment belongs to exactly ONE worker
-- UNIQUE constraint on `worker_assignments.worker_id` enforces 1:1
-- To reassign worker: DELETE old assignment, INSERT new one
-
-**SQL:**
-```sql
-ALTER TABLE worker_assignments
-  ADD CONSTRAINT uq_worker_assignments_worker UNIQUE (worker_id);
-
-ALTER TABLE worker_assignments
-  ADD CONSTRAINT fk_worker_assignments_worker
-  FOREIGN KEY (worker_id) REFERENCES users(id);
-```
-
-**Business Logic:**
-- Validated in application: Only users with `role='worker'` can be assigned
-- Supervisors and admins cannot have assignments
-
----
-
-### 2. Areas → Worker Assignments (1:∞)
-
-```
-areas (1) ──── (∞) worker_assignments
-  id    ────     area_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One area can have MANY worker assignments (multiple workers)
-- Each assignment belongs to exactly ONE area
-- No constraint on number of workers per area
-
-**SQL:**
-```sql
-ALTER TABLE worker_assignments
-  ADD CONSTRAINT fk_worker_assignments_area
-  FOREIGN KEY (area_id) REFERENCES areas(id);
-```
-
-**Business Logic:**
-- Only active areas (`is_active = true`) can receive new assignments
-- Inactive areas keep existing assignments but no new ones
-
----
-
-### 3. Area Types → Areas (1:∞)
-
-```
-area_types (1) ──── (∞) areas
-    id     ────    area_type_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One area type (e.g., 'park') can categorize MANY areas
-- Each area belongs to exactly ONE area type
-- Area type is required (NOT NULL)
-
-**SQL:**
-```sql
-ALTER TABLE areas
-  ADD CONSTRAINT fk_areas_area_type
-  FOREIGN KEY (area_type_id) REFERENCES area_types(id);
-```
-
-**Business Logic:**
-- Area types are master data (seeded, rarely changes)
-- Cannot delete area type if referenced by areas
-- TypeORM eager loading: Area entity always loads area_type
-
----
-
-### 4. Users → Shifts (1:∞)
-
-```
-users (1) ──── (∞) shifts
-  id   ────    worker_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One user (worker) can have MANY shifts over time
-- Each shift belongs to exactly ONE worker
-- Historical record of all shifts
-
-**SQL:**
-```sql
-ALTER TABLE shifts
-  ADD CONSTRAINT fk_shifts_worker
-  FOREIGN KEY (worker_id) REFERENCES users(id);
-```
-
-**Business Logic:**
-- Worker can have only ONE active shift at a time (clock_out_time IS NULL)
-- Historical shifts retained indefinitely for audit/payroll
-
----
-
-### 5. Areas → Shifts (1:∞)
-
-```
-areas (1) ──── (∞) shifts
-  id   ────    area_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One area can have MANY shifts over time
-- Each shift occurs at exactly ONE area
-- Area at clock-in determines shift location
-
-**SQL:**
-```sql
-ALTER TABLE shifts
-  ADD CONSTRAINT fk_shifts_area
-  FOREIGN KEY (area_id) REFERENCES areas(id);
-```
-
-**Business Logic:**
-- Area_id comes from worker's current assignment
-- GPS validation: Worker must be within area boundary to clock in
-
----
-
-### 6. Shifts → Reports (1:∞)
-
-```
-shifts (1) ──── (∞) reports
-  id    ────    shift_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One shift can have MANY reports (multiple work reports per shift)
-- Each report belongs to exactly ONE shift
-- Reports can only be created during active shifts
-
-**SQL:**
-```sql
-ALTER TABLE reports
-  ADD CONSTRAINT fk_reports_shift
-  FOREIGN KEY (shift_id) REFERENCES shifts(id);
-```
-
-**Business Logic:**
-- Reports validated against active shift (clock_out_time IS NULL)
-- GPS location tagged at report creation
-- Workers can edit reports within 30 minutes
-
----
-
-### 7. Shifts → Location Logs (1:∞)
-
-```
-shifts (1) ──── (∞) location_logs
-  id    ────    shift_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One shift can have MANY location logs (GPS pings every 5-15 minutes)
-- Each location log belongs to exactly ONE shift
-- High volume relationship (grows quickly)
-
-**SQL:**
-```sql
-ALTER TABLE location_logs
-  ADD CONSTRAINT fk_location_logs_shift
-  FOREIGN KEY (shift_id) REFERENCES shifts(id);
-```
-
-**Business Logic:**
-- Location tracking starts on clock-in, stops on clock-out
-- Batch uploads every 30 minutes or 50 pings
-- Old logs (>90 days) can be archived
-
----
-
-### 8. Users → Reports (1:∞)
-
-```
-users (1) ──── (∞) reports
-  id   ────    worker_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One user (worker) can create MANY reports
-- Each report belongs to exactly ONE worker
-- Redundant with shift_id → worker_id, but kept for direct queries
-
-**SQL:**
-```sql
-ALTER TABLE reports
-  ADD CONSTRAINT fk_reports_worker
-  FOREIGN KEY (worker_id) REFERENCES users(id);
-```
-
-**Business Logic:**
-- Denormalized for query performance (avoid JOIN through shifts)
-- Worker can only view/edit their own reports
-
----
-
-### 9. Users → Location Logs (1:∞)
-
-```
-users (1) ──── (∞) location_logs
-  id   ────    worker_id
-```
-
-**Relationship Type:** One-to-Many
-
-**Details:**
-- One user (worker) can have MANY location logs
-- Each location log belongs to exactly ONE worker
-- Denormalized for performance (latest location query)
-
-**SQL:**
-```sql
-ALTER TABLE location_logs
-  ADD CONSTRAINT fk_location_logs_worker
-  FOREIGN KEY (worker_id) REFERENCES users(id);
-```
-
-**Business Logic:**
-- Denormalized for fast "latest location per worker" queries
-- Indexed: (worker_id, logged_at DESC) for performance
+**Phase 2C Changes:**
+- `shifts.area_id` is now **nullable** (auto-detected from WorkerSchedule → WorkerAssignment fallback)
+- `work_reports.photo_urls` TEXT[] replaces single `photo_url` (1-3 photos)
+- `work_reports.gps_lat/gps_lng` are now **nullable**
+- `work_reports.activity_type_id` links to `activity_types` for role-based validation
 
 ---
 
 ## Cardinality Summary Table
 
 | Relationship | Parent | Child | Type | Constraint | Notes |
-|--------------|--------|-------|------|------------|-------|
-| User-Assignment | users | worker_assignments | 1:1 | UNIQUE(worker_id) | One worker, one assignment |
-| Area-Assignment | areas | worker_assignments | 1:∞ | FK(area_id) | Many workers per area |
-| AreaType-Area | area_types | areas | 1:∞ | FK(area_type_id) | One type, many areas |
-| User-Shift | users | shifts | 1:∞ | FK(worker_id) | Many shifts per worker |
-| Area-Shift | areas | shifts | 1:∞ | FK(area_id) | Many shifts per area |
-| Shift-Report | shifts | reports | 1:∞ | FK(shift_id) | Many reports per shift |
-| Shift-Location | shifts | location_logs | 1:∞ | FK(shift_id) | Many logs per shift |
-| User-Report | users | reports | 1:∞ | FK(worker_id) | Denormalized for performance |
-| User-Location | users | location_logs | 1:∞ | FK(worker_id) | Denormalized for performance |
+|-------------|--------|-------|------|------------|-------|
+| Rayon-Area | rayons | areas | 1:∞ | FK(rayon_id) | 7 rayons, many areas each |
+| Rayon-User | rayons | users | 1:∞ | FK(rayon_id) | kepala_rayon role |
+| Rayon-Task | rayons | tasks | 1:∞ | FK(rayon_id) | Rayon-scoped tasks |
+| AreaType-Area | area_types | areas | 1:∞ | FK(area_type_id) | ACTIVE/PASSIVE category |
+| Area-User | areas | users | 1:∞ | FK(area_id) | korlap role |
+| User-Assignment | users | worker_assignments | 1:1 | UNIQUE(worker_id) | Deprecated |
+| User-Schedule | users | worker_schedules | 1:∞ | FK(user_id) | Primary assignment |
+| Area-Schedule | areas | worker_schedules | 1:∞ | FK(area_id) | Schedule location |
+| ShiftDef-Schedule | shift_definitions | worker_schedules | 1:∞ | FK(shift_definition_id) | Schedule timing |
+| User-Shift | users | shifts | 1:∞ | FK(worker_id) | Work shifts |
+| Area-Shift | areas | shifts | o:∞ | FK(area_id) | Nullable in Phase 2C |
+| Shift-Report | shifts | work_reports | 1:∞ | FK(shift_id) | Activity reports |
+| Shift-Location | shifts | location_logs | 1:∞ | FK(shift_id) | GPS tracking |
+| User-Report | users | work_reports | 1:∞ | FK(worker_id) | Denormalized |
+| ActivityType-Report | activity_types | work_reports | o:∞ | FK(activity_type_id) | Role-validated |
+| Task-Report | tasks | work_reports | o:∞ | FK(task_id) | Task completion |
+| User-Task (assigned) | users | tasks | o:∞ | FK(assigned_to) | Assignment |
+| User-Task (created) | users | tasks | 1:∞ | FK(created_by) | Creator |
+| Area-Task | areas | tasks | o:∞ | FK(area_id) | Nullable for rayon-scoped |
+| Task-TaskTag | tasks | task_tags | 1:∞ | FK(task_id) CASCADE | CC-like tagging |
+| User-TaskTag | users | task_tags | 1:∞ | FK(user_id) CASCADE | Tagged users |
+| User-Overtime | users | overtimes | 1:∞ | FK(user_id) CASCADE | Submissions |
+| Area-Overtime | areas | overtimes | o:∞ | FK(area_id) SET NULL | Location |
+| Overtime-Aktivitas | overtimes | overtime_aktivitas | 1:∞ | FK(overtime_id) CASCADE | Activities |
+| ActivityType-OvAkt | activity_types | overtime_aktivitas | 1:∞ | FK(activity_type_id) | Categorization |
+| User-Notification | users | notifications | 1:∞ | FK(user_id) CASCADE | Alerts |
+| User-NotifToken | users | notification_tokens | 1:∞ | FK(user_id) CASCADE | Devices |
+| ShiftDef-StaffReq | shift_definitions | area_staff_requirements | 1:∞ | FK(shift_definition_id) | Requirements |
+| Area-StaffReq | areas | area_staff_requirements | 1:∞ | FK(area_id) CASCADE | Requirements |
 
 ---
 
 ## Foreign Key Cascade Rules
 
-### On Delete Behavior
-
-**No Cascading Deletes** - All handled in application layer:
-
-```sql
--- Example: What happens when a user is deleted?
--- Answer: Deletion is prevented if referenced by other tables
-
-ALTER TABLE worker_assignments
-  ADD CONSTRAINT fk_worker_assignments_worker
-  FOREIGN KEY (worker_id) REFERENCES users(id)
-  ON DELETE RESTRICT;  -- Prevent deletion if assignments exist
-```
-
-**Rationale:**
-- Preserve data integrity and audit trail
-- Use `is_active = false` for soft delete instead
-- Explicitly handle deletion in application business logic
-
-### On Update Behavior
-
-**Cascade Updates** - UUID primary keys rarely change:
-
-```sql
--- Example: If a user.id changes (rare), update references
-ALTER TABLE worker_assignments
-  ADD CONSTRAINT fk_worker_assignments_worker
-  FOREIGN KEY (worker_id) REFERENCES users(id)
-  ON UPDATE CASCADE;  -- Update references if PK changes
-```
-
-**Rationale:**
-- UUID primary keys are immutable in practice
-- Cascade updates for safety (rarely triggered)
+| FK | ON DELETE | Rationale |
+|----|----------|-----------|
+| users.rayon_id | SET NULL | User persists if rayon deleted |
+| users.area_id | SET NULL | User persists if area deleted |
+| worker_assignments.worker_id | RESTRICT | Prevent deletion of assigned worker |
+| worker_assignments.area_id | RESTRICT | Prevent deletion of area with assignments |
+| worker_schedules.user_id | CASCADE | Remove schedules when user deleted |
+| worker_schedules.area_id | CASCADE | Remove schedules when area deleted |
+| shifts.worker_id | RESTRICT | Preserve shift history |
+| shifts.area_id | RESTRICT | Preserve shift history |
+| work_reports.worker_id | RESTRICT | Preserve report history |
+| work_reports.shift_id | RESTRICT | Preserve report history |
+| work_reports.task_id | SET NULL | Report persists if task deleted |
+| work_reports.activity_type_id | SET NULL | Report persists if type deleted |
+| tasks.assigned_to | SET NULL | Task persists if user deleted |
+| tasks.created_by | RESTRICT | Preserve creator reference |
+| tasks.area_id | RESTRICT | Prevent deletion of area with tasks |
+| task_tags.task_id | CASCADE | Remove tags when task deleted |
+| task_tags.user_id | CASCADE | Remove tags when user deleted |
+| overtimes.user_id | CASCADE | Remove overtime when user deleted |
+| overtimes.area_id | SET NULL | Overtime persists if area deleted |
+| overtime_aktivitas.overtime_id | CASCADE | Remove aktivitas when overtime deleted |
+| notifications.user_id | CASCADE | Remove notifications when user deleted |
+| notification_tokens.user_id | CASCADE | Remove tokens when user deleted |
 
 ---
 
-## Relationship Constraints
+## Unique Constraints
 
-### Unique Constraints
+| Table | Constraint | Columns |
+|-------|-----------|---------|
+| users | uq_users_username | username (WHERE deleted_at IS NULL) |
+| rayons | uq_rayons_name | name |
+| rayons | uq_rayons_code | code |
+| area_types | uq_area_types_code | code |
+| shift_definitions | uq_shift_definitions_code | code |
+| shift_definitions | uq_shift_definitions_name | name |
+| activity_types | uq_activity_types_code | code |
+| worker_assignments | uq_worker_assignments_worker | worker_id |
+| worker_schedules | uq_worker_schedule_overlap | (user_id, effective_date, shift_definition_id) |
+| task_tags | uq_task_tags_task_user | (task_id, user_id) |
+| notification_tokens | uq_notification_tokens_user_token | (user_id, token) |
+| special_day_overrides | uq_special_day_date | date |
+| area_staff_requirements | uq_area_staff_requirements | (area_id, shift_definition_id, role, day_type) |
 
-**worker_assignments.worker_id** - Enforces 1:1 relationship
+---
+
+## Check Constraints
+
 ```sql
-CONSTRAINT uq_worker_assignments_worker UNIQUE (worker_id)
-```
+-- users.role (Phase 2C: 8 roles)
+CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_data',
+                'kepala_rayon', 'top_management', 'admin_system', 'superadmin'))
 
-**users.username** - Prevents duplicate usernames
-```sql
-CONSTRAINT uq_users_username UNIQUE (username)
-```
+-- tasks.status (Phase 2C: 4 statuses, simplified from 6)
+CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed'))
 
-**area_types.code** - Prevents duplicate type codes
-```sql
-CONSTRAINT uq_area_types_code UNIQUE (code)
-```
+-- tasks.priority
+CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 
-### Check Constraints
+-- overtimes.status
+CHECK (status IN ('pending', 'approved', 'rejected'))
 
-**Validate enum values:**
-```sql
--- users.role
-CONSTRAINT chk_users_role CHECK (role IN ('worker', 'supervisor', 'admin'))
+-- area_types.category
+CHECK (category IN ('ACTIVE', 'PASSIVE'))
 
--- reports.report_type
-CONSTRAINT chk_reports_type CHECK (report_type IN ('task_completion', 'incident', 'maintenance_request'))
-```
+-- area_staff_requirements.day_type
+CHECK (day_type IN ('WEEKDAY', 'WEEKEND', 'HOLIDAY'))
 
-**Validate ranges:**
-```sql
 -- GPS coordinates
-CONSTRAINT chk_areas_gps_lat CHECK (gps_lat BETWEEN -90 AND 90)
-CONSTRAINT chk_areas_gps_lng CHECK (gps_lng BETWEEN -180 AND 180)
+CHECK (gps_lat BETWEEN -90 AND 90)
+CHECK (gps_lng BETWEEN -180 AND 180)
 
--- Battery level
-CONSTRAINT chk_location_logs_battery CHECK (battery_level BETWEEN 0 AND 100)
-```
-
----
-
-## Indexes for Relationship Queries
-
-### Foreign Key Indexes
-
-All foreign keys have indexes for efficient JOINs:
-
-```sql
--- Worker assignments
-CREATE INDEX idx_worker_assignments_worker_id ON worker_assignments(worker_id);
-CREATE INDEX idx_worker_assignments_area_id ON worker_assignments(area_id);
-
--- Areas
-CREATE INDEX idx_areas_area_type_id ON areas(area_type_id);
-
--- Shifts
-CREATE INDEX idx_shifts_worker_id ON shifts(worker_id);
-CREATE INDEX idx_shifts_area_id ON shifts(area_id);
-
--- Reports
-CREATE INDEX idx_reports_worker_id ON reports(worker_id);
-CREATE INDEX idx_reports_shift_id ON reports(shift_id);
-
--- Location logs
-CREATE INDEX idx_location_logs_worker_id ON location_logs(worker_id);
-CREATE INDEX idx_location_logs_shift_id ON location_logs(shift_id);
-```
-
-### Composite Indexes for Common Queries
-
-```sql
--- Find active shift for worker
-CREATE INDEX idx_shifts_active
-  ON shifts(worker_id, clock_out_time)
-  WHERE clock_out_time IS NULL;
-
--- Latest location per worker
-CREATE INDEX idx_location_logs_worker_time
-  ON location_logs(worker_id, logged_at DESC);
+-- battery_level
+CHECK (battery_level BETWEEN 0 AND 100)
 ```
 
 ---
 
 ## Data Flow Examples
 
-### Example 1: Clock-In Flow
+### Clock-In Flow (Phase 2C)
 
 ```mermaid
 sequenceDiagram
-    participant W as Worker
-    participant S as Shifts Table
+    participant W as Worker (satgas/linmas)
+    participant S as Shifts Service
+    participant WS as Worker Schedules
     participant WA as Worker Assignments
     participant A as Areas
 
-    W->>WA: Get assigned area_id
-    WA->>A: Validate area is active
-    A->>W: Return area GPS & radius
-    W->>S: Check no active shift (clock_out_time IS NULL)
-    S->>W: No active shift found
-    W->>S: INSERT new shift record
-    Note over S: clock_in_time = NOW()<br/>clock_out_time = NULL
+    W->>S: POST /shifts/clock-in (GPS, photo)
+    S->>WS: Find active schedule (effective_date, end_date)
+    alt Schedule found
+        WS->>A: Get area from schedule
+    else No schedule
+        S->>WA: Fallback: find non-deprecated assignment
+        WA->>A: Get area from assignment
+    end
+    A->>S: Return area (or null)
+    S->>S: Create shift with area_id (nullable)
+    S->>W: Return shift record
 ```
 
-### Example 2: Report Creation Flow
+### Aktivitas Report Flow (Phase 2C)
 
 ```mermaid
 sequenceDiagram
     participant W as Worker
-    participant S as Shifts Table
-    participant R as Reports Table
-    participant LL as Location Logs
+    participant R as Reports Service
+    participant S as Shifts
+    participant AT as Activity Types
 
-    W->>S: Get active shift (clock_out_time IS NULL)
-    S->>W: Return shift_id
-    W->>R: INSERT report with shift_id
-    Note over R: worker_id, shift_id<br/>GPS from device
-    W->>LL: Log GPS at report time
+    W->>R: POST /aktivitas (activity_type_id, photos, GPS)
+    R->>S: Get active shift
+    R->>AT: Validate activity_type for user role
+    AT->>R: Activity type validated
+    R->>R: Create report with shift_id, area_id, photo_urls
+    R->>W: Return report
 ```
 
-### Example 3: Supervisor Dashboard Query
+### Overtime Submission Flow
 
 ```mermaid
 sequenceDiagram
-    participant Sup as Supervisor
-    participant S as Shifts Table
-    participant LL as Location Logs
-    participant U as Users Table
-    participant A as Areas
+    participant W as Worker (satgas/linmas)
+    participant O as Overtime Service
+    participant AT as Activity Types
+    participant K as Korlap
 
-    Sup->>S: Get all active shifts
-    Note over S: WHERE clock_out_time IS NULL
-    S->>LL: Get latest location per worker
-    Note over LL: GROUP BY worker_id<br/>ORDER BY logged_at DESC
-    S->>U: JOIN for worker names
-    S->>A: JOIN for area details
-    Sup->>Sup: Display on map
+    W->>O: POST /overtime (date, times, aktivitas[])
+    O->>AT: Validate each aktivitas type for role
+    O->>O: Create overtime + nested aktivitas
+    O->>W: Return overtime (status: pending)
+    K->>O: PATCH /overtime/:id/approve
+    O->>O: Validate korlap area scope
+    O->>K: Return overtime (status: approved)
 ```
 
 ---
 
-## Relationship Integrity Rules
+## Table Count Summary
 
-### Referential Integrity
-
-1. **No Orphaned Records**
-   - All foreign keys must reference existing records
-   - ON DELETE RESTRICT prevents orphans
-
-2. **Consistent State**
-   - Worker assignments require active areas
-   - Reports require active shifts
-   - Location logs require active shifts
-
-3. **Data Validation**
-   - Application validates role before assignment
-   - GPS coordinates validated before clock-in
-   - Report types validated against enum
-
-### Transactional Integrity
-
-1. **Clock-In Transaction**
-   ```sql
-   BEGIN;
-     -- Validate no active shift
-     -- Insert shift record
-     -- Insert first location log
-   COMMIT;
-   ```
-
-2. **Batch Location Upload**
-   ```sql
-   BEGIN;
-     -- Insert multiple location logs
-     -- Update last_ping_time
-   COMMIT;
-   ```
-
-3. **Worker Reassignment**
-   ```sql
-   BEGIN;
-     -- Delete old assignment
-     -- Insert new assignment
-   COMMIT;
-   ```
+| Phase | Tables | New in Phase |
+|-------|--------|-------------|
+| Phase 1 (Core) | 7 | users, area_types, areas, worker_assignments, shifts, work_reports, location_logs |
+| Phase 2A (Rayons) | 5 | rayons, shift_definitions, worker_schedules, area_staff_requirements, special_day_overrides |
+| Phase 2B (Tasks) | 3 | tasks, notifications, notification_tokens |
+| Phase 2C (Feedback) | 3 | task_tags, overtimes, overtime_aktivitas |
+| **Total** | **18** | |
 
 ---
 
-## Future Enhancements (Phase 2)
-
-### Planned Relationships
-
-1. **Tasks Table**
-   - `users (supervisor) → tasks` (1:∞)
-   - `tasks → worker_assignments` (∞:∞) - Many-to-Many
-   - `tasks → reports` (1:∞) - Task completion
-
-2. **Assets Table**
-   - `areas → assets` (1:∞)
-   - `reports → assets` (∞:1) - Report about specific asset
-
-3. **Notifications Table**
-   - `users → notifications` (1:∞)
-   - `shifts → notifications` (1:∞) - Shift-related alerts
-
-4. **Audit Log**
-   - All tables → `audit_log` (polymorphic)
-
----
-
-**Last Updated:** 2026-01-16
-**ERD Version:** 1.0 (Phase 1 MVP Complete)
+**Last Updated:** 2026-02-11
+**ERD Version:** 3.0 (Phase 2C — Client Feedback)
 **Database:** PostgreSQL 14+

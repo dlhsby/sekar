@@ -336,7 +336,7 @@ export class TasksService {
 
     task.status = TaskStatus.COMPLETED;
     task.completion_photo_url = completeTaskDto.completion_photo_url;
-    task.completion_notes = completeTaskDto.completion_notes;
+    task.completion_notes = completeTaskDto.description;
     task.completed_at = new Date();
 
     await this.taskRepository.save(task);

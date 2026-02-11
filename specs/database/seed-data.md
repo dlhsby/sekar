@@ -1446,6 +1446,81 @@ npm run seed:all
 
 ---
 
-**Last Updated:** 2026-01-24
-**Seed Data Version:** 2.0 (Phase 2 Enhanced)
-**Total Records:** ~78 (Phase 1: 28 + Phase 2: 50)
+## Phase 2C Seed Data Changes
+
+### Role Renames (Phase 2C)
+
+Phase 2C overhauled the role system. The seed data now uses the new role names:
+
+| Old Role (Phase 1-2B) | New Role (Phase 2C) | Enum Value |
+|----------------------|--------------------|-----------|
+| `admin` | Admin System | `admin_system` |
+| `supervisor` | Korlap | `korlap` |
+| `worker` | Satgas | `satgas` |
+| `Linmas` | Linmas | `linmas` (unchanged) |
+| `KepalaRayon` | Kepala Rayon | `kepala_rayon` (unchanged) |
+| N/A | Admin Data | `admin_data` (new) |
+| N/A | Superadmin | `superadmin` (new) |
+
+### New Seed Users (Phase 2C)
+
+| Username | Role | Password | Notes |
+|----------|------|----------|-------|
+| superadmin | `superadmin` | admin123 | Full system access |
+| admin_system | `admin_system` | admin123 | System administration |
+| admin_data | `admin_data` | admin123 | Data management |
+| korlap1 | `korlap` | supervisor123 | Replaces supervisor1, has area_id |
+| satgas1 | `satgas` | worker123 | Replaces worker1 |
+| satgas2 | `satgas` | worker123 | Replaces worker2 |
+| satgas3 | `satgas` | worker123 | Replaces worker3 |
+| linmas1 | `linmas` | worker123 | Security officer |
+
+### Activity Types (Phase 2C — 20 types for 4 roles)
+
+| Role | Activity Types |
+|------|---------------|
+| `satgas` | Penyiraman, Penanaman, Pemangkasan, Pembersihan Taman, Pemupukan, Perawatan Tanaman, Perapian Taman |
+| `linmas` | Patroli Keamanan, Laporan Insiden, Pemantauan Pengunjung, Pengecekan Fasilitas, Pengamanan Area, Patroli Malam |
+| `korlap` | Inspeksi Lapangan, Koordinasi Tim, Evaluasi Kinerja |
+| `admin_data` | Input Data Tanaman, Pembaruan Data Area, Dokumentasi Aset |
+
+### Task Seeds (Phase 2C — 4 statuses only)
+
+| Task | Status | Priority | Assigned To |
+|------|--------|----------|-------------|
+| Penyiraman Taman Pagi | pending | high | unassigned |
+| Penanaman Bunga Musiman | assigned | medium | satgas1 |
+| Pemangkasan Pohon Tinggi | assigned | urgent | satgas2 |
+| Pembersihan Area Playground | in_progress | medium | satgas3 |
+| Penyiraman Taman Sore | completed | low | satgas1 |
+| Pemangkasan Semak Belukar | in_progress | low | satgas2 |
+| Pembersihan Jalur Jogging | pending | high | unassigned |
+| Perawatan Rumput Taman | assigned | low | satgas3 |
+
+### Running Phase 2C Seeds
+
+```bash
+cd be
+
+# Full seed (Phase 1 + Phase 2 + Tasks)
+npm run seed
+
+# Tasks only
+npm run seed:tasks
+```
+
+### Phase 2C Seed Data Summary
+
+| Category | Count | Notes |
+|----------|-------|-------|
+| Users (updated roles) | 8 | Phase 2C role names |
+| Activity Types | 20 | 4 role groups |
+| Tasks | 8 | 4 statuses (no accepted/declined) |
+| Task Tags | 0 | Created via API |
+| Overtimes | 0 | Created via API |
+
+---
+
+**Last Updated:** 2026-02-11
+**Seed Data Version:** 3.0 (Phase 2C — Client Feedback)
+**Total Records:** ~90 (Phase 1: 28 + Phase 2: 50 + Phase 2C: 12)

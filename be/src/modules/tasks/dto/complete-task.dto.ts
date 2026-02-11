@@ -16,10 +16,12 @@ export class CompleteTaskDto {
   completion_photo_url: string;
 
   @ApiProperty({
-    description: 'Notes about the task completion',
+    description: 'Completion description detailing what was done',
     example: 'Penyiraman selesai dilakukan, semua tanaman sudah disiram dengan baik',
+    maxLength: 2000,
   })
   @IsString()
   @IsNotEmpty()
-  completion_notes: string;
+  @MaxLength(2000)
+  description: string;
 }

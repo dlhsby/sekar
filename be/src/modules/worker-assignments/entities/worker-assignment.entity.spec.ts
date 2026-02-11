@@ -15,11 +15,15 @@ describe('WorkerAssignment Entity', () => {
     assignment.worker_id = 'worker-uuid-456';
     assignment.area_id = 'area-uuid-789';
     assignment.assigned_at = new Date();
+    assignment.deprecated = false;
+    assignment.migrated_to_schedule_id = null;
 
     expect(assignment.id).toBe('assignment-uuid-123');
     expect(assignment.worker_id).toBe('worker-uuid-456');
     expect(assignment.area_id).toBe('area-uuid-789');
     expect(assignment.assigned_at).toBeInstanceOf(Date);
+    expect(assignment.deprecated).toBe(false);
+    expect(assignment.migrated_to_schedule_id).toBeNull();
   });
 
   it('should support worker relation', () => {

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, ParseUUIDPipe, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { CityStatsDto } from './dto/city-stats.dto';
@@ -8,7 +8,8 @@ import { LiveWorkersResponseDto, LiveWorkersFilterDto } from './dto/live-workers
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../users/entities/user.entity';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User, UserRole } from '../users/entities/user.entity';
 import {
   MONITORING_CITY,
   MONITORING_RAYON,
@@ -63,7 +64,13 @@ export class MonitoringController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - KepalaRayon+ only' })
   @ApiResponse({ status: 404, description: 'Rayon not found' })
-  async getRayonStats(@Param('id', ParseUUIDPipe) id: string): Promise<RayonStatsDto> {
+  async getRayonStats(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ): Promise<RayonStatsDto> {
+    if (user.role === UserRole.KEPALA_RAYON && user.rayon_id !== id) {
+      throw new ForbiddenException('Anda hanya dapat melihat monitoring rayon Anda');
+    }
     return this.monitoringService.getRayonStats(id);
   }
 
@@ -82,7 +89,13 @@ export class MonitoringController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - KoordinatorLapangan+ only' })
   @ApiResponse({ status: 404, description: 'Area not found' })
-  async getAreaStats(@Param('id', ParseUUIDPipe) id: string): Promise<AreaStatsDto> {
+  async getAreaStats(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ): Promise<AreaStatsDto> {
+    if (user.role === UserRole.KORLAP && user.area_id !== id) {
+      throw new ForbiddenException('Anda hanya dapat melihat monitoring area Anda');
+    }
     return this.monitoringService.getAreaStats(id);
   }
 

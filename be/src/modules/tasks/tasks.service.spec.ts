@@ -354,7 +354,7 @@ describe('TasksService', () => {
   describe('complete', () => {
     const completeDto: CompleteTaskDto = {
       completion_photo_url: 'https://example.com/photo.jpg',
-      completion_notes: 'Done',
+      description: 'Done',
     };
 
     it('should complete an in-progress task', async () => {
@@ -666,7 +666,7 @@ describe('TasksService', () => {
       taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
 
       await expect(
-        service.complete('task-uuid', 'user-uuid', { completion_photo_url: 'https://example.com/photo.jpg', completion_notes: 'Done' } as CompleteTaskDto),
+        service.complete('task-uuid', 'user-uuid', { completion_photo_url: 'https://example.com/photo.jpg', description: 'Done' } as CompleteTaskDto),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -677,7 +677,7 @@ describe('TasksService', () => {
         assigned_to: 'user-uuid',
       };
       const completeDto: CompleteTaskDto = {
-        completion_notes: 'Done',
+        description: 'Done',
         completion_photo_url: 'https://example.com/photo.jpg',
       };
 

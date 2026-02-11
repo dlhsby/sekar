@@ -217,7 +217,7 @@ describe('TasksController', () => {
   describe('complete', () => {
     it('should complete a task with evidence', async () => {
       const completeDto: CompleteTaskDto = {
-        completion_notes: 'Task completed successfully',
+        description: 'Task completed successfully',
         completion_photo_url: 'https://example.com/photo.jpg',
       };
       const completedTask = {

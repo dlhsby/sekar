@@ -284,6 +284,26 @@ describe('OvertimeService', () => {
         service.reject(overtimeId, approverId, UserRole.SATGAS, rejectDto),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('should reject rejection if area mismatch', async () => {
+      mockOvertimeRepo.findOne.mockResolvedValue({
+        ...mockPendingOvertime,
+        area_id: 'area-uuid-1',
+        status: OvertimeStatus.PENDING,
+      });
+      mockUserRepo.findOne.mockResolvedValue({
+        id: approverId,
+        area_id: 'different-area-uuid',
+        role: UserRole.KORLAP,
+      });
+
+      await expect(
+        service.reject(overtimeId, approverId, UserRole.KORLAP, rejectDto),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.reject(overtimeId, approverId, UserRole.KORLAP, rejectDto),
+      ).rejects.toThrow('You can only reject overtime for your area');
+    });
   });
 
   describe('findMy', () => {

@@ -101,13 +101,13 @@ export class Report {
   @Column({ type: 'text', nullable: true })
   photo_url?: string;
 
-  @ApiProperty({ description: 'GPS latitude where report was created', example: -7.2905 })
-  @Column({ type: 'decimal', precision: 10, scale: 8 })
-  gps_lat: number;
+  @ApiProperty({ description: 'GPS latitude where report was created', example: -7.2905, nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+  gps_lat: number | null;
 
-  @ApiProperty({ description: 'GPS longitude where report was created', example: 112.7398 })
-  @Column({ type: 'decimal', precision: 11, scale: 8 })
-  gps_lng: number;
+  @ApiProperty({ description: 'GPS longitude where report was created', example: 112.7398, nullable: true })
+  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+  gps_lng: number | null;
 
   @ApiProperty({ description: 'Report creation timestamp' })
   @CreateDateColumn({ type: 'timestamptz' })

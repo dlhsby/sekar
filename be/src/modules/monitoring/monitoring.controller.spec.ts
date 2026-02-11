@@ -5,12 +5,48 @@ import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveWorkersResponseDto, LiveWorkersFilterDto } from './dto/live-workers.dto';
-import { UserRole } from '../users/entities/user.entity';
-import { NotFoundException } from '@nestjs/common';
+import { User, UserRole } from '../users/entities/user.entity';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('MonitoringController', () => {
   let controller: MonitoringController;
   let service: jest.Mocked<MonitoringService>;
+
+  const mockSuperadmin = {
+    id: 'superadmin-uuid',
+    username: 'superadmin',
+    password_hash: 'hashed',
+    full_name: 'Super Admin',
+    role: UserRole.SUPERADMIN,
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+  } as User;
+
+  const mockKepalaRayon = {
+    id: 'kepala-rayon-uuid',
+    username: 'kepala_rayon1',
+    password_hash: 'hashed',
+    full_name: 'Kepala Rayon 1',
+    role: UserRole.KEPALA_RAYON,
+    is_active: true,
+    rayon_id: 'rayon-1',
+    created_at: new Date(),
+    updated_at: new Date(),
+  } as User;
+
+  const mockKorlap = {
+    id: 'korlap-uuid',
+    username: 'korlap1',
+    password_hash: 'hashed',
+    full_name: 'Korlap 1',
+    role: UserRole.KORLAP,
+    is_active: true,
+    rayon_id: 'rayon-1',
+    area_id: 'area-1',
+    created_at: new Date(),
+    updated_at: new Date(),
+  } as User;
 
   const mockCityStats: CityStatsDto = {
     total_rayons: 7,
@@ -215,7 +251,7 @@ describe('MonitoringController', () => {
     it('should return rayon statistics', async () => {
       service.getRayonStats.mockResolvedValue(mockRayonStats);
 
-      const result = await controller.getRayonStats('rayon-1');
+      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
 
       expect(service.getRayonStats).toHaveBeenCalledWith('rayon-1');
       expect(result).toEqual(mockRayonStats);
@@ -226,13 +262,28 @@ describe('MonitoringController', () => {
         new NotFoundException('Rayon with ID rayon-1 not found'),
       );
 
-      await expect(controller.getRayonStats('rayon-1')).rejects.toThrow(NotFoundException);
+      await expect(controller.getRayonStats('rayon-1', mockSuperadmin)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should allow kepala_rayon to access own rayon', async () => {
+      service.getRayonStats.mockResolvedValue(mockRayonStats);
+
+      const result = await controller.getRayonStats('rayon-1', mockKepalaRayon);
+
+      expect(service.getRayonStats).toHaveBeenCalledWith('rayon-1');
+      expect(result).toEqual(mockRayonStats);
+    });
+
+    it('should deny kepala_rayon access to other rayon', async () => {
+      await expect(
+        controller.getRayonStats('rayon-other', mockKepalaRayon),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should return statistics with area summaries', async () => {
       service.getRayonStats.mockResolvedValue(mockRayonStats);
 
-      const result = await controller.getRayonStats('rayon-1');
+      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
 
       expect(result.areas).toBeDefined();
       expect(result.areas.length).toBeGreaterThan(0);
@@ -244,7 +295,7 @@ describe('MonitoringController', () => {
     it('should return statistics with shift summaries', async () => {
       service.getRayonStats.mockResolvedValue(mockRayonStats);
 
-      const result = await controller.getRayonStats('rayon-1');
+      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
 
       expect(result.shifts).toBeDefined();
       expect(result.shifts.length).toBeGreaterThan(0);
@@ -256,7 +307,7 @@ describe('MonitoringController', () => {
     it('should return statistics with alerts', async () => {
       service.getRayonStats.mockResolvedValue(mockRayonStats);
 
-      const result = await controller.getRayonStats('rayon-1');
+      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
 
       expect(result.alerts).toBeDefined();
       expect(result.alerts.length).toBeGreaterThan(0);
@@ -267,7 +318,7 @@ describe('MonitoringController', () => {
     it('should return area statistics', async () => {
       service.getAreaStats.mockResolvedValue(mockAreaStats);
 
-      const result = await controller.getAreaStats('area-1');
+      const result = await controller.getAreaStats('area-1', mockSuperadmin);
 
       expect(service.getAreaStats).toHaveBeenCalledWith('area-1');
       expect(result).toEqual(mockAreaStats);
@@ -278,13 +329,28 @@ describe('MonitoringController', () => {
         new NotFoundException('Area with ID area-1 not found'),
       );
 
-      await expect(controller.getAreaStats('area-1')).rejects.toThrow(NotFoundException);
+      await expect(controller.getAreaStats('area-1', mockSuperadmin)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should allow korlap to access own area', async () => {
+      service.getAreaStats.mockResolvedValue(mockAreaStats);
+
+      const result = await controller.getAreaStats('area-1', mockKorlap);
+
+      expect(service.getAreaStats).toHaveBeenCalledWith('area-1');
+      expect(result).toEqual(mockAreaStats);
+    });
+
+    it('should deny korlap access to other area', async () => {
+      await expect(
+        controller.getAreaStats('area-other', mockKorlap),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should return statistics with worker list', async () => {
       service.getAreaStats.mockResolvedValue(mockAreaStats);
 
-      const result = await controller.getAreaStats('area-1');
+      const result = await controller.getAreaStats('area-1', mockSuperadmin);
 
       expect(result.workers).toBeDefined();
       expect(result.workers.length).toBeGreaterThan(0);
@@ -296,7 +362,7 @@ describe('MonitoringController', () => {
     it('should return statistics with staff requirements', async () => {
       service.getAreaStats.mockResolvedValue(mockAreaStats);
 
-      const result = await controller.getAreaStats('area-1');
+      const result = await controller.getAreaStats('area-1', mockSuperadmin);
 
       expect(result.staff_requirements).toBeDefined();
       expect(result.staff_requirements.length).toBeGreaterThan(0);
@@ -309,7 +375,7 @@ describe('MonitoringController', () => {
     it('should return statistics with location data', async () => {
       service.getAreaStats.mockResolvedValue(mockAreaStats);
 
-      const result = await controller.getAreaStats('area-1');
+      const result = await controller.getAreaStats('area-1', mockSuperadmin);
 
       expect(result.latitude).toBeDefined();
       expect(result.longitude).toBeDefined();

@@ -7,7 +7,8 @@ config();
 /**
  * Task Seeder Script
  *
- * Seeds dummy tasks for testing worker task list view
+ * Seeds dummy tasks for testing worker task list view.
+ * Phase 2C: Uses 4 statuses (pending, assigned, in_progress, completed).
  *
  * Usage: npm run seed:tasks
  */
@@ -41,46 +42,15 @@ async function seedTasks() {
     }
     const [area1, area2, area3] = areas.map((a: any) => a.id);
 
-    // Get activity type IDs (optional - Phase 2 feature)
-    const activityTypes = await queryRunner.query(
-      `SELECT id, code FROM activity_types WHERE is_active = TRUE LIMIT 5`,
-    );
-    let wateringType = null;
-    let plantingType = null;
-    let pruningType = null;
-    let cleaningType = null;
-
-    if (activityTypes.length > 0) {
-      wateringType =
-        activityTypes.find((at: any) => at.code === 'WATERING')?.id || activityTypes[0].id;
-      plantingType =
-        activityTypes.find((at: any) => at.code === 'PLANTING')?.id ||
-        activityTypes[1]?.id ||
-        activityTypes[0].id;
-      pruningType =
-        activityTypes.find((at: any) => at.code === 'PRUNING')?.id ||
-        activityTypes[2]?.id ||
-        activityTypes[0].id;
-      cleaningType =
-        activityTypes.find((at: any) => at.code === 'CLEANING')?.id ||
-        activityTypes[3]?.id ||
-        activityTypes[0].id;
-      console.log('  ✓ Found activity types');
-    } else {
-      console.log(
-        '  ⚠️  No activity types found (Phase 2 feature) - tasks will be created without activity types',
-      );
-    }
-
-    // Get user IDs (creator - fallback to supervisor or admin if no koordinator)
+    // Get user IDs (creator - korlap or fallback)
     let creator = await queryRunner.query(
-      `SELECT id FROM users WHERE role = 'koordinator_lapangan' LIMIT 1`,
+      `SELECT id FROM users WHERE role = 'korlap' LIMIT 1`,
     );
     if (creator.length === 0) {
-      creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'supervisor' LIMIT 1`);
+      creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_system' LIMIT 1`);
     }
     if (creator.length === 0) {
-      creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'admin' LIMIT 1`);
+      creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'superadmin' LIMIT 1`);
     }
     if (creator.length === 0) {
       throw new Error('No users found to create tasks. Please run seeder first.');
@@ -88,21 +58,22 @@ async function seedTasks() {
     const creatorId = creator[0].id;
     console.log('  ✓ Found task creator');
 
-    const workers = await queryRunner.query(`SELECT id FROM users WHERE role = 'worker' LIMIT 3`);
+    const workers = await queryRunner.query(`SELECT id FROM users WHERE role = 'satgas' LIMIT 3`);
     if (workers.length === 0) {
-      throw new Error('No workers found. Please run seeder first.');
+      throw new Error('No satgas workers found. Please run seeder first.');
     }
     const [worker1Id, worker2Id, worker3Id] = workers.map((w: any) => w.id);
 
     console.log('  ✓ Found required references');
 
-    // Clear existing tasks
+    // Clear existing tasks (cascade to task_tags)
     console.log('🗑️  Clearing existing tasks...');
+    await queryRunner.query(`DELETE FROM task_tags`);
     await queryRunner.query(`DELETE FROM tasks`);
-    console.log('  ✓ Cleared tasks table');
+    console.log('  ✓ Cleared tasks and task_tags tables');
 
     // ==========================================
-    // Seed Tasks with Various Statuses
+    // Seed Tasks with 4 Valid Statuses
     // ==========================================
     console.log('🎯 Seeding Tasks...');
 
@@ -119,7 +90,7 @@ async function seedTasks() {
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
+        area_id, assigned_to, created_by,
         created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888801',
@@ -129,14 +100,13 @@ async function seedTasks() {
         'high',
         $1,
         $2,
-        $3,
         NULL,
-        $4,
+        $3,
         NOW(),
         NOW()
       )
     `,
-      [tomorrow.toISOString(), area1, wateringType, creatorId],
+      [tomorrow.toISOString(), area1, creatorId],
     );
 
     // Task 2: ASSIGNED - Medium Priority Planting
@@ -144,7 +114,7 @@ async function seedTasks() {
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
+        area_id, assigned_to, created_by,
         assigned_at, created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888802',
@@ -156,40 +126,37 @@ async function seedTasks() {
         $2,
         $3,
         $4,
-        $5,
         NOW() - INTERVAL '1 hour',
         NOW(),
         NOW()
       )
     `,
-      [nextWeek.toISOString(), area2, plantingType, worker1Id, creatorId],
+      [nextWeek.toISOString(), area2, worker1Id, creatorId],
     );
 
-    // Task 3: ACCEPTED - Urgent Pruning
+    // Task 3: ASSIGNED - Urgent Pruning (previously accepted)
     await queryRunner.query(
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
-        assigned_at, accepted_at, created_at, updated_at
+        area_id, assigned_to, created_by,
+        assigned_at, created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888803',
         'Pemangkasan Pohon Tinggi',
         'Memangkas dahan pohon yang menghalangi jalur pejalan kaki.',
-        'accepted',
+        'assigned',
         'urgent',
         $1,
         $2,
         $3,
         $4,
-        $5,
         NOW() - INTERVAL '2 hours',
-        NOW() - INTERVAL '1 hour',
         NOW(),
         NOW()
       )
     `,
-      [tomorrow.toISOString(), area3, pruningType, worker2Id, creatorId],
+      [tomorrow.toISOString(), area3, worker2Id, creatorId],
     );
 
     // Task 4: IN_PROGRESS - Cleaning
@@ -197,8 +164,8 @@ async function seedTasks() {
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
-        assigned_at, accepted_at, started_at, created_at, updated_at
+        area_id, assigned_to, created_by,
+        assigned_at, started_at, created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888804',
         'Pembersihan Area Playground',
@@ -209,15 +176,13 @@ async function seedTasks() {
         $2,
         $3,
         $4,
-        $5,
         NOW() - INTERVAL '3 hours',
-        NOW() - INTERVAL '2 hours',
         NOW() - INTERVAL '30 minutes',
         NOW(),
         NOW()
       )
     `,
-      [now.toISOString(), area1, cleaningType, worker3Id, creatorId],
+      [now.toISOString(), area1, worker3Id, creatorId],
     );
 
     // Task 5: COMPLETED - Watering Task
@@ -225,9 +190,9 @@ async function seedTasks() {
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
-        assigned_at, accepted_at, started_at, completed_at,
-        completion_notes, completion_gps_lat, completion_gps_lng,
+        area_id, assigned_to, created_by,
+        assigned_at, started_at, completed_at,
+        completion_notes, completion_photo_url,
         created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888805',
@@ -239,48 +204,42 @@ async function seedTasks() {
         $2,
         $3,
         $4,
-        $5,
         NOW() - INTERVAL '5 hours',
-        NOW() - INTERVAL '4 hours',
         NOW() - INTERVAL '3 hours',
         NOW() - INTERVAL '2 hours',
         'Penyiraman selesai. Semua tanaman sudah disiram dengan baik.',
-        -7.2905,
-        112.7398,
+        'https://sekar-media-dev.s3.amazonaws.com/tasks/completion-photo-sample.jpg',
         NOW(),
         NOW()
       )
     `,
-      [yesterday.toISOString(), area2, wateringType, worker1Id, creatorId],
+      [yesterday.toISOString(), area2, worker1Id, creatorId],
     );
 
-    // Task 6: DECLINED - Pruning Task
+    // Task 6: IN_PROGRESS - Another task (previously declined, now in progress)
     await queryRunner.query(
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
-        assigned_at, declined_at, decline_reason,
-        created_at, updated_at
+        area_id, assigned_to, created_by,
+        assigned_at, started_at, created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888806',
         'Pemangkasan Semak Belukar',
         'Memangkas semak belukar di area belakang taman',
-        'declined',
+        'in_progress',
         'low',
         $1,
         $2,
         $3,
         $4,
-        $5,
         NOW() - INTERVAL '4 hours',
-        NOW() - INTERVAL '3 hours',
-        'Peralatan pemangkasan tidak tersedia',
+        NOW() - INTERVAL '1 hour',
         NOW(),
         NOW()
       )
     `,
-      [nextWeek.toISOString(), area3, pruningType, worker2Id, creatorId],
+      [nextWeek.toISOString(), area3, worker2Id, creatorId],
     );
 
     // Task 7: PENDING - Another High Priority
@@ -288,7 +247,7 @@ async function seedTasks() {
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
+        area_id, assigned_to, created_by,
         created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888807',
@@ -298,14 +257,13 @@ async function seedTasks() {
         'high',
         $1,
         $2,
-        $3,
         NULL,
-        $4,
+        $3,
         NOW(),
         NOW()
       )
     `,
-      [tomorrow.toISOString(), area1, cleaningType, creatorId],
+      [tomorrow.toISOString(), area1, creatorId],
     );
 
     // Task 8: ASSIGNED - Low Priority
@@ -313,7 +271,7 @@ async function seedTasks() {
       `
       INSERT INTO tasks (
         id, title, description, status, priority, deadline,
-        area_id, activity_type_id, assigned_to, created_by,
+        area_id, assigned_to, created_by,
         assigned_at, created_at, updated_at
       ) VALUES (
         '88888888-8888-8888-8888-888888888808',
@@ -325,38 +283,33 @@ async function seedTasks() {
         $2,
         $3,
         $4,
-        $5,
         NOW() - INTERVAL '30 minutes',
         NOW(),
         NOW()
       )
     `,
-      [nextWeek.toISOString(), area2, wateringType, worker3Id, creatorId],
+      [nextWeek.toISOString(), area2, worker3Id, creatorId],
     );
 
-    console.log('  ✓ Created 8 tasks with various statuses:');
+    console.log('  ✓ Created 8 tasks with 4 statuses:');
     console.log('    - 2 PENDING tasks');
-    console.log('    - 2 ASSIGNED tasks');
-    console.log('    - 1 ACCEPTED task');
-    console.log('    - 1 IN_PROGRESS task');
+    console.log('    - 3 ASSIGNED tasks');
+    console.log('    - 2 IN_PROGRESS tasks');
     console.log('    - 1 COMPLETED task');
-    console.log('    - 1 DECLINED task');
 
     console.log('');
     console.log('✅ Task seeding completed successfully!');
     console.log('');
     console.log('📝 Test Users:');
-    console.log('   - worker1 / worker123  (has ASSIGNED, COMPLETED tasks)');
-    console.log('   - worker2 / worker123  (has ACCEPTED, DECLINED tasks)');
-    console.log('   - worker3 / worker123  (has IN_PROGRESS, ASSIGNED tasks)');
+    console.log('   - satgas1  (has ASSIGNED, COMPLETED tasks)');
+    console.log('   - satgas2  (has ASSIGNED, IN_PROGRESS tasks)');
+    console.log('   - satgas3  (has IN_PROGRESS, ASSIGNED tasks)');
     console.log('');
-    console.log('🔍 Task Statuses:');
+    console.log('🔍 Task Statuses (Phase 2C):');
     console.log('   - PENDING: Tasks not yet assigned');
-    console.log('   - ASSIGNED: Tasks assigned but not accepted');
-    console.log('   - ACCEPTED: Tasks accepted by worker');
+    console.log('   - ASSIGNED: Tasks assigned to a worker');
     console.log('   - IN_PROGRESS: Tasks currently being worked on');
-    console.log('   - COMPLETED: Finished tasks');
-    console.log('   - DECLINED: Tasks rejected by worker');
+    console.log('   - COMPLETED: Finished tasks with photo evidence');
   } catch (error) {
     console.error('❌ Error seeding tasks:', error);
     throw error;

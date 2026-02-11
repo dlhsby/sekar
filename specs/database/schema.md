@@ -4,7 +4,7 @@ Complete PostgreSQL database schema for SEKAR system with production-ready optim
 
 **Document Owner:** Database Engineer
 **Last Updated:** 2026-02-10
-**Status:** Phase 2B Complete + Deployed | Phase 2C Planned
+**Status:** Phase 2C Implemented
 
 ---
 
@@ -2004,52 +2004,86 @@ Before deploying to production:
 
 ---
 
-## Phase 2C: Schema Changes (Planned)
+## Phase 2C: Schema Changes (Implemented)
 
 > **Full specification:** See [`specs/phases/phase-2-c-client-feedback/database.md`](../phases/phase-2-c-client-feedback/database.md)
 
-### Role Enum Update
+### Role Enum Update (Implemented)
 ```sql
--- users.role CHECK constraint changes:
--- Remove: 'worker', 'supervisor', 'admin', 'koordinator_lapangan'
--- Add: 'satgas', 'korlap', 'admin_data', 'admin_system', 'superadmin'
--- Keep: 'linmas', 'kepala_rayon', 'top_management'
+-- users.role CHECK constraint (8 roles):
+-- 'satgas', 'linmas', 'korlap', 'admin_data',
+-- 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'
 ```
 
-### New Tables
+### New Column: users.area_id (Implemented)
+```sql
+ALTER TABLE users ADD COLUMN area_id UUID REFERENCES areas(id) ON DELETE SET NULL;
+-- Used by korlap role for area scoping
+CREATE INDEX idx_users_area ON users(area_id) WHERE deleted_at IS NULL;
+```
+
+### New Tables (Implemented)
 
 **task_tags** - Many-to-many tagging for tasks (CC-like)
 ```sql
-task_tags (id UUID PK, task_id FK→tasks, user_id FK→users, created_at, UNIQUE(task_id, user_id))
+CREATE TABLE task_tags (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_task_tags_task_user UNIQUE (task_id, user_id)
+);
 ```
 
 **overtimes** - Overtime requests with approval workflow
 ```sql
-overtimes (id UUID PK, user_id FK→users, area_id FK→areas, date DATE, start_time TIME,
-           end_time TIME, status VARCHAR(20), approved_by FK→users, approved_at, rejection_reason,
-           notes, created_at, updated_at)
+CREATE TABLE overtimes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  approved_by UUID REFERENCES users(id),
+  approved_at TIMESTAMPTZ,
+  rejection_reason TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT chk_overtime_status CHECK (status IN ('pending', 'approved', 'rejected'))
+);
 ```
 
 **overtime_aktivitas** - Activities performed during overtime
 ```sql
-overtime_aktivitas (id UUID PK, overtime_id FK→overtimes CASCADE, activity_type_id FK→activity_types,
-                    description TEXT, photo_urls TEXT[], gps_lat, gps_lng, created_at)
+CREATE TABLE overtime_aktivitas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  overtime_id UUID NOT NULL REFERENCES overtimes(id) ON DELETE CASCADE,
+  activity_type_id UUID NOT NULL REFERENCES activity_types(id),
+  description TEXT NOT NULL,
+  photo_urls TEXT[] NOT NULL DEFAULT '{}',
+  gps_lat DECIMAL(10, 7),
+  gps_lng DECIMAL(10, 7),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
-### Modified Tables
+### Modified Tables (Implemented)
 
 | Table | Changes |
 |-------|---------|
-| `users` | Role CHECK constraint updated (8 roles) |
-| `work_reports` | Add photo_urls TEXT[], shift_id FK, remove review columns |
-| `tasks` | Add rayon_id FK→rayons, remove activity_type_id, remove GPS completion fields |
-| `activity_types` | Role constraint updated, new seed data (20 types for 4 roles) |
-| `worker_assignments` | Add deprecated BOOLEAN, migrated_to_schedule_id FK |
+| `users` | Added area_id UUID FK→areas (nullable), role CHECK updated to 8 roles |
+| `shifts` | area_id now nullable (auto-detected from WorkerSchedule/WorkerAssignment) |
+| `work_reports` | Added photo_urls TEXT[], gps_lat/gps_lng now nullable, report_type now nullable |
+| `tasks` | Added rayon_id FK→rayons (nullable), area_id now nullable, status simplified to 4 values, removed activity_type_id/GPS completion fields/decline columns |
+| `activity_types` | applicable_roles updated for Phase 2C roles (satgas, linmas, korlap, admin_data) |
+| `worker_assignments` | Added deprecated BOOLEAN (default false), migrated_to_schedule_id UUID |
 
 ---
 
 **Related Documents:**
-- [ERD](./erd.md) - Entity relationship diagrams
+- [ERD](./erd.md) - Entity relationship diagrams (Phase 2C)
 - [Migrations](./migrations.md) - Migration strategy
 - [Seed Data](./seed-data.md) - Test data specifications
 - [Phase 2C Database](../phases/phase-2-c-client-feedback/database.md) - Phase 2C migration details

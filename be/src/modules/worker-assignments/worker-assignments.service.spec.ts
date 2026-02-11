@@ -56,6 +56,8 @@ describe('WorkerAssignmentsService', () => {
     area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
     area: mockArea as any,
     assigned_at: new Date(),
+    deprecated: false,
+    migrated_to_schedule_id: null,
   };
 
   const mockRepository = {

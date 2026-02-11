@@ -26,6 +26,8 @@ describe('WorkerAssignmentsController', () => {
       name: 'Taman Bungkul',
     } as any,
     assigned_at: new Date(),
+    deprecated: false,
+    migrated_to_schedule_id: null,
   };
 
   const mockWorkerAssignmentsService = {

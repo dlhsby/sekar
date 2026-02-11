@@ -72,4 +72,18 @@ export class WorkerAssignment {
   })
   @CreateDateColumn()
   assigned_at: Date;
+
+  @ApiProperty({
+    description: 'Whether this assignment has been migrated to WorkerSchedule',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  deprecated: boolean;
+
+  @ApiProperty({
+    description: 'UUID of the WorkerSchedule this was migrated to',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  migrated_to_schedule_id: string | null;
 }

@@ -170,6 +170,18 @@ export class OvertimeService {
       throw new BadRequestException('Only pending overtime can be rejected');
     }
 
+    // Scope check: korlap can only reject for their area
+    const approver = await this.userRepo.findOne({ where: { id: approverId } });
+    if (
+      approver?.area_id &&
+      overtime.area_id &&
+      approver.area_id !== overtime.area_id
+    ) {
+      throw new ForbiddenException(
+        'You can only reject overtime for your area',
+      );
+    }
+
     overtime.status = OvertimeStatus.REJECTED;
     overtime.approved_by = approverId;
     overtime.approved_at = new Date();

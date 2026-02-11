@@ -1,6 +1,6 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, LessThanOrEqual } from 'typeorm';
+import { Repository, IsNull, LessThanOrEqual, Or, MoreThanOrEqual } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { Shift } from './entities/shift.entity';
 import { ClockInDto } from './dto/clock-in.dto';
@@ -57,6 +57,7 @@ export class ShiftsService {
       where: {
         user_id: userId,
         effective_date: LessThanOrEqual(today),
+        end_date: Or(IsNull(), MoreThanOrEqual(today)),
       },
       relations: ['area'],
       order: { effective_date: 'DESC' },
@@ -65,7 +66,7 @@ export class ShiftsService {
 
     // 2. Fallback to WorkerAssignment (deprecated)
     const assignment = await this.workerAssignmentRepo.findOne({
-      where: { worker_id: userId },
+      where: { worker_id: userId, deprecated: false },
       relations: ['area'],
     });
     if (assignment?.area) return assignment.area;
