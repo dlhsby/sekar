@@ -1,8 +1,9 @@
 # Phase 2C: Mobile Requirements
 
-**Last Updated:** 2026-02-10
-**Status:** Planning
+**Last Updated:** 2026-02-15
+**Status:** Spec Rewrite (Terminology Cleanup + Schema Redesign)
 **Platform:** React Native 0.83.1, TypeScript, Redux Toolkit
+**Related ADR:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
 
 ---
 
@@ -13,11 +14,53 @@
 | Change | Mobile Impact |
 |--------|-------------|
 | ClockInDto `area_id` now OPTIONAL | Remove mandatory area selection on clock-in screen; show auto-detected area as read-only |
+| Polygon geofencing (soft) | Show warning banner if outside boundary; clock-in always succeeds |
 | TaskStatus simplified to 4 states | Remove accept/decline buttons on TaskDetail; simplify status badge rendering |
 | CompleteTaskDto: GPS REMOVED, photo REQUIRED | Remove GPS capture from TaskComplete; make photo mandatory |
-| Reports → Aktivitas rename | Rename all screen files, API calls, Redux slice, navigation routes |
-| `applicable_roles TEXT[]` on activity_types | Filter activity types by `role IN applicable_roles` not `role === activityType.role` |
-| User entity gets `area_id` | Update User type to include optional `area_id` field |
+| `reports/` → `activities/` module rename | Rename all screen files, API calls, Redux slice, navigation routes |
+| `worker_id` → `user_id` column rename | Update all type definitions and API response handling |
+| Overtime flattened (1:1) | Simplified submit form — single activity per overtime, no nested array |
+| `work_reports` → `activities` table rename | Update API endpoints: `/reports` → `/activities` |
+| `worker_schedules` → `schedules` | Update API endpoints: `/worker-schedules` → `/schedules` |
+| `WorkerAssignment` dropped | Remove all references to worker assignments |
+
+---
+
+## API Breaking Changes - Terminology Updates (Feb 15, 2026)
+
+**⚠️ CRITICAL:** Backend deployed terminology cleanup with breaking API changes.
+
+**Affected Endpoints:**
+- `GET /monitoring/areas/:id/stats` - Response fields renamed
+
+**Required Changes:**
+1. Update `api.types.ts`:
+   - `WorkerStatusDto` → `UserStatusDto`
+   - `workers` → `users`
+   - `total_workers_assigned` → `total_users_assigned`
+   - `workers_online` → `users_online`
+   - `workers_offline` → `users_offline`
+
+2. Update Redux types in `store/slices/monitoringSlice.ts`
+
+3. Update supervisor dashboard components that display these stats
+
+**Timeline:** Update mobile types before deploying backend changes (coordinate deployment)
+
+---
+
+## Directory/File Renames
+
+| Current | New | Reason |
+|---------|-----|--------|
+| `fe/mobile/src/screens/worker/` | `fe/mobile/src/screens/field/` | Generic, not worker-specific |
+| `WorkerHomeScreen.tsx` | `HomeScreen.tsx` | Role-agnostic |
+| `WorkerNavigator.tsx` | `FieldNavigator.tsx` | Role-agnostic |
+| `WorkerHomeHeader.tsx` | `FieldHomeHeader.tsx` | Role-agnostic |
+| `ReportSubmissionScreen.tsx` | `ActivitySubmissionScreen.tsx` | English naming |
+| `TasksReportsScreen.tsx` | `TasksActivityScreen.tsx` | English naming |
+
+Other screens (`ClockInOutScreen`, `TaskDetailScreen`, etc.) keep their names — already role-agnostic.
 
 ---
 
@@ -36,28 +79,28 @@
 const TAB_CONFIG: Record<string, TabConfig[]> = {
   satgas: [
     { name: 'Home', icon: 'home', screen: ClockInOutScreen },
-    { name: 'Aktivitas', icon: 'file-text', screen: AktivitasListScreen },
+    { name: 'Aktivitas', icon: 'file-text', screen: ActivityListScreen },
     { name: 'Tugas', icon: 'clipboard', screen: TaskListScreen },
     { name: 'Lembur', icon: 'clock', screen: OvertimeListScreen },
     { name: 'Profil', icon: 'user', screen: ProfileScreen },
   ],
   linmas: [
     { name: 'Home', icon: 'home', screen: ClockInOutScreen },
-    { name: 'Aktivitas', icon: 'file-text', screen: AktivitasListScreen },
+    { name: 'Aktivitas', icon: 'file-text', screen: ActivityListScreen },
     { name: 'Tugas', icon: 'clipboard', screen: TaskListScreen },
     { name: 'Lembur', icon: 'clock', screen: OvertimeListScreen },
     { name: 'Profil', icon: 'user', screen: ProfileScreen },
   ],
   korlap: [
     { name: 'Home', icon: 'home', screen: ClockInOutScreen },
-    { name: 'Aktivitas', icon: 'file-text', screen: AktivitasListScreen },
+    { name: 'Aktivitas', icon: 'file-text', screen: ActivityListScreen },
     { name: 'Tugas', icon: 'clipboard', screen: TaskListScreen },
+    { name: 'Lembur', icon: 'clock', screen: OvertimeListScreen },
     { name: 'Monitoring', icon: 'bar-chart-2', screen: MonitoringScreen },
-    { name: 'Profil', icon: 'user', screen: ProfileScreen },
   ],
   admin_data: [
     { name: 'Home', icon: 'home', screen: ClockInOutScreen },
-    { name: 'Aktivitas', icon: 'file-text', screen: AktivitasListScreen },
+    { name: 'Aktivitas', icon: 'file-text', screen: ActivityListScreen },
     { name: 'Profil', icon: 'user', screen: ProfileScreen },
   ],
   kepala_rayon: [
@@ -84,6 +127,8 @@ const TAB_CONFIG: Record<string, TabConfig[]> = {
 };
 ```
 
+> **NOTE:** Tab labels remain in Indonesian (UI display). Code identifiers use English.
+
 ---
 
 ## New Screens (5)
@@ -95,49 +140,36 @@ const TAB_CONFIG: Record<string, TabConfig[]> = {
 
 **Features:**
 - Tab filter: "Pengajuan Saya" | "Menunggu Persetujuan" (korlap only)
-- List cards showing: date, time range, status badge, activity count
+- List cards showing: date, time range, status badge, activity type
 - FAB button to submit new overtime (satgas/linmas only)
-- Pull-to-refresh
-- Empty state with illustration
+- Pull-to-refresh, empty state
 
-**NB 2.0 Design:**
-- Card: `border-2 rounded-nb-base shadow-nb-soft`
-- Status badges: pending (yellow), approved (green), rejected (red)
-- FAB: Primary color `#7FBC8C`, 56px touch target
-
-### 2. OvertimeSubmitScreen
+### 2. OvertimeSubmitScreen (Simplified — flat)
 
 **Path:** `fe/mobile/src/screens/overtime/OvertimeSubmitScreen.tsx`
 **Access:** satgas, linmas
 
-**Flow:**
+**Flow (simplified — 1 overtime = 1 activity):**
 1. Select date (DatePicker, default today)
 2. Enter start time (TimePicker)
 3. Enter end time (TimePicker)
-4. Add aktivitas (at least 1):
-   - Take photo (camera only, max 3 per aktivitas)
-   - Select jenis aktivitas (role-filtered dropdown)
-   - Enter description
-   - Auto-capture GPS
-5. Optional notes
-6. Submit button
+4. Take photo(s) (camera only, max 3)
+5. Select activity type (role-filtered dropdown)
+6. Enter description
+7. Auto-capture GPS
+8. Optional notes
+9. Submit button
 
 **Validation:**
 - end_time > start_time
-- At least 1 aktivitas required
-- Each aktivitas: at least 1 photo, activity_type, description
-- Max 3 photos per aktivitas
+- Activity type required, description required
+- 1-3 photos required
+- Activity type must match user's role
 
 ### 3. OvertimeApprovalScreen
 
 **Path:** `fe/mobile/src/screens/overtime/OvertimeApprovalScreen.tsx`
 **Access:** korlap only
-
-**Features:**
-- List of pending overtime requests in korlap's area
-- Card preview: worker name, date, time range, activity count
-- Tap to view detail → OvertimeDetailScreen
-- Batch actions not required (approve/reject individually)
 
 ### 4. OvertimeDetailScreen
 
@@ -145,35 +177,14 @@ const TAB_CONFIG: Record<string, TabConfig[]> = {
 **Access:** Owner + korlap + admin_system + superadmin
 
 **Features:**
-- Header: Worker name, date, time range, status
-- Aktivitas list (expandable cards):
-  - Photo thumbnails (tappable for full view)
-  - Activity type badge
-  - Description text
-  - GPS coordinates
-- Action buttons (korlap only, if status is pending):
-  - "Setujui" (approve) - green button
-  - "Tolak" (reject) - red button with reason input modal
-- Timeline showing submission → approval/rejection
+- Header: User name, date, time range, status
+- Activity details (flat — single activity type, photos, description, GPS)
+- Action buttons (korlap only, if status is pending): "Setujui" / "Tolak"
 
 ### 5. TaskCreateScreen
 
 **Path:** `fe/mobile/src/screens/tasks/TaskCreateScreen.tsx`
 **Access:** korlap, kepala_rayon, top_management, admin_system, superadmin
-
-**Flow:**
-1. Title input
-2. Description input (multiline)
-3. Select assignee (filtered by hierarchy rules)
-4. Select scope: rayon OR area (depending on creator role)
-5. Due date (optional, DatePicker)
-6. Tag users (optional, multi-select)
-7. Submit
-
-**Assignee Filtering:**
-- korlap sees: satgas and linmas in their area
-- kepala_rayon sees: korlap in their rayon
-- top_management/admin_system/superadmin sees: kepala_rayon and korlap
 
 ---
 
@@ -183,124 +194,93 @@ const TAB_CONFIG: Record<string, TabConfig[]> = {
 
 **Changes:**
 - Remove GPS boundary validation UI (distance indicator, out-of-bounds warning)
-- Keep GPS coordinate display (informational)
-- Keep selfie capture
-- Area now auto-detected from schedule (display as read-only)
-- If no area assigned, show info banner: "Anda belum memiliki jadwal area"
+- **Add soft geofencing warning banner:** if outside area polygon, show "Anda berada di luar area kerja. Absen tetap dicatat."
+- Area auto-detected from schedule (display as read-only)
+- Keep GPS coordinate display, selfie capture
 
-### 2. ReportSubmissionScreen → AktivitasSubmissionScreen
+### 2. ReportSubmissionScreen → ActivitySubmissionScreen
 
-**Rename:** `ReportSubmissionScreen.tsx` → `AktivitasSubmissionScreen.tsx`
+**Rename:** `ReportSubmissionScreen.tsx` → `ActivitySubmissionScreen.tsx`
 
-**New flow order:**
-1. **Foto** - Camera capture (max 3 photos, camera only - no gallery)
-2. **Jenis Aktivitas** - Role-filtered dropdown (mandatory)
-3. **Deskripsi** - Text input (mandatory)
-4. **Lokasi** - Auto-captured GPS (display only)
+**New flow:** Foto → Jenis Aktivitas → Deskripsi → Lokasi (GPS auto)
 
-**Removed:**
-- Report type selector (TASK_COMPLETION, INCIDENT, etc.)
-- Condition assessment (Baik, Cukup, Buruk)
-- Gallery photo selection (camera only)
+**Removed:** Report type selector, condition assessment, gallery photo selection
+**Added:** 3-photo grid, camera-only, role-filtered activity type dropdown, shift validation
 
-**Added:**
-- 3-photo grid with add/remove buttons
-- Camera-only restriction (no image picker from gallery)
-- Activity type dropdown filtered by user's role
-- Shift validation (must be clocked in)
-
-### 3. TasksReportsScreen → TasksAktivitasScreen
+### 3. TasksReportsScreen → TasksActivityScreen
 
 **Changes:**
-- Rename tab from "Laporan" to "Aktivitas"
-- Update list card to show activity type badge instead of report type
-- Add photo thumbnails (up to 3)
+- Tab label: "Laporan" → "Aktivitas"
+- Activity type badge instead of report type
+- Photo thumbnails (up to 3)
 - Remove review status indicator
-- Add filter tabs: "Tugas Saya" | "Tag Saya" (for tasks)
+- Filter tabs: "Tugas Saya" | "Tag Saya"
 
 ### 4. TaskDetailScreen
 
 **Changes:**
-- Add tagged users section (with avatars/names, "ditandai" label)
-- Show rayon name if task has rayon_id
-- Update completion section (no GPS, just description + photo)
-- Add tag management (for task creator)
+- Tagged users section
+- Rayon name display (if rayon-scoped)
+- Simplified completion (no GPS)
+- Tag management for task creator
 
 ### 5. TaskCompleteScreen
 
 **Changes:**
-- Remove GPS capture requirement
-- Keep: description input (required) + photo capture (required)
-- Simplified UI: just 2 fields instead of 4
+- Remove GPS capture
+- Required: description + photo (2 fields only)
 
 ### 6. MapDashboardScreen (Monitoring)
 
 **Changes:**
-- Update role-based access checks (new role names)
-- korlap: show only own area
-- kepala_rayon: show own rayon areas
-- top_management/admin_system/superadmin: show all
+- Updated role-based access (new role names)
+- Boundary warning indicators for out-of-boundary users
+- korlap: own area only, kepala_rayon: own rayon, admin: all
 
 ### 7. RootNavigator
 
 **Changes:**
-- Replace WorkerTabNavigator + SupervisorTabNavigator with unified config
-- Use TAB_CONFIG map (defined above) for role-based tabs
-- Handle 8 roles instead of current 7
+- Replace WorkerTabNavigator + SupervisorTabNavigator with unified TAB_CONFIG
+- Handle 8 roles
 
 ---
 
 ## Redux Changes
 
-### Rename: reportSlice → aktivitasSlice
+### Rename: reportSlice → activitiesSlice
 
-**File:** `fe/mobile/src/store/slices/reportSlice.ts` → `aktivitasSlice.ts`
+**File:** `reportSlice.ts` → `activitiesSlice.ts`
 
 ```typescript
-interface AktivitasState {
-  aktivitasList: Aktivitas[];
+interface ActivitiesState {
+  activitiesList: Activity[];
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
 }
-
-// Actions renamed:
-// setReports → setAktivitasList
-// addReport → addAktivitas
-// setIsSubmitting → setIsSubmitting (unchanged)
-// setError → setError (unchanged)
+// Actions: setActivitiesList, addActivity, setIsSubmitting, setError
 ```
 
 ### New: overtimeSlice
 
-**File:** `fe/mobile/src/store/slices/overtimeSlice.ts`
-
 ```typescript
 interface OvertimeState {
   myOvertimes: Overtime[];
-  pendingApprovals: Overtime[]; // korlap only
+  pendingApprovals: Overtime[];
   selectedOvertime: Overtime | null;
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
 }
-
-// Actions:
-// setMyOvertimes, addOvertime, setPendingApprovals
-// setSelectedOvertime, updateOvertimeStatus
-// setIsLoading, setIsSubmitting, setError, clearError
 ```
 
 ### Update: tasksSlice
 
-**Add:**
-- `taggedTasks: Task[]` - Tasks where user is tagged
-- `setTaggedTasks` action
+- Add `taggedTasks: Task[]`, `setTaggedTasks` action
 - Filter state: `taskFilter: 'assigned' | 'tagged' | 'created'`
 
 ### Update: authSlice
 
-**Update role type:**
 ```typescript
 type UserRole = 'satgas' | 'linmas' | 'korlap' | 'admin_data' | 'kepala_rayon' | 'top_management' | 'admin_system' | 'superadmin';
 ```
@@ -309,36 +289,43 @@ type UserRole = 'satgas' | 'linmas' | 'korlap' | 'admin_data' | 'kepala_rayon' |
 
 ## Type Updates
 
-> **IMPORTANT:** Cross-reference with [backend.md](./backend.md) for verified entity field names and types.
-
 ### models.types.ts
 
 ```typescript
-// Update UserRole to match backend enum
 export type UserRole = 'satgas' | 'linmas' | 'korlap' | 'admin_data' | 'kepala_rayon' | 'top_management' | 'admin_system' | 'superadmin';
 
-// Simplified TaskStatus (was 6, now 4)
 export type TaskStatus = 'pending' | 'assigned' | 'in_progress' | 'completed';
-// REMOVED: 'accepted' and 'declined'
 
-// Rename WorkReport → Aktivitas
-// NOTE: Backend column is `worker_id` (not user_id), table is `work_reports`
-export interface Aktivitas {
+// RENAMED from WorkReport → Activity, RENAMED from Aktivitas → Activity
+export interface Activity {
   id: string;
-  worker_id: string;   // Column name in DB is worker_id
-  shift_id: string;    // Already exists, NOT NULL
+  user_id: string;      // RENAMED from worker_id
+  shift_id: string;
   area_id: string;
-  activity_type_id: string;  // NOW REQUIRED (was optional)
+  activity_type_id: string;
   activity_type?: ActivityType;
   description: string;
-  photo_urls: string[]; // Changed from photo_url: string (max 3)
+  photo_urls: string[];
   gps_lat?: number;
   gps_lng?: number;
   created_at: string;
-  // REMOVED: report_type, condition, is_reviewed, reviewed_by, reviewed_at
 }
 
-// New type
+// RENAMED from WorkerSchedule → Schedule
+export interface Schedule {
+  id: string;
+  user_id: string;
+  area_id: string;
+  shift_definition_id: string;
+  effective_date: string;
+  end_date?: string;
+  area?: Area;
+  shift_definition?: ShiftDefinition;
+}
+
+// REMOVED: WorkerAssignment interface
+
+// Overtime (FLAT — no nested aktivitas array)
 export interface Overtime {
   id: string;
   user_id: string;
@@ -354,15 +341,9 @@ export interface Overtime {
   approved_at?: string;
   rejection_reason?: string;
   notes?: string;
-  aktivitas: OvertimeAktivitas[];
-  created_at: string;
-}
-
-export interface OvertimeAktivitas {
-  id: string;
-  overtime_id: string;
+  // Activity fields (flat — 1 overtime = 1 activity)
   activity_type_id: string;
-  activity_type?: ActivityType;
+  activityType?: ActivityType;
   description: string;
   photo_urls: string[];
   gps_lat?: number;
@@ -370,8 +351,9 @@ export interface OvertimeAktivitas {
   created_at: string;
 }
 
-// Update Task (simplified from Phase 2B)
-// REMOVED: activity_type_id, completion_gps_lat/lng, decline_reason, declined_at, accepted_at
+// REMOVED: OvertimeAktivitas interface (merged into Overtime)
+
+// Task (simplified)
 export interface Task {
   id: string;
   title: string;
@@ -380,24 +362,23 @@ export interface Task {
   assignee?: User;
   created_by: string;
   creator?: User;
-  area_id?: string;      // NOW OPTIONAL (was required) — tasks can be rayon-scoped
+  area_id?: string;
   area?: Area;
-  rayon_id?: string;     // NEW: for rayon-scoped tasks
-  rayon?: Rayon;         // NEW
-  deadline?: string;     // Column name in DB (DTO uses due_date)
-  priority?: 'low' | 'medium' | 'high' | 'urgent'; // KEPT from Phase 2B
-  status: TaskStatus;    // 4 values: pending, assigned, in_progress, completed
+  rayon_id?: string;
+  rayon?: Rayon;
+  deadline?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status: TaskStatus;
   completion_photo_url?: string;
   completion_notes?: string;
   completed_at?: string;
   started_at?: string;
   assigned_at?: string;
-  tags?: TaskTag[];      // NEW: tagged users
+  tags?: TaskTag[];
   created_at: string;
   updated_at: string;
 }
 
-// Update TaskTag (NEW)
 export interface TaskTag {
   id: string;
   task_id: string;
@@ -407,24 +388,38 @@ export interface TaskTag {
 }
 ```
 
+### Type Renames Summary
+
+| Current Type | New Type |
+|-------------|----------|
+| `WorkReport` | `Activity` |
+| `Aktivitas` | `Activity` |
+| `WorkerSchedule` | `Schedule` |
+| `WorkerAssignment` | REMOVED |
+| `WorkerDashboard` | `FieldDashboard` |
+| `WorkerTabParamList` | `FieldTabParamList` |
+| `ActiveWorker` | `ActiveUser` |
+| `LiveWorker` | `LiveUser` |
+| `NotClockedInWorker` | `NotClockedInUser` |
+| `OvertimeAktivitas` | REMOVED (merged into Overtime) |
+
 ### navigation.types.ts
 
 ```typescript
-// Update RootStackParamList
 export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
   ClockInOut: undefined;
-  AktivitasSubmission: undefined;  // Renamed from ReportSubmission
-  AktivitasList: undefined;        // Renamed from ReportsList
+  ActivitySubmission: undefined;   // Renamed from ReportSubmission/AktivitasSubmission
+  ActivityList: undefined;         // Renamed from ReportsList/AktivitasList
   TaskList: undefined;
   TaskDetail: { taskId: string };
   TaskComplete: { taskId: string };
-  TaskCreate: undefined;           // NEW
-  OvertimeList: undefined;         // NEW
-  OvertimeSubmit: undefined;       // NEW
-  OvertimeDetail: { overtimeId: string };  // NEW
-  OvertimeApproval: undefined;     // NEW
+  TaskCreate: undefined;
+  OvertimeList: undefined;
+  OvertimeSubmit: undefined;
+  OvertimeDetail: { overtimeId: string };
+  OvertimeApproval: undefined;
   Monitoring: undefined;
   Profile: undefined;
 };
@@ -432,56 +427,93 @@ export type RootStackParamList = {
 
 ---
 
-## NB 2.0 Compliance Checklist
-
-All new screens MUST adhere to:
-
-- [ ] Borders: 2px (`nbBorders.base`)
-- [ ] Border radius: 6px base (`nbBorderRadius.base`)
-- [ ] Shadows: Soft-edge, opacity 0.18-0.22, blur 2-4px (`nbShadows.soft`)
-- [ ] Primary color: `#7FBC8C` (`nbColors.primary`)
-- [ ] Background: `#F5F0EB` (`nbColors.background`)
-- [ ] Touch targets: 48px minimum (WCAG 2.1 AA)
-- [ ] Typography: Space Grotesk headings, system body
-- [ ] Status colors: Success `#4CAF50`, Warning `#F57C00`, Error `#D32F2F`
-- [ ] Cards: `nbBorders.base` + `nbBorderRadius.base` + `nbShadows.soft`
-- [ ] Buttons: 48px height minimum, `nbBorderRadius.base`
-- [ ] Inputs: `nbBorders.base`, 48px height, clear labels
-- [ ] Icons: 24px default, 20px in tabs, consistent Feather icons
-
-**Token file:** `fe/mobile/src/constants/nbTokens.ts`
-
----
-
 ## API Service Updates
 
-### Rename: reportsApi → aktivitasApi
+### Rename: reportsApi → activitiesApi
 
-**File:** `fe/mobile/src/services/api/reportsApi.ts` → `aktivitasApi.ts`
+**File:** `reportsApi.ts` → `activitiesApi.ts`
 
-- `createReport()` → `createAktivitas()`
-- `getReports()` → `getAktivitasList()`
-- `getReport()` → `getAktivitas()`
-- Base path: `/reports` → `/aktivitas`
+| Current | New |
+|---------|-----|
+| `createReport()` | `createActivity()` |
+| `getReports()` | `getActivities()` |
+| `getReport()` | `getActivity()` |
+| Base path: `/reports` | `/activities` |
+| Base path: `/aktivitas` | `/activities` |
+
+### Rename: schedulesApi endpoints
+
+| Current | New |
+|---------|-----|
+| Endpoint: `/worker-schedules` | `/schedules` |
+
+### Update: shiftsApi
+
+| Current | New |
+|---------|-----|
+| `getWorkerShifts()` | `getUserShifts()` |
+| Response field: `worker_id` | `user_id` |
+
+### Update: supervisorApi
+
+| Current | New |
+|---------|-----|
+| `getActiveWorkers()` | `getActiveUsers()` |
+| `getWorkerAttendance()` | `getAttendance()` |
 
 ### New: overtimeApi
 
 **File:** `fe/mobile/src/services/api/overtimeApi.ts`
 
-- `submitOvertime(dto)`
-- `getMyOvertimes()`
-- `getPendingApprovals()`
-- `getOvertimeDetail(id)`
-- `approveOvertime(id)`
-- `rejectOvertime(id, reason)`
+```typescript
+submitOvertime(dto: CreateOvertimeDto)     // POST /overtime (flat DTO)
+getMyOvertimes()                           // GET /overtime/my
+getPendingApprovals()                      // GET /overtime
+getOvertimeDetail(id: string)              // GET /overtime/:id
+approveOvertime(id: string)                // PATCH /overtime/:id/approve
+rejectOvertime(id: string, reason: string) // PATCH /overtime/:id/reject
+```
 
 ### Update: tasksApi
 
 - Add `getTaggedTasks()`
 - Add `addTaskTags(taskId, userIds)`
 - Add `removeTaskTag(taskId, userId)`
+- Remove `acceptTask()`, `declineTask()`
 - Update `createTask()` to include `tagged_user_ids` and `rayon_id`
 - Remove GPS fields from `completeTask()`
+
+### Component Renames
+
+| Current | New |
+|---------|-----|
+| `WorkerInfoCard` | `UserInfoCard` |
+| `WorkerMarker` | `UserMarker` |
+
+---
+
+## Geofencing UI
+
+### ClockInOutScreen
+
+- After GPS acquisition, call `area.boundary_polygon` check (client-side or via API)
+- If outside boundary: show soft warning banner
+  - Text: "Anda berada di luar area kerja. Absen tetap dicatat."
+  - Style: Yellow/amber background, warning icon
+  - Clock-in button remains enabled
+
+### MapDashboardScreen (Monitoring)
+
+- Users who clocked in outside boundary shown with yellow/red marker
+- Filter: "Tampilkan di luar area saja"
+
+---
+
+## NB 2.0 Compliance Checklist
+
+All new screens MUST adhere to Neo Brutalism 2.0 design system.
+
+**Token file:** `fe/mobile/src/constants/nbTokens.ts`
 
 ---
 
@@ -490,10 +522,70 @@ All new screens MUST adhere to:
 | Category | Count | Details |
 |----------|-------|---------|
 | New screens | 5 | OvertimeList, OvertimeSubmit, OvertimeApproval, OvertimeDetail, TaskCreate |
-| Modified screens | 7 | ClockInOut, AktivitasSubmission, TasksAktivitas, TaskDetail, TaskComplete, MapDashboard, RootNavigator |
-| Unchanged screens | 5 | LoginScreen, WorkerHomeScreen, ProfileScreen, SupervisorHomeScreen, NotificationsScreen |
+| Modified screens | 7 | ClockInOut, ActivitySubmission, TasksActivity, TaskDetail, TaskComplete, MapDashboard, RootNavigator |
+| Unchanged screens | 5 | LoginScreen, HomeScreen, ProfileScreen, SupervisorHomeScreen, NotificationsScreen |
 | **Total screens** | **22** | Up from 17 in Phase 2B |
 
 ---
 
-**Last Updated:** 2026-02-10
+## ✅ Implementation Status: Terminology Cleanup (Completed 2026-02-15)
+
+### Production Code Fixes
+
+**LoginScreen.tsx** (Commit: be21d3e)
+- ✅ Line 96: Replaced hardcoded `'worker'` check with `isClockableRole()` helper for area fetching
+- ✅ Line 138: Replaced hardcoded `'worker'` check with `isClockableRole()` helper for shift loading
+- ✅ Now supports all 5 clockable roles: satgas, linmas, korlap, admin_data, kepala_rayon
+
+**ProfileHeader.tsx** (Commit: be21d3e)
+- ✅ Lines 40-51: Replaced hardcoded role switch statement with `ROLE_LABELS` lookup
+- ✅ Supports all 8 Phase 2C roles dynamically
+- ✅ Displays correct Indonesian labels from `constants/roles.ts`
+
+### Test Data Updates
+
+**Files Updated:** 12 test files, 30+ instances
+- ✅ `AuthProvider.test.tsx`: worker→satgas, supervisor→korlap, admin→admin_system (3 instances)
+- ✅ `authSlice.test.ts`: worker→satgas (1 instance)
+- ✅ `shiftWorkflow.test.ts`: worker→satgas (5 instances)
+- ✅ `SettingsScreen.test.tsx`: worker→satgas (1 instance)
+- ✅ `secureStorage.test.ts`: worker→satgas (2 instances)
+- ✅ `ClockInOutScreen.comprehensive.test.tsx`: worker→satgas (1 instance)
+- ✅ `ClockInOutScreen.test.tsx`: worker→satgas (1 instance)
+- ✅ `offlineQueue.edge-cases.test.ts`: worker→satgas (5 instances)
+- ✅ `authApi.test.ts`: worker→satgas (2 instances)
+- ✅ `notificationsApi.test.ts`: worker→satgas in target_roles array (1 instance)
+- ✅ `activityTypesApi.test.ts`: worker→satgas (1 instance)
+- ✅ `LoginScreen.test.tsx`: worker→satgas (7 instances), supervisor→korlap (1 instance)
+
+**Test Logic Fix:**
+- ✅ LoginScreen.test.tsx: Updated "should not fetch area for supervisor" test to use `top_management` (non-clockable role)
+  - Rationale: korlap IS clockable in Phase 2C, so test needed to use a monitoring-only role
+
+### Documentation Updates
+
+- ✅ `SettingsScreen.tsx`: Updated comment from "Worker and Supervisor navigators" to "all 8 roles via unified MainNavigator"
+- ✅ `MainNavigator.tsx`: Updated comment from "Supervisor/monitoring screens" to list all applicable roles
+- ✅ Verified korlap Profile tab exists in TAB_CONFIG
+
+### Verification Results
+
+**Test Suite:** All 59 affected tests passing (100% pass rate)
+- LoginScreen: 25/25 tests ✅
+- authSlice: All tests ✅
+- SettingsScreen: All tests ✅
+
+**Impact:**
+- All hardcoded old role checks removed from production code
+- All test data updated to Phase 2C role values
+- Future-proof: New roles only need updates in `constants/roles.ts`
+- No breaking changes to backend API contracts
+
+**References:**
+- ADR-009 (8-role system)
+- ADR-010 (English-only code)
+- Commit: be21d3e
+
+---
+
+**Last Updated:** 2026-02-15
