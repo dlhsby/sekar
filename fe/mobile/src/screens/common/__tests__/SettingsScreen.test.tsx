@@ -9,7 +9,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { SettingsScreen } from '../SettingsScreen';
 import authReducer from '../../../store/slices/authSlice';
 import shiftReducer from '../../../store/slices/shiftSlice';
-import reportReducer from '../../../store/slices/reportSlice';
+import activitiesReducer from '../../../store/slices/activitiesSlice';
 import offlineReducer from '../../../store/slices/offlineSlice';
 
 // Mock DeviceInfo
@@ -35,12 +35,12 @@ const createTestStore = () => {
     reducer: {
       auth: authReducer,
       shift: shiftReducer,
-      report: reportReducer,
+      activities: activitiesReducer,
       offline: offlineReducer,
     },
     preloadedState: {
       auth: {
-        user: { id: '1', username: 'testuser', role: 'worker' } as any,
+        user: { id: '1', username: 'testuser', role: 'satgas' } as any,
         assignedArea: null,
         token: 'test-token',
         isAuthenticated: true,

@@ -30,7 +30,7 @@ import { NBCard, NBBackgroundPattern, NBAlert } from '../../components/nb';
 import { ChangePasswordModal } from '../../components/common';
 import { logout } from '../../store/slices/authSlice';
 import { resetState as resetShiftState } from '../../store/slices/shiftSlice';
-import { resetState as resetReportState } from '../../store/slices/reportSlice';
+import { resetState as resetActivitiesState } from '../../store/slices/activitiesSlice';
 import { resetState as resetOfflineState } from '../../store/slices/offlineSlice';
 import {
   nbColors,
@@ -57,7 +57,7 @@ interface SettingItem {
 }
 
 /**
- * Screen props type - works with both Worker and Supervisor navigators
+ * Screen props type - works with all 8 roles via unified MainNavigator
  */
 type SettingsScreenProps = NativeStackScreenProps<{ Settings: undefined }, 'Settings'>;
 
@@ -96,7 +96,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
     setShowLogoutAlert(false);
     // Reset all states
     dispatch(resetShiftState());
-    dispatch(resetReportState());
+    dispatch(resetActivitiesState());
     dispatch(resetOfflineState());
     dispatch(logout());
   }, [dispatch]);

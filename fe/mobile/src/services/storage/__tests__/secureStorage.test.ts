@@ -144,7 +144,7 @@ describe('secureStorage', () => {
       id: 1,
       username: 'worker1',
       full_name: 'Test Worker',
-      role: 'worker' as const,
+      role: 'satgas' as const,
     };
 
     it('should store user data as JSON string', async () => {
@@ -166,7 +166,7 @@ describe('secureStorage', () => {
       id: 1,
       username: 'worker1',
       full_name: 'Test Worker',
-      role: 'worker',
+      role: 'satgas',
     };
 
     it('should retrieve and parse user data', async () => {

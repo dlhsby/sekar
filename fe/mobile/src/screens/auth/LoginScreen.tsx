@@ -31,7 +31,9 @@ import { login, getMe } from '../../services/api/authApi';
 import { setToken, setRefreshToken, setUser as setUserStorage } from '../../services/storage/secureStorage';
 import { loadAndSyncCurrentShift } from '../../services/shift';
 import { isValidUsername, isValidPassword } from '../../utils/validators';
+import { isClockableRole } from '../../constants/roles';
 import type { LoginResponse } from '../../types/api.types';
+import type { UserRole } from '../../types/models.types';
 
 function LoginScreen(): React.JSX.Element {
   const [username, setUsername] = useState('');
@@ -91,9 +93,9 @@ function LoginScreen(): React.JSX.Element {
 
       await setUserStorage(loginData.user);
 
-      // Fetch assigned area for worker users
+      // Fetch assigned area for clockable users (roles that can clock in/out)
       let assignedArea = null;
-      if (loginData.user.role === 'worker') {
+      if (isClockableRole(loginData.user.role as UserRole)) {
         try {
           const meResponse = await getMe();
           if (meResponse.data && meResponse.data.assigned_area) {
@@ -121,7 +123,7 @@ function LoginScreen(): React.JSX.Element {
         if (token) {
           const success = await fcmService.registerToken(token);
           if (success) {
-            console.log('[Login] ✅ FCM token registered successfully');
+            // FCM token registered successfully
           } else {
             console.error('[Login] ❌ FCM token registration returned false');
           }
@@ -133,9 +135,9 @@ function LoginScreen(): React.JSX.Element {
         // Don't block login if FCM fails
       }
 
-      // Load current shift for workers only (supervisors/admins don't have shifts)
+      // Load current shift for clockable roles only
       // This ensures the home screen shows correct shift status immediately after login
-      if (loginData.user.role === 'worker') {
+      if (isClockableRole(loginData.user.role as UserRole)) {
         loadAndSyncCurrentShift(dispatch).catch((err) =>
           console.warn('Shift sync after login failed:', err),
         );

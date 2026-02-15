@@ -30,7 +30,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
       id: 1,
       username: 'test-user',
       full_name: 'Test User',
-      role: 'worker',
+      role: 'satgas',
       area_id: 1,
       rayon_id: 1,
       is_active: true,
@@ -131,7 +131,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
       expect(counts).toEqual({
         'clock-in': 0,
         'clock-out': 0,
-        report: 0,
+        activity: 0,
         location: 0,
       });
     });
@@ -227,7 +227,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
       const malformedData = JSON.stringify([
         { id: 'valid', type: 'clock-in', data: {}, timestamp: Date.now(), retryCount: 0, status: 'pending' },
         null, // Malformed
-        { id: 'also-valid', type: 'report', data: {}, timestamp: Date.now(), retryCount: 0, status: 'pending' },
+        { id: 'also-valid', type: 'activity', data: {}, timestamp: Date.now(), retryCount: 0, status: 'pending' },
       ]);
 
       mockAsyncStorage.getItem.mockResolvedValue(malformedData);
@@ -282,7 +282,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         },
         {
           id: 'item-2',
-          type: 'report',
+          type: 'activity',
           data: {},
           timestamp: Date.now(),
           retryCount: 0,
@@ -316,7 +316,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         },
         {
           id: 'item-2',
-          type: 'report',
+          type: 'activity',
           data: {},
           timestamp: Date.now(),
           retryCount: 0,
@@ -404,7 +404,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         id: 1,
         username: 'user1',
         full_name: 'User 1',
-        role: 'worker',
+        role: 'satgas',
         area_id: 1,
         rayon_id: 1,
         is_active: true,
@@ -444,7 +444,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         id: 1,
         username: 'user1',
         full_name: 'User 1',
-        role: 'worker',
+        role: 'satgas',
         area_id: 1,
         rayon_id: 1,
         is_active: true,
@@ -493,7 +493,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         id: 1,
         username: 'user1',
         full_name: 'User 1',
-        role: 'worker',
+        role: 'satgas',
         area_id: 1,
         rayon_id: 1,
         is_active: true,
@@ -628,7 +628,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         },
         {
           id: 'item-2',
-          type: 'report',
+          type: 'activity',
           data: {},
           timestamp: Date.now(),
           retryCount: 3,
@@ -652,7 +652,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         id: 1,
         username: 'user1',
         full_name: 'User 1',
-        role: 'worker',
+        role: 'satgas',
         area_id: 1,
         rayon_id: 1,
         is_active: true,
@@ -707,7 +707,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         },
         {
           id: 'item-2',
-          type: 'report',
+          type: 'activity',
           data: {},
           timestamp: Date.now(),
           retryCount: 0,
@@ -738,7 +738,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         },
         {
           id: 'item-2',
-          type: 'report',
+          type: 'activity',
           data: {},
           timestamp: Date.now(),
           retryCount: 0,
@@ -778,7 +778,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         },
         {
           id: 'item-2',
-          type: 'report',
+          type: 'activity',
           data: {},
           timestamp: Date.now(),
           retryCount: 0,
@@ -818,7 +818,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         },
         {
           id: 'item-2',
-          type: 'report',
+          type: 'activity',
           data: {},
           timestamp: Date.now(),
           retryCount: 0,

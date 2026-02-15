@@ -41,7 +41,7 @@ describe('Complete Shift Workflow Integration', () => {
         id: 1,
         username: 'worker1',
         fullName: 'Worker One',
-        role: 'worker' as const,
+        role: 'satgas' as const,
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -81,29 +81,30 @@ describe('Complete Shift Workflow Integration', () => {
       const shiftState = store.getState().shift;
       expect(shiftState.currentShift).toEqual(shift);
 
-      // Step 3: Submit report (offline)
-      const reportAction = {
+      // Step 3: Submit activity (offline)
+      const activityAction = {
         id: 'offline-1',
-        type: 'CREATE_REPORT' as const,
-        endpoint: '/api/reports',
+        type: 'CREATE_ACTIVITY' as const,
+        endpoint: '/api/activities',
         method: 'POST' as const,
         data: {
           shiftId: shift.id,
-          reportText: 'Membersihkan area taman',
+          activityTypeId: 'activity-type-1',
+          description: 'Membersihkan area taman',
           photos: ['photo1.jpg', 'photo2.jpg'],
         },
         timestamp: Date.now(),
         retryCount: 0,
       };
 
-      store.dispatch(addToQueue(reportAction));
+      store.dispatch(addToQueue(activityAction));
 
       const offlineState = store.getState().offline;
       expect(offlineState.queue).toHaveLength(1);
-      expect(offlineState.queue[0]).toEqual(reportAction);
+      expect(offlineState.queue[0]).toEqual(activityAction);
 
-      // Step 4: Sync report (simulate)
-      store.dispatch(removeFromQueue(reportAction.id));
+      // Step 4: Sync activity (simulate)
+      store.dispatch(removeFromQueue(activityAction.id));
 
       const syncedOfflineState = store.getState().offline;
       expect(syncedOfflineState.queue).toHaveLength(0);
@@ -130,7 +131,7 @@ describe('Complete Shift Workflow Integration', () => {
         id: 1,
         username: 'worker1',
         fullName: 'Worker One',
-        role: 'worker' as const,
+        role: 'satgas' as const,
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -180,13 +181,13 @@ describe('Complete Shift Workflow Integration', () => {
       expect(shiftState.currentShift).not.toBeNull();
     });
 
-    it('should handle multiple reports in offline queue', async () => {
+    it('should handle multiple activities in offline queue', async () => {
       // Setup authenticated state with active shift
       const user = {
         id: 1,
         username: 'worker1',
         fullName: 'Worker One',
-        role: 'worker' as const,
+        role: 'satgas' as const,
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -205,47 +206,49 @@ describe('Complete Shift Workflow Integration', () => {
         })
       );
 
-      // Queue multiple reports while offline
-      const report1 = {
-        id: 'offline-report-1',
-        type: 'CREATE_REPORT' as const,
-        endpoint: '/api/reports',
+      // Queue multiple activities while offline
+      const activity1 = {
+        id: 'offline-activity-1',
+        type: 'CREATE_ACTIVITY' as const,
+        endpoint: '/api/activities',
         method: 'POST' as const,
         data: {
           shiftId: 1,
-          reportText: 'Report 1',
+          activityTypeId: 'activity-type-1',
+          description: 'Activity 1',
           photos: ['photo1.jpg'],
         },
         timestamp: Date.now(),
         retryCount: 0,
       };
 
-      const report2 = {
-        id: 'offline-report-2',
-        type: 'CREATE_REPORT' as const,
-        endpoint: '/api/reports',
+      const activity2 = {
+        id: 'offline-activity-2',
+        type: 'CREATE_ACTIVITY' as const,
+        endpoint: '/api/activities',
         method: 'POST' as const,
         data: {
           shiftId: 1,
-          reportText: 'Report 2',
+          activityTypeId: 'activity-type-1',
+          description: 'Activity 2',
           photos: ['photo2.jpg'],
         },
         timestamp: Date.now() + 1000,
         retryCount: 0,
       };
 
-      store.dispatch(addToQueue(report1));
-      store.dispatch(addToQueue(report2));
+      store.dispatch(addToQueue(activity1));
+      store.dispatch(addToQueue(activity2));
 
       let offlineState = store.getState().offline;
       expect(offlineState.queue).toHaveLength(2);
 
-      // Sync reports one by one
-      store.dispatch(removeFromQueue(report1.id));
+      // Sync activities one by one
+      store.dispatch(removeFromQueue(activity1.id));
       offlineState = store.getState().offline;
       expect(offlineState.queue).toHaveLength(1);
 
-      store.dispatch(removeFromQueue(report2.id));
+      store.dispatch(removeFromQueue(activity2.id));
       offlineState = store.getState().offline;
       expect(offlineState.queue).toHaveLength(0);
     });
@@ -262,13 +265,13 @@ describe('Complete Shift Workflow Integration', () => {
       expect(shiftState.currentShift).toBeNull();
     });
 
-    it('should handle report submission without active shift', () => {
+    it('should handle activity submission without active shift', () => {
       // Login but no active shift
       const user = {
         id: 1,
         username: 'worker1',
         fullName: 'Worker One',
-        role: 'worker' as const,
+        role: 'satgas' as const,
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -282,22 +285,23 @@ describe('Complete Shift Workflow Integration', () => {
       expect(authState.isAuthenticated).toBe(true);
       expect(shiftState.currentShift).toBeNull();
 
-      // Queue report (would fail on backend with REPORT_SHIFT_REQUIRED)
-      const reportAction = {
-        id: 'offline-report-no-shift',
-        type: 'CREATE_REPORT' as const,
-        endpoint: '/api/reports',
+      // Queue activity (would fail on backend with ACTIVITY_SHIFT_REQUIRED)
+      const activityAction = {
+        id: 'offline-activity-no-shift',
+        type: 'CREATE_ACTIVITY' as const,
+        endpoint: '/api/activities',
         method: 'POST' as const,
         data: {
           shiftId: null, // No shift ID
-          reportText: 'Report without shift',
+          activityTypeId: 'activity-type-1',
+          description: 'Activity without shift',
           photos: [],
         },
         timestamp: Date.now(),
         retryCount: 0,
       };
 
-      store.dispatch(addToQueue(reportAction));
+      store.dispatch(addToQueue(activityAction));
 
       const offlineState = store.getState().offline;
       expect(offlineState.queue).toHaveLength(1);
@@ -320,7 +324,7 @@ describe('Complete Shift Workflow Integration', () => {
         id: 1,
         username: 'worker1',
         fullName: 'Worker One',
-        role: 'worker' as const,
+        role: 'satgas' as const,
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -375,10 +379,10 @@ describe('Complete Shift Workflow Integration', () => {
     it('should maintain offline queue across app restarts (simulated)', () => {
       const queuedAction = {
         id: 'offline-1',
-        type: 'CREATE_REPORT' as const,
-        endpoint: '/api/reports',
+        type: 'CREATE_ACTIVITY' as const,
+        endpoint: '/api/activities',
         method: 'POST' as const,
-        data: { reportText: 'Test' },
+        data: { activityTypeId: 'activity-type-1', description: 'Test' },
         timestamp: Date.now(),
         retryCount: 0,
       };

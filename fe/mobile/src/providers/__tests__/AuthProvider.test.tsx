@@ -43,7 +43,7 @@ describe('AuthProvider', () => {
     id: 1,
     username: 'worker1',
     name: 'Test Worker',
-    role: 'worker',
+    role: 'satgas',
     phone: '081234567890',
   };
 
@@ -51,7 +51,7 @@ describe('AuthProvider', () => {
     id: 2,
     username: 'supervisor1',
     name: 'Test Supervisor',
-    role: 'supervisor',
+    role: 'korlap',
     phone: '081234567891',
   };
 
@@ -604,7 +604,7 @@ describe('AuthProvider', () => {
         id: 3,
         username: 'admin',
         name: 'Admin User',
-        role: 'admin',
+        role: 'admin_system',
         phone: '081234567892',
       };
 

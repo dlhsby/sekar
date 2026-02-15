@@ -185,7 +185,7 @@ describe('LoginScreen', () => {
         id: 1,
         username: 'worker1',
         full_name: 'Test Worker',
-        role: 'worker',
+        role: 'satgas',
       };
       const mockToken = 'test-access-token';
 
@@ -234,7 +234,7 @@ describe('LoginScreen', () => {
         id: 1,
         username: 'worker1',
         full_name: 'Test Worker',
-        role: 'worker',
+        role: 'satgas',
       };
 
       (authApi.login as jest.Mock).mockResolvedValue({
@@ -278,7 +278,7 @@ describe('LoginScreen', () => {
         id: 1,
         username: 'worker1',
         full_name: 'Test Worker',
-        role: 'worker',
+        role: 'satgas',
       };
 
       (authApi.login as jest.Mock).mockResolvedValue({
@@ -312,12 +312,12 @@ describe('LoginScreen', () => {
       });
     });
 
-    it('should not fetch assigned area for supervisor users', async () => {
+    it('should not fetch assigned area for non-clockable users', async () => {
       const mockUser = {
         id: 1,
-        username: 'supervisor1',
-        full_name: 'Test Supervisor',
-        role: 'supervisor',
+        username: 'manager1',
+        full_name: 'Test Manager',
+        role: 'top_management',
       };
 
       (authApi.login as jest.Mock).mockResolvedValue({
@@ -329,18 +329,18 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'supervisor1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'supervisor123');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'manager1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'manager123');
       fireEvent.press(getByText('Masuk'));
 
       await waitFor(() => {
         expect(authApi.login).toHaveBeenCalled();
       });
 
-      // Should not call getMe for supervisor
+      // Should not call getMe for non-clockable roles
       expect(authApi.getMe).not.toHaveBeenCalled();
 
-      // Should not call loadAndSyncCurrentShift for supervisor
+      // Should not call loadAndSyncCurrentShift for non-clockable roles
       expect(loadAndSyncCurrentShift).not.toHaveBeenCalled();
     });
 
@@ -349,7 +349,7 @@ describe('LoginScreen', () => {
         id: 1,
         username: 'worker1',
         full_name: 'Test Worker',
-        role: 'worker',
+        role: 'satgas',
       };
 
       (authApi.login as jest.Mock).mockResolvedValue({
@@ -404,7 +404,7 @@ describe('LoginScreen', () => {
         id: 1,
         username: 'worker1',
         full_name: 'Test Worker',
-        role: 'worker',
+        role: 'satgas',
       };
 
       (authApi.login as jest.Mock).mockResolvedValue({
@@ -485,7 +485,7 @@ describe('LoginScreen', () => {
     it('should show alert when token is missing from response', async () => {
       (authApi.login as jest.Mock).mockResolvedValue({
         data: {
-          user: { id: 1, username: 'worker1', role: 'worker' },
+          user: { id: 1, username: 'worker1', role: 'satgas' },
           // No access_token
         },
       });
@@ -520,7 +520,7 @@ describe('LoginScreen', () => {
         id: 1,
         username: 'worker1',
         full_name: 'Test Worker',
-        role: 'worker',
+        role: 'satgas',
       };
 
       (authApi.login as jest.Mock).mockResolvedValue({

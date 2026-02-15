@@ -27,7 +27,7 @@ describe('authSlice', () => {
     id: 1,
     username: 'worker1',
     full_name: 'Test Worker',
-    role: 'worker' as const,
+    role: 'satgas' as const,
   };
 
   const mockArea = {

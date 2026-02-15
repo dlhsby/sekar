@@ -36,7 +36,7 @@ describe('activityTypesApi', () => {
     });
 
     it('gets activity types with role filter', async () => {
-      const filters = { role: 'worker' as const };
+      const filters = { role: 'satgas' as const };
       const mockResponse = {
         data: {
           data: [{ id: '1', name: 'Penyiraman', code: 'WATERING' }],

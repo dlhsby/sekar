@@ -26,7 +26,7 @@ describe('authApi', () => {
             id: 1,
             username: 'worker1',
             full_name: 'Test Worker',
-            role: 'worker',
+            role: 'satgas',
           },
         },
       };
@@ -69,7 +69,7 @@ describe('authApi', () => {
           id: 1,
           username: 'worker1',
           full_name: 'Test Worker',
-          role: 'worker',
+          role: 'satgas',
           assigned_area: {
             id: 1,
             name: 'Park A',

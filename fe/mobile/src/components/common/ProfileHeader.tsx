@@ -13,7 +13,8 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
-import type { User } from '../../types/models.types';
+import { ROLE_LABELS } from '../../constants/roles';
+import type { User, UserRole } from '../../types/models.types';
 
 interface ProfileHeaderProps {
   user: User | null;
@@ -38,16 +39,8 @@ const getUserInitials = (fullName?: string): string => {
  * Get role badge text
  */
 const getRoleBadge = (role?: string): string => {
-  switch (role) {
-    case 'worker':
-      return 'Pekerja';
-    case 'supervisor':
-      return 'Supervisor';
-    case 'admin':
-      return 'Admin';
-    default:
-      return 'Pengguna';
-  }
+  if (!role) return 'Pengguna';
+  return ROLE_LABELS[role as UserRole] || 'Pengguna';
 };
 
 /**
