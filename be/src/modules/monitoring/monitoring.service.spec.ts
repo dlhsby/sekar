@@ -7,7 +7,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { Task, TaskStatus, TaskPriority } from '../tasks/entities/task.entity';
-import { Report } from '../reports/entities/report.entity';
+import { Activity } from '../activities/entities/activity.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
@@ -23,7 +23,7 @@ describe('MonitoringService', () => {
   let areaRepository: jest.Mocked<Repository<Area>>;
   let shiftRepository: jest.Mocked<Repository<Shift>>;
   let taskRepository: jest.Mocked<Repository<Task>>;
-  let reportRepository: jest.Mocked<Repository<Report>>;
+  let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
@@ -76,8 +76,8 @@ describe('MonitoringService', () => {
 
   const mockShift: Shift = {
     id: 'shift-1',
-    worker_id: 'user-1',
-    worker: mockUser,
+    user_id: 'user-1',
+    user: mockUser,
     area_id: 'area-1',
     area: mockArea,
     clock_in_time: new Date(),
@@ -87,6 +87,8 @@ describe('MonitoringService', () => {
     clock_out_time: null as unknown as Date,
     clock_out_gps_lat: null as unknown as number,
     clock_out_gps_lng: null as unknown as number,
+    clock_in_outside_boundary: false,
+    clock_out_outside_boundary: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -105,14 +107,14 @@ describe('MonitoringService', () => {
 
   const mockLocationLog: LocationLog = {
     id: 'loc-1',
-    worker_id: 'user-1',
+    user_id: 'user-1',
     shift_id: 'shift-1',
     gps_lat: -7.2905,
     gps_lng: 112.7398,
     accuracy_meters: 10,
     battery_level: 85,
     logged_at: new Date(),
-    worker: mockUser,
+    user: mockUser,
     shift: mockShift,
   };
 
@@ -146,7 +148,7 @@ describe('MonitoringService', () => {
     id: 'req-1',
     area_id: 'area-1',
     shift_definition_id: 'shift-def-1',
-    role: StaffRole.WORKER,
+    role: StaffRole.SATGAS,
     required_count: 5,
     day_type: DayType.WEEKDAY,
     area: mockArea,
@@ -209,7 +211,7 @@ describe('MonitoringService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Report),
+          provide: getRepositoryToken(Activity),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -261,7 +263,7 @@ describe('MonitoringService', () => {
     areaRepository = module.get(getRepositoryToken(Area));
     shiftRepository = module.get(getRepositoryToken(Shift));
     taskRepository = module.get(getRepositoryToken(Task));
-    reportRepository = module.get(getRepositoryToken(Report));
+    activityRepository = module.get(getRepositoryToken(Activity));
     locationRepository = module.get(getRepositoryToken(LocationLog));
     rayonRepository = module.get(getRepositoryToken(Rayon));
     shiftDefinitionRepository = module.get(getRepositoryToken(ShiftDefinition));
@@ -278,7 +280,7 @@ describe('MonitoringService', () => {
       areaRepository.find.mockResolvedValue([mockArea]);
       shiftRepository.count.mockResolvedValue(5);
       taskRepository.count.mockResolvedValue(10);
-      reportRepository.count.mockResolvedValue(15);
+      activityRepository.count.mockResolvedValue(15);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
 
       const qb = createMockQueryBuilder([], 0);
@@ -297,7 +299,7 @@ describe('MonitoringService', () => {
       expect(result).toHaveProperty('tasks_pending');
       expect(result).toHaveProperty('tasks_in_progress');
       expect(result).toHaveProperty('tasks_completed_today');
-      expect(result).toHaveProperty('reports_submitted_today');
+      expect(result).toHaveProperty('activities_submitted_today');
       expect(result).toHaveProperty('rayons');
       expect(result).toHaveProperty('generated_at');
       expect(result.rayons).toBeInstanceOf(Array);
@@ -309,7 +311,7 @@ describe('MonitoringService', () => {
       areaRepository.find.mockResolvedValue([mockArea]);
       shiftRepository.count.mockResolvedValue(10);
       taskRepository.count.mockResolvedValue(5);
-      reportRepository.count.mockResolvedValue(20);
+      activityRepository.count.mockResolvedValue(20);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
 
       const qb = createMockQueryBuilder([], 0);
@@ -334,7 +336,7 @@ describe('MonitoringService', () => {
       const qb = createMockQueryBuilder([], 0);
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.createQueryBuilder = jest.fn(() => qb as any);
-      reportRepository.createQueryBuilder = jest.fn(() => qb as any);
+      activityRepository.createQueryBuilder = jest.fn(() => qb as any);
       locationRepository.createQueryBuilder = jest.fn(() => qb as any);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
 
@@ -369,7 +371,7 @@ describe('MonitoringService', () => {
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.count.mockResolvedValue(0);
-      reportRepository.createQueryBuilder = jest.fn(() => qb as any);
+      activityRepository.createQueryBuilder = jest.fn(() => qb as any);
       locationRepository.createQueryBuilder = jest.fn(() => qb as any);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
 
@@ -389,7 +391,7 @@ describe('MonitoringService', () => {
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.count.mockResolvedValue(0);
-      reportRepository.createQueryBuilder = jest.fn(() => qb as any);
+      activityRepository.createQueryBuilder = jest.fn(() => qb as any);
       locationRepository.createQueryBuilder = jest.fn(() => qb as any);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
 
@@ -409,7 +411,7 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
       staffRequirementRepository.find.mockResolvedValue([]);
       taskRepository.find.mockResolvedValue([]);
-      reportRepository.count.mockResolvedValue(5);
+      activityRepository.count.mockResolvedValue(5);
 
       const result = await service.getAreaStats('area-1');
 
@@ -422,7 +424,7 @@ describe('MonitoringService', () => {
       expect(result).toHaveProperty('latitude');
       expect(result).toHaveProperty('longitude');
       expect(result).toHaveProperty('coverage_area');
-      expect(result).toHaveProperty('workers');
+      expect(result).toHaveProperty('users');
       expect(result).toHaveProperty('staff_requirements');
       expect(result).toHaveProperty('active_tasks');
       expect(result).toHaveProperty('alerts');
@@ -444,14 +446,14 @@ describe('MonitoringService', () => {
       shiftRepository.count.mockResolvedValue(3);
       locationRepository.findOne.mockResolvedValue(mockLocationLog);
       taskRepository.find.mockResolvedValue([]);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
-      expect(result.workers.length).toBe(1);
-      expect(result.workers[0]).toHaveProperty('id', 'user-1');
-      expect(result.workers[0]).toHaveProperty('full_name', 'Worker One');
-      expect(result.workers[0]).toHaveProperty('is_online');
+      expect(result.users.length).toBe(1);
+      expect(result.users[0]).toHaveProperty('id', 'user-1');
+      expect(result.users[0]).toHaveProperty('full_name', 'Worker One');
+      expect(result.users[0]).toHaveProperty('is_online');
     });
 
     it('should include active tasks', async () => {
@@ -465,7 +467,7 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
       staffRequirementRepository.find.mockResolvedValue([]);
       taskRepository.find.mockResolvedValue([pendingTask, inProgressTask, completedTask]);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
@@ -497,7 +499,7 @@ describe('MonitoringService', () => {
       shiftRepository.count.mockResolvedValue(3); // only 3 present
       locationRepository.findOne.mockResolvedValue(mockLocationLog);
       taskRepository.find.mockResolvedValue([]);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
@@ -507,19 +509,19 @@ describe('MonitoringService', () => {
     });
   });
 
-  describe('getLiveWorkers', () => {
-    it('should return live worker positions', async () => {
+  describe('getLiveUsers', () => {
+    it('should return live user positions', async () => {
       const qb = createMockQueryBuilder([mockShift], 1);
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
       locationRepository.findOne.mockResolvedValue(mockLocationLog);
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      const result = await service.getLiveWorkers();
+      const result = await service.getLiveUsers();
 
       expect(result).toHaveProperty('total_online');
       expect(result).toHaveProperty('total_offline');
-      expect(result).toHaveProperty('workers');
+      expect(result).toHaveProperty('users');
       expect(result).toHaveProperty('generated_at');
     });
 
@@ -530,7 +532,7 @@ describe('MonitoringService', () => {
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      await service.getLiveWorkers({ area_id: 'area-1' });
+      await service.getLiveUsers({ area_id: 'area-1' });
 
       expect(qb.andWhere).toHaveBeenCalledWith('shift.area_id = :areaId', { areaId: 'area-1' });
     });
@@ -542,7 +544,7 @@ describe('MonitoringService', () => {
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      await service.getLiveWorkers({ rayon_id: 'rayon-1' });
+      await service.getLiveUsers({ rayon_id: 'rayon-1' });
 
       expect(qb.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId: 'rayon-1' });
     });
@@ -554,12 +556,12 @@ describe('MonitoringService', () => {
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      await service.getLiveWorkers({ role: UserRole.SATGAS });
+      await service.getLiveUsers({ role: UserRole.SATGAS });
 
-      expect(qb.andWhere).toHaveBeenCalledWith('worker.role = :role', { role: UserRole.SATGAS });
+      expect(qb.andWhere).toHaveBeenCalledWith('user.role = :role', { role: UserRole.SATGAS });
     });
 
-    it('should mark worker as online if location updated within 10 minutes', async () => {
+    it('should mark user as online if location updated within 10 minutes', async () => {
       const recentLocation = {
         ...mockLocationLog,
         logged_at: new Date(), // Current time
@@ -571,13 +573,13 @@ describe('MonitoringService', () => {
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      const result = await service.getLiveWorkers();
+      const result = await service.getLiveUsers();
 
       expect(result.total_online).toBe(1);
       expect(result.total_offline).toBe(0);
     });
 
-    it('should mark worker as offline if location not updated within 10 minutes', async () => {
+    it('should mark user as offline if location not updated within 10 minutes', async () => {
       const oldLocation = {
         ...mockLocationLog,
         logged_at: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
@@ -589,13 +591,13 @@ describe('MonitoringService', () => {
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      const result = await service.getLiveWorkers();
+      const result = await service.getLiveUsers();
 
       expect(result.total_online).toBe(0);
       expect(result.total_offline).toBe(1);
     });
 
-    it('should include current task if worker has one', async () => {
+    it('should include current task if user has one', async () => {
       const inProgressTask = { ...mockTask, status: TaskStatus.IN_PROGRESS };
 
       const qb = createMockQueryBuilder([mockShift], 1);
@@ -604,24 +606,24 @@ describe('MonitoringService', () => {
       taskRepository.findOne.mockResolvedValue(inProgressTask);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      const result = await service.getLiveWorkers();
+      const result = await service.getLiveUsers();
 
-      expect(result.workers[0].current_task_status).toBe(TaskStatus.IN_PROGRESS);
-      expect(result.workers[0].current_task_title).toBe('Water plants');
+      expect(result.users[0].current_task_status).toBe(TaskStatus.IN_PROGRESS);
+      expect(result.users[0].current_task_title).toBe('Water plants');
     });
 
     it('should return empty list when no active shifts', async () => {
       const qb = createMockQueryBuilder([], 0);
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
 
-      const result = await service.getLiveWorkers();
+      const result = await service.getLiveUsers();
 
-      expect(result.workers).toEqual([]);
+      expect(result.users).toEqual([]);
       expect(result.total_online).toBe(0);
       expect(result.total_offline).toBe(0);
     });
 
-    it('should handle worker without rayon', async () => {
+    it('should handle user without rayon', async () => {
       const shiftWithoutRayon = {
         ...mockShift,
         area: { ...mockArea, rayon_id: null },
@@ -632,26 +634,26 @@ describe('MonitoringService', () => {
       locationRepository.findOne.mockResolvedValue(mockLocationLog);
       taskRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getLiveWorkers();
+      const result = await service.getLiveUsers();
 
-      expect(result.workers[0].rayon_id).toBeNull();
-      expect(result.workers[0].rayon_name).toBeNull();
+      expect(result.users[0].rayon_id).toBeNull();
+      expect(result.users[0].rayon_name).toBeNull();
     });
 
-    it('should handle worker without location log', async () => {
+    it('should handle user without location log', async () => {
       const qb = createMockQueryBuilder([mockShift], 1);
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
       locationRepository.findOne.mockResolvedValue(null);
       taskRepository.findOne.mockResolvedValue(null);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
 
-      const result = await service.getLiveWorkers();
+      const result = await service.getLiveUsers();
 
-      expect(result.workers[0].latitude).toBe(0);
-      expect(result.workers[0].longitude).toBe(0);
-      expect(result.workers[0].accuracy).toBeNull();
-      expect(result.workers[0].battery_level).toBeNull();
-      expect(result.workers[0].last_update).toEqual(mockShift.clock_in_time);
+      expect(result.users[0].latitude).toBe(0);
+      expect(result.users[0].longitude).toBe(0);
+      expect(result.users[0].accuracy).toBeNull();
+      expect(result.users[0].battery_level).toBeNull();
+      expect(result.users[0].last_update).toEqual(mockShift.clock_in_time);
     });
   });
 
@@ -678,7 +680,7 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
       staffRequirementRepository.find.mockResolvedValue([]);
       taskRepository.find.mockResolvedValue([]);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
@@ -693,7 +695,7 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([]); // No active shifts
       staffRequirementRepository.find.mockResolvedValue([]);
       taskRepository.find.mockResolvedValue([]);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
@@ -716,7 +718,7 @@ describe('MonitoringService', () => {
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.count.mockResolvedValue(0);
-      reportRepository.createQueryBuilder = jest.fn(() => qb as any);
+      activityRepository.createQueryBuilder = jest.fn(() => qb as any);
       locationRepository.createQueryBuilder = jest.fn(() => qb as any);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
 
@@ -735,7 +737,7 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
       staffRequirementRepository.find.mockResolvedValue([]);
       taskRepository.find.mockResolvedValue([assignedTask, inProgressTask]);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
@@ -753,7 +755,7 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
       staffRequirementRepository.find.mockResolvedValue([]);
       taskRepository.find.mockResolvedValue([assignedTask]);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
 
       const result = await service.getAreaStats('area-1');
 
@@ -765,7 +767,7 @@ describe('MonitoringService', () => {
       areaRepository.find.mockResolvedValue([]); // No areas
       shiftRepository.count.mockResolvedValue(0);
       taskRepository.count.mockResolvedValue(0);
-      reportRepository.count.mockResolvedValue(0);
+      activityRepository.count.mockResolvedValue(0);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
 
       const result = await service.getCityStats();
@@ -796,7 +798,7 @@ describe('MonitoringService', () => {
 
       shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
       taskRepository.createQueryBuilder = jest.fn(() => qb as any);
-      reportRepository.createQueryBuilder = jest.fn(() => qb as any);
+      activityRepository.createQueryBuilder = jest.fn(() => qb as any);
       locationRepository.createQueryBuilder = jest.fn(() => qb as any);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
 

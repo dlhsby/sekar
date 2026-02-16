@@ -1,13 +1,12 @@
 /**
  * API Services Index
- * Central export for all API services
+ * Phase 2C: activities replaces reports, monitoring consolidated
  */
 
 // Re-export individual functions
 export * from './authApi';
 export * from './shiftsApi';
-export * from './reportsApi';
-export * from './supervisorApi';
+export * from './activitiesApi';
 export * from './locationApi';
 export * from './usersApi';
 // Phase 2 APIs
@@ -16,31 +15,31 @@ export * from './activityTypesApi';
 export * from './monitoringApi';
 export * from './notificationsApi';
 export * from './shiftDefinitionsApi';
+// Phase 2C APIs
+export * from './overtimeApi';
 export { default as apiClient } from './apiClient';
 
-// Export as namespace objects for consumers that prefer `shiftsApi.getCurrentShift()` style
+// Namespace exports
 import * as shiftsApiModule from './shiftsApi';
-import * as reportsApiModule from './reportsApi';
+import * as activitiesApiModule from './activitiesApi';
 import * as authApiModule from './authApi';
-import * as supervisorApiModule from './supervisorApi';
 import * as locationApiModule from './locationApi';
 import * as usersApiModule from './usersApi';
-// Phase 2
 import * as tasksApiModule from './tasksApi';
 import * as activityTypesApiModule from './activityTypesApi';
 import * as monitoringApiModule from './monitoringApi';
 import * as notificationsApiModule from './notificationsApi';
 import * as shiftDefinitionsApiModule from './shiftDefinitionsApi';
+import * as overtimeApiModule from './overtimeApi';
 
 export const shiftsApi = shiftsApiModule;
-export const reportsApi = reportsApiModule;
+export const activitiesApi = activitiesApiModule;
 export const authApi = authApiModule;
-export const supervisorApi = supervisorApiModule;
 export const locationApi = locationApiModule;
 export const usersApi = usersApiModule;
-// Phase 2
 export const tasksApi = tasksApiModule;
 export const activityTypesApi = activityTypesApiModule;
 export const monitoringApi = monitoringApiModule;
 export const notificationsApi = notificationsApiModule;
 export const shiftDefinitionsApi = shiftDefinitionsApiModule;
+export const overtimeApi = overtimeApiModule;

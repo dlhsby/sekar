@@ -8,7 +8,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { syncManager } from '../syncManager';
 import * as offlineQueue from '../offlineQueue';
 import * as shiftsApi from '../../api/shiftsApi';
-import * as reportsApi from '../../api/reportsApi';
+import * as activitiesApi from '../../api/activitiesApi';
 import * as locationApi from '../../api/locationApi';
 
 // Mocks
@@ -27,7 +27,7 @@ jest.mock('@react-native-community/netinfo', () => ({
 
 jest.mock('../offlineQueue');
 jest.mock('../../api/shiftsApi');
-jest.mock('../../api/reportsApi');
+jest.mock('../../api/activitiesApi');
 jest.mock('../../api/locationApi');
 jest.mock('../../location/locationTracker', () => ({
   locationTracker: {
@@ -156,7 +156,7 @@ describe('syncManager', () => {
       const items = [
         { id: '1', type: 'location', data: { shift_id: 'test-shift', locations: [] }, timestamp: 120, retryCount: 0, status: 'pending' },
         { id: '2', type: 'clock-in', data: {}, timestamp: 121, retryCount: 0, status: 'pending' },
-        { id: '3', type: 'report', data: {}, timestamp: 122, retryCount: 0, status: 'pending' },
+        { id: '3', type: 'activity', data: {}, timestamp: 122, retryCount: 0, status: 'pending' },
         { id: '4', type: 'clock-out', data: {}, timestamp: 123, retryCount: 0, status: 'pending' },
       ];
       (offlineQueue.getQueuedItems as jest.Mock).mockResolvedValue(items);
@@ -167,12 +167,12 @@ describe('syncManager', () => {
       // Mock successful API calls
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({ data: { shift_id: 1 } });
       (shiftsApi.clockOut as jest.Mock).mockResolvedValue({ data: { shift_id: 1 } });
-      (reportsApi.createReport as jest.Mock).mockResolvedValue({ data: { report_id: 1 } });
+      (activitiesApi.createActivity as jest.Mock).mockResolvedValue({ data: { activity_id: 1 } });
       (locationApi.uploadLocationBatch as jest.Mock).mockResolvedValue({ data: { inserted_count: 0 } });
 
       await syncManager.processQueue();
 
-      // Verify processing order: clock-in (2) → report (3) → clock-out (4) → location (1)
+      // Verify processing order: clock-in (2) → activity (3) → clock-out (4) → location (1)
       const callOrder = (offlineQueue.updateQueueItem as jest.Mock).mock.calls
         .filter((call: any) => call[1].status === 'syncing')
         .map((call: any) => call[0]);
@@ -357,15 +357,14 @@ describe('syncManager', () => {
       expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('2');
     });
 
-    it('should sync report data', async () => {
+    it('should sync activity data', async () => {
       const item = {
         id: '1',
-        type: 'report' as const,
+        type: 'activity' as const,
         data: {
-          shift_id: 1,
-          description: 'Test report',
-          work_type: 'cleaning',
-          photos: ['photo1.jpg'],
+          activity_type_id: '1',
+          description: 'Test activity',
+          photo_urls: ['photo1.jpg'],
           gps_lat: -7.25,
           gps_lng: 112.75,
         },
@@ -377,11 +376,11 @@ describe('syncManager', () => {
       (offlineQueue.getQueuedItems as jest.Mock).mockResolvedValue([item]);
       (offlineQueue.updateQueueItem as jest.Mock).mockResolvedValue(undefined);
       (offlineQueue.removeFromQueue as jest.Mock).mockResolvedValue(undefined);
-      (reportsApi.createReport as jest.Mock).mockResolvedValue({ data: { report_id: 1 } });
+      (activitiesApi.createActivity as jest.Mock).mockResolvedValue({ data: { activity_id: 1 } });
 
       await syncManager.processQueue();
 
-      expect(reportsApi.createReport).toHaveBeenCalledWith(item.data);
+      expect(activitiesApi.createActivity).toHaveBeenCalledWith(item.data);
       expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('1');
     });
 

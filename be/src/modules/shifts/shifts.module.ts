@@ -3,10 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ShiftsController } from './shifts.controller';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
-import { WorkerSchedule } from '../worker-schedules/entities/worker-schedule.entity';
-import { WorkerAssignment } from '../worker-assignments/entities/worker-assignment.entity';
+import { Schedule } from '../schedules/entities/schedule.entity';
 import { AreasModule } from '../areas/areas.module';
-import { WorkerAssignmentsModule } from '../worker-assignments/worker-assignments.module';
 import { SharedModule } from '../../shared/shared.module';
 
 /**
@@ -18,9 +16,8 @@ import { SharedModule } from '../../shared/shared.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Shift, WorkerSchedule, WorkerAssignment]),
+    TypeOrmModule.forFeature([Shift, Schedule]),
     forwardRef(() => AreasModule),
-    forwardRef(() => WorkerAssignmentsModule),
     SharedModule,
   ],
   controllers: [ShiftsController],

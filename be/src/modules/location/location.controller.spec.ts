@@ -13,15 +13,15 @@ describe('LocationController', () => {
 
   const mockLocationService = {
     createBatch: jest.fn(),
-    getWorkerHistoryPaginated: jest.fn(),
+    getUserHistoryPaginated: jest.fn(),
     getLatestLocation: jest.fn(),
   };
 
-  const mockWorker: User = {
-    id: 'worker-uuid-123',
-    username: 'worker1',
+  const mockUser: User = {
+    id: 'user-uuid-123',
+    username: 'user1',
     password_hash: 'hashed',
-    full_name: 'Worker One',
+    full_name: 'User One',
     role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
@@ -30,14 +30,14 @@ describe('LocationController', () => {
 
   const mockLocationLog: LocationLog = {
     id: 'location-uuid-1',
-    worker_id: mockWorker.id,
+    user_id: mockUser.id,
     shift_id: 'shift-uuid-1',
     gps_lat: -7.2905,
     gps_lng: 112.7398,
     accuracy_meters: 12.5,
     battery_level: 85,
     logged_at: new Date('2026-01-09T10:30:00Z'),
-    worker: mockWorker,
+    user: mockUser,
     shift: null as any,
   };
 
@@ -86,9 +86,9 @@ describe('LocationController', () => {
     it('should batch upload locations', async () => {
       mockLocationService.createBatch.mockResolvedValue({ count: 2 });
 
-      const result = await controller.createBatch(createDto, mockWorker);
+      const result = await controller.createBatch(createDto, mockUser);
 
-      expect(service.createBatch).toHaveBeenCalledWith(createDto, mockWorker.id);
+      expect(service.createBatch).toHaveBeenCalledWith(createDto, mockUser.id);
       expect(result).toEqual({ count: 2 });
     });
 
@@ -97,28 +97,28 @@ describe('LocationController', () => {
 
       const result = await controller.createBatch(
         { ...createDto, locations: Array(10).fill(createDto.locations[0]) },
-        mockWorker,
+        mockUser,
       );
 
       expect(result.count).toBe(10);
     });
   });
 
-  describe('getWorkerHistory', () => {
-    const workerId = 'worker-uuid-123';
+  describe('getUserHistory', () => {
+    const userId = 'user-uuid-123';
 
-    it('should return paginated worker location history with no filters', async () => {
+    it('should return paginated user location history with no filters', async () => {
       const paginatedResult = {
         data: [mockLocationLog],
         meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
       };
-      mockLocationService.getWorkerHistoryPaginated.mockResolvedValue(paginatedResult);
+      mockLocationService.getUserHistoryPaginated.mockResolvedValue(paginatedResult);
 
       const paginationDto: PaginationDto = { page: 1, limit: 50 };
-      const result = await controller.getWorkerHistory(workerId, paginationDto);
+      const result = await controller.getUserHistory(userId, paginationDto);
 
-      expect(service.getWorkerHistoryPaginated).toHaveBeenCalledWith(
-        workerId,
+      expect(service.getUserHistoryPaginated).toHaveBeenCalledWith(
+        userId,
         {
           from_date: undefined,
           to_date: undefined,
@@ -135,18 +135,18 @@ describe('LocationController', () => {
         data: [mockLocationLog],
         meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
       };
-      mockLocationService.getWorkerHistoryPaginated.mockResolvedValue(paginatedResult);
+      mockLocationService.getUserHistoryPaginated.mockResolvedValue(paginatedResult);
 
       const paginationDto: PaginationDto = { page: 1, limit: 50 };
-      const result = await controller.getWorkerHistory(
-        workerId,
+      const result = await controller.getUserHistory(
+        userId,
         paginationDto,
         '2026-01-01',
         '2026-01-31',
       );
 
-      expect(service.getWorkerHistoryPaginated).toHaveBeenCalledWith(
-        workerId,
+      expect(service.getUserHistoryPaginated).toHaveBeenCalledWith(
+        userId,
         {
           from_date: '2026-01-01',
           to_date: '2026-01-31',
@@ -163,19 +163,19 @@ describe('LocationController', () => {
         data: [mockLocationLog],
         meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
       };
-      mockLocationService.getWorkerHistoryPaginated.mockResolvedValue(paginatedResult);
+      mockLocationService.getUserHistoryPaginated.mockResolvedValue(paginatedResult);
 
       const paginationDto: PaginationDto = { page: 1, limit: 50 };
-      const result = await controller.getWorkerHistory(
-        workerId,
+      const result = await controller.getUserHistory(
+        userId,
         paginationDto,
         undefined,
         undefined,
         'shift-uuid-1',
       );
 
-      expect(service.getWorkerHistoryPaginated).toHaveBeenCalledWith(
-        workerId,
+      expect(service.getUserHistoryPaginated).toHaveBeenCalledWith(
+        userId,
         {
           from_date: undefined,
           to_date: undefined,
@@ -189,21 +189,21 @@ describe('LocationController', () => {
   });
 
   describe('getLatestLocation', () => {
-    const workerId = 'worker-uuid-123';
+    const userId = 'user-uuid-123';
 
     it('should return latest location', async () => {
       mockLocationService.getLatestLocation.mockResolvedValue(mockLocationLog);
 
-      const result = await controller.getLatestLocation(workerId);
+      const result = await controller.getLatestLocation(userId);
 
-      expect(service.getLatestLocation).toHaveBeenCalledWith(workerId);
+      expect(service.getLatestLocation).toHaveBeenCalledWith(userId);
       expect(result).toEqual(mockLocationLog);
     });
 
     it('should return null if no location found', async () => {
       mockLocationService.getLatestLocation.mockResolvedValue(null);
 
-      const result = await controller.getLatestLocation(workerId);
+      const result = await controller.getLatestLocation(userId);
 
       expect(result).toBeNull();
     });

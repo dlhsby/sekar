@@ -1,9 +1,11 @@
 # ADR-005: 100m GPS Boundary Tolerance
 
 **Date:** 2026-01-16
-**Status:** ✅ Accepted
+**Status:** ⚠️ Partially Superseded by [ADR-010](./ADR-010-phase2c-terminology-cleanup.md) (Phase 2C)
 **Deciders:** System Architect, Product Owner, Field Testing Team
 **Tags:** gps, validation, business-rules
+
+> **Phase 2C Update:** Hard GPS boundary rejection (100m tolerance) is replaced by **soft polygon geofencing**. Clock-in/out always succeeds regardless of GPS position. Out-of-boundary clock-ins are flagged with `clock_in_outside_boundary = true` on the shift record for monitoring. The Haversine distance calculation remains as a fallback when no area polygon is defined. See [ADR-010 Decision 5](./ADR-010-phase2c-terminology-cleanup.md).
 
 ---
 

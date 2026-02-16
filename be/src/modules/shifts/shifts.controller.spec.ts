@@ -13,11 +13,11 @@ describe('ShiftsController', () => {
   let controller: ShiftsController;
   let service: ShiftsService;
 
-  const mockWorker = {
-    id: 'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
-    username: 'worker1',
+  const mockUser = {
+    id: 'user-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+    username: 'user1',
     role: UserRole.SATGAS,
-    full_name: 'Worker One',
+    full_name: 'User One',
     is_active: true,
     password_hash: 'hashed',
     created_at: new Date(),
@@ -26,8 +26,8 @@ describe('ShiftsController', () => {
 
   const mockShift: any = {
     id: 'shift-uuid-5e6f7a8b-c9d0-1234-ef01-345678901234',
-    worker_id: mockWorker.id,
-    worker: mockWorker as any,
+    user_id: mockUser.id,
+    user: mockUser as any,
     area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
     area: {
       id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
@@ -48,7 +48,7 @@ describe('ShiftsController', () => {
     clockIn: jest.fn(),
     clockOut: jest.fn(),
     findActiveShift: jest.fn(),
-    findByWorkerId: jest.fn(),
+    findByUserId: jest.fn(),
     findAllActiveShifts: jest.fn(),
     findAllActiveShiftsPaginated: jest.fn(),
   };
@@ -82,17 +82,17 @@ describe('ShiftsController', () => {
       selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
     };
 
-    it('should clock in a worker with provided area_id', async () => {
+    it('should clock in a user with provided area_id', async () => {
       mockShiftsService.clockIn.mockResolvedValue(mockShift);
 
-      const result = await controller.clockIn(mockWorker as any, clockInDto);
+      const result = await controller.clockIn(mockUser as any, clockInDto);
 
       expect(result).toEqual(mockShift);
-      expect(service.clockIn).toHaveBeenCalledWith(mockWorker.id, clockInDto);
+      expect(service.clockIn).toHaveBeenCalledWith(mockUser.id, clockInDto);
       expect(service.clockIn).toHaveBeenCalledTimes(1);
     });
 
-    it('should clock in a worker with auto-detected area', async () => {
+    it('should clock in a user with auto-detected area', async () => {
       const dtoWithoutArea = {
         gps_lat: -7.2905,
         gps_lng: 112.7398,
@@ -100,16 +100,16 @@ describe('ShiftsController', () => {
       };
       mockShiftsService.clockIn.mockResolvedValue(mockShift);
 
-      const result = await controller.clockIn(mockWorker as any, dtoWithoutArea);
+      const result = await controller.clockIn(mockUser as any, dtoWithoutArea);
 
       expect(result).toEqual(mockShift);
-      expect(service.clockIn).toHaveBeenCalledWith(mockWorker.id, dtoWithoutArea);
+      expect(service.clockIn).toHaveBeenCalledWith(mockUser.id, dtoWithoutArea);
     });
 
     it('should throw BadRequestException if already clocked in', async () => {
       mockShiftsService.clockIn.mockRejectedValue(new BadRequestException('Already clocked in'));
 
-      await expect(controller.clockIn(mockWorker as any, clockInDto)).rejects.toThrow(
+      await expect(controller.clockIn(mockUser as any, clockInDto)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -119,7 +119,7 @@ describe('ShiftsController', () => {
         new BadRequestException('Failed to upload selfie photo'),
       );
 
-      await expect(controller.clockIn(mockWorker as any, clockInDto)).rejects.toThrow(
+      await expect(controller.clockIn(mockUser as any, clockInDto)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -131,7 +131,7 @@ describe('ShiftsController', () => {
       gps_lng: 112.7399,
     };
 
-    it('should clock out a worker', async () => {
+    it('should clock out a user', async () => {
       const clockedOutShift = {
         ...mockShift,
         clock_out_time: new Date('2026-01-09T16:00:00Z'),
@@ -140,10 +140,10 @@ describe('ShiftsController', () => {
       };
       mockShiftsService.clockOut.mockResolvedValue(clockedOutShift);
 
-      const result = await controller.clockOut(mockWorker as any, clockOutDto);
+      const result = await controller.clockOut(mockUser as any, clockOutDto);
 
       expect(result).toEqual(clockedOutShift);
-      expect(service.clockOut).toHaveBeenCalledWith(mockWorker.id, clockOutDto);
+      expect(service.clockOut).toHaveBeenCalledWith(mockUser.id, clockOutDto);
       expect(service.clockOut).toHaveBeenCalledTimes(1);
     });
 
@@ -152,7 +152,7 @@ describe('ShiftsController', () => {
         new BadRequestException('No active shift found'),
       );
 
-      await expect(controller.clockOut(mockWorker as any, clockOutDto)).rejects.toThrow(
+      await expect(controller.clockOut(mockUser as any, clockOutDto)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -162,36 +162,36 @@ describe('ShiftsController', () => {
     it('should return current active shift', async () => {
       mockShiftsService.findActiveShift.mockResolvedValue(mockShift);
 
-      const result = await controller.getCurrentShift(mockWorker as any);
+      const result = await controller.getCurrentShift(mockUser as any);
 
       expect(result).toEqual(mockShift);
-      expect(service.findActiveShift).toHaveBeenCalledWith(mockWorker.id);
+      expect(service.findActiveShift).toHaveBeenCalledWith(mockUser.id);
     });
 
     it('should return null if no active shift', async () => {
       mockShiftsService.findActiveShift.mockResolvedValue(null);
 
-      const result = await controller.getCurrentShift(mockWorker as any);
+      const result = await controller.getCurrentShift(mockUser as any);
 
       expect(result).toBeNull();
     });
   });
 
   describe('getMyShifts', () => {
-    it('should return shift history for worker', async () => {
+    it('should return shift history for user', async () => {
       const shifts = [mockShift, { ...mockShift, id: 'shift-2' }];
-      mockShiftsService.findByWorkerId.mockResolvedValue(shifts);
+      mockShiftsService.findByUserId.mockResolvedValue(shifts);
 
-      const result = await controller.getMyShifts(mockWorker as any);
+      const result = await controller.getMyShifts(mockUser as any);
 
       expect(result).toEqual(shifts);
-      expect(service.findByWorkerId).toHaveBeenCalledWith(mockWorker.id);
+      expect(service.findByUserId).toHaveBeenCalledWith(mockUser.id);
     });
 
     it('should return empty array if no shifts', async () => {
-      mockShiftsService.findByWorkerId.mockResolvedValue([]);
+      mockShiftsService.findByUserId.mockResolvedValue([]);
 
-      const result = await controller.getMyShifts(mockWorker as any);
+      const result = await controller.getMyShifts(mockUser as any);
 
       expect(result).toEqual([]);
     });
@@ -199,7 +199,7 @@ describe('ShiftsController', () => {
 
   describe('getActiveShifts', () => {
     it('should return paginated active shifts', async () => {
-      const activeShifts = [mockShift, { ...mockShift, worker_id: 'worker-2' }];
+      const activeShifts = [mockShift, { ...mockShift, user_id: 'user-2' }];
       const paginatedResult = new PaginatedResponseDto(activeShifts, 2, 1, 50);
       mockShiftsService.findAllActiveShiftsPaginated.mockResolvedValue(paginatedResult);
 

@@ -1,6 +1,7 @@
 /**
  * RootNavigator Tests
  * Unit tests for root navigation based on auth state
+ * Phase 2C: Unified MainNavigator replaces WorkerNavigator/SupervisorNavigator
  */
 
 import React from 'react';
@@ -10,8 +11,11 @@ import { configureStore } from '@reduxjs/toolkit';
 import RootNavigator from '../RootNavigator';
 import authReducer from '../../store/slices/authSlice';
 import shiftReducer from '../../store/slices/shiftSlice';
-import reportReducer from '../../store/slices/reportSlice';
+import activitiesReducer from '../../store/slices/activitiesSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
+import tasksReducer from '../../store/slices/tasksSlice';
+import notificationsReducer from '../../store/slices/notificationsSlice';
+import overtimeReducer from '../../store/slices/overtimeSlice';
 
 // Alert mocked globally in jest.setup.js
 
@@ -26,17 +30,10 @@ jest.mock('../../screens/auth/LoginScreen', () => {
   };
 });
 
-jest.mock('../WorkerNavigator', () => {
+jest.mock('../MainNavigator', () => {
   const { Text } = require('react-native');
-  return function MockWorkerNavigator() {
-    return <Text testID="worker-navigator">Worker Navigator</Text>;
-  };
-});
-
-jest.mock('../SupervisorNavigator', () => {
-  const { Text } = require('react-native');
-  return function MockSupervisorNavigator() {
-    return <Text testID="supervisor-navigator">Supervisor Navigator</Text>;
+  return function MockMainNavigator() {
+    return <Text testID="main-navigator">Main Navigator</Text>;
   };
 });
 
@@ -46,8 +43,11 @@ function createTestStore(preloadedState?: any) {
     reducer: {
       auth: authReducer,
       shift: shiftReducer,
-      report: reportReducer,
+      activities: activitiesReducer,
       offline: offlineReducer,
+      tasks: tasksReducer,
+      notifications: notificationsReducer,
+      overtime: overtimeReducer,
     },
     preloadedState,
   });
@@ -96,15 +96,15 @@ describe('RootNavigator', () => {
     });
   });
 
-  describe('worker authentication', () => {
-    it('should render WorkerNavigator for worker role', () => {
+  describe('authenticated state - unified MainNavigator', () => {
+    it('should render MainNavigator for satgas role', () => {
       const store = createTestStore({
         auth: {
           user: {
-            id: 1,
-            username: 'worker1',
-            full_name: 'Test Worker',
-            role: 'worker',
+            id: '1',
+            username: 'satgas1',
+            full_name: 'Test Satgas',
+            role: 'satgas',
           },
           assignedArea: null,
           isAuthenticated: true,
@@ -119,14 +119,14 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('worker-navigator')).toBeTruthy();
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render WorkerNavigator for linmas role', () => {
+    it('should render MainNavigator for linmas role', () => {
       const store = createTestStore({
         auth: {
           user: {
-            id: 4,
+            id: '4',
             username: 'linmas1',
             full_name: 'Test Linmas',
             role: 'linmas',
@@ -144,20 +144,17 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      // Linmas should use WorkerNavigator (same features as worker)
-      expect(screen.getByTestId('worker-navigator')).toBeTruthy();
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
     });
-  });
 
-  describe('supervisor authentication', () => {
-    it('should render SupervisorNavigator for supervisor role', () => {
+    it('should render MainNavigator for korlap role', () => {
       const store = createTestStore({
         auth: {
           user: {
-            id: 2,
-            username: 'supervisor1',
-            full_name: 'Test Supervisor',
-            role: 'supervisor',
+            id: '2',
+            username: 'korlap1',
+            full_name: 'Test Korlap',
+            role: 'korlap',
           },
           assignedArea: null,
           isAuthenticated: true,
@@ -172,17 +169,17 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render SupervisorNavigator for admin role', () => {
+    it('should render MainNavigator for admin_data role', () => {
       const store = createTestStore({
         auth: {
           user: {
-            id: 3,
-            username: 'admin',
-            full_name: 'Test Admin',
-            role: 'admin',
+            id: '8',
+            username: 'admin_data1',
+            full_name: 'Test Admin Data',
+            role: 'admin_data',
           },
           assignedArea: null,
           isAuthenticated: true,
@@ -197,15 +194,14 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      // Admin should also go to supervisor navigator (not worker)
-      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render SupervisorNavigator for kepala_rayon role', () => {
+    it('should render MainNavigator for kepala_rayon role', () => {
       const store = createTestStore({
         auth: {
           user: {
-            id: 5,
+            id: '5',
             username: 'kepala_rayon1',
             full_name: 'Test Kepala Rayon',
             role: 'kepala_rayon',
@@ -223,41 +219,14 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      // Kepala Rayon (Rayon manager) should use supervisor navigator
-      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render SupervisorNavigator for koordinator_lapangan role', () => {
+    it('should render MainNavigator for top_management role', () => {
       const store = createTestStore({
         auth: {
           user: {
-            id: 6,
-            username: 'koordinator1',
-            full_name: 'Test Koordinator Lapangan',
-            role: 'koordinator_lapangan',
-          },
-          assignedArea: null,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        },
-      });
-
-      render(
-        <Provider store={store}>
-          <RootNavigator />
-        </Provider>
-      );
-
-      // Koordinator Lapangan (Field coordinator) should use supervisor navigator
-      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
-    });
-
-    it('should render SupervisorNavigator for top_management role', () => {
-      const store = createTestStore({
-        auth: {
-          user: {
-            id: 7,
+            id: '7',
             username: 'topmanager1',
             full_name: 'Test Top Management',
             role: 'top_management',
@@ -275,8 +244,57 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      // Top Management (City-wide view) should use supervisor navigator
-      expect(screen.getByTestId('supervisor-navigator')).toBeTruthy();
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+    });
+
+    it('should render MainNavigator for admin_system role', () => {
+      const store = createTestStore({
+        auth: {
+          user: {
+            id: '9',
+            username: 'admin_system1',
+            full_name: 'Test Admin System',
+            role: 'admin_system',
+          },
+          assignedArea: null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      render(
+        <Provider store={store}>
+          <RootNavigator />
+        </Provider>
+      );
+
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+    });
+
+    it('should render MainNavigator for superadmin role', () => {
+      const store = createTestStore({
+        auth: {
+          user: {
+            id: '10',
+            username: 'superadmin',
+            full_name: 'Test Superadmin',
+            role: 'superadmin',
+          },
+          assignedArea: null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      render(
+        <Provider store={store}>
+          <RootNavigator />
+        </Provider>
+      );
+
+      expect(screen.getByTestId('main-navigator')).toBeTruthy();
     });
   });
 });

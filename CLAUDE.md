@@ -148,16 +148,33 @@ async method(@GetUser() user: User) { ... }
 
 ### Role Values Convention
 
-**CRITICAL:** Always use lowercase role values matching backend enum:
-- `'worker'` - Field worker (Satgas)
-- `'supervisor'` - Area supervisor (Koordinator Lapangan)
-- `'admin'` - System administrator
+**CRITICAL:** Always use lowercase role values matching backend enum.
+
+**Phase 2C roles (8 roles -- ADR-009):**
+- `'satgas'` - Field worker (was `worker`)
 - `'linmas'` - Security officer
-- `'top_management'` - City-wide view
+- `'korlap'` - Field coordinator (was `koordinator_lapangan`)
+- `'admin_data'` - Data administrator (new)
 - `'kepala_rayon'` - Rayon manager
-- `'koordinator_lapangan'` - Field coordinator
+- `'top_management'` - City-wide view
+- `'admin_system'` - System administrator (new, split from `admin`)
+- `'superadmin'` - Full system access (new, split from `admin`)
+
+**Removed roles:** `worker`, `supervisor`, `admin`, `koordinator_lapangan`
 
 **Never use Pascal case for roles** (avoid `'Worker'`, `'Admin'`, `'Supervisor'`).
+
+### Terminology Convention (Phase 2C -- ADR-010)
+
+**Code uses English; Indonesian only for UI labels and user-facing messages.**
+
+| Concept | Code Name | Indonesian UI Label |
+|---------|-----------|-------------------|
+| Activity submission | `Activity`, `/activities` | Aktivitas |
+| Work schedule | `Schedule`, `/schedules` | Jadwal |
+| Overtime | `Overtime`, `/overtime` | Lembur |
+
+**Dropped:** `WorkerAssignment`, `OvertimeAktivitas`, `Report` (entity), `/aktivitas` (route), `/worker-schedules` (route)
 
 ---
 

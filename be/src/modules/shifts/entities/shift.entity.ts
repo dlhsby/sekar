@@ -28,19 +28,19 @@ export class Shift {
   id: string;
 
   @ApiProperty({
-    description: 'Worker UUID (foreign key to users table)',
+    description: 'User UUID (foreign key to users table)',
     example: 'f634880a-7498-449a-a293-9c5204176300',
   })
   @Column('uuid')
-  worker_id: string;
+  user_id: string;
 
   @ApiProperty({
-    description: 'Worker details',
+    description: 'User details',
     type: () => User,
   })
   @ManyToOne(() => User, { eager: true, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'worker_id' })
-  worker: User;
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   @ApiProperty({
     description: 'Area UUID (foreign key to areas table) - Phase 2C: optional (auto-detected)',
@@ -58,6 +58,20 @@ export class Shift {
   @ManyToOne(() => Area, { eager: true, nullable: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'area_id' })
   area?: Area;
+
+  @ApiProperty({
+    description: 'Whether user was outside area boundary at clock-in',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  clock_in_outside_boundary: boolean;
+
+  @ApiProperty({
+    description: 'Whether user was outside area boundary at clock-out',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  clock_out_outside_boundary: boolean;
 
   @ApiProperty({
     description: 'Clock-in timestamp',

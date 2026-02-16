@@ -30,7 +30,7 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
     const unsubscribe = NetInfo.addEventListener((state) => {
       const isOnline = state.isConnected === true && state.isInternetReachable !== false;
 
-      console.log('[NetworkProvider] Network state changed:', {
+      console.debug('[NetworkProvider] Network state changed:', {
         isConnected: state.isConnected,
         isInternetReachable: state.isInternetReachable,
         type: state.type,
@@ -41,7 +41,7 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
 
       // Trigger sync when transitioning from offline to online
       if (previousOnlineStatus.current === false && isOnline) {
-        console.log('[NetworkProvider] Network restored - triggering sync');
+        console.debug('[NetworkProvider] Network restored - triggering sync');
         syncManager.syncNow().catch((error) => {
           console.error('[NetworkProvider] Sync after reconnect failed:', error);
         });
@@ -54,7 +54,7 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
     NetInfo.fetch().then((state) => {
       const isOnline = state.isConnected === true && state.isInternetReachable !== false;
 
-      console.log('[NetworkProvider] Initial network state:', {
+      console.debug('[NetworkProvider] Initial network state:', {
         isConnected: state.isConnected,
         isInternetReachable: state.isInternetReachable,
         type: state.type,
@@ -66,7 +66,7 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
 
       // Trigger initial sync if online
       if (isOnline) {
-        console.log('[NetworkProvider] Initial online state - triggering sync');
+        console.debug('[NetworkProvider] Initial online state - triggering sync');
         syncManager.syncNow().catch((error) => {
           console.error('[NetworkProvider] Initial sync failed:', error);
         });

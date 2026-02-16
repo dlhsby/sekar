@@ -1,6 +1,6 @@
 /**
  * Shifts API Service
- * Clock-in/out related API calls
+ * Phase 2C: area_id optional (auto-detected from schedule)
  */
 
 import { get, post } from './apiClient';
@@ -13,35 +13,29 @@ import type {
 } from '../../types/api.types';
 
 /**
- * Clock in to start shift using Base64 encoded photo
- * @param areaId - Area UUID (string)
- * @param gpsLat - GPS latitude
- * @param gpsLng - GPS longitude
- * @param selfiePhotoBase64 - Base64 encoded selfie photo with data URI prefix
- * @returns Clock-in response with shift ID
+ * Clock in to start shift
+ * Phase 2C: areaId is optional (auto-detected from schedule)
  */
 export async function clockIn(
-  areaId: string,
   gpsLat: number,
   gpsLng: number,
   selfiePhotoBase64: string,
+  areaId?: string,
 ): Promise<ApiResponse<ClockInResponse>> {
-  const payload = {
-    area_id: areaId,
+  const payload: Record<string, unknown> = {
     gps_lat: gpsLat,
     gps_lng: gpsLng,
     selfie_photo: selfiePhotoBase64,
   };
+  if (areaId) {
+    payload.area_id = areaId;
+  }
   return post<ClockInResponse>('/shifts/clock-in', payload);
 }
 
 /**
  * Clock out to end shift
- * Backend automatically uses the current active shift for the authenticated user.
- *
- * @param gpsLat - GPS latitude
- * @param gpsLng - GPS longitude
- * @returns Clock-out response with total hours
+ * Backend uses the authenticated user's current active shift
  */
 export async function clockOut(
   gpsLat: number,
@@ -54,21 +48,14 @@ export async function clockOut(
   return post<ClockOutResponse>('/shifts/clock-out', payload);
 }
 
-/**
- * Get current active shift
- * @returns Current shift data or null
- */
 export async function getCurrentShift(): Promise<
   ApiResponse<CurrentShiftResponse | null>
 > {
   return get<CurrentShiftResponse | null>('/shifts/current');
 }
 
-/**
- * Get worker's shift history
- * @returns Array of past shifts
- */
-export async function getMyShifts(): Promise<ApiResponse<CurrentShiftResponse[]>> {
+export async function getMyShifts(): Promise<
+  ApiResponse<CurrentShiftResponse[]>
+> {
   return get<CurrentShiftResponse[]>('/shifts/my-shifts');
 }
-

@@ -32,9 +32,9 @@ npm run start:dev
 
 | Username | Password | Role |
 |----------|----------|------|
-| admin | admin123 | Admin |
-| supervisor1 | supervisor123 | Supervisor |
-| worker1, worker2, worker3 | worker123 | Worker |
+| admin | admin123 | Superadmin |
+| korlap1, korlap2 | korlap123 | Korlap |
+| satgas1, satgas2, satgas3 | satgas123 | Satgas |
 
 ## Common Commands
 

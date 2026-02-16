@@ -258,7 +258,7 @@ export class AreaStaffRequirementsService {
       }
 
       const shift = shiftMap.get(shiftId)!;
-      if (req.role === StaffRole.WORKER) {
+      if (req.role === StaffRole.SATGAS) {
         shift.workerCount = req.required_count;
       } else if (req.role === StaffRole.LINMAS) {
         shift.linmasCount = req.required_count;

@@ -22,8 +22,8 @@ import { VALID_TASK_ASSIGNMENTS } from '../users/constants/role-groups';
 /**
  * Service for managing tasks
  *
- * Tasks are work assignments created by KoordinatorLapangan or higher roles.
- * Workers can accept, decline, start, and complete tasks.
+ * Tasks are work assignments created by korlap or higher roles.
+ * Assignees (satgas, linmas, korlap) can start and complete tasks.
  */
 @Injectable()
 export class TasksService {
@@ -51,10 +51,11 @@ export class TasksService {
     // Get creator to validate hierarchy
     const creator = await this.usersService.findOne(creatorId);
 
-    // Validate area exists if provided
+    // Validate area exists if provided and check scope
     if (createTaskDto.area_id) {
       await this.areasService.findOne(createTaskDto.area_id);
     }
+    await this.validateScope(creator, createTaskDto.area_id);
 
     // If assigning to a user, validate the user and hierarchy
     let initialStatus = TaskStatus.PENDING;
@@ -240,7 +241,7 @@ export class TasksService {
   }
 
   /**
-   * Assign a task to a worker
+   * Assign a task to a user
    *
    * @param id - Task ID
    * @param assignTaskDto - Assignment data
@@ -277,7 +278,7 @@ export class TasksService {
   }
 
   /**
-   * Start working on a task (by worker)
+   * Start working on a task (by assignee)
    *
    * @param id - Task ID
    * @param userId - ID of the user starting the task
@@ -310,7 +311,7 @@ export class TasksService {
   }
 
   /**
-   * Complete a task with evidence (by worker)
+   * Complete a task with evidence (by assignee)
    *
    * @param id - Task ID
    * @param userId - ID of the user completing the task
@@ -361,7 +362,7 @@ export class TasksService {
   }
 
   /**
-   * Get tasks by area (for coordinators/supervisors)
+   * Get tasks by area (for management roles)
    *
    * @param areaId - Area ID
    * @param activeOnly - If true, only return non-completed/declined tasks
@@ -463,7 +464,19 @@ export class TasksService {
    * @returns The updated task
    */
   async addTag(taskId: string, userId: string, taggedUserId: string): Promise<Task> {
-    this.logger.log(`Adding tag to task ${taskId}: user ${taggedUserId}`);
+    return this.addTags(taskId, userId, [taggedUserId]);
+  }
+
+  /**
+   * Add multiple tags to a task (batch)
+   *
+   * @param taskId - Task ID
+   * @param userId - ID of the user adding the tags (for authorization)
+   * @param taggedUserIds - Array of user IDs to tag
+   * @returns The updated task
+   */
+  async addTags(taskId: string, userId: string, taggedUserIds: string[]): Promise<Task> {
+    this.logger.log(`Adding ${taggedUserIds.length} tags to task ${taskId}`);
 
     const task = await this.findOne(taskId);
 
@@ -472,26 +485,28 @@ export class TasksService {
       throw new ForbiddenException('Only the task creator can add tags');
     }
 
-    // Check if tag already exists
-    const existingTag = await this.taskTagRepository.findOne({
-      where: { task_id: taskId, user_id: taggedUserId },
-    });
+    for (const taggedUserId of taggedUserIds) {
+      // Check if tag already exists
+      const existingTag = await this.taskTagRepository.findOne({
+        where: { task_id: taskId, user_id: taggedUserId },
+      });
 
-    if (existingTag) {
-      throw new BadRequestException('User is already tagged in this task');
+      if (existingTag) {
+        continue; // Skip already tagged users in batch mode
+      }
+
+      // Verify tagged user exists
+      await this.usersService.findOne(taggedUserId);
+
+      const tag = this.taskTagRepository.create({
+        task_id: taskId,
+        user_id: taggedUserId,
+      });
+
+      await this.taskTagRepository.save(tag);
     }
 
-    // Verify tagged user exists
-    await this.usersService.findOne(taggedUserId);
-
-    const tag = this.taskTagRepository.create({
-      task_id: taskId,
-      user_id: taggedUserId,
-    });
-
-    await this.taskTagRepository.save(tag);
-    this.logger.log(`Tag added to task ${taskId}`);
-
+    this.logger.log(`Tags added to task ${taskId}`);
     return this.findOne(taskId);
   }
 
@@ -551,6 +566,31 @@ export class TasksService {
       throw new ForbiddenException(
         `Users with role "${creatorRole}" cannot assign tasks to users with role "${assigneeRole}"`,
       );
+    }
+  }
+
+  /**
+   * Validate geographic scope for task creation
+   *
+   * - kepala_rayon: area.rayon_id must match creator.rayon_id
+   * - korlap: dto.area_id must match creator.area_id
+   */
+  private async validateScope(creator: User, areaId?: string): Promise<void> {
+    if (creator.role === UserRole.KEPALA_RAYON && creator.rayon_id && areaId) {
+      const area = await this.areasService.findOne(areaId);
+      if (area.rayon_id !== creator.rayon_id) {
+        throw new ForbiddenException(
+          'Kepala Rayon can only create tasks for areas within their rayon',
+        );
+      }
+    }
+
+    if (creator.role === UserRole.KORLAP && creator.area_id && areaId) {
+      if (areaId !== creator.area_id) {
+        throw new ForbiddenException(
+          'Korlap can only create tasks for their own area',
+        );
+      }
     }
   }
 }

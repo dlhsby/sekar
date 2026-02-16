@@ -4,10 +4,8 @@ import { Repository, IsNull } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
-import { WorkerSchedule } from '../worker-schedules/entities/worker-schedule.entity';
-import { WorkerAssignment } from '../worker-assignments/entities/worker-assignment.entity';
+import { Schedule } from '../schedules/entities/schedule.entity';
 import { AreasService } from '../areas/areas.service';
-import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 import { S3Service } from '../../shared/services/s3.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
@@ -19,17 +17,15 @@ describe('ShiftsService', () => {
   let module: TestingModule;
   let service: ShiftsService;
   let repository: jest.Mocked<Repository<Shift>>;
-  let workerScheduleRepo: jest.Mocked<Repository<WorkerSchedule>>;
-  let workerAssignmentRepo: jest.Mocked<Repository<WorkerAssignment>>;
+  let scheduleRepo: jest.Mocked<Repository<Schedule>>;
   let areasService: jest.Mocked<AreasService>;
-  let workerAssignmentsService: jest.Mocked<WorkerAssignmentsService>;
   let s3Service: jest.Mocked<S3Service>;
 
-  const mockWorker = {
-    id: 'worker-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
-    username: 'worker1',
+  const mockUser = {
+    id: 'user-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+    username: 'user1',
     role: UserRole.SATGAS,
-    full_name: 'Worker One',
+    full_name: 'User One',
     is_active: true,
   };
 
@@ -42,26 +38,21 @@ describe('ShiftsService', () => {
     is_active: true,
   };
 
-  const mockAssignment = {
-    id: 'assignment-uuid-4d5e6f7a-b8c9-0123-def0-234567890123',
-    worker_id: mockWorker.id,
-    area_id: mockArea.id,
-    area: mockArea as any,
-  };
-
   const mockShift: any = {
     id: 'shift-uuid-5e6f7a8b-c9d0-1234-ef01-345678901234',
-    worker_id: mockWorker.id,
-    worker: mockWorker as any,
+    user_id: mockUser.id,
+    user: mockUser as any,
     area_id: mockArea.id,
     area: mockArea as any,
     clock_in_time: new Date('2026-01-09T08:00:00Z'),
     clock_in_gps_lat: -7.2905,
     clock_in_gps_lng: 112.7398,
     clock_in_photo_url: 'https://s3.amazonaws.com/photo.jpg',
+    clock_in_outside_boundary: false,
     clock_out_time: null,
     clock_out_gps_lat: null,
     clock_out_gps_lng: null,
+    clock_out_outside_boundary: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -78,20 +69,12 @@ describe('ShiftsService', () => {
     findOne: jest.fn(),
   };
 
-  const mockWorkerAssignmentsService = {
-    getWorkerAssignment: jest.fn(),
-  };
-
   const mockS3Service = {
     uploadFile: jest.fn(),
     generateKey: jest.fn(),
   };
 
-  const mockWorkerScheduleRepo = {
-    findOne: jest.fn(),
-  };
-
-  const mockWorkerAssignmentRepo = {
+  const mockScheduleRepo = {
     findOne: jest.fn(),
   };
 
@@ -104,20 +87,12 @@ describe('ShiftsService', () => {
           useValue: mockRepository,
         },
         {
-          provide: getRepositoryToken(WorkerSchedule),
-          useValue: mockWorkerScheduleRepo,
-        },
-        {
-          provide: getRepositoryToken(WorkerAssignment),
-          useValue: mockWorkerAssignmentRepo,
+          provide: getRepositoryToken(Schedule),
+          useValue: mockScheduleRepo,
         },
         {
           provide: AreasService,
           useValue: mockAreasService,
-        },
-        {
-          provide: WorkerAssignmentsService,
-          useValue: mockWorkerAssignmentsService,
         },
         {
           provide: S3Service,
@@ -128,16 +103,10 @@ describe('ShiftsService', () => {
 
     service = module.get<ShiftsService>(ShiftsService);
     repository = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
-    workerScheduleRepo = module.get(getRepositoryToken(WorkerSchedule)) as jest.Mocked<
-      Repository<WorkerSchedule>
-    >;
-    workerAssignmentRepo = module.get(getRepositoryToken(WorkerAssignment)) as jest.Mocked<
-      Repository<WorkerAssignment>
+    scheduleRepo = module.get(getRepositoryToken(Schedule)) as jest.Mocked<
+      Repository<Schedule>
     >;
     areasService = module.get(AreasService) as jest.Mocked<AreasService>;
-    workerAssignmentsService = module.get(
-      WorkerAssignmentsService,
-    ) as jest.Mocked<WorkerAssignmentsService>;
     s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
   });
 
@@ -148,37 +117,26 @@ describe('ShiftsService', () => {
   });
 
   describe('getActiveArea', () => {
-    it('should return area from WorkerSchedule when exists', async () => {
+    it('should return area from Schedule when exists', async () => {
       const mockSchedule = {
         id: 'schedule-uuid',
-        user_id: mockWorker.id,
+        user_id: mockUser.id,
         area_id: mockArea.id,
         area: mockArea,
         effective_date: new Date('2026-01-01'),
       };
-      mockWorkerScheduleRepo.findOne.mockResolvedValue(mockSchedule as any);
+      mockScheduleRepo.findOne.mockResolvedValue(mockSchedule as any);
 
-      const result = await service.getActiveArea(mockWorker.id);
-
-      expect(result).toEqual(mockArea);
-      expect(mockWorkerScheduleRepo.findOne).toHaveBeenCalled();
-    });
-
-    it('should fallback to WorkerAssignment when no WorkerSchedule', async () => {
-      mockWorkerScheduleRepo.findOne.mockResolvedValue(null);
-      mockWorkerAssignmentRepo.findOne.mockResolvedValue(mockAssignment as any);
-
-      const result = await service.getActiveArea(mockWorker.id);
+      const result = await service.getActiveArea(mockUser.id);
 
       expect(result).toEqual(mockArea);
-      expect(mockWorkerAssignmentRepo.findOne).toHaveBeenCalled();
+      expect(mockScheduleRepo.findOne).toHaveBeenCalled();
     });
 
-    it('should return null when no assignment found', async () => {
-      mockWorkerScheduleRepo.findOne.mockResolvedValue(null);
-      mockWorkerAssignmentRepo.findOne.mockResolvedValue(null);
+    it('should return null when no schedule found', async () => {
+      mockScheduleRepo.findOne.mockResolvedValue(null);
 
-      const result = await service.getActiveArea(mockWorker.id);
+      const result = await service.getActiveArea(mockUser.id);
 
       expect(result).toBeNull();
     });
@@ -192,7 +150,7 @@ describe('ShiftsService', () => {
       selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
     };
 
-    it('should successfully clock in a worker with area_id provided', async () => {
+    it('should successfully clock in a user with area_id provided', async () => {
       mockRepository.findOne.mockResolvedValue(null); // No active shift
       mockAreasService.findOne.mockResolvedValue(mockArea);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
@@ -200,12 +158,12 @@ describe('ShiftsService', () => {
       mockRepository.create.mockReturnValue(mockShift);
       mockRepository.save.mockResolvedValue(mockShift);
 
-      const result = await service.clockIn(mockWorker.id, clockInDto);
+      const result = await service.clockIn(mockUser.id, clockInDto);
 
       expect(result).toEqual(mockShift);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { worker_id: mockWorker.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.areaType', 'worker'],
+        where: { user_id: mockUser.id, clock_out_time: IsNull() },
+        relations: ['area', 'area.areaType', 'user'],
       });
       expect(mockAreasService.findOne).toHaveBeenCalledWith(mockArea.id);
       expect(mockS3Service.uploadFile).toHaveBeenCalled();
@@ -220,27 +178,27 @@ describe('ShiftsService', () => {
 
       const mockSchedule = {
         id: 'schedule-uuid',
-        user_id: mockWorker.id,
+        user_id: mockUser.id,
         area_id: mockArea.id,
         area: mockArea,
         effective_date: new Date('2026-01-01'),
       };
 
       mockRepository.findOne.mockResolvedValue(null);
-      mockWorkerScheduleRepo.findOne.mockResolvedValue(mockSchedule as any);
+      mockScheduleRepo.findOne.mockResolvedValue(mockSchedule as any);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
       mockRepository.create.mockReturnValue(mockShift);
       mockRepository.save.mockResolvedValue(mockShift);
 
-      const result = await service.clockIn(mockWorker.id, dtoWithoutArea);
+      const result = await service.clockIn(mockUser.id, dtoWithoutArea);
 
       expect(result).toEqual(mockShift);
-      expect(mockWorkerScheduleRepo.findOne).toHaveBeenCalled();
+      expect(mockScheduleRepo.findOne).toHaveBeenCalled();
       expect(mockAreasService.findOne).not.toHaveBeenCalled();
     });
 
-    it('should allow clock-in without area when no assignment found', async () => {
+    it('should allow clock-in without area when no schedule found', async () => {
       const dtoWithoutArea = {
         gps_lat: -7.2905,
         gps_lng: 112.7398,
@@ -254,26 +212,25 @@ describe('ShiftsService', () => {
       };
 
       mockRepository.findOne.mockResolvedValue(null);
-      mockWorkerScheduleRepo.findOne.mockResolvedValue(null);
-      mockWorkerAssignmentRepo.findOne.mockResolvedValue(null);
+      mockScheduleRepo.findOne.mockResolvedValue(null);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
       mockRepository.create.mockReturnValue(shiftWithoutArea);
       mockRepository.save.mockResolvedValue(shiftWithoutArea);
 
-      const result = await service.clockIn(mockWorker.id, dtoWithoutArea);
+      const result = await service.clockIn(mockUser.id, dtoWithoutArea);
 
       expect(result).toEqual(shiftWithoutArea);
       expect(result.area_id).toBeNull();
     });
 
-    it('should throw ApiException with SHIFT_ALREADY_ACTIVE if worker already clocked in', async () => {
+    it('should throw ApiException with SHIFT_ALREADY_ACTIVE if user already clocked in', async () => {
       mockRepository.findOne.mockResolvedValue(mockShift);
 
-      await expect(service.clockIn(mockWorker.id, clockInDto)).rejects.toThrow(ApiException);
+      await expect(service.clockIn(mockUser.id, clockInDto)).rejects.toThrow(ApiException);
 
       try {
-        await service.clockIn(mockWorker.id, clockInDto);
+        await service.clockIn(mockUser.id, clockInDto);
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
         expect(error.getCode()).toBe(ApiErrorCode.SHIFT_ALREADY_ACTIVE);
@@ -289,7 +246,7 @@ describe('ShiftsService', () => {
       mockS3Service.uploadFile.mockRejectedValue(new Error('S3 upload failed'));
 
       try {
-        await service.clockIn(mockWorker.id, clockInDto);
+        await service.clockIn(mockUser.id, clockInDto);
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
@@ -305,7 +262,7 @@ describe('ShiftsService', () => {
       gps_lng: 112.7399,
     };
 
-    it('should successfully clock out a worker', async () => {
+    it('should successfully clock out a user', async () => {
       const activeShift = { ...mockShift };
       mockRepository.findOne.mockResolvedValue(activeShift);
       mockRepository.save.mockResolvedValue({
@@ -315,7 +272,7 @@ describe('ShiftsService', () => {
         clock_out_gps_lng: clockOutDto.gps_lng,
       });
 
-      const result = await service.clockOut(mockWorker.id, clockOutDto);
+      const result = await service.clockOut(mockUser.id, clockOutDto);
 
       expect(result.clock_out_time).toBeTruthy();
       expect(result.clock_out_gps_lat).toBe(clockOutDto.gps_lat);
@@ -325,10 +282,10 @@ describe('ShiftsService', () => {
     it('should throw ApiException with SHIFT_NOT_ACTIVE if no active shift found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.clockOut(mockWorker.id, clockOutDto)).rejects.toThrow(ApiException);
+      await expect(service.clockOut(mockUser.id, clockOutDto)).rejects.toThrow(ApiException);
 
       try {
-        await service.clockOut(mockWorker.id, clockOutDto);
+        await service.clockOut(mockUser.id, clockOutDto);
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
         expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_ACTIVE);
@@ -341,19 +298,19 @@ describe('ShiftsService', () => {
     it('should return active shift if exists', async () => {
       mockRepository.findOne.mockResolvedValue(mockShift);
 
-      const result = await service.findActiveShift(mockWorker.id);
+      const result = await service.findActiveShift(mockUser.id);
 
       expect(result).toEqual(mockShift);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { worker_id: mockWorker.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.areaType', 'worker'],
+        where: { user_id: mockUser.id, clock_out_time: IsNull() },
+        relations: ['area', 'area.areaType', 'user'],
       });
     });
 
     it('should return null if no active shift', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.findActiveShift(mockWorker.id);
+      const result = await service.findActiveShift(mockUser.id);
 
       expect(result).toBeNull();
     });
@@ -382,15 +339,15 @@ describe('ShiftsService', () => {
     });
   });
 
-  describe('findByWorkerId', () => {
-    it('should return shifts for worker', async () => {
+  describe('findByUserId', () => {
+    it('should return shifts for user', async () => {
       mockRepository.find.mockResolvedValue([mockShift]);
 
-      const result = await service.findByWorkerId(mockWorker.id);
+      const result = await service.findByUserId(mockUser.id);
 
       expect(result).toEqual([mockShift]);
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { worker_id: mockWorker.id },
+        where: { user_id: mockUser.id },
         relations: ['area', 'area.areaType'],
         order: { clock_in_time: 'DESC' },
         take: 50,
@@ -437,7 +394,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual([mockShift]);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: { clock_out_time: IsNull() },
-        relations: ['worker', 'area', 'area.areaType'],
+        relations: ['user', 'area', 'area.areaType'],
         order: { clock_in_time: 'ASC' },
       });
     });
@@ -455,7 +412,7 @@ describe('ShiftsService', () => {
       expect(result.meta.limit).toBe(50);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { clock_out_time: IsNull() },
-        relations: ['worker', 'area', 'area.areaType'],
+        relations: ['user', 'area', 'area.areaType'],
         order: { clock_in_time: 'ASC' },
         skip: 0,
         take: 50,
@@ -472,7 +429,7 @@ describe('ShiftsService', () => {
       expect(result.meta.totalPages).toBe(2);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { clock_out_time: IsNull() },
-        relations: ['worker', 'area', 'area.areaType'],
+        relations: ['user', 'area', 'area.areaType'],
         order: { clock_in_time: 'ASC' },
         skip: 5,
         take: 5,

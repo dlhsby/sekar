@@ -73,11 +73,11 @@ export class UpdateActivityTypeDto {
    * Updated roles that can perform this activity.
    * Valid values: 'Worker', 'Linmas'
    *
-   * @example ['Worker', 'Linmas']
+   * @example ['satgas', 'linmas']
    */
   @ApiPropertyOptional({
     description: 'Roles that can perform this activity',
-    example: ['Worker', 'Linmas'],
+    example: ['satgas', 'linmas'],
     type: [String],
     enum: VALID_ACTIVITY_ROLES,
     isArray: true,

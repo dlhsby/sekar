@@ -7,9 +7,9 @@ import { useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { logout } from '../store/slices/authSlice';
+import { logout, resetState as resetAuthState } from '../store/slices/authSlice';
 import { resetState as resetShiftState } from '../store/slices/shiftSlice';
-import { resetState as resetReportState } from '../store/slices/reportSlice';
+import { resetState as resetActivitiesState } from '../store/slices/activitiesSlice';
 import { resetState as resetOfflineState } from '../store/slices/offlineSlice';
 import {
   getPendingCount,
@@ -26,7 +26,7 @@ interface SyncStatus {
   pendingByType: {
     'clock-in': number;
     'clock-out': number;
-    report: number;
+    activity: number;
     location: number;
   };
 }
@@ -65,8 +65,8 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
     if (pendingByType['clock-out'] > 0) {
       parts.push(`${pendingByType['clock-out']} clock-out`);
     }
-    if (pendingByType.report > 0) {
-      parts.push(`${pendingByType.report} laporan`);
+    if (pendingByType.activity > 0) {
+      parts.push(`${pendingByType.activity} aktivitas`);
     }
     if (pendingByType.location > 0) {
       parts.push(`${pendingByType.location} lokasi`);
@@ -98,7 +98,7 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
       // Clear all Redux states
       dispatch(resetAuthState());
       dispatch(resetShiftState());
-      dispatch(resetReportState());
+      dispatch(resetActivitiesState());
       dispatch(resetOfflineState());
 
       // Dispatch logout last to trigger navigation

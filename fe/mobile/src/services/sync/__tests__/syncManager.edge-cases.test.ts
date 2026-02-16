@@ -9,7 +9,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { syncManager } from '../syncManager';
 import * as offlineQueue from '../offlineQueue';
 import * as shiftsApi from '../../api/shiftsApi';
-import * as reportsApi from '../../api/reportsApi';
+import * as activitiesApi from '../../api/activitiesApi';
 import * as locationApi from '../../api/locationApi';
 import { locationTracker } from '../../location/locationTracker';
 
@@ -23,14 +23,14 @@ jest.mock('react-native', () => ({
 jest.mock('@react-native-community/netinfo');
 jest.mock('../offlineQueue');
 jest.mock('../../api/shiftsApi');
-jest.mock('../../api/reportsApi');
+jest.mock('../../api/activitiesApi');
 jest.mock('../../api/locationApi');
 jest.mock('../../location/locationTracker');
 
 const mockNetInfo = NetInfo as jest.Mocked<typeof NetInfo>;
 const mockOfflineQueue = offlineQueue as jest.Mocked<typeof offlineQueue>;
 const mockShiftsApi = shiftsApi as jest.Mocked<typeof shiftsApi>;
-const mockReportsApi = reportsApi as jest.Mocked<typeof reportsApi>;
+const mockActivitiesApi = activitiesApi as jest.Mocked<typeof activitiesApi>;
 const mockLocationApi = locationApi as jest.Mocked<typeof locationApi>;
 const mockLocationTracker = locationTracker as jest.Mocked<typeof locationTracker>;
 
@@ -281,7 +281,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
     it('should remove item on conflict error (code CONFLICT)', async () => {
       const item: any = {
         id: 'item-1',
-        type: 'report',
+        type: 'activity',
         data: {
           shift_id: 1,
           description: 'Test',
@@ -300,7 +300,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
 
       const conflictError: any = new Error('Conflict');
       conflictError.code = 'CONFLICT';
-      mockReportsApi.createReport.mockRejectedValue(conflictError);
+      mockActivitiesApi.createActivity.mockRejectedValue(conflictError);
 
       await syncManager.processQueue();
 
@@ -413,10 +413,10 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       });
     });
 
-    it('should handle report sync error', async () => {
+    it('should handle activity sync error', async () => {
       const item: any = {
         id: 'item-1',
-        type: 'report',
+        type: 'activity',
         data: {
           shift_id: 1,
           description: 'Test',
@@ -432,8 +432,8 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
-      mockReportsApi.createReport.mockResolvedValue({
-        error: 'Report creation failed',
+      mockActivitiesApi.createActivity.mockResolvedValue({
+        error: 'Activity creation failed',
         data: undefined,
       });
 
@@ -442,7 +442,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       expect(mockOfflineQueue.updateQueueItem).toHaveBeenCalledWith('item-1', {
         status: 'pending',
         retryCount: 1,
-        error: 'Report creation failed',
+        error: 'Activity creation failed',
       });
     });
   });

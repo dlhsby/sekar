@@ -9,7 +9,7 @@ import { IsNumber, Min, Max } from 'class-validator';
  */
 export class ClockOutDto {
   @ApiProperty({
-    description: 'GPS latitude of worker location at clock-out',
+    description: 'GPS latitude of user location at clock-out',
     example: -7.2906,
     minimum: -90,
     maximum: 90,
@@ -20,7 +20,7 @@ export class ClockOutDto {
   gps_lat: number;
 
   @ApiProperty({
-    description: 'GPS longitude of worker location at clock-out',
+    description: 'GPS longitude of user location at clock-out',
     example: 112.7399,
     minimum: -180,
     maximum: 180,

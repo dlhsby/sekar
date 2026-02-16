@@ -10,7 +10,7 @@ import { IsNumber, IsString, IsUUID, IsOptional, Min, Max, MaxLength, Matches } 
  */
 export class ClockInDto {
   @ApiProperty({
-    description: 'Area UUID where worker is clocking in (optional - auto-detected from schedule if not provided)',
+    description: 'Area UUID where user is clocking in (optional - auto-detected from schedule if not provided)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     required: false,
   })
@@ -19,7 +19,7 @@ export class ClockInDto {
   area_id?: string;
 
   @ApiProperty({
-    description: 'GPS latitude of worker location',
+    description: 'GPS latitude of user location',
     example: -7.2905,
     minimum: -90,
     maximum: 90,
@@ -30,7 +30,7 @@ export class ClockInDto {
   gps_lat: number;
 
   @ApiProperty({
-    description: 'GPS longitude of worker location',
+    description: 'GPS longitude of user location',
     example: 112.7398,
     minimum: -180,
     maximum: 180,

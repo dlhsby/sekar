@@ -15,7 +15,7 @@ import {
   type QueueItem,
 } from './offlineQueue';
 import { clockIn, clockOut } from '../api/shiftsApi';
-import { createReport } from '../api/reportsApi';
+import { createActivity } from '../api/activitiesApi';
 import { uploadLocationBatch } from '../api/locationApi';
 import { locationTracker } from '../location/locationTracker';
 import config from '../../constants/config';
@@ -37,13 +37,12 @@ interface ClockOutData {
   gps_lng: number;
 }
 
-interface ReportData {
-  shift_id: number;
+interface ActivityData {
+  activity_type_id: string;
   description: string;
-  work_type: string;
-  gps_lat: number;
-  gps_lng: number;
-  photos: string[];
+  photo_urls: string[];
+  gps_lat?: number;
+  gps_lng?: number;
 }
 
 // New format for location batch (matches backend)
@@ -60,11 +59,11 @@ interface LegacyLocationBatchData {
 type LocationBatchData = NewLocationBatchData | LegacyLocationBatchData;
 
 /**
- * Sync priority order: clock-in → reports → clock-out → location pings
+ * Sync priority order: clock-in → activities → clock-out → location pings
  */
 const SYNC_PRIORITY: Record<string, number> = {
   'clock-in': 1,
-  report: 2,
+  activity: 2,
   'clock-out': 3,
   location: 4,
 };
@@ -104,11 +103,11 @@ class SyncManager extends EventEmitter {
    */
   public initialize(): void {
     if (this.isInitialized) {
-      console.log('[SyncManager] Already initialized');
+      console.debug('[SyncManager] Already initialized');
       return;
     }
 
-    console.log('[SyncManager] Initializing...');
+    console.debug('[SyncManager] Initializing...');
 
     // Listen to network state changes
     this.netInfoUnsubscribe = NetInfo.addEventListener(
@@ -125,14 +124,14 @@ class SyncManager extends EventEmitter {
     this.startPeriodicSync();
 
     this.isInitialized = true;
-    console.log('[SyncManager] Initialized successfully');
+    console.debug('[SyncManager] Initialized successfully');
   }
 
   /**
    * Cleanup listeners and timers
    */
   public cleanup(): void {
-    console.log('[SyncManager] Cleaning up...');
+    console.debug('[SyncManager] Cleaning up...');
 
     if (this.netInfoUnsubscribe) {
       this.netInfoUnsubscribe();
@@ -152,7 +151,7 @@ class SyncManager extends EventEmitter {
     this.isSyncing = false;
     this.wasOffline = false;
 
-    console.log('[SyncManager] Cleanup complete');
+    console.debug('[SyncManager] Cleanup complete');
   }
 
   /**
@@ -160,7 +159,7 @@ class SyncManager extends EventEmitter {
    * Triggers location capture when coming back online with active shift
    */
   private handleNetworkChange = (state: NetInfoState): void => {
-    console.log('[SyncManager] Network state changed:', {
+    console.debug('[SyncManager] Network state changed:', {
       isConnected: state.isConnected,
       isInternetReachable: state.isInternetReachable,
     });
@@ -170,20 +169,20 @@ class SyncManager extends EventEmitter {
     if (isOnline) {
       // Coming back online
       if (this.wasOffline) {
-        console.log('[SyncManager] Back online - triggering location capture and sync');
+        console.debug('[SyncManager] Back online - triggering location capture and sync');
 
         // Trigger immediate location capture if tracking is active
         if (locationTracker.isTracking()) {
-          console.log('[SyncManager] Triggering immediate location capture');
+          console.debug('[SyncManager] Triggering immediate location capture');
           locationTracker.captureNow();
         }
       }
 
-      console.log('[SyncManager] Network available - triggering sync');
+      console.debug('[SyncManager] Network available - triggering sync');
       this.processQueue();
     } else {
       // Going offline
-      console.log('[SyncManager] Network offline');
+      console.debug('[SyncManager] Network offline');
     }
 
     this.wasOffline = !isOnline;
@@ -194,14 +193,14 @@ class SyncManager extends EventEmitter {
    * Triggers location capture when app comes to foreground with active shift
    */
   private handleAppStateChange = (nextAppState: AppStateStatus): void => {
-    console.log('[SyncManager] App state changed:', nextAppState);
+    console.debug('[SyncManager] App state changed:', nextAppState);
 
     if (nextAppState === 'active') {
-      console.log('[SyncManager] App foregrounded - triggering sync');
+      console.debug('[SyncManager] App foregrounded - triggering sync');
 
       // Trigger immediate location capture if tracking is active
       if (locationTracker.isTracking()) {
-        console.log('[SyncManager] Triggering immediate location capture on foreground');
+        console.debug('[SyncManager] Triggering immediate location capture on foreground');
         locationTracker.captureNow();
       }
 
@@ -215,7 +214,7 @@ class SyncManager extends EventEmitter {
   private startPeriodicSync(): void {
     this.stopPeriodicSync();
     this.periodicSyncTimer = setInterval(() => {
-      console.log('[SyncManager] Periodic sync triggered');
+      console.debug('[SyncManager] Periodic sync triggered');
       this.processQueue();
     }, PERIODIC_SYNC_INTERVAL);
   }
@@ -235,14 +234,14 @@ class SyncManager extends EventEmitter {
    */
   public async processQueue(): Promise<void> {
     if (this.isSyncing) {
-      console.log('[SyncManager] Sync already in progress, skipping');
+      console.debug('[SyncManager] Sync already in progress, skipping');
       return;
     }
 
     // Check network connectivity
     const netInfo = await NetInfo.fetch();
     if (!netInfo.isConnected || !netInfo.isInternetReachable) {
-      console.log('[SyncManager] No network connection, skipping sync');
+      console.debug('[SyncManager] No network connection, skipping sync');
       return;
     }
 
@@ -256,12 +255,12 @@ class SyncManager extends EventEmitter {
       );
 
       if (pendingItems.length === 0) {
-        console.log('[SyncManager] No items to sync');
+        console.debug('[SyncManager] No items to sync');
         this.emit('syncComplete', 0, 0);
         return;
       }
 
-      console.log(`[SyncManager] Starting sync for ${pendingItems.length} items`);
+      console.debug(`[SyncManager] Starting sync for ${pendingItems.length} items`);
 
       // Sort by priority and timestamp
       const sortedItems = this.sortByPriority(pendingItems);
@@ -289,7 +288,7 @@ class SyncManager extends EventEmitter {
       // Clean up successfully synced items
       await clearSyncedItems();
 
-      console.log(
+      console.debug(
         `[SyncManager] Sync complete - Success: ${successCount}, Failed: ${failureCount}`,
       );
       this.emit('syncComplete', successCount, failureCount);
@@ -317,7 +316,7 @@ class SyncManager extends EventEmitter {
    * Process a single queue item with retry logic
    */
   private async processSingleItem(item: QueueItem): Promise<void> {
-    console.log(`[SyncManager] Processing ${item.type} item:`, item.id);
+    console.debug(`[SyncManager] Processing ${item.type} item:`, item.id);
 
     // Check retry limit
     if (item.retryCount >= MAX_RETRIES) {
@@ -334,7 +333,7 @@ class SyncManager extends EventEmitter {
     // Apply exponential backoff delay
     if (item.retryCount > 0) {
       const delay = RETRY_DELAYS[Math.min(item.retryCount - 1, RETRY_DELAYS.length - 1)];
-      console.log(`[SyncManager] Retry ${item.retryCount}, waiting ${delay}ms`);
+      console.debug(`[SyncManager] Retry ${item.retryCount}, waiting ${delay}ms`);
       await this.delay(delay);
     }
 
@@ -354,7 +353,7 @@ class SyncManager extends EventEmitter {
       });
       await removeFromQueue(item.id);
 
-      console.log(`[SyncManager] Successfully synced ${item.type}:`, item.id);
+      console.debug(`[SyncManager] Successfully synced ${item.type}:`, item.id);
     } catch (error: any) {
       console.error(`[SyncManager] Error syncing ${item.type}:`, error);
 
@@ -390,8 +389,8 @@ class SyncManager extends EventEmitter {
         await this.syncClockOut(item.data);
         break;
 
-      case 'report':
-        await this.syncReport(item.data);
+      case 'activity':
+        await this.syncActivity(item.data);
         break;
 
       case 'location':
@@ -414,7 +413,7 @@ class SyncManager extends EventEmitter {
       throw new Error(result?.error || 'Clock-in sync failed');
     }
 
-    console.log('[SyncManager] Clock-in synced:', result.data);
+    console.debug('[SyncManager] Clock-in synced:', result.data);
   }
 
   /**
@@ -429,30 +428,20 @@ class SyncManager extends EventEmitter {
       throw new Error(result?.error || 'Clock-out sync failed');
     }
 
-    console.log('[SyncManager] Clock-out synced:', result.data);
+    console.debug('[SyncManager] Clock-out synced:', result.data);
   }
 
   /**
-   * Sync report
+   * Sync activity
    */
-  private async syncReport(data: ReportData): Promise<void> {
-    const { shift_id, description, work_type, gps_lat, gps_lng, photos } = data;
-    const reportData = {
-      shift_id,
-      description,
-      work_type,
-      gps_lat,
-      gps_lng,
-      photos,
-    };
-
-    const result = await createReport(reportData);
+  private async syncActivity(data: ActivityData): Promise<void> {
+    const result = await createActivity(data);
 
     if (!result || result.error) {
-      throw new Error(result?.error || 'Report sync failed');
+      throw new Error(result?.error || 'Activity sync failed');
     }
 
-    console.log('[SyncManager] Report synced:', result.data);
+    console.debug('[SyncManager] Activity synced:', result.data);
   }
 
   /**
@@ -475,7 +464,7 @@ class SyncManager extends EventEmitter {
         throw new Error(result?.error || 'Location batch sync failed');
       }
 
-      console.log('[SyncManager] Location batch synced (new format):', result.data);
+      console.debug('[SyncManager] Location batch synced (new format):', result.data);
     } else {
       // Legacy format - convert and sync
       const pings = (data as LegacyLocationBatchData).pings || [];
@@ -505,7 +494,7 @@ class SyncManager extends EventEmitter {
         throw new Error(result?.error || 'Location batch sync failed (legacy)');
       }
 
-      console.log('[SyncManager] Location batch synced (legacy format):', result.data);
+      console.debug('[SyncManager] Location batch synced (legacy format):', result.data);
     }
   }
 
@@ -548,7 +537,7 @@ class SyncManager extends EventEmitter {
    * Force sync immediately
    */
   public forceSyncNow(): void {
-    console.log('[SyncManager] Force sync triggered');
+    console.debug('[SyncManager] Force sync triggered');
     this.processQueue();
   }
 }

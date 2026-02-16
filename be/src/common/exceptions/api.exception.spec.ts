@@ -57,8 +57,8 @@ describe('ApiException', () => {
 
     it('should structure response correctly', () => {
       const statusCode = HttpStatus.FORBIDDEN;
-      const code = ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED;
-      const message = 'Reports can only be edited within 1 hour';
+      const code = ApiErrorCode.ACTIVITY_EDIT_WINDOW_CLOSED;
+      const message = 'Activities can only be edited within 1 hour';
       const details = { elapsedHours: 2 };
 
       const exception = new ApiException(statusCode, code, message, details);
@@ -182,8 +182,8 @@ describe('ApiExceptionHelpers', () => {
 
   describe('forbidden', () => {
     it('should create Forbidden exception with code', () => {
-      const code = ApiErrorCode.REPORT_ACCESS_DENIED;
-      const message = 'You can only access your own reports';
+      const code = ApiErrorCode.ACTIVITY_ACCESS_DENIED;
+      const message = 'You can only access your own activities';
 
       const exception = ApiExceptionHelpers.forbidden(code, message);
 
@@ -279,16 +279,16 @@ describe('ApiExceptionHelpers', () => {
           ApiErrorCode.AUTH_INVALID_CREDENTIALS,
           'Invalid credentials',
         ),
-        ApiExceptionHelpers.forbidden(ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED, 'Window closed'),
+        ApiExceptionHelpers.forbidden(ApiErrorCode.ACTIVITY_EDIT_WINDOW_CLOSED, 'Window closed'),
         ApiExceptionHelpers.notFound(ApiErrorCode.SHIFT_NOT_FOUND, 'Not found'),
-        ApiExceptionHelpers.conflict(ApiErrorCode.ASSIGNMENT_ALREADY_EXISTS, 'Already exists'),
+        ApiExceptionHelpers.conflict(ApiErrorCode.SHIFT_ALREADY_ACTIVE, 'Already exists'),
       ];
 
       expect(exceptions[0].getCode()).toBe(ApiErrorCode.SHIFT_ALREADY_ACTIVE);
       expect(exceptions[1].getCode()).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
-      expect(exceptions[2].getCode()).toBe(ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED);
+      expect(exceptions[2].getCode()).toBe(ApiErrorCode.ACTIVITY_EDIT_WINDOW_CLOSED);
       expect(exceptions[3].getCode()).toBe(ApiErrorCode.SHIFT_NOT_FOUND);
-      expect(exceptions[4].getCode()).toBe(ApiErrorCode.ASSIGNMENT_ALREADY_EXISTS);
+      expect(exceptions[4].getCode()).toBe(ApiErrorCode.SHIFT_ALREADY_ACTIVE);
     });
   });
 });

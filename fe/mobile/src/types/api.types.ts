@@ -1,6 +1,7 @@
 /**
  * API Types
  * TypeScript interfaces for API requests and responses
+ * Phase 2C: ADR-009 (8-role system), ADR-010 (terminology cleanup)
  */
 
 import type {
@@ -8,9 +9,9 @@ import type {
   Area,
   AreaType,
   Shift,
-  WorkReport,
+  Activity,
   LocationPing,
-  ActiveWorker,
+  ActiveUser,
   AttendanceRecord,
   Task,
   TaskStatus,
@@ -19,8 +20,9 @@ import type {
   ShiftDefinition,
   Notification,
   MonitoringStats,
-  LiveWorker,
+  LiveUser,
   UserRole,
+  Overtime,
 } from './models.types';
 
 // Auth API
@@ -31,7 +33,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access_token: string;
-  refresh_token?: string; // Optional for two-token system
+  refresh_token: string;
   user: User;
 }
 
@@ -47,14 +49,14 @@ export interface ChangePasswordRequest {
 
 // Shifts API
 export interface ClockInRequest {
-  area_id: string; // UUID
+  area_id?: string; // Phase 2C: optional, auto-detected from schedule
   gps_lat: number;
   gps_lng: number;
   selfie_photo: string; // base64 encoded with data URI prefix
 }
 
 export interface ClockInResponse {
-  shift_id: string; // UUID (updated to match backend)
+  shift_id: string;
   clock_in_time: string;
 }
 
@@ -64,7 +66,7 @@ export interface ClockOutRequest {
 }
 
 export interface ClockOutResponse {
-  shift_id: string; // UUID (updated to match backend)
+  shift_id: string;
   clock_out_time: string;
   total_hours: number;
 }
@@ -75,33 +77,27 @@ export interface CurrentShiftResponse extends Shift {
   hours_worked: number;
 }
 
-// Reports API
-export interface CreateReportRequest {
-  shift_id: string; // UUID (updated to match backend)
+// Activities API (was Reports)
+export interface CreateActivityRequest {
+  activity_type_id: string;
   description: string;
-  report_type: 'cleaning' | 'planting' | 'maintenance' | 'inspection';
-  gps_lat: number;
-  gps_lng: number;
-  photos: string[]; // base64 encoded
+  photo_urls: string[]; // 1-3 S3 URLs
+  gps_lat?: number;
+  gps_lng?: number;
 }
 
-export interface CreateReportResponse {
-  report_id: string; // UUID
-  report_time: string;
+export interface CreateActivityResponse {
+  id: string;
+  created_at: string;
 }
 
-export interface UploadMediaResponse {
-  media_id: number;
-  media_url: string;
-  thumbnail_url?: string;
-}
-
-export interface MyReportsResponse extends WorkReport {
-  media_urls: string[];
+export interface ActivitiesFilter {
+  date?: string; // YYYY-MM-DD
+  area_id?: string;
+  user_id?: string;
 }
 
 // Location API
-// Single location point for batch upload (matches backend LocationPointDto)
 export interface LocationPoint {
   gps_lat: number;
   gps_lng: number;
@@ -110,13 +106,11 @@ export interface LocationPoint {
   logged_at: string; // ISO 8601 timestamp
 }
 
-// Backend expects shift_id + locations array (matches CreateLocationBatchDto)
 export interface LocationBatchRequest {
-  shift_id: string; // UUID - already correct
+  shift_id: string;
   locations: LocationPoint[];
 }
 
-// Legacy format for migration - kept for offline queue compatibility
 export interface LegacyLocationBatchRequest {
   pings: LocationPing[];
 }
@@ -126,76 +120,39 @@ export interface LocationBatchResponse {
 }
 
 // Supervisor API
-export interface ActiveWorkerLocation {
+export interface ActiveUserLocation {
   gps_lat: number;
   gps_lng: number;
   logged_at: string;
 }
 
-export interface ActiveWorkerArea {
-  id: string; // UUID (updated to match backend)
+export interface ActiveUserArea {
+  id: string;
   name: string;
 }
 
-export interface ActiveWorkerShift {
-  id: string; // UUID (updated to match backend)
+export interface ActiveUserShift {
+  id: string;
   clock_in_time: string;
-  area: ActiveWorkerArea;
+  area: ActiveUserArea;
 }
 
-export interface ActiveWorkerData {
-  id: string; // UUID (updated to match backend)
+export interface ActiveUserData {
+  id: string;
   username: string;
   full_name: string;
-  role?: 'worker' | 'linmas'; // Phase 2 - optional for backwards compatibility
-  shift: ActiveWorkerShift;
-  latest_location: ActiveWorkerLocation | null;
+  role?: UserRole;
+  shift: ActiveUserShift;
+  latest_location: ActiveUserLocation | null;
 }
 
-// Backend returns paginated response
-export interface PaginatedActiveWorkersResponse {
-  data: ActiveWorkerData[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
-export interface ReportsFilter {
-  date?: string; // YYYY-MM-DD - will be converted to from_date/to_date
-  worker_id?: string; // UUID
-  area_id?: string; // UUID (not supported by backend yet)
-  area_type?: string;
-  from_date?: string; // YYYY-MM-DD
-  to_date?: string; // YYYY-MM-DD
-}
-
-export interface ReportsListResponse extends WorkReport {
-  // Nested relations (eager-loaded by backend)
-  worker?: User;
-  area?: Area;
-  shift?: Shift;
-  // Legacy flat fields (deprecated - use nested objects above)
-  worker_name?: string;
-  area_name?: string;
-  area_type?: string;
-  media_urls?: string[];
-  thumbnail_url?: string;
-}
-
-export interface ReviewReportRequest {
-  reviewed: boolean;
-}
-
-export interface ReviewReportResponse {
-  success: boolean;
+export interface PaginatedActiveUsersResponse {
+  users: ActiveUserData[];
 }
 
 export interface AttendanceFilter {
-  date?: string; // YYYY-MM-DD
-  area_id?: string; // UUID (updated to match backend)
+  date?: string;
+  area_id?: string;
   area_type?: string;
 }
 
@@ -203,10 +160,10 @@ export interface AttendanceResponse {
   date: string;
   total_workers: number;
   clocked_in_count: number;
-  not_clocked_in: NotClockedInWorker[];
+  not_clocked_in: NotClockedInUser[];
 }
 
-export interface NotClockedInWorker {
+export interface NotClockedInUser {
   id: string;
   username: string;
   full_name: string;
@@ -234,14 +191,14 @@ export interface ApiResponse<T> {
 
 // Generic API Error
 export interface ApiError {
-  status: number; // Maps to statusCode from backend
-  code: string; // Error code enum value (e.g., 'SHIFT_ALREADY_ACTIVE')
-  message: string; // Human-readable error message
-  error?: string; // Error name (e.g., 'Bad Request', 'Unauthorized')
-  timestamp?: string; // ISO 8601 timestamp when error occurred
-  path?: string; // Request path that caused the error
-  details?: any; // Additional error context (e.g., activeShiftId)
-  errors?: Record<string, string[]>; // Validation errors (legacy, keep for compatibility)
+  status: number;
+  code: string;
+  message: string;
+  error?: string;
+  timestamp?: string;
+  path?: string;
+  details?: unknown;
+  errors?: Record<string, string[]>;
 }
 
 // =====================
@@ -264,9 +221,10 @@ export interface CreateTaskRequest {
   description: string;
   priority: TaskPriority;
   deadline?: string;
-  area_id: string;
-  activity_type_id: string;
+  area_id?: string; // Phase 2C: optional
+  rayon_id?: string; // Phase 2C: rayon-scoped tasks
   assigned_to?: string;
+  tagged_user_ids?: string[]; // Phase 2C: task tagging
 }
 
 export interface UpdateTaskRequest {
@@ -281,19 +239,44 @@ export interface AssignTaskRequest {
   assigned_to: string;
 }
 
-export interface DeclineTaskRequest {
-  decline_reason: string;
+export interface CompleteTaskRequest {
+  description: string; // Phase 2C: required
+  completion_photo_url: string; // Phase 2C: required, S3 URL
 }
 
-export interface CompleteTaskRequest {
-  completion_notes?: string;
-  completion_photo?: string; // base64
-  gps_lat: number;
-  gps_lng: number;
+export interface TagTaskRequest {
+  user_ids: string[];
 }
 
 export interface TasksListResponse {
   data: Task[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Overtime API (Phase 2C: new)
+export interface CreateOvertimeRequest {
+  date: string; // YYYY-MM-DD
+  start_time: string; // HH:mm
+  end_time: string; // HH:mm
+  activity_type_id: string;
+  description: string;
+  photo_urls: string[]; // 1-3 S3 URLs
+  gps_lat?: number;
+  gps_lng?: number;
+  notes?: string;
+}
+
+export interface RejectOvertimeRequest {
+  reason: string;
+}
+
+export interface OvertimeListResponse {
+  data: Overtime[];
   meta: {
     total: number;
     page: number;
@@ -356,7 +339,7 @@ export interface BroadcastNotificationRequest {
   target_roles?: UserRole[];
   target_area_id?: string;
   target_rayon_id?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 // Monitoring API
@@ -389,22 +372,20 @@ export interface AreaMonitoringResponse extends MonitoringStats {
   area_id: string;
   area_name: string;
   staffing_status: 'adequate' | 'understaffed' | 'overstaffed';
-  required_workers: number;
-  actual_workers: number;
-  workers: LiveWorker[];
+  required_users: number;
+  actual_users: number;
+  users: LiveUser[];
 }
 
-export interface LiveWorkersFilter {
+export interface LiveUsersFilter {
   area_id?: string;
   rayon_id?: string;
   shift_definition_id?: string;
 }
 
-export interface LiveWorkersResponse {
-  data: LiveWorker[];
-  meta: {
-    total: number;
-    last_updated: string;
-  };
+export interface LiveUsersResponse {
+  total_online: number;
+  total_offline: number;
+  users: LiveUser[];
+  generated_at: string;
 }
-

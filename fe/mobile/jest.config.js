@@ -1,7 +1,10 @@
 module.exports = {
   preset: 'react-native',
+  maxWorkers: '50%',
+  testTimeout: 10000,
+  workerIdleMemoryLimit: '512MB',
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|react-redux|@react-navigation|react-native-vector-icons|react-native-geolocation-service|react-native-image-picker|react-native-permissions|react-native-fs|@reduxjs|immer|react-native-svg)/)',
+    'node_modules/(?!(react-native|@react-native|react-redux|@react-navigation|react-native-vector-icons|react-native-geolocation-service|react-native-image-picker|react-native-permissions|react-native-fs|@reduxjs|immer|react-native-svg|react-native-date-picker|react-native-device-info|react-native-encrypted-storage)/)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {

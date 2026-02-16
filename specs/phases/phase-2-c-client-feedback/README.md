@@ -1,28 +1,29 @@
 # Phase 2C: Client Feedback Implementation
 
 **Date:** February 10, 2026
-**Status:** Planning
+**Status:** Spec Rewrite (Terminology Cleanup + Schema Redesign)
 **Priority:** High - Breaking Changes
 **Duration:** 4-6 weeks estimated
 **Depends On:** Phase 2B (Complete)
+**Related ADRs:** [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
 
 ---
 
 ## Overview
 
-Phase 2C addresses comprehensive client feedback received during the February 10, 2026 meeting. This phase introduces **breaking changes across all layers** including role system overhaul, feature scope changes, and new modules. The backend is currently deployed to production (api.sekar.wahyutrip.com) requiring careful migration planning.
+Phase 2C addresses comprehensive client feedback received during the February 10, 2026 meeting. This phase introduces **breaking changes across all layers** including role system overhaul, terminology cleanup, schema redesign, and new modules. The backend is currently deployed to production (api.sekar.wahyutrip.com) requiring careful migration planning.
 
 ### Key Changes Summary
 
-1. **Role system overhaul** - 7 roles → 8 roles with renames, splits, and removals
-2. **GPS boundary removal** - Clock-in allowed from anywhere (client mandate)
-3. **Reports → Aktivitas** - Renamed, restructured (max 3 photos, camera only, no review workflow)
-4. **Task system redesign** - Hierarchical assignment, tagging, simplified completion
-5. **New overtime module** - Submit, approve, with embedded aktivitas
-6. **Activity types update** - New role-specific categories per client specification
-7. **Monitoring access changes** - Updated role-based scoping
-8. **Navigation restructure** - Role-based tab configuration for 8 roles
-9. **Worker assignment reconciliation** - WorkerAssignment vs WorkerSchedule conflict resolution
+1. **Role system overhaul** - 7 roles to 8 roles with renames, splits, and removals
+2. **Terminology cleanup** - Remove "worker" terminology; rename tables, columns, modules, entities to generic English (ADR-010)
+3. **Overtime flattening** - 1 overtime = 1 activity (no nested `overtime_aktivitas`); flat DTO
+4. **Polygon geofencing (soft)** - Boundary validation using polygons from KMZ import; soft warning only, never blocks clock-in
+5. **Reports to Activities** - Module, entity, route, DTO rename (`/reports` to `/activities`)
+6. **Task system redesign** - Hierarchical assignment, tagging, simplified completion (4 statuses)
+7. **Activity types update** - 20 role-specific categories across 4 roles
+8. **Monitoring access changes** - Updated role-based scoping with boundary warnings
+9. **Navigation restructure** - Role-based tab configuration for 8 roles
 10. **Clockable roles expansion** - 5 roles can now clock in (was 2)
 
 ---
@@ -58,15 +59,15 @@ Phase 2C addresses comprehensive client feedback received during the February 10
 
 ```
 superadmin (full access)
-├── admin_system (manage users/areas/rayons + monitoring)
-│   └── (no subordinates in field)
-├── top_management (city-wide monitoring + task creation)
-│   ├── kepala_rayon (rayon-scoped monitoring + task assignment)
-│   │   └── korlap (area-scoped monitoring + task assignment + overtime approval)
-│   │       ├── satgas (field work + aktivitas + overtime submit)
-│   │       └── linmas (security + aktivitas + overtime submit)
-│   └── korlap (direct assignment also allowed)
-└── admin_data (data entry + clock-in + aktivitas, NO monitoring)
++-- admin_system (manage users/areas/rayons + monitoring)
+|   +-- (no subordinates in field)
++-- top_management (city-wide monitoring + task creation)
+|   +-- kepala_rayon (rayon-scoped monitoring + task assignment)
+|   |   +-- korlap (area-scoped monitoring + task assignment + overtime approval)
+|   |       +-- satgas (field work + activities + overtime submit)
+|   |       +-- linmas (security + activities + overtime submit)
+|   +-- korlap (direct assignment also allowed)
++-- admin_data (data entry + clock-in + activities, NO monitoring)
 ```
 
 ---
@@ -76,9 +77,9 @@ superadmin (full access)
 | Feature | satgas | linmas | korlap | admin_data | kepala_rayon | top_mgmt | admin_sys | superadmin |
 |---------|--------|--------|--------|------------|--------------|----------|-----------|------------|
 | **Clock In/Out** | Y | Y | Y | Y | Y | - | - | - |
-| **Aktivitas Submit** | Y | Y | Y | Y | - | - | - | - |
-| **View Own Aktivitas** | Y | Y | Y | Y | - | - | - | - |
-| **View All Aktivitas** | - | - | Y* | Y | Y* | Y | Y | Y |
+| **Activity Submit** | Y | Y | Y | Y | - | - | - | - |
+| **View Own Activities** | Y | Y | Y | Y | - | - | - | - |
+| **View All Activities** | - | - | Y* | Y | Y* | Y | Y | Y |
 | **Receive Tasks** | Y | Y | Y | - | Y | - | - | - |
 | **Create Tasks** | - | - | Y | - | Y | Y | Y | Y |
 | **Tag Users on Tasks** | - | - | Y | - | Y | Y | Y | Y |
@@ -111,28 +112,68 @@ Tasks can only be assigned **downward** in the hierarchy:
 
 ---
 
+## Terminology Cleanup (ADR-010)
+
+### Table Renames
+
+| Current | New | Action |
+|---------|-----|--------|
+| `worker_schedules` | `schedules` | RENAME |
+| `work_reports` | `activities` | RENAME |
+| `worker_assignments` | - | DROP (fully replaced by schedules) |
+| `overtime_aktivitas` | - | DROP (merged into overtimes) |
+
+### Column Renames
+
+| Table | Old Column | New Column |
+|-------|-----------|------------|
+| `shifts` | `worker_id` | `user_id` |
+| `activities` (was `work_reports`) | `worker_id` | `user_id` |
+| `location_logs` | `worker_id` | `user_id` |
+
+### Module/Entity Renames
+
+| Current | New |
+|---------|-----|
+| `reports/` module | `activities/` |
+| `worker-schedules/` module | `schedules/` |
+| `worker-assignments/` module | DELETED |
+| `Report` entity | `Activity` |
+| `WorkerSchedule` entity | `Schedule` |
+| `WorkerAssignment` entity | DELETED |
+| `OvertimeAktivitas` entity | DELETED (merged into Overtime) |
+
+### Route Renames
+
+| Current | New |
+|---------|-----|
+| `/aktivitas` or `/reports` | `/activities` |
+| `/worker-schedules` | `/schedules` |
+
+---
+
 ## Gap Analysis Summary
 
 | ID | Gap | Impact | Priority |
 |----|-----|--------|----------|
-| GAP-1 | Role system overhaul (7→8 roles) | ALL layers - enum, DB, guards, navigation, tests | Critical |
-| GAP-2 | Worker assignment conflict (Assignment vs Schedule) | Clock-in area detection, scheduling | High |
-| GAP-3 | Activity types mismatch (10→20 types across 4 roles) | Seed data, validation, UI dropdowns. **Note:** `applicable_roles TEXT[]` array column, not single `role` | High |
-| GAP-4 | GPS boundary removal | Shifts service, ADR-005 update | Medium |
-| GAP-5 | Reports → Aktivitas transformation | DB schema, API routes, mobile screens, Redux. **Note:** `shift_id` already exists on reports | Critical |
-| GAP-6 | Task system redesign (hierarchy, tagging, status simplification) | Task module, mobile screens, web pages. Simplify 6→4 statuses, remove accept/decline flow | High |
-| GAP-7 | Overtime feature (entirely new) | New module, 3+ screens, approval workflow | High |
-| GAP-8 | Monitoring access scope change | Role guards, controller auth, scope authorization for korlap/kepala_rayon | Medium |
+| GAP-1 | Role system overhaul (7 to 8 roles) | ALL layers - enum, DB, guards, navigation, tests | Critical |
+| GAP-2 | Terminology cleanup (ADR-010) | ALL layers - table/column/module/entity renames | Critical |
+| GAP-3 | Activity types mismatch (10 to 20 types across 4 roles) | Seed data, validation, UI dropdowns. **Note:** `applicable_roles TEXT[]` array column | High |
+| GAP-4 | Polygon geofencing (soft warning) | Shifts service, GpsUtil, monitoring dashboard | Medium |
+| GAP-5 | Reports to Activities transformation | DB schema, API routes, mobile screens, Redux | Critical |
+| GAP-6 | Task system redesign (hierarchy, tagging, status simplification) | Task module, mobile screens, web pages. Simplify 6 to 4 statuses | High |
+| GAP-7 | Overtime flattening (1:1 with activity) | Overtime module, DTO restructure, drop overtime_aktivitas | High |
+| GAP-8 | Monitoring access scope change | Role guards, controller auth, boundary warnings | Medium |
 | GAP-9 | Staff requirements expansion (clockable roles) | Staff requirements entity, scheduling | Low |
 | GAP-10 | NB 2.0 design compliance for new screens | All new UI components | Medium |
 | GAP-11 | User entity missing `area_id` | Add `area_id` column to users table for korlap area association | Critical |
-| GAP-12 | ClockInDto `area_id` is REQUIRED | Must become optional for area auto-detect from WorkerSchedule | High |
+| GAP-12 | ClockInDto `area_id` is REQUIRED | Must become optional for area auto-detect from Schedule | High |
 
 ---
 
 ## Activity Types (Phase 2C)
 
-### Satgas Activities
+### Satgas Activities (8)
 | # | ID | Display Name (ID) |
 |---|----|--------------------|
 | 1 | `perawatan` | Perawatan |
@@ -144,7 +185,7 @@ Tasks can only be assigned **downward** in the hierarchy:
 | 7 | `angkut_sampah` | Angkut Sampah |
 | 8 | `lainnya_satgas` | Lainnya |
 
-### Linmas Activities
+### Linmas Activities (5)
 | # | ID | Display Name (ID) |
 |---|----|--------------------|
 | 1 | `patroli` | Patroli |
@@ -153,7 +194,7 @@ Tasks can only be assigned **downward** in the hierarchy:
 | 4 | `halau_pkl` | Halau PKL |
 | 5 | `lainnya_linmas` | Lainnya |
 
-### Korlap Activities
+### Korlap Activities (4)
 | # | ID | Display Name (ID) |
 |---|----|--------------------|
 | 1 | `cek_kendaraan` | Pengecekan Kendaraan |
@@ -161,7 +202,7 @@ Tasks can only be assigned **downward** in the hierarchy:
 | 3 | `cek_alat` | Pengecekan Alat |
 | 4 | `lainnya_korlap` | Lainnya |
 
-### Admin Data Activities
+### Admin Data Activities (3)
 | # | ID | Display Name (ID) |
 |---|----|--------------------|
 | 1 | `cek_absensi` | Cek Absensi |
@@ -179,41 +220,44 @@ Tasks can only be assigned **downward** in the hierarchy:
 - All existing tests updated for new role names
 
 ### Phase 1: Core Backend Changes (Week 1-2)
-- GPS boundary removal from shifts
-- Reports → Aktivitas module rename and restructure
-- Activity types seed data update
-- Worker assignment reconciliation
+- Terminology cleanup migration (table/column renames)
+- Polygon geofencing (soft warning, GpsUtil methods)
+- Reports to Activities module rename and restructure
+- Activity types seed data update (20 types, lowercase applicable_roles)
+- WorkerAssignment removal
 
 ### Phase 2: Task System Redesign (Week 2)
 - Hierarchical assignment validation
 - Task tagging (task_tags table)
-- Simplified task completion
+- Simplified task completion (no GPS, photo required)
 - Mobile task creation screen
 
 ### Phase 3: Overtime Module (Week 2-3)
-- New overtime module (entity, service, controller, DTOs)
-- Overtime aktivitas embedded
+- Flat overtime (1 overtime = 1 activity, no nested array)
+- Drop overtime_aktivitas table, add activity columns to overtimes
 - Approval workflow (korlap)
 
 ### Phase 4: Mobile Updates (Week 3-4)
 - Navigation restructure for 8 roles
-- Aktivitas submission screen (new flow: foto→jenis→deskripsi→lokasi)
+- Activity submission screen (new flow: foto to jenis to deskripsi to lokasi)
 - Overtime screens (list, submit, approval, detail)
 - Task creation screen (mobile)
-- Redux slice updates
+- Redux slice updates (reportSlice to activitiesSlice)
+- Geofencing warning banner
 
 ### Phase 5: Web Updates (Week 4-5)
 - Role-based navigation sidebar
-- /aktivitas page (replacing /reports)
+- /activities page (replacing /reports)
 - /overtime page (new)
 - Task management updates
-- Monitoring access updates
+- Monitoring access updates with boundary warnings
 
 ### Phase 6: Testing & Verification (Week 5-6)
+- Terminology cleanup regression tests
+- Polygon geofencing unit tests
 - Role migration verification
-- New feature tests (overtime, task hierarchy, aktivitas)
+- New feature tests (overtime flat, task hierarchy, activities)
 - E2E flow testing
-- Regression testing
 
 ---
 
@@ -225,7 +269,7 @@ Tasks can only be assigned **downward** in the hierarchy:
 | Activity type ID conflicts with existing data | Medium | High | Soft-delete old types, create new ones with new IDs |
 | Overtime approval bottleneck (single korlap) | Medium | Medium | Allow kepala_rayon as backup approver |
 | Mobile app version fragmentation | High | Medium | Force update mechanism, minimum version check |
-| Worker assignment/schedule conflict | Medium | High | Deprecate WorkerAssignment, use WorkerSchedule as primary |
+| Table/column renames break running queries | Medium | High | Single atomic migration with BEGIN/COMMIT |
 
 ---
 
@@ -236,9 +280,11 @@ Tasks can only be assigned **downward** in the hierarchy:
 - [Mobile Requirements](./mobile.md)
 - [Web Requirements](./web.md)
 - [Testing Plan](./testing.md)
+- [Seeder Updates](./seeder-updates.md) - Phase 2C test data implementation
 - [Implementation Status](./STATUS.md)
 - [ADR-009: Role System Overhaul](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md)
+- [ADR-010: Terminology Cleanup](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
 
 ---
 
-**Last Updated:** 2026-02-10
+**Last Updated:** 2026-02-16

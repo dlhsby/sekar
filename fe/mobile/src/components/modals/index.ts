@@ -4,5 +4,5 @@
  */
 
 export { ShiftDetailModal } from './ShiftDetailModal';
-export { TodayReportsModal } from './TodayReportsModal';
+export { TodayActivitiesModal } from './TodayActivitiesModal';
 export { TodayWorkHoursModal } from './TodayWorkHoursModal';

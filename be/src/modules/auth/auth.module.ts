@@ -7,7 +7,6 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { User } from '../users/entities/user.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { WorkerAssignmentsModule } from '../worker-assignments/worker-assignments.module';
 
 @Module({
   imports: [
@@ -26,7 +25,6 @@ import { WorkerAssignmentsModule } from '../worker-assignments/worker-assignment
         };
       },
     }),
-    forwardRef(() => WorkerAssignmentsModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

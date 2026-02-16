@@ -27,11 +27,11 @@ import {
  */
 export function AppWithSyncManager() {
   useEffect(() => {
-    console.log('[App] Initializing Sync Manager...');
+    console.debug('[App] Initializing Sync Manager...');
     syncManager.initialize();
 
     return () => {
-      console.log('[App] Cleaning up Sync Manager...');
+      console.debug('[App] Cleaning up Sync Manager...');
       syncManager.cleanup();
     };
   }, []);
@@ -156,7 +156,7 @@ export function DetailedPendingSync() {
   const [counts, setCounts] = useState({
     'clock-in': 0,
     'clock-out': 0,
-    report: 0,
+    activity: 0,
     location: 0,
   });
 
@@ -172,7 +172,7 @@ export function DetailedPendingSync() {
     return () => clearInterval(interval);
   }, []);
 
-  const total = counts['clock-in'] + counts['clock-out'] + counts.report + counts.location;
+  const total = counts['clock-in'] + counts['clock-out'] + counts.activity + counts.location;
 
   if (total === 0) {
     return null;
@@ -196,10 +196,10 @@ export function DetailedPendingSync() {
         </View>
       )}
 
-      {counts.report > 0 && (
+      {counts.activity > 0 && (
         <View style={styles.detailedRow}>
-          <Text style={styles.detailedType}>Reports</Text>
-          <Text style={styles.detailedCount}>{counts.report}</Text>
+          <Text style={styles.detailedType}>Activities</Text>
+          <Text style={styles.detailedCount}>{counts.activity}</Text>
         </View>
       )}
 
@@ -229,7 +229,7 @@ export async function handleClockInWithOffline(
     const netInfo = await NetInfo.fetch();
 
     if (!netInfo.isConnected || !netInfo.isInternetReachable) {
-      console.log('[ClockIn] Offline - adding to queue');
+      console.debug('[ClockIn] Offline - adding to queue');
       await addToQueue('clock-in', {
         area_id: areaId,
         gps_lat: gpsLat,
@@ -251,7 +251,7 @@ export async function handleClockInWithOffline(
 
     if (result.error) {
       // API failed, add to queue
-      console.log('[ClockIn] API error - adding to queue');
+      console.debug('[ClockIn] API error - adding to queue');
       await addToQueue('clock-in', {
         area_id: areaId,
         gps_lat: gpsLat,
@@ -289,45 +289,45 @@ export async function handleClockInWithOffline(
 }
 
 /**
- * STEP 5: Report submission with offline fallback
+ * STEP 5: Activity submission with offline fallback
  */
-export async function handleReportSubmitWithOffline(reportData: any): Promise<void> {
+export async function handleActivitySubmitWithOffline(activityData: any): Promise<void> {
   try {
     const netInfo = await NetInfo.fetch();
 
     if (!netInfo.isConnected || !netInfo.isInternetReachable) {
-      await addToQueue('report', reportData);
+      await addToQueue('activity', activityData);
 
       Alert.alert(
         'Offline Mode',
-        'You are offline. Your report will be synced when connection is restored.',
+        'You are offline. Your activity will be synced when connection is restored.',
         [{ text: 'OK' }],
       );
       return;
     }
 
-    const { createReport } = require('../api/reportsApi');
-    const result = await createReport(reportData);
+    const { createActivity } = require('../api/activitiesApi');
+    const result = await createActivity(activityData);
 
     if (result.error) {
-      await addToQueue('report', reportData);
+      await addToQueue('activity', activityData);
 
       Alert.alert(
-        'Report Queued',
-        'Report submission failed but has been saved. It will sync automatically.',
+        'Activity Queued',
+        'Activity submission failed but has been saved. It will sync automatically.',
         [{ text: 'OK' }],
       );
       return;
     }
 
-    Alert.alert('Success', 'Report submitted successfully!', [{ text: 'OK' }]);
+    Alert.alert('Success', 'Activity submitted successfully!', [{ text: 'OK' }]);
   } catch (error: any) {
-    console.error('[Report] Error:', error);
-    await addToQueue('report', reportData);
+    console.error('[Activity] Error:', error);
+    await addToQueue('activity', activityData);
 
     Alert.alert(
-      'Report Queued',
-      'Could not connect to server. Your report will sync when online.',
+      'Activity Queued',
+      'Could not connect to server. Your activity will sync when online.',
       [{ text: 'OK' }],
     );
   }

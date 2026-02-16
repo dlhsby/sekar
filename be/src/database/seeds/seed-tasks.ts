@@ -72,7 +72,7 @@ async function seedTasks() {
     if (workers.length === 0) {
       throw new Error('No satgas workers found. Please run seeder first.');
     }
-    const [worker1Id, worker2Id, worker3Id] = workers.map((w: any) => w.id);
+    const [satgas1Id, satgas2Id, satgas3Id] = workers.map((w: any) => w.id);
 
     console.log('  ✓ Found required references');
 
@@ -141,7 +141,7 @@ async function seedTasks() {
         NOW()
       )
     `,
-      [nextWeek.toISOString(), area2, worker1Id, creatorId],
+      [nextWeek.toISOString(), area2, satgas1Id, creatorId],
     );
 
     // Task 3: ASSIGNED - Urgent Pruning (previously accepted)
@@ -166,7 +166,7 @@ async function seedTasks() {
         NOW()
       )
     `,
-      [tomorrow.toISOString(), area3, worker2Id, creatorId],
+      [tomorrow.toISOString(), area3, satgas2Id, creatorId],
     );
 
     // Task 4: IN_PROGRESS - Cleaning
@@ -192,7 +192,7 @@ async function seedTasks() {
         NOW()
       )
     `,
-      [now.toISOString(), area1, worker3Id, creatorId],
+      [now.toISOString(), area1, satgas3Id, creatorId],
     );
 
     // Task 5: COMPLETED - Watering Task
@@ -223,7 +223,7 @@ async function seedTasks() {
         NOW()
       )
     `,
-      [yesterday.toISOString(), area2, worker1Id, creatorId],
+      [yesterday.toISOString(), area2, satgas1Id, creatorId],
     );
 
     // Task 6: IN_PROGRESS - Another task (previously declined, now in progress)
@@ -249,7 +249,7 @@ async function seedTasks() {
         NOW()
       )
     `,
-      [nextWeek.toISOString(), area3, worker2Id, creatorId],
+      [nextWeek.toISOString(), area3, satgas2Id, creatorId],
     );
 
     // Task 7: PENDING - Another High Priority
@@ -298,17 +298,94 @@ async function seedTasks() {
         NOW()
       )
     `,
-      [nextWeek.toISOString(), area2, worker3Id, creatorId],
+      [nextWeek.toISOString(), area2, satgas3Id, creatorId],
     );
 
-    console.log('  ✓ Created 8 tasks with 4 statuses:');
+    console.log('  ✓ Created 8 area-scoped tasks with 4 statuses:');
     console.log('    - 2 PENDING tasks');
     console.log('    - 3 ASSIGNED tasks');
     console.log('    - 2 IN_PROGRESS tasks');
     console.log('    - 1 COMPLETED task');
 
+    // ==========================================
+    // Seed Rayon-Scoped Tasks (Phase 2C)
+    // ==========================================
+    console.log('');
+    console.log('🌐 Seeding Rayon-Scoped Tasks...');
+
+    // Get kepala rayon user
+    const kepalaRayonResult = await queryRunner.query(`
+      SELECT id FROM users WHERE role = 'kepala_rayon' LIMIT 1
+    `);
+
+    // Get rayon
+    const rayonResult = await queryRunner.query(`
+      SELECT id FROM rayons WHERE name = 'Rayon Selatan' LIMIT 1
+    `);
+
+    if (kepalaRayonResult.length > 0 && rayonResult.length > 0) {
+      const kepalaRayonId = kepalaRayonResult[0].id;
+      const rayonId = rayonResult[0].id;
+
+      const RAYON_TASK_1_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+      const RAYON_TASK_2_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+
+      // Rayon-scoped tasks: rayon_id is set, area_id is NULL
+      await queryRunner.query(
+        `
+        INSERT INTO tasks (
+          id, title, description,
+          rayon_id, area_id,
+          created_by, priority, status,
+          deadline, created_at, updated_at
+        ) VALUES
+          (
+            '${RAYON_TASK_1_ID}',
+            'Audit semua area di Rayon Selatan',
+            'Periksa kondisi fasilitas di seluruh area dalam rayon',
+            $1,
+            NULL,
+            $2,
+            'high',
+            'pending',
+            $3,
+            NOW(),
+            NOW()
+          ),
+          (
+            '${RAYON_TASK_2_ID}',
+            'Koordinasi tim rayon untuk event weekend',
+            'Persiapan event di semua taman dalam rayon',
+            $1,
+            NULL,
+            $2,
+            'medium',
+            'pending',
+            $4,
+            NOW(),
+            NOW()
+          )
+        ON CONFLICT (id) DO NOTHING;
+      `,
+        [
+          rayonId,
+          kepalaRayonId,
+          new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+          new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+        ],
+      );
+
+      console.log('  ✓ Created 2 rayon-scoped tasks (rayon_id set, area_id = NULL)');
+    } else {
+      console.log('  ⚠ Kepala Rayon or Rayon not found, skipping rayon-scoped tasks');
+    }
+
     console.log('');
     console.log('✅ Task seeding completed successfully!');
+    console.log('');
+    console.log('📊 Summary:');
+    console.log('   - 8 area-scoped tasks (assigned to specific areas)');
+    console.log('   - 2 rayon-scoped tasks (assigned to rayon, area_id = NULL)');
     console.log('');
     console.log('📝 Test Users:');
     console.log('   - satgas1  (has ASSIGNED, COMPLETED tasks)');

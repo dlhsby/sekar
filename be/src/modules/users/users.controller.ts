@@ -72,9 +72,9 @@ export class UsersController {
     schema: {
       example: {
         id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-        username: 'worker4',
+        username: 'satgas4',
         full_name: 'Pekerja Empat',
-        role: 'worker',
+        role: 'satgas',
         is_active: true,
         created_at: '2026-01-07T10:00:00.000Z',
       },
@@ -112,7 +112,7 @@ export class UsersController {
    * @returns Paginated users (without passwords)
    */
   @Get()
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
   @ApiOperation({
     summary: 'Get all users with pagination',
     description:
@@ -128,9 +128,9 @@ export class UsersController {
         data: [
           {
             id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-            username: 'worker1',
+            username: 'satgas1',
             full_name: 'Pekerja Satu',
-            role: 'worker',
+            role: 'satgas',
             is_active: true,
             created_at: '2026-01-07T10:00:00.000Z',
           },
@@ -138,7 +138,7 @@ export class UsersController {
             id: '9237ec92-08df-5d7f-b2c5-c2bdf395fb89',
             username: 'supervisor1',
             full_name: 'Supervisor Satu',
-            role: 'supervisor',
+            role: 'korlap',
             is_active: true,
             created_at: '2026-01-07T10:00:00.000Z',
           },
@@ -154,10 +154,13 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized. Admin or Supervisor role required.',
+    description: 'Unauthorized. Admin or Korlap role required.',
   })
-  findAll(@Query() paginationDto: PaginationDto): Promise<PaginatedResponseDto<User>> {
-    return this.usersService.findAllPaginated(paginationDto.page, paginationDto.limit);
+  findAll(
+    @Query() paginationDto: PaginationDto,
+    @GetUser() user: User,
+  ): Promise<PaginatedResponseDto<User>> {
+    return this.usersService.findAllPaginated(paginationDto.page, paginationDto.limit, user);
   }
 
   /**
@@ -170,7 +173,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Get(':id')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
   @ApiOperation({
     summary: 'Get user by ID',
     description:
@@ -187,9 +190,9 @@ export class UsersController {
     schema: {
       example: {
         id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-        username: 'worker1',
+        username: 'satgas1',
         full_name: 'Pekerja Satu',
-        role: 'worker',
+        role: 'satgas',
         is_active: true,
         created_at: '2026-01-07T10:00:00.000Z',
         updated_at: '2026-01-07T10:00:00.000Z',
@@ -213,7 +216,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized. Admin or Supervisor role required.',
+    description: 'Unauthorized. Admin or Korlap role required.',
   })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findOne(id);
@@ -248,9 +251,9 @@ export class UsersController {
     schema: {
       example: {
         id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-        username: 'worker1',
+        username: 'satgas1',
         full_name: 'Pekerja Satu Updated',
-        role: 'worker',
+        role: 'satgas',
         is_active: true,
         created_at: '2026-01-07T10:00:00.000Z',
         updated_at: '2026-01-07T11:00:00.000Z',

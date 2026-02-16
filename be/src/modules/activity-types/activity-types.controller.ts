@@ -64,7 +64,7 @@ export class ActivityTypesController {
     required: false,
     description: 'Filter by applicable role',
     enum: ['Worker', 'Linmas'],
-    example: 'Worker',
+    example: 'satgas',
   })
   @ApiResponse({
     status: 200,

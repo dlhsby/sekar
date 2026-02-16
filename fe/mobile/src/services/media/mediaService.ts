@@ -331,7 +331,7 @@ class MediaService {
    * Call this periodically or when app goes to background
    */
   async cleanupTempFiles(): Promise<void> {
-    console.log(`[MediaService] Cleaning up ${this.tempFiles.size} temp files`);
+    console.debug(`[MediaService] Cleaning up ${this.tempFiles.size} temp files`);
 
     const filesToDelete = Array.from(this.tempFiles);
     let successCount = 0;
@@ -355,7 +355,7 @@ class MediaService {
       }
     }
 
-    console.log(`[MediaService] Cleanup complete - ${successCount} deleted, ${failCount} failed`);
+    console.debug(`[MediaService] Cleanup complete - ${successCount} deleted, ${failCount} failed`);
   }
 
   /**

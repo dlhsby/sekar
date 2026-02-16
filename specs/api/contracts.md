@@ -8,13 +8,14 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 - **Swagger Documentation:** `/api/v1/docs`
 - **Authentication:** JWT Bearer token (15-min access + 7-day refresh with rotation)
 - **Content Type:** `application/json` (except file uploads: `multipart/form-data`)
-- **Total Endpoints:** 84 (41 Phase 1 + 43 Phase 2) → **~92 target (Phase 2C: +8 new)**
+- **Total Endpoints:** 84 (41 Phase 1 + 43 Phase 2) → **Phase 2C: implemented**
 - **Backend:** NestJS 11.x, Node.js >=24.13.0, TypeScript 5.x
 - **Database:** PostgreSQL 14+ with TypeORM
-- **Testing:** 416 tests passing (99.06% coverage)
-- **Error Codes:** 31 standardized codes (see `error-handling.md`)
+- **Testing:** 769 tests passing (50 suites)
+- **Error Codes:** 40+ standardized codes (see `error-handling.md`)
 - **Rate Limiting:** 100 req/min global, 5 req/min auth endpoints
-- **Last Updated:** February 10, 2026
+- **Last Updated:** February 11, 2026
+- **Phase 2C Note:** Terminology cleanup (ADR-010) has implemented route renames: `/aktivitas`→`/activities`, `/worker-schedules`→`/schedules`. Dropped `/workers/:id/assign`. Flattened overtime DTO. See Phase 2C specs for full details.
 
 ## Table of Contents
 
@@ -24,9 +25,9 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 3. [Users Management](#users-module) (6 endpoints)
 4. [Area Types](#area-types-module) (5 endpoints)
 5. [Areas Management](#areas-module) (5 endpoints)
-6. [Worker Assignments](#worker-assignments-module) (2 endpoints)
+6. [Worker Assignments](#worker-assignments-module) (2 endpoints) **→ DROPPED in Phase 2C ✅ Removed**
 7. [Shifts Management](#shifts-module) (5 endpoints)
-8. [Reports Management](#reports-module) (6 endpoints)
+8. [Reports Management](#reports-module) (6 endpoints) **→ Renamed to Activities (`/activities`) ✅ Implemented**
 9. [Location Tracking](#location-module) (3 endpoints)
 10. [Supervisor Dashboard](#supervisor-module) (3 endpoints)
 
@@ -35,7 +36,7 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 12. [Shift Definitions Module](#shift-definitions-module) (2 endpoints)
 13. [Activity Types Module](#activity-types-module) (4 endpoints)
 14. [Area Staff Requirements Module](#area-staff-requirements-module) (4 endpoints)
-15. [Worker Schedules Module](#worker-schedules-module) (5 endpoints)
+15. [Worker Schedules Module](#worker-schedules-module) (5 endpoints) **→ Renamed to Schedules (`/schedules`) ✅ Implemented**
 16. [Monitoring Module](#monitoring-module) (4 endpoints)
 17. [Areas Extensions](#areas-module-extensions-phase-2) (3 endpoints)
 18. [Notifications Module](#notifications-module-phase-2) (5 endpoints)
@@ -333,7 +334,7 @@ Content-Type: application/json
 | `username` | string | Yes | Max 50 chars, alphanumeric with _ and -, unique |
 | `password` | string | Yes | Min 6 characters |
 | `full_name` | string | Yes | Max 100 characters |
-| `role` | enum | No | `worker`, `supervisor`, `admin` (default: `worker`) |
+| `role` | enum | No | `satgas`, `linmas`, `korlap`, `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin` (default: `satgas`) |
 
 **Response (201 Created):**
 ```json
@@ -3062,6 +3063,14 @@ Get rayon statistics (Admin, TopManagement, KepalaRayon).
 #### GET /api/v1/monitoring/area/:id
 
 Get area statistics (Admin, TopManagement, KepalaRayon, KoordinatorLapangan).
+
+**⚠️ Breaking Change (Phase 2C - Feb 15, 2026):** Response field names changed:
+- `total_workers_assigned` → `total_users_assigned`
+- `workers_online` → `users_online`
+- `workers_offline` → `users_offline`
+- `workers: WorkerStatusDto[]` → `users: UserStatusDto[]`
+
+Mobile and web clients must update type definitions before backend deployment.
 
 **Response (200 OK):**
 ```json

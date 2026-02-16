@@ -3,21 +3,22 @@
  * Helper functions for map operations and worker status calculations
  */
 
-import { calculateDistance } from './gpsUtils';
-import type { ActiveWorkerData } from '../types/api.types';
-import type { WorkerStatus } from '../components/supervisor/WorkerMarker';
+import { calculateDistance, isPointInPolygon } from './gpsUtils';
+import type { ActiveUserData } from '../types/api.types';
+import type { UserStatus } from '../components/monitoring/UserMarker';
 import type { Region } from 'react-native-maps';
 
 /**
- * Calculate worker status based on distance from area center
- * - Active (green): Within 80% of radius
- * - Warning (yellow): 80%-100% of radius
- * - Outside (red): Beyond radius
+ * Calculate worker status based on boundary check
+ * Phase 2C: polygon-first, radius fallback (matches backend)
+ * - Active (green): Within boundary (polygon or 80% of radius)
+ * - Warning (yellow): Near boundary edge (80%-100% of radius, or inside polygon)
+ * - Outside (red): Beyond boundary
  */
-export function calculateWorkerStatus(
-  worker: ActiveWorkerData,
-  areas: Array<{ id: number; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string }>
-): WorkerStatus {
+export function calculateUserStatus(
+  worker: ActiveUserData,
+  areas: Array<{ id: string | number; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string; boundary_polygon?: [number, number][] }>
+): UserStatus {
   if (!worker.latest_location) {
     return 'outside';
   }
@@ -28,20 +29,22 @@ export function calculateWorkerStatus(
     return 'outside';
   }
 
-  // Parse coordinates (API may return strings)
+  const userLat = parseFloat(worker.latest_location.gps_lat.toString());
+  const userLng = parseFloat(worker.latest_location.gps_lng.toString());
+
+  // 1. Polygon check (preferred)
+  if (area.boundary_polygon && area.boundary_polygon.length >= 3) {
+    return isPointInPolygon(userLat, userLng, area.boundary_polygon)
+      ? 'active'
+      : 'outside';
+  }
+
+  // 2. Radius fallback
   const areaLat = typeof area.gps_lat === 'string' ? parseFloat(area.gps_lat) : area.gps_lat;
   const areaLng = typeof area.gps_lng === 'string' ? parseFloat(area.gps_lng) : area.gps_lng;
   const radiusMeters = typeof area.radius_meters === 'string' ? parseFloat(area.radius_meters) : area.radius_meters;
 
-  // Calculate distance from area center
-  const distance = calculateDistance(
-    parseFloat(worker.latest_location.gps_lat.toString()),
-    parseFloat(worker.latest_location.gps_lng.toString()),
-    areaLat,
-    areaLng
-  );
-
-  // Determine status based on distance thresholds
+  const distance = calculateDistance(userLat, userLng, areaLat, areaLng);
   const warningThreshold = radiusMeters * 0.8;
 
   if (distance <= warningThreshold) {
@@ -71,7 +74,7 @@ export const SURABAYA_CITY_REGION: Region = {
  * Calculate map region to fit all worker markers
  */
 export function calculateMapRegion(
-  workers: ActiveWorkerData[],
+  workers: ActiveUserData[],
   fallbackCenter: { latitude: number; longitude: number } = {
     latitude: SURABAYA_CITY_REGION.latitude,
     longitude: SURABAYA_CITY_REGION.longitude,
@@ -125,8 +128,8 @@ export function calculateMapRegion(
  * Get status summary counts
  */
 export function getStatusSummary(
-  workers: ActiveWorkerData[],
-  areas: Array<{ id: number; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string }>
+  workers: ActiveUserData[],
+  areas: Array<{ id: string | number; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string; boundary_polygon?: [number, number][] }>
 ): {
   total: number;
   active: number;
@@ -141,7 +144,7 @@ export function getStatusSummary(
   };
 
   workers.forEach(worker => {
-    const status = calculateWorkerStatus(worker, areas);
+    const status = calculateUserStatus(worker, areas);
     summary[status]++;
   });
 
@@ -149,12 +152,12 @@ export function getStatusSummary(
 }
 
 /**
- * Filter workers by area
+ * Filter users by area
  */
-export function filterWorkersByArea(
-  workers: ActiveWorkerData[],
-  areaId: number | null
-): ActiveWorkerData[] {
+export function filterUsersByArea(
+  workers: ActiveUserData[],
+  areaId: string | number | null
+): ActiveUserData[] {
   if (areaId === null) {
     return workers;
   }
@@ -166,7 +169,7 @@ export function filterWorkersByArea(
  * Ensures coordinates are numbers (API may return strings)
  */
 export function getAreaCircles(
-  areas: Array<{ id: number; name: string; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string }>
+  areas: Array<{ id: string | number; name: string; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string }>
 ): Array<{
   center: { latitude: number; longitude: number };
   radius: number;
@@ -185,10 +188,10 @@ export function getAreaCircles(
 /**
  * Cluster definition for map marker grouping
  */
-export interface WorkerCluster {
+export interface UserCluster {
   id: string;
   coordinate: { latitude: number; longitude: number };
-  workers: ActiveWorkerData[];
+  workers: ActiveUserData[];
   pointCount: number;
 }
 
@@ -196,7 +199,7 @@ export interface WorkerCluster {
  * Check if a worker is within the visible map region
  */
 export function isWorkerInRegion(
-  worker: ActiveWorkerData,
+  worker: ActiveUserData,
   region: Region
 ): boolean {
   if (!worker.latest_location) {
@@ -215,12 +218,12 @@ export function isWorkerInRegion(
 }
 
 /**
- * Filter workers by visible region
+ * Filter users by visible region
  */
-export function filterWorkersByRegion(
-  workers: ActiveWorkerData[],
+export function filterUsersByRegion(
+  workers: ActiveUserData[],
   region: Region
-): ActiveWorkerData[] {
+): ActiveUserData[] {
   return workers.filter(worker => isWorkerInRegion(worker, region));
 }
 
@@ -228,7 +231,7 @@ export function filterWorkersByRegion(
  * Worker with parsed coordinates for efficient clustering
  */
 interface WorkerWithCoords {
-  worker: ActiveWorkerData;
+  worker: ActiveUserData;
   lat: number;
   lng: number;
 }
@@ -246,19 +249,17 @@ interface WorkerWithCoords {
  * @param region - Current map region
  * @param clusterRadius - Clustering radius in degrees (default: auto-calculated from zoom)
  */
-export function clusterWorkers(
-  workers: ActiveWorkerData[],
+export function clusterUsers(
+  workers: ActiveUserData[],
   region: Region,
   clusterRadius?: number
-): WorkerCluster[] {
-  const startTime = performance.now();
-
+): UserCluster[] {
   // Auto-calculate cluster radius based on zoom level
   // Higher latitudeDelta = zoomed out = larger clusters
   const radius = clusterRadius ?? Math.max(region.latitudeDelta / 15, 0.001);
 
-  const clusters: WorkerCluster[] = [];
-  const processed = new Set<number>();
+  const clusters: UserCluster[] = [];
+  const processed = new Set<string>();
 
   // Filter to only workers with location data and parse coordinates once
   const workersWithCoords: WorkerWithCoords[] = workers
@@ -312,7 +313,7 @@ export function clusterWorkers(
     endIdx = left;
 
     // Only check workers in latitude range for longitude
-    const nearbyWorkers: ActiveWorkerData[] = [];
+    const nearbyWorkers: ActiveUserData[] = [];
     for (let i = startIdx; i < endIdx; i++) {
       const candidate = workersWithCoords[i];
       if (processed.has(candidate.worker.id)) {
@@ -345,28 +346,6 @@ export function clusterWorkers(
       pointCount: nearbyWorkers.length,
     });
   });
-
-  const endTime = performance.now();
-  const duration = endTime - startTime;
-
-  // Log performance metrics for monitoring and benchmarking
-  console.log(
-    `[MapUtils] Clustering performance: ${workers.length} workers → ${clusters.length} clusters in ${duration.toFixed(2)}ms`
-  );
-
-  // Warn if clustering is slow (>100ms for production monitoring)
-  if (duration > 100) {
-    console.warn(
-      `[MapUtils] Slow clustering detected: ${duration.toFixed(2)}ms for ${workers.length} workers. Consider optimizing for scale.`
-    );
-  }
-
-  // Performance tracking for 500 worker benchmark (Issue #10)
-  if (workers.length >= 500) {
-    console.log(
-      `[MapUtils] 500+ worker benchmark: ${workers.length} workers clustered in ${duration.toFixed(2)}ms (${(workers.length / duration).toFixed(1)} workers/ms)`
-    );
-  }
 
   return clusters;
 }

@@ -1,16 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * Worker status within an area
+ * User status within an area
  */
-export class WorkerStatusDto {
+export class UserStatusDto {
   @ApiProperty({ example: 'user-uuid' })
   id: string;
 
   @ApiProperty({ example: 'John Doe' })
   full_name: string;
 
-  @ApiProperty({ example: 'worker' })
+  @ApiProperty({ example: 'satgas' })
   role: string;
 
   @ApiProperty({ example: true })
@@ -68,7 +68,7 @@ export class StaffRequirementStatusDto {
   @ApiProperty({ example: 'requirement-uuid' })
   id: string;
 
-  @ApiProperty({ example: 'worker' })
+  @ApiProperty({ example: 'satgas' })
   role: string;
 
   @ApiProperty({ example: 6 })
@@ -116,13 +116,13 @@ export class AreaStatsDto {
   coverage_area: number | null;
 
   @ApiProperty({ example: 6 })
-  total_workers_assigned: number;
+  total_users_assigned: number;
 
   @ApiProperty({ example: 5 })
-  workers_online: number;
+  users_online: number;
 
   @ApiProperty({ example: 1 })
-  workers_offline: number;
+  users_offline: number;
 
   @ApiProperty({ example: false })
   is_fully_staffed: boolean;
@@ -130,8 +130,8 @@ export class AreaStatsDto {
   @ApiProperty({ type: [StaffRequirementStatusDto] })
   staff_requirements: StaffRequirementStatusDto[];
 
-  @ApiProperty({ type: [WorkerStatusDto] })
-  workers: WorkerStatusDto[];
+  @ApiProperty({ type: [UserStatusDto] })
+  users: UserStatusDto[];
 
   @ApiProperty({ example: 5 })
   tasks_total: number;
@@ -149,9 +149,9 @@ export class AreaStatsDto {
   active_tasks: TaskSummaryDto[];
 
   @ApiProperty({ example: 8 })
-  reports_submitted_today: number;
+  activities_submitted_today: number;
 
-  @ApiProperty({ example: ['Understaffed: need 1 more worker'] })
+  @ApiProperty({ example: ['Understaffed: need 1 more satgas'] })
   alerts: string[];
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })

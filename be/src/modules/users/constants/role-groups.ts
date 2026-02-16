@@ -8,7 +8,7 @@ export const CLOCKABLE_ROLES = [
   UserRole.KEPALA_RAYON,
 ];
 
-export const AKTIVITAS_SUBMITTERS = [
+export const ACTIVITY_SUBMITTERS = [
   UserRole.SATGAS,
   UserRole.LINMAS,
   UserRole.KORLAP,
@@ -40,7 +40,7 @@ export const MONITORING_CITY = [
   UserRole.SUPERADMIN,
 ];
 
-export const MONITORING_RAYON = [UserRole.KEPALA_RAYON, ...MONITORING_CITY];
+export const MONITORING_RAYON = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA, ...MONITORING_CITY];
 
 export const MONITORING_AREA = [UserRole.KORLAP, ...MONITORING_RAYON];
 

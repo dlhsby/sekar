@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act, cleanup } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -62,6 +62,13 @@ describe('LoginScreen', () => {
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
     (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
+  });
+
+  afterEach(async () => {
+    // Flush any pending async operations to prevent "import after teardown" errors
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
   });
 
   describe('rendering', () => {
@@ -558,7 +565,7 @@ describe('LoginScreen', () => {
   describe('loading state', () => {
     it('should disable inputs when loading', async () => {
       (authApi.login as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
+        () => new Promise(() => {})
       );
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
@@ -581,7 +588,7 @@ describe('LoginScreen', () => {
 
     it('should disable button when loading', async () => {
       (authApi.login as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
+        () => new Promise(() => {})
       );
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();

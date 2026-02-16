@@ -8,12 +8,36 @@ TypeORM migrations for SEKAR database schema changes.
 
 ### Current Migrations
 
-1. **`1737006000000-AddProductionIndexesAndConstraints.ts`**
-   - **Status:** Ready for Review - DO NOT RUN YET
+1. **`1737000000000-InitialSchema.ts`**
+   - **Status:** Complete (Phase 1)
+   - **Purpose:** Initial database schema
+   - **Impact:** Creates base tables (users, areas, shifts, work_reports, location_logs)
+
+2. **`1737720000000-Phase2DatabaseSchema.ts`**
+   - **Status:** Complete (Phase 2)
+   - **Purpose:** Phase 2 enhanced features
+   - **Impact:** Creates 6 new tables (rayons, shift_definitions, activity_types, area_staff_requirements, worker_schedules, special_day_overrides), updates users/areas/work_reports
+
+3. **`1739390400000-Phase2CSchema.ts`**
+   - **Status:** Ready for Phase 2C Implementation
+   - **Purpose:** Phase 2C role system overhaul + terminology cleanup + schema refinements
+   - **Impact:**
+     - Role system: 7 → 8 roles, adds users.area_id
+     - Activity types: PascalCase → lowercase, 10 → 20 types
+     - Terminology: 2 tables renamed (worker_schedules → schedules, work_reports → activities)
+     - Terminology: 2 tables dropped (worker_assignments, overtime_aktivitas)
+     - Terminology: 3 column renames (worker_id → user_id across tables)
+     - Tasks: +rayon_id, area_id nullable, 6 → 4 statuses, task_tags table
+     - Activities: multi-photo support, activity_type_id required
+   - **Duration:** 10-30s (dev), 2-5min (production with 100k+ records)
+   - **Rollback:** Partial (some dropped data cannot be restored)
+   - **See:** `specs/phases/phase-2-c-client-feedback/database.md` for full spec
+
+4. **`1737006000000-AddProductionIndexesAndConstraints.ts.disabled`**
+   - **Status:** Disabled (optional production hardening)
    - **Purpose:** Production database hardening
    - **Impact:** Adds 11 indexes, 17 constraints, 6 columns to reports
    - **Duration:** 5s (dev) to 5min (1M records)
-   - **See:** `MIGRATION_TESTING_GUIDE.md` for full testing instructions
 
 ---
 
@@ -191,5 +215,5 @@ Before deploying migration to production:
 
 ---
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-02-11 (Added Phase 2C migration)
 **Maintainer:** Database Engineer

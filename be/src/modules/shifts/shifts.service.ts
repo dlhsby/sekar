@@ -6,21 +6,20 @@ import { Shift } from './entities/shift.entity';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { AreasService } from '../areas/areas.service';
-import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 import { S3Service } from '../../shared/services/s3.service';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
+import { GpsUtil } from '../../common/utils/gps.util';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import {
   MINIMUM_SHIFT_DURATION_MS,
   MINIMUM_SHIFT_DURATION_MINUTES,
 } from '../../common/constants/shift.constants';
-import { WorkerSchedule } from '../worker-schedules/entities/worker-schedule.entity';
-import { WorkerAssignment } from '../worker-assignments/entities/worker-assignment.entity';
+import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 
 /**
- * Service for managing worker shifts
+ * Service for managing user shifts
  *
  * Handles clock-in/out operations with GPS recording and photo uploads.
  * Phase 2C: GPS boundary validation removed, area auto-detection added.
@@ -32,28 +31,25 @@ export class ShiftsService {
   constructor(
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
-    @InjectRepository(WorkerSchedule)
-    private readonly workerScheduleRepo: Repository<WorkerSchedule>,
-    @InjectRepository(WorkerAssignment)
-    private readonly workerAssignmentRepo: Repository<WorkerAssignment>,
+    @InjectRepository(Schedule)
+    private readonly scheduleRepo: Repository<Schedule>,
     private readonly areasService: AreasService,
-    private readonly workerAssignmentsService: WorkerAssignmentsService,
     private readonly s3Service: S3Service,
   ) {}
 
   /**
-   * Get active area for a worker
-   * Checks WorkerSchedule (primary) then WorkerAssignment (fallback)
+   * Get active area for a user
+   * Checks Schedule using effective_date and end_date
    *
-   * @param userId Worker UUID
+   * @param userId User UUID
    * @returns Area entity or null if no assignment found
    */
   async getActiveArea(userId: string): Promise<Area | null> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. Check WorkerSchedule (PRIMARY - uses user_id, effective_date)
-    const schedule = await this.workerScheduleRepo.findOne({
+    // Check Schedule (uses user_id, effective_date)
+    const schedule = await this.scheduleRepo.findOne({
       where: {
         user_id: userId,
         effective_date: LessThanOrEqual(today),
@@ -64,13 +60,6 @@ export class ShiftsService {
     });
     if (schedule?.area) return schedule.area;
 
-    // 2. Fallback to WorkerAssignment (deprecated)
-    const assignment = await this.workerAssignmentRepo.findOne({
-      where: { worker_id: userId, deprecated: false },
-      relations: ['area'],
-    });
-    if (assignment?.area) return assignment.area;
-
     return null;
   }
 
@@ -78,16 +67,16 @@ export class ShiftsService {
    * Clock in to start a shift
    * Phase 2C: GPS boundary validation removed, area auto-detection added
    *
-   * @param workerId Worker UUID
+   * @param userId User UUID
    * @param dto Clock-in data (optional area_id, GPS, selfie photo)
    * @returns Created shift entity
    * @throws BadRequestException if already clocked in
    */
-  async clockIn(workerId: string, dto: ClockInDto): Promise<Shift> {
-    this.logger.log(`Worker ${workerId} attempting to clock in`);
+  async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
+    this.logger.log(`User ${userId} attempting to clock in`);
 
-    // 1. Check if worker already has an active shift
-    const activeShift = await this.findActiveShift(workerId);
+    // 1. Check if user already has an active shift
+    const activeShift = await this.findActiveShift(userId);
     if (activeShift) {
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
@@ -102,7 +91,7 @@ export class ShiftsService {
     if (dto.area_id) {
       area = await this.areasService.findOne(dto.area_id);
     } else {
-      area = await this.getActiveArea(workerId);
+      area = await this.getActiveArea(userId);
     }
     // area can be null - allow clock-in without area (GPS still recorded)
 
@@ -124,19 +113,30 @@ export class ShiftsService {
       );
     }
 
-    // 4. Create shift record
+    // 4. Check boundary (soft geofencing — never blocks clock-in)
+    let clockInOutsideBoundary = false;
+    if (area) {
+      const isWithin = GpsUtil.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, area);
+      clockInOutsideBoundary = !isWithin;
+      if (clockInOutsideBoundary) {
+        this.logger.warn(`User ${userId} clocking in outside area boundary: ${area.name}`);
+      }
+    }
+
+    // 5. Create shift record
     const shift = this.shiftRepository.create({
-      worker_id: workerId,
+      user_id: userId,
       area_id: area?.id || null,
       clock_in_time: new Date(),
       clock_in_gps_lat: dto.gps_lat,
       clock_in_gps_lng: dto.gps_lng,
       clock_in_photo_url: photoUrl,
+      clock_in_outside_boundary: clockInOutsideBoundary,
     });
 
     const savedShift = await this.shiftRepository.save(shift);
     this.logger.log(
-      `Worker ${workerId} clocked in successfully. Shift ID: ${savedShift.id}, Area: ${area?.name || 'None'}`,
+      `User ${userId} clocked in successfully. Shift ID: ${savedShift.id}, Area: ${area?.name || 'None'}`,
     );
 
     return savedShift;
@@ -145,18 +145,18 @@ export class ShiftsService {
   /**
    * Clock out to end a shift
    *
-   * @param workerId Worker UUID
+   * @param userId User UUID
    * @param dto Clock-out data (GPS coordinates)
    * @returns Updated shift entity
    * @throws BadRequestException if no active shift found
    */
-  async clockOut(workerId: string, dto: ClockOutDto): Promise<Shift> {
-    this.logger.log(`Worker ${workerId} attempting to clock out`);
+  async clockOut(userId: string, dto: ClockOutDto): Promise<Shift> {
+    this.logger.log(`User ${userId} attempting to clock out`);
 
     // Find active shift
     const shift = await this.shiftRepository.findOne({
       where: {
-        worker_id: workerId,
+        user_id: userId,
         clock_out_time: IsNull(),
       },
       relations: ['area'],
@@ -187,32 +187,43 @@ export class ShiftsService {
       );
     }
 
+    // Check boundary (soft geofencing — never blocks clock-out)
+    let clockOutOutsideBoundary = false;
+    if (shift.area) {
+      const isWithin = GpsUtil.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, shift.area);
+      clockOutOutsideBoundary = !isWithin;
+      if (clockOutOutsideBoundary) {
+        this.logger.warn(`User ${userId} clocking out outside area boundary: ${shift.area.name}`);
+      }
+    }
+
     // Update shift with clock-out details
     shift.clock_out_time = new Date();
     shift.clock_out_gps_lat = dto.gps_lat;
     shift.clock_out_gps_lng = dto.gps_lng;
+    shift.clock_out_outside_boundary = clockOutOutsideBoundary;
 
     const updatedShift = await this.shiftRepository.save(shift);
 
     const hoursWorked = this.calculateHoursWorked(shift.clock_in_time, shift.clock_out_time);
-    this.logger.log(`Worker ${workerId} clocked out successfully. Hours worked: ${hoursWorked}`);
+    this.logger.log(`User ${userId} clocked out successfully. Hours worked: ${hoursWorked}`);
 
     return updatedShift;
   }
 
   /**
-   * Get active shift for a worker
+   * Get active shift for a user
    *
-   * @param workerId Worker UUID
+   * @param userId User UUID
    * @returns Active shift or null if not clocked in
    */
-  async findActiveShift(workerId: string): Promise<Shift | null> {
+  async findActiveShift(userId: string): Promise<Shift | null> {
     return this.shiftRepository.findOne({
       where: {
-        worker_id: workerId,
+        user_id: userId,
         clock_out_time: IsNull(),
       },
-      relations: ['area', 'area.areaType', 'worker'],
+      relations: ['area', 'area.areaType', 'user'],
     });
   }
 
@@ -226,7 +237,7 @@ export class ShiftsService {
   async findOne(id: string): Promise<Shift> {
     const shift = await this.shiftRepository.findOne({
       where: { id },
-      relations: ['area', 'area.areaType', 'worker'],
+      relations: ['area', 'area.areaType', 'user'],
     });
 
     if (!shift) {
@@ -241,15 +252,15 @@ export class ShiftsService {
   }
 
   /**
-   * Get all shifts for a worker
+   * Get all shifts for a user
    *
-   * @param workerId Worker UUID
+   * @param userId User UUID
    * @param limit Maximum number of results (default: 50)
    * @returns Array of shifts ordered by clock-in time descending
    */
-  async findByWorkerId(workerId: string, limit = 50): Promise<Shift[]> {
+  async findByUserId(userId: string, limit = 50): Promise<Shift[]> {
     return this.shiftRepository.find({
-      where: { worker_id: workerId },
+      where: { user_id: userId },
       relations: ['area', 'area.areaType'],
       order: { clock_in_time: 'DESC' },
       take: limit,
@@ -266,7 +277,7 @@ export class ShiftsService {
   async findByAreaId(areaId: string, limit = 100): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { area_id: areaId },
-      relations: ['worker'],
+      relations: ['user'],
       order: { clock_in_time: 'DESC' },
       take: limit,
     });
@@ -287,24 +298,24 @@ export class ShiftsService {
   }
 
   /**
-   * Get all active shifts (for supervisor dashboard)
+   * Get all active shifts (for management dashboard)
    *
-   * @returns Array of active shifts with worker and area details
+   * @returns Array of active shifts with user and area details
    */
   async findAllActiveShifts(): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { clock_out_time: IsNull() },
-      relations: ['worker', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.areaType'],
       order: { clock_in_time: 'ASC' },
     });
   }
 
   /**
-   * Get all active shifts with pagination (for supervisor dashboard)
+   * Get all active shifts with pagination (for management dashboard)
    *
    * @param page Page number
    * @param limit Items per page
-   * @returns Paginated active shifts with worker and area details
+   * @returns Paginated active shifts with user and area details
    */
   async findAllActiveShiftsPaginated(
     page: number = 1,
@@ -312,7 +323,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { clock_out_time: IsNull() },
-      relations: ['worker', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.areaType'],
       order: { clock_in_time: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

@@ -4,13 +4,12 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
-import { OvertimeAktivitas } from './overtime-aktivitas.entity';
+import { ActivityType } from '../../activity-types/entities/activity-type.entity';
 
 export enum OvertimeStatus {
   PENDING = 'pending',
@@ -58,6 +57,21 @@ export class Overtime {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  @Column('uuid')
+  activity_type_id: string;
+
+  @Column('text')
+  description: string;
+
+  @Column('text', { array: true, default: '{}' })
+  photo_urls: string[];
+
+  @Column('decimal', { precision: 10, scale: 8, nullable: true })
+  gps_lat?: number;
+
+  @Column('decimal', { precision: 11, scale: 8, nullable: true })
+  gps_lng?: number;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
@@ -70,11 +84,9 @@ export class Overtime {
   @JoinColumn({ name: 'approved_by' })
   approver?: User;
 
-  @OneToMany(() => OvertimeAktivitas, (oa) => oa.overtime, {
-    cascade: true,
-    eager: true,
-  })
-  aktivitas: OvertimeAktivitas[];
+  @ManyToOne(() => ActivityType)
+  @JoinColumn({ name: 'activity_type_id' })
+  activityType: ActivityType;
 
   @CreateDateColumn()
   created_at: Date;

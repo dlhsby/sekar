@@ -196,11 +196,11 @@ class WebSocketService {
       }
 
       if (this.socket?.connected) {
-        console.log('[WebSocket] Already connected');
+        console.debug('[WebSocket] Already connected');
         return true;
       }
 
-      console.log('[WebSocket] Connecting to server');
+      console.debug('[WebSocket] Connecting to server');
       this.connectionState = ConnectionState.CONNECTING;
 
       // Extract base URL without /api/v1 path
@@ -251,11 +251,11 @@ class WebSocketService {
    */
   disconnect(): void {
     if (!this.socket) {
-      console.log('[WebSocket] Already disconnected');
+      console.debug('[WebSocket] Already disconnected');
       return;
     }
 
-    console.log('[WebSocket] Disconnecting');
+    console.debug('[WebSocket] Disconnecting');
 
     // Clear reconnection timer
     if (this.reconnectTimer) {
@@ -306,16 +306,16 @@ class WebSocketService {
     const room = `area:${areaId}`;
 
     if (this.subscribedRooms.has(room)) {
-      console.log('[WebSocket] Already subscribed to', room);
+      console.debug('[WebSocket] Already subscribed to', room);
       return;
     }
 
-    console.log('[WebSocket] Subscribing to area:', areaId);
+    console.debug('[WebSocket] Subscribing to area:', areaId);
 
     this.socket.emit('subscribe:area', { area_id: areaId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.add(room);
-        console.log('[WebSocket] Subscribed to area:', areaId);
+        console.debug('[WebSocket] Subscribed to area:', areaId);
       } else {
         console.error('[WebSocket] Failed to subscribe to area:', response);
       }
@@ -336,16 +336,16 @@ class WebSocketService {
     const room = `area:${areaId}`;
 
     if (!this.subscribedRooms.has(room)) {
-      console.log('[WebSocket] Not subscribed to', room);
+      console.debug('[WebSocket] Not subscribed to', room);
       return;
     }
 
-    console.log('[WebSocket] Unsubscribing from area:', areaId);
+    console.debug('[WebSocket] Unsubscribing from area:', areaId);
 
     this.socket.emit('unsubscribe:area', { area_id: areaId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.delete(room);
-        console.log('[WebSocket] Unsubscribed from area:', areaId);
+        console.debug('[WebSocket] Unsubscribed from area:', areaId);
       } else {
         console.error('[WebSocket] Failed to unsubscribe from area:', response);
       }
@@ -366,16 +366,16 @@ class WebSocketService {
     const room = `rayon:${rayonId}`;
 
     if (this.subscribedRooms.has(room)) {
-      console.log('[WebSocket] Already subscribed to', room);
+      console.debug('[WebSocket] Already subscribed to', room);
       return;
     }
 
-    console.log('[WebSocket] Subscribing to rayon:', rayonId);
+    console.debug('[WebSocket] Subscribing to rayon:', rayonId);
 
     this.socket.emit('subscribe:rayon', { rayon_id: rayonId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.add(room);
-        console.log('[WebSocket] Subscribed to rayon:', rayonId);
+        console.debug('[WebSocket] Subscribed to rayon:', rayonId);
       } else {
         console.error('[WebSocket] Failed to subscribe to rayon:', response);
       }
@@ -396,16 +396,16 @@ class WebSocketService {
     const room = `rayon:${rayonId}`;
 
     if (!this.subscribedRooms.has(room)) {
-      console.log('[WebSocket] Not subscribed to', room);
+      console.debug('[WebSocket] Not subscribed to', room);
       return;
     }
 
-    console.log('[WebSocket] Unsubscribing from rayon:', rayonId);
+    console.debug('[WebSocket] Unsubscribing from rayon:', rayonId);
 
     this.socket.emit('unsubscribe:rayon', { rayon_id: rayonId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.delete(room);
-        console.log('[WebSocket] Unsubscribed from rayon:', rayonId);
+        console.debug('[WebSocket] Unsubscribed from rayon:', rayonId);
       } else {
         console.error('[WebSocket] Failed to unsubscribe from rayon:', response);
       }
@@ -480,7 +480,7 @@ class WebSocketService {
 
     // Connection established
     this.socket.on('connect', () => {
-      console.log('[WebSocket] Connected to server');
+      console.debug('[WebSocket] Connected to server');
       this.connectionState = ConnectionState.CONNECTED;
       this.reconnectAttempts = 0;
 
@@ -499,7 +499,7 @@ class WebSocketService {
 
     // Disconnection
     this.socket.on('disconnect', (reason: string) => {
-      console.log('[WebSocket] Disconnected:', reason);
+      console.debug('[WebSocket] Disconnected:', reason);
       this.connectionState = ConnectionState.DISCONNECTED;
 
       // Auto-reconnect if not a manual disconnect
@@ -510,7 +510,7 @@ class WebSocketService {
 
     // Reconnection attempt
     this.socket.on('reconnect_attempt', (attempt: number) => {
-      console.log('[WebSocket] Reconnection attempt:', attempt);
+      console.debug('[WebSocket] Reconnection attempt:', attempt);
       this.connectionState = ConnectionState.RECONNECTING;
       this.reconnectAttempts = attempt;
     });
@@ -523,7 +523,7 @@ class WebSocketService {
 
     // Reconnected successfully
     this.socket.on('reconnect', () => {
-      console.log('[WebSocket] Reconnected successfully');
+      console.debug('[WebSocket] Reconnected successfully');
       this.connectionState = ConnectionState.CONNECTED;
       this.reconnectAttempts = 0;
     });
@@ -548,7 +548,7 @@ class WebSocketService {
       this.reconnectConfig.maxDelay
     );
 
-    console.log(`[WebSocket] Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
+    console.debug(`[WebSocket] Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -566,7 +566,7 @@ class WebSocketService {
   private resubscribeToRooms(): void {
     if (this.subscribedRooms.size === 0) {return;}
 
-    console.log('[WebSocket] Resubscribing to', this.subscribedRooms.size, 'rooms');
+    console.debug('[WebSocket] Resubscribing to', this.subscribedRooms.size, 'rooms');
 
     this.subscribedRooms.forEach((room) => {
       if (room.startsWith('area:')) {
@@ -609,7 +609,7 @@ class WebSocketService {
       this.socket.on(eventType, handler);
     }
 
-    console.log('[WebSocket] Added listener for', eventType);
+    console.debug('[WebSocket] Added listener for', eventType);
 
     // Return unsubscribe function
     return () => {
@@ -619,7 +619,7 @@ class WebSocketService {
         this.socket.off(eventType, handler);
       }
 
-      console.log('[WebSocket] Removed listener for', eventType);
+      console.debug('[WebSocket] Removed listener for', eventType);
     };
   }
 
@@ -640,7 +640,7 @@ class WebSocketService {
         });
         this.eventListeners.delete(eventType);
       }
-      console.log('[WebSocket] Removed all listeners for', eventType);
+      console.debug('[WebSocket] Removed all listeners for', eventType);
     } else {
       // Remove all listeners
       this.eventListeners.forEach((handlers, event) => {
@@ -651,7 +651,7 @@ class WebSocketService {
         });
       });
       this.eventListeners.clear();
-      console.log('[WebSocket] Removed all event listeners');
+      console.debug('[WebSocket] Removed all event listeners');
     }
   }
 
@@ -674,14 +674,14 @@ class WebSocketService {
       ...this.reconnectConfig,
       ...config,
     };
-    console.log('[WebSocket] Reconnect config updated:', this.reconnectConfig);
+    console.debug('[WebSocket] Reconnect config updated:', this.reconnectConfig);
   }
 
   /**
    * Manually trigger reconnection
    */
   async reconnect(): Promise<boolean> {
-    console.log('[WebSocket] Manual reconnect triggered');
+    console.debug('[WebSocket] Manual reconnect triggered');
 
     if (this.socket?.connected) {
       this.disconnect();
@@ -695,7 +695,7 @@ class WebSocketService {
    * Cleanup and remove all listeners
    */
   cleanup(): void {
-    console.log('[WebSocket] Cleaning up service');
+    console.debug('[WebSocket] Cleaning up service');
 
     this.removeAllListeners();
     this.disconnect();

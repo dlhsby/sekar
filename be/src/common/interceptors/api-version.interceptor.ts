@@ -28,7 +28,7 @@ export class ApiVersionInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const response = context.switchToHttp().getResponse();
-        response.setHeader('X-API-Version', 'v1');
+        response.setHeader('X-API-Version', '1'); // Version number only (tests expect '1' not 'v1')
       }),
     );
   }

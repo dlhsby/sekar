@@ -125,7 +125,7 @@ class LocationTracker extends EventEmitter {
     }
     singletonInitialized = true;
 
-    console.log(`[LocationTracker:${this.instanceId}] Instance created`);
+    console.debug(`[LocationTracker:${this.instanceId}] Instance created`);
   }
 
   /**
@@ -136,16 +136,16 @@ class LocationTracker extends EventEmitter {
     if (this.tracking) {
       // If already tracking the same shift, just capture a new location
       if (this.shiftId === shiftId) {
-        console.log(`[LocationTracker:${this.instanceId}] Already tracking this shift, capturing location`);
+        console.debug(`[LocationTracker:${this.instanceId}] Already tracking this shift, capturing location`);
         this.captureLocation();
         return;
       }
       // If tracking a different shift, stop first
-      console.log(`[LocationTracker:${this.instanceId}] Switching to new shift`);
+      console.debug(`[LocationTracker:${this.instanceId}] Switching to new shift`);
       await this.stop();
     }
 
-    console.log(`[LocationTracker:${this.instanceId}] Initializing for shift:`, shiftId);
+    console.debug(`[LocationTracker:${this.instanceId}] Initializing for shift:`, shiftId);
 
     // Set shiftId FIRST so restored locations can be uploaded
     this.shiftId = shiftId;
@@ -157,7 +157,7 @@ class LocationTracker extends EventEmitter {
     // Check location permission
     const hasPermission = await checkLocationPermission();
     if (!hasPermission) {
-      console.log(`[LocationTracker:${this.instanceId}] Requesting location permission`);
+      console.debug(`[LocationTracker:${this.instanceId}] Requesting location permission`);
       const result = await requestLocationPermission();
 
       if (!result.granted) {
@@ -190,7 +190,7 @@ class LocationTracker extends EventEmitter {
     this.startLocationWatch();
 
     this.emit('trackingStarted', shiftId);
-    console.log(`[LocationTracker:${this.instanceId}] Tracking started for shift:`, shiftId);
+    console.debug(`[LocationTracker:${this.instanceId}] Tracking started for shift:`, shiftId);
   }
 
   /**
@@ -198,18 +198,18 @@ class LocationTracker extends EventEmitter {
    */
   public async stop(): Promise<void> {
     if (!this.tracking) {
-      console.log('[LocationTracker] Not tracking');
+      console.debug('[LocationTracker] Not tracking');
       return;
     }
 
-    console.log('[LocationTracker] Stopping tracking...');
+    console.debug('[LocationTracker] Stopping tracking...');
 
     // Stop location watching
     this.stopLocationWatch();
 
     // Upload remaining locations if any
     if (this.locationBuffer.length > 0) {
-      console.log(`[LocationTracker] Uploading ${this.locationBuffer.length} remaining locations`);
+      console.debug(`[LocationTracker] Uploading ${this.locationBuffer.length} remaining locations`);
       await this.uploadLocations(true); // Force upload all remaining
     }
 
@@ -219,7 +219,7 @@ class LocationTracker extends EventEmitter {
     this.locationBuffer = [];
 
     this.emit('trackingStopped');
-    console.log('[LocationTracker] Tracking stopped');
+    console.debug('[LocationTracker] Tracking stopped');
   }
 
   /**
@@ -246,7 +246,7 @@ class LocationTracker extends EventEmitter {
             battery_level: batteryLevel,
           };
 
-          console.log('[LocationTracker] Got current location:', {
+          console.debug('[LocationTracker] Got current location:', {
             lat: location.latitude.toFixed(6),
             lng: location.longitude.toFixed(6),
             accuracy: `${location.accuracy.toFixed(1)}m`,
@@ -295,7 +295,7 @@ class LocationTracker extends EventEmitter {
    */
   public captureNow(): void {
     if (this.tracking && this.shiftId) {
-      console.log('[LocationTracker] Immediate capture triggered');
+      console.debug('[LocationTracker] Immediate capture triggered');
       this.captureLocation();
     }
   }
@@ -304,7 +304,7 @@ class LocationTracker extends EventEmitter {
    * Start location watching with randomized interval
    */
   private startLocationWatch(): void {
-    console.log('[LocationTracker] Starting location watch with randomized interval');
+    console.debug('[LocationTracker] Starting location watch with randomized interval');
 
     // Capture first location immediately
     this.captureLocation();
@@ -322,7 +322,7 @@ class LocationTracker extends EventEmitter {
     }
 
     const interval = getRandomInterval();
-    console.log(`[LocationTracker] Next capture in ${Math.round(interval / 1000)}s`);
+    console.debug(`[LocationTracker] Next capture in ${Math.round(interval / 1000)}s`);
 
     this.intervalId = setTimeout(() => {
       if (this.tracking) {
@@ -336,7 +336,7 @@ class LocationTracker extends EventEmitter {
    * Stop location watching
    */
   private stopLocationWatch(): void {
-    console.log('[LocationTracker] Stopping location watch');
+    console.debug('[LocationTracker] Stopping location watch');
 
     if (this.watchId !== null) {
       Geolocation.clearWatch(this.watchId);
@@ -354,11 +354,11 @@ class LocationTracker extends EventEmitter {
    */
   private async captureLocation(): Promise<void> {
     if (!this.shiftId || !this.tracking) {
-      console.log('[LocationTracker] Not tracking, skipping capture');
+      console.debug('[LocationTracker] Not tracking, skipping capture');
       return;
     }
 
-    console.log('[LocationTracker] Capturing location...');
+    console.debug('[LocationTracker] Capturing location...');
 
     // Get battery level first (non-blocking, fast ~1-5ms)
     const batteryLevel = await getBatteryLevel();
@@ -374,7 +374,7 @@ class LocationTracker extends EventEmitter {
           battery_level: batteryLevel,
         };
 
-        console.log('[LocationTracker] Location captured:', {
+        console.debug('[LocationTracker] Location captured:', {
           lat: location.latitude.toFixed(6),
           lng: location.longitude.toFixed(6),
           accuracy: `${location.accuracy.toFixed(1)}m`,
@@ -418,7 +418,7 @@ class LocationTracker extends EventEmitter {
       return;
     }
 
-    console.log('[LocationTracker] Retrying with lower accuracy...');
+    console.debug('[LocationTracker] Retrying with lower accuracy...');
 
     // Get battery level (may have changed since first attempt)
     const batteryLevel = await getBatteryLevel();
@@ -434,7 +434,7 @@ class LocationTracker extends EventEmitter {
           battery_level: batteryLevel,
         };
 
-        console.log('[LocationTracker] Location captured (low accuracy):', {
+        console.debug('[LocationTracker] Location captured (low accuracy):', {
           lat: location.latitude.toFixed(6),
           lng: location.longitude.toFixed(6),
           accuracy: `${location.accuracy.toFixed(1)}m`,
@@ -461,7 +461,7 @@ class LocationTracker extends EventEmitter {
    */
   private addLocationToBuffer(location: LocationPing): void {
     this.locationBuffer.push(location);
-    console.log(`[LocationTracker] Buffer size: ${this.locationBuffer.length}/${MAX_BUFFER_SIZE}`);
+    console.debug(`[LocationTracker] Buffer size: ${this.locationBuffer.length}/${MAX_BUFFER_SIZE}`);
 
     // Warning at 80% capacity
     const warningThreshold = Math.floor(MAX_BUFFER_SIZE * 0.8);
@@ -509,15 +509,15 @@ class LocationTracker extends EventEmitter {
         const otherShiftLocations = restoredBuffer.length - currentShiftLocations.length;
 
         if (otherShiftLocations > 0) {
-          console.log(`[LocationTracker:${this.instanceId}] Discarding ${otherShiftLocations} locations from other shifts`);
+          console.debug(`[LocationTracker:${this.instanceId}] Discarding ${otherShiftLocations} locations from other shifts`);
         }
 
         this.locationBuffer = currentShiftLocations;
-        console.log(`[LocationTracker:${this.instanceId}] Restored ${this.locationBuffer.length} locations for current shift`);
+        console.debug(`[LocationTracker:${this.instanceId}] Restored ${this.locationBuffer.length} locations for current shift`);
 
         // Upload restored locations if any (now shiftId is set)
         if (this.locationBuffer.length > 0 && this.shiftId) {
-          console.log(`[LocationTracker:${this.instanceId}] Uploading restored locations...`);
+          console.debug(`[LocationTracker:${this.instanceId}] Uploading restored locations...`);
           await this.uploadLocations();
         }
 
@@ -554,12 +554,12 @@ class LocationTracker extends EventEmitter {
    */
   private async uploadLocations(forceAll = false): Promise<void> {
     if (this.locationBuffer.length === 0) {
-      console.log('[LocationTracker] No locations to upload');
+      console.debug('[LocationTracker] No locations to upload');
       return;
     }
 
     if (!this.shiftId) {
-      console.log('[LocationTracker] No shift ID, cannot upload');
+      console.debug('[LocationTracker] No shift ID, cannot upload');
       return;
     }
 
@@ -568,7 +568,7 @@ class LocationTracker extends EventEmitter {
     const locationsToUpload = this.locationBuffer.slice(0, uploadCount);
     const shiftId = this.shiftId;
 
-    console.log(`[LocationTracker] Uploading ${locationsToUpload.length} locations...`);
+    console.debug(`[LocationTracker] Uploading ${locationsToUpload.length} locations...`);
 
     try {
       // Convert internal format to API format
@@ -587,7 +587,7 @@ class LocationTracker extends EventEmitter {
       // Update persisted buffer
       await this.persistBuffer();
 
-      console.log(`[LocationTracker] Batch uploaded successfully: ${result.data?.inserted_count || locationsToUpload.length} locations`);
+      console.debug(`[LocationTracker] Batch uploaded successfully: ${result.data?.inserted_count || locationsToUpload.length} locations`);
       this.emit('batchUploaded', locationsToUpload.length);
     } catch (error: any) {
       console.error('[LocationTracker] Upload failed, queuing for offline sync:', error.message);
@@ -607,7 +607,7 @@ class LocationTracker extends EventEmitter {
         // Update persisted buffer
         await this.persistBuffer();
 
-        console.log(`[LocationTracker] Batch queued for offline sync: ${locationsToUpload.length} locations`);
+        console.debug(`[LocationTracker] Batch queued for offline sync: ${locationsToUpload.length} locations`);
         this.emit('batchQueued', locationsToUpload.length);
       } catch (queueError: any) {
         console.error('[LocationTracker] Failed to queue locations:', queueError.message);
@@ -685,11 +685,11 @@ class LocationTracker extends EventEmitter {
    */
   public async forceUpload(): Promise<void> {
     if (this.locationBuffer.length === 0) {
-      console.log('[LocationTracker] No locations to upload');
+      console.debug('[LocationTracker] No locations to upload');
       return;
     }
 
-    console.log('[LocationTracker] Force uploading buffered locations');
+    console.debug('[LocationTracker] Force uploading buffered locations');
     await this.uploadLocations(true);
   }
 
@@ -697,7 +697,7 @@ class LocationTracker extends EventEmitter {
    * Clear buffer (use with caution)
    */
   public clearBuffer(): void {
-    console.log('[LocationTracker] Clearing buffer');
+    console.debug('[LocationTracker] Clearing buffer');
     this.locationBuffer = [];
   }
 
@@ -705,7 +705,7 @@ class LocationTracker extends EventEmitter {
    * Cleanup - use for complete teardown
    */
   public cleanup(): void {
-    console.log('[LocationTracker] Cleaning up...');
+    console.debug('[LocationTracker] Cleaning up...');
 
     this.stopLocationWatch();
     this.locationBuffer = [];
@@ -713,7 +713,7 @@ class LocationTracker extends EventEmitter {
     this.tracking = false;
     this.removeAllListeners();
 
-    console.log('[LocationTracker] Cleanup complete');
+    console.debug('[LocationTracker] Cleanup complete');
   }
 }
 

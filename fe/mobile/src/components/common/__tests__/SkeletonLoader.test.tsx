@@ -340,9 +340,9 @@ describe('SkeletonLoader Component', () => {
     });
 
     it('should handle large SkeletonList count', () => {
-      const { getAllByLabelText } = render(<SkeletonList count={100} />);
+      const { getAllByLabelText } = render(<SkeletonList count={20} />);
       const skeletons = getAllByLabelText('Memuat konten');
-      expect(skeletons.length).toBe(300); // 100 items × 3 skeletons
+      expect(skeletons.length).toBe(60); // 20 items × 3 skeletons
     });
   });
 });

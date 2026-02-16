@@ -4,7 +4,7 @@ import { MonitoringService } from './monitoring.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
-import { LiveWorkersResponseDto, LiveWorkersFilterDto } from './dto/live-workers.dto';
+import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -22,8 +22,8 @@ import {
  * Provides role-scoped access to monitoring statistics:
  * - City-wide: Admin, TopManagement
  * - Rayon-level: KepalaRayon and above
- * - Area-level: KoordinatorLapangan and above
- * - Live workers: All supervisory roles
+ * - Area-level: Korlap and above
+ * - Live users: All supervisory roles
  */
 @ApiTags('Monitoring')
 @ApiBearerAuth()
@@ -68,8 +68,8 @@ export class MonitoringController {
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
   ): Promise<RayonStatsDto> {
-    if (user.role === UserRole.KEPALA_RAYON && user.rayon_id !== id) {
-      throw new ForbiddenException('Anda hanya dapat melihat monitoring rayon Anda');
+    if ((user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) && user.rayon_id !== id) {
+      throw new ForbiddenException('You can only view monitoring for your own rayon');
     }
     return this.monitoringService.getRayonStats(id);
   }
@@ -87,32 +87,37 @@ export class MonitoringController {
     type: AreaStatsDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - KoordinatorLapangan+ only' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Korlap+ only' })
   @ApiResponse({ status: 404, description: 'Area not found' })
   async getAreaStats(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
   ): Promise<AreaStatsDto> {
     if (user.role === UserRole.KORLAP && user.area_id !== id) {
-      throw new ForbiddenException('Anda hanya dapat melihat monitoring area Anda');
+      throw new ForbiddenException('You can only view monitoring for your own area');
     }
     return this.monitoringService.getAreaStats(id);
   }
 
   /**
-   * Get live worker positions
+   * Get live user positions
    */
-  @Get('live-workers')
+  @Get('live-users')
   @Roles(...MONITORING_AREA)
-  @ApiOperation({ summary: 'Get real-time worker positions' })
+  @ApiOperation({ summary: 'Get real-time user positions' })
   @ApiResponse({
     status: 200,
-    description: 'Live worker positions',
-    type: LiveWorkersResponseDto,
+    description: 'Live user positions',
+    type: LiveUsersResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Supervisory roles only' })
-  async getLiveWorkers(@Query() filters: LiveWorkersFilterDto): Promise<LiveWorkersResponseDto> {
-    return this.monitoringService.getLiveWorkers(filters);
+  @ApiResponse({ status: 403, description: 'Forbidden - Monitoring roles only' })
+  async getLiveUsers(@Query() filters: LiveUsersFilterDto, @GetUser() user: User): Promise<LiveUsersResponseDto> {
+    if (user.role === UserRole.KORLAP && user.area_id) {
+      filters.area_id = user.area_id;
+    } else if (user.role === UserRole.ADMIN_DATA && user.rayon_id) {
+      filters.rayon_id = user.rayon_id;
+    }
+    return this.monitoringService.getLiveUsers(filters);
   }
 }

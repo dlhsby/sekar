@@ -72,7 +72,7 @@ describe('LocationService', () => {
   });
 
   describe('createBatch', () => {
-    const workerId = 'worker-uuid-123';
+    const userId = 'user-uuid-123';
     const shiftId = 'shift-uuid-456';
     const createDto: CreateLocationBatchDto = {
       shift_id: shiftId,
@@ -96,7 +96,7 @@ describe('LocationService', () => {
 
     const mockShift = {
       id: shiftId,
-      worker_id: workerId,
+      user_id: userId,
       clock_in_time: new Date(),
       clock_out_time: null,
     };
@@ -105,7 +105,7 @@ describe('LocationService', () => {
       mockShiftsRepository.findOne.mockResolvedValue(mockShift);
       mockLocationLogsRepository.create.mockImplementation((data) => data);
 
-      const result = await service.createBatch(createDto, workerId);
+      const result = await service.createBatch(createDto, userId);
 
       expect(result.count).toBe(2);
       expect(mockQueryRunner.connect).toHaveBeenCalled();
@@ -118,14 +118,14 @@ describe('LocationService', () => {
     it('should throw NotFoundException if shift not found', async () => {
       mockShiftsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.createBatch(createDto, workerId)).rejects.toThrow(NotFoundException);
+      await expect(service.createBatch(createDto, userId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if shift is completed', async () => {
       const completedShift = { ...mockShift, clock_out_time: new Date() };
       mockShiftsRepository.findOne.mockResolvedValue(completedShift);
 
-      await expect(service.createBatch(createDto, workerId)).rejects.toThrow(BadRequestException);
+      await expect(service.createBatch(createDto, userId)).rejects.toThrow(BadRequestException);
     });
 
     it('should rollback transaction on error', async () => {
@@ -133,23 +133,23 @@ describe('LocationService', () => {
       mockLocationLogsRepository.create.mockImplementation((data) => data);
       mockQueryRunner.manager.save.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.createBatch(createDto, workerId)).rejects.toThrow();
+      await expect(service.createBatch(createDto, userId)).rejects.toThrow();
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
   });
 
-  describe('getWorkerHistory', () => {
-    const workerId = 'worker-uuid-123';
+  describe('getUserHistory', () => {
+    const userId = 'user-uuid-123';
 
     it('should return location history with no filters', async () => {
       const mockLocations = [
-        { id: 'loc-1', worker_id: workerId },
-        { id: 'loc-2', worker_id: workerId },
+        { id: 'loc-1', user_id: userId },
+        { id: 'loc-2', user_id: userId },
       ];
       mockLocationLogsRepository.find.mockResolvedValue(mockLocations);
 
-      const result = await service.getWorkerHistory(workerId, {});
+      const result = await service.getUserHistory(userId, {});
 
       expect(result).toEqual(mockLocations);
       expect(locationLogsRepository.find).toHaveBeenCalled();
@@ -159,7 +159,7 @@ describe('LocationService', () => {
       const mockLocations = [{ id: 'loc-1', shift_id: 'shift-123' }];
       mockLocationLogsRepository.find.mockResolvedValue(mockLocations);
 
-      const result = await service.getWorkerHistory(workerId, {
+      const result = await service.getUserHistory(userId, {
         shift_id: 'shift-123',
       });
 
@@ -170,7 +170,7 @@ describe('LocationService', () => {
       const mockLocations = [{ id: 'loc-1' }];
       mockLocationLogsRepository.find.mockResolvedValue(mockLocations);
 
-      const result = await service.getWorkerHistory(workerId, {
+      const result = await service.getUserHistory(userId, {
         from_date: '2026-01-01',
         to_date: '2026-01-31',
       });
@@ -182,7 +182,7 @@ describe('LocationService', () => {
       const mockLocations = [{ id: 'loc-1' }];
       mockLocationLogsRepository.find.mockResolvedValue(mockLocations);
 
-      const result = await service.getWorkerHistory(workerId, {
+      const result = await service.getUserHistory(userId, {
         from_date: '2026-01-01',
       });
 
@@ -193,14 +193,14 @@ describe('LocationService', () => {
       const mockLocations = Array(1000).fill({ id: 'loc-1' });
       mockLocationLogsRepository.find.mockResolvedValue(mockLocations);
 
-      const result = await service.getWorkerHistory(workerId, {});
+      const result = await service.getUserHistory(userId, {});
 
       expect(result.length).toBeLessThanOrEqual(1000);
     });
   });
 
-  describe('getWorkerHistoryPaginated', () => {
-    const workerId = 'worker-uuid-123';
+  describe('getUserHistoryPaginated', () => {
+    const userId = 'user-uuid-123';
 
     beforeEach(() => {
       mockLocationLogsRepository.findAndCount = jest.fn();
@@ -208,12 +208,12 @@ describe('LocationService', () => {
 
     it('should return paginated location history with default parameters', async () => {
       const mockData = [
-        { id: 'loc-1', worker_id: workerId },
-        { id: 'loc-2', worker_id: workerId },
+        { id: 'loc-1', user_id: userId },
+        { id: 'loc-2', user_id: userId },
       ];
       mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 100]);
 
-      const result = await service.getWorkerHistoryPaginated(workerId, {}, 1, 50);
+      const result = await service.getUserHistoryPaginated(userId, {}, 1, 50);
 
       expect(result.data).toEqual(mockData);
       expect(result.meta.total).toBe(100);
@@ -227,8 +227,8 @@ describe('LocationService', () => {
       const mockData = [{ id: 'loc-1', shift_id: 'shift-123' }];
       mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 1]);
 
-      const result = await service.getWorkerHistoryPaginated(
-        workerId,
+      const result = await service.getUserHistoryPaginated(
+        userId,
         { shift_id: 'shift-123' },
         1,
         50,
@@ -242,8 +242,8 @@ describe('LocationService', () => {
       const mockData = [{ id: 'loc-1', logged_at: new Date('2026-01-15') }];
       mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 1]);
 
-      const result = await service.getWorkerHistoryPaginated(
-        workerId,
+      const result = await service.getUserHistoryPaginated(
+        userId,
         {
           from_date: '2026-01-01',
           to_date: '2026-01-31',
@@ -260,8 +260,8 @@ describe('LocationService', () => {
       const mockData = [{ id: 'loc-1', logged_at: new Date('2026-01-15') }];
       mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 1]);
 
-      const result = await service.getWorkerHistoryPaginated(
-        workerId,
+      const result = await service.getUserHistoryPaginated(
+        userId,
         { from_date: '2026-01-01' },
         1,
         50,
@@ -275,7 +275,7 @@ describe('LocationService', () => {
       const mockData = [{ id: 'loc-51' }];
       mockLocationLogsRepository.findAndCount.mockResolvedValue([mockData, 100]);
 
-      const result = await service.getWorkerHistoryPaginated(workerId, {}, 2, 50);
+      const result = await service.getUserHistoryPaginated(userId, {}, 2, 50);
 
       expect(result.meta.page).toBe(2);
       expect(result.meta.totalPages).toBe(2);
@@ -290,7 +290,7 @@ describe('LocationService', () => {
     it('should return empty results when no data found', async () => {
       mockLocationLogsRepository.findAndCount.mockResolvedValue([[], 0]);
 
-      const result = await service.getWorkerHistoryPaginated(workerId, {}, 1, 50);
+      const result = await service.getUserHistoryPaginated(userId, {}, 1, 50);
 
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
@@ -299,22 +299,22 @@ describe('LocationService', () => {
   });
 
   describe('getLatestLocation', () => {
-    const workerId = 'worker-uuid-123';
+    const userId = 'user-uuid-123';
 
     it('should return latest location', async () => {
       const mockLocation = {
         id: 'loc-1',
-        worker_id: workerId,
+        user_id: userId,
         logged_at: new Date('2026-01-09T10:30:00Z'),
       };
       mockLocationLogsRepository.findOne.mockResolvedValue(mockLocation);
 
-      const result = await service.getLatestLocation(workerId);
+      const result = await service.getLatestLocation(userId);
 
       expect(result).toEqual(mockLocation);
       expect(locationLogsRepository.findOne).toHaveBeenCalledWith({
-        where: { worker_id: workerId },
-        relations: ['shift', 'shift.area', 'worker'],
+        where: { user_id: userId },
+        relations: ['shift', 'shift.area', 'user'],
         order: { logged_at: 'DESC' },
       });
     });
@@ -322,7 +322,7 @@ describe('LocationService', () => {
     it('should return null if no location found', async () => {
       mockLocationLogsRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getLatestLocation(workerId);
+      const result = await service.getLatestLocation(userId);
 
       expect(result).toBeNull();
     });

@@ -16,6 +16,8 @@ import { locationTracker } from '../services/location/locationTracker';
 import { permissionManager } from '../services/permissions/PermissionManager';
 import { colors } from '../constants/theme';
 import type { AppDispatch } from '../store/store';
+import { CLOCKABLE_ROLES } from '../constants/roles';
+import type { UserRole } from '../types/models.types';
 import type { CurrentShiftResponse } from '../types/api.types';
 
 interface AuthProviderProps {
@@ -23,15 +25,12 @@ interface AuthProviderProps {
 }
 
 /**
- * Load current shift for worker users and start location tracking if active.
- * Only workers have shifts - supervisors and admins manage workers instead.
+ * Load current shift for clockable role users and start location tracking if active.
+ * Only clockable roles (satgas, linmas, korlap, admin_data, kepala_rayon) have shifts.
  * This is called after auth restoration to sync shift state with the backend.
- *
- * @param userRole - The user's role from stored credentials
- * @param dispatch - Redux dispatch function
  */
-async function loadShiftForWorker(userRole: string, dispatch: AppDispatch): Promise<void> {
-  if (userRole !== 'worker') {
+async function loadShiftForClockableRole(userRole: string, dispatch: AppDispatch): Promise<void> {
+  if (!CLOCKABLE_ROLES.includes(userRole as UserRole)) {
     return;
   }
 
@@ -49,10 +48,10 @@ async function loadShiftForWorker(userRole: string, dispatch: AppDispatch): Prom
         const hasLocationPermission = await permissionManager.checkLocationPermission();
 
         if (onboardingComplete && hasLocationPermission) {
-          console.log('[AuthProvider] Active shift found and permissions granted, starting location tracking');
+          console.debug('[AuthProvider] Active shift found and permissions granted, starting location tracking');
           await locationTracker.initialize(String(shift.id));
         } else {
-          console.log('[AuthProvider] Active shift found but permissions not complete, skipping location tracking');
+          console.debug('[AuthProvider] Active shift found but permissions not complete, skipping location tracking');
         }
       }
     } else {
@@ -115,7 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             }
             // Load shift after auth restoration (workers only)
             // This will also start location tracking if there's an active shift
-            await loadShiftForWorker(storedUser.role, dispatch);
+            await loadShiftForClockableRole(storedUser.role, dispatch);
           } catch (networkError) {
             // Network timeout or error - use cached credentials
             console.warn('[AuthProvider] Network timeout, using cached credentials:', networkError);
@@ -126,7 +125,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
               }),
             );
             // Still try to load shift (might work if it's just API server being slow)
-            await loadShiftForWorker(storedUser.role, dispatch);
+            await loadShiftForClockableRole(storedUser.role, dispatch);
           }
         } else {
           // No stored credentials, just finish restoring

@@ -250,7 +250,7 @@ function DetailedPendingSync() {
     <View>
       {counts['clock-in'] > 0 && <Text>Clock-in pending: {counts['clock-in']}</Text>}
       {counts['clock-out'] > 0 && <Text>Clock-out pending: {counts['clock-out']}</Text>}
-      {counts.report > 0 && <Text>Reports pending: {counts.report}</Text>}
+      {counts.activity > 0 && <Text>Activities pending: {counts.activity}</Text>}
       {counts.location > 0 && <Text>Location pings pending: {counts.location}</Text>}
     </View>
   );

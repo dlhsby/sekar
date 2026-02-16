@@ -1,6 +1,7 @@
 /**
  * Common Screens
- * Screens shared between Worker and Supervisor roles
+ * Screens shared across all roles
  */
 
 export { SettingsScreen } from './SettingsScreen';
+export { ProfileScreen } from './ProfileScreen';

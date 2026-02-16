@@ -76,11 +76,11 @@ export class CreateActivityTypeDto {
    * Roles that can perform this activity.
    * Valid values: 'Worker', 'Linmas'
    *
-   * @example ['Worker']
+   * @example ['satgas']
    */
   @ApiProperty({
     description: 'Roles that can perform this activity',
-    example: ['Worker'],
+    example: ['satgas'],
     type: [String],
     enum: VALID_ACTIVITY_ROLES,
     isArray: true,

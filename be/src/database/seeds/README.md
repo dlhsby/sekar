@@ -7,7 +7,7 @@ This directory contains database seeding scripts for the SEKAR project.
 ### 1. Main Seeder (`seed.ts`)
 
 Seeds Phase 1 MVP data:
-- Users (admin, supervisor1-2, worker1-3)
+- Users (admin, korlap1-2, satgas1-3)
 - Area Types (park, pedestrian, mini_garden, street)
 - Areas (Taman Bungkul, Jalan Raya Darmo, Taman Harmoni)
 - Worker Assignments
@@ -66,9 +66,9 @@ npm run seed:tasks
 ```
 
 **Test Users (from Phase 1):**
-- `worker1` / `worker123` - Has ASSIGNED and COMPLETED tasks
-- `worker2` / `worker123` - Has ACCEPTED and DECLINED tasks
-- `worker3` / `worker123` - Has IN_PROGRESS and ASSIGNED tasks
+- `satgas1` / `satgas123` - Has ASSIGNED and COMPLETED tasks
+- `satgas2` / `satgas123` - Has IN_PROGRESS tasks
+- `satgas3` / `satgas123` - Has ASSIGNED tasks
 
 ## Typical Seeding Workflow
 
@@ -115,26 +115,24 @@ The task seeder creates tasks in all possible workflow states:
 
 After seeding tasks:
 
-1. **Login as worker1:**
-   - Username: `worker1`
-   - Password: `worker123`
+1. **Login as satgas1:**
+   - Username: `satgas1`
+   - Password: `satgas123`
    - You should see:
-     - 1 ASSIGNED task in "Tugas Baru" section
-     - 1 COMPLETED task in "Selesai" section
+     - 1 ASSIGNED task
+     - 1 COMPLETED task
 
-2. **Login as worker2:**
-   - Username: `worker2`
-   - Password: `worker123`
+2. **Login as satgas2:**
+   - Username: `satgas2`
+   - Password: `satgas123`
    - You should see:
-     - 1 ACCEPTED task in "Diterima" section
-     - 1 DECLINED task in history
+     - 1 IN_PROGRESS task
 
-3. **Login as worker3:**
-   - Username: `worker3`
-   - Password: `worker123`
+3. **Login as satgas3:**
+   - Username: `satgas3`
+   - Password: `satgas123`
    - You should see:
-     - 1 IN_PROGRESS task in "Sedang Dikerjakan" section
-     - 1 ASSIGNED task in "Tugas Baru" section
+     - 1 ASSIGNED task
 
 ## Database Cleanup
 

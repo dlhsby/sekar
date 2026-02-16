@@ -106,4 +106,92 @@ export class GpsUtil {
     const distance = this.calculateDistance(lat1, lng1, centerLat, centerLng);
     return distance <= radiusMeters;
   }
+
+  /**
+   * Ray casting algorithm — checks if a point is inside a polygon.
+   *
+   * Casts a horizontal ray from the point to the right and counts
+   * how many polygon edges it crosses. An odd count means inside.
+   *
+   * @param lat Latitude of the point
+   * @param lng Longitude of the point
+   * @param polygon Array of [lng, lat] coordinate pairs (GeoJSON convention).
+   *               The ring should be closed (first === last) but the method
+   *               handles open rings too.
+   * @returns true if the point is inside the polygon
+   */
+  static isPointInPolygon(lat: number, lng: number, polygon: number[][]): boolean {
+    let inside = false;
+    const n = polygon.length;
+
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      // GeoJSON: [lng, lat]
+      const yi = polygon[i][1];
+      const xi = polygon[i][0];
+      const yj = polygon[j][1];
+      const xj = polygon[j][0];
+
+      const intersect =
+        yi > lat !== yj > lat &&
+        lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
+  }
+
+  /**
+   * Check if a point is within an area boundary.
+   *
+   * Strategy: polygon-first, radius fallback.
+   * - If the area has a `boundary_polygon` (GeoJSON Polygon), use ray casting.
+   * - Otherwise fall back to radius-based check using gps_lat/gps_lng/radius_meters.
+   * - If neither is available, returns true (no boundary defined).
+   *
+   * @param lat Latitude of the point
+   * @param lng Longitude of the point
+   * @param area Area with optional boundary_polygon, gps_lat, gps_lng, radius_meters
+   * @returns true if within boundary (or no boundary defined), false if outside
+   */
+  static isWithinAreaBoundary(
+    lat: number,
+    lng: number,
+    area: {
+      boundary_polygon?: { type?: string; coordinates?: number[][][] };
+      gps_lat?: number;
+      gps_lng?: number;
+      radius_meters?: number;
+    },
+  ): boolean {
+    // 1. Polygon check (preferred)
+    if (
+      area.boundary_polygon?.coordinates &&
+      area.boundary_polygon.coordinates.length > 0
+    ) {
+      const outerRing = area.boundary_polygon.coordinates[0];
+      if (outerRing && outerRing.length >= 3) {
+        return this.isPointInPolygon(lat, lng, outerRing);
+      }
+    }
+
+    // 2. Radius fallback
+    if (
+      area.gps_lat != null &&
+      area.gps_lng != null &&
+      area.radius_meters != null &&
+      area.radius_meters > 0
+    ) {
+      return this.isWithinBoundary(
+        lat,
+        lng,
+        Number(area.gps_lat),
+        Number(area.gps_lng),
+        Number(area.radius_meters),
+      );
+    }
+
+    // 3. No boundary defined — allow
+    return true;
+  }
 }

@@ -200,7 +200,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
 
           // Check if permission was revoked
           if (prevState.permissionGranted && !permissionOk) {
-            console.log('[useLocationPermission] Permission was revoked');
+            console.debug('[useLocationPermission] Permission was revoked');
             setTimeout(() => {
               if (mountedRef.current) {
                 // Use ref to get latest callback without causing dependency changes
@@ -214,7 +214,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
 
           // Check if GPS was disabled
           if (prevState.gpsEnabled && !gpsOk) {
-            console.log('[useLocationPermission] GPS was disabled');
+            console.debug('[useLocationPermission] GPS was disabled');
             setTimeout(() => {
               if (mountedRef.current) {
                 // Use ref to get latest callback without causing dependency changes
@@ -342,7 +342,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
       appStateRef.current.match(/inactive|background/) &&
       nextAppState === 'active'
     ) {
-      console.log('[useLocationPermission] App became active, checking status');
+      console.debug('[useLocationPermission] App became active, checking status');
       await checkLocationStatus();
     }
     appStateRef.current = nextAppState;

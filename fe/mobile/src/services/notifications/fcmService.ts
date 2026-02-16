@@ -91,7 +91,7 @@ class FCMService {
    */
   async initialize(store: Store): Promise<void> {
     if (this.initialized) {
-      console.log('[FCM] Already initialized');
+      console.debug('[FCM] Already initialized');
       return;
     }
 
@@ -101,7 +101,7 @@ class FCMService {
       // Get Firebase Messaging instance
       this.messaging = messaging();
 
-      console.log('[FCM] Initializing Firebase Cloud Messaging');
+      console.debug('[FCM] Initializing Firebase Cloud Messaging');
 
       // Create notification channel for Android
       if (Platform.OS === 'android') {
@@ -111,7 +111,7 @@ class FCMService {
           importance: AndroidImportance.HIGH,
           sound: 'default',
         });
-        console.log('[FCM] Notification channel created');
+        console.debug('[FCM] Notification channel created');
       }
 
       // Check permission status (don't request - PermissionManager handles that)
@@ -130,12 +130,12 @@ class FCMService {
 
         this.permissionStatus = NotificationPermission.AUTHORIZED;
       } else {
-        console.log('[FCM] Permission not granted yet. Will initialize after permission is granted.');
+        console.debug('[FCM] Permission not granted yet. Will initialize after permission is granted.');
         this.permissionStatus = NotificationPermission.DENIED;
       }
 
       this.initialized = true;
-      console.log('[FCM] Initialization complete');
+      console.debug('[FCM] Initialization complete');
     } catch (error) {
       console.error('[FCM] Initialization failed:', error);
       console.warn('[FCM] Firebase Messaging not available. Install @react-native-firebase/messaging to enable push notifications.');
@@ -159,7 +159,7 @@ class FCMService {
     }
 
     try {
-      console.log('[FCM] Requesting notification permission');
+      console.debug('[FCM] Requesting notification permission');
 
       const authStatus = await this.messaging.requestPermission();
       const enabled =
@@ -175,7 +175,7 @@ class FCMService {
         this.reduxStore.dispatch(setPermissionGranted(enabled));
       }
 
-      console.log('[FCM] Permission status:', enabled ? 'granted' : 'denied');
+      console.debug('[FCM] Permission status:', enabled ? 'granted' : 'denied');
 
       return this.permissionStatus;
     } catch (error) {
@@ -212,7 +212,7 @@ class FCMService {
           this.reduxStore.dispatch(setFcmToken(token));
         }
 
-        console.log('[FCM] Token retrieved:', token.substring(0, 20) + '...');
+        console.debug('[FCM] Token retrieved:', token.substring(0, 20) + '...');
       }
 
       return token;
@@ -229,7 +229,7 @@ class FCMService {
    */
   async registerToken(token: string): Promise<boolean> {
     try {
-      console.log('[FCM] Registering token with backend');
+      console.debug('[FCM] Registering token with backend');
 
       const platform = Platform.OS as 'android' | 'ios';
       const deviceId = await DeviceInfo.getUniqueId();
@@ -251,7 +251,7 @@ class FCMService {
         return false;
       }
 
-      console.log('[FCM] Token registered successfully');
+      console.debug('[FCM] Token registered successfully');
       return true;
     } catch (error) {
       console.error('[FCM] Token registration error:', error);
@@ -266,7 +266,7 @@ class FCMService {
    */
   async unregisterToken(token?: string): Promise<boolean> {
     try {
-      console.log('[FCM] Unregistering token from backend');
+      console.debug('[FCM] Unregistering token from backend');
 
       const response = await unregisterDevice();
 
@@ -282,7 +282,7 @@ class FCMService {
         this.reduxStore.dispatch(setFcmToken(null));
       }
 
-      console.log('[FCM] Token unregistered successfully');
+      console.debug('[FCM] Token unregistered successfully');
       return true;
     } catch (error) {
       console.error('[FCM] Token unregistration error:', error);
@@ -296,10 +296,10 @@ class FCMService {
   private setupTokenRefreshListener(): void {
     if (!this.messaging) {return;}
 
-    console.log('[FCM] Setting up token refresh listener');
+    console.debug('[FCM] Setting up token refresh listener');
 
     this.unsubscribeTokenRefresh = this.messaging.onTokenRefresh(async (token: string) => {
-      console.log('[FCM] Token refreshed:', token.substring(0, 20) + '...');
+      console.debug('[FCM] Token refreshed:', token.substring(0, 20) + '...');
 
       this.fcmToken = token;
 
@@ -322,12 +322,12 @@ class FCMService {
   private setupMessageHandlers(): void {
     if (!this.messaging) {return;}
 
-    console.log('[FCM] Setting up message handlers');
+    console.debug('[FCM] Setting up message handlers');
 
     // Foreground message handler
     this.unsubscribeForeground = this.messaging.onMessage(
       async (remoteMessage: RemoteMessage) => {
-        console.log('[FCM] Foreground notification received:', remoteMessage);
+        console.debug('[FCM] Foreground notification received:', remoteMessage);
 
         const notification = this.convertToNotification(remoteMessage);
 
@@ -345,7 +345,7 @@ class FCMService {
             },
             data: remoteMessage.data,
           });
-          console.log('[FCM] Foreground notification displayed in tray');
+          console.debug('[FCM] Foreground notification displayed in tray');
         } catch (error) {
           console.warn('[FCM] Failed to display foreground notification:', error);
         }
@@ -398,7 +398,7 @@ class FCMService {
     // Listen for notification that opened the app from background/quit state
     const unsubscribe = this.messaging.onNotificationOpenedApp(
       async (remoteMessage: RemoteMessage) => {
-        console.log('[FCM] Notification opened app:', remoteMessage);
+        console.debug('[FCM] Notification opened app:', remoteMessage);
 
         const notification = this.convertToNotification(remoteMessage);
 
@@ -431,7 +431,7 @@ class FCMService {
       const remoteMessage = await this.messaging.getInitialNotification();
 
       if (remoteMessage) {
-        console.log('[FCM] Initial notification:', remoteMessage);
+        console.debug('[FCM] Initial notification:', remoteMessage);
         return this.convertToNotification(remoteMessage);
       }
 
@@ -524,7 +524,7 @@ class FCMService {
       return;
     }
 
-    console.log('[FCM] Notification handlers are already set up');
+    console.debug('[FCM] Notification handlers are already set up');
   }
 
   /**
@@ -555,7 +555,7 @@ class FCMService {
     }
 
     try {
-      console.log('[FCM] Deleting token');
+      console.debug('[FCM] Deleting token');
 
       await this.messaging.deleteToken();
       this.fcmToken = null;
@@ -564,7 +564,7 @@ class FCMService {
         this.reduxStore.dispatch(setFcmToken(null));
       }
 
-      console.log('[FCM] Token deleted successfully');
+      console.debug('[FCM] Token deleted successfully');
       return true;
     } catch (error) {
       console.error('[FCM] Failed to delete token:', error);
@@ -576,7 +576,7 @@ class FCMService {
    * Cleanup and remove all listeners
    */
   cleanup(): void {
-    console.log('[FCM] Cleaning up service');
+    console.debug('[FCM] Cleaning up service');
 
     if (this.unsubscribeTokenRefresh) {
       this.unsubscribeTokenRefresh();

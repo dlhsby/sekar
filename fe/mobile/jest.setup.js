@@ -53,7 +53,7 @@ jest.mock('react-native-geolocation-service', () => ({
 
 // Mock @react-native-community/netinfo
 jest.mock('@react-native-community/netinfo', () => ({
-  addEventListener: jest.fn(() => jest.fn()),
+  addEventListener: jest.fn(() => jest.fn()), // Returns unsubscribe function
   fetch: jest.fn(() =>
     Promise.resolve({
       isConnected: true,

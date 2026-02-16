@@ -1,11 +1,10 @@
 /**
- * Supervisor Components
- * Export all supervisor-related components
+ * Monitoring Components
+ * Export all monitoring-related components (map, attendance, user tracking)
  */
 
-export { WorkerMarker } from './WorkerMarker';
-export type { WorkerStatus } from './WorkerMarker';
-export { WorkerInfoCard } from './WorkerInfoCard';
+export { UserMarker } from './UserMarker';
+export type { UserStatus } from './UserMarker';
+export { UserInfoCard } from './UserInfoCard';
 export { default as AttendanceCard } from './AttendanceCard';
-export { default as ReportCard } from './ReportCard';
 export { default as PhotoGallery } from './PhotoGallery';

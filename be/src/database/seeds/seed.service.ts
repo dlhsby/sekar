@@ -4,9 +4,8 @@ import { Repository, IsNull } from 'typeorm';
 import { User, UserRole } from '../../modules/users/entities/user.entity';
 import { AreaType } from '../../modules/area-types/entities/area-type.entity';
 import { Area } from '../../modules/areas/entities/area.entity';
-import { WorkerAssignment } from '../../modules/worker-assignments/entities/worker-assignment.entity';
 import { Shift } from '../../modules/shifts/entities/shift.entity';
-import { Report, ReportType } from '../../modules/reports/entities/report.entity';
+import { Activity } from '../../modules/activities/entities/activity.entity';
 import { LocationLog } from '../../modules/location/entities/location-log.entity';
 import { AuthService } from '../../modules/auth/auth.service';
 
@@ -19,12 +18,10 @@ export class SeedService {
     private areaTypeRepository: Repository<AreaType>,
     @InjectRepository(Area)
     private areaRepository: Repository<Area>,
-    @InjectRepository(WorkerAssignment)
-    private workerAssignmentRepository: Repository<WorkerAssignment>,
     @InjectRepository(Shift)
     private shiftRepository: Repository<Shift>,
-    @InjectRepository(Report)
-    private reportRepository: Repository<Report>,
+    @InjectRepository(Activity)
+    private activityRepository: Repository<Activity>,
     @InjectRepository(LocationLog)
     private locationLogRepository: Repository<LocationLog>,
     private authService: AuthService,
@@ -37,9 +34,8 @@ export class SeedService {
     await this.seedUsers();
     await this.seedAreaTypes();
     await this.seedAreas();
-    await this.seedWorkerAssignments();
     await this.seedShifts();
-    await this.seedReports();
+    await this.seedActivities();
     await this.seedLocationLogs();
 
     console.log('✅ Database seeded successfully!');
@@ -53,9 +49,8 @@ export class SeedService {
     // TypeORM only creates tables when entities are first accessed
     await Promise.all([
       this.locationLogRepository.find({ take: 1 }).catch(() => []),
-      this.reportRepository.find({ take: 1 }).catch(() => []),
+      this.activityRepository.find({ take: 1 }).catch(() => []),
       this.shiftRepository.find({ take: 1 }).catch(() => []),
-      this.workerAssignmentRepository.find({ take: 1 }).catch(() => []),
       this.areaRepository.find({ take: 1 }).catch(() => []),
       this.areaTypeRepository.find({ take: 1 }).catch(() => []),
       this.userRepository.find({ take: 1 }).catch(() => []),
@@ -79,21 +74,15 @@ export class SeedService {
     }
 
     try {
-      await this.reportRepository.createQueryBuilder().delete().execute();
+      await this.activityRepository.createQueryBuilder().delete().execute();
     } catch (_error) {
-      console.log('  ⚠️  No reports to clear (table may be empty)');
+      console.log('  ⚠️  No activities to clear (table may be empty)');
     }
 
     try {
       await this.shiftRepository.createQueryBuilder().delete().execute();
     } catch (_error) {
       console.log('  ⚠️  No shifts to clear (table may be empty)');
-    }
-
-    try {
-      await this.workerAssignmentRepository.createQueryBuilder().delete().execute();
-    } catch (_error) {
-      console.log('  ⚠️  No worker_assignments to clear (table may be empty)');
     }
 
     try {
@@ -126,33 +115,33 @@ export class SeedService {
         role: UserRole.SUPERADMIN,
       },
       {
-        username: 'supervisor1',
-        password: 'supervisor123',
-        full_name: 'Supervisor Satu',
+        username: 'korlap1',
+        password: 'korlap123',
+        full_name: 'Korlap Satu',
         role: UserRole.KORLAP,
       },
       {
-        username: 'supervisor2',
-        password: 'supervisor123',
-        full_name: 'Supervisor Dua',
+        username: 'korlap2',
+        password: 'korlap123',
+        full_name: 'Korlap Dua',
         role: UserRole.KORLAP,
       },
       {
-        username: 'worker1',
-        password: 'worker123',
-        full_name: 'Pekerja Satu',
+        username: 'satgas1',
+        password: 'satgas123',
+        full_name: 'Satgas Satu',
         role: UserRole.SATGAS,
       },
       {
-        username: 'worker2',
-        password: 'worker123',
-        full_name: 'Pekerja Dua',
+        username: 'satgas2',
+        password: 'satgas123',
+        full_name: 'Satgas Dua',
         role: UserRole.SATGAS,
       },
       {
-        username: 'worker3',
-        password: 'worker123',
-        full_name: 'Pekerja Tiga',
+        username: 'satgas3',
+        password: 'satgas123',
+        full_name: 'Satgas Tiga',
         role: UserRole.SATGAS,
       },
     ];
@@ -168,6 +157,15 @@ export class SeedService {
       await this.userRepository.save(user);
       console.log(`  ✓ Created ${userData.role}: ${userData.username}`);
     }
+
+    // Phase 2C: Assign area_id to korlap users
+    console.log('📍 Assigning area_id to korlap users...');
+    await this.userRepository.manager.query(`
+      UPDATE users
+      SET area_id = (SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1)
+      WHERE username IN ('korlap1', 'korlap2');
+    `);
+    console.log('  ✓ Updated korlap1 and korlap2 with area_id');
   }
 
   private async seedAreaTypes() {
@@ -258,99 +256,22 @@ export class SeedService {
     }
   }
 
-  private async seedWorkerAssignments() {
-    console.log('👷 Seeding worker assignments...');
-
-    // Get workers (they should exist from seedUsers)
-    const worker1 = await this.userRepository.findOne({
-      where: { username: 'worker1' },
-    });
-    if (!worker1) {
-      throw new Error('Worker 1 not found. Ensure users are seeded first.');
-    }
-
-    const worker2 = await this.userRepository.findOne({
-      where: { username: 'worker2' },
-    });
-    if (!worker2) {
-      throw new Error('Worker 2 not found. Ensure users are seeded first.');
-    }
-
-    const worker3 = await this.userRepository.findOne({
-      where: { username: 'worker3' },
-    });
-    if (!worker3) {
-      throw new Error('Worker 3 not found. Ensure users are seeded first.');
-    }
-
-    // Get areas (they should exist from seedAreas)
-    const area1 = await this.areaRepository.findOne({
-      where: { name: 'Taman Bungkul' },
-    });
-    if (!area1) {
-      throw new Error('Area Taman Bungkul not found. Ensure areas are seeded first.');
-    }
-
-    const area2 = await this.areaRepository.findOne({
-      where: { name: 'Jalan Raya Darmo' },
-    });
-    if (!area2) {
-      throw new Error('Area Jalan Raya Darmo not found. Ensure areas are seeded first.');
-    }
-
-    const area3 = await this.areaRepository.findOne({
-      where: { name: 'Taman Harmoni' },
-    });
-    if (!area3) {
-      throw new Error('Area Taman Harmoni not found. Ensure areas are seeded first.');
-    }
-
-    const assignments = [
-      {
-        worker_id: worker1.id,
-        area_id: area1.id,
-        workerName: worker1.username,
-        areaName: area1.name,
-      },
-      {
-        worker_id: worker2.id,
-        area_id: area2.id,
-        workerName: worker2.username,
-        areaName: area2.name,
-      },
-      {
-        worker_id: worker3.id,
-        area_id: area3.id,
-        workerName: worker3.username,
-        areaName: area3.name,
-      },
-    ];
-
-    for (const assignmentData of assignments) {
-      const assignment = this.workerAssignmentRepository.create({
-        worker_id: assignmentData.worker_id,
-        area_id: assignmentData.area_id,
-      });
-      await this.workerAssignmentRepository.save(assignment);
-      console.log(`  ✓ Assigned ${assignmentData.workerName} to ${assignmentData.areaName}`);
-    }
-  }
 
   private async seedShifts() {
     console.log('⏰ Seeding shifts...');
 
     // Get workers
-    const worker1 = await this.userRepository.findOne({
-      where: { username: 'worker1' },
+    const satgas1 = await this.userRepository.findOne({
+      where: { username: 'satgas1' },
     });
-    const worker2 = await this.userRepository.findOne({
-      where: { username: 'worker2' },
+    const satgas2 = await this.userRepository.findOne({
+      where: { username: 'satgas2' },
     });
-    const worker3 = await this.userRepository.findOne({
-      where: { username: 'worker3' },
+    const satgas3 = await this.userRepository.findOne({
+      where: { username: 'satgas3' },
     });
 
-    if (!worker1 || !worker2 || !worker3) {
+    if (!satgas1 || !satgas2 || !satgas3) {
       throw new Error('Workers not found. Ensure users are seeded first.');
     }
 
@@ -391,68 +312,68 @@ export class SeedService {
     const shifts = [
       // Completed shifts from yesterday
       {
-        worker_id: worker1.id,
+        user_id: satgas1.id,
         area_id: area1.id,
         clock_in_time: yesterday,
         clock_in_gps_lat: -7.2905,
         clock_in_gps_lng: 112.7398,
         clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker1-abc123.jpg',
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/satgas1-abc123.jpg',
         clock_out_time: yesterdayEnd,
         clock_out_gps_lat: -7.2906,
         clock_out_gps_lng: 112.7399,
-        workerName: worker1.username,
+        workerName: satgas1.username,
         areaName: area1.name,
       },
       {
-        worker_id: worker2.id,
+        user_id: satgas2.id,
         area_id: area2.id,
         clock_in_time: new Date(yesterday.getTime() - 30 * 60 * 1000), // 7:30 AM
         clock_in_gps_lat: -7.2844,
         clock_in_gps_lng: 112.7915,
         clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/worker2-def456.jpg',
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/satgas2-def456.jpg',
         clock_out_time: new Date(yesterdayEnd.getTime() - 30 * 60 * 1000), // 3:30 PM
         clock_out_gps_lat: -7.2845,
         clock_out_gps_lng: 112.7916,
-        workerName: worker2.username,
+        workerName: satgas2.username,
         areaName: area2.name,
       },
       // Completed shift from 2 days ago
       {
-        worker_id: worker3.id,
+        user_id: satgas3.id,
         area_id: area3.id,
         clock_in_time: twoDaysAgo,
         clock_in_gps_lat: -7.3037,
         clock_in_gps_lng: 112.7375,
         clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/07/clock-in/worker3-ghi789.jpg',
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/07/clock-in/satgas3-ghi789.jpg',
         clock_out_time: twoDaysAgoEnd,
         clock_out_gps_lat: -7.3038,
         clock_out_gps_lng: 112.7376,
-        workerName: worker3.username,
+        workerName: satgas3.username,
         areaName: area3.name,
       },
-      // Active shift for today (worker1 clocked in 2 hours ago, can clock out now)
+      // Active shift for today (satgas1 clocked in 2 hours ago, can clock out now)
       {
-        worker_id: worker1.id,
+        user_id: satgas1.id,
         area_id: area1.id,
         clock_in_time: twoHoursAgo,
         clock_in_gps_lat: -7.2905,
         clock_in_gps_lng: 112.7398,
         clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/worker1-jkl012.jpg',
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/satgas1-jkl012.jpg',
         clock_out_time: null,
         clock_out_gps_lat: null,
         clock_out_gps_lng: null,
-        workerName: worker1.username,
+        workerName: satgas1.username,
         areaName: area1.name,
       },
     ];
 
     for (const shiftData of shifts) {
       await this.shiftRepository.save({
-        worker_id: shiftData.worker_id,
+        user_id: shiftData.user_id,
         area_id: shiftData.area_id,
         clock_in_time: shiftData.clock_in_time,
         clock_in_gps_lat: shiftData.clock_in_gps_lat,
@@ -467,84 +388,114 @@ export class SeedService {
         `  ✓ Created ${status} shift for ${shiftData.workerName} at ${shiftData.areaName}`,
       );
     }
+
+    // Phase 2C: Set boundary flag for testing monitoring dashboard warnings
+    console.log('⚠️  Setting boundary flag for test data...');
+    await this.shiftRepository.manager.query(`
+      UPDATE shifts
+      SET
+        clock_in_outside_boundary = true,
+        clock_out_outside_boundary = false
+      WHERE id = (
+        SELECT id FROM shifts
+        WHERE user_id = '${satgas1.id}'
+        AND clock_out_time IS NOT NULL
+        LIMIT 1
+      );
+    `);
+    console.log('  ✓ Updated 1 shift with boundary flag for testing');
   }
 
-  private async seedReports() {
-    console.log('📝 Seeding reports...');
+  private async seedActivities() {
+    console.log('📝 Seeding activities...');
 
     // Get workers
-    const worker1 = await this.userRepository.findOne({
-      where: { username: 'worker1' },
+    const satgas1 = await this.userRepository.findOne({
+      where: { username: 'satgas1' },
     });
-    const worker2 = await this.userRepository.findOne({
-      where: { username: 'worker2' },
+    const satgas2 = await this.userRepository.findOne({
+      where: { username: 'satgas2' },
     });
 
-    if (!worker1 || !worker2) {
+    if (!satgas1 || !satgas2) {
       throw new Error('Workers not found. Ensure users are seeded first.');
     }
 
-    // Get active shift for worker1 (today)
+    // Get active shift for satgas1 (today)
     const activeShift = await this.shiftRepository.findOne({
-      where: { worker_id: worker1.id, clock_out_time: IsNull() },
+      where: { user_id: satgas1.id, clock_out_time: IsNull() },
     });
 
     if (!activeShift) {
-      throw new Error('Active shift not found for worker1');
+      throw new Error('Active shift not found for satgas1');
     }
 
-    const reports = [
-      // Report for active shift (today)
+    // Get activity type IDs (use raw query to avoid needing ActivityType entity in seed service)
+    const activityTypes = await this.userRepository.manager.query(`
+      SELECT id, code FROM activity_types WHERE code IN ('perawatan', 'perantingan') LIMIT 2
+    `);
+
+    if (activityTypes.length < 2) {
+      console.log('  ⚠️  Activity types not found, skipping activity seeding (run Phase 2 seeder first)');
+      return;
+    }
+
+    const [perawatanType, perantinganType] = activityTypes;
+
+    const activities = [
+      // Activity for active shift (today)
       {
-        worker_id: worker1.id,
+        user_id: satgas1.id,
         shift_id: activeShift.id,
         area_id: activeShift.area_id,
-        report_type: ReportType.TASK_COMPLETION,
+        activity_type_id: perawatanType.id,
         description:
           'Completed cleaning main area of Taman Bungkul. All trash collected and disposed properly.',
-        photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/reports/report1-abc123.jpg',
+        photo_urls: [
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/activities/activity1-abc123.jpg',
+        ],
         gps_lat: -7.2905,
         gps_lng: 112.7398,
       },
       {
-        worker_id: worker1.id,
+        user_id: satgas1.id,
         shift_id: activeShift.id,
         area_id: activeShift.area_id,
-        report_type: ReportType.MAINTENANCE_REQUEST,
-        description: 'Bench near playground needs repair. One leg is loose and unstable.',
-        photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/reports/report2-def456.jpg',
+        activity_type_id: perantinganType.id,
+        description: 'Pruned overgrown branches near playground area.',
+        photo_urls: [
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/activities/activity2-def456.jpg',
+        ],
         gps_lat: -7.2906,
         gps_lng: 112.7399,
       },
     ];
 
-    for (const reportData of reports) {
-      await this.reportRepository.save(reportData);
-      console.log(`  ✓ Created ${reportData.report_type} report`);
+    for (const activityData of activities) {
+      await this.activityRepository.save(activityData);
+      console.log(`  ✓ Created activity: ${activityData.description.substring(0, 50)}...`);
     }
   }
 
   private async seedLocationLogs() {
     console.log('📍 Seeding location logs...');
 
-    // Get worker1 (active shift)
-    const worker1 = await this.userRepository.findOne({
-      where: { username: 'worker1' },
+    // Get satgas1 (active shift)
+    const satgas1 = await this.userRepository.findOne({
+      where: { username: 'satgas1' },
     });
 
-    if (!worker1) {
+    if (!satgas1) {
       throw new Error('Worker1 not found. Ensure users are seeded first.');
     }
 
-    // Get active shift for worker1
+    // Get active shift for satgas1
     const activeShift = await this.shiftRepository.findOne({
-      where: { worker_id: worker1.id, clock_out_time: IsNull() },
+      where: { user_id: satgas1.id, clock_out_time: IsNull() },
     });
 
     if (!activeShift) {
-      throw new Error('Active shift not found for worker1');
+      throw new Error('Active shift not found for satgas1');
     }
 
     // Create 10 location logs for active shift (simulate 5-minute intervals)
@@ -554,7 +505,7 @@ export class SeedService {
 
     for (let i = 0; i < 10; i++) {
       const locationLog = {
-        worker_id: worker1.id,
+        user_id: satgas1.id,
         shift_id: activeShift.id,
         gps_lat: baseLat + (Math.random() - 0.5) * 0.001, // Random within ~100m
         gps_lng: baseLng + (Math.random() - 0.5) * 0.001,
@@ -566,6 +517,6 @@ export class SeedService {
       await this.locationLogRepository.save(locationLog);
     }
 
-    console.log('  ✓ Created 10 location logs for worker1 active shift');
+    console.log('  ✓ Created 10 location logs for satgas1 active shift');
   }
 }

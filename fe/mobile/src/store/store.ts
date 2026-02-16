@@ -1,34 +1,33 @@
 /**
  * Redux Store Configuration
- * Centralized state management setup
+ * Phase 2C: activities replaces report, overtime added
  */
 
 import { configureStore } from '@reduxjs/toolkit';
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import authReducer from './slices/authSlice';
 import shiftReducer from './slices/shiftSlice';
-import reportReducer from './slices/reportSlice';
+import activitiesReducer from './slices/activitiesSlice';
 import offlineReducer from './slices/offlineSlice';
 import tasksReducer from './slices/tasksSlice';
 import notificationsReducer from './slices/notificationsSlice';
+import overtimeReducer from './slices/overtimeSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     shift: shiftReducer,
-    report: reportReducer,
+    activities: activitiesReducer,
     offline: offlineReducer,
     tasks: tasksReducer,
     notifications: notificationsReducer,
+    overtime: overtimeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types
         ignoredActions: ['shift/setCurrentShift'],
-        // Ignore these field paths in all actions
         ignoredActionPaths: ['payload.timestamp'],
-        // Ignore these paths in the state
         ignoredPaths: ['shift.currentShift'],
       },
     }),
@@ -41,4 +40,3 @@ export type AppDispatch = typeof store.dispatch;
 // Export typed hooks
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
-

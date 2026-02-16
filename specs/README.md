@@ -34,6 +34,7 @@ This specifications folder is organized by **specialist roles** to enable parall
 |-----------|-------|----------|-------------|
 | [`phases/phase-1-mvp/`](./phases/phase-1-mvp/) | Phase 1 | Weeks 1-2 | MVP - Clock-in/out, Reports, GPS tracking |
 | [`phases/phase-2-enhanced/`](./phases/phase-2-enhanced/) | Phase 2 | Weeks 3-4 | Tasks, Notifications, KMZ Import |
+| [`phases/phase-2-c-client-feedback/`](./phases/phase-2-c-client-feedback/) | Phase 2C | 4-6 weeks | Client Feedback: 8-role system, terminology cleanup, polygon geofencing |
 | [`phases/phase-3-analytics/`](./phases/phase-3-analytics/) | Phase 3 | Weeks 5-7 | Report Builder, Scheduler, Analytics |
 | [`phases/phase-4-assets/`](./phases/phase-4-assets/) | Phase 4 | Weeks 8-10 | Assets, QR Codes, Maintenance |
 | [`phases/phase-5-ios/`](./phases/phase-5-ios/) | Phase 5 | Weeks 11-13 | iOS, Biometrics, Fraud Detection, i18n |
@@ -89,23 +90,23 @@ Start with [`deployment/infrastructure.md`](./deployment/infrastructure.md) for 
 ## 📊 Tech Stack
 
 ### Backend
-- **Framework:** NestJS 10.x with TypeScript
+- **Framework:** NestJS 11.x with TypeScript 5.9
 - **Database:** PostgreSQL 14+ with TypeORM
 - **Authentication:** JWT with Passport.js
 - **Storage:** AWS S3 for media files
 - **Documentation:** Swagger/OpenAPI
 
 ### Mobile
-- **Framework:** React Native 0.76.x with TypeScript
+- **Framework:** React Native 0.83.1 with TypeScript
 - **State Management:** Redux Toolkit
-- **Navigation:** React Navigation v6
+- **Navigation:** React Navigation 7.x
 - **Storage:** AsyncStorage + Encrypted Storage
 - **Location:** react-native-geolocation-service
 - **Maps:** react-native-maps
 - **Offline:** Offline-first with sync queue
 
-### Web (Phase 6)
-- **Framework:** Next.js 15 with App Router
+### Web
+- **Framework:** Next.js 16.1.6 with App Router
 - **UI Library:** Shadcn/ui + TailwindCSS
 - **State Management:** React Query (TanStack Query)
 - **Authentication:** NextAuth.js v5
@@ -136,7 +137,7 @@ Work locations validated using Haversine formula with 100-meter boundary toleran
 All work reports require photo evidence stored in AWS S3 with automatic thumbnail generation.
 
 ### 5. Role-Based Access Control
-Three roles: Worker (field operations), Supervisor (team management), Admin (system configuration).
+Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin. See [ADR-009](./architecture/decisions/ADR-009-phase2c-role-system-overhaul.md).
 
 ## 📖 Reading Path for New Developers
 
@@ -187,15 +188,13 @@ Three roles: Worker (field operations), Supervisor (team management), Admin (sys
 - ✅ Coverage +4.1%: API Services +6.22%, Sync Services +5.02%
 - ✅ All critical modules ≥80% threshold
 
-**Next Phase:** Phase 3 - Polishing & E2E Testing
-1. E2E testing setup (Detox for mobile, Playwright for web)
-2. Complete manual testing checklist
-3. UI/UX polish and consistency audit
-4. Performance optimization
-5. Documentation finalization
+**Next Phase:** Phase 2C Client Feedback (spec complete, implementation pending)
+- 8-role system overhaul, terminology cleanup (ADR-010)
+- Soft polygon geofencing, flat overtime, task hierarchy
+- See [Phase 2C specs](./phases/phase-2-c-client-feedback/README.md)
 
 ---
 
-**Last Updated:** 2026-02-02
+**Last Updated:** 2026-02-11
 **Maintained By:** Development Team
 **Version:** 1.0.0

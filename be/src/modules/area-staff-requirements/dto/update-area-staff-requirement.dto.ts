@@ -15,11 +15,11 @@ export class UpdateAreaStaffRequirementDto {
    * @example 'linmas'
    */
   @ApiPropertyOptional({
-    description: 'Staff role (worker or linmas)',
+    description: 'Staff role (satgas or linmas)',
     enum: StaffRole,
     example: StaffRole.LINMAS,
   })
-  @IsEnum(StaffRole, { message: 'Role must be either "worker" or "linmas"' })
+  @IsEnum(StaffRole, { message: 'Role must be either "satgas" or "linmas"' })
   @IsOptional()
   role?: StaffRole;
 

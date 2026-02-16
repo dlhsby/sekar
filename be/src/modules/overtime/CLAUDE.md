@@ -2,17 +2,16 @@
 
 ## Overview
 
-The Overtime module manages overtime submission and approval workflow for SEKAR field workers (Satgas and Linmas). Workers submit overtime requests with associated activities and photos, which are then approved or rejected by their area coordinator (Korlap).
+The Overtime module manages overtime submission and approval workflow for SEKAR field workers (Satgas and Linmas). Workers submit overtime requests with activity details and photos, which are then approved or rejected by their area coordinator (Korlap).
 
 ## Module Structure
 
 ```
 overtime/
 ├── entities/
-│   ├── overtime.entity.ts           # Main overtime record
-│   └── overtime-aktivitas.entity.ts # Activities performed during overtime
+│   └── overtime.entity.ts           # Overtime record with flat structure
 ├── dto/
-│   ├── create-overtime.dto.ts       # Overtime submission DTOs
+│   ├── create-overtime.dto.ts       # Overtime submission DTO
 │   └── reject-overtime.dto.ts       # Rejection reason DTO
 ├── overtime.service.ts              # Business logic
 ├── overtime.controller.ts           # API endpoints (6 routes)
@@ -23,7 +22,7 @@ overtime/
 
 ## Database Schema
 
-### overtimes table
+### overtimes table (FLAT structure)
 - `id` (uuid, PK)
 - `user_id` (uuid, FK → users)
 - `area_id` (uuid, FK → areas, nullable)
@@ -35,18 +34,15 @@ overtime/
 - `approved_at` (timestamptz, nullable)
 - `rejection_reason` (text, nullable)
 - `notes` (text, nullable)
+- **`activity_type_id`** (uuid, FK → activity_types) - Single activity per overtime
+- **`description`** (text) - Activity description
+- **`photo_urls`** (text[]) - Array of photo URLs (1-3)
+- **`gps_lat`** (decimal, nullable) - GPS latitude
+- **`gps_lng`** (decimal, nullable) - GPS longitude
 - `created_at` (timestamptz)
 - `updated_at` (timestamptz)
 
-### overtime_aktivitas table
-- `id` (uuid, PK)
-- `overtime_id` (uuid, FK → overtimes)
-- `activity_type_id` (uuid, FK → activity_types)
-- `description` (text)
-- `photo_urls` (text[]) - Array of photo URLs (1-3)
-- `gps_lat` (decimal, nullable)
-- `gps_lng` (decimal, nullable)
-- `created_at` (timestamptz)
+**Note:** Phase 2C simplified the overtime structure. Each overtime record now contains one activity directly (flat structure), rather than having a separate `overtime_aktivitas` table with nested activities.
 
 ## API Endpoints
 
@@ -56,26 +52,27 @@ All endpoints require authentication (`@UseGuards(JwtAuthGuard, RolesGuard)`).
 **POST** `/overtime`
 - **Roles:** Satgas, Linmas
 - **Body:** `CreateOvertimeDto`
-- **Response:** Created overtime with nested aktivitas
+- **Response:** Created overtime record
 - **Validations:**
   - Role must be in OVERTIME_SUBMITTERS
-  - Each activity_type must be available for user's role
-  - At least 1 aktivitas required
+  - activity_type must be available for user's role
   - Date format: YYYY-MM-DD
   - Time format: HH:MM
+  - 1-3 photo URLs required
+  - description required
 
 ### 2. Get My Overtime
 **GET** `/overtime/my`
 - **Roles:** Satgas, Linmas
 - **Response:** Array of user's overtime submissions
-- **Includes:** aktivitas, activity_type, area
+- **Includes:** activity_type, area
 
 ### 3. Get Pending Overtime (for approval)
 **GET** `/overtime`
 - **Roles:** Korlap, Admin System, Superadmin
 - **Response:** Array of pending overtime
 - **Scope:** Korlap sees only their area
-- **Includes:** aktivitas, activity_type, user, area
+- **Includes:** activity_type, user, area
 
 ### 4. Get Overtime by ID
 **GET** `/overtime/:id`
@@ -106,7 +103,7 @@ All endpoints require authentication (`@UseGuards(JwtAuthGuard, RolesGuard)`).
 ### Submission Rules
 1. Only Satgas and Linmas can submit overtime
 2. Overtime is automatically associated with user's area_id
-3. Each aktivitas must:
+3. Each overtime submission must:
    - Reference a valid, active activity_type
    - Match user's role (activity_type.applicable_roles includes user.role)
    - Include 1-3 photos
@@ -123,7 +120,7 @@ All endpoints require authentication (`@UseGuards(JwtAuthGuard, RolesGuard)`).
    - rejection_reason (for rejections only)
 
 ### Activity Type Validation
-The module validates that each activity_type is available for the user's role by checking:
+The module validates that the activity_type is available for the user's role by checking:
 ```typescript
 if (!actType.applicable_roles.includes(userRole))
 ```
@@ -160,7 +157,7 @@ This prevents workers from claiming overtime for activities they're not authoriz
 ## Dependencies
 
 ### External Modules
-- `TypeOrmModule.forFeature([Overtime, OvertimeAktivitas, ActivityType, User])`
+- `TypeOrmModule.forFeature([Overtime, ActivityType, User])`
 
 ### Role Groups (from `users/constants/role-groups.ts`)
 - `OVERTIME_SUBMITTERS` = [SATGAS, LINMAS]
@@ -184,18 +181,14 @@ Authorization: Bearer <jwt_token>
   "start_time": "17:00",
   "end_time": "20:00",
   "notes": "Extra cleaning work after regular shift",
-  "aktivitas": [
-    {
-      "activity_type_id": "uuid-of-cleaning-activity",
-      "description": "Cleaned main park area and pathways",
-      "photo_urls": [
-        "https://s3.amazonaws.com/before.jpg",
-        "https://s3.amazonaws.com/after.jpg"
-      ],
-      "gps_lat": -7.250445,
-      "gps_lng": 112.768845
-    }
-  ]
+  "activity_type_id": "uuid-of-cleaning-activity",
+  "description": "Cleaned main park area and pathways",
+  "photo_urls": [
+    "https://s3.amazonaws.com/before.jpg",
+    "https://s3.amazonaws.com/after.jpg"
+  ],
+  "gps_lat": -7.250445,
+  "gps_lng": 112.768845
 }
 ```
 
@@ -237,7 +230,7 @@ Authorization: Bearer <korlap_jwt_token>
 
 ### Phase 2C Integration
 This module integrates with:
-1. **Activity Types** - Validates aktivitas against activity_types.applicable_roles
+1. **Activity Types** - Validates overtime against activity_types.applicable_roles
 2. **Users** - Gets user.area_id for scoping
 3. **Areas** - Associates overtime with area (nullable for flexibility)
 
@@ -249,17 +242,17 @@ This module integrates with:
 
 ## Notes
 
-- Overtime is created with `cascade: true` on aktivitas, so nested aktivitas are saved atomically
-- The module uses `eager: true` on overtime.aktivitas relation for automatic loading
-- Photo URLs are stored as an array (text[]) to support 1-3 photos per aktivitas
+- Photo URLs are stored as an array (text[]) to support 1-3 photos per overtime
 - GPS coordinates are optional (nullable) in case worker doesn't have GPS enabled
 - Area association is nullable to handle edge cases (workers without assigned areas)
+- **Simplified Structure:** Phase 2C flattened the overtime schema. Each overtime record now contains one activity directly, rather than supporting multiple activities per overtime.
 
 ## Created
 - **Date:** February 10, 2026
 - **Phase:** Phase 2C - Client Feedback
 - **Author:** Backend Developer Agent
 - **Test Coverage:** 100% (19/19 tests passing)
+- **Last Updated:** February 12, 2026 (Updated to reflect flat schema)
 
 
 <claude-mem-context>
@@ -267,5 +260,10 @@ This module integrates with:
 
 <!-- This section is auto-generated by claude-mem. Edit content outside the tags. -->
 
-*No recent activity*
+### Feb 14, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #3736 | 8:53 PM | ✅ | Added ShiftsService Import to OvertimeService | ~512 |
+| #3643 | 8:42 PM | 🔵 | SEKAR Phase 2C Backend Implementation Audit Completed | ~1066 |
 </claude-mem-context>

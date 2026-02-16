@@ -4,17 +4,17 @@
  */
 
 import {
-  calculateWorkerStatus,
+  calculateUserStatus,
   calculateMapRegion,
   getStatusSummary,
-  filterWorkersByArea,
+  filterUsersByArea,
   getAreaCircles,
-  clusterWorkers,
+  clusterUsers,
   shouldCluster,
   isWorkerInRegion,
-  filterWorkersByRegion,
+  filterUsersByRegion,
 } from '../mapUtils';
-import type { ActiveWorkerData } from '../../types/api.types';
+import type { ActiveUserData } from '../../types/api.types';
 import type { Area } from '../../types/models.types';
 import type { Region } from 'react-native-maps';
 
@@ -34,7 +34,7 @@ const mockAreas: Array<{ id: number; gps_lat: number; gps_lng: number; radius_me
   },
 ];
 
-const mockWorker1: ActiveWorkerData = {
+const mockUser1: ActiveUserData = {
   id: 1,
   username: 'worker1',
   full_name: 'Worker One',
@@ -53,7 +53,7 @@ const mockWorker1: ActiveWorkerData = {
   },
 };
 
-const mockWorker2: ActiveWorkerData = {
+const mockUser2: ActiveUserData = {
   id: 2,
   username: 'worker2',
   full_name: 'Worker Two',
@@ -72,7 +72,7 @@ const mockWorker2: ActiveWorkerData = {
   },
 };
 
-const mockWorker3: ActiveWorkerData = {
+const mockUser3: ActiveUserData = {
   id: 3,
   username: 'worker3',
   full_name: 'Worker Three',
@@ -91,7 +91,7 @@ const mockWorker3: ActiveWorkerData = {
   },
 };
 
-const mockWorkerNoLocation: ActiveWorkerData = {
+const mockUserNoLocation: ActiveUserData = {
   id: 4,
   username: 'worker4',
   full_name: 'Worker Four',
@@ -107,40 +107,40 @@ const mockWorkerNoLocation: ActiveWorkerData = {
 };
 
 describe('mapUtils', () => {
-  describe('calculateWorkerStatus', () => {
+  describe('calculateUserStatus', () => {
     it('should return "active" for worker within 80% of radius', () => {
-      const status = calculateWorkerStatus(mockWorker1, mockAreas);
+      const status = calculateUserStatus(mockUser1, mockAreas);
       expect(status).toBe('active');
     });
 
     it('should return "warning" for worker between 80-100% of radius', () => {
-      const status = calculateWorkerStatus(mockWorker2, mockAreas);
+      const status = calculateUserStatus(mockUser2, mockAreas);
       expect(status).toBe('warning');
     });
 
     it('should return "outside" for worker beyond radius', () => {
-      const status = calculateWorkerStatus(mockWorker3, mockAreas);
+      const status = calculateUserStatus(mockUser3, mockAreas);
       expect(status).toBe('outside');
     });
 
     it('should return "outside" for worker with no location', () => {
-      const status = calculateWorkerStatus(mockWorkerNoLocation, mockAreas);
+      const status = calculateUserStatus(mockUserNoLocation, mockAreas);
       expect(status).toBe('outside');
     });
 
     it('should return "outside" for worker with area not in list', () => {
       const workerUnknownArea = {
-        ...mockWorker1,
-        shift: { ...mockWorker1.shift, area: { id: 999, name: 'Unknown' } },
+        ...mockUser1,
+        shift: { ...mockUser1.shift, area: { id: 999, name: 'Unknown' } },
       };
-      const status = calculateWorkerStatus(workerUnknownArea, mockAreas);
+      const status = calculateUserStatus(workerUnknownArea, mockAreas);
       expect(status).toBe('outside');
     });
   });
 
   describe('calculateMapRegion', () => {
     it('should calculate region for single worker', () => {
-      const workers = [mockWorker1];
+      const workers = [mockUser1];
       const region = calculateMapRegion(workers);
 
       // Verify region structure
@@ -155,7 +155,7 @@ describe('mapUtils', () => {
     });
 
     it('should calculate region for multiple workers', () => {
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
+      const workers = [mockUser1, mockUser2, mockUser3];
       const region = calculateMapRegion(workers);
 
       // Verify region has proper structure
@@ -170,7 +170,7 @@ describe('mapUtils', () => {
     });
 
     it('should return fallback region when no workers', () => {
-      const workers: ActiveWorkerData[] = [];
+      const workers: ActiveUserData[] = [];
       const fallback = { latitude: -7.2575, longitude: 112.7521 };
       const region = calculateMapRegion(workers, fallback);
 
@@ -182,7 +182,7 @@ describe('mapUtils', () => {
     });
 
     it('should handle workers without location data', () => {
-      const workers = [mockWorkerNoLocation];
+      const workers = [mockUserNoLocation];
       const fallback = { latitude: -7.2575, longitude: 112.7521 };
       const region = calculateMapRegion(workers, fallback);
 
@@ -191,12 +191,12 @@ describe('mapUtils', () => {
     });
 
     it('should apply minimum delta for workers very close together', () => {
-      const closeWorker1 = mockWorker1;
+      const closeWorker1 = mockUser1;
       const closeWorker2 = {
-        ...mockWorker1,
+        ...mockUser1,
         id: 5,
         latest_location: {
-          gps_lat: -7.29051, // Very close to mockWorker1
+          gps_lat: -7.29051, // Very close to mockUser1
           gps_lng: 112.73981,
           logged_at: '2026-01-17T10:00:00.000Z',
         },
@@ -212,7 +212,7 @@ describe('mapUtils', () => {
 
   describe('getStatusSummary', () => {
     it('should count workers by status', () => {
-      const workers = [mockWorker1, mockWorker2, mockWorker3, mockWorkerNoLocation];
+      const workers = [mockUser1, mockUser2, mockUser3, mockUserNoLocation];
       const summary = getStatusSummary(workers, mockAreas);
 
       expect(summary.total).toBe(4);
@@ -222,7 +222,7 @@ describe('mapUtils', () => {
     });
 
     it('should return zero counts for empty worker list', () => {
-      const workers: ActiveWorkerData[] = [];
+      const workers: ActiveUserData[] = [];
       const summary = getStatusSummary(workers, mockAreas);
 
       expect(summary.total).toBe(0);
@@ -232,7 +232,7 @@ describe('mapUtils', () => {
     });
 
     it('should handle all workers in same status', () => {
-      const workers = [mockWorker1, { ...mockWorker1, id: 2 }, { ...mockWorker1, id: 3 }];
+      const workers = [mockUser1, { ...mockUser1, id: 2 }, { ...mockUser1, id: 3 }];
       const summary = getStatusSummary(workers, mockAreas);
 
       expect(summary.total).toBe(3);
@@ -242,10 +242,10 @@ describe('mapUtils', () => {
     });
   });
 
-  describe('filterWorkersByArea', () => {
+  describe('filterUsersByArea', () => {
     it('should return all workers when areaId is null', () => {
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const filtered = filterWorkersByArea(workers, null);
+      const workers = [mockUser1, mockUser2, mockUser3];
+      const filtered = filterUsersByArea(workers, null);
 
       expect(filtered).toHaveLength(3);
       expect(filtered).toEqual(workers);
@@ -253,26 +253,26 @@ describe('mapUtils', () => {
 
     it('should filter workers by specific area', () => {
       const worker2DifferentArea = {
-        ...mockWorker2,
-        shift: { ...mockWorker2.shift, area: { id: 2, name: 'Other Area' } },
+        ...mockUser2,
+        shift: { ...mockUser2.shift, area: { id: 2, name: 'Other Area' } },
       };
-      const workers = [mockWorker1, worker2DifferentArea, mockWorker3];
-      const filtered = filterWorkersByArea(workers, 1);
+      const workers = [mockUser1, worker2DifferentArea, mockUser3];
+      const filtered = filterUsersByArea(workers, 1);
 
       expect(filtered).toHaveLength(2);
-      expect(filtered).toEqual([mockWorker1, mockWorker3]);
+      expect(filtered).toEqual([mockUser1, mockUser3]);
     });
 
     it('should return empty array when no workers match area', () => {
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const filtered = filterWorkersByArea(workers, 999);
+      const workers = [mockUser1, mockUser2, mockUser3];
+      const filtered = filterUsersByArea(workers, 999);
 
       expect(filtered).toHaveLength(0);
     });
 
     it('should handle empty worker list', () => {
-      const workers: ActiveWorkerData[] = [];
-      const filtered = filterWorkersByArea(workers, 1);
+      const workers: ActiveUserData[] = [];
+      const filtered = filterUsersByArea(workers, 1);
 
       expect(filtered).toHaveLength(0);
     });
@@ -343,13 +343,13 @@ describe('mapUtils', () => {
     };
 
     it('should return true for worker within region', () => {
-      const result = isWorkerInRegion(mockWorker1, testRegion);
+      const result = isWorkerInRegion(mockUser1, testRegion);
       expect(result).toBe(true);
     });
 
     it('should return false for worker outside region', () => {
-      const farWorker: ActiveWorkerData = {
-        ...mockWorker1,
+      const farWorker: ActiveUserData = {
+        ...mockUser1,
         latest_location: {
           gps_lat: -7.5, // Far south
           gps_lng: 112.5, // Far west
@@ -361,13 +361,13 @@ describe('mapUtils', () => {
     });
 
     it('should return false for worker without location', () => {
-      const result = isWorkerInRegion(mockWorkerNoLocation, testRegion);
+      const result = isWorkerInRegion(mockUserNoLocation, testRegion);
       expect(result).toBe(false);
     });
 
     it('should handle worker at exact region boundary', () => {
-      const boundaryWorker: ActiveWorkerData = {
-        ...mockWorker1,
+      const boundaryWorker: ActiveUserData = {
+        ...mockUser1,
         latest_location: {
           gps_lat: -7.2905 + 0.05, // At edge of latitudeDelta
           gps_lng: 112.7398,
@@ -379,8 +379,8 @@ describe('mapUtils', () => {
     });
 
     it('should return false for worker just outside boundary', () => {
-      const outsideBoundary: ActiveWorkerData = {
-        ...mockWorker1,
+      const outsideBoundary: ActiveUserData = {
+        ...mockUser1,
         latest_location: {
           gps_lat: -7.2905 + 0.051, // Just outside latitudeDelta
           gps_lng: 112.7398,
@@ -392,7 +392,7 @@ describe('mapUtils', () => {
     });
   });
 
-  describe('filterWorkersByRegion', () => {
+  describe('filterUsersByRegion', () => {
     const testRegion: Region = {
       latitude: -7.2905,
       longitude: 112.7398,
@@ -401,10 +401,10 @@ describe('mapUtils', () => {
     };
 
     it('should filter workers within region', () => {
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const filtered = filterWorkersByRegion(workers, testRegion);
+      const workers = [mockUser1, mockUser2, mockUser3];
+      const filtered = filterUsersByRegion(workers, testRegion);
 
-      // mockWorker1 and mockWorker2 are close, mockWorker3 is far
+      // mockUser1 and mockUser2 are close, mockUser3 is far
       expect(filtered.length).toBeGreaterThan(0);
       expect(filtered.length).toBeLessThanOrEqual(workers.length);
     });
@@ -416,28 +416,28 @@ describe('mapUtils', () => {
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       };
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const filtered = filterWorkersByRegion(workers, farRegion);
+      const workers = [mockUser1, mockUser2, mockUser3];
+      const filtered = filterUsersByRegion(workers, farRegion);
 
       expect(filtered).toHaveLength(0);
     });
 
     it('should handle empty worker list', () => {
-      const workers: ActiveWorkerData[] = [];
-      const filtered = filterWorkersByRegion(workers, testRegion);
+      const workers: ActiveUserData[] = [];
+      const filtered = filterUsersByRegion(workers, testRegion);
 
       expect(filtered).toHaveLength(0);
     });
 
     it('should exclude workers without location', () => {
-      const workers = [mockWorker1, mockWorkerNoLocation];
-      const filtered = filterWorkersByRegion(workers, testRegion);
+      const workers = [mockUser1, mockUserNoLocation];
+      const filtered = filterUsersByRegion(workers, testRegion);
 
-      expect(filtered).not.toContain(mockWorkerNoLocation);
+      expect(filtered).not.toContain(mockUserNoLocation);
     });
   });
 
-  describe('clusterWorkers', () => {
+  describe('clusterUsers', () => {
     const testRegion: Region = {
       latitude: -7.2905,
       longitude: 112.7398,
@@ -446,17 +446,17 @@ describe('mapUtils', () => {
     };
 
     it('should cluster workers with no location data filtered out', () => {
-      const workers = [mockWorker1, mockWorkerNoLocation];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers = [mockUser1, mockUserNoLocation];
+      const clusters = clusterUsers(workers, testRegion);
 
-      // Only mockWorker1 should be clustered (has location)
+      // Only mockUser1 should be clustered (has location)
       expect(clusters.length).toBeGreaterThan(0);
-      expect(clusters[0].workers).not.toContain(mockWorkerNoLocation);
+      expect(clusters[0].workers).not.toContain(mockUserNoLocation);
     });
 
     it('should create single cluster for nearby workers', () => {
-      const nearbyWorker: ActiveWorkerData = {
-        ...mockWorker1,
+      const nearbyWorker: ActiveUserData = {
+        ...mockUser1,
         id: 5,
         latest_location: {
           gps_lat: -7.29051, // Very close
@@ -464,8 +464,8 @@ describe('mapUtils', () => {
           logged_at: '2026-01-17T10:00:00.000Z',
         },
       };
-      const workers = [mockWorker1, nearbyWorker];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers = [mockUser1, nearbyWorker];
+      const clusters = clusterUsers(workers, testRegion);
 
       expect(clusters).toHaveLength(1);
       expect(clusters[0].pointCount).toBe(2);
@@ -473,24 +473,24 @@ describe('mapUtils', () => {
     });
 
     it('should create separate clusters for far apart workers', () => {
-      const farWorker: ActiveWorkerData = {
-        ...mockWorker1,
+      const farWorker: ActiveUserData = {
+        ...mockUser1,
         id: 6,
         latest_location: {
-          gps_lat: -7.25, // Far from mockWorker1
+          gps_lat: -7.25, // Far from mockUser1
           gps_lng: 112.75,
           logged_at: '2026-01-17T10:00:00.000Z',
         },
       };
-      const workers = [mockWorker1, farWorker];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers = [mockUser1, farWorker];
+      const clusters = clusterUsers(workers, testRegion);
 
       expect(clusters.length).toBeGreaterThan(1);
     });
 
     it('should calculate cluster center as average of worker positions', () => {
-      const worker2Nearby: ActiveWorkerData = {
-        ...mockWorker1,
+      const worker2Nearby: ActiveUserData = {
+        ...mockUser1,
         id: 7,
         latest_location: {
           gps_lat: -7.2906,
@@ -498,8 +498,8 @@ describe('mapUtils', () => {
           logged_at: '2026-01-17T10:00:00.000Z',
         },
       };
-      const workers = [mockWorker1, worker2Nearby];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers = [mockUser1, worker2Nearby];
+      const clusters = clusterUsers(workers, testRegion);
 
       expect(clusters).toHaveLength(1);
       // Center should be average of the two positions
@@ -510,24 +510,24 @@ describe('mapUtils', () => {
     });
 
     it('should handle single worker', () => {
-      const workers = [mockWorker1];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers = [mockUser1];
+      const clusters = clusterUsers(workers, testRegion);
 
       expect(clusters).toHaveLength(1);
       expect(clusters[0].pointCount).toBe(1);
-      expect(clusters[0].workers).toEqual([mockWorker1]);
+      expect(clusters[0].workers).toEqual([mockUser1]);
     });
 
     it('should handle empty worker list', () => {
-      const workers: ActiveWorkerData[] = [];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers: ActiveUserData[] = [];
+      const clusters = clusterUsers(workers, testRegion);
 
       expect(clusters).toHaveLength(0);
     });
 
     it('should generate unique cluster IDs', () => {
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers = [mockUser1, mockUser2, mockUser3];
+      const clusters = clusterUsers(workers, testRegion);
 
       const ids = clusters.map(c => c.id);
       const uniqueIds = new Set(ids);
@@ -535,9 +535,9 @@ describe('mapUtils', () => {
     });
 
     it('should use custom cluster radius when provided', () => {
-      const workers = [mockWorker1, mockWorker2];
+      const workers = [mockUser1, mockUser2];
       const customRadius = 0.0001; // Very small radius
-      const clusters = clusterWorkers(workers, testRegion, customRadius);
+      const clusters = clusterUsers(workers, testRegion, customRadius);
 
       // With very small radius, workers should be in separate clusters
       expect(clusters.length).toBeGreaterThan(1);
@@ -550,16 +550,16 @@ describe('mapUtils', () => {
         latitudeDelta: 1.0, // Zoomed out
         longitudeDelta: 1.0,
       };
-      const workers = [mockWorker1, mockWorker2];
-      const clusters = clusterWorkers(workers, zoomedOutRegion);
+      const workers = [mockUser1, mockUser2];
+      const clusters = clusterUsers(workers, zoomedOutRegion);
 
       // With large latitudeDelta (zoomed out), should create fewer clusters
       expect(clusters.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should handle large number of workers', () => {
-      const manyWorkers: ActiveWorkerData[] = Array.from({ length: 100 }, (_, i) => ({
-        ...mockWorker1,
+      const manyWorkers: ActiveUserData[] = Array.from({ length: 100 }, (_, i) => ({
+        ...mockUser1,
         id: i,
         latest_location: {
           gps_lat: -7.29 + (i * 0.001),
@@ -567,7 +567,7 @@ describe('mapUtils', () => {
           logged_at: '2026-01-17T10:00:00.000Z',
         },
       }));
-      const clusters = clusterWorkers(manyWorkers, testRegion);
+      const clusters = clusterUsers(manyWorkers, testRegion);
 
       expect(clusters.length).toBeGreaterThan(0);
       expect(clusters.length).toBeLessThanOrEqual(100);
@@ -578,8 +578,8 @@ describe('mapUtils', () => {
     });
 
     it('should not process the same worker multiple times', () => {
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const clusters = clusterWorkers(workers, testRegion);
+      const workers = [mockUser1, mockUser2, mockUser3];
+      const clusters = clusterUsers(workers, testRegion);
 
       // Count total workers across all clusters
       const totalWorkers = clusters.reduce((sum, cluster) => sum + cluster.pointCount, 0);
@@ -677,226 +677,18 @@ describe('mapUtils', () => {
     });
   });
 
-  describe('Clustering Performance Logging (Issue #10)', () => {
-    const testRegion: Region = {
-      latitude: -7.2905,
-      longitude: 112.7398,
-      latitudeDelta: 0.1,
-      longitudeDelta: 0.1,
-    };
-
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
-    it('should log performance metrics after clustering', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      clusterWorkers(workers, testRegion);
-
-      // Should log performance metrics
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[MapUtils] Clustering performance:')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\d+ workers → \d+ clusters in \d+\.\d+ms/)
-      );
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should include worker count in performance log', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers = Array.from({ length: 50 }, (_, i) => ({
-        ...mockWorker1,
-        id: i,
-        latest_location: {
-          gps_lat: -7.29 + (i * 0.0001),
-          gps_lng: 112.74 + (i * 0.0001),
-          logged_at: '2026-01-17T10:00:00.000Z',
-        },
-      }));
-
-      clusterWorkers(workers, testRegion);
-
-      // Should log with correct worker count
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('50 workers')
-      );
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should include cluster count in performance log', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const clusters = clusterWorkers(workers, testRegion);
-
-      // Should log with cluster count
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(`${clusters.length} clusters`)
-      );
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should include duration in milliseconds in performance log', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers = [mockWorker1, mockWorker2];
-      clusterWorkers(workers, testRegion);
-
-      // Should log with duration in ms
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/in \d+\.\d+ms/)
-      );
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should warn when clustering is slow (>100ms)', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      // Create a large dataset that might take >100ms
-      const manyWorkers: ActiveWorkerData[] = Array.from({ length: 1000 }, (_, i) => ({
-        ...mockWorker1,
-        id: i,
-        latest_location: {
-          gps_lat: -7.29 + (i * 0.0001),
-          gps_lng: 112.74 + (i * 0.0001),
-          logged_at: '2026-01-17T10:00:00.000Z',
-        },
-      }));
-
-      clusterWorkers(manyWorkers, testRegion);
-
-      // Check if warning was logged (may or may not be slow depending on hardware)
-      const logCalls = consoleLogSpy.mock.calls;
-      const warnCalls = consoleWarnSpy.mock.calls;
-
-      // At minimum, should have performance log
-      expect(logCalls.some(call =>
-        call[0].includes('[MapUtils] Clustering performance:')
-      )).toBe(true);
-
-      consoleLogSpy.mockRestore();
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('should log 500+ worker benchmark when applicable', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      // Create exactly 500 workers
-      const workers500: ActiveWorkerData[] = Array.from({ length: 500 }, (_, i) => ({
-        ...mockWorker1,
-        id: i,
-        latest_location: {
-          gps_lat: -7.29 + (i * 0.0001),
-          gps_lng: 112.74 + (i * 0.0001),
-          logged_at: '2026-01-17T10:00:00.000Z',
-        },
-      }));
-
-      clusterWorkers(workers500, testRegion);
-
-      // Should log 500+ worker benchmark
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[MapUtils] 500+ worker benchmark:')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('500 workers clustered')
-      );
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should calculate workers per millisecond in benchmark', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers500: ActiveWorkerData[] = Array.from({ length: 500 }, (_, i) => ({
-        ...mockWorker1,
-        id: i,
-        latest_location: {
-          gps_lat: -7.29 + (i * 0.0001),
-          gps_lng: 112.74 + (i * 0.0001),
-          logged_at: '2026-01-17T10:00:00.000Z',
-        },
-      }));
-
-      clusterWorkers(workers500, testRegion);
-
-      // Should log workers/ms metric
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\d+\.\d+ workers\/ms/)
-      );
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should not break clustering functionality with logging', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers = [mockWorker1, mockWorker2, mockWorker3];
-      const clusters = clusterWorkers(workers, testRegion);
-
-      // Clustering should still work correctly
-      expect(clusters).toBeDefined();
-      expect(Array.isArray(clusters)).toBe(true);
-      expect(clusters.length).toBeGreaterThan(0);
-
-      // Each cluster should have valid structure
-      clusters.forEach(cluster => {
-        expect(cluster).toHaveProperty('id');
-        expect(cluster).toHaveProperty('coordinate');
-        expect(cluster).toHaveProperty('workers');
-        expect(cluster).toHaveProperty('pointCount');
-        expect(cluster.pointCount).toBeGreaterThan(0);
-      });
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should log performance for empty worker list', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers: ActiveWorkerData[] = [];
-      const clusters = clusterWorkers(workers, testRegion);
-
-      // Should log even for empty list
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[MapUtils] Clustering performance:')
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('0 workers → 0 clusters')
-      );
-      expect(clusters).toHaveLength(0);
-
-      consoleLogSpy.mockRestore();
-    });
-
-    it('should log performance for single worker', () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      const workers = [mockWorker1];
-      const clusters = clusterWorkers(workers, testRegion);
-
-      // Should log for single worker
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('1 workers → 1 clusters')
-      );
-      expect(clusters).toHaveLength(1);
-
-      consoleLogSpy.mockRestore();
-    });
-
+  describe('Clustering Performance', () => {
     it('should complete clustering quickly for typical datasets', () => {
+      const testRegion: Region = {
+        latitude: -7.2905,
+        longitude: 112.7398,
+        latitudeDelta: 0.1,
+        longitudeDelta: 0.1,
+      };
+
       // Test with typical dataset of 50 workers
-      const workers: ActiveWorkerData[] = Array.from({ length: 50 }, (_, i) => ({
-        ...mockWorker1,
+      const workers: ActiveUserData[] = Array.from({ length: 50 }, (_, i) => ({
+        ...mockUser1,
         id: i,
         latest_location: {
           gps_lat: -7.29 + (i * 0.001),
@@ -906,12 +698,11 @@ describe('mapUtils', () => {
       }));
 
       const startTime = performance.now();
-      const clusters = clusterWorkers(workers, testRegion);
+      const clusters = clusterUsers(workers, testRegion);
       const endTime = performance.now();
       const duration = endTime - startTime;
 
       // Should complete in reasonable time (< 100ms for 50 workers)
-      // Increased threshold for CI environments
       expect(duration).toBeLessThan(100);
       expect(clusters).toBeDefined();
       expect(clusters.length).toBeGreaterThan(0);

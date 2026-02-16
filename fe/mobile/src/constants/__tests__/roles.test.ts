@@ -1,0 +1,273 @@
+/**
+ * Role Constants Tests
+ * Phase 2C: 8-role system helper functions
+ */
+
+import type { UserRole } from '../../types/models.types';
+import {
+  ROLE_LABELS,
+  CLOCKABLE_ROLES,
+  ACTIVITY_SUBMITTERS,
+  TASK_CREATORS,
+  TASK_RECEIVERS,
+  OVERTIME_SUBMITTERS,
+  OVERTIME_APPROVERS,
+  MONITORING_ROLES,
+  VALID_TASK_ASSIGNMENTS,
+  isClockableRole,
+  canSubmitActivities,
+  canCreateTasks,
+  canReceiveTasks,
+  canSubmitOvertime,
+  canApproveOvertime,
+  canMonitor,
+  getMonitoringScope,
+} from '../roles';
+
+describe('Role Constants', () => {
+  describe('ROLE_LABELS', () => {
+    it('should have labels for all 8 roles', () => {
+      expect(Object.keys(ROLE_LABELS)).toHaveLength(8);
+      expect(ROLE_LABELS.satgas).toBe('Satgas');
+      expect(ROLE_LABELS.linmas).toBe('Linmas');
+      expect(ROLE_LABELS.korlap).toBe('Korlap');
+      expect(ROLE_LABELS.admin_data).toBe('Admin Data');
+      expect(ROLE_LABELS.kepala_rayon).toBe('Kepala Rayon');
+      expect(ROLE_LABELS.top_management).toBe('Top Management');
+      expect(ROLE_LABELS.admin_system).toBe('Admin Sistem');
+      expect(ROLE_LABELS.superadmin).toBe('Superadmin');
+    });
+  });
+
+  describe('CLOCKABLE_ROLES', () => {
+    it('should include satgas, linmas, korlap, admin_data, and kepala_rayon', () => {
+      expect(CLOCKABLE_ROLES).toEqual([
+        'satgas',
+        'linmas',
+        'korlap',
+        'admin_data',
+        'kepala_rayon',
+      ]);
+      expect(CLOCKABLE_ROLES).toHaveLength(5);
+    });
+  });
+
+  describe('ACTIVITY_SUBMITTERS', () => {
+    it('should include satgas, linmas, korlap, and admin_data', () => {
+      expect(ACTIVITY_SUBMITTERS).toEqual([
+        'satgas',
+        'linmas',
+        'korlap',
+        'admin_data',
+      ]);
+      expect(ACTIVITY_SUBMITTERS).toHaveLength(4);
+    });
+  });
+
+  describe('TASK_CREATORS', () => {
+    it('should include management and admin roles', () => {
+      expect(TASK_CREATORS).toEqual([
+        'korlap',
+        'kepala_rayon',
+        'top_management',
+        'admin_system',
+        'superadmin',
+      ]);
+      expect(TASK_CREATORS).toHaveLength(5);
+    });
+  });
+
+  describe('TASK_RECEIVERS', () => {
+    it('should include field roles that can receive tasks', () => {
+      expect(TASK_RECEIVERS).toEqual([
+        'satgas',
+        'linmas',
+        'korlap',
+        'kepala_rayon',
+      ]);
+      expect(TASK_RECEIVERS).toHaveLength(4);
+    });
+  });
+
+  describe('OVERTIME_SUBMITTERS', () => {
+    it('should include only satgas and linmas', () => {
+      expect(OVERTIME_SUBMITTERS).toEqual(['satgas', 'linmas']);
+      expect(OVERTIME_SUBMITTERS).toHaveLength(2);
+    });
+  });
+
+  describe('OVERTIME_APPROVERS', () => {
+    it('should include only korlap', () => {
+      expect(OVERTIME_APPROVERS).toEqual(['korlap']);
+      expect(OVERTIME_APPROVERS).toHaveLength(1);
+    });
+  });
+
+  describe('MONITORING_ROLES', () => {
+    it('should have correct city-level monitoring roles', () => {
+      expect(MONITORING_ROLES.city).toEqual([
+        'top_management',
+        'admin_system',
+        'superadmin',
+      ]);
+    });
+
+    it('should have correct rayon-level monitoring roles', () => {
+      expect(MONITORING_ROLES.rayon).toEqual(['kepala_rayon', 'admin_data']);
+    });
+
+    it('should have correct area-level monitoring roles', () => {
+      expect(MONITORING_ROLES.area).toEqual(['korlap']);
+    });
+  });
+
+  describe('VALID_TASK_ASSIGNMENTS', () => {
+    it('should define correct task assignment hierarchy', () => {
+      expect(VALID_TASK_ASSIGNMENTS.korlap).toEqual(['satgas', 'linmas']);
+      expect(VALID_TASK_ASSIGNMENTS.kepala_rayon).toEqual(['korlap']);
+      expect(VALID_TASK_ASSIGNMENTS.top_management).toEqual(['kepala_rayon', 'korlap']);
+      expect(VALID_TASK_ASSIGNMENTS.admin_system).toEqual(['kepala_rayon', 'korlap']);
+      expect(VALID_TASK_ASSIGNMENTS.superadmin).toEqual(['kepala_rayon', 'korlap']);
+    });
+  });
+
+  describe('isClockableRole', () => {
+    it('should return true for clockable roles', () => {
+      expect(isClockableRole('satgas')).toBe(true);
+      expect(isClockableRole('linmas')).toBe(true);
+      expect(isClockableRole('korlap')).toBe(true);
+      expect(isClockableRole('admin_data')).toBe(true);
+      expect(isClockableRole('kepala_rayon')).toBe(true);
+    });
+
+    it('should return false for non-clockable roles', () => {
+      expect(isClockableRole('top_management')).toBe(false);
+      expect(isClockableRole('admin_system')).toBe(false);
+      expect(isClockableRole('superadmin')).toBe(false);
+    });
+  });
+
+  describe('canSubmitActivities', () => {
+    it('should return true for activity submitter roles', () => {
+      expect(canSubmitActivities('satgas')).toBe(true);
+      expect(canSubmitActivities('linmas')).toBe(true);
+      expect(canSubmitActivities('korlap')).toBe(true);
+      expect(canSubmitActivities('admin_data')).toBe(true);
+    });
+
+    it('should return false for non-submitter roles', () => {
+      expect(canSubmitActivities('kepala_rayon')).toBe(false);
+      expect(canSubmitActivities('top_management')).toBe(false);
+      expect(canSubmitActivities('admin_system')).toBe(false);
+      expect(canSubmitActivities('superadmin')).toBe(false);
+    });
+  });
+
+  describe('canCreateTasks', () => {
+    it('should return true for task creator roles', () => {
+      expect(canCreateTasks('korlap')).toBe(true);
+      expect(canCreateTasks('kepala_rayon')).toBe(true);
+      expect(canCreateTasks('top_management')).toBe(true);
+      expect(canCreateTasks('admin_system')).toBe(true);
+      expect(canCreateTasks('superadmin')).toBe(true);
+    });
+
+    it('should return false for non-creator roles', () => {
+      expect(canCreateTasks('satgas')).toBe(false);
+      expect(canCreateTasks('linmas')).toBe(false);
+      expect(canCreateTasks('admin_data')).toBe(false);
+    });
+  });
+
+  describe('canReceiveTasks', () => {
+    it('should return true for task receiver roles', () => {
+      expect(canReceiveTasks('satgas')).toBe(true);
+      expect(canReceiveTasks('linmas')).toBe(true);
+      expect(canReceiveTasks('korlap')).toBe(true);
+      expect(canReceiveTasks('kepala_rayon')).toBe(true);
+    });
+
+    it('should return false for non-receiver roles', () => {
+      expect(canReceiveTasks('admin_data')).toBe(false);
+      expect(canReceiveTasks('top_management')).toBe(false);
+      expect(canReceiveTasks('admin_system')).toBe(false);
+      expect(canReceiveTasks('superadmin')).toBe(false);
+    });
+  });
+
+  describe('canSubmitOvertime', () => {
+    it('should return true for overtime submitter roles', () => {
+      expect(canSubmitOvertime('satgas')).toBe(true);
+      expect(canSubmitOvertime('linmas')).toBe(true);
+    });
+
+    it('should return false for non-submitter roles', () => {
+      expect(canSubmitOvertime('korlap')).toBe(false);
+      expect(canSubmitOvertime('admin_data')).toBe(false);
+      expect(canSubmitOvertime('kepala_rayon')).toBe(false);
+      expect(canSubmitOvertime('top_management')).toBe(false);
+      expect(canSubmitOvertime('admin_system')).toBe(false);
+      expect(canSubmitOvertime('superadmin')).toBe(false);
+    });
+  });
+
+  describe('canApproveOvertime', () => {
+    it('should return true for korlap', () => {
+      expect(canApproveOvertime('korlap')).toBe(true);
+    });
+
+    it('should return false for all other roles', () => {
+      expect(canApproveOvertime('satgas')).toBe(false);
+      expect(canApproveOvertime('linmas')).toBe(false);
+      expect(canApproveOvertime('admin_data')).toBe(false);
+      expect(canApproveOvertime('kepala_rayon')).toBe(false);
+      expect(canApproveOvertime('top_management')).toBe(false);
+      expect(canApproveOvertime('admin_system')).toBe(false);
+      expect(canApproveOvertime('superadmin')).toBe(false);
+    });
+  });
+
+  describe('canMonitor', () => {
+    it('should return true for all monitoring roles', () => {
+      expect(canMonitor('top_management')).toBe(true);
+      expect(canMonitor('admin_system')).toBe(true);
+      expect(canMonitor('superadmin')).toBe(true);
+      expect(canMonitor('kepala_rayon')).toBe(true);
+      expect(canMonitor('korlap')).toBe(true);
+    });
+
+    it('should return false for non-monitoring roles', () => {
+      expect(canMonitor('satgas')).toBe(false);
+      expect(canMonitor('linmas')).toBe(false);
+    });
+
+    it('should return true for admin_data (rayon monitoring)', () => {
+      expect(canMonitor('admin_data')).toBe(true);
+    });
+  });
+
+  describe('getMonitoringScope', () => {
+    it('should return city for city-level monitoring roles', () => {
+      expect(getMonitoringScope('top_management')).toBe('city');
+      expect(getMonitoringScope('admin_system')).toBe('city');
+      expect(getMonitoringScope('superadmin')).toBe('city');
+    });
+
+    it('should return rayon for rayon-level monitoring roles', () => {
+      expect(getMonitoringScope('kepala_rayon')).toBe('rayon');
+    });
+
+    it('should return area for area-level monitoring roles', () => {
+      expect(getMonitoringScope('korlap')).toBe('area');
+    });
+
+    it('should return rayon for admin_data', () => {
+      expect(getMonitoringScope('admin_data')).toBe('rayon');
+    });
+
+    it('should return null for non-monitoring roles', () => {
+      expect(getMonitoringScope('satgas')).toBeNull();
+      expect(getMonitoringScope('linmas')).toBeNull();
+    });
+  });
+});

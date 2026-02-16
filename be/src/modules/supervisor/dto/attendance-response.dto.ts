@@ -15,13 +15,13 @@ export class AttendanceAreaDto {
  * DTO for workers who did not clock in
  */
 export class NotClockedInWorkerDto {
-  @ApiProperty({ description: 'Worker UUID' })
+  @ApiProperty({ description: 'User UUID' })
   id: string;
 
-  @ApiProperty({ description: 'Worker username', example: 'worker1' })
+  @ApiProperty({ description: 'User username', example: 'satgas1' })
   username: string;
 
-  @ApiProperty({ description: 'Worker full name', example: 'Worker One' })
+  @ApiProperty({ description: 'User full name', example: 'Satgas One' })
   full_name: string;
 
   @ApiProperty({
@@ -43,20 +43,20 @@ export class AttendanceResponseDto {
   date: string;
 
   @ApiProperty({
-    description: 'Total number of active workers',
+    description: 'Total number of active users',
     example: 10,
   })
   total_workers: number;
 
   @ApiProperty({
-    description: 'Number of workers who clocked in today',
+    description: 'Number of users who clocked in today',
     example: 8,
   })
   clocked_in_count: number;
 
   @ApiProperty({
     type: [NotClockedInWorkerDto],
-    description: 'Workers who did not clock in today',
+    description: 'Users who did not clock in today',
   })
   not_clocked_in: NotClockedInWorkerDto[];
 }

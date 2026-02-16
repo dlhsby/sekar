@@ -169,6 +169,75 @@ export function validateClockInLocation(
 }
 
 /**
+ * Check if a point is inside a polygon using ray casting algorithm
+ * Polygon uses GeoJSON format: [lng, lat] pairs
+ * Matches backend GpsUtil.isPointInPolygon exactly
+ */
+export function isPointInPolygon(
+  lat: number,
+  lng: number,
+  polygon: [number, number][],
+): boolean {
+  let inside = false;
+  const n = polygon.length;
+
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    // GeoJSON: [lng, lat]
+    const yi = polygon[i][1];
+    const xi = polygon[i][0];
+    const yj = polygon[j][1];
+    const xj = polygon[j][0];
+
+    const intersect =
+      yi > lat !== yj > lat &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
+
+/**
+ * Check if a point is within an area boundary (polygon-first, radius fallback)
+ * Matches backend GpsUtil.isWithinAreaBoundary strategy
+ */
+export function isWithinAreaBoundary(
+  lat: number,
+  lng: number,
+  area: {
+    boundary_polygon?: [number, number][];
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+    radius_meters?: number | null;
+  },
+): boolean {
+  // 1. Polygon check (preferred)
+  if (area.boundary_polygon && area.boundary_polygon.length >= 3) {
+    return isPointInPolygon(lat, lng, area.boundary_polygon);
+  }
+
+  // 2. Radius fallback
+  if (
+    area.gps_lat != null &&
+    area.gps_lng != null &&
+    area.radius_meters != null &&
+    area.radius_meters > 0
+  ) {
+    return isWithinBoundary(
+      lat,
+      lng,
+      Number(area.gps_lat),
+      Number(area.gps_lng),
+      Number(area.radius_meters),
+    );
+  }
+
+  // 3. No boundary defined — allow
+  return true;
+}
+
+/**
  * Mock GPS coordinates (for development/testing only)
  * @returns Mock coordinates
  */

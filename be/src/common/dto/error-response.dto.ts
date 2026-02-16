@@ -136,23 +136,23 @@ export class ErrorExamples {
     path: '/api/shifts/clock-in',
   };
 
-  static readonly REPORT_SHIFT_REQUIRED = {
+  static readonly ACTIVITY_SHIFT_REQUIRED = {
     statusCode: 400,
-    code: ApiErrorCode.REPORT_SHIFT_REQUIRED,
+    code: ApiErrorCode.ACTIVITY_SHIFT_REQUIRED,
     message:
-      'Cannot create report for completed shift. Reports must be created during active shifts.',
+      'Cannot create activity for completed shift. Activities must be created during active shifts.',
     error: 'Bad Request',
     timestamp: '2024-01-10T10:30:00.000Z',
-    path: '/api/reports',
+    path: '/api/activities',
   };
 
-  static readonly REPORT_EDIT_WINDOW_CLOSED = {
+  static readonly ACTIVITY_EDIT_WINDOW_CLOSED = {
     statusCode: 403,
-    code: ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED,
-    message: 'Reports can only be updated within 1 hour of creation',
+    code: ApiErrorCode.ACTIVITY_EDIT_WINDOW_CLOSED,
+    message: 'Activities can only be updated within 1 hour of creation',
     error: 'Forbidden',
     timestamp: '2024-01-10T10:30:00.000Z',
-    path: '/api/reports/550e8400-e29b-41d4-a716-446655440000',
+    path: '/api/activities/550e8400-e29b-41d4-a716-446655440000',
   };
 
   static readonly VALIDATION_ERROR = {

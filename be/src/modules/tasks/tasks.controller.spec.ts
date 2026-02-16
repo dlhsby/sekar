@@ -7,6 +7,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
+import { TagUsersDto } from './dto/tag-users.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
 
 describe('TasksController', () => {
@@ -50,6 +51,9 @@ describe('TasksController', () => {
             assign: jest.fn(),
             start: jest.fn(),
             complete: jest.fn(),
+            findTaggedTasks: jest.fn(),
+            addTags: jest.fn(),
+            removeTag: jest.fn(),
           },
         },
       ],
@@ -235,6 +239,42 @@ describe('TasksController', () => {
 
       expect(tasksService.complete).toHaveBeenCalledWith('task-uuid', mockUser.id, completeDto);
       expect(result).toEqual(completedTask);
+    });
+  });
+
+  describe('findTaggedTasks', () => {
+    it('should return tagged tasks for current user', async () => {
+      const tasks = [mockTask];
+      tasksService.findTaggedTasks.mockResolvedValue(tasks as Task[]);
+
+      const result = await controller.findTaggedTasks(mockUser as User);
+
+      expect(tasksService.findTaggedTasks).toHaveBeenCalledWith(mockUser.id);
+      expect(result).toEqual(tasks);
+    });
+  });
+
+  describe('addTags', () => {
+    it('should add tags to a task', async () => {
+      const tagDto: TagUsersDto = { user_ids: ['user-1', 'user-2'] };
+      const taggedTask = { ...mockTask, tagged_user_ids: ['user-1', 'user-2'] };
+
+      tasksService.addTags.mockResolvedValue(taggedTask as Task);
+
+      const result = await controller.addTags('task-uuid', tagDto, mockUser as User);
+
+      expect(tasksService.addTags).toHaveBeenCalledWith('task-uuid', mockUser.id, tagDto.user_ids);
+      expect(result).toEqual(taggedTask);
+    });
+  });
+
+  describe('removeTag', () => {
+    it('should remove a tag from a task', async () => {
+      tasksService.removeTag.mockResolvedValue(undefined);
+
+      await controller.removeTag('task-uuid', 'user-1');
+
+      expect(tasksService.removeTag).toHaveBeenCalledWith('task-uuid', 'user-1');
     });
   });
 });

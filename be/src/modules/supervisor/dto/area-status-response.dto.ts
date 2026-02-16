@@ -11,13 +11,13 @@ export class AreaStatusDto {
   name: string;
 
   @ApiProperty({
-    description: 'Number of workers assigned to this area',
+    description: 'Number of users assigned to this area',
     example: 3,
   })
   assigned_workers_count: number;
 
   @ApiProperty({
-    description: 'Number of workers currently working in this area',
+    description: 'Number of users currently working in this area',
     example: 2,
   })
   active_workers_count: number;

@@ -58,7 +58,7 @@ function subscribeTokenRefresh(callback: (token: string | null) => void): void {
  * Notify all subscribers that token has been refreshed
  */
 function onTokenRefreshed(token: string | null): void {
-  console.log(`[ApiClient] Notifying ${refreshSubscribers.length} subscribers`);
+  console.debug(`[ApiClient] Notifying ${refreshSubscribers.length} subscribers`);
   refreshSubscribers.forEach(callback => callback(token));
   refreshSubscribers = [];
 }
@@ -108,9 +108,9 @@ apiClient.interceptors.request.use(
     }
 
     if (__DEV__) {
-      console.log('🚀 API Request:', requestConfig.method?.toUpperCase(), requestConfig.url);
-      console.log('🚀 API Base URL:', requestConfig.baseURL || config.API_BASE_URL);
-      console.log('🚀 Full URL:', `${requestConfig.baseURL || config.API_BASE_URL}${requestConfig.url}`);
+      console.debug('🚀 API Request:', requestConfig.method?.toUpperCase(), requestConfig.url);
+      console.debug('🚀 API Base URL:', requestConfig.baseURL || config.API_BASE_URL);
+      console.debug('🚀 Full URL:', `${requestConfig.baseURL || config.API_BASE_URL}${requestConfig.url}`);
     }
 
     return requestConfig;
@@ -127,7 +127,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     if (__DEV__) {
-      console.log('✅ API Response:', response.config.url, response.status);
+      console.debug('✅ API Response:', response.config.url, response.status);
     }
     return response;
   },
@@ -169,7 +169,7 @@ apiClient.interceptors.response.use(
 
         // Prevent infinite retry loop
         if (originalRequest._retry) {
-          console.log('🔒 Token refresh failed, clearing auth');
+          console.debug('🔒 Token refresh failed, clearing auth');
           await clearAll();
           return Promise.reject(apiError);
         }
@@ -182,7 +182,7 @@ apiClient.interceptors.response.use(
             const newToken = await refreshAccessToken();
 
             if (newToken) {
-              console.log('✅ Token refreshed successfully');
+              console.debug('✅ Token refreshed successfully');
               isRefreshing = false;
               onTokenRefreshed(newToken);
 
@@ -192,7 +192,7 @@ apiClient.interceptors.response.use(
               }
               return apiClient(originalRequest);
             } else {
-              console.log('❌ Token refresh failed, clearing auth');
+              console.debug('❌ Token refresh failed, clearing auth');
               isRefreshing = false;
               onTokenRefreshed(null); // Notify all subscribers of failure
               await clearAll();

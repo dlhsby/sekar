@@ -42,9 +42,9 @@ export class AuthResponseDto {
     description: 'User information',
     example: {
       id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-      username: 'worker1',
+      username: 'satgas1',
       full_name: 'Pekerja Satu',
-      role: 'worker',
+      role: 'satgas',
     },
   })
   user: {

@@ -3,16 +3,14 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Area } from './entities/area.entity';
+import { User } from '../users/entities/user.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { AreaTypesService } from '../area-types/area-types.service';
-import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 
 /**
  * Service for managing work areas
@@ -27,9 +25,9 @@ export class AreasService {
   constructor(
     @InjectRepository(Area)
     private readonly areaRepository: Repository<Area>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly areaTypesService: AreaTypesService,
-    @Inject(forwardRef(() => WorkerAssignmentsService))
-    private readonly workerAssignmentsService: WorkerAssignmentsService,
   ) {}
 
   /**
@@ -136,8 +134,8 @@ export class AreasService {
 
     const area = await this.findOne(id);
 
-    // Check if any workers are assigned to this area
-    const assignmentCount = await this.workerAssignmentsService.countByAreaId(id);
+    // Check if any workers are assigned to this area (via user.area_id)
+    const assignmentCount = await this.userRepository.count({ where: { area_id: id } });
     if (assignmentCount > 0) {
       this.logger.warn(`Cannot delete area ${id}: ${assignmentCount} worker(s) assigned`);
       throw new BadRequestException(`Cannot delete area: ${assignmentCount} worker(s) assigned`);

@@ -37,14 +37,14 @@ export class CreateAreaStaffRequirementDto {
   /**
    * Role for which the requirement applies.
    *
-   * @example 'worker'
+   * @example 'satgas'
    */
   @ApiProperty({
-    description: 'Staff role (worker or linmas)',
+    description: 'Staff role (satgas or linmas)',
     enum: StaffRole,
-    example: StaffRole.WORKER,
+    example: StaffRole.SATGAS,
   })
-  @IsEnum(StaffRole, { message: 'Role must be either "worker" or "linmas"' })
+  @IsEnum(StaffRole, { message: 'Role must be either "satgas" or "linmas"' })
   @IsNotEmpty({ message: 'Role is required' })
   role: StaffRole;
 

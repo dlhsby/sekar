@@ -1,8 +1,10 @@
 # Phase 2C: Database Schema Changes
 
-**Last Updated:** 2026-02-10
-**Status:** Planning
-**Migration Strategy:** Multi-step with rollback support
+**Last Updated:** 2026-02-16
+**Status:** Spec Rewrite (Terminology Cleanup + Schema Redesign)
+**Migration Strategy:** Single atomic migration with rollback support
+**Related ADR:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
+**See also:** [Seeder Updates](./seeder-updates.md) for test data implementation
 
 ---
 
@@ -15,33 +17,39 @@
 | `activity_types` role column | `applicable_roles TEXT[]` (array, NOT single `role`) | `be/src/modules/activity-types/entities/activity-type.entity.ts:58` |
 | Current seed role format | PascalCase in ARRAY: `ARRAY['Worker']`, `ARRAY['Linmas']`, `ARRAY['Worker', 'Linmas']` | `be/src/database/seeds/seed-phase2.ts:81-86` |
 | `work_reports.shift_id` | **ALREADY EXISTS** (UUID, NOT NULL, FK to shifts) | `be/src/modules/reports/entities/report.entity.ts:54` |
-| `work_reports.worker_id` | Column name is `worker_id` (NOT `user_id`) | `be/src/modules/reports/entities/report.entity.ts:50` |
+| `work_reports.worker_id` | Column name is `worker_id` (NOT `user_id`) — **RENAME to `user_id`** | `be/src/modules/reports/entities/report.entity.ts:50` |
 | `users.area_id` | **DOES NOT EXIST** — users only have `rayon_id` | `be/src/modules/users/entities/user.entity.ts:64` |
 | `worker_schedules` date field | `effective_date` (NOT `start_date`), has `user_id` (NOT `worker_id`) | `be/src/modules/worker-schedules/entities/worker-schedule.entity.ts:59` |
 | `tasks.area_id` | **REQUIRED** (NOT NULL), FK to areas | `be/src/modules/tasks/entities/task.entity.ts:78` |
 | TaskStatus enum | 6 values: `pending, assigned, accepted, in_progress, completed, declined` | `be/src/modules/tasks/entities/task.entity.ts:19-26` |
-| TaskPriority enum | 4 values: `low, medium, high, urgent` | `be/src/modules/tasks/entities/task.entity.ts:31-36` |
-| `tasks.activity_type_id` | EXISTS, nullable, FK to activity_types | `be/src/modules/tasks/entities/task.entity.ts:81` |
-| `tasks.completion_gps_lat/lng` | EXISTS, nullable decimal columns | `be/src/modules/tasks/entities/task.entity.ts:101,104` |
-| `tasks.decline_reason` | EXISTS, nullable text column | `be/src/modules/tasks/entities/task.entity.ts:108` |
-| CompleteTaskDto | `completion_photo_url` (optional), `completion_notes` (optional), `gps_lat` (REQUIRED), `gps_lng` (REQUIRED) | `be/src/modules/tasks/dto/complete-task.dto.ts:6-48` |
-| ClockInDto | `area_id` (REQUIRED UUID), `gps_lat`, `gps_lng`, `selfie_photo` (base64, 10MB max) | `be/src/modules/shifts/dto/clock-in.dto.ts:9-50` |
-| Report entity class | Named `Report` (NOT `WorkReport`), table `work_reports` | `be/src/modules/reports/entities/report.entity.ts:43` |
-| ReportType enum | 7 values: cleaning, planting, maintenance, inspection, task_completion, incident, maintenance_request | `be/src/modules/reports/entities/report.entity.ts:18-28` |
-| ReportCondition enum | 3 values: Baik, Cukup, Buruk | `be/src/modules/reports/entities/report.entity.ts:30-34` |
+| `shifts.worker_id` | Column name is `worker_id` — **RENAME to `user_id`** | `be/src/modules/shifts/entities/shift.entity.ts` |
+| `location_logs.worker_id` | Column name is `worker_id` — **RENAME to `user_id`** | `be/src/modules/location-logs/entities/location-log.entity.ts` |
+| `areas.boundary_polygon` | JSONB column, ALREADY EXISTS (from KMZ import) | `be/src/modules/areas/entities/area.entity.ts` |
+| Report entity class | Named `Report` (NOT `WorkReport`), table `work_reports` — **RENAME to `Activity`, table `activities`** | `be/src/modules/reports/entities/report.entity.ts:43` |
+| ReportType enum | 7 values — **DROP column** (replaced by `activity_type_id`) | `be/src/modules/reports/entities/report.entity.ts:18-28` |
 
 ---
 
-## Migration Order
+## Migration Overview
 
-Migrations MUST be executed in this order due to foreign key dependencies:
+Phase 2C uses a **single migration file** with 12 ordered steps. This replaces the previous 6-migration approach.
 
-1. **Migration 0:** Role enum update + add `area_id` to users (prerequisite for all other changes)
-2. **Migration 1:** Activity types update (new seed data using `applicable_roles TEXT[]`)
-3. **Migration 2:** Reports → Aktivitas schema transformation
-4. **Migration 3:** Tasks schema update (rayon_id, status simplification, task_tags table)
-5. **Migration 4:** New overtime tables (overtimes, overtime_aktivitas)
-6. **Migration 5:** Worker assignment deprecation flags
+### Changes Summary
+
+| Change | Type | Details |
+|--------|------|---------|
+| Table renames | 2 | `worker_schedules` → `schedules`, `work_reports` → `activities` |
+| Table drops | 2 | `worker_assignments`, `overtime_aktivitas` |
+| Column renames | 3 | `worker_id` → `user_id` on shifts, activities, location_logs |
+| Column drops | 1 | `activities.report_type` |
+| Columns added to `overtimes` | 5 | `activity_type_id`, `description`, `photo_urls`, `gps_lat`, `gps_lng` |
+| Columns added to `shifts` | 2 | `clock_in_outside_boundary`, `clock_out_outside_boundary` |
+| Role enum update | 1 | 7 roles → 8 roles |
+| Users column add | 1 | `area_id` UUID FK → areas |
+| Tasks modifications | Multiple | `rayon_id` added, `area_id` nullable, columns dropped |
+| TaskStatus constraint | 1 | 6 → 4 values |
+| New table | 1 | `task_tags` |
+| Activity types | Seed update | PascalCase → lowercase, 10 → 20 types |
 
 ---
 
@@ -61,12 +69,9 @@ CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon', 'top
 
 ### users table - add area_id column
 
-**IMPORTANT:** The `area_id` column does NOT currently exist on the users table. It must be ADDED for korlap role association.
-
 ```sql
--- Add area_id column to users table (for korlap → area association)
-ALTER TABLE users ADD COLUMN area_id UUID REFERENCES areas(id) ON DELETE SET NULL;
-CREATE INDEX idx_users_area_id ON users(area_id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS area_id UUID REFERENCES areas(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_users_area_id ON users(area_id);
 ```
 
 ### Migration Script
@@ -90,25 +95,6 @@ ALTER TABLE users ADD CONSTRAINT users_role_check
   CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'));
 ```
 
-### TypeORM Entity Change Required
-
-**File:** `be/src/modules/users/entities/user.entity.ts`
-
-Add after the `rayon_id` property (line ~64):
-```typescript
-@ApiProperty({
-  description: 'Area ID for Korlap role',
-  example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
-  required: false,
-})
-@Column({ type: 'uuid', nullable: true })
-area_id?: string;
-
-@ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
-@JoinColumn({ name: 'area_id' })
-area?: Area;
-```
-
 ### Rollback Script
 
 ```sql
@@ -116,49 +102,14 @@ ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 UPDATE users SET role = 'worker' WHERE role = 'satgas';
 UPDATE users SET role = 'koordinator_lapangan' WHERE role = 'korlap';
 UPDATE users SET role = 'admin' WHERE role = 'superadmin';
--- Note: admin_data and admin_system users would need manual handling
 ALTER TABLE users DROP COLUMN IF EXISTS area_id;
 ALTER TABLE users ADD CONSTRAINT users_role_check
   CHECK (role IN ('worker', 'linmas', 'supervisor', 'admin', 'koordinator_lapangan', 'kepala_rayon', 'top_management'));
 ```
 
-### Impact Assessment
-
-- **Rows affected:** All users table rows with roles worker, koordinator_lapangan, supervisor, admin
-- **Downtime:** Requires maintenance window (all active JWT tokens will reference old roles)
-- **Post-migration:** Force all users to re-authenticate (invalidate all refresh tokens)
-- **New column:** area_id added as nullable — existing korlap users need area_id populated manually
-
 ---
 
 ## Migration 1: Activity Types Update
-
-### IMPORTANT: Column is `applicable_roles TEXT[]` (NOT `role`)
-
-The `activity_types` table uses `applicable_roles` as a TEXT array column (`text[]`), NOT a single `role` column.
-
-**Current entity:** `be/src/modules/activity-types/entities/activity-type.entity.ts`
-```typescript
-@Column({ type: 'text', array: true })
-applicable_roles: string[];
-```
-
-**Current seed format** (PascalCase role values):
-```sql
-INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
-  ('...', 'Penyiraman', 'WATERING', '...', ARRAY['Worker'], TRUE),
-  ('...', 'Pembersihan', 'CLEANING', '...', ARRAY['Worker', 'Linmas'], TRUE);
-```
-
-### Phase 2C Decision: Role value case in applicable_roles
-
-The current seeds use PascalCase (`'Worker'`, `'Linmas'`) in the `applicable_roles` array, matching the OLD UserRole enum values used internally. With Phase 2C, new role values are lowercase (`'satgas'`, `'linmas'`, `'korlap'`, `'admin_data'`).
-
-**Two options:**
-1. **Keep PascalCase** in applicable_roles (use `'Satgas'`, `'Linmas'`, `'Korlap'`, `'AdminData'`) — requires mapping layer
-2. **Switch to lowercase** (use `'satgas'`, `'linmas'`, `'korlap'`, `'admin_data'`) — cleaner, matches DB role column
-
-**Recommendation:** Switch to lowercase to match the users.role column values. This requires updating the service layer `findByRole()` method.
 
 ### Migration Script
 
@@ -177,8 +128,9 @@ UPDATE activity_types SET applicable_roles = ARRAY(
 UPDATE activity_types SET deleted_at = NOW()
 WHERE deleted_at IS NULL;
 
--- Step 3: Insert new satgas activities
+-- Step 3: Insert 20 new activity types (8 satgas + 5 linmas + 4 korlap + 3 admin_data)
 INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
+  -- Satgas (8)
   (gen_random_uuid(), 'Perawatan', 'perawatan', 'Perawatan tanaman dan area', ARRAY['satgas'], true),
   (gen_random_uuid(), 'Penanaman', 'penanaman', 'Penanaman tanaman baru', ARRAY['satgas'], true),
   (gen_random_uuid(), 'Perantingan', 'perantingan', 'Pemangkasan ranting pohon', ARRAY['satgas'], true),
@@ -186,199 +138,146 @@ INSERT INTO activity_types (id, name, code, description, applicable_roles, is_ac
   (gen_random_uuid(), 'Penyulaman', 'penyulaman', 'Penggantian tanaman mati', ARRAY['satgas'], true),
   (gen_random_uuid(), 'Potong Rumput', 'potong_rumput', 'Pemotongan rumput', ARRAY['satgas'], true),
   (gen_random_uuid(), 'Angkut Sampah', 'angkut_sampah', 'Pengangkutan sampah', ARRAY['satgas'], true),
-  (gen_random_uuid(), 'Lainnya', 'lainnya_satgas', 'Aktivitas satgas lainnya', ARRAY['satgas'], true);
-
--- Step 4: Insert new linmas activities
-INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
+  (gen_random_uuid(), 'Lainnya', 'lainnya_satgas', 'Aktivitas satgas lainnya', ARRAY['satgas'], true),
+  -- Linmas (5)
   (gen_random_uuid(), 'Patroli', 'patroli', 'Patroli keamanan area', ARRAY['linmas'], true),
   (gen_random_uuid(), 'Insiden', 'insiden', 'Pelaporan insiden keamanan', ARRAY['linmas'], true),
   (gen_random_uuid(), 'Memeriksa Kondisi Fasilitas', 'periksa_fasilitas', 'Pemeriksaan kondisi fasilitas', ARRAY['linmas'], true),
   (gen_random_uuid(), 'Halau PKL', 'halau_pkl', 'Penertiban pedagang kaki lima', ARRAY['linmas'], true),
-  (gen_random_uuid(), 'Lainnya', 'lainnya_linmas', 'Aktivitas linmas lainnya', ARRAY['linmas'], true);
-
--- Step 5: Insert new korlap activities
-INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
+  (gen_random_uuid(), 'Lainnya', 'lainnya_linmas', 'Aktivitas linmas lainnya', ARRAY['linmas'], true),
+  -- Korlap (4)
   (gen_random_uuid(), 'Pengecekan Kendaraan', 'cek_kendaraan', 'Pemeriksaan kendaraan operasional', ARRAY['korlap'], true),
   (gen_random_uuid(), 'Patroli', 'patroli_korlap', 'Patroli area kerja', ARRAY['korlap'], true),
   (gen_random_uuid(), 'Pengecekan Alat', 'cek_alat', 'Pemeriksaan peralatan kerja', ARRAY['korlap'], true),
-  (gen_random_uuid(), 'Lainnya', 'lainnya_korlap', 'Aktivitas korlap lainnya', ARRAY['korlap'], true);
-
--- Step 6: Insert new admin_data activities
-INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
+  (gen_random_uuid(), 'Lainnya', 'lainnya_korlap', 'Aktivitas korlap lainnya', ARRAY['korlap'], true),
+  -- Admin Data (3)
   (gen_random_uuid(), 'Cek Absensi', 'cek_absensi', 'Pengecekan data absensi', ARRAY['admin_data'], true),
   (gen_random_uuid(), 'Cek dan Entri Laporan', 'entri_laporan', 'Pengecekan dan entri laporan', ARRAY['admin_data'], true),
   (gen_random_uuid(), 'Lainnya', 'lainnya_admin_data', 'Aktivitas admin data lainnya', ARRAY['admin_data'], true);
 ```
 
-### Activity Types Service Change Required
-
-**File:** `be/src/modules/activity-types/activity-types.service.ts`
-
-Update `findByRole()` to query using array contains:
-```typescript
-async findByRole(role: string): Promise<ActivityType[]> {
-  // applicable_roles is TEXT[] — use array contains operator
-  return this.repo.createQueryBuilder('at')
-    .where(':role = ANY(at.applicable_roles)', { role })
-    .andWhere('at.is_active = true')
-    .andWhere('at.deleted_at IS NULL')
-    .getMany();
-}
-```
-
 ---
 
-## Migration 2: Reports → Aktivitas Schema
+## Migration 2: Terminology Cleanup (Single Migration)
 
-### work_reports table - Current State (Verified)
+This migration handles all table renames, column renames, drops, and additions in a single atomic transaction.
 
-| Column | Type | Nullable | Notes |
-|--------|------|----------|-------|
-| `id` | UUID PK | NO | |
-| `worker_id` | UUID FK→users | NO | Column name is `worker_id`, NOT `user_id` |
-| `shift_id` | UUID FK→shifts | NO | **ALREADY EXISTS** — do NOT add again |
-| `area_id` | UUID FK→areas | NO | |
-| `task_id` | UUID FK→tasks | YES | Phase 2 addition |
-| `activity_type_id` | UUID FK→activity_types | YES | Phase 2 addition — becomes NOT NULL in 2C |
-| `report_type` | VARCHAR(50) | NO | ReportType enum — becomes nullable in 2C |
-| `description` | TEXT | NO | |
-| `condition` | VARCHAR(20) | YES | ReportCondition enum — removed in 2C |
-| `photo_url` | TEXT | YES | Single photo — migrated to photo_urls array |
-| `gps_lat` | DECIMAL(10,8) | NO | |
-| `gps_lng` | DECIMAL(11,8) | NO | |
-| `is_reviewed` | BOOLEAN | NO | Default false — removed in 2C |
-| `reviewed_by` | UUID FK→users | YES | Removed in 2C |
-| `reviewed_at` | TIMESTAMPTZ | YES | Removed in 2C |
-
-### Columns to ADD
+### Migration Script
 
 ```sql
--- Add multi-photo support (max 3)
-ALTER TABLE work_reports ADD COLUMN photo_urls TEXT[] DEFAULT '{}';
-```
+BEGIN;
 
-> **NOTE:** `shift_id` already exists and is NOT NULL. Do NOT add it again.
+-- Step 1: DROP TABLE overtime_aktivitas (FK child first)
+DROP TABLE IF EXISTS overtime_aktivitas CASCADE;
 
-### Columns to REMOVE (soft - nullable first, then drop in Phase 3)
-
-```sql
--- Phase 2C: Make nullable (backward compatibility during transition)
-ALTER TABLE work_reports ALTER COLUMN report_type DROP NOT NULL;
-
--- Phase 2C: Drop review workflow columns
-ALTER TABLE work_reports DROP COLUMN IF EXISTS is_reviewed;
-ALTER TABLE work_reports DROP COLUMN IF EXISTS reviewed_by;
-ALTER TABLE work_reports DROP COLUMN IF EXISTS reviewed_at;
-```
-
-### Constraints update
-
-```sql
--- activity_type_id becomes required
-ALTER TABLE work_reports ALTER COLUMN activity_type_id SET NOT NULL;
-
--- photo_urls max 3 items check
-ALTER TABLE work_reports ADD CONSTRAINT work_reports_photo_urls_max3
+-- Step 2: ALTER TABLE overtimes ADD activity columns (flat 1:1)
+ALTER TABLE overtimes ADD COLUMN IF NOT EXISTS activity_type_id UUID REFERENCES activity_types(id) ON DELETE SET NULL;
+ALTER TABLE overtimes ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE overtimes ADD COLUMN IF NOT EXISTS photo_urls TEXT[] DEFAULT '{}';
+ALTER TABLE overtimes ADD COLUMN IF NOT EXISTS gps_lat DECIMAL(10,7);
+ALTER TABLE overtimes ADD COLUMN IF NOT EXISTS gps_lng DECIMAL(10,7);
+ALTER TABLE overtimes ADD CONSTRAINT overtimes_photo_urls_max3
   CHECK (array_length(photo_urls, 1) IS NULL OR array_length(photo_urls, 1) <= 3);
+
+-- Step 3: ALTER TABLE worker_schedules RENAME TO schedules
+ALTER TABLE worker_schedules RENAME TO schedules;
+
+-- Step 4: DROP TABLE worker_assignments
+DROP TABLE IF EXISTS worker_assignments CASCADE;
+
+-- Step 5: ALTER TABLE work_reports RENAME TO activities
+ALTER TABLE work_reports RENAME TO activities;
+
+-- Step 6: ALTER TABLE activities DROP COLUMN report_type
+ALTER TABLE activities DROP COLUMN IF EXISTS report_type;
+
+-- Step 7: ALTER TABLE shifts RENAME COLUMN worker_id TO user_id
+ALTER TABLE shifts RENAME COLUMN worker_id TO user_id;
+
+-- Step 8: ALTER TABLE activities RENAME COLUMN worker_id TO user_id
+ALTER TABLE activities RENAME COLUMN worker_id TO user_id;
+
+-- Step 9: ALTER TABLE location_logs RENAME COLUMN worker_id TO user_id
+ALTER TABLE location_logs RENAME COLUMN worker_id TO user_id;
+
+-- Step 10: ALTER TABLE shifts ADD boundary flag columns
+ALTER TABLE shifts ADD COLUMN IF NOT EXISTS clock_in_outside_boundary BOOLEAN DEFAULT false;
+ALTER TABLE shifts ADD COLUMN IF NOT EXISTS clock_out_outside_boundary BOOLEAN DEFAULT false;
+
+-- Step 11: Rename indexes referencing old names
+ALTER INDEX IF EXISTS idx_work_reports_shift_id RENAME TO idx_activities_shift_id;
+ALTER INDEX IF EXISTS idx_work_reports_activity_type_id RENAME TO idx_activities_activity_type_id;
+ALTER INDEX IF EXISTS idx_work_reports_worker_id RENAME TO idx_activities_user_id;
+ALTER INDEX IF EXISTS idx_shifts_worker_id RENAME TO idx_shifts_user_id;
+ALTER INDEX IF EXISTS idx_location_logs_worker_id RENAME TO idx_location_logs_user_id;
+ALTER INDEX IF EXISTS idx_worker_schedules_user_id RENAME TO idx_schedules_user_id;
+
+-- Step 12: (Reserved — photo_urls constraint created fresh in Migration 4)
+
+COMMIT;
 ```
 
-### Data migration for existing reports
+### Rollback Script
 
 ```sql
--- Migrate single photo_url to photo_urls array
-UPDATE work_reports
-SET photo_urls = ARRAY[photo_url]
-WHERE photo_url IS NOT NULL AND (photo_urls IS NULL OR photo_urls = '{}');
+BEGIN;
 
--- Set activity_type_id for existing reports that don't have one
--- (must be done BEFORE the NOT NULL constraint is set)
--- Strategy: assign a default activity type based on report_type
-UPDATE work_reports wr
-SET activity_type_id = (
-  SELECT id FROM activity_types
-  WHERE code = CASE wr.report_type
-    WHEN 'cleaning' THEN 'perawatan'
-    WHEN 'planting' THEN 'penanaman'
-    WHEN 'maintenance' THEN 'perawatan'
-    WHEN 'inspection' THEN 'periksa_fasilitas'
-    WHEN 'task_completion' THEN 'perawatan'
-    WHEN 'incident' THEN 'insiden'
-    WHEN 'maintenance_request' THEN 'perawatan'
-    ELSE 'perawatan'
-  END
-  AND deleted_at IS NULL
-  LIMIT 1
-)
-WHERE activity_type_id IS NULL;
-```
+-- Reverse step 12: (no-op — constraint created fresh in Migration 4)
 
-### Index additions
+-- Reverse step 11
+ALTER INDEX IF EXISTS idx_activities_shift_id RENAME TO idx_work_reports_shift_id;
+ALTER INDEX IF EXISTS idx_activities_activity_type_id RENAME TO idx_work_reports_activity_type_id;
+ALTER INDEX IF EXISTS idx_activities_user_id RENAME TO idx_work_reports_worker_id;
+ALTER INDEX IF EXISTS idx_shifts_user_id RENAME TO idx_shifts_worker_id;
+ALTER INDEX IF EXISTS idx_location_logs_user_id RENAME TO idx_location_logs_worker_id;
+ALTER INDEX IF EXISTS idx_schedules_user_id RENAME TO idx_worker_schedules_user_id;
 
-```sql
--- shift_id index likely already exists, but ensure it does
-CREATE INDEX IF NOT EXISTS idx_work_reports_shift_id ON work_reports(shift_id);
-CREATE INDEX IF NOT EXISTS idx_work_reports_activity_type_id ON work_reports(activity_type_id);
+-- Reverse step 10
+ALTER TABLE shifts DROP COLUMN IF EXISTS clock_in_outside_boundary;
+ALTER TABLE shifts DROP COLUMN IF EXISTS clock_out_outside_boundary;
+
+-- Reverse step 9
+ALTER TABLE location_logs RENAME COLUMN user_id TO worker_id;
+
+-- Reverse step 8
+ALTER TABLE activities RENAME COLUMN user_id TO worker_id;
+
+-- Reverse step 7
+ALTER TABLE shifts RENAME COLUMN user_id TO worker_id;
+
+-- Reverse step 6 (cannot re-add dropped column without data - flag for manual review)
+-- ALTER TABLE activities ADD COLUMN report_type VARCHAR(50);
+
+-- Reverse step 5
+ALTER TABLE activities RENAME TO work_reports;
+
+-- Reverse step 4 (cannot re-create dropped table without schema - flag for manual review)
+-- CREATE TABLE worker_assignments (...);
+
+-- Reverse step 3
+ALTER TABLE schedules RENAME TO worker_schedules;
+
+-- Reverse step 2
+ALTER TABLE overtimes DROP CONSTRAINT IF EXISTS overtimes_photo_urls_max3;
+ALTER TABLE overtimes DROP COLUMN IF EXISTS activity_type_id;
+ALTER TABLE overtimes DROP COLUMN IF EXISTS description;
+ALTER TABLE overtimes DROP COLUMN IF EXISTS photo_urls;
+ALTER TABLE overtimes DROP COLUMN IF EXISTS gps_lat;
+ALTER TABLE overtimes DROP COLUMN IF EXISTS gps_lng;
+
+-- Reverse step 1 (cannot re-create dropped table - flag for manual review)
+-- CREATE TABLE overtime_aktivitas (...);
+
+COMMIT;
 ```
 
 ---
 
 ## Migration 3: Tasks Schema Update
 
-### Current Task Schema (Verified)
-
-| Column | Type | Nullable | Phase 2C Change |
-|--------|------|----------|-----------------|
-| `id` | UUID PK | NO | Keep |
-| `title` | VARCHAR(200) | NO | Keep |
-| `description` | TEXT | YES | Keep |
-| `status` | ENUM TaskStatus | NO | Simplify: remove ACCEPTED, DECLINED |
-| `priority` | ENUM TaskPriority | NO | **Decision needed**: keep or remove? |
-| `deadline` | TIMESTAMPTZ | YES | Keep (rename concept to `due_date` in DTO only) |
-| `area_id` | UUID FK→areas | **NO (required)** | Make NULLABLE (tasks can be rayon-scoped) |
-| `activity_type_id` | UUID FK→activity_types | YES | **DROP** — tasks don't have activity types in 2C |
-| `assigned_to` | UUID FK→users | YES | Keep |
-| `created_by` | UUID FK→users | NO | Keep |
-| `completion_photo_url` | VARCHAR(500) | YES | Keep — becomes REQUIRED in DTO |
-| `completion_notes` | TEXT | YES | Keep — replaced by `description` in DTO |
-| `completed_at` | TIMESTAMPTZ | YES | Keep |
-| `completion_gps_lat` | DECIMAL(10,7) | YES | **DROP** |
-| `completion_gps_lng` | DECIMAL(10,7) | YES | **DROP** |
-| `decline_reason` | TEXT | YES | **DROP** (if removing DECLINED status) |
-| `declined_at` | TIMESTAMPTZ | YES | **DROP** (if removing DECLINED status) |
-| `assigned_at` | TIMESTAMPTZ | YES | Keep |
-| `accepted_at` | TIMESTAMPTZ | YES | **DROP** (if removing ACCEPTED status) |
-| `started_at` | TIMESTAMPTZ | YES | Keep |
-
-### TaskStatus Simplification Decision
-
-**Current (6 statuses):** `pending → assigned → accepted → in_progress → completed → declined`
-
-**Phase 2C (simplified, 4 statuses):** `pending → assigned → in_progress → completed`
-
-**Rationale:** Client didn't mention accept/decline workflow. Tasks go directly from assigned to in_progress.
-
-```sql
--- Update task status constraint
-ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_status_check;
-
--- Migrate existing data
-UPDATE tasks SET status = 'assigned' WHERE status = 'accepted';
-UPDATE tasks SET status = 'assigned' WHERE status = 'declined';
-
--- Add new constraint (4 statuses)
-ALTER TABLE tasks ADD CONSTRAINT tasks_status_check
-  CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed'));
-```
-
-### TaskPriority Decision
-
-**Recommendation:** KEEP priority enum as-is. It's useful for task ordering and doesn't conflict with Phase 2C requirements. The client didn't mention removing it.
-
-### Tasks table modifications
-
 ```sql
 -- Add rayon_id for rayon-scoped tasks
-ALTER TABLE tasks ADD COLUMN rayon_id UUID REFERENCES rayons(id);
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS rayon_id UUID REFERENCES rayons(id);
 
 -- Make area_id nullable (tasks can be rayon-scoped without specific area)
 ALTER TABLE tasks ALTER COLUMN area_id DROP NOT NULL;
@@ -394,15 +293,15 @@ ALTER TABLE tasks DROP COLUMN IF EXISTS completion_gps_lng;
 ALTER TABLE tasks DROP COLUMN IF EXISTS decline_reason;
 ALTER TABLE tasks DROP COLUMN IF EXISTS declined_at;
 ALTER TABLE tasks DROP COLUMN IF EXISTS accepted_at;
-```
 
-### Index additions
+-- Update task status constraint (6 → 4 statuses)
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_status_check;
+UPDATE tasks SET status = 'assigned' WHERE status IN ('accepted', 'declined');
+ALTER TABLE tasks ADD CONSTRAINT tasks_status_check
+  CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed'));
 
-```sql
-CREATE INDEX idx_tasks_rayon_id ON tasks(rayon_id);
--- These indexes already exist via @Index decorators but ensure they do:
-CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to, status);
-CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by);
+-- Index
+CREATE INDEX IF NOT EXISTS idx_tasks_rayon_id ON tasks(rayon_id);
 ```
 
 ### New table: task_tags
@@ -422,108 +321,112 @@ CREATE INDEX idx_task_tags_user_id ON task_tags(user_id);
 
 ---
 
-## Migration 4: Overtime Tables
+## Migration 4: Activities Table Updates
 
-### New table: overtimes
-
-```sql
-CREATE TABLE overtimes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id),
-  area_id UUID REFERENCES areas(id),
-  date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'approved', 'rejected')),
-  approved_by UUID REFERENCES users(id),
-  approved_at TIMESTAMP WITH TIME ZONE,
-  rejection_reason TEXT,
-  notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX idx_overtimes_user_id ON overtimes(user_id);
-CREATE INDEX idx_overtimes_area_id ON overtimes(area_id);
-CREATE INDEX idx_overtimes_status ON overtimes(status);
-CREATE INDEX idx_overtimes_date ON overtimes(date);
-CREATE INDEX idx_overtimes_approved_by ON overtimes(approved_by);
-```
-
-### New table: overtime_aktivitas
+Updates to the `activities` table (formerly `work_reports`) for Phase 2C features.
 
 ```sql
-CREATE TABLE overtime_aktivitas (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  overtime_id UUID NOT NULL REFERENCES overtimes(id) ON DELETE CASCADE,
-  activity_type_id UUID NOT NULL REFERENCES activity_types(id),
-  description TEXT NOT NULL,
-  photo_urls TEXT[] DEFAULT '{}',
-  gps_lat DECIMAL(10, 8),
-  gps_lng DECIMAL(11, 8),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Add multi-photo support (max 3)
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS photo_urls TEXT[] DEFAULT '{}';
 
-ALTER TABLE overtime_aktivitas ADD CONSTRAINT overtime_aktivitas_photo_urls_max3
+-- Make activity_type_id required
+ALTER TABLE activities ALTER COLUMN activity_type_id SET NOT NULL;
+
+-- Drop review workflow columns
+ALTER TABLE activities DROP COLUMN IF EXISTS is_reviewed;
+ALTER TABLE activities DROP COLUMN IF EXISTS reviewed_by;
+ALTER TABLE activities DROP COLUMN IF EXISTS reviewed_at;
+
+-- Drop legacy columns (replaced by activity_type_id and photo_urls)
+ALTER TABLE activities DROP COLUMN IF EXISTS condition;
+ALTER TABLE activities DROP COLUMN IF EXISTS photo_url;
+
+-- Photo constraint
+ALTER TABLE activities ADD CONSTRAINT activities_photo_urls_max3
   CHECK (array_length(photo_urls, 1) IS NULL OR array_length(photo_urls, 1) <= 3);
 
-CREATE INDEX idx_overtime_aktivitas_overtime_id ON overtime_aktivitas(overtime_id);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_activities_shift_id ON activities(shift_id);
+CREATE INDEX IF NOT EXISTS idx_activities_activity_type_id ON activities(activity_type_id);
+
+-- Data migration: single photo_url → photo_urls array
+UPDATE activities
+SET photo_urls = ARRAY[photo_url]
+WHERE photo_url IS NOT NULL AND (photo_urls IS NULL OR photo_urls = '{}');
+
+-- Map existing reports to activity types (before NOT NULL constraint)
+UPDATE activities a
+SET activity_type_id = (
+  SELECT id FROM activity_types
+  WHERE code = 'perawatan' AND deleted_at IS NULL
+  LIMIT 1
+)
+WHERE activity_type_id IS NULL;
 ```
 
 ---
 
-## Migration 5: Worker Assignment Reconciliation
+## Migration Execution Order
 
-### Strategy: Deprecate WorkerAssignment, use WorkerSchedule as primary
+Migrations MUST be executed in this order due to foreign key dependencies:
 
-**WorkerSchedule fields (verified):** `user_id`, `area_id`, `shift_definition_id`, `effective_date`, `end_date`
-
-```sql
--- Add deprecation flag to worker_assignments
-ALTER TABLE worker_assignments ADD COLUMN deprecated BOOLEAN DEFAULT false;
-ALTER TABLE worker_assignments ADD COLUMN migrated_to_schedule_id UUID REFERENCES worker_schedules(id);
-
--- Mark all existing assignments as deprecated
-UPDATE worker_assignments SET deprecated = true;
-```
-
-**Clock-in area detection logic (post-migration):**
-1. Check WorkerSchedule for today's active schedule:
-   ```sql
-   SELECT area_id FROM worker_schedules
-   WHERE user_id = :userId
-     AND effective_date <= CURRENT_DATE
-     AND (end_date IS NULL OR end_date >= CURRENT_DATE)
-     AND deleted_at IS NULL
-   ORDER BY effective_date DESC LIMIT 1;
-   ```
-2. Fallback: Check WorkerAssignment (non-deprecated) → use that area_id
-3. No assignment: Allow clock-in with NULL area (GPS still recorded)
+1. **Migration 0:** Role enum update + add `area_id` to users (prerequisite for all other changes)
+2. **Migration 1:** Activity types update (new seed data using `applicable_roles TEXT[]`)
+3. **Migration 2:** Terminology cleanup (table renames, column renames, drops, additions)
+4. **Migration 3:** Tasks schema update (rayon_id, status simplification, task_tags table)
+5. **Migration 4:** Activities table updates (photo_urls, constraints, data migration)
 
 ---
 
-## Updated Entity Relationship Summary
+## Final Table Inventory (17 tables)
+
+| # | Table | Status | Notes |
+|---|-------|--------|-------|
+| 1 | `users` | ALTERED | +`area_id`, role enum updated |
+| 2 | `rayons` | Unchanged | |
+| 3 | `area_types` | Unchanged | |
+| 4 | `areas` | Unchanged | Already has `boundary_polygon` JSONB |
+| 5 | `shift_definitions` | Unchanged | |
+| 6 | `schedules` | RENAMED | From `worker_schedules` |
+| 7 | `shifts` | ALTERED | `worker_id`→`user_id`, +2 boundary flags |
+| 8 | `activities` | RENAMED+ALTERED | From `work_reports`, `worker_id`→`user_id`, -`report_type` |
+| 9 | `location_logs` | ALTERED | `worker_id`→`user_id` |
+| 10 | `activity_types` | Unchanged | Seeds updated (lowercase applicable_roles) |
+| 11 | `area_staff_requirements` | Unchanged | |
+| 12 | `special_day_overrides` | Unchanged | |
+| 13 | `tasks` | ALTERED | +`rayon_id`, `area_id` nullable, 4 statuses, columns dropped |
+| 14 | `task_tags` | NEW | task_id + user_id, UNIQUE constraint |
+| 15 | `overtimes` | ALTERED | +5 activity columns (flat 1:1) |
+| 16 | `notifications` | Unchanged | |
+| 17 | `notification_tokens` | Unchanged | |
+
+**Dropped tables (2):**
+- `worker_assignments` — Fully replaced by `schedules`
+- `overtime_aktivitas` — Merged into `overtimes`
+
+---
+
+## Entity Relationship Summary
 
 ```
 users (role: 8 roles, has rayon_id AND area_id)
-├── shifts (1:N via worker_id)
-│   └── work_reports/aktivitas (1:N via shift_id)
+├── shifts (1:N via user_id)          ← RENAMED from worker_id
+│   └── activities (1:N via shift_id) ← RENAMED from work_reports
+├── schedules (1:N via user_id)       ← RENAMED from worker_schedules
 ├── tasks (N:1 as assigned_to)
 ├── tasks (N:1 as created_by)
 ├── task_tags (N:M via task_tags)
 ├── overtimes (1:N as user_id)
 ├── overtimes (1:N as approved_by)
-├── location_logs (1:N)
-├── worker_assignments (1:1, deprecated)
-└── worker_schedules (1:N via user_id)
+└── location_logs (1:N via user_id)   ← RENAMED from worker_id
 
 areas
 ├── shifts (1:N)
 ├── overtimes (1:N)
+├── activities (1:N)
 ├── tasks (1:N, nullable in 2C)
 ├── users (1:N via area_id for korlap)
-└── worker_schedules (1:N)
+└── schedules (1:N)
 
 rayons
 ├── areas (1:N)
@@ -531,14 +434,15 @@ rayons
 └── users (1:N via rayon_id for kepala_rayon)
 
 activity_types (applicable_roles TEXT[] — multi-role support)
-├── work_reports (1:N via activity_type_id)
-└── overtime_aktivitas (1:N)
-
-overtimes
-└── overtime_aktivitas (1:N)
+├── activities (1:N via activity_type_id)
+└── overtimes (1:N via activity_type_id)  ← NEW (flat, was via overtime_aktivitas)
 
 tasks
 └── task_tags (1:N)
+
+shifts
+├── clock_in_outside_boundary (BOOLEAN)   ← NEW
+└── clock_out_outside_boundary (BOOLEAN)  ← NEW
 ```
 
 ---
@@ -547,8 +451,6 @@ tasks
 
 ### Test Users (Phase 2C)
 
-> **NOTE:** `area_id` is a new column added in Migration 0. Password uses bcrypt hash.
-
 ```sql
 -- Update existing users' roles first (via Migration 0)
 -- Then insert new test users for new roles:
@@ -556,35 +458,91 @@ INSERT INTO users (id, username, password_hash, full_name, role, rayon_id, area_
   (gen_random_uuid(), 'superadmin', '$2b$10$...', 'Super Admin', 'superadmin', NULL, NULL, true),
   (gen_random_uuid(), 'admin_system1', '$2b$10$...', 'Admin Sistem', 'admin_system', NULL, NULL, true),
   (gen_random_uuid(), 'admin_data1', '$2b$10$...', 'Admin Data', 'admin_data', NULL, NULL, true);
-
--- Existing users get role updates via Migration 0:
--- admin → superadmin, worker1/worker2 → satgas, supervisor1 → korlap (with area_id set)
 ```
 
-**Default password for all test users:** `password123` (bcrypt hashed with 10 rounds)
+### TypeORM Seed File Updates Required
 
-### TypeORM Seed File Update Required
+- `be/src/database/seeds/seed-phase2.ts`: Update table references (`worker_schedules` → `schedules`, `work_reports` → `activities`), column references (`worker_id` → `user_id`)
+- Remove `seedWorkerAssignments()` from `seed.service.ts`
+- Update overtime seeds: flat structure (no nested aktivitas array)
+- Activity type seeds: lowercase `applicable_roles` values
 
-**File:** `be/src/database/seeds/seed-phase2.ts`
+### Overtime Test Data (Phase 2C)
 
-Update the activity type INSERT statements to use `applicable_roles` column with lowercase role values (see Migration 1 SQL above).
+**Implementation:** Added in `seed-phase2.ts:seedOvertimes()`
+
+```sql
+-- 3 overtime records demonstrating flat structure (Phase 2C)
+INSERT INTO overtimes (user_id, area_id, date, start_time, end_time, activity_type_id, description, photo_urls, gps_lat, gps_lng, status) VALUES
+  -- PENDING: Awaiting approval
+  (satgas_user_id, taman_bungkul_id, '2026-02-10', '17:00:00', '20:00:00', perawatan_type_id, 'Perawatan tambahan setelah jam kerja', ARRAY['https://example.com/overtime1.jpg'], -7.2756, 112.7395, 'PENDING'),
+  -- APPROVED: Completed with photo evidence
+  (korlap_user_id, taman_bungkul_id, '2026-02-09', '16:00:00', '19:00:00', perawatan_type_id, 'Koordinasi tim malam', ARRAY['https://example.com/overtime2.jpg'], -7.2756, 112.7395, 'APPROVED'),
+  -- REJECTED: Request denied, no GPS/photo
+  (satgas_user_id, taman_bungkul_id, '2026-02-08', '15:00:00', '18:00:00', perawatan_type_id, 'Request ditolak - tidak ada budget', ARRAY[]::text[], NULL, NULL, 'REJECTED');
+```
+
+**Key Points:**
+- All activity fields (`activity_type_id`, `description`, `photo_urls`, `gps_lat`, `gps_lng`) are directly on the `overtimes` table
+- No separate `overtime_aktivitas` table (Phase 2C flattened structure)
+- Tests all 3 statuses: PENDING, APPROVED, REJECTED
+
+### Task Test Data (Phase 2C)
+
+**Implementation:** Added in `seed-tasks.ts`
+
+```sql
+-- 8 area-scoped tasks (assigned to specific areas)
+-- status: pending (2), assigned (3), in_progress (2), completed (1)
+
+-- 2 rayon-scoped tasks (assigned to rayon, area_id = NULL)
+INSERT INTO tasks (title, description, rayon_id, area_id, assigned_by, priority, status, deadline) VALUES
+  ('Audit semua area di Rayon Selatan', 'Periksa kondisi fasilitas di seluruh area dalam rayon', rayon_selatan_id, NULL, kepala_rayon_id, 'high', 'pending', NOW() + INTERVAL '7 days'),
+  ('Koordinasi tim rayon untuk event weekend', 'Persiapan event di semua taman dalam rayon', rayon_selatan_id, NULL, kepala_rayon_id, 'medium', 'pending', NOW() + INTERVAL '3 days');
+```
+
+**Key Points:**
+- Rayon-scoped tasks have `rayon_id` set and `area_id = NULL`
+- Enables kepala_rayon to assign tasks across their entire rayon
+- Tests nullable `area_id` feature from migration
+
+### Korlap User Area Assignment
+
+**Implementation:** Added in `seed.service.ts:seedUsers()`
+
+```sql
+-- After creating korlap1 and korlap2 users
+UPDATE users
+SET area_id = (SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1)
+WHERE username IN ('korlap1', 'korlap2');
+```
+
+**Rationale:** All korlap users must have `area_id` populated per Phase 2C spec to enable area-scoped features.
+
+### Shift Boundary Flag Test Data
+
+**Implementation:** Added in `seed.service.ts:seedShifts()`
+
+```sql
+-- Update one completed shift to have boundary flag
+UPDATE shifts
+SET clock_in_outside_boundary = true,
+    clock_out_outside_boundary = false
+WHERE user_id = satgas1_id AND clock_out_time IS NOT NULL LIMIT 1;
+```
+
+**Purpose:** Provides test data for monitoring dashboard boundary warnings (GPS polygon geofencing feature).
 
 ---
 
-## Rollback Strategy
+## Impact Assessment
 
-Each migration has an independent rollback. In case of failure:
-
-1. **Stop the application**
-2. **Run rollback for the failed migration only** (each migration is atomic)
-3. **Verify data integrity** with provided CHECK queries
-4. **Restart the application**
-
-If full rollback to Phase 2B is needed:
-1. Run all rollbacks in reverse order (5→4→3→2→1→0)
-2. Re-deploy Phase 2B backend code
-3. Force all users to re-authenticate
+- **Rows affected:** All users, shifts, activities, location_logs, schedules
+- **Downtime:** Requires maintenance window (table renames lock tables briefly)
+- **Post-migration:** Force all users to re-authenticate (invalidate all refresh tokens)
+- **New column:** `users.area_id` added as nullable — existing korlap users need `area_id` populated manually
+- **Boundary flags:** All existing shifts get `clock_in_outside_boundary = false` and `clock_out_outside_boundary = false` by default
 
 ---
 
-**Last Updated:** 2026-02-10
+**Last Updated:** 2026-02-16

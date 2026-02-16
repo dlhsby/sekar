@@ -1,7 +1,7 @@
 # SEKAR Production Operations Manual
 
-**Last Updated:** February 10, 2026
-**Status:** Production Ready
+**Last Updated:** February 16, 2026 (Phase 2C Updates)
+**Status:** Phase 2B Production Ready | Phase 2C Deployment Ready
 **Audience:** DevOps Engineers
 
 ---
@@ -752,6 +752,212 @@ docker run -it --rm -e PGPASSWORD=$DATABASE_PASSWORD postgres:14-alpine psql -h 
 
 ---
 
-**Last Updated:** February 10, 2026
+## 8. Phase 2C Operations (After Deployment)
+
+### New Modules and Endpoints
+
+**Phase 2C adds 8-role system and terminology cleanup:**
+
+#### Activities (renamed from Reports)
+```bash
+# Get all activities (scoped by role)
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/activities
+
+# Create activity
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activity_type_id": "uuid",
+    "description": "Activity description",
+    "photo_urls": ["url1", "url2"],
+    "gps_lat": -7.250445,
+    "gps_lng": 112.768845
+  }' \
+  http://localhost:3000/api/v1/activities
+```
+
+#### Schedules (renamed from Worker Schedules)
+```bash
+# Get all schedules
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/schedules
+
+# Create schedule
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "uuid",
+    "area_id": "uuid",
+    "effective_date": "2026-02-16",
+    "end_date": "2026-02-23"
+  }' \
+  http://localhost:3000/api/v1/schedules
+```
+
+#### Overtime (Flat Structure)
+```bash
+# Submit overtime (flat, no nested aktivitas)
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "date": "2026-02-16",
+    "start_time": "18:00",
+    "end_time": "21:00",
+    "activity_type_id": "uuid",
+    "description": "Overtime work description",
+    "photo_urls": ["url1", "url2"],
+    "gps_lat": -7.250445,
+    "gps_lng": 112.768845
+  }' \
+  http://localhost:3000/api/v1/overtime
+
+# Approve overtime (korlap only)
+curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/overtime/UUID/approve
+
+# Reject overtime (korlap only)
+curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"rejection_reason": "Reason text"}' \
+  http://localhost:3000/api/v1/overtime/UUID/reject
+```
+
+#### Tasks (Simplified Workflow)
+```bash
+# Create task with optional rayon/area
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Task title",
+    "description": "Task description",
+    "rayon_id": "uuid",
+    "area_id": "uuid",
+    "assigned_to": "uuid",
+    "tagged_user_ids": ["uuid1", "uuid2"],
+    "deadline": "2026-02-20T17:00:00Z"
+  }' \
+  http://localhost:3000/api/v1/tasks
+
+# Tag users to task
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_ids": ["uuid1", "uuid2"]}' \
+  http://localhost:3000/api/v1/tasks/UUID/tag
+
+# Get tagged tasks
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/tasks/tagged
+
+# Start task (changes status to in_progress)
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/tasks/UUID/start
+
+# Complete task (no GPS required)
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Completion notes",
+    "completion_photo_url": "url"
+  }' \
+  http://localhost:3000/api/v1/tasks/UUID/complete
+```
+
+### Monitoring with Scope Authorization
+
+**Phase 2C adds hierarchical scope checks:**
+
+```bash
+# City-wide monitoring (top_management, admin_system, superadmin only)
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/monitoring/city-stats
+
+# Rayon monitoring (kepala_rayon for own rayon, or city-level roles)
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/monitoring/rayon/RAYON_UUID
+
+# Area monitoring (korlap for own area, or higher roles)
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/monitoring/area/AREA_UUID
+
+# Live users (scoped by role)
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/monitoring/live-users
+```
+
+**Scope violations return 403 Forbidden.**
+
+### 8-Role System Test Credentials
+
+```bash
+# Get token for each role
+for ROLE in superadmin admin_system admin_data korlap1 satgas1 linmas1 kepala_rayon_selatan top_management1; do
+  echo "Testing $ROLE..."
+  TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+    -H "Content-Type: application/json" \
+    -d "{\"username\":\"$ROLE\",\"password\":\"${ROLE/admin/admin123}\"}" \
+    | jq -r '.access_token')
+
+  if [ "$TOKEN" != "null" ]; then
+    echo "✅ $ROLE login successful"
+  else
+    echo "❌ $ROLE login failed"
+  fi
+done
+```
+
+### Verifying Phase 2C Deployment
+
+**Check table renames:**
+```bash
+docker run --rm -e PGPASSWORD=$DATABASE_PASSWORD \
+  postgres:14-alpine \
+  psql -h $DATABASE_HOST -U sekar_admin -d sekar_db \
+  -c "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('activities', 'schedules', 'worker_assignments', 'overtime_aktivitas');"
+
+# Expected output:
+#  tablename
+# ------------
+#  activities
+#  schedules
+# (2 rows)
+# worker_assignments and overtime_aktivitas should NOT exist
+```
+
+**Verify old routes removed:**
+```bash
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"superadmin","password":"superadmin123"}' \
+  | jq -r '.access_token')
+
+# These should return 404
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/aktivitas
+# Expected: 404
+
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/reports
+# Expected: 404
+
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/worker-schedules
+# Expected: 404
+```
+
+**Check web dashboard:**
+```bash
+# Web health check
+curl http://sekar.wahyutrip.com/api/health
+
+# Web homepage
+curl -I http://sekar.wahyutrip.com
+# Expected: 200 OK, HTML response
+```
+
+---
+
+**Last Updated:** February 16, 2026 (Phase 2C Updates)
 **Maintainer:** DevOps Team
 **For Issues:** Open GitHub issue or contact DevOps team

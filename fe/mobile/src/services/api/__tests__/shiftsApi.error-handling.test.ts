@@ -26,7 +26,7 @@ describe('shiftsApi - Error Handling', () => {
       mockApiClient.post.mockRejectedValue(networkError);
 
       await expect(
-        shiftsApi.clockIn('area-id-123', 10.5, 20.3, 'data:image/jpeg;base64,abc123')
+        shiftsApi.clockIn(10.5, 20.3, 'data:image/jpeg;base64,abc123', 'area-id-123')
       ).rejects.toThrow('Network Error');
     });
 
@@ -41,7 +41,7 @@ describe('shiftsApi - Error Handling', () => {
       };
       mockApiClient.post.mockResolvedValue(validationError);
 
-      const result = await shiftsApi.clockIn('area-id-123', 200, 300, 'data:image/jpeg;base64,abc123');
+      const result = await shiftsApi.clockIn(200, 300, 'data:image/jpeg;base64,abc123');
 
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe('VALIDATION_ERROR');
@@ -58,7 +58,7 @@ describe('shiftsApi - Error Handling', () => {
       };
       mockApiClient.post.mockResolvedValue(shiftActiveError);
 
-      const result = await shiftsApi.clockIn('area-id-123', 10.5, 20.3, 'data:image/jpeg;base64,abc123');
+      const result = await shiftsApi.clockIn(10.5, 20.3, 'data:image/jpeg;base64,abc123');
 
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe('SHIFT_ALREADY_ACTIVE');
@@ -75,22 +75,34 @@ describe('shiftsApi - Error Handling', () => {
       };
       mockApiClient.post.mockResolvedValue(unauthorizedError);
 
-      const result = await shiftsApi.clockIn('area-id-123', 10.5, 20.3, 'data:image/jpeg;base64,abc123');
+      const result = await shiftsApi.clockIn(10.5, 20.3, 'data:image/jpeg;base64,abc123', 'area-id-123');
 
       expect(result.success).toBe(false);
       expect(result.error?.status).toBe(401);
     });
 
-    it('should handle empty area ID', async () => {
+    it('should handle optional area ID', async () => {
       mockApiClient.post.mockResolvedValue({ success: true, data: { id: '123' } });
 
-      const result = await shiftsApi.clockIn('', 10.5, 20.3, 'data:image/jpeg;base64,abc123');
+      const result = await shiftsApi.clockIn(10.5, 20.3, 'data:image/jpeg;base64,abc123');
 
       expect(mockApiClient.post).toHaveBeenCalledWith('/shifts/clock-in', {
-        area_id: '',
         gps_lat: 10.5,
         gps_lng: 20.3,
         selfie_photo: 'data:image/jpeg;base64,abc123',
+      });
+    });
+
+    it('should include area ID when provided', async () => {
+      mockApiClient.post.mockResolvedValue({ success: true, data: { id: '123' } });
+
+      const result = await shiftsApi.clockIn(10.5, 20.3, 'data:image/jpeg;base64,abc123', 'area-456');
+
+      expect(mockApiClient.post).toHaveBeenCalledWith('/shifts/clock-in', {
+        gps_lat: 10.5,
+        gps_lng: 20.3,
+        selfie_photo: 'data:image/jpeg;base64,abc123',
+        area_id: 'area-456',
       });
     });
   });
@@ -272,13 +284,13 @@ describe('shiftsApi - Error Handling', () => {
     it('should handle extreme GPS coordinates', async () => {
       mockApiClient.post.mockResolvedValue({ success: true, data: { id: '123' } });
 
-      await shiftsApi.clockIn('area-id', -90, -180, 'data:image/jpeg;base64,abc');
+      await shiftsApi.clockIn(-90, -180, 'data:image/jpeg;base64,abc', 'area-id');
 
       expect(mockApiClient.post).toHaveBeenCalledWith('/shifts/clock-in', {
-        area_id: 'area-id',
         gps_lat: -90,
         gps_lng: -180,
         selfie_photo: 'data:image/jpeg;base64,abc',
+        area_id: 'area-id',
       });
     });
 
@@ -286,21 +298,21 @@ describe('shiftsApi - Error Handling', () => {
       const longBase64 = 'data:image/jpeg;base64,' + 'a'.repeat(10000);
       mockApiClient.post.mockResolvedValue({ success: true, data: { id: '123' } });
 
-      await shiftsApi.clockIn('area-id', 10.5, 20.3, longBase64);
+      await shiftsApi.clockIn(10.5, 20.3, longBase64, 'area-id');
 
       expect(mockApiClient.post).toHaveBeenCalledWith('/shifts/clock-in', {
-        area_id: 'area-id',
         gps_lat: 10.5,
         gps_lng: 20.3,
         selfie_photo: longBase64,
+        area_id: 'area-id',
       });
     });
 
     it('should handle concurrent clock-in attempts', async () => {
       mockApiClient.post.mockResolvedValue({ success: true, data: { id: '123' } });
 
-      const promise1 = shiftsApi.clockIn('area1', 10, 20, 'photo1');
-      const promise2 = shiftsApi.clockIn('area2', 11, 21, 'photo2');
+      const promise1 = shiftsApi.clockIn(10, 20, 'photo1', 'area1');
+      const promise2 = shiftsApi.clockIn(11, 21, 'photo2', 'area2');
 
       const [result1, result2] = await Promise.all([promise1, promise2]);
 

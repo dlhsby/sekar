@@ -15,6 +15,7 @@ describe('HttpExceptionFilter', () => {
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
+      setHeader: jest.fn().mockReturnThis(),
     };
 
     mockRequest = {
@@ -121,11 +122,11 @@ describe('HttpExceptionFilter', () => {
       expect(jsonCall.details.maxDistance).toBe(150);
     });
 
-    it('should handle report edit window closed error', () => {
+    it('should handle activity edit window closed error', () => {
       const exception = new ApiException(
         HttpStatus.FORBIDDEN,
-        ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED,
-        'Reports can only be edited within 1 hour of creation',
+        ApiErrorCode.ACTIVITY_EDIT_WINDOW_CLOSED,
+        'Activities can only be edited within 1 hour of creation',
         { elapsedHours: 2 },
       );
 
@@ -133,7 +134,7 @@ describe('HttpExceptionFilter', () => {
 
       const jsonCall = mockResponse.json.mock.calls[0][0];
       expect(jsonCall.statusCode).toBe(HttpStatus.FORBIDDEN);
-      expect(jsonCall.code).toBe(ApiErrorCode.REPORT_EDIT_WINDOW_CLOSED);
+      expect(jsonCall.code).toBe(ApiErrorCode.ACTIVITY_EDIT_WINDOW_CLOSED);
       expect(jsonCall.error).toBe('Forbidden');
     });
   });
@@ -316,17 +317,17 @@ describe('HttpExceptionFilter', () => {
 
   describe('Path inclusion', () => {
     it('should include request path in response', () => {
-      mockRequest.url = '/api/v1/reports';
+      mockRequest.url = '/api/v1/activities';
       const exception = new ApiException(
         HttpStatus.BAD_REQUEST,
-        ApiErrorCode.REPORT_SHIFT_REQUIRED,
+        ApiErrorCode.ACTIVITY_SHIFT_REQUIRED,
         'Shift required',
       );
 
       filter.catch(exception, mockArgumentsHost);
 
       const jsonCall = mockResponse.json.mock.calls[0][0];
-      expect(jsonCall.path).toBe('/api/v1/reports');
+      expect(jsonCall.path).toBe('/api/v1/activities');
     });
 
     it('should handle complex paths with query parameters', () => {
@@ -440,17 +441,17 @@ describe('HttpExceptionFilter', () => {
       expect(jsonCall.details.workerLocation).toBeDefined();
     });
 
-    it('should handle report creation during inactive shift', () => {
+    it('should handle activity creation during inactive shift', () => {
       const exception = new ApiException(
         HttpStatus.BAD_REQUEST,
-        ApiErrorCode.REPORT_SHIFT_REQUIRED,
-        'Cannot create report for completed shift',
+        ApiErrorCode.ACTIVITY_SHIFT_REQUIRED,
+        'Cannot create activity for completed shift',
       );
 
       filter.catch(exception, mockArgumentsHost);
 
       const jsonCall = mockResponse.json.mock.calls[0][0];
-      expect(jsonCall.code).toBe(ApiErrorCode.REPORT_SHIFT_REQUIRED);
+      expect(jsonCall.code).toBe(ApiErrorCode.ACTIVITY_SHIFT_REQUIRED);
       expect(jsonCall.statusCode).toBe(400);
     });
 

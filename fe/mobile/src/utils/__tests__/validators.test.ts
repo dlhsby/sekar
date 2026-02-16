@@ -12,6 +12,8 @@ import {
   isRequired,
   getValidationError,
   sanitizeString,
+  isValidUUID,
+  isValidUUIDAny,
 } from '../validators';
 
 describe('validators', () => {
@@ -275,6 +277,104 @@ describe('validators', () => {
 
     it('should handle empty string', () => {
       expect(sanitizeString('')).toBe('');
+    });
+  });
+
+  describe('isValidUUID', () => {
+    it('should return true for valid UUID v4', () => {
+      expect(isValidUUID('550e8400-e29b-41d4-a716-446655440000')).toBe(true);
+      expect(isValidUUID('6ba7b810-9dad-41d1-80b4-00c04fd430c8')).toBe(true);
+      expect(isValidUUID('a3bb189e-8bf9-4da9-9f84-2c3e7e0d3f8c')).toBe(true);
+    });
+
+    it('should return true for valid UUID v4 with uppercase', () => {
+      expect(isValidUUID('550E8400-E29B-41D4-A716-446655440000')).toBe(true);
+    });
+
+    it('should return true for valid UUID v4 with mixed case', () => {
+      expect(isValidUUID('550e8400-E29B-41d4-A716-446655440000')).toBe(true);
+    });
+
+    it('should return false for UUID v1 (not v4)', () => {
+      expect(isValidUUID('550e8400-e29b-11d4-a716-446655440000')).toBe(false);
+    });
+
+    it('should return false for UUID v3 (not v4)', () => {
+      expect(isValidUUID('550e8400-e29b-31d4-a716-446655440000')).toBe(false);
+    });
+
+    it('should return false for UUID v5 (not v4)', () => {
+      expect(isValidUUID('550e8400-e29b-51d4-a716-446655440000')).toBe(false);
+    });
+
+    it('should return false for invalid UUID format', () => {
+      expect(isValidUUID('not-a-uuid')).toBe(false);
+      expect(isValidUUID('550e8400-e29b-41d4-a716')).toBe(false);
+      expect(isValidUUID('550e8400e29b41d4a716446655440000')).toBe(false);
+    });
+
+    it('should return false for null', () => {
+      expect(isValidUUID(null)).toBe(false);
+    });
+
+    it('should return false for undefined', () => {
+      expect(isValidUUID(undefined)).toBe(false);
+    });
+
+    it('should return false for empty string', () => {
+      expect(isValidUUID('')).toBe(false);
+    });
+
+    it('should return false for UUID with wrong variant', () => {
+      expect(isValidUUID('550e8400-e29b-41d4-c716-446655440000')).toBe(false);
+    });
+  });
+
+  describe('isValidUUIDAny', () => {
+    it('should return true for valid UUID v4', () => {
+      expect(isValidUUIDAny('550e8400-e29b-41d4-a716-446655440000')).toBe(true);
+    });
+
+    it('should return true for valid UUID v1', () => {
+      expect(isValidUUIDAny('550e8400-e29b-11d4-a716-446655440000')).toBe(true);
+    });
+
+    it('should return true for valid UUID v3', () => {
+      expect(isValidUUIDAny('550e8400-e29b-31d4-a716-446655440000')).toBe(true);
+    });
+
+    it('should return true for valid UUID v5', () => {
+      expect(isValidUUIDAny('550e8400-e29b-51d4-a716-446655440000')).toBe(true);
+    });
+
+    it('should return true for UUID with uppercase', () => {
+      expect(isValidUUIDAny('550E8400-E29B-11D4-A716-446655440000')).toBe(true);
+    });
+
+    it('should return false for invalid UUID format', () => {
+      expect(isValidUUIDAny('not-a-uuid')).toBe(false);
+      expect(isValidUUIDAny('550e8400-e29b-11d4-a716')).toBe(false);
+      expect(isValidUUIDAny('550e8400e29b11d4a716446655440000')).toBe(false);
+    });
+
+    it('should return false for null', () => {
+      expect(isValidUUIDAny(null)).toBe(false);
+    });
+
+    it('should return false for undefined', () => {
+      expect(isValidUUIDAny(undefined)).toBe(false);
+    });
+
+    it('should return false for empty string', () => {
+      expect(isValidUUIDAny('')).toBe(false);
+    });
+
+    it('should return false for invalid version number (v6)', () => {
+      expect(isValidUUIDAny('550e8400-e29b-61d4-a716-446655440000')).toBe(false);
+    });
+
+    it('should return false for invalid version number (v0)', () => {
+      expect(isValidUUIDAny('550e8400-e29b-01d4-a716-446655440000')).toBe(false);
     });
   });
 });

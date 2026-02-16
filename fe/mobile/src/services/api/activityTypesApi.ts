@@ -6,12 +6,8 @@
  */
 
 import { get } from './apiClient';
-import type { ApiResponse } from '../../types/api.types';
-import type {
-  ActivityType,
-  ActivityTypesFilter,
-  ActivityTypesListResponse,
-} from '../../types/api.types';
+import type { ApiResponse, ActivityTypesFilter, ActivityTypesListResponse } from '../../types/api.types';
+import type { ActivityType } from '../../types/models.types';
 
 /**
  * Get list of activity types

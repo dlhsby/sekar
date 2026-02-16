@@ -610,11 +610,12 @@ describe('NotificationsService', () => {
 
       await service.sendToUser(sendDto);
 
-      // Wait for async push notification
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // Wait for fire-and-forget async chain: sendPushNotification -> simulateFcmSend (100ms delay) -> save per token
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
+      // tokenRepository.save called once per token in simulateFcmSend
       expect(tokenRepository.save).toHaveBeenCalledTimes(2);
-    });
+    }, 10000);
 
     it('should retry on FCM send failure up to max attempts', async () => {
       const sendDto = {
@@ -630,12 +631,12 @@ describe('NotificationsService', () => {
 
       await service.sendToUser(sendDto);
 
-      // Wait for async retries
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Wait for fire-and-forget async retries (up to 3 attempts, each with error handling)
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Should have saved notification with error tracking
       expect(notificationRepository.save).toHaveBeenCalled();
-    });
+    }, 15000);
   });
 
   describe('markAllAsRead edge cases', () => {

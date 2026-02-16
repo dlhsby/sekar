@@ -21,7 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import {
   OVERTIME_SUBMITTERS,
   OVERTIME_APPROVERS,
@@ -32,7 +32,7 @@ import {
  * Overtime Controller
  *
  * Handles HTTP requests for overtime submission and approval.
- * Satgas/Linmas submit overtime, Korlap approves/rejects.
+ * Satgas/Linmas submit overtime with single activity, Korlap approves/rejects.
  */
 @ApiTags('overtime')
 @ApiBearerAuth()
@@ -93,9 +93,9 @@ export class OvertimeController {
    * Korlap and admin roles
    */
   @Get()
-  @Roles(...OVERTIME_APPROVERS, ...USER_MANAGERS)
+  @Roles(...OVERTIME_APPROVERS, ...USER_MANAGERS, UserRole.ADMIN_DATA)
   @ApiOperation({
-    summary: 'Get pending overtime for approval (Korlap, Admin)',
+    summary: 'Get pending overtime for approval (Korlap, Admin, AdminData)',
   })
   @ApiResponse({
     status: 200,

@@ -172,7 +172,7 @@ class PermissionManager {
    */
   async requestNotificationPermission(): Promise<PermissionResult> {
     try {
-      console.log('[PermissionManager] Requesting notification permission');
+      console.debug('[PermissionManager] Requesting notification permission');
 
       // Check if already requested before
       const alreadyRequested = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_REQUESTED);
@@ -246,7 +246,7 @@ class PermissionManager {
    */
   async requestLocationPermission(): Promise<PermissionResult> {
     try {
-      console.log('[PermissionManager] Requesting location permission');
+      console.debug('[PermissionManager] Requesting location permission');
 
       const permission =
         Platform.OS === 'ios'
@@ -361,7 +361,7 @@ class PermissionManager {
     }
 
     try {
-      console.log('[PermissionManager] Requesting background location permission');
+      console.debug('[PermissionManager] Requesting background location permission');
 
       // Verify foreground location is granted first
       const foregroundStatus = await this.checkLocationPermission();
@@ -446,7 +446,7 @@ class PermissionManager {
    */
   async requestCameraPermission(): Promise<PermissionResult> {
     try {
-      console.log('[PermissionManager] Requesting camera permission');
+      console.debug('[PermissionManager] Requesting camera permission');
 
       const permission =
         Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;

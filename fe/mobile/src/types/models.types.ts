@@ -1,58 +1,58 @@
 /**
  * Data Models
  * TypeScript interfaces for all data models used in the app
+ * Phase 2C: ADR-009 (8-role system), ADR-010 (terminology cleanup)
  */
 
-// User roles - matches backend UserRole enum exactly (lowercase)
+// User roles - 8 roles matching backend UserRole enum (lowercase)
 export type UserRole =
-  | 'worker'
-  | 'supervisor'
-  | 'admin'
-  | 'top_management'
+  | 'satgas'
+  | 'linmas'
+  | 'korlap'
+  | 'admin_data'
   | 'kepala_rayon'
-  | 'koordinator_lapangan'
-  | 'linmas';
+  | 'top_management'
+  | 'admin_system'
+  | 'superadmin';
 
 // Area types
 export type AreaTypeCode = 'park' | 'pedestrian' | 'mini_garden' | 'street';
 
-// Work report conditions
-export type ReportCondition = 'Baik' | 'Cukup' | 'Buruk';
-
 // Media types
 export type MediaType = 'photo' | 'video';
 
-// Task status (Phase 2)
-export type TaskStatus =
-  | 'pending'
-  | 'assigned'
-  | 'accepted'
-  | 'in_progress'
-  | 'completed'
-  | 'declined';
+// Task status - 4 values (Phase 2C simplified: removed accepted, declined)
+export type TaskStatus = 'pending' | 'assigned' | 'in_progress' | 'completed';
 
-// Task priority (Phase 2)
+// Task priority
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+// Overtime status
+export type OvertimeStatus = 'pending' | 'approved' | 'rejected';
 
 // Day type for scheduling
 export type DayType = 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
 
-// Area type category (Phase 2)
+// Area type category
 export type AreaTypeCategory = 'ACTIVE' | 'PASSIVE';
 
 // User
 export interface User {
-  id: string; // UUID (updated to match backend)
+  id: string;
   username: string;
   full_name: string;
   role: UserRole;
+  rayon_id?: string;
+  rayon?: Rayon;
+  area_id?: string;
+  area?: Area;
   created_at: string;
   updated_at: string;
 }
 
 // Area Type
 export interface AreaType {
-  id: string; // UUID (updated to match backend)
+  id: string;
   code: AreaTypeCode;
   name: string;
   description: string;
@@ -61,86 +61,65 @@ export interface AreaType {
 
 // Area
 export interface Area {
-  id: string; // UUID
+  id: string;
   name: string;
-  area_type_id: string; // UUID (updated to match backend)
+  area_type_id: string;
   area_type?: AreaType;
+  rayon_id?: string;
+  rayon?: Rayon;
   gps_lat: number;
   gps_lng: number;
   radius_meters: number;
+  boundary_polygon?: [number, number][];
   address?: string;
   created_at: string;
   updated_at: string;
 }
 
-// Worker Assignment
-export interface WorkerAssignment {
-  id: string; // UUID (updated to match backend)
-  worker_id: string; // UUID (updated to match backend)
-  area_id: string; // UUID (updated to match backend)
-  area?: Area;
-  assigned_at: string;
-}
-
 // Shift
 export interface Shift {
-  id: string; // UUID (updated to match backend)
-  worker_id: string; // UUID (updated to match backend)
-  area_id: string; // UUID (updated to match backend)
+  id: string;
+  user_id: string;
+  area_id: string | null; // Phase 2C: nullable, auto-detected
   area?: Area;
+  user?: User;
   clock_in_time: string;
   clock_in_gps_lat: number;
   clock_in_gps_lng: number;
   clock_in_photo_url?: string;
+  clock_in_outside_boundary?: boolean;
   clock_out_time?: string;
   clock_out_gps_lat?: number;
   clock_out_gps_lng?: number;
+  clock_out_outside_boundary?: boolean;
   created_at: string;
   updated_at: string;
 }
 
-// Work Report
-export interface WorkReport {
-  id: string; // UUID
-  shift_id: string; // UUID
-  worker_id: string; // UUID
-  area_id: string; // UUID
-  worker?: User;
+// Activity (was WorkReport)
+export interface Activity {
+  id: string;
+  user_id: string;
+  shift_id: string;
+  area_id?: string;
   area?: Area;
-  report_time?: string;
-  report_type?: string; // Backend field
-  gps_lat: number | null;
-  gps_lng: number | null;
-  notes?: string; // Legacy field
-  description?: string; // Backend field (same as notes)
-  condition?: ReportCondition;
-  asset_id?: number;
-  reviewed?: boolean; // Legacy field
-  is_reviewed?: boolean; // Backend field
-  reviewed_by?: string; // UUID
-  reviewed_at?: string;
-  media?: ReportMedia[]; // Array format
-  photo_url?: string; // Backend field (single URL)
+  task_id?: string;
+  activity_type_id: string;
+  activityType?: ActivityType;
+  description: string;
+  photo_urls: string[];
+  gps_lat?: number;
+  gps_lng?: number;
+  user?: User;
   created_at: string;
   updated_at: string;
-}
-
-// Report Media
-export interface ReportMedia {
-  id: string; // UUID
-  report_id: string; // UUID
-  media_type: MediaType;
-  media_url: string;
-  thumbnail_url?: string;
-  file_size_kb: number;
-  created_at: string;
 }
 
 // Location Ping (LocationLog in backend)
 export interface LocationPing {
-  id?: string; // UUID (updated to match backend)
-  worker_id?: string; // UUID (updated to match backend)
-  shift_id?: string; // UUID (updated to match backend)
+  id?: string;
+  user_id?: string;
+  shift_id?: string;
   timestamp: string;
   gps_lat: number;
   gps_lng: number;
@@ -158,10 +137,11 @@ export interface Coordinates {
   speed?: number;
 }
 
-// Active Worker (for supervisor map)
-export interface ActiveWorker {
-  worker_id: string; // UUID (updated to match backend)
+// Active User (for supervisor map, was ActiveWorker)
+export interface ActiveUser {
+  user_id: string;
   full_name: string;
+  role: UserRole;
   area_name: string;
   area_type: string;
   current_gps_lat: number;
@@ -170,22 +150,22 @@ export interface ActiveWorker {
   last_ping_time: string;
 }
 
-// Attendance Record (for supervisor)
+// Attendance Record
 export interface AttendanceRecord {
-  worker_id: string; // UUID (updated to match backend)
+  user_id: string;
   full_name: string;
   area_name: string;
   area_type: string;
   clock_in_time?: string;
   clock_out_time?: string;
   hours_worked: number;
-  reports_count: number;
+  activities_count: number;
 }
 
-// Dashboard Summary (for worker)
-export interface WorkerDashboard {
+// Dashboard Summary (for field roles, was WorkerDashboard)
+export interface FieldDashboard {
   current_shift?: Shift;
-  today_reports_count: number;
+  today_activities_count: number;
   today_hours_worked: number;
   assigned_area?: Area;
   pending_sync_count: number;
@@ -242,8 +222,8 @@ export interface AreaStaffRequirement {
   updated_at: string;
 }
 
-// Worker Schedule
-export interface WorkerSchedule {
+// Schedule (was WorkerSchedule)
+export interface Schedule {
   id: string;
   user_id: string;
   user?: User;
@@ -258,7 +238,16 @@ export interface WorkerSchedule {
   updated_at: string;
 }
 
-// Task (Phase 2)
+// Task Tag (Phase 2C)
+export interface TaskTag {
+  id: string;
+  task_id: string;
+  user_id: string;
+  user?: User;
+  created_at: string;
+}
+
+// Task (Phase 2C: simplified, no accept/decline, optional area_id, rayon support)
 export interface Task {
   id: string;
   title: string;
@@ -266,10 +255,10 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   deadline?: string;
-  area_id: string;
+  area_id?: string;
   area?: Area;
-  activity_type_id: string;
-  activity_type?: ActivityType;
+  rayon_id?: string;
+  rayon?: Rayon;
   assigned_to?: string;
   assigned_user?: User;
   created_by: string;
@@ -277,9 +266,35 @@ export interface Task {
   completion_photo_url?: string;
   completion_notes?: string;
   completed_at?: string;
+  started_at?: string;
+  assigned_at?: string;
+  tags?: TaskTag[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Overtime (Phase 2C: flat structure, no nested aktivitas)
+export interface Overtime {
+  id: string;
+  user_id: string;
+  user?: User;
+  area_id?: string;
+  area?: Area;
+  date: string; // YYYY-MM-DD
+  start_time: string; // HH:mm
+  end_time: string; // HH:mm
+  status: OvertimeStatus;
+  activity_type_id: string;
+  activityType?: ActivityType;
+  description: string;
+  photo_urls: string[];
   gps_lat?: number;
   gps_lng?: number;
-  decline_reason?: string;
+  approved_by?: string;
+  approved_at?: string;
+  approver?: User;
+  rejection_reason?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -291,7 +306,7 @@ export interface Notification {
   title: string;
   body: string;
   type: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   read: boolean;
   read_at?: string;
   created_at: string;
@@ -299,30 +314,29 @@ export interface Notification {
 
 // Monitoring Stats
 export interface MonitoringStats {
-  total_workers: number;
-  online_workers: number;
-  offline_workers: number;
+  total_users: number;
+  online_users: number;
+  offline_users: number;
   total_areas: number;
   staffed_areas: number;
   understaffed_areas: number;
   tasks_pending: number;
   tasks_completed_today: number;
-  reports_submitted_today: number;
+  activities_submitted_today: number;
 }
 
-// Live Worker (for real-time monitoring)
-export interface LiveWorker {
+// Live User (was LiveWorker) — matches backend LiveUserDto
+export interface LiveUser {
   id: string;
-  user_id: string;
   full_name: string;
   role: UserRole;
   area_id: string;
   area_name: string;
   shift_id: string;
   clock_in_time: string;
-  gps_lat: number;
-  gps_lng: number;
-  last_location_at: string;
+  latitude: number;
+  longitude: number;
+  last_update: string;
   battery_level?: number;
+  outside_boundary?: boolean;
 }
-

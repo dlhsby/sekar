@@ -52,7 +52,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: 1 },
-          { id: '2', type: 'report', status: 'pending', user_id: undefined },
+          { id: '2', type: 'activity', status: 'pending', user_id: undefined },
           { id: '3', type: 'location', status: 'pending' },
         ])
       );
@@ -70,7 +70,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: 1 },
-          { id: '2', type: 'report', status: 'pending', user_id: 2 },
+          { id: '2', type: 'activity', status: 'pending', user_id: 2 },
           { id: '3', type: 'location', status: 'pending', user_id: 3 },
         ])
       );
@@ -88,7 +88,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: 5 },
-          { id: '2', type: 'report', status: 'pending', user_id: 10 },
+          { id: '2', type: 'activity', status: 'pending', user_id: 10 },
         ])
       );
 
@@ -103,7 +103,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: 1 },
-          { id: '2', type: 'report', status: 'pending', user_id: 2 },
+          { id: '2', type: 'activity', status: 'pending', user_id: 2 },
           { id: '3', type: 'location', status: 'pending', user_id: 1 },
         ])
       );
@@ -130,7 +130,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: 5 },
-          { id: '2', type: 'report', status: 'pending', user_id: 10 },
+          { id: '2', type: 'activity', status: 'pending', user_id: 10 },
         ])
       );
 
@@ -148,7 +148,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: undefined },
-          { id: '2', type: 'report', status: 'pending', user_id: 1 },
+          { id: '2', type: 'activity', status: 'pending', user_id: 1 },
           { id: '3', type: 'location', status: 'failed' },
         ])
       );
@@ -167,7 +167,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'orphaned', user_id: undefined },
-          { id: '2', type: 'report', status: 'pending', user_id: undefined },
+          { id: '2', type: 'activity', status: 'pending', user_id: undefined },
         ])
       );
 
@@ -181,7 +181,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'success', user_id: undefined },
-          { id: '2', type: 'report', status: 'pending', user_id: undefined },
+          { id: '2', type: 'activity', status: 'pending', user_id: undefined },
         ])
       );
 
@@ -211,7 +211,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: 1 },
-          { id: '2', type: 'report', status: 'pending', user_id: undefined },
+          { id: '2', type: 'activity', status: 'pending', user_id: undefined },
           { id: '3', type: 'location', status: 'orphaned', user_id: 2 },
         ])
       );
@@ -232,7 +232,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: undefined },
-          { id: '2', type: 'report', status: 'failed', user_id: undefined },
+          { id: '2', type: 'activity', status: 'failed', user_id: undefined },
         ])
       );
 
@@ -248,7 +248,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: undefined },
-          { id: '2', type: 'report', status: 'failed', user_id: undefined },
+          { id: '2', type: 'activity', status: 'failed', user_id: undefined },
           { id: '3', type: 'location', status: 'failed', user_id: undefined },
         ])
       );
@@ -266,9 +266,9 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: undefined },
           { id: '2', type: 'clock-out', status: 'pending', user_id: undefined },
-          { id: '3', type: 'report', status: 'pending', user_id: undefined },
+          { id: '3', type: 'activity', status: 'pending', user_id: undefined },
           { id: '4', type: 'location', status: 'pending', user_id: undefined },
-          { id: '5', type: 'report', status: 'failed', user_id: undefined },
+          { id: '5', type: 'activity', status: 'failed', user_id: undefined },
         ])
       );
 
@@ -277,7 +277,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
       expect(counts).toEqual({
         'clock-in': 1,
         'clock-out': 1,
-        report: 1,
+        activity: 1,
         location: 1,
       });
     });
@@ -289,7 +289,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         'OFFLINE_QUEUE',
         JSON.stringify([
           { id: '1', type: 'clock-in', status: 'pending', user_id: undefined },
-          { id: '2', type: 'report', status: 'failed', user_id: undefined },
+          { id: '2', type: 'activity', status: 'failed', user_id: undefined },
         ])
       );
 

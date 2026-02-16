@@ -36,7 +36,7 @@ describe('AreaStaffRequirementsService', () => {
     id: '44444444-4444-4444-4444-444444444401',
     area_id: mockArea.id,
     shift_definition_id: mockShiftDefinition.id,
-    role: StaffRole.WORKER,
+    role: StaffRole.SATGAS,
     required_count: 6,
     day_type: DayType.WEEKDAY,
     created_at: new Date('2024-01-01T00:00:00Z'),
@@ -211,7 +211,7 @@ describe('AreaStaffRequirementsService', () => {
     const createDto: CreateAreaStaffRequirementDto = {
       area_id: mockArea.id,
       shift_definition_id: mockShiftDefinition.id,
-      role: StaffRole.WORKER,
+      role: StaffRole.SATGAS,
       required_count: 6,
       day_type: DayType.WEEKDAY,
     };
@@ -236,7 +236,7 @@ describe('AreaStaffRequirementsService', () => {
       const dtoWithoutDayType: CreateAreaStaffRequirementDto = {
         area_id: mockArea.id,
         shift_definition_id: mockShiftDefinition.id,
-        role: StaffRole.WORKER,
+        role: StaffRole.SATGAS,
         required_count: 6,
       };
 
@@ -317,7 +317,7 @@ describe('AreaStaffRequirementsService', () => {
       mockRequirementRepository.findOne.mockResolvedValue({ ...mockRequirementWorker });
       mockRequirementRepository.save.mockResolvedValue(mockRequirementWorker);
 
-      const updateWithSameRole: UpdateAreaStaffRequirementDto = { role: StaffRole.WORKER };
+      const updateWithSameRole: UpdateAreaStaffRequirementDto = { role: StaffRole.SATGAS };
 
       const result = await service.update(mockRequirementWorker.id, updateWithSameRole);
 

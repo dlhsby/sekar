@@ -25,7 +25,7 @@ describe('shiftSlice', () => {
 
   const mockShift = {
     id: 1,
-    worker_id: 1,
+    user_id: 1,
     area_id: 1,
     clock_in_time: '2026-01-19T08:00:00Z',
     clock_in_lat: -7.25,

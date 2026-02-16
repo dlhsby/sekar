@@ -1,7 +1,7 @@
 /**
  * Tasks Slice
- * Task management state for workers
- * Phase 2 feature
+ * Task management state
+ * Phase 2C: 4 statuses, tagged tasks, no accept/decline
  */
 
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
@@ -9,23 +9,27 @@ import type { Task, TaskStatus } from '../../types/models.types';
 
 interface TasksState {
   tasks: Task[];
+  taggedTasks: Task[];
   selectedTask: Task | null;
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
   filter: {
     status: TaskStatus | 'all';
+    type: 'assigned' | 'tagged' | 'created' | 'all';
   };
 }
 
 const initialState: TasksState = {
   tasks: [],
+  taggedTasks: [],
   selectedTask: null,
   isLoading: false,
   isSubmitting: false,
   error: null,
   filter: {
     status: 'all',
+    type: 'all',
   },
 };
 
@@ -47,6 +51,12 @@ const tasksSlice = createSlice({
       state.error = null;
     },
 
+    setTaggedTasks: (state, action: PayloadAction<Task[]>) => {
+      state.taggedTasks = action.payload;
+      state.isLoading = false;
+      state.error = null;
+    },
+
     addTask: (state, action: PayloadAction<Task>) => {
       state.tasks.unshift(action.payload);
       state.isSubmitting = false;
@@ -58,7 +68,12 @@ const tasksSlice = createSlice({
       if (index !== -1) {
         state.tasks[index] = action.payload;
       }
-      // Also update selectedTask if it's the same task
+      const tagIdx = state.taggedTasks.findIndex(
+        (t) => t.id === action.payload.id,
+      );
+      if (tagIdx !== -1) {
+        state.taggedTasks[tagIdx] = action.payload;
+      }
       if (state.selectedTask?.id === action.payload.id) {
         state.selectedTask = action.payload;
       }
@@ -68,6 +83,9 @@ const tasksSlice = createSlice({
 
     removeTask: (state, action: PayloadAction<string>) => {
       state.tasks = state.tasks.filter((t) => t.id !== action.payload);
+      state.taggedTasks = state.taggedTasks.filter(
+        (t) => t.id !== action.payload,
+      );
       if (state.selectedTask?.id === action.payload) {
         state.selectedTask = null;
       }
@@ -79,7 +97,7 @@ const tasksSlice = createSlice({
 
     updateTaskStatus: (
       state,
-      action: PayloadAction<{ taskId: string; status: TaskStatus }>
+      action: PayloadAction<{ taskId: string; status: TaskStatus }>,
     ) => {
       const { taskId, status } = action.payload;
       const task = state.tasks.find((t) => t.id === taskId);
@@ -96,6 +114,10 @@ const tasksSlice = createSlice({
       state.filter.status = action.payload;
     },
 
+    setFilterType: (state, action: PayloadAction<'assigned' | 'tagged' | 'created' | 'all'>) => {
+      state.filter.type = action.payload;
+    },
+
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
       state.isLoading = false;
@@ -108,6 +130,7 @@ const tasksSlice = createSlice({
 
     clearTasks: (state) => {
       state.tasks = [];
+      state.taggedTasks = [];
       state.selectedTask = null;
     },
 
@@ -119,12 +142,14 @@ export const {
   setLoading,
   setSubmitting,
   setTasks,
+  setTaggedTasks,
   addTask,
   updateTask,
   removeTask,
   setSelectedTask,
   updateTaskStatus,
   setFilterStatus,
+  setFilterType,
   setError,
   clearError,
   clearTasks,
@@ -132,13 +157,15 @@ export const {
 } = tasksSlice.actions;
 
 // Selectors
-export const selectAllTasks = (state: { tasks: TasksState }) => state.tasks.tasks;
+export const selectAllTasks = (state: { tasks: TasksState }) =>
+  state.tasks.tasks;
+
+export const selectTaggedTasks = (state: { tasks: TasksState }) =>
+  state.tasks.taggedTasks;
 
 export const selectFilteredTasks = (state: { tasks: TasksState }) => {
   const { tasks, filter } = state.tasks;
-  if (filter.status === 'all') {
-    return tasks;
-  }
+  if (filter.status === 'all') return tasks;
   return tasks.filter((task) => task.status === filter.status);
 };
 
@@ -156,12 +183,10 @@ export const selectTasksError = (state: { tasks: TasksState }) =>
 
 export const selectPendingTasksCount = (state: { tasks: TasksState }) =>
   state.tasks.tasks.filter(
-    (t) => t.status === 'pending' || t.status === 'assigned'
+    (t) => t.status === 'pending' || t.status === 'assigned',
   ).length;
 
 export const selectInProgressTasksCount = (state: { tasks: TasksState }) =>
-  state.tasks.tasks.filter(
-    (t) => t.status === 'accepted' || t.status === 'in_progress'
-  ).length;
+  state.tasks.tasks.filter((t) => t.status === 'in_progress').length;
 
 export default tasksSlice.reducer;

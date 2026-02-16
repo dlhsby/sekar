@@ -8,7 +8,6 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
-import { WorkerAssignmentsService } from '../worker-assignments/worker-assignments.service';
 
 /**
  * Authentication Controller
@@ -21,7 +20,6 @@ import { WorkerAssignmentsService } from '../worker-assignments/worker-assignmen
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly workerAssignmentsService: WorkerAssignmentsService,
   ) {}
 
   /**
@@ -113,9 +111,9 @@ export class AuthController {
         refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         user: {
           id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-          username: 'worker1',
+          username: 'satgas1',
           full_name: 'Pekerja Satu',
-          role: 'worker',
+          role: 'satgas',
         },
       },
     },
@@ -211,9 +209,9 @@ export class AuthController {
     schema: {
       example: {
         id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
-        username: 'worker1',
+        username: 'satgas1',
         full_name: 'Pekerja Satu',
-        role: 'worker',
+        role: 'satgas',
         created_at: '2026-01-07T10:00:00.000Z',
       },
     },
@@ -237,32 +235,10 @@ export class AuthController {
       created_at: user.created_at,
     };
 
-    // If user is a field role, include assigned area with full details
-    if (user.role === UserRole.SATGAS || user.role === UserRole.LINMAS) {
-      const assignment = await this.workerAssignmentsService.getWorkerAssignment(user.id);
-
-      if (assignment && assignment.area) {
-        // Ensure GPS coordinates are numbers, not strings
-        userData.assigned_area = {
-          id: assignment.area.id,
-          name: assignment.area.name,
-          area_type_id: assignment.area.area_type_id,
-          area_type: assignment.area.areaType
-            ? {
-                id: assignment.area.areaType.id,
-                code: assignment.area.areaType.code,
-                name: assignment.area.areaType.name,
-                description: assignment.area.areaType.description,
-              }
-            : undefined,
-          gps_lat: Number(assignment.area.gps_lat),
-          gps_lng: Number(assignment.area.gps_lng),
-          radius_meters: Number(assignment.area.radius_meters),
-          address: assignment.area.address,
-          created_at: assignment.area.created_at,
-          updated_at: assignment.area.updated_at,
-        };
-      }
+    // Include area info for field roles (area_id is set on the user entity)
+    if (user.area_id) {
+      userData.area_id = user.area_id;
+      userData.rayon_id = user.rayon_id;
     }
 
     return userData;

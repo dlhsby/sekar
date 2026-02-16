@@ -242,6 +242,102 @@ describe('GPS Utils', () => {
     });
   });
 
+  describe('isPointInPolygon', () => {
+    // Simple rectangle polygon around Taman Bungkul
+    // GeoJSON format: [lng, lat]
+    const rectangle: [number, number][] = [
+      [112.739, -7.291],
+      [112.741, -7.291],
+      [112.741, -7.289],
+      [112.739, -7.289],
+    ];
+
+    it('should return true for point inside rectangle', () => {
+      expect(gpsUtils.isPointInPolygon(-7.2905, 112.7398, rectangle)).toBe(true);
+    });
+
+    it('should return false for point outside rectangle', () => {
+      expect(gpsUtils.isPointInPolygon(-7.2850, 112.7398, rectangle)).toBe(false);
+    });
+
+    it('should return false for point far outside', () => {
+      expect(gpsUtils.isPointInPolygon(-7.30, 112.75, rectangle)).toBe(false);
+    });
+
+    it('should handle triangle polygon', () => {
+      const triangle: [number, number][] = [
+        [112.739, -7.291],
+        [112.741, -7.291],
+        [112.740, -7.289],
+      ];
+      expect(gpsUtils.isPointInPolygon(-7.2905, 112.7400, triangle)).toBe(true);
+      expect(gpsUtils.isPointInPolygon(-7.2850, 112.7395, triangle)).toBe(false);
+    });
+
+    it('should handle empty polygon', () => {
+      expect(gpsUtils.isPointInPolygon(-7.2905, 112.7398, [])).toBe(false);
+    });
+  });
+
+  describe('isWithinAreaBoundary', () => {
+    it('should use polygon when boundary_polygon exists', () => {
+      const area = {
+        boundary_polygon: [
+          [112.739, -7.291],
+          [112.741, -7.291],
+          [112.741, -7.289],
+          [112.739, -7.289],
+        ] as [number, number][],
+        gps_lat: -7.2905,
+        gps_lng: 112.7398,
+        radius_meters: 100,
+      };
+      // Inside polygon
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area)).toBe(true);
+      // Outside polygon
+      expect(gpsUtils.isWithinAreaBoundary(-7.285, 112.7398, area)).toBe(false);
+    });
+
+    it('should fallback to radius when no polygon', () => {
+      const area = {
+        gps_lat: -7.2905,
+        gps_lng: 112.7398,
+        radius_meters: 100,
+      };
+      // Within radius
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area)).toBe(true);
+      // Outside radius
+      expect(gpsUtils.isWithinAreaBoundary(-7.295, 112.7398, area)).toBe(false);
+    });
+
+    it('should return true when no boundary defined', () => {
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, {})).toBe(true);
+    });
+
+    it('should return true when polygon has fewer than 3 points', () => {
+      const area = {
+        boundary_polygon: [[112.739, -7.291], [112.741, -7.291]] as [number, number][],
+      };
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area)).toBe(true);
+    });
+
+    it('should return true when radius is 0 or null', () => {
+      const area = { gps_lat: -7.2905, gps_lng: 112.7398, radius_meters: 0 };
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area)).toBe(true);
+      const area2 = { gps_lat: -7.2905, gps_lng: 112.7398, radius_meters: null };
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area2)).toBe(true);
+    });
+  });
+
+  describe('getMockCoordinates', () => {
+    it('should return Surabaya coordinates', () => {
+      const coords = gpsUtils.getMockCoordinates();
+      expect(coords.latitude).toBe(-7.2905);
+      expect(coords.longitude).toBe(112.7398);
+      expect(coords.accuracy).toBe(10);
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle zero distance', () => {
       const distance = gpsUtils.calculateDistance(

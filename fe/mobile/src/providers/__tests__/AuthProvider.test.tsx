@@ -35,11 +35,11 @@ jest.mock('../../services/permissions/PermissionManager', () => ({
 
 describe('AuthProvider', () => {
   let store: any;
-  let mockConsoleLog: jest.SpyInstance;
+  let mockConsoleDebug: jest.SpyInstance;
   let mockConsoleWarn: jest.SpyInstance;
   let mockConsoleError: jest.SpyInstance;
 
-  const mockWorkerUser = {
+  const mockFieldUser = {
     id: 1,
     username: 'worker1',
     name: 'Test Worker',
@@ -47,11 +47,11 @@ describe('AuthProvider', () => {
     phone: '081234567890',
   };
 
-  const mockSupervisorUser = {
+  const mockMonitoringUser = {
     id: 2,
-    username: 'supervisor1',
-    name: 'Test Supervisor',
-    role: 'korlap',
+    username: 'topmanager1',
+    name: 'Test Manager',
+    role: 'top_management',
     phone: '081234567891',
   };
 
@@ -69,7 +69,7 @@ describe('AuthProvider', () => {
     jest.clearAllMocks();
 
     // Re-apply console spies after clearAllMocks
-    mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
+    mockConsoleDebug = jest.spyOn(console, 'debug').mockImplementation();
     mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
     mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 
@@ -92,7 +92,7 @@ describe('AuthProvider', () => {
   });
 
   afterEach(() => {
-    mockConsoleLog.mockRestore();
+    mockConsoleDebug.mockRestore();
     mockConsoleWarn.mockRestore();
     mockConsoleError.mockRestore();
   });
@@ -138,9 +138,9 @@ describe('AuthProvider', () => {
       const mockArea = { id: 1, name: 'Test Area' };
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: { ...mockWorkerUser, assigned_area: mockArea },
+        data: { ...mockFieldUser, assigned_area: mockArea },
       });
       (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({
         data: mockShift,
@@ -158,7 +158,7 @@ describe('AuthProvider', () => {
       );
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockWorkerUser);
+        expect(store.getState().auth.user).toEqual(mockFieldUser);
       });
 
       expect(store.getState().auth.assignedArea).toEqual(mockArea);
@@ -170,9 +170,9 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockWorkerUser,
+        data: mockFieldUser,
       });
       (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({
         data: null,
@@ -189,20 +189,20 @@ describe('AuthProvider', () => {
       );
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockWorkerUser);
+        expect(store.getState().auth.user).toEqual(mockFieldUser);
       });
 
       expect(store.getState().shift.currentShift).toBeNull();
       expect(locationTracker.initialize).not.toHaveBeenCalled();
     });
 
-    it('should restore auth for supervisor (no shift loading)', async () => {
+    it('should restore auth for monitoring role (no shift loading)', async () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockSupervisorUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockMonitoringUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockSupervisorUser,
+        data: mockMonitoringUser,
       });
 
       render(
@@ -216,7 +216,7 @@ describe('AuthProvider', () => {
       );
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockSupervisorUser);
+        expect(store.getState().auth.user).toEqual(mockMonitoringUser);
       });
 
       expect(shiftsApi.getCurrentShift).not.toHaveBeenCalled();
@@ -229,7 +229,7 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockImplementation(
         () => new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Network timeout')), 15000))
@@ -250,7 +250,7 @@ describe('AuthProvider', () => {
 
       await waitFor(
         () => {
-          expect(store.getState().auth.user).toEqual(mockWorkerUser);
+          expect(store.getState().auth.user).toEqual(mockFieldUser);
         },
         { timeout: 15000 }
       );
@@ -265,7 +265,7 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({ data: null });
       (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({
         data: null,
@@ -282,7 +282,7 @@ describe('AuthProvider', () => {
       );
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockWorkerUser);
+        expect(store.getState().auth.user).toEqual(mockFieldUser);
       });
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
@@ -294,7 +294,7 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockRejectedValue(
         new Error('Network request failed')
       );
@@ -313,7 +313,7 @@ describe('AuthProvider', () => {
       );
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockWorkerUser);
+        expect(store.getState().auth.user).toEqual(mockFieldUser);
       });
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
@@ -328,9 +328,9 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockWorkerUser,
+        data: mockFieldUser,
       });
       (shiftsApi.getCurrentShift as jest.Mock).mockRejectedValue({
         response: { status: 404 },
@@ -347,7 +347,7 @@ describe('AuthProvider', () => {
       );
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockWorkerUser);
+        expect(store.getState().auth.user).toEqual(mockFieldUser);
       });
 
       expect(store.getState().shift.currentShift).toBeNull();
@@ -358,9 +358,9 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockWorkerUser,
+        data: mockFieldUser,
       });
       (shiftsApi.getCurrentShift as jest.Mock).mockRejectedValue(
         new Error('API Error')
@@ -377,7 +377,7 @@ describe('AuthProvider', () => {
       );
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockWorkerUser);
+        expect(store.getState().auth.user).toEqual(mockFieldUser);
       });
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
@@ -416,7 +416,7 @@ describe('AuthProvider', () => {
 
     it('should handle missing token gracefully', async () => {
       (secureStorage.getToken as jest.Mock).mockResolvedValue(null);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
 
       render(
         <Provider store={store}>
@@ -465,9 +465,9 @@ describe('AuthProvider', () => {
       const shiftWithId = { ...mockShift, id: 456 };
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockWorkerUser,
+        data: mockFieldUser,
       });
       (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({
         data: shiftWithId,
@@ -487,7 +487,7 @@ describe('AuthProvider', () => {
         expect(locationTracker.initialize).toHaveBeenCalledWith('456');
       });
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(mockConsoleDebug).toHaveBeenCalledWith(
         '[AuthProvider] Active shift found and permissions granted, starting location tracking'
       );
     });
@@ -497,9 +497,9 @@ describe('AuthProvider', () => {
       const shiftWithoutId = { ...mockShift, id: null };
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockWorkerUser,
+        data: mockFieldUser,
       });
       (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({
         data: shiftWithoutId,
@@ -526,9 +526,9 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockWorkerUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockFieldUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockWorkerUser,
+        data: mockFieldUser,
       });
       (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({
         data: mockShift,
@@ -561,9 +561,9 @@ describe('AuthProvider', () => {
       const mockToken = 'valid-token';
 
       (secureStorage.getToken as jest.Mock).mockResolvedValue(mockToken);
-      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockSupervisorUser);
+      (secureStorage.getUser as jest.Mock).mockResolvedValue(mockMonitoringUser);
       (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: mockSupervisorUser,
+        data: mockMonitoringUser,
       });
 
       const { rerender, unmount } = render(
@@ -590,7 +590,7 @@ describe('AuthProvider', () => {
       }
 
       await waitFor(() => {
-        expect(store.getState().auth.user).toEqual(mockSupervisorUser);
+        expect(store.getState().auth.user).toEqual(mockMonitoringUser);
       });
 
       unmount();

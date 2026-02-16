@@ -12,7 +12,7 @@ describe('LocationLog Entity', () => {
     const locationLog = new LocationLog();
 
     locationLog.id = 'location-uuid-123';
-    locationLog.worker_id = 'worker-uuid-456';
+    locationLog.user_id = 'user-uuid-456';
     locationLog.shift_id = 'shift-uuid-789';
     locationLog.gps_lat = -7.2905;
     locationLog.gps_lng = 112.7398;
@@ -21,7 +21,7 @@ describe('LocationLog Entity', () => {
     locationLog.logged_at = new Date('2026-01-09T10:30:00Z');
 
     expect(locationLog.id).toBe('location-uuid-123');
-    expect(locationLog.worker_id).toBe('worker-uuid-456');
+    expect(locationLog.user_id).toBe('user-uuid-456');
     expect(locationLog.shift_id).toBe('shift-uuid-789');
     expect(locationLog.gps_lat).toBe(-7.2905);
     expect(locationLog.gps_lng).toBe(112.7398);
@@ -30,29 +30,29 @@ describe('LocationLog Entity', () => {
     expect(locationLog.logged_at).toBeInstanceOf(Date);
   });
 
-  it('should support worker relation', () => {
+  it('should support user relation', () => {
     const locationLog = new LocationLog();
-    const mockWorker: User = {
-      id: 'worker-uuid-456',
-      username: 'worker1',
+    const mockUser: User = {
+      id: 'user-uuid-456',
+      username: 'user1',
       password_hash: 'hashed',
-      full_name: 'Worker One',
+      full_name: 'User One',
       role: UserRole.SATGAS,
       is_active: true,
       created_at: new Date(),
       updated_at: new Date(),
     };
 
-    locationLog.worker = mockWorker;
-    expect(locationLog.worker).toBe(mockWorker);
-    expect(locationLog.worker.username).toBe('worker1');
+    locationLog.user = mockUser;
+    expect(locationLog.user).toBe(mockUser);
+    expect(locationLog.user.username).toBe('user1');
   });
 
   it('should support shift relation', () => {
     const locationLog = new LocationLog();
     const mockShift: Shift = {
       id: 'shift-uuid-789',
-      worker_id: 'worker-uuid-456',
+      user_id: 'user-uuid-456',
       area_id: 'area-uuid-123',
       clock_in_time: new Date('2026-01-09T08:00:00Z'),
       clock_in_gps_lat: -7.2905,

@@ -3,8 +3,9 @@
  * Handles user profile operations including password changes
  */
 
-import { post } from './apiClient';
+import { get, post } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
+import type { User } from '../../types/models.types';
 
 /**
  * Change password request payload
@@ -12,6 +13,14 @@ import type { ApiResponse } from '../../types/api.types';
 export interface ChangePasswordRequest {
   current_password: string;
   new_password: string;
+}
+
+/**
+ * Get all users (for task assignment)
+ * @returns List of users
+ */
+export async function getUsers(): Promise<ApiResponse<User[]>> {
+  return get<User[]>('/users');
 }
 
 /**

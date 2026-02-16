@@ -4,7 +4,7 @@ import { MonitoringService } from './monitoring.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
-import { LiveWorkersResponseDto, LiveWorkersFilterDto } from './dto/live-workers.dto';
+import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
@@ -48,6 +48,18 @@ describe('MonitoringController', () => {
     updated_at: new Date(),
   } as User;
 
+  const mockAdminData = {
+    id: 'admin-data-uuid',
+    username: 'admindata1',
+    password_hash: 'hashed',
+    full_name: 'Admin Data 1',
+    role: UserRole.ADMIN_DATA,
+    is_active: true,
+    rayon_id: 'rayon-1',
+    created_at: new Date(),
+    updated_at: new Date(),
+  } as User;
+
   const mockCityStats: CityStatsDto = {
     total_rayons: 7,
     total_areas: 50,
@@ -58,7 +70,7 @@ describe('MonitoringController', () => {
     tasks_pending: 30,
     tasks_in_progress: 45,
     tasks_completed_today: 25,
-    reports_submitted_today: 100,
+    activities_submitted_today: 100,
     rayons: [
       {
         id: 'rayon-1',
@@ -87,7 +99,7 @@ describe('MonitoringController', () => {
     tasks_pending: 5,
     tasks_in_progress: 10,
     tasks_completed_today: 8,
-    reports_submitted_today: 20,
+    activities_submitted_today: 20,
     areas: [
       {
         id: 'area-1',
@@ -127,9 +139,9 @@ describe('MonitoringController', () => {
     latitude: -7.2905,
     longitude: 112.7398,
     coverage_area: 2500,
-    total_workers_assigned: 6,
-    workers_online: 5,
-    workers_offline: 1,
+    total_users_assigned: 6,
+    users_online: 5,
+    users_offline: 1,
     is_fully_staffed: false,
     staff_requirements: [
       {
@@ -141,7 +153,7 @@ describe('MonitoringController', () => {
         is_met: false,
       },
     ],
-    workers: [
+    users: [
       {
         id: 'user-1',
         full_name: 'Worker One',
@@ -160,15 +172,15 @@ describe('MonitoringController', () => {
     tasks_in_progress: 4,
     tasks_completed_today: 3,
     active_tasks: [],
-    reports_submitted_today: 15,
+    activities_submitted_today: 15,
     alerts: ['Understaffed: need 1 more Worker'],
     generated_at: new Date(),
   };
 
-  const mockLiveWorkers: LiveWorkersResponseDto = {
+  const mockLiveUsers: LiveUsersResponseDto = {
     total_online: 150,
     total_offline: 50,
-    workers: [
+    users: [
       {
         id: 'user-1',
         full_name: 'Worker One',
@@ -183,6 +195,7 @@ describe('MonitoringController', () => {
         battery_level: 85,
         last_update: new Date(),
         is_within_area: true,
+        outside_boundary: false,
         shift_id: 'shift-1',
         shift_name: 'Shift 1',
         clock_in_time: new Date(),
@@ -203,7 +216,7 @@ describe('MonitoringController', () => {
             getCityStats: jest.fn(),
             getRayonStats: jest.fn(),
             getAreaStats: jest.fn(),
-            getLiveWorkers: jest.fn(),
+            getLiveUsers: jest.fn(),
           },
         },
       ],
@@ -241,7 +254,7 @@ describe('MonitoringController', () => {
       expect(result).toHaveProperty('tasks_pending');
       expect(result).toHaveProperty('tasks_in_progress');
       expect(result).toHaveProperty('tasks_completed_today');
-      expect(result).toHaveProperty('reports_submitted_today');
+      expect(result).toHaveProperty('activities_submitted_today');
       expect(result).toHaveProperty('rayons');
       expect(result).toHaveProperty('generated_at');
     });
@@ -277,6 +290,21 @@ describe('MonitoringController', () => {
     it('should deny kepala_rayon access to other rayon', async () => {
       await expect(
         controller.getRayonStats('rayon-other', mockKepalaRayon),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow admin_data to access own rayon', async () => {
+      service.getRayonStats.mockResolvedValue(mockRayonStats);
+
+      const result = await controller.getRayonStats('rayon-1', mockAdminData);
+
+      expect(service.getRayonStats).toHaveBeenCalledWith('rayon-1');
+      expect(result).toEqual(mockRayonStats);
+    });
+
+    it('should deny admin_data access to other rayon', async () => {
+      await expect(
+        controller.getRayonStats('rayon-other', mockAdminData),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -352,11 +380,11 @@ describe('MonitoringController', () => {
 
       const result = await controller.getAreaStats('area-1', mockSuperadmin);
 
-      expect(result.workers).toBeDefined();
-      expect(result.workers.length).toBeGreaterThan(0);
-      expect(result.workers[0]).toHaveProperty('id');
-      expect(result.workers[0]).toHaveProperty('full_name');
-      expect(result.workers[0]).toHaveProperty('is_online');
+      expect(result.users).toBeDefined();
+      expect(result.users.length).toBeGreaterThan(0);
+      expect(result.users[0]).toHaveProperty('id');
+      expect(result.users[0]).toHaveProperty('full_name');
+      expect(result.users[0]).toHaveProperty('is_online');
     });
 
     it('should return statistics with staff requirements', async () => {
@@ -383,68 +411,101 @@ describe('MonitoringController', () => {
     });
   });
 
-  describe('getLiveWorkers', () => {
-    it('should return live worker positions', async () => {
-      service.getLiveWorkers.mockResolvedValue(mockLiveWorkers);
+  describe('getLiveUsers', () => {
+    it('should return live user positions', async () => {
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 
-      const result = await controller.getLiveWorkers({});
+      const result = await controller.getLiveUsers({}, mockSuperadmin);
 
-      expect(service.getLiveWorkers).toHaveBeenCalledWith({});
-      expect(result).toEqual(mockLiveWorkers);
+      expect(service.getLiveUsers).toHaveBeenCalledWith({});
+      expect(result).toEqual(mockLiveUsers);
     });
 
     it('should pass filters to service', async () => {
-      const filters: LiveWorkersFilterDto = {
+      const filters: LiveUsersFilterDto = {
         area_id: 'area-1',
         rayon_id: 'rayon-1',
         role: UserRole.SATGAS,
       };
-      service.getLiveWorkers.mockResolvedValue(mockLiveWorkers);
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 
-      await controller.getLiveWorkers(filters);
+      await controller.getLiveUsers(filters, mockSuperadmin);
 
-      expect(service.getLiveWorkers).toHaveBeenCalledWith(filters);
+      expect(service.getLiveUsers).toHaveBeenCalledWith(filters);
     });
 
-    it('should return worker positions with location data', async () => {
-      service.getLiveWorkers.mockResolvedValue(mockLiveWorkers);
+    it('should return user positions with location data', async () => {
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 
-      const result = await controller.getLiveWorkers({});
+      const result = await controller.getLiveUsers({}, mockSuperadmin);
 
-      expect(result.workers[0]).toHaveProperty('latitude');
-      expect(result.workers[0]).toHaveProperty('longitude');
-      expect(result.workers[0]).toHaveProperty('accuracy');
-      expect(result.workers[0]).toHaveProperty('battery_level');
-      expect(result.workers[0]).toHaveProperty('last_update');
+      expect(result.users[0]).toHaveProperty('latitude');
+      expect(result.users[0]).toHaveProperty('longitude');
+      expect(result.users[0]).toHaveProperty('accuracy');
+      expect(result.users[0]).toHaveProperty('battery_level');
+      expect(result.users[0]).toHaveProperty('last_update');
     });
 
     it('should return online/offline counts', async () => {
-      service.getLiveWorkers.mockResolvedValue(mockLiveWorkers);
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 
-      const result = await controller.getLiveWorkers({});
+      const result = await controller.getLiveUsers({}, mockSuperadmin);
 
       expect(result.total_online).toBeDefined();
       expect(result.total_offline).toBeDefined();
       expect(result.total_online + result.total_offline).toBe(200);
     });
 
-    it('should return worker task information', async () => {
-      service.getLiveWorkers.mockResolvedValue(mockLiveWorkers);
+    it('should return user task information', async () => {
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 
-      const result = await controller.getLiveWorkers({});
+      const result = await controller.getLiveUsers({}, mockSuperadmin);
 
-      expect(result.workers[0]).toHaveProperty('current_task_status');
-      expect(result.workers[0]).toHaveProperty('current_task_title');
+      expect(result.users[0]).toHaveProperty('current_task_status');
+      expect(result.users[0]).toHaveProperty('current_task_title');
     });
 
-    it('should return worker shift information', async () => {
-      service.getLiveWorkers.mockResolvedValue(mockLiveWorkers);
+    it('should return user shift information', async () => {
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 
-      const result = await controller.getLiveWorkers({});
+      const result = await controller.getLiveUsers({}, mockSuperadmin);
 
-      expect(result.workers[0]).toHaveProperty('shift_id');
-      expect(result.workers[0]).toHaveProperty('shift_name');
-      expect(result.workers[0]).toHaveProperty('clock_in_time');
+      expect(result.users[0]).toHaveProperty('shift_id');
+      expect(result.users[0]).toHaveProperty('shift_name');
+      expect(result.users[0]).toHaveProperty('clock_in_time');
+    });
+
+    it('should force area_id scope for KORLAP user', async () => {
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
+      const filters: LiveUsersFilterDto = {};
+
+      await controller.getLiveUsers(filters, mockKorlap);
+
+      expect(service.getLiveUsers).toHaveBeenCalledWith(
+        expect.objectContaining({ area_id: 'area-1' }),
+      );
+    });
+
+    it('should force rayon_id scope for ADMIN_DATA user', async () => {
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
+      const filters: LiveUsersFilterDto = {};
+
+      await controller.getLiveUsers(filters, mockAdminData);
+
+      expect(service.getLiveUsers).toHaveBeenCalledWith(
+        expect.objectContaining({ rayon_id: 'rayon-1' }),
+      );
+    });
+
+    it('should not override explicit rayon_id filter for ADMIN_DATA', async () => {
+      service.getLiveUsers.mockResolvedValue(mockLiveUsers);
+      const filters: LiveUsersFilterDto = { rayon_id: 'rayon-1' };
+
+      await controller.getLiveUsers(filters, mockAdminData);
+
+      expect(service.getLiveUsers).toHaveBeenCalledWith(
+        expect.objectContaining({ rayon_id: 'rayon-1' }),
+      );
     });
   });
 });

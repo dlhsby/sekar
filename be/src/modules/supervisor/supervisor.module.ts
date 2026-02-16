@@ -5,7 +5,6 @@ import { SupervisorController } from './supervisor.controller';
 import { Shift } from '../shifts/entities/shift.entity';
 import { User } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
-import { WorkerAssignment } from '../worker-assignments/entities/worker-assignment.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 
 /**
@@ -17,7 +16,7 @@ import { LocationLog } from '../location/entities/location-log.entity';
  * - Daily attendance reports
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Shift, User, Area, WorkerAssignment, LocationLog])],
+  imports: [TypeOrmModule.forFeature([Shift, User, Area, LocationLog])],
   controllers: [SupervisorController],
   providers: [SupervisorService],
   exports: [SupervisorService],

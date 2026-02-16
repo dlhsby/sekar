@@ -1,6 +1,6 @@
 /**
  * Root Navigator
- * Main navigation setup for the app
+ * Phase 2C: unified navigator for all 8 roles (no Worker/Supervisor split)
  */
 
 import React from 'react';
@@ -9,10 +9,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation.types';
 import { useAppSelector } from '../store/hooks';
 
-// Screens
 import LoginScreen from '../screens/auth/LoginScreen';
-import WorkerNavigator from './WorkerNavigator';
-import SupervisorNavigator from './SupervisorNavigator';
+import MainNavigator from './MainNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -21,16 +19,11 @@ function RootNavigator(): React.JSX.Element {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated || !user ? (
           <Stack.Screen name="Login" component={LoginScreen} />
-        ) : user.role === 'worker' || user.role === 'linmas' ? (
-          <Stack.Screen name="WorkerTabs" component={WorkerNavigator} />
         ) : (
-          <Stack.Screen name="SupervisorTabs" component={SupervisorNavigator} />
+          <Stack.Screen name="MainTabs" component={MainNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
@@ -38,4 +31,3 @@ function RootNavigator(): React.JSX.Element {
 }
 
 export default RootNavigator;
-

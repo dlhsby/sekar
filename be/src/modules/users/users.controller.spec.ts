@@ -83,10 +83,60 @@ describe('UsersController', () => {
       };
       mockUsersService.findAllPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 50 });
+      const result = await controller.findAll({ page: 1, limit: 50 }, mockUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, mockUser);
+    });
+
+    it('should pass admin_data user context for rayon filtering', async () => {
+      const adminDataUser: User = {
+        id: 'admin-data-uuid',
+        username: 'admindata1',
+        password_hash: 'hashedpassword',
+        full_name: 'Admin Data One',
+        role: UserRole.ADMIN_DATA,
+        rayon_id: 'rayon-uuid-1',
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const paginatedResult = {
+        data: [mockUser],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockUsersService.findAllPaginated.mockResolvedValue(paginatedResult);
+
+      const result = await controller.findAll({ page: 1, limit: 50 }, adminDataUser);
+
+      expect(result).toEqual(paginatedResult);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, adminDataUser);
+    });
+
+    it('should pass kepala_rayon user context for rayon filtering', async () => {
+      const kepalaRayonUser: User = {
+        id: 'kepala-rayon-uuid',
+        username: 'kepalarayon1',
+        password_hash: 'hashedpassword',
+        full_name: 'Kepala Rayon One',
+        role: UserRole.KEPALA_RAYON,
+        rayon_id: 'rayon-uuid-2',
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const paginatedResult = {
+        data: [mockUser],
+        meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      };
+      mockUsersService.findAllPaginated.mockResolvedValue(paginatedResult);
+
+      const result = await controller.findAll({ page: 1, limit: 50 }, kepalaRayonUser);
+
+      expect(result).toEqual(paginatedResult);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, kepalaRayonUser);
     });
   });
 

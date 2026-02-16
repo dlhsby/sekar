@@ -13,11 +13,11 @@ export class LoginDto {
    * User's username for authentication.
    * Must be alphanumeric with optional underscores and hyphens.
    *
-   * @example 'worker1'
+   * @example 'satgas1'
    */
   @ApiProperty({
     description: 'Username for authentication',
-    example: 'worker1',
+    example: 'satgas1',
     minLength: 1,
     maxLength: ValidationConstants.USERNAME_MAX_LENGTH,
   })
@@ -32,11 +32,11 @@ export class LoginDto {
    * User's password for authentication.
    * Must be at least 6 characters long.
    *
-   * @example 'worker123'
+   * @example 'satgas123'
    */
   @ApiProperty({
     description: 'Password for authentication',
-    example: 'worker123',
+    example: 'satgas123',
     minLength: ValidationConstants.PASSWORD_MIN_LENGTH,
   })
   @IsString()

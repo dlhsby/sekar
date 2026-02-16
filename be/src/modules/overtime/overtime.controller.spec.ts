@@ -45,15 +45,11 @@ describe('OvertimeController', () => {
         start_time: '17:00',
         end_time: '20:00',
         notes: 'Extra work',
-        aktivitas: [
-          {
-            activity_type_id: 'activity-uuid-1',
-            description: 'Cleaned park',
-            photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
-            gps_lat: -7.250445,
-            gps_lng: 112.768845,
-          },
-        ],
+        activity_type_id: 'activity-uuid-1',
+        description: 'Cleaned park',
+        photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
+        gps_lat: -7.250445,
+        gps_lng: 112.768845,
       };
       const user = { id: 'user-uuid-1', role: UserRole.SATGAS } as User;
       const mockOvertime = {
@@ -103,6 +99,25 @@ describe('OvertimeController', () => {
       const result = await controller.findPending(user);
 
       expect(service.findPending).toHaveBeenCalledWith(user.id, user.role);
+      expect(result).toEqual(mockOvertimes);
+    });
+
+    it('should call service.findPending for admin_data user (rayon-scoped)', async () => {
+      const adminDataUser = {
+        id: 'admin-data-uuid-1',
+        role: UserRole.ADMIN_DATA,
+        rayon_id: 'rayon-uuid-1',
+      } as User;
+      const mockOvertimes = [
+        { id: 'overtime-1', status: OvertimeStatus.PENDING },
+        { id: 'overtime-2', status: OvertimeStatus.PENDING },
+      ];
+
+      mockOvertimeService.findPending.mockResolvedValue(mockOvertimes);
+
+      const result = await controller.findPending(adminDataUser);
+
+      expect(service.findPending).toHaveBeenCalledWith(adminDataUser.id, adminDataUser.role);
       expect(result).toEqual(mockOvertimes);
     });
   });

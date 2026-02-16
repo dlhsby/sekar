@@ -64,7 +64,7 @@ export class CityStatsDto {
   tasks_completed_today: number;
 
   @ApiProperty({ example: 45 })
-  reports_submitted_today: number;
+  activities_submitted_today: number;
 
   @ApiProperty({ type: [RayonSummaryDto] })
   rayons: RayonSummaryDto[];

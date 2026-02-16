@@ -9,7 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthService } from '../auth/auth.service';
@@ -95,8 +95,24 @@ export class UsersService {
   async findAllPaginated(
     page: number = 1,
     limit: number = 50,
+    requestingUser?: User,
   ): Promise<PaginatedResponseDto<User>> {
     this.logger.log(`Fetching users with pagination: page=${page}, limit=${limit}`);
+
+    // Rayon-scoped roles see only users in their rayon
+    if (requestingUser && (requestingUser.role === UserRole.ADMIN_DATA || requestingUser.role === UserRole.KEPALA_RAYON) && requestingUser.rayon_id) {
+      const qb = this.userRepository
+        .createQueryBuilder('user')
+        .leftJoin('user.area', 'area')
+        .select(['user.id', 'user.username', 'user.full_name', 'user.role', 'user.is_active', 'user.created_at'])
+        .where('area.rayon_id = :rayonId', { rayonId: requestingUser.rayon_id })
+        .orderBy('user.created_at', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      const [data, total] = await qb.getManyAndCount();
+      return new PaginatedResponseDto(data, total, page, limit);
+    }
 
     const [data, total] = await this.userRepository.findAndCount({
       select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],

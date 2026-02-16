@@ -188,7 +188,7 @@ describe('FCMService', () => {
     });
 
     it('should not reinitialize if already initialized', async () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
 
       mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
@@ -202,9 +202,9 @@ describe('FCMService', () => {
       await fcmService.initialize(store);
 
       // Should log that it's already initialized
-      expect(consoleLogSpy).toHaveBeenCalledWith('[FCM] Already initialized');
+      expect(consoleDebugSpy).toHaveBeenCalledWith('[FCM] Already initialized');
 
-      consoleLogSpy.mockRestore();
+      consoleDebugSpy.mockRestore();
     });
   });
 
@@ -373,7 +373,7 @@ describe('FCMService', () => {
     });
 
     it('should log when handlers are already set up', async () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
 
       mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
@@ -383,9 +383,9 @@ describe('FCMService', () => {
       await fcmService.initialize(store);
       fcmService.setupNotificationHandlers();
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[FCM] Notification handlers are already set up');
+      expect(consoleDebugSpy).toHaveBeenCalledWith('[FCM] Notification handlers are already set up');
 
-      consoleLogSpy.mockRestore();
+      consoleDebugSpy.mockRestore();
     });
   });
 

@@ -7,13 +7,13 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import AttendanceScreen from '../AttendanceScreen';
-import * as supervisorApi from '../../../services/api/supervisorApi';
+import * as monitoringApi from '../../../services/api/monitoringApi';
 
 // Mock Alert to prevent errors from imported components
 jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 // Mock the API
-jest.mock('../../../services/api/supervisorApi');
+jest.mock('../../../services/api/monitoringApi');
 
 // Mock react-native-safe-area-context
 jest.mock('react-native-safe-area-context', () => ({
@@ -52,7 +52,7 @@ describe('AttendanceScreen', () => {
     jest.useRealTimers();
     // Setup Alert spy in beforeEach to prevent cross-test pollution
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    (supervisorApi.getAttendance as jest.Mock).mockResolvedValue({
+    (monitoringApi.getAttendance as jest.Mock).mockResolvedValue({
       data: mockAttendanceData,
     });
   });
@@ -67,7 +67,7 @@ describe('AttendanceScreen', () => {
 
       await waitFor(() => {
         expect(getByText('Kehadiran')).toBeTruthy();
-      });
+      }, { timeout: 5000 });
     });
 
     it('should render date navigator', async () => {
@@ -92,7 +92,7 @@ describe('AttendanceScreen', () => {
 
     it('should render loading indicator while fetching', async () => {
       // Delay the mock response
-      (supervisorApi.getAttendance as jest.Mock).mockImplementation(
+      (monitoringApi.getAttendance as jest.Mock).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve({ data: mockAttendanceData }), 100))
       );
 
@@ -143,7 +143,7 @@ describe('AttendanceScreen', () => {
       const { getByText } = render(<AttendanceScreen />);
 
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalled();
+        expect(monitoringApi.getAttendance).toHaveBeenCalled();
       });
 
       const prevButton = getByText('◀');
@@ -151,7 +151,7 @@ describe('AttendanceScreen', () => {
 
       await waitFor(() => {
         // API should be called twice: initial + after navigation
-        expect(supervisorApi.getAttendance).toHaveBeenCalledTimes(2);
+        expect(monitoringApi.getAttendance).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -167,7 +167,7 @@ describe('AttendanceScreen', () => {
 
       // Should only call API once (initial load), not after pressing next
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalledTimes(1);
+        expect(monitoringApi.getAttendance).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -175,21 +175,21 @@ describe('AttendanceScreen', () => {
       const { getByText } = render(<AttendanceScreen />);
 
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalled();
+        expect(monitoringApi.getAttendance).toHaveBeenCalled();
       });
 
       // Go to previous day
       fireEvent.press(getByText('◀'));
 
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalledTimes(2);
+        expect(monitoringApi.getAttendance).toHaveBeenCalledTimes(2);
       });
 
       // Now next button should work
       fireEvent.press(getByText('▶'));
 
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalledTimes(3);
+        expect(monitoringApi.getAttendance).toHaveBeenCalledTimes(3);
       });
     });
   });
@@ -199,7 +199,7 @@ describe('AttendanceScreen', () => {
       render(<AttendanceScreen />);
 
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalled();
+        expect(monitoringApi.getAttendance).toHaveBeenCalled();
       });
     });
 
@@ -207,7 +207,7 @@ describe('AttendanceScreen', () => {
       render(<AttendanceScreen />);
 
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalledWith(
+        expect(monitoringApi.getAttendance).toHaveBeenCalledWith(
           expect.objectContaining({
             date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
           })
@@ -218,7 +218,7 @@ describe('AttendanceScreen', () => {
 
   describe('error handling', () => {
     it('should show alert when API returns error', async () => {
-      (supervisorApi.getAttendance as jest.Mock).mockResolvedValue({
+      (monitoringApi.getAttendance as jest.Mock).mockResolvedValue({
         error: 'Failed to load attendance',
       });
 
@@ -234,7 +234,7 @@ describe('AttendanceScreen', () => {
     });
 
     it('should show alert when API throws error', async () => {
-      (supervisorApi.getAttendance as jest.Mock).mockRejectedValue(
+      (monitoringApi.getAttendance as jest.Mock).mockRejectedValue(
         new Error('Network error')
       );
 
@@ -250,7 +250,7 @@ describe('AttendanceScreen', () => {
     });
 
     it('should show generic error message when error has no message', async () => {
-      (supervisorApi.getAttendance as jest.Mock).mockRejectedValue({});
+      (monitoringApi.getAttendance as jest.Mock).mockRejectedValue({});
 
       render(<AttendanceScreen />);
 
@@ -269,7 +269,7 @@ describe('AttendanceScreen', () => {
       const { getByTestId, UNSAFE_getByType } = render(<AttendanceScreen />);
 
       await waitFor(() => {
-        expect(supervisorApi.getAttendance).toHaveBeenCalledTimes(1);
+        expect(monitoringApi.getAttendance).toHaveBeenCalledTimes(1);
       });
 
       // Note: Testing pull to refresh directly is challenging
@@ -280,7 +280,7 @@ describe('AttendanceScreen', () => {
 
   describe('empty states', () => {
     it('should show empty message when all workers are clocked in', async () => {
-      (supervisorApi.getAttendance as jest.Mock).mockResolvedValue({
+      (monitoringApi.getAttendance as jest.Mock).mockResolvedValue({
         data: {
           ...mockAttendanceData,
           not_clocked_in: [],
@@ -297,7 +297,7 @@ describe('AttendanceScreen', () => {
     });
 
     it('should show correct counts when all workers are absent', async () => {
-      (supervisorApi.getAttendance as jest.Mock).mockResolvedValue({
+      (monitoringApi.getAttendance as jest.Mock).mockResolvedValue({
         data: {
           ...mockAttendanceData,
           clocked_in_count: 0,

@@ -16,9 +16,9 @@ import {
   UnsubscribeAreaDto,
   SubscribeRayonDto,
   UnsubscribeRayonDto,
-  WorkerLocationEvent,
-  WorkerClockInEvent,
-  WorkerClockOutEvent,
+  UserLocationEvent,
+  UserClockInEvent,
+  UserClockOutEvent,
   AreaStaffingEvent,
   TaskAssignedEvent,
   TaskCompletedEvent,
@@ -175,57 +175,57 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
-   * Emit worker location update
+   * Emit user location update
    */
-  emitWorkerLocation(event: WorkerLocationEvent): void {
-    this.logger.debug(`Emitting worker location: ${event.worker_id} at ${event.area_name}`);
+  emitUserLocation(event: UserLocationEvent): void {
+    this.logger.debug(`Emitting user location: ${event.user_id} at ${event.area_name}`);
 
     // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.WORKER_LOCATION, event);
+    this.server.to(`area:${event.area_id}`).emit(EventType.USER_LOCATION, event);
 
     // Emit to rayon subscribers
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.WORKER_LOCATION, event);
+      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_LOCATION, event);
     }
 
     // Emit to city subscribers
-    this.server.to('city').emit(EventType.WORKER_LOCATION, event);
+    this.server.to('city').emit(EventType.USER_LOCATION, event);
   }
 
   /**
-   * Emit worker clock-in event
+   * Emit user clock-in event
    */
-  emitWorkerClockIn(event: WorkerClockInEvent): void {
-    this.logger.log(`Emitting worker clock-in: ${event.worker_name} at ${event.area_name}`);
+  emitUserClockIn(event: UserClockInEvent): void {
+    this.logger.log(`Emitting user clock-in: ${event.user_name} at ${event.area_name}`);
 
     // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.WORKER_CLOCK_IN, event);
+    this.server.to(`area:${event.area_id}`).emit(EventType.USER_CLOCK_IN, event);
 
     // Emit to rayon subscribers
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.WORKER_CLOCK_IN, event);
+      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_IN, event);
     }
 
     // Emit to city subscribers
-    this.server.to('city').emit(EventType.WORKER_CLOCK_IN, event);
+    this.server.to('city').emit(EventType.USER_CLOCK_IN, event);
   }
 
   /**
-   * Emit worker clock-out event
+   * Emit user clock-out event
    */
-  emitWorkerClockOut(event: WorkerClockOutEvent): void {
-    this.logger.log(`Emitting worker clock-out: ${event.worker_name} at ${event.area_name}`);
+  emitUserClockOut(event: UserClockOutEvent): void {
+    this.logger.log(`Emitting user clock-out: ${event.user_name} at ${event.area_name}`);
 
     // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.WORKER_CLOCK_OUT, event);
+    this.server.to(`area:${event.area_id}`).emit(EventType.USER_CLOCK_OUT, event);
 
     // Emit to rayon subscribers
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.WORKER_CLOCK_OUT, event);
+      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_OUT, event);
     }
 
     // Emit to city subscribers
-    this.server.to('city').emit(EventType.WORKER_CLOCK_OUT, event);
+    this.server.to('city').emit(EventType.USER_CLOCK_OUT, event);
   }
 
   /**

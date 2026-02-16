@@ -19,17 +19,17 @@ export enum DayType {
 }
 
 export enum StaffRole {
-  WORKER = 'worker',
+  SATGAS = 'satgas',
   LINMAS = 'linmas',
 }
 
 /**
  * AreaStaffRequirement Entity
  *
- * Defines the required number of staff (Workers/Linmas) for each area
+ * Defines the required number of staff (Satgas/Linmas) for each area
  * per shift and day type.
  *
- * Example: Taman Bungkul, Shift 1, Weekday needs 6 Workers and 2 Linmas
+ * Example: Taman Bungkul, Shift 1, Weekday needs 6 Satgas and 2 Linmas
  */
 @Entity('area_staff_requirements')
 export class AreaStaffRequirement {
@@ -57,7 +57,7 @@ export class AreaStaffRequirement {
   @ApiProperty({
     description: 'Role requiring staff',
     enum: StaffRole,
-    example: StaffRole.WORKER,
+    example: StaffRole.SATGAS,
   })
   @Column({ type: 'varchar', length: 30 })
   role: StaffRole;

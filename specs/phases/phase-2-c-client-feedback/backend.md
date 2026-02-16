@@ -1,8 +1,10 @@
 # Phase 2C: Backend Requirements
 
-**Last Updated:** 2026-02-10
-**Status:** Planning
+**Last Updated:** 2026-02-16
+**Status:** Spec Rewrite (Terminology Cleanup + Schema Redesign)
 **Framework:** NestJS 11.x, TypeScript 5.9, TypeORM
+**Related ADR:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
+**See also:** [Seeder Updates](./seeder-updates.md) for test data implementation
 
 ---
 
@@ -21,22 +23,23 @@
 | `ClockInDto` | `area_id` is REQUIRED (UUID). Must become optional for auto-detect. |
 | `CompleteTaskDto` | `gps_lat` and `gps_lng` are REQUIRED (@IsNotEmpty). `completion_photo_url` and `completion_notes` are OPTIONAL. |
 | `WorkerSchedule` | Uses `user_id` and `effective_date` (NOT `worker_id` / `start_date`) |
-| Shift entity | Uses `worker_id` column name |
+| Shift entity | Uses `worker_id` column name — **RENAME to `user_id`** |
 
 ---
 
 ## Module Changes Overview
 
-| Module | Change Type | Priority | Description |
-|--------|------------|----------|-------------|
-| Users | Modify | Critical | New UserRole enum (8 roles), add `area_id` to entity |
-| Shifts | Modify | High | Remove GPS boundary, expand clockable roles to 5, update ClockInDto |
-| Reports → Aktivitas | Rename + Modify | Critical | Multi-photo, mandatory activity_type, no review, correct applicable_roles check |
-| Tasks | Modify | High | Hierarchical assignment, tagging, simplified completion + status, update CompleteTaskDto |
-| Overtime | New | High | Full CRUD + approval workflow |
-| Monitoring | Modify | Medium | Updated role access, add area-scope authorization for korlap |
-| Activity Types | Modify | High | New seed data using `applicable_roles TEXT[]` for 4 roles |
-| Worker Assignments | Modify | Medium | Deprecation, schedule reconciliation |
+| Current Module | New Module | Change Type | Description |
+|---------------|------------|------------|-------------|
+| `users/` | `users/` | Modify | 8-role enum, `area_id`, role groups |
+| `shifts/` | `shifts/` | Modify | `worker_id`→`user_id`, expand clockable roles, polygon geofencing |
+| `reports/` | **`activities/`** | **Rename + Modify** | Multi-photo, mandatory activity_type, no review, English naming |
+| `worker-schedules/` | **`schedules/`** | **Rename** | Remove "worker" prefix |
+| `worker-assignments/` | — | **DELETE** | Fully deprecated, replaced by `schedules` |
+| `tasks/` | `tasks/` | Modify | Hierarchy, tagging, simplified completion + status |
+| `overtime/` | `overtime/` | Modify | **Flatten** — drop `OvertimeAktivitas`, merge into `Overtime` |
+| `monitoring/` | `monitoring/` | Modify | Updated role access, scope auth, boundary warnings |
+| `activity-types/` | `activity-types/` | Modify | New seed data, `applicable_roles` lowercase |
 
 ---
 
@@ -45,19 +48,6 @@
 ### UserRole Enum Update
 
 **File:** `be/src/modules/users/entities/user.entity.ts`
-
-**Current enum (line 14-22):**
-```typescript
-export enum UserRole {
-  WORKER = 'worker',
-  SUPERVISOR = 'supervisor',
-  ADMIN = 'admin',
-  TOP_MANAGEMENT = 'top_management',
-  KEPALA_RAYON = 'kepala_rayon',
-  KOORDINATOR_LAPANGAN = 'koordinator_lapangan',
-  LINMAS = 'linmas',
-}
-```
 
 **Target enum:**
 ```typescript
@@ -75,16 +65,9 @@ export enum UserRole {
 
 ### User Entity - Add area_id
 
-**File:** `be/src/modules/users/entities/user.entity.ts`
-
-The User entity currently has `rayon_id` but **NO `area_id`**. Add after line 64:
+Add after the `rayon_id` property:
 
 ```typescript
-@ApiProperty({
-  description: 'Area ID for Korlap role',
-  example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
-  required: false,
-})
 @Column({ type: 'uuid', nullable: true })
 area_id?: string;
 
@@ -93,74 +76,43 @@ area_id?: string;
 area?: Area;
 ```
 
-**Import required:** `import { Area } from '../../areas/entities/area.entity';`
-
 ### Role Group Constants
 
-**New file:** `be/src/modules/users/constants/role-groups.ts`
+**File:** `be/src/modules/users/constants/role-groups.ts`
 
 ```typescript
 import { UserRole } from '../entities/user.entity';
 
 export const CLOCKABLE_ROLES = [
-  UserRole.SATGAS,
-  UserRole.LINMAS,
-  UserRole.KORLAP,
-  UserRole.ADMIN_DATA,
-  UserRole.KEPALA_RAYON,
+  UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP,
+  UserRole.ADMIN_DATA, UserRole.KEPALA_RAYON,
 ];
 
-export const AKTIVITAS_SUBMITTERS = [
-  UserRole.SATGAS,
-  UserRole.LINMAS,
-  UserRole.KORLAP,
-  UserRole.ADMIN_DATA,
+export const ACTIVITY_SUBMITTERS = [
+  UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_DATA,
 ];
 
 export const TASK_CREATORS = [
-  UserRole.KORLAP,
-  UserRole.KEPALA_RAYON,
-  UserRole.TOP_MANAGEMENT,
-  UserRole.ADMIN_SYSTEM,
-  UserRole.SUPERADMIN,
+  UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT,
+  UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN,
 ];
 
 export const TASK_RECEIVERS = [
-  UserRole.SATGAS,
-  UserRole.LINMAS,
-  UserRole.KORLAP,
-  UserRole.KEPALA_RAYON,
+  UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.KEPALA_RAYON,
 ];
 
-export const OVERTIME_SUBMITTERS = [
-  UserRole.SATGAS,
-  UserRole.LINMAS,
-];
-
-export const OVERTIME_APPROVERS = [
-  UserRole.KORLAP,
-];
+export const OVERTIME_SUBMITTERS = [UserRole.SATGAS, UserRole.LINMAS];
+export const OVERTIME_APPROVERS = [UserRole.KORLAP];
 
 export const MONITORING_CITY = [
-  UserRole.TOP_MANAGEMENT,
-  UserRole.ADMIN_SYSTEM,
-  UserRole.SUPERADMIN,
+  UserRole.TOP_MANAGEMENT, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN,
 ];
-
 export const MONITORING_RAYON = [
-  UserRole.KEPALA_RAYON,
-  ...MONITORING_CITY,
+  UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA, ...MONITORING_CITY,
 ];
+export const MONITORING_AREA = [UserRole.KORLAP, ...MONITORING_RAYON];
 
-export const MONITORING_AREA = [
-  UserRole.KORLAP,
-  ...MONITORING_RAYON,
-];
-
-export const USER_MANAGERS = [
-  UserRole.ADMIN_SYSTEM,
-  UserRole.SUPERADMIN,
-];
+export const USER_MANAGERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
 
 export const VALID_TASK_ASSIGNMENTS: Record<string, string[]> = {
   [UserRole.TOP_MANAGEMENT]: [UserRole.KEPALA_RAYON, UserRole.KORLAP],
@@ -171,114 +123,48 @@ export const VALID_TASK_ASSIGNMENTS: Record<string, string[]> = {
 };
 ```
 
-### CreateUserDto Changes
-
-**File:** `be/src/modules/users/dto/create-user.dto.ts`
-
-**Current state:** role defaults to `UserRole.WORKER`, no `area_id` field.
-
-**Target changes:**
-```typescript
-@IsEnum(UserRole)
-@IsOptional()
-role?: UserRole = UserRole.SATGAS; // Changed from WORKER
-
-@IsUUID()
-@IsOptional()
-@ValidateIf(o => o.role === UserRole.KEPALA_RAYON)
-rayon_id?: string; // Required if role is kepala_rayon
-
-@IsUUID()
-@IsOptional()
-@ValidateIf(o => o.role === UserRole.KORLAP)
-area_id?: string; // Required if role is korlap (NEW field)
-```
+> **NOTE:** `AKTIVITAS_SUBMITTERS` renamed to `ACTIVITY_SUBMITTERS` (English-only in code).
 
 ### Guards Update - Complete @Roles Mapping
 
-Every `@Roles()` decorator in the codebase must be updated. Here is the complete mapping:
-
 | Controller File | Method | Current @Roles | Target @Roles |
 |----------------|--------|----------------|---------------|
-| `shifts.controller.ts` | clockIn | `UserRole.WORKER` | `...CLOCKABLE_ROLES` |
-| `shifts.controller.ts` | clockOut | `UserRole.WORKER` | `...CLOCKABLE_ROLES` |
-| `shifts.controller.ts` | getCurrentShift | `UserRole.WORKER` | `...CLOCKABLE_ROLES` |
-| `shifts.controller.ts` | getMyShifts | `UserRole.WORKER` | `...CLOCKABLE_ROLES` |
+| `shifts.controller.ts` | clockIn/Out | `UserRole.WORKER` | `...CLOCKABLE_ROLES` |
 | `shifts.controller.ts` | getActiveShifts | `ADMIN, SUPERVISOR` | `...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON` |
-| `reports.controller.ts` | create | `UserRole.WORKER` | `...AKTIVITAS_SUBMITTERS` |
-| `reports.controller.ts` | getMyReports | `UserRole.WORKER` | `...AKTIVITAS_SUBMITTERS` |
-| `reports.controller.ts` | findAll | `ADMIN, SUPERVISOR` | `...MONITORING_AREA` |
-| `reports.controller.ts` | update | `UserRole.WORKER` | `...AKTIVITAS_SUBMITTERS` |
+| `activities.controller.ts` | create | `UserRole.WORKER` | `...ACTIVITY_SUBMITTERS` |
+| `activities.controller.ts` | getMyActivities | `UserRole.WORKER` | `...ACTIVITY_SUBMITTERS` |
+| `activities.controller.ts` | findAll | `ADMIN, SUPERVISOR` | `...MONITORING_AREA` |
 | `tasks.controller.ts` | create | `ADMIN, KEPALA_RAYON, KOORDINATOR_LAPANGAN` | `...TASK_CREATORS` |
 | `tasks.controller.ts` | myTasks | `WORKER, LINMAS` | `...TASK_RECEIVERS` |
 | `tasks.controller.ts` | complete | `WORKER, LINMAS` | `...TASK_RECEIVERS` |
 | `monitoring.controller.ts` | getCityStats | `ADMIN, TOP_MANAGEMENT` | `...MONITORING_CITY` |
 | `monitoring.controller.ts` | getRayonStats | `+KEPALA_RAYON` | `...MONITORING_RAYON` |
-| `monitoring.controller.ts` | getAreaStats | `+KOORDINATOR_LAPANGAN, SUPERVISOR` | `...MONITORING_AREA` |
-| `monitoring.controller.ts` | getLiveWorkers | `+KOORDINATOR_LAPANGAN, SUPERVISOR` | `...MONITORING_AREA` |
-| `users.controller.ts` | CRUD operations | `ADMIN` | `...USER_MANAGERS` |
-| `areas.controller.ts` | CRUD operations | `ADMIN` | `...USER_MANAGERS` |
-| `rayons.controller.ts` | CRUD operations | `ADMIN` | `...USER_MANAGERS` |
+| `monitoring.controller.ts` | getAreaStats | `+SUPERVISOR` | `...MONITORING_AREA` |
+| `monitoring.controller.ts` | getLiveUsers | `+SUPERVISOR` | `...MONITORING_AREA` |
+| `users.controller.ts` | CRUD | `ADMIN` | `...USER_MANAGERS` |
+| `overtime.controller.ts` | submit | `SATGAS, LINMAS` | `...OVERTIME_SUBMITTERS` |
+| `overtime.controller.ts` | approve/reject | `KORLAP` | `...OVERTIME_APPROVERS` |
 
 ---
 
 ## B. Shifts Module
 
-### GPS Boundary Removal
+### Entity Changes
 
-**File:** `be/src/modules/shifts/shifts.service.ts`
+**File:** `be/src/modules/shifts/entities/shift.entity.ts`
 
-The `clockIn()` method currently has 5 steps. **Remove step 3 (GPS boundary validation):**
-
-```typescript
-// CURRENT clockIn() flow:
-// 1. Check if user already has active shift
-// 2. Verify worker assignment (area_id from DTO)
-// 3. Validate GPS boundary ← REMOVE THIS STEP
-// 4. Upload selfie to S3
-// 5. Create shift record
-
-// REMOVE these lines:
-// const isWithinBoundary = GpsUtil.isWithinBoundary(
-//   dto.gps_lat, dto.gps_lng,
-//   area.gps_lat, area.gps_lng,
-//   area.radius_meters + BOUNDARY_TOLERANCE
-// );
-// if (!isWithinBoundary) { throw new BadRequestException(...) }
-```
-
-**Keep:**
-- GPS coordinates recording (gps_lat, gps_lng stored on shift record)
-- Selfie photo upload to S3
-- Area association (from auto-detect, not DTO)
+- **Rename column:** `worker_id` → `user_id`
+- **Rename relation:** `worker` → `user`
+- **Add columns:** `clock_in_outside_boundary` (BOOLEAN, default false), `clock_out_outside_boundary` (BOOLEAN, default false)
 
 ### ClockInDto Transformation
 
 **File:** `be/src/modules/shifts/dto/clock-in.dto.ts`
 
-**Current DTO (all fields REQUIRED):**
 ```typescript
 export class ClockInDto {
   @IsUUID()
-  area_id: string;        // REQUIRED - Phase 2C: make OPTIONAL (auto-detect)
-
-  @IsNumber() @Min(-90) @Max(90)
-  gps_lat: number;        // Keep REQUIRED
-
-  @IsNumber() @Min(-180) @Max(180)
-  gps_lng: number;        // Keep REQUIRED
-
-  @IsString() @MaxLength(10_000_000)
-  @Matches(/^data:image\/(jpeg|jpg|png);base64,.../)
-  selfie_photo: string;   // Keep REQUIRED
-}
-```
-
-**Target DTO:**
-```typescript
-export class ClockInDto {
-  @IsUUID()
-  @IsOptional()  // NEW: optional, auto-detected from WorkerSchedule
+  @IsOptional()  // Was REQUIRED — now auto-detected from Schedule
   area_id?: string;
 
   @IsNumber() @Min(-90) @Max(90)
@@ -293,31 +179,14 @@ export class ClockInDto {
 }
 ```
 
-### Clockable Roles Expansion
-
-**Current:** Only `UserRole.WORKER` can clock in/out
-**Phase 2C:** All `CLOCKABLE_ROLES` (satgas, linmas, korlap, admin_data, kepala_rayon)
-
-**File:** `be/src/modules/shifts/shifts.controller.ts`
-
-Update all clock-in/out endpoints:
-```typescript
-@Roles(...CLOCKABLE_ROLES)
-```
-
-### Area Auto-Detection
-
-**File:** `be/src/modules/shifts/shifts.service.ts`
-
-Add new method using correct WorkerSchedule field names:
+### Area Auto-Detection (Updated for Terminology)
 
 ```typescript
 async getActiveArea(userId: string): Promise<Area | null> {
   const today = new Date();
 
-  // 1. Check today's WorkerSchedule (PRIMARY source)
-  // NOTE: Field is `effective_date` NOT `start_date`, and `user_id` NOT `worker_id`
-  const schedule = await this.workerScheduleRepo.findOne({
+  // Check today's Schedule (PRIMARY source — renamed from WorkerSchedule)
+  const schedule = await this.scheduleRepo.findOne({
     where: {
       user_id: userId,
       effective_date: LessThanOrEqual(today),
@@ -328,19 +197,56 @@ async getActiveArea(userId: string): Promise<Area | null> {
   });
   if (schedule) return schedule.area;
 
-  // 2. Fallback to WorkerAssignment (deprecated)
-  const assignment = await this.workerAssignmentRepo.findOne({
-    where: { worker_id: userId, deprecated: false },
-    relations: ['area'],
-  });
-  if (assignment) return assignment.area;
-
-  // 3. No area assigned - allow clock-in with null area (GPS still recorded)
+  // No area assigned - allow clock-in with null area
   return null;
 }
 ```
 
-**Updated clockIn() logic:**
+> **NOTE:** `WorkerAssignment` fallback REMOVED (table dropped). Only `Schedule` is checked.
+
+### Polygon Geofencing (Soft Warning)
+
+**New file:** `be/src/common/utils/gps.util.ts` — add methods:
+
+```typescript
+/**
+ * Ray casting algorithm — checks if point is inside a GeoJSON polygon.
+ * No PostGIS needed, runs in application layer.
+ */
+static isPointInPolygon(lat: number, lng: number, polygon: GeoJSON.Polygon): boolean {
+  const coords = polygon.coordinates[0]; // outer ring
+  let inside = false;
+  for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+    const xi = coords[i][1], yi = coords[i][0]; // lat, lng
+    const xj = coords[j][1], yj = coords[j][0];
+    const intersect = ((yi > lng) !== (yj > lng))
+      && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Check if GPS coords are within an area's boundary.
+ * Priority: polygon (from KMZ) → radius fallback → true (no boundary defined)
+ */
+static isWithinAreaBoundary(lat: number, lng: number, area: Area): boolean {
+  // 1. Polygon check (from areas.boundary_polygon JSONB)
+  if (area.boundary_polygon) {
+    return GpsUtil.isPointInPolygon(lat, lng, area.boundary_polygon);
+  }
+  // 2. Radius fallback (from area center + radius_meters)
+  if (area.gps_lat && area.gps_lng && area.radius_meters) {
+    const distance = GpsUtil.calculateDistance(lat, lng, area.gps_lat, area.gps_lng);
+    return distance <= area.radius_meters;
+  }
+  // 3. No boundary defined — not flagged
+  return true;
+}
+```
+
+### clockIn() Integration
+
 ```typescript
 async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
   // 1. Check if user already has active shift
@@ -355,225 +261,199 @@ async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
     area = await this.getActiveArea(userId);
   }
 
-  // 3. GPS boundary validation REMOVED (Phase 2C)
+  // 3. Polygon geofencing (soft warning — never blocks)
+  let outsideBoundary = false;
+  if (area && dto.gps_lat && dto.gps_lng) {
+    outsideBoundary = !GpsUtil.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, area);
+  }
 
   // 4. Upload selfie to S3
   const selfieUrl = await this.s3Service.uploadBase64(dto.selfie_photo, ...);
 
   // 5. Create shift record
   return this.shiftRepo.save({
-    worker_id: userId,  // Column name is worker_id
+    user_id: userId,                      // RENAMED from worker_id
     area_id: area?.id ?? null,
     clock_in_time: new Date(),
     clock_in_photo: selfieUrl,
     gps_lat: dto.gps_lat,
     gps_lng: dto.gps_lng,
+    clock_in_outside_boundary: outsideBoundary,  // NEW
   });
 }
 ```
 
+Same logic for `clockOut()` → sets `clock_out_outside_boundary`.
+
+### ShiftsService Changes (Remove WorkerAssignment fallback)
+
+- Remove `@InjectRepository(WorkerAssignment)` from constructor
+- Remove `WorkerAssignmentsService` import
+- `getActiveArea()` only checks `Schedule` (renamed from `WorkerSchedule`)
+- Remove `WorkerAssignment` from `shifts.module.ts` TypeORM imports
+
 ---
 
-## C. Reports → Aktivitas Module
+## C. Activities Module (formerly Reports)
+
+### Module Rename
+
+| Current | New |
+|---------|-----|
+| `be/src/modules/reports/` | `be/src/modules/activities/` |
+| `ReportsModule` | `ActivitiesModule` |
+| `ReportsService` | `ActivitiesService` |
+| `ReportsController` | `ActivitiesController` |
+| `Report` entity class | `Activity` entity class |
+| Table name `work_reports` | Table name `activities` |
 
 ### Route Renaming
 
 | Current Route | New Route | Method |
 |--------------|-----------|--------|
-| `POST /reports` | `POST /aktivitas` | Create aktivitas |
-| `GET /reports` | `GET /aktivitas` | List aktivitas |
-| `GET /reports/:id` | `GET /aktivitas/:id` | Get aktivitas detail |
-| `GET /reports/my` | `GET /aktivitas/my` | My aktivitas |
-| `DELETE /reports/:id` | _(removed)_ | No delete in 2C |
+| `POST /reports` | `POST /activities` | Create activity |
+| `GET /reports` | `GET /activities` | List activities |
+| `GET /reports/:id` | `GET /activities/:id` | Get activity detail |
+| `GET /reports/my` | `GET /activities/my` | My activities |
 
-**Implementation approach:** Rename controller route prefix from `'reports'` to `'aktivitas'`. Optionally keep `/reports` as alias for 1 release cycle.
+### Entity Changes
 
-### CreateAktivitasDto
+**File:** `be/src/modules/activities/entities/activity.entity.ts` (renamed from `report.entity.ts`)
 
-**File:** `be/src/modules/reports/dto/create-report.dto.ts` → rename to `create-aktivitas.dto.ts`
+- **Rename class:** `Report` → `Activity`
+- **Table name:** `activities` (was `work_reports`)
+- **Rename column:** `worker_id` → `user_id`
+- **Rename relation:** `worker` → `user`
+- **Drop column:** `report_type` (enum removed entirely)
+- **Drop columns:** `is_reviewed`, `reviewed_by`, `reviewed_at`, `reviewer` relation
+- **Drop column:** `condition` (ReportCondition enum)
+- **Add column:** `photo_urls: string[]` (TEXT array, default `'{}'`)
+- **Make required:** `activity_type_id` (was nullable)
+
+### CreateActivityDto (renamed from CreateAktivitasDto)
 
 ```typescript
-export class CreateAktivitasDto {
+export class CreateActivityDto {
   @IsUUID()
   @IsNotEmpty()
-  activity_type_id: string;  // NOW REQUIRED (was optional)
+  activity_type_id: string;  // REQUIRED
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(1000)
+  @MaxLength(500)
   description: string;
 
   @IsArray()
   @ArrayMaxSize(3)
-  @ArrayMinSize(1)    // At least 1 photo required
+  @ArrayMinSize(1)
   @IsString({ each: true })
-  photo_urls: string[]; // S3 URLs after upload (max 3)
+  photo_urls: string[];  // S3 URLs (max 3)
 
-  @IsNumber()
-  @IsOptional()
+  @IsNumber() @IsOptional()
   gps_lat?: number;
 
-  @IsNumber()
-  @IsOptional()
+  @IsNumber() @IsOptional()
   gps_lng?: number;
-
-  // shift_id is NOT from client — auto-populated from active shift in service layer
 }
 ```
 
-### Photo Upload Strategy
+### DTO Rename Summary
 
-**Multi-photo upload flow for aktivitas (max 3 photos):**
-
-1. **Mobile app** captures photos via camera (camera only, no gallery)
-2. **Mobile app** uploads each photo to `POST /upload/photo` (existing S3 upload endpoint)
-3. **Mobile app** receives S3 URLs for each uploaded photo
-4. **Mobile app** sends `CreateAktivitasDto` with `photo_urls: [url1, url2, url3]`
-
-**Existing upload infrastructure:** The S3 upload service in `be/src/modules/uploads/` already handles base64 image uploads. The current single-photo flow on reports uses inline base64 in the DTO. For multi-photo:
-
-- **Option A (recommended):** Create a separate `POST /uploads/photos` endpoint that accepts FormData with multiple files, returns array of S3 URLs. Mobile sends URLs in DTO.
-- **Option B:** Keep inline base64 — send array of base64 strings in DTO (large payload, ~30MB for 3 photos).
-
-**Recommendation:** Option A — separate upload endpoint.
+| Current | New |
+|---------|-----|
+| `CreateAktivitasDto` | `CreateActivityDto` |
+| `CreateReportDto` | _(replaced by CreateActivityDto)_ |
+| `UpdateReportDto` | `UpdateActivityDto` |
+| `ReportsFilterDto` | `ActivitiesFilterDto` |
 
 ### Service Changes
 
-**File:** `be/src/modules/reports/reports.service.ts`
-
 ```typescript
-async createAktivitas(userId: string, dto: CreateAktivitasDto): Promise<Report> {
+async createActivity(userId: string, dto: CreateActivityDto): Promise<Activity> {
   // 1. Verify user has active shift
   const activeShift = await this.shiftsService.getActiveShift(userId);
   if (!activeShift) {
     throw new BadRequestException('Harus clock-in terlebih dahulu');
   }
 
-  // 2. Verify activity_type matches user's role using applicable_roles array
+  // 2. Verify activity_type matches user's role
   const user = await this.usersService.findOne(userId);
   const activityType = await this.activityTypesService.findOne(dto.activity_type_id);
-
-  // IMPORTANT: applicable_roles is TEXT[] array, check with .includes()
   if (!activityType.applicable_roles.includes(user.role)) {
     throw new BadRequestException('Jenis aktivitas tidak sesuai dengan role Anda');
   }
 
-  // 3. Validate photo count (max 3)
-  if (dto.photo_urls.length > 3) {
-    throw new BadRequestException('Maksimal 3 foto per aktivitas');
-  }
-  if (dto.photo_urls.length < 1) {
-    throw new BadRequestException('Minimal 1 foto per aktivitas');
-  }
-
-  // 4. Create report with shift_id from active shift
-  return this.reportRepo.save({
+  // 3. Create activity
+  return this.activityRepo.save({
     activity_type_id: dto.activity_type_id,
     description: dto.description,
     photo_urls: dto.photo_urls,
     gps_lat: dto.gps_lat,
     gps_lng: dto.gps_lng,
-    worker_id: userId,       // Column name is worker_id
-    shift_id: activeShift.id, // Already exists, NOT NULL
+    user_id: userId,           // RENAMED from worker_id
+    shift_id: activeShift.id,
     area_id: activeShift.area_id,
   });
 }
 ```
 
-### Report Entity Changes Required
-
-**File:** `be/src/modules/reports/entities/report.entity.ts`
-
-1. Add `photo_urls` property:
-```typescript
-@Column({ type: 'text', array: true, default: '{}' })
-photo_urls: string[];
-```
-
-2. Remove review fields: `is_reviewed`, `reviewed_by`, `reviewed_at`, `reviewer` relation
-3. Make `report_type` optional (or remove enum usage)
-4. Make `activity_type_id` required (remove `nullable: true`)
-
 ### Access Control
 
-| Action | Roles | Notes |
+| Action | Roles | Scope |
 |--------|-------|-------|
-| Create aktivitas | satgas, linmas, korlap, admin_data | Must have active shift |
-| View own aktivitas | satgas, linmas, korlap, admin_data | Filter by worker_id = userId |
-| View all aktivitas | korlap (own area), kepala_rayon (own rayon), top_management, admin_system, superadmin | Auto-scope by role |
+| Create activity | ACTIVITY_SUBMITTERS | Must have active shift |
+| View own activities | ACTIVITY_SUBMITTERS | `user_id = currentUser.id` |
+| View all activities | MONITORING_AREA | korlap: own area, kepala_rayon: own rayon, admin: all |
 
 ---
 
-## D. Tasks Module
+## D. Schedules Module (formerly WorkerSchedules)
 
-### Hierarchical Assignment Validation
+### Module Rename
 
-**File:** `be/src/modules/tasks/tasks.service.ts`
+| Current | New |
+|---------|-----|
+| `be/src/modules/worker-schedules/` | `be/src/modules/schedules/` |
+| `WorkerSchedulesModule` | `SchedulesModule` |
+| `WorkerSchedulesService` | `SchedulesService` |
+| `WorkerSchedulesController` | `SchedulesController` |
+| `WorkerSchedule` entity class | `Schedule` entity class |
+| Table name `worker_schedules` | Table name `schedules` |
 
-```typescript
-import { VALID_TASK_ASSIGNMENTS } from '../../users/constants/role-groups';
+### Route Renaming
 
-async createTask(creatorId: string, dto: CreateTaskDto): Promise<Task> {
-  const creator = await this.usersService.findOne(creatorId);
-  const assignee = await this.usersService.findOne(dto.assigned_to);
+| Current Route | New Route |
+|--------------|-----------|
+| `GET /worker-schedules` | `GET /schedules` |
+| `POST /worker-schedules` | `POST /schedules` |
+| `PATCH /worker-schedules/:id` | `PATCH /schedules/:id` |
+| `DELETE /worker-schedules/:id` | `DELETE /schedules/:id` |
 
-  // Validate assignment hierarchy
-  const allowedTargets = VALID_TASK_ASSIGNMENTS[creator.role] || [];
-  if (!allowedTargets.includes(assignee.role)) {
-    throw new ForbiddenException(
-      `Role ${creator.role} tidak dapat menugaskan ke ${assignee.role}`
-    );
-  }
+### DTO Renames
 
-  // Validate scope: kepala_rayon can only assign within own rayon
-  if (creator.role === UserRole.KEPALA_RAYON && creator.rayon_id) {
-    // Check if assignee is in creator's rayon (via area → rayon mapping)
-    if (dto.area_id) {
-      const area = await this.areasService.findOne(dto.area_id);
-      if (area.rayon_id !== creator.rayon_id) {
-        throw new ForbiddenException('Anda hanya dapat menugaskan di rayon Anda');
-      }
-    }
-  }
+| Current | New |
+|---------|-----|
+| `CreateWorkerScheduleDto` | `CreateScheduleDto` |
+| `UpdateWorkerScheduleDto` | `UpdateScheduleDto` |
 
-  // Validate scope: korlap can only assign within own area
-  if (creator.role === UserRole.KORLAP && creator.area_id) {
-    if (dto.area_id && dto.area_id !== creator.area_id) {
-      throw new ForbiddenException('Anda hanya dapat menugaskan di area Anda');
-    }
-  }
+---
 
-  const task = await this.taskRepo.save({
-    ...dto,
-    created_by: creatorId,
-    status: TaskStatus.PENDING,
-    assigned_at: new Date(),
-  });
+## E. Worker Assignments Module — DELETE
 
-  // Handle tagging
-  if (dto.tagged_user_ids?.length) {
-    await this.addTags(task.id, dto.tagged_user_ids);
-  }
+The `worker-assignments/` module is **deleted entirely**:
 
-  return task;
-}
-```
+- Delete directory `be/src/modules/worker-assignments/`
+- Remove `WorkerAssignmentsModule` from `app.module.ts` imports
+- Remove `WorkerAssignment` entity from TypeORM `entities` array
+- Remove all `WorkerAssignment` references from `shifts.module.ts` and `shifts.service.ts`
+- Delete `AssignWorkerDto`
+- Delete test files
+
+---
+
+## F. Tasks Module
 
 ### TaskStatus Simplification
-
-**File:** `be/src/modules/tasks/entities/task.entity.ts`
-
-**Current (6 statuses):**
-```typescript
-export enum TaskStatus {
-  PENDING = 'pending',
-  ASSIGNED = 'assigned',
-  ACCEPTED = 'accepted',      // REMOVE
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-  DECLINED = 'declined',      // REMOVE
-}
-```
 
 **Target (4 statuses):**
 ```typescript
@@ -585,134 +465,100 @@ export enum TaskStatus {
 }
 ```
 
-**Task entity columns to REMOVE:**
-- `decline_reason` (text)
-- `declined_at` (timestamptz)
-- `accepted_at` (timestamptz)
+**Removed:** `ACCEPTED`, `DECLINED`
 
-**Task entity changes:**
-- `area_id`: Change from NOT NULL to nullable (tasks can be rayon-scoped)
-- `activity_type_id`: DROP column
-- `completion_gps_lat/lng`: DROP columns
+### Task Entity Changes
 
-### CreateTaskDto (Updated)
+- **Drop columns:** `activity_type_id`, `completion_gps_lat`, `completion_gps_lng`, `decline_reason`, `declined_at`, `accepted_at`
+- **Add column:** `rayon_id` (nullable UUID FK → rayons)
+- **Change:** `area_id` from NOT NULL to nullable
+- **Add relation:** `tags: TaskTag[]` (OneToMany)
 
-**File:** `be/src/modules/tasks/dto/create-task.dto.ts`
+### CreateTaskDto
 
-**Current state:** Has `activity_type_id` (optional), `area_id` (required), `priority` (optional).
-
-**Target:**
 ```typescript
 export class CreateTaskDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
+  @IsString() @IsNotEmpty() @MaxLength(200)
   title: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(2000)
-  description: string;
+  @IsString() @IsOptional()
+  description?: string;
 
-  @IsUUID()
-  @IsNotEmpty()
-  assigned_to: string;
+  @IsUUID() @IsOptional()
+  assigned_to?: string;
 
-  @IsUUID()
-  @IsOptional()
-  area_id?: string;     // NOW OPTIONAL (was required)
+  @IsUUID() @IsOptional()
+  area_id?: string;     // NOW OPTIONAL
 
-  @IsUUID()
-  @IsOptional()
-  rayon_id?: string;    // NEW field
+  @IsUUID() @IsOptional()
+  rayon_id?: string;    // NEW
 
-  @IsDateString()
-  @IsOptional()
-  due_date?: string;    // Maps to `deadline` column
+  @IsDateString() @IsOptional()
+  deadline?: string;
 
-  @IsEnum(TaskPriority)
-  @IsOptional()
-  priority?: TaskPriority;  // KEEP — useful for ordering
+  @IsEnum(TaskPriority) @IsOptional()
+  priority?: TaskPriority;
 
-  @IsArray()
-  @IsUUID('4', { each: true })
-  @IsOptional()
-  tagged_user_ids?: string[]; // NEW: CC-like tagging, view only
+  @IsArray() @IsUUID('4', { each: true }) @IsOptional()
+  tagged_user_ids?: string[];  // NEW: CC-like tagging
 }
 ```
 
-### CompleteTaskDto Transformation
+### CompleteTaskDto
 
-**File:** `be/src/modules/tasks/dto/complete-task.dto.ts`
-
-**Current DTO:**
 ```typescript
 export class CompleteTaskDto {
-  @IsString() @IsOptional()
-  completion_photo_url?: string;  // Currently OPTIONAL → make REQUIRED
+  @IsString() @IsNotEmpty() @MaxLength(2000)
+  description: string;            // REQUIRED
 
-  @IsString() @IsOptional()
-  completion_notes?: string;      // Currently OPTIONAL → keep optional
+  @IsString() @IsNotEmpty() @MaxLength(500)
+  completion_photo_url: string;   // REQUIRED (was optional)
 
-  @IsNumber() @IsNotEmpty()
-  gps_lat: number;                // Currently REQUIRED → REMOVE
-
-  @IsNumber() @IsNotEmpty()
-  gps_lng: number;                // Currently REQUIRED → REMOVE
+  // GPS fields REMOVED
 }
 ```
 
-**Target DTO:**
+### Hierarchical Assignment Validation
+
 ```typescript
-export class CompleteTaskDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(2000)
-  description: string;            // NEW: required completion description
+async createTask(creatorId: string, dto: CreateTaskDto): Promise<Task> {
+  const creator = await this.usersService.findOne(creatorId);
+  const assignee = await this.usersService.findOne(dto.assigned_to);
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(500)
-  completion_photo_url: string;   // NOW REQUIRED (was optional)
+  const allowedTargets = VALID_TASK_ASSIGNMENTS[creator.role] || [];
+  if (!allowedTargets.includes(assignee.role)) {
+    throw new ForbiddenException(
+      `Role ${creator.role} tidak dapat menugaskan ke ${assignee.role}`
+    );
+  }
 
-  // GPS fields REMOVED — no longer tracked on task completion
+  // Scope validation: kepala_rayon within own rayon
+  if (creator.role === UserRole.KEPALA_RAYON && creator.rayon_id) {
+    if (dto.area_id) {
+      const area = await this.areasService.findOne(dto.area_id);
+      if (area.rayon_id !== creator.rayon_id) {
+        throw new ForbiddenException('Anda hanya dapat menugaskan di rayon Anda');
+      }
+    }
+  }
+
+  // Scope validation: korlap within own area
+  if (creator.role === UserRole.KORLAP && creator.area_id) {
+    if (dto.area_id && dto.area_id !== creator.area_id) {
+      throw new ForbiddenException('Anda hanya dapat menugaskan di area Anda');
+    }
+  }
+
+  const task = await this.taskRepo.save({
+    ...dto, created_by: creatorId,
+    status: TaskStatus.PENDING, assigned_at: new Date(),
+  });
+
+  if (dto.tagged_user_ids?.length) {
+    await this.addTags(task.id, dto.tagged_user_ids);
+  }
+  return task;
 }
-```
-
-### Task Tagging
-
-**New entity:** `be/src/modules/tasks/entities/task-tag.entity.ts`
-
-```typescript
-@Entity('task_tags')
-@Unique(['task_id', 'user_id'])
-export class TaskTag {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ type: 'uuid' })
-  task_id: string;
-
-  @Column({ type: 'uuid' })
-  user_id: string;
-
-  @CreateDateColumn()
-  created_at: Date;
-
-  @ManyToOne(() => Task, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'task_id' })
-  task: Task;
-
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-}
-```
-
-**Add to Task entity:**
-```typescript
-@OneToMany(() => TaskTag, tag => tag.task)
-tags: TaskTag[];
 ```
 
 ### Task Tagging Endpoints
@@ -720,23 +566,21 @@ tags: TaskTag[];
 | Method | Path | Description | Roles |
 |--------|------|-------------|-------|
 | `GET` | `/tasks/tagged` | Tasks where I'm tagged | All authenticated |
-| `POST` | `/tasks/:id/tag` | Add tagged users to task | Task creator only |
-| `DELETE` | `/tasks/:id/tag/:userId` | Remove tag from task | Task creator only |
+| `POST` | `/tasks/:id/tag` | Add tagged users | Task creator only |
+| `DELETE` | `/tasks/:id/tag/:userId` | Remove tag | Task creator only |
 
-### Task List Filters
-
+**POST `/tasks/:id/tag` request body:**
 ```typescript
-// GET /tasks?filter=assigned  → Tasks assigned to me
-// GET /tasks?filter=tagged    → Tasks where I'm tagged (via task_tags)
-// GET /tasks?filter=created   → Tasks I created
-// GET /tasks?status=pending|assigned|in_progress|completed
+{
+  user_ids: string[];  // Array of user UUIDs to tag
+}
 ```
 
 ---
 
-## E. Overtime Module (NEW)
+## G. Overtime Module (Flattened)
 
-### Module Structure
+### Module Structure (Updated)
 
 ```
 be/src/modules/overtime/
@@ -744,14 +588,13 @@ be/src/modules/overtime/
 ├── overtime.controller.ts
 ├── overtime.service.ts
 ├── entities/
-│   ├── overtime.entity.ts
-│   └── overtime-aktivitas.entity.ts
+│   └── overtime.entity.ts       ← ONLY entity (overtime-aktivitas.entity.ts DELETED)
 └── dto/
-    ├── create-overtime.dto.ts
+    ├── create-overtime.dto.ts   ← FLAT (no nested aktivitas array)
     └── approve-overtime.dto.ts
 ```
 
-### Entity: Overtime
+### Entity: Overtime (Flat — activity fields inline)
 
 ```typescript
 @Entity('overtimes')
@@ -789,9 +632,23 @@ export class Overtime {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @OneToMany(() => OvertimeAktivitas, oa => oa.overtime, { cascade: true })
-  aktivitas: OvertimeAktivitas[];
+  // Activity fields (FLAT — merged from overtime_aktivitas)
+  @Column({ type: 'uuid', nullable: true })
+  activity_type_id: string;
 
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column({ type: 'text', array: true, default: '{}' })
+  photo_urls: string[];
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  gps_lat: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  gps_lng: number;
+
+  // Relations
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
@@ -804,6 +661,10 @@ export class Overtime {
   @JoinColumn({ name: 'approved_by' })
   approver: User;
 
+  @ManyToOne(() => ActivityType, { nullable: true })
+  @JoinColumn({ name: 'activity_type_id' })
+  activityType: ActivityType;
+
   @CreateDateColumn()
   created_at: Date;
 
@@ -812,42 +673,60 @@ export class Overtime {
 }
 ```
 
-### Entity: OvertimeAktivitas
+> **DELETED:** `OvertimeAktivitas` entity and `overtime_aktivitas` table.
+
+### CreateOvertimeDto (FLAT — no nested array)
 
 ```typescript
-@Entity('overtime_aktivitas')
-export class OvertimeAktivitas {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class CreateOvertimeDto {
+  @IsDateString() @IsNotEmpty()
+  date: string;
 
-  @Column({ type: 'uuid' })
-  overtime_id: string;
+  @IsString() @Matches(/^\d{2}:\d{2}$/)
+  start_time: string;
 
-  @Column({ type: 'uuid' })
+  @IsString() @Matches(/^\d{2}:\d{2}$/)
+  end_time: string;
+
+  @IsString() @IsOptional()
+  notes?: string;
+
+  // Activity fields (inline — 1 overtime = 1 activity)
+  @IsUUID() @IsNotEmpty()
   activity_type_id: string;
 
-  @Column({ type: 'text' })
+  @IsString() @IsNotEmpty()
   description: string;
 
-  @Column({ type: 'text', array: true, default: '{}' })
+  @IsArray() @ArrayMaxSize(3) @ArrayMinSize(1)
+  @IsString({ each: true })
   photo_urls: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
-  gps_lat: number;
+  @IsNumber() @IsOptional()
+  gps_lat?: number;
 
-  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
-  gps_lng: number;
+  @IsNumber() @IsOptional()
+  gps_lng?: number;
+}
+```
 
-  @ManyToOne(() => Overtime, o => o.aktivitas, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'overtime_id' })
-  overtime: Overtime;
+### API Response (Flat)
 
-  @ManyToOne(() => ActivityType)
-  @JoinColumn({ name: 'activity_type_id' })
-  activity_type: ActivityType;
-
-  @CreateDateColumn()
-  created_at: Date;
+```json
+{
+  "id": "uuid",
+  "date": "2026-02-10",
+  "start_time": "17:00",
+  "end_time": "20:00",
+  "status": "pending",
+  "activity_type_id": "uuid",
+  "activityType": { "id": "uuid", "name": "Penyiraman", "code": "penyiraman" },
+  "description": "Extra watering after shift",
+  "photo_urls": ["https://..."],
+  "gps_lat": -7.2905,
+  "gps_lng": 112.7398,
+  "notes": null,
+  "created_at": "2026-02-10T17:00:00Z"
 }
 ```
 
@@ -855,125 +734,44 @@ export class OvertimeAktivitas {
 
 | Method | Path | Description | Roles |
 |--------|------|-------------|-------|
-| `POST` | `/overtime` | Submit overtime request | satgas, linmas |
-| `GET` | `/overtime/my` | My overtime requests | satgas, linmas |
-| `GET` | `/overtime` | Pending approvals | korlap |
-| `GET` | `/overtime/:id` | Overtime detail | Owner, korlap, admin_system, superadmin |
-| `PATCH` | `/overtime/:id/approve` | Approve overtime | korlap |
-| `PATCH` | `/overtime/:id/reject` | Reject overtime | korlap |
+| `POST` | `/overtime` | Submit overtime request | OVERTIME_SUBMITTERS |
+| `GET` | `/overtime/my` | My overtime requests | OVERTIME_SUBMITTERS |
+| `GET` | `/overtime` | Pending approvals | OVERTIME_APPROVERS |
+| `GET` | `/overtime/:id` | Overtime detail | Owner + managers |
+| `PATCH` | `/overtime/:id/approve` | Approve overtime | OVERTIME_APPROVERS |
+| `PATCH` | `/overtime/:id/reject` | Reject overtime | OVERTIME_APPROVERS |
 
-### CreateOvertimeDto
-
-```typescript
-export class CreateOvertimeDto {
-  @IsDateString()
-  @IsNotEmpty()
-  date: string;
-
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/)
-  start_time: string;
-
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/)
-  end_time: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @ValidateNested({ each: true })
-  @Type(() => CreateOvertimeAktivitasDto)
-  aktivitas: CreateOvertimeAktivitasDto[];
-}
-
-export class CreateOvertimeAktivitasDto {
-  @IsUUID()
-  @IsNotEmpty()
-  activity_type_id: string;
-
-  @IsString()
-  @IsNotEmpty()
-  description: string;
-
-  @IsArray()
-  @ArrayMaxSize(3)
-  @IsString({ each: true })
-  photo_urls: string[];
-
-  @IsNumber()
-  @IsOptional()
-  gps_lat?: number;
-
-  @IsNumber()
-  @IsOptional()
-  gps_lng?: number;
-}
-```
-
-### Overtime Service Logic
+### Service Logic (Updated for flat structure)
 
 ```typescript
 async submitOvertime(userId: string, dto: CreateOvertimeDto): Promise<Overtime> {
   const user = await this.usersService.findOne(userId);
 
-  // Only satgas and linmas can submit
   if (!OVERTIME_SUBMITTERS.includes(user.role as UserRole)) {
     throw new ForbiddenException('Hanya satgas dan linmas yang dapat mengajukan lembur');
   }
 
-  // Validate activity types match user's role using applicable_roles array
-  for (const akt of dto.aktivitas) {
-    const actType = await this.activityTypesService.findOne(akt.activity_type_id);
-    // IMPORTANT: applicable_roles is TEXT[], check with .includes()
-    if (!actType.applicable_roles.includes(user.role)) {
-      throw new BadRequestException('Jenis aktivitas tidak sesuai role');
-    }
+  // Validate activity type matches user's role
+  const actType = await this.activityTypesService.findOne(dto.activity_type_id);
+  if (!actType.applicable_roles.includes(user.role)) {
+    throw new BadRequestException('Jenis aktivitas tidak sesuai role');
   }
 
-  // Get user's area from schedule (using correct field names)
   const area = await this.shiftsService.getActiveArea(userId);
 
   return this.overtimeRepo.save({
     user_id: userId,
     area_id: area?.id ?? null,
-    ...dto,
-  });
-}
-
-async approveOvertime(korlapId: string, overtimeId: string): Promise<Overtime> {
-  const korlap = await this.usersService.findOne(korlapId);
-  const overtime = await this.overtimeRepo.findOne({
-    where: { id: overtimeId },
-    relations: ['user', 'area'],
-  });
-
-  if (!overtime) throw new NotFoundException('Overtime tidak ditemukan');
-  if (overtime.status !== 'pending') throw new BadRequestException('Overtime sudah diproses');
-
-  // Korlap can only approve overtime in their area
-  if (korlap.area_id && overtime.area_id && overtime.area_id !== korlap.area_id) {
-    throw new ForbiddenException('Anda hanya dapat menyetujui lembur di area Anda');
-  }
-
-  return this.overtimeRepo.save({
-    ...overtime,
-    status: 'approved',
-    approved_by: korlapId,
-    approved_at: new Date(),
+    ...dto,  // Flat — activity fields directly on overtime
   });
 }
 ```
 
 ---
 
-## F. Monitoring Module
+## H. Monitoring Module
 
 ### Updated Role Access with Authorization
-
-**File:** `be/src/modules/monitoring/monitoring.controller.ts`
 
 ```typescript
 // City monitoring
@@ -985,7 +783,6 @@ async getCityStats() { ... }
 @Roles(...MONITORING_RAYON)
 @Get('rayon/:rayonId')
 async getRayonStats(@Param('rayonId') rayonId: string, @GetUser() user: User) {
-  // Authorization: kepala_rayon can only access their own rayon
   if (user.role === UserRole.KEPALA_RAYON && user.rayon_id !== rayonId) {
     throw new ForbiddenException('Anda hanya dapat melihat monitoring rayon Anda');
   }
@@ -996,7 +793,6 @@ async getRayonStats(@Param('rayonId') rayonId: string, @GetUser() user: User) {
 @Roles(...MONITORING_AREA)
 @Get('area/:areaId')
 async getAreaStats(@Param('areaId') areaId: string, @GetUser() user: User) {
-  // Authorization: korlap can only access their own area
   if (user.role === UserRole.KORLAP && user.area_id !== areaId) {
     throw new ForbiddenException('Anda hanya dapat melihat monitoring area Anda');
   }
@@ -1004,20 +800,22 @@ async getAreaStats(@Param('areaId') areaId: string, @GetUser() user: User) {
 }
 ```
 
-### Removed Roles from Monitoring
+### getLiveUsers (renamed from getLiveWorkers)
 
-- `supervisor` — removed (legacy role, mapped to korlap)
-- `admin` — split into `admin_system` (has monitoring) and `admin_data` (no monitoring)
+- Endpoint renamed: method name `getLiveWorkers` → `getLiveUsers`
+- Response includes `outside_boundary: boolean` per user for geofencing warnings
+- Dashboard shows warning indicator (yellow/red icon) for out-of-boundary users
+
+### Monitoring Service Updates
+
+- Remove `TaskStatus.ACCEPTED` from active tasks filter array
+- Replace `worker_id` references with `user_id` in queries
 
 ---
 
-## G. Activity Types Module
+## I. Activity Types Module
 
-### Service Update for applicable_roles Array
-
-**File:** `be/src/modules/activity-types/activity-types.service.ts`
-
-The `findByRole()` method must query using PostgreSQL array contains (`ANY`), not equality:
+### Service Update
 
 ```typescript
 async findByRole(role: string): Promise<ActivityType[]> {
@@ -1029,90 +827,120 @@ async findByRole(role: string): Promise<ActivityType[]> {
 }
 ```
 
-### API Endpoint (unchanged)
+---
 
-```typescript
-// GET /activity-types?role=satgas → Filter by role (using applicable_roles array)
-@Get()
-async findAll(@Query('role') role?: string): Promise<ActivityType[]> {
-  if (role) {
-    return this.activityTypesService.findByRole(role);
-  }
-  return this.activityTypesService.findAll();
-}
-```
+## J. Error Code Updates
 
-### Seed Data
+| Current Code | New Code |
+|-------------|----------|
+| `REPORT_NOT_FOUND` | `ACTIVITY_NOT_FOUND` |
+| `REPORT_ACCESS_DENIED` | `ACTIVITY_ACCESS_DENIED` |
+| Any `REPORT_*` | `ACTIVITY_*` |
+| Any `AKTIVITAS_*` | `ACTIVITY_*` |
 
-See [database.md](./database.md) Migration 1 for complete seed SQL with correct `applicable_roles TEXT[]` format.
+### Error Codes (Phase 2C)
+
+| Code | HTTP | Message |
+|------|------|---------|
+| `OVERTIME_001` | 403 | Hanya satgas dan linmas yang dapat mengajukan lembur |
+| `OVERTIME_002` | 400 | Overtime sudah diproses |
+| `OVERTIME_003` | 403 | Anda hanya dapat menyetujui lembur di area Anda |
+| `OVERTIME_004` | 404 | Overtime tidak ditemukan |
+| `TASK_HIER_001` | 403 | Role X tidak dapat menugaskan ke Y |
+| `TASK_HIER_002` | 403 | Anda hanya dapat menugaskan di rayon Anda |
+| `TASK_HIER_003` | 403 | Anda hanya dapat menugaskan di area Anda |
+| `ACTIVITY_001` | 400 | Harus clock-in terlebih dahulu |
+| `ACTIVITY_002` | 400 | Jenis aktivitas tidak sesuai dengan role Anda |
+| `ACTIVITY_003` | 400 | Maksimal 3 foto per aktivitas |
+| `ACTIVITY_004` | 400 | Minimal 1 foto per aktivitas |
+| `MONITOR_001` | 403 | Anda hanya dapat melihat monitoring rayon Anda |
+| `MONITOR_002` | 403 | Anda hanya dapat melihat monitoring area Anda |
 
 ---
 
-## H. Worker Assignments Reconciliation
+## K. Seed Updates
 
-### Strategy
+### Phase 1 Seed Updates (`seed.service.ts`)
 
-1. **Primary source of truth:** WorkerSchedule (uses `user_id` + `effective_date` + `end_date`)
-2. **Deprecated:** WorkerAssignment (keep for backward compatibility, mark deprecated)
-3. **Clock-in logic:** Check schedule first, fallback to assignment
+- Remove `seedWorkerAssignments()` (deprecated module)
+- **Add `area_id` assignment for korlap users:** All korlap users (korlap1, korlap2) must have `area_id` populated. Added UPDATE query after user creation to assign them to Taman Bungkul.
+- **Add boundary flag test data:** One completed shift updated with `clock_in_outside_boundary = true` to test monitoring dashboard polygon geofencing warnings.
 
-### Migration Path
+### Phase 2 Seed Updates (`seed-phase2.ts`)
 
-1. For each WorkerAssignment, create corresponding WorkerSchedule if none exists
-2. Mark WorkerAssignment as deprecated
-3. Update Shifts module to check WorkerSchedule first (see `getActiveArea()` above)
-4. Remove WorkerAssignment dependency from clockIn validation
+- Update table references: `worker_schedules` → `schedules`
+- Update column references: `worker_id` → `user_id`
+- **Add overtime test data:** 3 overtime records (PENDING, APPROVED, REJECTED) using flat structure with activity fields directly on overtime table (no nested `aktivitas` array).
 
----
+### Task Seed Updates (`seed-tasks.ts`)
 
-## Error Codes (Phase 2C New)
-
-| Code | HTTP | Message | Context |
-|------|------|---------|---------|
-| `OVERTIME_001` | 403 | Hanya satgas dan linmas yang dapat mengajukan lembur | Non-eligible role submits overtime |
-| `OVERTIME_002` | 400 | Overtime sudah diproses | Approve/reject already processed overtime |
-| `OVERTIME_003` | 403 | Anda hanya dapat menyetujui lembur di area Anda | Korlap approves outside their area |
-| `OVERTIME_004` | 404 | Overtime tidak ditemukan | Invalid overtime ID |
-| `TASK_HIER_001` | 403 | Role X tidak dapat menugaskan ke Y | Assignment hierarchy violation |
-| `TASK_HIER_002` | 403 | Anda hanya dapat menugaskan di rayon Anda | Kepala rayon scope violation |
-| `TASK_HIER_003` | 403 | Anda hanya dapat menugaskan di area Anda | Korlap scope violation |
-| `AKTIVITAS_001` | 400 | Harus clock-in terlebih dahulu | Submit aktivitas without active shift |
-| `AKTIVITAS_002` | 400 | Jenis aktivitas tidak sesuai dengan role Anda | Activity type not in applicable_roles |
-| `AKTIVITAS_003` | 400 | Maksimal 3 foto per aktivitas | Photo count exceeded |
-| `AKTIVITAS_004` | 400 | Minimal 1 foto per aktivitas | No photos provided |
-| `MONITOR_001` | 403 | Anda hanya dapat melihat monitoring rayon Anda | Kepala rayon accessing other rayon |
-| `MONITOR_002` | 403 | Anda hanya dapat melihat monitoring area Anda | Korlap accessing other area |
+- **Add rayon-scoped tasks:** 2 tasks with `rayon_id` set and `area_id = NULL` to test kepala_rayon assignment workflows.
+- All area-scoped tasks (8) maintain `area_id` populated, `rayon_id = NULL`.
 
 ---
 
-## New Endpoint Summary
+## Endpoint Summary
+
+### New Endpoints
 
 | Method | Path | Description | Roles |
 |--------|------|-------------|-------|
-| `POST` | `/overtime` | Submit overtime | satgas, linmas |
-| `GET` | `/overtime/my` | My overtime requests | satgas, linmas |
-| `GET` | `/overtime` | Pending approvals | korlap |
+| `POST` | `/overtime` | Submit overtime | OVERTIME_SUBMITTERS |
+| `GET` | `/overtime/my` | My overtime requests | OVERTIME_SUBMITTERS |
+| `GET` | `/overtime` | Pending approvals | OVERTIME_APPROVERS |
 | `GET` | `/overtime/:id` | Overtime detail | Owner + managers |
-| `PATCH` | `/overtime/:id/approve` | Approve overtime | korlap |
-| `PATCH` | `/overtime/:id/reject` | Reject overtime | korlap |
+| `PATCH` | `/overtime/:id/approve` | Approve overtime | OVERTIME_APPROVERS |
+| `PATCH` | `/overtime/:id/reject` | Reject overtime | OVERTIME_APPROVERS |
 | `GET` | `/tasks/tagged` | Tasks where I'm tagged | All authenticated |
 | `POST` | `/tasks/:id/tag` | Add tags to task | Task creator |
 | `DELETE` | `/tasks/:id/tag/:userId` | Remove tag | Task creator |
-| `POST` | `/uploads/photos` | Multi-photo upload (returns URLs) | All authenticated |
+| `POST` | `/uploads/photos` | Multi-photo upload | All authenticated |
 
-## Modified Endpoint Summary
+### Renamed Endpoints
 
-| Method | Path | Change | Description |
-|--------|------|--------|-------------|
-| `POST` | `/aktivitas` | Renamed from `/reports` | Create aktivitas |
-| `GET` | `/aktivitas` | Renamed from `/reports` | List aktivitas |
-| `GET` | `/aktivitas/:id` | Renamed from `/reports/:id` | Get detail |
-| `GET` | `/aktivitas/my` | Renamed from `/reports/my` | My aktivitas |
-| `POST` | `/shifts/clock-in` | Modified | GPS boundary removed, area optional, 5 roles |
-| `POST` | `/tasks` | Modified | Hierarchical validation, tagging, area optional |
-| `PATCH` | `/tasks/:id/complete` | Modified | Simplified (no GPS, photo+description required) |
-| `GET` | `/monitoring/*` | Modified | Updated role access + scope authorization |
+| Old Path | New Path | Change |
+|----------|----------|--------|
+| `/reports` | `/activities` | Module rename |
+| `/reports/:id` | `/activities/:id` | Module rename |
+| `/reports/my` | `/activities/my` | Module rename |
+| `/worker-schedules` | `/schedules` | Module rename |
+
+### Removed Endpoints
+
+| Path | Reason |
+|------|--------|
+| `/workers/:id/assign` | `worker_assignments` dropped |
+| `/tasks/:id/accept` | Accept workflow removed |
+| `/tasks/:id/decline` | Decline workflow removed |
 
 ---
 
-**Last Updated:** 2026-02-10
+## Completed Work
+
+### Terminology Cleanup (Feb 15, 2026)
+- ✅ Removed all outdated "worker" and "supervisor" references in API docs, DTOs, and comments
+- ✅ Updated DTO: `WorkerStatusDto` → `UserStatusDto`
+- ✅ Updated field names: `workers` → `users`, `total_workers_assigned` → `total_users_assigned`
+- ✅ Updated all JSDoc and comments to use Phase 2C terminology (satgas, korlap, user)
+- ✅ Files modified: 9 files (users controller, area-stats DTO, main.ts, shifts, supervisor, monitoring, tasks)
+- ✅ Tests: All 922 tests passing
+- ⚠️ **Breaking Change:** API response field names changed in `/monitoring/areas/:id/stats` - mobile/web teams must update before backend deployment
+
+---
+
+## Implementation Sub-phases
+
+| Sub-phase | Scope | Dependencies |
+|-----------|-------|-------------|
+| **A: Database Migration** | All migration scripts | None |
+| **B: Entity + Module Renames** | `Report`→`Activity`, `WorkerSchedule`→`Schedule`, module dirs | A |
+| **C: Column Renames** | `worker_id`→`user_id` on 3 entities | B |
+| **D: Overtime Flatten** | Drop `OvertimeAktivitas`, merge into `Overtime` | B |
+| **E: Polygon Geofencing** | `GpsUtil` methods, shifts integration, boundary flags | B |
+| **F: Delete WorkerAssignments** | Remove module, update shifts service | B |
+| **G: Seed Updates** | All seed files for new names | B, C, D |
+| **H: Backend Tests** | Update all tests for new names + add geofencing tests | C, D, E, F |
+
+---
+
+**Last Updated:** 2026-02-16

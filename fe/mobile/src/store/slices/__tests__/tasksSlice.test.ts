@@ -26,12 +26,14 @@ import type { Task, TaskStatus } from '../../../types/models.types';
 describe('tasksSlice', () => {
   const initialState = {
     tasks: [],
+    taggedTasks: [],
     selectedTask: null,
     isLoading: false,
     isSubmitting: false,
     error: null,
     filter: {
       status: 'all' as TaskStatus | 'all',
+      type: 'all' as 'assigned' | 'tagged' | 'created' | 'all',
     },
   };
 
@@ -247,7 +249,7 @@ describe('tasksSlice', () => {
     it('should set filter to all', () => {
       const filteredState = {
         ...initialState,
-        filter: { status: 'pending' as TaskStatus | 'all' },
+        filter: { status: 'pending' as TaskStatus | 'all', type: 'all' as 'assigned' | 'tagged' | 'created' | 'all' },
       };
       const state = tasksReducer(filteredState, setFilterStatus('all'));
       expect(state.filter.status).toBe('all');
@@ -302,7 +304,7 @@ describe('tasksSlice', () => {
         isLoading: true,
         isSubmitting: true,
         error: 'Some error',
-        filter: { status: 'pending' as TaskStatus | 'all' },
+        filter: { status: 'pending' as TaskStatus | 'all', type: 'all' as 'assigned' | 'tagged' | 'created' | 'all' },
       };
       const state = tasksReducer(modifiedState, resetState());
       expect(state).toEqual(initialState);
@@ -322,7 +324,7 @@ describe('tasksSlice', () => {
           tasks: {
             ...initialState,
             tasks: mockTasks,
-            filter: { status: 'pending' as TaskStatus | 'all' },
+            filter: { status: 'pending' as TaskStatus | 'all', type: 'all' as 'assigned' | 'tagged' | 'created' | 'all' },
           },
         };
         const result = selectFilteredTasks(state);
@@ -344,14 +346,10 @@ describe('tasksSlice', () => {
     });
 
     describe('selectInProgressTasksCount', () => {
-      it('should count accepted and in_progress tasks', () => {
-        const tasksWithAccepted = [
-          ...mockTasks,
-          { ...mockTask, id: 'task-004', status: 'accepted' as TaskStatus },
-        ];
-        const state = { tasks: { ...initialState, tasks: tasksWithAccepted } };
+      it('should count only in_progress tasks', () => {
+        const state = { tasks: { ...initialState, tasks: mockTasks } };
         const result = selectInProgressTasksCount(state);
-        expect(result).toBe(2); // 1 in_progress + 1 accepted
+        expect(result).toBe(1); // Only 1 in_progress (no 'accepted' status in Phase 2C)
       });
     });
   });

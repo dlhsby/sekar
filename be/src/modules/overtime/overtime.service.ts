@@ -8,18 +8,18 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Overtime, OvertimeStatus } from './entities/overtime.entity';
-import { OvertimeAktivitas } from './entities/overtime-aktivitas.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { OVERTIME_SUBMITTERS } from '../users/constants/role-groups';
+import { ShiftsService } from '../shifts/shifts.service';
 
 /**
  * Overtime Service
  *
  * Handles business logic for overtime submission and approval.
- * Satgas and Linmas submit overtime with aktivitas.
+ * Satgas and Linmas submit overtime with activity.
  * Korlap approves/rejects overtime within their area.
  */
 @Injectable()
@@ -29,12 +29,11 @@ export class OvertimeService {
   constructor(
     @InjectRepository(Overtime)
     private overtimeRepo: Repository<Overtime>,
-    @InjectRepository(OvertimeAktivitas)
-    private overtimeAktivitasRepo: Repository<OvertimeAktivitas>,
     @InjectRepository(ActivityType)
     private activityTypeRepo: Repository<ActivityType>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    private shiftsService: ShiftsService,
   ) {}
 
   /**
@@ -43,7 +42,7 @@ export class OvertimeService {
    * @param userId User UUID (satgas or linmas)
    * @param userRole User role
    * @param dto Overtime creation data
-   * @returns Created overtime with aktivitas
+   * @returns Created overtime
    */
   async submit(
     userId: string,
@@ -61,41 +60,35 @@ export class OvertimeService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    // Validate each aktivitas's activity_type matches user's role
-    for (const akt of dto.aktivitas) {
-      const actType = await this.activityTypeRepo.findOne({
-        where: { id: akt.activity_type_id, is_active: true },
-      });
-      if (!actType) {
-        throw new BadRequestException(
-          `Activity type ${akt.activity_type_id} not found`,
-        );
-      }
-      if (!actType.applicable_roles.includes(userRole)) {
-        throw new ForbiddenException(
-          `Activity type ${actType.name} is not available for your role`,
-        );
-      }
+    // Validate activity_type matches user's role
+    const actType = await this.activityTypeRepo.findOne({
+      where: { id: dto.activity_type_id, is_active: true },
+    });
+    if (!actType) {
+      throw new BadRequestException(
+        `Activity type ${dto.activity_type_id} not found`,
+      );
+    }
+    if (!actType.applicable_roles.includes(userRole)) {
+      throw new ForbiddenException(
+        `Activity type ${actType.name} is not available for your role`,
+      );
     }
 
-    // Create overtime with nested aktivitas
+    // Create flat overtime
     const overtime = this.overtimeRepo.create({
       user_id: userId,
-      area_id: user.area_id || undefined,
+      area_id: (await this.shiftsService.getActiveArea(userId))?.id || user.area_id || undefined,
       date: dto.date,
       start_time: dto.start_time,
       end_time: dto.end_time,
       notes: dto.notes,
       status: OvertimeStatus.PENDING,
-      aktivitas: dto.aktivitas.map((akt) =>
-        this.overtimeAktivitasRepo.create({
-          activity_type_id: akt.activity_type_id,
-          description: akt.description,
-          photo_urls: akt.photo_urls,
-          gps_lat: akt.gps_lat,
-          gps_lng: akt.gps_lng,
-        }),
-      ),
+      activity_type_id: dto.activity_type_id,
+      description: dto.description,
+      photo_urls: dto.photo_urls,
+      gps_lat: dto.gps_lat,
+      gps_lng: dto.gps_lng,
     });
 
     const saved = await this.overtimeRepo.save(overtime);
@@ -201,7 +194,7 @@ export class OvertimeService {
   async findMy(userId: string): Promise<Overtime[]> {
     return this.overtimeRepo.find({
       where: { user_id: userId },
-      relations: ['aktivitas', 'aktivitas.activity_type', 'area'],
+      relations: ['activityType', 'area'],
       order: { created_at: 'DESC' },
     });
   }
@@ -222,15 +215,17 @@ export class OvertimeService {
 
     const qb = this.overtimeRepo
       .createQueryBuilder('overtime')
-      .leftJoinAndSelect('overtime.aktivitas', 'aktivitas')
-      .leftJoinAndSelect('aktivitas.activity_type', 'activityType')
+      .leftJoinAndSelect('overtime.activityType', 'activityType')
       .leftJoinAndSelect('overtime.user', 'user')
       .leftJoinAndSelect('overtime.area', 'area')
       .where('overtime.status = :status', { status: OvertimeStatus.PENDING });
 
-    // Scope: korlap sees only their area
+    // Scope: korlap sees only their area, admin_data sees only their rayon
     if (approverRole === UserRole.KORLAP && approver?.area_id) {
       qb.andWhere('overtime.area_id = :areaId', { areaId: approver.area_id });
+    } else if (approverRole === UserRole.ADMIN_DATA && approver?.rayon_id) {
+      qb.leftJoin('overtime.area', 'area');
+      qb.andWhere('area.rayon_id = :rayonId', { rayonId: approver.rayon_id });
     }
 
     qb.orderBy('overtime.created_at', 'DESC');
@@ -253,13 +248,7 @@ export class OvertimeService {
   private async findOneOrFail(overtimeId: string): Promise<Overtime> {
     const overtime = await this.overtimeRepo.findOne({
       where: { id: overtimeId },
-      relations: [
-        'aktivitas',
-        'aktivitas.activity_type',
-        'user',
-        'area',
-        'approver',
-      ],
+      relations: ['activityType', 'user', 'area', 'approver'],
     });
     if (!overtime) {
       throw new NotFoundException('Overtime not found');

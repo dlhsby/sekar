@@ -6,7 +6,7 @@ import { User } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { Task } from '../tasks/entities/task.entity';
-import { Report } from '../reports/entities/report.entity';
+import { Activity } from '../activities/entities/activity.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
@@ -18,8 +18,8 @@ import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-s
  * Provides:
  * - City-wide statistics (Admin/TopManagement)
  * - Rayon-level statistics (KepalaRayon+)
- * - Area-level statistics (KoordinatorLapangan+)
- * - Live worker positions
+ * - Area-level statistics (Korlap+)
+ * - Live user positions
  */
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-s
       Area,
       Shift,
       Task,
-      Report,
+      Activity,
       LocationLog,
       Rayon,
       ShiftDefinition,

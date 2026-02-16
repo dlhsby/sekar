@@ -23,12 +23,12 @@ import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
 import { TaskCompleteScreen } from '../screens/field/TaskCompleteScreen';
 import { ShiftHistoryScreen } from '../screens/field/ShiftHistoryScreen';
 import { ActivityDetailScreen } from '../screens/field/ActivityDetailScreen';
-import { ProfileScreen as FieldProfileScreen } from '../screens/field/ProfileScreen';
-
 // Monitoring screens (used by korlap, kepala_rayon, top management, admin roles)
-import { MapDashboardScreen } from '../screens/supervisor/MapDashboardScreen';
-import { default as AttendanceScreen } from '../screens/supervisor/AttendanceScreen';
-import { ProfileScreen as SupervisorProfileScreen } from '../screens/supervisor/ProfileScreen';
+import { MapDashboardScreen } from '../screens/monitoring/MapDashboardScreen';
+import { default as AttendanceScreen } from '../screens/monitoring/AttendanceScreen';
+
+// Unified profile screen (all roles)
+import { ProfileScreen } from '../screens/common/ProfileScreen';
 
 // Overtime screens
 import { OvertimeListScreen } from '../screens/overtime/OvertimeListScreen';
@@ -71,11 +71,12 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
     { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   admin_data: [
     { name: 'Home', label: 'Home', icon: 'home' },
     { name: 'Activities', label: 'Aktivitas', icon: 'clipboard-text-multiple' },
+    { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
+    { name: 'Overtime', label: 'Lembur', icon: 'clock-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   kepala_rayon: [
@@ -112,19 +113,8 @@ const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
   Tasks: TasksActivityScreen, // Same screen, different default tab
   Overtime: OvertimeListScreen,
   Monitoring: MapDashboardScreen,
-  Profile: FieldProfileScreen,
+  Profile: ProfileScreen,
 };
-
-// Choose profile screen based on role
-function getProfileScreen(role: UserRole): React.ComponentType<any> {
-  const monitoringRoles: UserRole[] = [
-    'top_management',
-    'admin_system',
-    'superadmin',
-    'kepala_rayon',
-  ];
-  return monitoringRoles.includes(role) ? SupervisorProfileScreen : FieldProfileScreen;
-}
 
 function MainNavigator(): React.JSX.Element {
   const user = useAppSelector((state) => state.auth.user);
@@ -166,9 +156,7 @@ function MainNavigator(): React.JSX.Element {
         <Tab.Screen
           key={tab.name}
           name={tab.name}
-          component={
-            tab.name === 'Profile' ? getProfileScreen(role) : SCREEN_MAP[tab.name]
-          }
+          component={SCREEN_MAP[tab.name]}
           options={{
             headerTitle: () => <FieldHomeHeader />,
             tabBarLabel: tab.label,

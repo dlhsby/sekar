@@ -3,7 +3,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OvertimeService } from './overtime.service';
 import { Overtime, OvertimeStatus } from './entities/overtime.entity';
-import { OvertimeAktivitas } from './entities/overtime-aktivitas.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
@@ -13,12 +12,12 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { ShiftsService } from '../shifts/shifts.service';
 
 describe('OvertimeService', () => {
   let module: TestingModule;
   let service: OvertimeService;
   let overtimeRepo: Repository<Overtime>;
-  let overtimeAktivitasRepo: Repository<OvertimeAktivitas>;
   let activityTypeRepo: Repository<ActivityType>;
   let userRepo: Repository<User>;
 
@@ -30,16 +29,16 @@ describe('OvertimeService', () => {
     createQueryBuilder: jest.fn(),
   };
 
-  const mockOvertimeAktivitasRepo = {
-    create: jest.fn(),
-  };
-
   const mockActivityTypeRepo = {
     findOne: jest.fn(),
   };
 
   const mockUserRepo = {
     findOne: jest.fn(),
+  };
+
+  const mockShiftsService = {
+    getActiveArea: jest.fn().mockResolvedValue(null),
   };
 
   beforeEach(async () => {
@@ -51,10 +50,6 @@ describe('OvertimeService', () => {
           useValue: mockOvertimeRepo,
         },
         {
-          provide: getRepositoryToken(OvertimeAktivitas),
-          useValue: mockOvertimeAktivitasRepo,
-        },
-        {
           provide: getRepositoryToken(ActivityType),
           useValue: mockActivityTypeRepo,
         },
@@ -62,15 +57,16 @@ describe('OvertimeService', () => {
           provide: getRepositoryToken(User),
           useValue: mockUserRepo,
         },
+        {
+          provide: ShiftsService,
+          useValue: mockShiftsService,
+        },
       ],
     }).compile();
 
     service = module.get<OvertimeService>(OvertimeService);
     overtimeRepo = module.get<Repository<Overtime>>(
       getRepositoryToken(Overtime),
-    );
-    overtimeAktivitasRepo = module.get<Repository<OvertimeAktivitas>>(
-      getRepositoryToken(OvertimeAktivitas),
     );
     activityTypeRepo = module.get<Repository<ActivityType>>(
       getRepositoryToken(ActivityType),
@@ -106,23 +102,16 @@ describe('OvertimeService', () => {
       start_time: '17:00',
       end_time: '20:00',
       notes: 'Extra cleaning work',
-      aktivitas: [
-        {
-          activity_type_id: activityTypeId,
-          description: 'Cleaned park area',
-          photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
-          gps_lat: -7.250445,
-          gps_lng: 112.768845,
-        },
-      ],
+      activity_type_id: activityTypeId,
+      description: 'Cleaned park area',
+      photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
+      gps_lat: -7.250445,
+      gps_lng: 112.768845,
     };
 
     it('should submit overtime by satgas', async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType);
-      mockOvertimeAktivitasRepo.create.mockReturnValue({
-        ...createDto.aktivitas[0],
-      });
       mockOvertimeRepo.create.mockReturnValue({
         user_id: userId,
         area_id: areaId,
@@ -320,7 +309,7 @@ describe('OvertimeService', () => {
 
       expect(overtimeRepo.find).toHaveBeenCalledWith({
         where: { user_id: userId },
-        relations: ['aktivitas', 'aktivitas.activity_type', 'area'],
+        relations: ['activityType', 'area'],
         order: { created_at: 'DESC' },
       });
       expect(result).toHaveLength(2);
@@ -330,6 +319,7 @@ describe('OvertimeService', () => {
   describe('findPending', () => {
     const approverId = 'korlap-uuid-1';
     const areaId = 'area-uuid-1';
+    const rayonId = 'rayon-uuid-1';
 
     it('should return pending overtime scoped to korlap area', async () => {
       const mockApprover = {
@@ -341,6 +331,7 @@ describe('OvertimeService', () => {
 
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
@@ -357,6 +348,96 @@ describe('OvertimeService', () => {
         { areaId },
       );
       expect(result).toHaveLength(1);
+    });
+
+    it('should return pending overtime scoped to admin_data rayon', async () => {
+      const adminDataId = 'admin-data-uuid-1';
+      const mockAdminData = {
+        id: adminDataId,
+        rayon_id: rayonId,
+        role: UserRole.ADMIN_DATA,
+      };
+      mockUserRepo.findOne.mockResolvedValue(mockAdminData);
+
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { id: 'overtime-1', status: OvertimeStatus.PENDING },
+          { id: 'overtime-2', status: OvertimeStatus.PENDING },
+        ]),
+      };
+      mockOvertimeRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findPending(adminDataId, UserRole.ADMIN_DATA);
+
+      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('overtime.area', 'area');
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'area.rayon_id = :rayonId',
+        { rayonId },
+      );
+      expect(result).toHaveLength(2);
+    });
+
+    it('should not filter by rayon for superadmin', async () => {
+      const superadminId = 'superadmin-uuid-1';
+      const mockSuperadmin = {
+        id: superadminId,
+        role: UserRole.SUPERADMIN,
+      };
+      mockUserRepo.findOne.mockResolvedValue(mockSuperadmin);
+
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { id: 'overtime-1', status: OvertimeStatus.PENDING },
+          { id: 'overtime-2', status: OvertimeStatus.PENDING },
+        ]),
+      };
+      mockOvertimeRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findPending(superadminId, UserRole.SUPERADMIN);
+
+      // Should only filter by status, not by rayon
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('overtime.status = :status', {
+        status: OvertimeStatus.PENDING,
+      });
+      expect(result).toHaveLength(2);
+    });
+
+    it('should return empty array for admin_data when no pending overtime in their rayon', async () => {
+      const adminDataId = 'admin-data-uuid-2';
+      const mockAdminData = {
+        id: adminDataId,
+        rayon_id: 'empty-rayon-uuid',
+        role: UserRole.ADMIN_DATA,
+      };
+      mockUserRepo.findOne.mockResolvedValue(mockAdminData);
+
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockOvertimeRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findPending(adminDataId, UserRole.ADMIN_DATA);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'area.rayon_id = :rayonId',
+        { rayonId: 'empty-rayon-uuid' },
+      );
+      expect(result).toHaveLength(0);
     });
   });
 

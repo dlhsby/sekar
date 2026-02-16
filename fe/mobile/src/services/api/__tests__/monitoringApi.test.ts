@@ -1,5 +1,6 @@
 /**
  * Monitoring API Service Tests
+ * Phase 2C: consolidated monitoring + supervisor endpoints
  */
 
 import * as monitoringApi from '../monitoringApi';
@@ -21,9 +22,9 @@ describe('monitoringApi', () => {
     it('gets city monitoring stats without filters', async () => {
       const mockResponse = {
         data: {
-          total_workers: 100,
-          online_workers: 80,
-          offline_workers: 20,
+          total_users: 100,
+          online_users: 80,
+          offline_users: 20,
           total_areas: 10,
           staffed_areas: 8,
           understaffed_areas: 2,
@@ -40,7 +41,7 @@ describe('monitoringApi', () => {
 
     it('gets city monitoring stats with date filter', async () => {
       const filters = { date: '2026-01-25' };
-      const mockResponse = { data: { total_workers: 100 } };
+      const mockResponse = { data: { total_users: 100 } };
       mockGet.mockResolvedValue(mockResponse);
 
       const result = await monitoringApi.getCityMonitoring(filters);
@@ -57,7 +58,7 @@ describe('monitoringApi', () => {
         data: {
           rayon_id: rayonId,
           rayon_name: 'Rayon Selatan',
-          total_workers: 50,
+          total_users: 50,
           areas: [],
         },
       };
@@ -96,7 +97,7 @@ describe('monitoringApi', () => {
           area_id: areaId,
           area_name: 'Taman Bungkul',
           staffing_status: 'adequate',
-          workers: [],
+          users: [],
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -126,57 +127,211 @@ describe('monitoringApi', () => {
     });
   });
 
-  describe('getLiveWorkers', () => {
-    it('gets live workers without filters', async () => {
+  describe('getLiveUsers', () => {
+    it('gets live users without filters', async () => {
       const mockResponse = {
         data: {
-          data: [],
-          meta: { total: 0, last_updated: '2026-01-25T10:00:00Z' },
+          total_online: 0,
+          total_offline: 0,
+          users: [],
+          generated_at: '2026-01-25T10:00:00Z',
         },
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getLiveWorkers();
+      const result = await monitoringApi.getLiveUsers();
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/monitoring/live-workers',
+        '/monitoring/live-users',
         undefined,
       );
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets live workers with area filter', async () => {
+    it('gets live users with area filter', async () => {
       const filters = { area_id: 'area-123' };
       const mockResponse = {
         data: {
-          data: [
-            { id: '1', user_id: 'user-1', full_name: 'Worker 1' },
+          total_online: 1,
+          total_offline: 0,
+          users: [
+            { id: 'user-1', full_name: 'User 1', latitude: -7.25, longitude: 112.75 },
           ],
-          meta: { total: 1, last_updated: '2026-01-25T10:00:00Z' },
+          generated_at: '2026-01-25T10:00:00Z',
         },
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getLiveWorkers(filters);
+      const result = await monitoringApi.getLiveUsers(filters);
 
-      expect(mockGet).toHaveBeenCalledWith('/monitoring/live-workers', filters);
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/live-users', filters);
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets live workers with rayon filter', async () => {
+    it('gets live users with rayon filter', async () => {
       const filters = { rayon_id: 'rayon-123' };
       const mockResponse = {
         data: {
-          data: [],
-          meta: { total: 0, last_updated: '2026-01-25T10:00:00Z' },
+          total_online: 0,
+          total_offline: 0,
+          users: [],
+          generated_at: '2026-01-25T10:00:00Z',
         },
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getLiveWorkers(filters);
+      const result = await monitoringApi.getLiveUsers(filters);
 
-      expect(mockGet).toHaveBeenCalledWith('/monitoring/live-workers', filters);
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/live-users', filters);
       expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('getActiveUsers', () => {
+    it('should call get with correct endpoint', async () => {
+      const mockResponse = {
+        data: {
+          users: [
+            {
+              id: 'uuid-1',
+              username: 'user1',
+              full_name: 'John Doe',
+              shift: {
+                id: 'shift-1',
+                clock_in_time: '2026-01-19T08:00:00Z',
+                area: { id: 'area-1', name: 'Park A' },
+              },
+              latest_location: { gps_lat: -7.25, gps_lng: 112.75, logged_at: '2026-01-19T10:00:00Z' },
+            },
+          ],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getActiveUsers();
+
+      expect(mockGet).toHaveBeenCalledWith('/supervisor/active-users');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should return error on failure', async () => {
+      const mockError = { error: 'Failed to fetch active users' };
+      mockGet.mockResolvedValue(mockError);
+
+      const result = await monitoringApi.getActiveUsers();
+
+      expect(result).toEqual(mockError);
+    });
+  });
+
+  describe('getAllActivities', () => {
+    it('should call get with /activities endpoint and empty params', async () => {
+      const mockResponse = {
+        data: [
+          { id: 'uuid-1', user_name: 'John', area_name: 'Park A', activity_time: '2026-01-19T10:00:00Z' },
+        ],
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getAllActivities();
+
+      expect(mockGet).toHaveBeenCalledWith('/activities', {});
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should call get with user_id filter', async () => {
+      const mockResponse = { data: [] };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getAllActivities({ user_id: 'uuid-123' });
+
+      expect(mockGet).toHaveBeenCalledWith('/activities', { user_id: 'uuid-123' });
+    });
+
+    it('should call get with area_id filter', async () => {
+      const mockResponse = { data: [] };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getAllActivities({ area_id: 'uuid-456' });
+
+      expect(mockGet).toHaveBeenCalledWith('/activities', { area_id: 'uuid-456' });
+    });
+
+    it('should return error on failure', async () => {
+      const mockError = { error: 'Failed to fetch activities' };
+      mockGet.mockResolvedValue(mockError);
+
+      const result = await monitoringApi.getAllActivities();
+
+      expect(result).toEqual(mockError);
+    });
+  });
+
+  describe('getActivityDetails', () => {
+    it('should call get with correct endpoint (UUID)', async () => {
+      const mockResponse = {
+        data: {
+          id: 'uuid-activity-123',
+          description: 'Task completed',
+          gps_lat: -7.25,
+          gps_lng: 112.75,
+          user: { id: 'uuid-user-1', full_name: 'John Doe' },
+          area: { id: 'uuid-area-1', name: 'Park A' },
+          media: [],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getActivityDetails('uuid-activity-123');
+
+      expect(mockGet).toHaveBeenCalledWith('/activities/uuid-activity-123');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should return error when activity not found', async () => {
+      const mockError = { error: 'Activity not found' };
+      mockGet.mockResolvedValue(mockError);
+
+      const result = await monitoringApi.getActivityDetails('uuid-not-found');
+
+      expect(result).toEqual(mockError);
+    });
+  });
+
+  describe('getAttendance', () => {
+    it('should call get with correct endpoint and empty filters', async () => {
+      const mockResponse = {
+        data: {
+          date: '2026-01-19',
+          total_workers: 10,
+          clocked_in_count: 7,
+          not_clocked_in: [],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getAttendance();
+
+      expect(mockGet).toHaveBeenCalledWith('/supervisor/attendance', {});
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should call get with date filter', async () => {
+      const mockResponse = { data: {} };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getAttendance({ date: '2026-01-18' });
+
+      expect(mockGet).toHaveBeenCalledWith('/supervisor/attendance', { date: '2026-01-18' });
+    });
+
+    it('should return error on failure', async () => {
+      const mockError = { error: 'Failed to fetch attendance' };
+      mockGet.mockResolvedValue(mockError);
+
+      const result = await monitoringApi.getAttendance();
+
+      expect(result).toEqual(mockError);
     });
   });
 
@@ -186,7 +341,11 @@ describe('monitoringApi', () => {
       expect(defaultExport.getCityMonitoring).toBeDefined();
       expect(defaultExport.getRayonMonitoring).toBeDefined();
       expect(defaultExport.getAreaMonitoring).toBeDefined();
-      expect(defaultExport.getLiveWorkers).toBeDefined();
+      expect(defaultExport.getLiveUsers).toBeDefined();
+      expect(defaultExport.getActiveUsers).toBeDefined();
+      expect(defaultExport.getAllActivities).toBeDefined();
+      expect(defaultExport.getActivityDetails).toBeDefined();
+      expect(defaultExport.getAttendance).toBeDefined();
     });
   });
 });

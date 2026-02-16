@@ -49,22 +49,28 @@ The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for c
 | `SHIFT_ALREADY_ACTIVE` | 400 | Worker already has an active shift and cannot clock in again |
 | `SHIFT_NOT_FOUND` | 404 | Shift with given ID not found |
 | `SHIFT_NOT_ACTIVE` | 400 | No active shift found for clock-out operation |
-| `SHIFT_GPS_OUT_OF_BOUNDS` | 400 | GPS coordinates are outside the allowed area boundary |
-| `SHIFT_NOT_ASSIGNED` | 400 | Worker is not assigned to any area or the requested area |
+| `SHIFT_GPS_OUT_OF_BOUNDS` | 400 | GPS coordinates are outside the allowed area boundary ⚠️ Phase 2C: No longer thrown — soft polygon geofencing sets `clock_in_outside_boundary` flag instead |
+| `SHIFT_NOT_ASSIGNED` | 400 | Worker is not assigned to any area or the requested area ⚠️ Phase 2C: Updated — area auto-detected from schedule, clock-in allowed with no area |
 | `SHIFT_PHOTO_UPLOAD_FAILED` | 400 | Failed to upload clock-in/out selfie photo |
 | `SHIFT_DURATION_TOO_SHORT` | 400 | Shift duration is below the minimum required duration (default: 5 minutes, configurable) |
 
-### Report Errors (7 codes)
+### Activity Errors (11 codes) ✅ Implemented (Phase 2C)
+
+> Renamed from `REPORT_*` to `ACTIVITY_*` per [ADR-010](../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md). Table `work_reports` → `activities`.
 
 | Code | HTTP Status | Description |
 |------|-------------|-------------|
-| `REPORT_SHIFT_REQUIRED` | 400 | Report must be created during an active shift |
-| `REPORT_SHIFT_NOT_FOUND` | 404 | Shift not found or doesn't belong to worker |
-| `REPORT_EDIT_WINDOW_CLOSED` | 403 | Reports can only be edited within 1 hour of creation |
-| `REPORT_PHOTO_REQUIRED` | 400 | Report requires a photo attachment |
-| `REPORT_NOT_FOUND` | 404 | Report not found |
-| `REPORT_ACCESS_DENIED` | 403 | Worker can only access their own reports |
-| `REPORT_PHOTO_UPLOAD_FAILED` | 400 | Failed to upload report photo |
+| `ACTIVITY_SHIFT_REQUIRED` | 400 | Activity must be created during an active shift |
+| `ACTIVITY_SHIFT_NOT_FOUND` | 404 | Shift not found or doesn't belong to user |
+| `ACTIVITY_EDIT_WINDOW_CLOSED` | 403 | Activities can only be edited within 1 hour of creation |
+| `ACTIVITY_PHOTO_REQUIRED` | 400 | Activity requires a photo attachment |
+| `ACTIVITY_NOT_FOUND` | 404 | Activity not found |
+| `ACTIVITY_ACCESS_DENIED` | 403 | User can only access their own activities |
+| `ACTIVITY_PHOTO_UPLOAD_FAILED` | 400 | Failed to upload activity photo |
+| `ACTIVITY_MUST_CLOCK_IN` | 400 | Must have active shift to submit activity |
+| `ACTIVITY_ROLE_MISMATCH` | 403 | Activity type not applicable to user's role |
+| `ACTIVITY_MAX_PHOTOS` | 400 | Maximum 3 photos per activity |
+| `ACTIVITY_MIN_PHOTOS` | 400 | Minimum 1 photo required |
 
 ### Sync Errors (3 codes)
 
@@ -81,12 +87,9 @@ The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for c
 | `AREA_NOT_FOUND` | 404 | Area not found |
 | `AREA_CODE_DUPLICATE` | 409 | Area code already exists |
 
-### Worker Assignment Errors (2 codes)
+### Worker Assignment Errors ~~(2 codes)~~ ✅ REMOVED (Phase 2C)
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `ASSIGNMENT_NOT_FOUND` | 400 | Worker is not assigned to any area |
-| `ASSIGNMENT_ALREADY_EXISTS` | 409 | Worker already assigned to an area |
+> `worker_assignments` table dropped. Area association managed via `schedules` table. Error codes `ASSIGNMENT_NOT_FOUND` and `ASSIGNMENT_ALREADY_EXISTS` removed.
 
 ### General Errors (5 codes)
 
@@ -662,7 +665,7 @@ app.useGlobalFilters(new AllExceptionsFilter());
 - 409: Already clocked in
 - 413: Photo too large
 
-### Scenario 2: Report Submission Failure
+### Scenario 2: Activity Submission Failure
 
 **Issues Checked:**
 1. ✅ User authenticated?
@@ -670,7 +673,7 @@ app.useGlobalFilters(new AllExceptionsFilter());
 3. ✅ User owns the shift?
 4. ✅ Report type valid?
 5. ✅ Description length valid?
-6. ✅ Photos uploaded (1-5)?
+6. ✅ Photos uploaded (1-3)?
 
 **Possible Errors:**
 - 401: Missing/invalid token

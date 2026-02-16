@@ -37,7 +37,7 @@ export class LocationController {
    */
   @Post('batch')
   @Roles(...CLOCKABLE_ROLES)
-  @ApiOperation({ summary: 'Batch upload location logs (Worker only)' })
+  @ApiOperation({ summary: 'Batch upload location logs (User only)' })
   @ApiResponse({
     status: 201,
     description: 'Locations uploaded successfully',
@@ -58,15 +58,15 @@ export class LocationController {
   }
 
   /**
-   * Get location history for a worker with pagination
-   * Admin and Supervisor can view worker location history
+   * Get location history for a user with pagination
+   * Admin and Supervisor can view user location history
    */
-  @Get('worker/:workerId')
+  @Get('user/:userId')
   @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
-  @ApiOperation({ summary: 'Get worker location history with pagination (Admin, Supervisor)' })
+  @ApiOperation({ summary: 'Get user location history with pagination (Admin, Korlap)' })
   @ApiParam({
-    name: 'workerId',
-    description: 'Worker UUID',
+    name: 'userId',
+    description: 'User UUID',
     type: String,
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
@@ -97,7 +97,7 @@ export class LocationController {
         data: [
           {
             id: 'location-uuid',
-            worker_id: 'worker-uuid',
+            user_id: 'user-uuid',
             shift_id: 'shift-uuid',
             gps_lat: -7.250445,
             gps_lng: 112.768845,
@@ -115,15 +115,15 @@ export class LocationController {
       },
     },
   })
-  async getWorkerHistory(
-    @Param('workerId') workerId: string,
+  async getUserHistory(
+    @Param('userId') userId: string,
     @Query() paginationDto: PaginationDto,
     @Query('from_date') fromDate?: string,
     @Query('to_date') toDate?: string,
     @Query('shift_id') shiftId?: string,
   ): Promise<PaginatedResponseDto<LocationLog>> {
-    return this.locationService.getWorkerHistoryPaginated(
-      workerId,
+    return this.locationService.getUserHistoryPaginated(
+      userId,
       {
         from_date: fromDate,
         to_date: toDate,
@@ -135,15 +135,15 @@ export class LocationController {
   }
 
   /**
-   * Get latest location for a worker
-   * Admin and Supervisor can view worker's most recent location
+   * Get latest location for a user
+   * Admin and Supervisor can view user's most recent location
    */
-  @Get('worker/:workerId/latest')
+  @Get('user/:userId/latest')
   @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
-  @ApiOperation({ summary: 'Get latest worker location (Admin, Supervisor)' })
+  @ApiOperation({ summary: 'Get latest user location (Admin, Korlap)' })
   @ApiParam({
-    name: 'workerId',
-    description: 'Worker UUID',
+    name: 'userId',
+    description: 'User UUID',
     type: String,
   })
   @ApiResponse({
@@ -153,9 +153,9 @@ export class LocationController {
   })
   @ApiResponse({
     status: 404,
-    description: 'No location found for worker',
+    description: 'No location found for user',
   })
-  async getLatestLocation(@Param('workerId') workerId: string): Promise<LocationLog | null> {
-    return this.locationService.getLatestLocation(workerId);
+  async getLatestLocation(@Param('userId') userId: string): Promise<LocationLog | null> {
+    return this.locationService.getLatestLocation(userId);
   }
 }

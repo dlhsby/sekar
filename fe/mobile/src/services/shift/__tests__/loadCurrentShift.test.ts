@@ -34,7 +34,7 @@ describe('loadAndSyncCurrentShift', () => {
       const mockShift = {
         id: 1,
         area_id: 1,
-        worker_id: 1,
+        user_id: 1,
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_in_gps_lat: -7.250445,
         clock_in_gps_lng: 112.768845,
@@ -239,7 +239,7 @@ describe('loadAndSyncCurrentShift', () => {
         data: {
           id: 1,
           area_id: 1,
-          worker_id: 1,
+          user_id: 1,
           clock_in_time: '2026-01-20T08:00:00Z',
         },
         // No error property
@@ -258,7 +258,7 @@ describe('loadAndSyncCurrentShift', () => {
       const fullShift = {
         id: 1,
         area_id: 1,
-        worker_id: 1,
+        user_id: 1,
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_out_time: '2026-01-20T16:00:00Z',
         clock_in_gps_lat: -7.250445,
@@ -288,7 +288,7 @@ describe('loadAndSyncCurrentShift', () => {
 
     it('should work with valid dispatch function', async () => {
       const mockResponse = {
-        data: { id: 1, worker_id: 1, clock_in_time: '2026-01-20T08:00:00Z' },
+        data: { id: 1, user_id: 1, clock_in_time: '2026-01-20T08:00:00Z' },
         error: null,
       };
 

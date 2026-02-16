@@ -62,7 +62,7 @@ describe('Offline Sync Integration', () => {
       const storedQueue: QueueItem[] = [
         {
           id: 'stored-1',
-          type: 'report' as QueueItemType,
+          type: 'activity' as QueueItemType,
           data: { reportText: 'Test' },
           timestamp: Date.now(),
           retryCount: 0,
@@ -102,7 +102,7 @@ describe('Offline Sync Integration', () => {
       const storedQueue: QueueItem[] = [
         {
           id: 'retry-test',
-          type: 'report' as QueueItemType,
+          type: 'activity' as QueueItemType,
           data: { reportText: 'Test' },
           timestamp: Date.now(),
           retryCount: 0,
@@ -155,7 +155,7 @@ describe('Offline Sync Integration', () => {
       const storedQueue: QueueItem[] = [
         {
           id: 'pending-1',
-          type: 'report' as QueueItemType,
+          type: 'activity' as QueueItemType,
           data: {},
           timestamp: Date.now(),
           retryCount: 0,
@@ -194,7 +194,7 @@ describe('Offline Sync Integration', () => {
       const storedQueue: QueueItem[] = [
         {
           id: 'failed-1',
-          type: 'report' as QueueItemType,
+          type: 'activity' as QueueItemType,
           data: {},
           timestamp: Date.now(),
           retryCount: 3,
@@ -227,7 +227,7 @@ describe('Offline Sync Integration', () => {
       const storedQueue: QueueItem[] = [
         {
           id: 'remove-1',
-          type: 'report' as QueueItemType,
+          type: 'activity' as QueueItemType,
           data: {},
           timestamp: Date.now(),
           retryCount: 0,

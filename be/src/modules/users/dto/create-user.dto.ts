@@ -26,11 +26,11 @@ export class CreateUserDto {
    * Must be unique in the system.
    * Can only contain letters, numbers, underscores, and hyphens.
    *
-   * @example 'worker4'
+   * @example 'satgas4'
    */
   @ApiProperty({
     description: 'Username for login (alphanumeric with underscores/hyphens allowed)',
-    example: 'worker4',
+    example: 'satgas4',
     minLength: 1,
     maxLength: ValidationConstants.USERNAME_MAX_LENGTH,
     pattern: '^[a-zA-Z0-9_-]+$',

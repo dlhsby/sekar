@@ -4,9 +4,9 @@ import { ConfigService } from '@nestjs/config';
 import { Socket, Server } from 'socket.io';
 import { EventsGateway } from './events.gateway';
 import {
-  WorkerLocationEvent,
-  WorkerClockInEvent,
-  WorkerClockOutEvent,
+  UserLocationEvent,
+  UserClockInEvent,
+  UserClockOutEvent,
   AreaStaffingEvent,
   TaskAssignedEvent,
   TaskCompletedEvent,
@@ -77,7 +77,7 @@ describe('EventsGateway', () => {
     it('should accept connection with valid JWT token', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'user-1',
-        role: 'Worker',
+        role: UserRole.SATGAS,
       });
 
       await gateway.handleConnection(mockClient);
@@ -140,7 +140,7 @@ describe('EventsGateway', () => {
     it('should not join city room for Worker role', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'worker-1',
-        role: 'Worker',
+        role: UserRole.SATGAS,
       });
 
       await gateway.handleConnection(mockClient);
@@ -161,7 +161,7 @@ describe('EventsGateway', () => {
 
       jwtService.verify.mockReturnValue({
         sub: 'user-1',
-        role: 'Worker',
+        role: UserRole.SATGAS,
       });
 
       await gateway.handleConnection(clientWithQuery);
@@ -184,7 +184,7 @@ describe('EventsGateway', () => {
 
       jwtService.verify.mockReturnValue({
         sub: 'user-1',
-        role: 'Worker',
+        role: UserRole.SATGAS,
       });
 
       await gateway.handleConnection(clientWithAuth);
@@ -199,7 +199,7 @@ describe('EventsGateway', () => {
     it('should handle disconnect for connected client', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'user-1',
-        role: 'Worker',
+        role: UserRole.SATGAS,
       });
 
       await gateway.handleConnection(mockClient);
@@ -265,10 +265,10 @@ describe('EventsGateway', () => {
     });
   });
 
-  describe('emitWorkerLocation', () => {
-    const locationEvent: WorkerLocationEvent = {
-      worker_id: 'worker-1',
-      worker_name: 'Worker One',
+  describe('emitUserLocation', () => {
+    const locationEvent: UserLocationEvent = {
+      user_id: 'worker-1',
+      user_name: 'Worker One',
       role: UserRole.SATGAS,
       shift_id: 'shift-1',
       area_id: 'area-1',
@@ -282,20 +282,20 @@ describe('EventsGateway', () => {
     };
 
     it('should emit to area room', () => {
-      gateway.emitWorkerLocation(locationEvent);
+      gateway.emitUserLocation(locationEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('area:area-1');
-      expect(mockServer.emit).toHaveBeenCalledWith(EventType.WORKER_LOCATION, locationEvent);
+      expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_LOCATION, locationEvent);
     });
 
     it('should emit to rayon room', () => {
-      gateway.emitWorkerLocation(locationEvent);
+      gateway.emitUserLocation(locationEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('rayon:rayon-1');
     });
 
     it('should emit to city room', () => {
-      gateway.emitWorkerLocation(locationEvent);
+      gateway.emitUserLocation(locationEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('city');
     });
@@ -304,7 +304,7 @@ describe('EventsGateway', () => {
       const eventNoRayon = { ...locationEvent, rayon_id: undefined };
       mockServer.to.mockClear();
 
-      gateway.emitWorkerLocation(eventNoRayon);
+      gateway.emitUserLocation(eventNoRayon);
 
       const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
         call[0]?.startsWith('rayon:'),
@@ -313,10 +313,10 @@ describe('EventsGateway', () => {
     });
   });
 
-  describe('emitWorkerClockIn', () => {
-    const clockInEvent: WorkerClockInEvent = {
-      worker_id: 'worker-1',
-      worker_name: 'Worker One',
+  describe('emitUserClockIn', () => {
+    const clockInEvent: UserClockInEvent = {
+      user_id: 'worker-1',
+      user_name: 'Worker One',
       role: UserRole.SATGAS,
       shift_id: 'shift-1',
       area_id: 'area-1',
@@ -328,19 +328,19 @@ describe('EventsGateway', () => {
     };
 
     it('should emit clock-in to all relevant rooms', () => {
-      gateway.emitWorkerClockIn(clockInEvent);
+      gateway.emitUserClockIn(clockInEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('area:area-1');
       expect(mockServer.to).toHaveBeenCalledWith('rayon:rayon-1');
       expect(mockServer.to).toHaveBeenCalledWith('city');
-      expect(mockServer.emit).toHaveBeenCalledWith(EventType.WORKER_CLOCK_IN, clockInEvent);
+      expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_CLOCK_IN, clockInEvent);
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
       const eventNoRayon = { ...clockInEvent, rayon_id: undefined };
       mockServer.to.mockClear();
 
-      gateway.emitWorkerClockIn(eventNoRayon);
+      gateway.emitUserClockIn(eventNoRayon);
 
       const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
         call[0]?.startsWith('rayon:'),
@@ -349,10 +349,10 @@ describe('EventsGateway', () => {
     });
   });
 
-  describe('emitWorkerClockOut', () => {
-    const clockOutEvent: WorkerClockOutEvent = {
-      worker_id: 'worker-1',
-      worker_name: 'Worker One',
+  describe('emitUserClockOut', () => {
+    const clockOutEvent: UserClockOutEvent = {
+      user_id: 'worker-1',
+      user_name: 'Worker One',
       shift_id: 'shift-1',
       area_id: 'area-1',
       area_name: 'Taman Bungkul',
@@ -362,19 +362,19 @@ describe('EventsGateway', () => {
     };
 
     it('should emit clock-out to all relevant rooms', () => {
-      gateway.emitWorkerClockOut(clockOutEvent);
+      gateway.emitUserClockOut(clockOutEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('area:area-1');
       expect(mockServer.to).toHaveBeenCalledWith('rayon:rayon-1');
       expect(mockServer.to).toHaveBeenCalledWith('city');
-      expect(mockServer.emit).toHaveBeenCalledWith(EventType.WORKER_CLOCK_OUT, clockOutEvent);
+      expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_CLOCK_OUT, clockOutEvent);
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
       const eventNoRayon = { ...clockOutEvent, rayon_id: undefined };
       mockServer.to.mockClear();
 
-      gateway.emitWorkerClockOut(eventNoRayon);
+      gateway.emitUserClockOut(eventNoRayon);
 
       const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
         call[0]?.startsWith('rayon:'),
@@ -454,7 +454,7 @@ describe('EventsGateway', () => {
     });
 
     it('should emit to assigned user directly', () => {
-      jwtService.verify.mockReturnValue({ sub: 'worker-1', role: 'Worker' });
+      jwtService.verify.mockReturnValue({ sub: 'worker-1', role: UserRole.SATGAS });
       gateway.handleConnection(mockClient);
 
       gateway.emitTaskAssigned(taskAssignedEvent);
@@ -507,7 +507,7 @@ describe('EventsGateway', () => {
     });
 
     it('should count rooms excluding client IDs', async () => {
-      jwtService.verify.mockReturnValue({ sub: 'user-1', role: 'Worker' });
+      jwtService.verify.mockReturnValue({ sub: 'user-1', role: UserRole.SATGAS });
       await gateway.handleConnection(mockClient);
 
       // Simulate rooms in adapter including named rooms and client IDs

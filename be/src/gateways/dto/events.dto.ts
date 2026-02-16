@@ -34,14 +34,14 @@ export class UnsubscribeRayonDto {
 }
 
 /**
- * Worker location update event
+ * User location update event
  */
-export class WorkerLocationEvent {
+export class UserLocationEvent {
   @IsUUID()
-  worker_id: string;
+  user_id: string;
 
   @IsString()
-  worker_name: string;
+  user_name: string;
 
   @IsEnum(UserRole)
   role: UserRole;
@@ -77,14 +77,14 @@ export class WorkerLocationEvent {
 }
 
 /**
- * Worker clock-in event
+ * User clock-in event
  */
-export class WorkerClockInEvent {
+export class UserClockInEvent {
   @IsUUID()
-  worker_id: string;
+  user_id: string;
 
   @IsString()
-  worker_name: string;
+  user_name: string;
 
   @IsEnum(UserRole)
   role: UserRole;
@@ -112,14 +112,14 @@ export class WorkerClockInEvent {
 }
 
 /**
- * Worker clock-out event
+ * User clock-out event
  */
-export class WorkerClockOutEvent {
+export class UserClockOutEvent {
   @IsUUID()
-  worker_id: string;
+  user_id: string;
 
   @IsString()
-  worker_name: string;
+  user_name: string;
 
   @IsUUID()
   shift_id: string;
@@ -230,9 +230,9 @@ export class TaskCompletedEvent {
  * Event types enumeration
  */
 export enum EventType {
-  WORKER_LOCATION = 'worker:location',
-  WORKER_CLOCK_IN = 'worker:clock-in',
-  WORKER_CLOCK_OUT = 'worker:clock-out',
+  USER_LOCATION = 'user:location',
+  USER_CLOCK_IN = 'user:clock-in',
+  USER_CLOCK_OUT = 'user:clock-out',
   AREA_STAFFING = 'area:staffing',
   TASK_ASSIGNED = 'task:assigned',
   TASK_COMPLETED = 'task:completed',

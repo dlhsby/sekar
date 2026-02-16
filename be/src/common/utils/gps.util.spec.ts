@@ -211,6 +211,149 @@ describe('GpsUtil', () => {
     });
   });
 
+  describe('isPointInPolygon', () => {
+    // A simple square polygon around Taman Bungkul (GeoJSON [lng, lat])
+    const square: number[][] = [
+      [112.739, -7.291],
+      [112.741, -7.291],
+      [112.741, -7.289],
+      [112.739, -7.289],
+      [112.739, -7.291], // closed ring
+    ];
+
+    it('should return true for point inside polygon', () => {
+      expect(GpsUtil.isPointInPolygon(-7.290, 112.740, square)).toBe(true);
+    });
+
+    it('should return false for point outside polygon', () => {
+      expect(GpsUtil.isPointInPolygon(-7.295, 112.740, square)).toBe(false);
+    });
+
+    it('should return false for point far away', () => {
+      expect(GpsUtil.isPointInPolygon(-7.300, 112.750, square)).toBe(false);
+    });
+
+    it('should handle triangle polygon', () => {
+      const triangle: number[][] = [
+        [112.739, -7.291],
+        [112.741, -7.291],
+        [112.740, -7.289],
+        [112.739, -7.291],
+      ];
+      // Center of triangle should be inside
+      expect(GpsUtil.isPointInPolygon(-7.2903, 112.740, triangle)).toBe(true);
+      // Outside triangle
+      expect(GpsUtil.isPointInPolygon(-7.288, 112.740, triangle)).toBe(false);
+    });
+
+    it('should handle L-shaped polygon', () => {
+      const lShape: number[][] = [
+        [0, 0], [2, 0], [2, 1], [1, 1], [1, 2], [0, 2], [0, 0],
+      ];
+      // Inside the bottom part
+      expect(GpsUtil.isPointInPolygon(0.5, 1.5, lShape)).toBe(true);
+      // Inside the left part
+      expect(GpsUtil.isPointInPolygon(1.5, 0.5, lShape)).toBe(true);
+      // Outside the concave corner
+      expect(GpsUtil.isPointInPolygon(1.5, 1.5, lShape)).toBe(false);
+    });
+
+    it('should handle open ring (no closing vertex)', () => {
+      const openSquare: number[][] = [
+        [112.739, -7.291],
+        [112.741, -7.291],
+        [112.741, -7.289],
+        [112.739, -7.289],
+        // no closing point
+      ];
+      expect(GpsUtil.isPointInPolygon(-7.290, 112.740, openSquare)).toBe(true);
+    });
+  });
+
+  describe('isWithinAreaBoundary', () => {
+    it('should use polygon when available', () => {
+      const area = {
+        boundary_polygon: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [112.739, -7.291],
+              [112.741, -7.291],
+              [112.741, -7.289],
+              [112.739, -7.289],
+              [112.739, -7.291],
+            ],
+          ],
+        },
+        gps_lat: -7.290,
+        gps_lng: 112.740,
+        radius_meters: 10, // Tiny radius — would fail if radius was used
+      };
+      // Point inside polygon
+      expect(GpsUtil.isWithinAreaBoundary(-7.290, 112.740, area)).toBe(true);
+    });
+
+    it('should return false for point outside polygon', () => {
+      const area = {
+        boundary_polygon: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [112.739, -7.291],
+              [112.741, -7.291],
+              [112.741, -7.289],
+              [112.739, -7.289],
+              [112.739, -7.291],
+            ],
+          ],
+        },
+      };
+      expect(GpsUtil.isWithinAreaBoundary(-7.295, 112.740, area)).toBe(false);
+    });
+
+    it('should fall back to radius when no polygon', () => {
+      const area = {
+        gps_lat: -7.290,
+        gps_lng: 112.740,
+        radius_meters: 100,
+      };
+      // Same point
+      expect(GpsUtil.isWithinAreaBoundary(-7.290, 112.740, area)).toBe(true);
+      // Far away
+      expect(GpsUtil.isWithinAreaBoundary(-7.300, 112.740, area)).toBe(false);
+    });
+
+    it('should return true when no boundary defined', () => {
+      expect(GpsUtil.isWithinAreaBoundary(-7.290, 112.740, {})).toBe(true);
+    });
+
+    it('should return true when polygon has empty coordinates', () => {
+      const area = {
+        boundary_polygon: { type: 'Polygon', coordinates: [] },
+      };
+      expect(GpsUtil.isWithinAreaBoundary(-7.290, 112.740, area)).toBe(true);
+    });
+
+    it('should handle polygon with no fallback radius', () => {
+      const area = {
+        boundary_polygon: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [112.739, -7.291],
+              [112.741, -7.291],
+              [112.741, -7.289],
+              [112.739, -7.289],
+              [112.739, -7.291],
+            ],
+          ],
+        },
+      };
+      // Inside polygon, no radius defined
+      expect(GpsUtil.isWithinAreaBoundary(-7.290, 112.740, area)).toBe(true);
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle zero radius', () => {
       const result = GpsUtil.isWithinBoundary(

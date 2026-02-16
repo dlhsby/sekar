@@ -101,6 +101,8 @@ const TAB_CONFIG: Record<string, TabConfig[]> = {
   admin_data: [
     { name: 'Home', icon: 'home', screen: ClockInOutScreen },
     { name: 'Aktivitas', icon: 'file-text', screen: ActivityListScreen },
+    { name: 'Monitoring', icon: 'bar-chart-2', screen: MonitoringScreen },
+    { name: 'Lembur', icon: 'clock', screen: OvertimeListScreen },
     { name: 'Profil', icon: 'user', screen: ProfileScreen },
   ],
   kepala_rayon: [

@@ -2,6 +2,8 @@
 
 Comprehensive authentication and authorization specifications for SEKAR Backend API.
 
+> **Phase 2C Note:** This document reflects the Phase 1-2B role system (Worker, Supervisor, Admin). Phase 2C overhauls to 8 roles: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping and [Phase 2C backend.md](../phases/phase-2-c-client-feedback/backend.md) for updated RBAC and role group constants. The permission matrices in Section 6 below will be updated during Phase 2C implementation.
+
 ## Table of Contents
 
 1. [Overview](#overview)

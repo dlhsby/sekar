@@ -18,9 +18,9 @@ export class LocationLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ApiProperty({ description: 'Worker UUID who sent the location ping' })
+  @ApiProperty({ description: 'User UUID who sent the location ping' })
   @Column({ type: 'uuid' })
-  worker_id: string;
+  user_id: string;
 
   @ApiProperty({ description: 'Shift UUID when location was logged' })
   @Column({ type: 'uuid' })
@@ -56,13 +56,13 @@ export class LocationLog {
 
   // Relations
   /**
-   * Worker who sent the location ping
+   * User who sent the location ping
    * onDelete: RESTRICT prevents deletion of users with location logs
    */
-  @ApiProperty({ type: () => User, description: 'Worker who sent the location' })
+  @ApiProperty({ type: () => User, description: 'User who sent the location' })
   @ManyToOne(() => User, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'worker_id' })
-  worker: User;
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   /**
    * Shift when location was logged

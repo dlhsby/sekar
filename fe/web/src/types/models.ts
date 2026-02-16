@@ -1,32 +1,36 @@
 /**
  * Domain Models for SEKAR Web Application
- * Type definitions that match backend entities
+ * Type definitions that match backend entities (Phase 2C - ADR-009, ADR-010)
  */
 
 /**
- * User Role Type
+ * User Role Type - 8 roles (Phase 2C)
  * Must match backend UserRole enum
- * IMPORTANT: Always use lowercase values matching backend
  */
 export type UserRole =
-  | 'admin'
-  | 'top_management'
+  | 'satgas'
+  | 'linmas'
+  | 'korlap'
+  | 'admin_data'
   | 'kepala_rayon'
-  | 'koordinator_lapangan'
-  | 'worker'
-  | 'linmas';
+  | 'top_management'
+  | 'admin_system'
+  | 'superadmin';
 
 /**
  * User Interface
- * Matches backend User entity
+ * Matches backend User entity (Phase 2C)
  */
 export interface User extends Record<string, unknown> {
   id: string;
-  name: string;
-  email: string;
+  username: string;
+  full_name: string;
   role: UserRole;
   rayon_id?: string;
-  rayon?: Rayon; // Populated relation
+  rayon?: Rayon;
+  area_id?: string;
+  area?: Area;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
@@ -34,7 +38,6 @@ export interface User extends Record<string, unknown> {
 
 /**
  * Rayon Interface
- * Matches backend Rayon entity
  */
 export interface Rayon {
   id: string;
@@ -47,13 +50,12 @@ export interface Rayon {
 
 /**
  * Rayon Statistics Interface
- * Statistics for a specific rayon
  */
 export interface RayonStats {
   rayon_id: string;
   total_areas: number;
-  total_workers: number;
-  active_workers: number;
+  total_users: number;
+  active_users: number;
   total_coverage_area: number;
 }
 
@@ -71,22 +73,24 @@ export interface UserFilters {
  * Create User DTO
  */
 export interface CreateUserDto {
-  name: string;
-  email: string;
-  password?: string; // Optional to make it compatible with form data
+  username: string;
+  full_name: string;
+  password?: string;
   role: UserRole;
   rayon_id?: string;
+  area_id?: string;
 }
 
 /**
  * Update User DTO
  */
 export interface UpdateUserDto {
-  name?: string;
-  email?: string;
+  username?: string;
+  full_name?: string;
   password?: string;
   role?: UserRole;
   rayon_id?: string;
+  area_id?: string;
 }
 
 /**
@@ -104,7 +108,6 @@ export interface PaginatedResponse<T> {
 
 /**
  * Area Type Interface
- * Matches backend AreaType entity
  */
 export interface AreaType {
   id: string;
@@ -118,7 +121,6 @@ export interface AreaType {
 
 /**
  * Area Interface
- * Matches backend Area entity
  */
 export interface Area extends Record<string, unknown> {
   id: string;
@@ -181,24 +183,22 @@ export interface UpdateAreaDto {
 
 /**
  * Shift Definition Interface
- * Matches backend ShiftDefinition entity
  */
 export interface ShiftDefinition {
   id: string;
   name: string;
   code: string;
-  start_time: string; // HH:MM format
-  end_time: string; // HH:MM format
+  start_time: string;
+  end_time: string;
   crosses_midnight: boolean;
   is_active: boolean;
   created_at: string;
 }
 
 /**
- * Worker Schedule Interface
- * Matches backend WorkerSchedule entity
+ * Schedule Interface (renamed from WorkerSchedule per ADR-010)
  */
-export interface WorkerSchedule extends Record<string, unknown> {
+export interface Schedule extends Record<string, unknown> {
   id: string;
   user_id: string;
   user?: User;
@@ -206,22 +206,25 @@ export interface WorkerSchedule extends Record<string, unknown> {
   area?: Area;
   shift_definition_id: string;
   shift_definition?: ShiftDefinition;
-  effective_date: string; // ISO date
-  end_date?: string; // ISO date, null = ongoing
+  effective_date: string;
+  end_date?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
 }
 
+/** @deprecated Use Schedule instead */
+export type WorkerSchedule = Schedule;
+
 /**
  * Schedule Filter Options
  */
 export interface ScheduleFilters {
-  search?: string; // Worker name search
+  search?: string;
   area_id?: string;
   shift_definition_id?: string;
-  date_from?: string; // ISO date
-  date_to?: string; // ISO date
+  date_from?: string;
+  date_to?: string;
   page?: number;
   limit?: number;
 }
@@ -233,8 +236,8 @@ export interface CreateScheduleDto {
   user_id: string;
   area_id: string;
   shift_definition_id: string;
-  effective_date: string; // ISO date
-  end_date?: string; // ISO date, optional
+  effective_date: string;
+  end_date?: string;
 }
 
 /**
@@ -246,4 +249,136 @@ export interface UpdateScheduleDto {
   shift_definition_id?: string;
   effective_date?: string;
   end_date?: string;
+}
+
+/**
+ * Activity Type Interface (Phase 2C)
+ */
+export interface ActivityType {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  applicable_roles: UserRole[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Activity Interface (Phase 2C - replaces WorkReport)
+ */
+export interface Activity extends Record<string, unknown> {
+  id: string;
+  user_id: string;
+  user?: {
+    id: string;
+    username: string;
+    full_name: string;
+    role: UserRole;
+  };
+  shift_id: string;
+  area_id: string;
+  area?: {
+    id: string;
+    name: string;
+  };
+  activity_type_id: string;
+  activity_type?: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  description: string;
+  photo_urls: string[];
+  gps_lat?: number;
+  gps_lng?: number;
+  created_at: string;
+}
+
+/**
+ * Activity Filter Options
+ */
+export interface ActivityFilters {
+  activity_type_id?: string;
+  area_id?: string;
+  user_id?: string;
+  from_date?: string;
+  to_date?: string;
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Overtime Status
+ */
+export type OvertimeStatus = 'pending' | 'approved' | 'rejected';
+
+/**
+ * Overtime Interface (Phase 2C - flat schema)
+ */
+export interface Overtime extends Record<string, unknown> {
+  id: string;
+  user_id: string;
+  user?: {
+    id: string;
+    username: string;
+    full_name: string;
+    role: UserRole;
+  };
+  area_id: string;
+  area?: {
+    id: string;
+    name: string;
+  };
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: OvertimeStatus;
+  activity_type_id?: string;
+  activity_type?: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  description?: string;
+  photo_urls?: string[];
+  gps_lat?: number;
+  gps_lng?: number;
+  approved_by?: string;
+  approver?: {
+    id: string;
+    full_name: string;
+  };
+  approved_at?: string;
+  rejection_reason?: string;
+  notes?: string;
+  created_at: string;
+}
+
+/**
+ * Overtime Filter Options
+ */
+export interface OvertimeFilters {
+  status?: OvertimeStatus;
+  area_id?: string;
+  user_id?: string;
+  from_date?: string;
+  to_date?: string;
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Task Tag Interface (Phase 2C)
+ */
+export interface TaskTag {
+  id: string;
+  task_id: string;
+  user_id: string;
+  user?: {
+    id: string;
+    full_name: string;
+  };
+  created_at: string;
 }

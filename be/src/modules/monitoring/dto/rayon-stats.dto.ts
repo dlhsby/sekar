@@ -99,7 +99,7 @@ export class RayonStatsDto {
   tasks_completed_today: number;
 
   @ApiProperty({ example: 20 })
-  reports_submitted_today: number;
+  activities_submitted_today: number;
 
   @ApiProperty({ type: [AreaSummaryDto] })
   areas: AreaSummaryDto[];
@@ -107,7 +107,7 @@ export class RayonStatsDto {
   @ApiProperty({ type: [ShiftSummaryDto] })
   shifts: ShiftSummaryDto[];
 
-  @ApiProperty({ example: ['Taman Bungkul - needs 1 more worker'] })
+  @ApiProperty({ example: ['Taman Bungkul - needs 1 more satgas'] })
   alerts: string[];
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })

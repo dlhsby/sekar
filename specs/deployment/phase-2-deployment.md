@@ -1,8 +1,8 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** February 10, 2026 (Fresh Start Complete)
-**Status:** ✅ Phase 2B Deployed | Both Migrations Executed | Seeded
-**Deployment Time:** 15-20 minutes (automated)
+**Last Updated:** February 16, 2026 (Phase 2C Preparation)
+**Status:** ✅ Phase 2B Deployed | 🔄 Phase 2C Ready for Deployment
+**Deployment Time:** 15-20 minutes (automated backend) + 10 minutes (web)
 
 > **⚠️ IMPORTANT:** This guide references domain names that need to be set up manually.
 > For current deployment status and actual URLs, see: `specs/deployment/DEPLOYMENT_STATUS.md`
@@ -144,6 +144,181 @@ ssh -i key.pem user@server "docker exec sekar-backend npm run migration:run"
 
 **Phase 1 data** (users, areas): Safe to re-run (clears old data)
 **Phase 2+ data** (rayons, tasks): Consider incremental seeding scripts
+
+---
+
+## 🚀 Phase 2C Deployment (Client Feedback)
+
+**Deployment Date:** To be scheduled
+**Breaking Changes:** Yes (role system overhaul, terminology cleanup)
+**Migration Required:** Yes (Phase2CSchema.ts)
+**Mobile App Update:** Required immediately after backend deployment
+**Estimated Downtime:** 0 minutes (zero-downtime deployment)
+
+### What's New in Phase 2C
+
+**1. Role System Overhaul (ADR-009)**
+- Expands from 3 roles to 8 roles: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin
+- Removes old roles: worker, supervisor, admin, koordinator_lapangan
+- Adds 11 role group constants (CLOCKABLE_ROLES, ACTIVITY_SUBMITTERS, etc.)
+- Adds `users.area_id` column (nullable, FK to areas)
+
+**2. Terminology Cleanup (ADR-010)**
+- Table renames: work_reports→activities, worker_schedules→schedules
+- Column renames: worker_id→user_id (in shifts, activities, location_logs)
+- Module renames: reports→activities, worker-schedules→schedules
+- Route changes: /aktivitas→/activities, /worker-schedules→/schedules
+- Dropped tables: worker_assignments, overtime_aktivitas
+
+**3. Module Changes**
+- **Shifts:** Soft geofencing warnings (never blocks), optional area_id
+- **Activities:** Scoped access by role, role-filtered activity types
+- **Tasks:** Simplified 4-status workflow (removes accepted/declined), rayon-scoped tasks, tagged users
+- **Overtime:** Flat structure (no nested aktivitas), simplified DTO
+- **Monitoring:** Scope authorization (city/rayon/area level access control)
+
+**4. Web Dashboard**
+- First deployment of Next.js web application
+- Nginx proxy configuration required
+- Mapbox maps integration
+
+### Phase 2C Deployment Prerequisites
+
+**Infrastructure (Must Complete Before Deployment Day):**
+1. ✅ Web CI/CD workflow created (`.github/workflows/web-ci-cd.yml`)
+2. ⏳ AWS ECR `sekar-web` repository created
+3. ⏳ GitHub Secrets added (3 new: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_WS_URL, MAPBOX_TOKEN)
+4. ⏳ Nginx configuration template reviewed (`specs/deployment/nginx-web.conf.template`)
+
+**Documentation:**
+1. ✅ Phase 2C backend spec complete
+2. ✅ Phase 2C mobile spec complete
+3. ✅ Phase 2C web spec complete
+4. ✅ ADR-009 (role system) and ADR-010 (terminology) written
+5. ✅ Deployment checklist ready (323 tests)
+
+**Testing:**
+1. ✅ Backend tests passing (845 tests, 90.77% coverage)
+2. ✅ Mobile tests passing (2,141 tests, 80.31% coverage)
+3. ✅ Web tests passing (84.36% coverage)
+4. ✅ Database migration tested locally
+5. ✅ Fresh seed data verified
+
+### Phase 2C Fresh Deployment Procedure
+
+**⚠️ CRITICAL:** Phase 2C requires a fresh deployment (database wipe). User data from Phase 2B will be lost. This is acceptable during development phase.
+
+**Why Fresh Deployment?**
+- Role enum expansion incompatible with existing users (3→8 roles)
+- Table renames require dropping old tables
+- Column renames safer with fresh schema
+- Avoids complex data migration for development data
+
+**Deployment Steps (15 minutes):**
+
+1. **Create RDS Snapshot** (5 min)
+   ```bash
+   aws rds create-db-snapshot \
+     --db-instance-identifier sekar-prod \
+     --db-snapshot-identifier sekar-phase2b-backup-$(date +%Y%m%d-%H%M)
+   ```
+
+2. **Push to Main** (Auto-triggers CI/CD)
+   ```bash
+   git push origin main
+   ```
+
+3. **CI/CD Executes Automatically** (10 min)
+   - ✅ Lint & Test (5 min)
+   - ✅ Build & Push to ECR (3 min)
+   - ✅ SSH to EC2
+   - ✅ Wipe database clean (`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`)
+   - ✅ Run Phase 2C migration (creates all 18 tables)
+   - ✅ Start backend container
+   - ✅ Health check verification
+
+4. **Manual Seed Database** (3 min)
+   ```bash
+   ssh -i sekar-key.pem ec2-user@16.79.183.240
+   cd ~/sekar/backend
+   ./scripts/deploy-seed.sh
+   ```
+
+5. **Web Deployment** (10 min)
+   - Web CI/CD triggers on same push (if `fe/web/**` changed)
+   - Or trigger manually:
+     ```bash
+     ssh -i sekar-key.pem ec2-user@16.79.183.240
+     cd ~/sekar/web
+
+     # Apply Nginx config
+     sudo cp ~/sekar/nginx-web.conf /etc/nginx/conf.d/sekar-web.conf
+     sudo nginx -t && sudo systemctl reload nginx
+
+     # Pull and start web
+     aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY
+     docker pull $ECR_REGISTRY/sekar-web:latest
+     docker-compose -f docker-compose.prod.yml up -d web
+     ```
+
+6. **Verification** (5 min)
+   - Backend health: `curl http://16.79.183.240:3000/api/v1/health`
+   - Web health: `curl http://sekar.wahyutrip.com/api/health`
+   - Test login: superadmin/superadmin123
+   - Test new endpoints: /activities, /schedules
+   - Verify old endpoints removed: /aktivitas, /reports, /worker-schedules
+
+**Total Time:** 30-35 minutes (mostly automated)
+
+### Phase 2C Test Credentials
+
+**8 Role System:**
+```
+Superadmin:          superadmin / superadmin123
+Admin System:        admin_system / admin123
+Admin Data:          admin_data / admin123
+Korlap (Field Coordinator): korlap1 / password123
+Satgas (Field Worker): satgas1 / password123
+Linmas (Security):   linmas1 / password123
+Kepala Rayon:        kepala_rayon_selatan / password123
+Top Management:      top_management1 / password123
+```
+
+### Phase 2C Breaking Changes
+
+**Mobile Apps:**
+- ❌ Old mobile apps will not work
+- ✅ Must update mobile app immediately after backend deployment
+- ⚠️ Users will see login errors until mobile app updated
+
+**API Routes:**
+- ❌ `/api/v1/aktivitas` → 404 (use `/api/v1/activities`)
+- ❌ `/api/v1/reports` → 404 (use `/api/v1/activities`)
+- ❌ `/api/v1/worker-schedules` → 404 (use `/api/v1/schedules`)
+
+**Database:**
+- ❌ Phase 2B backups cannot be restored to Phase 2C schema
+- ⚠️ Rollback requires RDS snapshot + code revert + mobile app rollback
+
+### Phase 2C Rollback Procedure
+
+**If deployment fails during migration:**
+```bash
+# 1. Restore RDS snapshot
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier sekar-prod \
+  --db-snapshot-identifier sekar-phase2b-backup-YYYYMMDD-HHMM
+
+# 2. Revert Docker image
+ssh -i sekar-key.pem ec2-user@16.79.183.240
+cd ~/sekar/backend
+docker pull $ECR_REGISTRY/sekar-backend:phase2b-sha
+docker-compose -f docker-compose.prod.yml up -d backend
+```
+
+**If migration completes but app fails:**
+- ⚠️ Do NOT restore database (data loss)
+- ✅ Fix forward with hotfix deployment
 
 ---
 

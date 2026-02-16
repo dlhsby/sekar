@@ -154,7 +154,7 @@ const config: Config = {
 
 // Log configuration on app start (development only)
 if (__DEV__) {
-  console.log('📱 SEKAR Configuration:', {
+  console.debug('📱 SEKAR Configuration:', {
     API_BASE_URL: config.API_BASE_URL,
     APP_ENV: config.APP_ENV,
     IS_DEV: config.IS_DEV,

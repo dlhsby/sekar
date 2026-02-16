@@ -57,7 +57,7 @@ describe('offlineQueue', () => {
     it('should return parsed items from AsyncStorage', async () => {
       const mockItems = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending' },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(mockItems));
 
@@ -111,7 +111,7 @@ describe('offlineQueue', () => {
 
     it('should append to existing queue', async () => {
       const existingItems = [
-        { id: '1', type: 'report', data: {}, timestamp: 123, retryCount: 0, status: 'pending' },
+        { id: '1', type: 'activity', data: {}, timestamp: 123, retryCount: 0, status: 'pending' },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(existingItems));
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
@@ -134,7 +134,7 @@ describe('offlineQueue', () => {
     it('should update existing item', async () => {
       const items = [
         { id: 'item-1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending' },
-        { id: 'item-2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
+        { id: 'item-2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
@@ -164,7 +164,7 @@ describe('offlineQueue', () => {
     it('should remove item from queue', async () => {
       const items = [
         { id: 'item-1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending' },
-        { id: 'item-2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
+        { id: 'item-2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
@@ -194,7 +194,7 @@ describe('offlineQueue', () => {
     it('should filter items by type', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending' },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending' },
         { id: '3', type: 'clock-in', data: {}, timestamp: 125, retryCount: 0, status: 'pending' },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
@@ -222,10 +222,10 @@ describe('offlineQueue', () => {
     it('should return count of pending items for current user', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending', user_id: 1 },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'syncing', user_id: 1 },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'syncing', user_id: 1 },
         { id: '3', type: 'location', data: {}, timestamp: 125, retryCount: 0, status: 'pending', user_id: 1 },
-        { id: '4', type: 'report', data: {}, timestamp: 126, retryCount: 0, status: 'success', user_id: 1 },
-        { id: '5', type: 'report', data: {}, timestamp: 127, retryCount: 0, status: 'pending', user_id: 2 },
+        { id: '4', type: 'activity', data: {}, timestamp: 126, retryCount: 0, status: 'success', user_id: 1 },
+        { id: '5', type: 'activity', data: {}, timestamp: 127, retryCount: 0, status: 'pending', user_id: 2 },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
 
@@ -248,7 +248,7 @@ describe('offlineQueue', () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending', user_id: 1 },
         { id: '2', type: 'clock-in', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
-        { id: '3', type: 'report', data: {}, timestamp: 125, retryCount: 0, status: 'pending', user_id: 1 },
+        { id: '3', type: 'activity', data: {}, timestamp: 125, retryCount: 0, status: 'pending', user_id: 1 },
         { id: '4', type: 'location', data: {}, timestamp: 126, retryCount: 0, status: 'syncing', user_id: 1 },
         { id: '5', type: 'clock-out', data: {}, timestamp: 127, retryCount: 0, status: 'success', user_id: 1 },
         { id: '6', type: 'clock-in', data: {}, timestamp: 128, retryCount: 0, status: 'pending', user_id: 2 },
@@ -260,7 +260,7 @@ describe('offlineQueue', () => {
       expect(counts).toEqual({
         'clock-in': 2,
         'clock-out': 0,
-        report: 1,
+        activity: 1,
         location: 0,
       });
     });
@@ -270,9 +270,9 @@ describe('offlineQueue', () => {
     it('should return count of failed items for current user', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 3, status: 'failed', user_id: 1 },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
         { id: '3', type: 'location', data: {}, timestamp: 125, retryCount: 3, status: 'failed', user_id: 1 },
-        { id: '4', type: 'report', data: {}, timestamp: 126, retryCount: 3, status: 'failed', user_id: 2 },
+        { id: '4', type: 'activity', data: {}, timestamp: 126, retryCount: 3, status: 'failed', user_id: 2 },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
 
@@ -286,7 +286,7 @@ describe('offlineQueue', () => {
     it('should return failed items for current user', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 3, status: 'failed', user_id: 1 },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
         { id: '3', type: 'location', data: {}, timestamp: 125, retryCount: 3, status: 'failed', user_id: 2 },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
@@ -302,7 +302,7 @@ describe('offlineQueue', () => {
     it('should remove failed items for current user', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 3, status: 'failed', user_id: 1 },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
         { id: '3', type: 'location', data: {}, timestamp: 125, retryCount: 3, status: 'failed', user_id: 2 },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
@@ -321,7 +321,7 @@ describe('offlineQueue', () => {
     it('should reset failed items to pending for current user', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 3, status: 'failed', user_id: 1, error: 'Network error' },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 1 },
         { id: '3', type: 'location', data: {}, timestamp: 125, retryCount: 3, status: 'failed', user_id: 2 },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
@@ -342,7 +342,7 @@ describe('offlineQueue', () => {
     it('should return items for specific user', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending', user_id: 1 },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 2 },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 2 },
         { id: '3', type: 'location', data: {}, timestamp: 125, retryCount: 0, status: 'pending', user_id: 1 },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
@@ -358,7 +358,7 @@ describe('offlineQueue', () => {
     it('should remove items for specific user', async () => {
       const items = [
         { id: '1', type: 'clock-in', data: {}, timestamp: 123, retryCount: 0, status: 'pending', user_id: 1 },
-        { id: '2', type: 'report', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 2 },
+        { id: '2', type: 'activity', data: {}, timestamp: 124, retryCount: 0, status: 'pending', user_id: 2 },
         { id: '3', type: 'location', data: {}, timestamp: 125, retryCount: 0, status: 'pending', user_id: 1 },
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));

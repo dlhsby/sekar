@@ -1,6 +1,6 @@
 /**
  * Navigation Types
- * TypeScript type definitions for React Navigation
+ * Phase 2C: Unified navigator for all 8 roles (replaces Worker/Supervisor split)
  */
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -10,46 +10,38 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 // Root Stack Navigator (Auth flow)
 export type RootStackParamList = {
   Login: undefined;
-  WorkerTabs: undefined;
-  SupervisorTabs: undefined;
+  MainTabs: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
   NativeStackScreenProps<RootStackParamList, T>;
 
-// Worker Tab Navigator
-export type WorkerTabParamList = {
-  WorkerHome: undefined;
-  ClockInOut: undefined;
-  Report: undefined;
-  TasksReports: { activeTab?: 'tasks' | 'reports' } | undefined;
-  ReportDetail: { reportId: string; isWorkerView?: boolean };
+// Unified Main Tab Navigator (all roles)
+export type MainTabParamList = {
+  // Visible tabs (role-dependent)
+  Home: undefined;
+  Activities: { activeTab?: 'tasks' | 'tagged' | 'activities' } | undefined;
+  Tasks: undefined;
+  Overtime: undefined;
+  Monitoring: undefined;
   Profile: undefined;
-  ShiftHistory: undefined;
+  // Hidden stack screens
+  ClockInOut: undefined;
+  ActivitySubmission: undefined;
+  ActivityDetail: { activityId: string };
   TaskDetail: { taskId: string };
   TaskComplete: { taskId: string };
+  TaskCreate: undefined;
+  OvertimeSubmit: undefined;
+  OvertimeDetail: { overtimeId: string };
+  OvertimeApproval: undefined;
+  ShiftHistory: undefined;
   Settings: undefined;
 };
 
-export type WorkerTabScreenProps<T extends keyof WorkerTabParamList> =
+export type MainTabScreenProps<T extends keyof MainTabParamList> =
   CompositeScreenProps<
-    BottomTabScreenProps<WorkerTabParamList, T>,
-    RootStackScreenProps<keyof RootStackParamList>
-  >;
-
-// Supervisor Tab Navigator
-export type SupervisorTabParamList = {
-  MapDashboard: undefined;
-  ReportsList: undefined;
-  ReportDetail: { reportId: string; isWorkerView?: boolean };
-  Attendance: undefined;
-  Profile: undefined;
-  Settings: undefined;
-};
-
-export type SupervisorTabScreenProps<T extends keyof SupervisorTabParamList> =
-  CompositeScreenProps<
-    BottomTabScreenProps<SupervisorTabParamList, T>,
+    BottomTabScreenProps<MainTabParamList, T>,
     RootStackScreenProps<keyof RootStackParamList>
   >;
 
@@ -59,4 +51,3 @@ declare global {
     interface RootParamList extends RootStackParamList {}
   }
 }
-

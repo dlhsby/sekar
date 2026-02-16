@@ -6,7 +6,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { USER_MANAGERS } from '../users/constants/role-groups';
-import { ActiveWorkerDto } from './dto/active-workers-response.dto';
+import { ActiveUserDto } from './dto/active-users-response.dto';
 import { AreaStatusResponseDto } from './dto/area-status-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -21,17 +21,17 @@ import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination
 @ApiBearerAuth()
 @Controller('supervisor')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(...USER_MANAGERS, UserRole.KORLAP)
+@Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.ADMIN_DATA)
 export class SupervisorController {
   constructor(private readonly supervisorService: SupervisorService) {}
 
   /**
-   * Get all active workers with real-time locations and pagination
-   * Shows workers who are currently clocked in
+   * Get all active users with real-time locations and pagination
+   * Shows users who are currently clocked in
    */
-  @Get('active-workers')
+  @Get('active-users')
   @ApiOperation({
-    summary: 'Get active workers with pagination (Admin, Supervisor)',
+    summary: 'Get active users with pagination (Admin, Korlap)',
     description:
       'Returns paginated list of workers currently clocked in with their latest GPS locations',
   })
@@ -39,7 +39,7 @@ export class SupervisorController {
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiResponse({
     status: 200,
-    description: 'Paginated list of active workers',
+    description: 'Paginated list of active users',
     schema: {
       example: {
         data: [
@@ -71,10 +71,10 @@ export class SupervisorController {
       },
     },
   })
-  async getActiveWorkers(
+  async getActiveUsers(
     @Query() paginationDto: PaginationDto,
-  ): Promise<PaginatedResponseDto<ActiveWorkerDto>> {
-    return this.supervisorService.getActiveWorkersPaginated(
+  ): Promise<PaginatedResponseDto<ActiveUserDto>> {
+    return this.supervisorService.getActiveUsersPaginated(
       paginationDto.page,
       paginationDto.limit,
     );
@@ -86,8 +86,8 @@ export class SupervisorController {
    */
   @Get('area-status')
   @ApiOperation({
-    summary: 'Get area status (Admin, Supervisor)',
-    description: 'Returns assigned and active worker counts for each area',
+    summary: 'Get area status (Admin, Korlap)',
+    description: 'Returns assigned and active user counts for each area',
   })
   @ApiResponse({
     status: 200,
@@ -104,7 +104,7 @@ export class SupervisorController {
    */
   @Get('attendance')
   @ApiOperation({
-    summary: 'Get attendance report with pagination (Admin, Supervisor)',
+    summary: 'Get attendance report with pagination (Admin, Korlap)',
     description: 'Returns paginated attendance statistics for a specific date (defaults to today)',
   })
   @ApiQuery({

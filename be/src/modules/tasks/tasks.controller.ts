@@ -27,6 +27,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
+import { TagUsersDto } from './dto/tag-users.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -157,11 +158,11 @@ export class TasksController {
   }
 
   /**
-   * Assign a task to a worker
+   * Assign a task to a user
    */
   @Post(':id/assign')
   @Roles(...TASK_CREATORS)
-  @ApiOperation({ summary: 'Assign a task to a worker' })
+  @ApiOperation({ summary: 'Assign a task to a user' })
   @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Task assigned successfully', type: Task })
   @ApiResponse({ status: 400, description: 'Invalid assignment (wrong status or invalid user)' })
@@ -192,23 +193,23 @@ export class TasksController {
   }
 
   /**
-   * Add a tag to a task
+   * Add tags to a task (batch)
    */
   @Post(':id/tag')
   @Roles(...TASK_CREATORS)
-  @ApiOperation({ summary: 'Add a user tag to a task' })
+  @ApiOperation({ summary: 'Add user tags to a task (batch)' })
   @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Tag added successfully', type: Task })
+  @ApiResponse({ status: 200, description: 'Tags added successfully', type: Task })
   @ApiResponse({ status: 400, description: 'User already tagged or invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - only task creator can add tags' })
   @ApiResponse({ status: 404, description: 'Task or user not found' })
-  async addTag(
+  async addTags(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body('user_id', ParseUUIDPipe) userId: string,
+    @Body() tagUsersDto: TagUsersDto,
     @GetUser() user: User,
   ): Promise<Task> {
-    return this.tasksService.addTag(id, user.id, userId);
+    return this.tasksService.addTags(id, user.id, tagUsersDto.user_ids);
   }
 
   /**

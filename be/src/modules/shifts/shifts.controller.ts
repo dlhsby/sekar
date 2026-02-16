@@ -31,7 +31,7 @@ import { CLOCKABLE_ROLES, USER_MANAGERS } from '../users/constants/role-groups';
 /**
  * Shifts Controller
  *
- * Handles worker shift operations including clock-in, clock-out,
+ * Handles user shift operations including clock-in, clock-out,
  * and shift status queries.
  */
 @ApiTags('shifts')
@@ -47,8 +47,8 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Clock in to start a shift',
     description:
-      'Worker clocks in to their assigned area with GPS validation and selfie photo. ' +
-      'GPS must be within area boundary (default ±100m). Only one active shift allowed per worker.',
+      'User clocks in to start a shift. Area can be auto-detected from schedule or provided manually. ' +
+      'Only one active shift allowed per user.',
   })
   @ApiBody({ type: ClockInDto })
   @ApiResponse({
@@ -58,7 +58,7 @@ export class ShiftsController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Already clocked in, not assigned to area, or GPS outside boundary',
+    description: 'Already clocked in or validation error',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -66,7 +66,7 @@ export class ShiftsController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Only workers can clock in',
+    description: 'Only users can clock in',
   })
   async clockIn(@GetUser() user: User, @Body() dto: ClockInDto): Promise<Shift> {
     return this.shiftsService.clockIn(user.id, dto);
@@ -78,7 +78,7 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Clock out to end a shift',
     description:
-      'Worker clocks out from their active shift. Records clock-out time and GPS coordinates.',
+      'User clocks out from their active shift. Records clock-out time and GPS coordinates.',
   })
   @ApiBody({ type: ClockOutDto })
   @ApiResponse({
@@ -96,7 +96,7 @@ export class ShiftsController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Only workers can clock out',
+    description: 'Only users can clock out',
   })
   async clockOut(@GetUser() user: User, @Body() dto: ClockOutDto): Promise<Shift> {
     return this.shiftsService.clockOut(user.id, dto);
@@ -107,7 +107,7 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Get current active shift',
     description:
-      'Returns the active shift for the authenticated worker, or null if not clocked in.',
+      'Returns the active shift for the authenticated user, or null if not clocked in.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -120,7 +120,7 @@ export class ShiftsController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Only workers can view their current shift',
+    description: 'Only users can view their current shift',
   })
   async getCurrentShift(@GetUser() user: User): Promise<Shift | null> {
     return this.shiftsService.findActiveShift(user.id);
@@ -131,7 +131,7 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Get my shift history',
     description:
-      'Returns the last 50 shifts for the authenticated worker, ordered by most recent first.',
+      'Returns the last 50 shifts for the authenticated user, ordered by most recent first.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -144,10 +144,10 @@ export class ShiftsController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Only workers can view their shift history',
+    description: 'Only authorized users can view their shift history',
   })
   async getMyShifts(@GetUser() user: User): Promise<Shift[]> {
-    return this.shiftsService.findByWorkerId(user.id);
+    return this.shiftsService.findByUserId(user.id);
   }
 
   @Get('active')
@@ -156,7 +156,7 @@ export class ShiftsController {
     summary: 'Get all active shifts with pagination',
     description:
       'Returns all currently active shifts (not yet clocked out). ' +
-      'For supervisor/admin dashboard to monitor active workers.',
+      'For management dashboard to monitor active users.',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
@@ -168,12 +168,12 @@ export class ShiftsController {
         data: [
           {
             id: 'shift-uuid',
-            worker_id: 'worker-uuid',
+            user_id: 'user-uuid',
             area_id: 'area-uuid',
             clock_in_time: '2026-01-16T08:00:00.000Z',
             clock_out_time: null,
-            worker: {
-              id: 'worker-uuid',
+            user: {
+              id: 'user-uuid',
               username: 'worker1',
               full_name: 'Pekerja Satu',
             },
@@ -198,7 +198,7 @@ export class ShiftsController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: 'Only admin and supervisors can view all active shifts',
+    description: 'Only admin and korlap can view all active shifts',
   })
   async getActiveShifts(
     @Query() paginationDto: PaginationDto,

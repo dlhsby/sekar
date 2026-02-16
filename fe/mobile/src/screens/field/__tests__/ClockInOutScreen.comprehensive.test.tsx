@@ -61,7 +61,7 @@ const mockShift = {
   id: 'shift-123',
   clock_in_time: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
   clock_out_time: null,
-  worker_id: 1,
+  user_id: 1,
   area_id: 'area-123',
 };
 

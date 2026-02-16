@@ -12,48 +12,52 @@ describe('Shift Entity', () => {
     const shift = new Shift();
 
     shift.id = 'shift-uuid-123';
-    shift.worker_id = 'worker-uuid-456';
+    shift.user_id = 'user-uuid-456';
     shift.area_id = 'area-uuid-789';
     shift.clock_in_time = new Date('2026-01-09T08:00:00Z');
     shift.clock_in_gps_lat = -7.2905;
     shift.clock_in_gps_lng = 112.7398;
     shift.clock_in_photo_url = 'https://s3.amazonaws.com/photo.jpg';
+    shift.clock_in_outside_boundary = false;
     shift.clock_out_time = new Date('2026-01-09T16:00:00Z');
     shift.clock_out_gps_lat = -7.2906;
     shift.clock_out_gps_lng = 112.7399;
+    shift.clock_out_outside_boundary = false;
     shift.created_at = new Date();
     shift.updated_at = new Date();
 
     expect(shift.id).toBe('shift-uuid-123');
-    expect(shift.worker_id).toBe('worker-uuid-456');
+    expect(shift.user_id).toBe('user-uuid-456');
     expect(shift.area_id).toBe('area-uuid-789');
     expect(shift.clock_in_time).toBeInstanceOf(Date);
     expect(shift.clock_in_gps_lat).toBe(-7.2905);
     expect(shift.clock_in_gps_lng).toBe(112.7398);
     expect(shift.clock_in_photo_url).toBe('https://s3.amazonaws.com/photo.jpg');
+    expect(shift.clock_in_outside_boundary).toBe(false);
     expect(shift.clock_out_time).toBeInstanceOf(Date);
     expect(shift.clock_out_gps_lat).toBe(-7.2906);
     expect(shift.clock_out_gps_lng).toBe(112.7399);
+    expect(shift.clock_out_outside_boundary).toBe(false);
     expect(shift.created_at).toBeInstanceOf(Date);
     expect(shift.updated_at).toBeInstanceOf(Date);
   });
 
-  it('should support worker relation', () => {
+  it('should support user relation', () => {
     const shift = new Shift();
-    const mockWorker: User = {
-      id: 'worker-uuid-456',
-      username: 'worker1',
+    const mockUser: User = {
+      id: 'user-uuid-456',
+      username: 'user1',
       password_hash: 'hashed',
-      full_name: 'Worker One',
+      full_name: 'User One',
       role: UserRole.SATGAS,
       is_active: true,
       created_at: new Date(),
       updated_at: new Date(),
     };
 
-    shift.worker = mockWorker;
-    expect(shift.worker).toBe(mockWorker);
-    expect(shift.worker.username).toBe('worker1');
+    shift.user = mockUser;
+    expect(shift.user).toBe(mockUser);
+    expect(shift.user.username).toBe('user1');
   });
 
   it('should support area relation', () => {
@@ -88,11 +92,11 @@ describe('Shift Entity', () => {
 
   it('should create completed shift with all properties', () => {
     const shift = new Shift();
-    const mockWorker: User = {
-      id: 'worker-uuid-456',
-      username: 'worker1',
+    const mockUser: User = {
+      id: 'user-uuid-456',
+      username: 'user1',
       password_hash: 'hashed',
-      full_name: 'Worker One',
+      full_name: 'User One',
       role: UserRole.SATGAS,
       is_active: true,
       created_at: new Date(),
@@ -113,26 +117,30 @@ describe('Shift Entity', () => {
     };
 
     shift.id = 'shift-uuid-123';
-    shift.worker_id = mockWorker.id;
-    shift.worker = mockWorker;
+    shift.user_id = mockUser.id;
+    shift.user = mockUser;
     shift.area_id = mockArea.id;
     shift.area = mockArea;
     shift.clock_in_time = new Date('2026-01-09T08:00:00Z');
     shift.clock_in_gps_lat = -7.2905;
     shift.clock_in_gps_lng = 112.7398;
     shift.clock_in_photo_url = 'https://s3.amazonaws.com/clock-in.jpg';
+    shift.clock_in_outside_boundary = false;
     shift.clock_out_time = new Date('2026-01-09T16:00:00Z');
     shift.clock_out_gps_lat = -7.2906;
     shift.clock_out_gps_lng = 112.7399;
+    shift.clock_out_outside_boundary = false;
     shift.created_at = new Date();
     shift.updated_at = new Date();
 
     expect(shift.id).toBe('shift-uuid-123');
-    expect(shift.worker_id).toBe(mockWorker.id);
-    expect(shift.worker).toBe(mockWorker);
+    expect(shift.user_id).toBe(mockUser.id);
+    expect(shift.user).toBe(mockUser);
     expect(shift.area_id).toBe(mockArea.id);
     expect(shift.area).toBe(mockArea);
     expect(shift.clock_in_time).toBeInstanceOf(Date);
     expect(shift.clock_out_time).toBeInstanceOf(Date);
+    expect(shift.clock_in_outside_boundary).toBe(false);
+    expect(shift.clock_out_outside_boundary).toBe(false);
   });
 });

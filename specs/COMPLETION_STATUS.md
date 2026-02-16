@@ -1,9 +1,9 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** February 10, 2026 (Phase 2C Planning Started)
-**Current Phase:** Phase 2C Client Feedback - 🟡 Planning
-**Next Phase:** Phase 2C Implementation → Phase 3 Polishing & E2E Testing
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 0% 🟡 | Phase 3: 0% | Phase 4: 0%
+**Last Updated:** February 12, 2026 (Phase 2C Mobile Complete)
+**Current Phase:** Phase 2C Client Feedback - 🟡 Backend & Mobile Complete (70%)
+**Next Phase:** Phase 2C Web → Phase 3 Polishing & E2E Testing
+**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C Backend: 100% ✅ | Phase 2C Mobile: 100% ✅ | Phase 2C: 70% 🟡 | Phase 3: 0% | Phase 4: 0%
 
 ---
 
@@ -30,12 +30,12 @@
 
 | Component | Status | Progress | Tests | Coverage | Notes |
 |-----------|--------|----------|-------|----------|-------|
-| **Backend** | ✅ **DEPLOYED** | 100% | 845 passing | 90.77% | 15 modules, 83 endpoints, API v1, **PRODUCTION LIVE** |
-| **Mobile** | ✅ Complete | 100% | 2,141 passing (99.07% pass rate) | 80.31% | 17 screens, Neo Brutalism UI, WCAG 2.1 AA |
-| **Web** | ✅ Complete | 100% | 505 tests | >80% | 18 pages, 16 NB components, Next.js 16.1.4 |
-| **Database** | ✅ **DEPLOYED** | 100% | 845 tests | - | 14 tables (Phase 1+2B), **SEEDED & LIVE** |
-| **Documentation** | ✅ Updated | 100% | 50+ spec files | - | Deployment docs consolidated to specs/ |
-| **DevOps** | ✅ **OPERATIONAL** | 100% | 3 pipelines | - | GitHub Actions, Docker, AWS, **CI/CD GREEN**
+| **Backend** | ✅ Phase 2C Complete | 100% | 769 passing (50 suites) | >90% | Phase 2C: Activities, Schedules, Overtime, Monitoring scope auth |
+| **Mobile** | ✅ Phase 2C Complete | 100% | Tests pending | - | 6 phases: types, Redux, API, nav, 12 modified + 5 new screens |
+| **Web** | 🟡 Phase 2C Pending | 0% | - | - | Phase 2C terminology & role updates not started |
+| **Database** | ✅ Phase 2C Complete | 100% | 769 tests | - | Phase 2C schema updates complete (17 tables) |
+| **Documentation** | ✅ Phase 2C Complete | 100% | 7 spec files | - | Database, backend, mobile, web, testing specs complete |
+| **DevOps** | ⏳ Phase 2C Pending | 0% | - | - | Deployment after mobile/web complete |
 
 ---
 
@@ -46,11 +46,11 @@
 | 1 | MVP - Core Tracking | ✅ Complete | 2 weeks |
 | 2A | Enhanced Features | ✅ Complete | 2 weeks |
 | 2B | UI/UX Revamp | ✅ Complete | 3-4 weeks |
-| **2C** | **Client Feedback** | **🟡 Planning** | **4-6 weeks** |
+| **2C** | **Client Feedback** | **🟡 Backend & Mobile Complete (70%)** | **4-6 weeks** |
 | 3 | Polishing & E2E Testing | Not Started | 2-3 weeks |
 | 4 | Advanced Features (Analytics + Assets + iOS) | Not Started | 6-8 weeks |
 
-> **Phase 2C** addresses client feedback from February 10, 2026 meeting. Includes breaking changes: role system overhaul (7→8 roles), GPS boundary removal, reports→aktivitas rename, new overtime module, task hierarchy redesign. See [Phase 2C specs](./phases/phase-2-c-client-feedback/README.md).
+> **Phase 2C** addresses client feedback from February 10, 2026 meeting. Breaking changes include: role system overhaul (7→8 roles), terminology cleanup ([ADR-010](./architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)): `work_reports`→`activities`, `worker_schedules`→`schedules`, `worker_id`→`user_id`; drop `worker_assignments` and `overtime_aktivitas` tables; flat overtime (1:1 with activity); soft polygon geofencing (never blocks clock-in); simplified TaskStatus (6→4 states). See [Phase 2C specs](./phases/phase-2-c-client-feedback/README.md).
 
 > **Note:** Phase structure was reorganized on January 30, 2026. Original phases 3-6 were consolidated into new phases 3-4.
 
@@ -58,13 +58,38 @@
 
 ## 📊 Implementation Status
 
-### ✅ Backend Implementation (100% Complete)
+### ✅ Backend Implementation (Phase 2C Complete)
 
-**Status:** ✅ Production-Ready (with enhancements per architectural specs)
-**Duration:** Phase 1 (8 days) + Phase 2 (8 days) = 16 days total
-**Test Coverage:** 90.77% (845 tests passing)
-**API Endpoints:** 83 documented endpoints (40 Phase 1 + 43 Phase 2)
+**Status:** ✅ Phase 2C Complete - Terminology cleanup and role system overhaul implemented
+**Duration:** Phase 1 (8 days) + Phase 2 (8 days) + Phase 2C (3 days) = 19 days total
+**Test Coverage:** >90% (769 tests passing, 50 test suites)
+**API Endpoints:** ~85+ endpoints (Phase 1 + 2B + 2C)
 **Error Codes:** 31 standardized codes
+
+**Phase 2C Changes (February 11, 2026):**
+- ✅ **Terminology Cleanup (ADR-010):**
+  - `work_reports` → `activities` (module, routes, entities)
+  - `worker_schedules` → `schedules` (module, routes, entities)
+  - Dropped `worker_assignments` module entirely
+  - Dropped `overtime_aktivitas` entity (flat overtime: 1:1 with activity)
+  - Column renames: `worker_id` → `user_id` across 3 tables
+- ✅ **Role System Overhaul (ADR-009):**
+  - 7 roles → 8 roles (new: `admin_data`, `admin_system`, `superadmin`)
+  - Renamed: `worker` → `satgas`, `supervisor` → `korlap`, `koordinator_lapangan` → `korlap`
+  - All guards, decorators, and seeds updated
+- ✅ **Soft Polygon Geofencing:**
+  - Added `inside_boundary`, `outside_boundary_override` flags to shifts
+  - Clock-in/out never blocked by GPS (soft validation)
+- ✅ **Monitoring Scope Authorization:**
+  - City-wide stats: `top_management`, `admin_system`, `superadmin`
+  - Rayon stats: `kepala_rayon` (own rayon only)
+  - Area stats: `korlap` (own area only)
+- ✅ **Overtime Simplified:**
+  - 1:1 relationship with activity (removed separate table)
+  - Rejection now shows reason, auto-deletes overtime
+- ✅ **Task Status Simplified:**
+  - 6 states → 4 states (removed `accepted`, `declined`)
+  - Cleaner workflow: pending → in_progress → completed/cancelled
 
 #### Completed Modules (9 Feature Modules + SharedModule + SeedModule)
 
@@ -74,9 +99,9 @@
 | **Users** | 5 | 28 | 100% | ✅ Complete |
 | **Area Types** | 2 | 12 | 100% | ✅ Complete |
 | **Areas** | 5 | 21 | 100% | ✅ Complete |
-| **Worker Assignments** | 2 | 18 | 100% | ✅ Complete |
+| **Worker Assignments** | 2 | 18 | 100% | ✅ Complete ⚠️ Phase 2C: DROPPED |
 | **Shifts** | 5 | 45 | 100% | ✅ Complete |
-| **Reports** | 6 | 42 | 100% | ✅ Complete |
+| **Reports** | 6 | 42 | 100% | ✅ Complete ⚠️ Phase 2C: renamed to Activities |
 | **Location** | 3 | 32 | 100% | ✅ Complete |
 | **Supervisor** | 3 | 28 | 100% | ✅ Complete |
 | **Shared (S3)** | - | 12 | 100% | ✅ Complete |
@@ -87,7 +112,7 @@
 - ✅ NestJS 11.x with TypeScript
 - ✅ PostgreSQL 14+ with TypeORM
 - ✅ JWT authentication (7-day expiry)
-- ✅ Role-based access control (Worker, Supervisor, Admin)
+- ✅ Role-based access control (Phase 1: Worker/Supervisor/Admin; Phase 2C: 8 roles — see [ADR-009](./architecture/decisions/ADR-009-phase2c-role-system-overhaul.md))
 - ✅ Swagger/OpenAPI documentation at `/api/docs`
 - ✅ Environment configuration
 - ✅ Database seeding
@@ -104,7 +129,7 @@
 - ✅ Bcrypt password hashing (10 rounds)
 
 **Worker Operations:**
-- ✅ GPS-validated clock-in (±100m tolerance)
+- ✅ GPS-validated clock-in (Phase 1: ±100m hard rejection; Phase 2C: soft polygon geofencing — see [ADR-010](./architecture/decisions/ADR-010-phase2c-terminology-cleanup.md))
 - ✅ Selfie photo upload to S3
 - ✅ GPS-validated clock-out
 - ✅ Automatic shift duration calculation
@@ -124,24 +149,26 @@
 - ✅ Haversine GPS distance calculation
 - ✅ Boundary validation utilities
 
-#### Database Schema (7 Tables)
+#### Database Schema (Phase 1: 7 Tables → Phase 2B: 16 Tables → Phase 2C: 17 Tables)
 
+**Phase 1 Tables (7):**
 1. **users** - User accounts with roles
 2. **area_types** - Area classification reference
 3. **areas** - Work areas with GPS boundaries
-4. **worker_assignments** - Worker-to-area mappings
+4. **worker_assignments** - Worker-to-area mappings ⚠️ Phase 2C: DROPPED
 5. **shifts** - Clock-in/out records
-6. **reports** - Work reports with media
+6. **reports** - Work reports with media ⚠️ Phase 2C: renamed to `activities`
 7. **location_logs** - GPS tracking history
+
+> **Phase 2C Database Changes:** See [Phase 2C database.md](./phases/phase-2-c-client-feedback/database.md) for full migration plan (5 migrations). Key changes: 2 tables dropped (`worker_assignments`, `overtime_aktivitas`), 2 tables renamed (`worker_schedules`→`schedules`, `work_reports`→`activities`), column renames (`worker_id`→`user_id` on 3 tables), boundary flags added to `shifts`. Final count: 17 tables.
 
 **Relationships:**
 - Users 1:N Shifts
-- Users 1:N Reports (as worker)
-- Users 1:N Reports (as reviewer)
+- Users 1:N Activities (Phase 2C: renamed from Reports)
 - Users 1:N LocationLogs
-- Users N:1 Areas (via WorkerAssignments)
+- Users N:1 Areas (Phase 2C: via `schedules`, not `worker_assignments`)
 - Areas 1:N Shifts
-- Shifts 1:N Reports
+- Shifts 1:N Activities
 - Shifts 1:N LocationLogs
 
 #### Backend Metrics
@@ -165,8 +192,8 @@ Swagger Docs:         100% complete
   - `admin` / `admin123` (Admin)
   - `supervisor1` / `supervisor123` (Supervisor)
   - `worker1`, `worker2`, `worker3` / `worker123` (Workers)
-- 3 worker assignments
-- Sample shifts, reports, location logs
+- 3 worker assignments (Phase 2C: replaced by schedules)
+- Sample shifts, reports (Phase 2C: renamed to activities), location logs
 
 #### Production Readiness Status
 
@@ -998,6 +1025,72 @@ See `specs/ACTION_PLAN.md` for detailed 4-week production hardening plan.
 ---
 
 ## 📝 Change Log
+
+### February 12, 2026 - Phase 2C Mobile Complete + Review Fixes
+
+**Phase 2C Mobile Implementation Complete:**
+- ✅ **6 Phases Implemented:** Type system, Redux, API services, navigation, modified screens, new screens
+- ✅ **Review Fixes Applied:**
+  - Polygon geofencing in ClockInOutScreen (was radius-only, now polygon-first)
+  - Polygon-first boundary check in mapUtils/calculateUserStatus
+  - ActivityDetailScreen created (new read-only detail view)
+  - Dead code deleted (ReportListItem, ReportCard components)
+  - ProfileScreen: role badges updated to 8 Phase 2C roles (was worker/supervisor/admin)
+  - ProfileScreen: sync status uses `activity` key (was `report`)
+  - TaskDetailScreen: uses `task.creator` (was `task.assigned_by` which doesn't exist)
+  - RootNavigator test: store includes all 7 reducers
+  - App.tsx: location tracking works for all clockable roles (was hardcoded to 'worker')
+- ✅ **Manual Review Checklist:** 155 mobile test cases added (Parts 11-18 in deployment checklist)
+- ✅ **Key Architecture:** Unified MainNavigator for all 8 roles, role-filtered tab configs
+
+**Next Steps:**
+- Manual review of mobile implementation (see status_deployment_checklist.md Parts 11-18)
+- Web Phase 2C implementation (terminology + role updates)
+- Integration testing across all components
+
+### February 11, 2026 - Phase 2C Backend Complete
+
+**Phase 2C Backend Implementation Complete:**
+- ✅ **Test Results:** 769 tests passing (50 test suites), >90% coverage
+- ✅ **Modules Implemented:**
+  - Activities module (renamed from Reports, using ADR-010 terminology)
+  - Schedules module (renamed from WorkerSchedules, using ADR-010 terminology)
+  - Flat overtime (1:1 with activity, removed OvertimeAktivitas)
+  - Monitoring scope authorization (city/rayon/area stats by role)
+  - Polygon geofencing (soft validation, never blocks clock-in)
+- ✅ **Dropped Modules:**
+  - WorkerAssignments module removed (replaced by schedules)
+  - OvertimeAktivitas entity removed (flat overtime approach)
+- ✅ **Role System Overhaul (ADR-009):**
+  - 8 roles implemented: `satgas`, `linmas`, `korlap`, `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`
+  - All guards, decorators, seeds updated for new roles
+  - Old roles removed: `worker`, `supervisor`, `admin`, `koordinator_lapangan`
+- ✅ **Terminology Cleanup (ADR-010):**
+  - Code uses English: `activities`, `schedules`, `overtime`
+  - Database: `work_reports` → `activities`, `worker_schedules` → `schedules`
+  - Routes: `/api/v1/activities`, `/api/v1/schedules`, `/api/v1/overtime`
+  - Column renames: `worker_id` → `user_id` on shifts, activities, schedules
+- ✅ **Database Changes:**
+  - Boundary flags added to shifts: `inside_boundary`, `outside_boundary_override`
+  - Task status simplified: 6 → 4 states (removed `accepted`, `declined`)
+  - Overtime rejection shows reason, auto-deletes overtime record
+- ✅ **Seeds Updated:**
+  - 20 activity types across 4 roles (satgas, linmas, korlap, admin_data)
+  - Test users with new roles and rayon assignments
+  - Sample activities and schedules with new schema
+
+**Documentation Updated:**
+- specs/COMPLETION_STATUS.md - Added Phase 2C backend completion
+- specs/phases/phase-2-c-client-feedback/STATUS.md - Backend tasks marked complete
+- specs/phases/phase-2-c-client-feedback/backend.md - Implementation verified
+- specs/architecture/decisions/ADR-009-phase2c-role-system-overhaul.md - Finalized
+- specs/architecture/decisions/ADR-010-phase2c-terminology-cleanup.md - Created
+
+**Next Steps:**
+- Mobile Phase 2C implementation (terminology + role updates)
+- Web Phase 2C implementation (terminology + role updates)
+- Integration testing across all components
+- Production deployment after full Phase 2C complete
 
 ### February 3, 2026 - Web Phase 2 Review, Fix & Testing Cycle
 

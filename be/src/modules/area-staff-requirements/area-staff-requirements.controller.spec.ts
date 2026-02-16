@@ -27,7 +27,7 @@ describe('AreaStaffRequirementsController', () => {
     id: '44444444-4444-4444-4444-444444444401',
     area_id: mockArea.id,
     shift_definition_id: mockShiftDefinition.id,
-    role: StaffRole.WORKER,
+    role: StaffRole.SATGAS,
     required_count: 6,
     day_type: DayType.WEEKDAY,
     created_at: new Date('2024-01-01T00:00:00Z'),
@@ -169,7 +169,7 @@ describe('AreaStaffRequirementsController', () => {
       const createDto: CreateAreaStaffRequirementDto = {
         area_id: 'will-be-overridden', // Should be overridden by URL param
         shift_definition_id: mockShiftDefinition.id,
-        role: StaffRole.WORKER,
+        role: StaffRole.SATGAS,
         required_count: 6,
         day_type: DayType.WEEKDAY,
       };

@@ -13,7 +13,7 @@ const QUEUE_KEY = 'OFFLINE_QUEUE';
 /**
  * Queue item types
  */
-export type QueueItemType = 'clock-in' | 'clock-out' | 'report' | 'location';
+export type QueueItemType = 'clock-in' | 'clock-out' | 'activity' | 'location';
 
 /**
  * Queue item status
@@ -119,7 +119,7 @@ export async function addToQueue(
     items.push(newItem);
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(items));
 
-    console.log(`[OfflineQueue] Added ${type} to queue:`, newItem.id, userId ? `(user: ${userId})` : '(no user)');
+    console.debug(`[OfflineQueue] Added ${type} to queue:`, newItem.id, userId ? `(user: ${userId})` : '(no user)');
     return newItem.id;
   } catch (error) {
     console.error('[OfflineQueue] Error adding to queue:', error);
@@ -148,7 +148,7 @@ export async function updateQueueItem(
     items[index] = { ...items[index], ...updates };
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(items));
 
-    console.log(`[OfflineQueue] Updated item ${id}:`, updates);
+    console.debug(`[OfflineQueue] Updated item ${id}:`, updates);
   } catch (error) {
     console.error('[OfflineQueue] Error updating queue item:', error);
     throw error;
@@ -165,7 +165,7 @@ export async function removeFromQueue(id: string): Promise<void> {
     const filteredItems = items.filter(item => item.id !== id);
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(filteredItems));
 
-    console.log('[OfflineQueue] Removed item from queue:', id);
+    console.debug('[OfflineQueue] Removed item from queue:', id);
   } catch (error) {
     console.error('[OfflineQueue] Error removing from queue:', error);
     throw error;
@@ -230,7 +230,7 @@ export async function getFailedCount(): Promise<number> {
 export async function getPendingCountsByType(): Promise<{
   'clock-in': number;
   'clock-out': number;
-  report: number;
+  activity: number;
   location: number;
 }> {
   try {
@@ -244,7 +244,7 @@ export async function getPendingCountsByType(): Promise<{
       'clock-in': pendingItems.filter(item => item.type === 'clock-in').length,
       'clock-out': pendingItems.filter(item => item.type === 'clock-out')
         .length,
-      report: pendingItems.filter(item => item.type === 'report').length,
+      activity: pendingItems.filter(item => item.type === 'activity').length,
       location: pendingItems.filter(item => item.type === 'location').length,
     };
   } catch (error) {
@@ -252,7 +252,7 @@ export async function getPendingCountsByType(): Promise<{
     return {
       'clock-in': 0,
       'clock-out': 0,
-      report: 0,
+      activity: 0,
       location: 0,
     };
   }
@@ -306,7 +306,7 @@ export async function clearQueueForUser(userId: number): Promise<void> {
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(remainingItems));
 
     const clearedCount = items.length - remainingItems.length;
-    console.log(`[OfflineQueue] Cleared ${clearedCount} items for user ${userId}`);
+    console.debug(`[OfflineQueue] Cleared ${clearedCount} items for user ${userId}`);
   } catch (error) {
     console.error('[OfflineQueue] Error clearing queue for user:', error);
     throw error;
@@ -344,7 +344,7 @@ export async function migrateOrphanedItems(): Promise<number> {
 
     if (migratedCount > 0) {
       await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updatedItems));
-      console.log(`[OfflineQueue] Migrated ${migratedCount} orphaned items`);
+      console.debug(`[OfflineQueue] Migrated ${migratedCount} orphaned items`);
     }
 
     return migratedCount;
@@ -367,7 +367,7 @@ export async function clearFailedItems(): Promise<void> {
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(remainingItems));
 
     const clearedCount = items.length - remainingItems.length;
-    console.log(`[OfflineQueue] Cleared ${clearedCount} failed items`);
+    console.debug(`[OfflineQueue] Cleared ${clearedCount} failed items`);
   } catch (error) {
     console.error('[OfflineQueue] Error clearing failed items:', error);
     throw error;
@@ -384,7 +384,7 @@ export async function clearOrphanedItems(): Promise<void> {
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(remainingItems));
 
     const clearedCount = items.length - remainingItems.length;
-    console.log(`[OfflineQueue] Cleared ${clearedCount} orphaned items`);
+    console.debug(`[OfflineQueue] Cleared ${clearedCount} orphaned items`);
   } catch (error) {
     console.error('[OfflineQueue] Error clearing orphaned items:', error);
     throw error;
@@ -397,7 +397,7 @@ export async function clearOrphanedItems(): Promise<void> {
 export async function clearQueue(): Promise<void> {
   try {
     await AsyncStorage.removeItem(QUEUE_KEY);
-    console.log('[OfflineQueue] Queue cleared');
+    console.debug('[OfflineQueue] Queue cleared');
   } catch (error) {
     console.error('[OfflineQueue] Error clearing queue:', error);
     throw error;
@@ -413,7 +413,7 @@ export async function clearSyncedItems(): Promise<void> {
     const unsynced = items.filter(item => item.status !== 'success');
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(unsynced));
 
-    console.log('[OfflineQueue] Cleared synced items');
+    console.debug('[OfflineQueue] Cleared synced items');
   } catch (error) {
     console.error('[OfflineQueue] Error clearing synced items:', error);
     throw error;
@@ -448,7 +448,7 @@ export async function retryFailedItems(): Promise<number> {
 
     if (retriedCount > 0) {
       await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updatedItems));
-      console.log(`[OfflineQueue] Reset ${retriedCount} failed items to pending`);
+      console.debug(`[OfflineQueue] Reset ${retriedCount} failed items to pending`);
     }
 
     return retriedCount;

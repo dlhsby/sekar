@@ -38,6 +38,7 @@ describe('UsersService', () => {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockAuthService = {
@@ -160,6 +161,165 @@ describe('UsersService', () => {
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
       expect(result.meta.totalPages).toBe(0);
+    });
+
+    it('should filter users by rayon for admin_data user', async () => {
+      const adminDataUser = {
+        id: 'admin-data-uuid',
+        username: 'admindata1',
+        role: UserRole.ADMIN_DATA,
+        rayon_id: 'rayon-uuid-1',
+      };
+      const users = [mockUser];
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([users, 1]),
+      };
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      await service.findAllPaginated(1, 50, adminDataUser as any);
+
+      expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId: 'rayon-uuid-1' });
+    });
+
+    it('should filter users by rayon for kepala_rayon user', async () => {
+      const kepalaRayonUser = {
+        id: 'kepala-rayon-uuid',
+        username: 'kepalarayon1',
+        role: UserRole.KEPALA_RAYON,
+        rayon_id: 'rayon-uuid-2',
+      };
+      const users = [mockUser];
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([users, 1]),
+      };
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      await service.findAllPaginated(1, 50, kepalaRayonUser as any);
+
+      expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId: 'rayon-uuid-2' });
+    });
+
+    it('should not filter users for admin_system user', async () => {
+      const adminSystemUser = {
+        id: 'admin-system-uuid',
+        username: 'adminsystem1',
+        role: UserRole.ADMIN_SYSTEM,
+      };
+      const users = [mockUser];
+      mockUserRepository.findAndCount.mockResolvedValue([users, 1]);
+
+      await service.findAllPaginated(1, 50, adminSystemUser as any);
+
+      expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
+        select: ['id', 'username', 'full_name', 'role', 'is_active', 'created_at'],
+        skip: 0,
+        take: 50,
+        order: { created_at: 'DESC' },
+      });
+    });
+
+    it('should return empty array for admin_data when no users in their rayon', async () => {
+      const adminDataUser = {
+        id: 'admin-data-uuid-2',
+        username: 'admindata2',
+        role: UserRole.ADMIN_DATA,
+        rayon_id: 'empty-rayon-uuid',
+      };
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findAllPaginated(1, 50, adminDataUser as any);
+
+      expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: 'empty-rayon-uuid',
+      });
+      expect(result.data).toHaveLength(0);
+      expect(result.meta.total).toBe(0);
+    });
+
+    it('should return empty array for kepala_rayon when no users in their rayon', async () => {
+      const kepalaRayonUser = {
+        id: 'kepala-rayon-uuid-2',
+        username: 'kepalarayon2',
+        role: UserRole.KEPALA_RAYON,
+        rayon_id: 'empty-rayon-uuid-2',
+      };
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findAllPaginated(1, 50, kepalaRayonUser as any);
+
+      expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: 'empty-rayon-uuid-2',
+      });
+      expect(result.data).toHaveLength(0);
+      expect(result.meta.total).toBe(0);
+    });
+
+    it('should properly scope admin_data to only their rayon users', async () => {
+      const adminDataUser = {
+        id: 'admin-data-uuid',
+        username: 'admindata1',
+        role: UserRole.ADMIN_DATA,
+        rayon_id: 'rayon-uuid-1',
+      };
+      const rayon1Users = [
+        { ...mockUser, id: 'user-1', username: 'worker1' },
+        { ...mockUser, id: 'user-2', username: 'worker2' },
+      ];
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([rayon1Users, 2]),
+      };
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findAllPaginated(1, 50, adminDataUser as any);
+
+      expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: 'rayon-uuid-1',
+      });
+      expect(result.data).toHaveLength(2);
+      expect(result.meta.total).toBe(2);
     });
   });
 

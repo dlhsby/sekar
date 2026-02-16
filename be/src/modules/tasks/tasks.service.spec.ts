@@ -771,16 +771,15 @@ describe('TasksService', () => {
       );
     });
 
-    it('should throw BadRequestException if user already tagged', async () => {
+    it('should skip silently if user already tagged', async () => {
       const task = { ...mockTask, id: 'task-uuid', created_by: 'user-uuid' };
       const existingTag = { task_id: 'task-uuid', user_id: 'tagged-uuid' };
 
       taskRepository.findOne.mockResolvedValue(task as Task);
       taskTagRepository.findOne.mockResolvedValue(existingTag as any);
 
-      await expect(service.addTag('task-uuid', 'user-uuid', 'tagged-uuid')).rejects.toThrow(
-        BadRequestException,
-      );
+      const result = await service.addTag('task-uuid', 'user-uuid', 'tagged-uuid');
+      expect(result).toEqual(task);
     });
   });
 

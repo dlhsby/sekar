@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupervisorController } from './supervisor.controller';
 import { SupervisorService } from './supervisor.service';
-import { ActiveWorkersResponseDto, ActiveWorkerDto } from './dto/active-workers-response.dto';
+import { ActiveUsersResponseDto, ActiveUserDto } from './dto/active-users-response.dto';
 import { AreaStatusResponseDto, AreaStatusDto } from './dto/area-status-response.dto';
 import { AttendanceResponseDto } from './dto/attendance-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
@@ -13,8 +13,8 @@ describe('SupervisorController', () => {
   let service: SupervisorService;
 
   const mockSupervisorService = {
-    getActiveWorkers: jest.fn(),
-    getActiveWorkersPaginated: jest.fn(),
+    getActiveUsers: jest.fn(),
+    getActiveUsersPaginated: jest.fn(),
     getAreaStatus: jest.fn(),
     getAttendance: jest.fn(),
     getAttendancePaginated: jest.fn(),
@@ -43,7 +43,7 @@ describe('SupervisorController', () => {
 
   describe('getActiveWorkers', () => {
     it('should return paginated active workers', async () => {
-      const mockActiveWorker: ActiveWorkerDto = {
+      const mockActiveWorker: ActiveUserDto = {
         id: 'worker-uuid-1',
         username: 'worker1',
         full_name: 'Worker One',
@@ -64,12 +64,12 @@ describe('SupervisorController', () => {
 
       const paginatedResult = new PaginatedResponseDto([mockActiveWorker], 1, 1, 50);
 
-      mockSupervisorService.getActiveWorkersPaginated.mockResolvedValue(paginatedResult);
+      mockSupervisorService.getActiveUsersPaginated.mockResolvedValue(paginatedResult);
 
       const paginationDto: PaginationDto = { page: 1, limit: 50 };
-      const result = await controller.getActiveWorkers(paginationDto);
+      const result = await controller.getActiveUsers(paginationDto);
 
-      expect(service.getActiveWorkersPaginated).toHaveBeenCalledWith(1, 50);
+      expect(service.getActiveUsersPaginated).toHaveBeenCalledWith(1, 50);
       expect(result).toEqual(paginatedResult);
       expect(result.data).toHaveLength(1);
     });
@@ -77,13 +77,45 @@ describe('SupervisorController', () => {
     it('should return empty paginated result if no active workers', async () => {
       const paginatedResult = new PaginatedResponseDto([], 0, 1, 50);
 
-      mockSupervisorService.getActiveWorkersPaginated.mockResolvedValue(paginatedResult);
+      mockSupervisorService.getActiveUsersPaginated.mockResolvedValue(paginatedResult);
 
       const paginationDto: PaginationDto = { page: 1, limit: 50 };
-      const result = await controller.getActiveWorkers(paginationDto);
+      const result = await controller.getActiveUsers(paginationDto);
 
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
+    });
+
+    it('should work for admin_data role (rayon-scoped access)', async () => {
+      const mockActiveWorker: ActiveUserDto = {
+        id: 'worker-uuid-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        shift: {
+          id: 'shift-uuid-1',
+          clock_in_time: new Date('2026-01-09T08:00:00Z'),
+          area: {
+            id: 'area-uuid-1',
+            name: 'Taman Bungkul',
+          },
+        },
+        latest_location: {
+          gps_lat: -7.2905,
+          gps_lng: 112.7398,
+          logged_at: new Date('2026-01-09T10:30:00Z'),
+        },
+      };
+
+      const paginatedResult = new PaginatedResponseDto([mockActiveWorker], 1, 1, 50);
+
+      mockSupervisorService.getActiveUsersPaginated.mockResolvedValue(paginatedResult);
+
+      const paginationDto: PaginationDto = { page: 1, limit: 50 };
+      const result = await controller.getActiveUsers(paginationDto);
+
+      expect(service.getActiveUsersPaginated).toHaveBeenCalledWith(1, 50);
+      expect(result).toEqual(paginatedResult);
+      expect(result.data).toHaveLength(1);
     });
   });
 

@@ -24,9 +24,9 @@ import {
   nbShadows,
 } from '../../constants/nbTokens';
 import { NBCard, NBButton, NBBackgroundPattern } from '../../components/nb';
-import { getAttendance } from '../../services/api/supervisorApi';
+import { getAttendance } from '../../services/api/monitoringApi';
 import { formatDate } from '../../utils/dateUtils';
-import AttendanceCard from '../../components/supervisor/AttendanceCard';
+import AttendanceCard from '../../components/monitoring/AttendanceCard';
 
 const INDONESIAN_MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',

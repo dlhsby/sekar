@@ -82,7 +82,7 @@ export class NotificationsController {
    */
   @Post('send')
   @Roles(...USER_MANAGERS, UserRole.KORLAP)
-  @ApiOperation({ summary: 'Send notification to a specific user (Admin/Supervisor only)' })
+  @ApiOperation({ summary: 'Send notification to a specific user (Admin/Korlap only)' })
   @ApiResponse({
     status: 201,
     description: 'Notification sent successfully',
@@ -90,7 +90,7 @@ export class NotificationsController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin/Supervisor only' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin/Korlap only' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async send(@Body() dto: SendNotificationDto): Promise<Notification> {
     return this.notificationsService.sendToUser(dto);

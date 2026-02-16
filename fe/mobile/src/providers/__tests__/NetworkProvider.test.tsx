@@ -30,7 +30,7 @@ jest.mock('../../services/sync', () => ({
 }));
 
 // Mock console methods to reduce test output noise
-const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
+const mockConsoleDebug = jest.spyOn(console, 'debug').mockImplementation();
 const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 
 describe('NetworkProvider', () => {
@@ -64,7 +64,7 @@ describe('NetworkProvider', () => {
   });
 
   afterAll(() => {
-    mockConsoleLog.mockRestore();
+    mockConsoleDebug.mockRestore();
     mockConsoleError.mockRestore();
   });
 

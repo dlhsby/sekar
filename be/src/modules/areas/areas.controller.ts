@@ -218,7 +218,7 @@ export class AreasController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Cannot delete area with active worker assignments',
+    description: 'Cannot delete area with active user assignments',
   })
   @ApiResponse({
     status: 401,

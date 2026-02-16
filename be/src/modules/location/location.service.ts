@@ -27,25 +27,25 @@ export class LocationService {
   /**
    * Batch insert location logs
    *
-   * Workers send multiple GPS pings at once for efficiency.
+   * Users send multiple GPS pings at once for efficiency.
    * Uses transaction for atomic insert of all locations.
    *
    * @param dto Batch of location points
-   * @param workerId UUID of the worker
+   * @param userId UUID of the user
    * @returns Number of locations inserted
    */
-  async createBatch(dto: CreateLocationBatchDto, workerId: string): Promise<{ count: number }> {
+  async createBatch(dto: CreateLocationBatchDto, userId: string): Promise<{ count: number }> {
     this.logger.log(
-      `Worker ${workerId} uploading ${dto.locations.length} location logs for shift ${dto.shift_id}`,
+      `User ${userId} uploading ${dto.locations.length} location logs for shift ${dto.shift_id}`,
     );
 
-    // Validate shift exists and belongs to worker
+    // Validate shift exists and belongs to user
     const shift = await this.shiftsRepository.findOne({
-      where: { id: dto.shift_id, worker_id: workerId },
+      where: { id: dto.shift_id, user_id: userId },
     });
 
     if (!shift) {
-      throw new NotFoundException(`Shift not found or does not belong to worker ${workerId}`);
+      throw new NotFoundException(`Shift not found or does not belong to user ${userId}`);
     }
 
     // Validate shift is active (no clock_out_time)
@@ -61,7 +61,7 @@ export class LocationService {
     try {
       const locationEntities = dto.locations.map((location) => {
         return this.locationLogsRepository.create({
-          worker_id: workerId,
+          user_id: userId,
           shift_id: dto.shift_id,
           gps_lat: location.gps_lat,
           gps_lng: location.gps_lng,
@@ -87,21 +87,21 @@ export class LocationService {
   }
 
   /**
-   * Get location history for a worker
+   * Get location history for a user
    *
-   * @param workerId UUID of the worker
+   * @param userId UUID of the user
    * @param filters Date range and shift filters
    * @returns List of location logs
    */
-  async getWorkerHistory(
-    workerId: string,
+  async getUserHistory(
+    userId: string,
     filters: {
       from_date?: string;
       to_date?: string;
       shift_id?: string;
     },
   ): Promise<LocationLog[]> {
-    const where: any = { worker_id: workerId };
+    const where: any = { user_id: userId };
 
     if (filters.shift_id) {
       where.shift_id = filters.shift_id;
@@ -122,16 +122,16 @@ export class LocationService {
   }
 
   /**
-   * Get paginated location history for a worker
+   * Get paginated location history for a user
    *
-   * @param workerId UUID of the worker
+   * @param userId UUID of the user
    * @param filters Date range and shift filters
    * @param page Page number
    * @param limit Items per page
    * @returns Paginated location logs
    */
-  async getWorkerHistoryPaginated(
-    workerId: string,
+  async getUserHistoryPaginated(
+    userId: string,
     filters: {
       from_date?: string;
       to_date?: string;
@@ -140,7 +140,7 @@ export class LocationService {
     page: number = 1,
     limit: number = 50,
   ): Promise<PaginatedResponseDto<LocationLog>> {
-    const where: any = { worker_id: workerId };
+    const where: any = { user_id: userId };
 
     if (filters.shift_id) {
       where.shift_id = filters.shift_id;
@@ -164,15 +164,15 @@ export class LocationService {
   }
 
   /**
-   * Get latest location for a worker
+   * Get latest location for a user
    *
-   * @param workerId UUID of the worker
+   * @param userId UUID of the user
    * @returns Most recent location log
    */
-  async getLatestLocation(workerId: string): Promise<LocationLog | null> {
+  async getLatestLocation(userId: string): Promise<LocationLog | null> {
     return this.locationLogsRepository.findOne({
-      where: { worker_id: workerId },
-      relations: ['shift', 'shift.area', 'worker'],
+      where: { user_id: userId },
+      relations: ['shift', 'shift.area', 'user'],
       order: { logged_at: 'DESC' },
     });
   }

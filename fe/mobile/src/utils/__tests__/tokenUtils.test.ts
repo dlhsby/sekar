@@ -16,7 +16,7 @@ jest.mock('../../services/storage/secureStorage', () => ({
 }));
 
 // Mock console methods to avoid cluttering test output
-const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
+const mockConsoleDebug = jest.spyOn(console, 'debug').mockImplementation();
 const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 
 describe('tokenUtils', () => {
@@ -25,7 +25,7 @@ describe('tokenUtils', () => {
   });
 
   afterAll(() => {
-    mockConsoleLog.mockRestore();
+    mockConsoleDebug.mockRestore();
     mockConsoleError.mockRestore();
   });
 
@@ -36,7 +36,7 @@ describe('tokenUtils', () => {
       const result = await isTokenExpired();
 
       expect(result).toBe(true);
-      expect(mockConsoleLog).toHaveBeenCalledWith('[TokenUtils] No token found');
+      expect(mockConsoleDebug).toHaveBeenCalledWith('[TokenUtils] No token found');
     });
 
     it('should return true when token is invalid (not a JWT)', async () => {
@@ -45,7 +45,7 @@ describe('tokenUtils', () => {
       const result = await isTokenExpired();
 
       expect(result).toBe(true);
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(mockConsoleDebug).toHaveBeenCalledWith(
         '[TokenUtils] Invalid token or missing expiry'
       );
     });
@@ -61,7 +61,7 @@ describe('tokenUtils', () => {
       const result = await isTokenExpired();
 
       expect(result).toBe(true);
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(mockConsoleDebug).toHaveBeenCalledWith(
         '[TokenUtils] Invalid token or missing expiry'
       );
     });

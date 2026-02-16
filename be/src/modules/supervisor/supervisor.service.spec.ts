@@ -5,7 +5,6 @@ import { SupervisorService } from './supervisor.service';
 import { Shift } from '../shifts/entities/shift.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
-import { WorkerAssignment } from '../worker-assignments/entities/worker-assignment.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 
 describe('SupervisorService', () => {
@@ -14,7 +13,6 @@ describe('SupervisorService', () => {
   let shiftsRepository: Repository<Shift>;
   let usersRepository: Repository<User>;
   let areasRepository: Repository<Area>;
-  let workerAssignmentsRepository: Repository<WorkerAssignment>;
   let locationLogsRepository: Repository<LocationLog>;
 
   const mockShiftsRepository = {
@@ -25,15 +23,11 @@ describe('SupervisorService', () => {
 
   const mockUsersRepository = {
     find: jest.fn(),
+    count: jest.fn(),
   };
 
   const mockAreasRepository = {
     find: jest.fn(),
-  };
-
-  const mockWorkerAssignmentsRepository = {
-    count: jest.fn(),
-    findOne: jest.fn(),
   };
 
   const mockLocationLogsRepository = {
@@ -57,10 +51,6 @@ describe('SupervisorService', () => {
           useValue: mockAreasRepository,
         },
         {
-          provide: getRepositoryToken(WorkerAssignment),
-          useValue: mockWorkerAssignmentsRepository,
-        },
-        {
           provide: getRepositoryToken(LocationLog),
           useValue: mockLocationLogsRepository,
         },
@@ -71,9 +61,6 @@ describe('SupervisorService', () => {
     shiftsRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
     usersRepository = module.get<Repository<User>>(getRepositoryToken(User));
     areasRepository = module.get<Repository<Area>>(getRepositoryToken(Area));
-    workerAssignmentsRepository = module.get<Repository<WorkerAssignment>>(
-      getRepositoryToken(WorkerAssignment),
-    );
     locationLogsRepository = module.get<Repository<LocationLog>>(getRepositoryToken(LocationLog));
   });
 
@@ -83,13 +70,13 @@ describe('SupervisorService', () => {
     jest.restoreAllMocks();
   });
 
-  describe('getActiveWorkersPaginated', () => {
+  describe('getActiveUsersPaginated', () => {
     beforeEach(() => {
       mockShiftsRepository.findAndCount = jest.fn();
     });
 
     it('should return paginated active workers with latest locations', async () => {
-      const mockWorker = {
+      const mockUser = {
         id: 'worker-uuid-1',
         username: 'worker1',
         full_name: 'Worker One',
@@ -102,7 +89,7 @@ describe('SupervisorService', () => {
 
       const mockShift = {
         id: 'shift-uuid-1',
-        worker: mockWorker,
+        user: mockUser,
         area: mockArea,
         clock_in_time: new Date('2026-01-09T08:00:00Z'),
         clock_out_time: null,
@@ -117,7 +104,7 @@ describe('SupervisorService', () => {
       mockShiftsRepository.findAndCount.mockResolvedValue([[mockShift], 1]);
       mockLocationLogsRepository.findOne.mockResolvedValue(mockLocation);
 
-      const result = await service.getActiveWorkersPaginated(1, 50);
+      const result = await service.getActiveUsersPaginated(1, 50);
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].id).toBe('worker-uuid-1');
@@ -131,7 +118,7 @@ describe('SupervisorService', () => {
     it('should handle workers without location logs in paginated results', async () => {
       const mockShift = {
         id: 'shift-uuid-1',
-        worker: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
+        user: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
         area: { id: 'area-uuid-1', name: 'Taman Bungkul' },
         clock_in_time: new Date(),
         clock_out_time: null,
@@ -140,7 +127,7 @@ describe('SupervisorService', () => {
       mockShiftsRepository.findAndCount.mockResolvedValue([[mockShift], 1]);
       mockLocationLogsRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getActiveWorkersPaginated(1, 50);
+      const result = await service.getActiveUsersPaginated(1, 50);
 
       expect(result.data[0].latest_location).toBeNull();
     });
@@ -148,7 +135,7 @@ describe('SupervisorService', () => {
     it('should return empty paginated results if no active workers', async () => {
       mockShiftsRepository.findAndCount.mockResolvedValue([[], 0]);
 
-      const result = await service.getActiveWorkersPaginated(1, 50);
+      const result = await service.getActiveUsersPaginated(1, 50);
 
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
@@ -157,7 +144,7 @@ describe('SupervisorService', () => {
     it('should handle workers with null area in paginated results', async () => {
       const mockShift = {
         id: 'shift-uuid-1',
-        worker: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
+        user: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
         area: null,
         clock_in_time: new Date(),
         clock_out_time: null,
@@ -166,7 +153,7 @@ describe('SupervisorService', () => {
       mockShiftsRepository.findAndCount.mockResolvedValue([[mockShift], 1]);
       mockLocationLogsRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getActiveWorkersPaginated(1, 50);
+      const result = await service.getActiveUsersPaginated(1, 50);
 
       expect(result.data[0].shift.area).toBeNull();
     });
@@ -175,7 +162,7 @@ describe('SupervisorService', () => {
       const mockShifts = [
         {
           id: 'shift-2',
-          worker: { id: 'worker-2', username: 'worker2', full_name: 'Worker Two' },
+          user: { id: 'worker-2', username: 'worker2', full_name: 'Worker Two' },
           area: { id: 'area-1', name: 'Area 1' },
           clock_in_time: new Date(),
           clock_out_time: null,
@@ -185,7 +172,7 @@ describe('SupervisorService', () => {
       mockShiftsRepository.findAndCount.mockResolvedValue([mockShifts, 100]);
       mockLocationLogsRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getActiveWorkersPaginated(2, 50);
+      const result = await service.getActiveUsersPaginated(2, 50);
 
       expect(result.meta.page).toBe(2);
       expect(result.meta.totalPages).toBe(2);
@@ -198,9 +185,9 @@ describe('SupervisorService', () => {
     });
   });
 
-  describe('getActiveWorkers', () => {
+  describe('getActiveUsers', () => {
     it('should return active workers with latest locations', async () => {
-      const mockWorker = {
+      const mockUser = {
         id: 'worker-uuid-1',
         username: 'worker1',
         full_name: 'Worker One',
@@ -213,7 +200,7 @@ describe('SupervisorService', () => {
 
       const mockShift = {
         id: 'shift-uuid-1',
-        worker: mockWorker,
+        user: mockUser,
         area: mockArea,
         clock_in_time: new Date('2026-01-09T08:00:00Z'),
         clock_out_time: null,
@@ -228,18 +215,18 @@ describe('SupervisorService', () => {
       mockShiftsRepository.find.mockResolvedValue([mockShift]);
       mockLocationLogsRepository.findOne.mockResolvedValue(mockLocation);
 
-      const result = await service.getActiveWorkers();
+      const result = await service.getActiveUsers();
 
-      expect(result.workers).toHaveLength(1);
-      expect(result.workers[0].id).toBe('worker-uuid-1');
-      expect(result.workers[0].latest_location).toEqual(mockLocation);
+      expect(result.users).toHaveLength(1);
+      expect(result.users[0].id).toBe('worker-uuid-1');
+      expect(result.users[0].latest_location).toEqual(mockLocation);
       expect(shiftsRepository.find).toHaveBeenCalled();
     });
 
     it('should handle workers without location logs', async () => {
       const mockShift = {
         id: 'shift-uuid-1',
-        worker: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
+        user: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
         area: { id: 'area-uuid-1', name: 'Taman Bungkul' },
         clock_in_time: new Date(),
         clock_out_time: null,
@@ -248,15 +235,15 @@ describe('SupervisorService', () => {
       mockShiftsRepository.find.mockResolvedValue([mockShift]);
       mockLocationLogsRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getActiveWorkers();
+      const result = await service.getActiveUsers();
 
-      expect(result.workers[0].latest_location).toBeNull();
+      expect(result.users[0].latest_location).toBeNull();
     });
 
     it('should handle workers with null area', async () => {
       const mockShift = {
         id: 'shift-uuid-1',
-        worker: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
+        user: { id: 'worker-uuid-1', username: 'worker1', full_name: 'Worker One' },
         area: null,
         clock_in_time: new Date(),
         clock_out_time: null,
@@ -265,17 +252,17 @@ describe('SupervisorService', () => {
       mockShiftsRepository.find.mockResolvedValue([mockShift]);
       mockLocationLogsRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getActiveWorkers();
+      const result = await service.getActiveUsers();
 
-      expect(result.workers[0].shift.area).toBeNull();
+      expect(result.users[0].shift.area).toBeNull();
     });
 
     it('should return empty array if no active workers', async () => {
       mockShiftsRepository.find.mockResolvedValue([]);
 
-      const result = await service.getActiveWorkers();
+      const result = await service.getActiveUsers();
 
-      expect(result.workers).toEqual([]);
+      expect(result.users).toEqual([]);
     });
   });
 
@@ -287,17 +274,13 @@ describe('SupervisorService', () => {
       ];
 
       mockAreasRepository.find.mockResolvedValue(mockAreas);
-      mockWorkerAssignmentsRepository.count.mockResolvedValueOnce(3); // area 1 assigned
       mockShiftsRepository.count.mockResolvedValueOnce(2); // area 1 active
-      mockWorkerAssignmentsRepository.count.mockResolvedValueOnce(2); // area 2 assigned
       mockShiftsRepository.count.mockResolvedValueOnce(1); // area 2 active
 
       const result = await service.getAreaStatus();
 
       expect(result.areas).toHaveLength(2);
-      expect(result.areas[0].assigned_workers_count).toBe(3);
       expect(result.areas[0].active_workers_count).toBe(2);
-      expect(result.areas[1].assigned_workers_count).toBe(2);
       expect(result.areas[1].active_workers_count).toBe(1);
     });
 
@@ -336,11 +319,10 @@ describe('SupervisorService', () => {
         },
       ];
 
-      const mockClockedInShifts = [{ worker: { id: 'worker-1' } }, { worker: { id: 'worker-2' } }];
+      const mockClockedInShifts = [{ user: { id: 'worker-1' } }, { user: { id: 'worker-2' } }];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
-      mockWorkerAssignmentsRepository.findOne.mockResolvedValueOnce(null); // worker-3 no assignment
 
       const result = await service.getAttendance();
 
@@ -363,9 +345,6 @@ describe('SupervisorService', () => {
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue([]);
-      mockWorkerAssignmentsRepository.findOne.mockResolvedValue({
-        area: { id: 'area-1', name: 'Taman Bungkul' },
-      });
 
       const result = await service.getAttendance('2026-01-08');
 
@@ -373,10 +352,6 @@ describe('SupervisorService', () => {
       expect(result.total_workers).toBe(1);
       expect(result.clocked_in_count).toBe(0);
       expect(result.not_clocked_in).toHaveLength(1);
-      expect(result.not_clocked_in[0].area).toEqual({
-        id: 'area-1',
-        name: 'Taman Bungkul',
-      });
     });
 
     it('should handle 100% attendance', async () => {
@@ -390,7 +365,7 @@ describe('SupervisorService', () => {
         },
       ];
 
-      const mockClockedInShifts = [{ worker: { id: 'worker-1' } }];
+      const mockClockedInShifts = [{ user: { id: 'worker-1' } }];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
@@ -429,11 +404,10 @@ describe('SupervisorService', () => {
         },
       ];
 
-      const mockClockedInShifts = [{ worker: { id: 'worker-1' } }, { worker: { id: 'worker-2' } }];
+      const mockClockedInShifts = [{ user: { id: 'worker-1' } }, { user: { id: 'worker-2' } }];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
-      mockWorkerAssignmentsRepository.findOne.mockResolvedValueOnce(null); // worker-3 no assignment
 
       const result = await service.getAttendancePaginated(undefined, 1, 50);
 
@@ -458,9 +432,6 @@ describe('SupervisorService', () => {
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue([]);
-      mockWorkerAssignmentsRepository.findOne.mockResolvedValue({
-        area: { id: 'area-1', name: 'Taman Bungkul' },
-      });
 
       const result = await service.getAttendancePaginated('2026-01-08', 1, 50);
 
@@ -468,10 +439,6 @@ describe('SupervisorService', () => {
       expect(result.total_workers).toBe(1);
       expect(result.clocked_in_count).toBe(0);
       expect(result.not_clocked_in.data).toHaveLength(1);
-      expect(result.not_clocked_in.data[0].area).toEqual({
-        id: 'area-1',
-        name: 'Taman Bungkul',
-      });
     });
 
     it('should handle pagination with multiple pages', async () => {
@@ -485,7 +452,6 @@ describe('SupervisorService', () => {
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue([]);
-      mockWorkerAssignmentsRepository.findOne.mockResolvedValue(null);
 
       const result = await service.getAttendancePaginated(undefined, 2, 50);
 
@@ -506,7 +472,7 @@ describe('SupervisorService', () => {
         },
       ];
 
-      const mockClockedInShifts = [{ worker: { id: 'worker-1' } }];
+      const mockClockedInShifts = [{ user: { id: 'worker-1' } }];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);

@@ -3,9 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AreasService } from './areas.service';
 import { AreasController } from './areas.controller';
 import { Area } from './entities/area.entity';
+import { User } from '../users/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { AreaTypesModule } from '../area-types/area-types.module';
-import { WorkerAssignmentsModule } from '../worker-assignments/worker-assignments.module';
 
 /**
  * Areas Module
@@ -15,13 +15,12 @@ import { WorkerAssignmentsModule } from '../worker-assignments/worker-assignment
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Area]),
+    TypeOrmModule.forFeature([Area, User]),
     forwardRef(() => AuthModule), // For JwtAuthGuard and RolesGuard (circular dependency)
     AreaTypesModule, // For validating area_type_id
-    forwardRef(() => WorkerAssignmentsModule), // For checking worker assignments before deletion
   ],
   controllers: [AreasController],
   providers: [AreasService],
-  exports: [AreasService], // Export for use in WorkerAssignments module
+  exports: [AreasService],
 })
 export class AreasModule {}

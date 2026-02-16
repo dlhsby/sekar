@@ -294,9 +294,9 @@ async function seedPhase2() {
     console.log('  ✓ Created 9 additional users with Phase 2C roles');
 
     // ==========================================
-    // STEP 9: Seed Worker Schedules
+    // STEP 9: Seed Schedules
     // ==========================================
-    console.log('📅 Seeding Worker Schedules...');
+    console.log('📅 Seeding Schedules...');
 
     // Get worker IDs
     const workerResult = await queryRunner.query(`
@@ -308,14 +308,110 @@ async function seedPhase2() {
       for (let i = 0; i < workers.length; i++) {
         const shiftId = i < 2 ? SHIFT_1_ID : SHIFT_2_ID;
         await queryRunner.query(`
-          INSERT INTO worker_schedules (user_id, area_id, shift_definition_id, effective_date, end_date, created_by)
+          INSERT INTO schedules (user_id, area_id, shift_definition_id, effective_date, end_date, created_by)
           VALUES ('${workers[i].id}', '${tamanBungkulId}', '${shiftId}', '2026-01-20', NULL, NULL)
           ON CONFLICT DO NOTHING;
         `);
       }
-      console.log('  ✓ Created 4 Worker Schedules');
+      console.log('  ✓ Created 4 Schedules');
     } else {
       console.log('  ⚠ No workers or areas found, skipping schedules');
+    }
+
+    // ==========================================
+    // STEP 10: Seed Overtimes (Phase 2C)
+    // ==========================================
+    console.log('⏰ Seeding Overtime records...');
+
+    // Get test users
+    const korlapResult = await queryRunner.query(`
+      SELECT id FROM users WHERE username = 'korlap_bungkul' LIMIT 1
+    `);
+    const satgasResult = await queryRunner.query(`
+      SELECT id FROM users WHERE username IN ('satgas1', 'satgas_bungkul') LIMIT 1
+    `);
+
+    if (korlapResult.length > 0 && satgasResult.length > 0 && tamanBungkulId) {
+      const korlapId = korlapResult[0].id;
+      const satgasId = satgasResult[0].id;
+
+      // Get activity type ID
+      const activityTypeResult = await queryRunner.query(`
+        SELECT id FROM activity_types WHERE code = 'perawatan' LIMIT 1
+      `);
+
+      if (activityTypeResult.length > 0) {
+        const activityTypeId = activityTypeResult[0].id;
+
+        const OVERTIME_1_ID = '11111111-1111-1111-1111-111111111111';
+        const OVERTIME_2_ID = '22222222-2222-2222-2222-222222222222';
+        const OVERTIME_3_ID = '33333333-3333-3333-3333-333333333333';
+
+        // Flat overtime structure (Phase 2C - no overtime_aktivitas table)
+        await queryRunner.query(`
+          INSERT INTO overtimes (
+            id, user_id, area_id, date, start_time, end_time,
+            activity_type_id, description, photo_urls,
+            gps_lat, gps_lng, status,
+            created_at, updated_at
+          ) VALUES
+            (
+              '${OVERTIME_1_ID}',
+              '${satgasId}',
+              '${tamanBungkulId}',
+              '2026-02-10',
+              '17:00:00',
+              '20:00:00',
+              '${activityTypeId}',
+              'Perawatan tambahan setelah jam kerja',
+              ARRAY['https://example.com/overtime1.jpg'],
+              -7.2756,
+              112.7395,
+              'PENDING',
+              NOW(),
+              NOW()
+            ),
+            (
+              '${OVERTIME_2_ID}',
+              '${korlapId}',
+              '${tamanBungkulId}',
+              '2026-02-09',
+              '16:00:00',
+              '19:00:00',
+              '${activityTypeId}',
+              'Koordinasi tim malam',
+              ARRAY['https://example.com/overtime2.jpg'],
+              -7.2756,
+              112.7395,
+              'APPROVED',
+              NOW(),
+              NOW()
+            ),
+            (
+              '${OVERTIME_3_ID}',
+              '${satgasId}',
+              '${tamanBungkulId}',
+              '2026-02-08',
+              '15:00:00',
+              '18:00:00',
+              '${activityTypeId}',
+              'Request ditolak - tidak ada budget',
+              '{}',
+              NULL,
+              NULL,
+              'REJECTED',
+              NOW(),
+              NOW()
+            )
+          ON CONFLICT (id) DO NOTHING;
+        `);
+
+        console.log('  ✓ Created 3 overtime records (PENDING, APPROVED, REJECTED)');
+      } else {
+        console.log('  ⚠ Activity types not found, skipping overtime seeding');
+      }
+    } else {
+      console.log('  ⚠ Required users or areas not found, skipping overtime seeding');
     }
 
     console.log('');
@@ -328,7 +424,8 @@ async function seedPhase2() {
     console.log('  - 4 Special Day Overrides');
     console.log('  - 9 Additional Users (Phase 2C roles)');
     console.log('  - 14 Area Staff Requirements');
-    console.log('  - 4 Worker Schedules');
+    console.log('  - 4 Schedules');
+    console.log('  - 3 Overtime records (PENDING, APPROVED, REJECTED)');
     console.log('  - Updated Area Types with categories');
     console.log('  - Updated Areas with Rayon assignments');
   } catch (error) {

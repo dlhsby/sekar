@@ -84,7 +84,7 @@ describe('ApiVersionInterceptor', () => {
     it('should set X-API-Version response header to v1', (done) => {
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
         next: () => {
-          expect(mockResponse.setHeader).toHaveBeenCalledWith('X-API-Version', 'v1');
+          expect(mockResponse.setHeader).toHaveBeenCalledWith('X-API-Version', '1');
           done();
         },
         error: done,
@@ -96,7 +96,7 @@ describe('ApiVersionInterceptor', () => {
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
         next: () => {
-          expect(mockResponse.setHeader).toHaveBeenCalledWith('X-API-Version', 'v1');
+          expect(mockResponse.setHeader).toHaveBeenCalledWith('X-API-Version', '1');
           done();
         },
         error: done,

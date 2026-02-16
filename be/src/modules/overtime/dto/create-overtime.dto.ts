@@ -6,17 +6,35 @@ import {
   IsArray,
   ArrayMinSize,
   ArrayMaxSize,
-  ValidateNested,
   IsDateString,
   Matches,
   IsNumber,
   Min,
   Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class CreateOvertimeAktivitasDto {
+export class CreateOvertimeDto {
+  @ApiProperty({ description: 'Overtime date', example: '2026-02-10' })
+  @IsDateString()
+  @IsNotEmpty()
+  date: string;
+
+  @ApiProperty({ description: 'Start time', example: '17:00' })
+  @IsString()
+  @Matches(/^\d{2}:\d{2}$/, { message: 'start_time must be HH:MM format' })
+  start_time: string;
+
+  @ApiProperty({ description: 'End time', example: '20:00' })
+  @IsString()
+  @Matches(/^\d{2}:\d{2}$/, { message: 'end_time must be HH:MM format' })
+  end_time: string;
+
+  @ApiPropertyOptional({ description: 'Optional notes' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
   @ApiProperty({ description: 'Activity type UUID' })
   @IsUUID()
   @IsNotEmpty()
@@ -51,36 +69,4 @@ export class CreateOvertimeAktivitasDto {
   @Max(180)
   @IsOptional()
   gps_lng?: number;
-}
-
-export class CreateOvertimeDto {
-  @ApiProperty({ description: 'Overtime date', example: '2026-02-10' })
-  @IsDateString()
-  @IsNotEmpty()
-  date: string;
-
-  @ApiProperty({ description: 'Start time', example: '17:00' })
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/, { message: 'start_time must be HH:MM format' })
-  start_time: string;
-
-  @ApiProperty({ description: 'End time', example: '20:00' })
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/, { message: 'end_time must be HH:MM format' })
-  end_time: string;
-
-  @ApiPropertyOptional({ description: 'Optional notes' })
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @ApiProperty({
-    type: [CreateOvertimeAktivitasDto],
-    description: 'Activities performed during overtime (at least 1)',
-  })
-  @IsArray()
-  @ArrayMinSize(1, { message: 'At least 1 aktivitas is required' })
-  @ValidateNested({ each: true })
-  @Type(() => CreateOvertimeAktivitasDto)
-  aktivitas: CreateOvertimeAktivitasDto[];
 }

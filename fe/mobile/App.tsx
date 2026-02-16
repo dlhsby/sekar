@@ -70,7 +70,7 @@ function AppContent(): React.JSX.Element {
       const currentShift = state.shift.currentShift;
       const user = state.auth.user;
 
-      if (currentShift?.id && user?.role === 'worker') {
+      if (currentShift?.id && user?.role) {
         console.log('[App] Starting location tracking for active shift');
         await locationTracker.initialize(String(currentShift.id));
       }

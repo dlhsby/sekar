@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "1e98228b-6063-442d-a730-5cb0a62dc3dc",
     "name": "SEKAR API",
-    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 113\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n\n## Test Users (Phase 2C - 8 roles)\n- superadmin / superadmin123 (Superadmin)\n- admin_system / admin123 (Admin System)\n- admin_data / admin123 (Admin Data)\n- korlap1 / password123 (Korlap)\n- satgas1,2,3 / password123 (Satgas)\n- linmas1 / password123 (Linmas)\n- kepala_rayon_selatan / password123 (Kepala Rayon)\n- top_management1 / password123 (Top Management)\n\n## Collection Structure\n\n### Phase 1 MVP\n- 00-11: Core endpoints (auth, users, areas, shifts, aktivitas, location, supervisor)\n\n### Phase 2A - Backend Foundation\n- 12-17: Special Day Overrides, Rayons, Shift Definitions, Activity Types, Area Staff, Worker Schedules\n\n### Phase 2B - Backend Core Features\n- 18. Tasks (12 endpoints)\n- 19. Notifications (7 endpoints)\n- 20. Monitoring (4 endpoints)\n- 21. KMZ Import (3 endpoints)\n\n### Phase 2C - Client Feedback\n- 22. Overtime (6 endpoints)\n\n## Status\n- ✅ Phase 1 MVP Complete\n- ✅ Phase 2A Backend Foundation Complete\n- ✅ Phase 2B Backend Core Features Complete\n- ✅ Phase 2C Client Feedback Complete",
+    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 113\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n- **Tests:** 922 passing (54 test suites, 87.93% coverage)\n\n## Test Users (Phase 2C - 8 roles)\n- admin / admin123 (Superadmin)\n- admin_system1 / password123 (Admin System)\n- admin_data1 / password123 (Admin Data)\n- korlap1 / korlap123 (Korlap)\n- satgas1,2,3 / satgas123 (Satgas)\n- linmas1,2 / satgas123 (Linmas)\n- kepala_rayon_selatan / password123 (Kepala Rayon)\n- top_management1 / password123 (Top Management)\n\n## Collection Structure\n\n### Phase 1 MVP\n- 00-11: Core endpoints (auth, users, areas, shifts, activities, location, supervisor)\n\n### Phase 2A - Backend Foundation\n- 12-17: Special Day Overrides, Rayons, Shift Definitions, Activity Types, Area Staff, Schedules\n\n### Phase 2B - Backend Core Features\n- 18. Tasks (12 endpoints)\n- 19. Notifications (7 endpoints)\n- 20. Monitoring (4 endpoints)\n- 21. KMZ Import (3 endpoints)\n\n### Phase 2C - Client Feedback\n- 22. Overtime (6 endpoints)\n\n## Phase 2C Terminology Changes\n- /aktivitas → /activities (Indonesian → English)\n- /worker-schedules → /schedules (simplified)\n- worker_id → user_id (generalized)\n- Reports → Activities (entity rename)\n- WorkerSchedule → Schedule (entity rename)\n- worker/supervisor roles → satgas/korlap (Indonesian official titles)\n\n## Status\n- ✅ Phase 1 MVP Complete\n- ✅ Phase 2A Backend Foundation Complete\n- ✅ Phase 2B Backend Core Features Complete\n- ✅ Phase 2C Terminology Cleanup Complete",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -167,7 +167,7 @@
       "name": "01. Authentication",
       "item": [
         {
-          "name": "Login (Worker)",
+          "name": "Login (Satgas)",
           "event": [
             {
               "listen": "prerequest",
@@ -313,7 +313,7 @@
           }
         },
         {
-          "name": "Login (Supervisor)",
+          "name": "Login (Korlap)",
           "event": [
             {
               "listen": "test",
@@ -323,9 +323,9 @@
                   "    pm.response.to.have.status(200);",
                   "});",
                   "",
-                  "pm.test('User role is supervisor', function() {",
+                  "pm.test('User role is korlap', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.user.role).to.eql('supervisor');",
+                  "    pm.expect(json.user.role).to.eql('korlap');",
                   "});",
                   "",
                   "// Save tokens",
@@ -618,7 +618,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"password\": \"testpassword123\",\n  \"full_name\": \"Test User\",\n  \"role\": \"worker\"\n}"
+              "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"password\": \"testpassword123\",\n  \"full_name\": \"Test User\",\n  \"role\": \"satgas\"\n}"
             },
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/users",
@@ -660,9 +660,9 @@
                   "    }",
                   "});",
                   "",
-                  "// Save first worker ID for testing",
+                  "// Save first user ID for testing",
                   "const json = pm.response.json();",
-                  "const worker = json.find(u => u.role === 'worker');",
+                  "const worker = json.find(u => u.role === 'satgas');",
                   "if (worker) {",
                   "    pm.environment.set('worker_id', worker.id);",
                   "}"
@@ -1425,10 +1425,10 @@
       ]
     },
     {
-      "name": "05. Worker Assignments",
+      "name": "05. DEPRECATED - Worker Assignments",
       "item": [
         {
-          "name": "Assign Worker to Area",
+          "name": "Assign User to Area",
           "event": [
             {
               "listen": "prerequest",
@@ -1465,7 +1465,7 @@
                   "if (pm.response.code === 201) {",
                   "    const json = pm.response.json();",
                   "    pm.environment.set('worker_assignment_id', json.id);",
-                  "    console.log('Worker assigned: ' + json.id);",
+                  "    console.log('User assigned: ' + json.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1501,7 +1501,7 @@
           }
         },
         {
-          "name": "Remove Worker Assignment",
+          "name": "Remove User Assignment",
           "event": [
             {
               "listen": "test",
@@ -1513,7 +1513,7 @@
                   "",
                   "if (pm.response.code === 200) {",
                   "    pm.environment.unset('worker_assignment_id');",
-                  "    console.log('Worker assignment removed');",
+                  "    console.log('User assignment removed');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1542,7 +1542,7 @@
       ]
     },
     {
-      "name": "06. Shifts - Worker Flow",
+      "name": "06. Shifts - User Flow",
       "item": [
         {
           "name": "Clock In",
@@ -1806,7 +1806,7 @@
       ]
     },
     {
-      "name": "07. Shifts - Supervisor View",
+      "name": "07. Shifts - Korlap View",
       "item": [
         {
           "name": "Get Active Shifts",
@@ -1856,7 +1856,7 @@
       ]
     },
     {
-      "name": "08. Aktivitas - Worker Flow",
+      "name": "08. Aktivitas - User Flow",
       "item": [
         {
           "name": "Create Aktivitas",
@@ -1871,7 +1871,7 @@
                   "}",
                   "",
                   "// Set shift_id for the request",
-                  "pm.environment.set('report_shift_id', shiftId);"
+                  "pm.environment.set('activity_shift_id', shiftId);"
                 ],
                 "type": "text/javascript"
               }
@@ -1904,7 +1904,7 @@
                   "// Save report ID",
                   "if (pm.response.code === 201) {",
                   "    const json = pm.response.json();",
-                  "    pm.environment.set('created_report_id', json.id);",
+                  "    pm.environment.set('created_activity_id', json.id);",
                   "    console.log('Report created: ' + json.id);",
                   "}"
                 ],
@@ -1925,7 +1925,7 @@
               "raw": "{\n  \"activity_type_id\": \"{{activity_type_id}}\",\n  \"description\": \"Completed cleaning task in the park area. All debris removed.\",\n  \"photo_urls\": [\n    \"https://s3.amazonaws.com/sekar-media-dev/photo1.jpg\"\n  ],\n  \"gps_lat\": -7.2905,\n  \"gps_lng\": 112.7398\n}"
             },
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/activities",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -1971,7 +1971,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/my-reports",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/activities/my-reports",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2006,7 +2006,7 @@
                   "",
                   "pm.test('ID matches requested ID', function() {",
                   "    const json = pm.response.json();",
-                  "    const requestedId = pm.environment.get('created_report_id');",
+                  "    const requestedId = pm.environment.get('created_activity_id');",
                   "    pm.expect(json.id).to.eql(requestedId);",
                   "});"
                 ],
@@ -2018,7 +2018,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/{{created_report_id}}",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/activities/{{created_activity_id}}",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2027,7 +2027,7 @@
                 "api",
                 "{{version}}",
                 "aktivitas",
-                "{{created_report_id}}"
+                "{{created_activity_id}}"
               ]
             }
           }
@@ -2073,7 +2073,7 @@
               "raw": "{\n  \"description\": \"Updated: Completed cleaning task in the park area. All debris removed and plants watered. Additional trimming done.\"\n}"
             },
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/{{created_report_id}}",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/activities/{{created_activity_id}}",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2082,7 +2082,7 @@
                 "api",
                 "{{version}}",
                 "aktivitas",
-                "{{created_report_id}}"
+                "{{created_activity_id}}"
               ]
             }
           }
@@ -2125,7 +2125,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/activities",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2151,7 +2151,7 @@
                   "});",
                   "",
                   "if (pm.response.code === 200) {",
-                  "    pm.environment.unset('created_report_id');",
+                  "    pm.environment.unset('created_activity_id');",
                   "    console.log('Report deleted and ID cleared');",
                   "}"
                 ],
@@ -2163,7 +2163,7 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/aktivitas/{{created_report_id}}",
+              "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/activities/{{created_activity_id}}",
               "protocol": "{{host}}",
               "host": [
                 "{{base_url}}{{port}}"
@@ -2172,7 +2172,7 @@
                 "api",
                 "{{version}}",
                 "aktivitas",
-                "{{created_report_id}}"
+                "{{created_activity_id}}"
               ]
             },
             "description": "Delete aktivitas (admin_system, superadmin only)"
@@ -2251,7 +2251,7 @@
           }
         },
         {
-          "name": "Get Worker Location History",
+          "name": "Get User Location History",
           "event": [
             {
               "listen": "test",
@@ -2293,14 +2293,14 @@
                 "api",
                 "{{version}}",
                 "location",
-                "worker",
+                "user",
                 "{{worker_id}}"
               ]
             }
           }
         },
         {
-          "name": "Get Worker Latest Location",
+          "name": "Get User Latest Location",
           "event": [
             {
               "listen": "test",
@@ -2338,7 +2338,7 @@
                 "api",
                 "{{version}}",
                 "location",
-                "worker",
+                "user",
                 "{{worker_id}}",
                 "latest"
               ]
@@ -2348,10 +2348,10 @@
       ]
     },
     {
-      "name": "11. Supervisor Dashboard",
+      "name": "11. Korlap Dashboard",
       "item": [
         {
-          "name": "Get Active Workers",
+          "name": "Get Active Users",
           "event": [
             {
               "listen": "test",
@@ -3309,7 +3309,7 @@
           "response": []
         },
         {
-          "name": "Get Activity Types for Workers",
+          "name": "Get Activity Types for Users",
           "event": [
             {
               "listen": "test",
@@ -3705,7 +3705,7 @@
             "description": "Create a new staff requirement (Admin only)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"shiftDefinitionId\": \"{{shift_definition_id}}\",\n  \"role\": \"worker\",\n  \"requiredCount\": 5,\n  \"dayType\": \"WEEKDAY\"\n}"
+              "raw": "{\n  \"shiftDefinitionId\": \"{{shift_definition_id}}\",\n  \"role\": \"satgas\",\n  \"requiredCount\": 5,\n  \"dayType\": \"WEEKDAY\"\n}"
             }
           },
           "response": []
@@ -3795,7 +3795,7 @@
       ]
     },
     {
-      "name": "17. Worker Schedules",
+      "name": "17. Schedules",
       "item": [
         {
           "name": "Get All Schedules",
@@ -3811,7 +3811,7 @@
                   "    pm.expect(pm.response.json()).to.be.an('array');",
                   "});",
                   "if (pm.response.json().length > 0) {",
-                  "    pm.environment.set('worker_schedule_id', pm.response.json()[0].id);",
+                  "    pm.environment.set('schedule_id', pm.response.json()[0].id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -3938,13 +3938,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/schedules/{{worker_schedule_id}}",
+              "raw": "{{baseUrl}}/schedules/{{schedule_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "schedules",
-                "{{worker_schedule_id}}"
+                "{{schedule_id}}"
               ]
             },
             "description": "Get a specific worker schedule"
@@ -3952,7 +3952,7 @@
           "response": []
         },
         {
-          "name": "Create Worker Schedule (Admin)",
+          "name": "Create Schedule (Admin)",
           "event": [
             {
               "listen": "test",
@@ -3962,7 +3962,7 @@
                   "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
                   "});",
                   "if (pm.response.code === 201) {",
-                  "    pm.environment.set('created_worker_schedule_id', pm.response.json().id);",
+                  "    pm.environment.set('created_schedule_id', pm.response.json().id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -3995,7 +3995,7 @@
           "response": []
         },
         {
-          "name": "Update Worker Schedule (Admin)",
+          "name": "Update Schedule (Admin)",
           "event": [
             {
               "listen": "test",
@@ -4018,13 +4018,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/schedules/{{created_worker_schedule_id}}",
+              "raw": "{{baseUrl}}/schedules/{{created_schedule_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "schedules",
-                "{{created_worker_schedule_id}}"
+                "{{created_schedule_id}}"
               ]
             },
             "description": "Update a worker schedule (Admin/Koordinator)",
@@ -4036,7 +4036,7 @@
           "response": []
         },
         {
-          "name": "Delete Worker Schedule (Admin)",
+          "name": "Delete Schedule (Admin)",
           "event": [
             {
               "listen": "test",
@@ -4059,13 +4059,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/schedules/{{created_worker_schedule_id}}",
+              "raw": "{{baseUrl}}/schedules/{{created_schedule_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "schedules",
-                "{{created_worker_schedule_id}}"
+                "{{created_schedule_id}}"
               ]
             },
             "description": "Delete a worker schedule (Admin/Koordinator)"
@@ -4942,12 +4942,12 @@
                 "{{created_area_id}}"
               ]
             },
-            "description": "Get statistics for a specific area"
+            "description": "Get statistics for a specific area\\n\\n⚠️ Breaking Change (Feb 15, 2026): Response field names changed:\\n- total_workers_assigned → total_users_assigned\\n- workers_online → users_online\\n- workers_offline → users_offline\\n- workers: WorkerStatusDto[] → users: UserStatusDto[]"
           },
           "response": []
         },
         {
-          "name": "Get Live Workers",
+          "name": "Get Live Users",
           "event": [
             {
               "listen": "test",
@@ -4979,7 +4979,7 @@
                 "live-workers"
               ]
             },
-            "description": "Get real-time worker positions and status"
+            "description": "Get real-time user positions and status (renamed from live-workers)"
           },
           "response": []
         }

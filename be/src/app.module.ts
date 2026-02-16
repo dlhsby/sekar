@@ -9,9 +9,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AreaTypesModule } from './modules/area-types/area-types.module';
 import { AreasModule } from './modules/areas/areas.module';
-import { WorkerAssignmentsModule } from './modules/worker-assignments/worker-assignments.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
-import { ReportsModule } from './modules/reports/reports.module';
+import { ActivitiesModule } from './modules/activities/activities.module';
 import { LocationModule } from './modules/location/location.module';
 import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { SharedModule } from './shared/shared.module';
@@ -21,7 +20,7 @@ import { RayonsModule } from './modules/rayons/rayons.module';
 import { ShiftDefinitionsModule } from './modules/shift-definitions/shift-definitions.module';
 import { ActivityTypesModule } from './modules/activity-types/activity-types.module';
 import { AreaStaffRequirementsModule } from './modules/area-staff-requirements/area-staff-requirements.module';
-import { WorkerSchedulesModule } from './modules/worker-schedules/worker-schedules.module';
+import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SpecialDayOverridesModule } from './modules/special-day-overrides/special-day-overrides.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -38,11 +37,11 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
       envFilePath: '.env',
     }),
 
-    // Rate limiting module
+    // Rate limiting module (high limits in test environment to prevent interference)
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // Time window in milliseconds (60 seconds)
-        limit: 100, // Maximum requests per time window
+        ttl: parseInt(process.env.THROTTLE_TTL || '60000', 10), // Time window in milliseconds
+        limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10), // Maximum requests per time window
       },
     ]),
 
@@ -91,12 +90,11 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
     // Feature modules (order matters due to dependencies)
     SharedModule, // Shared services (S3, etc.)
     AuthModule, // Must be first (provides guards)
-    UsersModule, // Needed by WorkerAssignments
+    UsersModule,
     AreaTypesModule, // Needed by Areas
-    AreasModule, // Needed by WorkerAssignments & Shifts
-    WorkerAssignmentsModule, // Needed by Shifts
+    AreasModule, // Needed by Shifts
     ShiftsModule,
-    ReportsModule, // Depends on Shifts, SharedModule
+    ActivitiesModule, // Depends on Shifts, SharedModule (Phase 2C: renamed from ReportsModule)
     LocationModule, // Depends on Shifts
     SupervisorModule, // Depends on all above modules
     SeedModule,
@@ -105,7 +103,7 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
     ShiftDefinitionsModule, // Fixed shift definitions
     ActivityTypesModule, // Activity types with role filtering
     AreaStaffRequirementsModule, // Staff requirements per area/shift
-    WorkerSchedulesModule, // Worker scheduling
+    SchedulesModule, // Worker scheduling
     SpecialDayOverridesModule, // Special day overrides (holidays, etc.)
     TasksModule, // Task management for workers
     NotificationsModule, // Push notifications and FCM token management
@@ -117,11 +115,15 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // Global rate limiting guard
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    // Global rate limiting guard (disabled in test environment)
+    ...(process.env.NODE_ENV !== 'test'
+      ? [
+          {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
+          },
+        ]
+      : []),
   ],
 })
 export class AppModule {}

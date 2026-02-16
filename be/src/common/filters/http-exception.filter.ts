@@ -96,6 +96,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       this.logger.warn(`HTTP ${statusCode} Error: ${errorResponse.message} - Path: ${request.url}`);
     }
 
+    // Set API version header on error responses (matching ApiVersionInterceptor)
+    response.setHeader('X-API-Version', '1');
+
     response.status(statusCode).json(errorResponse);
   }
 

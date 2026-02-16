@@ -41,13 +41,13 @@ export async function isTokenExpired(bufferMinutes: number = 1): Promise<boolean
   try {
     const token = await getToken();
     if (!token) {
-      console.log('[TokenUtils] No token found');
+      console.debug('[TokenUtils] No token found');
       return true;
     }
 
     const decoded = decodeJWT(token);
     if (!decoded || !decoded.exp) {
-      console.log('[TokenUtils] Invalid token or missing expiry');
+      console.debug('[TokenUtils] Invalid token or missing expiry');
       return true;
     }
 
@@ -58,9 +58,9 @@ export async function isTokenExpired(bufferMinutes: number = 1): Promise<boolean
 
     if (__DEV__) {
       const timeRemaining = Math.floor((expiresAt - now) / 60000);
-      console.log('[TokenUtils] Token expires at:', new Date(expiresAt).toISOString());
-      console.log('[TokenUtils] Time remaining (minutes):', timeRemaining);
-      console.log('[TokenUtils] Is expired/expiring:', isExpired);
+      console.debug('[TokenUtils] Token expires at:', new Date(expiresAt).toISOString());
+      console.debug('[TokenUtils] Time remaining (minutes):', timeRemaining);
+      console.debug('[TokenUtils] Is expired/expiring:', isExpired);
     }
 
     return isExpired;

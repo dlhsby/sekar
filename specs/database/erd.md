@@ -2,20 +2,23 @@
 
 ## Overview
 
-This document provides comprehensive Entity Relationship Diagrams for the SEKAR database schema, updated to reflect **Phase 2C (Client Feedback)** changes including the 8-role system, overtime module, task tags, and schema modifications.
+This document provides comprehensive Entity Relationship Diagrams for the SEKAR database schema, updated to reflect **Phase 2C (Client Feedback)** changes including the 8-role system, terminology cleanup (ADR-010), flat overtime, polygon geofencing, and schema modifications.
 
 **Notation:**
 - `1` = One (exactly one)
-- `∞` = Many (zero or more)
+- `inf` = Many (zero or more)
 - `1..1` = One-to-One
-- `1..∞` = One-to-Many
-- `∞..∞` = Many-to-Many
+- `1..inf` = One-to-Many
 - `||` = Mandatory (NOT NULL)
 - `o|` = Optional (NULL allowed)
 
+**Related ADRs:**
+- [ADR-009: Role System Overhaul](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md)
+- [ADR-010: Terminology Cleanup](../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
+
 ---
 
-## Complete ERD (All Tables — Phase 2C)
+## Complete ERD (All Tables -- Phase 2C Post-Rewrite)
 
 ```mermaid
 erDiagram
@@ -23,10 +26,9 @@ erDiagram
     RAYONS ||--o{ USERS : "manages"
     RAYONS ||--o{ TASKS : "scoped_to"
 
-    USERS ||--o{ WORKER_ASSIGNMENTS : "has_one"
-    USERS ||--o{ WORKER_SCHEDULES : "scheduled"
+    USERS ||--o{ SCHEDULES : "scheduled"
     USERS ||--o{ SHIFTS : "works"
-    USERS ||--o{ WORK_REPORTS : "creates"
+    USERS ||--o{ ACTIVITIES : "creates"
     USERS ||--o{ LOCATION_LOGS : "sends"
     USERS ||--o{ TASKS : "assigned_to"
     USERS ||--o{ TASKS : "created_by"
@@ -36,28 +38,24 @@ erDiagram
 
     AREA_TYPES ||--o{ AREAS : "categorizes"
 
-    AREAS ||--o{ WORKER_ASSIGNMENTS : "receives"
-    AREAS ||--o{ WORKER_SCHEDULES : "scheduled_at"
+    AREAS ||--o{ SCHEDULES : "scheduled_at"
     AREAS ||--o{ SHIFTS : "location_for"
-    AREAS ||--o{ WORK_REPORTS : "report_at"
+    AREAS ||--o{ ACTIVITIES : "activity_at"
     AREAS ||--o{ TASKS : "scoped_to"
     AREAS ||--o{ OVERTIMES : "overtime_at"
     AREAS ||--o{ AREA_STAFF_REQUIREMENTS : "requires"
     AREAS o|--|| USERS : "korlap_area"
 
-    SHIFTS ||--o{ WORK_REPORTS : "contains"
+    SHIFTS ||--o{ ACTIVITIES : "contains"
     SHIFTS ||--o{ LOCATION_LOGS : "tracks"
 
-    SHIFT_DEFINITIONS ||--o{ WORKER_SCHEDULES : "defines"
+    SHIFT_DEFINITIONS ||--o{ SCHEDULES : "defines"
     SHIFT_DEFINITIONS ||--o{ AREA_STAFF_REQUIREMENTS : "for_shift"
 
     TASKS ||--o{ TASK_TAGS : "has_tags"
-    TASKS ||--o{ WORK_REPORTS : "completed_by"
 
-    ACTIVITY_TYPES ||--o{ WORK_REPORTS : "categorizes"
-    ACTIVITY_TYPES ||--o{ OVERTIME_AKTIVITAS : "categorizes"
-
-    OVERTIMES ||--o{ OVERTIME_AKTIVITAS : "contains"
+    ACTIVITY_TYPES ||--o{ ACTIVITIES : "categorizes"
+    ACTIVITY_TYPES ||--o{ OVERTIMES : "categorizes"
 
     USERS {
         uuid id PK
@@ -103,7 +101,7 @@ erDiagram
         decimal gps_lng "NOT NULL"
         integer radius_meters "DEFAULT 100"
         text address "NULL"
-        jsonb boundary_polygon "NULL"
+        jsonb boundary_polygon "NULL, GeoJSON for polygon geofencing"
         decimal coverage_area "NULL"
         boolean is_active "DEFAULT true"
         timestamptz created_at
@@ -111,16 +109,7 @@ erDiagram
         timestamptz deleted_at "NULL"
     }
 
-    WORKER_ASSIGNMENTS {
-        uuid id PK
-        uuid worker_id FK "NOT NULL, UNIQUE"
-        uuid area_id FK "NOT NULL"
-        timestamptz assigned_at
-        boolean deprecated "DEFAULT false"
-        uuid migrated_to_schedule_id "NULL"
-    }
-
-    WORKER_SCHEDULES {
+    SCHEDULES {
         uuid id PK
         uuid user_id FK "NOT NULL"
         uuid area_id FK "NOT NULL"
@@ -146,32 +135,32 @@ erDiagram
 
     SHIFTS {
         uuid id PK
-        uuid worker_id FK "NOT NULL"
+        uuid user_id FK "NOT NULL, renamed from worker_id"
         uuid area_id FK "NULL, auto-detected"
         timestamptz clock_in_time "NOT NULL"
         decimal clock_in_gps_lat "NULL"
         decimal clock_in_gps_lng "NULL"
         text clock_in_photo_url "NULL"
+        boolean clock_in_outside_boundary "DEFAULT false"
         timestamptz clock_out_time "NULL"
         decimal clock_out_gps_lat "NULL"
         decimal clock_out_gps_lng "NULL"
         text clock_out_photo_url "NULL"
+        boolean clock_out_outside_boundary "DEFAULT false"
         timestamptz created_at
         timestamptz updated_at
         timestamptz deleted_at "NULL"
     }
 
-    WORK_REPORTS {
+    ACTIVITIES {
         uuid id PK
-        uuid worker_id FK "NOT NULL"
+        uuid user_id FK "NOT NULL, renamed from worker_id"
         uuid shift_id FK "NOT NULL"
         uuid area_id FK "NULL"
         uuid task_id FK "NULL"
         uuid activity_type_id FK "NULL"
-        varchar report_type "NULL"
         text description "NOT NULL"
         text_array photo_urls "NOT NULL, 1-3 URLs"
-        text photo_url "NULL, legacy"
         decimal gps_lat "NULL"
         decimal gps_lng "NULL"
         timestamptz created_at
@@ -184,7 +173,7 @@ erDiagram
         varchar name "NOT NULL"
         varchar code UK "NOT NULL"
         text description "NULL"
-        text_array applicable_roles "NOT NULL"
+        text_array applicable_roles "NOT NULL, lowercase values"
         boolean is_active "DEFAULT true"
         timestamptz created_at
         timestamptz updated_at
@@ -230,24 +219,18 @@ erDiagram
         timestamptz approved_at "NULL"
         text rejection_reason "NULL"
         text notes "NULL"
+        uuid activity_type_id FK "NULL, SET NULL on delete"
+        text description "NULL"
+        text_array photo_urls "DEFAULT empty array, 1-3 URLs"
+        decimal gps_lat "NULL"
+        decimal gps_lng "NULL"
         timestamptz created_at
         timestamptz updated_at
     }
 
-    OVERTIME_AKTIVITAS {
-        uuid id PK
-        uuid overtime_id FK "NOT NULL"
-        uuid activity_type_id FK "NOT NULL"
-        text description "NOT NULL"
-        text_array photo_urls "NOT NULL, 1-3 URLs"
-        decimal gps_lat "NULL"
-        decimal gps_lng "NULL"
-        timestamptz created_at
-    }
-
     LOCATION_LOGS {
         uuid id PK
-        uuid worker_id FK "NOT NULL"
+        uuid user_id FK "NOT NULL, renamed from worker_id"
         uuid shift_id FK "NOT NULL"
         decimal gps_lat "NOT NULL"
         decimal gps_lng "NOT NULL"
@@ -302,7 +285,7 @@ erDiagram
 
 ---
 
-## Role System (Phase 2C — 8 Roles)
+## Role System (Phase 2C -- 8 Roles)
 
 ```mermaid
 graph TD
@@ -336,8 +319,7 @@ graph TD
 erDiagram
     USERS ||--o| RAYONS : "kepala_rayon manages"
     USERS ||--o| AREAS : "korlap manages"
-    USERS ||--o| WORKER_SCHEDULES : "satgas/linmas scheduled"
-    USERS ||--o| WORKER_ASSIGNMENTS : "legacy (deprecated)"
+    USERS ||--o| SCHEDULES : "satgas/linmas scheduled"
 
     USERS {
         uuid id
@@ -348,9 +330,10 @@ erDiagram
 ```
 
 **Assignment Rules:**
-- **kepala_rayon** → assigned via `users.rayon_id`
-- **korlap** → assigned via `users.area_id`
-- **satgas/linmas** → assigned via `worker_schedules` (primary) or `worker_assignments` (deprecated fallback)
+- **kepala_rayon** -> assigned via `users.rayon_id`
+- **korlap** -> assigned via `users.area_id`
+- **satgas/linmas** -> assigned via `schedules` (effective_date/end_date range)
+- **worker_assignments** -> DROPPED (fully replaced by schedules)
 
 ---
 
@@ -359,20 +342,20 @@ erDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> pending: Create task
-    pending --> assigned: Assign to worker
-    assigned --> in_progress: Worker starts
-    in_progress --> completed: Worker completes with photo
+    pending --> assigned: Assign to user
+    assigned --> in_progress: Assignee starts
+    in_progress --> completed: Assignee completes with photo
 ```
 
 **Task Relationships:**
-- Task → Area (nullable for rayon-scoped)
-- Task → Rayon (nullable for area-scoped)
-- Task → User (assigned_to, created_by)
-- Task → TaskTag (1:∞, CC-like tagging)
+- Task -> Area (nullable for rayon-scoped)
+- Task -> Rayon (nullable for area-scoped)
+- Task -> User (assigned_to, created_by)
+- Task -> TaskTag (1:inf, CC-like tagging)
 
 ---
 
-### Overtime Workflow
+### Overtime Workflow (Flat -- 1 overtime = 1 activity)
 
 ```mermaid
 stateDiagram-v2
@@ -381,32 +364,36 @@ stateDiagram-v2
     pending --> rejected: Korlap rejects
 ```
 
-**Overtime Relationships:**
-- Overtime → User (submitter, CASCADE)
-- Overtime → Area (nullable, SET NULL)
-- Overtime → User (approver, nullable)
-- Overtime → OvertimeAktivitas (1:∞, CASCADE)
-- OvertimeAktivitas → ActivityType
+**Overtime Relationships (Post-Rewrite):**
+- Overtime -> User (submitter, CASCADE)
+- Overtime -> Area (nullable, SET NULL)
+- Overtime -> User (approver, nullable)
+- Overtime -> ActivityType (ManyToOne, SET NULL) -- flat, inline on overtimes table
+- No child table (overtime_aktivitas DROPPED)
 
 ---
 
-### Shift & Reports Flow
+### Shift & Activities Flow
 
 ```mermaid
 erDiagram
-    USERS ||--o{ SHIFTS : "works (1:∞)"
-    AREAS o|--o{ SHIFTS : "hosts (o:∞)"
-    SHIFTS ||--o{ WORK_REPORTS : "contains (1:∞)"
-    SHIFTS ||--o{ LOCATION_LOGS : "tracks (1:∞)"
-    ACTIVITY_TYPES o|--o{ WORK_REPORTS : "categorizes"
-    TASKS o|--o{ WORK_REPORTS : "completed_by"
+    USERS ||--o{ SHIFTS : "works (1:inf)"
+    AREAS o|--o{ SHIFTS : "hosts (o:inf)"
+    SHIFTS ||--o{ ACTIVITIES : "contains (1:inf)"
+    SHIFTS ||--o{ LOCATION_LOGS : "tracks (1:inf)"
+    ACTIVITY_TYPES o|--o{ ACTIVITIES : "categorizes"
 ```
 
 **Phase 2C Changes:**
-- `shifts.area_id` is now **nullable** (auto-detected from WorkerSchedule → WorkerAssignment fallback)
-- `work_reports.photo_urls` TEXT[] replaces single `photo_url` (1-3 photos)
-- `work_reports.gps_lat/gps_lng` are now **nullable**
-- `work_reports.activity_type_id` links to `activity_types` for role-based validation
+- `shifts.user_id` renamed from `worker_id`
+- `shifts.clock_in_outside_boundary` and `clock_out_outside_boundary` added (polygon geofencing flags)
+- `shifts.area_id` is **nullable** (auto-detected from Schedule)
+- `activities` table renamed from `work_reports`
+- `activities.user_id` renamed from `worker_id`
+- `activities.photo_urls` TEXT[] (1-3 photos)
+- `activities.gps_lat/gps_lng` are **nullable**
+- `activities.activity_type_id` links to `activity_types` for role-based validation
+- `activities.report_type` column DROPPED
 
 ---
 
@@ -414,35 +401,33 @@ erDiagram
 
 | Relationship | Parent | Child | Type | Constraint | Notes |
 |-------------|--------|-------|------|------------|-------|
-| Rayon-Area | rayons | areas | 1:∞ | FK(rayon_id) | 7 rayons, many areas each |
-| Rayon-User | rayons | users | 1:∞ | FK(rayon_id) | kepala_rayon role |
-| Rayon-Task | rayons | tasks | 1:∞ | FK(rayon_id) | Rayon-scoped tasks |
-| AreaType-Area | area_types | areas | 1:∞ | FK(area_type_id) | ACTIVE/PASSIVE category |
-| Area-User | areas | users | 1:∞ | FK(area_id) | korlap role |
-| User-Assignment | users | worker_assignments | 1:1 | UNIQUE(worker_id) | Deprecated |
-| User-Schedule | users | worker_schedules | 1:∞ | FK(user_id) | Primary assignment |
-| Area-Schedule | areas | worker_schedules | 1:∞ | FK(area_id) | Schedule location |
-| ShiftDef-Schedule | shift_definitions | worker_schedules | 1:∞ | FK(shift_definition_id) | Schedule timing |
-| User-Shift | users | shifts | 1:∞ | FK(worker_id) | Work shifts |
-| Area-Shift | areas | shifts | o:∞ | FK(area_id) | Nullable in Phase 2C |
-| Shift-Report | shifts | work_reports | 1:∞ | FK(shift_id) | Activity reports |
-| Shift-Location | shifts | location_logs | 1:∞ | FK(shift_id) | GPS tracking |
-| User-Report | users | work_reports | 1:∞ | FK(worker_id) | Denormalized |
-| ActivityType-Report | activity_types | work_reports | o:∞ | FK(activity_type_id) | Role-validated |
-| Task-Report | tasks | work_reports | o:∞ | FK(task_id) | Task completion |
-| User-Task (assigned) | users | tasks | o:∞ | FK(assigned_to) | Assignment |
-| User-Task (created) | users | tasks | 1:∞ | FK(created_by) | Creator |
-| Area-Task | areas | tasks | o:∞ | FK(area_id) | Nullable for rayon-scoped |
-| Task-TaskTag | tasks | task_tags | 1:∞ | FK(task_id) CASCADE | CC-like tagging |
-| User-TaskTag | users | task_tags | 1:∞ | FK(user_id) CASCADE | Tagged users |
-| User-Overtime | users | overtimes | 1:∞ | FK(user_id) CASCADE | Submissions |
-| Area-Overtime | areas | overtimes | o:∞ | FK(area_id) SET NULL | Location |
-| Overtime-Aktivitas | overtimes | overtime_aktivitas | 1:∞ | FK(overtime_id) CASCADE | Activities |
-| ActivityType-OvAkt | activity_types | overtime_aktivitas | 1:∞ | FK(activity_type_id) | Categorization |
-| User-Notification | users | notifications | 1:∞ | FK(user_id) CASCADE | Alerts |
-| User-NotifToken | users | notification_tokens | 1:∞ | FK(user_id) CASCADE | Devices |
-| ShiftDef-StaffReq | shift_definitions | area_staff_requirements | 1:∞ | FK(shift_definition_id) | Requirements |
-| Area-StaffReq | areas | area_staff_requirements | 1:∞ | FK(area_id) CASCADE | Requirements |
+| Rayon-Area | rayons | areas | 1:inf | FK(rayon_id) | 7 rayons, many areas each |
+| Rayon-User | rayons | users | 1:inf | FK(rayon_id) | kepala_rayon role |
+| Rayon-Task | rayons | tasks | 1:inf | FK(rayon_id) | Rayon-scoped tasks |
+| AreaType-Area | area_types | areas | 1:inf | FK(area_type_id) | ACTIVE/PASSIVE category |
+| Area-User | areas | users | 1:inf | FK(area_id) | korlap role |
+| User-Schedule | users | schedules | 1:inf | FK(user_id) | Primary assignment |
+| Area-Schedule | areas | schedules | 1:inf | FK(area_id) | Schedule location |
+| ShiftDef-Schedule | shift_definitions | schedules | 1:inf | FK(shift_definition_id) | Schedule timing |
+| User-Shift | users | shifts | 1:inf | FK(user_id) | Work shifts |
+| Area-Shift | areas | shifts | o:inf | FK(area_id) | Nullable |
+| Shift-Activity | shifts | activities | 1:inf | FK(shift_id) | Activity reports |
+| Shift-Location | shifts | location_logs | 1:inf | FK(shift_id) | GPS tracking |
+| User-Activity | users | activities | 1:inf | FK(user_id) | Activity submitter |
+| ActivityType-Activity | activity_types | activities | o:inf | FK(activity_type_id) | Role-validated |
+| Task-Activity | tasks | activities | o:inf | FK(task_id) | Task completion |
+| User-Task (assigned) | users | tasks | o:inf | FK(assigned_to) | Assignment |
+| User-Task (created) | users | tasks | 1:inf | FK(created_by) | Creator |
+| Area-Task | areas | tasks | o:inf | FK(area_id) | Nullable for rayon-scoped |
+| Task-TaskTag | tasks | task_tags | 1:inf | FK(task_id) CASCADE | CC-like tagging |
+| User-TaskTag | users | task_tags | 1:inf | FK(user_id) CASCADE | Tagged users |
+| User-Overtime | users | overtimes | 1:inf | FK(user_id) CASCADE | Submissions |
+| Area-Overtime | areas | overtimes | o:inf | FK(area_id) SET NULL | Location |
+| ActivityType-Overtime | activity_types | overtimes | o:inf | FK(activity_type_id) SET NULL | Flat activity |
+| User-Notification | users | notifications | 1:inf | FK(user_id) CASCADE | Alerts |
+| User-NotifToken | users | notification_tokens | 1:inf | FK(user_id) CASCADE | Devices |
+| ShiftDef-StaffReq | shift_definitions | area_staff_requirements | 1:inf | FK(shift_definition_id) | Requirements |
+| Area-StaffReq | areas | area_staff_requirements | 1:inf | FK(area_id) CASCADE | Requirements |
 
 ---
 
@@ -452,16 +437,14 @@ erDiagram
 |----|----------|-----------|
 | users.rayon_id | SET NULL | User persists if rayon deleted |
 | users.area_id | SET NULL | User persists if area deleted |
-| worker_assignments.worker_id | RESTRICT | Prevent deletion of assigned worker |
-| worker_assignments.area_id | RESTRICT | Prevent deletion of area with assignments |
-| worker_schedules.user_id | CASCADE | Remove schedules when user deleted |
-| worker_schedules.area_id | CASCADE | Remove schedules when area deleted |
-| shifts.worker_id | RESTRICT | Preserve shift history |
+| schedules.user_id | CASCADE | Remove schedules when user deleted |
+| schedules.area_id | CASCADE | Remove schedules when area deleted |
+| shifts.user_id | RESTRICT | Preserve shift history |
 | shifts.area_id | RESTRICT | Preserve shift history |
-| work_reports.worker_id | RESTRICT | Preserve report history |
-| work_reports.shift_id | RESTRICT | Preserve report history |
-| work_reports.task_id | SET NULL | Report persists if task deleted |
-| work_reports.activity_type_id | SET NULL | Report persists if type deleted |
+| activities.user_id | RESTRICT | Preserve activity history |
+| activities.shift_id | RESTRICT | Preserve activity history |
+| activities.task_id | SET NULL | Activity persists if task deleted |
+| activities.activity_type_id | SET NULL | Activity persists if type deleted |
 | tasks.assigned_to | SET NULL | Task persists if user deleted |
 | tasks.created_by | RESTRICT | Preserve creator reference |
 | tasks.area_id | RESTRICT | Prevent deletion of area with tasks |
@@ -469,7 +452,7 @@ erDiagram
 | task_tags.user_id | CASCADE | Remove tags when user deleted |
 | overtimes.user_id | CASCADE | Remove overtime when user deleted |
 | overtimes.area_id | SET NULL | Overtime persists if area deleted |
-| overtime_aktivitas.overtime_id | CASCADE | Remove aktivitas when overtime deleted |
+| overtimes.activity_type_id | SET NULL | Overtime persists if type deleted |
 | notifications.user_id | CASCADE | Remove notifications when user deleted |
 | notification_tokens.user_id | CASCADE | Remove tokens when user deleted |
 
@@ -486,8 +469,7 @@ erDiagram
 | shift_definitions | uq_shift_definitions_code | code |
 | shift_definitions | uq_shift_definitions_name | name |
 | activity_types | uq_activity_types_code | code |
-| worker_assignments | uq_worker_assignments_worker | worker_id |
-| worker_schedules | uq_worker_schedule_overlap | (user_id, effective_date, shift_definition_id) |
+| schedules | uq_schedule_overlap | (user_id, effective_date, shift_definition_id) |
 | task_tags | uq_task_tags_task_user | (task_id, user_id) |
 | notification_tokens | uq_notification_tokens_user_token | (user_id, token) |
 | special_day_overrides | uq_special_day_date | date |
@@ -529,59 +511,65 @@ CHECK (battery_level BETWEEN 0 AND 100)
 
 ## Data Flow Examples
 
-### Clock-In Flow (Phase 2C)
+### Clock-In Flow (Phase 2C -- Soft Polygon Geofencing)
 
 ```mermaid
 sequenceDiagram
-    participant W as Worker (satgas/linmas)
+    participant U as User (satgas/linmas/korlap/admin_data/kepala_rayon)
     participant S as Shifts Service
-    participant WS as Worker Schedules
-    participant WA as Worker Assignments
+    participant SC as Schedules
     participant A as Areas
+    participant G as GpsUtil
 
-    W->>S: POST /shifts/clock-in (GPS, photo)
-    S->>WS: Find active schedule (effective_date, end_date)
+    U->>S: POST /shifts/clock-in (GPS, photo)
+    S->>SC: Find active schedule (effective_date, end_date range)
     alt Schedule found
-        WS->>A: Get area from schedule
+        SC->>A: Get area from schedule
     else No schedule
-        S->>WA: Fallback: find non-deprecated assignment
-        WA->>A: Get area from assignment
+        A->>S: Return null (no area)
     end
-    A->>S: Return area (or null)
-    S->>S: Create shift with area_id (nullable)
-    S->>W: Return shift record
+    S->>G: isWithinAreaBoundary(lat, lng, area)
+    alt Inside boundary
+        G->>S: true
+        S->>S: clock_in_outside_boundary = false
+    else Outside boundary
+        G->>S: false
+        S->>S: clock_in_outside_boundary = true (soft warning)
+    end
+    S->>S: Create shift with area_id + boundary flag
+    S->>U: Return shift record (always succeeds)
 ```
 
-### Aktivitas Report Flow (Phase 2C)
+### Activity Submission Flow (Phase 2C)
 
 ```mermaid
 sequenceDiagram
-    participant W as Worker
-    participant R as Reports Service
+    participant U as User
+    participant A as Activities Service
     participant S as Shifts
     participant AT as Activity Types
 
-    W->>R: POST /aktivitas (activity_type_id, photos, GPS)
-    R->>S: Get active shift
-    R->>AT: Validate activity_type for user role
-    AT->>R: Activity type validated
-    R->>R: Create report with shift_id, area_id, photo_urls
-    R->>W: Return report
+    U->>A: POST /activities (activity_type_id, photos, GPS)
+    A->>S: Get active shift
+    A->>AT: Validate activity_type for user role
+    AT->>A: Activity type validated (applicable_roles includes user.role)
+    A->>A: Create activity with shift_id, area_id, photo_urls
+    A->>U: Return activity
 ```
 
-### Overtime Submission Flow
+### Overtime Submission Flow (Flat)
 
 ```mermaid
 sequenceDiagram
-    participant W as Worker (satgas/linmas)
+    participant U as User (satgas/linmas)
     participant O as Overtime Service
     participant AT as Activity Types
     participant K as Korlap
 
-    W->>O: POST /overtime (date, times, aktivitas[])
-    O->>AT: Validate each aktivitas type for role
-    O->>O: Create overtime + nested aktivitas
-    O->>W: Return overtime (status: pending)
+    U->>O: POST /overtime (date, times, activity_type_id, description, photos)
+    O->>AT: Validate activity_type for user role
+    O->>O: Create flat overtime record (no child table)
+    O->>U: Return overtime (status: pending)
     K->>O: PATCH /overtime/:id/approve
     O->>O: Validate korlap area scope
     O->>K: Return overtime (status: approved)
@@ -589,18 +577,27 @@ sequenceDiagram
 
 ---
 
+## Tables Dropped in Phase 2C (ADR-010)
+
+| Table | Reason | Replacement |
+|-------|--------|-------------|
+| `worker_assignments` | Fully replaced by `schedules` | `schedules` table |
+| `overtime_aktivitas` | Merged into `overtimes` (flat 1:1) | Activity columns on `overtimes` |
+
+---
+
 ## Table Count Summary
 
-| Phase | Tables | New in Phase |
-|-------|--------|-------------|
+| Phase | Tables | New/Changed in Phase |
+|-------|--------|---------------------|
 | Phase 1 (Core) | 7 | users, area_types, areas, worker_assignments, shifts, work_reports, location_logs |
 | Phase 2A (Rayons) | 5 | rayons, shift_definitions, worker_schedules, area_staff_requirements, special_day_overrides |
 | Phase 2B (Tasks) | 3 | tasks, notifications, notification_tokens |
-| Phase 2C (Feedback) | 3 | task_tags, overtimes, overtime_aktivitas |
-| **Total** | **18** | |
+| Phase 2C (Feedback) | -2 +1 | +task_tags, +overtimes; DROPPED: worker_assignments, overtime_aktivitas; RENAMED: worker_schedules->schedules, work_reports->activities |
+| **Total** | **17** | Down from 18 in Phase 2B (net -1: +2 new, -2 dropped, 2 renamed) |
 
 ---
 
 **Last Updated:** 2026-02-11
-**ERD Version:** 3.0 (Phase 2C — Client Feedback)
+**ERD Version:** 4.0 (Phase 2C -- Terminology Cleanup Post-Rewrite)
 **Database:** PostgreSQL 14+
