@@ -1,8 +1,8 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** February 16, 2026 (Phase 2C Preparation)
-**Status:** ✅ Phase 2B Deployed | 🔄 Phase 2C Ready for Deployment
-**Deployment Time:** 15-20 minutes (automated backend) + 10 minutes (web)
+**Last Updated:** February 16, 2026 (Phase 2C Deployment Complete)
+**Status:** ✅ Phase 2C Deployed (Backend + Web)
+**Deployment Time:** Backend 15-20 min (automated) | Web 10-15 min (manual) | Total ~1h20m with fixes
 
 > **⚠️ IMPORTANT:** This guide references domain names that need to be set up manually.
 > For current deployment status and actual URLs, see: `specs/deployment/DEPLOYMENT_STATUS.md`
@@ -11,18 +11,18 @@
 
 ## 📋 Quick Reference
 
-**Current Production URLs:**
-- API: http://16.79.183.240:3000 (or http://sekar.wahyutrip.com if nginx configured)
-- API (subdomain): http://api.sekar.wahyutrip.com ⚠️ NOT YET CONFIGURED (see DEPLOYMENT_STATUS.md)
-- Web Dashboard: http://sekar.wahyutrip.com ⚠️ NOT YET DEPLOYED
+**Current Production URLs (Phase 2C):**
+- API: http://api.sekar.wahyutrip.com (sekar-backend:3000)
+- Web Dashboard: http://sekar.wahyutrip.com (sekar-web:3001)
+- Database: RDS PostgreSQL 14 (18 tables)
 
-**What's New in Phase 2:**
-- ✅ Automated secret management (GitHub Secrets → .env.production)
-- ✅ Production-only deployment (main branch)
-- ✅ 6 new database tables (rayons, tasks, notifications, etc.)
-- ✅ 43 new API endpoints (83 total)
-- ✅ Firebase Cloud Messaging for push notifications
-- ✅ Zero-downtime deployment with health checks
+**What's New in Phase 2C:**
+- ✅ 8-role system (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
+- ✅ Terminology cleanup (activities, schedules, overtime - no more Indonesian paths)
+- ✅ New modules: Activities, Schedules, Overtime (flat structure)
+- ✅ Web dashboard deployed (Next.js 16.1.6 with Nginx proxy)
+- ✅ Database: 18 tables (dropped worker_assignments, overtime_aktivitas)
+- ⚠️ Breaking changes: Old mobile apps will not work
 
 **Prerequisites:**
 - [ ] All 16 GitHub Secrets configured
@@ -58,29 +58,31 @@
 - DATABASE_SYNCHRONIZE=false but TypeORM still synced at some point
 - Migration tracking worked correctly once executed
 
-### Current Database State (✅ PRODUCTION)
+### Current Database State (✅ PHASE 2C PRODUCTION)
 
 **Executed Migrations:**
 ```
-typeorm_migrations:
-├── InitialSchema1737000000000        # Phase 1: 7 core tables
-└── Phase2DatabaseSchema1737720000000 # Phase 2: +6 tables, +4 updates
+DATABASE_SYNCHRONIZE=true enabled (workaround)
+No migrations tracked in typeorm_migrations table
+Schema created from TypeORM entities directly
 ```
 
-**Tables (14 total):**
-- **Phase 1**: users, area_types, areas, worker_assignments, shifts, work_reports, location_logs
-- **Phase 2**: rayons, shift_definitions, activity_types, special_day_overrides, area_staff_requirements, worker_schedules
+**Tables (18 total):**
+- **Phase 1**: users, area_types, areas, shifts, location_logs
+- **Phase 2**: rayons, shift_definitions, activity_types, special_day_overrides, area_staff_requirements, schedules
+- **Phase 2C**: activities, tasks, notifications, overtimes
 - **System**: typeorm_migrations
+- **Dropped**: worker_assignments (Phase 2C removed), overtime_aktivitas (Phase 2C removed)
 
 **Seeded Data:**
-- 6 users (admin, 2 supervisors, 3 workers)
-- 4 area types, 3 areas
-- 3 worker assignments
-- 4 shifts (1 active, 3 completed)
-- 2 work reports
-- 10 location logs
+- 6 users (1 admin, 2 korlap, 3 satgas) with Phase 2C roles
+- 7 rayons (Rayon 1 - Rayon 7)
+- 100+ areas across rayons
+- Sample tasks and activities
+- 20 activity types across 4 roles
 
 **API Status:** ✅ Operational at http://api.sekar.wahyutrip.com
+**Web Status:** ✅ Operational at http://sekar.wahyutrip.com (CSR bailout issue)
 **Test Login:** ✅ `admin`/`admin123` works with JWT tokens
 
 ---
@@ -147,13 +149,56 @@ ssh -i key.pem user@server "docker exec sekar-backend npm run migration:run"
 
 ---
 
-## 🚀 Phase 2C Deployment (Client Feedback)
+## 🚀 Phase 2C Deployment (Client Feedback) - COMPLETED ✅
 
-**Deployment Date:** To be scheduled
+**Deployment Date:** February 16, 2026 (15:25-16:45 WIB)
+**Deployment Time:** 1 hour 20 minutes
 **Breaking Changes:** Yes (role system overhaul, terminology cleanup)
-**Migration Required:** Yes (Phase2CSchema.ts)
-**Mobile App Update:** Required immediately after backend deployment
-**Estimated Downtime:** 0 minutes (zero-downtime deployment)
+**Commit:** 65c7895 (main merge) + 6239094 (tsconfig fix)
+**Status:** ✅ DEPLOYED
+
+### Deployment Summary
+
+**Services Deployed:**
+- ✅ Backend: http://api.sekar.wahyutrip.com (sekar-backend:3000)
+- ✅ Web: http://sekar.wahyutrip.com (sekar-web:3001)
+- ✅ Database: Phase 2C schema (18 tables)
+
+**What Was Deployed:**
+1. 8-role system (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
+2. New endpoints: `/api/v1/activities`, `/api/v1/schedules`, `/api/v1/overtime`
+3. Web dashboard (first deployment)
+4. Database: 18 tables total (6 Phase 1 + 11 Phase 2 + 1 Phase 2C)
+5. Seeded data: 6 users, 7 rayons, 100+ areas
+
+### Critical Issues & Fixes During Deployment
+
+**1. Database Migration Failure** ⚠️
+- **Issue:** Phase2CSchema migration failed - tries to ALTER non-existent tables
+- **Root Cause:** Migration assumes Phase 2 tables exist but they weren't created
+- **Workaround:** Enabled `DATABASE_SYNCHRONIZE=true` (temporary)
+- **Action Required:** Disable after 48h stability period
+
+**2. Docker Build Failure (Web)** ✅
+- **Issue:** tsconfig.json excluded from Docker context
+- **Error:** All module imports failed in Docker build
+- **Fix:** Removed tsconfig.json from .dockerignore (commit 6239094)
+
+**3. Missing Environment Variables (Web)** ✅
+- **Issue:** NEXT_PUBLIC_* vars not baked into build
+- **Fix:** Rebuilt with correct build args
+- **Note:** These are build-time variables, not runtime
+
+**4. Web CI/CD Not Triggered** ⚠️
+- **Issue:** Automated deployment didn't run after merge
+- **Workaround:** Manual deployment via Docker save/load
+- **Follow-up:** Investigate GitHub Actions
+
+**5. Login Page CSR Bailout** ⚠️
+- **Issue:** Page uses `useSearchParams()` without Suspense wrapper
+- **Impact:** Skeleton loaders until JavaScript hydrates
+- **Status:** Functional but UX issue
+- **Fix Required:** Wrap useSearchParams in Suspense boundary
 
 ### What's New in Phase 2C
 
@@ -179,8 +224,9 @@ ssh -i key.pem user@server "docker exec sekar-backend npm run migration:run"
 
 **4. Web Dashboard**
 - First deployment of Next.js web application
-- Nginx proxy configuration required
+- Nginx proxy configuration at /etc/nginx/conf.d/sekar-web.conf
 - Mapbox maps integration
+- Note: Uses `npm start` with standalone mode (warning, but functional)
 
 ### Phase 2C Deployment Prerequisites
 
@@ -204,85 +250,109 @@ ssh -i key.pem user@server "docker exec sekar-backend npm run migration:run"
 4. ✅ Database migration tested locally
 5. ✅ Fresh seed data verified
 
-### Phase 2C Fresh Deployment Procedure
+### Phase 2C Actual Deployment Process (February 16, 2026)
 
-**⚠️ CRITICAL:** Phase 2C requires a fresh deployment (database wipe). User data from Phase 2B will be lost. This is acceptable during development phase.
+**Backend Deployment (Automated):**
+1. ✅ Merged Phase 2C to main (git push) - 65c7895
+2. ✅ GitHub Actions triggered backend-ci-cd.yml
+3. ✅ CI/CD: lint → test → build → push ECR → deploy EC2
+4. ⚠️ Migration failed due to missing tables
+5. ✅ Applied workaround: `DATABASE_SYNCHRONIZE=true` in be/.env.production
+6. ✅ Seeded Phase 1 + Phase 2 data
+7. ✅ Health check: PASS
 
-**Why Fresh Deployment?**
-- Role enum expansion incompatible with existing users (3→8 roles)
-- Table renames require dropping old tables
-- Column renames safer with fresh schema
-- Avoids complex data migration for development data
+**Web Deployment (Manual - CI/CD Failure):**
+1. ⚠️ Web CI/CD didn't trigger automatically
+2. ✅ Fixed .dockerignore (removed tsconfig.json exclusion) - commit 6239094
+3. ✅ Built locally with NEXT_PUBLIC_ env vars
+4. ✅ Saved Docker image: `docker save sekar-web:latest | gzip`
+5. ✅ Copied to server: `scp sekar-web.tar.gz ec2-user@16.79.183.240:~/sekar/web/`
+6. ✅ Loaded and started: `docker load && docker-compose up -d`
+7. ✅ Created Nginx config: `/etc/nginx/conf.d/sekar-web.conf`
 
-**Deployment Steps (15 minutes):**
+**Nginx Configuration:**
+```bash
+ssh -i ~/wahyutrip/dlhsby/taman/creds/sekar-key.pem ec2-user@16.79.183.240
 
-1. **Create RDS Snapshot** (5 min)
-   ```bash
-   aws rds create-db-snapshot \
-     --db-instance-identifier sekar-prod \
-     --db-snapshot-identifier sekar-phase2b-backup-$(date +%Y%m%d-%H%M)
-   ```
+sudo tee /etc/nginx/conf.d/sekar-web.conf << 'EOF'
+server {
+    listen 80;
+    server_name sekar.wahyutrip.com;
 
-2. **Push to Main** (Auto-triggers CI/CD)
-   ```bash
-   git push origin main
-   ```
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_cache_bypass $http_upgrade;
+    }
 
-3. **CI/CD Executes Automatically** (10 min)
-   - ✅ Lint & Test (5 min)
-   - ✅ Build & Push to ECR (3 min)
-   - ✅ SSH to EC2
-   - ✅ Wipe database clean (`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`)
-   - ✅ Run Phase 2C migration (creates all 18 tables)
-   - ✅ Start backend container
-   - ✅ Health check verification
+    location /_next/static {
+        proxy_pass http://localhost:3001;
+        proxy_cache_valid 200 365d;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
 
-4. **Manual Seed Database** (3 min)
-   ```bash
-   ssh -i sekar-key.pem ec2-user@16.79.183.240
-   cd ~/sekar/backend
-   ./scripts/deploy-seed.sh
-   ```
+    client_max_body_size 10M;
+}
+EOF
 
-5. **Web Deployment** (10 min)
-   - Web CI/CD triggers on same push (if `fe/web/**` changed)
-   - Or trigger manually:
-     ```bash
-     ssh -i sekar-key.pem ec2-user@16.79.183.240
-     cd ~/sekar/web
+sudo nginx -t && sudo systemctl reload nginx
+```
 
-     # Apply Nginx config
-     sudo cp ~/sekar/nginx-web.conf /etc/nginx/conf.d/sekar-web.conf
-     sudo nginx -t && sudo systemctl reload nginx
+**Database Seeding:**
+```bash
+# Phase 1 (base users and areas)
+npm run seed:phase1:prod
 
-     # Pull and start web
-     aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY
-     docker pull $ECR_REGISTRY/sekar-web:latest
-     docker-compose -f docker-compose.prod.yml up -d web
-     ```
+# Phase 2 (rayons, tasks, notifications)
+npm run seed:phase2:prod
+```
 
-6. **Verification** (5 min)
-   - Backend health: `curl http://16.79.183.240:3000/api/v1/health`
-   - Web health: `curl http://sekar.wahyutrip.com/api/health`
-   - Test login: superadmin/superadmin123
-   - Test new endpoints: /activities, /schedules
-   - Verify old endpoints removed: /aktivitas, /reports, /worker-schedules
+**Verification Results:**
+```bash
+# Backend API
+curl http://api.sekar.wahyutrip.com/api/v1/health
+# → {"status":"ok","timestamp":"..."}
 
-**Total Time:** 30-35 minutes (mostly automated)
+# Login test
+curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+# → {"access_token":"eyJhbG..."}
+
+# New Phase 2C endpoints
+GET /api/v1/activities → 200 (2 activities)
+GET /api/v1/schedules → 200 (0 schedules)
+GET /api/v1/overtime → 200 (0 overtime)
+
+# Old routes removed
+GET /api/v1/aktivitas → 404
+GET /api/v1/worker-schedules → 404
+
+# Web Dashboard
+curl http://sekar.wahyutrip.com
+# → 307 redirect to /login
+
+curl http://sekar.wahyutrip.com/login
+# → 200 OK (HTML with skeleton loaders due to CSR bailout)
+```
+
+**Total Time:** 1 hour 20 minutes (less automated than planned)
 
 ### Phase 2C Test Credentials
 
-**8 Role System:**
-```
-Superadmin:          superadmin / superadmin123
-Admin System:        admin_system / admin123
-Admin Data:          admin_data / admin123
-Korlap (Field Coordinator): korlap1 / password123
-Satgas (Field Worker): satgas1 / password123
-Linmas (Security):   linmas1 / password123
-Kepala Rayon:        kepala_rayon_selatan / password123
-Top Management:      top_management1 / password123
-```
+**Seeded Users (6 total):**
+| Username | Password | Role |
+|----------|----------|------|
+| admin | admin123 | superadmin |
+| korlap1 | password123 | korlap |
+| korlap2 | password123 | korlap |
+| satgas1 | password123 | satgas |
+| satgas2 | password123 | satgas |
+| satgas3 | password123 | satgas |
 
 ### Phase 2C Breaking Changes
 
@@ -300,25 +370,74 @@ Top Management:      top_management1 / password123
 - ❌ Phase 2B backups cannot be restored to Phase 2C schema
 - ⚠️ Rollback requires RDS snapshot + code revert + mobile app rollback
 
+### Post-Deployment Actions
+
+**Immediate (Next 24h):**
+- [ ] Monitor DATABASE_SYNCHRONIZE logs for sync issues
+- [ ] Test login flow in browser (verify JavaScript hydration)
+- [ ] Update mobile app to Phase 2C
+- [ ] Test all critical user flows (clock-in, activities, tasks)
+
+**Short-term (Next Week):**
+- [ ] Disable DATABASE_SYNCHRONIZE=true after stability confirmed
+- [ ] Fix Phase2CSchema migration to create all tables properly
+- [ ] Investigate web CI/CD pipeline failure
+- [ ] Fix login page CSR bailout (wrap useSearchParams in Suspense)
+- [ ] Consider switching web Dockerfile to use `.next/standalone/server.js`
+
+**Long-term:**
+- [ ] Implement zero-downtime deployments with blue-green strategy
+- [ ] Add CloudWatch monitoring and alerting
+- [ ] Set up automated rollback on health check failure
+
+### Known Issues
+
+1. **Web Login CSR Bailout:**
+   - Login page uses `useSearchParams()` without Suspense wrapper
+   - Page shows skeleton loaders until JavaScript hydrates
+   - Functional but UX impact
+   - Fix: Wrap useSearchParams in Suspense boundary
+
+2. **DATABASE_SYNCHRONIZE Enabled:**
+   - Temporary workaround for migration failure
+   - Must be disabled after confirming stable operations
+   - Security risk in production (schema changes without migrations)
+
+3. **Web CI/CD Pipeline:**
+   - Automated deployment didn't trigger
+   - Required manual deployment via Docker save/load
+   - Investigate GitHub Actions workflow
+
+4. **Standalone Mode Warning:**
+   - Next.js warns about `output: 'standalone'` with `npm start`
+   - Container works but should use `node .next/standalone/server.js`
+   - Non-blocking but worth fixing for best practices
+
 ### Phase 2C Rollback Procedure
 
-**If deployment fails during migration:**
+**If critical issues arise:**
 ```bash
-# 1. Restore RDS snapshot
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier sekar-prod \
-  --db-snapshot-identifier sekar-phase2b-backup-YYYYMMDD-HHMM
-
-# 2. Revert Docker image
-ssh -i sekar-key.pem ec2-user@16.79.183.240
+# Backend rollback
+ssh -i ~/wahyutrip/dlhsby/taman/creds/sekar-key.pem ec2-user@16.79.183.240
 cd ~/sekar/backend
-docker pull $ECR_REGISTRY/sekar-backend:phase2b-sha
-docker-compose -f docker-compose.prod.yml up -d backend
+docker pull ${ECR_REGISTRY}/sekar-backend:65c7895  # Previous Phase 2B commit
+docker-compose -f docker-compose.prod.yml up -d
+
+# Web rollback
+cd ~/sekar/web
+docker stop sekar-web && docker rm sekar-web
+# No previous version (first deployment)
 ```
 
-**If migration completes but app fails:**
-- ⚠️ Do NOT restore database (data loss)
-- ✅ Fix forward with hotfix deployment
+**Database rollback (ONLY if migration failed mid-way):**
+```bash
+# Restore from RDS snapshot
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier sekar-prod \
+  --db-snapshot-identifier sekar-phase2b-backup-YYYYMMDD
+```
+
+**⚠️ WARNING:** Database migration is partially irreversible. Do NOT rollback database after migration completes. Fix forward instead.
 
 ---
 

@@ -2,8 +2,59 @@
 
 **Purpose:** Comprehensive deployment procedures and manual testing checklist for Phase 2C verification.
 **Last Updated:** February 16, 2026
-**Status:** Backend Complete | Mobile Complete | Web Complete
+**Deployment Status:** ✅ DEPLOYED (February 16, 2026 15:25-16:45 WIB)
 **Related ADR:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
+
+---
+
+## Deployment Results (Production)
+
+**Date:** February 16, 2026 (15:25-16:45 WIB)
+**Duration:** 1 hour 20 minutes
+**Commit:** 65c7895 (Phase 2C merge) + 6239094 (.dockerignore fix)
+
+### Services Deployed
+
+| Service | URL | Status | Container |
+|---------|-----|--------|-----------|
+| Backend API | http://api.sekar.wahyutrip.com | ✅ Healthy | sekar-backend:3000 |
+| Web Dashboard | http://sekar.wahyutrip.com | ✅ Running | sekar-web:3001 |
+| Database | RDS PostgreSQL | ✅ Seeded | 18 tables, 6 users |
+
+### Issues Encountered & Fixes
+
+1. ⚠️ **Database Migration Failure**
+   - Phase2CSchema migration failed (tries to ALTER non-existent tables)
+   - **Workaround:** Enabled `DATABASE_SYNCHRONIZE=true` (temporary)
+   - **Action Required:** Disable after 48h stability period
+
+2. ✅ **Web Docker Build Failure**
+   - tsconfig.json excluded from Docker context
+   - **Fix:** Removed from .dockerignore (commit 6239094)
+
+3. ✅ **Missing NEXT_PUBLIC_ Env Vars**
+   - **Fix:** Rebuilt with correct build args
+
+4. ⚠️ **Web CI/CD Not Triggered**
+   - **Workaround:** Manual deployment via Docker save/load
+
+5. ⚠️ **Login Page CSR Bailout**
+   - `useSearchParams()` without Suspense wrapper
+   - Shows skeleton loaders (functional but UX issue)
+
+### Production Test Credentials
+
+**Actual Seeded Users (6 total):**
+| Role | Username | Password |
+|------|----------|----------|
+| superadmin | admin | admin123 |
+| korlap | korlap1 | password123 |
+| korlap | korlap2 | password123 |
+| satgas | satgas1 | password123 |
+| satgas | satgas2 | password123 |
+| satgas | satgas3 | password123 |
+
+**Note:** Only 2 roles seeded (superadmin, korlap, satgas). Other roles need manual creation if needed for testing.
 
 ---
 
