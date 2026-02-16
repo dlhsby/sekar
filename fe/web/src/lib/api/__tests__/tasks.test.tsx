@@ -14,7 +14,6 @@ import {
   useCreateTask,
   useUpdateTask,
   useDeleteTask,
-  useAcceptTask,
   useCompleteTask,
   type Task,
   type TaskFilters,
@@ -90,7 +89,7 @@ describe('Tasks API', () => {
       ]);
       expect(tasksKeys.details()).toEqual(['tasks', 'detail']);
       expect(tasksKeys.detail('1')).toEqual(['tasks', 'detail', '1']);
-      expect(tasksKeys.my()).toEqual(['tasks', 'my']);
+      expect(tasksKeys.tagged()).toEqual(['tasks', 'tagged']);
     });
   });
 
@@ -227,35 +226,8 @@ describe('Tasks API', () => {
     });
   });
 
-  describe('useAcceptTask', () => {
-    it('should accept task', async () => {
-      mockAxios.onPost('/tasks/1/accept').reply(200, { ...mockTask, status: 'accepted' });
-
-      const { result } = renderHook(() => useAcceptTask(), { wrapper: createWrapper() });
-
-      result.current.mutate('1');
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    });
-
-    it('should invalidate queries on success', async () => {
-      mockAxios.onPost('/tasks/1/accept').reply(200, mockTask);
-
-      const { result } = renderHook(() => useAcceptTask(), { wrapper: createWrapper() });
-
-      const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
-
-      result.current.mutate('1');
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      // Check that invalidateQueries was called with queryKeys containing tasks
-      expect(invalidateSpy).toHaveBeenCalled();
-      const calls = invalidateSpy.mock.calls;
-      const callsWithTasksKey = calls.filter((call) => call[0]?.queryKey?.[0] === 'tasks');
-      expect(callsWithTasksKey.length).toBeGreaterThanOrEqual(1);
-    });
-  });
+  // Note: useAcceptTask and useDeclineTask were removed in Phase 2C
+  // Tasks now use tagging system instead of accept/decline workflow
 
   describe('useCompleteTask', () => {
     it('should complete task', async () => {

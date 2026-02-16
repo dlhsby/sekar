@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui';
-import { UserRole } from '@/types/models';
+import type { UserRole } from '@/types/models';
+import { ROLE_LABELS, ROLE_BADGE_VARIANTS } from '@/lib/constants/roles';
 
 interface RoleBadgeProps {
   role: UserRole;
@@ -10,30 +11,9 @@ interface RoleBadgeProps {
  * Displays user role with appropriate color variant
  */
 export function RoleBadge({ role }: RoleBadgeProps) {
-  const variantMap: Record<
-    UserRole,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    admin: 'destructive',
-    top_management: 'default',
-    kepala_rayon: 'warning',
-    koordinator_lapangan: 'success',
-    worker: 'secondary',
-    linmas: 'secondary',
-  };
-
-  const labelMap: Record<UserRole, string> = {
-    admin: 'Admin',
-    top_management: 'Top Management',
-    kepala_rayon: 'Kepala Rayon',
-    koordinator_lapangan: 'Koordinator Lapangan',
-    worker: 'Worker',
-    linmas: 'Linmas',
-  };
-
   return (
-    <Badge variant={variantMap[role]} size="sm">
-      {labelMap[role]}
+    <Badge variant={ROLE_BADGE_VARIANTS[role] ?? 'secondary'} size="sm">
+      {ROLE_LABELS[role] ?? role}
     </Badge>
   );
 }

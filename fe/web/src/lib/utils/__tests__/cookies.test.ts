@@ -39,7 +39,7 @@ describe('Cookie Utilities', () => {
     });
 
     // Set NODE_ENV to test
-    process.env.NODE_ENV = 'test';
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true });
   });
 
   afterEach(() => {
@@ -108,7 +108,7 @@ describe('Cookie Utilities', () => {
     });
 
     it('should set secure cookie in production', () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       setAuthCookie('access_token', 'test-token', { secure: true });
 
       expect(cookieStorage['access_token']).toBe(encodeURIComponent('test-token'));

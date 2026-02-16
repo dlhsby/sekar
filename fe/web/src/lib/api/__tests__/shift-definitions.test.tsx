@@ -34,25 +34,31 @@ describe('Shift Definitions API', () => {
     {
       id: '1',
       name: 'Pagi',
+      code: 'PAGI',
       start_time: '06:00',
       end_time: '14:00',
-      color: '#4CAF50',
+      crosses_midnight: false,
+      is_active: true,
       created_at: '2026-01-01T00:00:00Z',
     },
     {
       id: '2',
       name: 'Siang',
+      code: 'SIANG',
       start_time: '14:00',
       end_time: '22:00',
-      color: '#FF9800',
+      crosses_midnight: false,
+      is_active: true,
       created_at: '2026-01-01T00:00:00Z',
     },
     {
       id: '3',
       name: 'Malam',
+      code: 'MALAM',
       start_time: '22:00',
       end_time: '06:00',
-      color: '#2196F3',
+      crosses_midnight: true,
+      is_active: true,
       created_at: '2026-01-01T00:00:00Z',
     },
   ];
@@ -117,7 +123,7 @@ describe('Shift Definitions API', () => {
       expect(result.current.data?.name).toBe('Pagi');
       expect(result.current.data?.start_time).toBe('06:00');
       expect(result.current.data?.end_time).toBe('14:00');
-      expect(result.current.data?.color).toBe('#4CAF50');
+      expect(result.current.data?.code).toBe('PAGI');
     });
 
     it('should handle shift not found', async () => {

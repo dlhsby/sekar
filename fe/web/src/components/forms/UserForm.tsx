@@ -5,33 +5,35 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FormInput, FormSelect, Button } from '@/components/ui';
-import { UserRole, User } from '@/types/models';
+import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
+import { useAreas } from '@/lib/api/areas';
+import { ALL_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
 
 /**
- * User Form Validation Schema
+ * User Form Validation Schema (Phase 2C - 8 roles)
  */
 const userSchema = z
   .object({
-    name: z.string().min(2, 'Nama minimal 2 karakter'),
-    email: z.string().email('Format email tidak valid'),
+    username: z.string().min(2, 'Username minimal 2 karakter'),
+    full_name: z.string().min(2, 'Nama minimal 2 karakter'),
     password: z.string().min(6, 'Password minimal 6 karakter').optional().or(z.literal('')),
     role: z.enum([
-      'admin',
-      'top_management',
-      'kepala_rayon',
-      'koordinator_lapangan',
-      'worker',
+      'satgas',
       'linmas',
+      'korlap',
+      'admin_data',
+      'kepala_rayon',
+      'top_management',
+      'admin_system',
+      'superadmin',
     ]),
     rayon_id: z.string().uuid().optional().or(z.literal('')),
+    area_id: z.string().uuid().optional().or(z.literal('')),
   })
   .refine(
     (data) => {
-      // Rayon required if kepala_rayon
-      if (data.role === 'kepala_rayon') {
-        return !!data.rayon_id;
-      }
+      if (data.role === 'kepala_rayon') return !!data.rayon_id;
       return true;
     },
     {
@@ -39,55 +41,29 @@ const userSchema = z
       path: ['rayon_id'],
     }
   )
-  .refine(() => {
-    // Password required on create (no initial user)
-    // This will be checked at component level
-    return true;
-  });
+  .refine(
+    (data) => {
+      if (data.role === 'korlap') return !!data.area_id;
+      return true;
+    },
+    {
+      message: 'Area wajib dipilih untuk role Korlap',
+      path: ['area_id'],
+    }
+  );
 
 type UserFormData = z.infer<typeof userSchema>;
 
 interface UserFormProps {
-  /** Initial user data (for edit mode) */
   initialData?: User;
-  /** Form submission handler */
   onSubmit: (data: UserFormData) => Promise<void>;
-  /** Cancel handler */
   onCancel: () => void;
-  /** Loading state */
   loading?: boolean;
-  /** Submit button text */
   submitText?: string;
 }
 
 /**
- * User Form Component
- * Reusable form for creating and editing users
- *
- * Features:
- * - Validation with Zod
- * - Rayon field conditional on role
- * - Password optional on edit
- * - Loading states
- * - Error display
- *
- * @example
- * ```tsx
- * // Create mode
- * <UserForm
- *   onSubmit={async (data) => await createUser(data)}
- *   onCancel={() => router.back()}
- *   submitText="Buat User"
- * />
- *
- * // Edit mode
- * <UserForm
- *   initialData={user}
- *   onSubmit={async (data) => await updateUser(user.id, data)}
- *   onCancel={() => router.back()}
- *   submitText="Simpan"
- * />
- * ```
+ * User Form Component (Phase 2C - 8 roles, area_id for korlap)
  */
 export function UserForm({
   initialData,
@@ -98,10 +74,9 @@ export function UserForm({
 }: UserFormProps) {
   const isEditMode = !!initialData;
 
-  // Fetch rayons for dropdown
   const { data: rayons = [], isLoading: rayonsLoading } = useRayons();
+  const { data: areasData, isLoading: areasLoading } = useAreas({ limit: 1000 });
 
-  // Setup form with validation
   const {
     register,
     handleSubmit,
@@ -111,85 +86,68 @@ export function UserForm({
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
-      name: initialData?.name || '',
-      email: initialData?.email || '',
+      username: initialData?.username || '',
+      full_name: initialData?.full_name || '',
       password: '',
-      role: initialData?.role || 'worker',
+      role: initialData?.role || 'satgas',
       rayon_id: initialData?.rayon_id || '',
+      area_id: initialData?.area_id || '',
     },
   });
 
-  // Watch role to show/hide rayon field
   const selectedRole = watch('role');
 
-  // Clear rayon_id when role changes away from kepala_rayon
   useEffect(() => {
-    if (selectedRole !== 'kepala_rayon') {
-      setValue('rayon_id', '');
-    }
+    if (selectedRole !== 'kepala_rayon') setValue('rayon_id', '');
+    if (selectedRole !== 'korlap') setValue('area_id', '');
   }, [selectedRole, setValue]);
 
   const handleFormSubmit = async (data: UserFormData) => {
-    // Validate password on create mode
-    if (!isEditMode && !data.password) {
-      // This should be caught by Zod, but double-check
-      return;
-    }
+    if (!isEditMode && !data.password) return;
 
-    // Remove empty password on edit
     const submitData = { ...data };
-    if (isEditMode && !submitData.password) {
-      delete submitData.password;
-    }
-
-    // Remove empty rayon_id
-    if (!submitData.rayon_id) {
-      delete submitData.rayon_id;
-    }
+    if (isEditMode && !submitData.password) delete submitData.password;
+    if (!submitData.rayon_id) delete submitData.rayon_id;
+    if (!submitData.area_id) delete submitData.area_id;
 
     await onSubmit(submitData);
   };
 
-  // Role options
-  const roleOptions = [
-    { value: 'admin', label: 'Admin' },
-    { value: 'top_management', label: 'Top Management' },
-    { value: 'kepala_rayon', label: 'Kepala Rayon' },
-    { value: 'koordinator_lapangan', label: 'Koordinator Lapangan' },
-    { value: 'worker', label: 'Worker' },
-    { value: 'linmas', label: 'Linmas' },
-  ];
+  const roleOptions = ALL_ROLES.map((role) => ({
+    value: role,
+    label: ROLE_LABELS[role],
+  }));
 
-  // Rayon options
   const rayonOptions = rayons.map((rayon) => ({
     value: rayon.id,
     label: `${rayon.name} (${rayon.code})`,
   }));
 
+  const areaOptions = (areasData?.data || []).map((area) => ({
+    value: area.id,
+    label: `${area.name} (${area.code})`,
+  }));
+
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      {/* Name Field */}
+      <FormInput
+        label="Username"
+        placeholder="Masukkan username"
+        error={errors.username?.message}
+        required
+        disabled={isSubmitting || loading}
+        {...register('username')}
+      />
+
       <FormInput
         label="Nama Lengkap"
         placeholder="Masukkan nama lengkap"
-        error={errors.name?.message}
+        error={errors.full_name?.message}
         required
         disabled={isSubmitting || loading}
-        {...register('name')}
+        {...register('full_name')}
       />
 
-      {/* Email Field */}
-      <FormInput
-        label="Email"
-        type="email"
-        placeholder="Masukkan email"
-        error={errors.email?.message}
-        required
-        disabled={isSubmitting || loading}
-        {...register('email')}
-      />
-
-      {/* Password Field */}
       <FormInput
         label="Password"
         type="password"
@@ -201,7 +159,6 @@ export function UserForm({
         {...register('password')}
       />
 
-      {/* Role Field */}
       <FormSelect
         label="Role"
         options={roleOptions}
@@ -212,7 +169,6 @@ export function UserForm({
         disabled={isSubmitting || loading}
       />
 
-      {/* Rayon Field (conditional) */}
       {selectedRole === 'kepala_rayon' && (
         <FormSelect
           label="Rayon"
@@ -226,7 +182,19 @@ export function UserForm({
         />
       )}
 
-      {/* Actions */}
+      {selectedRole === 'korlap' && (
+        <FormSelect
+          label="Area"
+          options={areaOptions}
+          value={watch('area_id') || ''}
+          onChange={(value) => setValue('area_id', value as string)}
+          placeholder={areasLoading ? 'Memuat...' : 'Pilih area'}
+          error={errors.area_id?.message}
+          required
+          disabled={isSubmitting || loading || areasLoading}
+        />
+      )}
+
       <div className="flex gap-3 pt-4">
         <Button
           type="button"

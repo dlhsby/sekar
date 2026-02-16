@@ -5,13 +5,19 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserForm } from '../UserForm';
 import { useRayons } from '@/lib/api/rayons';
+import { useAreas } from '@/lib/api/areas';
 import type { User } from '@/types/models';
+import { ReactNode } from 'react';
 
-// Mock the rayons API hook
+// Mock the API hooks
 jest.mock('@/lib/api/rayons', () => ({
   useRayons: jest.fn(),
+}));
+jest.mock('@/lib/api/areas', () => ({
+  useAreas: jest.fn(),
 }));
 
 describe('UserForm', () => {
@@ -27,20 +33,39 @@ describe('UserForm', () => {
     submitText: 'Simpan',
   };
 
+  const createWrapper = () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    const Wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    Wrapper.displayName = 'TestWrapper';
+    return Wrapper;
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useRayons as jest.Mock).mockReturnValue({
       data: mockRayons,
       isLoading: false,
     });
+    (useAreas as jest.Mock).mockReturnValue({
+      data: { data: [], total: 0 },
+      isLoading: false,
+    });
   });
 
   describe('Form Rendering', () => {
     it('should render all form fields in create mode', () => {
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/nama lengkap/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /batal/i })).toBeInTheDocument();
@@ -48,7 +73,7 @@ describe('UserForm', () => {
     });
 
     it('should show password field as required in create mode', () => {
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       const passwordInput = screen.getByLabelText(/password/i);
       expect(passwordInput).toHaveAttribute('required');
@@ -57,15 +82,14 @@ describe('UserForm', () => {
     it('should show password field as optional in edit mode', () => {
       const initialData: User = {
         id: '1',
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'worker',
-        status: 'active',
+        username: 'testuser',
+        full_name: 'Test User',
+        role: 'satgas',
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} />);
+      render(<UserForm {...defaultProps} initialData={initialData} />, { wrapper: createWrapper() });
 
       const passwordInput = screen.getByLabelText(/password/i);
       expect(passwordInput).not.toHaveAttribute('required');
@@ -75,25 +99,24 @@ describe('UserForm', () => {
     it('should populate form fields with initial data', () => {
       const initialData: User = {
         id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'admin',
-        status: 'active',
+        username: 'johndoe',
+        full_name: 'John Doe',
+        role: 'admin_system',
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} />);
+      render(<UserForm {...defaultProps} initialData={initialData} />, { wrapper: createWrapper() });
 
       expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('john@example.com')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('johndoe')).toBeInTheDocument();
     });
   });
 
   describe('Validation', () => {
     it.skip('should display error for empty name', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
@@ -104,7 +127,7 @@ describe('UserForm', () => {
 
     it.skip('should display error for short name', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'A');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
@@ -116,7 +139,7 @@ describe('UserForm', () => {
 
     it.skip('should display error for invalid email format', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/email/i), 'invalid-email');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
@@ -128,7 +151,7 @@ describe('UserForm', () => {
 
     it.skip('should display error for short password', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/password/i), '12345');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
@@ -138,16 +161,17 @@ describe('UserForm', () => {
       });
     });
 
-    it('should not display email error for valid email', async () => {
+    it('should not display username error for valid username', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
-      await user.type(screen.getByLabelText(/email/i), 'valid@example.com');
+      await user.type(screen.getByLabelText(/username/i), 'validuser');
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Valid User');
+      await user.type(screen.getByLabelText(/password/i), 'password123');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
       await waitFor(() => {
-        expect(screen.queryByText(/format email tidak valid/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/username minimal/i)).not.toBeInTheDocument();
       });
     });
   });
@@ -155,7 +179,7 @@ describe('UserForm', () => {
   describe('Role Selection', () => {
     it.skip('should show rayon field when kepala_rayon is selected', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       // Initially rayon field should not be visible
       expect(screen.queryByLabelText(/^rayon$/i)).not.toBeInTheDocument();
@@ -173,7 +197,7 @@ describe('UserForm', () => {
 
     it.skip('should hide rayon field when role is not kepala_rayon', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       // Change to kepala_rayon first
       await user.click(screen.getByLabelText(/role/i));
@@ -195,7 +219,7 @@ describe('UserForm', () => {
 
     it.skip('should require rayon when kepala_rayon is selected', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User');
       await user.type(screen.getByLabelText(/email/i), 'test@example.com');
@@ -215,7 +239,7 @@ describe('UserForm', () => {
 
     it.skip('should display all role options', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />);
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
       await user.click(screen.getByLabelText(/role/i));
 
@@ -233,7 +257,7 @@ describe('UserForm', () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} />);
+      render(<UserForm {...defaultProps} onSubmit={onSubmit} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'New User');
       await user.type(screen.getByLabelText(/email/i), 'new@example.com');
@@ -248,7 +272,7 @@ describe('UserForm', () => {
           name: 'New User',
           email: 'new@example.com',
           password: 'password123',
-          role: 'worker',
+          role: 'satgas',
         });
       });
     });
@@ -259,15 +283,14 @@ describe('UserForm', () => {
 
       const initialData: User = {
         id: '1',
-        name: 'Existing User',
-        email: 'existing@example.com',
-        role: 'worker',
-        status: 'active',
+        username: 'existinguser',
+        full_name: 'Existing User',
+        role: 'satgas',
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />);
+      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, { wrapper: createWrapper() });
 
       await user.clear(screen.getByLabelText(/nama lengkap/i));
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Updated User');
@@ -277,9 +300,9 @@ describe('UserForm', () => {
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: 'Updated User',
-            email: 'existing@example.com',
-            role: 'worker',
+            full_name: 'Updated User',
+            username: 'existinguser',
+            role: 'satgas',
           })
         );
         expect(onSubmit).toHaveBeenCalledWith(
@@ -294,7 +317,7 @@ describe('UserForm', () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} />);
+      render(<UserForm {...defaultProps} onSubmit={onSubmit} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Kepala User');
       await user.type(screen.getByLabelText(/email/i), 'kepala@example.com');
@@ -327,10 +350,10 @@ describe('UserForm', () => {
 
   describe('Loading States', () => {
     it('should disable all fields when loading', () => {
-      render(<UserForm {...defaultProps} loading={true} />);
+      render(<UserForm {...defaultProps} loading={true} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/nama lengkap/i)).toBeDisabled();
-      expect(screen.getByLabelText(/email/i)).toBeDisabled();
+      expect(screen.getByLabelText(/username/i)).toBeDisabled();
       expect(screen.getByLabelText(/password/i)).toBeDisabled();
       expect(screen.getByLabelText(/role/i)).toBeDisabled();
       expect(screen.getByRole('button', { name: /simpan/i })).toBeDisabled();
@@ -338,27 +361,27 @@ describe('UserForm', () => {
     });
 
     it('should show loading indicator on submit button when loading', () => {
-      render(<UserForm {...defaultProps} loading={true} />);
+      render(<UserForm {...defaultProps} loading={true} />, { wrapper: createWrapper() });
 
       const submitButton = screen.getByRole('button', { name: /simpan/i });
       expect(submitButton).toBeDisabled();
     });
 
     it('should disable fields during form submission', async () => {
-      const onSubmit = jest.fn(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+      const onSubmit = jest.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 1000)));
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} />);
+      render(<UserForm {...defaultProps} onSubmit={onSubmit} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User');
-      await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+      await user.type(screen.getByLabelText(/username/i), 'testuser');
       await user.type(screen.getByLabelText(/password/i), 'password123');
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
       // Fields should be disabled during submission
       expect(screen.getByLabelText(/nama lengkap/i)).toBeDisabled();
-      expect(screen.getByLabelText(/email/i)).toBeDisabled();
+      expect(screen.getByLabelText(/username/i)).toBeDisabled();
     });
 
     it('should show placeholder when rayons are loading', () => {
@@ -373,11 +396,12 @@ describe('UserForm', () => {
           {...defaultProps}
           initialData={{
             id: '1',
-            name: 'Test User',
             username: 'testuser',
-            email: 'test@example.com',
+            full_name: 'Test User',
             role: 'kepala_rayon' as const,
             rayon_id: '',
+            created_at: '2026-01-01',
+            updated_at: '2026-01-01',
           }}
         />
       );
@@ -395,7 +419,7 @@ describe('UserForm', () => {
       const onCancel = jest.fn();
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onCancel={onCancel} />);
+      render(<UserForm {...defaultProps} onCancel={onCancel} />, { wrapper: createWrapper() });
 
       await user.click(screen.getByRole('button', { name: /batal/i }));
 
@@ -404,10 +428,10 @@ describe('UserForm', () => {
 
     it.skip('should not call onCancel when form is submitting', async () => {
       const onCancel = jest.fn();
-      const onSubmit = jest.fn(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+      const onSubmit = jest.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 1000)));
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} onCancel={onCancel} />);
+      render(<UserForm {...defaultProps} onSubmit={onSubmit} onCancel={onCancel} />, { wrapper: createWrapper() });
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test');
       await user.type(screen.getByLabelText(/email/i), 'test@example.com');
@@ -422,13 +446,13 @@ describe('UserForm', () => {
 
   describe('Custom Submit Button Text', () => {
     it('should display custom submit button text', () => {
-      render(<UserForm {...defaultProps} submitText="Buat User Baru" />);
+      render(<UserForm {...defaultProps} submitText="Buat User Baru" />, { wrapper: createWrapper() });
 
       expect(screen.getByRole('button', { name: /buat user baru/i })).toBeInTheDocument();
     });
 
     it('should use default text if not provided', () => {
-      render(<UserForm onSubmit={jest.fn()} onCancel={jest.fn()} />);
+      render(<UserForm onSubmit={jest.fn()} onCancel={jest.fn()} />, { wrapper: createWrapper() });
 
       expect(screen.getByRole('button', { name: /simpan/i })).toBeInTheDocument();
     });

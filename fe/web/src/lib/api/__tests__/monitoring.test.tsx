@@ -12,11 +12,11 @@ import {
   useCityStats,
   useRayonMonitoring,
   useAreaMonitoring,
-  useLiveWorkers,
+  useLiveUsers,
   type CityStats,
   type RayonMonitoringStats,
   type AreaMonitoringStats,
-  type LiveWorkersResponse,
+  type LiveUsersResponse,
 } from '../monitoring';
 import { ReactNode } from 'react';
 
@@ -44,9 +44,9 @@ describe('Monitoring API', () => {
     summary: {
       total_rayons: 7,
       total_areas: 75,
-      total_workers: 150,
+      total_users: 150,
       total_linmas: 30,
-      workers_online: 120,
+      users_online: 120,
       linmas_online: 25,
       active_shifts: 45,
       reports_today: 25,
@@ -63,9 +63,9 @@ describe('Monitoring API', () => {
     },
     summary: {
       total_areas: 10,
-      total_workers: 20,
+      total_users: 20,
       total_linmas: 5,
-      workers_online: 18,
+      users_online: 18,
       linmas_online: 4,
       active_shifts: 15,
       reports_today: 8,
@@ -97,7 +97,7 @@ describe('Monitoring API', () => {
     },
   };
 
-  const mockLiveWorkers: LiveWorkersResponse = {
+  const mockLiveWorkers: LiveUsersResponse = {
     timestamp: '2026-02-04T10:00:00Z',
     workers: [
       {
@@ -132,9 +132,9 @@ describe('Monitoring API', () => {
       expect(monitoringKeys.city()).toEqual(['monitoring', 'city']);
       expect(monitoringKeys.rayon('1')).toEqual(['monitoring', 'rayon', '1']);
       expect(monitoringKeys.area('1')).toEqual(['monitoring', 'area', '1']);
-      expect(monitoringKeys.liveWorkers({ rayon_id: '1' })).toEqual([
+      expect(monitoringKeys.liveUsers({ rayon_id: '1' })).toEqual([
         'monitoring',
-        'live-workers',
+        'live-users',
         { rayon_id: '1' },
       ]);
     });
@@ -149,7 +149,7 @@ describe('Monitoring API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.summary.total_rayons).toBe(7);
-      expect(result.current.data?.summary.workers_online).toBe(120);
+      expect(result.current.data?.summary.users_online).toBe(120);
       expect(result.current.data?.summary.reports_today).toBe(25);
     });
 
@@ -173,7 +173,7 @@ describe('Monitoring API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.rayon.name).toBe('Rayon 1');
-      expect(result.current.data?.summary.workers_online).toBe(18);
+      expect(result.current.data?.summary.users_online).toBe(18);
       expect(result.current.data?.summary.understaffed_areas).toBe(2);
     });
 
@@ -227,11 +227,11 @@ describe('Monitoring API', () => {
     });
   });
 
-  describe('useLiveWorkers', () => {
+  describe('useLiveUsers', () => {
     it('should fetch live workers without filters', async () => {
-      mockAxios.onGet('/monitoring/live-workers').reply(200, mockLiveWorkers);
+      mockAxios.onGet('/monitoring/live-users').reply(200, mockLiveWorkers);
 
-      const { result } = renderHook(() => useLiveWorkers(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLiveUsers(), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -241,9 +241,9 @@ describe('Monitoring API', () => {
     });
 
     it('should fetch live workers with rayon filter', async () => {
-      mockAxios.onGet('/monitoring/live-workers').reply(200, mockLiveWorkers);
+      mockAxios.onGet('/monitoring/live-users').reply(200, mockLiveWorkers);
 
-      const { result } = renderHook(() => useLiveWorkers({ rayon_id: '1' }), {
+      const { result } = renderHook(() => useLiveUsers({ rayon_id: '1' }), {
         wrapper: createWrapper(),
       });
 
@@ -253,9 +253,9 @@ describe('Monitoring API', () => {
     });
 
     it('should handle fetch error', async () => {
-      mockAxios.onGet('/monitoring/live-workers').reply(500);
+      mockAxios.onGet('/monitoring/live-users').reply(500);
 
-      const { result } = renderHook(() => useLiveWorkers(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLiveUsers(), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

@@ -27,13 +27,17 @@ describe('Users API', () => {
             id: '1',
             username: 'admin',
             full_name: 'Admin User',
-            role: 'admin',
+            role: 'admin_system',
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
           },
           {
             id: '2',
             username: 'worker1',
             full_name: 'Worker One',
-            role: 'worker',
+            role: 'satgas',
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
           },
         ],
         meta: {
@@ -59,7 +63,9 @@ describe('Users API', () => {
             id: '1',
             username: 'admin',
             full_name: 'Admin User',
-            role: 'admin',
+            role: 'admin_system',
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
           },
         ],
         meta: {
@@ -70,12 +76,12 @@ describe('Users API', () => {
         },
       };
 
-      mockAxios.onGet(/\/users\?.*role=admin/).reply(200, mockResponse);
+      mockAxios.onGet(/\/users\?.*role=admin_system/).reply(200, mockResponse);
 
-      const response = await apiClient.get<PaginatedResponse<User>>('/users?role=admin');
+      const response = await apiClient.get<PaginatedResponse<User>>('/users?role=admin_system');
 
       expect(response.data.data).toHaveLength(1);
-      expect(response.data.data[0].role).toBe('admin');
+      expect(response.data.data[0].role).toBe('admin_system');
     });
 
     it('should fetch users with pagination', async () => {
@@ -85,7 +91,9 @@ describe('Users API', () => {
             id: '3',
             username: 'worker2',
             full_name: 'Worker Two',
-            role: 'worker',
+            role: 'satgas',
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
           },
         ],
         meta: {
@@ -111,7 +119,9 @@ describe('Users API', () => {
             id: '1',
             username: 'admin',
             full_name: 'Admin User',
-            role: 'admin',
+            role: 'admin_system',
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
           },
         ],
         meta: {
@@ -146,8 +156,9 @@ describe('Users API', () => {
         id: '1',
         username: 'admin',
         full_name: 'Admin User',
-        role: 'admin',
+        role: 'admin_system',
         created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       };
 
       mockAxios.onGet('/users/1').reply(200, mockUser);
@@ -155,7 +166,7 @@ describe('Users API', () => {
       const response = await apiClient.get<User>('/users/1');
 
       expect(response.data.username).toBe('admin');
-      expect(response.data.role).toBe('admin');
+      expect(response.data.role).toBe('admin_system');
     });
 
     it('should handle user not found', async () => {
@@ -175,14 +186,16 @@ describe('Users API', () => {
         username: 'newuser',
         password: 'password123',
         full_name: 'New User',
-        role: 'worker',
+        role: 'satgas',
       };
 
       const mockResponse: User = {
         id: '10',
         username: 'newuser',
         full_name: 'New User',
-        role: 'worker',
+        role: 'satgas',
+        created_at: '2026-02-04T00:00:00Z',
+        updated_at: '2026-02-04T00:00:00Z',
       };
 
       mockAxios.onPost('/users', newUser).reply(201, mockResponse);
@@ -198,7 +211,7 @@ describe('Users API', () => {
         username: 'a',
         password: '123',
         full_name: '',
-        role: 'worker',
+        role: 'satgas',
       };
 
       mockAxios.onPost('/users').reply(400, {
@@ -219,7 +232,7 @@ describe('Users API', () => {
         username: 'admin',
         password: 'password123',
         full_name: 'Another Admin',
-        role: 'admin',
+        role: 'admin_system',
       };
 
       mockAxios.onPost('/users').reply(409, {
@@ -236,14 +249,16 @@ describe('Users API', () => {
     it('should update existing user', async () => {
       const updateData: UpdateUserDto = {
         full_name: 'Updated Name',
-        role: 'koordinator_lapangan',
+        role: 'korlap',
       };
 
       const mockResponse: User = {
         id: '1',
         username: 'admin',
         full_name: 'Updated Name',
-        role: 'koordinator_lapangan',
+        role: 'korlap',
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-02-04T00:00:00Z',
       };
 
       mockAxios.onPatch('/users/1', updateData).reply(200, mockResponse);
@@ -251,7 +266,7 @@ describe('Users API', () => {
       const response = await apiClient.patch<User>('/users/1', updateData);
 
       expect(response.data.full_name).toBe('Updated Name');
-      expect(response.data.role).toBe('koordinator_lapangan');
+      expect(response.data.role).toBe('korlap');
     });
 
     it('should update user password', async () => {
@@ -263,7 +278,9 @@ describe('Users API', () => {
         id: '1',
         username: 'admin',
         full_name: 'Admin User',
-        role: 'admin',
+        role: 'admin_system',
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       });
 
       const response = await apiClient.patch('/users/1', updateData);
@@ -316,7 +333,11 @@ describe('Users API', () => {
     it('should generate correct query keys', () => {
       expect(userKeys.all).toEqual(['users']);
       expect(userKeys.lists()).toEqual(['users', 'list']);
-      expect(userKeys.list({ role: 'admin' })).toEqual(['users', 'list', { role: 'admin' }]);
+      expect(userKeys.list({ role: 'admin_system' })).toEqual([
+        'users',
+        'list',
+        { role: 'admin_system' },
+      ]);
       expect(userKeys.details()).toEqual(['users', 'detail']);
       expect(userKeys.detail('1')).toEqual(['users', 'detail', '1']);
     });

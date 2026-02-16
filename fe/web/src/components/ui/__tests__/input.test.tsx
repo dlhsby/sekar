@@ -330,7 +330,7 @@ describe('Input Component', () => {
     it('should have thick borders', () => {
       render(<Input data-testid="input" aria-label="Input" />);
       const input = screen.getByTestId('input');
-      expect(input).toHaveClass('border-3', 'border-nb-black');
+      expect(input).toHaveClass('border-2', 'border-nb-black');
     });
 
     it('should have Neo Brutalism shadow', () => {

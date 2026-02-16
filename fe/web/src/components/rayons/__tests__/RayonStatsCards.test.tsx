@@ -11,8 +11,8 @@ describe('RayonStatsCards', () => {
   const mockStats: RayonStats = {
     rayon_id: 'rayon-1',
     total_areas: 15,
-    total_workers: 50,
-    active_workers: 45,
+    total_users: 50,
+    active_users: 45,
     total_coverage_area: 150000,
   };
 
@@ -27,14 +27,14 @@ describe('RayonStatsCards', () => {
     render(<RayonStatsCards stats={mockStats} />);
 
     expect(screen.getByText('50')).toBeInTheDocument();
-    expect(screen.getByText(/total pekerja/i)).toBeInTheDocument();
+    expect(screen.getByText(/total petugas/i)).toBeInTheDocument();
   });
 
   it('should render active workers stat', () => {
     render(<RayonStatsCards stats={mockStats} />);
 
     expect(screen.getByText('45')).toBeInTheDocument();
-    expect(screen.getByText(/pekerja aktif/i)).toBeInTheDocument();
+    expect(screen.getByText(/petugas aktif/i)).toBeInTheDocument();
   });
 
   it('should render coverage area stat with formatting', () => {
@@ -62,10 +62,10 @@ describe('RayonStatsCards', () => {
   it('should render all 4 stat cards in grid', () => {
     render(<RayonStatsCards stats={mockStats} />);
 
-    // Component renders 4 cards: Total Area, Total Pekerja, Pekerja Aktif, Luas Tutupan
+    // Component renders 4 cards: Total Area, Total Petugas, Petugas Aktif, Luas Tutupan
     expect(screen.getByText(/total area/i)).toBeInTheDocument();
-    expect(screen.getByText(/total pekerja/i)).toBeInTheDocument();
-    expect(screen.getByText(/pekerja aktif/i)).toBeInTheDocument();
+    expect(screen.getByText(/total petugas/i)).toBeInTheDocument();
+    expect(screen.getByText(/petugas aktif/i)).toBeInTheDocument();
     expect(screen.getByText(/luas tutupan/i)).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 /**
- * Real-Time Monitoring Dashboard
- * Live worker tracking and area monitoring
- * Access: Admin + TopManagement + KepalaRayon + KoordinatorLapangan
+ * Real-Time Monitoring Dashboard (Phase 2C - terminology updated)
+ * Live user tracking and area monitoring
+ * Access: MONITORING_ROLES
  */
 
 'use client';
@@ -11,17 +11,16 @@ import {
   useCityStats,
   useRayonMonitoring,
   useAreaMonitoring,
-  useLiveWorkers,
-  type LiveWorkersFilters,
+  useLiveUsers,
+  type LiveUsersFilters,
 } from '@/lib/api/monitoring';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
 import { Card, CardHeader, CardContent, Badge, FormSelect, Button } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-// Access control: Admin + TopManagement + KepalaRayon + KoordinatorLapangan
-const ALLOWED_ROLES = ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'];
+import { MONITORING_ROLES, hasRole, ROLE_LABELS } from '@/lib/constants/roles';
+import type { UserRole } from '@/types/models';
 
 export default function MonitoringPage() {
   const { user, loading: authLoading } = useAuth();
@@ -30,7 +29,7 @@ export default function MonitoringPage() {
   const [areaFilter, setAreaFilter] = useState('all');
 
   useEffect(() => {
-    if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
+    if (!authLoading && user && !hasRole(user.role, MONITORING_ROLES)) {
       router.push('/');
     }
   }, [user, authLoading, router]);
@@ -50,12 +49,12 @@ export default function MonitoringPage() {
     areaFilter !== 'all' ? areaFilter : ''
   );
 
-  // Fetch live workers
-  const filters: LiveWorkersFilters = {};
+  // Fetch live users
+  const filters: LiveUsersFilters = {};
   if (rayonFilter && rayonFilter !== 'all') filters.rayon_id = rayonFilter;
   if (areaFilter && areaFilter !== 'all') filters.area_id = areaFilter;
 
-  const { data: liveWorkersData, isLoading: workersLoading } = useLiveWorkers(filters);
+  const { data: liveUsersData, isLoading: usersLoading } = useLiveUsers(filters);
 
   // Loading state
   if (authLoading || !user) {
@@ -70,7 +69,7 @@ export default function MonitoringPage() {
   }
 
   // Access denied
-  if (!ALLOWED_ROLES.includes(user.role)) {
+  if (!hasRole(user.role, MONITORING_ROLES)) {
     return null;
   }
 
@@ -89,9 +88,9 @@ export default function MonitoringPage() {
         ? rayonLoading
         : cityLoading;
 
-  const workers = liveWorkersData?.workers || [];
-  const onlineWorkers = workers.filter((w) => w.status === 'online');
-  const offlineWorkers = workers.filter((w) => w.status === 'offline');
+  const users = liveUsersData?.users || [];
+  const onlineUsers = users.filter((u) => u.status === 'online');
+  const offlineUsers = users.filter((u) => u.status === 'offline');
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -100,7 +99,7 @@ export default function MonitoringPage() {
         <div>
           <h1 className="text-3xl font-bold text-nb-black">Monitoring Real-Time</h1>
           <p className="text-nb-gray-600 mt-1">
-            Pantau posisi pekerja dan status area secara langsung
+            Pantau posisi petugas dan status area secara langsung
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -120,7 +119,7 @@ export default function MonitoringPage() {
                 value={rayonFilter}
                 onChange={(value) => {
                   setRayonFilter(value as string);
-                  setAreaFilter('all'); // Reset area when rayon changes
+                  setAreaFilter('all');
                 }}
                 options={[
                   { value: 'all', label: 'Semua Rayon' },
@@ -175,25 +174,25 @@ export default function MonitoringPage() {
         </div>
       ) : displayStats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Workers Online */}
+          {/* Users Online */}
           <Card variant="elevated">
             <CardContent>
-              <div className="text-sm font-semibold text-nb-gray-600 mb-2">Pekerja Online</div>
+              <div className="text-sm font-semibold text-nb-gray-600 mb-2">Petugas Online</div>
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-black text-nb-success">
                   {areaFilter && areaFilter !== 'all'
-                    ? (areaStats?.current_shift?.active_workers ?? 0)
+                    ? (areaStats?.current_shift?.active_users ?? 0)
                     : rayonFilter && rayonFilter !== 'all'
-                      ? (rayonStats?.summary?.workers_online ?? 0)
-                      : (cityStats?.summary?.workers_online ?? 0)}
+                      ? (rayonStats?.summary?.users_online ?? 0)
+                      : (cityStats?.summary?.users_online ?? 0)}
                 </div>
                 <div className="text-nb-gray-600">
                   /{' '}
                   {areaFilter && areaFilter !== 'all'
-                    ? (areaStats?.current_shift?.assigned_workers ?? 0)
+                    ? (areaStats?.current_shift?.assigned_users ?? 0)
                     : rayonFilter && rayonFilter !== 'all'
-                      ? (rayonStats?.summary?.total_workers ?? 0)
-                      : (cityStats?.summary?.total_workers ?? 0)}
+                      ? (rayonStats?.summary?.total_users ?? 0)
+                      : (cityStats?.summary?.total_users ?? 0)}
                 </div>
               </div>
             </CardContent>
@@ -237,15 +236,15 @@ export default function MonitoringPage() {
             </Card>
           )}
 
-          {/* Reports Today */}
+          {/* Activities Today */}
           {(!areaFilter || areaFilter === 'all') && (
             <Card variant="elevated">
               <CardContent>
-                <div className="text-sm font-semibold text-nb-gray-600 mb-2">Laporan Hari Ini</div>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">Aktivitas Hari Ini</div>
                 <div className="text-3xl font-black text-nb-black">
                   {rayonFilter && rayonFilter !== 'all'
-                    ? (rayonStats?.summary?.reports_today ?? 0)
-                    : (cityStats?.summary?.reports_today ?? 0)}
+                    ? (rayonStats?.summary?.activities_today ?? 0)
+                    : (cityStats?.summary?.activities_today ?? 0)}
                 </div>
               </CardContent>
             </Card>
@@ -274,90 +273,86 @@ export default function MonitoringPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-nb-black">Peta Live</h2>
-            <Badge variant="success">{onlineWorkers.length} Online</Badge>
+            <Badge variant="success">{onlineUsers.length} Online</Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="bg-nb-gray-100 border-2 border-nb-black h-96 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-6xl mb-4">🗺️</div>
               <p className="text-nb-gray-600 font-semibold mb-2">Peta Monitoring Real-Time</p>
               <p className="text-sm text-nb-gray-500">Integrasi Mapbox akan ditambahkan di sini</p>
               <p className="text-xs text-nb-gray-400 mt-2">
-                {workers.length} pekerja terdeteksi ({onlineWorkers.length} online,{' '}
-                {offlineWorkers.length} offline)
+                {users.length} petugas terdeteksi ({onlineUsers.length} online,{' '}
+                {offlineUsers.length} offline)
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Workers List */}
+      {/* Users List */}
       <Card variant="elevated">
         <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Daftar Pekerja Aktif</h2>
+          <h2 className="text-xl font-bold text-nb-black">Daftar Petugas Aktif</h2>
         </CardHeader>
         <CardContent>
-          {workersLoading ? (
-            <div className="text-center py-8 text-nb-gray-600">Memuat data pekerja...</div>
-          ) : workers.length === 0 ? (
+          {usersLoading ? (
+            <div className="text-center py-8 text-nb-gray-600">Memuat data petugas...</div>
+          ) : users.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-5xl mb-4">👷</div>
-              <p className="text-nb-gray-600 font-semibold">Tidak ada pekerja aktif</p>
+              <p className="text-nb-gray-600 font-semibold">Tidak ada petugas aktif</p>
               <p className="text-sm text-nb-gray-500 mt-2">
-                Tidak ada pekerja yang sedang clock-in saat ini
+                Tidak ada petugas yang sedang clock-in saat ini
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {workers.map((worker, index) => {
-                return (
-                  <div
-                    key={worker.user_id || `worker-${index}`}
-                    className="flex items-center justify-between p-4 border-2 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
-                  >
-                    {/* Worker Info */}
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`h-3 w-3 rounded-full ${
-                          worker.status === 'online' ? 'bg-nb-success' : 'bg-nb-gray-400'
-                        }`}
-                      />
-                      <div>
-                        <div className="font-bold text-nb-black">{worker.full_name}</div>
-                        <div className="text-sm text-nb-gray-600">{worker.area_name}</div>
-                      </div>
-                    </div>
-
-                    {/* Status Badges */}
-                    <div className="flex items-center gap-2">
-                      <Badge variant={worker.role === 'worker' ? 'default' : 'warning'} size="sm">
-                        {worker.role}
-                      </Badge>
-                      <Badge
-                        variant={worker.status === 'online' ? 'success' : 'secondary'}
-                        size="sm"
-                      >
-                        {worker.status === 'online' ? 'Online' : 'Offline'}
-                      </Badge>
-                      {worker.battery_level < 20 && (
-                        <Badge variant="destructive" size="sm">
-                          🔋 {worker.battery_level}%
-                        </Badge>
-                      )}
+              {users.map((liveUser, index) => (
+                <div
+                  key={liveUser.user_id || `user-${index}`}
+                  className="flex items-center justify-between p-4 border-2 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
+                >
+                  {/* User Info */}
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`h-3 w-3 rounded-full ${
+                        liveUser.status === 'online' ? 'bg-nb-success' : 'bg-nb-gray-400'
+                      }`}
+                    />
+                    <div>
+                      <div className="font-bold text-nb-black">{liveUser.full_name}</div>
+                      <div className="text-sm text-nb-gray-600">{liveUser.area_name}</div>
                     </div>
                   </div>
-                );
-              })}
+
+                  {/* Status Badges */}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default" size="sm">
+                      {ROLE_LABELS[liveUser.role as UserRole] || liveUser.role}
+                    </Badge>
+                    <Badge
+                      variant={liveUser.status === 'online' ? 'success' : 'secondary'}
+                      size="sm"
+                    >
+                      {liveUser.status === 'online' ? 'Online' : 'Offline'}
+                    </Badge>
+                    {liveUser.battery_level < 20 && (
+                      <Badge variant="destructive" size="sm">
+                        {liveUser.battery_level}%
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Last Updated */}
-      {liveWorkersData && (
+      {liveUsersData && (
         <div className="text-center text-sm text-nb-gray-500">
-          Terakhir diperbarui: {new Date(liveWorkersData.timestamp).toLocaleString('id-ID')}
+          Terakhir diperbarui: {new Date(liveUsersData.timestamp).toLocaleString('id-ID')}
         </div>
       )}
     </div>

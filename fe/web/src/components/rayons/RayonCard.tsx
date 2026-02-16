@@ -62,8 +62,8 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-success/10 rounded-nb-base">
-                <div className="text-2xl font-bold text-nb-success">{stats.total_workers}</div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">Total Pekerja</div>
+                <div className="text-2xl font-bold text-nb-success">{stats.total_users}</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">Total Petugas</div>
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-gray-100 rounded-nb-base col-span-2">

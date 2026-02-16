@@ -34,9 +34,9 @@ describe('Users API', () => {
     id: '1',
     username: 'admin',
     full_name: 'Admin User',
-    role: 'admin',
-    status: 'active',
+    role: 'admin_system',
     created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
   };
 
   beforeEach(() => {
@@ -52,7 +52,11 @@ describe('Users API', () => {
     it('should generate correct query keys', () => {
       expect(userKeys.all).toEqual(['users']);
       expect(userKeys.lists()).toEqual(['users', 'list']);
-      expect(userKeys.list({ role: 'admin' })).toEqual(['users', 'list', { role: 'admin' }]);
+      expect(userKeys.list({ role: 'admin_system' })).toEqual([
+        'users',
+        'list',
+        { role: 'admin_system' },
+      ]);
       expect(userKeys.details()).toEqual(['users', 'detail']);
       expect(userKeys.detail('1')).toEqual(['users', 'detail', '1']);
     });
@@ -94,15 +98,15 @@ describe('Users API', () => {
     });
 
     it('should fetch users with role filter', async () => {
-      mockAxios.onGet('/users?role=admin').reply(200, mockResponse);
+      mockAxios.onGet('/users?role=admin_system').reply(200, mockResponse);
 
-      const { result } = renderHook(() => useUsers({ role: 'admin' }), {
+      const { result } = renderHook(() => useUsers({ role: 'admin_system' }), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(result.current.data?.data[0].role).toBe('admin');
+      expect(result.current.data?.data[0].role).toBe('admin_system');
     });
 
     it('should fetch users with pagination', async () => {
@@ -144,8 +148,7 @@ describe('Users API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.username).toBe('admin');
-      expect(result.current.data?.role).toBe('admin');
-      expect(result.current.data?.status).toBe('active');
+      expect(result.current.data?.role).toBe('admin_system');
     });
 
     it('should handle user not found', async () => {
@@ -176,14 +179,14 @@ describe('Users API', () => {
         username: 'newuser',
         full_name: 'New User',
         password: 'password123',
-        role: 'worker',
+        role: 'satgas',
       };
 
       const createdUser: User = {
         ...newUser,
         id: '10',
-        status: 'active',
         created_at: '2026-02-04T00:00:00Z',
+        updated_at: '2026-02-04T00:00:00Z',
       };
 
       mockAxios.onPost('/users', newUser).reply(201, createdUser);
@@ -222,12 +225,12 @@ describe('Users API', () => {
         username: 'newuser',
         full_name: 'New User',
         password: 'password123',
-        role: 'worker',
+        role: 'satgas',
       };
 
       mockAxios
         .onPost('/users')
-        .reply(201, { ...newUser, id: '10', status: 'active', created_at: '2026-02-04' });
+        .reply(201, { ...newUser, id: '10', created_at: '2026-02-04', updated_at: '2026-02-04' });
 
       const { result } = renderHook(() => useCreateUser(), { wrapper: createWrapper() });
 

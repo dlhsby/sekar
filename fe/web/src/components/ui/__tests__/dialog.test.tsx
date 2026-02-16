@@ -142,7 +142,7 @@ describe('Dialog Component', () => {
       );
 
       const header = screen.getByTestId('dialog-header');
-      expect(header).toHaveClass('p-4', 'border-b-3', 'border-nb-black');
+      expect(header).toHaveClass('p-4', 'border-b-2', 'border-nb-black');
     });
 
     it('should render children correctly', () => {
@@ -177,7 +177,7 @@ describe('Dialog Component', () => {
       );
 
       const footer = screen.getByTestId('dialog-footer');
-      expect(footer).toHaveClass('p-4', 'border-t-3', 'border-nb-black');
+      expect(footer).toHaveClass('p-4', 'border-t-2', 'border-nb-black');
     });
 
     it('should render action buttons', () => {
@@ -253,7 +253,7 @@ describe('Dialog Component', () => {
       );
 
       const content = screen.getByRole('dialog');
-      expect(content).toHaveClass('border-3', 'border-nb-black', 'bg-nb-white', 'shadow-nb-lg');
+      expect(content).toHaveClass('border-2', 'border-nb-black', 'bg-nb-white', 'shadow-nb-lg');
     });
 
     it('should accept custom className', () => {

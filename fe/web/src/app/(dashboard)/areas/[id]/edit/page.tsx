@@ -23,7 +23,7 @@ export default function EditAreaPage({ params }: { params: Promise<{ id: string 
   const [error, setError] = useState<string | null>(null);
 
   // Redirect if not admin
-  if (user && user.role !== 'admin' && user.role !== 'top_management') {
+  if (user && user.role !== 'admin_system' && user.role !== 'superadmin' && user.role !== 'top_management') {
     router.push(`/areas/${id}`);
     return null;
   }

@@ -1,11 +1,11 @@
 /**
  * Unit Tests: Schedules API
- * Tests worker schedule CRUD operations
+ * Tests schedule CRUD operations (Phase 2C: renamed from worker-schedules)
  */
 
 import MockAdapter from 'axios-mock-adapter';
 import { apiClient } from '../client';
-import type { WorkerSchedule, PaginatedResponse } from '@/types/models';
+import type { Schedule, PaginatedResponse } from '@/types/models';
 
 describe('Schedules API', () => {
   let mockAxios: MockAdapter;
@@ -18,19 +18,19 @@ describe('Schedules API', () => {
     mockAxios.restore();
   });
 
-  const mockSchedule: WorkerSchedule = {
+  const mockSchedule: Schedule = {
     id: '1',
-    worker_id: 'worker-1',
+    user_id: 'user-1',
     shift_definition_id: 'shift-1',
     area_id: 'area-1',
-    date: '2026-02-04',
-    status: 'scheduled',
+    effective_date: '2026-02-04',
     created_at: '2026-02-03T00:00:00Z',
+    updated_at: '2026-02-03T00:00:00Z',
   };
 
-  describe('GET /worker-schedules', () => {
+  describe('GET /schedules', () => {
     it('should fetch schedules list', async () => {
-      const mockResponse: PaginatedResponse<WorkerSchedule> = {
+      const mockResponse: PaginatedResponse<Schedule> = {
         data: [mockSchedule],
         meta: {
           total: 1,
@@ -40,169 +40,167 @@ describe('Schedules API', () => {
         },
       };
 
-      mockAxios.onGet(/\/worker-schedules/).reply(200, mockResponse);
+      mockAxios.onGet(/\/schedules/).reply(200, mockResponse);
 
-      const response = await apiClient.get<PaginatedResponse<WorkerSchedule>>('/worker-schedules');
+      const response = await apiClient.get<PaginatedResponse<Schedule>>('/schedules');
 
       expect(response.data.data).toHaveLength(1);
-      expect(response.data.data[0].status).toBe('scheduled');
+      expect(response.data.data[0].effective_date).toBe('2026-02-04');
     });
 
     it('should fetch schedules with date filter', async () => {
-      mockAxios.onGet(/\/worker-schedules\?date=2026-02-04/).reply(200, {
+      mockAxios.onGet(/\/schedules\?date=2026-02-04/).reply(200, {
         data: [mockSchedule],
         meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
       });
 
-      const response = await apiClient.get('/worker-schedules?date=2026-02-04');
+      const response = await apiClient.get('/schedules?date=2026-02-04');
 
       expect(response.data.data).toHaveLength(1);
     });
 
-    it('should fetch schedules with worker filter', async () => {
-      mockAxios.onGet(/\/worker-schedules\?worker_id=worker-1/).reply(200, {
+    it('should fetch schedules with user filter', async () => {
+      mockAxios.onGet(/\/schedules\?user_id=user-1/).reply(200, {
         data: [mockSchedule],
         meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
       });
 
-      const response = await apiClient.get('/worker-schedules?worker_id=worker-1');
+      const response = await apiClient.get('/schedules?user_id=user-1');
 
-      expect(response.data.data[0].worker_id).toBe('worker-1');
+      expect(response.data.data[0].user_id).toBe('user-1');
     });
 
     it('should fetch schedules with status filter', async () => {
-      mockAxios.onGet(/\/worker-schedules\?status=completed/).reply(200, {
+      mockAxios.onGet(/\/schedules\?status=completed/).reply(200, {
         data: [],
         meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
       });
 
-      const response = await apiClient.get('/worker-schedules?status=completed');
+      const response = await apiClient.get('/schedules?status=completed');
 
       expect(response.data.data).toHaveLength(0);
     });
   });
 
-  describe('GET /worker-schedules/:id', () => {
+  describe('GET /schedules/:id', () => {
     it('should fetch single schedule by ID', async () => {
-      mockAxios.onGet('/worker-schedules/1').reply(200, mockSchedule);
+      mockAxios.onGet('/schedules/1').reply(200, mockSchedule);
 
-      const response = await apiClient.get<WorkerSchedule>('/worker-schedules/1');
+      const response = await apiClient.get<Schedule>('/schedules/1');
 
-      expect(response.data.worker_id).toBe('worker-1');
-      expect(response.data.date).toBe('2026-02-04');
+      expect(response.data.user_id).toBe('user-1');
+      expect(response.data.effective_date).toBe('2026-02-04');
     });
 
     it('should handle schedule not found', async () => {
-      mockAxios.onGet('/worker-schedules/999').reply(404, {
+      mockAxios.onGet('/schedules/999').reply(404, {
         statusCode: 404,
         message: 'Schedule not found',
         error: 'NotFound',
       });
 
-      await expect(apiClient.get('/worker-schedules/999')).rejects.toThrow();
+      await expect(apiClient.get('/schedules/999')).rejects.toThrow();
     });
   });
 
-  describe('POST /worker-schedules', () => {
+  describe('POST /schedules', () => {
     it('should create new schedule', async () => {
       const newSchedule = {
-        worker_id: 'worker-2',
+        user_id: 'user-2',
         shift_definition_id: 'shift-1',
         area_id: 'area-2',
-        date: '2026-02-05',
+        effective_date: '2026-02-05',
       };
 
-      mockAxios.onPost('/worker-schedules', newSchedule).reply(201, {
+      mockAxios.onPost('/schedules', newSchedule).reply(201, {
         ...newSchedule,
         id: '10',
-        status: 'scheduled',
         created_at: '2026-02-04T00:00:00Z',
+        updated_at: '2026-02-04T00:00:00Z',
       });
 
-      const response = await apiClient.post('/worker-schedules', newSchedule);
+      const response = await apiClient.post('/schedules', newSchedule);
 
       expect(response.status).toBe(201);
-      expect(response.data.worker_id).toBe('worker-2');
+      expect(response.data.user_id).toBe('user-2');
     });
 
     it('should handle validation errors', async () => {
-      mockAxios.onPost('/worker-schedules').reply(400, {
+      mockAxios.onPost('/schedules').reply(400, {
         statusCode: 400,
         message: 'Validation failed',
         errors: {
-          worker_id: 'Worker ID is required',
-          date: 'Date must be in the future',
+          user_id: 'User ID is required',
+          effective_date: 'Date must be in the future',
         },
       });
 
-      await expect(apiClient.post('/worker-schedules', {})).rejects.toThrow();
+      await expect(apiClient.post('/schedules', {})).rejects.toThrow();
     });
 
     it('should handle duplicate schedule error', async () => {
-      mockAxios.onPost('/worker-schedules').reply(409, {
+      mockAxios.onPost('/schedules').reply(409, {
         statusCode: 409,
-        message: 'Worker already has a schedule for this date',
+        message: 'User already has a schedule for this date',
         error: 'Conflict',
       });
 
-      await expect(apiClient.post('/worker-schedules', {})).rejects.toThrow();
+      await expect(apiClient.post('/schedules', {})).rejects.toThrow();
     });
   });
 
-  describe('PATCH /worker-schedules/:id', () => {
+  describe('PATCH /schedules/:id', () => {
     it('should update schedule', async () => {
       const updateData = {
         area_id: 'area-3',
-        status: 'completed',
       };
 
-      mockAxios.onPatch('/worker-schedules/1', updateData).reply(200, {
+      mockAxios.onPatch('/schedules/1', updateData).reply(200, {
         ...mockSchedule,
         ...updateData,
       });
 
-      const response = await apiClient.patch('/worker-schedules/1', updateData);
+      const response = await apiClient.patch('/schedules/1', updateData);
 
       expect(response.data.area_id).toBe('area-3');
-      expect(response.data.status).toBe('completed');
     });
   });
 
-  describe('DELETE /worker-schedules/:id', () => {
+  describe('DELETE /schedules/:id', () => {
     it('should delete schedule', async () => {
-      mockAxios.onDelete('/worker-schedules/1').reply(204);
+      mockAxios.onDelete('/schedules/1').reply(204);
 
-      const response = await apiClient.delete('/worker-schedules/1');
+      const response = await apiClient.delete('/schedules/1');
 
       expect(response.status).toBe(204);
     });
 
     it('should handle delete error for completed schedule', async () => {
-      mockAxios.onDelete('/worker-schedules/1').reply(400, {
+      mockAxios.onDelete('/schedules/1').reply(400, {
         statusCode: 400,
         message: 'Cannot delete completed schedule',
         error: 'BadRequest',
       });
 
-      await expect(apiClient.delete('/worker-schedules/1')).rejects.toThrow();
+      await expect(apiClient.delete('/schedules/1')).rejects.toThrow();
     });
   });
 
-  describe('POST /worker-schedules/bulk', () => {
+  describe('POST /schedules/bulk', () => {
     it('should create multiple schedules', async () => {
       const bulkData = {
-        worker_ids: ['worker-1', 'worker-2'],
+        user_ids: ['user-1', 'user-2'],
         shift_definition_id: 'shift-1',
         area_id: 'area-1',
         dates: ['2026-02-04', '2026-02-05'],
       };
 
-      mockAxios.onPost('/worker-schedules/bulk', bulkData).reply(201, {
+      mockAxios.onPost('/schedules/bulk', bulkData).reply(201, {
         created: 4,
         schedules: [],
       });
 
-      const response = await apiClient.post('/worker-schedules/bulk', bulkData);
+      const response = await apiClient.post('/schedules/bulk', bulkData);
 
       expect(response.data.created).toBe(4);
     });

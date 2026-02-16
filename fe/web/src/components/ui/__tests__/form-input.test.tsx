@@ -72,7 +72,7 @@ describe('FormInput Component', () => {
   describe('Error Handling', () => {
     it('should display error message', () => {
       render(<FormInput label="Field" error="Error message" />);
-      expect(screen.getByText('Error message')).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent('Error message');
     });
 
     it('should show error state styling', () => {
@@ -294,7 +294,7 @@ describe('FormInput Component', () => {
       );
 
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-      expect(screen.getByText('Password minimal 6 karakter')).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent('Password minimal 6 karakter');
       const input = screen.getByPlaceholderText('Masukkan password');
       expect(input).toHaveAttribute('aria-invalid', 'true');
     });

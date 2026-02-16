@@ -263,7 +263,7 @@ describe('Button Component', () => {
     it('should have border and shadow for default variant', () => {
       render(<Button>Neo Brutalism</Button>);
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('border-3', 'border-nb-black', 'shadow-nb-md');
+      expect(button).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-md');
     });
 
     it('should not have shadow for ghost variant', () => {

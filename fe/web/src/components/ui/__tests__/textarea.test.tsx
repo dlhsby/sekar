@@ -186,7 +186,7 @@ describe('Textarea Component', () => {
     it('should have border and shadow styles', () => {
       render(<Textarea data-testid="styled-textarea" />);
       const textarea = screen.getByTestId('styled-textarea');
-      expect(textarea).toHaveClass('border-3', 'border-nb-black', 'shadow-nb-sm');
+      expect(textarea).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-sm');
     });
 
     it('should have proper minimum height', () => {

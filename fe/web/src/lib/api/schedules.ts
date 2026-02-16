@@ -1,12 +1,11 @@
 /**
- * Schedules API Client
- * TanStack Query hooks for worker schedule data fetching and mutations
+ * Schedules API Client (Phase 2C - renamed from WorkerSchedule)
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import {
-  WorkerSchedule,
+import type {
+  Schedule,
   ScheduleFilters,
   CreateScheduleDto,
   UpdateScheduleDto,
@@ -28,18 +27,17 @@ export const scheduleKeys = {
 
 /**
  * Fetch schedules with filters
- * Supports pagination, search, and filtering by area/shift/date range
  */
 export function useSchedules(filters?: ScheduleFilters) {
   return useQuery({
     queryKey: scheduleKeys.list(filters),
     queryFn: async () => {
-      const response = await apiClient.get<PaginatedResponse<WorkerSchedule>>('/schedules', {
+      const response = await apiClient.get<PaginatedResponse<Schedule>>('/schedules', {
         params: filters,
       });
       return response.data;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes - schedules change frequently
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -50,7 +48,7 @@ export function useSchedule(id: string) {
   return useQuery({
     queryKey: scheduleKeys.detail(id),
     queryFn: async () => {
-      const response = await apiClient.get<WorkerSchedule>(`/schedules/${id}`);
+      const response = await apiClient.get<Schedule>(`/schedules/${id}`);
       return response.data;
     },
     enabled: !!id,
@@ -65,7 +63,7 @@ export function useAreaSchedules(areaId: string, filters?: ScheduleFilters) {
   return useQuery({
     queryKey: scheduleKeys.areaSchedules(areaId, filters),
     queryFn: async () => {
-      const response = await apiClient.get<PaginatedResponse<WorkerSchedule>>(
+      const response = await apiClient.get<PaginatedResponse<Schedule>>(
         `/schedules/area/${areaId}`,
         { params: filters }
       );
@@ -77,36 +75,34 @@ export function useAreaSchedules(areaId: string, filters?: ScheduleFilters) {
 }
 
 /**
- * Create new schedule mutation
+ * Create new schedule
  */
 export function useCreateSchedule() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateScheduleDto) => {
-      const response = await apiClient.post<WorkerSchedule>('/schedules', data);
+      const response = await apiClient.post<Schedule>('/schedules', data);
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate all schedule queries
       queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
     },
   });
 }
 
 /**
- * Update schedule mutation
+ * Update schedule
  */
 export function useUpdateSchedule(id: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: UpdateScheduleDto) => {
-      const response = await apiClient.patch<WorkerSchedule>(`/schedules/${id}`, data);
+      const response = await apiClient.patch<Schedule>(`/schedules/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate schedule lists and the specific schedule
       queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
       queryClient.invalidateQueries({ queryKey: scheduleKeys.detail(id) });
     },
@@ -114,7 +110,7 @@ export function useUpdateSchedule(id: string) {
 }
 
 /**
- * Delete schedule mutation
+ * Delete schedule
  */
 export function useDeleteSchedule() {
   const queryClient = useQueryClient();
@@ -124,7 +120,6 @@ export function useDeleteSchedule() {
       await apiClient.delete(`/schedules/${id}`);
     },
     onSuccess: () => {
-      // Invalidate all schedule queries
       queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
     },
   });

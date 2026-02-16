@@ -11,6 +11,15 @@ import { areaKeys, useAreas, useArea, useCreateArea, useUpdateArea, useDeleteAre
 import type { Area, PaginatedResponse, CreateAreaDto, UpdateAreaDto } from '@/types/models';
 import { ReactNode } from 'react';
 
+const mockAreaType = {
+  id: 'type-1',
+  name: 'Taman',
+  code: 'TAMAN',
+  category: 'ACTIVE' as const,
+  created_at: '2026-01-01',
+  updated_at: '2026-01-01',
+};
+
 describe('Areas API', () => {
   let mockAxios: MockAdapter;
   let queryClient: QueryClient;
@@ -59,10 +68,11 @@ describe('Areas API', () => {
         {
           id: '1',
           name: 'Taman Bungkul',
+          code: 'TB',
           area_type_id: 'type-1',
-          area_type: { id: 'type-1', name: 'Taman', created_at: '2026-01-01' },
+          area_type: mockAreaType,
           rayon_id: 'rayon-1',
-          boundary: {
+          boundary_polygon: {
             type: 'Polygon',
             coordinates: [
               [
@@ -74,10 +84,11 @@ describe('Areas API', () => {
               ],
             ],
           },
-          centroid_lat: -7.2885,
-          centroid_lng: 112.7395,
-          area_m2: 10000,
+          center_latitude: -7.2885,
+          center_longitude: 112.7395,
+          coverage_area: 10000,
           created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
         },
       ],
       meta: {
@@ -170,10 +181,11 @@ describe('Areas API', () => {
     const mockArea: Area = {
       id: '1',
       name: 'Taman Bungkul',
+      code: 'TB',
       area_type_id: 'type-1',
-      area_type: { id: 'type-1', name: 'Taman', created_at: '2026-01-01' },
+      area_type: mockAreaType,
       rayon_id: 'rayon-1',
-      boundary: {
+      boundary_polygon: {
         type: 'Polygon',
         coordinates: [
           [
@@ -185,10 +197,11 @@ describe('Areas API', () => {
           ],
         ],
       },
-      centroid_lat: -7.2885,
-      centroid_lng: 112.7395,
-      area_m2: 10000,
+      center_latitude: -7.2885,
+      center_longitude: 112.7395,
+      coverage_area: 10000,
       created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
     };
 
     it('should fetch single area by ID', async () => {
@@ -199,8 +212,8 @@ describe('Areas API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.name).toBe('Taman Bungkul');
-      expect(result.current.data?.boundary.type).toBe('Polygon');
-      expect(result.current.data?.area_m2).toBe(10000);
+      expect(result.current.data?.boundary_polygon?.type).toBe('Polygon');
+      expect(result.current.data?.coverage_area).toBe(10000);
     });
 
     it('should handle area not found', async () => {
@@ -229,9 +242,12 @@ describe('Areas API', () => {
     it('should create new area', async () => {
       const newArea: CreateAreaDto = {
         name: 'New Park',
+        code: 'NP',
         area_type_id: 'type-1',
         rayon_id: 'rayon-1',
-        boundary: {
+        center_latitude: -7.2885,
+        center_longitude: 112.7395,
+        boundary_polygon: {
           type: 'Polygon',
           coordinates: [
             [
@@ -248,11 +264,12 @@ describe('Areas API', () => {
       const createdArea: Area = {
         ...newArea,
         id: '10',
-        area_type: { id: 'type-1', name: 'Taman', created_at: '2026-01-01' },
-        centroid_lat: -7.2885,
-        centroid_lng: 112.7395,
-        area_m2: 10000,
+        area_type: mockAreaType,
+        center_latitude: -7.2885,
+        center_longitude: 112.7395,
+        coverage_area: 10000,
         created_at: '2026-02-04T00:00:00Z',
+        updated_at: '2026-02-04T00:00:00Z',
       };
 
       mockAxios.onPost('/areas', newArea).reply(201, createdArea);
@@ -273,7 +290,7 @@ describe('Areas API', () => {
         message: 'Validation failed',
         errors: {
           name: 'Name is required',
-          boundary: 'Boundary must have at least 4 points',
+          boundary_polygon: 'Boundary must have at least 4 points',
         },
       });
 
@@ -289,9 +306,12 @@ describe('Areas API', () => {
     it('should invalidate queries on success', async () => {
       const newArea: CreateAreaDto = {
         name: 'New Park',
+        code: 'NP',
         area_type_id: 'type-1',
         rayon_id: 'rayon-1',
-        boundary: {
+        center_latitude: -7.2885,
+        center_longitude: 112.7395,
+        boundary_polygon: {
           type: 'Polygon',
           coordinates: [
             [
@@ -304,7 +324,7 @@ describe('Areas API', () => {
         },
       };
 
-      mockAxios.onPost('/areas').reply(201, { ...newArea, id: '10', created_at: '2026-02-04' });
+      mockAxios.onPost('/areas').reply(201, { ...newArea, id: '10', created_at: '2026-02-04', updated_at: '2026-02-04' });
 
       const { result } = renderHook(() => useCreateArea(), { wrapper: createWrapper() });
 
@@ -327,10 +347,11 @@ describe('Areas API', () => {
       const updatedArea: Area = {
         id: '1',
         name: 'Updated Park Name',
+        code: 'TB',
         area_type_id: 'type-1',
-        area_type: { id: 'type-1', name: 'Taman', created_at: '2026-01-01' },
+        area_type: mockAreaType,
         rayon_id: 'rayon-1',
-        boundary: {
+        boundary_polygon: {
           type: 'Polygon',
           coordinates: [
             [
@@ -340,10 +361,11 @@ describe('Areas API', () => {
             ],
           ],
         },
-        centroid_lat: -7.2885,
-        centroid_lng: 112.7395,
-        area_m2: 10000,
+        center_latitude: -7.2885,
+        center_longitude: 112.7395,
+        coverage_area: 10000,
         created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       };
 
       mockAxios.onPatch('/areas/1', updateData).reply(200, updatedArea);

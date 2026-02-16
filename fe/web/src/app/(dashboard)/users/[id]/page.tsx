@@ -111,7 +111,7 @@ export default function EditUserPage({ params }: EditUserPageProps) {
         </Button>
         <h1 className="text-3xl font-black">Edit User</h1>
         <p className="text-sm text-nb-gray-600 mt-1">
-          Edit data user <span className="font-semibold">{user.name}</span>
+          Edit data user <span className="font-semibold">{user.full_name}</span>
         </p>
       </div>
 

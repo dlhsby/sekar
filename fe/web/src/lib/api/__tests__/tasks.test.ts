@@ -5,7 +5,8 @@
 
 import MockAdapter from 'axios-mock-adapter';
 import { apiClient } from '../client';
-import type { Task, TaskStatus, PaginatedResponse } from '@/types/models';
+import type { PaginatedResponse } from '@/types/models';
+import type { Task, TaskStatus } from '../tasks';
 
 describe('Tasks API', () => {
   let mockAxios: MockAdapter;

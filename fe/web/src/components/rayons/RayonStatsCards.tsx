@@ -45,14 +45,14 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
       icon: <Map className="w-6 h-6" />,
     },
     {
-      label: 'Total Pekerja',
-      value: stats.total_workers,
+      label: 'Total Petugas',
+      value: stats.total_users,
       color: 'green',
       icon: <Users className="w-6 h-6" />,
     },
     {
-      label: 'Pekerja Aktif',
-      value: stats.active_workers,
+      label: 'Petugas Aktif',
+      value: stats.active_users,
       color: 'purple',
       icon: <UserCheck className="w-6 h-6" />,
     },

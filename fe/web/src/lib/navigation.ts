@@ -9,48 +9,25 @@ import {
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
   FolderIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
+import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
 
 /**
  * Navigation Item Interface
- *
- * Defines the structure for sidebar navigation items
  */
 export interface NavItem {
-  /** Unique identifier */
   id: string;
-  /** Display label */
   label: string;
-  /** Route path */
   href: string;
-  /** Icon component from Heroicons */
   icon: ComponentType<{ className?: string }>;
-  /** Roles that can access this route */
   roles: string[];
-  /** Nested navigation items */
   children?: NavItem[];
 }
 
 /**
- * Navigation Items Configuration
- *
- * Role-based navigation structure for the dashboard sidebar.
- * Items are filtered based on the current user's role.
- *
- * Roles:
- * - admin: Full access to all features
- * - top_management: Monitoring, reports, analytics
- * - kepala_rayon: Rayon-level monitoring, reports, tasks
- * - koordinator_lapangan: Area-level monitoring, schedules, tasks
- *
- * @example
- * ```tsx
- * const userRole = 'admin';
- * const filteredNav = navigationItems.filter(item =>
- *   item.roles.includes('*') || item.roles.includes(userRole)
- * );
- * ```
+ * Navigation Items Configuration (Phase 2C)
  */
 export const navigationItems: NavItem[] = [
   {
@@ -58,63 +35,70 @@ export const navigationItems: NavItem[] = [
     label: 'Dashboard',
     href: '/',
     icon: HomeIcon,
-    roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
+    roles: [...MONITORING_ROLES],
   },
   {
     id: 'monitoring',
     label: 'Monitoring',
     href: '/monitoring',
     icon: MapIcon,
-    roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
+    roles: [...MONITORING_ROLES],
   },
   {
     id: 'tasks',
-    label: 'Tasks',
+    label: 'Tugas',
     href: '/tasks',
     icon: ClipboardDocumentListIcon,
-    roles: ['admin', 'kepala_rayon', 'koordinator_lapangan'],
+    roles: [...TASK_MANAGER_ROLES],
   },
   {
-    id: 'reports',
-    label: 'Reports',
-    href: '/reports',
+    id: 'activities',
+    label: 'Aktivitas',
+    href: '/activities',
     icon: DocumentTextIcon,
-    roles: ['admin', 'top_management', 'kepala_rayon', 'koordinator_lapangan'],
+    roles: [...MONITORING_ROLES],
+  },
+  {
+    id: 'overtime',
+    label: 'Lembur',
+    href: '/overtime',
+    icon: ClockIcon,
+    roles: [...MONITORING_ROLES],
   },
   {
     id: 'data',
     label: 'Data',
-    href: '#', // No direct href, this is a submenu parent
+    href: '#',
     icon: FolderIcon,
-    roles: ['admin', 'top_management', 'koordinator_lapangan'],
+    roles: [...ADMIN_ROLES, 'top_management', 'korlap', 'admin_data'],
     children: [
       {
         id: 'users',
         label: 'Users',
         href: '/users',
         icon: UsersIcon,
-        roles: ['admin'], // Admin only
+        roles: [...ADMIN_ROLES, 'admin_data'],
       },
       {
         id: 'areas',
         label: 'Areas',
         href: '/areas',
         icon: MapPinIcon,
-        roles: ['admin', 'top_management'],
+        roles: [...ADMIN_ROLES, 'top_management'],
       },
       {
         id: 'rayons',
         label: 'Rayons',
         href: '/rayons',
         icon: BuildingOfficeIcon,
-        roles: ['admin', 'top_management'],
+        roles: [...ADMIN_ROLES, 'top_management'],
       },
       {
         id: 'schedules',
-        label: 'Schedules',
+        label: 'Jadwal',
         href: '/schedules',
         icon: CalendarIcon,
-        roles: ['admin', 'koordinator_lapangan'],
+        roles: [...ADMIN_ROLES, 'korlap', 'admin_data'],
       },
     ],
   },
@@ -123,18 +107,12 @@ export const navigationItems: NavItem[] = [
     label: 'Settings',
     href: '/settings',
     icon: Cog6ToothIcon,
-    roles: ['admin'],
+    roles: [...ADMIN_ROLES],
   },
 ];
 
 /**
  * Filter Navigation Items by Role
- *
- * Utility function to filter navigation items based on user role.
- *
- * @param items - Navigation items to filter
- * @param userRole - Current user's role
- * @returns Filtered navigation items
  */
 export const filterNavigationByRole = (items: NavItem[], userRole: string): NavItem[] => {
   return items
@@ -144,7 +122,6 @@ export const filterNavigationByRole = (items: NavItem[], userRole: string): NavI
       return item.roles.includes(userRole);
     })
     .map((item) => {
-      // If item has children, filter them recursively
       if (item.children) {
         return {
           ...item,
@@ -154,7 +131,6 @@ export const filterNavigationByRole = (items: NavItem[], userRole: string): NavI
       return item;
     })
     .filter((item) => {
-      // Remove parent items with no accessible children
       if (item.children) {
         return item.children.length > 0;
       }
@@ -164,21 +140,6 @@ export const filterNavigationByRole = (items: NavItem[], userRole: string): NavI
 
 /**
  * Get Breadcrumb Path
- *
- * Converts a route path to breadcrumb segments.
- *
- * @param pathname - Current route path
- * @returns Array of breadcrumb segments
- *
- * @example
- * ```tsx
- * getBreadcrumbPath('/dashboard/users/123')
- * // Returns: [
- * //   { label: 'Dashboard', href: '/dashboard' },
- * //   { label: 'Users', href: '/dashboard/users' },
- * //   { label: '123', href: '/dashboard/users/123' }
- * // ]
- * ```
  */
 export const getBreadcrumbPath = (pathname: string): { label: string; href: string }[] => {
   const segments = pathname.split('/').filter(Boolean);
@@ -186,11 +147,8 @@ export const getBreadcrumbPath = (pathname: string): { label: string; href: stri
 
   segments.forEach((segment, index) => {
     const href = '/' + segments.slice(0, index + 1).join('/');
-
-    // Try to find label from navigation items
     const navItem = navigationItems.find((item) => item.href === href);
     const label = navItem?.label || segment.charAt(0).toUpperCase() + segment.slice(1);
-
     breadcrumbs.push({ label, href });
   });
 

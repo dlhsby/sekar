@@ -1,3 +1,8 @@
+/**
+ * Users List Page (Phase 2C - 8 roles)
+ * Access: ADMIN_ROLES
+ */
+
 'use client';
 
 import { useState } from 'react';
@@ -18,20 +23,14 @@ import { RoleBadge } from '@/components/users/RoleBadge';
 import { DeleteUserModal } from '@/components/users/DeleteUserModal';
 import { useUsers } from '@/lib/api/users';
 import { User, UserRole } from '@/types/models';
+import { ROLE_LABELS } from '@/lib/constants/roles';
 
-/**
- * Users List Page
- *
- * Features:
- * - List all users with pagination
- * - Search by name or email
- * - Filter by role
- * - Create new user
- * - Edit existing user
- * - Delete user with confirmation
- * - Loading and empty states
- * - Admin only access
- */
+// Build role options from centralized constants
+const roleOptions = [
+  { value: '__ALL__', label: 'Semua Role' },
+  ...Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label })),
+];
+
 export default function UsersPage() {
   const router = useRouter();
 
@@ -52,28 +51,17 @@ export default function UsersPage() {
     limit,
   });
 
-  // Role filter options
-  const roleOptions = [
-    { value: '__ALL__', label: 'Semua Role' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'top_management', label: 'Top Management' },
-    { value: 'kepala_rayon', label: 'Kepala Rayon' },
-    { value: 'koordinator_lapangan', label: 'Koordinator Lapangan' },
-    { value: 'worker', label: 'Worker' },
-    { value: 'linmas', label: 'Linmas' },
-  ];
-
   // Table columns
   const columns: DataTableColumn<User>[] = [
     {
-      key: 'name',
+      key: 'full_name',
       title: 'Nama',
       sortable: true,
       'aria-sort': 'none' as const,
     },
     {
-      key: 'email',
-      title: 'Email',
+      key: 'username',
+      title: 'Username',
       sortable: true,
       'aria-sort': 'none' as const,
     },
@@ -90,6 +78,13 @@ export default function UsersPage() {
       ),
     },
     {
+      key: 'area',
+      title: 'Area',
+      render: (_, row) => (
+        <span className="text-sm">{row.area ? `${row.area.name}` : '-'}</span>
+      ),
+    },
+    {
       key: 'actions',
       title: 'Aksi',
       align: 'center',
@@ -102,7 +97,7 @@ export default function UsersPage() {
               e.stopPropagation();
               router.push(`/users/${row.id}`);
             }}
-            aria-label={`Edit ${row.name}`}
+            aria-label={`Edit ${row.full_name}`}
           >
             <Pencil className="w-4 h-4" />
           </Button>
@@ -113,7 +108,7 @@ export default function UsersPage() {
               e.stopPropagation();
               setUserToDelete(row);
             }}
-            aria-label={`Delete ${row.name}`}
+            aria-label={`Delete ${row.full_name}`}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -122,12 +117,10 @@ export default function UsersPage() {
     },
   ];
 
-  // Handle delete success
   const handleDeleteSuccess = () => {
     setUserToDelete(null);
   };
 
-  // Handle clear filters
   const handleClearFilters = () => {
     setSearch('');
     setRoleFilter('__ALL__');
@@ -160,7 +153,7 @@ export default function UsersPage() {
             <div className="md:col-span-2">
               <FormInput
                 label="Cari User"
-                placeholder="Cari berdasarkan nama atau email..."
+                placeholder="Cari berdasarkan nama atau username..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -186,7 +179,7 @@ export default function UsersPage() {
           {hasFilters && (
             <div className="mt-4">
               <Button variant="secondary" size="sm" onClick={handleClearFilters}>
-                Clear Filters
+                Reset Filter
               </Button>
             </div>
           )}
@@ -244,7 +237,7 @@ export default function UsersPage() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
-                Previous
+                Sebelumnya
               </Button>
               <span className="text-sm font-medium px-3">
                 Halaman {page} dari {totalPages}
@@ -255,7 +248,7 @@ export default function UsersPage() {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
-                Next
+                Selanjutnya
               </Button>
             </div>
           </CardContent>

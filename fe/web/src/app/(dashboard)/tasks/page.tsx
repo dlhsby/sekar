@@ -1,7 +1,6 @@
 /**
- * Tasks List Page
- * View and manage task assignments
- * Access: Admin + KepalaRayon + KoordinatorLapangan
+ * Tasks List Page (Phase 2C - 4 statuses, no accept/decline)
+ * Access: TASK_MANAGER_ROLES
  */
 
 'use client';
@@ -23,9 +22,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Task } from '@/lib/api/tasks';
-
-// Access control
-const ALLOWED_ROLES = ['admin', 'kepala_rayon', 'koordinator_lapangan'];
+import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
 
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuth();
@@ -36,12 +33,11 @@ export default function TasksPage() {
   const limit = 20;
 
   useEffect(() => {
-    if (!authLoading && user && !ALLOWED_ROLES.includes(user.role)) {
-      router.push('/dashboard');
+    if (!authLoading && user && !hasRole(user.role, TASK_MANAGER_ROLES)) {
+      router.push('/');
     }
   }, [user, authLoading, router]);
 
-  // Fetch tasks
   const { data: tasksData, isLoading } = useTasks({
     status: statusFilter !== 'all' ? statusFilter : undefined,
     priority: priorityFilter !== 'all' ? priorityFilter : undefined,
@@ -49,7 +45,6 @@ export default function TasksPage() {
     limit,
   });
 
-  // Loading state
   if (authLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -61,27 +56,19 @@ export default function TasksPage() {
     );
   }
 
-  // Access denied
-  if (!ALLOWED_ROLES.includes(user.role)) {
-    return null;
-  }
+  if (!hasRole(user.role, TASK_MANAGER_ROLES)) return null;
 
   const tasks = tasksData?.data || [];
   const pagination = tasksData?.meta;
 
-  // Status options
   const statusOptions = [
     { value: 'all', label: 'Semua Status' },
     { value: 'pending', label: 'Pending' },
     { value: 'assigned', label: 'Ditugaskan' },
-    { value: 'accepted', label: 'Diterima' },
     { value: 'in_progress', label: 'Sedang Dikerjakan' },
     { value: 'completed', label: 'Selesai' },
-    { value: 'declined', label: 'Ditolak' },
-    { value: 'cancelled', label: 'Dibatalkan' },
   ];
 
-  // Priority options
   const priorityOptions = [
     { value: 'all', label: 'Semua Prioritas' },
     { value: 'low', label: 'Rendah' },
@@ -90,30 +77,20 @@ export default function TasksPage() {
     { value: 'urgent', label: 'Mendesak' },
   ];
 
-  // Status badge colors
-  const statusBadges: Record<
-    TaskStatus,
-    'secondary' | 'default' | 'success' | 'warning' | 'destructive'
-  > = {
+  const statusBadges: Record<TaskStatus, 'secondary' | 'default' | 'success' | 'warning'> = {
     pending: 'secondary',
     assigned: 'default',
-    accepted: 'default',
     in_progress: 'warning',
     completed: 'success',
-    declined: 'destructive',
-    cancelled: 'secondary',
   };
 
-  // Priority badge colors
-  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> =
-    {
-      low: 'secondary',
-      normal: 'success',
-      high: 'warning',
-      urgent: 'destructive',
-    };
+  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> = {
+    low: 'secondary',
+    normal: 'success',
+    high: 'warning',
+    urgent: 'destructive',
+  };
 
-  // Table columns
   const columns: ColumnDef<Task>[] = [
     {
       key: 'title',
@@ -131,6 +108,11 @@ export default function TasksPage() {
       key: 'area',
       header: 'Area',
       cell: (task) => <div className="text-sm">{task.area ? task.area.name : '-'}</div>,
+    },
+    {
+      key: 'rayon',
+      header: 'Rayon',
+      cell: (task) => <div className="text-sm">{task.rayon ? task.rayon.name : '-'}</div>,
     },
     {
       key: 'priority',
@@ -172,47 +154,36 @@ export default function TasksPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-nb-black">Tugas</h1>
-          <p className="text-nb-gray-600 mt-1">Kelola penugasan pekerja</p>
+          <p className="text-nb-gray-600 mt-1">Kelola penugasan</p>
         </div>
         <Button onClick={() => router.push('/tasks/new')} leftIcon={<Plus className="w-5 h-5" />}>
           Buat Tugas Baru
         </Button>
       </div>
 
-      {/* Filters */}
       <Card variant="elevated">
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Status Filter */}
             <FormSelect
               label="Filter Status"
               value={statusFilter}
-              onChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
+              onChange={(value) => { setStatusFilter(value as TaskStatus | 'all'); setPage(1); }}
               options={statusOptions}
-              aria-label="Filter berdasarkan status"
             />
-
-            {/* Priority Filter */}
             <FormSelect
               label="Filter Prioritas"
               value={priorityFilter}
-              onChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
+              onChange={(value) => { setPriorityFilter(value as TaskPriority | 'all'); setPage(1); }}
               options={priorityOptions}
             />
           </div>
-
-          {/* Clear Filters */}
           {(statusFilter !== 'all' || priorityFilter !== 'all') && (
             <Button
               variant="secondary"
-              onClick={() => {
-                setStatusFilter('all');
-                setPriorityFilter('all');
-              }}
+              onClick={() => { setStatusFilter('all'); setPriorityFilter('all'); setPage(1); }}
               className="mt-4"
             >
               Reset Filter
@@ -221,8 +192,7 @@ export default function TasksPage() {
         </CardContent>
       </Card>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4" aria-label="Jumlah tugas per status">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card variant="elevated">
           <CardContent>
             <div className="text-sm font-semibold text-nb-gray-600 mb-2">Total Tugas</div>
@@ -255,7 +225,6 @@ export default function TasksPage() {
         </Card>
       </div>
 
-      {/* Table */}
       <Card variant="elevated">
         <CardHeader>
           <h2 className="text-xl font-bold text-nb-black">Daftar Tugas</h2>
@@ -267,13 +236,10 @@ export default function TasksPage() {
             loading={isLoading}
             emptyMessage="Tidak ada tugas"
           />
-
-          {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
               <div className="text-sm text-nb-gray-600">
-                Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} total
-                tugas)
+                Halaman {pagination.page} dari {pagination.totalPages}
               </div>
               <div className="flex gap-2">
                 <Button

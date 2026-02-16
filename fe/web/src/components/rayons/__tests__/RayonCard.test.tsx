@@ -47,8 +47,8 @@ describe('RayonCard', () => {
     const mockStats = {
       rayon_id: 'rayon-1',
       total_areas: 10,
-      total_workers: 50,
-      active_workers: 45,
+      total_users: 50,
+      active_users: 45,
       total_coverage_area: 100000,
     };
 

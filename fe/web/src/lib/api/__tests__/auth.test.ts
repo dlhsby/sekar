@@ -32,7 +32,7 @@ describe('Auth API', () => {
           id: '1',
           username: 'admin',
           full_name: 'Admin User',
-          role: 'admin',
+          role: 'admin_system',
         },
       };
 
@@ -129,7 +129,7 @@ describe('Auth API', () => {
           id: '1',
           username: 'admin',
           full_name: 'Admin User',
-          role: 'admin',
+          role: 'admin_system',
         },
       };
 
@@ -168,8 +168,7 @@ describe('Auth API', () => {
         id: '1',
         username: 'admin',
         full_name: 'Admin User',
-        role: 'admin',
-        created_at: '2026-01-01T00:00:00Z',
+        role: 'admin_system',
       };
 
       mockAxios.onGet('/auth/me').reply(200, mockUser);
@@ -178,7 +177,7 @@ describe('Auth API', () => {
 
       expect(user).toEqual(mockUser);
       expect(user.username).toBe('admin');
-      expect(user.role).toBe('admin');
+      expect(user.role).toBe('admin_system');
     });
 
     it('should handle unauthorized access', async () => {
@@ -212,7 +211,7 @@ describe('Auth API', () => {
         id: '3',
         username: 'worker1',
         full_name: 'Worker One',
-        role: 'worker',
+        role: 'satgas',
         assigned_area: {
           id: 'area-1',
           name: 'Taman Bungkul',
@@ -236,11 +235,13 @@ describe('Auth API', () => {
   describe('UserRole type', () => {
     it('should accept all valid roles', () => {
       const validRoles: Array<User['role']> = [
-        'admin',
+        'admin_system',
+        'superadmin',
         'top_management',
         'kepala_rayon',
-        'koordinator_lapangan',
-        'worker',
+        'korlap',
+        'admin_data',
+        'satgas',
         'linmas',
       ];
 

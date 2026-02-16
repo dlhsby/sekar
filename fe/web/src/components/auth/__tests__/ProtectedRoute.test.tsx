@@ -17,7 +17,7 @@ describe('ProtectedRoute', () => {
     username: 'testuser',
     full_name: 'Test User',
     email: 'test@example.com',
-    role: 'admin' as const,
+    role: 'admin_system' as const,
   };
 
   beforeEach(() => {
@@ -92,12 +92,12 @@ describe('ProtectedRoute', () => {
     });
 
     render(
-      <ProtectedRoute requiredRoles={['admin', 'koordinator_lapangan']}>
+      <ProtectedRoute requiredRoles={['admin_system', 'korlap']}>
         <div>Staff Content</div>
       </ProtectedRoute>
     );
 
-    expect(useRequireAuth).toHaveBeenCalledWith(['admin', 'koordinator_lapangan']);
+    expect(useRequireAuth).toHaveBeenCalledWith(['admin_system', 'korlap']);
     expect(screen.getByText('Staff Content')).toBeInTheDocument();
   });
 });

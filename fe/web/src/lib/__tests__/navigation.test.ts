@@ -13,13 +13,14 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      expect(navigationItems).toHaveLength(6);
+      expect(navigationItems).toHaveLength(7);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
       expect(navIds).toContain('tasks');
-      expect(navIds).toContain('reports');
+      expect(navIds).toContain('activities');
+      expect(navIds).toContain('overtime');
       expect(navIds).toContain('data');
       expect(navIds).toContain('settings');
 
@@ -52,7 +53,9 @@ describe('Navigation Utilities', () => {
 
     it('should have admin-only routes', () => {
       const adminOnlyItems = navigationItems.filter(
-        (item) => item.roles.length === 1 && item.roles[0] === 'admin'
+        (item) => item.roles.length === 2 &&
+                 item.roles.includes('admin_system') &&
+                 item.roles.includes('superadmin')
       );
 
       expect(adminOnlyItems.length).toBeGreaterThan(0);
@@ -61,13 +64,14 @@ describe('Navigation Utilities', () => {
       // Check nested admin-only routes under 'data'
       const dataItem = navigationItems.find((item) => item.id === 'data');
       const usersItem = dataItem?.children?.find((child) => child.id === 'users');
-      expect(usersItem?.roles).toEqual(['admin']);
+      expect(usersItem?.roles).toContain('admin_system');
+      expect(usersItem?.roles).toContain('superadmin');
     });
   });
 
   describe('filterNavigationByRole', () => {
-    it('should return all items for admin role', () => {
-      const filtered = filterNavigationByRole(navigationItems, 'admin');
+    it('should return all items for superadmin role', () => {
+      const filtered = filterNavigationByRole(navigationItems, 'superadmin');
 
       expect(filtered).toHaveLength(navigationItems.length);
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
@@ -84,7 +88,8 @@ describe('Navigation Utilities', () => {
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'reports')).toBeDefined();
+      expect(filtered.find((item) => item.id === 'activities')).toBeDefined();
+      expect(filtered.find((item) => item.id === 'overtime')).toBeDefined();
 
       // Check nested items under 'data'
       const dataItem = filtered.find((item) => item.id === 'data');
@@ -103,7 +108,8 @@ describe('Navigation Utilities', () => {
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'reports')).toBeDefined();
+      expect(filtered.find((item) => item.id === 'activities')).toBeDefined();
+      expect(filtered.find((item) => item.id === 'overtime')).toBeDefined();
       expect(filtered.find((item) => item.id === 'tasks')).toBeDefined();
 
       // Should NOT include 'data' submenu (no accessible children)
@@ -112,12 +118,13 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
     });
 
-    it('should return appropriate items for koordinator_lapangan', () => {
-      const filtered = filterNavigationByRole(navigationItems, 'koordinator_lapangan');
+    it('should return appropriate items for korlap', () => {
+      const filtered = filterNavigationByRole(navigationItems, 'korlap');
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'reports')).toBeDefined();
+      expect(filtered.find((item) => item.id === 'activities')).toBeDefined();
+      expect(filtered.find((item) => item.id === 'overtime')).toBeDefined();
       expect(filtered.find((item) => item.id === 'tasks')).toBeDefined();
 
       // Check nested items under 'data'
@@ -131,8 +138,8 @@ describe('Navigation Utilities', () => {
       expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeUndefined();
     });
 
-    it('should return empty array for worker role', () => {
-      const filtered = filterNavigationByRole(navigationItems, 'worker');
+    it('should return empty array for satgas role', () => {
+      const filtered = filterNavigationByRole(navigationItems, 'satgas');
 
       expect(filtered).toHaveLength(0);
     });
@@ -274,7 +281,7 @@ describe('Navigation Utilities', () => {
       const breadcrumbs = getBreadcrumbPath('/tasks/task-123');
 
       expect(breadcrumbs).toHaveLength(2);
-      expect(breadcrumbs[0].label).toBe('Tasks');
+      expect(breadcrumbs[0].label).toBe('Tugas');
       expect(breadcrumbs[1].label).toBe('Task-123');
     });
   });

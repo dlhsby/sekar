@@ -28,18 +28,14 @@ describe('Auth Hooks', () => {
     id: '1',
     username: 'admin',
     full_name: 'Admin User',
-    role: 'admin',
-    status: 'active',
-    created_at: '2026-01-01T00:00:00Z',
+    role: 'admin_system',
   };
 
   const mockWorker: User = {
     id: '2',
     username: 'worker1',
     full_name: 'Worker One',
-    role: 'worker',
-    status: 'active',
-    created_at: '2026-01-01T00:00:00Z',
+    role: 'satgas',
   };
 
   const mockAuthContext = (user: User | null, loading = false) => {
@@ -51,7 +47,6 @@ describe('Auth Hooks', () => {
       logout: jest.fn(),
       refreshUser: jest.fn(),
       clearError: jest.fn(),
-      isAuthenticated: user !== null && !loading,
     });
   };
 
@@ -69,7 +64,6 @@ describe('Auth Hooks', () => {
 
       expect(result.current.user).toEqual(mockUser);
       expect(result.current.loading).toBe(false);
-      expect(result.current.isAuthenticated).toBe(true);
       expect(typeof result.current.logout).toBe('function');
     });
 
@@ -80,7 +74,6 @@ describe('Auth Hooks', () => {
 
       expect(result.current.user).toBeNull();
       expect(result.current.loading).toBe(false);
-      expect(result.current.isAuthenticated).toBe(false);
     });
 
     it('should return loading state during initialization', () => {
@@ -141,7 +134,7 @@ describe('Auth Hooks', () => {
     it('should allow user with required role', () => {
       mockAuthContext(mockUser);
 
-      renderHook(() => useRequireAuth(['admin', 'top_management']));
+      renderHook(() => useRequireAuth(['admin_system', 'top_management']));
 
       expect(mockPush).not.toHaveBeenCalled();
     });
@@ -152,7 +145,7 @@ describe('Auth Hooks', () => {
       // Spy on console.error to verify it's called
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-      renderHook(() => useRequireAuth(['admin', 'supervisor']));
+      renderHook(() => useRequireAuth(['admin_system', 'korlap']));
 
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith(
@@ -189,7 +182,7 @@ describe('Auth Hooks', () => {
     it('should return true when user has one of the specified roles', () => {
       mockAuthContext(mockUser);
 
-      const { result } = renderHook(() => useHasRole(['admin', 'supervisor']));
+      const { result } = renderHook(() => useHasRole(['admin_system', 'korlap']));
 
       expect(result.current).toBe(true);
     });
@@ -197,7 +190,7 @@ describe('Auth Hooks', () => {
     it('should return false when user does not have any of the specified roles', () => {
       mockAuthContext(mockWorker);
 
-      const { result } = renderHook(() => useHasRole(['admin', 'supervisor']));
+      const { result } = renderHook(() => useHasRole(['admin_system', 'korlap']));
 
       expect(result.current).toBe(false);
     });
@@ -205,7 +198,7 @@ describe('Auth Hooks', () => {
     it('should return false when user is not authenticated', () => {
       mockAuthContext(null);
 
-      const { result } = renderHook(() => useHasRole(['admin']));
+      const { result } = renderHook(() => useHasRole(['admin_system']));
 
       expect(result.current).toBe(false);
     });
@@ -213,7 +206,7 @@ describe('Auth Hooks', () => {
     it('should return true for exact role match', () => {
       mockAuthContext(mockUser);
 
-      const { result } = renderHook(() => useHasRole(['admin']));
+      const { result } = renderHook(() => useHasRole(['admin_system']));
 
       expect(result.current).toBe(true);
     });
@@ -221,7 +214,7 @@ describe('Auth Hooks', () => {
     it('should handle multiple role checks correctly', () => {
       mockAuthContext(mockWorker);
 
-      const { result } = renderHook(() => useHasRole(['worker', 'supervisor', 'admin']));
+      const { result } = renderHook(() => useHasRole(['satgas', 'korlap', 'admin_system']));
 
       expect(result.current).toBe(true);
     });

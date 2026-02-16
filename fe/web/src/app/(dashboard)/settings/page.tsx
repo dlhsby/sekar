@@ -6,74 +6,22 @@
 
 'use client';
 
-import { Card, CardContent, CardHeader, Button, FormInput } from '@/components/ui';
+import { Card, CardContent, CardHeader, Button } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
+import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-
-// Password change schema
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
-    newPassword: z.string().min(8, 'Password minimal 8 karakter'),
-    confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Password tidak cocok',
-    path: ['confirmPassword'],
-  });
-
-type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
   const [language, setLanguage] = useState<'id' | 'en'>('id');
   const [notifications, setNotifications] = useState(true);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordLoading, setPasswordLoading] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<PasswordFormData>({
-    resolver: zodResolver(passwordSchema),
-  });
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
+    if (!loading && (!user || !hasRole(user.role, ADMIN_ROLES))) {
       redirect('/');
     }
   }, [user, loading]);
-
-  const handlePasswordChange = async (data: PasswordFormData) => {
-    try {
-      setPasswordLoading(true);
-      setPasswordError(null);
-      setPasswordSuccess(false);
-
-      // TODO: Implement password change API call when backend endpoint is ready
-      // await apiClient.post('/users/change-password', {
-      //   current_password: data.currentPassword,
-      //   new_password: data.newPassword,
-      // });
-
-      // Simulate API call for now
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setPasswordSuccess(true);
-      reset();
-    } catch (error) {
-      setPasswordError(error instanceof Error ? error.message : 'Gagal mengubah password');
-    } finally {
-      setPasswordLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -86,7 +34,7 @@ export default function SettingsPage() {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || !hasRole(user.role, ADMIN_ROLES)) {
     return null;
   }
 
@@ -132,55 +80,9 @@ export default function SettingsPage() {
           <h2 className="text-xl font-bold text-nb-black">Ubah Password</h2>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(handlePasswordChange)} className="space-y-4">
-            <FormInput
-              label="Password Saat Ini"
-              type="password"
-              placeholder="Masukkan password saat ini"
-              error={errors.currentPassword?.message}
-              {...register('currentPassword')}
-            />
-
-            <FormInput
-              label="Password Baru"
-              type="password"
-              placeholder="Masukkan password baru (minimal 8 karakter)"
-              error={errors.newPassword?.message}
-              {...register('newPassword')}
-            />
-
-            <FormInput
-              label="Konfirmasi Password Baru"
-              type="password"
-              placeholder="Konfirmasi password baru"
-              error={errors.confirmPassword?.message}
-              {...register('confirmPassword')}
-            />
-
-            {passwordSuccess && (
-              <div className="p-4 bg-nb-success-light border-2 border-nb-success text-nb-success rounded-none">
-                <p className="font-semibold">Password berhasil diubah!</p>
-              </div>
-            )}
-
-            {passwordError && (
-              <div
-                className="p-4 bg-nb-danger-light border-2 border-nb-danger text-nb-danger rounded-none"
-                role="alert"
-                aria-live="polite"
-              >
-                <p className="font-semibold">{passwordError}</p>
-              </div>
-            )}
-
-            <Button type="submit" variant="default" loading={passwordLoading}>
-              Ubah Password
-            </Button>
-
-            <p className="text-xs text-nb-gray-600 mt-2">
-              Note: Fitur ubah password akan aktif setelah endpoint backend tersedia.
-            </p>
-          </form>
+          <p className="text-nb-gray-600">
+            Fitur belum tersedia. Hubungi administrator sistem untuk mengubah password.
+          </p>
         </CardContent>
       </Card>
 

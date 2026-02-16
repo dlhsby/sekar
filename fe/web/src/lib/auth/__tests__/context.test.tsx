@@ -48,7 +48,7 @@ describe('Auth Context', () => {
     id: '1',
     username: 'admin',
     full_name: 'Admin User',
-    role: 'admin',
+    role: 'admin_system',
   };
 
   const mockAuthResponse: AuthResponse = {

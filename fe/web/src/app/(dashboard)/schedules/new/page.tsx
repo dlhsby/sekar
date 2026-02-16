@@ -31,7 +31,7 @@ export default function CreateSchedulePage() {
   const [error, setError] = useState('');
 
   // Fetch options
-  const { data: usersData } = useUsers({ role: 'worker', limit: 1000 });
+  const { data: usersData } = useUsers({ limit: 1000 });
   const { data: areasData } = useAreas({ limit: 1000 });
   const { data: shifts } = useShiftDefinitions();
   const createMutation = useCreateSchedule();

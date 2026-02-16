@@ -27,7 +27,7 @@ const mockAdminUser = {
   id: '1',
   username: 'admin',
   full_name: 'Admin User',
-  role: 'admin',
+  role: 'admin_system',
   area_id: null,
   created_at: '2024-01-01T00:00:00Z',
 };
@@ -36,7 +36,7 @@ const mockSupervisorUser = {
   id: '2',
   username: 'supervisor1',
   full_name: 'Supervisor User',
-  role: 'koordinator_lapangan',
+  role: 'korlap',
   area_id: 'area-1',
   created_at: '2024-01-01T00:00:00Z',
 };
@@ -561,7 +561,7 @@ describe('SettingsPage Component', () => {
 
       // Profile and password cards should be elevated
       const profileCard = screen.getByText(/profil pengguna/i).closest('div');
-      expect(profileCard?.parentElement).toHaveClass('border-3');
+      expect(profileCard?.parentElement).toHaveClass('border-2');
     });
   });
 

@@ -7,7 +7,25 @@ import type { User } from '@/types/models';
  * Handles authentication, token refresh, and error handling
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = (() => {
+  const url = process.env.NEXT_PUBLIC_API_URL;
+
+  // Only validate during runtime in production (not build time)
+  // Check if we're in a browser or server-side during actual request
+  if (
+    !url &&
+    process.env.NODE_ENV === 'production' &&
+    typeof window !== 'undefined' // Only check in browser, not during SSG build
+  ) {
+    console.error(
+      'NEXT_PUBLIC_API_URL is not set in production. ' +
+      'Please set it in your .env.production file. ' +
+      'Falling back to localhost (API calls will fail).'
+    );
+  }
+
+  return url || 'http://localhost:3000/api/v1';
+})();
 
 // Create axios instance with default config
 export const apiClient = axios.create({

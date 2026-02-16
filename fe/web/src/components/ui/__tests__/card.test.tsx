@@ -19,7 +19,7 @@ describe('Card Component', () => {
     it('should render with default variant', () => {
       render(<Card data-testid="card">Content</Card>);
       const card = screen.getByTestId('card');
-      expect(card).toHaveClass('border-3', 'border-nb-black', 'shadow-nb-sm');
+      expect(card).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-sm');
     });
 
     it('should render with elevated variant', () => {
@@ -39,7 +39,7 @@ describe('Card Component', () => {
         </Card>
       );
       const card = screen.getByTestId('card');
-      expect(card).toHaveClass('border-3', 'shadow-none');
+      expect(card).toHaveClass('border-2', 'shadow-none');
     });
 
     it('should render with filled variant', () => {
@@ -255,7 +255,7 @@ describe('Card Component', () => {
     it('should have thick borders', () => {
       render(<Card data-testid="card">Content</Card>);
       const card = screen.getByTestId('card');
-      expect(card).toHaveClass('border-3', 'border-nb-black');
+      expect(card).toHaveClass('border-2', 'border-nb-black');
     });
 
     it('should have Neo Brutalism shadow', () => {

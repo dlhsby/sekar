@@ -31,9 +31,9 @@ describe('Area Types API', () => {
   };
 
   const mockAreaTypes: AreaType[] = [
-    { id: '1', name: 'Taman', created_at: '2026-01-01T00:00:00Z' },
-    { id: '2', name: 'Jalur Hijau', created_at: '2026-01-01T00:00:00Z' },
-    { id: '3', name: 'Hutan Kota', created_at: '2026-01-01T00:00:00Z' },
+    { id: '1', name: 'Taman', code: 'TAMAN', category: 'ACTIVE', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+    { id: '2', name: 'Jalur Hijau', code: 'JALUR_HIJAU', category: 'PASSIVE', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+    { id: '3', name: 'Hutan Kota', code: 'HUTAN_KOTA', category: 'ACTIVE', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
   ];
 
   beforeEach(() => {

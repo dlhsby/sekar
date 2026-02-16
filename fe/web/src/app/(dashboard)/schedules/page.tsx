@@ -119,8 +119,8 @@ export default function SchedulesPage() {
       header: 'Pekerja',
       cell: (schedule) => (
         <div>
-          <div className="font-semibold text-nb-black">{schedule.user?.name || '-'}</div>
-          <div className="text-sm text-nb-gray-600">{schedule.user?.email || ''}</div>
+          <div className="font-semibold text-nb-black">{schedule.user?.full_name || '-'}</div>
+          <div className="text-sm text-nb-gray-600">{schedule.user?.username || ''}</div>
         </div>
       ),
     },
@@ -327,7 +327,7 @@ export default function SchedulesPage() {
             <p className="text-nb-gray-700">Apakah Anda yakin ingin menghapus jadwal ini?</p>
             {scheduleToDelete && (
               <div className="p-4 border-2 border-nb-black bg-nb-gray-50">
-                <div className="font-semibold">{scheduleToDelete.user?.name}</div>
+                <div className="font-semibold">{scheduleToDelete.user?.full_name}</div>
                 <div className="text-sm text-nb-gray-600">
                   {scheduleToDelete.area?.name} • {scheduleToDelete.shift_definition?.name}
                 </div>

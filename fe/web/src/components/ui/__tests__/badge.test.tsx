@@ -123,7 +123,7 @@ describe('Badge Component', () => {
     it('should have border and uppercase text', () => {
       render(<Badge>Styled</Badge>);
       const badge = screen.getByText('Styled');
-      expect(badge).toHaveClass('border-2', 'border-nb-black', 'uppercase', 'font-bold');
+      expect(badge).toHaveClass('border-2', 'border-nb-black', 'uppercase', 'font-semibold');
     });
 
     it('should have inline-flex display', () => {

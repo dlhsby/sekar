@@ -31,7 +31,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
   // Form state
   // Fetch data
   const { data: schedule, isLoading: scheduleLoading } = useSchedule(params.id);
-  const { data: usersData } = useUsers({ role: 'worker', limit: 1000 });
+  const { data: usersData } = useUsers({ limit: 1000 });
   const { data: areasData } = useAreas({ limit: 1000 });
   const { data: shifts } = useShiftDefinitions();
   const updateMutation = useUpdateSchedule(params.id);

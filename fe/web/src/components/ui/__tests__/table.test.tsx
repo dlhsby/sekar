@@ -237,7 +237,7 @@ describe('Table Component', () => {
       );
 
       const tfoot = container.querySelector('tfoot');
-      expect(tfoot).toHaveClass('border-t-3', 'border-nb-black');
+      expect(tfoot).toHaveClass('border-t-2', 'border-nb-black');
     });
   });
 
@@ -576,7 +576,7 @@ describe('Table Component', () => {
       );
 
       const wrapper = container.querySelector('.overflow-auto');
-      expect(wrapper).toHaveClass('border-3', 'border-nb-black');
+      expect(wrapper).toHaveClass('border-2', 'border-nb-black');
     });
 
     it('should have border on header rows', () => {
@@ -591,7 +591,7 @@ describe('Table Component', () => {
       );
 
       const thead = container.querySelector('thead');
-      expect(thead).toHaveClass('[&_tr]:border-b-3');
+      expect(thead).toHaveClass('[&_tr]:border-b-2');
     });
 
     it('should have borders between cells', () => {

@@ -1,137 +1,95 @@
+/**
+ * Dashboard Home Page (Phase 2C - 8-role system)
+ * Role-based dashboard content
+ */
+
 'use client';
 
 import { Users, MapPin, Map, Building2, CheckCircle, Clock, FileText } from 'lucide-react';
 import { useUser } from '@/lib/auth/hooks';
 import { Card, CardHeader, CardContent, Badge } from '@/components/ui';
+import { ROLE_LABELS } from '@/lib/constants/roles';
+import type { UserRole } from '@/types/models';
 
-/**
- * Dashboard Home Page
- *
- * Role-based dashboard content
- */
+// Stats configuration per role group
+const ADMIN_STATS = [
+  { label: 'Total Users', value: '156', Icon: Users, color: 'default' as const },
+  { label: 'Active Areas', value: '42', Icon: MapPin, color: 'success' as const },
+  { label: 'Total Rayons', value: '8', Icon: Building2, color: 'warning' as const },
+  { label: 'Aktivitas Hari Ini', value: '23', Icon: FileText, color: 'secondary' as const },
+];
+
+const MANAGEMENT_STATS = [
+  { label: 'All Rayons', value: '8', Icon: Building2, color: 'default' as const },
+  { label: 'Petugas Aktif', value: '124', Icon: Users, color: 'success' as const },
+  { label: 'Areas Covered', value: '42', Icon: MapPin, color: 'warning' as const },
+  { label: 'Aktivitas Hari Ini', value: '23', Icon: FileText, color: 'secondary' as const },
+];
+
+const KEPALA_RAYON_STATS = [
+  { label: 'Area Rayon Saya', value: '12', Icon: MapPin, color: 'default' as const },
+  { label: 'Petugas Aktif', value: '28', Icon: Users, color: 'success' as const },
+  { label: 'Tugas Pending', value: '5', Icon: Clock, color: 'warning' as const },
+  { label: 'Aktivitas Hari Ini', value: '8', Icon: FileText, color: 'secondary' as const },
+];
+
+const KORLAP_STATS = [
+  { label: 'Area Saya', value: '5', Icon: MapPin, color: 'default' as const },
+  { label: 'Tim Saya', value: '12', Icon: Users, color: 'success' as const },
+  { label: 'Tugas Hari Ini', value: '7', Icon: CheckCircle, color: 'warning' as const },
+  { label: 'Aktivitas Hari Ini', value: '4', Icon: FileText, color: 'secondary' as const },
+];
+
+const STATS_BY_ROLE: Partial<Record<UserRole, typeof ADMIN_STATS>> = {
+  admin_system: ADMIN_STATS,
+  superadmin: ADMIN_STATS,
+  top_management: MANAGEMENT_STATS,
+  kepala_rayon: KEPALA_RAYON_STATS,
+  korlap: KORLAP_STATS,
+};
+
+const WELCOME_MESSAGES: Partial<Record<UserRole, string>> = {
+  admin_system: 'Kelola sistem SEKAR dari sini.',
+  superadmin: 'Akses penuh ke seluruh sistem SEKAR.',
+  top_management: 'Lihat operasional seluruh rayon dan analitik.',
+  kepala_rayon: 'Pantau dan kelola kinerja rayon Anda.',
+  korlap: 'Koordinasikan tim dan aktivitas area Anda.',
+};
+
+// Quick actions configuration
+const ADMIN_ACTIONS = [
+  { Icon: Users, title: 'Kelola Users', desc: 'Buat, edit, dan kelola akun pengguna', color: 'nb-primary' },
+  { Icon: Building2, title: 'Kelola Rayons', desc: 'Konfigurasi rayon dan hierarki', color: 'nb-success' },
+  { Icon: MapPin, title: 'Kelola Areas', desc: 'Buat dan konfigurasi area layanan', color: 'nb-warning' },
+];
+
+const MONITORING_ACTIONS = [
+  { Icon: Map, title: 'Lihat Monitoring', desc: 'Pantau lokasi petugas secara real-time', color: 'nb-primary' },
+  { Icon: FileText, title: 'Lihat Aktivitas', desc: 'Tinjau aktivitas yang dilaporkan', color: 'nb-success' },
+  { Icon: Clock, title: 'Lihat Jadwal', desc: 'Cek jadwal tim dan shift', color: 'nb-warning' },
+];
+
 export default function DashboardPage() {
   const user = useUser();
 
-  // Role-based stats configuration
-  const getStatsForRole = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return [
-          { label: 'Total Users', value: '156', Icon: Users, color: 'default' as const },
-          { label: 'Active Areas', value: '42', Icon: MapPin, color: 'success' as const },
-          { label: 'Total Rayons', value: '8', Icon: Building2, color: 'warning' as const },
-          { label: 'Reports Today', value: '23', Icon: FileText, color: 'secondary' as const },
-        ];
-      case 'top_management':
-        return [
-          { label: 'All Rayons', value: '8', Icon: Building2, color: 'default' as const },
-          { label: 'Active Workers', value: '124', Icon: Users, color: 'success' as const },
-          { label: 'Areas Covered', value: '42', Icon: MapPin, color: 'warning' as const },
-          { label: 'Reports Today', value: '23', Icon: FileText, color: 'secondary' as const },
-        ];
-      case 'kepala_rayon':
-        return [
-          { label: 'My Rayon Areas', value: '12', Icon: MapPin, color: 'default' as const },
-          { label: 'Active Workers', value: '28', Icon: Users, color: 'success' as const },
-          { label: 'Tasks Pending', value: '5', Icon: Clock, color: 'warning' as const },
-          { label: 'Reports Today', value: '8', Icon: FileText, color: 'secondary' as const },
-        ];
-      case 'koordinator_lapangan':
-        return [
-          { label: 'My Areas', value: '5', Icon: MapPin, color: 'default' as const },
-          { label: 'Team Workers', value: '12', Icon: Users, color: 'success' as const },
-          { label: 'Tasks Today', value: '7', Icon: CheckCircle, color: 'warning' as const },
-          { label: 'Reports Today', value: '4', Icon: FileText, color: 'secondary' as const },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  // Recent activity mock data (role-based)
-  const getRecentActivity = (role: string) => {
-    const activities = {
-      admin: [
-        {
-          text: 'New user "Budi Santoso" created',
-          time: '5 minutes ago',
-          type: 'success' as const,
-        },
-        {
-          text: 'Rayon "Surabaya Timur" configuration updated',
-          time: '15 minutes ago',
-          type: 'neutral' as const,
-        },
-        {
-          text: 'System backup completed successfully',
-          time: '1 hour ago',
-          type: 'success' as const,
-        },
-        { text: '23 new reports submitted today', time: '2 hours ago', type: 'neutral' as const },
-      ],
-      top_management: [
-        {
-          text: 'Rayon "Surabaya Pusat" achieved 95% completion',
-          time: '30 minutes ago',
-          type: 'success' as const,
-        },
-        {
-          text: 'Weekly performance report generated',
-          time: '1 hour ago',
-          type: 'neutral' as const,
-        },
-        { text: 'New area "Taman Bungkul" added', time: '2 hours ago', type: 'neutral' as const },
-        {
-          text: '124 workers active across all rayons',
-          time: '3 hours ago',
-          type: 'success' as const,
-        },
-      ],
-      kepala_rayon: [
-        {
-          text: 'Worker "Ahmad" completed area cleaning',
-          time: '10 minutes ago',
-          type: 'success' as const,
-        },
-        { text: 'New task assigned to team', time: '25 minutes ago', type: 'neutral' as const },
-        { text: 'Area inspection report submitted', time: '1 hour ago', type: 'neutral' as const },
-        { text: '5 pending tasks require review', time: '2 hours ago', type: 'warning' as const },
-      ],
-      koordinator_lapangan: [
-        {
-          text: 'Worker "Siti" clocked in at Area Kenjeran',
-          time: '5 minutes ago',
-          type: 'success' as const,
-        },
-        {
-          text: 'Daily schedule created for team',
-          time: '30 minutes ago',
-          type: 'neutral' as const,
-        },
-        { text: 'Area maintenance completed', time: '1 hour ago', type: 'success' as const },
-        { text: '7 tasks scheduled for today', time: '2 hours ago', type: 'neutral' as const },
-      ],
-    };
-
-    return activities[role as keyof typeof activities] || activities.admin;
-  };
-
-  const stats = user ? getStatsForRole(user.role) : [];
-  const recentActivity = user ? getRecentActivity(user.role) : [];
+  const stats = user ? (STATS_BY_ROLE[user.role] || []) : [];
+  const welcomeMessage = user ? (WELCOME_MESSAGES[user.role] || '') : '';
+  const isAdmin = user?.role === 'admin_system' || user?.role === 'superadmin';
+  const quickActions = isAdmin ? ADMIN_ACTIONS : MONITORING_ACTIONS;
 
   return (
     <div>
       {/* Welcome Section */}
       <div className="mb-8">
         <h1 className="text-4xl font-extrabold text-nb-black mb-2">
-          Welcome back, {user?.full_name || 'User'}!
+          Selamat datang, {user?.full_name || 'User'}!
         </h1>
-        <p className="text-nb-gray-600 text-lg">
-          {user?.role === 'admin' && 'Manage the entire SEKAR system from here.'}
-          {user?.role === 'top_management' && 'Overview of all rayon operations and analytics.'}
-          {user?.role === 'kepala_rayon' && 'Monitor and manage your rayon performance.'}
-          {user?.role === 'koordinator_lapangan' && 'Coordinate your team and area activities.'}
-        </p>
+        <p className="text-nb-gray-600 text-lg">{welcomeMessage}</p>
+        {user && (
+          <p className="text-sm text-nb-gray-500 mt-1">
+            Role: {ROLE_LABELS[user.role] || user.role}
+          </p>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -156,95 +114,17 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Recent Activity */}
-      <Card variant="elevated" className="mb-8">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-extrabold text-nb-black">Recent Activity</h2>
-            <Badge variant="secondary" size="sm">
-              Live
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-4 pb-4 border-b-2 border-nb-gray-100 last:border-b-0 last:pb-0"
-              >
-                <div className="flex-shrink-0 mt-1">
-                  {activity.type === 'success' && (
-                    <CheckCircle className="h-5 w-5 text-nb-success" />
-                  )}
-                  {activity.type === 'warning' && <Clock className="h-5 w-5 text-nb-warning" />}
-                  {activity.type === 'neutral' && <FileText className="h-5 w-5 text-nb-gray-400" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-nb-black font-medium">{activity.text}</p>
-                  <p className="text-nb-gray-500 text-sm mt-1">{activity.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions (role-based) */}
+      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {user?.role === 'admin' && (
-          <>
-            <Card variant="outlined" interactive className="hover:border-nb-primary">
-              <CardContent className="text-center py-8">
-                <Users className="h-12 w-12 mx-auto mb-3 text-nb-primary" />
-                <h3 className="font-bold text-lg text-nb-black">Manage Users</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">
-                  Create, edit, and manage user accounts
-                </p>
-              </CardContent>
-            </Card>
-            <Card variant="outlined" interactive className="hover:border-nb-success">
-              <CardContent className="text-center py-8">
-                <Building2 className="h-12 w-12 mx-auto mb-3 text-nb-success" />
-                <h3 className="font-bold text-lg text-nb-black">Manage Rayons</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">Configure rayons and hierarchies</p>
-              </CardContent>
-            </Card>
-            <Card variant="outlined" interactive className="hover:border-nb-warning">
-              <CardContent className="text-center py-8">
-                <MapPin className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
-                <h3 className="font-bold text-lg text-nb-black">Manage Areas</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">Create and configure service areas</p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {user?.role !== 'admin' && (
-          <>
-            <Card variant="outlined" interactive className="hover:border-nb-primary">
-              <CardContent className="text-center py-8">
-                <Map className="h-12 w-12 mx-auto mb-3 text-nb-primary" />
-                <h3 className="font-bold text-lg text-nb-black">View Monitoring</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">Track worker locations in real-time</p>
-              </CardContent>
-            </Card>
-            <Card variant="outlined" interactive className="hover:border-nb-success">
-              <CardContent className="text-center py-8">
-                <FileText className="h-12 w-12 mx-auto mb-3 text-nb-success" />
-                <h3 className="font-bold text-lg text-nb-black">View Reports</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">Review submitted work reports</p>
-              </CardContent>
-            </Card>
-            <Card variant="outlined" interactive className="hover:border-nb-warning">
-              <CardContent className="text-center py-8">
-                <Clock className="h-12 w-12 mx-auto mb-3 text-nb-warning" />
-                <h3 className="font-bold text-lg text-nb-black">View Schedules</h3>
-                <p className="text-nb-gray-600 text-sm mt-1">Check team schedules and shifts</p>
-              </CardContent>
-            </Card>
-          </>
-        )}
+        {quickActions.map((action) => (
+          <Card key={action.title} variant="outlined" interactive className={`hover:border-${action.color}`}>
+            <CardContent className="text-center py-8">
+              <action.Icon className={`h-12 w-12 mx-auto mb-3 text-${action.color}`} />
+              <h3 className="font-bold text-lg text-nb-black">{action.title}</h3>
+              <p className="text-nb-gray-600 text-sm mt-1">{action.desc}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

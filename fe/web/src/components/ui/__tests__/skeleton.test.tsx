@@ -198,7 +198,7 @@ describe('Skeleton Component', () => {
       const { container } = render(<SkeletonCard />);
 
       const card = container.firstChild;
-      expect(card).toHaveClass('border-3', 'border-nb-black', 'bg-nb-white', 'shadow-nb-sm');
+      expect(card).toHaveClass('border-2', 'border-nb-black', 'bg-nb-white', 'shadow-nb-sm');
     });
 
     it('should contain multiple skeleton elements', () => {
@@ -256,7 +256,7 @@ describe('Skeleton Component', () => {
       const { container } = render(<SkeletonTable />);
 
       const table = container.firstChild;
-      expect(table).toHaveClass('border-3', 'border-nb-black', 'overflow-hidden');
+      expect(table).toHaveClass('border-2', 'border-nb-black', 'overflow-hidden');
     });
 
     it('should render header row', () => {
@@ -270,21 +270,24 @@ describe('Skeleton Component', () => {
       const { container } = render(<SkeletonTable />);
 
       const rows = container.querySelectorAll('.border-b-2');
-      expect(rows.length).toBe(5);
+      // Header row (1) + data rows (5) = 6 total
+      expect(rows.length).toBe(6);
     });
 
     it('should render custom number of rows', () => {
       const { container } = render(<SkeletonTable rows={3} />);
 
       const rows = container.querySelectorAll('.border-b-2');
-      expect(rows.length).toBe(3);
+      // Header row (1) + data rows (3) = 4 total
+      expect(rows.length).toBe(4);
     });
 
     it('should render 10 rows when specified', () => {
       const { container } = render(<SkeletonTable rows={10} />);
 
       const rows = container.querySelectorAll('.border-b-2');
-      expect(rows.length).toBe(10);
+      // Header row (1) + data rows (10) = 11 total
+      expect(rows.length).toBe(11);
     });
 
     it('should render 4 columns per row', () => {
@@ -328,21 +331,24 @@ describe('Skeleton Component', () => {
     it('should render default 5 items', () => {
       const { container } = render(<SkeletonList />);
 
-      const items = container.querySelectorAll('.border-3');
+      // Use a more specific selector to target just the list items, not nested skeletons
+      const items = container.querySelectorAll('.space-y-3 > div');
       expect(items.length).toBe(5);
     });
 
     it('should render custom number of items', () => {
       const { container } = render(<SkeletonList items={3} />);
 
-      const items = container.querySelectorAll('.border-3');
+      // Use a more specific selector to target just the list items, not nested skeletons
+      const items = container.querySelectorAll('.space-y-3 > div');
       expect(items.length).toBe(3);
     });
 
     it('should render 8 items when specified', () => {
       const { container } = render(<SkeletonList items={8} />);
 
-      const items = container.querySelectorAll('.border-3');
+      // Use a more specific selector to target just the list items, not nested skeletons
+      const items = container.querySelectorAll('.space-y-3 > div');
       expect(items.length).toBe(8);
     });
 
@@ -356,7 +362,7 @@ describe('Skeleton Component', () => {
     it('should render text skeletons in each item', () => {
       const { container } = render(<SkeletonList items={1} />);
 
-      const item = container.querySelector('.border-3');
+      const item = container.querySelector('.space-y-3 > div');
       const textSkeletons = item?.querySelectorAll('.h-4');
       expect(textSkeletons?.length).toBe(2);
     });
@@ -384,11 +390,11 @@ describe('Skeleton Component', () => {
       expect(skeleton).toHaveClass('border-2', 'border-nb-black');
     });
 
-    it('should have 3px border on composed skeletons', () => {
+    it('should have 2px border on composed skeletons', () => {
       const { container } = render(<SkeletonCard />);
 
       const card = container.firstChild;
-      expect(card).toHaveClass('border-3', 'border-nb-black');
+      expect(card).toHaveClass('border-2', 'border-nb-black');
     });
 
     it('should have hard shadow on skeleton card', () => {
@@ -468,7 +474,7 @@ describe('Skeleton Component', () => {
         </div>
       );
 
-      const cards = container.querySelectorAll('.border-3.border-nb-black.bg-nb-white');
+      const cards = container.querySelectorAll('.border-2.border-nb-black.bg-nb-white');
       expect(cards.length).toBe(3);
     });
 
@@ -477,7 +483,8 @@ describe('Skeleton Component', () => {
 
       const { container } = render(<SkeletonTable rows={10} />);
       const rows = container.querySelectorAll('.border-b-2');
-      expect(rows.length).toBe(10);
+      // Header row (1) + data rows (10) = 11 total
+      expect(rows.length).toBe(11);
     });
   });
 
@@ -489,12 +496,12 @@ describe('Skeleton Component', () => {
       expect(skeleton.tagName).toBe('DIV');
     });
 
-    it('should not interfere with screen readers', () => {
+    it('should have screen reader support', () => {
       const { container } = render(<Skeleton />);
 
       const skeleton = container.firstChild as HTMLElement;
-      expect(skeleton).not.toHaveAttribute('role');
-      expect(skeleton).not.toHaveAttribute('aria-label');
+      expect(skeleton).toHaveAttribute('role', 'status');
+      expect(skeleton).toHaveAttribute('aria-label', 'Memuat...');
     });
 
     it('should be visually distinct as loading state', () => {

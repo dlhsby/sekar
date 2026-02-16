@@ -1,19 +1,8 @@
 import { apiClient } from './client';
+import type { UserRole } from '@/types/models';
 
 /**
- * User Role Type
- * Must match backend UserRole enum
- */
-export type UserRole =
-  | 'admin'
-  | 'top_management'
-  | 'kepala_rayon'
-  | 'koordinator_lapangan'
-  | 'worker'
-  | 'linmas';
-
-/**
- * User interface from backend
+ * User interface from backend (Phase 2C)
  */
 export interface User {
   id: string;
@@ -21,7 +10,7 @@ export interface User {
   full_name: string;
   role: UserRole;
   rayon_id?: string;
-  created_at?: string;
+  area_id?: string;
   assigned_area?: {
     id: string;
     name: string;
@@ -32,6 +21,8 @@ export interface User {
     address?: string;
   };
 }
+
+export type { UserRole };
 
 /**
  * Login credentials
@@ -52,40 +43,23 @@ export interface AuthResponse {
 
 /**
  * Auth API Client
- * Handles authentication-related API calls
  */
 export const authApi = {
-  /**
-   * Login with username and password
-   * Backend sets httpOnly cookies for both access and refresh tokens
-   */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
     return response.data;
   },
 
-  /**
-   * Logout current user
-   * Backend clears httpOnly cookies
-   */
   logout: async (): Promise<{ message: string }> => {
     const response = await apiClient.post<{ message: string }>('/auth/logout');
     return response.data;
   },
 
-  /**
-   * Refresh access token using refresh token from httpOnly cookie
-   * Backend rotates both access and refresh tokens
-   */
   refreshToken: async (): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/auth/refresh');
     return response.data;
   },
 
-  /**
-   * Get current authenticated user
-   * Requires valid access token in httpOnly cookie
-   */
   getCurrentUser: async (): Promise<User> => {
     const response = await apiClient.get<User>('/auth/me');
     return response.data;

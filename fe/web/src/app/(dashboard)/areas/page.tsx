@@ -58,7 +58,7 @@ export default function AreasPage() {
   const { data: areaTypes } = useAreaTypes();
 
   // Check if user is admin
-  const isAdmin = user?.role === 'admin' || user?.role === 'top_management';
+  const isAdmin = user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
 
   // Handle filter changes
   const handleSearchChange = (value: string) => {

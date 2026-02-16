@@ -38,7 +38,7 @@ describe('EmptyState Component', () => {
       const { container } = render(<EmptyState />);
 
       const emptyState = container.firstChild;
-      expect(emptyState).toHaveClass('border-3', 'border-nb-black', 'shadow-nb-sm');
+      expect(emptyState).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-sm');
     });
   });
 
@@ -415,7 +415,7 @@ describe('EmptyState Component', () => {
       const { container } = render(<EmptyState />);
 
       const emptyState = container.firstChild;
-      expect(emptyState).toHaveClass('border-3', 'border-nb-black');
+      expect(emptyState).toHaveClass('border-2', 'border-nb-black');
     });
 
     it('should have hard shadow', () => {
@@ -429,7 +429,7 @@ describe('EmptyState Component', () => {
       const { container } = render(<EmptyState />);
 
       const iconContainer = container.querySelector('.w-16.h-16');
-      expect(iconContainer).toHaveClass('border-3', 'border-nb-black', 'shadow-nb-sm');
+      expect(iconContainer).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-sm');
     });
 
     it('should have white background', () => {
@@ -459,7 +459,7 @@ describe('EmptyState Component', () => {
       const { container } = render(<EmptyState className="my-8" />);
 
       const emptyState = container.firstChild;
-      expect(emptyState).toHaveClass('my-8', 'border-3', 'border-nb-black');
+      expect(emptyState).toHaveClass('my-8', 'border-2', 'border-nb-black');
     });
 
     it('should forward ref correctly', () => {

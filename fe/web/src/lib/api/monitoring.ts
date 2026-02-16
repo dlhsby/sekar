@@ -1,25 +1,25 @@
 /**
- * Monitoring API Client
- * Real-time worker tracking and area monitoring
+ * Monitoring API Client (Phase 2C - terminology updated)
  */
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
+import type { UserRole } from '@/types/models';
 
 /**
- * City-Wide Statistics Interface
+ * City-Wide Statistics Interface (Phase 2C)
  */
 export interface CityStats {
   timestamp: string;
   summary: {
     total_rayons: number;
     total_areas: number;
-    total_workers: number;
+    total_users: number;
     total_linmas: number;
-    workers_online: number;
+    users_online: number;
     linmas_online: number;
     active_shifts: number;
-    reports_today: number;
+    activities_today: number;
     tasks_pending: number;
     tasks_in_progress: number;
   };
@@ -36,12 +36,12 @@ export interface RayonMonitoringStats {
   };
   summary: {
     total_areas: number;
-    total_workers: number;
+    total_users: number;
     total_linmas: number;
-    workers_online: number;
+    users_online: number;
     linmas_online: number;
     active_shifts: number;
-    reports_today: number;
+    activities_today: number;
     understaffed_areas: number;
   };
 }
@@ -64,22 +64,22 @@ export interface AreaMonitoringStats {
       start_time: string;
       end_time: string;
     };
-    required_workers: number;
+    required_users: number;
     required_linmas: number;
-    assigned_workers: number;
+    assigned_users: number;
     assigned_linmas: number;
-    active_workers: number;
+    active_users: number;
     active_linmas: number;
   };
 }
 
 /**
- * Live Worker Position Interface
+ * Live User Position Interface (Phase 2C - renamed from LiveWorker)
  */
-export interface LiveWorker {
+export interface LiveUser {
   user_id: string;
   full_name: string;
-  role: 'worker' | 'linmas';
+  role: UserRole;
   area_id: string;
   area_name: string;
   shift_id: string;
@@ -91,18 +91,18 @@ export interface LiveWorker {
 }
 
 /**
- * Live Workers Response Interface
+ * Live Users Response
  */
-export interface LiveWorkersResponse {
+export interface LiveUsersResponse {
   timestamp: string;
-  workers: LiveWorker[];
+  users: LiveUser[];
   total: number;
 }
 
 /**
- * Live Workers Filters
+ * Live Users Filters
  */
-export interface LiveWorkersFilters {
+export interface LiveUsersFilters {
   rayon_id?: string;
   area_id?: string;
 }
@@ -115,13 +115,12 @@ export const monitoringKeys = {
   city: () => [...monitoringKeys.all, 'city'] as const,
   rayon: (id: string) => [...monitoringKeys.all, 'rayon', id] as const,
   area: (id: string) => [...monitoringKeys.all, 'area', id] as const,
-  liveWorkers: (filters?: LiveWorkersFilters) =>
-    [...monitoringKeys.all, 'live-workers', filters] as const,
+  liveUsers: (filters?: LiveUsersFilters) =>
+    [...monitoringKeys.all, 'live-users', filters] as const,
 };
 
 /**
  * Fetch City-Wide Statistics
- * Access: Admin + TopManagement
  */
 export function useCityStats() {
   return useQuery({
@@ -130,14 +129,13 @@ export function useCityStats() {
       const response = await apiClient.get<CityStats>('/monitoring/city');
       return response.data;
     },
-    staleTime: 30 * 1000, // 30 seconds (real-time data)
-    refetchInterval: 30 * 1000, // Auto-refresh every 30s
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }
 
 /**
  * Fetch Rayon Statistics
- * Access: Admin + TopManagement + KepalaRayon
  */
 export function useRayonMonitoring(rayonId: string) {
   return useQuery({
@@ -146,15 +144,14 @@ export function useRayonMonitoring(rayonId: string) {
       const response = await apiClient.get<RayonMonitoringStats>(`/monitoring/rayon/${rayonId}`);
       return response.data;
     },
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 30 * 1000, // Auto-refresh every 30s
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
     enabled: !!rayonId,
   });
 }
 
 /**
  * Fetch Area Statistics
- * Access: Admin + TopManagement + KepalaRayon + KoordinatorLapangan
  */
 export function useAreaMonitoring(areaId: string) {
   return useQuery({
@@ -163,26 +160,25 @@ export function useAreaMonitoring(areaId: string) {
       const response = await apiClient.get<AreaMonitoringStats>(`/monitoring/area/${areaId}`);
       return response.data;
     },
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 30 * 1000, // Auto-refresh every 30s
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
     enabled: !!areaId,
   });
 }
 
 /**
- * Fetch Live Worker Positions
- * Access: Admin + TopManagement + KepalaRayon + KoordinatorLapangan
+ * Fetch Live User Positions (Phase 2C - renamed from useLiveWorkers)
  */
-export function useLiveWorkers(filters?: LiveWorkersFilters) {
+export function useLiveUsers(filters?: LiveUsersFilters) {
   return useQuery({
-    queryKey: monitoringKeys.liveWorkers(filters),
+    queryKey: monitoringKeys.liveUsers(filters),
     queryFn: async () => {
-      const response = await apiClient.get<LiveWorkersResponse>('/monitoring/live-workers', {
+      const response = await apiClient.get<LiveUsersResponse>('/monitoring/live-users', {
         params: filters,
       });
       return response.data;
     },
-    staleTime: 15 * 1000, // 15 seconds (very fresh data)
-    refetchInterval: 15 * 1000, // Auto-refresh every 15s for live tracking
+    staleTime: 15 * 1000,
+    refetchInterval: 15 * 1000,
   });
 }
