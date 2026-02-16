@@ -63,7 +63,7 @@ e2e/
 .eslintrc.json
 .prettierrc
 .prettierignore
-tsconfig.json
+# tsconfig.json - NEEDED for Docker build
 playwright.config.ts
 jest.config.js
 
