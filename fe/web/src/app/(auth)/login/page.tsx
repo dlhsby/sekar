@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,17 +22,9 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 /**
- * Login Page
- *
- * Features:
- * - Username and password authentication
- * - Form validation with Zod
- * - Loading state during login
- * - Error messages
- * - Redirect after successful login
- * - Redirect parameter support (redirect to intended page)
+ * Login Form Component (wrapped in Suspense to fix CSR bailout)
  */
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, user, loading: authLoading } = useAuth();
@@ -176,5 +168,22 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Login Page with Suspense boundary to prevent CSR bailout
+ */
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-nb-background flex items-center justify-center">
+          <div className="text-nb-gray-600">Loading...</div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
