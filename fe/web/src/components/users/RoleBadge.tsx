@@ -1,3 +1,5 @@
+'use client';
+
 import { Badge } from '@/components/ui';
 import type { UserRole } from '@/types/models';
 import { ROLE_LABELS, ROLE_BADGE_VARIANTS } from '@/lib/constants/roles';
