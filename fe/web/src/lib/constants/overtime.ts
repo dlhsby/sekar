@@ -11,8 +11,9 @@ export const OVERTIME_STATUS_LABELS: Record<OvertimeStatus, string> = {
   rejected: 'Ditolak',
 };
 
-export const OVERTIME_STATUS_BADGES: Record<OvertimeStatus, 'warning' | 'success' | 'destructive'> = {
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'destructive',
-};
+export const OVERTIME_STATUS_BADGES: Record<OvertimeStatus, 'warning' | 'success' | 'destructive'> =
+  {
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'destructive',
+  };

@@ -142,8 +142,7 @@ export default function ActivitiesPage() {
     },
   ];
 
-  const hasActiveFilters =
-    filters.activityTypeId !== 'all' || filters.fromDate || filters.toDate;
+  const hasActiveFilters = filters.activityTypeId !== 'all' || filters.fromDate || filters.toDate;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -175,9 +174,7 @@ export default function ActivitiesPage() {
               label="Sampai Tanggal"
               type="date"
               value={filters.toDate}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, toDate: e.target.value, page: 1 }))
-              }
+              onChange={(e) => setFilters((prev) => ({ ...prev, toDate: e.target.value, page: 1 }))}
             />
           </div>
 
@@ -219,7 +216,9 @@ export default function ActivitiesPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setFilters((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))
+                  }
                   disabled={pagination.page === 1}
                   leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >

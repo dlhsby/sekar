@@ -24,7 +24,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
   const { data: area, isLoading, error } = useArea(id);
   const [deleteModal, setDeleteModal] = useState(false);
 
-  const isAdmin = user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
+  const isAdmin =
+    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
 
   // Handle map load - draw polygon
   const handleMapLoad = (map: mapboxgl.Map) => {

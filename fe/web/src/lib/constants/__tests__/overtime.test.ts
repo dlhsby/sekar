@@ -26,14 +26,14 @@ describe('Overtime Constants', () => {
 
     it('should cover all OvertimeStatus values', () => {
       const statuses: OvertimeStatus[] = ['pending', 'approved', 'rejected'];
-      statuses.forEach(status => {
+      statuses.forEach((status) => {
         expect(OVERTIME_STATUS_LABELS[status]).toBeDefined();
         expect(typeof OVERTIME_STATUS_LABELS[status]).toBe('string');
       });
     });
 
     it('should have non-empty labels', () => {
-      Object.values(OVERTIME_STATUS_LABELS).forEach(label => {
+      Object.values(OVERTIME_STATUS_LABELS).forEach((label) => {
         expect(label.length).toBeGreaterThan(0);
       });
     });
@@ -58,14 +58,14 @@ describe('Overtime Constants', () => {
 
     it('should only use valid badge variants', () => {
       const validVariants = ['warning', 'success', 'destructive'];
-      Object.values(OVERTIME_STATUS_BADGES).forEach(variant => {
+      Object.values(OVERTIME_STATUS_BADGES).forEach((variant) => {
         expect(validVariants).toContain(variant);
       });
     });
 
     it('should cover all OvertimeStatus values', () => {
       const statuses: OvertimeStatus[] = ['pending', 'approved', 'rejected'];
-      statuses.forEach(status => {
+      statuses.forEach((status) => {
         expect(OVERTIME_STATUS_BADGES[status]).toBeDefined();
       });
     });
@@ -80,7 +80,7 @@ describe('Overtime Constants', () => {
 
     it('should provide both label and badge for each status', () => {
       const statuses: OvertimeStatus[] = ['pending', 'approved', 'rejected'];
-      statuses.forEach(status => {
+      statuses.forEach((status) => {
         expect(OVERTIME_STATUS_LABELS[status]).toBeDefined();
         expect(OVERTIME_STATUS_BADGES[status]).toBeDefined();
       });

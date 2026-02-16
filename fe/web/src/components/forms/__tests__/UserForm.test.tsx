@@ -89,7 +89,9 @@ describe('UserForm', () => {
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} />, { wrapper: createWrapper() });
+      render(<UserForm {...defaultProps} initialData={initialData} />, {
+        wrapper: createWrapper(),
+      });
 
       const passwordInput = screen.getByLabelText(/password/i);
       expect(passwordInput).not.toHaveAttribute('required');
@@ -106,7 +108,9 @@ describe('UserForm', () => {
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} />, { wrapper: createWrapper() });
+      render(<UserForm {...defaultProps} initialData={initialData} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
       expect(screen.getByDisplayValue('johndoe')).toBeInTheDocument();
@@ -290,7 +294,9 @@ describe('UserForm', () => {
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, { wrapper: createWrapper() });
+      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       await user.clear(screen.getByLabelText(/nama lengkap/i));
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Updated User');
@@ -431,7 +437,9 @@ describe('UserForm', () => {
       const onSubmit = jest.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 1000)));
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} onCancel={onCancel} />, { wrapper: createWrapper() });
+      render(<UserForm {...defaultProps} onSubmit={onSubmit} onCancel={onCancel} />, {
+        wrapper: createWrapper(),
+      });
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test');
       await user.type(screen.getByLabelText(/email/i), 'test@example.com');
@@ -446,7 +454,9 @@ describe('UserForm', () => {
 
   describe('Custom Submit Button Text', () => {
     it('should display custom submit button text', () => {
-      render(<UserForm {...defaultProps} submitText="Buat User Baru" />, { wrapper: createWrapper() });
+      render(<UserForm {...defaultProps} submitText="Buat User Baru" />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByRole('button', { name: /buat user baru/i })).toBeInTheDocument();
     });

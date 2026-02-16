@@ -324,7 +324,9 @@ describe('Areas API', () => {
         },
       };
 
-      mockAxios.onPost('/areas').reply(201, { ...newArea, id: '10', created_at: '2026-02-04', updated_at: '2026-02-04' });
+      mockAxios
+        .onPost('/areas')
+        .reply(201, { ...newArea, id: '10', created_at: '2026-02-04', updated_at: '2026-02-04' });
 
       const { result } = renderHook(() => useCreateArea(), { wrapper: createWrapper() });
 
