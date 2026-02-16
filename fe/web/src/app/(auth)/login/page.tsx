@@ -9,7 +9,6 @@ import { Eye, EyeOff } from 'lucide-react';
 import { FormInput, Button, Card, CardContent } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
-import { clearAuthCookies } from '@/lib/utils/cookies';
 
 /**
  * Login form schema with validation
@@ -33,11 +32,6 @@ function LoginForm() {
 
   // Get redirect URL from query params (if any)
   const redirect = searchParams.get('redirect') || '/';
-
-  // Clear stale cookies on mount to break redirect loops
-  useEffect(() => {
-    clearAuthCookies();
-  }, []);
 
   // Form with react-hook-form and zod validation
   const {
