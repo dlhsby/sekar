@@ -66,8 +66,8 @@ export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUser
           {/* Warning Message */}
           <div className="text-center">
             <p className="text-sm text-nb-gray-700">
-              Apakah Anda yakin ingin menghapus user <span className="font-bold">{user?.full_name}</span>
-              ?
+              Apakah Anda yakin ingin menghapus user{' '}
+              <span className="font-bold">{user?.full_name}</span>?
             </p>
             <p className="text-sm text-nb-gray-600 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
           </div>

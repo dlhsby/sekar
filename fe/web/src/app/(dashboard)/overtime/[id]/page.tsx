@@ -152,7 +152,10 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => { setShowRejectForm(false); setRejectReason(''); }}
+                  onClick={() => {
+                    setShowRejectForm(false);
+                    setRejectReason('');
+                  }}
                 >
                   Batal
                 </Button>
@@ -251,9 +254,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
       {overtime.photo_urls && overtime.photo_urls.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">
-              Foto ({overtime.photo_urls.length})
-            </h2>
+            <h2 className="text-xl font-bold text-nb-black">Foto ({overtime.photo_urls.length})</h2>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -262,11 +263,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
                   key={index}
                   className="bg-nb-gray-100 border-2 border-nb-black overflow-hidden"
                 >
-                  <img
-                    src={url}
-                    alt={`Foto lembur ${index + 1}`}
-                    className="w-full h-auto"
-                  />
+                  <img src={url} alt={`Foto lembur ${index + 1}`} className="w-full h-auto" />
                 </div>
               ))}
             </div>

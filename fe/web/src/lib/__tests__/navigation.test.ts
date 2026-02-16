@@ -53,9 +53,10 @@ describe('Navigation Utilities', () => {
 
     it('should have admin-only routes', () => {
       const adminOnlyItems = navigationItems.filter(
-        (item) => item.roles.length === 2 &&
-                 item.roles.includes('admin_system') &&
-                 item.roles.includes('superadmin')
+        (item) =>
+          item.roles.length === 2 &&
+          item.roles.includes('admin_system') &&
+          item.roles.includes('superadmin')
       );
 
       expect(adminOnlyItems.length).toBeGreaterThan(0);

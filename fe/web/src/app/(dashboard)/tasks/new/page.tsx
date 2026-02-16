@@ -24,7 +24,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { TASK_MANAGER_ROLES, VALID_TASK_ASSIGNMENTS, hasRole, ROLE_LABELS } from '@/lib/constants/roles';
+import {
+  TASK_MANAGER_ROLES,
+  VALID_TASK_ASSIGNMENTS,
+  hasRole,
+  ROLE_LABELS,
+} from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 
 export default function CreateTaskPage() {
@@ -52,7 +57,7 @@ export default function CreateTaskPage() {
   const hasAccess = user && hasRole(user.role, TASK_MANAGER_ROLES);
 
   // Get assignable roles based on current user role
-  const assignableRoles = user ? (VALID_TASK_ASSIGNMENTS[user.role] || []) : [];
+  const assignableRoles = user ? VALID_TASK_ASSIGNMENTS[user.role] || [] : [];
 
   // Loading state - show spinner while checking auth
   if (authLoading) {

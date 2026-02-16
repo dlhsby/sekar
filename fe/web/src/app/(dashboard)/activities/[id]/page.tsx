@@ -139,11 +139,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                     key={index}
                     className="bg-nb-gray-100 border-2 border-nb-black overflow-hidden"
                   >
-                    <img
-                      src={url}
-                      alt={`Foto aktivitas ${index + 1}`}
-                      className="w-full h-auto"
-                    />
+                    <img src={url} alt={`Foto aktivitas ${index + 1}`} className="w-full h-auto" />
                   </div>
                 ))}
               </div>

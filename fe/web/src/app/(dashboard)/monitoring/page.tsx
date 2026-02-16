@@ -240,7 +240,9 @@ export default function MonitoringPage() {
           {(!areaFilter || areaFilter === 'all') && (
             <Card variant="elevated">
               <CardContent>
-                <div className="text-sm font-semibold text-nb-gray-600 mb-2">Aktivitas Hari Ini</div>
+                <div className="text-sm font-semibold text-nb-gray-600 mb-2">
+                  Aktivitas Hari Ini
+                </div>
                 <div className="text-3xl font-black text-nb-black">
                   {rayonFilter && rayonFilter !== 'all'
                     ? (rayonStats?.summary?.activities_today ?? 0)

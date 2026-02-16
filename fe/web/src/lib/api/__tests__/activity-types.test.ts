@@ -63,35 +63,29 @@ describe('Activity Types API', () => {
     });
 
     it('should fetch activity types filtered by satgas role', async () => {
-      const satgasTypes = mockActivityTypes.filter(
-        t => t.applicable_roles.includes('satgas')
-      );
+      const satgasTypes = mockActivityTypes.filter((t) => t.applicable_roles.includes('satgas'));
 
-      mock.onGet('/activity-types', { params: { role: 'satgas' } })
-        .reply(200, satgasTypes);
+      mock.onGet('/activity-types', { params: { role: 'satgas' } }).reply(200, satgasTypes);
 
       const response = await apiClient.get<ActivityType[]>('/activity-types', {
         params: { role: 'satgas' as UserRole },
       });
 
       expect(response.data).toHaveLength(2);
-      expect(response.data.every(t => t.applicable_roles.includes('satgas'))).toBe(true);
+      expect(response.data.every((t) => t.applicable_roles.includes('satgas'))).toBe(true);
     });
 
     it('should fetch activity types filtered by linmas role', async () => {
-      const linmasTypes = mockActivityTypes.filter(
-        t => t.applicable_roles.includes('linmas')
-      );
+      const linmasTypes = mockActivityTypes.filter((t) => t.applicable_roles.includes('linmas'));
 
-      mock.onGet('/activity-types', { params: { role: 'linmas' } })
-        .reply(200, linmasTypes);
+      mock.onGet('/activity-types', { params: { role: 'linmas' } }).reply(200, linmasTypes);
 
       const response = await apiClient.get<ActivityType[]>('/activity-types', {
         params: { role: 'linmas' as UserRole },
       });
 
       expect(response.data).toHaveLength(2);
-      expect(response.data.every(t => t.applicable_roles.includes('linmas'))).toBe(true);
+      expect(response.data.every((t) => t.applicable_roles.includes('linmas'))).toBe(true);
     });
 
     it('should handle empty activity types list', async () => {
@@ -135,12 +129,11 @@ describe('Activity Types API', () => {
     });
 
     it('should handle invalid role parameter', async () => {
-      mock.onGet('/activity-types', { params: { role: 'invalid_role' } })
-        .reply(400, {
-          statusCode: 400,
-          message: 'Invalid role parameter',
-          error: 'BadRequest',
-        });
+      mock.onGet('/activity-types', { params: { role: 'invalid_role' } }).reply(400, {
+        statusCode: 400,
+        message: 'Invalid role parameter',
+        error: 'BadRequest',
+      });
 
       await expect(
         apiClient.get('/activity-types', { params: { role: 'invalid_role' } })

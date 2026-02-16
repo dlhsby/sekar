@@ -20,8 +20,8 @@ const API_BASE_URL = (() => {
   ) {
     console.error(
       'NEXT_PUBLIC_API_URL is not set in production. ' +
-      'Please set it in your .env.production file. ' +
-      'Falling back to localhost (API calls will fail).'
+        'Please set it in your .env.production file. ' +
+        'Falling back to localhost (API calls will fail).'
     );
   }
 

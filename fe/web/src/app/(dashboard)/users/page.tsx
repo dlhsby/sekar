@@ -80,9 +80,7 @@ export default function UsersPage() {
     {
       key: 'area',
       title: 'Area',
-      render: (_, row) => (
-        <span className="text-sm">{row.area ? `${row.area.name}` : '-'}</span>
-      ),
+      render: (_, row) => <span className="text-sm">{row.area ? `${row.area.name}` : '-'}</span>,
     },
     {
       key: 'actions',

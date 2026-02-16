@@ -84,12 +84,13 @@ export default function TasksPage() {
     completed: 'success',
   };
 
-  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> = {
-    low: 'secondary',
-    normal: 'success',
-    high: 'warning',
-    urgent: 'destructive',
-  };
+  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> =
+    {
+      low: 'secondary',
+      normal: 'success',
+      high: 'warning',
+      urgent: 'destructive',
+    };
 
   const columns: ColumnDef<Task>[] = [
     {
@@ -170,20 +171,30 @@ export default function TasksPage() {
             <FormSelect
               label="Filter Status"
               value={statusFilter}
-              onChange={(value) => { setStatusFilter(value as TaskStatus | 'all'); setPage(1); }}
+              onChange={(value) => {
+                setStatusFilter(value as TaskStatus | 'all');
+                setPage(1);
+              }}
               options={statusOptions}
             />
             <FormSelect
               label="Filter Prioritas"
               value={priorityFilter}
-              onChange={(value) => { setPriorityFilter(value as TaskPriority | 'all'); setPage(1); }}
+              onChange={(value) => {
+                setPriorityFilter(value as TaskPriority | 'all');
+                setPage(1);
+              }}
               options={priorityOptions}
             />
           </div>
           {(statusFilter !== 'all' || priorityFilter !== 'all') && (
             <Button
               variant="secondary"
-              onClick={() => { setStatusFilter('all'); setPriorityFilter('all'); setPage(1); }}
+              onClick={() => {
+                setStatusFilter('all');
+                setPriorityFilter('all');
+                setPage(1);
+              }}
               className="mt-4"
             >
               Reset Filter

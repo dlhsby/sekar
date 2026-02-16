@@ -58,22 +58,47 @@ const WELCOME_MESSAGES: Partial<Record<UserRole, string>> = {
 
 // Quick actions configuration
 const ADMIN_ACTIONS = [
-  { Icon: Users, title: 'Kelola Users', desc: 'Buat, edit, dan kelola akun pengguna', color: 'nb-primary' },
-  { Icon: Building2, title: 'Kelola Rayons', desc: 'Konfigurasi rayon dan hierarki', color: 'nb-success' },
-  { Icon: MapPin, title: 'Kelola Areas', desc: 'Buat dan konfigurasi area layanan', color: 'nb-warning' },
+  {
+    Icon: Users,
+    title: 'Kelola Users',
+    desc: 'Buat, edit, dan kelola akun pengguna',
+    color: 'nb-primary',
+  },
+  {
+    Icon: Building2,
+    title: 'Kelola Rayons',
+    desc: 'Konfigurasi rayon dan hierarki',
+    color: 'nb-success',
+  },
+  {
+    Icon: MapPin,
+    title: 'Kelola Areas',
+    desc: 'Buat dan konfigurasi area layanan',
+    color: 'nb-warning',
+  },
 ];
 
 const MONITORING_ACTIONS = [
-  { Icon: Map, title: 'Lihat Monitoring', desc: 'Pantau lokasi petugas secara real-time', color: 'nb-primary' },
-  { Icon: FileText, title: 'Lihat Aktivitas', desc: 'Tinjau aktivitas yang dilaporkan', color: 'nb-success' },
+  {
+    Icon: Map,
+    title: 'Lihat Monitoring',
+    desc: 'Pantau lokasi petugas secara real-time',
+    color: 'nb-primary',
+  },
+  {
+    Icon: FileText,
+    title: 'Lihat Aktivitas',
+    desc: 'Tinjau aktivitas yang dilaporkan',
+    color: 'nb-success',
+  },
   { Icon: Clock, title: 'Lihat Jadwal', desc: 'Cek jadwal tim dan shift', color: 'nb-warning' },
 ];
 
 export default function DashboardPage() {
   const user = useUser();
 
-  const stats = user ? (STATS_BY_ROLE[user.role] || []) : [];
-  const welcomeMessage = user ? (WELCOME_MESSAGES[user.role] || '') : '';
+  const stats = user ? STATS_BY_ROLE[user.role] || [] : [];
+  const welcomeMessage = user ? WELCOME_MESSAGES[user.role] || '' : '';
   const isAdmin = user?.role === 'admin_system' || user?.role === 'superadmin';
   const quickActions = isAdmin ? ADMIN_ACTIONS : MONITORING_ACTIONS;
 
@@ -117,7 +142,12 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {quickActions.map((action) => (
-          <Card key={action.title} variant="outlined" interactive className={`hover:border-${action.color}`}>
+          <Card
+            key={action.title}
+            variant="outlined"
+            interactive
+            className={`hover:border-${action.color}`}
+          >
             <CardContent className="text-center py-8">
               <action.Icon className={`h-12 w-12 mx-auto mb-3 text-${action.color}`} />
               <h3 className="font-bold text-lg text-nb-black">{action.title}</h3>

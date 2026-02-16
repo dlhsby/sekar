@@ -227,8 +227,9 @@ describe('Overtime API', () => {
         error: 'BadRequest',
       });
 
-      await expect(apiClient.patch('/overtime/overtime-1/reject', { rejection_reason: 'Test' }))
-        .rejects.toThrow();
+      await expect(
+        apiClient.patch('/overtime/overtime-1/reject', { rejection_reason: 'Test' })
+      ).rejects.toThrow();
     });
   });
 

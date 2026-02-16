@@ -100,9 +100,7 @@ export default function OvertimePage() {
     {
       key: 'date',
       header: 'Tanggal',
-      cell: (ot) => (
-        <div className="text-sm">{new Date(ot.date).toLocaleDateString('id-ID')}</div>
-      ),
+      cell: (ot) => <div className="text-sm">{new Date(ot.date).toLocaleDateString('id-ID')}</div>,
     },
     {
       key: 'user',
@@ -131,9 +129,7 @@ export default function OvertimePage() {
     {
       key: 'activity_type',
       header: 'Tipe Aktivitas',
-      cell: (ot) => (
-        <div className="text-sm">{ot.activity_type?.name || '-'}</div>
-      ),
+      cell: (ot) => <div className="text-sm">{ot.activity_type?.name || '-'}</div>,
     },
     {
       key: 'status',
@@ -210,20 +206,31 @@ export default function OvertimePage() {
               label="Dari Tanggal"
               type="date"
               value={fromDate}
-              onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setPage(1);
+              }}
             />
             <FormInput
               label="Sampai Tanggal"
               type="date"
               value={toDate}
-              onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
 
           {hasActiveFilters && (
             <Button
               variant="secondary"
-              onClick={() => { setStatusFilter('all'); setFromDate(''); setToDate(''); setPage(1); }}
+              onClick={() => {
+                setStatusFilter('all');
+                setFromDate('');
+                setToDate('');
+                setPage(1);
+              }}
               className="mt-4"
             >
               Reset Filter
@@ -256,7 +263,10 @@ export default function OvertimePage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => { setRejectingId(null); setRejectReason(''); }}
+                  onClick={() => {
+                    setRejectingId(null);
+                    setRejectReason('');
+                  }}
                 >
                   Batal
                 </Button>
