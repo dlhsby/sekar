@@ -23,11 +23,15 @@ export default function DebugPage() {
         <CardContent className="p-6">
           <h2 className="font-bold mb-4">Window Object</h2>
           <pre className="bg-nb-gray-100 p-4 rounded overflow-auto text-xs">
-            {JSON.stringify({
-              width: typeof window !== 'undefined' ? window.innerWidth : 0,
-              height: typeof window !== 'undefined' ? window.innerHeight : 0,
-              userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A',
-            }, null, 2)}
+            {JSON.stringify(
+              {
+                width: typeof window !== 'undefined' ? window.innerWidth : 0,
+                height: typeof window !== 'undefined' ? window.innerHeight : 0,
+                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A',
+              },
+              null,
+              2
+            )}
           </pre>
         </CardContent>
       </Card>
