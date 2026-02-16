@@ -8,12 +8,13 @@ import type { User } from '@/types/models';
  */
 
 const API_BASE_URL = (() => {
-  const url = process.env.NEXT_PUBLIC_API_URL;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiVersion = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
 
   // Only validate during runtime in production (not build time)
   // Check if we're in a browser or server-side during actual request
   if (
-    !url &&
+    !baseUrl &&
     process.env.NODE_ENV === 'production' &&
     typeof window !== 'undefined' // Only check in browser, not during SSG build
   ) {
@@ -24,7 +25,10 @@ const API_BASE_URL = (() => {
     );
   }
 
-  return url || 'http://localhost:3000/api/v1';
+  const url = baseUrl || 'http://localhost:3000';
+
+  // Construct full API URL: baseUrl/api/version
+  return `${url}/api/${apiVersion}`;
 })();
 
 // Create axios instance with default config
