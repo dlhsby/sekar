@@ -21,6 +21,7 @@ const config: Config = {
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/__tests__/**',
+    '!src/types/**',                  // Exclude TypeScript type definitions (no runtime code)
     '!src/app/**/page.tsx',           // Exclude Next.js pages (tested via E2E)
     '!src/app/**/layout.tsx',         // Exclude Next.js layouts
     '!src/app/**/loading.tsx',        // Exclude Next.js loading states

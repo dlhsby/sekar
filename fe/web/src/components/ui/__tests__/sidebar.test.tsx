@@ -159,21 +159,21 @@ describe('Sidebar Component', () => {
       render(<Sidebar items={mockItems} userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-navy');
+      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-sidebar');
     });
 
     it('should highlight active item with custom currentPath prop', () => {
       render(<Sidebar items={mockItems} currentPath="/tasks" />);
 
       const tasksLink = screen.getByText('Tugas').closest('a');
-      expect(tasksLink).toHaveClass('bg-nb-white', 'text-nb-navy');
+      expect(tasksLink).toHaveClass('bg-nb-white', 'text-nb-sidebar');
     });
 
     it('should highlight active item for nested paths', () => {
       render(<Sidebar items={mockItems} currentPath="/users/123" userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-navy');
+      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-sidebar');
     });
   });
 
@@ -313,18 +313,18 @@ describe('Sidebar Component', () => {
       const { container } = render(<Sidebar items={mockItems} />);
 
       const sidebar = container.querySelector('aside');
-      expect(sidebar).toHaveClass('border-r-3', 'border-nb-black');
+      expect(sidebar).toHaveClass('border-r-2', 'border-nb-black');
     });
 
     it('should have proper section borders', () => {
       const { container } = render(<Sidebar items={mockItems} user={mockUser} />);
 
       // Header border
-      const header = container.querySelector('.border-b-2.border-nb-navy-light');
+      const header = container.querySelector('.border-b-2.border-nb-sidebar-hover');
       expect(header).toBeInTheDocument();
 
       // User section border
-      const userSection = container.querySelector('.border-t-2.border-nb-navy-light');
+      const userSection = container.querySelector('.border-t-2.border-nb-sidebar-hover');
       expect(userSection).toBeInTheDocument();
     });
   });
