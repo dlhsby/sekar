@@ -255,7 +255,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           <div className="p-6 border-b-2 border-nb-sidebar-hover flex-shrink-0">
             {logo || (
               <>
-                <h1 className="text-2xl font-extrabold">{title}</h1>
+                <h1 className="text-2xl font-extrabold text-nb-white">{title}</h1>
                 <p className="text-nb-white/70 text-sm mt-1">{subtitle}</p>
               </>
             )}
