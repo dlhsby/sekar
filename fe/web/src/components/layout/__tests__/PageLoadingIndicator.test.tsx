@@ -1,5 +1,3 @@
-// @ts-nocheck
-/* eslint-disable */
 /**
  * Unit Tests: PageLoadingIndicator Component
  * Tests loading progress bar during navigation
