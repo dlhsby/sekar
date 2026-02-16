@@ -39,7 +39,9 @@ export function setAuthCookie(
     expires,
     maxAge,
     path = '/',
-    secure = process.env.NODE_ENV === 'production',
+    // Only use secure cookies if explicitly enabled via env var OR in production HTTPS
+    // For HTTP testing, set NEXT_PUBLIC_SECURE_COOKIES=false
+    secure = process.env.NEXT_PUBLIC_SECURE_COOKIES === 'true',
     sameSite = 'lax',
   } = options;
 
