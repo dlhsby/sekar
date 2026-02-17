@@ -26,7 +26,7 @@ import { submitOvertime } from '../../services/api/overtimeApi';
 import { useActivityTypes } from '../../hooks/useActivityTypes';
 import { mediaService, type Photo } from '../../services/media';
 import { requestCameraPermission } from '../../services/permissions';
-import { NBButton, NBTextInput, NBCard, NBBackgroundPattern, NBAlert } from '../../components/nb';
+import { NBButton, NBTextInput, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBAlert } from '../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
 import type { CreateOvertimeRequest } from '../../types/api.types';
 import type { Coordinates } from '../../types/models.types';
@@ -251,141 +251,175 @@ export const OvertimeSubmitScreen: React.FC<MainTabScreenProps<'OvertimeSubmit'>
           <Text style={styles.headerTitle}>Ajukan Lembur</Text>
         </View>
 
+        {/* Date & Time Card */}
         <NBCard style={styles.card}>
-          {/* Date */}
-          <Text style={styles.label}>Tanggal</Text>
-          <TouchableOpacity
-            style={styles.pickerButton}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={styles.pickerText}>
-              {form.date.toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Start Time */}
-          <Text style={styles.label}>Waktu Mulai</Text>
-          <TouchableOpacity
-            style={styles.pickerButton}
-            onPress={() => setShowStartTimePicker(true)}
-          >
-            <Text style={styles.pickerText}>{formatTime(form.startTime)}</Text>
-          </TouchableOpacity>
-
-          {/* End Time */}
-          <Text style={styles.label}>Waktu Selesai</Text>
-          <TouchableOpacity
-            style={styles.pickerButton}
-            onPress={() => setShowEndTimePicker(true)}
-          >
-            <Text style={styles.pickerText}>{formatTime(form.endTime)}</Text>
-          </TouchableOpacity>
-          {errors.time && <Text style={styles.errorText}>{errors.time}</Text>}
-
-          {/* Activity Type */}
-          <Text style={styles.label}>Jenis Aktivitas *</Text>
-          {loadingActivityTypes ? (
-            <ActivityIndicator />
-          ) : (
-            <View style={styles.pickerContainer}>
-              {activityTypes.map((type) => (
-                <TouchableOpacity
-                  key={type.id}
-                  style={[
-                    styles.optionButton,
-                    form.activityTypeId === type.id && styles.optionButtonActive,
-                  ]}
-                  onPress={() =>
-                    setForm((prev) => ({ ...prev, activityTypeId: type.id }))
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      form.activityTypeId === type.id && styles.optionTextActive,
-                    ]}
-                  >
-                    {type.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          {errors.activityType && (
-            <Text style={styles.errorText}>{errors.activityType}</Text>
-          )}
-
-          {/* Photos */}
-          <Text style={styles.label}>Foto (1-3) *</Text>
-          <View style={styles.photosContainer}>
-            {form.photos.map((photo) => (
-              <View key={photo.id} style={styles.photoWrapper}>
-                <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-                <TouchableOpacity
-                  style={styles.photoRemove}
-                  onPress={() => handleRemovePhoto(photo.id)}
-                >
-                  <Text style={styles.photoRemoveText}>×</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-            {form.photos.length < 3 && (
-              <TouchableOpacity
-                style={styles.photoAdd}
-                onPress={handleCapturePhoto}
-              >
-                <Text style={styles.photoAddText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
-
-          {/* Description */}
-          <NBTextInput
-            label="Deskripsi *"
-            value={form.description}
-            onChangeText={(text) =>
-              setForm((prev) => ({ ...prev, description: text }))
-            }
-            placeholder="Jelaskan aktivitas lembur..."
-            multiline
-            numberOfLines={4}
-            error={errors.description}
-          />
-
-          {/* GPS */}
-          <View style={styles.gpsContainer}>
-            <Text style={styles.label}>Lokasi GPS</Text>
-            {isCapturingLocation ? (
-              <ActivityIndicator size="small" color={nbColors.primary} />
-            ) : form.location ? (
-              <Text style={styles.gpsText}>
-                {form.location.latitude.toFixed(6)}, {form.location.longitude.toFixed(6)}
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>📅 TANGGAL & WAKTU</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            {/* Date */}
+            <Text style={styles.label}>Tanggal</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={styles.pickerText}>
+                {form.date.toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </Text>
-            ) : (
-              <Text style={styles.gpsTextError}>Lokasi tidak tersedia</Text>
-            )}
-            <NBButton
-              title="Perbarui GPS"
-              variant="secondary"
-              size="sm"
-              onPress={captureLocation}
-            />
-          </View>
+            </TouchableOpacity>
 
-          {/* Notes */}
-          <NBTextInput
-            label="Catatan (Opsional)"
-            value={form.notes}
-            onChangeText={(text) => setForm((prev) => ({ ...prev, notes: text }))}
-            placeholder="Tambahkan catatan jika diperlukan..."
-            multiline
-            numberOfLines={2}
-          />
+            {/* Start Time */}
+            <Text style={styles.label}>Waktu Mulai</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowStartTimePicker(true)}
+            >
+              <Text style={styles.pickerText}>{formatTime(form.startTime)}</Text>
+            </TouchableOpacity>
+
+            {/* End Time */}
+            <Text style={styles.label}>Waktu Selesai</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowEndTimePicker(true)}
+            >
+              <Text style={styles.pickerText}>{formatTime(form.endTime)}</Text>
+            </TouchableOpacity>
+            {errors.time && <Text style={styles.errorText}>{errors.time}</Text>}
+          </NBCardContent>
+        </NBCard>
+
+        {/* Activity Type Card */}
+        <NBCard style={styles.card}>
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            {loadingActivityTypes ? (
+              <ActivityIndicator />
+            ) : (
+              <View style={styles.pickerContainer}>
+                {activityTypes.map((type) => (
+                  <TouchableOpacity
+                    key={type.id}
+                    style={[
+                      styles.optionButton,
+                      form.activityTypeId === type.id && styles.optionButtonActive,
+                    ]}
+                    onPress={() =>
+                      setForm((prev) => ({ ...prev, activityTypeId: type.id }))
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        form.activityTypeId === type.id && styles.optionTextActive,
+                      ]}
+                    >
+                      {type.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {errors.activityType && (
+              <Text style={styles.errorText}>{errors.activityType}</Text>
+            )}
+          </NBCardContent>
+        </NBCard>
+
+        {/* Photos Card */}
+        <NBCard style={styles.card}>
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>📸 FOTO BUKTI</Text>
+            <Text style={styles.sectionSubtitle}>Tambahkan 1-3 foto pekerjaan lembur</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
+            <View style={styles.photosContainer}>
+              {form.photos.map((photo) => (
+                <View key={photo.id} style={styles.photoWrapper}>
+                  <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+                  <TouchableOpacity
+                    style={styles.photoRemove}
+                    onPress={() => handleRemovePhoto(photo.id)}
+                  >
+                    <Text style={styles.photoRemoveText}>×</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {form.photos.length < 3 && (
+                <TouchableOpacity
+                  style={styles.photoAdd}
+                  onPress={handleCapturePhoto}
+                >
+                  <Text style={styles.photoAddText}>+</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </NBCardContent>
+        </NBCard>
+
+        {/* Description Card */}
+        <NBCard style={styles.card}>
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>📝 DESKRIPSI</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            <NBTextInput
+              label="Deskripsi Aktivitas *"
+              value={form.description}
+              onChangeText={(text) =>
+                setForm((prev) => ({ ...prev, description: text }))
+              }
+              placeholder="Jelaskan aktivitas lembur yang dilakukan..."
+              multiline
+              numberOfLines={4}
+              error={errors.description}
+            />
+          </NBCardContent>
+        </NBCard>
+
+        {/* GPS & Notes Card */}
+        <NBCard style={styles.card}>
+          <NBCardHeader>
+            <Text style={styles.sectionTitle}>📍 LOKASI & CATATAN</Text>
+          </NBCardHeader>
+          <NBCardContent>
+            {/* GPS */}
+            <View style={styles.gpsContainer}>
+              <Text style={styles.label}>Lokasi GPS</Text>
+              {isCapturingLocation ? (
+                <ActivityIndicator size="small" color={nbColors.primary} />
+              ) : form.location ? (
+                <Text style={styles.gpsText}>
+                  {form.location.latitude.toFixed(6)}, {form.location.longitude.toFixed(6)}
+                </Text>
+              ) : (
+                <Text style={styles.gpsTextError}>Lokasi tidak tersedia</Text>
+              )}
+              <NBButton
+                title="Perbarui GPS"
+                variant="secondary"
+                size="sm"
+                onPress={captureLocation}
+              />
+            </View>
+
+            {/* Notes */}
+            <NBTextInput
+              label="Catatan (Opsional)"
+              value={form.notes}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, notes: text }))}
+              placeholder="Tambahkan catatan jika diperlukan..."
+              multiline
+              numberOfLines={2}
+            />
+          </NBCardContent>
         </NBCard>
 
         {/* Submit Button */}
@@ -469,7 +503,21 @@ const styles = StyleSheet.create({
     color: nbColors.black,
   },
   card: {
-    margin: nbSpacing.md,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+  },
+  sectionTitle: {
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionSubtitle: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.gray[600],
+    marginTop: nbSpacing.xs,
   },
   label: {
     fontSize: nbTypography.fontSize.sm,
@@ -484,7 +532,7 @@ const styles = StyleSheet.create({
     borderRadius: nbBorderRadius.base,
     backgroundColor: nbColors.white,
     paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm,
+    paddingVertical: nbSpacing.md,
     minHeight: 48,
     justifyContent: 'center',
   },
@@ -502,12 +550,13 @@ const styles = StyleSheet.create({
     borderRadius: nbBorderRadius.base,
     backgroundColor: nbColors.white,
     paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm,
+    paddingVertical: nbSpacing.md,
     minHeight: 48,
     justifyContent: 'center',
   },
   optionButtonActive: {
     backgroundColor: nbColors.primary,
+    borderWidth: nbBorders.thick, // Emphasize selected state
   },
   optionText: {
     fontSize: nbTypography.fontSize.base,
@@ -568,8 +617,8 @@ const styles = StyleSheet.create({
     color: nbColors.gray[400],
   },
   gpsContainer: {
-    marginTop: nbSpacing.md,
-    gap: nbSpacing.xs,
+    gap: nbSpacing.sm,
+    marginBottom: nbSpacing.md,
   },
   gpsText: {
     fontSize: nbTypography.fontSize.sm,

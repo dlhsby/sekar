@@ -400,7 +400,7 @@ describe('ActivitiesService', () => {
       expect(result).toHaveLength(1);
       expect(mockActivitiesRepo.find).toHaveBeenCalledWith({
         where: { user_id: mockUser.id },
-        relations: ['user', 'shift', 'shift.area'],
+        relations: ['user', 'shift', 'shift.area', 'activityType'],
         order: { created_at: 'DESC' },
       });
     });

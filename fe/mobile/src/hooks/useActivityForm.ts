@@ -55,6 +55,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
+  const [sortedActivityTypes, setSortedActivityTypes] = useState<ActivityType[]>([]);
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
   const formRef = useRef<FormState>(form);
@@ -69,7 +70,25 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
       const response = await getMyActivityTypes();
       if (response.error) { throw new Error(response.error); }
       if (response.data && Array.isArray(response.data.data)) {
-        setActivityTypes(response.data.data);
+        const types = response.data.data;
+        setActivityTypes(types);
+
+        // Sort alphabetically and move "Lainnya" to end
+        const sorted = [...types].sort((a, b) =>
+          a.name.localeCompare(b.name, 'id')
+        );
+
+        const lainyaIndex = sorted.findIndex(t =>
+          t.code.toLowerCase() === 'lainnya' ||
+          t.name.toLowerCase() === 'lainnya'
+        );
+
+        if (lainyaIndex > -1) {
+          const lainnya = sorted.splice(lainyaIndex, 1)[0];
+          sorted.push(lainnya);
+        }
+
+        setSortedActivityTypes(sorted);
       }
     } catch (error) {
       Alert.alert('Error', 'Gagal memuat jenis aktivitas. Coba lagi nanti.');
@@ -354,6 +373,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
     errors,
     isLoadingLocation,
     activityTypes,
+    sortedActivityTypes,
     isLoadingTypes,
     isSubmitting,
     isOnline,

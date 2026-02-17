@@ -66,10 +66,28 @@ export class Overtime {
   @Column('text', { array: true, default: '{}' })
   photo_urls: string[];
 
-  @Column('decimal', { precision: 10, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lat?: number;
 
-  @Column('decimal', { precision: 11, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lng?: number;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })

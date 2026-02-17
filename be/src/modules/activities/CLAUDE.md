@@ -9,3 +9,32 @@
 |----|------|---|-------|------|
 | #3643 | 8:42 PM | 🔵 | SEKAR Phase 2C Backend Implementation Audit Completed | ~1066 |
 </claude-mem-context>
+
+# GPS Coordinates Type Conversion Fix
+
+## Problem
+PostgreSQL DECIMAL columns (`gps_lat`, `gps_lng`) were being returned as strings by TypeORM to preserve precision. This caused the mobile app's type check (`typeof activity.gps_lat === 'number'`) to fail, displaying "Lokasi tidak tersedia" even when GPS coordinates were properly saved.
+
+## Solution
+Added TypeORM `transformer` to Activity entity's `gps_lat` and `gps_lng` columns:
+
+```typescript
+@Column({
+  type: 'decimal',
+  precision: 10,
+  scale: 8,
+  nullable: true,
+  transformer: {
+    to: (value: number | null) => value,
+    from: (value: string | null) => (value ? parseFloat(value) : null),
+  },
+})
+gps_lat: number | null;
+```
+
+This ensures that DECIMAL strings from PostgreSQL are automatically converted to JavaScript numbers when loaded, making them compatible with mobile app's type checks and GPS utilities.
+
+## Testing
+- All 41 activities service tests pass
+- GPS coordinates are now returned as numbers in API responses
+- Mobile app can display GPS coordinates correctly

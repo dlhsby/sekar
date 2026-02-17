@@ -29,13 +29,15 @@ export async function getTasks(
 }
 
 export async function getMyTasks(
-  filters?: { status?: string; page?: number; limit?: number },
+  filters?: { status?: string; from_date?: string; to_date?: string; page?: number; limit?: number },
 ): Promise<ApiResponse<Task[]>> {
   return get<Task[]>('/tasks/my-tasks', filters);
 }
 
-export async function getTaggedTasks(): Promise<ApiResponse<Task[]>> {
-  return get<Task[]>('/tasks/tagged');
+export async function getTaggedTasks(
+  filters?: { status?: string; from_date?: string; to_date?: string; page?: number; limit?: number },
+): Promise<ApiResponse<Task[]>> {
+  return get<Task[]>('/tasks/tagged', filters);
 }
 
 export async function getTaskById(id: string): Promise<ApiResponse<Task>> {

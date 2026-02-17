@@ -33,7 +33,7 @@ export function calculateUserStatus(
   const userLng = parseFloat(worker.latest_location.gps_lng.toString());
 
   // 1. Polygon check (preferred)
-  if (area.boundary_polygon && area.boundary_polygon.length >= 3) {
+  if (Array.isArray(area.boundary_polygon) && area.boundary_polygon.length >= 3) {
     return isPointInPolygon(userLat, userLng, area.boundary_polygon)
       ? 'active'
       : 'outside';

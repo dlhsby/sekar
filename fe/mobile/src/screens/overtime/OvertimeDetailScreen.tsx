@@ -288,8 +288,14 @@ export const OvertimeDetailScreen: React.FC<MainTabScreenProps<'OvertimeDetail'>
         {/* Rejection Reason */}
         {selectedOvertime.status === 'rejected' &&
           selectedOvertime.rejection_reason && (
-            <NBCard style={{...styles.card, backgroundColor: nbColors.dangerLight}}>
-              <Text style={styles.sectionTitle}>Alasan Penolakan</Text>
+            <NBCard style={{
+              ...styles.card,
+              borderColor: nbColors.danger,
+              borderWidth: nbBorders.thick
+            }}>
+              <Text style={[styles.sectionTitle, {color: nbColors.danger}]}>
+                Alasan Penolakan
+              </Text>
               <Text style={styles.sectionValue}>
                 {selectedOvertime.rejection_reason}
               </Text>

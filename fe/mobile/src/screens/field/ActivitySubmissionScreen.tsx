@@ -37,6 +37,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
     errors,
     isLoadingLocation,
     activityTypes,
+    sortedActivityTypes,
     isLoadingTypes,
     isSubmitting,
     isOnline,
@@ -84,7 +85,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
   const onSubmit = useCallback(() => {
     handleSubmit(
       () => navigation.navigate('ClockInOut'),
-      () => navigation.navigate('Activities', { activeTab: 'activities' }),
+      () => navigation.navigate('TasksActivities'),
     );
   }, [handleSubmit, navigation]);
 
@@ -160,10 +161,11 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
                   <NBButton title="Coba Lagi" onPress={loadActivityTypes} variant="secondary" size="sm" />
                 </View>
               ) : (
-                <ScrollView style={styles.activityTypeScrollView}>
-                  {activityTypes.map((type) => (
+                <FlatList
+                  data={sortedActivityTypes}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item: type }) => (
                     <TouchableOpacity
-                      key={type.id}
                       style={[
                         styles.activityTypeOption,
                         form.activityTypeId === type.id && styles.activityTypeOptionSelected,
@@ -179,8 +181,10 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
                         {form.activityTypeId === type.id ? '✓ ' : ''}{type.name}
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                  )}
+                  nestedScrollEnabled={false}
+                  scrollEnabled={false}
+                />
               )}
             </NBCardContent>
           </NBCard>
@@ -341,9 +345,6 @@ const styles = StyleSheet.create({
     color: nbColors.gray['600'],
     fontSize: nbTypography.fontSize.xs,
     marginTop: nbSpacing.xs,
-  },
-  activityTypeScrollView: {
-    maxHeight: 240,
   },
   activityTypeOption: {
     padding: nbSpacing.md,

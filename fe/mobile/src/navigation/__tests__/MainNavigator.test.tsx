@@ -162,28 +162,32 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS).toHaveProperty('superadmin');
     });
 
-    it('satgas has 5 tabs', () => {
-      expect(TAB_CONFIGS.satgas).toHaveLength(5);
+    it('satgas has 4 tabs', () => {
+      expect(TAB_CONFIGS.satgas).toHaveLength(4);
       expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Home')).toBe(true);
+      expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'TasksActivities')).toBe(true);
       expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('linmas has 5 tabs', () => {
-      expect(TAB_CONFIGS.linmas).toHaveLength(5);
+    it('linmas has 4 tabs', () => {
+      expect(TAB_CONFIGS.linmas).toHaveLength(4);
       expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Home')).toBe(true);
+      expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'TasksActivities')).toBe(true);
       expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('korlap has 5 tabs with Monitoring (Profile via stack)', () => {
+    it('korlap has 5 tabs including Profile', () => {
       expect(TAB_CONFIGS.korlap).toHaveLength(5);
+      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Monitoring')).toBe(true);
-      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(false);
+      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'TasksActivities')).toBe(true);
+      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
     it('admin_data has 5 tabs with Monitoring and Overtime', () => {
       expect(TAB_CONFIGS.admin_data).toHaveLength(5);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Home')).toBe(true);
-      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Activities')).toBe(true);
+      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'TasksActivities')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Overtime')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(true);
@@ -232,14 +236,10 @@ describe('MainNavigator', () => {
       });
     });
 
-    it('all roles except korlap have Profile tab (korlap uses stack)', () => {
+    it('all roles have Profile tab', () => {
       Object.keys(TAB_CONFIGS).forEach((role) => {
         const hasProfile = TAB_CONFIGS[role].some((tab) => tab.name === 'Profile');
-        if (role === 'korlap') {
-          expect(hasProfile).toBe(false);
-        } else {
-          expect(hasProfile).toBe(true);
-        }
+        expect(hasProfile).toBe(true);
       });
     });
 
@@ -251,11 +251,11 @@ describe('MainNavigator', () => {
       });
     });
 
-    it('clockable roles have Activities tab', () => {
+    it('clockable roles have TasksActivities tab', () => {
       const clockableRoles = ['satgas', 'linmas', 'korlap', 'admin_data'];
       clockableRoles.forEach((role) => {
-        const hasActivities = TAB_CONFIGS[role].some((tab) => tab.name === 'Activities');
-        expect(hasActivities).toBe(true);
+        const hasTasksActivities = TAB_CONFIGS[role].some((tab) => tab.name === 'TasksActivities');
+        expect(hasTasksActivities).toBe(true);
       });
     });
 
@@ -277,8 +277,7 @@ describe('MainNavigator', () => {
 
     it('should render tab labels for satgas role', () => {
       const { getByText } = renderNavigator('satgas');
-      expect(getByText('Aktivitas')).toBeTruthy();
-      expect(getByText('Tugas')).toBeTruthy();
+      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Lembur')).toBeTruthy();
       expect(getByText('Profil')).toBeTruthy();
     });
@@ -298,7 +297,7 @@ describe('MainNavigator', () => {
     it('should render for admin_data role with 5 tabs', () => {
       const { getAllByText, getByText } = renderNavigator('admin_data');
       expect(getAllByText('Home').length).toBeGreaterThanOrEqual(1);
-      expect(getAllByText('Aktivitas').length).toBeGreaterThanOrEqual(1);
+      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
       expect(getByText('Lembur')).toBeTruthy();
       expect(getAllByText('Profil').length).toBeGreaterThanOrEqual(1);

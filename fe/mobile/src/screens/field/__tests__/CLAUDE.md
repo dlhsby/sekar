@@ -7,5 +7,11 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #3728 | 8:51 PM | 🔵 | HomeScreen.test.tsx File Already Exists But Imports WorkerHomeScreen | ~503 |
+| #3730 | 8:52 PM | 🔵 | HomeScreen Test File Exists But Production HomeScreen File Does Not | ~531 |
+
+### Feb 17, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #4906 | 12:26 AM | ✅ | Updated ActivityDetailScreen test to match new photo section labels | ~254 |
 </claude-mem-context>

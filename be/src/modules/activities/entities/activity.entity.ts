@@ -75,11 +75,29 @@ export class Activity {
   photo_urls: string[];
 
   @ApiProperty({ description: 'GPS latitude where activity was created', example: -7.2905, nullable: true })
-  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lat: number | null;
 
   @ApiProperty({ description: 'GPS longitude where activity was created', example: 112.7398, nullable: true })
-  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lng: number | null;
 
   @ApiProperty({ description: 'Activity creation timestamp' })

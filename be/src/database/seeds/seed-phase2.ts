@@ -298,22 +298,23 @@ async function seedPhase2() {
     // ==========================================
     console.log('📅 Seeding Schedules...');
 
-    // Get worker IDs
+    // Get ALL clockable worker IDs (satgas, linmas, AND korlap)
+    // Phase 2C: korlap is CLOCKABLE but needs schedule entries too!
     const workerResult = await queryRunner.query(`
-      SELECT id, username FROM users WHERE role IN ('satgas', 'linmas') LIMIT 10;
+      SELECT id, username FROM users WHERE role IN ('satgas', 'linmas', 'korlap');
     `);
 
     if (workerResult.length > 0 && tamanBungkulId) {
-      const workers = workerResult.slice(0, 4);
-      for (let i = 0; i < workers.length; i++) {
-        const shiftId = i < 2 ? SHIFT_1_ID : SHIFT_2_ID;
+      // Create schedules for ALL workers (not just first 4)
+      for (let i = 0; i < workerResult.length; i++) {
+        const shiftId = i % 3 === 0 ? SHIFT_1_ID : i % 3 === 1 ? SHIFT_2_ID : SHIFT_3_ID;
         await queryRunner.query(`
           INSERT INTO schedules (user_id, area_id, shift_definition_id, effective_date, end_date, created_by)
-          VALUES ('${workers[i].id}', '${tamanBungkulId}', '${shiftId}', '2026-01-20', NULL, NULL)
+          VALUES ('${workerResult[i].id}', '${tamanBungkulId}', '${shiftId}', '2026-02-01', NULL, NULL)
           ON CONFLICT DO NOTHING;
         `);
       }
-      console.log('  ✓ Created 4 Schedules');
+      console.log(`  ✓ Created ${workerResult.length} Schedules (satgas, linmas, korlap)`);
     } else {
       console.log('  ⚠ No workers or areas found, skipping schedules');
     }

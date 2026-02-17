@@ -26,7 +26,9 @@ import { UpdateActivityTypeDto } from './dto/update-activity-type.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
@@ -77,6 +79,47 @@ export class ActivityTypesController {
   })
   findAll(@Query('role') role?: string): Promise<ActivityType[]> {
     return this.activityTypesService.findAll(role);
+  }
+
+  /**
+   * Get activity types applicable to current user's role
+   *
+   * Returns activity types filtered by the authenticated user's role.
+   * Mobile app uses this endpoint to show only relevant activity types.
+   *
+   * @param user - Current authenticated user (from JWT)
+   * @returns Activity types applicable to user's role
+   */
+  @Get('my-types')
+  @ApiOperation({
+    summary: 'Get activity types for current user',
+    description:
+      'Returns activity types applicable to the authenticated user\'s role (satgas, linmas, korlap, admin_data).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Activity types retrieved successfully',
+    schema: {
+      example: {
+        data: [
+          {
+            id: '33333333-3333-3333-3333-333333333301',
+            name: 'Perawatan',
+            code: 'perawatan',
+            description: 'Perawatan tanaman dan area',
+            applicable_roles: ['satgas'],
+            is_active: true,
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  findMyTypes(@GetUser() user: User): Promise<{ data: ActivityType[] }> {
+    return this.activityTypesService.findByUserRole(user.role);
   }
 
   /**

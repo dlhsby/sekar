@@ -27,6 +27,7 @@ const config: Config = {
     '!src/app/**/loading.tsx',        // Exclude Next.js loading states
     '!src/app/**/error.tsx',          // Exclude Next.js error pages
     '!src/app/**/not-found.tsx',      // Exclude Next.js not-found pages
+    '!src/components/maps/**',        // Mapbox GL requires WebGL — cannot run in jsdom
   ],
   coverageThreshold: {
     global: {

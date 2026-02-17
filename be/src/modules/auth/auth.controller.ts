@@ -1,5 +1,7 @@
 import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, LessThanOrEqual, MoreThanOrEqual, Or, IsNull } from 'typeorm';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -8,6 +10,8 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
+import { Schedule } from '../schedules/entities/schedule.entity';
+import { Area } from '../areas/entities/area.entity';
 
 /**
  * Authentication Controller
@@ -20,6 +24,10 @@ import { User, UserRole } from '../users/entities/user.entity';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    @InjectRepository(Schedule)
+    private readonly scheduleRepository: Repository<Schedule>,
+    @InjectRepository(Area)
+    private readonly areaRepository: Repository<Area>,
   ) {}
 
   /**
@@ -235,10 +243,55 @@ export class AuthController {
       created_at: user.created_at,
     };
 
-    // Include area info for field roles (area_id is set on the user entity)
+    // Include area info for field roles
+    // Phase 2C: Check both User.area_id (korlap permanent assignment)
+    // and active Schedule (satgas/linmas date-based assignment)
     if (user.area_id) {
+      // Korlap with permanent area assignment
       userData.area_id = user.area_id;
       userData.rayon_id = user.rayon_id;
+
+      // Fetch full area details for clock-in/out
+      const area = await this.areaRepository.findOne({
+        where: { id: user.area_id },
+        relations: ['areaType'],
+      });
+      if (area) {
+        userData.assigned_area = {
+          id: area.id,
+          name: area.name,
+          gps_lat: area.gps_lat,
+          gps_lng: area.gps_lng,
+          radius_meters: area.radius_meters,
+          area_type: area.areaType
+            ? { id: area.areaType.id, name: area.areaType.name }
+            : null,
+        };
+      }
+    } else {
+      // Satgas/Linmas: Check for active schedule-based assignment
+      const today = new Date();
+      const activeSchedule = await this.scheduleRepository.findOne({
+        where: {
+          user_id: user.id,
+          effective_date: LessThanOrEqual(today),
+          end_date: Or(MoreThanOrEqual(today), IsNull()),
+        },
+        relations: ['area', 'area.areaType'],
+      });
+
+      if (activeSchedule && activeSchedule.area) {
+        userData.assigned_area = {
+          id: activeSchedule.area.id,
+          name: activeSchedule.area.name,
+          gps_lat: activeSchedule.area.gps_lat,
+          gps_lng: activeSchedule.area.gps_lng,
+          radius_meters: activeSchedule.area.radius_meters,
+          area_type: activeSchedule.area.areaType
+            ? { id: activeSchedule.area.areaType.id, name: activeSchedule.area.areaType.name }
+            : null,
+        };
+      }
     }
 
     return userData;

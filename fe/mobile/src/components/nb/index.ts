@@ -46,3 +46,7 @@ export type { NBSkeletonProps, NBSkeletonVariant } from './NBSkeleton';
 // Background Pattern
 export { NBBackgroundPattern } from './NBBackgroundPattern';
 export type { PatternType } from './NBBackgroundPattern';
+
+// Select / Dropdown
+export { NBSelect } from './NBSelect';
+export type { NBSelectProps, NBSelectOption } from './NBSelect';

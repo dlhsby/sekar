@@ -22,7 +22,8 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
 }));
 
 // Mock navigation
-const mockGoBack = jest.fn();
+const mockNavigate = jest.fn();
+const mockSetOptions = jest.fn();
 const mockRoute = {
   params: {
     activityId: '1',
@@ -32,7 +33,8 @@ const mockRoute = {
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({
-    goBack: mockGoBack,
+    navigate: mockNavigate,
+    setOptions: mockSetOptions,
   }),
   useRoute: () => mockRoute,
   NavigationContainer: ({ children }: any) => children,
@@ -46,6 +48,37 @@ describe('ActivityDetailScreen', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('sets up navigation header with back button', async () => {
+    const mockActivity = {
+      id: '1',
+      description: 'Test activity',
+      photo_urls: [],
+      gps_lat: -7.25,
+      gps_lng: 112.75,
+      created_at: '2026-02-14T10:00:00Z',
+    };
+
+    (activitiesApi.getActivityById as jest.Mock).mockResolvedValue({
+      data: mockActivity,
+    });
+
+    render(
+      <NavigationContainer>
+        <ActivityDetailScreen />
+      </NavigationContainer>
+    );
+
+    await waitFor(() => {
+      expect(mockSetOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headerShown: true,
+          title: 'Detail Aktivitas',
+          headerLeft: expect.any(Function),
+        })
+      );
+    });
   });
 
   it('shows loading indicator while fetching', async () => {
@@ -98,8 +131,8 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Detail Aktivitas')).toBeTruthy();
       expect(getByText('Test activity description')).toBeTruthy();
+      expect(getByText('Test User')).toBeTruthy();
     });
   });
 
@@ -128,7 +161,7 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Jenis Aktivitas')).toBeTruthy();
+      expect(getByText('🏷️ JENIS AKTIVITAS')).toBeTruthy();
       expect(getByText('Menyiram')).toBeTruthy();
     });
   });
@@ -154,7 +187,7 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Deskripsi')).toBeTruthy();
+      expect(getByText('📝 DESKRIPSI PEKERJAAN')).toBeTruthy();
       expect(getByText('Detailed activity description here')).toBeTruthy();
     });
   });
@@ -183,7 +216,8 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Foto (2)')).toBeTruthy();
+      expect(getByText('📸 FOTO AKTIVITAS')).toBeTruthy();
+      expect(getByText('2 foto dilampirkan')).toBeTruthy();
     });
   });
 
@@ -208,12 +242,12 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Lokasi GPS')).toBeTruthy();
+      expect(getByText('📍 LOKASI GPS')).toBeTruthy();
       expect(getByText('-7.256789, 112.754321')).toBeTruthy();
     });
   });
 
-  it('shows creation timestamp', async () => {
+  it('shows general information card with timestamp and user', async () => {
     const mockActivity = {
       id: '1',
       description: 'Test activity',
@@ -221,34 +255,13 @@ describe('ActivityDetailScreen', () => {
       gps_lat: -7.25,
       gps_lng: 112.75,
       created_at: '2026-02-14T10:30:00Z',
-    };
-
-    (activitiesApi.getActivityById as jest.Mock).mockResolvedValue({
-      data: mockActivity,
-    });
-
-    const { getByText } = render(
-      <NavigationContainer>
-        <ActivityDetailScreen />
-      </NavigationContainer>
-    );
-
-    await waitFor(() => {
-      expect(getByText('Dibuat Pada')).toBeTruthy();
-    });
-  });
-
-  it('shows user name', async () => {
-    const mockActivity = {
-      id: '1',
-      description: 'Test activity',
-      photo_urls: [],
-      gps_lat: -7.25,
-      gps_lng: 112.75,
-      created_at: '2026-02-14T10:00:00Z',
       user: {
         id: '1',
         full_name: 'John Doe',
+      },
+      area: {
+        id: '1',
+        name: 'Park A',
       },
     };
 
@@ -263,12 +276,20 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Petugas')).toBeTruthy();
+      // Check merged card header
+      expect(getByText('📋 INFORMASI UMUM')).toBeTruthy();
+      // Check time information
+      expect(getByText('Tanggal & Waktu')).toBeTruthy();
+      // Check user information
+      expect(getByText('Nama Petugas')).toBeTruthy();
       expect(getByText('John Doe')).toBeTruthy();
+      // Check area information
+      expect(getByText('Area')).toBeTruthy();
+      expect(getByText('Park A')).toBeTruthy();
     });
   });
 
-  it('handles API error - shows alert and goes back', async () => {
+  it('handles API error - shows alert and navigates to TasksActivities', async () => {
     (activitiesApi.getActivityById as jest.Mock).mockResolvedValue({
       data: null,
       error: 'Activity not found',
@@ -282,11 +303,11 @@ describe('ActivityDetailScreen', () => {
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith('Error', 'Activity not found');
-      expect(mockGoBack).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities');
     });
   });
 
-  it('handles exception - shows alert and goes back', async () => {
+  it('handles exception - shows alert and navigates to TasksActivities', async () => {
     (activitiesApi.getActivityById as jest.Mock).mockRejectedValue(
       new Error('Network error')
     );
@@ -302,7 +323,7 @@ describe('ActivityDetailScreen', () => {
         'Error',
         'Gagal memuat detail aktivitas'
       );
-      expect(mockGoBack).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities');
     });
   });
 });

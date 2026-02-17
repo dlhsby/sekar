@@ -1515,12 +1515,68 @@ npm run seed:tasks
 |----------|-------|-------|
 | Users (updated roles) | 8 | Phase 2C role names |
 | Activity Types | 20 | 4 role groups |
-| Tasks | 8 | 4 statuses (no accepted/declined) |
+| Tasks | 40 | 8 satgas + 4 linmas + 3 korlap + 25 extended (scroll test) |
+| Activities | 50 | 30 satgas + 13 linmas + 7 korlap (8-week date range) |
 | Task Tags | 0 | Created via API |
 | Overtimes | 0 | Created via API |
 
+#### Tasks Breakdown (seed-tasks.ts)
+
+**Total:** 40 tasks across 4 statuses
+
+**By Role:**
+- **Satgas (8 tasks):** Original area-scoped tasks for field workers
+- **Linmas (4 tasks):** Security/patrol tasks (pending, assigned, in_progress, completed)
+- **Korlap (3 tasks):** Coordination/supervision tasks (1 rayon-scoped)
+- **Extended (25 tasks):** Varied roles/statuses/dates for scroll testing
+
+**Status Distribution (approximate):**
+- Pending: ~10 tasks
+- Assigned: ~12 tasks
+- In Progress: ~10 tasks
+- Completed: ~8 tasks
+
+**Test Coverage:**
+- All 4 Phase 2C statuses represented
+- Mix of area-scoped and rayon-scoped tasks
+- Tagged task scenarios (for "Tag Saya" filter testing)
+- Various priority levels (urgent, high, medium, low)
+- Date range from 30 days ago to next week (filter testing)
+- 40+ items for scroll performance testing
+
+#### Activities Breakdown (seed-activities.ts)
+
+**Total:** 50 activities across 8 weeks
+
+**By Role:**
+- **Satgas (30 activities, 60%):** Field work — 12 recent + 18 extended
+- **Linmas (13 activities, 26%):** Security work — 5 recent + 8 extended
+- **Korlap (7 activities, 14%):** Coordination work — 3 recent + 4 extended
+
+**Date Distribution (for date filter testing):**
+- Weeks 1-4 (1-28 days ago): 20 activities (recent)
+- Weeks 5-8 (29-60 days ago): 30 activities (extended)
+
+**Photo Distribution:**
+- ~35 activities with 1 photo (70%)
+- ~12 activities with 2 photos (24%)
+- ~3 activities with 3 photos (6%)
+
+**GPS Coordinates:**
+- All centered around Taman Bungkul (-7.2905, 112.7395)
+- Varied ±0.0005 degrees (simulates different work locations within 100m radius)
+- Tests GPS coordinate display and precision handling
+
+**Test Coverage:**
+- Scroll performance testing (50 items — 2.5x more than before)
+- Date range filter validation (8 weeks of data)
+- Activity type diversity (9 different types)
+- Multi-photo display scenarios
+- Role-based activity filtering
+- Extended historical data for date picker UX testing
+
 ---
 
-**Last Updated:** 2026-02-11
-**Seed Data Version:** 3.0 (Phase 2C — Client Feedback)
-**Total Records:** ~90 (Phase 1: 28 + Phase 2: 50 + Phase 2C: 12)
+**Last Updated:** 2026-02-17
+**Seed Data Version:** 3.2 (Phase 2C — Extended Scroll/Filter Testing Data)
+**Total Records:** ~158 (Phase 1: 28 + Phase 2: 50 + Phase 2C: 80 tasks+activities)

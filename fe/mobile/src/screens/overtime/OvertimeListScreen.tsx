@@ -248,6 +248,7 @@ export const OvertimeListScreen: React.FC<MainTabScreenProps<'Overtime'>> = () =
             <NBButton
               title="+ Ajukan Lembur"
               onPress={handleSubmit}
+              variant="primary"
               size="lg"
             />
           </View>
@@ -289,13 +290,15 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing.md,
   },
   listContent: {
-    paddingHorizontal: nbSpacing.md,
+    paddingHorizontal: nbSpacing.sm, // Reduced since cards have their own margins
     paddingTop: nbSpacing.md,
-    paddingBottom: nbSpacing['2xl'],
+    paddingBottom: 80, // Reserve space for FAB (56px button + 16px margin + 8px buffer)
     flexGrow: 1,
   },
   card: {
     marginBottom: nbSpacing.md,
+    marginHorizontal: nbSpacing.xs, // Add horizontal spacing between cards
+    padding: nbSpacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -332,8 +335,9 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: nbSpacing.lg,
+    bottom: nbSpacing.md,
     left: nbSpacing.md,
     right: nbSpacing.md,
+    zIndex: 10,
   },
 });

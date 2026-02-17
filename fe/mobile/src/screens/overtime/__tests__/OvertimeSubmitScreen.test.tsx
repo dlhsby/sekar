@@ -325,7 +325,7 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       // Fill description
-      const descriptionInput = getByPlaceholderText('Jelaskan aktivitas lembur...');
+      const descriptionInput = getByPlaceholderText('Jelaskan aktivitas lembur yang dilakukan...');
       await act(async () => {
         fireEvent.changeText(descriptionInput, 'Lembur untuk penyiraman taman');
       });
@@ -375,7 +375,7 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       // Fill description
-      const descriptionInput = getByPlaceholderText('Jelaskan aktivitas lembur...');
+      const descriptionInput = getByPlaceholderText('Jelaskan aktivitas lembur yang dilakukan...');
       await act(async () => {
         fireEvent.changeText(descriptionInput, 'Test description');
       });
@@ -422,7 +422,7 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       // Fill description
-      const descriptionInput = getByPlaceholderText('Jelaskan aktivitas lembur...');
+      const descriptionInput = getByPlaceholderText('Jelaskan aktivitas lembur yang dilakukan...');
       await act(async () => {
         fireEvent.changeText(descriptionInput, 'Test');
       });

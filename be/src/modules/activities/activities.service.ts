@@ -123,7 +123,8 @@ export class ActivitiesService {
       .createQueryBuilder('activity')
       .leftJoinAndSelect('activity.user', 'user')
       .leftJoinAndSelect('activity.shift', 'shift')
-      .leftJoinAndSelect('shift.area', 'area');
+      .leftJoinAndSelect('shift.area', 'area')
+      .leftJoinAndSelect('activity.activityType', 'activityType');
 
     // Scope-based filtering (specific roles first, then generic groups)
     if (user.role === UserRole.KORLAP) {
@@ -191,7 +192,7 @@ export class ActivitiesService {
 
     const activities = await this.activitiesRepository.find({
       where,
-      relations: ['user', 'shift', 'shift.area'],
+      relations: ['user', 'shift', 'shift.area', 'activityType'],
       order: { created_at: 'DESC' },
     });
 
@@ -209,7 +210,7 @@ export class ActivitiesService {
   async findOne(id: string, user: User): Promise<Activity> {
     const activity = await this.activitiesRepository.findOne({
       where: { id },
-      relations: ['user', 'shift', 'shift.area', 'shift.area.rayon'],
+      relations: ['user', 'shift', 'shift.area', 'activityType'],
     });
 
     if (!activity) {

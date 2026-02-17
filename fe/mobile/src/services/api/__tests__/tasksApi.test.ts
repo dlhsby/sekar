@@ -133,7 +133,7 @@ describe('tasksApi', () => {
 
       const result = await tasksApi.getTaggedTasks();
 
-      expect(mockGet).toHaveBeenCalledWith('/tasks/tagged');
+      expect(mockGet).toHaveBeenCalledWith('/tasks/tagged', undefined);
       expect(result).toEqual(mockResponse);
     });
   });

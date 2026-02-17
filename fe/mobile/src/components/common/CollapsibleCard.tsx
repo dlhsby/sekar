@@ -13,7 +13,6 @@ import {
   StyleSheet,
   LayoutAnimation,
   Platform,
-  UIManager,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -25,10 +24,6 @@ import {
   nbShadows,
 } from '../../constants/nbTokens';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 interface CollapsibleCardProps {
   title: string;

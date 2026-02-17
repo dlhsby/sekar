@@ -218,6 +218,51 @@ const TAB_CONFIG: Record<string, TabConfig[]> = {
 - Remove review status indicator
 - Filter tabs: "Tugas Saya" | "Tag Saya"
 
+#### Enhanced Task Filtering (Feb 17, 2026 - Bottom Sheet Modal)
+
+**Filter Button Bar (always visible - 48px):**
+- "Filter" button with badge showing active count
+- Mini chips showing active rayon/area filters
+- Tapping button opens `TaskFilterModal` bottom sheet
+
+**TaskFilterModal (`fe/mobile/src/components/modals/TaskFilterModal.tsx`):**
+- Slides up from bottom (`animationType="slide"`, `transparent={true}`)
+- Semi-transparent overlay dismisses on tap outside
+- `maxHeight: '80%'` with scroll support
+- "Terapkan Filter" and "Reset" action buttons
+
+**Filter Types:**
+- **Assignment Filter:** "Ditugaskan ke Saya" | "Tag Saya" (two-chip toggle)
+- **Status Filter:** Semua | Menunggu | Ditugaskan | Dikerjakan | Selesai (chips)
+- **Date Range Filter:** From/To using `@react-native-community/datetimepicker` native picker
+- **Rayon Filter:** Dropdown (role-based access — see below)
+- **Area Filter:** Dropdown populated from selected rayon (role-based access)
+
+**Role-Based Filter Access:**
+
+| Role | Rayon Filter | Area Filter |
+|------|-------------|------------|
+| `kepala_rayon` | ✅ Editable dropdown | ✅ Editable (by rayon) |
+| `top_management` | ✅ Editable dropdown | ✅ Editable (by rayon) |
+| `admin_system` | ✅ Editable dropdown | ✅ Editable (by rayon) |
+| `superadmin` | ✅ Editable dropdown | ✅ Editable (by rayon) |
+| `korlap` | 🔒 Fixed (user.rayon_id) | ✅ Editable (fixed rayon) |
+| `admin_data` | 🔒 Fixed (user.rayon_id) | ✅ Editable (fixed rayon) |
+| `satgas` | 🔒 Fixed (user.rayon_id) | 🔒 Fixed (user.area_id) |
+| `linmas` | 🔒 Fixed (user.rayon_id) | 🔒 Fixed (user.area_id) |
+
+**Filter Logic:**
+- All filters combine with AND logic via API query params
+- API params: `status`, `from_date`, `to_date`, `rayon_id`, `area_id`
+- Active filter count badge on filter button
+- Mini chips show active rayon/area selections
+
+**Implementation:**
+- Modal: `fe/mobile/src/components/modals/TaskFilterModal.tsx`
+- APIs: `rayonsApi.ts`, `areasApi.ts` (new files)
+- State: `isFilterModalOpen`, `rayonFilter`, `areaFilter`, `statusFilter`, `dateFrom`, `dateTo`
+- DatePicker: `DateTimePicker` from `@react-native-community/datetimepicker`
+
 ### 4. TaskDetailScreen
 
 **Changes:**

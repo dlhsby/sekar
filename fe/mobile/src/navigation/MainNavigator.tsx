@@ -52,52 +52,50 @@ interface TabConfig {
 
 export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   satgas: [
-    { name: 'Home', label: 'Home', icon: 'home' },
-    { name: 'Activities', label: 'Aktivitas', icon: 'clipboard-text-multiple' },
-    { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'Home', label: 'Beranda', icon: 'home' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   linmas: [
-    { name: 'Home', label: 'Home', icon: 'home' },
-    { name: 'Activities', label: 'Aktivitas', icon: 'clipboard-text-multiple' },
-    { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'Home', label: 'Beranda', icon: 'home' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   korlap: [
-    { name: 'Home', label: 'Home', icon: 'home' },
-    { name: 'Activities', label: 'Aktivitas', icon: 'clipboard-text-multiple' },
-    { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
-    { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
+    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
+    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
+    { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   admin_data: [
-    { name: 'Home', label: 'Home', icon: 'home' },
-    { name: 'Activities', label: 'Aktivitas', icon: 'clipboard-text-multiple' },
+    { name: 'Home', label: 'Beranda', icon: 'home' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   kepala_rayon: [
-    { name: 'Home', label: 'Home', icon: 'home' },
-    { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'Home', label: 'Beranda', icon: 'home' },
+    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   top_management: [
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   admin_system: [
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   superadmin: [
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Tasks', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
 };
@@ -109,8 +107,7 @@ function getTabsForRole(role: UserRole): TabConfig[] {
 // Map tab names to their screen components
 const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
   Home: HomeScreen,
-  Activities: TasksActivityScreen,
-  Tasks: TasksActivityScreen, // Same screen, different default tab
+  TasksActivities: TasksActivityScreen,
   Overtime: OvertimeListScreen,
   Monitoring: MapDashboardScreen,
   Profile: ProfileScreen,
