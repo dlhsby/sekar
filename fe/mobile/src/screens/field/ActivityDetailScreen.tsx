@@ -9,23 +9,18 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Image,
   ActivityIndicator,
   Platform,
-  TouchableOpacity,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import { getActivityById } from '../../services/api/activitiesApi';
 import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import type { Activity } from '../../types/models.types';
 
-type RouteParams = {
-  activityId: string;
-};
 
 function formatDateTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -39,30 +34,12 @@ function formatDateTime(dateStr: string): string {
 }
 
 export function ActivityDetailScreen(): React.JSX.Element {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { activityId } = route.params as RouteParams;
+  const navigation = useNavigation<MainTabScreenProps<'ActivityDetail'>['navigation']>();
+  const route = useRoute<RouteProp<MainTabParamList, 'ActivityDetail'>>();
+  const { activityId } = route.params;
 
   const [activity, setActivity] = useState<Activity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Set up header with back button
-  useEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      title: 'Detail Aktivitas',
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('TasksActivities' as never)}
-          style={styles.backButton}
-          accessibilityLabel="Kembali"
-          accessibilityRole="button"
-        >
-          <Icon name="arrow-left" size={24} color={nbColors.black} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -73,11 +50,11 @@ export function ActivityDetailScreen(): React.JSX.Element {
           setActivity(response.data);
         } else if (response.error) {
           Alert.alert('Error', response.error);
-          navigation.navigate('TasksActivities' as never);
+          navigation.navigate('TasksActivities');
         }
       } catch {
         Alert.alert('Error', 'Gagal memuat detail aktivitas');
-        navigation.navigate('TasksActivities' as never);
+        navigation.navigate('TasksActivities');
       } finally {
         setIsLoading(false);
       }
@@ -242,10 +219,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingVertical: nbSpacing.md,
     paddingBottom: nbSpacing['2xl'],
-  },
-  backButton: {
-    marginLeft: nbSpacing.md,
-    padding: nbSpacing.xs,
   },
   card: {
     marginHorizontal: nbSpacing.md,

@@ -44,17 +44,30 @@
 
 ### Production Test Credentials
 
-**Actual Seeded Users (6 total):**
+**Actual Seeded Users — Phase 1 (`npm run seed`):**
 | Role | Username | Password |
 |------|----------|----------|
-| superadmin | admin | admin123 |
+| superadmin | admin | password123 |
 | korlap | korlap1 | password123 |
 | korlap | korlap2 | password123 |
 | satgas | satgas1 | password123 |
 | satgas | satgas2 | password123 |
 | satgas | satgas3 | password123 |
 
-**Note:** Only 2 roles seeded (superadmin, korlap, satgas). Other roles need manual creation if needed for testing.
+**Actual Seeded Users — Phase 2 (`npm run seed:phase2`):**
+| Role | Username | Password |
+|------|----------|----------|
+| admin_system | admin_system1 | password123 |
+| admin_data | admin_data1 | password123 |
+| top_management | top_management1 | password123 |
+| kepala_rayon | kepala_rayon_selatan | password123 |
+| kepala_rayon | kepala_rayon_utara | password123 |
+| korlap | korlap_bungkul | password123 |
+| linmas | linmas1 | password123 |
+| linmas | linmas2 | password123 |
+| satgas | satgas4 | password123 |
+
+**Note:** All passwords are `password123` for consistency across all roles and seeders.
 
 ---
 
@@ -75,16 +88,20 @@
 
 | Role | Username | Password | Notes |
 |------|----------|----------|-------|
-| Superadmin | superadmin | superadmin123 | Full system access |
-| Admin System | admin_system | admin123 | System administration |
-| Admin Data | admin_data | admin123 | Data management |
-| Korlap | korlap1 | password123 | Area coordinator |
-| Satgas 1 | satgas1 | password123 | Field worker |
-| Satgas 2 | satgas2 | password123 | Field worker |
-| Satgas 3 | satgas3 | password123 | Field worker |
-| Linmas 1 | linmas1 | password123 | Security officer |
-| Kepala Rayon | kepala_rayon_selatan | password123 | Rayon manager |
-| Top Management | top_management1 | password123 | City-wide view |
+| superadmin | admin | password123 | Full system access |
+| admin_system | admin_system1 | password123 | System administration |
+| admin_data | admin_data1 | password123 | Data management |
+| korlap | korlap1 | password123 | Area coordinator (Phase 1) |
+| korlap | korlap_bungkul | password123 | Area coordinator (Phase 2) |
+| satgas | satgas1 | password123 | Field worker (Phase 1) |
+| satgas | satgas2 | password123 | Field worker (Phase 1) |
+| satgas | satgas3 | password123 | Field worker (Phase 1) |
+| satgas | satgas4 | password123 | Field worker (Phase 2) |
+| linmas | linmas1 | password123 | Security officer |
+| linmas | linmas2 | password123 | Security officer |
+| kepala_rayon | kepala_rayon_selatan | password123 | Rayon manager |
+| kepala_rayon | kepala_rayon_utara | password123 | Rayon manager |
+| top_management | top_management1 | password123 | City-wide view |
 
 ### API Testing Tools
 
@@ -883,16 +900,30 @@ npm run seed
 
 | Step | Action | Expected | Status |
 |------|--------|----------|--------|
-| 1 | Login as satgas1 | Home screen with 5 tabs | [ ] |
-| 2 | Tap "Absen" → ClockInOut screen | Photo + GPS capture | [ ] |
-| 3 | Clock in (outside area) | Yellow warning banner, clock-in succeeds | [ ] |
-| 4 | Tap "Aktivitas" tab | Activity list + submission | [ ] |
-| 5 | Submit activity (photo + type + description) | Success, activity in list | [ ] |
-| 6 | Tap "Tugas" tab | 3 sub-tabs: Tugas Saya, Tag Saya, Aktivitas | [ ] |
+| 1 | Login as satgas1 | Home screen with 5 tabs | [x] |
+| 2 | Verify Home: header, FAB, today stats | Greeting + role badge + Clock In/Out FAB visible | [x] |
+| 3 | Tap FAB → ClockInOut screen | Back button in header, "Clock In" title, area card, GPS card | [x] |
+| 4 | Clock in (outside area) | Yellow warning banner, clock-in succeeds | [x] |
+| 5 | Tap "Tugas & Aktivitas" tab | Filter bar + task/activity list | [ ] |
+| 6 | Submit activity (photo + type + description) | Success, activity in list | [ ] |
+| 7 | View task detail + start task | Status → in_progress | [ ] |
+| 8 | Tap "Lembur" tab | Overtime list + submit FAB | [ ] |
+| 9 | Submit overtime (flat form) | Success, overtime in list | [ ] |
+| 10 | Tap "Profil" tab | 8-role badge shows "Satgas" | [ ] |
+| 11 | Clock out | Shift ended | [ ] |
+
+### Path M1b: Linmas Mobile Workflow (10 minutes)
+
+| Step | Action | Expected | Status |
+|------|--------|----------|--------|
+| 1 | Login as linmas1 | Home screen with 5 tabs (same layout as satgas) | [x] |
+| 2 | Verify Home: header, FAB, today stats | Greeting + "Linmas" role badge + Clock In/Out FAB visible | [x] |
+| 3 | Tap FAB → ClockInOut screen | Back button in header, "Clock In" title, area card, GPS card | [x] |
+| 4 | Clock in | Geofencing banner (inside/outside area), clock-in succeeds | [x] |
+| 5 | Tap "Tugas & Aktivitas" tab | Filter bar + task/activity list (linmas-specific activity types) | [ ] |
+| 6 | Submit activity (patroli / insiden type) | Success, activity in list | [ ] |
 | 7 | Tap "Lembur" tab | Overtime list + submit FAB | [ ] |
-| 8 | Submit overtime (flat form) | Success, overtime in list | [ ] |
-| 9 | Tap "Profil" tab | 8-role badge shows "Satgas" | [ ] |
-| 10 | Clock out | Shift ended | [ ] |
+| 8 | Tap "Profil" tab | 8-role badge shows "Linmas" | [ ] |
 
 ### Path M2: Korlap Mobile Workflow (15 minutes)
 
@@ -948,10 +979,11 @@ npm run seed
 | Part 15: Mobile Screen Changes | 36 | - | - | - |
 | Part 16: Mobile New Screens | 10 | - | - | - |
 | Part 17: Mobile Dead Code Cleanup | 10 | - | - | - |
-| Part 18: Mobile Quick Test Paths | 32 | - | - | - |
-| **TOTAL** | **323** | **0** | **0** | **323** |
+| Part 18: Mobile Quick Test Paths | 40 | 8 (M1:1-4, M1b:1-4) | 0 | 32 |
+| **TOTAL** | **331** | **8** | **0** | **323** |
 
 *Note: Parts 1-10 are backend manual tests (Postman + code review). Parts 11-18 are mobile manual tests (code review + device/emulator).*
+*Path M1b (Linmas) added Feb 18, 2026. Steps 1-4 of M1 and M1b passed (Login, Home, ClockInOut — satgas + linmas).*
 
 ---
 
@@ -1011,7 +1043,7 @@ curl $API_URL/api/health
 # Get admin token
 TOKEN=$(curl -s -X POST $API_URL/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"superadmin","password":"superadmin123"}' \
+  -d '{"username":"admin","password":"password123"}' \
   | jq -r '.access_token')
 
 # Test Phase 2C endpoints (new routes)

@@ -12,10 +12,8 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBButton,
@@ -31,11 +29,11 @@ import { nbColors, nbSpacing, nbTypography, nbShadows, nbBorders } from '../../c
 const fontSizes = nbTypography.fontSize;
 import { formatDateTime, formatRelativeTime } from '../../utils/dateUtils';
 import * as tasksApi from '../../services/api/tasksApi';
-import type { MainTabParamList } from '../../types/navigation.types';
+import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import type { Task, TaskStatus, TaskPriority } from '../../types/models.types';
 
 type TaskDetailRouteProp = RouteProp<MainTabParamList, 'TaskDetail'>;
-type TaskDetailNavigationProp = NativeStackNavigationProp<MainTabParamList, 'TaskDetail'>;
+type TaskDetailNavigationProp = MainTabScreenProps<'TaskDetail'>['navigation'];
 
 /**
  * Get badge variant based on priority
@@ -122,22 +120,6 @@ export function TaskDetailScreen(): React.JSX.Element {
   useEffect(() => {
     fetchTask();
   }, [fetchTask]);
-
-  // Set up header with back button
-  useEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          accessibilityLabel="Kembali"
-          accessibilityRole="button"
-        >
-          <Icon name="arrow-left" size={24} color={nbColors.black} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -387,10 +369,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingVertical: nbSpacing.md,
     paddingBottom: nbSpacing.xl,
-  },
-  backButton: {
-    marginLeft: nbSpacing.md,
-    padding: nbSpacing.xs,
   },
   loadingContainer: {
     flex: 1,

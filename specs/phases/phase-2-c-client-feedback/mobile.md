@@ -635,4 +635,111 @@ All new screens MUST adhere to Neo Brutalism 2.0 design system.
 
 ---
 
-**Last Updated:** 2026-02-15
+## Header System Standard (Phase 2C — Feb 18, 2026)
+
+**Component:** `fe/mobile/src/components/navigation/FieldHomeHeader.tsx`
+**Navigator:** `fe/mobile/src/navigation/MainNavigator.tsx`
+
+### Architecture: 3-Column Unified Header
+
+`FieldHomeHeader` owns **all three columns** and is rendered as the navigator's `headerTitle` — React Navigation's `headerLeft` is **never used** for back navigation.
+
+```
+[←16px pad→][Left 40–44px][←8/4px→][Center flex:1][←4px→][Status badge][←16px pad→]
+```
+
+| Column | Content |
+|--------|---------|
+| **Left** | `onBack` prop → 44×44 back arrow (WCAG); no `onBack` → 40×40 leaf icon |
+| **Center** | Main tab: "Halo, [Name]!" + role badge. Sub-screen: page title 18px extrabold |
+| **Right** | Online / Syncing / Pending status badge, pinned to right edge |
+
+**Rule:** All sub-screens MUST pass `onBack`. There is no spacer/no-back case.
+
+### Pixel Alignment
+
+Both screen types have the center column start at the same x-position:
+
+| Left element | Width | Gap | Total |
+|---|---|---|---|
+| Leaf icon box | 40px | `marginRight: sm` (8px) | **48px** |
+| Back arrow (WCAG touch 44px, `alignItems: 'flex-start'`) | 44px | `marginRight: xs` (4px) | **48px** ✓ |
+
+The `alignItems: 'flex-start'` on the back button ensures the arrow icon also starts at the same visual x-position (16px from screen edge) as the leaf icon box's left edge.
+
+### React Navigation Style Overrides (in `MainNavigator.tsx` → `screenOptions`)
+
+React Navigation v6 bottom-tabs injects a computed `maxWidth` cap on the title slot that limits it to `layout.width - 32`. These overrides are required to give `FieldHomeHeader` full width:
+
+```typescript
+headerTitleContainerStyle: {
+  flex: 1,
+  marginHorizontal: 0,   // overrides default 16px margins
+  maxWidth: 9999,        // overrides computed cap (our style is last in array → wins)
+},
+headerRightContainerStyle: {
+  flexGrow: 0,           // overrides default flexGrow: 1 on the empty right slot
+  flexBasis: 0,
+  width: 0,
+},
+```
+
+> **Why `flexGrow: 0` not `flex: 0`?** React Navigation's right slot has an explicit `flexGrow: 1` in its style array. The `flex` shorthand does not reliably override individual `flexGrow` when merged; explicit `flexGrow: 0` is required.
+
+### Token Values (Phase 2C)
+
+| Token | Phase 2B | Phase 2C | Reason |
+|-------|----------|----------|--------|
+| Header padding | 8px (`sm`) | 16px (`md`) | Matches HomeScreen card edge |
+| Back button touch target | 40×40 | 44×44 | WCAG 2.1 AA minimum |
+| Back button `alignItems` | `center` | `flex-start` | Icon aligns with leaf icon's left edge |
+| Page title font | `xl` (20px) | `lg` (18px) | Overflow protection on long titles |
+| Status badge padding-H | 6px | 8px | Improved readability |
+| Status badge min-width | 60px | 64px | "Offline" text no longer clips |
+| Status badge font | 10px | 11px bold | WCAG minimum readable size |
+
+### Custom Navigation Targets (via `onBack` prop)
+
+| Screen | Configured in | Back navigates to |
+|--------|---------------|-------------------|
+| ActivityDetail | MainNavigator | `navigate('TasksActivities')` |
+| ShiftHistory | MainNavigator | `navigate('Profile')` |
+| TaskComplete | Screen `setOptions` | Alert-confirm dialog → `goBack()` |
+| ClockInOut | Screen `setOptions` | `goBack()` (dynamic title too) |
+| ActivitySubmission | MainNavigator | `goBack()` |
+| All other sub-screens | MainNavigator | `goBack()` |
+
+### Screen-Level `setOptions` (2 screens only)
+
+**ClockInOut** — sets dynamic title + onBack at mount and whenever `isClockIn` changes:
+```typescript
+navigation.setOptions({
+  headerTitle: () => (
+    <FieldHomeHeader title={isClockIn ? 'Clock In' : 'Clock Out'} onBack={goBack} />
+  ),
+});
+```
+
+**TaskComplete** — sets custom onBack (shows alert before leaving):
+```typescript
+navigation.setOptions({
+  headerTitle: () => <FieldHomeHeader title="Selesaikan Tugas" onBack={handleCancel} />,
+});
+```
+
+All other screens are fully configured in `MainNavigator.tsx`.
+
+### ClockInOutScreen (Phase 2C)
+
+- Dynamic header title (Clock In / Clock Out) via `setOptions`
+- Collapsible "Area Ditugaskan" card (default: collapsed)
+- Collapsible "Lokasi Anda" card (default: expanded)
+- Card order: Area Ditugaskan → Foto Selfie → Lokasi Anda
+- Soft geofencing banner (inside ✅ / outside ⚠️) — clock-in always succeeds
+- FAB Submit button (fixed bottom, outside ScrollView)
+- Shift timer: 40px extrabold, `nbColors.warning`
+- Clock-in timestamp: `formatDateTime` (date + time)
+
+---
+
+**Last Updated:** 2026-02-18

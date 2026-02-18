@@ -1,7 +1,7 @@
 # Phase 2C: Client Feedback - Implementation Status
 
-**Status:** Backend, Mobile & Web Complete ✅ | UX Enhancements Applied | Ready for Manual Testing
-**Last Updated:** February 17, 2026 (8:50 AM)
+**Status:** Backend, Mobile & Web Complete ✅ | UX Enhancements Applied | Role Guard + Tests Updated | Code Review Fixes Applied | Ready for Manual Testing
+**Last Updated:** February 18, 2026 (updated)
 **Overall Progress:** 100% (Backend 100%, Mobile 100%, Web 100%)
 **Branch:** `f/phase-2-c-client-feedback`
 **Related ADRs:** [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
@@ -77,6 +77,40 @@ This STATUS.md file serves as an **index and quick reference** for Phase 2C impl
 | **Phase 4: Mobile Updates** | 100% | ✅ Complete | 5 new + 12 modified screens, unified 8-role navigator, UX fixes + test updates applied, 3,021 tests passing |
 | **Phase 5: Web Updates** | 100% | ✅ Complete | 8-role system, activities/schedules/overtime/tasks pages, monitoring dashboard with users_online terminology |
 | **Phase 6: Testing** | 100% | ✅ Complete | BE: 961 tests/54 suites (95.64% stmts ✅), Mobile: 3,028/123 suites, Web: 1,213/60 suites (96.46% stmts ✅) |
+| **Phase 7: Code Review Fixes** | 100% | ✅ Complete | 15 fixes to HomeScreen & LoginScreen, 53 tests added/updated, coverage ≥ 80% maintained |
+
+---
+
+## HomeScreen & LoginScreen Code Review Fixes (Feb 18, 2026)
+
+Applied 15 code review fixes to mobile screens. All 3,060 tests pass (124 suites).
+
+### Fix List
+
+| # | File | Fix |
+|---|------|-----|
+| 1 | `LoginScreen.tsx` | Gate all FCM `console.error`/`console.warn` calls behind `if (__DEV__)` |
+| 2 | `LoginScreen.tsx` | Wrap `handleLogin` in `useCallback([username, password, dispatch])` |
+| 3 | `LoginScreen.tsx` | `catch (err: any)` → `catch (err: unknown)` with `err instanceof Error` narrowing |
+| 4 | `LoginScreen.tsx` | Dispatch `clearError()` at the very top of `handleLogin` to prevent stale errors |
+| 5 | `api.types.ts` | `LoginResponse.refresh_token: string` → `refresh_token?: string` (optional) |
+| 6 | `HomeScreen.tsx` | Remove unused `SafeAreaView` import from `react-native` |
+| 7 | `HomeScreen.tsx` | Remove `loadTodayActivities()` from `loadInitialData` — `useFocusEffect` covers it |
+| 8 | `HomeScreen.tsx` | Remove `as any` from FAB role guard — `user.role` is already typed as `UserRole` |
+| 9 | `HomeScreen.tsx` | Remove unused `isOnline`, `isSyncing`, `pendingShiftsCount` offline Redux selector |
+| 10 | `HomeScreen.tsx` | Wire `handleViewActivities` to `TodayActivitiesModal.onActivityPress` |
+| 11 | `HomeScreen.tsx` | Gate all `console.warn` calls in load functions behind `if (__DEV__)` |
+| 12 | `HomeScreen.tsx` | Remove `timerMinutes` from `totalTodayDuration` deps and remove `timerMinutes` variable |
+| 13 | `HomeScreen.tsx` | Replace `nbColors.warningLight + '20'` with `withAlpha(nbColors.warningLight, 0.125)` |
+| 14 | `HomeScreen.tsx` | Move `pad()` helper to module scope (outside component function) |
+| 15 | `HomeScreen.tsx` | Standardise `useAppDispatch`/`useAppSelector` import to `../../store/hooks` |
+
+### Test Coverage
+
+- `LoginScreen.test.tsx`: 30 tests (6 new: Fix 1, 3, 4 coverage)
+- `HomeScreen.test.tsx`: 23 tests (13 new: Fix 7, 8, 9, 10 coverage)
+- Total mobile tests: 3,060 passing, 124 suites
+- Coverage: ≥ 80% maintained for all modified files
 
 ### Re-Implementation Scope
 
@@ -91,6 +125,83 @@ This STATUS.md file serves as an **index and quick reference** for Phase 2C impl
 - ✅ Added `clock_in_outside_boundary` and `clock_out_outside_boundary` to shifts entity
 - ✅ Renamed constants: `AKTIVITAS_SUBMITTERS` to `ACTIVITY_SUBMITTERS`
 - ✅ Updated all test files for new naming (769 tests passing)
+
+---
+
+## Mobile UX Fixes & Test Updates (Feb 18, 2026)
+
+**Trigger:** Final review of HomeScreen changes, FCM crash fix, and modal UX improvements from Phase 2C
+**Scope:** Role guard on FAB, test fixes for ShiftDetailModal wording changes, new HomeScreen + useActivityForm tests
+**Outcome:** All tests updated, role guard added, STATUS.md reflects all mobile UX improvements ✅
+
+### Changes Implemented
+
+**1. FCM Permission Crash Fix (`fcmService.ts`)**
+
+**Problem:** `FirebaseMessagingTypes.AuthorizationStatus` is a type namespace — accessing it as a runtime value threw a crash on Android.
+**Fix:** Replaced `FirebaseMessagingTypes.AuthorizationStatus.AUTHORIZED` with numeric literals in `requestPermission()` and `checkPermission()`:
+```typescript
+// Before (crashed): authStatus === FirebaseMessagingTypes.AuthorizationStatus.AUTHORIZED
+// After (correct):  authStatus === 1 || authStatus === 2
+const enabled = authStatus === 1 || authStatus === 2;
+```
+**Tests:** Existing `fcmService.test.ts` already uses the mock `AuthorizationStatus` and passes.
+
+**2. HomeScreen: Removed Inline "Buat Aktivitas" + Added Fixed Clock In/Out FAB**
+
+**Changes:**
+- Removed inline "Buat Aktivitas" button from HomeScreen
+- Added fixed-position Clock In/Out FAB (`testID="clock-button"`) at bottom
+- Added `useFocusEffect` to reload today's activities on screen focus
+- Added role guard: FAB only shown for `CLOCKABLE_ROLES` (satgas, linmas, korlap, admin_data, kepala_rayon)
+- `top_management`, `admin_system`, `superadmin` never reach HomeScreen (no Home tab in MainNavigator)
+
+**3. ShiftDetailModal: Wording Improvements**
+
+**Changes:**
+- Validation section title: `"Validasi Lokasi"` → `"Validasi Lokasi Clock In"`
+- Validation badge: `"VALID"` → `"Di Dalam Area"`, `"TIDAK VALID"` → `"Di Luar Area"`
+- Pusat Area: Moved from standalone row to `"Pusat: lat, lng"` subtext within Area row
+
+**4. Modal Scrolling Fixes**
+
+- `TodayActivitiesModal`: Added `flexShrink: 1` to scroll container to fix overflow on small screens
+- `TodayWorkHoursModal`: Used `stickyHeaderIndices` for sticky summary header while list scrolls
+
+**5. Activity Counter Auto-Refresh**
+
+- `useActivityForm.ts`: Dispatches `addActivity(response.data)` after successful submission
+- HomeScreen counter updates immediately without requiring manual refresh
+
+### Test Updates
+
+**Fixed tests (`ShiftDetailModal.test.tsx`):**
+- `'VALID'` → `'Di Dalam Area'`, `'TIDAK VALID'` → `'Di Luar Area'`
+- `'Validasi Lokasi'` → `'Validasi Lokasi Clock In'`
+- `'Pusat Area'` row label → `expect(getByText(/Pusat:/))` subtext match
+- Added 4 new `Phase 2C Wording Changes` test cases
+
+**New tests (`HomeScreen.test.tsx`):**
+- `HomeScreen Clock In/Out FAB` suite (3 tests): FAB present for satgas, present when shift active, absent for top_management
+- `HomeScreen useFocusEffect` suite (1 test): activitiesApi called on focus
+
+**New test file (`useActivityForm.test.ts`):**
+- 15 tests covering: initial state, form updates, validation, successful submission, offline queuing, location handling, saveDraft
+
+### Files Changed (6 total)
+
+**Mobile Source (2 files):**
+- `fe/mobile/src/screens/field/HomeScreen.tsx` — added `CLOCKABLE_ROLES` import, role-guarded FAB
+- `fe/mobile/src/services/notifications/fcmService.ts` — numeric literals for AuthorizationStatus
+
+**Tests (4 files):**
+- `fe/mobile/src/screens/field/__tests__/HomeScreen.test.tsx` — added 4 new tests (2 suites)
+- `fe/mobile/src/components/modals/__tests__/ShiftDetailModal.test.tsx` — fixed 5 tests, added 4 new wording tests
+- `fe/mobile/src/hooks/__tests__/useActivityForm.test.ts` — NEW FILE, 15 tests
+
+### Test Results
+
+**All existing tests remain passing. New tests cover the Phase 2C UX changes.**
 
 ---
 
@@ -443,6 +554,9 @@ Each increment gets its own plan-confirm-implement cycle.
 
 | Date | Author | Changes |
 |------|--------|---------|
+| 2026-02-18 | Product Owner | **MANUAL REVIEW — SATGAS & LINMAS (Login, Home, ClockInOut)**: Accepted. Login (L1-L4), Home (H1-H5), ClockInOut (C1-C7) all pass for both roles. Path M1b (Linmas) added to deployment checklist. Aktivitas + Tugas screens under parallel review. `status_reviews.md` and `status_deployment_checklist.md` updated. |
+| 2026-02-18 | Claude | **HEADER SYSTEM REDESIGN COMPLETE (Phase 2C)**: Unified 3-column FieldHomeHeader across all screens. All headerLeft back buttons removed from MainNavigator — FieldHomeHeader owns all 3 columns. Back button 44×44 (WCAG), leaf icon 40×40 (main tabs), spacing 40+8=44+4=48px (center text x-position identical). maxWidth:9999 override for RN title container computed cap. Code review applied: ClockInOut targeted catch, ShiftHistory __DEV__ guards, ActivityDetailScreen typed hooks, TaskCompleteScreen/TaskDetailScreen fixed nav types. Documented in specs/mobile/screens.md + specs/phases/phase-2-c-client-feedback/mobile.md. 3,075 tests passing. |
+| 2026-02-18 | Claude | **MOBILE UX FIXES & TEST UPDATES**: Added role guard (CLOCKABLE_ROLES) to HomeScreen Clock In/Out FAB — top_management/admin_system/superadmin cannot see it (also unreachable via navigation). Fixed ShiftDetailModal tests: VALID→Di Dalam Area, TIDAK VALID→Di Luar Area, Validasi Lokasi→Validasi Lokasi Clock In, Pusat Area row→/Pusat:/ subtext. Added 4 new Phase 2C wording tests to ShiftDetailModal. Added 2 new HomeScreen test suites (FAB visibility + useFocusEffect). Created useActivityForm.test.ts with 15 tests. FCM crash fix: replaced FirebaseMessagingTypes.AuthorizationStatus enum access with numeric literals (1, 2). |
 | 2026-02-17 | Claude | **COVERAGE FIXES (Final)**: BE: Excluded seed-*.ts + config/firebase.config.ts from coverage collection; added 4 supervisor.service tests for `area_id` branch coverage → 961 tests passing, 95.64% stmts / 87.48% branches ✅ (was 76.55%/79.99%⚠️). Web: Excluded components/maps/** (Mapbox GL WebGL — not testable in jsdom); added hook-level tests for `activity-types.ts` and `overtime.ts` (were at 0%); unskipped `PageLoadingIndicator` tests + added 9 correct timer-based tests; created `AreaForm.test.tsx` (88.46% coverage with mocked PolygonEditor) → 1,213 tests / 60 suites, 1,161 passing (52 skipped), 96.46% stmts / 91.01% branches ✅. Both BE and Web now fully pass 80% thresholds on all 4 metrics. |
 | 2026-02-17 | Claude | **PACKAGE AUDIT & TEST VERIFICATION (Evening)**: npm audit fix applied to `be/` (qs package 1 low vuln → 0). Web: 0 vulnerabilities confirmed. Tests: BE 957/957 ✅, Mobile 3,021/3,028 ✅, Web 1,122/1,174 ✅. Known BE coverage gaps documented (branches 76.55%, lines 79.99% — pre-existing). specs/COMPLETION_STATUS.md updated: Web 0% → 100%, test counts updated, quality metrics corrected. 2 Dependabot PRs pending (#27 be patches, #28 web patches). |
 | 2026-02-17 | Claude | **PRE-MANUAL-TESTING REVIEW**: Fixed 2 failing auth controller tests (missing `area_type: null` and `relations: ['areaType']` in test expectations). Verified seeder data quality: all 20 activity types use lowercase roles, korlap has area_id, flat overtime structure correct, schedule dates valid (2026-02-01). Console.warn audit passed (no console.log in production code). Web frontend verified as fully Phase 2C compliant: 8-role system, activities/schedules/overtime/tasks pages, monitoring with users_online terminology, role-based access controls, centralized constants. Updated STATUS.md to reflect web completion (was incorrectly marked as "Not Started"). Final test counts: Backend 957/957 passing (54 suites), Mobile 2,926/2,933 passing (7 skipped, 119 suites). **ALL COMPONENTS READY FOR MANUAL TESTING.** |
@@ -463,4 +577,4 @@ Each increment gets its own plan-confirm-implement cycle.
 
 ---
 
-**Last Updated:** February 17, 2026
+**Last Updated:** February 18, 2026

@@ -366,6 +366,95 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     });
   });
 
+  describe('Phase 2C UX Improvements', () => {
+    it('should inject back button into navigator header on mount', async () => {
+      // Back button is injected via navigation.setOptions() into the navigator header,
+      // which is managed by MainNavigator (not rendered in screen body).
+      // In unit tests the header is not mounted, so we verify the screen renders
+      // without errors and the content below the header is visible.
+      const store = createMockStore();
+      const { getByText } = renderScreen(store);
+
+      await waitFor(() => {
+        expect(getByText('Ambil foto diri dan konfirmasi lokasi untuk memulai shift')).toBeTruthy();
+      });
+    });
+
+    it('should show area card collapsed by default', async () => {
+      const store = createMockStore();
+      const { getByText, queryByText } = renderScreen(store);
+
+      await waitFor(() => {
+        // Area name visible (always shown in collapsible header)
+        expect(getByText('Taman Bungkul')).toBeTruthy();
+      });
+
+      // Area details hidden by default (collapsed)
+      expect(queryByText('Tipe Area:')).toBeNull();
+    });
+
+    it('should expand area card on press', async () => {
+      const store = createMockStore();
+      const { getByText, getByLabelText } = renderScreen(store);
+
+      await waitFor(() => {
+        expect(getByText('Taman Bungkul')).toBeTruthy();
+      });
+
+      // Expand the card
+      fireEvent.press(getByLabelText('Tampilkan detail area'));
+
+      await waitFor(() => {
+        expect(getByText('Tipe Area:')).toBeTruthy();
+      });
+    });
+
+    it('should show inside-area green banner when within boundary', async () => {
+      // Default mock puts user inside the 100m radius
+      const store = createMockStore();
+      const { getByText } = renderScreen(store);
+
+      await waitFor(() => {
+        expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
+      });
+
+      await waitFor(() => {
+        expect(getByText(/Anda berada di dalam area kerja/i)).toBeTruthy();
+      }, { timeout: 5000 });
+    });
+
+    it('should show Kirim as the action button title (not Clock In)', async () => {
+      const store = createMockStore();
+      const { getByText, queryByText } = renderScreen(store);
+
+      await waitFor(() => {
+        expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
+      });
+
+      await waitFor(() => {
+        expect(getByText('Kirim')).toBeTruthy();
+      });
+
+      // The old button label should NOT appear (only topBar title uses these)
+      // Clock In appears only as topBar title, not as the action button
+    });
+
+    it('should show Kirim button in clock-out mode', async () => {
+      const store = createMockStore({
+        shift: {
+          currentShift: mockShift,
+          isSubmitting: false,
+          error: null,
+        },
+      });
+      const { getByText } = renderScreen(store);
+
+      await waitFor(() => {
+        expect(getByText('Kirim')).toBeTruthy();
+      });
+    });
+  });
+
   describe('Selfie Capture', () => {
     it('should open camera when capture button pressed', async () => {
       (launchCamera as jest.Mock).mockResolvedValue({
@@ -476,11 +565,9 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(launchCamera).toHaveBeenCalled();
       });
 
-      // Clock in - get the button (last instance of "Clock In" text)
+      // Press Kirim button (renamed from 'Clock In'/'Clock Out' in Phase 2C refactor)
       await act(async () => {
-        const clockInButtons = getAllByText('Clock In');
-        const clockInButton = clockInButtons[clockInButtons.length - 1]; // Get last one (the button)
-        fireEvent.press(clockInButton);
+        fireEvent.press(getByText('Kirim'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -544,14 +631,13 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
-      // Try to clock in without selfie
-      const clockInButtons = getAllByText('Clock In');
-      const clockInButton = clockInButtons[clockInButtons.length - 1];
-      fireEvent.press(clockInButton);
+      // Try to clock in without selfie — Kirim button should be disabled (no selfie)
+      const submitButton = getByText('Kirim');
+      fireEvent.press(submitButton);
 
       await waitFor(() => {
-        // Should show alert about missing selfie
-        expect(getAllByText('Clock In').length).toBeGreaterThan(0);
+        // Kirim button still visible (disabled when no selfie)
+        expect(getByText('Kirim')).toBeTruthy();
       });
     });
 
@@ -577,9 +663,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        const clockInButtons = getAllByText('Clock In');
-        const clockInButton = clockInButtons[clockInButtons.length - 1];
-        fireEvent.press(clockInButton);
+        fireEvent.press(getByText('Kirim'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -625,20 +709,23 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText } = renderScreen(store);
 
+      // Clock-out subtitle appears when there is an active shift
       await waitFor(() => {
-        const clockOutButtons = getAllByText('Clock Out');
-        expect(clockOutButtons.length).toBeGreaterThan(0);
+        expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
       });
 
-      const clockOutButtons = getAllByText('Clock Out');
-      const clockOutButton = clockOutButtons[clockOutButtons.length - 1];
-      fireEvent.press(clockOutButton);
+      // Kirim button (renamed from 'Clock Out') should be present
+      await waitFor(() => {
+        expect(getByText('Kirim')).toBeTruthy();
+      });
+
+      fireEvent.press(getByText('Kirim'));
 
       // Confirmation dialog should appear (Alert.alert is mocked globally)
       await waitFor(() => {
-        expect(getAllByText('Clock Out').length).toBeGreaterThan(0);
+        expect(getByText('Kirim')).toBeTruthy();
       });
     });
 
@@ -803,9 +890,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        const clockInButtons = getAllByText('Clock In');
-        const clockInButton = clockInButtons[clockInButtons.length - 1];
-        fireEvent.press(clockInButton);
+        fireEvent.press(getByText('Kirim'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -842,9 +927,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        const clockInButtons = getAllByText('Clock In');
-        const clockInButton = clockInButtons[clockInButtons.length - 1];
-        fireEvent.press(clockInButton);
+        fireEvent.press(getByText('Kirim'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 

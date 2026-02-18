@@ -46,6 +46,22 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 > **Design System:** Neo Brutalism 2.0 - See `specs/ui-ux/neo-brutalism.md`
 > **Phase 2B Updates:** See `specs/phases/phase-2-b-ui-ux-revamp/mobile.md`
 
+### Navigation Header (Phase 2C)
+
+**Component:** `fe/mobile/src/components/navigation/FieldHomeHeader.tsx`
+
+All screens use a unified 3-column header. Main screens show a leaf icon + greeting; sub-screens show a back arrow + page title. The status badge (Online/Offline/Syncing) is always pinned right.
+
+```
+Main:  [🌿 40×40]──8px──[Halo, Ahmad! | Satgas]──4px──[● ONLINE ]
+       ←16px                                                16px→
+
+Sub:   [← 44×44]──4px──[Detail Tugas              ]──4px──[● ONLINE ]
+       ←16px                                                16px→
+```
+
+> **Full spec:** `specs/phases/phase-2-c-client-feedback/mobile.md` → Header System Standard
+
 ---
 
 ## Auth Stack
@@ -158,7 +174,7 @@ const validateLoginForm = (phone: string, password: string): ValidationError[] =
 ```json
 {
   "phone": "081234567890",
-  "password": "worker123"
+  "password": "password123"
 }
 ```
 

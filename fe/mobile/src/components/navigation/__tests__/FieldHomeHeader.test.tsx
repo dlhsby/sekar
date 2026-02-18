@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { FieldHomeHeader } from '../FieldHomeHeader';
@@ -455,6 +455,124 @@ describe('FieldHomeHeader', () => {
       const greeting = getByText(/Halo,/);
       expect(greeting.props.ellipsizeMode).toBe('tail');
       expect(greeting.props.numberOfLines).toBe(1);
+    });
+  });
+
+  describe('Sub-screen mode (title prop)', () => {
+    it('should show page title instead of greeting when title is provided', () => {
+      const store = createMockStore();
+      const { getByText, queryByText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Detail Tugas" />
+        </Provider>
+      );
+
+      expect(getByText('Detail Tugas')).toBeTruthy();
+      expect(queryByText(/Halo,/)).toBeNull();
+    });
+
+    it('should NOT show role badge when title is provided', () => {
+      const store = createMockStore('satgas');
+      const { queryByText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Clock In" />
+        </Provider>
+      );
+
+      expect(queryByText('Satgas')).toBeNull();
+    });
+
+    it('should still show online status in sub-screen mode', () => {
+      const store = createMockStore('satgas', 'Ahmad', true);
+      const { getByText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Riwayat Shift" />
+        </Provider>
+      );
+
+      expect(getByText('Online')).toBeTruthy();
+    });
+
+    it('should truncate long page titles with ellipsis', () => {
+      const store = createMockStore();
+      const { getByText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Judul Halaman Yang Sangat Panjang Sekali" />
+        </Provider>
+      );
+
+      const titleEl = getByText('Judul Halaman Yang Sangat Panjang Sekali');
+      expect(titleEl.props.numberOfLines).toBe(1);
+      expect(titleEl.props.ellipsizeMode).toBe('tail');
+    });
+  });
+
+  describe('Back button (onBack prop)', () => {
+    it('should show back button when onBack is provided', () => {
+      const store = createMockStore();
+      const { getByLabelText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Detail Aktivitas" onBack={() => {}} />
+        </Provider>
+      );
+
+      expect(getByLabelText('Kembali')).toBeTruthy();
+    });
+
+    it('should call onBack when back button is pressed', () => {
+      const store = createMockStore();
+      const onBack = jest.fn();
+      const { getByLabelText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Clock In" onBack={onBack} />
+        </Provider>
+      );
+
+      fireEvent.press(getByLabelText('Kembali'));
+      expect(onBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('should show leaf icon (not back button) when used as main screen header', () => {
+      const store = createMockStore();
+      const { queryByLabelText, UNSAFE_getByType } = render(
+        <Provider store={store}>
+          <FieldHomeHeader />
+        </Provider>
+      );
+
+      expect(queryByLabelText('Kembali')).toBeNull();
+      const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
+      const icon = UNSAFE_getByType(MaterialCommunityIcons);
+      expect(icon.props.name).toBe('leaf');
+    });
+
+    it('should show leaf icon (not back button) when title is provided without onBack', () => {
+      const store = createMockStore();
+      const { queryByLabelText, UNSAFE_queryAllByType } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Detail Tugas" />
+        </Provider>
+      );
+
+      expect(queryByLabelText('Kembali')).toBeNull();
+      const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
+      const icons = UNSAFE_queryAllByType(MaterialCommunityIcons);
+      expect(icons.length).toBe(1);
+      expect(icons[0].props.name).toBe('leaf');
+    });
+
+    it('should show arrow-left icon when onBack is provided', () => {
+      const store = createMockStore();
+      const { UNSAFE_getAllByType } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Detail" onBack={() => {}} />
+        </Provider>
+      );
+
+      const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
+      const icons = UNSAFE_getAllByType(MaterialCommunityIcons);
+      const backIcon = icons.find((el: any) => el.props.name === 'arrow-left');
+      expect(backIcon).toBeTruthy();
     });
   });
 });

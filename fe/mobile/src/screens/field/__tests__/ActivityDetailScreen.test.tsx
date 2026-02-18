@@ -50,7 +50,7 @@ describe('ActivityDetailScreen', () => {
     jest.clearAllMocks();
   });
 
-  it('sets up navigation header with back button', async () => {
+  it('does not call setOptions for header (header managed by MainNavigator via FieldHomeHeader)', async () => {
     const mockActivity = {
       id: '1',
       description: 'Test activity',
@@ -70,11 +70,11 @@ describe('ActivityDetailScreen', () => {
       </NavigationContainer>
     );
 
+    // Phase 2C: header is fully managed by MainNavigator (FieldHomeHeader with onBack prop).
+    // ActivityDetailScreen no longer calls setOptions for back button or title.
     await waitFor(() => {
-      expect(mockSetOptions).toHaveBeenCalledWith(
+      expect(mockSetOptions).not.toHaveBeenCalledWith(
         expect.objectContaining({
-          headerShown: true,
-          title: 'Detail Aktivitas',
           headerLeft: expect.any(Function),
         })
       );

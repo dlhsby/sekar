@@ -17,18 +17,17 @@ import {
   FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
+import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import { mediaService, type Photo } from '../../services/media';
 import { requestCameraPermission } from '../../services/permissions';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as tasksApi from '../../services/api/tasksApi';
-import type { MainTabParamList } from '../../types/navigation.types';
+import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import type { Task } from '../../types/models.types';
 
 type TaskCompleteRouteProp = RouteProp<MainTabParamList, 'TaskComplete'>;
-type TaskCompleteNavigationProp = NativeStackNavigationProp<MainTabParamList, 'TaskComplete'>;
+type TaskCompleteNavigationProp = MainTabScreenProps<'TaskComplete'>['navigation'];
 
 export function TaskCompleteScreen(): React.JSX.Element {
   const navigation = useNavigation<TaskCompleteNavigationProp>();
@@ -133,11 +132,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity onPress={handleCancel} style={styles.headerBackButton}>
-          <MaterialCommunityIcons name="arrow-left" size={28} color={nbColors.black} />
-        </TouchableOpacity>
-      ),
+      headerTitle: () => <FieldHomeHeader title="Selesaikan Tugas" onBack={handleCancel} />,
     });
   }, [navigation, handleCancel]);
 
@@ -259,7 +254,6 @@ export function TaskCompleteScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   contentContainer: { paddingVertical: nbSpacing.md, paddingBottom: nbSpacing.xl },
-  headerBackButton: { marginLeft: 16 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' },
   loadingText: { marginTop: nbSpacing.md, fontSize: nbTypography.fontSize.base, color: nbColors.gray['600'] },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', paddingHorizontal: nbSpacing.lg },
