@@ -33,7 +33,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string; // Fix 5: optional — not all server configs issue a refresh token
   user: User;
 }
 
@@ -92,9 +92,17 @@ export interface CreateActivityResponse {
 }
 
 export interface ActivitiesFilter {
-  date?: string; // YYYY-MM-DD
+  from_date?: string; // YYYY-MM-DD (from date) — matches backend ActivitiesFilterDto
+  to_date?: string; // YYYY-MM-DD (to date)
   area_id?: string;
   user_id?: string;
+  rayon_id?: string;
+  activity_type_id?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  sort_by?: string;
+  sort_dir?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
 }
 
 // Location API
@@ -214,11 +222,15 @@ export interface TasksFilter {
   created_by?: string;
   from_date?: string;
   to_date?: string;
+  sort_by?: string;
+  sort_dir?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
 }
 
 export interface CreateTaskRequest {
   title: string;
-  description: string;
+  description?: string;
   priority: TaskPriority;
   deadline?: string;
   area_id?: string; // Phase 2C: optional
@@ -248,8 +260,30 @@ export interface TagTaskRequest {
   user_ids: string[];
 }
 
+export interface DeclineTaskRequest {
+  reason: string;
+}
+
+export interface RequestRevisionRequest {
+  reason: string;
+}
+
+export interface RejectActivityRequest {
+  reason: string;
+}
+
 export interface TasksListResponse {
   data: Task[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface ActivitiesListResponse {
+  data: Activity[];
   meta: {
     total: number;
     page: number;

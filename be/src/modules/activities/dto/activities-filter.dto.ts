@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, Matches } from 'class-validator';
+import { IsEnum, IsIn, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { ActivityStatus } from '../entities/activity.entity';
 
 /**
  * Activities Filter DTO
@@ -48,4 +49,55 @@ export class ActivitiesFilterDto extends PaginationDto {
     message: 'to_date must be in YYYY-MM-DD format',
   })
   to_date?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by area ID (UUID)',
+    example: 'area-uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  area_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by rayon ID (UUID)',
+    example: 'rayon-uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  rayon_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by activity type ID (UUID)',
+    example: 'type-uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  activity_type_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by approval status',
+    enum: ActivityStatus,
+    example: ActivityStatus.PENDING,
+  })
+  @IsOptional()
+  @IsEnum(ActivityStatus)
+  status?: ActivityStatus;
+
+  @ApiPropertyOptional({
+    description: 'Sort by field',
+    enum: ['created_at'],
+    default: 'created_at',
+  })
+  @IsOptional()
+  @IsIn(['created_at'])
+  sort_by?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sort direction',
+    enum: ['asc', 'desc'],
+    default: 'desc',
+  })
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sort_dir?: string;
 }

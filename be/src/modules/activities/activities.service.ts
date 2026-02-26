@@ -8,13 +8,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, IsNull } from 'typeorm';
-import { Activity } from './entities/activity.entity';
+import { Activity, ActivityStatus } from './entities/activity.entity';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { S3Service } from '../../shared/services/s3.service';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { User, UserRole } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -41,6 +42,7 @@ export class ActivitiesService {
     @InjectRepository(ActivityType)
     private activityTypeRepository: Repository<ActivityType>,
     private s3Service: S3Service,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -112,8 +114,14 @@ export class ActivitiesService {
     filters: {
       user_id?: string;
       shift_id?: string;
+      area_id?: string;
+      rayon_id?: string;
+      activity_type_id?: string;
       from_date?: string;
       to_date?: string;
+      status?: ActivityStatus;
+      sort_by?: string;
+      sort_dir?: string;
     },
     user: User,
     page: number = 1,
@@ -123,8 +131,10 @@ export class ActivitiesService {
       .createQueryBuilder('activity')
       .leftJoinAndSelect('activity.user', 'user')
       .leftJoinAndSelect('activity.shift', 'shift')
-      .leftJoinAndSelect('shift.area', 'area')
-      .leftJoinAndSelect('activity.activityType', 'activityType');
+      .leftJoinAndSelect('shift.area', 'shiftArea')
+      .leftJoinAndSelect('activity.area', 'area')
+      .leftJoinAndSelect('activity.activityType', 'activityType')
+      .leftJoinAndSelect('activity.reviewer', 'reviewer');
 
     // Scope-based filtering (specific roles first, then generic groups)
     if (user.role === UserRole.KORLAP) {
@@ -145,20 +155,46 @@ export class ActivitiesService {
       queryBuilder.andWhere('activity.shift_id = :shiftId', { shiftId: filters.shift_id });
     }
 
-    if (filters.from_date && filters.to_date) {
-      queryBuilder.andWhere('activity.created_at BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(filters.from_date),
-        toDate: new Date(filters.to_date),
-      });
-    } else if (filters.from_date) {
-      queryBuilder.andWhere('activity.created_at >= :fromDate', {
-        fromDate: new Date(filters.from_date),
+    if (filters.area_id) {
+      queryBuilder.andWhere('activity.area_id = :filterAreaId', { filterAreaId: filters.area_id });
+    }
+
+    if (filters.rayon_id) {
+      queryBuilder.andWhere('area.rayon_id = :filterRayonId', { filterRayonId: filters.rayon_id });
+    }
+
+    if (filters.activity_type_id) {
+      queryBuilder.andWhere('activity.activity_type_id = :activityTypeId', {
+        activityTypeId: filters.activity_type_id,
       });
     }
 
-    // Pagination
+    if (filters.from_date || filters.to_date) {
+      const fromDate = filters.from_date ? new Date(filters.from_date) : null;
+      const toDate = filters.to_date ? new Date(filters.to_date) : null;
+      if (toDate) toDate.setHours(23, 59, 59, 999);
+
+      if (fromDate && toDate) {
+        queryBuilder.andWhere('activity.created_at BETWEEN :fromDate AND :toDate', {
+          fromDate,
+          toDate,
+        });
+      } else if (fromDate) {
+        queryBuilder.andWhere('activity.created_at >= :fromDate', { fromDate });
+      } else if (toDate) {
+        queryBuilder.andWhere('activity.created_at <= :toDate', { toDate });
+      }
+    }
+
+    if (filters.status) {
+      queryBuilder.andWhere('activity.status = :status', { status: filters.status });
+    }
+
+    // Dynamic sort + pagination
+    const sortField = filters.sort_by ?? 'created_at';
+    const sortDir = (filters.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
     queryBuilder
-      .orderBy('activity.created_at', 'DESC')
+      .orderBy(`activity.${sortField}`, sortDir)
       .skip((page - 1) * limit)
       .take(limit);
 
@@ -192,7 +228,7 @@ export class ActivitiesService {
 
     const activities = await this.activitiesRepository.find({
       where,
-      relations: ['user', 'shift', 'shift.area', 'activityType'],
+      relations: ['user', 'shift', 'shift.area', 'area', 'activityType', 'reviewer'],
       order: { created_at: 'DESC' },
     });
 
@@ -210,7 +246,7 @@ export class ActivitiesService {
   async findOne(id: string, user: User): Promise<Activity> {
     const activity = await this.activitiesRepository.findOne({
       where: { id },
-      relations: ['user', 'shift', 'shift.area', 'activityType'],
+      relations: ['user', 'shift', 'shift.area', 'area', 'activityType', 'reviewer'],
     });
 
     if (!activity) {
@@ -329,6 +365,139 @@ export class ActivitiesService {
 
     await this.activitiesRepository.remove(activity);
     this.logger.log(`Activity deleted: ${id}`);
+  }
+
+  /**
+   * Approve a pending activity (Phase 2C)
+   *
+   * Only Korlap (for their area) and Kepala Rayon (for their rayon) can approve activities.
+   * Hierarchy validation ensures approvers can only approve activities within their scope.
+   *
+   * @param activityId Activity UUID to approve
+   * @param reviewerId UUID of the reviewer (Korlap or Kepala Rayon)
+   * @returns Updated activity with APPROVED status
+   */
+  async approveActivity(activityId: string, reviewerId: string): Promise<Activity> {
+    const activity = await this.activitiesRepository.findOne({
+      where: { id: activityId },
+      relations: ['user', 'area'],
+    });
+
+    if (!activity) {
+      throw new NotFoundException('Aktivitas tidak ditemukan');
+    }
+
+    if (activity.status !== ActivityStatus.PENDING) {
+      throw new BadRequestException('Aktivitas sudah diproses');
+    }
+
+    if (activity.user_id === reviewerId) {
+      throw new ForbiddenException('Anda tidak dapat mereview aktivitas Anda sendiri');
+    }
+
+    const reviewer = await this.usersService.findOne(reviewerId);
+    this.validateApprovalHierarchy(activity, reviewer);
+
+    activity.status = ActivityStatus.APPROVED;
+    activity.reviewed_by = reviewerId;
+    activity.reviewed_at = new Date();
+
+    await this.activitiesRepository.save(activity);
+
+    // Re-fetch with all relations for the response
+    return this.activitiesRepository.findOneOrFail({
+      where: { id: activityId },
+      relations: ['user', 'area', 'activityType', 'reviewer'],
+    });
+  }
+
+  /**
+   * Reject a pending activity with a reason (Phase 2C)
+   *
+   * Only Korlap (for their area) and Kepala Rayon (for their rayon) can reject activities.
+   * Hierarchy validation ensures approvers can only reject activities within their scope.
+   *
+   * @param activityId Activity UUID to reject
+   * @param reviewerId UUID of the reviewer (Korlap or Kepala Rayon)
+   * @param reason Reason for rejection (required)
+   * @returns Updated activity with REJECTED status and rejection_reason
+   */
+  async rejectActivity(activityId: string, reviewerId: string, reason: string): Promise<Activity> {
+    const activity = await this.activitiesRepository.findOne({
+      where: { id: activityId },
+      relations: ['user', 'area'],
+    });
+
+    if (!activity) {
+      throw new NotFoundException('Aktivitas tidak ditemukan');
+    }
+
+    if (activity.status !== ActivityStatus.PENDING) {
+      throw new BadRequestException('Aktivitas sudah diproses');
+    }
+
+    if (activity.user_id === reviewerId) {
+      throw new ForbiddenException('Anda tidak dapat mereview aktivitas Anda sendiri');
+    }
+
+    const reviewer = await this.usersService.findOne(reviewerId);
+    this.validateApprovalHierarchy(activity, reviewer);
+
+    activity.status = ActivityStatus.REJECTED;
+    activity.reviewed_by = reviewerId;
+    activity.reviewed_at = new Date();
+    activity.rejection_reason = reason;
+
+    await this.activitiesRepository.save(activity);
+
+    // Re-fetch with all relations for the response
+    return this.activitiesRepository.findOneOrFail({
+      where: { id: activityId },
+      relations: ['user', 'area', 'activityType', 'reviewer'],
+    });
+  }
+
+  /**
+   * Validate that the reviewer has authority to approve/reject the activity (Phase 2C)
+   *
+   * Hierarchy rules:
+   * - Korlap: Can approve Satgas and Linmas activities within their assigned area
+   * - Kepala Rayon: Can approve Korlap and AdminData activities within their assigned rayon
+   *
+   * @param activity Activity to be approved/rejected (must have user and area loaded)
+   * @param reviewer The user attempting to approve/reject
+   * @throws ForbiddenException if reviewer lacks authority
+   */
+  private validateApprovalHierarchy(activity: Activity, reviewer: User): void {
+    const submitterRole = activity.user?.role;
+
+    if (reviewer.role === UserRole.KORLAP) {
+      if (!['satgas', 'linmas'].includes(submitterRole)) {
+        throw new ForbiddenException('Korlap hanya dapat menyetujui aktivitas satgas dan linmas');
+      }
+      if (!reviewer.area_id || activity.area_id !== reviewer.area_id) {
+        throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di area Anda');
+      }
+    } else if (reviewer.role === UserRole.KEPALA_RAYON) {
+      if (!reviewer.rayon_id) {
+        throw new ForbiddenException('Akun Kepala Rayon Anda belum memiliki rayon');
+      }
+      if (!['korlap', 'admin_data'].includes(submitterRole)) {
+        throw new ForbiddenException('Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data');
+      }
+      if (submitterRole === 'korlap') {
+        if (!activity.area || !activity.area.rayon_id || activity.area.rayon_id !== reviewer.rayon_id) {
+          throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di rayon Anda');
+        }
+      }
+      if (submitterRole === 'admin_data') {
+        if (!activity.user.rayon_id || activity.user.rayon_id !== reviewer.rayon_id) {
+          throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di rayon Anda');
+        }
+      }
+    } else {
+      throw new ForbiddenException('Anda tidak memiliki wewenang untuk menyetujui aktivitas');
+    }
   }
 
   /**
