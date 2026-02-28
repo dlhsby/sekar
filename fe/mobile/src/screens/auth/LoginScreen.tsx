@@ -4,7 +4,7 @@
  * Uses Neo Brutalism design system
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ import {
 } from '../../constants/nbTokens';
 import { NBButton, NBTextInput, NBPasswordInput, NBBackgroundPattern } from '../../components/nb';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setLoading, setUser, setError } from '../../store/slices/authSlice';
+import { setLoading, setUser, setError, clearError } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
 import { setToken, setRefreshToken, setUser as setUserStorage } from '../../services/storage/secureStorage';
 import { loadAndSyncCurrentShift } from '../../services/shift';
@@ -46,8 +46,13 @@ function LoginScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
 
-  const handleLogin = async () => {
-    // Reset errors
+  // Fix 2: Wrapped in useCallback with correct dependency array
+  // Fix 4: Dispatch clearError() at the very start to prevent stale Redux error
+  const handleLogin = useCallback(async () => {
+    // Fix 4: Clear any stale Redux error before starting a new login attempt
+    dispatch(clearError());
+
+    // Reset local field errors
     setUsernameError('');
     setPasswordError('');
 
@@ -87,34 +92,46 @@ function LoginScreen(): React.JSX.Element {
       await setToken(loginData.access_token);
 
       // Store refresh token if provided (two-token system)
+      // Fix 5: refresh_token is optional (? in type) so this guard is correct
       if (loginData.refresh_token) {
         await setRefreshToken(loginData.refresh_token);
       }
 
       await setUserStorage(loginData.user);
 
-      // Fetch assigned area for clockable users (roles that can clock in/out)
+      // Fetch assigned area and updated user fields for clockable users
       let assignedArea = null;
+      let enrichedUser = loginData.user;
       if (isClockableRole(loginData.user.role as UserRole)) {
         try {
           const meResponse = await getMe();
-          if (meResponse.data && meResponse.data.assigned_area) {
-            // Ensure GPS coordinates are numbers, not strings
-            assignedArea = {
-              ...meResponse.data.assigned_area,
-              gps_lat: Number(meResponse.data.assigned_area.gps_lat),
-              gps_lng: Number(meResponse.data.assigned_area.gps_lng),
-              radius_meters: Number(meResponse.data.assigned_area.radius_meters),
+          if (meResponse.data) {
+            // Merge area_id/rayon_id from getMe (schedule-based) into user
+            enrichedUser = {
+              ...loginData.user,
+              area_id: meResponse.data.area_id ?? loginData.user.area_id,
+              rayon_id: meResponse.data.rayon_id ?? loginData.user.rayon_id,
             };
+            if (meResponse.data.assigned_area) {
+              // Ensure GPS coordinates are numbers, not strings
+              assignedArea = {
+                ...meResponse.data.assigned_area,
+                gps_lat: Number(meResponse.data.assigned_area.gps_lat),
+                gps_lng: Number(meResponse.data.assigned_area.gps_lng),
+                radius_meters: Number(meResponse.data.assigned_area.radius_meters),
+              };
+            }
           }
         } catch (err) {
-          console.warn('Failed to fetch assigned area:', err);
+          if (__DEV__) {
+            console.warn('Failed to fetch assigned area:', err);
+          }
           // Continue without assigned area - user can still login
         }
       }
 
-      // Update Redux state with user and assigned area
-      dispatch(setUser({ user: loginData.user, area: assignedArea }));
+      // Update Redux state with user and assigned area (null -> undefined to match payload type)
+      dispatch(setUser({ user: enrichedUser, area: assignedArea ?? undefined }));
 
       // Register FCM token after successful login
       try {
@@ -122,33 +139,44 @@ function LoginScreen(): React.JSX.Element {
         const token = await fcmService.getToken();
         if (token) {
           const success = await fcmService.registerToken(token);
-          if (success) {
-            // FCM token registered successfully
-          } else {
-            console.error('[Login] ❌ FCM token registration returned false');
+          if (!success) {
+            // Fix 1: Gate FCM console calls behind __DEV__
+            if (__DEV__) {
+              console.error('[Login] FCM token registration returned false');
+            }
           }
         } else {
-          console.warn('[Login] ⚠️ No FCM token available');
+          // Fix 1: Gate FCM console calls behind __DEV__
+          if (__DEV__) {
+            console.warn('[Login] No FCM token available');
+          }
         }
       } catch (err) {
-        console.error('[Login] ❌ FCM token registration exception:', err);
+        // Fix 1: Gate FCM console calls behind __DEV__
+        if (__DEV__) {
+          console.error('[Login] FCM token registration exception:', err);
+        }
         // Don't block login if FCM fails
       }
 
       // Load current shift for clockable roles only
       // This ensures the home screen shows correct shift status immediately after login
       if (isClockableRole(loginData.user.role as UserRole)) {
-        loadAndSyncCurrentShift(dispatch).catch((err) =>
-          console.warn('Shift sync after login failed:', err),
-        );
+        loadAndSyncCurrentShift(dispatch).catch((err) => {
+          if (__DEV__) {
+            console.warn('Shift sync after login failed:', err);
+          }
+        });
       }
-    } catch (err: any) {
-      dispatch(setError(err.message || 'Terjadi kesalahan'));
-      Alert.alert('Error', err.message || 'Terjadi kesalahan');
+    } catch (err: unknown) {
+      // Fix 3: catch (err: unknown) with proper narrowing
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan';
+      dispatch(setError(message));
+      Alert.alert('Error', message);
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [username, password, dispatch]);
 
   return (
     <NBBackgroundPattern

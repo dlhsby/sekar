@@ -295,6 +295,21 @@ export async function put<T>(
 }
 
 /**
+ * Generic PATCH request
+ */
+export async function patch<T>(
+  url: string,
+  data?: any,
+): Promise<ApiResponse<T>> {
+  try {
+    const response = await apiClient.patch<T>(url, data);
+    return { data: response.data };
+  } catch (error) {
+    return { error: (error as ApiError).message };
+  }
+}
+
+/**
  * Generic DELETE request
  */
 export async function del<T>(url: string): Promise<ApiResponse<T>> {

@@ -29,8 +29,9 @@ jest.mock('../../screens/field/ClockInOutScreen', () => ({
 jest.mock('../../screens/field/ActivitySubmissionScreen', () => ({
   ActivitySubmissionScreen: () => MockScreen({ name: 'ActivitySubmission' }),
 }));
-jest.mock('../../screens/field/TasksActivityScreen', () => ({
+jest.mock('../../screens/taskActivity', () => ({
   TasksActivityScreen: () => MockScreen({ name: 'TasksActivity' }),
+  TaskCreateScreen: () => MockScreen({ name: 'TaskCreate' }),
 }));
 jest.mock('../../screens/field/TaskDetailScreen', () => ({
   TaskDetailScreen: () => MockScreen({ name: 'TaskDetail' }),
@@ -63,12 +64,7 @@ jest.mock('../../screens/overtime/OvertimeSubmitScreen', () => ({
 jest.mock('../../screens/overtime/OvertimeDetailScreen', () => ({
   OvertimeDetailScreen: () => MockScreen({ name: 'OvertimeDetail' }),
 }));
-jest.mock('../../screens/overtime/OvertimeApprovalScreen', () => ({
-  OvertimeApprovalScreen: () => MockScreen({ name: 'OvertimeApproval' }),
-}));
-jest.mock('../../screens/tasks/TaskCreateScreen', () => ({
-  TaskCreateScreen: () => MockScreen({ name: 'TaskCreate' }),
-}));
+// TaskCreateScreen is now exported from taskActivity (already mocked above)
 jest.mock('../../screens/common/SettingsScreen', () => ({
   SettingsScreen: () => MockScreen({ name: 'Settings' }),
 }));
@@ -193,9 +189,10 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('kepala_rayon has 4 tabs', () => {
-      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(4);
+    it('kepala_rayon has 5 tabs including Overtime', () => {
+      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(5);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Monitoring')).toBe(true);
+      expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Overtime')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
@@ -210,9 +207,10 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Monitoring')).toBe(true);
     });
 
-    it('superadmin has 3 tabs', () => {
-      expect(TAB_CONFIGS.superadmin).toHaveLength(3);
+    it('superadmin has 4 tabs including Overtime', () => {
+      expect(TAB_CONFIGS.superadmin).toHaveLength(4);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Monitoring')).toBe(true);
+      expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Overtime')).toBe(true);
     });
 
     it('all tab configs have valid structure', () => {
@@ -290,7 +288,7 @@ describe('MainNavigator', () => {
     it('should render for top_management role', () => {
       const { getByText } = renderNavigator('top_management');
       expect(getByText('Monitoring')).toBeTruthy();
-      expect(getByText('Tugas')).toBeTruthy();
+      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Profil')).toBeTruthy();
     });
 
@@ -306,7 +304,7 @@ describe('MainNavigator', () => {
     it('should render for kepala_rayon role', () => {
       const { getAllByText, getByText } = renderNavigator('kepala_rayon');
       expect(getAllByText('Home').length).toBeGreaterThanOrEqual(1);
-      expect(getByText('Tugas')).toBeTruthy();
+      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
       expect(getByText('Profil')).toBeTruthy();
     });
@@ -314,7 +312,7 @@ describe('MainNavigator', () => {
     it('should render for superadmin role', () => {
       const { getByText } = renderNavigator('superadmin');
       expect(getByText('Monitoring')).toBeTruthy();
-      expect(getByText('Tugas')).toBeTruthy();
+      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Profil')).toBeTruthy();
     });
 

@@ -12,7 +12,7 @@ import DeviceInfo from 'react-native-device-info';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { createActivity } from '../services/api/activitiesApi';
 import { getMyActivityTypes } from '../services/api/activityTypesApi';
-import { setSubmitting, setError } from '../store/slices/activitiesSlice';
+import { setSubmitting, setError, addActivity } from '../store/slices/activitiesSlice';
 import { addToQueue as addToOfflineQueue } from '../services/sync/offlineQueue';
 import { mediaService, type Photo } from '../services/media';
 import { requestCameraPermission } from '../services/permissions';
@@ -92,7 +92,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
       }
     } catch (error) {
       Alert.alert('Error', 'Gagal memuat jenis aktivitas. Coba lagi nanti.');
-      console.error('Failed to load activity types:', error);
+      if (__DEV__) { console.error('Failed to load activity types:', error); }
     } finally {
       setIsLoadingTypes(false);
     }
@@ -115,7 +115,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
         setIsLoadingLocation(false);
       },
       (error) => {
-        console.error('Location error:', error);
+        if (__DEV__) { console.error('Location error:', error); }
         let errorMessage = 'Tidak dapat mendapatkan lokasi GPS';
         if (error.code === 1) { errorMessage = 'Izin lokasi ditolak'; }
         else if (error.code === 3) { errorMessage = 'Waktu habis. Coba di area terbuka.'; }
@@ -148,11 +148,11 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
         return false;
       }
       if (freeDiskStorageMB < 200) {
-        console.warn(`[ActivitySubmission] Low disk space: ${Math.round(freeDiskStorageMB)}MB remaining`);
+        if (__DEV__) { console.warn(`[ActivitySubmission] Low disk space: ${Math.round(freeDiskStorageMB)}MB remaining`); }
       }
       return true;
     } catch (error) {
-      console.error('[ActivitySubmission] Failed to check disk space:', error);
+      if (__DEV__) { console.error('[ActivitySubmission] Failed to check disk space:', error); }
       return true;
     }
   }, []);
@@ -218,7 +218,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
       };
       await AsyncStorage.setItem('activity_draft', JSON.stringify(draft));
     } catch (error) {
-      console.error('Failed to save draft:', error);
+      if (__DEV__) { console.error('Failed to save draft:', error); }
     }
   }, [form]);
 
@@ -245,6 +245,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
                   description: draft.description || '',
                   activityTypeId: draft.activityTypeId || null,
                 }));
+                getCurrentLocation(); // Re-acquire fresh GPS after draft restore
               },
             },
           ]
@@ -253,7 +254,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
         await AsyncStorage.removeItem('activity_draft');
       }
     } catch (error) {
-      console.error('Failed to restore draft:', error);
+      if (__DEV__) { console.error('Failed to restore draft:', error); }
     }
   }, []);
 
@@ -273,17 +274,23 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
     return () => clearInterval(draftInterval);
   }, []);
 
-  // Reset form after successful submission
+  // Reset form (does NOT clear draft from storage — use clearDraft for that)
   const resetForm = useCallback(() => {
     setForm({ photos: [], description: '', activityTypeId: null, location: null });
     setTimeout(() => { photoListRef.current?.scrollToOffset({ offset: 0, animated: false }); }, 100);
     getCurrentLocation();
   }, [getCurrentLocation, photoListRef]);
 
+  // Clear draft from AsyncStorage
+  const clearDraft = useCallback(async () => {
+    await AsyncStorage.removeItem('activity_draft');
+  }, []);
+
   // Submit activity
   const handleSubmit = useCallback(async (
     onNavigateClockIn: () => void,
     onNavigateActivities: () => void,
+    onValidationFail?: () => void,
   ) => {
     if (!currentShift) {
       Alert.alert(
@@ -298,7 +305,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
     }
 
     if (!validateForm()) {
-      Alert.alert('Form Tidak Valid', 'Periksa kembali form Anda.');
+      onValidationFail?.();
       return;
     }
 
@@ -323,6 +330,7 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
         const response = await createActivity(activityData);
         if (response.error) { throw new Error(response.error); }
         if (response.data) {
+          dispatch(addActivity(response.data)); // Immediately update Redux so HomeScreen counter reflects the new activity
           await AsyncStorage.removeItem('activity_draft');
           for (const photo of form.photos) { await mediaService.deletePhoto(photo.uri); }
           resetForm();
@@ -387,5 +395,8 @@ export function useActivityForm(photoListRef: React.RefObject<FlatList | null>) 
     setActivityTypeId,
     saveDraft,
     clearError,
+    resetForm,
+    clearDraft,
+    restoreDraft,
   };
 }

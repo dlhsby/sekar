@@ -18,7 +18,7 @@ import { FieldHomeHeader } from '../components/navigation/FieldHomeHeader';
 import { HomeScreen } from '../screens/field/HomeScreen';
 import { ClockInOutScreen } from '../screens/field/ClockInOutScreen';
 import { ActivitySubmissionScreen } from '../screens/field/ActivitySubmissionScreen';
-import { TasksActivityScreen } from '../screens/field/TasksActivityScreen';
+import { TasksActivityScreen } from '../screens/taskActivity';
 import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
 import { TaskCompleteScreen } from '../screens/field/TaskCompleteScreen';
 import { ShiftHistoryScreen } from '../screens/field/ShiftHistoryScreen';
@@ -34,10 +34,9 @@ import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { OvertimeListScreen } from '../screens/overtime/OvertimeListScreen';
 import { OvertimeSubmitScreen } from '../screens/overtime/OvertimeSubmitScreen';
 import { OvertimeDetailScreen } from '../screens/overtime/OvertimeDetailScreen';
-import { OvertimeApprovalScreen } from '../screens/overtime/OvertimeApprovalScreen';
 
 // Task creation screen
-import { TaskCreateScreen } from '../screens/tasks/TaskCreateScreen';
+import { TaskCreateScreen } from '../screens/taskActivity';
 
 // Common screens
 import { SettingsScreen } from '../screens/common/SettingsScreen';
@@ -66,7 +65,7 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   korlap: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
@@ -79,23 +78,25 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   ],
   kepala_rayon: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
+    { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   top_management: [
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   admin_system: [
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   superadmin: [
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'TasksActivities', label: 'Tugas', icon: 'clipboard-check' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
+    { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
 };
@@ -191,22 +192,32 @@ function MainNavigator(): React.JSX.Element {
         options={{ headerTitle: () => <FieldHomeHeader />, tabBarButton: () => null }}
       />
 
-      {/* ActivitySubmission: back to previous screen */}
+      {/* ActivitySubmission: back to Aktivitas tab */}
       <Tab.Screen
         name="ActivitySubmission"
         component={ActivitySubmissionScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Buat Aktivitas" onBack={() => navigation.goBack()} />,
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Buat Aktivitas"
+              onBack={() => navigation.navigate('TasksActivities', { initialTab: 'activities' })}
+            />
+          ),
           tabBarButton: () => null,
         })}
       />
 
-      {/* TaskDetail: standard goBack */}
+      {/* TaskDetail: back to Tugas tab */}
       <Tab.Screen
         name="TaskDetail"
         component={TaskDetailScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Detail Tugas" onBack={() => navigation.goBack()} />,
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Detail Tugas"
+              onBack={() => navigation.navigate('TasksActivities', { initialTab: 'tasks' })}
+            />
+          ),
           tabBarButton: () => null,
         })}
       />
@@ -273,14 +284,6 @@ function MainNavigator(): React.JSX.Element {
         component={OvertimeDetailScreen}
         options={({ navigation }) => ({
           headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.goBack()} />,
-          tabBarButton: () => null,
-        })}
-      />
-      <Tab.Screen
-        name="OvertimeApproval"
-        component={OvertimeApprovalScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Persetujuan Lembur" onBack={() => navigation.goBack()} />,
           tabBarButton: () => null,
         })}
       />

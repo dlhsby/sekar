@@ -378,6 +378,75 @@ Migrations MUST be executed in this order due to foreign key dependencies:
 
 ---
 
+## Migration 5: Activity Approval + Task Acceptance & Verification
+
+```sql
+BEGIN;
+
+-- ── Activities: Approval Workflow ──────────────────
+ALTER TABLE activities ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'pending';
+ALTER TABLE activities ADD CONSTRAINT activities_status_check
+  CHECK (status IN ('pending', 'approved', 'rejected'));
+ALTER TABLE activities ADD COLUMN reviewed_by UUID;
+ALTER TABLE activities ADD CONSTRAINT FK_activities_reviewed_by
+  FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE activities ADD COLUMN reviewed_at TIMESTAMPTZ;
+ALTER TABLE activities ADD COLUMN rejection_reason TEXT;
+
+CREATE INDEX idx_activities_status ON activities(status);
+CREATE INDEX idx_activities_area_status ON activities(area_id, status);
+
+-- ── Tasks: Accept/Decline ──────────────────────────
+ALTER TABLE tasks ADD COLUMN accepted_at TIMESTAMPTZ;
+ALTER TABLE tasks ADD COLUMN declined_at TIMESTAMPTZ;
+ALTER TABLE tasks ADD COLUMN decline_reason TEXT;
+
+-- ── Tasks: Verification ────────────────────────────
+ALTER TABLE tasks ADD COLUMN verified_by UUID;
+ALTER TABLE tasks ADD CONSTRAINT FK_tasks_verified_by
+  FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE tasks ADD COLUMN verified_at TIMESTAMPTZ;
+ALTER TABLE tasks ADD COLUMN revision_reason TEXT;
+
+CREATE INDEX idx_tasks_verified_by ON tasks(verified_by);
+
+-- ── Tasks: Expand status enum ──────────────────────
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_status_check;
+ALTER TABLE tasks ADD CONSTRAINT tasks_status_check
+  CHECK (status IN ('pending', 'assigned', 'accepted', 'declined',
+                    'in_progress', 'completed', 'verified', 'revision_needed'));
+
+COMMIT;
+```
+
+### Rollback
+
+```sql
+BEGIN;
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_status_check;
+ALTER TABLE tasks ADD CONSTRAINT tasks_status_check
+  CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed'));
+DROP INDEX IF EXISTS idx_tasks_verified_by;
+ALTER TABLE tasks DROP COLUMN IF EXISTS revision_reason;
+ALTER TABLE tasks DROP COLUMN IF EXISTS verified_at;
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS FK_tasks_verified_by;
+ALTER TABLE tasks DROP COLUMN IF EXISTS verified_by;
+ALTER TABLE tasks DROP COLUMN IF EXISTS decline_reason;
+ALTER TABLE tasks DROP COLUMN IF EXISTS declined_at;
+ALTER TABLE tasks DROP COLUMN IF EXISTS accepted_at;
+DROP INDEX IF EXISTS idx_activities_area_status;
+DROP INDEX IF EXISTS idx_activities_status;
+ALTER TABLE activities DROP COLUMN IF EXISTS rejection_reason;
+ALTER TABLE activities DROP COLUMN IF EXISTS reviewed_at;
+ALTER TABLE activities DROP CONSTRAINT IF EXISTS FK_activities_reviewed_by;
+ALTER TABLE activities DROP COLUMN IF EXISTS reviewed_by;
+ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_status_check;
+ALTER TABLE activities DROP COLUMN IF EXISTS status;
+COMMIT;
+```
+
+---
+
 ## Final Table Inventory (17 tables)
 
 | # | Table | Status | Notes |

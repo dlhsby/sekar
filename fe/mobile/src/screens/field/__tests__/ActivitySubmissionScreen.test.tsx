@@ -73,7 +73,15 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     navigate: jest.fn(),
     goBack: jest.fn(),
+    addListener: jest.fn(() => jest.fn()),
+    dispatch: jest.fn(),
+    setOptions: jest.fn(),
   }),
+  useFocusEffect: (cb: () => void) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const React = require('react');
+    React.useEffect(cb, [cb]);
+  },
   NavigationContainer: ({ children }: any) => children,
 }));
 
@@ -293,10 +301,7 @@ describe('ActivitySubmissionScreen', () => {
     });
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Form Tidak Valid',
-        'Periksa kembali form Anda.'
-      );
+      expect(getByText('Tambahkan minimal 1 foto')).toBeTruthy();
     });
   });
 
@@ -338,10 +343,7 @@ describe('ActivitySubmissionScreen', () => {
     });
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Form Tidak Valid',
-        'Periksa kembali form Anda.'
-      );
+      expect(getByText('Deskripsi wajib diisi')).toBeTruthy();
     });
   });
 
@@ -392,10 +394,7 @@ describe('ActivitySubmissionScreen', () => {
     });
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Form Tidak Valid',
-        'Periksa kembali form Anda.'
-      );
+      expect(getByText('Pilih jenis aktivitas')).toBeTruthy();
     });
   });
 

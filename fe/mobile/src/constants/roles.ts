@@ -52,10 +52,10 @@ export const TASK_RECEIVERS: UserRole[] = [
 ];
 
 /** Roles that can submit overtime */
-export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas'];
+export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'admin_data'];
 
 /** Roles that can approve overtime */
-export const OVERTIME_APPROVERS: UserRole[] = ['korlap'];
+export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
 
 /** Monitoring access by scope */
 export const MONITORING_ROLES: Record<'city' | 'rayon' | 'area', UserRole[]> = {
@@ -101,4 +101,17 @@ export const getMonitoringScope = (role: UserRole): 'city' | 'rayon' | 'area' | 
   if (MONITORING_ROLES.rayon.includes(role)) return 'rayon';
   if (MONITORING_ROLES.area.includes(role)) return 'area';
   return null;
+};
+
+/**
+ * Maps each role to its direct subordinate roles for filter scoping
+ * (used by filter modals to show only directly managed users in lists).
+ */
+export const FILTER_SUBORDINATE_ROLES: Partial<Record<UserRole, UserRole[]>> = {
+  korlap: ['satgas', 'linmas'],
+  kepala_rayon: ['korlap', 'admin_data'],
+  top_management: ['kepala_rayon'],
+  admin_system: ['kepala_rayon', 'korlap', 'admin_data', 'satgas', 'linmas'],
+  superadmin: ['kepala_rayon', 'korlap', 'admin_data', 'satgas', 'linmas', 'top_management', 'admin_system'],
+  admin_data: [],
 };

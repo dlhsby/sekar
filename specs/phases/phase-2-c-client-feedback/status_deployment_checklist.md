@@ -870,7 +870,7 @@ npm run seed
 
 | # | Test Case | Expected | Status |
 |---|-----------|----------|--------|
-| 278 | `TaskCreateScreen.tsx` exists | New file in screens/tasks/ | [ ] |
+| 278 | `TaskCreateScreen.tsx` exists | In screens/taskActivity/ (moved from screens/tasks/) | [ ] |
 | 279 | Access restricted to TASK_CREATORS | Role check | [ ] |
 | 280 | Fields: title, description, priority, deadline, area, rayon, assignee, tags | Complete form | [ ] |
 | 281 | Hierarchical assignment validation | korlap→satgas/linmas only, etc. | [ ] |

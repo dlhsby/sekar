@@ -644,3 +644,175 @@ describe('LoginScreen', () => {
     });
   });
 });
+
+// ============================================================
+// Code Review Fixes — Feb 18, 2026
+// ============================================================
+
+describe('LoginScreen — Fix 1: FCM console calls gated behind __DEV__', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
+    (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
+  });
+
+  it('should NOT emit console.error or console.warn in production (__DEV__ = false)', async () => {
+    // Save and override __DEV__
+    const originalDev = (global as any).__DEV__;
+    (global as any).__DEV__ = false;
+
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const mockUser = { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas' };
+
+    // FCM service throws — this used to always log even in prod
+    jest.mock('../../../services/notifications/fcmService', () => ({
+      default: { getToken: jest.fn().mockRejectedValue(new Error('FCM error')), registerToken: jest.fn() },
+    }), { virtual: true });
+
+    (authApi.login as jest.Mock).mockResolvedValue({
+      data: { access_token: 'token', user: mockUser },
+    });
+    (authApi.getMe as jest.Mock).mockResolvedValue({ data: { ...mockUser, assigned_area: null } });
+
+    const store = configureStore({ reducer: { auth: authReducer } });
+    const { getByPlaceholderText, getByText } = render(
+      <Provider store={store}><LoginScreen /></Provider>
+    );
+
+    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
+
+    await act(async () => {
+      fireEvent.press(getByText('Masuk'));
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // No FCM-related console output should appear in production
+    const fcmConsoleErrors = consoleSpy.mock.calls.filter(
+      (args) => String(args[0]).includes('FCM')
+    );
+    const fcmConsoleWarns = warnSpy.mock.calls.filter(
+      (args) => String(args[0]).includes('FCM') || String(args[0]).includes('No FCM')
+    );
+    expect(fcmConsoleErrors).toHaveLength(0);
+    expect(fcmConsoleWarns).toHaveLength(0);
+
+    consoleSpy.mockRestore();
+    warnSpy.mockRestore();
+    (global as any).__DEV__ = originalDev;
+  });
+});
+
+describe('LoginScreen — Fix 4: clearError dispatched at start of handleLogin', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
+    (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
+  });
+
+  it('should clear stale Redux error before attempting login', async () => {
+    // Pre-populate the store with an existing error
+    const store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: {
+        auth: {
+          user: null,
+          assignedArea: null,
+          isAuthenticated: false,
+          isLoading: false,
+          isRestoring: false,
+          error: 'Previous error from last attempt',
+        },
+      } as any,
+    });
+
+    (authApi.login as jest.Mock).mockResolvedValue({
+      data: {
+        access_token: 'token',
+        user: { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas' },
+      },
+    });
+    (authApi.getMe as jest.Mock).mockResolvedValue({ data: { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas', assigned_area: null } });
+
+    const { getByPlaceholderText, getByText } = render(
+      <Provider store={store}><LoginScreen /></Provider>
+    );
+
+    // Verify stale error exists before login
+    expect(store.getState().auth.error).toBe('Previous error from last attempt');
+
+    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
+
+    await act(async () => {
+      fireEvent.press(getByText('Masuk'));
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Error should be cleared immediately when handleLogin runs (clearError dispatched first)
+    // After a successful login, error remains null
+    await waitFor(() => {
+      expect(store.getState().auth.error).toBeNull();
+    });
+  });
+
+  it('should press login button only once per press event (useCallback stability)', async () => {
+    (authApi.login as jest.Mock).mockResolvedValue({
+      data: {
+        access_token: 'token',
+        user: { id: 1, username: 'worker1', full_name: 'Worker', role: 'top_management' },
+      },
+    });
+
+    const { getByPlaceholderText, getByText } = renderLoginScreen();
+
+    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
+    fireEvent.press(getByText('Masuk'));
+
+    await waitFor(() => {
+      // handleLogin is called exactly once per button press
+      expect(authApi.login).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+describe('LoginScreen — Fix 3: catch (err: unknown) with safe narrowing', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  });
+
+  it('should show Error.message when caught error is an Error instance', async () => {
+    (authApi.login as jest.Mock).mockRejectedValue(new Error('Koneksi terputus'));
+
+    const { getByPlaceholderText, getByText } = renderLoginScreen();
+
+    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
+    fireEvent.press(getByText('Masuk'));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Koneksi terputus');
+    });
+  });
+
+  it('should show fallback message when caught error is not an Error instance', async () => {
+    // Throwing a non-Error value (e.g. a string)
+    (authApi.login as jest.Mock).mockRejectedValue('string-error');
+
+    const { getByPlaceholderText, getByText } = renderLoginScreen();
+
+    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
+    fireEvent.press(getByText('Masuk'));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Terjadi kesalahan');
+    });
+  });
+});

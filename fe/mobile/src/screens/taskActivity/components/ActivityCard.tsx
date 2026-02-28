@@ -8,21 +8,12 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { NBCard, NBBadge } from '../../../components/nb';
 import { nbColors, nbSpacing, nbTypography } from '../../../constants/nbTokens';
 import type { Activity } from '../../../types/models.types';
+import { formatDate, formatTime } from '../../../utils/statusHelpers';
 
 interface ActivityCardProps {
   activity: Activity;
   onPress: () => void;
 }
-
-const formatTime = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-};
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-};
 
 export function ActivityCard({ activity, onPress }: ActivityCardProps): React.JSX.Element {
   return (
@@ -68,6 +59,12 @@ export function ActivityCard({ activity, onPress }: ActivityCardProps): React.JS
             <Text style={styles.itemMetaChip}>📸 {activity.photo_urls.length} foto</Text>
           )}
         </View>
+        {/* Creator row */}
+        {activity.user && (
+          <Text style={styles.itemCreator}>
+            👤 {activity.user.role} - {activity.user.full_name}
+          </Text>
+        )}
       </NBCard>
     </TouchableOpacity>
   );
@@ -118,5 +115,10 @@ const styles = StyleSheet.create({
   itemMetaChip: {
     fontSize: nbTypography.fontSize.xs,
     color: nbColors.gray[500],
+  },
+  itemCreator: {
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray['500'],
+    marginTop: nbSpacing.xs,
   },
 });

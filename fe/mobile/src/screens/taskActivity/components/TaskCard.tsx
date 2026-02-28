@@ -8,6 +8,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { NBCard, NBBadge } from '../../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../../constants/nbTokens';
 import type { Task, TaskStatus } from '../../../types/models.types';
+import { getTaskStatusLabel, formatDate, formatTime } from '../../../utils/statusHelpers';
 
 interface TaskCardProps {
   task: Task;
@@ -38,29 +39,6 @@ function getTaskStatusBadgeVariant(
   }
 }
 
-function getTaskStatusLabel(status: TaskStatus): string {
-  const labels: Record<TaskStatus, string> = {
-    pending: 'Menunggu',
-    assigned: 'Ditugaskan',
-    accepted: 'Diterima',
-    declined: 'Ditolak',
-    in_progress: 'Dikerjakan',
-    completed: 'Menunggu Verifikasi',
-    verified: 'Terverifikasi',
-    revision_needed: 'Perlu Revisi',
-  };
-  return labels[status] || status;
-}
-
-const formatTime = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-};
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-};
 
 export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
   return (
@@ -112,6 +90,12 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
             <Text style={styles.itemMetaChip}>🏷️ {task.tags.length} tag</Text>
           )}
         </View>
+        {/* Creator row */}
+        {task.creator && (
+          <Text style={styles.itemCreator}>
+            👤 {task.creator.role} - {task.creator.full_name}
+          </Text>
+        )}
       </NBCard>
     </TouchableOpacity>
   );
@@ -162,5 +146,10 @@ const styles = StyleSheet.create({
   itemMetaChip: {
     fontSize: nbTypography.fontSize.xs,
     color: nbColors.gray[500],
+  },
+  itemCreator: {
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray[500],
+    marginTop: nbSpacing.xs,
   },
 });

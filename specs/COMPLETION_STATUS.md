@@ -1,6 +1,6 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** February 17, 2026 (Phase 2C 100% Complete — All Components)
+**Last Updated:** February 28, 2026 (Phase 2C deep review pass — 9 bugs fixed, 5 refactors, 3,264 mobile tests)
 **Current Phase:** Phase 2C Client Feedback - ✅ Complete (100%)
 **Next Phase:** Phase 3 Polishing & E2E Testing
 **Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 3: 0% | Phase 4: 0%
@@ -14,7 +14,7 @@
 | **Backend API** | ✅ Live | http://api.sekar.wahyutrip.com |
 | **Database** | ✅ Seeded | Phase 1 + 2B schema, 6 test users, 3 areas |
 | **Migrations** | ✅ Executed | InitialSchema + Phase2DatabaseSchema |
-| **Auth** | ✅ Working | JWT tokens, admin/admin123 verified |
+| **Auth** | ✅ Working | JWT tokens, admin/password123 verified |
 | **FCM** | ✅ Enabled | Push notifications configured |
 | **CI/CD** | ✅ Green | All 3 pipelines passing |
 | **Deployments** | 4 iterations | Final: run 21856584343 (schema perfect) |
@@ -31,7 +31,7 @@
 | Component | Status | Progress | Tests | Coverage | Notes |
 |-----------|--------|----------|-------|----------|-------|
 | **Backend** | ✅ Phase 2C Complete | 100% | 961 passing (54 suites) | 95.64% stmts / 87.48% branches ✅ | Phase 2C: Activities, Schedules, Overtime, Monitoring scope auth |
-| **Mobile** | ✅ Phase 2C Complete | 100% | 3028 (3021 pass, 7 skip / 123 suites) | 85.3% stmts ✅ | 5 new + 12 modified screens, unified 8-role navigator |
+| **Mobile** | ✅ Phase 2C Complete | 100% | 3264 (3257 pass, 7 skip / 133 suites) | 85.3% stmts ✅ | 5 new + 12 modified screens, unified 8-role navigator; Lembur 11-point client feedback + deep review pass complete |
 | **Web** | ✅ Phase 2C Complete | 100% | 1213 (1161 pass, 52 skip / 60 suites) | 96.46% stmts / 91.01% branches ✅ | 8-role system, activities/schedules/overtime/tasks, monitoring |
 | **Database** | ✅ Phase 2C Complete | 100% | 957 BE tests | - | 18 tables, migrations M0-M4 executed in production |
 | **Documentation** | ✅ Phase 2C Complete | 100% | 12 spec files | - | Database, backend, mobile, web, testing, status docs complete |
@@ -189,9 +189,9 @@ Swagger Docs:         100% complete
 - 4 area types (Park, Pedestrian, Mini Garden, Street)
 - 3 test areas in Surabaya with GPS coordinates
 - 4 test users:
-  - `admin` / `admin123` (Admin)
-  - `supervisor1` / `supervisor123` (Supervisor)
-  - `worker1`, `worker2`, `worker3` / `worker123` (Workers)
+  - `admin` / `password123` (Admin)
+  - `supervisor1` / `password123` (Supervisor)
+  - `worker1`, `worker2`, `worker3` / `password123` (Workers)
 - 3 worker assignments (Phase 2C: replaced by schedules)
 - Sample shifts, reports (Phase 2C: renamed to activities), location logs
 

@@ -89,6 +89,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   const navigation = useNavigation<MainTabScreenProps<'TaskCreate'>['navigation']>();
   const { role, canCreateTask } = useRoleAccess();
   const user = useAppSelector((state) => state.auth.user);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [form, setForm] = useState<FormState>({
     title: '',
@@ -397,7 +398,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   // Handle submit
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
-      Alert.alert('Validasi Gagal', 'Mohon periksa kembali form');
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       return;
     }
 
@@ -475,10 +476,21 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     >
       <SafeAreaView style={styles.container}>
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Validation error summary */}
+          {Object.values(errors).some(Boolean) && (
+            <View style={styles.errorSummary}>
+              <Text style={styles.errorSummaryTitle}>⚠️ Mohon lengkapi data berikut:</Text>
+              {Object.values(errors).filter(Boolean).map((msg, i) => (
+                <Text key={i} style={styles.errorSummaryItem}>• {msg}</Text>
+              ))}
+            </View>
+          )}
+
           {/* Title & Description */}
           <NBCard style={styles.card}>
             <NBCardHeader>
@@ -855,5 +867,24 @@ const styles = StyleSheet.create({
   requiredAsterisk: {
     color: nbColors.danger,
     fontWeight: '700',
+  },
+  errorSummary: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.danger,
+    borderRadius: nbBorderRadius.sm,
+    padding: nbSpacing.sm,
+    marginBottom: nbSpacing.md,
+  },
+  errorSummaryTitle: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.danger,
+    marginBottom: nbSpacing.xs,
+  },
+  errorSummaryItem: {
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.danger,
+    marginTop: 2,
   },
 });

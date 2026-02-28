@@ -21,14 +21,17 @@ export type AreaTypeCode = 'park' | 'pedestrian' | 'mini_garden' | 'street';
 // Media types
 export type MediaType = 'photo' | 'video';
 
-// Task status - 4 values (Phase 2C simplified: removed accepted, declined)
-export type TaskStatus = 'pending' | 'assigned' | 'in_progress' | 'completed';
+// Task status - 8 values (Phase 2C: accept/decline + verify/revision)
+export type TaskStatus = 'pending' | 'assigned' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'verified' | 'revision_needed';
 
 // Task priority
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 // Overtime status
 export type OvertimeStatus = 'pending' | 'approved' | 'rejected';
+
+// Activity approval status
+export type ActivityStatus = 'pending' | 'approved' | 'rejected';
 
 // Day type for scheduling
 export type DayType = 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
@@ -111,6 +114,12 @@ export interface Activity {
   gps_lat?: number;
   gps_lng?: number;
   user?: User;
+  // Activity approval fields
+  status?: ActivityStatus;
+  reviewed_by?: string;
+  reviewer?: User;
+  reviewed_at?: string;
+  rejection_reason?: string;
   created_at: string;
   updated_at: string;
 }
@@ -247,7 +256,7 @@ export interface TaskTag {
   created_at: string;
 }
 
-// Task (Phase 2C: simplified, no accept/decline, optional area_id, rayon support)
+// Task (Phase 2C: accept/decline + verify/revision support, optional area_id, rayon support)
 export interface Task {
   id: string;
   title: string;
@@ -268,21 +277,27 @@ export interface Task {
   completed_at?: string;
   started_at?: string;
   assigned_at?: string;
+  accepted_at?: string;
+  declined_at?: string;
+  decline_reason?: string;
+  verified_by?: string;
+  verifier?: User;
+  verified_at?: string;
+  revision_reason?: string;
   tags?: TaskTag[];
   created_at: string;
   updated_at: string;
 }
 
-// Overtime (Phase 2C: flat structure, no nested aktivitas)
+// Overtime (Phase 2C: flat structure, datetime-based, overnight support)
 export interface Overtime {
   id: string;
   user_id: string;
   user?: User;
   area_id?: string;
   area?: Area;
-  date: string; // YYYY-MM-DD
-  start_time: string; // HH:mm
-  end_time: string; // HH:mm
+  start_datetime: string; // ISO 8601 e.g. "2026-02-14T17:00:00+07:00"
+  end_datetime: string;   // ISO 8601 — may cross midnight
   status: OvertimeStatus;
   activity_type_id: string;
   activityType?: ActivityType;
@@ -294,7 +309,6 @@ export interface Overtime {
   approved_at?: string;
   approver?: User;
   rejection_reason?: string;
-  notes?: string;
   created_at: string;
   updated_at: string;
 }

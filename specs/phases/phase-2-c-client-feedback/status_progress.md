@@ -1,6 +1,6 @@
 # Phase 2C - Implementation Progress
 
-**Last Updated:** February 16, 2026
+**Last Updated:** February 28, 2026
 **Status:** ✅ COMPLETE - Deployed to Production
 
 ---
@@ -117,15 +117,52 @@
 
 ---
 
+## Phase 2C — Review & Refactoring Pass (Feb 28, 2026)
+
+### Bug Fixes Applied
+- [x] BUG-001: `rayon_id` filter silently dropped in `overtimeApi.ts` → fixed `buildQuery()`
+- [x] BUG-002: Task `rayonFilter`/`areaFilter`/`petugasFilter` not sent to API → fixed `buildTaskParams()`
+- [x] BUG-003: `superadmin`/`admin_system` not in `OVERTIME_APPROVERS` → fixed role constants
+- [x] BUG-004: `ActivityDetailScreen` missing auto-scroll when reject input appears → added `scrollViewRef`
+- [x] BUG-006: `rayon_id` not counted in `activeActivityFilterCount` → fixed + chip added
+- [x] BUG-007: `OvertimeSubmitScreen` draft prompt fires on every re-focus → added `hasRestoredOnMount` guard
+- [x] BUG-009: `OvertimeDetailScreen` competing back buttons (useLayoutEffect + navigator) → removed useLayoutEffect override
+- [x] BUG-010: `TasksActivityScreen` `useFocusEffect` stale closure → fixed dep array
+- [x] BUG-012: `ActivityCard` missing `itemCreator` StyleSheet entry → added style
+
+### Refactoring
+- [x] `FILTER_SUBORDINATE_ROLES` constant centralised in `constants/roles.ts` (was copy-pasted in 3 modals)
+- [x] `parseFilterDate`, `toFilterDateString`, `toTitleCase` extracted to `utils/filterHelpers.ts`
+- [x] `getTaskStatusLabel` extended to all 8 statuses in `statusHelpers.ts`; duplicates removed
+- [x] `formatDate`, `formatTime` centralised in `statusHelpers.ts`; duplicates removed
+- [x] `OvertimeCard` extracted from `OvertimeListScreen` to `screens/overtime/components/OvertimeCard.tsx`
+
+### Filter Modal Improvements (User Feedback)
+- [x] OvertimeFilterModal: "Dibuat Oleh" with subordinate hierarchy, "Semua Bawahan", "Dibuat oleh Saya"
+- [x] ActivityFilterModal: Merged "Petugas" + "Dibuat Oleh" into single subordinate-aware "Dibuat Oleh"
+- [x] TaskFilterModal: "Penugasan" filter with "Ditugaskan Kepada Saya", "Dibuat oleh Saya", subordinate list
+- [x] All filter modals: `searchable` prop on all selects, "Semua Bawahan" option, role-hierarchy filtering
+
+### Other UX Fixes
+- [x] Added "Dibuat Terlama" sort option to OvertimeListScreen
+- [x] OvertimeDetailScreen back button navigates to Lembur list (not home)
+- [x] Renamed "Penugasan" → "Dibuat Oleh" in Activity/Task filter modals
+
+### Test Coverage
+- Total: 3,264 tests passing (133 test suites)
+- New tests added: filterHelpers.ts (26), statusHelpers.ts additions (8), roles.ts additions (8), OvertimeCard (19)
+- All new/modified utility files: ≥93% coverage
+
+---
+
 ## Phase 3: Overtime Module - ✅ COMPLETE
 
-**Duration:** February 10, 2026
-**Status:** ✅ Full overtime submission and approval workflow
+**Duration:** February 10, 2026 (initial); February 28, 2026 (client feedback improvements)
+**Status:** ✅ Full overtime submission and approval workflow + 11-point client feedback applied
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Create `Overtime` entity | ✅ Complete | user_id, area_id, date, start/end_time, status, approved_by |
-| Create `OvertimeAktivitas` entity | ✅ Complete | overtime_id, activity_type_id, description, photo_urls |
+| Create `Overtime` entity | ✅ Complete | user_id, area_id, start_datetime, end_datetime, status, approved_by |
 | OvertimeStatus enum | ✅ Complete | pending, approved, rejected |
 | POST `/overtime` — Submit | ✅ Complete | satgas, linmas only |
 | GET `/overtime/my` — User's list | ✅ Complete | Own overtime submissions |
@@ -133,16 +170,32 @@
 | GET `/overtime/:id` — Detail | ✅ Complete | Full overtime with relations |
 | PATCH `/overtime/:id/approve` | ✅ Complete | korlap, own area only |
 | PATCH `/overtime/:id/reject` | ✅ Complete | korlap, own area, reason required |
-| Activity type validation | ✅ Complete | applicable_roles check per aktivitas |
-| Cascade save | ✅ Complete | Overtime + nested aktivitas atomically |
-| Service tests | ✅ Complete | 14 tests |
+| Activity type validation | ✅ Complete | applicable_roles check |
+| Service tests | ✅ Complete | 13 tests |
 | Controller tests | ✅ Complete | 6 tests |
+
+**Client Feedback Improvements (Feb 28, 2026 — 11-point plan):**
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | Add page title on Lembur list | ✅ Complete |
+| 2 | Draft/discard in create Lembur (30s auto-save, restore prompt, TTL 24h) | ✅ Complete |
+| 3 | Fix create Lembur UI: remove duplicate title, enlarge description, remove notes | ✅ Complete |
+| 4 | Back button + post-create redirect to Lembur list | ✅ Complete |
+| 5 | Remove "Tipe Aktivitas" filter from Lembur AND from Aktivitas tab | ✅ Complete |
+| 6 | Lembur list consistent styling (created_at, description, status like Activity/Task) | ✅ Complete |
+| 7 | Lembur list scroll area above FAB button | ✅ Complete |
+| 8 | Show creator + role in Lembur, Task, and Activity lists | ✅ Complete |
+| 9 | kepala_rayon has Lembur approval access (only top_management + admin_system excluded) | ✅ Complete |
+| 10 | start_datetime + end_datetime (overnight support, replaces date/start_time/end_time) | ✅ Complete |
+| 11 | "Semua" first, "Lainnya" last in all filters/forms | ✅ Complete |
 
 **Metrics:**
 - **New Module:** 1 (Overtime)
 - **New Endpoints:** 6
-- **New Tables:** 2 (overtimes, overtime_aktivitas)
-- **New Tests:** 20
+- **New Table:** 1 (overtimes — flat schema, no overtime_aktivitas)
+- **Backend Tests:** 19 (13 service + 6 controller)
+- **Mobile Tests:** 3264 total (3257 passing, 7 skipped)
 
 ---
 
@@ -162,7 +215,7 @@
 - [ ] OvertimeSubmitScreen
 - [ ] OvertimeApprovalScreen
 - [ ] OvertimeDetailScreen
-- [ ] TaskCreateScreen
+- [x] TaskCreateScreen (in taskActivity/, assignee mandatory)
 
 ### Modified Screens (7)
 - [ ] ClockInOutScreen (remove GPS boundary UI)
@@ -299,5 +352,5 @@
 
 ---
 
-*Phase 2C Client Feedback: Backend Complete, Frontend Pending*
-*Last Updated: February 11, 2026*
+*Phase 2C Client Feedback: All Features Complete + Deep Review Pass Complete*
+*Last Updated: February 28, 2026*

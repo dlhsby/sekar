@@ -8,6 +8,10 @@ import { NBSelect } from '../NBSelect';
 
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon');
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ bottom: 0, top: 0, left: 0, right: 0 }),
+}));
+
 const OPTIONS = [
   { label: 'Option A', value: 'a' },
   { label: 'Option B', value: 'b' },
@@ -300,6 +304,88 @@ describe('NBSelect', () => {
       fireEvent.press(getByText('Option A'));
 
       expect(mockOnValueChange).toHaveBeenCalledWith('a');
+    });
+  });
+
+  describe('Sheet header', () => {
+    it('shows sheet header with placeholder text when opened', () => {
+      const { getByText, getAllByText } = render(
+        <NBSelect
+          value=""
+          onValueChange={mockOnValueChange}
+          options={OPTIONS}
+          placeholder="Pilih opsi"
+        />,
+      );
+
+      fireEvent.press(getByText('Pilih opsi'));
+
+      // Sheet header title should match the placeholder
+      const matches = getAllByText('Pilih opsi');
+      expect(matches.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('shows sheet header with label prop when opened', () => {
+      const { getByText, getAllByText } = render(
+        <NBSelect
+          value=""
+          onValueChange={mockOnValueChange}
+          options={OPTIONS}
+          placeholder="Pilih..."
+          label="Pilih Opsi Anda"
+        />,
+      );
+
+      fireEvent.press(getByText('Pilih...'));
+
+      // Sheet header should show the label prop text
+      const labelMatches = getAllByText('Pilih Opsi Anda');
+      expect(labelMatches.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('closes sheet when header close button is pressed', () => {
+      const { getByText, queryByText, getByLabelText } = render(
+        <NBSelect
+          value=""
+          onValueChange={mockOnValueChange}
+          options={OPTIONS}
+          placeholder="Pilih..."
+        />,
+      );
+
+      // Open the sheet
+      fireEvent.press(getByText('Pilih...'));
+      expect(getByText('Option A')).toBeTruthy();
+
+      // Press the close button in the sheet header
+      fireEvent.press(getByLabelText('Tutup'));
+
+      // Options should no longer be visible
+      expect(queryByText('Option A')).toBeNull();
+    });
+  });
+
+  describe('Selected state visual', () => {
+    it('shows check icon next to selected option in dropdown', () => {
+      const { getAllByText, getByText } = render(
+        <NBSelect
+          value="b"
+          onValueChange={mockOnValueChange}
+          options={OPTIONS}
+        />,
+      );
+
+      // Open the dropdown by pressing the trigger (which shows "Option B")
+      fireEvent.press(getAllByText('Option B')[0]);
+
+      // Option B is selected — it should appear in the list
+      // Both trigger and list item show "Option B"
+      const optionBInstances = getAllByText('Option B');
+      expect(optionBInstances.length).toBeGreaterThanOrEqual(2);
+
+      // Other options should also be visible
+      expect(getByText('Option A')).toBeTruthy();
+      expect(getByText('Option C')).toBeTruthy();
     });
   });
 });

@@ -1,6 +1,6 @@
 /**
  * TaskDetailScreen Tests
- * Phase 2C: No accept/decline, start directly from assigned
+ * Phase 2C: 8-status workflow with accept/decline + verify/revision
  */
 
 import React from 'react';
@@ -34,7 +34,17 @@ jest.mock('@react-navigation/native', () => {
 // Mock tasksApi
 jest.mock('../../../services/api/tasksApi');
 
+// Mock store hooks — role gating uses useAppSelector for auth user
+const mockUseAppSelector = jest.fn();
+jest.mock('../../../store/hooks', () => ({
+  useAppSelector: (selector: any) => mockUseAppSelector(selector),
+  useAppDispatch: jest.fn(() => jest.fn()),
+}));
+
 // Alert mocked globally in jest.setup.js
+
+const ASSIGNEE_USER = { id: 'assignee-1', role: 'satgas', full_name: 'Satgas 1' };
+const VERIFIER_USER = { id: 'verifier-1', role: 'korlap', full_name: 'Korlap 1' };
 
 const mockTask = {
   id: 'task-123',
@@ -47,6 +57,7 @@ const mockTask = {
   rayon: { id: 'rayon-1', name: 'Rayon 1' }, // Phase 2C: Added rayon
   activity_type: { id: 'at-1', name: 'Penyiraman', code: 'WATERING' },
   created_at: '2026-01-25T08:00:00Z',
+  assigned_to: 'assignee-1', // Phase 2C: for isAssignee check
   assigned_by: { id: 'user-1', full_name: 'Supervisor 1' },
   tags: [ // Phase 2C: Added tags
     { id: 'tag-1', user: { id: 'user-2', full_name: 'Worker 2' } },
@@ -60,12 +71,24 @@ const renderWithNav = (component: React.ReactElement) => {
 
 describe('TaskDetailScreen', () => {
   beforeEach(() => {
+    // Default: logged-in user is the assignee (satgas role)
+    mockUseAppSelector.mockReturnValue(ASSIGNEE_USER);
+
     // Clear specific mocks (not jest.clearAllMocks() which breaks global Alert mock)
     mockNavigate.mockClear();
     mockGoBack.mockClear();
     mockSetOptions.mockClear();
+    mockUseAppSelector.mockClear();
+    // Re-set default after clear
+    mockUseAppSelector.mockReturnValue(ASSIGNEE_USER);
     (tasksApi.getTaskById as jest.Mock).mockClear();
     (tasksApi.startTask as jest.Mock).mockClear();
+    if ((tasksApi.acceptTask as jest.Mock).mockClear) {
+      (tasksApi.acceptTask as jest.Mock).mockClear();
+    }
+    if ((tasksApi.declineTask as jest.Mock).mockClear) {
+      (tasksApi.declineTask as jest.Mock).mockClear();
+    }
   });
 
   it('renders loading state initially', () => {
@@ -92,17 +115,17 @@ describe('TaskDetailScreen', () => {
     15000
   );
 
-  it('shows start button for assigned tasks (Phase 2C: no accept step)', async () => {
+  it('shows accept/decline buttons for assigned tasks (Phase 2C: 8-status workflow)', async () => {
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
 
     const { findByText, queryByText } = renderWithNav(<TaskDetailScreen />);
 
-    // Phase 2C: Start directly from 'assigned' (no accept/decline)
-    expect(await findByText('Mulai Kerjakan')).toBeTruthy();
+    // Phase 2C: accept/decline required before start
+    expect(await findByText('Terima')).toBeTruthy();
+    expect(await findByText('Tolak')).toBeTruthy();
 
-    // Phase 2C: No accept/decline buttons
-    expect(queryByText('Terima Tugas')).toBeNull();
-    expect(queryByText('Tolak Tugas')).toBeNull();
+    // Phase 2C: No start button until task is accepted
+    expect(queryByText('Mulai Kerjakan')).toBeNull();
   });
 
   it('shows complete button for in_progress tasks', async () => {
@@ -133,7 +156,7 @@ describe('TaskDetailScreen', () => {
     const backButton = await findByText('Kembali');
     fireEvent.press(backButton);
 
-    expect(mockGoBack).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith('TasksActivities', { initialTab: 'tasks' });
   });
 
   it('shows completion details for completed tasks', async () => {
@@ -165,8 +188,10 @@ describe('TaskDetailScreen', () => {
     expect(mockNavigate).toHaveBeenCalledWith('TaskComplete', { taskId: 'task-123' });
   });
 
-  it('calls startTask API when start button pressed (Phase 2C)', async () => {
-    (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
+  it('calls startTask API when start button pressed (Phase 2C: requires accepted status)', async () => {
+    (tasksApi.getTaskById as jest.Mock).mockResolvedValue({
+      data: { ...mockTask, status: 'accepted' as const },
+    });
     (tasksApi.startTask as jest.Mock).mockResolvedValue({ data: {} });
 
     const { findByText } = renderWithNav(<TaskDetailScreen />);

@@ -14,6 +14,7 @@ import {
   OVERTIME_APPROVERS,
   MONITORING_ROLES,
   VALID_TASK_ASSIGNMENTS,
+  FILTER_SUBORDINATE_ROLES,
   isClockableRole,
   canSubmitActivities,
   canCreateTasks,
@@ -90,16 +91,16 @@ describe('Role Constants', () => {
   });
 
   describe('OVERTIME_SUBMITTERS', () => {
-    it('should include only satgas and linmas', () => {
-      expect(OVERTIME_SUBMITTERS).toEqual(['satgas', 'linmas']);
-      expect(OVERTIME_SUBMITTERS).toHaveLength(2);
+    it('should include satgas, linmas, korlap, and admin_data', () => {
+      expect(OVERTIME_SUBMITTERS).toEqual(['satgas', 'linmas', 'korlap', 'admin_data']);
+      expect(OVERTIME_SUBMITTERS).toHaveLength(4);
     });
   });
 
   describe('OVERTIME_APPROVERS', () => {
-    it('should include only korlap', () => {
-      expect(OVERTIME_APPROVERS).toEqual(['korlap']);
-      expect(OVERTIME_APPROVERS).toHaveLength(1);
+    it('should include korlap, kepala_rayon, admin_system, and superadmin', () => {
+      expect(OVERTIME_APPROVERS).toEqual(['korlap', 'kepala_rayon', 'admin_system', 'superadmin']);
+      expect(OVERTIME_APPROVERS).toHaveLength(4);
     });
   });
 
@@ -199,11 +200,11 @@ describe('Role Constants', () => {
     it('should return true for overtime submitter roles', () => {
       expect(canSubmitOvertime('satgas')).toBe(true);
       expect(canSubmitOvertime('linmas')).toBe(true);
+      expect(canSubmitOvertime('korlap')).toBe(true);
+      expect(canSubmitOvertime('admin_data')).toBe(true);
     });
 
     it('should return false for non-submitter roles', () => {
-      expect(canSubmitOvertime('korlap')).toBe(false);
-      expect(canSubmitOvertime('admin_data')).toBe(false);
       expect(canSubmitOvertime('kepala_rayon')).toBe(false);
       expect(canSubmitOvertime('top_management')).toBe(false);
       expect(canSubmitOvertime('admin_system')).toBe(false);
@@ -212,18 +213,18 @@ describe('Role Constants', () => {
   });
 
   describe('canApproveOvertime', () => {
-    it('should return true for korlap', () => {
+    it('should return true for korlap, kepala_rayon, admin_system, and superadmin', () => {
       expect(canApproveOvertime('korlap')).toBe(true);
+      expect(canApproveOvertime('kepala_rayon')).toBe(true);
+      expect(canApproveOvertime('admin_system')).toBe(true);
+      expect(canApproveOvertime('superadmin')).toBe(true);
     });
 
     it('should return false for all other roles', () => {
       expect(canApproveOvertime('satgas')).toBe(false);
       expect(canApproveOvertime('linmas')).toBe(false);
       expect(canApproveOvertime('admin_data')).toBe(false);
-      expect(canApproveOvertime('kepala_rayon')).toBe(false);
       expect(canApproveOvertime('top_management')).toBe(false);
-      expect(canApproveOvertime('admin_system')).toBe(false);
-      expect(canApproveOvertime('superadmin')).toBe(false);
     });
   });
 
@@ -268,6 +269,54 @@ describe('Role Constants', () => {
     it('should return null for non-monitoring roles', () => {
       expect(getMonitoringScope('satgas')).toBeNull();
       expect(getMonitoringScope('linmas')).toBeNull();
+    });
+  });
+
+  describe('FILTER_SUBORDINATE_ROLES', () => {
+    it('korlap subordinates are satgas and linmas', () => {
+      expect(FILTER_SUBORDINATE_ROLES['korlap']).toEqual(['satgas', 'linmas']);
+    });
+
+    it('kepala_rayon subordinates are korlap and admin_data', () => {
+      expect(FILTER_SUBORDINATE_ROLES['kepala_rayon']).toEqual(['korlap', 'admin_data']);
+    });
+
+    it('top_management subordinates are kepala_rayon only', () => {
+      expect(FILTER_SUBORDINATE_ROLES['top_management']).toEqual(['kepala_rayon']);
+    });
+
+    it('admin_system subordinates include all field and management roles', () => {
+      expect(FILTER_SUBORDINATE_ROLES['admin_system']).toEqual([
+        'kepala_rayon',
+        'korlap',
+        'admin_data',
+        'satgas',
+        'linmas',
+      ]);
+    });
+
+    it('superadmin subordinates include all roles', () => {
+      expect(FILTER_SUBORDINATE_ROLES['superadmin']).toEqual([
+        'kepala_rayon',
+        'korlap',
+        'admin_data',
+        'satgas',
+        'linmas',
+        'top_management',
+        'admin_system',
+      ]);
+    });
+
+    it('admin_data subordinates is an empty array', () => {
+      expect(FILTER_SUBORDINATE_ROLES['admin_data']).toEqual([]);
+    });
+
+    it('satgas has no entry (undefined — no subordinates)', () => {
+      expect(FILTER_SUBORDINATE_ROLES['satgas']).toBeUndefined();
+    });
+
+    it('linmas has no entry (undefined — no subordinates)', () => {
+      expect(FILTER_SUBORDINATE_ROLES['linmas']).toBeUndefined();
     });
   });
 });

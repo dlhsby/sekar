@@ -176,9 +176,9 @@ class FCMService {
       console.debug('[FCM] Requesting notification permission');
 
       const authStatus = await requestPermission(this.messaging);
-      const enabled =
-        authStatus === FirebaseMessagingTypes.AuthorizationStatus.AUTHORIZED ||
-        authStatus === FirebaseMessagingTypes.AuthorizationStatus.PROVISIONAL;
+      // AuthorizationStatus values: AUTHORIZED=1, PROVISIONAL=2
+      // Using numeric literals because FirebaseMessagingTypes is a type namespace, not a runtime value
+      const enabled = authStatus === 1 || authStatus === 2;
 
       this.permissionStatus = enabled
         ? NotificationPermission.AUTHORIZED
@@ -510,9 +510,9 @@ class FCMService {
 
     try {
       const authStatus = await hasPermission(this.messaging);
-      const enabled =
-        authStatus === FirebaseMessagingTypes.AuthorizationStatus.AUTHORIZED ||
-        authStatus === FirebaseMessagingTypes.AuthorizationStatus.PROVISIONAL;
+      // AuthorizationStatus values: AUTHORIZED=1, PROVISIONAL=2
+      // Using numeric literals because FirebaseMessagingTypes is a type namespace, not a runtime value
+      const enabled = authStatus === 1 || authStatus === 2;
 
       this.permissionStatus = enabled
         ? NotificationPermission.AUTHORIZED

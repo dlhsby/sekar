@@ -6,42 +6,42 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 
 ### Screen Summary
 
-**Total: 17 screens implemented | 10 NB reusable components**
-**Phase 2C Target: 22 screens (+5 new, 7 modified)**
+**Total: 22 screens implemented | 16 NB reusable components**
+**Phase 2C: 22 screens (5 new, 7 modified from Phase 2B)**
 
 | Stack | Screen | Status | Priority | Phase |
 |-------|--------|--------|----------|-------|
 | **Auth** | Login | ✅ Complete | P0 | 1 |
 | **Auth** | Register | ✅ Complete | P1 | 2 |
-| **Worker** | Home | ✅ Complete | P0 | 1 |
-| **Worker** | Clock In/Out | ✅ Complete | P0 | 1 |
-| **Worker** | Report Submission | ✅ Complete | P0 | 1 |
-| **Worker** | Work Reports | ✅ Complete | P0 | 1 |
-| **Worker** | Location Tracking | ✅ Complete | P0 | 1 |
-| **Worker** | Profile | ✅ Complete | P1 | 1 |
+| **Field** | Home | ✅ Complete (2C modified) | P0 | 1→2C |
+| **Field** | Clock In/Out | ✅ Complete | P0 | 1 |
+| **Field** | Activity Submission | ✅ Complete (2C renamed) | P0 | 1→2C |
+| **Field** | Activity Detail | ✅ Complete (2C: approval UI) | P0 | 2C |
+| **Field** | Tasks & Activity List | ✅ Complete (2C modified) | P0 | 2→2C |
+| **Field** | Location Tracking | ✅ Complete | P0 | 1 |
+| **Field** | Profile | ✅ Complete | P1 | 1 |
 | **Supervisor** | Map Dashboard | ✅ Complete | P0 | 1 |
 | **Supervisor** | Reports List | ✅ Complete | P0 | 1 |
-| **Supervisor** | Report Detail | ✅ Complete | P0 | 1 |
 | **Supervisor** | Attendance | ✅ Complete | P1 | 1 |
-| **Tasks** | Task Detail | ✅ Complete | P1 | 2 |
+| **Tasks** | Task Detail | ✅ Complete (2C: accept/decline/verify) | P1 | 2→2C |
 | **Tasks** | Task Complete | ✅ Complete | P1 | 2 |
-| **Tasks** | Tasks Reports | ✅ Complete | P2 | 2 |
+| **Tasks** | Task Create | ✅ Complete | P1 | 2C |
 | **Common** | Notifications | ✅ Complete | P2 | 2 |
 | **Common** | Settings | ✅ Complete | P2 | 2 |
-| **Overtime** | Overtime List | ⏳ Planned | P1 | 2C |
-| **Overtime** | Overtime Submit | ⏳ Planned | P1 | 2C |
-| **Overtime** | Overtime Approval | ⏳ Planned | P1 | 2C |
-| **Overtime** | Overtime Detail | ⏳ Planned | P1 | 2C |
-| **Tasks** | Task Create | ⏳ Planned | P1 | 2C |
+| **Overtime** | Overtime Submit | ✅ Complete | P1 | 2C |
+| **Overtime** | Overtime Detail | ✅ Complete | P1 | 2C |
+
+**Tests:** 3,099 tests across 125 test suites (February 2026)
 
 ### Component Summary (NB 2.0)
 
 | Category | Components | Count |
 |----------|------------|-------|
-| **NB Core** | NBButton, NBCard, NBTextInput, NBPasswordInput | 4 |
+| **NB Core** | NBButton, NBCard, NBTextInput, NBPasswordInput, NBSelect, NBDatePicker | 6 |
 | **NB Feedback** | NBAlert, NBBadge, NBSkeleton, NBEmptyState | 4 |
 | **NB Navigation** | NBTab, NBBackgroundPattern | 2 |
-| **Total** | | **10** |
+| **NB Modals** | ShiftDetailModal, TaskFilterModal, ActivityFilterModal, TodayActivitiesModal, TodayWorkHoursModal | 5 |
+| **Total** | | **17** |
 
 > **Design System:** Neo Brutalism 2.0 - See `specs/ui-ux/neo-brutalism.md`
 > **Phase 2B Updates:** See `specs/phases/phase-2-b-ui-ux-revamp/mobile.md`

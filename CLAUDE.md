@@ -48,7 +48,7 @@ npm run test:cov           # With coverage (>80% required)
 npm run seed               # Seed all data (Phase 1 + Phase 2 + Tasks)
 ```
 
-**Test Users:** `admin/admin123`, `supervisor1/supervisor123`, `worker1/worker123`
+**Test Users:** All users use `password123` — e.g. `admin/password123`, `korlap1/password123`, `satgas1/password123`
 **API Docs:** http://localhost:3000/api/docs
 
 ### Mobile
@@ -56,7 +56,8 @@ npm run seed               # Seed all data (Phase 1 + Phase 2 + Tasks)
 cd fe/mobile
 npm install
 # Edit .env: API_BASE_URL=http://10.0.2.2:3000 (emulator) or http://<YOUR_IP>:3000 (device)
-npm run android            # Android
+npm run android            # Android (first connected device)
+npm run android:all        # Android (all connected devices simultaneously)
 npm run ios                # iOS (macOS only)
 npm test                   # Run tests
 ```

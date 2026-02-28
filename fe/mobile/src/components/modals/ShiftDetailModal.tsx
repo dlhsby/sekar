@@ -72,13 +72,16 @@ export function ShiftDetailModal({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable
+        <View
           style={styles.modalContent}
-          onPress={(e) => e?.stopPropagation?.()}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => false}
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Detail Shift</Text>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>Detail Shift</Text>
+            </View>
             <TouchableOpacity
               onPress={onClose}
               style={styles.closeButton}
@@ -121,6 +124,11 @@ export function ShiftDetailModal({
                     </Text>
                     {shift.area?.address && (
                       <Text style={styles.tableSubtext}>{shift.area.address}</Text>
+                    )}
+                    {shift.area?.gps_lat && shift.area?.gps_lng && (
+                      <Text style={styles.tableSubtext}>
+                        Pusat: {Number(shift.area.gps_lat).toFixed(6)}, {Number(shift.area.gps_lng).toFixed(6)}
+                      </Text>
                     )}
                   </View>
                 </View>
@@ -191,13 +199,13 @@ export function ShiftDetailModal({
                           color={isInside ? nbColors.successDark : nbColors.dangerDark}
                         />
                       </View>
-                      <Text style={styles.validationTitle}>Validasi Lokasi</Text>
+                      <Text style={styles.validationTitle}>Validasi Lokasi Clock In</Text>
                       <View style={[
                         styles.validationBadge,
                         { backgroundColor: isInside ? nbColors.successDark : nbColors.dangerDark }
                       ]}>
                         <Text style={styles.badgeText}>
-                          {isInside ? 'VALID' : 'TIDAK VALID'}
+                          {isInside ? 'Di Dalam Area' : 'Di Luar Area'}
                         </Text>
                       </View>
                     </View>
@@ -215,25 +223,10 @@ export function ShiftDetailModal({
                   </View>
                 </View>
 
-                {/* Area Center GPS */}
-                {shift.area?.gps_lat && shift.area?.gps_lng && (
-                  <View style={[styles.tableRow, styles.tableRowEven]}>
-                    <MaterialCommunityIcons
-                      name="map-marker-radius"
-                      size={20}
-                      color={nbColors.gray['700']}
-                      style={styles.rowIcon}
-                    />
-                    <Text style={styles.tableLabel}>Pusat Area</Text>
-                    <Text style={styles.tableValueMono}>
-                      {Number(shift.area.gps_lat).toFixed(6)}, {Number(shift.area.gps_lng).toFixed(6)}
-                    </Text>
-                  </View>
-                )}
               </>
             )}
           </ScrollView>
-        </Pressable>
+        </View>
       </Pressable>
     </Modal>
   );
@@ -247,13 +240,14 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: nbColors.surface,
-    borderTopLeftRadius: 0, // Sharp corners for Neo Brutalism
+    borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     borderTopWidth: nbBorders.base,
     borderLeftWidth: nbBorders.base,
     borderRightWidth: nbBorders.base,
     borderColor: nbColors.black,
     maxHeight: '80%',
+    flexShrink: 1,
     ...nbShadows.lg,
   },
   header: {
@@ -265,11 +259,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.black,
   },
+  titleContainer: {
+    flex: 1,
+  },
   title: {
     fontSize: nbTypography.fontSize.xl,
     fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.black,
-    flex: 1,
+    marginBottom: 2,
   },
   closeButton: {
     width: 48,

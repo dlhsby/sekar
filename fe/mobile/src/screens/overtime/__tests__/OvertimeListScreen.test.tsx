@@ -1,6 +1,6 @@
 /**
  * OvertimeListScreen Tests
- * Tests for overtime list with tabs, filters, and role-based access
+ * Phase 2C: Single list with filter bar, sort modal, and role-based FAB
  */
 
 import React from 'react';
@@ -9,7 +9,6 @@ import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
-import overtimeReducer from '../../../store/slices/overtimeSlice';
 import { OvertimeListScreen } from '../OvertimeListScreen';
 import * as overtimeApi from '../../../services/api/overtimeApi';
 import type { Overtime } from '../../../types/models.types';
@@ -23,21 +22,54 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   },
 }));
 
+jest.mock('../../../components/modals', () => ({
+  SortModal: ({ visible, onSelect, options }: any) => {
+    const React = require('react');
+    const { View, Text, TouchableOpacity } = require('react-native');
+    if (!visible) { return null; }
+    return React.createElement(View, { testID: 'sort-modal' },
+      React.createElement(Text, null, 'Urutkan Lembur'),
+      ...options.map((o: any) =>
+        React.createElement(TouchableOpacity, { key: o.key, onPress: () => onSelect(o.key) },
+          React.createElement(Text, null, o.label),
+        ),
+      ),
+    );
+  },
+  OvertimeFilterModal: ({ visible, onApplyFilters, onResetFilters }: any) => {
+    const React = require('react');
+    const { View, Text, TouchableOpacity } = require('react-native');
+    if (!visible) { return null; }
+    return React.createElement(View, { testID: 'filter-modal' },
+      React.createElement(Text, null, 'Filter Lembur'),
+      React.createElement(TouchableOpacity, { onPress: () => onApplyFilters({ status: 'pending' }) },
+        React.createElement(Text, null, 'Apply'),
+      ),
+      React.createElement(TouchableOpacity, { onPress: onResetFilters },
+        React.createElement(Text, null, 'Reset'),
+      ),
+    );
+  },
+}));
+
+const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({
-    navigate: jest.fn(),
+    navigate: mockNavigate,
     goBack: jest.fn(),
   }),
+  useFocusEffect: (cb: any) => {
+    const React = require('react');
+    React.useEffect(() => { cb(); }, []);
+  },
   NavigationContainer: ({ children }: any) => children,
 }));
 
 jest.mock('react-native-geolocation-service', () => ({
   default: {
     getCurrentPosition: jest.fn((success) =>
-      success({
-        coords: { latitude: -7.25, longitude: 112.75, accuracy: 10 },
-      }),
+      success({ coords: { latitude: -7.25, longitude: 112.75, accuracy: 10 } }),
     ),
   },
 }));
@@ -57,17 +89,16 @@ jest.mock('../../../hooks/useRoleAccess', () => ({
 }));
 
 jest.mock('../../../services/api/overtimeApi', () => ({
-  getMyOvertimes: jest.fn(() => Promise.resolve({ data: [] })),
-  getPendingApprovals: jest.fn(() => Promise.resolve({ data: [] })),
+  getMyOvertimes: jest.fn(() => Promise.resolve({ data: { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } } })),
+  getOvertimes: jest.fn(() => Promise.resolve({ data: { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } } })),
 }));
 
 const mockOvertimes: Overtime[] = [
   {
     id: 'ot-1',
     user_id: 'user-1',
-    date: '2026-02-14',
-    start_time: '17:00',
-    end_time: '19:00',
+    start_datetime: '2026-02-14T17:00:00+07:00',
+    end_datetime: '2026-02-14T19:00:00+07:00',
     activity_type_id: 'type-1',
     description: 'Penyiraman tambahan',
     photo_urls: ['https://example.com/photo1.jpg'],
@@ -96,9 +127,8 @@ const mockOvertimes: Overtime[] = [
   {
     id: 'ot-2',
     user_id: 'user-1',
-    date: '2026-02-13',
-    start_time: '18:00',
-    end_time: '20:00',
+    start_datetime: '2026-02-13T18:00:00+07:00',
+    end_datetime: '2026-02-13T20:00:00+07:00',
     activity_type_id: 'type-2',
     description: 'Pemotongan rumput',
     photo_urls: ['https://example.com/photo2.jpg'],
@@ -126,9 +156,9 @@ const mockOvertimes: Overtime[] = [
   },
 ];
 
-const createTestStore = (overrides = {}) =>
+const createTestStore = () =>
   configureStore({
-    reducer: { auth: authReducer, overtime: overtimeReducer },
+    reducer: { auth: authReducer },
     preloadedState: {
       auth: {
         user: {
@@ -143,22 +173,28 @@ const createTestStore = (overrides = {}) =>
         error: null,
         assignedArea: null,
       },
-      overtime: {
-        myOvertimes: [],
-        pendingApprovals: [],
-        selectedOvertime: null,
-        isLoading: false,
-        isSubmitting: false,
-        error: null,
-      },
-      ...overrides,
     },
   });
 
-const renderWithProviders = (component: React.ReactElement, store = createTestStore()) => {
+const mockNavigation: any = {
+  navigate: mockNavigate,
+  goBack: jest.fn(),
+  setOptions: jest.fn(),
+  addListener: jest.fn(),
+};
+
+const mockRoute: any = {
+  params: {},
+  key: 'test-key',
+  name: 'Overtime',
+};
+
+const renderScreen = (store = createTestStore()) => {
   return render(
     <Provider store={store}>
-      <NavigationContainer>{component}</NavigationContainer>
+      <NavigationContainer>
+        <OvertimeListScreen navigation={mockNavigation} route={mockRoute} />
+      </NavigationContainer>
     </Provider>,
   );
 };
@@ -166,11 +202,9 @@ const renderWithProviders = (component: React.ReactElement, store = createTestSt
 describe('OvertimeListScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Ensure real timers (in case previous suite used fake timers)
     if (jest.isMockFunction(setTimeout)) {
       jest.useRealTimers();
     }
-    // Reset useRoleAccess to default (satgas with canSubmitOvertime=true)
     const { useRoleAccess } = require('../../../hooks/useRoleAccess');
     useRoleAccess.mockReturnValue({
       canSubmitOvertime: true,
@@ -183,73 +217,90 @@ describe('OvertimeListScreen', () => {
       monitoringScope: null,
       role: 'satgas',
     });
-    // Reset API mocks to defaults
-    (overtimeApi.getMyOvertimes as jest.Mock).mockResolvedValue({ data: [] });
-    (overtimeApi.getPendingApprovals as jest.Mock).mockResolvedValue({ data: [] });
+    (overtimeApi.getMyOvertimes as jest.Mock).mockResolvedValue({
+      data: { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } },
+    });
+    (overtimeApi.getOvertimes as jest.Mock).mockResolvedValue({
+      data: { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } },
+    });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    // Ensure real timers after each test
     if (jest.isMockFunction(setTimeout)) {
       jest.useRealTimers();
     }
   });
 
-  it('renders with "Lembur" header', async () => {
-    const { getByText } = renderWithProviders(<OvertimeListScreen />);
+  it('renders filter bar with "Semua Lembur" placeholder', async () => {
+    const { getByText } = renderScreen();
+    await waitFor(() => {
+      expect(getByText('Semua Lembur')).toBeTruthy();
+    });
+  });
+
+  it('fetches overtime data on mount using getMyOvertimes for submitters', async () => {
+    renderScreen();
+    await waitFor(() => {
+      expect(overtimeApi.getMyOvertimes).toHaveBeenCalled();
+    });
+  });
+
+  it('fetches overtime data using getOvertimes for approvers', async () => {
+    const { useRoleAccess } = require('../../../hooks/useRoleAccess');
+    useRoleAccess.mockReturnValue({
+      canSubmitOvertime: false,
+      canApproveOvertime: true,
+      canClock: false,
+      canSubmitActivity: false,
+      canCreateTask: true,
+      canReceiveTask: false,
+      canMonitor: true,
+      monitoringScope: 'rayon',
+      role: 'kepala_rayon',
+    });
+
+    renderScreen();
+    await waitFor(() => {
+      expect(overtimeApi.getOvertimes).toHaveBeenCalled();
+    });
+  });
+
+  it('shows empty state when no overtimes', async () => {
+    const { getByText } = renderScreen();
+    await waitFor(() => {
+      expect(getByText('Tidak ada data lembur')).toBeTruthy();
+      expect(getByText('Belum ada pengajuan lembur')).toBeTruthy();
+    });
+  });
+
+  it('shows page title "Lembur"', async () => {
+    const { getByText } = renderScreen();
     await waitFor(() => {
       expect(getByText('Lembur')).toBeTruthy();
     });
   });
 
-  it('shows "Pengajuan Saya" tab', async () => {
-    const { getByText } = renderWithProviders(<OvertimeListScreen />);
-    await waitFor(() => {
-      expect(getByText('Pengajuan Saya')).toBeTruthy();
-    });
-  });
-
-  it('dispatches overtime data to store from API', async () => {
+  it('shows overtime cards with description and creator+role', async () => {
     (overtimeApi.getMyOvertimes as jest.Mock).mockResolvedValue({
-      data: mockOvertimes,
+      data: { data: mockOvertimes, meta: { total: 2, page: 1, limit: 10, totalPages: 1 } },
     });
 
-    const store = createTestStore();
-    renderWithProviders(<OvertimeListScreen />, store);
-
+    const { getByText, getAllByText } = renderScreen();
     await waitFor(() => {
-      expect(overtimeApi.getMyOvertimes).toHaveBeenCalled();
-    });
-
-    // Verify data was dispatched to store
-    await waitFor(() => {
-      const state = store.getState();
-      expect(state.overtime.myOvertimes).toHaveLength(2);
-      expect(state.overtime.myOvertimes[0].status).toBe('pending');
+      expect(getByText('Penyiraman tambahan')).toBeTruthy();
+      expect(getAllByText(/satgas - Satgas 1/).length).toBeGreaterThan(0);
     });
   });
 
-  it('shows empty state when no overtimes', async () => {
-    (overtimeApi.getMyOvertimes as jest.Mock).mockResolvedValue({ data: [] });
-
-    const { getByText } = renderWithProviders(<OvertimeListScreen />);
-
-    await waitFor(() => {
-      expect(getByText('Tidak ada data')).toBeTruthy();
-      expect(getByText('Belum ada pengajuan lembur')).toBeTruthy();
-    });
-  });
-
-  it('shows FAB for satgas/linmas (canSubmitOvertime=true)', async () => {
-    const { getByText } = renderWithProviders(<OvertimeListScreen />);
-
+  it('shows FAB for satgas (canSubmitOvertime=true)', async () => {
+    const { getByText } = renderScreen();
     await waitFor(() => {
       expect(getByText('+ Ajukan Lembur')).toBeTruthy();
     });
   });
 
-  it('hides FAB for korlap (canSubmitOvertime=false)', async () => {
+  it('hides FAB for kepala_rayon (canSubmitOvertime=false)', async () => {
     const { useRoleAccess } = require('../../../hooks/useRoleAccess');
     useRoleAccess.mockReturnValue({
       canSubmitOvertime: false,
@@ -260,91 +311,46 @@ describe('OvertimeListScreen', () => {
       canReceiveTask: false,
       canMonitor: true,
       monitoringScope: 'rayon',
-      role: 'korlap',
+      role: 'kepala_rayon',
     });
 
-    const { queryByText } = renderWithProviders(<OvertimeListScreen />);
-
+    const { queryByText } = renderScreen();
     await waitFor(() => {
       expect(queryByText('+ Ajukan Lembur')).toBeNull();
     });
   });
 
-  it('shows "Menunggu Persetujuan" tab for korlap (canApproveOvertime=true)', async () => {
-    const { useRoleAccess } = require('../../../hooks/useRoleAccess');
-    useRoleAccess.mockReturnValue({
-      canSubmitOvertime: false,
-      canApproveOvertime: true,
-      canClock: false,
-      canSubmitActivity: false,
-      canCreateTask: true,
-      canReceiveTask: false,
-      canMonitor: true,
-      monitoringScope: 'rayon',
-      role: 'korlap',
-    });
-
-    const pendingApprovals = [mockOvertimes[0]];
-    const store = createTestStore({
-      overtime: {
-        myOvertimes: [],
-        pendingApprovals,
-        selectedOvertime: null,
-        isLoading: false,
-        isSubmitting: false,
-        error: null,
-      },
-    });
-
-    (overtimeApi.getPendingApprovals as jest.Mock).mockResolvedValue({
-      data: pendingApprovals,
-    });
-
-    const { getByText } = renderWithProviders(<OvertimeListScreen />, store);
-
-    await waitFor(() => {
-      expect(getByText('Menunggu Persetujuan')).toBeTruthy();
-    });
-  });
-
   it('navigates to OvertimeDetail on card press', async () => {
-    const mockNavigate = jest.fn();
-    const navigation = require('@react-navigation/native');
-    jest.spyOn(navigation, 'useNavigation').mockReturnValue({
-      navigate: mockNavigate,
-      goBack: jest.fn(),
-    });
-
     (overtimeApi.getMyOvertimes as jest.Mock).mockResolvedValue({
-      data: mockOvertimes,
+      data: { data: mockOvertimes, meta: { total: 2, page: 1, limit: 10, totalPages: 1 } },
     });
 
-    const { findByText } = renderWithProviders(<OvertimeListScreen />);
+    const { findByText } = renderScreen();
+    const descText = await findByText('Penyiraman tambahan');
+    fireEvent.press(descText);
 
-    const dateText = await findByText('14 Februari 2026');
-    fireEvent.press(dateText);
-
-    expect(mockNavigate).toHaveBeenCalledWith('OvertimeDetail', {
-      overtimeId: 'ot-1',
-    });
+    expect(mockNavigate).toHaveBeenCalledWith('OvertimeDetail', { overtimeId: 'ot-1' });
   });
 
-  it('renders FAB with correct text', async () => {
-    const { getByText } = renderWithProviders(<OvertimeListScreen />);
-
+  it('navigates to OvertimeSubmit when FAB pressed', async () => {
+    const { getByText } = renderScreen();
     await waitFor(() => {
       expect(getByText('+ Ajukan Lembur')).toBeTruthy();
     });
-
-    // FAB is pressable
     fireEvent.press(getByText('+ Ajukan Lembur'));
+    expect(mockNavigate).toHaveBeenCalledWith('OvertimeSubmit');
   });
 
-  it('fetches overtime data on mount', async () => {
-    renderWithProviders(<OvertimeListScreen />);
+  it('handles API error gracefully', async () => {
+    (overtimeApi.getMyOvertimes as jest.Mock).mockResolvedValue({
+      error: 'Server error',
+      data: null,
+    });
 
+    const { getByText } = renderScreen();
     await waitFor(() => {
-      expect(overtimeApi.getMyOvertimes).toHaveBeenCalled();
+      // Should still render without crashing
+      expect(getByText('Semua Lembur')).toBeTruthy();
     });
   });
 });

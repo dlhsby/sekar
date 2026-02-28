@@ -16,6 +16,12 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 // Mock APIs
 jest.mock('../../../services/api/activitiesApi');
 
+// Mock store hooks — ActivityDetailScreen uses useAppSelector for auth user
+jest.mock('../../../store/hooks', () => ({
+  useAppSelector: jest.fn(() => null),
+  useAppDispatch: jest.fn(() => jest.fn()),
+}));
+
 // Mock NBBackgroundPattern
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: any) => children,
@@ -303,7 +309,7 @@ describe('ActivityDetailScreen', () => {
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith('Error', 'Activity not found');
-      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities');
+      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities', { initialTab: 'activities' });
     });
   });
 
@@ -323,7 +329,7 @@ describe('ActivityDetailScreen', () => {
         'Error',
         'Gagal memuat detail aktivitas'
       );
-      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities');
+      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities', { initialTab: 'activities' });
     });
   });
 });

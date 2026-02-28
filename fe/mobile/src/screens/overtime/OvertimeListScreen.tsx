@@ -1,10 +1,10 @@
 /**
  * Overtime List Screen
- * Phase 2C: Overtime submissions and approvals
- * Shows user's own overtime submissions and pending approvals (korlap only)
+ * Phase 2C: Single list with filter bar + sort + FAB pattern
+ * Title/filter bar/card style matches TasksActivityScreen standard.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,185 +13,198 @@ import {
   SafeAreaView,
   RefreshControl,
   TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { MainTabScreenProps } from '../../types/navigation.types';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import {
-  selectMyOvertimes,
-  selectPendingApprovals,
-  selectOvertimeLoading,
-  setLoading,
-  setMyOvertimes,
-  setPendingApprovals,
-  setError,
-} from '../../store/slices/overtimeSlice';
-import { getMyOvertimes, getPendingApprovals } from '../../services/api/overtimeApi';
+import { useFocusEffect } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import { NBBackgroundPattern, NBButton, NBEmptyState } from '../../components/nb';
+import { SortModal, OvertimeFilterModal } from '../../components/modals';
+import { OvertimeCard } from './components/OvertimeCard';
+import { getOvertimeStatusLabel } from '../../utils/statusHelpers';
+import { getMyOvertimes, getOvertimes } from '../../services/api/overtimeApi';
 import { useRoleAccess } from '../../hooks/useRoleAccess';
-import { NBTab, NBCard, NBBadge, NBEmptyState, NBButton, NBBackgroundPattern } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
-import type { Overtime, OvertimeStatus } from '../../types/models.types';
+import { useAppSelector } from '../../store/hooks';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorders,
+  nbBorderRadius,
+  nbShadows,
+} from '../../constants/nbTokens';
+import type { MainTabParamList } from '../../types/navigation.types';
+import type { OvertimeFilter } from '../../types/api.types';
+import type { Overtime } from '../../types/models.types';
 
-type TabKey = 'my' | 'approvals';
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-/**
- * Get status badge color based on overtime status
- */
-function getStatusColor(status: OvertimeStatus): 'success' | 'warning' | 'danger' {
-  switch (status) {
-    case 'approved':
-      return 'success';
-    case 'pending':
-      return 'warning';
-    case 'rejected':
-      return 'danger';
-    default:
-      return 'warning';
+const OVERTIME_PAGE_LIMIT = 10;
+
+const SORT_OPTIONS = [
+  { key: 'start_desc', label: 'Tanggal Terbaru' },
+  { key: 'start_asc', label: 'Tanggal Terlama' },
+  { key: 'created_at_desc', label: 'Dibuat Terbaru' },
+  { key: 'created_at_asc', label: 'Dibuat Terlama' },
+];
+
+type SortKey = 'start_desc' | 'start_asc' | 'created_at_desc' | 'created_at_asc';
+
+function sortToParams(sort: SortKey): Pick<OvertimeFilter, 'sort_by' | 'sort_dir'> {
+  switch (sort) {
+    case 'start_asc': return { sort_by: 'start_datetime', sort_dir: 'asc' };
+    case 'created_at_desc': return { sort_by: 'created_at', sort_dir: 'desc' };
+    case 'created_at_asc': return { sort_by: 'created_at', sort_dir: 'asc' };
+    default: return { sort_by: 'start_datetime', sort_dir: 'desc' };
   }
 }
 
-/**
- * Get status label in Indonesian
- */
-function getStatusLabel(status: OvertimeStatus): string {
-  switch (status) {
-    case 'approved':
-      return 'Disetujui';
-    case 'pending':
-      return 'Menunggu';
-    case 'rejected':
-      return 'Ditolak';
-    default:
-      return status;
-  }
-}
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
-/**
- * Format date string to Indonesian format
- */
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
+type Props = {
+  navigation: NativeStackNavigationProp<MainTabParamList, 'Overtime'>;
+  route: RouteProp<MainTabParamList, 'Overtime'>;
+};
 
-/**
- * Overtime Card Component
- */
-interface OvertimeCardProps {
-  overtime: Overtime;
-  onPress: () => void;
-}
+export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
+  const { canSubmitOvertime, canApproveOvertime } = useRoleAccess();
+  const user = useAppSelector((state) => state.auth.user);
 
-function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JSX.Element {
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <NBCard style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <Text style={styles.cardDate}>{formatDate(overtime.date)}</Text>
-            <Text style={styles.cardTime}>
-              {overtime.start_time} - {overtime.end_time}
-            </Text>
-          </View>
-          <NBBadge
-            color={getStatusColor(overtime.status)}
-            text={getStatusLabel(overtime.status)}
-          />
-        </View>
-        <View style={styles.cardContent}>
-          {overtime.activityType && (
-            <Text style={styles.activityType}>{overtime.activityType.name}</Text>
-          )}
-          {overtime.user && (
-            <Text style={styles.userName}>{overtime.user.full_name}</Text>
-          )}
-        </View>
-      </NBCard>
-    </TouchableOpacity>
-  );
-}
-
-/**
- * Overtime List Screen Component
- */
-export const OvertimeListScreen: React.FC<MainTabScreenProps<'Overtime'>> = () => {
-  const navigation = useNavigation<MainTabScreenProps<'Overtime'>['navigation']>();
-  const dispatch = useAppDispatch();
-  const { canApproveOvertime, canSubmitOvertime } = useRoleAccess();
-
-  const myOvertimes = useAppSelector(selectMyOvertimes);
-  const pendingApprovals = useAppSelector(selectPendingApprovals);
-  const isLoading = useAppSelector(selectOvertimeLoading);
-
-  const [activeTab, setActiveTab] = useState<TabKey>('my');
+  // List state
+  const [allOvertimes, setAllOvertimes] = useState<Overtime[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Build tabs array based on permissions
-  const tabs = [
-    { key: 'my', label: 'Pengajuan Saya' },
-    ...(canApproveOvertime
-      ? [{ key: 'approvals' as const, label: 'Menunggu Persetujuan', count: pendingApprovals.filter(o => o.status === 'pending').length }]
-      : []),
-  ];
+  // Filter & sort state
+  const [filters, setFilters] = useState<OvertimeFilter>({});
+  const [sort, setSort] = useState<SortKey>('start_desc');
+  const [isSortModalOpen, setIsSortModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Fetch data
-  const fetchData = useCallback(async () => {
-    dispatch(setLoading(true));
-    try {
-      // Fetch user's own overtimes
-      const myResponse = await getMyOvertimes();
-      if (myResponse.data) {
-        dispatch(setMyOvertimes(myResponse.data));
-      } else if (myResponse.error) {
-        dispatch(setError(myResponse.error));
-      }
+  // Dedup in-flight requests
+  const isFetching = useRef(false);
+  const pendingFetch = useRef<{ page: number; reset: boolean } | null>(null);
 
-      // Fetch pending approvals if user can approve
-      if (canApproveOvertime) {
-        const approvalsResponse = await getPendingApprovals();
-        if (approvalsResponse.data) {
-          dispatch(setPendingApprovals(approvalsResponse.data));
-        } else if (approvalsResponse.error) {
-          dispatch(setError(approvalsResponse.error));
-        }
-      }
-    } catch (error) {
-      dispatch(setError('Gagal memuat data lembur'));
-    } finally {
-      dispatch(setLoading(false));
+  // Active filter count (status, date range, rayon, area, user each count as 1)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.status) { count++; }
+    if (filters.from_date || filters.to_date) { count++; }
+    if (filters.rayon_id) { count++; }
+    if (filters.area_id) { count++; }
+    if (filters.user_id) { count++; }
+    return count;
+  }, [filters]);
+
+  // Filter chips — colored like TasksActivityScreen
+  const filterChips = useMemo(() => {
+    const chips: { text: string; chipStyle: 'status' | 'date' | 'location' | 'assignment' }[] = [];
+    if (filters.status) {
+      chips.push({ text: getOvertimeStatusLabel(filters.status), chipStyle: 'status' });
     }
-  }, [dispatch, canApproveOvertime]);
+    if (filters.from_date || filters.to_date) {
+      const f = filters.from_date;
+      const t = filters.to_date;
+      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', chipStyle: 'date' });
+    }
+    if (filters.rayon_id) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
+    if (filters.area_id) { chips.push({ text: 'Area', chipStyle: 'location' }); }
+    if (filters.user_id) { chips.push({ text: 'Petugas', chipStyle: 'assignment' }); }
+    return chips;
+  }, [filters]);
 
-  // Initial load
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const buildParams = useCallback((p: number): OvertimeFilter => ({
+    ...filters,
+    ...sortToParams(sort),
+    page: p,
+    limit: OVERTIME_PAGE_LIMIT,
+  }), [filters, sort]);
 
-  // Pull-to-refresh
+  const fetchOvertimes = useCallback(async (p: number, reset: boolean) => {
+    if (isFetching.current) {
+      pendingFetch.current = { page: p, reset };
+      return;
+    }
+    isFetching.current = true;
+
+    try {
+      if (reset) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const params = buildParams(p);
+      const response = canApproveOvertime
+        ? await getOvertimes(params)
+        : await getMyOvertimes(params);
+
+      if (response.error) {
+        setError(response.error);
+        return;
+      }
+
+      const data = response.data?.data ?? [];
+      const total = response.data?.meta.total ?? 0;
+
+      setAllOvertimes((prev) => {
+        if (reset) { return data; }
+        const existingIds = new Set(prev.map((o) => o.id));
+        return [...prev, ...data.filter((o: Overtime) => !existingIds.has(o.id))];
+      });
+      setPage(p);
+      setHasMore(p * OVERTIME_PAGE_LIMIT < total);
+    } catch {
+      setError('Gagal memuat data lembur');
+    } finally {
+      isFetching.current = false;
+      setLoading(false);
+      setIsLoadingMore(false);
+      if (pendingFetch.current) {
+        const { page: pendingPage, reset: pendingReset } = pendingFetch.current;
+        pendingFetch.current = null;
+        fetchOvertimes(pendingPage, pendingReset);
+      }
+    }
+  }, [buildParams, canApproveOvertime]);
+
+  useFocusEffect(
+    useCallback(() => { fetchOvertimes(1, true); }, [fetchOvertimes]),
+  );
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
-  }, [fetchData]);
+    try { await fetchOvertimes(1, true); } finally { setRefreshing(false); }
+  }, [fetchOvertimes]);
 
-  // Navigate to detail
+  const loadMore = useCallback(() => {
+    if (!hasMore || isFetching.current || isLoadingMore) { return; }
+    fetchOvertimes(page + 1, false);
+  }, [hasMore, isLoadingMore, page, fetchOvertimes]);
+
   const handleOvertimePress = useCallback(
-    (overtimeId: string) => {
-      navigation.navigate('OvertimeDetail', { overtimeId });
-    },
+    (overtimeId: string) => navigation.navigate('OvertimeDetail', { overtimeId }),
     [navigation],
   );
 
-  // Navigate to submit
-  const handleSubmit = useCallback(() => {
-    navigation.navigate('OvertimeSubmit');
-  }, [navigation]);
+  const handleSubmit = useCallback(() => navigation.navigate('OvertimeSubmit'), [navigation]);
 
-  // Render item
+  const handleApplyFilters = useCallback((newFilters: OvertimeFilter) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleResetFilters = useCallback(() => setFilters({}), []);
+
+  const handleSortSelect = useCallback((key: string) => setSort(key as SortKey), []);
+
   const renderItem = useCallback(
     ({ item }: { item: Overtime }) => (
       <OvertimeCard overtime={item} onPress={() => handleOvertimePress(item.id)} />
@@ -199,50 +212,141 @@ export const OvertimeListScreen: React.FC<MainTabScreenProps<'Overtime'>> = () =
     [handleOvertimePress],
   );
 
-  // Get data for active tab
-  const data = activeTab === 'my' ? myOvertimes : pendingApprovals;
+  const keyExtractor = useCallback((item: Overtime) => item.id, []);
+
+  const renderFooter = useCallback(() => {
+    if (!isLoadingMore) { return null; }
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={nbColors.primary} />
+      </View>
+    );
+  }, [isLoadingMore]);
+
+  const activeSortLabel = useMemo(
+    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Tanggal Terbaru',
+    [sort],
+  );
+
+  const isSortActive = sort !== 'start_desc';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <NBBackgroundPattern style={styles.background} />
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Lembur</Text>
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <SafeAreaView style={styles.safeArea}>
+
+        {/* Page Title — same style as Tugas & Aktivitas */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.pageTitle}>Lembur</Text>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          <NBTab
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={(key) => setActiveTab(key as TabKey)}
-          />
+        {/* Filter Bar — indented with outer margin, matching TAT */}
+        <View style={[styles.filterBarCollapsed, activeFilterCount > 0 && styles.filterBarActive]}>
+          <View style={styles.filterBarLeft}>
+            {filterChips.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.miniChipsContent}
+              >
+                {filterChips.map((chip, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.miniChip,
+                      chip.chipStyle === 'status' && styles.miniChipStatus,
+                      chip.chipStyle === 'date' && styles.miniChipDate,
+                      chip.chipStyle === 'location' && styles.miniChipLocation,
+                      chip.chipStyle === 'assignment' && styles.miniChipAssignment,
+                    ]}
+                  >
+                    <Text style={styles.miniChipText}>{chip.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={styles.filterBarPlaceholder}>Semua Lembur</Text>
+            )}
+            {activeFilterCount > 0 && (
+              <TouchableOpacity
+                style={styles.filterClearButton}
+                onPress={handleResetFilters}
+                accessibilityRole="button"
+                accessibilityLabel="Reset filter lembur"
+              >
+                <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.danger} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.filterBarRight}>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsSortModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Urutan: ${activeSortLabel}`}
+            >
+              <MaterialCommunityIcons
+                name="sort"
+                size={22}
+                color={isSortActive ? nbColors.primary : nbColors.black}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsFilterModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter lembur${activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''}`}
+            >
+              <MaterialCommunityIcons
+                name="filter-variant"
+                size={22}
+                color={activeFilterCount > 0 ? nbColors.primary : nbColors.black}
+              />
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* List */}
+        {/* List — wrapped so it ends above the FAB (mirrors TAT contentWrapper paddingBottom pattern) */}
+        <View style={[styles.listWrapper, canSubmitOvertime && styles.listWrapperWithFab]}>
         <FlatList
-          data={data}
+          style={styles.list}
+          data={allOvertimes}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={renderFooter}
           ListEmptyComponent={
-            <NBEmptyState
-              variant="noData"
-              title="Tidak ada data"
-              description={
-                activeTab === 'my'
-                  ? 'Belum ada pengajuan lembur'
-                  : 'Tidak ada pengajuan yang menunggu persetujuan'
-              }
-            />
+            loading ? null : (
+              <NBEmptyState
+                variant="noData"
+                title="Tidak ada data lembur"
+                description={
+                  activeFilterCount > 0
+                    ? 'Tidak ada lembur yang sesuai filter'
+                    : 'Belum ada pengajuan lembur'
+                }
+              />
+            )
           }
         />
+        </View>
 
-        {/* FAB - Submit button for roles that can submit overtime */}
+        {/* FAB */}
         {canSubmitOvertime && (
           <View style={styles.fab}>
             <NBButton
@@ -250,94 +354,164 @@ export const OvertimeListScreen: React.FC<MainTabScreenProps<'Overtime'>> = () =
               onPress={handleSubmit}
               variant="primary"
               size="lg"
+              fullWidth
             />
           </View>
         )}
-      </View>
-    </SafeAreaView>
+
+        {/* Sort Modal */}
+        <SortModal
+          visible={isSortModalOpen}
+          onClose={() => setIsSortModalOpen(false)}
+          title="URUTKAN LEMBUR"
+          options={SORT_OPTIONS}
+          selectedOption={sort}
+          onSelect={handleSortSelect}
+        />
+
+        {/* Filter Modal */}
+        <OvertimeFilterModal
+          visible={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          filters={filters}
+          onApplyFilters={handleApplyFilters}
+          onResetFilters={handleResetFilters}
+          userRole={user?.role}
+          userRayonId={user?.rayon_id}
+          userAreaId={user?.area_id}
+          userId={user?.id}
+        />
+      </SafeAreaView>
+    </NBBackgroundPattern>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: nbColors.background,
+    backgroundColor: 'transparent',
   },
-  background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
+  // Page title — matches Tugas & Aktivitas headerContainer pattern
+  headerContainer: {
     paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
-    backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
+    paddingTop: nbSpacing.md,
+    paddingBottom: nbSpacing.xs,
   },
-  headerTitle: {
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
+  pageTitle: {
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
   },
-  tabContainer: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.md,
-  },
-  listContent: {
-    paddingHorizontal: nbSpacing.sm, // Reduced since cards have their own margins
-    paddingTop: nbSpacing.md,
-    paddingBottom: 80, // Reserve space for FAB (56px button + 16px margin + 8px buffer)
-    flexGrow: 1,
-  },
-  card: {
-    marginBottom: nbSpacing.md,
-    marginHorizontal: nbSpacing.xs, // Add horizontal spacing between cards
-    padding: nbSpacing.md,
-  },
-  cardHeader: {
+  // Filter bar — marginHorizontal matches TAT contentWrapper padding
+  filterBarCollapsed: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    backgroundColor: nbColors.white,
+    borderBottomWidth: nbBorders.extra,
+    borderBottomColor: nbColors.gray[300],
+    ...nbShadows.md,
+    marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
+    minHeight: 48,
   },
-  cardHeaderLeft: {
+  filterBarActive: {
+    borderBottomColor: nbColors.primary,
+  },
+  filterBarLeft: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
-  cardDate: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
-    marginBottom: nbSpacing.xs,
+  filterBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: nbSpacing.xs,
   },
-  cardTime: {
+  filterBarPlaceholder: {
     fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+    color: nbColors.gray[400],
+    fontStyle: 'italic',
   },
-  cardContent: {
+  miniChipsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: nbSpacing.xs,
   },
-  activityType: {
-    fontSize: nbTypography.fontSize.sm,
+  miniChip: {
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.sm,
+    height: 32,
+    justifyContent: 'center',
+  },
+  miniChipStatus: { backgroundColor: nbColors.info },
+  miniChipDate: { backgroundColor: nbColors.warning },
+  miniChipLocation: { backgroundColor: nbColors.infoLight },
+  miniChipAssignment: { backgroundColor: nbColors.primary },
+  miniChipText: {
+    fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.primary,
+    color: nbColors.black,
   },
-  userName: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+  filterClearButton: {
+    padding: 4,
+    marginLeft: 4,
   },
+  filterIconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: nbColors.danger,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
+  },
+  // List — wrapper shrinks the frame above FAB, mirrors TAT contentWrapper pattern
+  listWrapper: {
+    flex: 1,
+  },
+  listWrapperWithFab: {
+    paddingBottom: 80,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing['2xl'],
+    flexGrow: 1,
+  },
+  // FAB
   fab: {
     position: 'absolute',
     bottom: nbSpacing.md,
     left: nbSpacing.md,
     right: nbSpacing.md,
     zIndex: 10,
+  },
+  footerLoader: {
+    paddingVertical: nbSpacing.md,
+    alignItems: 'center',
   },
 });

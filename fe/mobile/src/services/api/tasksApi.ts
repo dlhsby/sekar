@@ -1,9 +1,9 @@
 /**
  * Tasks API Service
- * Phase 2C: simplified (no accept/decline), tagging support
+ * Phase 2C: accept/decline + verify/revision support, tagging support
  */
 
-import { get, post, put, del } from './apiClient';
+import { get, post, put, del, patch } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type {
   Task,
@@ -14,6 +14,8 @@ import type {
   AssignTaskRequest,
   CompleteTaskRequest,
   TagTaskRequest,
+  DeclineTaskRequest,
+  RequestRevisionRequest,
 } from '../../types/api.types';
 
 export async function createTask(
@@ -29,15 +31,36 @@ export async function getTasks(
 }
 
 export async function getMyTasks(
-  filters?: { status?: string; from_date?: string; to_date?: string; page?: number; limit?: number },
-): Promise<ApiResponse<Task[]>> {
-  return get<Task[]>('/tasks/my-tasks', filters);
+  filters?: {
+    status?: string;
+    deadline_after?: string;
+    deadline_before?: string;
+    created_after?: string;
+    created_before?: string;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+    activeOnly?: boolean;
+  },
+): Promise<ApiResponse<TasksListResponse>> {
+  return get<TasksListResponse>('/tasks/my-tasks', filters);
 }
 
 export async function getTaggedTasks(
-  filters?: { status?: string; from_date?: string; to_date?: string; page?: number; limit?: number },
-): Promise<ApiResponse<Task[]>> {
-  return get<Task[]>('/tasks/tagged', filters);
+  filters?: {
+    status?: string;
+    deadline_after?: string;
+    deadline_before?: string;
+    created_after?: string;
+    created_before?: string;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  },
+): Promise<ApiResponse<TasksListResponse>> {
+  return get<TasksListResponse>('/tasks/tagged', filters);
 }
 
 export async function getTaskById(id: string): Promise<ApiResponse<Task>> {
@@ -88,6 +111,28 @@ export async function removeTaskTag(
   return del<void>(`/tasks/${taskId}/tag/${userId}`);
 }
 
+export async function acceptTask(id: string): Promise<ApiResponse<Task>> {
+  return post<Task>(`/tasks/${id}/accept`);
+}
+
+export async function declineTask(
+  id: string,
+  data: DeclineTaskRequest,
+): Promise<ApiResponse<Task>> {
+  return post<Task>(`/tasks/${id}/decline`, data);
+}
+
+export async function verifyTask(id: string): Promise<ApiResponse<Task>> {
+  return patch<Task>(`/tasks/${id}/verify`);
+}
+
+export async function requestRevision(
+  id: string,
+  data: RequestRevisionRequest,
+): Promise<ApiResponse<Task>> {
+  return patch<Task>(`/tasks/${id}/revision`, data);
+}
+
 export default {
   createTask,
   getTasks,
@@ -101,4 +146,8 @@ export default {
   completeTask,
   addTaskTags,
   removeTaskTag,
+  acceptTask,
+  declineTask,
+  verifyTask,
+  requestRevision,
 };

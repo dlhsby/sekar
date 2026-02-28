@@ -50,3 +50,7 @@ export type { PatternType } from './NBBackgroundPattern';
 // Select / Dropdown
 export { NBSelect } from './NBSelect';
 export type { NBSelectProps, NBSelectOption } from './NBSelect';
+
+// Date Picker
+export { NBDatePicker } from './NBDatePicker';
+export type { NBDatePickerProps } from './NBDatePicker';

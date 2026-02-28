@@ -26,9 +26,10 @@ import {
   nbShadows,
 } from '../../constants/nbTokens';
 import type { ActivitiesFilter } from '../../types/api.types';
-import type { ActivityType, Area, Rayon, User, UserRole } from '../../types/models.types';
-import { getMyActivityTypes } from '../../services/api/activityTypesApi';
+import type { Area, Rayon, User, UserRole } from '../../types/models.types';
 import { getAreas, getAreasByRayonId, getRayons, getUsers } from '../../services/api';
+import { FILTER_SUBORDINATE_ROLES } from '../../constants/roles';
+import { parseFilterDate, toFilterDateString, toTitleCase } from '../../utils/filterHelpers';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -42,19 +43,6 @@ interface ActivityFilterModalProps {
   userRayonId?: string;
   userAreaId?: string;
   userId?: string; // current user's id for "Dibuat oleh Saya" default
-}
-
-function parseDate(dateStr: string): Date | null {
-  if (!dateStr) return null;
-  const d = new Date(dateStr + 'T00:00:00');
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function toDateString(date: Date): string {
-  const y = date.getFullYear();
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const d = date.getDate().toString().padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -92,23 +80,21 @@ export function ActivityFilterModal({
     userRole === 'top_management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
+  const hasSubordinates = useMemo(
+    () => userRole ? (FILTER_SUBORDINATE_ROLES[userRole]?.length ?? 0) > 0 : false,
+    [userRole],
+  );
+
   const [localStatus, setLocalStatus] = useState(filters.status ?? '');
   const [localDateFrom, setLocalDateFrom] = useState(filters.from_date ?? '');
   const [localDateTo, setLocalDateTo] = useState(filters.to_date ?? '');
-  const [localActivityTypeId, setLocalActivityTypeId] = useState(filters.activity_type_id ?? '');
   const [localAreaId, setLocalAreaId] = useState(isAreaFixed ? (userAreaId ?? '') : (filters.area_id ?? ''));
   const [localRayonId, setLocalRayonId] = useState(filters.rayon_id ?? '');
   const [localUserId, setLocalUserId] = useState(filters.user_id ?? '');
-  // Penugasan scope: satgas/linmas locked to 'mine'; others can select 'mine'|'all'
-  const [localScope, setLocalScope] = useState<'mine' | 'all'>(
-    isFieldWorker ? 'mine' : (filters.user_id ? 'mine' : 'all')
-  );
 
-  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [rayons, setRayons] = useState<Rayon[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [loadingTypes, setLoadingTypes] = useState(false);
   const [loadingAreas, setLoadingAreas] = useState(false);
   const [loadingRayons, setLoadingRayons] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -118,18 +104,14 @@ export function ActivityFilterModal({
       setLocalStatus(filters.status ?? '');
       setLocalDateFrom(filters.from_date ?? '');
       setLocalDateTo(filters.to_date ?? '');
-      setLocalActivityTypeId(filters.activity_type_id ?? '');
       setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : (filters.area_id ?? ''));
       setLocalRayonId(filters.rayon_id ?? '');
-      const hasUserFilter = !!filters.user_id;
       setLocalUserId(filters.user_id ?? '');
-      setLocalScope(isFieldWorker ? 'mine' : (hasUserFilter ? 'mine' : 'all'));
     }
-  }, [visible, filters, isAreaFixed, userAreaId, isFieldWorker]);
+  }, [visible, filters, isAreaFixed, userAreaId]);
 
   useEffect(() => {
     if (!visible) return;
-    loadActivityTypes();
     if (showRayon && (canSelectRayon || isRayonFixed)) loadRayons();
     if (isAreaFixed) return;
     if (userRayonId) {
@@ -161,25 +143,22 @@ export function ActivityFilterModal({
     try {
       const response = await getUsers(100);
       const allUsers: User[] = response.data ?? [];
-      setUsers(areaId ? allUsers.filter((u) => (u as any).area_id === areaId) : allUsers);
+      const subordinateRoles = userRole ? (FILTER_SUBORDINATE_ROLES[userRole] ?? []) : [];
+      let filtered = allUsers.filter((u) => u.id !== userId);
+      if (subordinateRoles.length > 0) {
+        filtered = filtered.filter((u) => subordinateRoles.includes(u.role));
+      }
+      if (areaId) {
+        filtered = filtered.filter((u) => (u as any).area_id === areaId);
+      }
+      setUsers(filtered);
     } catch {
       // non-critical
     } finally {
       setLoadingUsers(false);
     }
-  }, []);
-
-  const loadActivityTypes = useCallback(async () => {
-    setLoadingTypes(true);
-    try {
-      const response = await getMyActivityTypes();
-      if (response.data?.data) setActivityTypes(response.data.data);
-    } catch {
-      // non-critical
-    } finally {
-      setLoadingTypes(false);
-    }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userRole]);
 
   const loadAllAreas = useCallback(async () => {
     setLoadingAreas(true);
@@ -212,31 +191,25 @@ export function ActivityFilterModal({
     if (localDateTo) applied.to_date = localDateTo;
     if (localAreaId) applied.area_id = localAreaId;
     if (localRayonId) applied.rayon_id = localRayonId;
-    if (localActivityTypeId) applied.activity_type_id = localActivityTypeId;
-    // Penugasan scope: 'mine' means filter by user
-    if (localScope === 'mine' || isFieldWorker) {
-      applied.user_id = localUserId || userId;
-    }
+    if (localUserId && localUserId !== 'all_subordinates') { applied.user_id = localUserId; }
     onApplyFilters(applied);
     onClose();
-  }, [localStatus, localDateFrom, localDateTo, localAreaId, localRayonId, localActivityTypeId, localScope, localUserId, isFieldWorker, userId, onApplyFilters, onClose]);
+  }, [localStatus, localDateFrom, localDateTo, localAreaId, localRayonId, localUserId, onApplyFilters, onClose]);
 
   const handleReset = useCallback(() => {
     setLocalStatus('');
     setLocalDateFrom('');
     setLocalDateTo('');
-    setLocalActivityTypeId('');
     setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : '');
     setLocalRayonId('');
     setLocalUserId('');
-    setLocalScope(isFieldWorker ? 'mine' : 'all');
     onResetFilters();
     onClose();
-  }, [isAreaFixed, userAreaId, isFieldWorker, onResetFilters, onClose]);
+  }, [isAreaFixed, userAreaId, onResetFilters, onClose]);
 
   // Date picker min/max constraints
-  const dateFromParsed = parseDate(localDateFrom);
-  const dateToParsed = parseDate(localDateTo);
+  const dateFromParsed = parseFilterDate(localDateFrom);
+  const dateToParsed = parseFilterDate(localDateTo);
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
@@ -276,6 +249,7 @@ export function ActivityFilterModal({
                   { label: 'Disetujui', value: 'approved' },
                   { label: 'Ditolak', value: 'rejected' },
                 ]}
+                searchable
               />
             </View>
 
@@ -286,7 +260,7 @@ export function ActivityFilterModal({
                 <View style={styles.dateButtonHalf}>
                   <NBDatePicker
                     value={dateFromParsed}
-                    onChange={(date) => setLocalDateFrom(toDateString(date))}
+                    onChange={(date) => setLocalDateFrom(toFilterDateString(date))}
                     label="Dari"
                     maximumDate={dateToParsed ?? undefined}
                   />
@@ -297,7 +271,7 @@ export function ActivityFilterModal({
                 <View style={styles.dateButtonHalf}>
                   <NBDatePicker
                     value={dateToParsed}
-                    onChange={(date) => setLocalDateTo(toDateString(date))}
+                    onChange={(date) => setLocalDateTo(toFilterDateString(date))}
                     label="Sampai"
                     minimumDate={dateFromParsed ?? undefined}
                   />
@@ -325,6 +299,7 @@ export function ActivityFilterModal({
                       ...rayons.map(r => ({ label: r.name, value: r.id })),
                     ]}
                     disabled={loadingRayons}
+                    searchable
                   />
                 )}
               </View>
@@ -349,61 +324,33 @@ export function ActivityFilterModal({
                     ...areas.map((a) => ({ label: a.name, value: a.id })),
                   ]}
                   disabled={loadingAreas}
+                  searchable
                 />
               )}
             </View>
 
-            {/* 5. Petugas — hidden for satgas/linmas */}
+            {/* 5. Dibuat Oleh — hidden for satgas/linmas */}
             {!isFieldWorker && (
               <View style={styles.filterSection}>
-                <Text style={styles.filterLabel}>Petugas</Text>
+                <Text style={styles.filterLabel}>Dibuat Oleh</Text>
                 <NBSelect
                   value={localUserId || 'all'}
                   onValueChange={(v) => setLocalUserId(v === 'all' ? '' : String(v))}
                   options={[
-                    { label: 'Semua Petugas', value: 'all' },
-                    ...users.map(u => ({ label: u.full_name, value: u.id })),
+                    { label: 'Semua Petugas (Termasuk Saya)', value: 'all' },
+                    ...(hasSubordinates ? [{ label: 'Semua Bawahan', value: 'all_subordinates' }] : []),
+                    ...(userId ? [{ label: 'Dibuat oleh Saya', value: userId }] : []),
+                    ...users.map((u) => ({
+                      label: `${toTitleCase(u.role)} - ${u.full_name}`,
+                      value: u.id,
+                    })),
                   ]}
                   disabled={loadingUsers}
+                  searchable
                 />
               </View>
             )}
 
-            {/* 6. Penugasan */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Penugasan</Text>
-              {isFieldWorker ? (
-                <NBSelect
-                  value="mine"
-                  onValueChange={() => {}}
-                  options={[{ label: 'Dibuat oleh Saya', value: 'mine' }]}
-                  disabled={true}
-                />
-              ) : (
-                <NBSelect
-                  value={localScope}
-                  onValueChange={(v) => setLocalScope(v as 'mine' | 'all')}
-                  options={[
-                    { label: 'Semua', value: 'all' },
-                    { label: 'Dibuat oleh Saya', value: 'mine' },
-                  ]}
-                />
-              )}
-            </View>
-
-            {/* 7. Tipe Aktivitas */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Tipe Aktivitas</Text>
-              <NBSelect
-                value={localActivityTypeId || 'all'}
-                onValueChange={(v) => setLocalActivityTypeId(v === 'all' ? '' : String(v))}
-                options={[
-                  { label: 'Semua Tipe', value: 'all' },
-                  ...activityTypes.map((t) => ({ label: t.name, value: t.id })),
-                ]}
-                disabled={loadingTypes}
-              />
-            </View>
           </ScrollView>
 
           {/* Fixed action buttons */}

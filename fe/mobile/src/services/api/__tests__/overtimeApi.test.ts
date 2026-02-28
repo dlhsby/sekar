@@ -5,7 +5,6 @@
 
 import * as overtimeApi from '../overtimeApi';
 import * as apiClient from '../apiClient';
-import apiClientDefault from '../apiClient';
 
 jest.mock('../apiClient', () => ({
   __esModule: true,
@@ -14,13 +13,12 @@ jest.mock('../apiClient', () => ({
   },
   get: jest.fn(),
   post: jest.fn(),
+  patch: jest.fn(),
 }));
 
 const mockGet = apiClient.get as jest.MockedFunction<typeof apiClient.get>;
 const mockPost = apiClient.post as jest.MockedFunction<typeof apiClient.post>;
-const mockPatch = apiClientDefault.patch as jest.MockedFunction<
-  typeof apiClientDefault.patch
->;
+const mockPatch = apiClient.patch as jest.MockedFunction<typeof apiClient.patch>;
 
 describe('overtimeApi', () => {
   beforeEach(() => {
@@ -30,12 +28,11 @@ describe('overtimeApi', () => {
   describe('submitOvertime', () => {
     it('submits overtime with correct data', async () => {
       const overtimeData = {
-        date: '2026-02-14',
-        start_time: '17:00',
-        end_time: '20:00',
+        start_datetime: '2026-02-14T17:00:00+07:00',
+        end_datetime: '2026-02-14T20:00:00+07:00',
         activity_type_id: 'type-001',
         description: 'Lembur penyiraman',
-        photos: ['data:image/jpeg;base64,photo1'],
+        photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
         gps_lat: -7.25,
         gps_lng: 112.75,
       };
@@ -52,12 +49,9 @@ describe('overtimeApi', () => {
   });
 
   describe('getMyOvertimes', () => {
-    it('gets user overtimes', async () => {
+    it('gets user overtimes without filters', async () => {
       const mockResponse = {
-        data: [
-          { id: 'ot-1', status: 'pending' },
-          { id: 'ot-2', status: 'approved' },
-        ],
+        data: { data: [{ id: 'ot-1', status: 'pending' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } },
       };
       mockGet.mockResolvedValue(mockResponse);
 
@@ -66,16 +60,38 @@ describe('overtimeApi', () => {
       expect(mockGet).toHaveBeenCalledWith('/overtime/my');
       expect(result).toEqual(mockResponse);
     });
-  });
 
-  describe('getPendingApprovals', () => {
-    it('gets pending approvals for korlap', async () => {
-      const mockResponse = { data: [{ id: 'ot-1', status: 'pending' }] };
+    it('gets user overtimes with filters', async () => {
+      const mockResponse = {
+        data: { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } },
+      };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await overtimeApi.getPendingApprovals();
+      const result = await overtimeApi.getMyOvertimes({ status: 'pending', page: 1, limit: 10 });
+
+      expect(mockGet).toHaveBeenCalledWith('/overtime/my?status=pending&page=1&limit=10');
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('getOvertimes', () => {
+    it('gets all overtimes without filters', async () => {
+      const mockResponse = { data: { data: [{ id: 'ot-1', status: 'pending' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } } };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await overtimeApi.getOvertimes();
 
       expect(mockGet).toHaveBeenCalledWith('/overtime');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('gets overtimes filtered by status=pending', async () => {
+      const mockResponse = { data: { data: [{ id: 'ot-1', status: 'pending' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } } };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await overtimeApi.getOvertimes({ status: 'pending' });
+
+      expect(mockGet).toHaveBeenCalledWith('/overtime?status=pending');
       expect(result).toEqual(mockResponse);
     });
   });
@@ -102,23 +118,16 @@ describe('overtimeApi', () => {
       const result = await overtimeApi.approveOvertime('ot-123');
 
       expect(mockPatch).toHaveBeenCalledWith('/overtime/ot-123/approve');
-      expect(result).toEqual({ data: mockResponse.data });
+      expect(result).toEqual(mockResponse);
     });
 
     it('returns error on failure', async () => {
-      mockPatch.mockRejectedValue(new Error('Network error'));
+      const mockResponse = { error: 'Network error' };
+      mockPatch.mockResolvedValue(mockResponse);
 
       const result = await overtimeApi.approveOvertime('ot-123');
 
       expect(result).toEqual({ error: 'Network error' });
-    });
-
-    it('returns generic error for non-Error throws', async () => {
-      mockPatch.mockRejectedValue('unknown error');
-
-      const result = await overtimeApi.approveOvertime('ot-123');
-
-      expect(result).toEqual({ error: 'Approve failed' });
     });
   });
 
@@ -135,23 +144,16 @@ describe('overtimeApi', () => {
       expect(mockPatch).toHaveBeenCalledWith('/overtime/ot-123/reject', {
         reason: 'Tidak sesuai prosedur',
       });
-      expect(result).toEqual({ data: mockResponse.data });
+      expect(result).toEqual(mockResponse);
     });
 
     it('returns error on failure', async () => {
-      mockPatch.mockRejectedValue(new Error('Unauthorized'));
+      const mockResponse = { error: 'Unauthorized' };
+      mockPatch.mockResolvedValue(mockResponse);
 
       const result = await overtimeApi.rejectOvertime('ot-123', 'reason');
 
       expect(result).toEqual({ error: 'Unauthorized' });
-    });
-
-    it('returns generic error for non-Error throws', async () => {
-      mockPatch.mockRejectedValue(42);
-
-      const result = await overtimeApi.rejectOvertime('ot-123', 'reason');
-
-      expect(result).toEqual({ error: 'Reject failed' });
     });
   });
 
@@ -160,7 +162,7 @@ describe('overtimeApi', () => {
       const defaultExport = overtimeApi.default;
       expect(defaultExport.submitOvertime).toBeDefined();
       expect(defaultExport.getMyOvertimes).toBeDefined();
-      expect(defaultExport.getPendingApprovals).toBeDefined();
+      expect(defaultExport.getOvertimes).toBeDefined();
       expect(defaultExport.getOvertimeById).toBeDefined();
       expect(defaultExport.approveOvertime).toBeDefined();
       expect(defaultExport.rejectOvertime).toBeDefined();

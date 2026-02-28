@@ -289,10 +289,7 @@ describe('TaskCreateScreen', () => {
     });
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Validasi Gagal',
-        'Mohon periksa kembali form'
-      );
+      expect(getByText('Judul harus diisi')).toBeTruthy();
     });
   });
 
@@ -319,10 +316,7 @@ describe('TaskCreateScreen', () => {
     });
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Validasi Gagal',
-        'Mohon periksa kembali form'
-      );
+      expect(getByText('Petugas harus dipilih')).toBeTruthy();
     });
   });
 

@@ -1,115 +1,91 @@
 /**
  * Overtime Detail Screen
- * Phase 2C: View overtime details and approve/reject (korlap only)
+ * Phase 2C: Read-only view with inline approval/rejection — matches ActivityDetailScreen pattern
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Image,
   ActivityIndicator,
-  Modal,
-  TouchableOpacity,
+  Platform,
+  SafeAreaView,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import type { MainTabScreenProps } from '../../types/navigation.types';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import {
-  selectSelectedOvertime,
-  setSelectedOvertime,
-  updateOvertime,
-  setSubmitting,
-  selectOvertimeSubmitting,
-} from '../../store/slices/overtimeSlice';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import { getOvertimeById, approveOvertime, rejectOvertime } from '../../services/api/overtimeApi';
-import { useRoleAccess } from '../../hooks/useRoleAccess';
-import { NBButton, NBCard, NBBadge, NBTextInput, NBBackgroundPattern } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
-import type { OvertimeStatus } from '../../types/models.types';
+import {
+  NBCard,
+  NBCardHeader,
+  NBCardContent,
+  NBBackgroundPattern,
+  NBBadge,
+  NBButton,
+  NBTextInput,
+} from '../../components/nb';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorders,
+  nbBorderRadius,
+  nbShadows,
+} from '../../constants/nbTokens';
+import {
+  getOvertimeStatusColor,
+  getOvertimeStatusLabel,
+  formatDateTimeIndonesian,
+  formatDurationHours,
+} from '../../utils/statusHelpers';
+import { useAppSelector } from '../../store/hooks';
+import type { Overtime } from '../../types/models.types';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type RouteParams = {
   overtimeId: string;
 };
 
-/**
- * Get status badge color
- */
-function getStatusColor(status: OvertimeStatus): 'success' | 'warning' | 'danger' {
-  switch (status) {
-    case 'approved':
-      return 'success';
-    case 'pending':
-      return 'warning';
-    case 'rejected':
-      return 'danger';
-    default:
-      return 'warning';
-  }
-}
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
-/**
- * Get status label
- */
-function getStatusLabel(status: OvertimeStatus): string {
-  switch (status) {
-    case 'approved':
-      return 'Disetujui';
-    case 'pending':
-      return 'Menunggu';
-    case 'rejected':
-      return 'Ditolak';
-    default:
-      return status;
-  }
-}
-
-/**
- * Format date
- */
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-/**
- * Overtime Detail Screen Component
- */
-export const OvertimeDetailScreen: React.FC<MainTabScreenProps<'OvertimeDetail'>> = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
+export function OvertimeDetailScreen(): React.JSX.Element {
+  const navigation = useNavigation<MainTabScreenProps<'OvertimeDetail'>['navigation']>();
+  const route = useRoute<RouteProp<MainTabParamList, 'OvertimeDetail'>>();
   const { overtimeId } = route.params as RouteParams;
-  const dispatch = useAppDispatch();
-  const { canApproveOvertime } = useRoleAccess();
 
-  const selectedOvertime = useAppSelector(selectSelectedOvertime);
-  const isSubmitting = useAppSelector(selectOvertimeSubmitting);
+  const user = useAppSelector((state) => state.auth.user);
 
+  const [overtime, setOvertime] = useState<Overtime | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
-  // Fetch overtime detail
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleTolakPress = useCallback(() => {
+    setShowRejectInput(true);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+  }, []);
+
   useEffect(() => {
     const fetchDetail = async () => {
       setIsLoading(true);
       try {
         const response = await getOvertimeById(overtimeId);
         if (response.data) {
-          dispatch(setSelectedOvertime(response.data));
+          setOvertime(response.data);
         } else if (response.error) {
           Alert.alert('Error', response.error);
           navigation.goBack();
         }
-      } catch (error) {
+      } catch {
         Alert.alert('Error', 'Gagal memuat detail lembur');
         navigation.goBack();
       } finally {
@@ -118,263 +94,336 @@ export const OvertimeDetailScreen: React.FC<MainTabScreenProps<'OvertimeDetail'>
     };
 
     fetchDetail();
-  }, [overtimeId, dispatch, navigation]);
+  }, [overtimeId, navigation]);
 
-  // Handle approve
+  // Determine if current user can approve/reject this overtime (mirrors ActivityDetailScreen)
+  const canApprove = useMemo(() => {
+    if (!overtime || !user || overtime.status !== 'pending') { return false; }
+    const submitterRole = overtime.user?.role;
+    if (user.role === 'korlap') {
+      return (submitterRole === 'satgas' || submitterRole === 'linmas') &&
+             user.area_id != null && overtime.area_id === user.area_id;
+    }
+    if (user.role === 'kepala_rayon') {
+      if (!user.rayon_id) { return false; }
+      const inSameRayon =
+        overtime.area?.rayon_id === user.rayon_id ||
+        overtime.user?.rayon_id === user.rayon_id;
+      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_data');
+    }
+    return false;
+  }, [overtime, user]);
+
   const handleApprove = useCallback(async () => {
+    if (!overtime || isSubmitting) { return; }
     Alert.alert('Konfirmasi', 'Setujui pengajuan lembur ini?', [
       { text: 'Batal', style: 'cancel' },
       {
         text: 'Setuju',
         onPress: async () => {
-          dispatch(setSubmitting(true));
+          setIsSubmitting(true);
           try {
-            const response = await approveOvertime(overtimeId);
-            if (response.data) {
-              dispatch(updateOvertime(response.data));
-              Alert.alert('Berhasil', 'Lembur disetujui', [
-                { text: 'OK', onPress: () => navigation.goBack() },
-              ]);
-            } else if (response.error) {
-              Alert.alert('Gagal', response.error);
+            const response = await approveOvertime(overtime.id);
+            if (response.error) {
+              Alert.alert('Error', response.error);
+              return;
             }
-          } catch (error) {
-            Alert.alert('Gagal', 'Terjadi kesalahan');
+            if (response.data) { setOvertime(response.data); }
+            Alert.alert('Berhasil', 'Lembur disetujui');
+          } catch {
+            Alert.alert('Error', 'Gagal menyetujui lembur');
           } finally {
-            dispatch(setSubmitting(false));
+            setIsSubmitting(false);
           }
         },
       },
     ]);
-  }, [overtimeId, dispatch, navigation]);
+  }, [overtime, isSubmitting]);
 
-  // Handle reject
-  const handleReject = useCallback(async () => {
-    if (!rejectionReason.trim()) {
-      Alert.alert('Peringatan', 'Alasan penolakan harus diisi');
+  const handleRejectSubmit = useCallback(async () => {
+    if (!overtime || !rejectReason.trim()) {
+      Alert.alert('Error', 'Alasan penolakan wajib diisi');
       return;
     }
-
-    dispatch(setSubmitting(true));
-    setShowRejectModal(false);
-
+    setIsSubmitting(true);
     try {
-      const response = await rejectOvertime(overtimeId, rejectionReason.trim());
-      if (response.data) {
-        dispatch(updateOvertime(response.data));
-        Alert.alert('Berhasil', 'Lembur ditolak', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
-      } else if (response.error) {
-        Alert.alert('Gagal', response.error);
+      const response = await rejectOvertime(overtime.id, rejectReason.trim());
+      if (response.error) {
+        Alert.alert('Error', response.error);
+        return;
       }
-    } catch (error) {
-      Alert.alert('Gagal', 'Terjadi kesalahan');
+      if (response.data) { setOvertime(response.data); }
+      setShowRejectInput(false);
+      setRejectReason('');
+      Alert.alert('Berhasil', 'Lembur ditolak');
+    } catch {
+      Alert.alert('Error', 'Gagal menolak lembur');
     } finally {
-      dispatch(setSubmitting(false));
-      setRejectionReason('');
+      setIsSubmitting(false);
     }
-  }, [overtimeId, rejectionReason, dispatch, navigation]);
+  }, [overtime, rejectReason]);
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <NBBackgroundPattern style={styles.background} />
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
           <Text style={styles.loadingText}>Memuat data...</Text>
         </View>
-      </SafeAreaView>
+      </NBBackgroundPattern>
     );
   }
 
-  if (!selectedOvertime) {
-    return null;
-  }
-
-  const showActions =
-    canApproveOvertime && selectedOvertime.status === 'pending';
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <NBBackgroundPattern style={styles.background} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Detail Lembur</Text>
-          <NBBadge
-            color={getStatusColor(selectedOvertime.status)}
-            text={getStatusLabel(selectedOvertime.status)}
+  if (!overtime) {
+    return (
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Lembur tidak ditemukan</Text>
+          <NBButton
+            title="Kembali"
+            variant="secondary"
+            onPress={() => navigation.goBack()}
           />
         </View>
+      </NBBackgroundPattern>
+    );
+  }
 
-        {/* User Info */}
-        {selectedOvertime.user && (
+  return (
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.container}
+          contentContainerStyle={[
+            styles.contentContainer,
+            canApprove && styles.contentContainerWithFooter,
+            showRejectInput && styles.contentContainerWithReject,
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* General Info Card */}
           <NBCard style={styles.card}>
-            <Text style={styles.sectionTitle}>Petugas</Text>
-            <Text style={styles.sectionValue}>{selectedOvertime.user.full_name}</Text>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>📋 INFORMASI UMUM</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Mulai</Text>
+                <Text style={styles.value}>{formatDateTimeIndonesian(overtime.start_datetime)}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Selesai</Text>
+                <Text style={styles.value}>{formatDateTimeIndonesian(overtime.end_datetime)}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Durasi</Text>
+                <Text style={styles.value}>{formatDurationHours(overtime.start_datetime, overtime.end_datetime)}</Text>
+              </View>
+              {overtime.user && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Petugas</Text>
+                  <Text style={styles.value}>
+                    {overtime.user.role} - {overtime.user.full_name}
+                  </Text>
+                </View>
+              )}
+              {overtime.area?.name && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Area</Text>
+                  <Text style={styles.value}>{overtime.area.name}</Text>
+                </View>
+              )}
+            </NBCardContent>
           </NBCard>
-        )}
 
-        {/* Date and Time */}
-        <NBCard style={styles.card}>
-          <Text style={styles.sectionTitle}>Tanggal</Text>
-          <Text style={styles.sectionValue}>{formatDate(selectedOvertime.date)}</Text>
-
-          <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>
-            Waktu
-          </Text>
-          <Text style={styles.sectionValue}>
-            {selectedOvertime.start_time} - {selectedOvertime.end_time}
-          </Text>
-        </NBCard>
-
-        {/* Activity Type */}
-        {selectedOvertime.activityType && (
+          {/* Status Card */}
           <NBCard style={styles.card}>
-            <Text style={styles.sectionTitle}>Jenis Aktivitas</Text>
-            <Text style={styles.sectionValue}>
-              {selectedOvertime.activityType.name}
-            </Text>
-          </NBCard>
-        )}
-
-        {/* Description */}
-        <NBCard style={styles.card}>
-          <Text style={styles.sectionTitle}>Deskripsi</Text>
-          <Text style={styles.sectionValue}>{selectedOvertime.description}</Text>
-        </NBCard>
-
-        {/* Photos */}
-        {selectedOvertime.photo_urls.length > 0 && (
-          <NBCard style={styles.card}>
-            <Text style={styles.sectionTitle}>Foto</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.photosContainer}
-            >
-              {selectedOvertime.photo_urls.map((url, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: url }}
-                  style={styles.photo}
-                  resizeMode="cover"
+            <NBCardHeader>
+              <View style={styles.statusRow}>
+                <Text style={styles.sectionTitle}>📋 STATUS</Text>
+                <NBBadge
+                  text={getOvertimeStatusLabel(overtime.status)}
+                  color={getOvertimeStatusColor(overtime.status)}
                 />
-              ))}
-            </ScrollView>
+              </View>
+            </NBCardHeader>
+            <NBCardContent>
+              {overtime.status === 'rejected' && overtime.rejection_reason && (
+                <View style={styles.infoRow}>
+                  <Text style={[styles.label, styles.dangerLabel]}>Alasan Penolakan</Text>
+                  <Text style={styles.value}>{overtime.rejection_reason}</Text>
+                </View>
+              )}
+            </NBCardContent>
           </NBCard>
-        )}
 
-        {/* GPS */}
-        {selectedOvertime.gps_lat && selectedOvertime.gps_lng && (
-          <NBCard style={styles.card}>
-            <Text style={styles.sectionTitle}>Lokasi GPS</Text>
-            <Text style={styles.sectionValue}>
-              {selectedOvertime.gps_lat.toFixed(6)},{' '}
-              {selectedOvertime.gps_lng.toFixed(6)}
-            </Text>
-          </NBCard>
-        )}
-
-        {/* Notes */}
-        {selectedOvertime.notes && (
-          <NBCard style={styles.card}>
-            <Text style={styles.sectionTitle}>Catatan</Text>
-            <Text style={styles.sectionValue}>{selectedOvertime.notes}</Text>
-          </NBCard>
-        )}
-
-        {/* Rejection Reason */}
-        {selectedOvertime.status === 'rejected' &&
-          selectedOvertime.rejection_reason && (
-            <NBCard style={{
-              ...styles.card,
-              borderColor: nbColors.danger,
-              borderWidth: nbBorders.thick
-            }}>
-              <Text style={[styles.sectionTitle, {color: nbColors.danger}]}>
-                Alasan Penolakan
-              </Text>
-              <Text style={styles.sectionValue}>
-                {selectedOvertime.rejection_reason}
-              </Text>
+          {/* Activity Type Card */}
+          {overtime.activityType && (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <Text style={styles.value}>{overtime.activityType.name}</Text>
+                {overtime.activityType.description && (
+                  <Text style={styles.description}>{overtime.activityType.description}</Text>
+                )}
+              </NBCardContent>
             </NBCard>
           )}
 
-        {/* Actions for korlap */}
-        {showActions && (
-          <View style={styles.actionsContainer}>
-            <NBButton
-              title="Tolak"
-              variant="danger"
-              onPress={() => setShowRejectModal(true)}
-              disabled={isSubmitting}
-              style={styles.actionButton}
-            />
-            <NBButton
-              title={isSubmitting ? 'Memproses...' : 'Setuju'}
-              onPress={handleApprove}
-              disabled={isSubmitting}
-              style={styles.actionButton}
-            />
-          </View>
-        )}
-      </ScrollView>
+          {/* Description Card */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>📝 DESKRIPSI</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              <Text style={styles.descriptionText}>{overtime.description}</Text>
+            </NBCardContent>
+          </NBCard>
 
-      {/* Reject Modal */}
-      <Modal
-        visible={showRejectModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowRejectModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Alasan Penolakan</Text>
-            <NBTextInput
-              value={rejectionReason}
-              onChangeText={setRejectionReason}
-              placeholder="Masukkan alasan penolakan..."
-              multiline
-              numberOfLines={4}
-            />
-            <View style={styles.modalActions}>
-              <NBButton
-                title="Batal"
-                variant="secondary"
-                onPress={() => {
-                  setShowRejectModal(false);
-                  setRejectionReason('');
-                }}
-                style={styles.modalButton}
-              />
-              <NBButton
-                title="Tolak"
-                variant="danger"
-                onPress={handleReject}
-                disabled={!rejectionReason.trim()}
-                style={styles.modalButton}
+          {/* Photos Card */}
+          {overtime.photo_urls.length > 0 && (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>📸 FOTO BUKTI</Text>
+                <Text style={styles.sectionSubtitle}>{overtime.photo_urls.length} foto dilampirkan</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.photosContainer}
+                >
+                  {overtime.photo_urls.map((url, index) => (
+                    <Image
+                      key={index}
+                      source={{ uri: url }}
+                      style={styles.photo}
+                      resizeMode="cover"
+                    />
+                  ))}
+                </ScrollView>
+              </NBCardContent>
+            </NBCard>
+          )}
+
+          {/* GPS Card */}
+          {overtime.gps_lat != null && overtime.gps_lng != null ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <View style={styles.locationContainer}>
+                  <Text style={styles.locationText}>
+                    {`${Number(overtime.gps_lat).toFixed(6)}, ${Number(overtime.gps_lng).toFixed(6)}`}
+                  </Text>
+                </View>
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {/* Inline reject reason input */}
+          {canApprove && showRejectInput && (
+            <View style={styles.rejectInputSection}>
+              <NBTextInput
+                label="📝 ALASAN PENOLAKAN"
+                placeholder="Jelaskan alasan penolakan lembur ini..."
+                multiline
+                numberOfLines={4}
+                maxLength={1000}
+                value={rejectReason}
+                onChangeText={setRejectReason}
+                helperText={`${rejectReason.length}/1000 karakter`}
+                inputStyle={styles.rejectInputField}
+                textAlignVertical="top"
               />
             </View>
+          )}
+        </ScrollView>
+
+        {/* Fixed approval FAB — mirrors ActivityDetailScreen */}
+        {canApprove && (
+          <View style={styles.fab}>
+            {!showRejectInput ? (
+              <View style={styles.approvalButtonRow}>
+                <View style={styles.approvalButtonHalf}>
+                  <NBButton
+                    title="Tolak"
+                    variant="danger"
+                    onPress={handleTolakPress}
+                    disabled={isSubmitting}
+                    fullWidth
+                    size="lg"
+                  />
+                </View>
+                <View style={styles.approvalButtonHalf}>
+                  <NBButton
+                    title="Setujui"
+                    variant="success"
+                    onPress={handleApprove}
+                    disabled={isSubmitting}
+                    loading={isSubmitting}
+                    fullWidth
+                    size="lg"
+                  />
+                </View>
+              </View>
+            ) : (
+              <View style={styles.approvalButtonRow}>
+                <View style={styles.approvalButtonHalf}>
+                  <NBButton
+                    title="Batal"
+                    variant="secondary"
+                    onPress={() => { setShowRejectInput(false); setRejectReason(''); }}
+                    fullWidth
+                    size="lg"
+                  />
+                </View>
+                <View style={styles.approvalButtonHalf}>
+                  <NBButton
+                    title="Kirim Penolakan"
+                    variant="danger"
+                    onPress={handleRejectSubmit}
+                    disabled={isSubmitting || !rejectReason.trim()}
+                    loading={isSubmitting}
+                    size="lg"
+                    fullWidth
+                  />
+                </View>
+              </View>
+            )}
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        )}
+      </SafeAreaView>
+    </NBBackgroundPattern>
   );
-};
+}
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   container: {
     flex: 1,
-    backgroundColor: nbColors.background,
-  },
-  background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -387,90 +436,110 @@ const styles = StyleSheet.create({
     fontWeight: nbTypography.fontWeight.medium,
     color: nbColors.gray[600],
   },
-  scrollContent: {
+  contentContainer: {
+    paddingVertical: nbSpacing.md,
     paddingBottom: nbSpacing['2xl'],
   },
-  header: {
+  contentContainerWithFooter: {
+    paddingBottom: nbSpacing.md,
+  },
+  contentContainerWithReject: {
+    paddingBottom: nbSpacing['3xl'],
+  },
+  card: {
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    ...nbShadows.sm,
+  },
+  sectionTitle: {
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionSubtitle: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
+    marginTop: nbSpacing.xs,
+  },
+  statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
-    backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
   },
-  headerTitle: {
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+  infoRow: {
+    marginBottom: nbSpacing.md,
   },
-  card: {
-    margin: nbSpacing.md,
-    marginBottom: 0,
-  },
-  sectionTitle: {
+  label: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[600],
+    color: nbColors.gray[700],
     marginBottom: nbSpacing.xs,
   },
-  sectionTitleSpaced: {
-    marginTop: nbSpacing.md,
+  dangerLabel: {
+    color: nbColors.danger,
   },
-  sectionValue: {
+  value: {
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.black,
+  },
+  description: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.gray[600],
+    marginTop: nbSpacing.xs,
+  },
+  descriptionText: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.regular,
     color: nbColors.black,
+    lineHeight: nbTypography.fontSize.base * 1.5,
   },
   photosContainer: {
     gap: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
   },
   photo: {
-    width: 150,
-    height: 150,
+    width: 160,
+    height: 160,
     borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
+    ...nbShadows.sm,
   },
-  actionsContainer: {
-    flexDirection: 'row',
-    gap: nbSpacing.md,
-    paddingHorizontal: nbSpacing.md,
-    marginTop: nbSpacing.lg,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  locationContainer: {
     padding: nbSpacing.md,
-  },
-  modalContent: {
-    backgroundColor: nbColors.white,
+    backgroundColor: nbColors.gray[50],
     borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    padding: nbSpacing.lg,
-    width: '100%',
-    maxWidth: 400,
   },
-  modalTitle: {
-    fontSize: nbTypography.fontSize.xl,
+  locationText: {
+    fontSize: nbTypography.fontSize.lg,
     fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.black,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    letterSpacing: 0.5,
+  },
+  rejectInputSection: {
+    marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
   },
-  modalActions: {
-    flexDirection: 'row',
-    gap: nbSpacing.md,
-    marginTop: nbSpacing.md,
+  rejectInputField: {
+    minHeight: 100,
   },
-  modalButton: {
+  fab: {
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+  },
+  approvalButtonRow: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+  },
+  approvalButtonHalf: {
     flex: 1,
   },
 });

@@ -21,6 +21,7 @@ import { NBBackgroundPattern, NBButton, NBTab } from '../../components/nb';
 import { TaskFilterModal, ActivityFilterModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import { ACTIVITY_SUBMITTERS, TASK_CREATORS, canMonitor } from '../../constants/roles';
+import { getTaskStatusLabel } from '../../utils/statusHelpers';
 import type { MainTabParamList } from '../../types/navigation.types';
 import { getMyActivities, getActivities } from '../../services/api/activitiesApi';
 import { getMyTasks, getTaggedTasks } from '../../services/api/tasksApi';
@@ -30,7 +31,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { TasksTab } from './tabs/TasksTab';
 import { ActivitiesTab } from './tabs/ActivitiesTab';
-import { SortModal } from './components/SortModal';
+import { SortModal } from '../../components/modals/SortModal';
 
 type Props = {
   navigation: NativeStackNavigationProp<MainTabParamList, 'TasksActivities'>;
@@ -42,19 +43,18 @@ type TaskFilterType = 'all' | 'assigned' | 'tagged' | 'created_by_me';
 type TaskSortOption = 'created_at_desc' | 'created_at_asc' | 'deadline_asc' | 'priority_desc';
 type ActivitySortOption = 'created_at_desc' | 'created_at_asc';
 
-function getTaskStatusLabel(status: TaskStatus): string {
-  const labels: Record<TaskStatus, string> = {
-    pending: 'Menunggu',
-    assigned: 'Ditugaskan',
-    accepted: 'Diterima',
-    declined: 'Ditolak',
-    in_progress: 'Dikerjakan',
-    completed: 'Menunggu Verifikasi',
-    verified: 'Terverifikasi',
-    revision_needed: 'Perlu Revisi',
-  };
-  return labels[status] || status;
-}
+const TASK_SORT_OPTIONS = [
+  { key: 'created_at_desc', label: 'Terbaru (default)' },
+  { key: 'created_at_asc', label: 'Terlama' },
+  { key: 'deadline_asc', label: 'Deadline Terdekat' },
+  { key: 'priority_desc', label: 'Prioritas Tertinggi' },
+];
+
+const ACTIVITY_SORT_OPTIONS = [
+  { key: 'created_at_desc', label: 'Terbaru (default)' },
+  { key: 'created_at_asc', label: 'Terlama' },
+];
+
 
 const TASKS_PAGE_LIMIT = 10;
 const ACTIVITIES_PAGE_LIMIT = 10;
@@ -143,8 +143,11 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
       sort_dir,
       page,
       limit: TASKS_PAGE_LIMIT,
+      ...(rayonFilter ? { rayon_id: rayonFilter } : {}),
+      ...(areaFilter ? { area_id: areaFilter } : {}),
+      ...(petugasFilter ? { assigned_to: petugasFilter } : {}),
     };
-  }, [taskSort, statusFilter, dateFrom, dateTo, createdFrom, createdTo]);
+  }, [taskSort, statusFilter, dateFrom, dateTo, createdFrom, createdTo, rayonFilter, areaFilter, petugasFilter]);
 
   const fetchTasks = useCallback(async (page: number, reset: boolean) => {
     if (isFetchingTasks.current) {
@@ -283,8 +286,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
     useCallback(() => {
       fetchTasks(1, true);
       fetchActivities(1, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [fetchTasks, fetchActivities])
   );
 
   // Re-fetch tasks when filter/sort changes (after initial mount)
@@ -331,6 +333,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
     if (activityFilters.from_date || activityFilters.to_date) count++;
     if (activityFilters.activity_type_id) count++;
     if (activityFilters.area_id && activityFilters.area_id !== initialAreaId) count++;
+    if (activityFilters.rayon_id) count++;
     return count;
   }, [activityFilters, initialAreaId]);
 
@@ -432,6 +435,9 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
       }
       if (activityFilters.area_id && activityFilters.area_id !== initialAreaId) {
         chips.push({ text: 'Area', style: styles.miniChipLocation });
+      }
+      if (activityFilters.rayon_id) {
+        chips.push({ text: 'Rayon dipilih', style: styles.miniChipLocation });
       }
     }
 
@@ -614,12 +620,19 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
         {/* Sort Modal */}
         <SortModal
           visible={isSortModalOpen}
-          activeTab={activeTab}
-          taskSort={taskSort}
-          activitySort={activitySort}
           onClose={() => setIsSortModalOpen(false)}
-          onSelectTaskSort={(sort) => { setTaskSort(sort); fetchTasks(1, true); }}
-          onSelectActivitySort={(sort) => { setActivitySort(sort); fetchActivities(1, true); }}
+          title={activeTab === 'tasks' ? 'URUTKAN TUGAS' : 'URUTKAN AKTIVITAS'}
+          options={activeTab === 'tasks' ? TASK_SORT_OPTIONS : ACTIVITY_SORT_OPTIONS}
+          selectedOption={activeTab === 'tasks' ? taskSort : activitySort}
+          onSelect={(key) => {
+            if (activeTab === 'tasks') {
+              setTaskSort(key as TaskSortOption);
+              fetchTasks(1, true);
+            } else {
+              setActivitySort(key as ActivitySortOption);
+              fetchActivities(1, true);
+            }
+          }}
         />
 
         {/* Task Filter Modal */}

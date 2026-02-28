@@ -4,7 +4,7 @@
  * Supports offline queueing and auto-save drafts
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,15 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Alert,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBTextInput } from '../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { useActivityForm } from '../../hooks';
+import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 import type { Photo } from '../../services/media';
 
@@ -31,6 +33,7 @@ import type { Photo } from '../../services/media';
 export function ActivitySubmissionScreen(): React.JSX.Element {
   const navigation = useNavigation<MainTabScreenProps<'ActivitySubmission'>['navigation']>();
   const photoListRef = useRef<FlatList>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const {
     form,
@@ -50,7 +53,73 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
     setDescription,
     setActivityTypeId,
     clearError,
+    resetForm,
+    clearDraft,
+    saveDraft,
+    restoreDraft,
   } = useActivityForm(photoListRef);
+
+  // Restore draft when screen gains focus (tab navigation keeps component mounted)
+  // useRef avoids re-triggering useFocusEffect on state change, so restoreDraft runs only on re-focus (not mount)
+  const hasRestoredOnMount = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasRestoredOnMount.current) {
+        hasRestoredOnMount.current = false;
+        return;
+      }
+      restoreDraft();
+    }, [restoreDraft]),
+  );
+
+  const hasFormData = useMemo(
+    () => form.photos.length > 0 || form.description.length > 0 || form.activityTypeId !== null,
+    [form.photos.length, form.description.length, form.activityTypeId],
+  );
+
+  const navigateBack = useCallback(() => {
+    navigation.navigate('TasksActivities', { initialTab: 'activities' });
+  }, [navigation]);
+
+  // Prompt user to save draft or discard when leaving with unsaved data
+  const handleLeave = useCallback(() => {
+    if (!hasFormData) {
+      navigateBack();
+      return;
+    }
+    Alert.alert(
+      'Simpan Draft?',
+      'Simpan data aktivitas sebagai draft?',
+      [
+        {
+          text: 'Tidak',
+          style: 'destructive',
+          onPress: async () => {
+            await clearDraft();
+            resetForm();
+            navigateBack();
+          },
+        },
+        {
+          text: 'Ya',
+          onPress: async () => {
+            await saveDraft();
+            resetForm();
+            navigateBack();
+          },
+        },
+      ],
+    );
+  }, [hasFormData, resetForm, clearDraft, navigateBack, saveDraft]);
+
+  // Override header back button to use handleLeave with discard/draft prompt
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <FieldHomeHeader title="Buat Aktivitas" onBack={handleLeave} />
+      ),
+    });
+  }, [navigation, handleLeave]);
 
   const renderPhotoItem = useCallback(({ item }: { item: Photo }) => (
     <View style={styles.photoItem}>
@@ -85,7 +154,8 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
   const onSubmit = useCallback(() => {
     handleSubmit(
       () => navigation.navigate('ClockInOut'),
-      () => navigation.navigate('TasksActivities'),
+      () => navigation.navigate('TasksActivities', { initialTab: 'activities' }),
+      () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }),
     );
   }, [handleSubmit, navigation]);
 
@@ -98,10 +168,21 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
     >
       <SafeAreaView style={styles.container}>
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Validation error summary */}
+          {Object.values(errors).some(Boolean) && (
+            <View style={styles.errorSummary}>
+              <Text style={styles.errorSummaryTitle}>⚠️ Mohon lengkapi data berikut:</Text>
+              {Object.values(errors).filter(Boolean).map((msg, i) => (
+                <Text key={i} style={styles.errorSummaryItem}>• {msg}</Text>
+              ))}
+            </View>
+          )}
+
           {/* Error banner */}
           {activityError && (
             <NBAlert
@@ -232,15 +313,33 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
               )}
             </NBCardContent>
           </NBCard>
-
-          {/* Submit button */}
-          <NBButton
-            title={isOnline ? 'Kirim Aktivitas' : 'Simpan untuk Sync'}
-            onPress={onSubmit}
-            loading={isSubmitting}
-            disabled={isSubmitting}
-          />
         </ScrollView>
+
+        {/* Fixed FAB buttons — matching TasksActivityScreen FAB pattern */}
+        <View style={styles.fab}>
+          <View style={styles.fabButtonRow}>
+            <View style={styles.fabButtonHalf}>
+              <NBButton
+                title="Batal"
+                variant="secondary"
+                onPress={handleLeave}
+                disabled={isSubmitting}
+                fullWidth
+                size="lg"
+              />
+            </View>
+            <View style={styles.fabButtonHalf}>
+              <NBButton
+                title={isOnline ? 'Kirim Aktivitas' : 'Simpan untuk Sync'}
+                onPress={onSubmit}
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                fullWidth
+                size="lg"
+              />
+            </View>
+          </View>
+        </View>
       </SafeAreaView>
     </NBBackgroundPattern>
   );
@@ -256,9 +355,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: nbSpacing.md,
-    paddingBottom: nbSpacing.xl * 2,
-    flexGrow: 1,
-    justifyContent: 'center',
+    paddingBottom: nbSpacing.md,
+  },
+  fab: {
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+  },
+  fabButtonRow: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+  },
+  fabButtonHalf: {
+    flex: 1,
   },
   card: {
     marginBottom: nbSpacing.md,
@@ -420,5 +528,24 @@ const styles = StyleSheet.create({
     color: nbColors.gray['600'],
     fontSize: nbTypography.fontSize.sm,
     marginBottom: nbSpacing.md,
+  },
+  errorSummary: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.danger,
+    borderRadius: nbBorderRadius.sm,
+    padding: nbSpacing.sm,
+    marginBottom: nbSpacing.md,
+  },
+  errorSummaryTitle: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.danger,
+    marginBottom: nbSpacing.xs,
+  },
+  errorSummaryItem: {
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.danger,
+    marginTop: 2,
   },
 });

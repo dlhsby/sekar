@@ -68,7 +68,7 @@ describe('activitiesApi', () => {
 
       const result = await activitiesApi.getMyActivities();
 
-      expect(mockGet).toHaveBeenCalledWith('/activities/my', {});
+      expect(mockGet).toHaveBeenCalledWith('/activities', {});
       expect(result).toEqual(mockResponse);
     });
 
@@ -76,9 +76,9 @@ describe('activitiesApi', () => {
       const mockResponse = { data: [{ id: 'act-1' }] };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await activitiesApi.getMyActivities('2026-02-14');
+      const result = await activitiesApi.getMyActivities({ date: '2026-02-14' });
 
-      expect(mockGet).toHaveBeenCalledWith('/activities/my', { date: '2026-02-14' });
+      expect(mockGet).toHaveBeenCalledWith('/activities', { date: '2026-02-14' });
       expect(result).toEqual(mockResponse);
     });
 

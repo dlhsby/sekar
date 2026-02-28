@@ -23,6 +23,7 @@ import type {
   LiveUser,
   UserRole,
   Overtime,
+  OvertimeStatus,
 } from './models.types';
 
 // Auth API
@@ -292,17 +293,15 @@ export interface ActivitiesListResponse {
   };
 }
 
-// Overtime API (Phase 2C: new)
+// Overtime API (Phase 2C: datetime-based, overnight support)
 export interface CreateOvertimeRequest {
-  date: string; // YYYY-MM-DD
-  start_time: string; // HH:mm
-  end_time: string; // HH:mm
+  start_datetime: string; // ISO 8601 e.g. "2026-02-14T17:00:00+07:00"
+  end_datetime: string;   // ISO 8601 — may cross midnight
   activity_type_id: string;
   description: string;
   photo_urls: string[]; // 1-3 S3 URLs
   gps_lat?: number;
   gps_lng?: number;
-  notes?: string;
 }
 
 export interface RejectOvertimeRequest {
@@ -317,6 +316,19 @@ export interface OvertimeListResponse {
     limit: number;
     totalPages: number;
   };
+}
+
+export interface OvertimeFilter {
+  status?: OvertimeStatus;
+  from_date?: string;
+  to_date?: string;
+  rayon_id?: string;
+  area_id?: string;
+  user_id?: string;
+  sort_by?: 'created_at' | 'start_datetime';
+  sort_dir?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
 }
 
 // Activity Types API
