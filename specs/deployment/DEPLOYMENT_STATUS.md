@@ -1,30 +1,38 @@
 # Current Deployment Status
 
-**Last Updated:** February 16, 2026 (Phase 2C Preparation)
-**Backend Status:** Phase 2B ✅ (Deployed & Healthy) | Phase 2C 🔄 (Ready for deployment)
-**Web Dashboard:** ❌ NOT DEPLOYED (infrastructure ready, waiting for Phase 2C backend)
-**Database:** ✅ Phase 2B schema (17 tables) | Phase 2C migration ready
-**Migration Strategy:** ✅ Fixed (proper migrations, no synchronize)
-**Production Operations:** ✅ Documented with seeding script
+**Last Updated:** March 2, 2026 (Phase 2C Web Alignment + Security Fixes)
+**Backend Status:** Phase 2C ✅ Deployed & Healthy (888 tests, 89.57% coverage)
+**Web Dashboard:** ✅ DEPLOYED (Phase 2C complete — activities, schedules, overtime, tasks, monitoring)
+**Database:** ✅ Phase 2C schema (18 tables) — migrations M0-M4 executed
+**Migration Strategy:** ✅ DATABASE_SYNCHRONIZE=true (temporary — disable after 48h stability)
+**CI/CD:** ✅ All 3 pipelines green (Backend + Web + Mobile)
 
 ---
 
 ## Current Access URLs
 
-### Production Backend
-- **Direct Access:** http://16.79.183.240:3000/api/v1/health
-- **Nginx Proxy:** http://sekar.wahyutrip.com (proxies to port 3000)
-- **api subdomain:** ❌ NOT SET UP (see instructions below)
+### Production URLs
+- **Web Dashboard:** http://sekar.wahyutrip.com (sekar-web:3001)
+- **Backend API:** http://api.sekar.wahyutrip.com (sekar-backend:3000)
+- **API Health:** http://api.sekar.wahyutrip.com/api/v1/health
+- **API Docs:** http://api.sekar.wahyutrip.com/api/docs
+- **Direct IP:** http://16.79.183.240:3000/api/v1/health
 
 ### API Endpoints
 ```bash
 # Health check
-curl http://16.79.183.240:3000/api/v1/health
+curl http://api.sekar.wahyutrip.com/api/v1/health
 
-# Login test
-curl -X POST http://16.79.183.240:3000/api/v1/auth/login \
+# Login (Phase 2C roles — all use password123)
+curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password123"}'
+  -d '{"username":"korlap1","password":"password123"}'
+
+# Phase 2C endpoints
+GET /api/v1/activities      # Renamed from /aktivitas
+GET /api/v1/schedules       # Renamed from /worker-schedules
+GET /api/v1/overtime
+GET /api/v1/overtime/my
 ```
 
 ---
