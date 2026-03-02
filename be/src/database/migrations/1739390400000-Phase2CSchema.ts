@@ -95,6 +95,21 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       );
     `);
 
+    // Step 5: Update area_staff_requirements role constraint
+    // Phase 2 created this with old role values ['worker', 'linmas']; update to Phase 2C names
+    console.log('  - Updating area_staff_requirements role constraint...');
+    await queryRunner.query(`
+      ALTER TABLE area_staff_requirements DROP CONSTRAINT IF EXISTS chk_area_staff_requirements_role;
+    `);
+    await queryRunner.query(`
+      UPDATE area_staff_requirements SET role = 'satgas' WHERE role = 'worker';
+    `);
+    await queryRunner.query(`
+      ALTER TABLE area_staff_requirements ADD CONSTRAINT chk_area_staff_requirements_role CHECK (
+        role IN ('satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin')
+      );
+    `);
+
     console.log('✅ [Migration 0] Role system update completed.');
     console.log('');
 
