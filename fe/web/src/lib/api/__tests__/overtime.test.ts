@@ -53,9 +53,8 @@ describe('Overtime API', () => {
       id: 'area-1',
       name: 'Taman Bungkul',
     },
-    date: '2026-02-16',
-    start_time: '17:00:00',
-    end_time: '20:00:00',
+    start_datetime: '2026-02-16T17:00:00+07:00',
+    end_datetime: '2026-02-16T20:00:00+07:00',
     status: 'pending',
     activity_type_id: 'type-1',
     activity_type: {
@@ -153,9 +152,8 @@ describe('Overtime API', () => {
       const response = await apiClient.get<Overtime>('/overtime/overtime-1');
 
       expect(response.data.id).toBe('overtime-1');
-      expect(response.data.date).toBe('2026-02-16');
-      expect(response.data.start_time).toBe('17:00:00');
-      expect(response.data.end_time).toBe('20:00:00');
+      expect(response.data.start_datetime).toBe('2026-02-16T17:00:00+07:00');
+      expect(response.data.end_datetime).toBe('2026-02-16T20:00:00+07:00');
     });
 
     it('should handle overtime not found', async () => {
@@ -210,7 +208,7 @@ describe('Overtime API', () => {
 
   describe('PATCH /overtime/:id/reject', () => {
     it('should reject overtime with reason', async () => {
-      const rejectionData = { rejection_reason: 'Tidak sesuai prosedur' };
+      const rejectionData = { reason: 'Tidak sesuai prosedur' };
       const rejectedOvertime: Overtime = {
         ...mockOvertime,
         status: 'rejected',
@@ -249,7 +247,7 @@ describe('Overtime API', () => {
       });
 
       await expect(
-        apiClient.patch('/overtime/overtime-1/reject', { rejection_reason: 'Test' })
+        apiClient.patch('/overtime/overtime-1/reject', { reason: 'Test' })
       ).rejects.toThrow();
     });
   });
@@ -352,9 +350,8 @@ describe('useOvertime hook', () => {
     user: { id: 'u-1', username: 'satgas1', full_name: 'Satgas One', role: 'satgas' },
     area_id: 'a-1',
     area: { id: 'a-1', name: 'Taman' },
-    date: '2026-02-16',
-    start_time: '17:00',
-    end_time: '20:00',
+    start_datetime: '2026-02-16T17:00:00+07:00',
+    end_datetime: '2026-02-16T20:00:00+07:00',
     status: 'pending',
     activity_type_id: 'at-1',
     activity_type: { id: 'at-1', code: 'SWEEP', name: 'Penyapuan' },

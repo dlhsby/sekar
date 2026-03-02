@@ -62,7 +62,7 @@ export default function SchedulesPage() {
 
   // Access control
   useEffect(() => {
-    if (!authLoading && user && !['admin', 'koordinator_lapangan'].includes(user.role)) {
+    if (!authLoading && user && !['admin_system', 'superadmin', 'korlap', 'admin_data'].includes(user.role)) {
       router.push('/dashboard');
     }
   }, [user, authLoading, router]);
@@ -78,7 +78,7 @@ export default function SchedulesPage() {
     );
   }
 
-  if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
+  if (!['admin_system', 'superadmin', 'korlap', 'admin_data'].includes(user.role)) {
     return null;
   }
 

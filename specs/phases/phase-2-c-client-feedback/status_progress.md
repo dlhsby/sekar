@@ -1,6 +1,6 @@
 # Phase 2C - Implementation Progress
 
-**Last Updated:** February 28, 2026
+**Last Updated:** March 2, 2026
 **Status:** ✅ COMPLETE - Deployed to Production
 
 ---
@@ -236,16 +236,50 @@
 
 ## Phase 5: Web Updates - ✅ COMPLETE
 
-**Duration:** February 2026
-**Status:** ✅ Role constants and type updates complete; overtime/aktivitas pages in production
+**Duration:** February–March 2026
+**Status:** ✅ Web fully aligned with Phase 2C backend (types, API hooks, pages, tests)
 
-### Completed
+### Phase 5a: Initial Deployment (Feb 2026)
 - [x] Update UserRole type (8 roles) in `fe/web/src/lib/constants/roles.ts`
 - [x] Update ROUTE_ACCESS for 8 roles
 - [x] Sidebar role-based navigation updated
 - [x] Deployed to production (sekar.wahyutrip.com)
 
-**Note:** Overtime and aktivitas web pages are functional in production via the existing reports/tasks infrastructure updated with new role constants. Dedicated /overtime web page is scoped to Phase 3.
+### Phase 5b: Web-Backend Alignment (Mar 2, 2026)
+**Types Fixed:**
+- [x] Overtime: `date`/`start_time`/`end_time` → `start_datetime`/`end_datetime` (ISO 8601)
+- [x] Activity: added `status`, `reviewed_by`, `reviewer`, `reviewed_at`, `rejection_reason`
+- [x] TaskStatus: 4 → 8 values (added accepted, declined, verified, revision_needed)
+- [x] Task: added `created_by`, `creator`, `completion_photo_urls`, verify/revision fields
+- [x] OvertimeFilters/ActivityFilters: added `rayon_id`, `sort_by`, `sort_dir`
+
+**API Client Fixed:**
+- [x] Overtime reject body: `{ rejection_reason }` → `{ reason }`
+- [x] Activity approve/reject hooks added (`useApproveActivity`, `useRejectActivity`)
+- [x] Tasks: 7 new hooks (useTaggedTasks, useMyTasks, useAssignTask, useAcceptTask, useDeclineTask, useVerifyTask, useRequestRevision)
+- [x] OVERTIME_APPROVER_ROLES: `['korlap']` → `['korlap', 'kepala_rayon']`
+- [x] Added ACTIVITY_APPROVER_ROLES, TASK_VERIFIER_ROLES
+
+**Pages Fixed/Created:**
+- [x] Overtime list: datetime display from `start_datetime`/`end_datetime`
+- [x] Overtime detail: datetime display, approval buttons for korlap+kepala_rayon
+- [x] Activities list: status/area filters, approve/reject inline, auto-scoping
+- [x] Activities detail: approval workflow UI with reject reason form
+- [x] Tasks list: 3 tabs (Semua/Ditandai/Dibuat Saya), 8-status filter
+- [x] Tasks detail (NEW): full detail page with verify/revision workflow
+- [x] Monitoring: role-based auto-scoping (korlap→area, kepala_rayon→rayon)
+
+**Tests Added (8 new test files, 124+ new tests):**
+- [x] Activities list page tests (61 tests)
+- [x] Activities detail page tests (14 tests)
+- [x] Overtime list page tests (43 tests)
+- [x] Overtime detail page tests (14 tests)
+- [x] Tasks list page tests (21 tests)
+- [x] Tasks detail page tests (22 tests)
+- [x] Roles constants tests updated
+- [x] API hooks tests updated
+
+**Metrics:** 66 test suites, 1336 tests passing, 0 TypeScript errors
 
 ---
 
@@ -275,6 +309,14 @@
 
 ### Web Tests - ✅ COMPLETE
 - [x] Role constants updated and tested (roles.test.ts)
+- [x] Activities list page tests (61 tests)
+- [x] Activities detail page tests (14 tests)
+- [x] Overtime list page tests (43 tests)
+- [x] Overtime detail page tests (14 tests)
+- [x] Tasks list page tests (21 tests)
+- [x] Tasks detail page tests (22 tests)
+- [x] API hooks tests (overtime, activities, tasks)
+- [x] 66 test suites, 1336 tests passing, 0 TypeScript errors
 
 ### Integration / E2E Tests - DEFERRED to Phase 3
 - [ ] E2E: satgas clock-in → submit aktivitas → clock-out

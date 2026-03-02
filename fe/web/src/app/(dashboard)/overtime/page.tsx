@@ -96,11 +96,21 @@ export default function OvertimePage() {
     { value: 'rejected', label: 'Ditolak' },
   ];
 
+  const formatDateTime = (iso: string) => {
+    const d = new Date(iso);
+    return {
+      date: d.toLocaleDateString('id-ID'),
+      time: d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    };
+  };
+
   const columns: ColumnDef<Overtime>[] = [
     {
       key: 'date',
       header: 'Tanggal',
-      cell: (ot) => <div className="text-sm">{new Date(ot.date).toLocaleDateString('id-ID')}</div>,
+      cell: (ot) => (
+        <div className="text-sm">{formatDateTime(ot.start_datetime).date}</div>
+      ),
     },
     {
       key: 'user',
@@ -122,7 +132,7 @@ export default function OvertimePage() {
       header: 'Waktu',
       cell: (ot) => (
         <div className="text-sm font-mono">
-          {ot.start_time} - {ot.end_time}
+          {formatDateTime(ot.start_datetime).time} - {formatDateTime(ot.end_datetime).time}
         </div>
       ),
     },
@@ -196,8 +206,6 @@ export default function OvertimePage() {
                 if (isValidOvertimeStatus(value)) {
                   setStatusFilter(value);
                   setPage(1);
-                } else {
-                  console.warn('Invalid overtime status:', value);
                 }
               }}
               options={statusOptions}

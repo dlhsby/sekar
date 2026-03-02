@@ -126,9 +126,10 @@ describe('Role Constants', () => {
   });
 
   describe('OVERTIME_APPROVER_ROLES', () => {
-    it('should only include korlap as approver', () => {
-      expect(OVERTIME_APPROVER_ROLES).toHaveLength(1);
+    it('should include korlap and kepala_rayon as approvers', () => {
+      expect(OVERTIME_APPROVER_ROLES).toHaveLength(2);
       expect(OVERTIME_APPROVER_ROLES).toContain('korlap');
+      expect(OVERTIME_APPROVER_ROLES).toContain('kepala_rayon');
     });
   });
 

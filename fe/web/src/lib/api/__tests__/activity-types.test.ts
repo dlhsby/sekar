@@ -191,7 +191,7 @@ describe('useActivityTypes hook', () => {
       id: '1',
       code: 'SWEEP',
       name: 'Penyapuan',
-      description: null,
+      description: undefined,
       applicable_roles: ['satgas'],
       is_active: true,
       created_at: '2026-02-16T00:00:00Z',

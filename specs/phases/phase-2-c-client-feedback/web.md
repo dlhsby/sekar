@@ -1,7 +1,7 @@
 # Phase 2C: Web Requirements
 
-**Last Updated:** 2026-02-15
-**Status:** Spec Rewrite (Terminology Cleanup + Schema Redesign)
+**Last Updated:** 2026-03-02
+**Status:** ✅ Implementation Complete (Web aligned with Phase 2C backend)
 **Platform:** Next.js 16.x, React 19, TailwindCSS 4.x
 **Related ADR:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
 
@@ -143,9 +143,12 @@ const SIDEBAR_ITEMS: Record<string, SidebarItem[]> = {
 - Scoped access: korlap→own area, kepala_rayon→own rayon, admin→all
 
 ### /activities/[id] Detail Page:
-- Header: User name, date/time, area, activity type badge
+- Header: User name, date/time, area, activity type badge, status badge
 - Photo gallery (max 3)
 - Description, GPS on mini-map, shift info
+- Approval workflow: Approve/Reject buttons for ACTIVITY_APPROVER_ROLES (korlap, kepala_rayon)
+- Reviewer info display for approved/rejected activities
+- Rejection reason display
 
 ---
 
@@ -154,23 +157,34 @@ const SIDEBAR_ITEMS: Record<string, SidebarItem[]> = {
 **File:** `fe/web/src/app/(dashboard)/overtime/page.tsx`
 
 ### Features:
-- Data table: Date, User, Area, Time Range, Status, Activity Type
+- Data table: Date (from start_datetime), User, Area, Time Range (start_datetime - end_datetime), Status, Activity Type
 - Status filters: All | Pending | Approved | Rejected
-- Scoped by role
-- Action buttons (korlap only, for pending): Approve / Reject
+- Scoped by role (korlap→area, kepala_rayon→rayon)
+- Action buttons (korlap + kepala_rayon, for pending): Approve / Reject
+- Reject reason dialog with required reason field
 
 ### /overtime/[id] Detail Page:
-- Overtime info: user, date, time range, status
+- Overtime info: user, datetime (from start_datetime/end_datetime ISO 8601), status badge
 - Activity details (flat — single activity type, photos, description, GPS)
-- Approval history
+- Approval workflow: Approve/Reject buttons for OVERTIME_APPROVER_ROLES (korlap, kepala_rayon)
+- Approver info display, rejection reason display
 
 ---
 
 ## /tasks Page Updates
 
-- Add tab filters: "Ditugaskan" | "Ditandai" | "Dibuat"
+- Three tabs: "Semua Tugas" | "Ditandai" | "Dibuat Saya" using `useTasks`/`useTaggedTasks`/`useMyTasks`
+- 8-status filter (pending, assigned, accepted, declined, in_progress, completed, verified, revision_needed)
 - Task creation form: rayon scope, tag users, hierarchy-filtered assignee
-- Task detail: tagged users, simplified completion (no GPS)
+
+### /tasks/[id] Detail Page (NEW):
+- Task info: title, description, status badge (8 statuses), priority badge, due date
+- Assignment info: creator, assigned_to, assigned_by, area, rayon
+- Tagged users with untag button (if current user is creator)
+- Completion info (if completed/verified): notes, photo gallery
+- Verification workflow: Verify/Request Revision buttons for TASK_VERIFIER_ROLES (korlap, kepala_rayon, top_management)
+- Decline info with reason display
+- Revision info with reason display
 
 ---
 
@@ -233,9 +247,9 @@ export interface User {
   updated_at: string;
 }
 
-export type TaskStatus = 'pending' | 'assigned' | 'in_progress' | 'completed';
+export type TaskStatus = 'pending' | 'assigned' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'verified' | 'revision_needed';
 
-// RENAMED from Report/Aktivitas → Activity
+// RENAMED from Report/Aktivitas → Activity (with approval workflow)
 export interface Activity {
   id: string;
   user_id: string;      // RENAMED from worker_id
@@ -249,6 +263,11 @@ export interface Activity {
   photo_urls: string[];
   gps_lat?: number;
   gps_lng?: number;
+  status: 'pending' | 'approved' | 'rejected';   // NEW: approval workflow
+  reviewed_by?: string;                            // NEW
+  reviewer?: { id: string; full_name: string };    // NEW
+  reviewed_at?: string;                            // NEW
+  rejection_reason?: string;                       // NEW
   created_at: string;
 }
 
@@ -262,16 +281,15 @@ export interface Schedule {
   end_date?: string;
 }
 
-// Overtime (FLAT — no nested aktivitas)
+// Overtime (FLAT — ISO 8601 datetime, supports overnight)
 export interface Overtime {
   id: string;
   user_id: string;
   user?: User;
   area_id?: string;
   area?: Area;
-  date: string;
-  start_time: string;
-  end_time: string;
+  start_datetime: string;   // ISO 8601 e.g. "2026-02-14T17:00:00+07:00"
+  end_datetime: string;     // ISO 8601, supports overnight
   status: 'pending' | 'approved' | 'rejected';
   approved_by?: string;
   approver?: User;
@@ -279,7 +297,7 @@ export interface Overtime {
   rejection_reason?: string;
   notes?: string;
   activity_type_id: string;
-  activityType?: ActivityType;
+  activity_type?: ActivityType;
   description: string;
   photo_urls: string[];
   gps_lat?: number;
@@ -348,4 +366,4 @@ rejectOvertime(id, reason) // PATCH /overtime/:id/reject
 
 ---
 
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-03-02

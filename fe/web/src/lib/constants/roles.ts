@@ -45,7 +45,13 @@ export const CLOCKABLE_ROLES: UserRole[] = [
 ];
 
 /** Roles that can approve overtime */
-export const OVERTIME_APPROVER_ROLES: UserRole[] = ['korlap'];
+export const OVERTIME_APPROVER_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
+
+/** Roles that can approve/reject activities */
+export const ACTIVITY_APPROVER_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
+
+/** Roles that can verify/request-revision on tasks */
+export const TASK_VERIFIER_ROLES: UserRole[] = ['korlap', 'kepala_rayon', 'top_management'];
 
 /** Indonesian labels for each role */
 export const ROLE_LABELS: Record<UserRole, string> = {

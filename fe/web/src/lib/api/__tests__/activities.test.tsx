@@ -47,6 +47,7 @@ describe('Activities API', () => {
     photo_urls: ['photo1.jpg', 'photo2.jpg'],
     gps_lat: -7.289383,
     gps_lng: 112.742308,
+    status: 'pending',
     created_at: '2026-02-16T08:00:00Z',
   };
 
@@ -263,6 +264,7 @@ describe('Activities API Hooks', () => {
     photo_urls: ['photo1.jpg', 'photo2.jpg'],
     gps_lat: -7.289383,
     gps_lng: 112.742308,
+    status: 'pending',
     created_at: '2026-02-16T08:00:00Z',
   };
 
