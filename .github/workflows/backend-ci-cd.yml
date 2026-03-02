@@ -333,10 +333,20 @@ jobs:
 
             echo "✅ Database migrations completed"
 
-            # Seed database with test data (DISABLED - run manually after deployment)
-            echo "⏩ Skipping database seeding (run manually with: cd ~/sekar/backend && ./scripts/deploy-seed.sh)"
-            # Seeding is disabled in CI/CD to prevent accidental data overwrites
-            # To seed production database, SSH to EC2 and run: ./scripts/deploy-seed.sh
+            # Seed database with Phase 1 + Phase 2 + activities + tasks data
+            echo "🌱 Running seeders..."
+            docker run --rm \
+              -e DATABASE_HOST=${DATABASE_HOST} \
+              -e DATABASE_PORT=5432 \
+              -e DATABASE_USER=sekar_admin \
+              -e DATABASE_PASSWORD=${DATABASE_PASSWORD} \
+              -e DATABASE_NAME=sekar_db \
+              -e DATABASE_SSL=true \
+              -e NODE_ENV=production \
+              -e JWT_SECRET=${JWT_SECRET} \
+              -e JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET} \
+              $ECR_REGISTRY/sekar-backend:latest \
+              sh -c "node dist/database/seeds/seed.js && node dist/database/seeds/seed-phase2.js && node dist/database/seeds/seed-activities.js && node dist/database/seeds/seed-tasks.js && echo '✅ All seeders completed'"
 
             # Deploy with zero-downtime
             echo "🚀 Starting backend container..."
