@@ -171,6 +171,39 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     // ==========================================
     console.log('[Migration 2] Terminology cleanup (table/column renames, drops)...');
 
+    // Create overtimes + overtime_aktivitas if they don't exist yet
+    // (Phase 2 migration omitted these tables; this ensures fresh-DB compatibility)
+    console.log('  - Ensuring overtimes table exists (fresh-DB compatibility)...');
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS overtimes (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+        date DATE,
+        start_time TIME,
+        end_time TIME,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        approved_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        approved_at TIMESTAMPTZ,
+        rejection_reason TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        CONSTRAINT chk_overtimes_status CHECK (status IN ('pending', 'approved', 'rejected'))
+      );
+    `);
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS overtime_aktivitas (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        overtime_id UUID NOT NULL REFERENCES overtimes(id) ON DELETE CASCADE,
+        activity_type_id UUID,
+        description TEXT,
+        photo_urls TEXT[] DEFAULT '{}',
+        gps_lat DECIMAL(10,8),
+        gps_lng DECIMAL(11,8),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // Step 1: Migrate overtime_aktivitas data to overtimes (flat 1:1), then DROP
     console.log('  - Adding activity columns to overtimes table...');
     await queryRunner.query(`
