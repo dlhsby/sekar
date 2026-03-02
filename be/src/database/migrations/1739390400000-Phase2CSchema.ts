@@ -389,16 +389,29 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS tasks (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        title VARCHAR(255) NOT NULL,
+        title VARCHAR(200) NOT NULL,
         description TEXT,
         status VARCHAR(20) NOT NULL DEFAULT 'pending',
         priority VARCHAR(20) NOT NULL DEFAULT 'medium',
         deadline TIMESTAMPTZ,
         area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+        rayon_id UUID,
         assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
         created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        completion_photo_urls TEXT[],
+        completion_notes TEXT,
+        completed_at TIMESTAMPTZ,
+        assigned_at TIMESTAMPTZ,
+        started_at TIMESTAMPTZ,
+        accepted_at TIMESTAMPTZ,
+        declined_at TIMESTAMPTZ,
+        decline_reason TEXT,
+        verified_by UUID,
+        verified_at TIMESTAMPTZ,
+        revision_reason TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        deleted_at TIMESTAMPTZ
       );
     `);
 
@@ -440,30 +453,29 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       ALTER TABLE tasks DROP COLUMN IF EXISTS completion_gps_lng;
     `);
 
-    // Remove accept/decline fields (simplified workflow)
-    console.log('  - Dropping accept/decline workflow columns...');
-    await queryRunner.query(`
-      ALTER TABLE tasks DROP COLUMN IF EXISTS decline_reason;
-    `);
-    await queryRunner.query(`
-      ALTER TABLE tasks DROP COLUMN IF EXISTS declined_at;
-    `);
-    await queryRunner.query(`
-      ALTER TABLE tasks DROP COLUMN IF EXISTS accepted_at;
-    `);
+    // Add completion workflow columns (photo array, notes, timestamps)
+    console.log('  - Adding completion and verification workflow columns...');
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_photo_urls TEXT[];`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_notes TEXT;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMPTZ;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS declined_at TIMESTAMPTZ;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS decline_reason TEXT;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS verified_by UUID;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS revision_reason TEXT;`);
+    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;`);
 
-    // Update task status constraint (6 → 4 statuses)
-    console.log('  - Updating TaskStatus constraint (6 → 4 values)...');
+    // Update task status constraint to 8 values (full Phase 2C workflow)
+    console.log('  - Updating TaskStatus constraint to 8 values...');
     await queryRunner.query(`
       ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_status_check;
     `);
-    // Migrate existing statuses
-    await queryRunner.query(`
-      UPDATE tasks SET status = 'assigned' WHERE status IN ('accepted', 'declined');
-    `);
     await queryRunner.query(`
       ALTER TABLE tasks ADD CONSTRAINT tasks_status_check
-        CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed'));
+        CHECK (status IN ('pending', 'assigned', 'accepted', 'declined', 'in_progress', 'completed', 'verified', 'revision_needed'));
     `);
 
     // Create task_tags table
@@ -528,16 +540,42 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       ALTER TABLE activities ALTER COLUMN activity_type_id SET NOT NULL;
     `);
 
-    // Drop review workflow columns
-    console.log('  - Dropping review workflow columns...');
+    // Drop old review flag (replaced by status enum)
+    console.log('  - Dropping old is_reviewed flag (replaced by status enum)...');
     await queryRunner.query(`
       ALTER TABLE activities DROP COLUMN IF EXISTS is_reviewed;
     `);
+
+    // Add approval workflow columns (Phase 2C activity approval)
+    console.log('  - Adding approval workflow columns to activities...');
+    await queryRunner.query(`
+      ALTER TABLE activities ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'pending';
+    `);
+    await queryRunner.query(`
+      ALTER TABLE activities DROP CONSTRAINT IF EXISTS chk_activities_status;
+    `);
+    await queryRunner.query(`
+      ALTER TABLE activities ADD CONSTRAINT chk_activities_status
+        CHECK (status IN ('pending', 'approved', 'rejected'));
+    `);
+    // reviewed_by was in Phase 1; drop then re-add with proper FK to ensure clean state
     await queryRunner.query(`
       ALTER TABLE activities DROP COLUMN IF EXISTS reviewed_by;
     `);
     await queryRunner.query(`
       ALTER TABLE activities DROP COLUMN IF EXISTS reviewed_at;
+    `);
+    await queryRunner.query(`
+      ALTER TABLE activities DROP COLUMN IF EXISTS rejection_reason;
+    `);
+    await queryRunner.query(`
+      ALTER TABLE activities ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL;
+    `);
+    await queryRunner.query(`
+      ALTER TABLE activities ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+    `);
+    await queryRunner.query(`
+      ALTER TABLE activities ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
     `);
 
     // Drop legacy columns
