@@ -10,7 +10,6 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -29,9 +28,6 @@ import {
 } from '../../constants/nbTokens';
 import type { CurrentShiftResponse } from '../../types/api.types';
 
-interface ShiftHistoryScreenProps {
-  navigation: any;
-}
 
 /**
  * Format date to Indonesian format
@@ -136,27 +132,11 @@ function DateHeader({ date }: DateHeaderProps): React.JSX.Element {
 /**
  * Shift History Screen Component
  */
-export function ShiftHistoryScreen({ navigation }: ShiftHistoryScreenProps): React.JSX.Element {
+export function ShiftHistoryScreen(): React.JSX.Element {
   const [shifts, setShifts] = useState<CurrentShiftResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Set up header with back button to Profile
-  useEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Profile')}
-          style={styles.backButton}
-          accessibilityLabel="Kembali ke Profil"
-          accessibilityRole="button"
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
 
   /**
    * Load shifts from API
@@ -178,7 +158,7 @@ export function ShiftHistoryScreen({ navigation }: ShiftHistoryScreenProps): Rea
       const response = await getMyShifts();
 
       if (response.error) {
-        console.error('[ShiftHistory] ❌ API Error:', response.error);
+        if (__DEV__) { console.error('[ShiftHistory] API Error:', response.error); }
         setError(response.error);
         return;
       }
@@ -194,7 +174,7 @@ export function ShiftHistoryScreen({ navigation }: ShiftHistoryScreenProps): Rea
         // Loaded shifts successfully
       }
     } catch (err: any) {
-      console.error('[ShiftHistory] ❌ Exception:', err);
+      if (__DEV__) { console.error('[ShiftHistory] Exception:', err); }
       setError(err.message || 'Gagal memuat riwayat shift');
     } finally {
       setIsLoading(false);
@@ -432,10 +412,6 @@ const styles = StyleSheet.create({
     color: nbColors.gray['700'],
   },
 
-  backButton: {
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm,
-  },
 });
 
 export default ShiftHistoryScreen;

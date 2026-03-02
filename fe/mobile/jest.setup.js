@@ -157,9 +157,9 @@ jest.mock('react-native-svg', () => {
   };
 });
 
-// Mock @react-native-firebase/messaging (Phase 2 - FCM)
+// Mock @react-native-firebase/messaging (v23 modular API)
 jest.mock('@react-native-firebase/messaging', () => {
-  const messaging = jest.fn(() => ({
+  const mockInstance = {
     requestPermission: jest.fn(() => Promise.resolve(1)),
     hasPermission: jest.fn(() => Promise.resolve(1)),
     getToken: jest.fn(() => Promise.resolve('mock-fcm-token')),
@@ -169,16 +169,28 @@ jest.mock('@react-native-firebase/messaging', () => {
     setBackgroundMessageHandler: jest.fn(),
     onNotificationOpenedApp: jest.fn(() => jest.fn()),
     getInitialNotification: jest.fn(() => Promise.resolve(null)),
-  }));
-
-  messaging.AuthorizationStatus = {
-    AUTHORIZED: 1,
-    DENIED: 0,
-    NOT_DETERMINED: -1,
-    PROVISIONAL: 2,
   };
 
-  return messaging;
+  return {
+    __esModule: true,
+    getMessaging: jest.fn(() => mockInstance),
+    getToken: jest.fn(() => Promise.resolve('mock-fcm-token')),
+    requestPermission: jest.fn(() => Promise.resolve(1)),
+    hasPermission: jest.fn(() => Promise.resolve(1)),
+    deleteToken: jest.fn(() => Promise.resolve()),
+    onMessage: jest.fn(() => jest.fn()),
+    onTokenRefresh: jest.fn(() => jest.fn()),
+    getInitialNotification: jest.fn(() => Promise.resolve(null)),
+    onNotificationOpenedApp: jest.fn(() => jest.fn()),
+    FirebaseMessagingTypes: {
+      AuthorizationStatus: {
+        AUTHORIZED: 1,
+        DENIED: 0,
+        NOT_DETERMINED: -1,
+        PROVISIONAL: 2,
+      },
+    },
+  };
 });
 
 // Mock @notifee/react-native (Phase 2 - Local Notifications)

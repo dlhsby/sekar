@@ -20,6 +20,17 @@ import * as activitiesApi from '../../../services/api/activitiesApi';
 // Mock APIs
 jest.mock('../../../services/api/tasksApi');
 jest.mock('../../../services/api/activitiesApi');
+jest.mock('../../../services/api', () => ({
+  getRayons: jest.fn().mockResolvedValue({ data: [] }),
+  getAreasByRayonId: jest.fn().mockResolvedValue({ data: [] }),
+  getAreas: jest.fn().mockResolvedValue({ data: [] }),
+}));
+
+// Mock react-native-safe-area-context (used by NBSelect inside modals)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ bottom: 0, top: 0, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: any) => children,
+}));
 
 // Mock NBBackgroundPattern
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
@@ -128,18 +139,18 @@ describe('TasksActivityScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Mock default API responses
-    (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({ data: [] });
-    (tasksApi.getTaggedTasks as jest.Mock).mockResolvedValue({ data: [] });
-    (activitiesApi.getMyActivities as jest.Mock).mockResolvedValue({
-      data: [],
-    });
+    // Mock default API responses (paginated format)
+    const emptyPaged = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+    (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({ data: emptyPaged });
+    (tasksApi.getTaggedTasks as jest.Mock).mockResolvedValue({ data: emptyPaged });
+    (activitiesApi.getMyActivities as jest.Mock).mockResolvedValue({ data: emptyPaged });
+    (activitiesApi.getActivities as jest.Mock).mockResolvedValue({ data: emptyPaged });
   });
 
-  it('renders with 3 tabs', async () => {
+  it('renders with tabs and compact filter bar', async () => {
     const store = createTestStore();
 
-    const { getByText } = render(
+    const { getByText, getByLabelText } = render(
       <Provider store={store}>
         <NavigationContainer>
           <TasksActivityScreen
@@ -151,16 +162,48 @@ describe('TasksActivityScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Tugas Saya')).toBeTruthy();
-      expect(getByText('Tag Saya')).toBeTruthy();
+      expect(getByText('Tugas')).toBeTruthy();
       expect(getByText('Aktivitas')).toBeTruthy();
+      expect(getByLabelText('Filter tugas')).toBeTruthy(); // Compact filter button
+    });
+  });
+
+  it('opens filter modal when filter button pressed', async () => {
+    const store = createTestStore();
+
+    const { getByText, getByLabelText, queryByText } = render(
+      <Provider store={store}>
+        <NavigationContainer>
+          <TasksActivityScreen
+            navigation={mockNavigation}
+            route={mockRoute as any}
+          />
+        </NavigationContainer>
+      </Provider>
+    );
+
+    // Initially filter modal is not open
+    await waitFor(() => {
+      expect(getByLabelText('Filter tugas')).toBeTruthy();
+      expect(queryByText('Filter Tugas')).toBeNull(); // Modal title not visible
+    });
+
+    // Press filter button to open modal
+    const filterButton = getByLabelText(/Filter/);
+    fireEvent.press(filterButton);
+
+    await waitFor(() => {
+      // TaskFilterModal should now be visible with its sections
+      expect(getByText('Filter Tugas')).toBeTruthy(); // Modal title
+      expect(getByText('Penugasan')).toBeTruthy();     // Penugasan filter section
+      expect(getByText('Status')).toBeTruthy();       // Status filter section
     });
   });
 
   it('shows loading indicator for tasks', async () => {
-    const store = createTestStore({
-      tasks: { isLoading: true },
-    });
+    // Simulate slow API to show loading state
+    (tasksApi.getMyTasks as jest.Mock).mockReturnValue(new Promise(() => {}));
+    const store = createTestStore();
 
     const { getByText } = render(
       <Provider store={store}>
@@ -217,9 +260,9 @@ describe('TasksActivityScreen', () => {
       },
     ];
 
-    // API returns data which gets dispatched to store
+    // API returns paginated data
     (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({
-      data: mockTasks,
+      data: { data: mockTasks, meta: { total: 2, page: 1, limit: 10, totalPages: 1 } },
     });
 
     const store = createTestStore();
@@ -277,9 +320,9 @@ describe('TasksActivityScreen', () => {
       },
     ];
 
-    // API returns data for rendering
+    // API returns paginated data for rendering
     (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({
-      data: mockTasks,
+      data: { data: mockTasks, meta: { total: 1, page: 1, limit: 10, totalPages: 1 } },
     });
 
     const store = createTestStore();
@@ -306,10 +349,10 @@ describe('TasksActivityScreen', () => {
     });
   });
 
-  it('renders activities tab', async () => {
+  it('switches to activities tab', async () => {
     const store = createTestStore();
 
-    const { getByText, queryByText } = render(
+    const { getByText, getAllByText, queryByText, getByLabelText } = render(
       <Provider store={store}>
         <NavigationContainer>
           <TasksActivityScreen
@@ -320,15 +363,18 @@ describe('TasksActivityScreen', () => {
       </Provider>
     );
 
-    // Switch to activities tab
+    // Initial tab: "Tugas" with filter bar visible
     await waitFor(() => {
-      expect(getByText('Aktivitas')).toBeTruthy();
+      expect(getByLabelText('Filter tugas')).toBeTruthy(); // Filter button only in Tugas tab
     });
 
-    fireEvent.press(getByText('Aktivitas'));
+    // Switch to "Aktivitas" tab
+    const aktivitasTabs = getAllByText('Aktivitas');
+    fireEvent.press(aktivitasTabs[0]); // Press the tab
 
-    // Should render the activities tab content
+    // Should render activities tab content with filter bar and empty state
     await waitFor(() => {
+      expect(getByLabelText('Filter aktivitas')).toBeTruthy(); // Activity filter bar is now shown
       expect(getByText('Belum ada aktivitas')).toBeTruthy();
     });
   });
@@ -336,7 +382,7 @@ describe('TasksActivityScreen', () => {
   it('shows empty state for activities', async () => {
     const store = createTestStore();
 
-    const { getByText } = render(
+    const { getByText, getAllByText } = render(
       <Provider store={store}>
         <NavigationContainer>
           <TasksActivityScreen
@@ -347,12 +393,14 @@ describe('TasksActivityScreen', () => {
       </Provider>
     );
 
-    // Switch to activities tab
+    // Initial tab: "Tugas"
     await waitFor(() => {
-      expect(getByText('Aktivitas')).toBeTruthy();
+      expect(getByText('Tugas')).toBeTruthy();
     });
 
-    fireEvent.press(getByText('Aktivitas'));
+    // Switch to "Aktivitas" tab
+    const aktivitasTabs = getAllByText('Aktivitas');
+    fireEvent.press(aktivitasTabs[0]);
 
     await waitFor(() => {
       expect(getByText('Belum ada aktivitas')).toBeTruthy();
@@ -375,6 +423,172 @@ describe('TasksActivityScreen', () => {
 
     await waitFor(() => {
       expect(tasksApi.getMyTasks).toHaveBeenCalled();
+    });
+  });
+
+  describe('FAB Button Visibility', () => {
+    it('shows "Tambah Aktivitas" FAB when satgas, clocked in, and activities filter active', async () => {
+      const store = createTestStore({
+        auth: {
+          user: { id: '1', role: 'satgas', full_name: 'Test Satgas' },
+        },
+        shift: {
+          currentShift: { id: 'shift-1', clock_in: '2026-02-16T08:00:00Z' },
+        },
+      });
+
+      const { getByText, queryByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <TasksActivityScreen
+              navigation={mockNavigation}
+              route={mockRoute as any}
+            />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      // Switch to activities tab
+      await waitFor(() => {
+        expect(getByText('Tugas')).toBeTruthy();
+      });
+
+      const aktivitasTab = getByText('Aktivitas');
+      fireEvent.press(aktivitasTab);
+
+      await waitFor(() => {
+        expect(getByText('+ Tambah Aktivitas')).toBeTruthy();
+        expect(queryByText('+ Buat Tugas')).toBeNull();
+      });
+    });
+
+    it('shows disabled "Tambah Aktivitas" FAB when not clocked in', async () => {
+      const store = createTestStore({
+        auth: {
+          user: { id: '1', role: 'satgas', full_name: 'Test Satgas' },
+        },
+        shift: {
+          currentShift: null, // Not clocked in
+        },
+      });
+
+      const { getByText, queryByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <TasksActivityScreen
+              navigation={mockNavigation}
+              route={mockRoute as any}
+            />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      // Switch to activities tab
+      await waitFor(() => {
+        expect(getByText('Tugas')).toBeTruthy();
+      });
+
+      const aktivitasTab = getByText('Aktivitas');
+      fireEvent.press(aktivitasTab);
+
+      await waitFor(() => {
+        // Button is shown but disabled (not hidden) when not clocked in
+        expect(queryByText('+ Tambah Aktivitas')).toBeTruthy();
+      });
+    });
+
+    it('shows "Buat Tugas" FAB when korlap on tasks tab', async () => {
+      const store = createTestStore({
+        auth: {
+          user: { id: '1', role: 'korlap', full_name: 'Test Korlap' },
+        },
+      });
+
+      const { getByText, queryByText, getByLabelText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <TasksActivityScreen
+              navigation={mockNavigation}
+              route={mockRoute as any}
+            />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      // On tasks tab - FAB should be visible
+      await waitFor(() => {
+        expect(getByLabelText('Filter tugas')).toBeTruthy(); // Filter bar visible on tasks tab
+        expect(getByText('+ Buat Tugas')).toBeTruthy();
+        expect(queryByText('+ Tambah Aktivitas')).toBeNull();
+      });
+    });
+
+    it('hides "Buat Tugas" FAB on activities tab', async () => {
+      const store = createTestStore({
+        auth: {
+          user: { id: '1', role: 'korlap', full_name: 'Test Korlap' },
+        },
+      });
+
+      const { getByText, queryByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <TasksActivityScreen
+              navigation={mockNavigation}
+              route={mockRoute as any}
+            />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      // Switch to activities tab
+      await waitFor(() => {
+        expect(getByText('Tugas')).toBeTruthy();
+      });
+
+      const aktivitasTab = getByText('Aktivitas');
+      fireEvent.press(aktivitasTab);
+
+      await waitFor(() => {
+        expect(queryByText('+ Buat Tugas')).toBeNull();
+      });
+    });
+
+    it('hides both FABs when user lacks all permissions', async () => {
+      const store = createTestStore({
+        auth: {
+          user: { id: '1', role: 'kepala_rayon', full_name: 'Test Kepala Rayon' },
+        },
+        shift: {
+          currentShift: null,
+        },
+      });
+
+      const { getByText, queryByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <TasksActivityScreen
+              navigation={mockNavigation}
+              route={mockRoute as any}
+            />
+          </NavigationContainer>
+        </Provider>
+      );
+
+      // Default tab (Tugas): should show "Buat Tugas" (kepala_rayon can create tasks)
+      await waitFor(() => {
+        expect(getByText('+ Buat Tugas')).toBeTruthy();
+        expect(queryByText('+ Tambah Aktivitas')).toBeNull(); // Cannot submit activities
+      });
+
+      // On activities tab: should hide "Buat Tugas"
+      const aktivitasTab = getByText('Aktivitas');
+      fireEvent.press(aktivitasTab);
+
+      await waitFor(() => {
+        expect(queryByText('+ Buat Tugas')).toBeNull();
+        expect(queryByText('+ Tambah Aktivitas')).toBeNull(); // Still cannot submit activities
+      });
     });
   });
 });

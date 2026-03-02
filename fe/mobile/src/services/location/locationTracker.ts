@@ -113,6 +113,7 @@ class LocationTracker extends EventEmitter {
   private locationBuffer: LocationPing[] = [];
   private watchId: number | null = null;
   private intervalId: NodeJS.Timeout | null = null;
+  private firstPingUploaded = false;
   private instanceId: string;
 
   constructor() {
@@ -306,6 +307,9 @@ class LocationTracker extends EventEmitter {
   private startLocationWatch(): void {
     console.debug('[LocationTracker] Starting location watch with randomized interval');
 
+    // Reset first-ping flag for this new tracking session
+    this.firstPingUploaded = false;
+
     // Capture first location immediately
     this.captureLocation();
 
@@ -384,8 +388,12 @@ class LocationTracker extends EventEmitter {
         this.addLocationToBuffer(location);
         this.emit('locationUpdate', location);
 
-        // Check if should upload batch
-        if (this.shouldUploadBatch()) {
+        // Upload first ping immediately so supervisor can see worker location right after clock-in.
+        // Subsequent pings batch as normal (upload when buffer reaches BATCH_UPLOAD_SIZE).
+        if (!this.firstPingUploaded) {
+          this.firstPingUploaded = true;
+          this.uploadLocations(true);
+        } else if (this.shouldUploadBatch()) {
           this.uploadLocations();
         }
       },
@@ -711,6 +719,7 @@ class LocationTracker extends EventEmitter {
     this.locationBuffer = [];
     this.shiftId = null;
     this.tracking = false;
+    this.firstPingUploaded = false;
     this.removeAllListeners();
 
     console.debug('[LocationTracker] Cleanup complete');

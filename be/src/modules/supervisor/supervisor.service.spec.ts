@@ -28,6 +28,7 @@ describe('SupervisorService', () => {
 
   const mockAreasRepository = {
     find: jest.fn(),
+    findOne: jest.fn(),
   };
 
   const mockLocationLogsRepository = {
@@ -483,6 +484,92 @@ describe('SupervisorService', () => {
       expect(result.clocked_in_count).toBe(1);
       expect(result.not_clocked_in.data).toHaveLength(0);
       expect(result.not_clocked_in.meta.total).toBe(0);
+    });
+
+    it('should include area info when not-clocked-in worker has area_id and area is found', async () => {
+      const mockAllWorkers = [
+        {
+          id: 'worker-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          is_active: true,
+          area_id: 'area-1',
+        },
+      ];
+
+      mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
+      mockShiftsRepository.find.mockResolvedValue([]);
+      mockAreasRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'Taman Bungkul' });
+
+      const result = await service.getAttendancePaginated(undefined, 1, 50);
+
+      expect(result.not_clocked_in.data[0].area).toEqual({ id: 'area-1', name: 'Taman Bungkul' });
+    });
+
+    it('should set area to null when worker has area_id but area is not found', async () => {
+      const mockAllWorkers = [
+        {
+          id: 'worker-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          is_active: true,
+          area_id: 'area-missing',
+        },
+      ];
+
+      mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
+      mockShiftsRepository.find.mockResolvedValue([]);
+      mockAreasRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.getAttendancePaginated(undefined, 1, 50);
+
+      expect(result.not_clocked_in.data[0].area).toBeNull();
+    });
+  });
+
+  describe('getAttendance (area_id branches)', () => {
+    it('should include area info when not-clocked-in worker has area_id and area is found', async () => {
+      const mockAllWorkers = [
+        {
+          id: 'worker-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          is_active: true,
+          area_id: 'area-1',
+        },
+      ];
+
+      mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
+      mockShiftsRepository.find.mockResolvedValue([]);
+      mockAreasRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'Taman Bungkul' });
+
+      const result = await service.getAttendance();
+
+      expect(result.not_clocked_in[0].area).toEqual({ id: 'area-1', name: 'Taman Bungkul' });
+    });
+
+    it('should set area to null when worker has area_id but area is not found', async () => {
+      const mockAllWorkers = [
+        {
+          id: 'worker-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          is_active: true,
+          area_id: 'area-missing',
+        },
+      ];
+
+      mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
+      mockShiftsRepository.find.mockResolvedValue([]);
+      mockAreasRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.getAttendance();
+
+      expect(result.not_clocked_in[0].area).toBeNull();
     });
   });
 });

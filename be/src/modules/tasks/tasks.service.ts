@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -17,7 +18,7 @@ import { TaskFilterDto } from './dto/task-filter.dto';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { VALID_TASK_ASSIGNMENTS } from '../users/constants/role-groups';
+import { VALID_TASK_ASSIGNMENTS, VERIFY_MAP } from '../users/constants/role-groups';
 
 /**
  * Service for managing tasks
@@ -103,7 +104,7 @@ export class TasksService {
    * @param filters - Optional filter criteria
    * @returns Array of tasks
    */
-  async findAll(filters?: TaskFilterDto): Promise<Task[]> {
+  async findAll(filters?: TaskFilterDto, user?: User): Promise<PaginatedResponseDto<Task>> {
     this.logger.log('Fetching tasks with filters');
 
     const where: FindOptionsWhere<Task> = {};
@@ -125,6 +126,43 @@ export class TasksService {
       .leftJoinAndSelect('task.tags', 'tags')
       .leftJoinAndSelect('tags.user', 'taggedUser')
       .where(where);
+
+    // Scope-based filtering by role
+    if (user) {
+      switch (user.role) {
+        case UserRole.SATGAS:
+        case UserRole.LINMAS:
+          // Field workers: only tasks assigned to them or where they're tagged
+          queryBuilder.andWhere(
+            '(task.assigned_to = :scopeUserId OR tags.user_id = :scopeUserId)',
+            { scopeUserId: user.id },
+          );
+          break;
+        case UserRole.KORLAP:
+          // Korlap: tasks in their area + tasks they created
+          if (user.area_id) {
+            queryBuilder.andWhere(
+              '(task.area_id = :scopeAreaId OR task.created_by = :scopeUserId)',
+              { scopeAreaId: user.area_id, scopeUserId: user.id },
+            );
+          } else {
+            queryBuilder.andWhere('task.created_by = :scopeUserId', { scopeUserId: user.id });
+          }
+          break;
+        case UserRole.KEPALA_RAYON:
+          // Kepala Rayon: tasks in their rayon + tasks they created
+          if (user.rayon_id) {
+            queryBuilder.andWhere(
+              '(area.rayon_id = :scopeRayonId OR task.rayon_id = :scopeRayonId OR task.created_by = :scopeUserId)',
+              { scopeRayonId: user.rayon_id, scopeUserId: user.id },
+            );
+          } else {
+            queryBuilder.andWhere('task.created_by = :scopeUserId', { scopeUserId: user.id });
+          }
+          break;
+        // top_management, admin_system, superadmin: no scope restriction
+      }
+    }
 
     // Date range filters
     if (filters?.deadline_before) {
@@ -148,11 +186,18 @@ export class TasksService {
       });
     }
 
-    return queryBuilder
-      .orderBy('task.priority', 'DESC')
-      .addOrderBy('task.deadline', 'ASC')
-      .addOrderBy('task.created_at', 'DESC')
-      .getMany();
+    // Dynamic sort
+    const sortBy = filters?.sort_by ?? 'created_at';
+    const sortDir = (filters?.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
+    queryBuilder.orderBy(`task.${sortBy}`, sortDir);
+
+    // Pagination
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 50;
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   /**
@@ -162,12 +207,12 @@ export class TasksService {
    * @returns The task
    * @throws NotFoundException if task not found
    */
-  async findOne(id: string): Promise<Task> {
+  async findOne(id: string, user?: User): Promise<Task> {
     this.logger.log(`Fetching task with ID: ${id}`);
 
     const task = await this.taskRepository.findOne({
       where: { id },
-      relations: ['area', 'rayon', 'assignee', 'creator', 'tags', 'tags.user'],
+      relations: ['area', 'rayon', 'assignee', 'creator', 'verifier', 'tags', 'tags.user'],
     });
 
     if (!task) {
@@ -175,7 +220,51 @@ export class TasksService {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
+    // Scope-based access check when user is provided (controller calls)
+    if (user) {
+      this.checkTaskAccess(task, user);
+    }
+
     return task;
+  }
+
+  /**
+   * Check if a user has access to view a specific task based on their role and scope
+   */
+  private checkTaskAccess(task: Task, user: User): void {
+    switch (user.role) {
+      case UserRole.SATGAS:
+      case UserRole.LINMAS:
+        if (
+          task.assigned_to !== user.id &&
+          task.created_by !== user.id &&
+          !task.tags?.some((t) => t.user_id === user.id)
+        ) {
+          throw new ForbiddenException('Anda tidak memiliki akses ke tugas ini');
+        }
+        break;
+      case UserRole.KORLAP:
+        if (
+          task.area_id !== user.area_id &&
+          task.created_by !== user.id &&
+          task.assigned_to !== user.id &&
+          !task.tags?.some((t) => t.user_id === user.id)
+        ) {
+          throw new ForbiddenException('Anda tidak memiliki akses ke tugas ini');
+        }
+        break;
+      case UserRole.KEPALA_RAYON:
+        if (
+          task.area?.rayon_id !== user.rayon_id &&
+          task.rayon_id !== user.rayon_id &&
+          task.created_by !== user.id &&
+          task.assigned_to !== user.id
+        ) {
+          throw new ForbiddenException('Anda tidak memiliki akses ke tugas ini');
+        }
+        break;
+      // top_management, admin_system, superadmin: no restriction
+    }
   }
 
   /**
@@ -185,7 +274,11 @@ export class TasksService {
    * @param activeOnly - If true, only return non-completed/declined tasks
    * @returns Array of tasks assigned to the user
    */
-  async findMyTasks(userId: string, activeOnly = true): Promise<Task[]> {
+  async findMyTasks(
+    userId: string,
+    activeOnly = false,
+    filters?: TaskFilterDto,
+  ): Promise<PaginatedResponseDto<Task>> {
     this.logger.log(`Fetching tasks for user: ${userId}`);
 
     const queryBuilder = this.taskRepository
@@ -195,19 +288,29 @@ export class TasksService {
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
       .leftJoinAndSelect('tags.user', 'taggedUser')
-      .where('task.assigned_to = :userId', { userId });
+      .where('(task.assigned_to = :userId OR task.created_by = :userId)', { userId });
 
-    if (activeOnly) {
+    if (filters?.status) {
+      // Explicit status filter overrides activeOnly behaviour
+      queryBuilder.andWhere('task.status = :status', { status: filters.status });
+    } else if (activeOnly) {
       queryBuilder.andWhere('task.status NOT IN (:...completedStatuses)', {
-        completedStatuses: [TaskStatus.COMPLETED],
+        completedStatuses: [TaskStatus.COMPLETED, TaskStatus.VERIFIED, TaskStatus.DECLINED],
       });
     }
 
-    return queryBuilder
-      .orderBy('task.priority', 'DESC')
-      .addOrderBy('task.deadline', 'ASC')
-      .addOrderBy('task.created_at', 'DESC')
-      .getMany();
+    // Dynamic sort
+    const sortBy = filters?.sort_by ?? 'created_at';
+    const sortDir = (filters?.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
+    queryBuilder.orderBy(`task.${sortBy}`, sortDir);
+
+    // Pagination
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 50;
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   /**
@@ -217,10 +320,15 @@ export class TasksService {
    * @param updateTaskDto - Update data
    * @returns The updated task
    */
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
+  async update(id: string, updateTaskDto: UpdateTaskDto, callerId?: string): Promise<Task> {
     this.logger.log(`Updating task with ID: ${id}`);
 
     const task = await this.findOne(id);
+
+    // Ownership check: only creator can update
+    if (callerId && task.created_by !== callerId) {
+      throw new ForbiddenException('Hanya pembuat tugas yang dapat mengedit tugas ini');
+    }
 
     // Validate area if being updated
     if (updateTaskDto.area_id && updateTaskDto.area_id !== task.area_id) {
@@ -247,15 +355,15 @@ export class TasksService {
    * @param assignTaskDto - Assignment data
    * @returns The updated task
    */
-  async assign(id: string, assignTaskDto: AssignTaskDto): Promise<Task> {
+  async assign(id: string, assignTaskDto: AssignTaskDto, callerId?: string): Promise<Task> {
     this.logger.log(`Assigning task ${id} to user ${assignTaskDto.assigned_to}`);
 
     const task = await this.findOne(id);
 
-    // Can only assign pending tasks
-    if (task.status !== TaskStatus.PENDING) {
+    // Can assign from pending (first assignment) or declined (reassignment)
+    if (task.status !== TaskStatus.PENDING && task.status !== TaskStatus.DECLINED) {
       throw new BadRequestException(
-        `Cannot assign task with status "${task.status}". Task must be pending.`,
+        `Cannot assign task with status "${task.status}". Task must be pending or declined.`,
       );
     }
 
@@ -263,9 +371,11 @@ export class TasksService {
     const assignee = await this.usersService.findOne(assignTaskDto.assigned_to);
     this.validateAssignee(assignee);
 
-    // Validate hierarchy
-    const creator = await this.usersService.findOne(task.created_by);
-    this.validateHierarchy(creator.role, assignee.role);
+    // Validate hierarchy using caller's role (not creator's)
+    const authorityUser = callerId
+      ? await this.usersService.findOne(callerId)
+      : await this.usersService.findOne(task.created_by);
+    this.validateHierarchy(authorityUser.role, assignee.role);
 
     task.assigned_to = assignTaskDto.assigned_to;
     task.status = TaskStatus.ASSIGNED;
@@ -294,10 +404,10 @@ export class TasksService {
       throw new ForbiddenException('You can only start tasks assigned to you');
     }
 
-    // Can only start assigned tasks
-    if (task.status !== TaskStatus.ASSIGNED) {
+    // Can only start accepted tasks or tasks needing revision
+    if (task.status !== TaskStatus.ACCEPTED && task.status !== TaskStatus.REVISION_NEEDED) {
       throw new BadRequestException(
-        `Cannot start task with status "${task.status}". Task must be assigned first.`,
+        `Cannot start task with status "${task.status}". Task must be accepted or in revision.`,
       );
     }
 
@@ -336,7 +446,7 @@ export class TasksService {
     }
 
     task.status = TaskStatus.COMPLETED;
-    task.completion_photo_url = completeTaskDto.completion_photo_url;
+    task.completion_photo_urls = completeTaskDto.completion_photo_urls;
     task.completion_notes = completeTaskDto.description;
     task.completed_at = new Date();
 
@@ -402,40 +512,34 @@ export class TasksService {
     total: number;
     pending: number;
     assigned: number;
+    accepted: number;
+    declined: number;
     inProgress: number;
     completed: number;
+    verified: number;
+    revisionNeeded: number;
   }> {
-    const tasks = await this.taskRepository.find({
-      where: { area_id: areaId },
-      select: ['status'],
-    });
+    const rows = await this.taskRepository
+      .createQueryBuilder('t')
+      .select('t.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('t.area_id = :areaId AND t.deleted_at IS NULL', { areaId })
+      .groupBy('t.status')
+      .getRawMany<{ status: string; count: string }>();
 
-    const stats = {
-      total: tasks.length,
-      pending: 0,
-      assigned: 0,
-      inProgress: 0,
-      completed: 0,
+    const map = Object.fromEntries(rows.map(r => [r.status, Number(r.count)]));
+    const g = (s: string) => map[s] ?? 0;
+    return {
+      total: rows.reduce((sum, r) => sum + Number(r.count), 0),
+      pending: g(TaskStatus.PENDING),
+      assigned: g(TaskStatus.ASSIGNED),
+      accepted: g(TaskStatus.ACCEPTED),
+      declined: g(TaskStatus.DECLINED),
+      inProgress: g(TaskStatus.IN_PROGRESS),
+      completed: g(TaskStatus.COMPLETED),
+      verified: g(TaskStatus.VERIFIED),
+      revisionNeeded: g(TaskStatus.REVISION_NEEDED),
     };
-
-    for (const task of tasks) {
-      switch (task.status) {
-        case TaskStatus.PENDING:
-          stats.pending++;
-          break;
-        case TaskStatus.ASSIGNED:
-          stats.assigned++;
-          break;
-        case TaskStatus.IN_PROGRESS:
-          stats.inProgress++;
-          break;
-        case TaskStatus.COMPLETED:
-          stats.completed++;
-          break;
-      }
-    }
-
-    return stats;
   }
 
   /**
@@ -444,15 +548,36 @@ export class TasksService {
    * @param userId - User ID
    * @returns Array of tasks where user is tagged
    */
-  async findTaggedTasks(userId: string): Promise<Task[]> {
+  async findTaggedTasks(
+    userId: string,
+    filters?: TaskFilterDto,
+  ): Promise<PaginatedResponseDto<Task>> {
     this.logger.log(`Fetching tasks tagged for user: ${userId}`);
 
-    const tags = await this.taskTagRepository.find({
-      where: { user_id: userId },
-      relations: ['task', 'task.area', 'task.rayon', 'task.creator', 'task.assignee'],
-    });
+    const sortBy = filters?.sort_by ?? 'created_at';
+    const sortDir = (filters?.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 50;
 
-    return tags.map((tag) => tag.task);
+    const queryBuilder = this.taskRepository
+      .createQueryBuilder('task')
+      .innerJoin('task.tags', 'tag', 'tag.user_id = :userId', { userId })
+      .leftJoinAndSelect('task.area', 'area')
+      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.creator', 'creator')
+      .leftJoinAndSelect('task.assignee', 'assignee')
+      .leftJoinAndSelect('task.tags', 'tags')
+      .leftJoinAndSelect('tags.user', 'taggedUser')
+      .orderBy(`task.${sortBy}`, sortDir)
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (filters?.status) {
+      queryBuilder.andWhere('task.status = :status', { status: filters.status });
+    }
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   /**
@@ -529,6 +654,171 @@ export class TasksService {
 
     await this.taskTagRepository.remove(tag);
     this.logger.log(`Tag removed from task ${taskId}`);
+  }
+
+  /**
+   * Accept an assigned task (by assignee only)
+   *
+   * @param taskId - Task ID
+   * @param userId - ID of the assignee accepting the task
+   * @returns The updated task
+   */
+  async acceptTask(taskId: string, userId: string): Promise<Task> {
+    this.logger.log(`User ${userId} accepting task ${taskId}`);
+
+    const task = await this.findOne(taskId);
+
+    if (task.assigned_to !== userId) {
+      throw new ForbiddenException('Anda bukan penerima tugas ini');
+    }
+
+    if (task.status !== TaskStatus.ASSIGNED) {
+      throw new BadRequestException('Tugas tidak dalam status ditugaskan');
+    }
+
+    task.status = TaskStatus.ACCEPTED;
+    task.accepted_at = new Date();
+
+    await this.taskRepository.save(task);
+    this.logger.log(`Task ${taskId} accepted by user ${userId}`);
+
+    return this.findOne(taskId);
+  }
+
+  /**
+   * Decline an assigned task (by assignee only)
+   *
+   * @param taskId - Task ID
+   * @param userId - ID of the assignee declining the task
+   * @param reason - Reason for declining
+   * @returns The updated task
+   */
+  async declineTask(taskId: string, userId: string, reason: string): Promise<Task> {
+    this.logger.log(`User ${userId} declining task ${taskId}`);
+
+    const task = await this.findOne(taskId);
+
+    if (task.assigned_to !== userId) {
+      throw new ForbiddenException('Anda bukan penerima tugas ini');
+    }
+
+    if (task.status !== TaskStatus.ASSIGNED) {
+      throw new BadRequestException('Tugas tidak dalam status ditugaskan');
+    }
+
+    task.status = TaskStatus.DECLINED;
+    task.declined_at = new Date();
+    task.decline_reason = reason;
+
+    await this.taskRepository.save(task);
+    this.logger.log(`Task ${taskId} declined by user ${userId}`);
+
+    return this.findOne(taskId);
+  }
+
+  /**
+   * Verify a completed task (by direct supervisor)
+   *
+   * @param taskId - Task ID
+   * @param verifierId - ID of the verifier
+   * @returns The updated task
+   */
+  async verifyTask(taskId: string, verifierId: string): Promise<Task> {
+    this.logger.log(`User ${verifierId} verifying task ${taskId}`);
+
+    const task = await this.findOne(taskId);
+
+    if (task.status !== TaskStatus.COMPLETED) {
+      throw new BadRequestException('Tugas belum diselesaikan');
+    }
+
+    if (!task.assigned_to) {
+      throw new BadRequestException('Tugas tidak memiliki penerima');
+    }
+
+    const verifier = await this.usersService.findOne(verifierId);
+    const assignee = await this.usersService.findOne(task.assigned_to);
+
+    await this.validateVerificationHierarchy(verifier, assignee);
+
+    task.status = TaskStatus.VERIFIED;
+    task.verified_by = verifierId;
+    task.verified_at = new Date();
+
+    await this.taskRepository.save(task);
+    this.logger.log(`Task ${taskId} verified by user ${verifierId}`);
+
+    return this.findOne(taskId);
+  }
+
+  /**
+   * Request revision on a completed task (by direct supervisor)
+   *
+   * @param taskId - Task ID
+   * @param verifierId - ID of the verifier requesting revision
+   * @param reason - Reason for revision
+   * @returns The updated task
+   */
+  async requestRevision(taskId: string, verifierId: string, reason: string): Promise<Task> {
+    this.logger.log(`User ${verifierId} requesting revision on task ${taskId}`);
+
+    const task = await this.findOne(taskId);
+
+    if (task.status !== TaskStatus.COMPLETED) {
+      throw new BadRequestException('Tugas belum diselesaikan');
+    }
+
+    if (!task.assigned_to) {
+      throw new BadRequestException('Tugas tidak memiliki penerima');
+    }
+
+    const verifier = await this.usersService.findOne(verifierId);
+    const assignee = await this.usersService.findOne(task.assigned_to);
+
+    await this.validateVerificationHierarchy(verifier, assignee);
+
+    task.status = TaskStatus.REVISION_NEEDED;
+    task.revision_reason = reason;
+
+    await this.taskRepository.save(task);
+    this.logger.log(`Revision requested on task ${taskId} by user ${verifierId}`);
+
+    return this.findOne(taskId);
+  }
+
+  /**
+   * Validate that verifier has authority over assignee based on role hierarchy and scope
+   *
+   * @param verifier - The verifying user
+   * @param assignee - The task assignee
+   */
+  private async validateVerificationHierarchy(verifier: User, assignee: User): Promise<void> {
+    const allowedAssigneeRoles = VERIFY_MAP[verifier.role];
+
+    if (!allowedAssigneeRoles?.includes(assignee.role as UserRole)) {
+      throw new ForbiddenException('Anda tidak berwenang memverifikasi tugas ini');
+    }
+
+    if (verifier.role === UserRole.KORLAP) {
+      if (!verifier.area_id || verifier.area_id !== assignee.area_id) {
+        throw new ForbiddenException('Anda hanya dapat memverifikasi tugas di area Anda');
+      }
+    }
+
+    if (verifier.role === UserRole.KEPALA_RAYON) {
+      if (!verifier.rayon_id) {
+        throw new ForbiddenException('Akun Kepala Rayon Anda belum memiliki rayon');
+      }
+      if (!assignee.area_id) {
+        throw new ForbiddenException('Penerima tugas tidak memiliki area yang valid');
+      }
+      const area = await this.areasService.findOne(assignee.area_id);
+      if (area.rayon_id !== verifier.rayon_id) {
+        throw new ForbiddenException('Anda hanya dapat memverifikasi tugas di rayon Anda');
+      }
+    }
+
+    // top_management: no scope restriction
   }
 
   /**

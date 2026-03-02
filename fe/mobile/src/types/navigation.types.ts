@@ -20,8 +20,7 @@ export type RootStackScreenProps<T extends keyof RootStackParamList> =
 export type MainTabParamList = {
   // Visible tabs (role-dependent)
   Home: undefined;
-  Activities: { activeTab?: 'tasks' | 'tagged' | 'activities' } | undefined;
-  Tasks: undefined;
+  TasksActivities: { initialTab?: 'tasks' | 'activities' } | undefined;
   Overtime: undefined;
   Monitoring: undefined;
   Profile: undefined;
@@ -34,7 +33,6 @@ export type MainTabParamList = {
   TaskCreate: undefined;
   OvertimeSubmit: undefined;
   OvertimeDetail: { overtimeId: string };
-  OvertimeApproval: undefined;
   ShiftHistory: undefined;
   Settings: undefined;
 };

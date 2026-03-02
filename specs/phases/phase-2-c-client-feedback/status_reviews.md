@@ -1,9 +1,87 @@
 # Phase 2C - Implementation Reviews
 
-**Last Updated:** February 16, 2026
-**Status:** All Reviews Complete ✅ | All Test Fixes Complete ✅ | Web Review Complete ✅
+**Last Updated:** February 28, 2026
+**Status:** All Reviews Complete ✅ | All Test Fixes Complete ✅ | Web Review Complete ✅ | Deep Review Pass Complete ✅
 
 This document contains implementation reviews for Phase 2C components.
+
+---
+
+## Code Review — Feb 28, 2026 (Automated Deep Review)
+
+### Scope
+Comprehensive automated review of Overtime, Task, and Activity features covering:
+- 22 source files, ~5,200 lines of code
+- All 8 user roles
+- All data flows (filter → API → render)
+- UI consistency across 3 features
+
+### Issues Found
+- 5 CRITICAL/HIGH bugs (all fixed)
+- 4 MEDIUM bugs (all fixed)
+- 3 LOW issues (2 fixed, 1 deferred: TaskDetailScreen fixed FAB deferred to Phase 3)
+
+### Refactoring
+- 5 shared extractions completed
+- Zero duplicate utility functions remain across Overtime/Task/Activity modals
+
+### Result
+All 3,264 mobile tests pass. Zero TypeScript errors in source files.
+
+---
+
+## Manual Screen Review — Satgas & Linmas (Feb 18, 2026) 🔄
+
+**Status:** In Progress — Login ✅ | Home ✅ | ClockInOut ✅ | Aktivitas ⏳ | Tugas ⏳
+**Reviewer:** Product Owner (manual device/emulator testing)
+**Roles Covered:** `satgas`, `linmas`
+**Method:** Live app testing against production-seeded data
+
+### Review Matrix
+
+| Screen | satgas | linmas | Notes |
+|--------|--------|--------|-------|
+| Login | ✅ Accepted | ✅ Accepted | Credential entry, JWT auth, role redirect |
+| Home | ✅ Accepted | ✅ Accepted | Header, FAB, today stats, modals |
+| ClockInOut | ✅ Accepted | ✅ Accepted | Geofencing banner, photo, submit |
+| Aktivitas | ⏳ In review | ⏳ In review | — |
+| Tugas | ⏳ In review | ⏳ In review | — |
+
+### Accepted Findings — Login Screen
+
+| # | Finding | Role | Resolution |
+|---|---------|------|-----------|
+| L1 | Login screen renders correctly for both roles | satgas, linmas | ✅ Accepted |
+| L2 | Successful login redirects to Home screen with correct tab set | satgas, linmas | ✅ Accepted |
+| L3 | FCM permission flow (optional, non-blocking) | satgas, linmas | ✅ Accepted |
+| L4 | Error states (wrong password, network) display correctly | satgas, linmas | ✅ Accepted |
+
+### Accepted Findings — Home Screen
+
+| # | Finding | Role | Resolution |
+|---|---------|------|-----------|
+| H1 | Header: "Halo, [Name]!" greeting + role badge + status indicator all visible | satgas, linmas | ✅ Accepted |
+| H2 | Today's stats card (shift duration, activity count) | satgas, linmas | ✅ Accepted |
+| H3 | Clock In/Out FAB visible at bottom (CLOCKABLE_ROLES guard active) | satgas, linmas | ✅ Accepted |
+| H4 | Tab bar shows correct 5 tabs: Beranda, Tugas, Lembur, Profil + tab for screen | satgas, linmas | ✅ Accepted |
+| H5 | useFocusEffect reloads activity count on return from submission | satgas, linmas | ✅ Accepted |
+
+### Accepted Findings — ClockInOut Screen
+
+| # | Finding | Role | Resolution |
+|---|---------|------|-----------|
+| C1 | Back button in header navigates correctly (goBack) | satgas, linmas | ✅ Accepted |
+| C2 | Header title switches dynamically: "Clock In" / "Clock Out" | satgas, linmas | ✅ Accepted |
+| C3 | Assigned area card displays area name and coordinates | satgas, linmas | ✅ Accepted |
+| C4 | GPS location card shows current coordinates | satgas, linmas | ✅ Accepted |
+| C5 | Geofencing banner: "Di Dalam Area" (green) / "Di Luar Area" (yellow warning, non-blocking) | satgas, linmas | ✅ Accepted |
+| C6 | Selfie photo required before submit | satgas, linmas | ✅ Accepted |
+| C7 | Submit succeeds, returns to Home with shift state updated | satgas, linmas | ✅ Accepted |
+
+### Pending Review
+
+- **Aktivitas screen** (satgas + linmas): activity list, submission form, activity detail — user reviewing in parallel
+- **Tugas screen** (satgas + linmas): task list, filter, task detail, task complete — user reviewing in parallel
 
 ---
 
@@ -471,10 +549,12 @@ The implementation is now fully aligned with Phase 2C specifications and ready f
 - `hooks/__tests__/usePhotoCapture.test.ts` — 5 tests
 
 **Batch 3 — Screens (8 files, 92 tests):**
-- `screens/field/__tests__/TasksActivityScreen.test.tsx` — 9 tests
+- `screens/taskActivity/__tests__/TasksActivityScreen.test.tsx` — 15 tests (moved + updated)
 - `screens/field/__tests__/ActivitySubmissionScreen.test.tsx` — 11 tests
 - `screens/field/__tests__/ActivityDetailScreen.test.tsx` — 8 tests
-- `screens/tasks/__tests__/TaskCreateScreen.test.tsx` — 10 tests
+- `screens/taskActivity/__tests__/TaskCreateScreen.test.tsx` — 10 tests (moved from screens/tasks/)
+- `screens/taskActivity/__tests__/TasksTab.test.tsx` — 3 tests (new)
+- `screens/taskActivity/__tests__/ActivitiesTab.test.tsx` — 3 tests (new)
 - `screens/overtime/__tests__/OvertimeListScreen.test.tsx` — 10 tests
 - `screens/overtime/__tests__/OvertimeSubmitScreen.test.tsx` — 13 tests
 - `screens/overtime/__tests__/OvertimeDetailScreen.test.tsx` — 12 tests

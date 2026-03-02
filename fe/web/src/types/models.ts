@@ -266,6 +266,11 @@ export interface ActivityType {
 }
 
 /**
+ * Activity Status (Phase 2C - approval workflow)
+ */
+export type ActivityStatus = 'pending' | 'approved' | 'rejected';
+
+/**
  * Activity Interface (Phase 2C - replaces WorkReport)
  */
 export interface Activity extends Record<string, unknown> {
@@ -293,6 +298,11 @@ export interface Activity extends Record<string, unknown> {
   photo_urls: string[];
   gps_lat?: number;
   gps_lng?: number;
+  status: ActivityStatus;
+  reviewed_by?: string;
+  reviewer?: { id: string; full_name: string };
+  reviewed_at?: string;
+  rejection_reason?: string;
   created_at: string;
 }
 
@@ -303,8 +313,12 @@ export interface ActivityFilters {
   activity_type_id?: string;
   area_id?: string;
   user_id?: string;
+  status?: ActivityStatus;
+  rayon_id?: string;
   from_date?: string;
   to_date?: string;
+  sort_by?: string;
+  sort_dir?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }
@@ -331,9 +345,8 @@ export interface Overtime extends Record<string, unknown> {
     id: string;
     name: string;
   };
-  date: string;
-  start_time: string;
-  end_time: string;
+  start_datetime: string;
+  end_datetime: string;
   status: OvertimeStatus;
   activity_type_id?: string;
   activity_type?: {
@@ -362,9 +375,12 @@ export interface Overtime extends Record<string, unknown> {
 export interface OvertimeFilters {
   status?: OvertimeStatus;
   area_id?: string;
+  rayon_id?: string;
   user_id?: string;
   from_date?: string;
   to_date?: string;
+  sort_by?: 'created_at' | 'start_datetime';
+  sort_dir?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }

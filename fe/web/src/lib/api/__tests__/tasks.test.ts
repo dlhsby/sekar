@@ -27,7 +27,7 @@ describe('Tasks API', () => {
     priority: 'high',
     rayon_id: 'rayon-1',
     area_id: 'area-1',
-    created_by_id: 'user-1',
+    created_by: 'user-1',
     created_at: '2026-02-04T00:00:00Z',
     updated_at: '2026-02-04T00:00:00Z',
   };

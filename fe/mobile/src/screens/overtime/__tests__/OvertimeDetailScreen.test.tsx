@@ -1,6 +1,6 @@
 /**
  * OvertimeDetailScreen Tests
- * Comprehensive tests to improve coverage from 54.43% to >80%
+ * Phase 2C: Inline approval/rejection with canApprove hierarchy
  */
 
 import React from 'react';
@@ -10,18 +10,11 @@ import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { OvertimeDetailScreen } from '../OvertimeDetailScreen';
 import { configureStore } from '@reduxjs/toolkit';
-import overtimeReducer from '../../../store/slices/overtimeSlice';
+import authReducer from '../../../store/slices/authSlice';
 import * as overtimeApi from '../../../services/api/overtimeApi';
 
 // Mock APIs
 jest.mock('../../../services/api/overtimeApi');
-
-// Mock useRoleAccess hook
-jest.mock('../../../hooks/useRoleAccess', () => ({
-  useRoleAccess: jest.fn(() => ({
-    canApproveOvertime: true,
-  })),
-}));
 
 // Mock navigation and route
 const mockNavigate = jest.fn();
@@ -35,9 +28,7 @@ const mockNavigation = {
 };
 
 const mockRoute = {
-  params: {
-    overtimeId: 'ot-001',
-  },
+  params: { overtimeId: 'ot-001' },
   key: 'test-key',
   name: 'OvertimeDetail',
 };
@@ -48,19 +39,18 @@ jest.mock('@react-navigation/native', () => ({
   useRoute: () => mockRoute,
 }));
 
-// Mock overtime data
+// Mock overtime data — submitted by satgas in area-1
 const mockOvertimeData = {
   id: 'ot-001',
   user_id: 'user-1',
-  date: '2026-02-14',
-  start_time: '17:00',
-  end_time: '20:00',
+  area_id: 'area-1',
+  start_datetime: '2026-02-14T17:00:00+07:00',
+  end_datetime: '2026-02-14T20:00:00+07:00',
   activity_type_id: 'type-1',
   description: 'Lembur penyiraman taman',
   photo_urls: ['https://example.com/photo1.jpg', 'https://example.com/photo2.jpg'],
   gps_lat: -7.250445,
   gps_lng: 112.768845,
-  notes: 'Catatan tambahan',
   status: 'pending' as const,
   rejection_reason: null,
   user: {
@@ -68,29 +58,42 @@ const mockOvertimeData = {
     full_name: 'Ahmad Satgas',
     username: 'ahmad',
     role: 'satgas',
+    rayon_id: 'rayon-1',
+  },
+  area: {
+    id: 'area-1',
+    name: 'Taman Bungkul',
+    rayon_id: 'rayon-1',
   },
   activityType: {
     id: 'type-1',
     name: 'Penyiraman',
+    description: 'Penyiraman tanaman',
   },
   created_at: '2026-02-14T17:00:00Z',
   updated_at: '2026-02-14T17:00:00Z',
 };
 
-// Create test store
-const createTestStore = (selectedOvertime: any = null) => {
+// Create auth store — user role determines canApprove
+const createTestStore = (userOverrides = {}) => {
   return configureStore({
-    reducer: {
-      overtime: overtimeReducer,
-    },
+    reducer: { auth: authReducer },
     preloadedState: {
-      overtime: {
-        myOvertimes: [],
-        pendingApprovals: [],
-        selectedOvertime,
-        isLoading: false,
-        isSubmitting: false,
+      auth: {
+        user: {
+          id: 'approver-1',
+          username: 'korlap1',
+          full_name: 'Korlap Test',
+          role: 'korlap',
+          area_id: 'area-1', // Same area → canApprove=true for satgas
+          rayon_id: 'rayon-1',
+          ...userOverrides,
+        },
+        token: 'test-token',
+        isAuthenticated: true,
+        loading: false,
         error: null,
+        assignedArea: null,
       },
     },
   });
@@ -103,11 +106,7 @@ describe('OvertimeDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     store = createTestStore();
-
-    // Spy on Alert
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-
-    // Mock getOvertimeById to return data
     (overtimeApi.getOvertimeById as jest.Mock).mockResolvedValue({
       data: mockOvertimeData,
     });
@@ -117,10 +116,10 @@ describe('OvertimeDetailScreen', () => {
     alertSpy.mockRestore();
   });
 
-  describe('Initial Load (lines 113-114)', () => {
+  describe('Initial Load', () => {
     it('should display loading state', async () => {
       (overtimeApi.getOvertimeById as jest.Mock).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
+        () => new Promise(() => {}),
       );
 
       const { getByText } = render(
@@ -128,7 +127,7 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       expect(getByText('Memuat data...')).toBeTruthy();
@@ -140,7 +139,7 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
@@ -148,7 +147,7 @@ describe('OvertimeDetailScreen', () => {
       });
     });
 
-    it('should show error alert and navigate back on API error (lines 113-114)', async () => {
+    it('should show error alert and navigate back on API error', async () => {
       (overtimeApi.getOvertimeById as jest.Mock).mockResolvedValue({
         error: 'Data tidak ditemukan',
         data: null,
@@ -159,7 +158,7 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
@@ -168,7 +167,7 @@ describe('OvertimeDetailScreen', () => {
       });
     });
 
-    it('should handle exception during fetch (lines 113-114)', async () => {
+    it('should handle exception during fetch', async () => {
       (overtimeApi.getOvertimeById as jest.Mock).mockRejectedValue(new Error('Network error'));
 
       render(
@@ -176,7 +175,7 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
@@ -187,31 +186,46 @@ describe('OvertimeDetailScreen', () => {
   });
 
   describe('Display Overtime Details', () => {
-    it('should render overtime details after loading', async () => {
+    it('should render overtime details with NB card sections', async () => {
       const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Detail Lembur')).toBeTruthy();
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
         expect(getByText('Lembur penyiraman taman')).toBeTruthy();
         expect(getByText('Penyiraman')).toBeTruthy();
-        expect(getByText('17:00 - 20:00')).toBeTruthy();
+        // Creator row: role - full_name
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
     });
 
-    it('should display GPS coordinates if available', async () => {
+    it('should display section titles', async () => {
       const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
+      );
+
+      await waitFor(() => {
+        expect(getByText('📋 INFORMASI UMUM')).toBeTruthy();
+        expect(getByText('📝 DESKRIPSI')).toBeTruthy();
+        expect(getByText('📸 FOTO BUKTI')).toBeTruthy();
+      });
+    });
+
+    it('should display GPS coordinates', async () => {
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <OvertimeDetailScreen />
+          </NavigationContainer>
+        </Provider>,
       );
 
       await waitFor(() => {
@@ -219,50 +233,50 @@ describe('OvertimeDetailScreen', () => {
       });
     });
 
-    it('should display notes if available', async () => {
+    it('should display creator role and name', async () => {
       const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Catatan tambahan')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
     });
 
-    it('should display photos section', async () => {
+    it('should display photo count', async () => {
       const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Foto')).toBeTruthy();
+        expect(getByText('2 foto dilampirkan')).toBeTruthy();
       });
     });
   });
 
-  describe('Approve Overtime (lines 125-144)', () => {
+  describe('Approve Overtime', () => {
     it('should show confirmation alert when approve button pressed', async () => {
       const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      const approveButton = getByText(/setuju/i);
+      const approveButton = getByText('Setujui');
       await act(async () => {
         fireEvent.press(approveButton);
       });
@@ -270,11 +284,11 @@ describe('OvertimeDetailScreen', () => {
       expect(alertSpy).toHaveBeenCalledWith(
         'Konfirmasi',
         'Setujui pengajuan lembur ini?',
-        expect.any(Array)
+        expect.any(Array),
       );
     });
 
-    it('should approve overtime successfully (lines 129-137)', async () => {
+    it('should approve overtime successfully', async () => {
       const approvedData = { ...mockOvertimeData, status: 'approved' as const };
       (overtimeApi.approveOvertime as jest.Mock).mockResolvedValue({
         data: approvedData,
@@ -285,19 +299,17 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      const approveButton = getByText(/setuju/i);
       await act(async () => {
-        fireEvent.press(approveButton);
+        fireEvent.press(getByText('Setujui'));
       });
 
-      // Trigger the confirm callback from Alert
       const confirmCallback = alertSpy.mock.calls[0][2][1].onPress;
       await act(async () => {
         await confirmCallback();
@@ -305,11 +317,11 @@ describe('OvertimeDetailScreen', () => {
 
       await waitFor(() => {
         expect(overtimeApi.approveOvertime).toHaveBeenCalledWith('ot-001');
-        expect(alertSpy).toHaveBeenCalledWith('Berhasil', 'Lembur disetujui', expect.any(Array));
+        expect(alertSpy).toHaveBeenCalledWith('Berhasil', 'Lembur disetujui');
       });
     });
 
-    it('should handle approve error (lines 138-140)', async () => {
+    it('should handle approve error', async () => {
       (overtimeApi.approveOvertime as jest.Mock).mockResolvedValue({
         error: 'Gagal menyetujui',
         data: null,
@@ -320,16 +332,15 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      const approveButton = getByText(/setuju/i);
       await act(async () => {
-        fireEvent.press(approveButton);
+        fireEvent.press(getByText('Setujui'));
       });
 
       const confirmCallback = alertSpy.mock.calls[0][2][1].onPress;
@@ -338,11 +349,11 @@ describe('OvertimeDetailScreen', () => {
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith('Gagal', 'Gagal menyetujui');
+        expect(alertSpy).toHaveBeenCalledWith('Error', 'Gagal menyetujui');
       });
     });
 
-    it('should handle approve exception (lines 141-143)', async () => {
+    it('should handle approve exception', async () => {
       (overtimeApi.approveOvertime as jest.Mock).mockRejectedValue(new Error('Network error'));
 
       const { getByText } = render(
@@ -350,16 +361,15 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      const approveButton = getByText(/setuju/i);
       await act(async () => {
-        fireEvent.press(approveButton);
+        fireEvent.press(getByText('Setujui'));
       });
 
       const confirmCallback = alertSpy.mock.calls[0][2][1].onPress;
@@ -368,223 +378,204 @@ describe('OvertimeDetailScreen', () => {
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith('Gagal', 'Terjadi kesalahan');
+        expect(alertSpy).toHaveBeenCalledWith('Error', 'Gagal menyetujui lembur');
       });
     });
   });
 
-  describe('Reject Overtime (lines 153-175)', () => {
-    it('should open reject modal when reject button pressed', async () => {
+  describe('Reject Overtime (inline)', () => {
+    it('should show inline reject input when Tolak pressed', async () => {
       const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      const rejectButton = getByText('Tolak');
       await act(async () => {
-        fireEvent.press(rejectButton);
+        fireEvent.press(getByText('Tolak'));
       });
 
       await waitFor(() => {
-        expect(getByText('Alasan Penolakan')).toBeTruthy();
+        // Inline reject mode: shows Batal + Kirim Penolakan buttons
+        expect(getByText('Batal')).toBeTruthy();
+        expect(getByText('Kirim Penolakan')).toBeTruthy();
       });
     });
 
-    it('should disable reject button when rejection reason is empty (lines 153-155)', async () => {
-      const { getByText, getAllByText } = render(
-        <Provider store={store}>
-          <NavigationContainer>
-            <OvertimeDetailScreen />
-          </NavigationContainer>
-        </Provider>
-      );
-
-      await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
-      });
-
-      // Open modal
-      const rejectButton = getAllByText('Tolak')[0];
-      await act(async () => {
-        fireEvent.press(rejectButton);
-      });
-
-      // Verify modal is open
-      await waitFor(() => {
-        expect(getByText('Alasan Penolakan')).toBeTruthy();
-      });
-
-      // The modal Tolak button should be disabled when reason is empty
-      // Pressing it should NOT trigger the rejection API
-      const submitRejectButton = getAllByText('Tolak')[1];
-      await act(async () => {
-        fireEvent.press(submitRejectButton);
-      });
-
-      // Alert should NOT be called since button is disabled
-      expect(alertSpy).not.toHaveBeenCalledWith('Peringatan', 'Alasan penolakan harus diisi');
-      expect(overtimeApi.rejectOvertime).not.toHaveBeenCalled();
-    });
-
-    it('should reject overtime successfully (lines 158-167)', async () => {
+    it('should reject overtime successfully', async () => {
       const rejectedData = { ...mockOvertimeData, status: 'rejected' as const, rejection_reason: 'Tidak sesuai jadwal' };
       (overtimeApi.rejectOvertime as jest.Mock).mockResolvedValue({
         data: rejectedData,
       });
 
-      const { getByText, getAllByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      // Open modal
-      const rejectButton = getAllByText('Tolak')[0];
+      // Open inline reject
       await act(async () => {
-        fireEvent.press(rejectButton);
+        fireEvent.press(getByText('Tolak'));
       });
 
-      // Enter rejection reason
-      const reasonInput = getByPlaceholderText('Masukkan alasan penolakan...');
+      // Enter reason
+      const reasonInput = getByPlaceholderText('Jelaskan alasan penolakan lembur ini...');
       await act(async () => {
         fireEvent.changeText(reasonInput, 'Tidak sesuai jadwal');
       });
 
-      // Submit
-      const submitRejectButton = getAllByText('Tolak')[1];
+      // Submit rejection
       await act(async () => {
-        fireEvent.press(submitRejectButton);
+        fireEvent.press(getByText('Kirim Penolakan'));
       });
 
       await waitFor(() => {
         expect(overtimeApi.rejectOvertime).toHaveBeenCalledWith('ot-001', 'Tidak sesuai jadwal');
-        expect(alertSpy).toHaveBeenCalledWith('Berhasil', 'Lembur ditolak', expect.any(Array));
+        expect(alertSpy).toHaveBeenCalledWith('Berhasil', 'Lembur ditolak');
       });
     });
 
-    it('should handle reject error (lines 168-170)', async () => {
+    it('should disable submit button when reject reason is empty', async () => {
+      const { getByText } = render(
+        <Provider store={store}>
+          <NavigationContainer>
+            <OvertimeDetailScreen />
+          </NavigationContainer>
+        </Provider>,
+      );
+
+      await waitFor(() => {
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
+      });
+
+      // Open inline reject
+      await act(async () => {
+        fireEvent.press(getByText('Tolak'));
+      });
+
+      // Kirim Penolakan button is disabled when reason is empty
+      // Pressing it should NOT trigger the rejection API
+      await act(async () => {
+        fireEvent.press(getByText('Kirim Penolakan'));
+      });
+
+      expect(overtimeApi.rejectOvertime).not.toHaveBeenCalled();
+    });
+
+    it('should handle reject error', async () => {
       (overtimeApi.rejectOvertime as jest.Mock).mockResolvedValue({
         error: 'Gagal menolak',
         data: null,
       });
 
-      const { getByText, getAllByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      // Open modal
-      const rejectButton = getAllByText('Tolak')[0];
       await act(async () => {
-        fireEvent.press(rejectButton);
+        fireEvent.press(getByText('Tolak'));
       });
 
-      // Enter reason
-      const reasonInput = getByPlaceholderText('Masukkan alasan penolakan...');
+      const reasonInput = getByPlaceholderText('Jelaskan alasan penolakan lembur ini...');
       await act(async () => {
         fireEvent.changeText(reasonInput, 'Test reason');
       });
 
-      // Submit
-      const submitRejectButton = getAllByText('Tolak')[1];
       await act(async () => {
-        fireEvent.press(submitRejectButton);
+        fireEvent.press(getByText('Kirim Penolakan'));
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith('Gagal', 'Gagal menolak');
+        expect(alertSpy).toHaveBeenCalledWith('Error', 'Gagal menolak');
       });
     });
 
-    it('should handle reject exception (lines 171-173)', async () => {
+    it('should handle reject exception', async () => {
       (overtimeApi.rejectOvertime as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-      const { getByText, getAllByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      // Open modal
-      const rejectButton = getAllByText('Tolak')[0];
       await act(async () => {
-        fireEvent.press(rejectButton);
+        fireEvent.press(getByText('Tolak'));
       });
 
-      // Enter reason
-      const reasonInput = getByPlaceholderText('Masukkan alasan penolakan...');
+      const reasonInput = getByPlaceholderText('Jelaskan alasan penolakan lembur ini...');
       await act(async () => {
         fireEvent.changeText(reasonInput, 'Test reason');
       });
 
-      // Submit
-      const submitRejectButton = getAllByText('Tolak')[1];
       await act(async () => {
-        fireEvent.press(submitRejectButton);
+        fireEvent.press(getByText('Kirim Penolakan'));
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith('Gagal', 'Terjadi kesalahan');
+        expect(alertSpy).toHaveBeenCalledWith('Error', 'Gagal menolak lembur');
       });
     });
 
-    it('should close modal when cancel button pressed (lines 305-342)', async () => {
-      const { getByText, getAllByText, queryByText } = render(
+    it('should cancel reject mode when Batal pressed', async () => {
+      const { getByText, queryByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('Ahmad Satgas')).toBeTruthy();
+        expect(getByText('satgas - Ahmad Satgas')).toBeTruthy();
       });
 
-      // Open modal
-      const rejectButton = getAllByText('Tolak')[0];
+      // Open inline reject
       await act(async () => {
-        fireEvent.press(rejectButton);
+        fireEvent.press(getByText('Tolak'));
       });
 
       await waitFor(() => {
-        expect(getByText('Alasan Penolakan')).toBeTruthy();
+        expect(getByText('Batal')).toBeTruthy();
       });
 
       // Cancel
-      const cancelButton = getByText('Batal');
       await act(async () => {
-        fireEvent.press(cancelButton);
+        fireEvent.press(getByText('Batal'));
       });
 
       await waitFor(() => {
-        expect(queryByText('Alasan Penolakan')).toBeNull();
+        // Back to default buttons
+        expect(queryByText('Kirim Penolakan')).toBeNull();
+        expect(getByText('Tolak')).toBeTruthy();
+        expect(getByText('Setujui')).toBeTruthy();
       });
     });
   });
@@ -596,15 +587,15 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(getByText('MENUNGGU')).toBeTruthy(); // NBBadge renders uppercase
+        expect(getByText('MENUNGGU')).toBeTruthy();
       });
     });
 
-    it('should display approved status with proper color', async () => {
+    it('should display approved status', async () => {
       (overtimeApi.getOvertimeById as jest.Mock).mockResolvedValue({
         data: { ...mockOvertimeData, status: 'approved' },
       });
@@ -614,7 +605,7 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
@@ -636,7 +627,7 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
@@ -646,8 +637,8 @@ describe('OvertimeDetailScreen', () => {
     });
   });
 
-  describe('Action Buttons Visibility', () => {
-    it('should hide action buttons when status is not pending', async () => {
+  describe('Action Buttons Visibility (canApprove hierarchy)', () => {
+    it('should hide buttons when status is not pending', async () => {
       (overtimeApi.getOvertimeById as jest.Mock).mockResolvedValue({
         data: { ...mockOvertimeData, status: 'approved' },
       });
@@ -657,32 +648,103 @@ describe('OvertimeDetailScreen', () => {
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(queryByText('Setuju')).toBeNull();
+        expect(queryByText('Setujui')).toBeNull();
         expect(queryByText('Tolak')).toBeNull();
       });
     });
 
-    it('should hide action buttons when user cannot approve', async () => {
-      const useRoleAccess = require('../../../hooks/useRoleAccess').useRoleAccess;
-      useRoleAccess.mockReturnValueOnce({
-        canApproveOvertime: false,
+    it('should hide buttons when user is satgas (cannot approve)', async () => {
+      // Satgas user — cannot approve anyone
+      const satgasStore = createTestStore({
+        id: 'user-1',
+        username: 'satgas1',
+        full_name: 'Test Satgas',
+        role: 'satgas',
+        area_id: 'area-1',
       });
 
       const { queryByText } = render(
+        <Provider store={satgasStore}>
+          <NavigationContainer>
+            <OvertimeDetailScreen />
+          </NavigationContainer>
+        </Provider>,
+      );
+
+      await waitFor(() => {
+        expect(queryByText('Setujui')).toBeNull();
+        expect(queryByText('Tolak')).toBeNull();
+      });
+    });
+
+    it('should show buttons when korlap approves satgas in same area', async () => {
+      // Default store is korlap with area-1, overtime is from satgas in area-1
+      const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
             <OvertimeDetailScreen />
           </NavigationContainer>
-        </Provider>
+        </Provider>,
       );
 
       await waitFor(() => {
-        expect(queryByText('Setuju')).toBeNull();
+        expect(getByText('Setujui')).toBeTruthy();
+        expect(getByText('Tolak')).toBeTruthy();
+      });
+    });
+
+    it('should hide buttons when korlap is in different area', async () => {
+      const differentAreaStore = createTestStore({
+        role: 'korlap',
+        area_id: 'area-other',
+        rayon_id: 'rayon-1',
+      });
+
+      const { queryByText } = render(
+        <Provider store={differentAreaStore}>
+          <NavigationContainer>
+            <OvertimeDetailScreen />
+          </NavigationContainer>
+        </Provider>,
+      );
+
+      await waitFor(() => {
+        expect(queryByText('Setujui')).toBeNull();
         expect(queryByText('Tolak')).toBeNull();
+      });
+    });
+
+    it('should show buttons when kepala_rayon approves korlap in same rayon', async () => {
+      // kepala_rayon approving korlap
+      const korlapOvertime = {
+        ...mockOvertimeData,
+        user: { ...mockOvertimeData.user, role: 'korlap', rayon_id: 'rayon-1' },
+      };
+      (overtimeApi.getOvertimeById as jest.Mock).mockResolvedValue({
+        data: korlapOvertime,
+      });
+
+      const kepalaStore = createTestStore({
+        role: 'kepala_rayon',
+        rayon_id: 'rayon-1',
+        area_id: null,
+      });
+
+      const { getByText } = render(
+        <Provider store={kepalaStore}>
+          <NavigationContainer>
+            <OvertimeDetailScreen />
+          </NavigationContainer>
+        </Provider>,
+      );
+
+      await waitFor(() => {
+        expect(getByText('Setujui')).toBeTruthy();
+        expect(getByText('Tolak')).toBeTruthy();
       });
     });
   });

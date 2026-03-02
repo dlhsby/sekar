@@ -1,12 +1,18 @@
 /**
- * Tasks List Page (Phase 2C - 4 statuses, no accept/decline)
+ * Tasks List Page (Phase 2C - 8 statuses, tabs, verification)
  * Access: TASK_MANAGER_ROLES
  */
 
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useTasks, type TaskStatus, type TaskPriority } from '@/lib/api/tasks';
+import {
+  useTasks,
+  useTaggedTasks,
+  useMyTasks,
+  type TaskStatus,
+  type TaskPriority,
+} from '@/lib/api/tasks';
 import {
   Card,
   CardHeader,
@@ -23,10 +29,29 @@ import Link from 'next/link';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Task } from '@/lib/api/tasks';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
+import { TASK_STATUS_LABELS, TASK_STATUS_BADGES } from '@/lib/constants/tasks';
+
+type ActiveTab = 'all' | 'tagged' | 'created';
+
+const PRIORITY_LABELS: Record<TaskPriority, string> = {
+  low: 'Rendah',
+  normal: 'Normal',
+  high: 'Tinggi',
+  urgent: 'Mendesak',
+};
+
+const PRIORITY_BADGES: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> =
+  {
+    low: 'secondary',
+    normal: 'success',
+    high: 'warning',
+    urgent: 'destructive',
+  };
 
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('all');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [page, setPage] = useState(1);
@@ -38,12 +63,23 @@ export default function TasksPage() {
     }
   }, [user, authLoading, router]);
 
-  const { data: tasksData, isLoading } = useTasks({
+  const filters = {
     status: statusFilter !== 'all' ? statusFilter : undefined,
     priority: priorityFilter !== 'all' ? priorityFilter : undefined,
     page,
     limit,
-  });
+  };
+
+  const allTasksQuery = useTasks(activeTab === 'all' ? filters : undefined);
+  const taggedTasksQuery = useTaggedTasks(activeTab === 'tagged' ? filters : undefined);
+  const myTasksQuery = useMyTasks(activeTab === 'created' ? filters : undefined);
+
+  const activeQuery =
+    activeTab === 'tagged'
+      ? taggedTasksQuery
+      : activeTab === 'created'
+        ? myTasksQuery
+        : allTasksQuery;
 
   if (authLoading || !user) {
     return (
@@ -58,15 +94,20 @@ export default function TasksPage() {
 
   if (!hasRole(user.role, TASK_MANAGER_ROLES)) return null;
 
-  const tasks = tasksData?.data || [];
-  const pagination = tasksData?.meta;
+  const tasks = activeQuery.data?.data || [];
+  const pagination = activeQuery.data?.meta;
+  const isLoading = activeQuery.isLoading;
 
   const statusOptions = [
     { value: 'all', label: 'Semua Status' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'assigned', label: 'Ditugaskan' },
-    { value: 'in_progress', label: 'Sedang Dikerjakan' },
-    { value: 'completed', label: 'Selesai' },
+    { value: 'pending', label: TASK_STATUS_LABELS.pending },
+    { value: 'assigned', label: TASK_STATUS_LABELS.assigned },
+    { value: 'accepted', label: TASK_STATUS_LABELS.accepted },
+    { value: 'declined', label: TASK_STATUS_LABELS.declined },
+    { value: 'in_progress', label: TASK_STATUS_LABELS.in_progress },
+    { value: 'completed', label: TASK_STATUS_LABELS.completed },
+    { value: 'verified', label: TASK_STATUS_LABELS.verified },
+    { value: 'revision_needed', label: TASK_STATUS_LABELS.revision_needed },
   ];
 
   const priorityOptions = [
@@ -77,20 +118,11 @@ export default function TasksPage() {
     { value: 'urgent', label: 'Mendesak' },
   ];
 
-  const statusBadges: Record<TaskStatus, 'secondary' | 'default' | 'success' | 'warning'> = {
-    pending: 'secondary',
-    assigned: 'default',
-    in_progress: 'warning',
-    completed: 'success',
-  };
-
-  const priorityBadges: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> =
-    {
-      low: 'secondary',
-      normal: 'success',
-      high: 'warning',
-      urgent: 'destructive',
-    };
+  const tabs: { key: ActiveTab; label: string }[] = [
+    { key: 'all', label: 'Semua Tugas' },
+    { key: 'tagged', label: 'Ditandai' },
+    { key: 'created', label: 'Dibuat Saya' },
+  ];
 
   const columns: ColumnDef<Task>[] = [
     {
@@ -107,20 +139,19 @@ export default function TasksPage() {
     },
     {
       key: 'area',
-      header: 'Area',
-      cell: (task) => <div className="text-sm">{task.area ? task.area.name : '-'}</div>,
-    },
-    {
-      key: 'rayon',
-      header: 'Rayon',
-      cell: (task) => <div className="text-sm">{task.rayon ? task.rayon.name : '-'}</div>,
+      header: 'Area / Rayon',
+      cell: (task) => (
+        <div className="text-sm">
+          {task.area ? task.area.name : task.rayon ? task.rayon.name : '-'}
+        </div>
+      ),
     },
     {
       key: 'priority',
       header: 'Prioritas',
       cell: (task) => (
-        <Badge variant={priorityBadges[task.priority]} size="sm">
-          {priorityOptions.find((p) => p.value === task.priority)?.label || task.priority}
+        <Badge variant={PRIORITY_BADGES[task.priority]} size="sm">
+          {PRIORITY_LABELS[task.priority]}
         </Badge>
       ),
     },
@@ -128,8 +159,8 @@ export default function TasksPage() {
       key: 'status',
       header: 'Status',
       cell: (task) => (
-        <Badge variant={statusBadges[task.status]} size="sm">
-          {statusOptions.find((s) => s.value === task.status)?.label || task.status}
+        <Badge variant={TASK_STATUS_BADGES[task.status]} size="sm">
+          {TASK_STATUS_LABELS[task.status]}
         </Badge>
       ),
     },
@@ -153,6 +184,11 @@ export default function TasksPage() {
     },
   ];
 
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    setPage(1);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -163,6 +199,23 @@ export default function TasksPage() {
         <Button onClick={() => router.push('/tasks/new')} leftIcon={<Plus className="w-5 h-5" />}>
           Buat Tugas Baru
         </Button>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex border-b-3 border-nb-black">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => handleTabChange(tab.key)}
+            className={`px-6 py-3 font-bold text-sm border-b-3 -mb-[3px] transition-colors ${
+              activeTab === tab.key
+                ? 'border-nb-primary text-nb-primary'
+                : 'border-transparent text-nb-gray-600 hover:text-nb-black'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <Card variant="elevated">
@@ -203,42 +256,12 @@ export default function TasksPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card variant="elevated">
-          <CardContent>
-            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Total Tugas</div>
-            <div className="text-3xl font-black text-nb-black">{pagination?.total || 0}</div>
-          </CardContent>
-        </Card>
-        <Card variant="elevated">
-          <CardContent>
-            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Pending</div>
-            <div className="text-3xl font-black text-nb-warning">
-              {tasks.filter((t) => t.status === 'pending' || t.status === 'assigned').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card variant="elevated">
-          <CardContent>
-            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Sedang Dikerjakan</div>
-            <div className="text-3xl font-black text-nb-primary">
-              {tasks.filter((t) => t.status === 'in_progress').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card variant="elevated">
-          <CardContent>
-            <div className="text-sm font-semibold text-nb-gray-600 mb-2">Selesai</div>
-            <div className="text-3xl font-black text-nb-success">
-              {tasks.filter((t) => t.status === 'completed').length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card variant="elevated">
         <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Daftar Tugas</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-nb-black">Daftar Tugas</h2>
+            <div className="text-sm text-nb-gray-600">{pagination?.total || 0} total</div>
+          </div>
         </CardHeader>
         <CardContent>
           <DataTable<Task>

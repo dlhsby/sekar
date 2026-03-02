@@ -3,9 +3,30 @@
  * Tests overtime CRUD operations and approval workflow (Phase 2C)
  */
 
+import React from 'react';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MockAdapter from 'axios-mock-adapter';
+import { ReactNode } from 'react';
 import { apiClient } from '../client';
+import {
+  overtimeKeys,
+  useOvertimes,
+  useOvertime,
+  useApproveOvertime,
+  useRejectOvertime,
+} from '../overtime';
 import type { PaginatedResponse, Overtime, OvertimeFilters } from '@/types/models';
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  const Wrapper = ({ children }: { children: ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
+  Wrapper.displayName = 'TestWrapper';
+  return Wrapper;
+}
 
 describe('Overtime API', () => {
   let mock: MockAdapter;
@@ -32,9 +53,8 @@ describe('Overtime API', () => {
       id: 'area-1',
       name: 'Taman Bungkul',
     },
-    date: '2026-02-16',
-    start_time: '17:00:00',
-    end_time: '20:00:00',
+    start_datetime: '2026-02-16T17:00:00+07:00',
+    end_datetime: '2026-02-16T20:00:00+07:00',
     status: 'pending',
     activity_type_id: 'type-1',
     activity_type: {
@@ -132,9 +152,8 @@ describe('Overtime API', () => {
       const response = await apiClient.get<Overtime>('/overtime/overtime-1');
 
       expect(response.data.id).toBe('overtime-1');
-      expect(response.data.date).toBe('2026-02-16');
-      expect(response.data.start_time).toBe('17:00:00');
-      expect(response.data.end_time).toBe('20:00:00');
+      expect(response.data.start_datetime).toBe('2026-02-16T17:00:00+07:00');
+      expect(response.data.end_datetime).toBe('2026-02-16T20:00:00+07:00');
     });
 
     it('should handle overtime not found', async () => {
@@ -189,7 +208,7 @@ describe('Overtime API', () => {
 
   describe('PATCH /overtime/:id/reject', () => {
     it('should reject overtime with reason', async () => {
-      const rejectionData = { rejection_reason: 'Tidak sesuai prosedur' };
+      const rejectionData = { reason: 'Tidak sesuai prosedur' };
       const rejectedOvertime: Overtime = {
         ...mockOvertime,
         status: 'rejected',
@@ -228,7 +247,7 @@ describe('Overtime API', () => {
       });
 
       await expect(
-        apiClient.patch('/overtime/overtime-1/reject', { rejection_reason: 'Test' })
+        apiClient.patch('/overtime/overtime-1/reject', { reason: 'Test' })
       ).rejects.toThrow();
     });
   });
@@ -249,5 +268,166 @@ describe('Overtime API', () => {
 
       await expect(apiClient.get('/overtime')).rejects.toThrow();
     });
+  });
+});
+
+describe('overtimeKeys', () => {
+  it('returns stable all key', () => {
+    expect(overtimeKeys.all).toEqual(['overtime']);
+  });
+
+  it('returns lists key', () => {
+    expect(overtimeKeys.lists()).toEqual(['overtime', 'list']);
+  });
+
+  it('returns list key with filters', () => {
+    const filters: OvertimeFilters = { status: 'pending' };
+    expect(overtimeKeys.list(filters)).toEqual(['overtime', 'list', filters]);
+  });
+
+  it('returns detail key', () => {
+    expect(overtimeKeys.detail('abc')).toEqual(['overtime', 'detail', 'abc']);
+  });
+});
+
+describe('useOvertimes hook', () => {
+  let mock: MockAdapter;
+
+  beforeEach(() => {
+    mock = new MockAdapter(apiClient);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  const mockPaged: PaginatedResponse<Overtime> = {
+    data: [],
+    meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
+  };
+
+  it('fetches overtime list', async () => {
+    mock.onGet('/overtime').reply(200, mockPaged);
+
+    const { result } = renderHook(() => useOvertimes(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockPaged);
+  });
+
+  it('fetches overtime list with filters', async () => {
+    mock.onGet('/overtime').reply(200, mockPaged);
+    const filters: OvertimeFilters = { status: 'approved' };
+
+    const { result } = renderHook(() => useOvertimes(filters), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('returns error on failure', async () => {
+    mock.onGet('/overtime').reply(500);
+
+    const { result } = renderHook(() => useOvertimes(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useOvertime hook', () => {
+  let mock: MockAdapter;
+
+  beforeEach(() => {
+    mock = new MockAdapter(apiClient);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  const mockOvertimeData: Overtime = {
+    id: 'ot-1',
+    user_id: 'u-1',
+    user: { id: 'u-1', username: 'satgas1', full_name: 'Satgas One', role: 'satgas' },
+    area_id: 'a-1',
+    area: { id: 'a-1', name: 'Taman' },
+    start_datetime: '2026-02-16T17:00:00+07:00',
+    end_datetime: '2026-02-16T20:00:00+07:00',
+    status: 'pending',
+    activity_type_id: 'at-1',
+    activity_type: { id: 'at-1', code: 'SWEEP', name: 'Penyapuan' },
+    description: 'Test',
+    photo_urls: [],
+    gps_lat: -7.28,
+    gps_lng: 112.74,
+    created_at: '2026-02-16T00:00:00Z',
+  };
+
+  it('fetches single overtime by id', async () => {
+    mock.onGet('/overtime/ot-1').reply(200, mockOvertimeData);
+
+    const { result } = renderHook(() => useOvertime('ot-1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.id).toBe('ot-1');
+  });
+
+  it('is disabled when id is empty', () => {
+    const { result } = renderHook(() => useOvertime(''), { wrapper: createWrapper() });
+
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+});
+
+describe('useApproveOvertime hook', () => {
+  let mock: MockAdapter;
+
+  beforeEach(() => {
+    mock = new MockAdapter(apiClient);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  it('approves overtime successfully', async () => {
+    mock.onPatch('/overtime/ot-1/approve').reply(200, { id: 'ot-1', status: 'approved' });
+
+    const { result } = renderHook(() => useApproveOvertime(), { wrapper: createWrapper() });
+
+    let approved: Overtime | undefined;
+    await act(async () => {
+      approved = await result.current.mutateAsync('ot-1');
+    });
+
+    expect(approved?.id).toBe('ot-1');
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useRejectOvertime hook', () => {
+  let mock: MockAdapter;
+
+  beforeEach(() => {
+    mock = new MockAdapter(apiClient);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  it('rejects overtime with reason', async () => {
+    mock
+      .onPatch('/overtime/ot-1/reject')
+      .reply(200, { id: 'ot-1', status: 'rejected', rejection_reason: 'reason' });
+
+    const { result } = renderHook(() => useRejectOvertime(), { wrapper: createWrapper() });
+
+    let rejected: Overtime | undefined;
+    await act(async () => {
+      rejected = await result.current.mutateAsync({ id: 'ot-1', reason: 'reason' });
+    });
+
+    expect(rejected?.id).toBe('ot-1');
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 });

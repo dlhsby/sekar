@@ -22,3 +22,5 @@ export { CollapsibleCard } from './CollapsibleCard';
 export { StatusIndicator } from './StatusIndicator';
 export { CountdownTimer } from './CountdownTimer';
 export { ShiftCard } from './ShiftCard';
+export { GPSLocationSection, type GPSLocationSectionProps } from './GPSLocationSection';
+export { PhotoUploader, type PhotoUploaderProps } from './PhotoUploader';

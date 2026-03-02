@@ -37,17 +37,21 @@ export const TASK_MANAGER_ROLES: UserRole[] = [
   'superadmin',
 ];
 
-/** Roles that can clock in/out */
+/** Roles that can clock in/out (field roles with area assignments only) */
 export const CLOCKABLE_ROLES: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
-  'kepala_rayon',
 ];
 
 /** Roles that can approve overtime */
-export const OVERTIME_APPROVER_ROLES: UserRole[] = ['korlap'];
+export const OVERTIME_APPROVER_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
+
+/** Roles that can approve/reject activities */
+export const ACTIVITY_APPROVER_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
+
+/** Roles that can verify/request-revision on tasks */
+export const TASK_VERIFIER_ROLES: UserRole[] = ['korlap', 'kepala_rayon', 'top_management'];
 
 /** Indonesian labels for each role */
 export const ROLE_LABELS: Record<UserRole, string> = {

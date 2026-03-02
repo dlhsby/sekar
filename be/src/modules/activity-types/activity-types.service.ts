@@ -47,6 +47,30 @@ export class ActivityTypesService {
   }
 
   /**
+   * Get activity types for a specific user role
+   *
+   * Returns activity types applicable to the user's role wrapped in a data object.
+   * Used by mobile app to show only relevant activity types.
+   *
+   * @param role - User role (satgas, linmas, korlap, admin_data, etc.)
+   * @returns Object containing array of activity types
+   */
+  async findByUserRole(role: string): Promise<{ data: ActivityType[] }> {
+    this.logger.log(`Fetching activity types for user role: ${role}`);
+
+    const activityTypes = await this.activityTypeRepository.find({
+      where: {
+        is_active: true,
+        applicable_roles: ArrayContains([role]),
+      },
+      order: { name: 'ASC' },
+    });
+
+    this.logger.log(`Found ${activityTypes.length} activity types for role: ${role}`);
+    return { data: activityTypes };
+  }
+
+  /**
    * Get a single activity type by ID
    *
    * @param id - Activity type ID (UUID)

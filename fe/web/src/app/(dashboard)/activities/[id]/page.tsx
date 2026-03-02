@@ -1,18 +1,19 @@
 /**
- * Activity Detail Page (Phase 2C)
+ * Activity Detail Page (Phase 2C - with approval workflow)
  * Access: MONITORING_ROLES
  */
 
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useActivity } from '@/lib/api/activities';
-import { Card, CardHeader, CardContent, Badge, Button } from '@/components/ui';
+import { useActivity, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
+import { Card, CardHeader, CardContent, Badge, Button, FormInput } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { use, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
-import { MONITORING_ROLES, hasRole } from '@/lib/constants/roles';
+import { ArrowLeft, Check, X } from 'lucide-react';
+import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
+import { ACTIVITY_STATUS_LABELS, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
 
 interface ActivityDetailPageProps {
   params: Promise<{ id: string }>;
@@ -21,8 +22,13 @@ interface ActivityDetailPageProps {
 export default function ActivityDetailPage({ params }: ActivityDetailPageProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
 
   const { id: activityId } = use(params);
+
+  const approveMutation = useApproveActivity();
+  const rejectMutation = useRejectActivity();
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, MONITORING_ROLES)) {
@@ -55,6 +61,19 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
     );
   }
 
+  const canApprove = hasRole(user.role, ACTIVITY_APPROVER_ROLES) && activity.status === 'pending';
+
+  const handleApprove = async () => {
+    await approveMutation.mutateAsync(activityId);
+    router.push('/activities');
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) return;
+    await rejectMutation.mutateAsync({ id: activityId, reason: rejectReason });
+    router.push('/activities');
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <nav className="mb-6 text-sm">
@@ -80,12 +99,76 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold text-nb-black mb-2">Detail Aktivitas</h1>
-        <Badge variant="default" size="lg">
-          {activity.activity_type?.name || 'Unknown'}
-        </Badge>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-nb-black mb-2">Detail Aktivitas</h1>
+          <div className="flex gap-2">
+            <Badge variant="default" size="lg">
+              {activity.activity_type?.name || 'Unknown'}
+            </Badge>
+            <Badge variant={ACTIVITY_STATUS_BADGES[activity.status]} size="lg">
+              {ACTIVITY_STATUS_LABELS[activity.status]}
+            </Badge>
+          </div>
+        </div>
+        {canApprove && (
+          <div className="flex gap-2">
+            <Button
+              variant="success"
+              onClick={handleApprove}
+              loading={approveMutation.isPending}
+              leftIcon={<Check className="w-4 h-4" />}
+            >
+              Setujui
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setShowRejectForm(true)}
+              leftIcon={<X className="w-4 h-4" />}
+            >
+              Tolak
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Reject Form */}
+      {showRejectForm && (
+        <Card variant="elevated">
+          <CardContent>
+            <div className="space-y-3">
+              <h3 className="font-bold text-nb-black">Alasan Penolakan</h3>
+              <FormInput
+                label="Alasan"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Masukkan alasan penolakan..."
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleReject}
+                  disabled={!rejectReason.trim() || rejectMutation.isPending}
+                  loading={rejectMutation.isPending}
+                >
+                  Tolak Aktivitas
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setShowRejectForm(false);
+                    setRejectReason('');
+                  }}
+                >
+                  Batal
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card variant="elevated">
@@ -124,6 +207,41 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
             </div>
           </CardContent>
         </Card>
+
+        {/* Approval Info */}
+        {activity.status !== 'pending' && (
+          <Card variant="elevated">
+            <CardHeader>
+              <h2 className="text-xl font-bold text-nb-black">
+                {activity.status === 'approved' ? 'Persetujuan' : 'Penolakan'}
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {activity.reviewer && (
+                  <div>
+                    <div className="text-sm font-semibold text-nb-gray-600">Diproses Oleh</div>
+                    <div className="font-bold text-nb-black">{activity.reviewer.full_name}</div>
+                  </div>
+                )}
+                {activity.reviewed_at && (
+                  <div>
+                    <div className="text-sm font-semibold text-nb-gray-600">Tanggal Proses</div>
+                    <div className="font-bold text-nb-black">
+                      {new Date(activity.reviewed_at).toLocaleString('id-ID')}
+                    </div>
+                  </div>
+                )}
+                {activity.rejection_reason && (
+                  <div>
+                    <div className="text-sm font-semibold text-nb-gray-600">Alasan Penolakan</div>
+                    <div className="text-nb-gray-700">{activity.rejection_reason}</div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {activity.photo_urls && activity.photo_urls.length > 0 && (
           <Card variant="elevated">

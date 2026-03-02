@@ -36,8 +36,23 @@ async function fetchAreas(filters: AreaFilters = {}): Promise<PaginatedResponse<
   if (filters.page) params.append('page', filters.page.toString());
   if (filters.limit) params.append('limit', filters.limit.toString());
 
-  const response = await apiClient.get<PaginatedResponse<Area>>(`/areas?${params.toString()}`);
-  return response.data;
+  const response = await apiClient.get(`/areas?${params.toString()}`);
+  const responseData = response.data;
+
+  // Backend returns plain Array<Area>, wrap into PaginatedResponse
+  if (Array.isArray(responseData)) {
+    return {
+      data: responseData as Area[],
+      meta: {
+        total: responseData.length,
+        page: filters.page || 1,
+        limit: filters.limit || responseData.length,
+        totalPages: 1,
+      },
+    };
+  }
+
+  return responseData as PaginatedResponse<Area>;
 }
 
 /**

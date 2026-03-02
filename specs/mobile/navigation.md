@@ -2,6 +2,8 @@
 
 Complete navigation structure and routing for SEKAR React Native mobile application.
 
+> **⚠️ Phase 2C Update (February 2026):** The Phase 1-2B dual-navigator structure (WorkerTabs + SupervisorTabs) documented in the main body has been **replaced** with a unified `MainNavigator` that dynamically renders tabs based on user role. See [Phase 2C Navigation Structure](#phase-2c-navigation-restructure) at the bottom of this document for the current implementation. The code reference patterns (guards, testing, deep linking, etc.) in the main body remain valid.
+
 ## Overview
 
 ### Navigation Library
@@ -11,7 +13,31 @@ Complete navigation structure and routing for SEKAR React Native mobile applicat
 
 > **Design System:** Tab bar and header styling use Neo Brutalism 2.0 tokens from `specs/ui-ux/neo-brutalism.md`
 
-### Navigation Structure
+### Navigation Structure (Phase 2C — Current)
+
+```
+Root
+├─ Auth Stack (Unauthenticated)
+│  └─ Login
+│
+└─ Main Stack (Authenticated — all 8 roles)
+   └─ MainTabs (dynamically configured per role via TAB_CONFIGS)
+      ├─ Home (Tab) ─── [satgas, linmas, korlap, admin_data, kepala_rayon]
+      ├─ Aktivitas (Tab) ─── [satgas, linmas, korlap, admin_data]
+      ├─ Tugas (Tab) ─── [satgas, linmas, korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
+      ├─ Lembur (Tab) ─── [satgas, linmas]
+      ├─ Monitoring (Tab) ─── [korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
+      ├─ Profil (Tab) ─── [all roles]
+      │
+      ├─ ActivitySubmission (Modal)
+      ├─ ActivityDetail (Push)
+      ├─ TaskDetail (Push)
+      ├─ TaskCreate (Push)
+      ├─ OvertimeSubmit (Push)
+      └─ OvertimeDetail (Push)
+```
+
+### Navigation Structure (Phase 1-2B — Legacy)
 
 ```
 Root
@@ -1199,6 +1225,6 @@ Root
 ---
 
 **Document Owner:** Mobile Developer
-**Last Updated:** 2026-02-10
-**Status:** Active - Phase 2C Planning
+**Last Updated:** 2026-02-20
+**Status:** Active - Phase 2C Implemented
 **Related Docs:** [`screens.md`](./screens.md), [`state-management.md`](./state-management.md)

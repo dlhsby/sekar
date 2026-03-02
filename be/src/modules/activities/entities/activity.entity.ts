@@ -16,6 +16,20 @@ import { Task } from '../../tasks/entities/task.entity';
 import { ActivityType } from '../../activity-types/entities/activity-type.entity';
 
 /**
+ * Activity Approval Status Enum
+ *
+ * Phase 2C: Activity approval workflow
+ * - PENDING: Awaiting review by Korlap or Kepala Rayon
+ * - APPROVED: Activity has been accepted
+ * - REJECTED: Activity has been declined with a reason
+ */
+export enum ActivityStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+/**
  * Activity Entity (formerly Report)
  *
  * Represents work activities submitted by field workers during their shifts.
@@ -75,12 +89,51 @@ export class Activity {
   photo_urls: string[];
 
   @ApiProperty({ description: 'GPS latitude where activity was created', example: -7.2905, nullable: true })
-  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lat: number | null;
 
   @ApiProperty({ description: 'GPS longitude where activity was created', example: 112.7398, nullable: true })
-  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lng: number | null;
+
+  @ApiProperty({
+    description: 'Approval status of the activity',
+    enum: ActivityStatus,
+    default: ActivityStatus.PENDING,
+    example: ActivityStatus.PENDING,
+  })
+  @Column({ type: 'varchar', length: 20, default: ActivityStatus.PENDING })
+  status: ActivityStatus;
+
+  @ApiProperty({ description: 'UUID of the user who reviewed this activity', nullable: true })
+  @Column({ type: 'uuid', nullable: true })
+  reviewed_by: string | null;
+
+  @ApiProperty({ description: 'Timestamp when the activity was reviewed', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
+  reviewed_at: Date | null;
+
+  @ApiProperty({ description: 'Reason for rejection (if rejected)', nullable: true })
+  @Column({ type: 'text', nullable: true })
+  rejection_reason: string | null;
 
   @ApiProperty({ description: 'Activity creation timestamp' })
   @CreateDateColumn({ type: 'timestamptz' })
@@ -129,4 +182,13 @@ export class Activity {
   @ManyToOne(() => ActivityType, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'activity_type_id' })
   activityType: ActivityType;
+
+  @ApiProperty({
+    type: () => User,
+    description: 'User who reviewed (approved/rejected) this activity',
+    nullable: true,
+  })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'reviewed_by' })
+  reviewer: User | null;
 }

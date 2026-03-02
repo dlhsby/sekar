@@ -25,7 +25,7 @@ jest.mock('@react-native-community/netinfo', () => ({
 // Mock sync manager
 jest.mock('../../services/sync', () => ({
   syncManager: {
-    syncNow: jest.fn(),
+    forceSyncNow: jest.fn(),
   },
 }));
 
@@ -49,7 +49,7 @@ describe('NetworkProvider', () => {
       type: 'wifi',
     });
 
-    (syncManager.syncNow as jest.Mock).mockResolvedValue(undefined);
+    (syncManager.forceSyncNow as jest.Mock).mockResolvedValue(undefined);
 
     // Create store
     store = configureStore({
@@ -129,7 +129,7 @@ describe('NetworkProvider', () => {
     });
 
     // Should trigger sync when going from offline to online
-    expect(syncManager.syncNow).toHaveBeenCalled();
+    expect(syncManager.forceSyncNow).toHaveBeenCalled();
   });
 
   it('should dispatch setOnlineStatus when network changes to offline', async () => {
@@ -360,7 +360,7 @@ describe('NetworkProvider', () => {
     );
 
     await waitFor(() => {
-      expect(syncManager.syncNow).toHaveBeenCalled();
+      expect(syncManager.forceSyncNow).toHaveBeenCalled();
     });
   });
 
@@ -385,10 +385,10 @@ describe('NetworkProvider', () => {
       expect(store.getState().offline.isOnline).toBe(false);
     });
 
-    expect(syncManager.syncNow).not.toHaveBeenCalled();
+    expect(syncManager.forceSyncNow).not.toHaveBeenCalled();
   });
 
-  it('should handle sync errors gracefully', async () => {
+  it('should trigger sync on reconnect without crashing', async () => {
     let networkChangeCallback: any;
 
     addEventListenerMock.mockImplementation((callback) => {
@@ -396,7 +396,6 @@ describe('NetworkProvider', () => {
       return unsubscribeMock;
     });
 
-    (syncManager.syncNow as jest.Mock).mockRejectedValue(new Error('Sync failed'));
     (NetInfo.fetch as jest.Mock).mockResolvedValue({
       isConnected: false,
       isInternetReachable: false,
@@ -428,14 +427,7 @@ describe('NetworkProvider', () => {
 
     await waitFor(() => {
       expect(store.getState().offline.isOnline).toBe(true);
-    });
-
-    // Sync error should be logged but not crash the app
-    await waitFor(() => {
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        '[NetworkProvider] Sync after reconnect failed:',
-        expect.any(Error)
-      );
+      expect(syncManager.forceSyncNow).toHaveBeenCalled();
     });
   });
 

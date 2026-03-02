@@ -27,11 +27,27 @@ export class LocationLog {
   shift_id: string;
 
   @ApiProperty({ description: 'GPS latitude', example: -7.2905 })
-  @Column({ type: 'decimal', precision: 10, scale: 8 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
   gps_lat: number;
 
   @ApiProperty({ description: 'GPS longitude', example: 112.7398 })
-  @Column({ type: 'decimal', precision: 11, scale: 8 })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
   gps_lng: number;
 
   @ApiProperty({

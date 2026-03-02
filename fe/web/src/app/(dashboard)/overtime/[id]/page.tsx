@@ -180,13 +180,15 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">Tanggal</div>
                 <div className="font-bold text-nb-black">
-                  {new Date(overtime.date).toLocaleDateString('id-ID')}
+                  {new Date(overtime.start_datetime).toLocaleDateString('id-ID')}
                 </div>
               </div>
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">Waktu</div>
                 <div className="font-bold text-nb-black font-mono">
-                  {overtime.start_time} - {overtime.end_time}
+                  {new Date(overtime.start_datetime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  {' - '}
+                  {new Date(overtime.end_datetime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
               <div>

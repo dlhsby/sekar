@@ -133,7 +133,7 @@ describe('tasksApi', () => {
 
       const result = await tasksApi.getTaggedTasks();
 
-      expect(mockGet).toHaveBeenCalledWith('/tasks/tagged');
+      expect(mockGet).toHaveBeenCalledWith('/tasks/tagged', undefined);
       expect(result).toEqual(mockResponse);
     });
   });
@@ -215,7 +215,7 @@ describe('tasksApi', () => {
       const taskId = 'task-123';
       const completeData = {
         description: 'Task completed successfully',
-        completion_photo_url: 'https://example.com/photo.jpg',
+        completion_photo_urls: ['https://example.com/photo.jpg'],
       };
       const mockResponse = { data: { id: taskId, status: 'completed' } };
       mockPost.mockResolvedValue(mockResponse);

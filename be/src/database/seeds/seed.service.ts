@@ -58,49 +58,33 @@ export class SeedService {
 
     // Now delete all records (tables should exist now)
     // Clear in reverse FK order to avoid constraint violations
-    // IMPORTANT: Delete tasks first (if table exists) as it references areas, area_types, and users
-    try {
-      await this.userRepository.manager.query('DELETE FROM tasks');
-      console.log('  ✓ Cleared tasks table');
-    } catch (_error) {
-      // Table may not exist if Phase 2 not deployed
-      console.log('  ⚠️  No tasks to clear (table may not exist - Phase 2 feature)');
-    }
+    // Clear all tables in reverse FK order to avoid constraint violations
+    // Phase 2+ tables first, then Phase 1 tables
+    const tablesToClear = [
+      'notifications',
+      'overtimes',
+      'worker_schedules',
+      'special_day_overrides',
+      'area_staff_requirements',
+      'work_reports',
+      'tasks',
+      'location_logs',
+      'activities',
+      'shifts',
+      'areas',
+      'area_types',
+      'activity_types',
+      'rayons',
+      'users',
+    ];
 
-    try {
-      await this.locationLogRepository.createQueryBuilder().delete().execute();
-    } catch (_error) {
-      console.log('  ⚠️  No location_logs to clear (table may be empty)');
-    }
-
-    try {
-      await this.activityRepository.createQueryBuilder().delete().execute();
-    } catch (_error) {
-      console.log('  ⚠️  No activities to clear (table may be empty)');
-    }
-
-    try {
-      await this.shiftRepository.createQueryBuilder().delete().execute();
-    } catch (_error) {
-      console.log('  ⚠️  No shifts to clear (table may be empty)');
-    }
-
-    try {
-      await this.areaRepository.createQueryBuilder().delete().execute();
-    } catch (_error) {
-      console.log('  ⚠️  No areas to clear (table may be empty)');
-    }
-
-    try {
-      await this.areaTypeRepository.createQueryBuilder().delete().execute();
-    } catch (_error) {
-      console.log('  ⚠️  No area_types to clear (table may be empty)');
-    }
-
-    try {
-      await this.userRepository.createQueryBuilder().delete().execute();
-    } catch (_error) {
-      console.log('  ⚠️  No users to clear (table may be empty)');
+    for (const table of tablesToClear) {
+      try {
+        await this.userRepository.manager.query(`DELETE FROM ${table}`);
+        console.log(`  ✓ Cleared ${table}`);
+      } catch (_error) {
+        console.log(`  ⚠️  Skipped ${table} (may not exist)`);
+      }
     }
   }
 
@@ -110,37 +94,37 @@ export class SeedService {
     const users = [
       {
         username: 'admin',
-        password: 'admin123',
+        password: 'password123',
         full_name: 'System Administrator',
         role: UserRole.SUPERADMIN,
       },
       {
         username: 'korlap1',
-        password: 'korlap123',
+        password: 'password123',
         full_name: 'Korlap Satu',
         role: UserRole.KORLAP,
       },
       {
         username: 'korlap2',
-        password: 'korlap123',
+        password: 'password123',
         full_name: 'Korlap Dua',
         role: UserRole.KORLAP,
       },
       {
         username: 'satgas1',
-        password: 'satgas123',
+        password: 'password123',
         full_name: 'Satgas Satu',
         role: UserRole.SATGAS,
       },
       {
         username: 'satgas2',
-        password: 'satgas123',
+        password: 'password123',
         full_name: 'Satgas Dua',
         role: UserRole.SATGAS,
       },
       {
         username: 'satgas3',
-        password: 'satgas123',
+        password: 'password123',
         full_name: 'Satgas Tiga',
         role: UserRole.SATGAS,
       },
@@ -158,14 +142,8 @@ export class SeedService {
       console.log(`  ✓ Created ${userData.role}: ${userData.username}`);
     }
 
-    // Phase 2C: Assign area_id to korlap users
-    console.log('📍 Assigning area_id to korlap users...');
-    await this.userRepository.manager.query(`
-      UPDATE users
-      SET area_id = (SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1)
-      WHERE username IN ('korlap1', 'korlap2');
-    `);
-    console.log('  ✓ Updated korlap1 and korlap2 with area_id');
+    // NOTE: area_id for korlap1/korlap2 is assigned in seed-phase2.ts STEP 8.5
+    // (cannot set here because seedAreas() runs after seedUsers())
   }
 
   private async seedAreaTypes() {
@@ -228,6 +206,17 @@ export class SeedService {
         radius_meters: 150,
         address: 'Jl. Taman Bungkul, Darmo, Surabaya',
         is_active: true,
+        boundary_polygon: {
+          type: 'Polygon',
+          coordinates: [[
+            [112.7388, -7.2895],
+            [112.7408, -7.2895],
+            [112.7408, -7.2915],
+            [112.7388, -7.2915],
+            [112.7388, -7.2895],
+          ]],
+        },
+        coverage_area: 44000,
       },
       {
         name: 'Jalan Raya Darmo',
@@ -237,6 +226,17 @@ export class SeedService {
         radius_meters: 200,
         address: 'Jl. Raya Darmo, Surabaya',
         is_active: true,
+        boundary_polygon: {
+          type: 'Polygon',
+          coordinates: [[
+            [112.7905, -7.2834],
+            [112.7925, -7.2834],
+            [112.7925, -7.2854],
+            [112.7905, -7.2854],
+            [112.7905, -7.2834],
+          ]],
+        },
+        coverage_area: 44000,
       },
       {
         name: 'Taman Harmoni',
@@ -246,6 +246,17 @@ export class SeedService {
         radius_meters: 100,
         address: 'Jl. Ketintang, Surabaya',
         is_active: true,
+        boundary_polygon: {
+          type: 'Polygon',
+          coordinates: [[
+            [112.7365, -7.3027],
+            [112.7385, -7.3027],
+            [112.7385, -7.3047],
+            [112.7365, -7.3047],
+            [112.7365, -7.3027],
+          ]],
+        },
+        coverage_area: 44000,
       },
     ];
 
@@ -260,116 +271,91 @@ export class SeedService {
   private async seedShifts() {
     console.log('⏰ Seeding shifts...');
 
-    // Get workers
-    const satgas1 = await this.userRepository.findOne({
-      where: { username: 'satgas1' },
-    });
-    const satgas2 = await this.userRepository.findOne({
-      where: { username: 'satgas2' },
-    });
-    const satgas3 = await this.userRepository.findOne({
-      where: { username: 'satgas3' },
-    });
+    // Get all clockable users (satgas, linmas, korlap)
+    const satgas1 = await this.userRepository.findOne({ where: { username: 'satgas1' } });
+    const satgas2 = await this.userRepository.findOne({ where: { username: 'satgas2' } });
+    const satgas3 = await this.userRepository.findOne({ where: { username: 'satgas3' } });
 
     if (!satgas1 || !satgas2 || !satgas3) {
-      throw new Error('Workers not found. Ensure users are seeded first.');
+      throw new Error('Satgas workers not found. Ensure users are seeded first.');
     }
 
     // Get areas
-    const area1 = await this.areaRepository.findOne({
-      where: { name: 'Taman Bungkul' },
-    });
-    const area2 = await this.areaRepository.findOne({
-      where: { name: 'Jalan Raya Darmo' },
-    });
-    const area3 = await this.areaRepository.findOne({
-      where: { name: 'Taman Harmoni' },
-    });
+    const area1 = await this.areaRepository.findOne({ where: { name: 'Taman Bungkul' } });
+    const area2 = await this.areaRepository.findOne({ where: { name: 'Jalan Raya Darmo' } });
+    const area3 = await this.areaRepository.findOne({ where: { name: 'Taman Harmoni' } });
 
     if (!area1 || !area2 || !area3) {
       throw new Error('Areas not found. Ensure areas are seeded first.');
     }
 
     // Create timestamps relative to current time
-    // Active shift should be 2 hours ago so worker can clock out
     const now = new Date();
     const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
 
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(8, 0, 0, 0);
-
     const yesterdayEnd = new Date(yesterday);
     yesterdayEnd.setHours(16, 0, 0, 0);
 
     const twoDaysAgo = new Date(now);
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
     twoDaysAgo.setHours(8, 15, 0, 0);
-
     const twoDaysAgoEnd = new Date(twoDaysAgo);
     twoDaysAgoEnd.setHours(16, 30, 0, 0);
 
-    const shifts = [
-      // Completed shifts from yesterday
+    interface ShiftSeedData {
+      user_id: string;
+      area_id: string;
+      clock_in_time: Date;
+      clock_in_gps_lat: number;
+      clock_in_gps_lng: number;
+      clock_in_photo_url: string;
+      clock_out_time: Date | null;
+      clock_out_gps_lat: number | null;
+      clock_out_gps_lng: number | null;
+      workerName: string;
+      areaName: string;
+    }
+
+    const shifts: ShiftSeedData[] = [
+      // === SATGAS SHIFTS (4) ===
       {
-        user_id: satgas1.id,
-        area_id: area1.id,
-        clock_in_time: yesterday,
-        clock_in_gps_lat: -7.2905,
-        clock_in_gps_lng: 112.7398,
-        clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/satgas1-abc123.jpg',
-        clock_out_time: yesterdayEnd,
-        clock_out_gps_lat: -7.2906,
-        clock_out_gps_lng: 112.7399,
-        workerName: satgas1.username,
-        areaName: area1.name,
+        user_id: satgas1.id, area_id: area1.id,
+        clock_in_time: yesterday, clock_in_gps_lat: -7.2905, clock_in_gps_lng: 112.7398,
+        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/satgas1-abc123.jpg',
+        clock_out_time: yesterdayEnd, clock_out_gps_lat: -7.2906, clock_out_gps_lng: 112.7399,
+        workerName: 'satgas1', areaName: area1.name,
       },
       {
-        user_id: satgas2.id,
-        area_id: area2.id,
-        clock_in_time: new Date(yesterday.getTime() - 30 * 60 * 1000), // 7:30 AM
-        clock_in_gps_lat: -7.2844,
-        clock_in_gps_lng: 112.7915,
-        clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/satgas2-def456.jpg',
-        clock_out_time: new Date(yesterdayEnd.getTime() - 30 * 60 * 1000), // 3:30 PM
-        clock_out_gps_lat: -7.2845,
-        clock_out_gps_lng: 112.7916,
-        workerName: satgas2.username,
-        areaName: area2.name,
+        user_id: satgas2.id, area_id: area2.id,
+        clock_in_time: new Date(yesterday.getTime() - 30 * 60 * 1000),
+        clock_in_gps_lat: -7.2844, clock_in_gps_lng: 112.7915,
+        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/08/clock-in/satgas2-def456.jpg',
+        clock_out_time: new Date(yesterdayEnd.getTime() - 30 * 60 * 1000),
+        clock_out_gps_lat: -7.2845, clock_out_gps_lng: 112.7916,
+        workerName: 'satgas2', areaName: area2.name,
       },
-      // Completed shift from 2 days ago
       {
-        user_id: satgas3.id,
-        area_id: area3.id,
-        clock_in_time: twoDaysAgo,
-        clock_in_gps_lat: -7.3037,
-        clock_in_gps_lng: 112.7375,
-        clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/07/clock-in/satgas3-ghi789.jpg',
-        clock_out_time: twoDaysAgoEnd,
-        clock_out_gps_lat: -7.3038,
-        clock_out_gps_lng: 112.7376,
-        workerName: satgas3.username,
-        areaName: area3.name,
+        user_id: satgas3.id, area_id: area3.id,
+        clock_in_time: twoDaysAgo, clock_in_gps_lat: -7.3037, clock_in_gps_lng: 112.7375,
+        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/07/clock-in/satgas3-ghi789.jpg',
+        clock_out_time: twoDaysAgoEnd, clock_out_gps_lat: -7.3038, clock_out_gps_lng: 112.7376,
+        workerName: 'satgas3', areaName: area3.name,
       },
-      // Active shift for today (satgas1 clocked in 2 hours ago, can clock out now)
       {
-        user_id: satgas1.id,
-        area_id: area1.id,
-        clock_in_time: twoHoursAgo,
-        clock_in_gps_lat: -7.2905,
-        clock_in_gps_lng: 112.7398,
-        clock_in_photo_url:
-          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/satgas1-jkl012.jpg',
-        clock_out_time: null,
-        clock_out_gps_lat: null,
-        clock_out_gps_lng: null,
-        workerName: satgas1.username,
-        areaName: area1.name,
+        user_id: satgas1.id, area_id: area1.id,
+        clock_in_time: twoHoursAgo, clock_in_gps_lat: -7.2905, clock_in_gps_lng: 112.7398,
+        clock_in_photo_url: 'https://sekar-media.s3.ap-southeast-1.amazonaws.com/sekar-media/2026/01/09/clock-in/satgas1-jkl012.jpg',
+        clock_out_time: null, clock_out_gps_lat: null, clock_out_gps_lng: null,
+        workerName: 'satgas1', areaName: area1.name,
       },
     ];
+
+    // === LINMAS, KORLAP, ADMIN_DATA, KEPALA_RAYON shifts ===
+    // Phase 2C role shifts (linmas, admin_data, kepala_rayon) are seeded in seed-phase2.ts
+    // since those users are created there.
 
     for (const shiftData of shifts) {
       await this.shiftRepository.save({
@@ -384,9 +370,7 @@ export class SeedService {
         clock_out_gps_lng: shiftData.clock_out_gps_lng,
       } as any);
       const status = shiftData.clock_out_time ? 'completed' : 'active';
-      console.log(
-        `  ✓ Created ${status} shift for ${shiftData.workerName} at ${shiftData.areaName}`,
-      );
+      console.log(`  ✓ Created ${status} shift for ${shiftData.workerName} at ${shiftData.areaName}`);
     }
 
     // Phase 2C: Set boundary flag for testing monitoring dashboard warnings

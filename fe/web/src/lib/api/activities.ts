@@ -63,3 +63,41 @@ export function useDeleteActivity() {
     },
   });
 }
+
+/**
+ * Approve Activity (korlap, kepala_rayon)
+ */
+export function useApproveActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiClient.patch<Activity>(`/activities/${id}/approve`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.details() });
+    },
+  });
+}
+
+/**
+ * Reject Activity (korlap, kepala_rayon)
+ */
+export function useRejectActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const response = await apiClient.patch<Activity>(`/activities/${id}/reject`, {
+        reason,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.details() });
+    },
+  });
+}

@@ -1,11 +1,12 @@
-import { IsOptional, IsUUID, IsEnum, IsDateString } from 'class-validator';
+import { IsOptional, IsUUID, IsEnum, IsDateString, IsIn } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskStatus, TaskPriority } from '../entities/task.entity';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 /**
- * DTO for filtering tasks
+ * DTO for filtering tasks with pagination and sorting
  */
-export class TaskFilterDto {
+export class TaskFilterDto extends PaginationDto {
   @ApiPropertyOptional({
     description: 'Filter by area ID',
     example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
@@ -85,4 +86,22 @@ export class TaskFilterDto {
   @IsDateString()
   @IsOptional()
   created_before?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sort by field',
+    enum: ['created_at', 'deadline', 'priority'],
+    default: 'created_at',
+  })
+  @IsOptional()
+  @IsIn(['created_at', 'deadline', 'priority'])
+  sort_by?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sort direction',
+    enum: ['asc', 'desc'],
+    default: 'desc',
+  })
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sort_dir?: string;
 }

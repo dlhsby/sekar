@@ -28,14 +28,11 @@ export class Overtime {
   @Column('uuid', { nullable: true })
   area_id?: string;
 
-  @Column('date')
-  date: string;
+  @Column({ type: 'timestamptz', default: () => 'NOW()' })
+  start_datetime: Date;
 
-  @Column('time')
-  start_time: string;
-
-  @Column('time')
-  end_time: string;
+  @Column({ type: 'timestamptz', default: () => 'NOW()' })
+  end_datetime: Date;
 
   @Column({
     type: 'varchar',
@@ -54,9 +51,6 @@ export class Overtime {
   @Column({ type: 'text', nullable: true })
   rejection_reason?: string;
 
-  @Column({ type: 'text', nullable: true })
-  notes?: string;
-
   @Column('uuid')
   activity_type_id: string;
 
@@ -66,10 +60,28 @@ export class Overtime {
   @Column('text', { array: true, default: '{}' })
   photo_urls: string[];
 
-  @Column('decimal', { precision: 10, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lat?: number;
 
-  @Column('decimal', { precision: 11, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   gps_lng?: number;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })

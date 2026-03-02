@@ -433,7 +433,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       },
     });
 
-    const { getAllByText } = render(
+    const { getByText } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ClockInOutScreen />
@@ -441,16 +441,14 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       </Provider>
     );
 
-    // Should show clock out title (may appear multiple times)
+    // Clock-out subtitle should appear
     await waitFor(() => {
-      const clockOutElements = getAllByText('Clock Out');
-      expect(clockOutElements.length).toBeGreaterThan(0);
+      expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
     });
 
-    // Clock out button should be available (no selfie required)
+    // Kirim button should be available (no selfie required for clock-out)
     await waitFor(() => {
-      const clockOutButtons = getAllByText('Clock Out');
-      expect(clockOutButtons.length).toBeGreaterThan(0);
+      expect(getByText('Kirim')).toBeTruthy();
     });
   });
 

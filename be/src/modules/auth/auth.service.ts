@@ -78,6 +78,8 @@ export class AuthService {
         username: user.username,
         full_name: user.full_name,
         role: user.role,
+        area_id: user.area_id || null,
+        rayon_id: user.rayon_id || null,
       },
     };
   }
@@ -174,6 +176,8 @@ export class AuthService {
           username: user.username,
           full_name: user.full_name,
           role: user.role,
+          area_id: user.area_id || null,
+          rayon_id: user.rayon_id || null,
         },
       };
     } catch (error) {

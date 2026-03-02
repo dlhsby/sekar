@@ -24,7 +24,7 @@ curl http://16.79.183.240:3000/api/v1/health
 # Login test
 curl -X POST http://16.79.183.240:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"password123"}'
 ```
 
 ---
@@ -208,7 +208,7 @@ git push origin main
 # Login to get token
 curl -X POST http://16.79.183.240:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"worker1","password":"worker123"}' \
+  -d '{"username":"worker1","password":"password123"}' \
   | jq -r '.access_token' > /tmp/token.txt
 
 # Register FCM token (from mobile app)
@@ -225,15 +225,15 @@ curl -X POST http://16.79.183.240:3000/api/v1/notifications/register-token \
 ```
 Admin:
   username: admin
-  password: admin123
+  password: password123
 
 Supervisors:
   username: supervisor1 / supervisor2
-  password: supervisor123
+  password: password123
 
 Workers:
   username: worker1 / worker2 / worker3
-  password: worker123
+  password: password123
 ```
 
 ## Phase 2C Test Credentials (After Deployment)
@@ -243,15 +243,15 @@ Workers:
 ```
 Superadmin:
   username: superadmin
-  password: superadmin123
+  password: superpassword123
 
 Admin System:
   username: admin_system
-  password: admin123
+  password: password123
 
 Admin Data:
   username: admin_data
-  password: admin123
+  password: password123
 
 Korlap (Field Coordinator):
   username: korlap1

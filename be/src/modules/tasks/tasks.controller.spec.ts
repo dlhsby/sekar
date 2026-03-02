@@ -9,6 +9,7 @@ import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
 import { TagUsersDto } from './dto/tag-users.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 describe('TasksController', () => {
   let controller: TasksController;
@@ -86,14 +87,15 @@ describe('TasksController', () => {
   });
 
   describe('findAll', () => {
-    it('should return all tasks', async () => {
+    it('should return paginated tasks', async () => {
       const tasks = [mockTask];
-      tasksService.findAll.mockResolvedValue(tasks as Task[]);
+      const paginated = new PaginatedResponseDto(tasks as Task[], 1, 1, 50);
+      tasksService.findAll.mockResolvedValue(paginated);
 
-      const result = await controller.findAll({});
+      const result = await controller.findAll({}, mockUser as User);
 
-      expect(tasksService.findAll).toHaveBeenCalledWith({});
-      expect(result).toEqual(tasks);
+      expect(tasksService.findAll).toHaveBeenCalledWith({}, mockUser);
+      expect(result).toEqual(paginated);
     });
 
     it('should apply filters', async () => {
@@ -102,44 +104,48 @@ describe('TasksController', () => {
         status: TaskStatus.PENDING,
       };
       const tasks = [mockTask];
-      tasksService.findAll.mockResolvedValue(tasks as Task[]);
+      const paginated = new PaginatedResponseDto(tasks as Task[], 1, 1, 50);
+      tasksService.findAll.mockResolvedValue(paginated);
 
-      const result = await controller.findAll(filters);
+      const result = await controller.findAll(filters, mockUser as User);
 
-      expect(tasksService.findAll).toHaveBeenCalledWith(filters);
-      expect(result).toEqual(tasks);
+      expect(tasksService.findAll).toHaveBeenCalledWith(filters, mockUser);
+      expect(result).toEqual(paginated);
     });
   });
 
   describe('findMyTasks', () => {
-    it('should return tasks for current user with activeOnly default', async () => {
+    it('should return paginated tasks for current user with activeOnly default (false)', async () => {
       const tasks = [mockTask];
-      tasksService.findMyTasks.mockResolvedValue(tasks as Task[]);
+      const paginated = new PaginatedResponseDto(tasks as Task[], 1, 1, 50);
+      tasksService.findMyTasks.mockResolvedValue(paginated);
 
       const result = await controller.findMyTasks(mockUser as User);
 
-      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, true);
-      expect(result).toEqual(tasks);
+      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, false, undefined);
+      expect(result).toEqual(paginated);
     });
 
     it('should return all tasks when activeOnly is false', async () => {
       const tasks = [mockTask];
-      tasksService.findMyTasks.mockResolvedValue(tasks as Task[]);
+      const paginated = new PaginatedResponseDto(tasks as Task[], 1, 1, 50);
+      tasksService.findMyTasks.mockResolvedValue(paginated);
 
       const result = await controller.findMyTasks(mockUser as User, 'false');
 
-      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, false);
-      expect(result).toEqual(tasks);
+      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, false, undefined);
+      expect(result).toEqual(paginated);
     });
 
     it('should return active tasks when activeOnly is true', async () => {
       const tasks = [mockTask];
-      tasksService.findMyTasks.mockResolvedValue(tasks as Task[]);
+      const paginated = new PaginatedResponseDto(tasks as Task[], 1, 1, 50);
+      tasksService.findMyTasks.mockResolvedValue(paginated);
 
       const result = await controller.findMyTasks(mockUser as User, 'true');
 
-      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, true);
-      expect(result).toEqual(tasks);
+      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, true, undefined);
+      expect(result).toEqual(paginated);
     });
   });
 
@@ -147,9 +153,9 @@ describe('TasksController', () => {
     it('should return a task by id', async () => {
       tasksService.findOne.mockResolvedValue(mockTask as Task);
 
-      const result = await controller.findOne('task-uuid');
+      const result = await controller.findOne('task-uuid', mockUser as User);
 
-      expect(tasksService.findOne).toHaveBeenCalledWith('task-uuid');
+      expect(tasksService.findOne).toHaveBeenCalledWith('task-uuid', mockUser);
       expect(result).toEqual(mockTask);
     });
   });
@@ -164,9 +170,9 @@ describe('TasksController', () => {
 
       tasksService.update.mockResolvedValue(updatedTask as Task);
 
-      const result = await controller.update('task-uuid', updateDto);
+      const result = await controller.update('task-uuid', updateDto, mockUser as User);
 
-      expect(tasksService.update).toHaveBeenCalledWith('task-uuid', updateDto);
+      expect(tasksService.update).toHaveBeenCalledWith('task-uuid', updateDto, mockUser.id);
       expect(result).toEqual(updatedTask);
     });
   });
@@ -194,9 +200,9 @@ describe('TasksController', () => {
 
       tasksService.assign.mockResolvedValue(assignedTask as Task);
 
-      const result = await controller.assign('task-uuid', assignDto);
+      const result = await controller.assign('task-uuid', assignDto, mockUser as User);
 
-      expect(tasksService.assign).toHaveBeenCalledWith('task-uuid', assignDto);
+      expect(tasksService.assign).toHaveBeenCalledWith('task-uuid', assignDto, mockUser.id);
       expect(result).toEqual(assignedTask);
     });
   });
@@ -222,15 +228,13 @@ describe('TasksController', () => {
     it('should complete a task with evidence', async () => {
       const completeDto: CompleteTaskDto = {
         description: 'Task completed successfully',
-        completion_photo_url: 'https://example.com/photo.jpg',
+        completion_photo_urls: ['https://example.com/photo.jpg'],
       };
       const completedTask = {
         ...mockTask,
         status: TaskStatus.COMPLETED,
-        completion_gps_lat: -7.2575,
-        completion_gps_lng: 112.7521,
         completion_notes: 'Task completed successfully',
-        completion_photo_url: 'https://example.com/photo.jpg',
+        completion_photo_urls: ['https://example.com/photo.jpg'],
       };
 
       tasksService.complete.mockResolvedValue(completedTask as Task);
@@ -243,14 +247,15 @@ describe('TasksController', () => {
   });
 
   describe('findTaggedTasks', () => {
-    it('should return tagged tasks for current user', async () => {
+    it('should return paginated tagged tasks for current user', async () => {
       const tasks = [mockTask];
-      tasksService.findTaggedTasks.mockResolvedValue(tasks as Task[]);
+      const paginated = new PaginatedResponseDto(tasks as Task[], 1, 1, 50);
+      tasksService.findTaggedTasks.mockResolvedValue(paginated);
 
       const result = await controller.findTaggedTasks(mockUser as User);
 
-      expect(tasksService.findTaggedTasks).toHaveBeenCalledWith(mockUser.id);
-      expect(result).toEqual(tasks);
+      expect(tasksService.findTaggedTasks).toHaveBeenCalledWith(mockUser.id, undefined);
+      expect(result).toEqual(paginated);
     });
   });
 

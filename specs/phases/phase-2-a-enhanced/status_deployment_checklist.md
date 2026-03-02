@@ -23,11 +23,11 @@
 
 | Role | Username | Password |
 |------|----------|----------|
-| Admin | admin | admin123 |
+| Admin | admin | password123 |
 | KepalaRayon | kepalarayon1 | rayon123 |
 | KoordinatorLapangan | koordinator1 | koordinator123 |
-| Worker 1 | worker1 | worker123 |
-| Worker 2 | worker2 | worker123 |
+| Worker 1 | worker1 | password123 |
+| Worker 2 | worker2 | password123 |
 | Linmas 1 | linmas1 | linmas123 |
 
 ### API Testing Tools
@@ -485,7 +485,7 @@ npm run lint
 |---|-----------|----------|--------|---------|
 | 260 | Web - Access / (root) | Redirect to /login | [ ] | |
 | 261 | Web - Access /login | Login page | [ ] | |
-| 262 | Web - Login admin/admin123 | Redirect to /dashboard | [ ] | |
+| 262 | Web - Login admin/password123 | Redirect to /dashboard | [ ] | |
 | 263 | Web - Login invalid | Error message | [ ] | |
 | 264 | Web - JWT in httpOnly cookie | Cookie set | [ ] | |
 | 265 | Web - Protected route without JWT | Redirect to /login | [ ] | |
@@ -1028,7 +1028,7 @@ API_URL="http://staging.sekar.wahyutrip.com"
 ```bash
 TOKEN=$(curl -s -X POST $API_URL/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}' \
+  -d '{"username":"admin","password":"password123"}' \
   | jq -r '.access_token')
 ```
 

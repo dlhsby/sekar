@@ -17,10 +17,16 @@ export interface ChangePasswordRequest {
 
 /**
  * Get all users (for task assignment)
+ * Backend returns paginated response { data: User[], meta }, so we unwrap it.
+ * @param limit - Max users to fetch (default 200 to get all)
  * @returns List of users
  */
-export async function getUsers(): Promise<ApiResponse<User[]>> {
-  return get<User[]>('/users');
+export async function getUsers(limit = 100): Promise<ApiResponse<User[]>> {
+  const response = await get<{ data: User[]; meta: any }>('/users', { limit });
+  if (response.data?.data) {
+    return { data: response.data.data };
+  }
+  return { data: [], error: response.error };
 }
 
 /**

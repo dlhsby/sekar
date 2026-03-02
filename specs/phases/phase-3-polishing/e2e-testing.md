@@ -137,7 +137,7 @@ describe('Authentication', () => {
 
   it('should login successfully with valid credentials', async () => {
     await element(by.id('input-nip')).typeText('worker1');
-    await element(by.id('input-password')).typeText('worker123');
+    await element(by.id('input-password')).typeText('password123');
     await element(by.id('btn-login')).tap();
     await expect(element(by.id('dashboard-screen'))).toBeVisible();
   });
@@ -241,7 +241,7 @@ test.describe('User Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[data-testid="input-email"]', 'admin');
-    await page.fill('[data-testid="input-password"]', 'admin123');
+    await page.fill('[data-testid="input-password"]', 'password123');
     await page.click('[data-testid="btn-login"]');
     await page.goto('/users');
   });
@@ -380,9 +380,9 @@ cd be && npm run seed
 ```
 
 **Test Users:**
-- `admin` / `admin123` (Admin role)
-- `supervisor1` / `supervisor123` (Supervisor role)
-- `worker1`, `worker2`, `worker3` / `worker123` (Worker role)
+- `admin` / `password123` (Admin role)
+- `supervisor1` / `password123` (Supervisor role)
+- `worker1`, `worker2`, `worker3` / `password123` (Worker role)
 
 ### Mock Data for E2E
 
@@ -394,9 +394,9 @@ export const testLocations = {
 };
 
 export const testUsers = {
-  worker: { nip: 'worker1', password: 'worker123' },
-  supervisor: { nip: 'supervisor1', password: 'supervisor123' },
-  admin: { nip: 'admin', password: 'admin123' },
+  worker: { nip: 'worker1', password: 'password123' },
+  supervisor: { nip: 'supervisor1', password: 'password123' },
+  admin: { nip: 'admin', password: 'password123' },
 };
 ```
 

@@ -65,9 +65,13 @@ export function TodayActivitiesModal({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable
+        {/* View instead of Pressable: onStartShouldSetResponder blocks overlay tap
+            propagation. onMoveShouldSetResponder=false releases the responder during
+            moves so ScrollView can claim scroll gestures cleanly. */}
+        <View
           style={styles.modalContent}
-          onPress={(e) => e?.stopPropagation?.()}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => false}
         >
           {/* Header */}
           <View style={styles.header}>
@@ -179,7 +183,7 @@ export function TodayActivitiesModal({
               })
             )}
           </ScrollView>
-        </Pressable>
+        </View>
       </Pressable>
     </Modal>
   );
@@ -200,6 +204,9 @@ const styles = StyleSheet.create({
     borderRightWidth: nbBorders.base,
     borderColor: nbColors.black,
     maxHeight: '80%',
+    // flexShrink: 1 ensures the container participates in bounded flex layout,
+    // giving ScrollView a constrained parent height so scrolling engages.
+    flexShrink: 1,
     ...nbShadows.lg,
   },
   header: {

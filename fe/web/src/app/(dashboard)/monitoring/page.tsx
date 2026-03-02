@@ -34,6 +34,16 @@ export default function MonitoringPage() {
     }
   }, [user, authLoading, router]);
 
+  // Auto-scope based on role
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'korlap' && user.area_id) {
+      setAreaFilter(user.area_id);
+    } else if (user.role === 'kepala_rayon' && user.rayon_id) {
+      setRayonFilter(user.rayon_id);
+    }
+  }, [user]);
+
   // Fetch filter options
   const { data: rayonsData } = useRayons();
   const { data: areasData } = useAreas({

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,11 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
+import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import {
   nbColors,
   nbTypography,
@@ -18,7 +20,7 @@ import {
 } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useClockInOut } from '../../hooks';
-import { formatTime } from '../../utils/dateUtils';
+import { formatDateTime } from '../../utils/dateUtils';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
 /**
@@ -28,6 +30,8 @@ import type { MainTabScreenProps } from '../../types/navigation.types';
  */
 export const ClockInOutScreen = (): React.JSX.Element => {
   const navigation = useNavigation<MainTabScreenProps<'ClockInOut'>['navigation']>();
+  const [isAreaExpanded, setIsAreaExpanded] = useState(false);
+  const [isLocationExpanded, setIsLocationExpanded] = useState(true);
 
   const {
     location,
@@ -45,7 +49,28 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     handleClockOut,
   } = useClockInOut();
 
-  const goBack = () => navigation.goBack();
+  const goBack = useCallback(() => navigation.goBack(), [navigation]);
+
+  // Override navigator header: FieldHomeHeader owns all 3 columns (title + onBack).
+  // try/catch suppresses the "outside a screen" error thrown by NavigationContainer in
+  // test/Storybook contexts where setOptions exists but cannot be called. All other
+  // errors (e.g. render crash inside FieldHomeHeader) are re-thrown.
+  useEffect(() => {
+    try {
+      navigation.setOptions({
+        headerTitle: () => (
+          <FieldHomeHeader
+            title={isClockIn ? 'Clock In' : 'Clock Out'}
+            onBack={goBack}
+          />
+        ),
+      });
+    } catch (e: unknown) {
+      if (!(e instanceof Error) || !e.message.includes('outside a screen')) {
+        throw e;
+      }
+    }
+  }, [navigation, goBack, isClockIn]);
 
   // No assigned area
   if (!assignedArea) {
@@ -94,134 +119,171 @@ export const ClockInOutScreen = (): React.JSX.Element => {
       opacity={0.06}
     >
       <View style={styles.container}>
+        {/* Scrollable content area — sits above the submit button */}
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Offline Banner */}
-        {!isOnline && isClockIn && (
-          <View style={styles.offlineBanner}>
-            <Text style={styles.offlineBannerIcon}>📵</Text>
-            <Text style={styles.offlineBannerText}>Mode Offline - Clock in memerlukan koneksi</Text>
+          {/* Offline Banner (top of scroll) */}
+          {!isOnline && isClockIn && (
+            <View style={styles.offlineBanner}>
+              <Text style={styles.offlineBannerIcon}>📵</Text>
+              <Text style={styles.offlineBannerText}>Mode Offline - Clock in memerlukan koneksi</Text>
+            </View>
+          )}
+
+          {/* Header Subtitle */}
+          <View style={styles.header}>
+            <Text style={styles.headerSubtitle}>
+              {isClockIn
+                ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
+                : 'Konfirmasi lokasi untuk mengakhiri shift'}
+            </Text>
           </View>
-        )}
 
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{isClockIn ? 'Clock In' : 'Clock Out'}</Text>
-          <Text style={styles.headerSubtitle}>
-            {isClockIn
-              ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
-              : 'Konfirmasi lokasi untuk mengakhiri shift'}
-          </Text>
-        </View>
-
-        {/* Area Info Card */}
-        <NBCard variant="elevated" style={styles.card}>
-          <Text style={styles.cardTitle}>Area Ditugaskan</Text>
-          <Text style={styles.areaName}>{assignedArea.name}</Text>
-          {assignedArea.address && <Text style={styles.areaAddress}>{assignedArea.address}</Text>}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Tipe Area:</Text>
-            <Text style={styles.infoValue}>{assignedArea.area_type?.name || 'N/A'}</Text>
-          </View>
-          {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Koordinat GPS:</Text>
-              <Text style={styles.infoValue}>
-                {Number(assignedArea.gps_lat).toFixed(6)}, {Number(assignedArea.gps_lng).toFixed(6)}
-              </Text>
-            </View>
-          )}
-          {assignedArea.radius_meters != null && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Radius Batas:</Text>
-              <Text style={styles.infoValue}>{assignedArea.radius_meters}m</Text>
-            </View>
-          )}
-        </NBCard>
-
-        {/* Location Card */}
-        <NBCard variant="elevated" style={styles.card}>
-          <Text style={styles.cardTitle}>Lokasi Anda</Text>
-          {location.error ? (
-            <View>
-              <Text style={styles.errorText}>{location.error}</Text>
-              <NBButton title="Coba Lagi" onPress={getCurrentLocation} variant="secondary" fullWidth />
-            </View>
-          ) : location.latitude && location.longitude ? (
-            <View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>GPS:</Text>
-                <Text style={styles.infoValue}>
-                  {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-                </Text>
-              </View>
-              {location.accuracy !== null && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Akurasi:</Text>
-                  <Text style={styles.infoValue}>{location.accuracy.toFixed(0)}m</Text>
-                </View>
-              )}
-              {location.accuracy !== null && location.accuracy > config.GPS_ACCURACY_THRESHOLD && (
-                <View style={styles.warningBox}>
-                  <Text style={styles.warningIcon}>⚠️</Text>
-                  <Text style={styles.warningText}>GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.</Text>
-                </View>
-              )}
-              {!isWithinBoundary && isClockIn && (
-                <View style={styles.softWarningBanner}>
-                  <Text style={styles.softWarningIcon}>⚠️</Text>
-                  <Text style={styles.softWarningText}>Anda berada di luar area kerja. Absen tetap dicatat.</Text>
-                </View>
-              )}
-              <NBButton title="Perbarui Lokasi" onPress={getCurrentLocation} variant="info" fullWidth disabled={location.loading} />
-              {!isClockIn && currentShift && (
-                <View style={styles.clockInInfo}>
-                  <View style={styles.timerContainer}>
-                    <Text style={styles.timerLabel}>Waktu Shift:</Text>
-                    <Text style={styles.timerValue}>{timer}</Text>
-                  </View>
-                  <View style={styles.clockInTimeRow}>
-                    <Text style={styles.clockInLabel}>Clock In:</Text>
-                    <Text style={styles.clockInTime}>{formatTime(currentShift.clock_in_time)}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          ) : (
-            <ActivityIndicator size="small" color={nbColors.primary} />
-          )}
-        </NBCard>
-
-        {/* Selfie Card (Clock In only) */}
-        {isClockIn && (
+          {/* Area Info Card - Collapsible */}
           <NBCard variant="elevated" style={styles.card}>
-            <Text style={styles.cardTitle}>Foto Selfie</Text>
-            {selfieUri ? (
-              <View>
-                <Image source={{ uri: selfieUri }} style={styles.selfieImage} />
-                <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+            <TouchableOpacity
+              style={styles.collapsibleHeader}
+              onPress={() => setIsAreaExpanded(v => !v)}
+              accessibilityLabel={isAreaExpanded ? 'Sembunyikan detail area' : 'Tampilkan detail area'}
+            >
+              <View style={styles.collapsibleHeaderLeft}>
+                <Text style={styles.cardTitle}>Area Ditugaskan</Text>
+                <Text style={styles.areaName}>{assignedArea.name}</Text>
               </View>
-            ) : (
-              <View>
-                <Text style={styles.selfiePrompt}>Ambil selfie untuk verifikasi identitas</Text>
-                <NBButton title="Ambil Selfie" onPress={handleCaptureSelfie} variant="primary" fullWidth />
+              <Text style={styles.chevron}>{isAreaExpanded ? '▼' : '▶'}</Text>
+            </TouchableOpacity>
+            {isAreaExpanded && (
+              <View style={styles.collapsibleBody}>
+                {assignedArea.address && <Text style={styles.areaAddress}>{assignedArea.address}</Text>}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Tipe Area:</Text>
+                  <Text style={styles.infoValue}>{assignedArea.area_type?.name || 'N/A'}</Text>
+                </View>
+                {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Koordinat GPS:</Text>
+                    <Text style={styles.infoValue}>
+                      {Number(assignedArea.gps_lat).toFixed(6)}, {Number(assignedArea.gps_lng).toFixed(6)}
+                    </Text>
+                  </View>
+                )}
+                {assignedArea.radius_meters != null && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Radius Batas:</Text>
+                    <Text style={styles.infoValue}>{assignedArea.radius_meters}m</Text>
+                  </View>
+                )}
               </View>
             )}
           </NBCard>
-        )}
 
-        {/* Offline Warning */}
+          {/* Selfie Card (Clock In only) */}
+          {isClockIn && (
+            <NBCard variant="elevated" style={styles.card}>
+              <Text style={styles.cardTitle}>Foto Selfie</Text>
+              {selfieUri ? (
+                <View>
+                  <Image source={{ uri: selfieUri }} style={styles.selfieImage} />
+                  <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+                </View>
+              ) : (
+                <View>
+                  <Text style={styles.selfiePrompt}>Ambil selfie untuk verifikasi identitas</Text>
+                  <NBButton title="Ambil Selfie" onPress={handleCaptureSelfie} variant="primary" fullWidth />
+                </View>
+              )}
+            </NBCard>
+          )}
+
+          {/* Location Card - Collapsible, default open */}
+          <NBCard variant="elevated" style={styles.card}>
+            <TouchableOpacity
+              style={styles.collapsibleHeader}
+              onPress={() => setIsLocationExpanded(v => !v)}
+              accessibilityLabel={isLocationExpanded ? 'Sembunyikan detail lokasi' : 'Tampilkan detail lokasi'}
+            >
+              <Text style={styles.cardTitle}>Lokasi Anda</Text>
+              <Text style={styles.chevron}>{isLocationExpanded ? '▼' : '▶'}</Text>
+            </TouchableOpacity>
+            {isLocationExpanded && (
+              location.error ? (
+                <View style={styles.collapsibleBody}>
+                  <Text style={styles.errorText}>{location.error}</Text>
+                  <NBButton title="Coba Lagi" onPress={getCurrentLocation} variant="secondary" fullWidth />
+                </View>
+              ) : location.latitude && location.longitude ? (
+                <View style={styles.collapsibleBody}>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>GPS:</Text>
+                    <Text style={styles.infoValue}>
+                      {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                    </Text>
+                  </View>
+                  {location.accuracy !== null && (
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Akurasi:</Text>
+                      <Text style={styles.infoValue}>{location.accuracy.toFixed(0)}m</Text>
+                    </View>
+                  )}
+                  {location.accuracy !== null && location.accuracy > config.GPS_ACCURACY_THRESHOLD && (
+                    <View style={styles.warningBox}>
+                      <Text style={styles.warningIcon}>⚠️</Text>
+                      <Text style={styles.warningText}>GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.</Text>
+                    </View>
+                  )}
+                  {/* Location Status Banner - bilateral feedback for both clock-in and clock-out */}
+                  {isWithinBoundary ? (
+                    <View style={styles.insideAreaBanner}>
+                      <Text style={styles.insideAreaIcon}>✅</Text>
+                      <Text style={styles.insideAreaText}>Anda berada di dalam area kerja</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.softWarningBanner}>
+                      <Text style={styles.softWarningIcon}>⚠️</Text>
+                      <Text style={styles.softWarningText}>Anda berada di luar area kerja. Absen tetap dicatat.</Text>
+                    </View>
+                  )}
+                  <NBButton title="Perbarui Lokasi" onPress={getCurrentLocation} variant="info" fullWidth disabled={location.loading} />
+                  {!isClockIn && currentShift && (
+                    <View style={styles.clockInInfo}>
+                      <View style={styles.timerContainer}>
+                        <Text style={styles.timerLabel}>Waktu Shift:</Text>
+                        <Text style={styles.timerValue}>{timer}</Text>
+                      </View>
+                      <View style={styles.clockInTimeRow}>
+                        <Text style={styles.clockInLabel}>Clock In:</Text>
+                        <Text style={styles.clockInTime}>{formatDateTime(currentShift.clock_in_time)}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.collapsibleBody}>
+                  <ActivityIndicator size="small" color={nbColors.primary} />
+                </View>
+              )
+            )}
+          </NBCard>
+        </ScrollView>
+
+        {/* Offline warnings — between scroll and submit button */}
         {!isOnline && isClockIn && (
           <View style={styles.offlineWarning}>
             <Text style={styles.offlineWarningText}>⚠️ Anda harus online untuk clock in. Sambungkan ke internet terlebih dahulu.</Text>
           </View>
         )}
+        {!isOnline && !isClockIn && (
+          <View style={styles.offlineWarning}>
+            <Text style={styles.offlineWarningText}>⚠️ Mode offline. Clock out akan disinkronkan saat online.</Text>
+          </View>
+        )}
 
-        {/* Clock In/Out Button */}
-        <View style={styles.submitButtonContainer}>
+        {/* Submit Button — fixed at bottom, scrollable area sits above */}
+        <View style={styles.submitBar}>
           <NBButton
-            title={isClockIn ? 'Clock In' : 'Clock Out'}
+            title="Kirim"
             onPress={isClockIn ? () => handleClockIn(goBack) : () => handleClockOut(goBack)}
             variant="primary"
+            size="lg"
             fullWidth
             loading={isSubmitting}
             disabled={
@@ -233,16 +295,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             }
           />
         </View>
-
-        {/* Offline Warning for Clock-out */}
-        {!isOnline && !isClockIn && (
-          <View style={styles.offlineWarning}>
-            <Text style={styles.offlineWarningText}>⚠️ Mode offline. Clock out akan disinkronkan saat online.</Text>
-          </View>
-        )}
-      </ScrollView>
-        </View>
-      </NBBackgroundPattern>
+      </View>
+    </NBBackgroundPattern>
   );
 };
 
@@ -267,18 +321,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingVertical: nbSpacing.md,
-    paddingBottom: nbSpacing.xl,
+    paddingTop: nbSpacing.md,
+    paddingBottom: nbSpacing.xs,
   },
   header: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
-  },
-  title: {
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
-    marginBottom: 2,
   },
   subtitle: {
     fontSize: nbTypography.fontSize.sm,
@@ -296,6 +344,22 @@ const styles = StyleSheet.create({
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
     padding: 10,
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  collapsibleHeaderLeft: {
+    flex: 1,
+  },
+  collapsibleBody: {
+    marginTop: nbSpacing.sm,
+  },
+  chevron: {
+    fontSize: nbTypography.fontSize.base,
+    color: nbColors.gray[600],
+    marginLeft: nbSpacing.sm,
   },
   cardTitle: {
     fontSize: nbTypography.fontSize.base,
@@ -352,13 +416,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: nbSpacing.sm,
   },
-  submitButtonContainer: {
-    marginHorizontal: nbSpacing.md,
-    marginTop: nbSpacing.xs,
+  submitBar: {
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing.md,
+    paddingTop: nbSpacing.xs,
+    backgroundColor: 'transparent',
   },
   offlineWarning: {
     marginHorizontal: nbSpacing.md,
-    marginTop: nbSpacing.sm,
+    marginBottom: nbSpacing.xs,
     padding: nbSpacing.sm,
     backgroundColor: nbColors.white,
     borderRadius: 0,
@@ -415,6 +481,28 @@ const styles = StyleSheet.create({
     color: nbColors.gray[700],
     fontWeight: nbTypography.fontWeight.medium,
   },
+  insideAreaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: nbSpacing.sm,
+    marginBottom: nbSpacing.xs,
+    padding: nbSpacing.sm,
+    backgroundColor: nbColors.accentGrass,
+    borderRadius: 0,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
+  },
+  insideAreaIcon: {
+    fontSize: 18,
+    marginRight: nbSpacing.sm,
+  },
+  insideAreaText: {
+    flex: 1,
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.white,
+  },
   softWarningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -450,16 +538,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   timerLabel: {
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.medium,
     color: nbColors.gray[600],
     marginBottom: 1,
   },
   timerValue: {
-    fontSize: nbTypography.fontSize.xl,
+    fontSize: 40,
     fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.accentGrass,
+    color: nbColors.warning,
     letterSpacing: 1,
+    textAlign: 'center',
   },
   clockInTimeRow: {
     flexDirection: 'row',

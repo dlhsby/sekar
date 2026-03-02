@@ -12,11 +12,24 @@
  *
  * Note: This service requires @react-native-firebase/messaging to be installed.
  * Install with: npm install @react-native-firebase/app @react-native-firebase/messaging
+ *
+ * Uses the v22+ modular API (functional style).
  */
 
 import { Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
-import messaging from '@react-native-firebase/messaging';
+import {
+  getMessaging,
+  getToken,
+  requestPermission,
+  hasPermission,
+  onMessage,
+  onTokenRefresh,
+  getInitialNotification,
+  onNotificationOpenedApp,
+  deleteToken,
+  FirebaseMessagingTypes,
+} from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import type { Notification } from '../../types/models.types';
 import { registerDevice, unregisterDevice } from '../api/notificationsApi';
@@ -69,10 +82,11 @@ interface RemoteMessage {
  * FCM Service Class
  *
  * Manages Firebase Cloud Messaging integration for push notifications.
- * This service is designed to work with @react-native-firebase/messaging.
+ * This service is designed to work with @react-native-firebase/messaging v22+
+ * using the modular (functional) API.
  */
 class FCMService {
-  private messaging: any = null;
+  private messaging: FirebaseMessagingTypes.Module | null = null;
   private reduxStore: Store | null = null;
   private fcmToken: string | null = null;
   private permissionStatus: NotificationPermission = NotificationPermission.NOT_DETERMINED;
@@ -98,8 +112,8 @@ class FCMService {
     this.reduxStore = store;
 
     try {
-      // Get Firebase Messaging instance
-      this.messaging = messaging();
+      // Get Firebase Messaging instance (modular API)
+      this.messaging = getMessaging();
 
       console.debug('[FCM] Initializing Firebase Cloud Messaging');
 
@@ -161,10 +175,10 @@ class FCMService {
     try {
       console.debug('[FCM] Requesting notification permission');
 
-      const authStatus = await this.messaging.requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      const authStatus = await requestPermission(this.messaging);
+      // AuthorizationStatus values: AUTHORIZED=1, PROVISIONAL=2
+      // Using numeric literals because FirebaseMessagingTypes is a type namespace, not a runtime value
+      const enabled = authStatus === 1 || authStatus === 2;
 
       this.permissionStatus = enabled
         ? NotificationPermission.AUTHORIZED
@@ -202,7 +216,7 @@ class FCMService {
     }
 
     try {
-      const token = await this.messaging.getToken();
+      const token = await getToken(this.messaging);
 
       if (token) {
         this.fcmToken = token;
@@ -298,7 +312,7 @@ class FCMService {
 
     console.debug('[FCM] Setting up token refresh listener');
 
-    this.unsubscribeTokenRefresh = this.messaging.onTokenRefresh(async (token: string) => {
+    this.unsubscribeTokenRefresh = onTokenRefresh(this.messaging, async (token: string) => {
       console.debug('[FCM] Token refreshed:', token.substring(0, 20) + '...');
 
       this.fcmToken = token;
@@ -325,7 +339,8 @@ class FCMService {
     console.debug('[FCM] Setting up message handlers');
 
     // Foreground message handler
-    this.unsubscribeForeground = this.messaging.onMessage(
+    this.unsubscribeForeground = onMessage(
+      this.messaging,
       async (remoteMessage: RemoteMessage) => {
         console.debug('[FCM] Foreground notification received:', remoteMessage);
 
@@ -396,7 +411,8 @@ class FCMService {
     this.openedHandlers.push(handler);
 
     // Listen for notification that opened the app from background/quit state
-    const unsubscribe = this.messaging.onNotificationOpenedApp(
+    const unsubscribe = onNotificationOpenedApp(
+      this.messaging,
       async (remoteMessage: RemoteMessage) => {
         console.debug('[FCM] Notification opened app:', remoteMessage);
 
@@ -428,7 +444,7 @@ class FCMService {
     }
 
     try {
-      const remoteMessage = await this.messaging.getInitialNotification();
+      const remoteMessage = await getInitialNotification(this.messaging);
 
       if (remoteMessage) {
         console.debug('[FCM] Initial notification:', remoteMessage);
@@ -493,10 +509,10 @@ class FCMService {
     }
 
     try {
-      const authStatus = await this.messaging.hasPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      const authStatus = await hasPermission(this.messaging);
+      // AuthorizationStatus values: AUTHORIZED=1, PROVISIONAL=2
+      // Using numeric literals because FirebaseMessagingTypes is a type namespace, not a runtime value
+      const enabled = authStatus === 1 || authStatus === 2;
 
       this.permissionStatus = enabled
         ? NotificationPermission.AUTHORIZED
@@ -557,7 +573,7 @@ class FCMService {
     try {
       console.debug('[FCM] Deleting token');
 
-      await this.messaging.deleteToken();
+      await deleteToken(this.messaging);
       this.fcmToken = null;
 
       if (this.reduxStore) {

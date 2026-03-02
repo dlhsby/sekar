@@ -3,32 +3,27 @@
  * Phase 2C: simplified — description + photo only (GPS removed)
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   Alert,
-  Image,
-  TextInput,
   ActivityIndicator,
-  TouchableOpacity,
-  FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
+import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBCardTextInput } from '../../components/nb';
+import { PhotoUploader } from '../../components/common';
+import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
+import { nbColors, nbSpacing, nbTypography } from '../../constants/nbTokens';
 import { mediaService, type Photo } from '../../services/media';
-import { requestCameraPermission } from '../../services/permissions';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as tasksApi from '../../services/api/tasksApi';
-import type { MainTabParamList } from '../../types/navigation.types';
+import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import type { Task } from '../../types/models.types';
 
 type TaskCompleteRouteProp = RouteProp<MainTabParamList, 'TaskComplete'>;
-type TaskCompleteNavigationProp = NativeStackNavigationProp<MainTabParamList, 'TaskComplete'>;
+type TaskCompleteNavigationProp = MainTabScreenProps<'TaskComplete'>['navigation'];
 
 export function TaskCompleteScreen(): React.JSX.Element {
   const navigation = useNavigation<TaskCompleteNavigationProp>();
@@ -40,7 +35,6 @@ export function TaskCompleteScreen(): React.JSX.Element {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [description, setDescription] = useState('');
-  const photoListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -60,28 +54,9 @@ export function TaskCompleteScreen(): React.JSX.Element {
     fetchTask();
   }, [taskId, navigation]);
 
-  const handleAddPhotoFromCamera = useCallback(async () => {
-    if (!mediaService.validatePhotoCount(photos.length)) {
-      Alert.alert('Maksimal Foto', `Maksimal ${mediaService.getMaxPhotos()} foto.`);
-      return;
-    }
-    const permissionResult = await requestCameraPermission();
-    if (!permissionResult.granted) {
-      if (permissionResult.message) {
-        Alert.alert('Izin Kamera', permissionResult.message);
-      }
-      return;
-    }
-    try {
-      const photo = await mediaService.capturePhoto(false);
-      if (photo) {
-        setPhotos((prev) => [...prev, photo]);
-        setTimeout(() => photoListRef.current?.scrollToEnd({ animated: true }), 100);
-      }
-    } catch {
-      Alert.alert('Error', 'Gagal mengambil foto');
-    }
-  }, [photos.length]);
+  const handleAddPhoto = useCallback((photo: Photo) => {
+    setPhotos((prev) => [...prev, photo]);
+  }, []);
 
   const handleRemovePhoto = useCallback((photoId: string) => {
     setPhotos((prev) => prev.filter((p) => p.id !== photoId));
@@ -116,16 +91,21 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
     setIsSubmitting(true);
     try {
+      const photoBase64Array: string[] = [];
+      for (const photo of photos) {
+        const base64 = await mediaService.convertToBase64(photo);
+        photoBase64Array.push(base64);
+      }
       await tasksApi.completeTask(task.id, {
         description: description.trim(),
-        completion_photo_url: photos[0].uri,
+        completion_photo_urls: photoBase64Array,
       });
       clearForm();
       Alert.alert('Berhasil', 'Tugas berhasil diselesaikan', [
-        { text: 'OK', onPress: () => navigation.goBack() },
+        { text: 'OK', onPress: () => navigation.navigate('TasksActivities', { initialTab: 'tasks' }) },
       ]);
-    } catch {
-      Alert.alert('Error', 'Gagal menyelesaikan tugas. Silakan coba lagi.');
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Gagal menyelesaikan tugas. Silakan coba lagi.');
     } finally {
       setIsSubmitting(false);
     }
@@ -133,36 +113,9 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity onPress={handleCancel} style={styles.headerBackButton}>
-          <MaterialCommunityIcons name="arrow-left" size={28} color={nbColors.black} />
-        </TouchableOpacity>
-      ),
+      headerTitle: () => <FieldHomeHeader title="Selesaikan Tugas" onBack={handleCancel} />,
     });
   }, [navigation, handleCancel]);
-
-  const renderPhotoItem = useCallback(({ item }: { item: Photo }) => (
-    <View style={styles.photoItem}>
-      <Image source={{ uri: item.uri }} style={styles.photoThumbnail} />
-      <TouchableOpacity
-        style={styles.removePhotoButton}
-        onPress={() => handleRemovePhoto(item.id)}
-        accessibilityLabel="Hapus foto"
-      >
-        <Text style={styles.removePhotoText}>✕</Text>
-      </TouchableOpacity>
-    </View>
-  ), [handleRemovePhoto]);
-
-  const renderAddPhotoButton = useCallback(() => {
-    if (!mediaService.validatePhotoCount(photos.length)) return null;
-    return (
-      <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddPhotoFromCamera}>
-        <Text style={styles.addPhotoIcon}>+</Text>
-        <Text style={styles.addPhotoText}>Foto</Text>
-      </TouchableOpacity>
-    );
-  }, [photos.length, handleAddPhotoFromCamera]);
 
   if (isLoading) {
     return (
@@ -202,40 +155,27 @@ export function TaskCompleteScreen(): React.JSX.Element {
         </NBCard>
 
         {/* Description (required) */}
-        <NBCard style={styles.card}>
-          <NBCardHeader>
-            <Text style={styles.sectionTitle}>Deskripsi Penyelesaian *</Text>
-          </NBCardHeader>
-          <NBCardContent>
-            <TextInput
-              style={styles.notesInput}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Jelaskan hasil pekerjaan..."
-              placeholderTextColor={nbColors.gray['400']}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </NBCardContent>
-        </NBCard>
+        <NBCardTextInput
+          title="Deskripsi Penyelesaian"
+          required
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Jelaskan hasil pekerjaan..."
+          numberOfLines={4}
+          style={styles.card}
+        />
 
         {/* Photo Evidence */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <Text style={styles.sectionTitle}>Foto Bukti *</Text>
-            <Text style={styles.sectionSubtitle}>Tambahkan 1 foto hasil pekerjaan</Text>
+            <Text style={styles.sectionTitle}>📸 FOTO BUKTI *</Text>
+            <Text style={styles.sectionSubtitle}>Tambahkan 1-3 foto hasil pekerjaan</Text>
           </NBCardHeader>
           <NBCardContent>
-            <FlatList
-              ref={photoListRef}
-              data={photos}
-              renderItem={renderPhotoItem}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              ListFooterComponent={renderAddPhotoButton}
-              style={styles.photoList}
+            <PhotoUploader
+              photos={photos}
+              onAdd={handleAddPhoto}
+              onRemove={handleRemovePhoto}
             />
           </NBCardContent>
         </NBCard>
@@ -259,7 +199,6 @@ export function TaskCompleteScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   contentContainer: { paddingVertical: nbSpacing.md, paddingBottom: nbSpacing.xl },
-  headerBackButton: { marginLeft: 16 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' },
   loadingText: { marginTop: nbSpacing.md, fontSize: nbTypography.fontSize.base, color: nbColors.gray['600'] },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', paddingHorizontal: nbSpacing.lg },
@@ -269,15 +208,6 @@ const styles = StyleSheet.create({
   sectionSubtitle: { fontSize: nbTypography.fontSize.sm, fontWeight: nbTypography.fontWeight.medium, color: nbColors.gray['600'], marginBottom: nbSpacing.md },
   taskTitle: { fontSize: nbTypography.fontSize.base, fontWeight: '600', color: nbColors.black, marginBottom: nbSpacing.xs },
   taskArea: { fontSize: nbTypography.fontSize.sm, color: nbColors.gray['600'] },
-  photoList: { marginTop: nbSpacing.sm },
-  photoItem: { marginRight: nbSpacing.sm, position: 'relative' },
-  photoThumbnail: { width: 160, height: 160, borderRadius: nbBorderRadius.base, borderWidth: nbBorders.base, borderColor: nbColors.black },
-  removePhotoButton: { position: 'absolute', top: -12, right: -12, backgroundColor: nbColors.danger, width: 48, height: 48, borderRadius: 24, borderWidth: nbBorders.base, borderColor: nbColors.black, alignItems: 'center', justifyContent: 'center', ...nbShadows.sm },
-  removePhotoText: { color: nbColors.white, fontSize: 24, fontWeight: nbTypography.fontWeight.bold },
-  addPhotoButton: { width: 160, height: 160, borderRadius: nbBorderRadius.base, borderWidth: nbBorders.base, borderColor: nbColors.black, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', backgroundColor: nbColors.gray['50'] },
-  addPhotoIcon: { fontSize: 32, color: nbColors.gray['600'] },
-  addPhotoText: { color: nbColors.gray['600'], fontSize: nbTypography.fontSize.xs, marginTop: nbSpacing.xs },
-  notesInput: { borderWidth: nbBorders.base, borderColor: nbColors.black, borderRadius: nbBorderRadius.base, padding: nbSpacing.md, fontSize: nbTypography.fontSize.base, color: nbColors.black, backgroundColor: nbColors.white, minHeight: 100 },
   actionContainer: { marginHorizontal: nbSpacing.md, marginTop: nbSpacing.md, gap: nbSpacing.sm },
 });
 

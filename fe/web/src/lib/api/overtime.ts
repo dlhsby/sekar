@@ -75,7 +75,7 @@ export function useRejectOvertime() {
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       const response = await apiClient.patch<Overtime>(`/overtime/${id}/reject`, {
-        rejection_reason: reason,
+        reason,
       });
       return response.data;
     },

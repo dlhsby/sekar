@@ -3,8 +3,10 @@ import { OvertimeController } from './overtime.controller';
 import { OvertimeService } from './overtime.service';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
+import { OvertimeFilterDto } from './dto/overtime-filter.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { OvertimeStatus } from './entities/overtime.entity';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 describe('OvertimeController', () => {
   let controller: OvertimeController;
@@ -12,8 +14,8 @@ describe('OvertimeController', () => {
 
   const mockOvertimeService = {
     submit: jest.fn(),
-    findMy: jest.fn(),
-    findPending: jest.fn(),
+    findMyPaginated: jest.fn(),
+    findAllPaginated: jest.fn(),
     findOne: jest.fn(),
     approve: jest.fn(),
     reject: jest.fn(),
@@ -41,10 +43,8 @@ describe('OvertimeController', () => {
   describe('submit', () => {
     it('should call service.submit with correct parameters', async () => {
       const createDto: CreateOvertimeDto = {
-        date: '2026-02-10',
-        start_time: '17:00',
-        end_time: '20:00',
-        notes: 'Extra work',
+        start_datetime: '2026-02-10T17:00:00+07:00',
+        end_datetime: '2026-02-10T20:00:00+07:00',
         activity_type_id: 'activity-uuid-1',
         description: 'Cleaned park',
         photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
@@ -72,53 +72,73 @@ describe('OvertimeController', () => {
   });
 
   describe('findMy', () => {
-    it('should call service.findMy with user id', async () => {
+    it('should call service.findMyPaginated with user id and filters', async () => {
       const user = { id: 'user-uuid-1', role: UserRole.SATGAS } as User;
-      const mockOvertimes = [
-        { id: 'overtime-1', status: OvertimeStatus.PENDING },
-      ];
+      const filterDto: OvertimeFilterDto = { status: OvertimeStatus.PENDING };
+      const mockResponse = new PaginatedResponseDto(
+        [{ id: 'overtime-1', status: OvertimeStatus.PENDING }],
+        1,
+        1,
+        50,
+      );
 
-      mockOvertimeService.findMy.mockResolvedValue(mockOvertimes);
+      mockOvertimeService.findMyPaginated.mockResolvedValue(mockResponse);
 
-      const result = await controller.findMy(user);
+      const result = await controller.findMy(user, filterDto);
 
-      expect(service.findMy).toHaveBeenCalledWith(user.id);
-      expect(result).toEqual(mockOvertimes);
+      expect(service.findMyPaginated).toHaveBeenCalledWith(user.id, filterDto);
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
     });
   });
 
-  describe('findPending', () => {
-    it('should call service.findPending with user id and role', async () => {
+  describe('findAll', () => {
+    it('should call service.findAllPaginated with user id, role and filters', async () => {
       const user = { id: 'korlap-uuid-1', role: UserRole.KORLAP } as User;
-      const mockOvertimes = [
-        { id: 'overtime-1', status: OvertimeStatus.PENDING },
-      ];
+      const filterDto: OvertimeFilterDto = {};
+      const mockResponse = new PaginatedResponseDto(
+        [{ id: 'overtime-1', status: OvertimeStatus.PENDING }],
+        1,
+        1,
+        50,
+      );
 
-      mockOvertimeService.findPending.mockResolvedValue(mockOvertimes);
+      mockOvertimeService.findAllPaginated.mockResolvedValue(mockResponse);
 
-      const result = await controller.findPending(user);
+      const result = await controller.findAll(user, filterDto);
 
-      expect(service.findPending).toHaveBeenCalledWith(user.id, user.role);
-      expect(result).toEqual(mockOvertimes);
+      expect(service.findAllPaginated).toHaveBeenCalledWith(
+        user.id,
+        user.role,
+        filterDto,
+      );
+      expect(result.data).toHaveLength(1);
     });
 
-    it('should call service.findPending for admin_data user (rayon-scoped)', async () => {
+    it('should call service.findAllPaginated for admin_data user', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid-1',
         role: UserRole.ADMIN_DATA,
         rayon_id: 'rayon-uuid-1',
       } as User;
-      const mockOvertimes = [
-        { id: 'overtime-1', status: OvertimeStatus.PENDING },
-        { id: 'overtime-2', status: OvertimeStatus.PENDING },
-      ];
+      const filterDto: OvertimeFilterDto = {};
+      const mockResponse = new PaginatedResponseDto(
+        [{ id: 'overtime-1' }, { id: 'overtime-2' }],
+        2,
+        1,
+        50,
+      );
 
-      mockOvertimeService.findPending.mockResolvedValue(mockOvertimes);
+      mockOvertimeService.findAllPaginated.mockResolvedValue(mockResponse);
 
-      const result = await controller.findPending(adminDataUser);
+      const result = await controller.findAll(adminDataUser, filterDto);
 
-      expect(service.findPending).toHaveBeenCalledWith(adminDataUser.id, adminDataUser.role);
-      expect(result).toEqual(mockOvertimes);
+      expect(service.findAllPaginated).toHaveBeenCalledWith(
+        adminDataUser.id,
+        adminDataUser.role,
+        filterDto,
+      );
+      expect(result.data).toHaveLength(2);
     });
   });
 
@@ -152,7 +172,6 @@ describe('OvertimeController', () => {
       expect(service.approve).toHaveBeenCalledWith(
         overtimeId,
         user.id,
-        user.role,
       );
       expect(result).toEqual(mockOvertime);
     });
@@ -176,7 +195,6 @@ describe('OvertimeController', () => {
       expect(service.reject).toHaveBeenCalledWith(
         overtimeId,
         user.id,
-        user.role,
         rejectDto,
       );
       expect(result).toEqual(mockOvertime);

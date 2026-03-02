@@ -226,9 +226,9 @@ cd ~/sekar/backend
 ✅ Task seeding complete
 
 Test credentials:
-  Admin:      admin / admin123
-  Supervisor: supervisor1 / supervisor123
-  Worker:     worker1 / worker123
+  Admin:      admin / password123
+  Supervisor: supervisor1 / password123
+  Worker:     worker1 / password123
 ```
 
 ### Step 6: Verify Deployment
@@ -242,7 +242,7 @@ curl http://16.79.183.240:3000/api/v1/health
 # Login as admin
 curl -X POST http://16.79.183.240:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"password123"}'
 
 # API documentation
 open http://16.79.183.240:3000/api/docs
@@ -893,7 +893,7 @@ for ROLE in superadmin admin_system admin_data korlap1 satgas1 linmas1 kepala_ra
   echo "Testing $ROLE..."
   TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
     -H "Content-Type: application/json" \
-    -d "{\"username\":\"$ROLE\",\"password\":\"${ROLE/admin/admin123}\"}" \
+    -d "{\"username\":\"$ROLE\",\"password\":\"${ROLE/admin/password123}\"}" \
     | jq -r '.access_token')
 
   if [ "$TOKEN" != "null" ]; then
@@ -926,7 +926,7 @@ docker run --rm -e PGPASSWORD=$DATABASE_PASSWORD \
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"superadmin","password":"superadmin123"}' \
+  -d '{"username":"superadmin","password":"superpassword123"}' \
   | jq -r '.access_token')
 
 # These should return 404

@@ -85,7 +85,16 @@ export class Shift {
     example: -7.2905,
     nullable: true,
   })
-  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   clock_in_gps_lat: number;
 
   @ApiProperty({
@@ -93,7 +102,16 @@ export class Shift {
     example: 112.7398,
     nullable: true,
   })
-  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   clock_in_gps_lng: number;
 
   @ApiProperty({
@@ -118,7 +136,16 @@ export class Shift {
     example: -7.2906,
     nullable: true,
   })
-  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   clock_out_gps_lat: number;
 
   @ApiProperty({
@@ -126,7 +153,16 @@ export class Shift {
     example: 112.7399,
     nullable: true,
   })
-  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value ? parseFloat(value) : null),
+    },
+  })
   clock_out_gps_lng: number;
 
   @ApiProperty({

@@ -95,9 +95,7 @@ Six test users covering all roles: 1 admin, 2 supervisors, 3 workers.
 
 ```sql
 -- Passwords are all bcrypt hashed with 10 rounds
--- admin: admin123
--- supervisor1/2: supervisor123
--- worker1/2/3: worker123
+-- All users: password123
 
 INSERT INTO users (id, username, password_hash, full_name, role, is_active, created_at, updated_at) VALUES
   -- Admin
@@ -120,7 +118,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | admin |
-| Password | admin123 |
+| Password | password123 |
 | Full Name | System Administrator |
 | Role | admin |
 | Permissions | Full system access, user management, all endpoints |
@@ -129,7 +127,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | supervisor1 |
-| Password | supervisor123 |
+| Password | password123 |
 | Full Name | Supervisor Satu |
 | Role | supervisor |
 | Permissions | View all workers, review reports, view dashboards |
@@ -138,7 +136,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | supervisor2 |
-| Password | supervisor123 |
+| Password | password123 |
 | Full Name | Supervisor Dua |
 | Role | supervisor |
 | Permissions | View all workers, review reports, view dashboards |
@@ -147,7 +145,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker1 |
-| Password | worker123 |
+| Password | password123 |
 | Full Name | Pekerja Satu |
 | Role | worker |
 | Assignment | Taman Bungkul (Park) |
@@ -157,7 +155,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker2 |
-| Password | worker123 |
+| Password | password123 |
 | Full Name | Pekerja Dua |
 | Role | worker |
 | Assignment | Jalan Raya Darmo (Pedestrian) |
@@ -167,7 +165,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker3 |
-| Password | worker123 |
+| Password | password123 |
 | Full Name | Pekerja Tiga |
 | Role | worker |
 | Assignment | Taman Harmoni (Park) |
@@ -178,7 +176,7 @@ ON CONFLICT (username) DO NOTHING;
 // All passwords hashed with bcrypt (10 rounds)
 import * as bcrypt from 'bcrypt';
 
-const hash = await bcrypt.hash('admin123', 10);
+const hash = await bcrypt.hash('password123', 10);
 // $2b$10$ZQfzJQQ0J0YQX0JXQj0QXuJ0YQj0QXuJ0QX0JXQj0QXuJ0QX0JXQ
 ```
 
@@ -678,15 +676,15 @@ npm run seed
 # Test all user roles
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin123"}'
+  -d '{"username": "admin", "password": "password123"}'
 
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "supervisor1", "password": "supervisor123"}'
+  -d '{"username": "supervisor1", "password": "password123"}'
 
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "worker1", "password": "worker123"}'
+  -d '{"username": "worker1", "password": "password123"}'
 ```
 
 #### 2. Active Shifts Query
@@ -1464,16 +1462,23 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 
 ### New Seed Users (Phase 2C)
 
-| Username | Role | Password | Notes |
-|----------|------|----------|-------|
-| superadmin | `superadmin` | admin123 | Full system access |
-| admin_system | `admin_system` | admin123 | System administration |
-| admin_data | `admin_data` | admin123 | Data management |
-| korlap1 | `korlap` | supervisor123 | Replaces supervisor1, has area_id |
-| satgas1 | `satgas` | worker123 | Replaces worker1 |
-| satgas2 | `satgas` | worker123 | Replaces worker2 |
-| satgas3 | `satgas` | worker123 | Replaces worker3 |
-| linmas1 | `linmas` | worker123 | Security officer |
+| Username | Role | Password | Seeder | Notes |
+|----------|------|----------|--------|-------|
+| admin | `superadmin` | password123 | Phase 1 | Full system access |
+| korlap1 | `korlap` | password123 | Phase 1 | Area coordinator |
+| korlap2 | `korlap` | password123 | Phase 1 | Area coordinator |
+| satgas1 | `satgas` | password123 | Phase 1 | Field worker |
+| satgas2 | `satgas` | password123 | Phase 1 | Field worker |
+| satgas3 | `satgas` | password123 | Phase 1 | Field worker |
+| admin_system1 | `admin_system` | password123 | Phase 2 | System administration |
+| admin_data1 | `admin_data` | password123 | Phase 2 | Data management |
+| top_management1 | `top_management` | password123 | Phase 2 | City-wide view |
+| kepala_rayon_selatan | `kepala_rayon` | password123 | Phase 2 | Rayon manager |
+| kepala_rayon_utara | `kepala_rayon` | password123 | Phase 2 | Rayon manager |
+| korlap_bungkul | `korlap` | password123 | Phase 2 | Area coordinator (Taman Bungkul) |
+| linmas1 | `linmas` | password123 | Phase 2 | Security officer |
+| linmas2 | `linmas` | password123 | Phase 2 | Security officer |
+| satgas4 | `satgas` | password123 | Phase 2 | Field worker |
 
 ### Activity Types (Phase 2C — 20 types for 4 roles)
 
@@ -1484,16 +1489,18 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 | `korlap` | Inspeksi Lapangan, Koordinasi Tim, Evaluasi Kinerja |
 | `admin_data` | Input Data Tanaman, Pembaruan Data Area, Dokumentasi Aset |
 
-### Task Seeds (Phase 2C — 4 statuses only)
+### Task Seeds (Phase 2C — 8 statuses)
+
+> **TaskStatus values:** pending, assigned, accepted, declined, in_progress, completed, verified, revision_needed
 
 | Task | Status | Priority | Assigned To |
 |------|--------|----------|-------------|
 | Penyiraman Taman Pagi | pending | high | unassigned |
 | Penanaman Bunga Musiman | assigned | medium | satgas1 |
-| Pemangkasan Pohon Tinggi | assigned | urgent | satgas2 |
+| Pemangkasan Pohon Tinggi | accepted | urgent | satgas2 |
 | Pembersihan Area Playground | in_progress | medium | satgas3 |
 | Penyiraman Taman Sore | completed | low | satgas1 |
-| Pemangkasan Semak Belukar | in_progress | low | satgas2 |
+| Pemangkasan Semak Belukar | verified | low | satgas2 |
 | Pembersihan Jalur Jogging | pending | high | unassigned |
 | Perawatan Rumput Taman | assigned | low | satgas3 |
 
@@ -1515,12 +1522,70 @@ npm run seed:tasks
 |----------|-------|-------|
 | Users (updated roles) | 8 | Phase 2C role names |
 | Activity Types | 20 | 4 role groups |
-| Tasks | 8 | 4 statuses (no accepted/declined) |
+| Tasks | 40 | 8 satgas + 4 linmas + 3 korlap + 25 extended (scroll test) |
+| Activities | 50 | 30 satgas + 13 linmas + 7 korlap (8-week date range) |
 | Task Tags | 0 | Created via API |
 | Overtimes | 0 | Created via API |
 
+#### Tasks Breakdown (seed-tasks.ts)
+
+**Total:** 40 tasks across 4 statuses
+
+**By Role:**
+- **Satgas (8 tasks):** Original area-scoped tasks for field workers
+- **Linmas (4 tasks):** Security/patrol tasks (pending, assigned, in_progress, completed)
+- **Korlap (3 tasks):** Coordination/supervision tasks (1 rayon-scoped)
+- **Extended (25 tasks):** Varied roles/statuses/dates for scroll testing
+
+**Status Distribution (approximate):**
+- Pending: ~10 tasks
+- Assigned: ~12 tasks
+- In Progress: ~10 tasks
+- Completed: ~8 tasks
+
+**Test Coverage:**
+- All 4 Phase 2C statuses represented
+- Mix of area-scoped and rayon-scoped tasks
+- Tagged task scenarios (for "Tag Saya" filter testing)
+- Various priority levels (urgent, high, medium, low)
+- Date range from 30 days ago to next week (filter testing)
+- 40+ items for scroll performance testing
+
+#### Activities Breakdown (seed-activities.ts)
+
+**Total:** 50 activities across 8 weeks
+
+**By Role:**
+- **Satgas (30 activities, 60%):** Field work — 12 recent + 18 extended
+- **Linmas (13 activities, 26%):** Security work — 5 recent + 8 extended
+- **Korlap (7 activities, 14%):** Coordination work — 3 recent + 4 extended
+
+**Date Distribution (for date filter testing):**
+- Weeks 1-4 (1-28 days ago): 20 activities (recent)
+- Weeks 5-8 (29-60 days ago): 30 activities (extended)
+
+**Photo Distribution:**
+- ~35 activities with 1 photo (70%)
+- ~12 activities with 2 photos (24%)
+- ~3 activities with 3 photos (6%)
+
+**GPS Coordinates:**
+- All centered around Taman Bungkul (-7.2905, 112.7395)
+- Varied ±0.0005 degrees (simulates different work locations within 100m radius)
+- Tests GPS coordinate display and precision handling
+
+**Test Coverage:**
+- Scroll performance testing (50 items — 2.5x more than before)
+- Date range filter validation (8 weeks of data)
+- Activity type diversity (9 different types)
+- Multi-photo display scenarios
+- Role-based activity filtering
+- Extended historical data for date picker UX testing
+
 ---
 
-**Last Updated:** 2026-02-11
-**Seed Data Version:** 3.0 (Phase 2C — Client Feedback)
-**Total Records:** ~90 (Phase 1: 28 + Phase 2: 50 + Phase 2C: 12)
+**Last Updated:** 2026-02-20
+**Seed Data Version:** 3.3 (Phase 2C — Activity Approval + Task Verification)
+**Total Records:** ~158 (Phase 1: 28 + Phase 2: 50 + Phase 2C: 80 tasks+activities)
+
+> **Note:** Phase 1/2 sections above use old role names (admin, supervisor, worker) for historical reference. The actual seeder code uses Phase 2C roles (superadmin, korlap, satgas, etc.). See Phase 2C section for current seed user table. `activity_types.applicable_roles` uses PascalCase in DB seeds (`ARRAY['Worker']`) — this is a known legacy pattern from Phase 2 seed SQL.

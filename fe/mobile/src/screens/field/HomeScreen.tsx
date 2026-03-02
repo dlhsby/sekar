@@ -5,28 +5,34 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  SafeAreaView,
   AccessibilityInfo,
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { CLOCKABLE_ROLES } from '../../constants/roles';
 import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal } from '../../components/modals';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
-import { useAppDispatch, useAppSelector } from '../../store/store';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+// Fix 15: canonical import path is store/hooks (matches majority of screens)
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi } from '../../services/api';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { formatDateTime, calculateDuration, isToday } from '../../utils/dateUtils';
 import { useLocationPermission } from '../../hooks';
+import type { Activity } from '../../types/models.types';
 
 /**
  * Worker Home Screen - Main dashboard for field workers
  * Phase 2C: uses activities instead of reports
  */
+
+// Fix 14: pad moved to module scope to avoid re-creation on every render
+const pad = (num: number): string => String(num).padStart(2, '0');
+
 export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
@@ -34,9 +40,7 @@ export function HomeScreen(): React.JSX.Element {
   const { user, assignedArea } = useAppSelector((state) => state.auth);
   const { currentShift, shiftHistory } = useAppSelector((state) => state.shift);
   const { activitiesList } = useAppSelector((state) => state.activities);
-  const { isOnline, isSyncing, pendingShiftsCount } = useAppSelector(
-    (state) => state.offline
-  );
+  // Fix 9: Removed unused offline Redux selector (isOnline, isSyncing, pendingShiftsCount)
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -82,7 +86,9 @@ export function HomeScreen(): React.JSX.Element {
     return shiftHistory.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
 
-  // Load current shift and activities on mount
+  // Fix 7: loadInitialData no longer calls loadTodayActivities — useFocusEffect
+  // fires on initial mount AND on subsequent focus events, so activities are
+  // loaded exactly once on mount and refreshed whenever the screen re-focuses.
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -120,10 +126,27 @@ export function HomeScreen(): React.JSX.Element {
     return () => clearInterval(interval);
   }, [currentShift?.id]);
 
-  const pad = (num: number): string => String(num).padStart(2, '0');
+  // On re-focus (e.g. returning from ClockInOut), reload everything so the shift
+  // list and activity counter are immediately up to date without a manual refresh.
+  // Skip the very first focus event — useEffect/loadInitialData handles that load.
+  const hasMountedRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasMountedRef.current) {
+        hasMountedRef.current = true;
+        return;
+      }
+      loadCurrentShift();
+      loadShiftHistory();
+      loadTodayActivities();
+    }, [])
+  );
 
   const loadInitialData = async () => {
     setLoading(true);
+    // Load shift data AND today's activities together on mount.
+    // useFocusEffect skips first focus (hasMountedRef), so we must include
+    // activities here to ensure they appear regardless of shift status.
     await Promise.all([loadCurrentShift(), loadShiftHistory(), loadTodayActivities()]);
     setLoading(false);
   };
@@ -132,14 +155,21 @@ export function HomeScreen(): React.JSX.Element {
     try {
       const response = await shiftsApi.getCurrentShift();
       if (response.error) {
-        console.warn('[HomeScreen] Failed to load shift:', response.error);
+        // Fix 11: Gate console.warn behind __DEV__
+        if (__DEV__) {
+          console.warn('[HomeScreen] Failed to load shift:', response.error);
+        }
         dispatch(setError(response.error));
         return;
       }
       dispatch(setCurrentShift(response.data ?? null));
-    } catch (error: any) {
-      console.warn('[HomeScreen] Unexpected error loading shift:', error.message);
-      dispatch(setError(error.message || 'Failed to load shift'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load shift';
+      // Fix 11: Gate console.warn behind __DEV__
+      if (__DEV__) {
+        console.warn('[HomeScreen] Unexpected error loading shift:', message);
+      }
+      dispatch(setError(message));
     }
   };
 
@@ -147,24 +177,35 @@ export function HomeScreen(): React.JSX.Element {
     try {
       const response = await shiftsApi.getMyShifts();
       if (response.error) {
-        console.warn('[HomeScreen] Failed to load shift history:', response.error);
+        // Fix 11: Gate console.warn behind __DEV__
+        if (__DEV__) {
+          console.warn('[HomeScreen] Failed to load shift history:', response.error);
+        }
         return;
       }
       dispatch(setShiftHistory(response.data ?? []));
-    } catch (error: any) {
-      console.warn('[HomeScreen] Unexpected error loading shift history:', error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load shift history';
+      // Fix 11: Gate console.warn behind __DEV__
+      if (__DEV__) {
+        console.warn('[HomeScreen] Unexpected error loading shift history:', message);
+      }
     }
   };
 
   const loadTodayActivities = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const response = await activitiesApi.getMyActivities(today);
+      const response = await activitiesApi.getMyActivities({ from_date: today });
       if (response.data) {
-        dispatch(setActivities(response.data));
+        dispatch(setActivities(response.data.data ?? []));
       }
-    } catch (error: any) {
-      console.warn('Failed to load activities:', error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load activities';
+      // Fix 11: Gate console.warn behind __DEV__
+      if (__DEV__) {
+        console.warn('Failed to load activities:', message);
+      }
     }
   };
 
@@ -178,16 +219,15 @@ export function HomeScreen(): React.JSX.Element {
     navigation.navigate('ClockInOut' as never);
   };
 
-  const handleNewActivity = () => {
-    navigation.navigate('ActivitySubmission' as never);
-  };
-
-  const handleViewActivities = () => {
+  // Fix 10: handleViewActivities is wired to TodayActivitiesModal's onActivityPress
+  const handleViewActivities = useCallback((_activity: Activity) => {
+    setActivitiesModalVisible(false);
     navigation.navigate('Activities' as never);
-  };
+  }, [navigation]);
 
-  // Derived state
-  const timerMinutes = timer.slice(0, 5);
+  // totalTodayDuration must stay consistent with TodayWorkHoursModal's own calculation.
+  // Both use new Date() for the active shift's end time, so the HomeScreen value
+  // must update every second (via timer dep) to match what the modal shows when opened.
   const totalTodayDuration = useMemo(() => {
     let totalMinutes = 0;
 
@@ -208,7 +248,9 @@ export function HomeScreen(): React.JSX.Element {
     const minutes = totalMinutes % 60;
 
     return `${hours}j ${minutes}m`;
-  }, [todayShifts, timerMinutes]);
+  // timer dep: recalculate every second for the active shift's running duration,
+  // keeping HomeScreen card in sync with TodayWorkHoursModal's fresh calculation.
+  }, [todayShifts, timer]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -340,27 +382,6 @@ export function HomeScreen(): React.JSX.Element {
           </View>
         </NBCard>
 
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          <NBButton
-            title={currentShift ? 'Clock Out' : 'Clock In'}
-            onPress={handleClockInOut}
-            variant="primary"
-            fullWidth
-            style={{ marginBottom: nbSpacing.sm }}
-            testID="clock-button"
-          />
-          {currentShift && (
-            <NBButton
-              title="Buat Aktivitas"
-              onPress={handleNewActivity}
-              variant="info"
-              fullWidth
-              testID="new-activity-button"
-            />
-          )}
-        </View>
-
         {/* Empty state message if not assigned */}
         {!assignedArea && !currentShift && (
           <NBCard style={styles.warningCard}>
@@ -370,6 +391,20 @@ export function HomeScreen(): React.JSX.Element {
           </NBCard>
         )}
       </ScrollView>
+
+      {/* Fixed Clock In/Out button — only for clockable field roles (satgas, linmas, korlap) */}
+      {/* Fix 8: user.role is typed as UserRole, no cast needed */}
+      {user?.role && CLOCKABLE_ROLES.includes(user.role) && (
+        <View style={styles.fab}>
+          <NBButton
+            title={currentShift ? 'Clock Out' : 'Clock In'}
+            onPress={handleClockInOut}
+            variant="primary"
+            size="lg"
+            testID="clock-button"
+          />
+        </View>
+      )}
     </View>
 
     {/* Modals */}
@@ -378,11 +413,12 @@ export function HomeScreen(): React.JSX.Element {
       onClose={() => setShiftModalVisible(false)}
       shift={currentShift}
     />
+    {/* Fix 10: onActivityPress wired to handleViewActivities which navigates to Activities screen */}
     <TodayActivitiesModal
       visible={activitiesModalVisible}
       onClose={() => setActivitiesModalVisible(false)}
       activities={activitiesList.filter((activity) => isToday(activity.created_at))}
-      onActivityPress={() => setActivitiesModalVisible(false)}
+      onActivityPress={handleViewActivities}
     />
     <TodayWorkHoursModal
       visible={workHoursModalVisible}
@@ -405,6 +441,7 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
     flexGrow: 1,
     justifyContent: 'center',
+    paddingBottom: 88, // Reserve space for fixed Clock button (button 56px + 16px gap + 16px bottom)
   },
   shiftCard: {
     marginBottom: nbSpacing.md,
@@ -503,11 +540,16 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm,
     fontStyle: 'italic',
   },
-  actions: {
-    marginTop: nbSpacing.sm,
+  fab: {
+    position: 'absolute',
+    bottom: nbSpacing.md,
+    left: nbSpacing.md,
+    right: nbSpacing.md,
+    zIndex: 10,
   },
   warningCard: {
-    backgroundColor: nbColors.warningLight + '20',
+    // Fix 13: Use withAlpha utility instead of hex string concatenation
+    backgroundColor: withAlpha(nbColors.warningLight, 0.125),
     borderColor: nbColors.warning,
     borderWidth: nbBorders.base,
     borderRadius: nbBorderRadius.base,

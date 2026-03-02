@@ -66,9 +66,9 @@ npm run seed:tasks
 ```
 
 **Test Users (from Phase 1):**
-- `satgas1` / `satgas123` - Has ASSIGNED and COMPLETED tasks
-- `satgas2` / `satgas123` - Has IN_PROGRESS tasks
-- `satgas3` / `satgas123` - Has ASSIGNED tasks
+- `satgas1` / `password123` - Has ASSIGNED and COMPLETED tasks
+- `satgas2` / `password123` - Has IN_PROGRESS tasks
+- `satgas3` / `password123` - Has ASSIGNED tasks
 
 ## Typical Seeding Workflow
 
@@ -117,20 +117,20 @@ After seeding tasks:
 
 1. **Login as satgas1:**
    - Username: `satgas1`
-   - Password: `satgas123`
+   - Password: `password123`
    - You should see:
      - 1 ASSIGNED task
      - 1 COMPLETED task
 
 2. **Login as satgas2:**
    - Username: `satgas2`
-   - Password: `satgas123`
+   - Password: `password123`
    - You should see:
      - 1 IN_PROGRESS task
 
 3. **Login as satgas3:**
    - Username: `satgas3`
-   - Password: `satgas123`
+   - Password: `password123`
    - You should see:
      - 1 ASSIGNED task
 

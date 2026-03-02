@@ -25,6 +25,8 @@ Phase 2C addresses comprehensive client feedback received during the February 10
 8. **Monitoring access changes** - Updated role-based scoping with boundary warnings
 9. **Navigation restructure** - Role-based tab configuration for 8 roles
 10. **Clockable roles expansion** - 5 roles can now clock in (was 2)
+11. **Activity approval workflow** - Hierarchical: korlap approves satgas/linmas activities (area-scoped), kepala_rayon approves korlap/admin_data activities (rayon-scoped)
+12. **Task acceptance & verification** - Assignees accept/decline tasks, supervisors verify completed tasks with revision support
 
 ---
 
@@ -84,6 +86,9 @@ superadmin (full access)
 | **Create Tasks** | - | - | Y | - | Y | Y | Y | Y |
 | **Tag Users on Tasks** | - | - | Y | - | Y | Y | Y | Y |
 | **Overtime Submit** | Y | Y | - | - | - | - | - | - |
+| **Approve Activities** | - | - | Y* | - | Y* | - | - | - |
+| **Accept/Decline Tasks** | Y | Y | Y | - | Y | - | - | - |
+| **Verify Tasks** | - | - | Y* | - | Y* | Y | - | - |
 | **Overtime Approve** | - | - | Y | - | - | - | - | - |
 | **Area Monitoring** | - | - | Y* | - | - | - | - | - |
 | **Rayon Monitoring** | - | - | - | - | Y* | - | - | - |

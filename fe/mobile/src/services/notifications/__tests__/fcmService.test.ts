@@ -3,13 +3,16 @@
  *
  * Tests for Firebase Cloud Messaging service integration.
  * Tests the public API and Firebase integration patterns.
+ *
+ * Uses the v22+ modular API mock pattern.
  */
 
 import { configureStore } from '@reduxjs/toolkit';
 import notificationsReducer from '../../../store/slices/notificationsSlice';
 
 // Mock Firebase messaging module - must use jest.fn() inside the factory
-// because jest.mock is hoisted before variable declarations
+// because jest.mock is hoisted before variable declarations.
+// Mirrors the v22+ modular (functional) API.
 jest.mock('@react-native-firebase/messaging', () => {
   const mockMessagingInstance = {
     getToken: jest.fn(),
@@ -22,19 +25,25 @@ jest.mock('@react-native-firebase/messaging', () => {
     getInitialNotification: jest.fn(),
   };
 
-  const mockMessaging = jest.fn(() => mockMessagingInstance);
-
-  // Add AuthorizationStatus enum to the mock
-  (mockMessaging as any).AuthorizationStatus = {
-    AUTHORIZED: 1,
-    DENIED: 0,
-    NOT_DETERMINED: -1,
-    PROVISIONAL: 2,
-  };
-
   return {
     __esModule: true,
-    default: mockMessaging,
+    getMessaging: jest.fn(() => mockMessagingInstance),
+    getToken: jest.fn((instance) => instance.getToken()),
+    requestPermission: jest.fn((instance) => instance.requestPermission()),
+    hasPermission: jest.fn((instance) => instance.hasPermission()),
+    onMessage: jest.fn((instance, handler) => instance.onMessage(handler)),
+    onTokenRefresh: jest.fn((instance, handler) => instance.onTokenRefresh(handler)),
+    deleteToken: jest.fn((instance) => instance.deleteToken()),
+    getInitialNotification: jest.fn((instance) => instance.getInitialNotification()),
+    onNotificationOpenedApp: jest.fn((instance, handler) => instance.onNotificationOpenedApp(handler)),
+    FirebaseMessagingTypes: {
+      AuthorizationStatus: {
+        AUTHORIZED: 1,
+        DENIED: 0,
+        NOT_DETERMINED: -1,
+        PROVISIONAL: 2,
+      },
+    },
   };
 });
 
@@ -72,15 +81,18 @@ jest.mock('@notifee/react-native', () => ({
 }));
 
 import fcmService, { NotificationPermission } from '../fcmService';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { registerDevice, unregisterDevice } from '../../api/notificationsApi';
 
 // Get reference to the mock
-const mockMessaging = messaging as jest.MockedFunction<typeof messaging>;
+const mockGetMessaging = getMessaging as jest.MockedFunction<typeof getMessaging>;
+
+// AuthorizationStatus shorthand for test readability
+const AuthorizationStatus = FirebaseMessagingTypes.AuthorizationStatus;
 
 describe('FCMService', () => {
   let store: ReturnType<typeof configureStore>;
-  let mockMessagingInstance: ReturnType<typeof mockMessaging>;
+  let mockMessagingInstance: ReturnType<typeof mockGetMessaging>;
   let mockGetToken: jest.Mock;
   let mockRequestPermission: jest.Mock;
   let mockHasPermission: jest.Mock;
@@ -102,7 +114,7 @@ describe('FCMService', () => {
     jest.clearAllMocks();
 
     // Get fresh references to the mock instance AFTER clearAllMocks
-    mockMessagingInstance = mockMessaging();
+    mockMessagingInstance = mockGetMessaging();
     mockGetToken = mockMessagingInstance.getToken as jest.Mock;
     mockRequestPermission = mockMessagingInstance.requestPermission as jest.Mock;
     mockHasPermission = mockMessagingInstance.hasPermission as jest.Mock;
@@ -127,13 +139,13 @@ describe('FCMService', () => {
     (fcmService as any).reduxStore = null;
 
     // Setup default mock returns
-    mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.DENIED);
+    mockHasPermission.mockResolvedValue(AuthorizationStatus.DENIED);
   });
 
   describe('initialize()', () => {
     it('should successfully initialize with permission granted', async () => {
       // Mock successful permission check (initialize uses hasPermission, not requestPermission)
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-fcm-token-123');
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -141,7 +153,7 @@ describe('FCMService', () => {
       await fcmService.initialize(store);
 
       // Verify messaging was initialized
-      expect(mockMessaging).toHaveBeenCalled();
+      expect(mockGetMessaging).toHaveBeenCalled();
 
       // Verify permission was checked (initialize uses checkPermission -> hasPermission)
       expect(mockHasPermission).toHaveBeenCalled();
@@ -158,7 +170,7 @@ describe('FCMService', () => {
     });
 
     it('should handle permission denied gracefully', async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.DENIED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.DENIED);
 
       await fcmService.initialize(store);
 
@@ -190,7 +202,7 @@ describe('FCMService', () => {
     it('should not reinitialize if already initialized', async () => {
       const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
 
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -210,7 +222,7 @@ describe('FCMService', () => {
 
   describe('requestPermission()', () => {
     it('should request and return AUTHORIZED status', async () => {
-      mockRequestPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockRequestPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
 
@@ -221,7 +233,7 @@ describe('FCMService', () => {
     });
 
     it('should handle PROVISIONAL status', async () => {
-      mockRequestPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.PROVISIONAL);
+      mockRequestPermission.mockResolvedValue(AuthorizationStatus.PROVISIONAL);
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
 
@@ -232,7 +244,7 @@ describe('FCMService', () => {
     });
 
     it('should handle permission denial', async () => {
-      mockRequestPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.DENIED);
+      mockRequestPermission.mockResolvedValue(AuthorizationStatus.DENIED);
 
       await fcmService.initialize(store);
       const status = await fcmService.requestPermission();
@@ -259,7 +271,7 @@ describe('FCMService', () => {
 
   describe('getToken()', () => {
     beforeEach(async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token'); // Need token for initialization
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -291,7 +303,7 @@ describe('FCMService', () => {
 
   describe('checkPermission()', () => {
     beforeEach(async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -299,20 +311,20 @@ describe('FCMService', () => {
     });
 
     it('should check and return permission status', async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
 
-      const hasPermission = await fcmService.checkPermission();
+      const hasPermissionResult = await fcmService.checkPermission();
 
-      expect(hasPermission).toBe(true);
+      expect(hasPermissionResult).toBe(true);
       expect(mockHasPermission).toHaveBeenCalled();
     });
 
     it('should return false when permission is denied', async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.DENIED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.DENIED);
 
-      const hasPermission = await fcmService.checkPermission();
+      const hasPermissionResult = await fcmService.checkPermission();
 
-      expect(hasPermission).toBe(false);
+      expect(hasPermissionResult).toBe(false);
     });
 
     it('should handle permission check error', async () => {
@@ -320,9 +332,9 @@ describe('FCMService', () => {
 
       mockHasPermission.mockRejectedValue(new Error('Permission check failed'));
 
-      const hasPermission = await fcmService.checkPermission();
+      const hasPermissionResult = await fcmService.checkPermission();
 
-      expect(hasPermission).toBe(false);
+      expect(hasPermissionResult).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
@@ -331,7 +343,7 @@ describe('FCMService', () => {
 
   describe('deleteToken()', () => {
     beforeEach(async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token-to-delete');
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -375,7 +387,7 @@ describe('FCMService', () => {
     it('should log when handlers are already set up', async () => {
       const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
 
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -391,7 +403,7 @@ describe('FCMService', () => {
 
   describe('onNotificationReceived()', () => {
     it('should add and remove notification handlers', async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -414,7 +426,7 @@ describe('FCMService', () => {
 
   describe('getInitialNotification()', () => {
     beforeEach(async () => {
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
       mockOnMessage.mockReturnValue(() => {});
       mockOnTokenRefresh.mockReturnValue(() => {});
@@ -469,7 +481,7 @@ describe('FCMService', () => {
       const unsubscribeToken = jest.fn();
       const unsubscribeForeground = jest.fn();
 
-      mockHasPermission.mockResolvedValue((mockMessaging as any).AuthorizationStatus.AUTHORIZED);
+      mockHasPermission.mockResolvedValue(AuthorizationStatus.AUTHORIZED);
       mockGetToken.mockResolvedValue('test-token');
       mockOnMessage.mockReturnValue(unsubscribeForeground);
       mockOnTokenRefresh.mockReturnValue(unsubscribeToken);

@@ -42,9 +42,7 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
       // Trigger sync when transitioning from offline to online
       if (previousOnlineStatus.current === false && isOnline) {
         console.debug('[NetworkProvider] Network restored - triggering sync');
-        syncManager.syncNow().catch((error) => {
-          console.error('[NetworkProvider] Sync after reconnect failed:', error);
-        });
+        syncManager.forceSyncNow();
       }
 
       previousOnlineStatus.current = isOnline;
@@ -67,9 +65,7 @@ export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element
       // Trigger initial sync if online
       if (isOnline) {
         console.debug('[NetworkProvider] Initial online state - triggering sync');
-        syncManager.syncNow().catch((error) => {
-          console.error('[NetworkProvider] Initial sync failed:', error);
-        });
+        syncManager.forceSyncNow();
       }
     });
 

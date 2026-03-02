@@ -26,7 +26,7 @@ interface AuthProviderProps {
 
 /**
  * Load current shift for clockable role users and start location tracking if active.
- * Only clockable roles (satgas, linmas, korlap, admin_data, kepala_rayon) have shifts.
+ * Only clockable roles (satgas, linmas, korlap) have shifts.
  * This is called after auth restoration to sync shift state with the backend.
  */
 async function loadShiftForClockableRole(userRole: string, dispatch: AppDispatch): Promise<void> {
@@ -48,10 +48,10 @@ async function loadShiftForClockableRole(userRole: string, dispatch: AppDispatch
         const hasLocationPermission = await permissionManager.checkLocationPermission();
 
         if (onboardingComplete && hasLocationPermission) {
-          console.debug('[AuthProvider] Active shift found and permissions granted, starting location tracking');
+          if (__DEV__) { console.debug('[AuthProvider] Active shift found and permissions granted, starting location tracking'); }
           await locationTracker.initialize(String(shift.id));
         } else {
-          console.debug('[AuthProvider] Active shift found but permissions not complete, skipping location tracking');
+          if (__DEV__) { console.debug('[AuthProvider] Active shift found but permissions not complete, skipping location tracking'); }
         }
       }
     } else {
@@ -66,7 +66,7 @@ async function loadShiftForClockableRole(userRole: string, dispatch: AppDispatch
     }
     // Other errors: log but don't crash app - shift state will remain as-is
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.warn('[AuthProvider] Failed to load current shift:', message);
+    if (__DEV__) { console.warn('[AuthProvider] Failed to load current shift:', message); }
   }
 }
 
@@ -94,17 +94,27 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             const meResponse = await Promise.race([getMe(), timeoutPromise]);
 
             if (meResponse.data) {
-              // Token is valid, restore auth state
-              const assignedArea = meResponse.data.assigned_area || null;
+              // Token is valid, restore auth state with latest area/rayon data
+              // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils
+              const rawArea = meResponse.data.assigned_area;
+              const rawPolygon = (rawArea as any)?.boundary_polygon;
+              const assignedArea = rawArea
+                ? { ...rawArea, boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined }
+                : null;
+              const updatedUser = {
+                ...storedUser,
+                area_id: meResponse.data.area_id ?? storedUser.area_id,
+                rayon_id: meResponse.data.rayon_id ?? storedUser.rayon_id,
+              };
               dispatch(
                 restoreAuth({
-                  user: storedUser,
+                  user: updatedUser,
                   area: assignedArea,
                 }),
               );
             } else {
               // Token invalid or API error, fall back to cached data
-              console.warn('[AuthProvider] API validation failed, using cached credentials');
+              if (__DEV__) { console.warn('[AuthProvider] API validation failed, using cached credentials'); }
               dispatch(
                 restoreAuth({
                   user: storedUser,
@@ -117,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             await loadShiftForClockableRole(storedUser.role, dispatch);
           } catch (networkError) {
             // Network timeout or error - use cached credentials
-            console.warn('[AuthProvider] Network timeout, using cached credentials:', networkError);
+            if (__DEV__) { console.warn('[AuthProvider] Network timeout, using cached credentials:', networkError); }
             dispatch(
               restoreAuth({
                 user: storedUser,
@@ -132,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
           dispatch(setRestoring(false));
         }
       } catch (error) {
-        console.error('[AuthProvider] Failed to restore session:', error);
+        if (__DEV__) { console.error('[AuthProvider] Failed to restore session:', error); }
         // On critical error, clear storage and finish restoring
         await clearAll();
         dispatch(logout());

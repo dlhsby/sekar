@@ -38,23 +38,21 @@ export function TodayWorkHoursModal({
   onClose,
   shifts,
 }: TodayWorkHoursModalProps): JSX.Element {
-  // Calculate total duration from all shifts (including active shift with current time)
+  // Calculate total duration from all shifts (active shift uses current time)
   const totalDuration = shifts.reduce((acc, shift) => {
     const endTime = shift.clock_out_time
       ? new Date(shift.clock_out_time)
-      : new Date(); // Use current time for active shift
-
-    const duration = calculateDuration(
-      new Date(shift.clock_in_time),
-      endTime
-    );
+      : new Date();
+    const duration = calculateDuration(new Date(shift.clock_in_time), endTime);
     return acc + duration.totalMinutes;
   }, 0);
 
   const totalHours = Math.floor(totalDuration / 60);
   const totalMinutes = totalDuration % 60;
-
   const todayDate = formatDate(new Date());
+
+  // Show total in title only when shifts exist
+  const titleSuffix = shifts.length > 0 ? ` (${totalHours}j ${totalMinutes}m)` : '';
 
   return (
     <Modal
@@ -64,14 +62,21 @@ export function TodayWorkHoursModal({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable
+        {/* View instead of Pressable: onStartShouldSetResponder blocks overlay tap
+            propagation. onMoveShouldSetResponder=false releases the responder during
+            moves so ScrollView can claim scroll gestures cleanly (same as
+            TouchableOpacity gives to ScrollView in TodayActivitiesModal). */}
+        <View
           style={styles.modalContent}
-          onPress={(e) => e?.stopPropagation?.()}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => false}
         >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>Jam Kerja Hari Ini</Text>
+              <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
+                Jam Kerja Hari Ini{titleSuffix}
+              </Text>
               <Text style={styles.subtitle}>{todayDate}</Text>
             </View>
             <TouchableOpacity
@@ -88,6 +93,7 @@ export function TodayWorkHoursModal({
             </TouchableOpacity>
           </View>
 
+          {/* Scrollable body — shift list or empty state */}
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -101,32 +107,16 @@ export function TodayWorkHoursModal({
                 </Text>
               </View>
             ) : (
-              <>
-                {/* Total Duration Section - Table Style (First) */}
-                <View style={styles.totalSection}>
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableLabel}>Total Jam Kerja Hari Ini</Text>
-                    <Text style={styles.totalValue}>
-                      {totalHours}j {totalMinutes}m
-                    </Text>
-                  </View>
-                </View>
-
-                {/* List Header */}
-                <Text style={styles.sectionTitle}>Riwayat Shift Hari Ini</Text>
-
-                {/* Shift Cards */}
-                {shifts.map((shift, index) => (
-                  <ShiftCard
-                    key={shift.id}
-                    shift={shift}
-                    shiftNumber={index + 1}
-                  />
-                ))}
-              </>
+              shifts.map((shift, index) => (
+                <ShiftCard
+                  key={shift.id}
+                  shift={shift}
+                  shiftNumber={index + 1}
+                />
+              ))
             )}
           </ScrollView>
-        </Pressable>
+        </View>
       </Pressable>
     </Modal>
   );
@@ -147,6 +137,9 @@ const styles = StyleSheet.create({
     borderRightWidth: nbBorders.base,
     borderColor: nbColors.black,
     maxHeight: '80%',
+    // flexShrink: 1 ensures the container participates in bounded flex layout,
+    // giving ScrollView a constrained parent height so scrolling engages.
+    flexShrink: 1,
     ...nbShadows.lg,
   },
   header: {
@@ -183,35 +176,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: nbSpacing.md,
     paddingBottom: nbSpacing.xl + nbSpacing.lg,
-  },
-  totalSection: {
-    marginBottom: nbSpacing.md,
-    backgroundColor: nbColors.background,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    borderRadius: 0,
-    padding: nbSpacing.sm,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  tableLabel: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
-  totalValue: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.primary,
-  },
-  sectionTitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    marginBottom: nbSpacing.sm,
   },
   emptyContainer: {
     alignItems: 'center',

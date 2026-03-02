@@ -4,12 +4,13 @@
 
 This document provides comprehensive testing guidelines for the SEKAR mobile app (React Native + TypeScript + Redux). It covers component testing, navigation testing, Redux testing, offline sync testing, and permission mocking.
 
-**Current Status (January 26, 2026):**
-- **2,000+ tests passing** (82+ test suites)
-- **80.31% overall coverage** (lines: 3224/4014) ⬆️ +1.52%
-- **80.04% statements coverage** (3306/4130) ⬆️ +1.48%
-- **75.17% branches coverage** (1732/2304) ⬆️ +0.91%
-- **80.96% functions coverage** (740/914) ⬆️ +1.05%
+**Current Status (February 20, 2026):**
+- **3,099 tests passing** (125 test suites)
+- **Phase 2C:** Activity approval, task acceptance/verification, 8-role system
+- Coverage: Maintained >80% (exact coverage numbers from `npm run test:cov`)
+
+**Previous Status (January 26, 2026):**
+- 2,000+ tests (82+ suites), 80.31% overall coverage
 
 **Recent Coverage Improvements (Session 4 - January 26, 2026):**
 - ✅ **TestNavigator.tsx**: 0% → Excluded (istanbul ignore)
@@ -848,7 +849,7 @@ describe('Login Flow', () => {
 
   it('should login successfully', async () => {
     await element(by.id('username-input')).typeText('worker1');
-    await element(by.id('password-input')).typeText('worker123');
+    await element(by.id('password-input')).typeText('password123');
     await element(by.id('login-button')).tap();
 
     await expect(element(by.text('Welcome, Pekerja Satu'))).toBeVisible();

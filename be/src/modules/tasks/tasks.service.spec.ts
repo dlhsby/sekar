@@ -52,11 +52,15 @@ describe('TasksService', () => {
 
   const mockQueryBuilder = {
     leftJoinAndSelect: jest.fn().mockReturnThis(),
+    innerJoin: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     addOrderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
     getMany: jest.fn().mockResolvedValue([mockTask]),
+    getManyAndCount: jest.fn().mockResolvedValue([[mockTask], 1]),
     getRawOne: jest.fn().mockResolvedValue({ total: '5', pending: '2' }),
   };
 
@@ -193,7 +197,7 @@ describe('TasksService', () => {
 
       expect(taskRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'task-uuid' },
-        relations: ['area', 'rayon', 'assignee', 'creator', 'tags', 'tags.user'],
+        relations: ['area', 'rayon', 'assignee', 'creator', 'verifier', 'tags', 'tags.user'],
       });
       expect(result).toEqual(mockTask);
     });
@@ -206,42 +210,72 @@ describe('TasksService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all tasks with no filters', async () => {
+    it('should return paginated tasks with no filters', async () => {
       const result = await service.findAll();
 
-      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
-      expect(result).toEqual([mockTask]);
+      expect(mockQueryBuilder.getManyAndCount).toHaveBeenCalled();
+      expect(result.data).toEqual([mockTask]);
+      expect(result.meta.total).toBe(1);
     });
 
-    it('should apply filters correctly', async () => {
+    it('should apply filters correctly and return paginated result', async () => {
       const filters = {
         area_id: 'area-uuid',
         status: TaskStatus.PENDING,
         priority: TaskPriority.HIGH,
       };
 
-      await service.findAll(filters);
+      const result = await service.findAll(filters);
 
       expect(mockQueryBuilder.where).toHaveBeenCalled();
+      expect(result.data).toEqual([mockTask]);
+    });
+
+    it('should use custom sort and pagination when provided', async () => {
+      const filters = {
+        sort_by: 'deadline',
+        sort_dir: 'asc',
+        page: 2,
+        limit: 10,
+      };
+
+      const result = await service.findAll(filters);
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('task.deadline', 'ASC');
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.limit).toBe(10);
     });
   });
 
   describe('findMyTasks', () => {
-    it('should return tasks for user', async () => {
+    it('should return paginated tasks for user', async () => {
       const result = await service.findMyTasks('user-uuid');
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('task.assigned_to = :userId', {
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(task.assigned_to = :userId OR task.created_by = :userId)', {
         userId: 'user-uuid',
       });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
-      expect(result).toEqual([mockTask]);
+      // activeOnly defaults to false — no status exclusion applied
+      expect(result.data).toEqual([mockTask]);
+      expect(result.meta.total).toBe(1);
     });
 
     it('should return all tasks including completed when activeOnly is false', async () => {
-      await service.findMyTasks('user-uuid', false);
+      const result = await service.findMyTasks('user-uuid', false);
 
       expect(mockQueryBuilder.where).toHaveBeenCalled();
-      // andWhere should not be called for status filter when activeOnly is false
+      expect(result.data).toEqual([mockTask]);
+    });
+
+    it('should use custom sort and pagination when filters provided', async () => {
+      const filters = { sort_by: 'priority', sort_dir: 'asc', page: 1, limit: 20 };
+      const result = await service.findMyTasks('user-uuid', true, filters);
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('task.priority', 'ASC');
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(20);
+      expect(result.meta.limit).toBe(20);
     });
   });
 
@@ -317,10 +351,10 @@ describe('TasksService', () => {
   });
 
   describe('start', () => {
-    it('should start an assigned task', async () => {
+    it('should start an accepted task', async () => {
       const assignedTask = {
         ...mockTask,
-        status: TaskStatus.ASSIGNED,
+        status: TaskStatus.ACCEPTED,
         assigned_to: 'user-uuid',
       };
       const inProgressTask = {
@@ -353,7 +387,7 @@ describe('TasksService', () => {
 
   describe('complete', () => {
     const completeDto: CompleteTaskDto = {
-      completion_photo_url: 'https://example.com/photo.jpg',
+      completion_photo_urls: ['https://example.com/photo.jpg'],
       description: 'Done',
     };
 
@@ -366,7 +400,7 @@ describe('TasksService', () => {
       const completedTask = {
         ...inProgressTask,
         status: TaskStatus.COMPLETED,
-        completion_photo_url: 'https://example.com/photo.jpg',
+        completion_photo_urls: ['https://example.com/photo.jpg'],
         completion_notes: 'Done',
       };
 
@@ -424,15 +458,25 @@ describe('TasksService', () => {
   });
 
   describe('getAreaTaskStats', () => {
+    function mockQueryBuilder(rows: { status: string; count: string }[]) {
+      const qb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(rows),
+      };
+      taskRepository.createQueryBuilder = jest.fn().mockReturnValue(qb);
+      return qb;
+    }
+
     it('should return task statistics for an area', async () => {
-      const tasks = [
-        { status: TaskStatus.PENDING },
-        { status: TaskStatus.PENDING },
-        { status: TaskStatus.ASSIGNED },
-        { status: TaskStatus.IN_PROGRESS },
-        { status: TaskStatus.COMPLETED },
-      ];
-      taskRepository.find.mockResolvedValue(tasks as Task[]);
+      mockQueryBuilder([
+        { status: TaskStatus.PENDING, count: '2' },
+        { status: TaskStatus.ASSIGNED, count: '1' },
+        { status: TaskStatus.IN_PROGRESS, count: '1' },
+        { status: TaskStatus.COMPLETED, count: '1' },
+      ]);
 
       const result = await service.getAreaTaskStats('area-uuid');
 
@@ -440,14 +484,17 @@ describe('TasksService', () => {
         total: 5,
         pending: 2,
         assigned: 1,
+        accepted: 0,
+        declined: 0,
         inProgress: 1,
         completed: 1,
+        verified: 0,
+        revisionNeeded: 0,
       });
     });
 
     it('should count multiple in_progress tasks', async () => {
-      const tasks = [{ status: TaskStatus.IN_PROGRESS }, { status: TaskStatus.IN_PROGRESS }];
-      taskRepository.find.mockResolvedValue(tasks as Task[]);
+      mockQueryBuilder([{ status: TaskStatus.IN_PROGRESS, count: '2' }]);
 
       const result = await service.getAreaTaskStats('area-uuid');
 
@@ -666,7 +713,7 @@ describe('TasksService', () => {
       taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
 
       await expect(
-        service.complete('task-uuid', 'user-uuid', { completion_photo_url: 'https://example.com/photo.jpg', description: 'Done' } as CompleteTaskDto),
+        service.complete('task-uuid', 'user-uuid', { completion_photo_urls: ['https://example.com/photo.jpg'], description: 'Done' } as CompleteTaskDto),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -678,13 +725,13 @@ describe('TasksService', () => {
       };
       const completeDto: CompleteTaskDto = {
         description: 'Done',
-        completion_photo_url: 'https://example.com/photo.jpg',
+        completion_photo_urls: ['https://example.com/photo.jpg'],
       };
 
       taskRepository.findOne.mockResolvedValueOnce(inProgressTask as Task).mockResolvedValueOnce({
         ...inProgressTask,
         status: TaskStatus.COMPLETED,
-        completion_photo_url: completeDto.completion_photo_url,
+        completion_photo_urls: completeDto.completion_photo_urls,
       } as Task);
       taskRepository.save.mockResolvedValue({} as Task);
 
@@ -716,28 +763,28 @@ describe('TasksService', () => {
   });
 
   describe('findTaggedTasks', () => {
-    it('should return tasks where user is tagged', async () => {
-      const mockTags = [
-        { task: { ...mockTask, id: 'task-1' } },
-        { task: { ...mockTask, id: 'task-2' } },
-      ];
-      taskTagRepository.find.mockResolvedValue(mockTags as any);
-
+    it('should return paginated tasks where user is tagged', async () => {
       const result = await service.findTaggedTasks('user-uuid');
 
-      expect(taskTagRepository.find).toHaveBeenCalledWith({
-        where: { user_id: 'user-uuid' },
-        relations: ['task', 'task.area', 'task.rayon', 'task.creator', 'task.assignee'],
-      });
-      expect(result).toHaveLength(2);
+      expect(mockQueryBuilder.innerJoin).toHaveBeenCalledWith(
+        'task.tags',
+        'tag',
+        'tag.user_id = :userId',
+        { userId: 'user-uuid' },
+      );
+      expect(mockQueryBuilder.getManyAndCount).toHaveBeenCalled();
+      expect(result.data).toEqual([mockTask]);
+      expect(result.meta.total).toBe(1);
     });
 
-    it('should return empty array when user has no tags', async () => {
-      taskTagRepository.find.mockResolvedValue([]);
+    it('should use custom sort and pagination when filters provided', async () => {
+      const filters = { sort_by: 'deadline', sort_dir: 'asc', page: 1, limit: 10 };
+      const result = await service.findTaggedTasks('user-uuid', filters);
 
-      const result = await service.findTaggedTasks('user-uuid');
-
-      expect(result).toEqual([]);
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('task.deadline', 'ASC');
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+      expect(result.meta.limit).toBe(10);
     });
   });
 
@@ -800,6 +847,442 @@ describe('TasksService', () => {
       await expect(service.removeTag('task-uuid', 'nonexistent-uuid')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('acceptTask', () => {
+    it('should accept an assigned task and set accepted_at', async () => {
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'user-uuid',
+      };
+      const acceptedTask = {
+        ...assignedTask,
+        status: TaskStatus.ACCEPTED,
+        accepted_at: new Date(),
+      };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(assignedTask as Task)
+        .mockResolvedValueOnce(acceptedTask as Task);
+      taskRepository.save.mockResolvedValue(acceptedTask as Task);
+
+      const result = await service.acceptTask('task-uuid', 'user-uuid');
+
+      expect(taskRepository.save).toHaveBeenCalled();
+      const savedArg = taskRepository.save.mock.calls[0][0] as Partial<Task>;
+      expect(savedArg.status).toBe(TaskStatus.ACCEPTED);
+      expect(savedArg.accepted_at).toBeInstanceOf(Date);
+      expect(result.status).toBe(TaskStatus.ACCEPTED);
+    });
+
+    it('should throw ForbiddenException when non-assignee tries to accept', async () => {
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'other-user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
+
+      await expect(service.acceptTask('task-uuid', 'user-uuid')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw BadRequestException when task is not in ASSIGNED status', async () => {
+      const pendingTask = {
+        ...mockTask,
+        status: TaskStatus.PENDING,
+        assigned_to: 'user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(pendingTask as Task);
+
+      await expect(service.acceptTask('task-uuid', 'user-uuid')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException when task is in ACCEPTED status', async () => {
+      const alreadyAcceptedTask = {
+        ...mockTask,
+        status: TaskStatus.ACCEPTED,
+        assigned_to: 'user-uuid',
+        accepted_at: new Date(),
+      };
+
+      taskRepository.findOne.mockResolvedValue(alreadyAcceptedTask as Task);
+
+      await expect(service.acceptTask('task-uuid', 'user-uuid')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('declineTask', () => {
+    it('should decline an assigned task and set declined_at and decline_reason', async () => {
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'user-uuid',
+      };
+      const declinedTask = {
+        ...assignedTask,
+        status: TaskStatus.DECLINED,
+        declined_at: new Date(),
+        decline_reason: 'Cannot complete due to equipment shortage',
+      };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(assignedTask as Task)
+        .mockResolvedValueOnce(declinedTask as Task);
+      taskRepository.save.mockResolvedValue(declinedTask as Task);
+
+      const result = await service.declineTask(
+        'task-uuid',
+        'user-uuid',
+        'Cannot complete due to equipment shortage',
+      );
+
+      expect(taskRepository.save).toHaveBeenCalled();
+      const savedArg = taskRepository.save.mock.calls[0][0] as Partial<Task>;
+      expect(savedArg.status).toBe(TaskStatus.DECLINED);
+      expect(savedArg.declined_at).toBeInstanceOf(Date);
+      expect(savedArg.decline_reason).toBe('Cannot complete due to equipment shortage');
+      expect(result.status).toBe(TaskStatus.DECLINED);
+    });
+
+    it('should throw ForbiddenException when non-assignee tries to decline', async () => {
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'other-user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
+
+      await expect(
+        service.declineTask('task-uuid', 'user-uuid', 'Some reason'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException when task is not in ASSIGNED status', async () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
+
+      await expect(
+        service.declineTask('task-uuid', 'user-uuid', 'Some reason'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when task is in COMPLETED status', async () => {
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'user-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(completedTask as Task);
+
+      await expect(
+        service.declineTask('task-uuid', 'user-uuid', 'Too late'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('verifyTask', () => {
+    const mockAssignedSatgas: Partial<User> = {
+      id: 'satgas-uuid',
+      role: UserRole.SATGAS,
+      area_id: 'area-uuid',
+      is_active: true,
+    };
+
+    const mockKorlapVerifier: Partial<User> = {
+      id: 'korlap-uuid',
+      role: UserRole.KORLAP,
+      area_id: 'area-uuid',
+      is_active: true,
+    };
+
+    const mockKepalaRayonVerifier: Partial<User> = {
+      id: 'kr-uuid',
+      role: UserRole.KEPALA_RAYON,
+      rayon_id: 'rayon-uuid',
+      is_active: true,
+    };
+
+    const mockTopManagementVerifier: Partial<User> = {
+      id: 'tm-uuid',
+      role: UserRole.TOP_MANAGEMENT,
+      is_active: true,
+    };
+
+    const mockAssignedKorlap: Partial<User> = {
+      id: 'korlap-assignee-uuid',
+      role: UserRole.KORLAP,
+      area_id: 'area-uuid',
+      is_active: true,
+    };
+
+    const mockAssignedKepalaRayon: Partial<User> = {
+      id: 'kr-assignee-uuid',
+      role: UserRole.KEPALA_RAYON,
+      rayon_id: 'rayon-uuid',
+      is_active: true,
+    };
+
+    it('should allow korlap to verify satgas task in same area', async () => {
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'satgas-uuid',
+      };
+      const verifiedTask = {
+        ...completedTask,
+        status: TaskStatus.VERIFIED,
+        verified_by: 'korlap-uuid',
+        verified_at: new Date(),
+      };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(completedTask as Task)
+        .mockResolvedValueOnce(verifiedTask as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(mockKorlapVerifier as User)
+        .mockResolvedValueOnce(mockAssignedSatgas as User);
+      taskRepository.save.mockResolvedValue(verifiedTask as Task);
+
+      const result = await service.verifyTask('task-uuid', 'korlap-uuid');
+
+      expect(taskRepository.save).toHaveBeenCalled();
+      const savedArg = taskRepository.save.mock.calls[0][0] as Partial<Task>;
+      expect(savedArg.status).toBe(TaskStatus.VERIFIED);
+      expect(savedArg.verified_by).toBe('korlap-uuid');
+      expect(savedArg.verified_at).toBeInstanceOf(Date);
+      expect(result.status).toBe(TaskStatus.VERIFIED);
+    });
+
+    it('should allow kepala_rayon to verify korlap task in same rayon', async () => {
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'korlap-assignee-uuid',
+      };
+      const verifiedTask = {
+        ...completedTask,
+        status: TaskStatus.VERIFIED,
+        verified_by: 'kr-uuid',
+        verified_at: new Date(),
+      };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(completedTask as Task)
+        .mockResolvedValueOnce(verifiedTask as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(mockKepalaRayonVerifier as User)
+        .mockResolvedValueOnce(mockAssignedKorlap as User);
+      // kepala_rayon scope check: areasService.findOne returns area with matching rayon_id
+      areasService.findOne.mockResolvedValue({ id: 'area-uuid', rayon_id: 'rayon-uuid' } as any);
+      taskRepository.save.mockResolvedValue(verifiedTask as Task);
+
+      const result = await service.verifyTask('task-uuid', 'kr-uuid');
+
+      expect(areasService.findOne).toHaveBeenCalledWith('area-uuid');
+      expect(taskRepository.save).toHaveBeenCalled();
+      expect(result.status).toBe(TaskStatus.VERIFIED);
+    });
+
+    it('should allow top_management to verify kepala_rayon task without scope restriction', async () => {
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'kr-assignee-uuid',
+      };
+      const verifiedTask = {
+        ...completedTask,
+        status: TaskStatus.VERIFIED,
+        verified_by: 'tm-uuid',
+        verified_at: new Date(),
+      };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(completedTask as Task)
+        .mockResolvedValueOnce(verifiedTask as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(mockTopManagementVerifier as User)
+        .mockResolvedValueOnce(mockAssignedKepalaRayon as User);
+      taskRepository.save.mockResolvedValue(verifiedTask as Task);
+
+      const result = await service.verifyTask('task-uuid', 'tm-uuid');
+
+      // top_management has no scope check so areasService should not be called
+      expect(areasService.findOne).not.toHaveBeenCalled();
+      expect(taskRepository.save).toHaveBeenCalled();
+      expect(result.status).toBe(TaskStatus.VERIFIED);
+    });
+
+    it('should throw BadRequestException when task is not COMPLETED', async () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'satgas-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
+
+      await expect(service.verifyTask('task-uuid', 'korlap-uuid')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw ForbiddenException when korlap tries to verify another korlap', async () => {
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'korlap-assignee-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(completedTask as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(mockKorlapVerifier as User)
+        .mockResolvedValueOnce(mockAssignedKorlap as User);
+
+      await expect(service.verifyTask('task-uuid', 'korlap-uuid')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ForbiddenException when korlap verifies satgas in different area', async () => {
+      const differentAreaSatgas: Partial<User> = {
+        id: 'satgas-other-area-uuid',
+        role: UserRole.SATGAS,
+        area_id: 'different-area-uuid',
+        is_active: true,
+      };
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'satgas-other-area-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(completedTask as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(mockKorlapVerifier as User)
+        .mockResolvedValueOnce(differentAreaSatgas as User);
+
+      await expect(service.verifyTask('task-uuid', 'korlap-uuid')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('requestRevision', () => {
+    const mockAssignedSatgas: Partial<User> = {
+      id: 'satgas-uuid',
+      role: UserRole.SATGAS,
+      area_id: 'area-uuid',
+      is_active: true,
+    };
+
+    const mockKorlapVerifier: Partial<User> = {
+      id: 'korlap-uuid',
+      role: UserRole.KORLAP,
+      area_id: 'area-uuid',
+      is_active: true,
+    };
+
+    const mockKorlapAssignee: Partial<User> = {
+      id: 'korlap-assignee-uuid',
+      role: UserRole.KORLAP,
+      area_id: 'area-uuid',
+      is_active: true,
+    };
+
+    it('should request revision on a completed task and set revision_reason', async () => {
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'satgas-uuid',
+      };
+      const revisionTask = {
+        ...completedTask,
+        status: TaskStatus.REVISION_NEEDED,
+        revision_reason: 'Photo evidence is unclear',
+      };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(completedTask as Task)
+        .mockResolvedValueOnce(revisionTask as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(mockKorlapVerifier as User)
+        .mockResolvedValueOnce(mockAssignedSatgas as User);
+      taskRepository.save.mockResolvedValue(revisionTask as Task);
+
+      const result = await service.requestRevision(
+        'task-uuid',
+        'korlap-uuid',
+        'Photo evidence is unclear',
+      );
+
+      expect(taskRepository.save).toHaveBeenCalled();
+      const savedArg = taskRepository.save.mock.calls[0][0] as Partial<Task>;
+      expect(savedArg.status).toBe(TaskStatus.REVISION_NEEDED);
+      expect(savedArg.revision_reason).toBe('Photo evidence is unclear');
+      expect(result.status).toBe(TaskStatus.REVISION_NEEDED);
+    });
+
+    it('should throw BadRequestException when task is not COMPLETED', async () => {
+      const verifiedTask = {
+        ...mockTask,
+        status: TaskStatus.VERIFIED,
+        assigned_to: 'satgas-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(verifiedTask as Task);
+
+      await expect(
+        service.requestRevision('task-uuid', 'korlap-uuid', 'Needs more detail'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when task is REVISION_NEEDED', async () => {
+      const revisionTask = {
+        ...mockTask,
+        status: TaskStatus.REVISION_NEEDED,
+        assigned_to: 'satgas-uuid',
+      };
+
+      taskRepository.findOne.mockResolvedValue(revisionTask as Task);
+
+      await expect(
+        service.requestRevision('task-uuid', 'korlap-uuid', 'Still needs improvement'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ForbiddenException when requester has wrong hierarchy', async () => {
+      const completedTask = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        assigned_to: 'korlap-assignee-uuid',
+      };
+
+      // korlap cannot request revision on another korlap's task
+      taskRepository.findOne.mockResolvedValue(completedTask as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(mockKorlapVerifier as User)
+        .mockResolvedValueOnce(mockKorlapAssignee as User);
+
+      await expect(
+        service.requestRevision('task-uuid', 'korlap-uuid', 'Needs rework'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

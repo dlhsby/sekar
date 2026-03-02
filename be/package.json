@@ -20,6 +20,7 @@
     "seed:phase1": "ts-node -r tsconfig-paths/register src/database/seeds/seed.ts",
     "seed:phase2": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase2.ts",
     "seed:tasks": "ts-node -r tsconfig-paths/register src/database/seeds/seed-tasks.ts",
+    "seed:activities": "ts-node -r tsconfig-paths/register src/database/seeds/seed-activities.ts",
     "seed:prod": "node dist/database/seeds/seed.js",
     "seed:phase2:prod": "node dist/database/seeds/seed-phase2.js",
     "seed:tasks:prod": "node dist/database/seeds/seed-tasks.js",
@@ -101,6 +102,11 @@
   "overrides": {
     "lodash": "^4.17.21",
     "tar": "^7.5.4",
+    "fast-xml-parser": "^5.3.8",
+    "serialize-javascript": "^7.0.3",
+    "ajv": "^8.18.0",
+    "multer": "^2.1.0",
+    "minimatch": "^10.2.3",
     "@mapbox/node-pre-gyp": {
       "tar": "^7.5.4"
     }
@@ -127,6 +133,8 @@
       "!**/seed.ts",
       "!**/seed.service.ts",
       "!**/seed.module.ts",
+      "!**/seed-*.ts",
+      "!**/config/firebase.config.ts",
       "!**/*.interface.ts",
       "!**/entities/*.entity.ts",
       "!**/dto/*.dto.ts",

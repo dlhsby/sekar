@@ -4,87 +4,128 @@
  * Supports offline queueing and auto-save drafts
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  Image,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
-  FlatList,
   ActivityIndicator,
+  Alert,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
-import { NBButton, NBCard, NBCardHeader, NBCardContent, NBTextInput } from '../../components/nb';
+import { NBButton, NBCard, NBCardHeader, NBCardContent, NBSelect, NBCardTextInput, type NBSelectOption } from '../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { PhotoUploader } from '../../components/common';
 import { useActivityForm } from '../../hooks';
+import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import type { MainTabScreenProps } from '../../types/navigation.types';
-import type { Photo } from '../../services/media';
 
 /**
  * Activity Submission Screen Component
  */
 export function ActivitySubmissionScreen(): React.JSX.Element {
   const navigation = useNavigation<MainTabScreenProps<'ActivitySubmission'>['navigation']>();
-  const photoListRef = useRef<FlatList>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const {
     form,
     errors,
     isLoadingLocation,
-    activityTypes,
+    sortedActivityTypes,
     isLoadingTypes,
     isSubmitting,
     isOnline,
     activityError,
     getCurrentLocation,
     loadActivityTypes,
-    handleAddPhoto,
+    addPhoto,
     handleRemovePhoto,
     handleSubmit,
     setDescription,
     setActivityTypeId,
     clearError,
-  } = useActivityForm(photoListRef);
+    resetForm,
+    clearDraft,
+    saveDraft,
+    restoreDraft,
+  } = useActivityForm();
 
-  const renderPhotoItem = useCallback(({ item }: { item: Photo }) => (
-    <View style={styles.photoItem}>
-      <Image source={{ uri: item.uri }} style={styles.photoThumbnail} />
-      <TouchableOpacity
-        style={styles.removePhotoButton}
-        onPress={() => handleRemovePhoto(item.id)}
-        accessibilityRole="button"
-        accessibilityLabel="Hapus foto"
-        accessibilityHint="Ketuk untuk menghapus foto ini dari aktivitas"
-      >
-        <Text style={styles.removePhotoText}>✕</Text>
-      </TouchableOpacity>
-    </View>
-  ), [handleRemovePhoto]);
+  // Restore draft when screen gains focus (tab navigation keeps component mounted)
+  // useRef avoids re-triggering useFocusEffect on state change, so restoreDraft runs only on re-focus (not mount)
+  const hasRestoredOnMount = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasRestoredOnMount.current) {
+        hasRestoredOnMount.current = false;
+        return;
+      }
+      restoreDraft();
+    }, [restoreDraft]),
+  );
 
-  const renderAddPhotoButton = useCallback(() => {
-    if (form.photos.length >= 3) { return null; }
-    return (
-      <TouchableOpacity
-        style={styles.addPhotoButton}
-        onPress={handleAddPhoto}
-        testID="add-photo-button"
-        accessibilityLabel="Tambah foto"
-      >
-        <Text style={styles.addPhotoIcon}>+</Text>
-        <Text style={styles.addPhotoText}>Foto</Text>
-      </TouchableOpacity>
+  const hasFormData = useMemo(
+    () => form.photos.length > 0 || form.description.length > 0 || form.activityTypeId !== null,
+    [form.photos.length, form.description.length, form.activityTypeId],
+  );
+
+  const activityTypeOptions = useMemo<NBSelectOption[]>(
+    () => sortedActivityTypes.map((t) => ({ label: t.name, value: t.id })),
+    [sortedActivityTypes],
+  );
+
+  const navigateBack = useCallback(() => {
+    navigation.navigate('TasksActivities', { initialTab: 'activities' });
+  }, [navigation]);
+
+  // Prompt user to save draft or discard when leaving with unsaved data
+  const handleLeave = useCallback(() => {
+    if (!hasFormData) {
+      navigateBack();
+      return;
+    }
+    Alert.alert(
+      'Simpan Draft?',
+      'Simpan data aktivitas sebagai draft?',
+      [
+        {
+          text: 'Tidak',
+          style: 'destructive',
+          onPress: async () => {
+            await clearDraft();
+            resetForm();
+            navigateBack();
+          },
+        },
+        {
+          text: 'Ya',
+          onPress: async () => {
+            await saveDraft();
+            resetForm();
+            navigateBack();
+          },
+        },
+      ],
     );
-  }, [form.photos.length, handleAddPhoto]);
+  }, [hasFormData, resetForm, clearDraft, navigateBack, saveDraft]);
+
+  // Override header back button to use handleLeave with discard/draft prompt
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <FieldHomeHeader title="Buat Aktivitas" onBack={handleLeave} />
+      ),
+    });
+  }, [navigation, handleLeave]);
 
   const onSubmit = useCallback(() => {
     handleSubmit(
       () => navigation.navigate('ClockInOut'),
-      () => navigation.navigate('Activities', { activeTab: 'activities' }),
+      () => navigation.navigate('TasksActivities', { initialTab: 'activities' }),
+      () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }),
     );
   }, [handleSubmit, navigation]);
 
@@ -97,10 +138,21 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
     >
       <SafeAreaView style={styles.container}>
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Validation error summary */}
+          {Object.values(errors).some(Boolean) && (
+            <View style={styles.errorSummary}>
+              <Text style={styles.errorSummaryTitle}>⚠️ Mohon lengkapi data berikut:</Text>
+              {Object.values(errors).filter(Boolean).map((msg, i) => (
+                <Text key={i} style={styles.errorSummaryItem}>• {msg}</Text>
+              ))}
+            </View>
+          )}
+
           {/* Error banner */}
           {activityError && (
             <NBAlert
@@ -128,16 +180,11 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
               <Text style={styles.sectionSubtitle}>Tambahkan 1-3 foto pekerjaan yang dilakukan</Text>
             </NBCardHeader>
             <NBCardContent>
-              {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
-              <FlatList
-                ref={photoListRef}
-                data={form.photos}
-                renderItem={renderPhotoItem}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                ListFooterComponent={renderAddPhotoButton}
-                style={styles.photoList}
+              <PhotoUploader
+                photos={form.photos}
+                onAdd={addPhoto}
+                onRemove={handleRemovePhoto}
+                error={errors.photos}
               />
             </NBCardContent>
           </NBCard>
@@ -148,59 +195,42 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
               <Text style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</Text>
             </NBCardHeader>
             <NBCardContent>
-              {errors.activityType && <Text style={styles.errorText}>{errors.activityType}</Text>}
               {isLoadingTypes ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
                   <Text style={styles.loadingText}>Memuat jenis aktivitas...</Text>
                 </View>
-              ) : activityTypes.length === 0 ? (
+              ) : activityTypeOptions.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>Tidak ada jenis aktivitas tersedia</Text>
                   <NBButton title="Coba Lagi" onPress={loadActivityTypes} variant="secondary" size="sm" />
                 </View>
               ) : (
-                <ScrollView style={styles.activityTypeScrollView}>
-                  {activityTypes.map((type) => (
-                    <TouchableOpacity
-                      key={type.id}
-                      style={[
-                        styles.activityTypeOption,
-                        form.activityTypeId === type.id && styles.activityTypeOptionSelected,
-                      ]}
-                      onPress={() => setActivityTypeId(type.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.activityTypeOptionText,
-                          form.activityTypeId === type.id && styles.activityTypeOptionTextSelected,
-                        ]}
-                      >
-                        {form.activityTypeId === type.id ? '✓ ' : ''}{type.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                <NBSelect
+                  value={form.activityTypeId ?? ''}
+                  onValueChange={(v) => setActivityTypeId(String(v))}
+                  options={activityTypeOptions}
+                  placeholder="Pilih jenis aktivitas..."
+                  searchable
+                  searchPlaceholder="Cari jenis aktivitas..."
+                />
               )}
+              {errors.activityType && <Text style={styles.errorText}>{errors.activityType}</Text>}
             </NBCardContent>
           </NBCard>
 
           {/* Description */}
-          <View style={styles.descriptionSection}>
-            <NBTextInput
-              label="📝 DESKRIPSI PEKERJAAN"
-              placeholder="Contoh: Menyiram tanaman di area A, memangkas rumput liar..."
-              multiline
-              numberOfLines={6}
-              maxLength={500}
-              value={form.description}
-              onChangeText={setDescription}
-              error={errors.description}
-              helperText={`${form.description.length}/500 karakter`}
-              inputStyle={styles.descriptionInput}
-              textAlignVertical="top"
-            />
-          </View>
+          <NBCardTextInput
+            title="📝 Deskripsi Pekerjaan"
+            required
+            value={form.description}
+            onChangeText={setDescription}
+            placeholder="Contoh: Menyiram tanaman di area A, memangkas rumput liar..."
+            numberOfLines={6}
+            maxLength={500}
+            error={errors.description}
+            style={styles.card}
+          />
 
           {/* GPS location */}
           <NBCard style={styles.card}>
@@ -228,15 +258,33 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
               )}
             </NBCardContent>
           </NBCard>
-
-          {/* Submit button */}
-          <NBButton
-            title={isOnline ? 'Kirim Aktivitas' : 'Simpan untuk Sync'}
-            onPress={onSubmit}
-            loading={isSubmitting}
-            disabled={isSubmitting}
-          />
         </ScrollView>
+
+        {/* Fixed FAB buttons — matching TasksActivityScreen FAB pattern */}
+        <View style={styles.fab}>
+          <View style={styles.fabButtonRow}>
+            <View style={styles.fabButtonHalf}>
+              <NBButton
+                title="Batal"
+                variant="secondary"
+                onPress={handleLeave}
+                disabled={isSubmitting}
+                fullWidth
+                size="lg"
+              />
+            </View>
+            <View style={styles.fabButtonHalf}>
+              <NBButton
+                title={isOnline ? 'Kirim Aktivitas' : 'Simpan untuk Sync'}
+                onPress={onSubmit}
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                fullWidth
+                size="lg"
+              />
+            </View>
+          </View>
+        </View>
       </SafeAreaView>
     </NBBackgroundPattern>
   );
@@ -252,14 +300,20 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: nbSpacing.md,
-    paddingBottom: nbSpacing.xl * 2,
-    flexGrow: 1,
-    justifyContent: 'center',
+    paddingBottom: nbSpacing.md,
+  },
+  fab: {
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+  },
+  fabButtonRow: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+  },
+  fabButtonHalf: {
+    flex: 1,
   },
   card: {
-    marginBottom: nbSpacing.md,
-  },
-  descriptionSection: {
     marginBottom: nbSpacing.md,
   },
   sectionTitle: {
@@ -275,9 +329,6 @@ const styles = StyleSheet.create({
     fontWeight: nbTypography.fontWeight.medium,
     color: nbColors.gray['600'],
   },
-  descriptionInput: {
-    minHeight: 140,
-  },
   offlineWarning: {
     backgroundColor: nbColors.warningLight,
     borderWidth: nbBorders.base,
@@ -288,84 +339,6 @@ const styles = StyleSheet.create({
   offlineWarningText: {
     color: nbColors.warning,
     fontSize: nbTypography.fontSize.sm,
-  },
-  photoList: {
-    marginTop: nbSpacing.sm,
-  },
-  photoItem: {
-    marginRight: nbSpacing.sm,
-    position: 'relative',
-  },
-  photoThumbnail: {
-    width: 160,
-    height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-  },
-  removePhotoButton: {
-    position: 'absolute',
-    top: -12,
-    right: -12,
-    backgroundColor: nbColors.danger,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...nbShadows.sm,
-  },
-  removePhotoText: {
-    color: nbColors.white,
-    fontSize: 24,
-    fontWeight: nbTypography.fontWeight.bold,
-  },
-  addPhotoButton: {
-    width: 160,
-    height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.gray['50'],
-  },
-  addPhotoIcon: {
-    fontSize: 32,
-    color: nbColors.gray['600'],
-  },
-  addPhotoText: {
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.xs,
-    marginTop: nbSpacing.xs,
-  },
-  activityTypeScrollView: {
-    maxHeight: 240,
-  },
-  activityTypeOption: {
-    padding: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    marginBottom: nbSpacing.sm,
-    backgroundColor: nbColors.white,
-  },
-  activityTypeOptionSelected: {
-    borderColor: nbColors.primary,
-    backgroundColor: withAlpha(nbColors.primary, 0.1),
-    ...nbShadows.sm,
-  },
-  activityTypeOptionText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.black,
-    textAlign: 'left',
-  },
-  activityTypeOptionTextSelected: {
-    color: nbColors.primary,
-    fontWeight: nbTypography.fontWeight.semibold,
   },
   locationLoading: {
     flexDirection: 'row',
@@ -419,5 +392,24 @@ const styles = StyleSheet.create({
     color: nbColors.gray['600'],
     fontSize: nbTypography.fontSize.sm,
     marginBottom: nbSpacing.md,
+  },
+  errorSummary: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.danger,
+    borderRadius: nbBorderRadius.sm,
+    padding: nbSpacing.sm,
+    marginBottom: nbSpacing.md,
+  },
+  errorSummaryTitle: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.danger,
+    marginBottom: nbSpacing.xs,
+  },
+  errorSummaryItem: {
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.danger,
+    marginTop: 2,
   },
 });

@@ -1,5 +1,5 @@
 /**
- * Tasks API Client (Phase 2C - simplified statuses, tagging)
+ * Tasks API Client (Phase 2C - 8 statuses, tagging, verification)
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,9 +7,17 @@ import { apiClient } from './client';
 import type { PaginatedResponse, TaskTag } from '@/types/models';
 
 /**
- * Task Status - simplified to 4 (Phase 2C)
+ * Task Status - 8 values (Phase 2C)
  */
-export type TaskStatus = 'pending' | 'assigned' | 'in_progress' | 'completed';
+export type TaskStatus =
+  | 'pending'
+  | 'assigned'
+  | 'accepted'
+  | 'declined'
+  | 'in_progress'
+  | 'completed'
+  | 'verified'
+  | 'revision_needed';
 
 /**
  * Task Priority
@@ -23,6 +31,8 @@ export interface Task extends Record<string, unknown> {
   id: string;
   title: string;
   description?: string;
+  created_by: string;
+  creator?: { id: string; full_name: string };
   assigned_to?: {
     id: string;
     full_name: string;
@@ -48,9 +58,18 @@ export interface Task extends Record<string, unknown> {
   priority: TaskPriority;
   status: TaskStatus;
   due_date?: string;
+  assigned_at?: string;
+  accepted_at?: string;
+  declined_at?: string;
+  decline_reason?: string;
+  started_at?: string;
   completed_at?: string;
-  completion_photo_url?: string;
+  completion_photo_urls?: string[];
   completion_notes?: string;
+  verified_by?: string;
+  verifier?: { id: string; full_name: string };
+  verified_at?: string;
+  revision_reason?: string;
   created_at: string;
   updated_at: string;
 }
@@ -109,7 +128,8 @@ export const tasksKeys = {
   list: (filters?: TaskFilters) => [...tasksKeys.lists(), filters] as const,
   details: () => [...tasksKeys.all, 'detail'] as const,
   detail: (id: string) => [...tasksKeys.details(), id] as const,
-  tagged: () => [...tasksKeys.all, 'tagged'] as const,
+  tagged: (filters?: TaskFilters) => [...tasksKeys.all, 'tagged', filters] as const,
+  myTasks: (filters?: TaskFilters) => [...tasksKeys.all, 'my-tasks', filters] as const,
 };
 
 /**
@@ -120,6 +140,38 @@ export function useTasks(filters?: TaskFilters) {
     queryKey: tasksKeys.list(filters),
     queryFn: async () => {
       const response = await apiClient.get<PaginatedResponse<Task>>('/tasks', {
+        params: filters,
+      });
+      return response.data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Fetch Tagged Tasks (tasks where current user is tagged)
+ */
+export function useTaggedTasks(filters?: TaskFilters) {
+  return useQuery({
+    queryKey: tasksKeys.tagged(filters),
+    queryFn: async () => {
+      const response = await apiClient.get<PaginatedResponse<Task>>('/tasks/tagged', {
+        params: filters,
+      });
+      return response.data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Fetch My Tasks (tasks created by current user)
+ */
+export function useMyTasks(filters?: TaskFilters) {
+  return useQuery({
+    queryKey: tasksKeys.myTasks(filters),
+    queryFn: async () => {
+      const response = await apiClient.get<PaginatedResponse<Task>>('/tasks/my-tasks', {
         params: filters,
       });
       return response.data;
@@ -195,6 +247,59 @@ export function useDeleteTask() {
 }
 
 /**
+ * Assign Task to a user
+ */
+export function useAssignTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ taskId, assignedTo }: { taskId: string; assignedTo: string }) => {
+      const response = await apiClient.post<Task>(`/tasks/${taskId}/assign`, {
+        assigned_to: assignedTo,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tasksKeys.all });
+    },
+  });
+}
+
+/**
+ * Accept Task (assigned user accepts)
+ */
+export function useAcceptTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await apiClient.post<Task>(`/tasks/${taskId}/accept`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tasksKeys.all });
+    },
+  });
+}
+
+/**
+ * Decline Task (assigned user declines)
+ */
+export function useDeclineTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ taskId, reason }: { taskId: string; reason: string }) => {
+      const response = await apiClient.post<Task>(`/tasks/${taskId}/decline`, { reason });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tasksKeys.all });
+    },
+  });
+}
+
+/**
  * Start Task
  */
 export function useStartTask() {
@@ -212,7 +317,7 @@ export function useStartTask() {
 }
 
 /**
- * Complete Task (Phase 2C - no GPS params)
+ * Complete Task (Phase 2C - photo_urls array + description)
  */
 export function useCompleteTask() {
   const queryClient = useQueryClient();
@@ -220,21 +325,55 @@ export function useCompleteTask() {
   return useMutation({
     mutationFn: async ({
       taskId,
-      photoUrl,
-      notes,
+      completionPhotoUrls,
+      description,
     }: {
       taskId: string;
-      photoUrl?: string;
-      notes?: string;
+      completionPhotoUrls?: string[];
+      description?: string;
     }) => {
       const response = await apiClient.post<Task>(`/tasks/${taskId}/complete`, {
-        completion_photo_url: photoUrl,
-        completion_notes: notes,
+        completion_photo_urls: completionPhotoUrls,
+        description,
       });
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tasksKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: tasksKeys.all });
+    },
+  });
+}
+
+/**
+ * Verify Task (supervisor verifies completed task)
+ */
+export function useVerifyTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await apiClient.patch<Task>(`/tasks/${taskId}/verify`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tasksKeys.all });
+    },
+  });
+}
+
+/**
+ * Request Revision on a completed task
+ */
+export function useRequestRevision() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ taskId, reason }: { taskId: string; reason: string }) => {
+      const response = await apiClient.patch<Task>(`/tasks/${taskId}/revision`, { reason });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tasksKeys.all });
     },
   });
 }

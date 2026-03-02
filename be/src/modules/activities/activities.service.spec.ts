@@ -3,10 +3,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, Between, IsNull } from 'typeorm';
 import { HttpStatus, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
-import { Activity } from './entities/activity.entity';
+import { Activity, ActivityStatus } from './entities/activity.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { S3Service } from '../../shared/services/s3.service';
+import { UsersService } from '../users/users.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { UserRole } from '../users/entities/user.entity';
@@ -20,6 +21,7 @@ describe('ActivitiesService', () => {
   let shiftsRepo: jest.Mocked<Repository<Shift>>;
   let activityTypeRepo: jest.Mocked<Repository<ActivityType>>;
   let s3Service: jest.Mocked<S3Service>;
+  let usersService: jest.Mocked<UsersService>;
 
   const mockUser = {
     id: 'user-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
@@ -72,6 +74,7 @@ describe('ActivitiesService', () => {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
+    findOneOrFail: jest.fn(),
     find: jest.fn(),
     remove: jest.fn(),
     createQueryBuilder: jest.fn(),
@@ -87,6 +90,10 @@ describe('ActivitiesService', () => {
 
   const mockS3Service = {
     convertToPresignedUrl: jest.fn(),
+  };
+
+  const mockUsersService = {
+    findOne: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -109,6 +116,10 @@ describe('ActivitiesService', () => {
           provide: S3Service,
           useValue: mockS3Service,
         },
+        {
+          provide: UsersService,
+          useValue: mockUsersService,
+        },
       ],
     }).compile();
 
@@ -117,6 +128,7 @@ describe('ActivitiesService', () => {
     shiftsRepo = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
     activityTypeRepo = module.get(getRepositoryToken(ActivityType)) as jest.Mocked<Repository<ActivityType>>;
     s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
+    usersService = module.get(UsersService) as jest.Mocked<UsersService>;
 
     // Reset S3 mock implementation to avoid appending to same string reference
     mockS3Service.convertToPresignedUrl.mockImplementation((url) => Promise.resolve(`presigned-${url}`));
@@ -322,11 +334,14 @@ describe('ActivitiesService', () => {
 
       await service.findAllPaginated(filters, mockUser as any, 1, 50);
 
+      const expectedToDate = new Date(filters.to_date);
+      expectedToDate.setHours(23, 59, 59, 999);
+
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'activity.created_at BETWEEN :fromDate AND :toDate',
         {
           fromDate: new Date(filters.from_date),
-          toDate: new Date(filters.to_date),
+          toDate: expectedToDate,
         },
       );
     });
@@ -400,7 +415,7 @@ describe('ActivitiesService', () => {
       expect(result).toHaveLength(1);
       expect(mockActivitiesRepo.find).toHaveBeenCalledWith({
         where: { user_id: mockUser.id },
-        relations: ['user', 'shift', 'shift.area'],
+        relations: ['user', 'shift', 'shift.area', 'area', 'activityType', 'reviewer'],
         order: { created_at: 'DESC' },
       });
     });
@@ -727,6 +742,220 @@ describe('ActivitiesService', () => {
 
       // Should keep original URLs on error
       expect(result.photo_urls).toEqual([originalUrl]);
+    });
+  });
+
+  describe('approveActivity', () => {
+    const korlapReviewer = {
+      id: 'korlap-uuid-1',
+      role: UserRole.KORLAP,
+      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      rayon_id: 'rayon-uuid-1',
+    };
+
+    const kepalaRayonReviewer = {
+      id: 'kepala-rayon-uuid-1',
+      role: UserRole.KEPALA_RAYON,
+      area_id: null,
+      rayon_id: 'rayon-uuid-1',
+    };
+
+    /** Build a fresh pending activity object to avoid cross-test mutation */
+    const buildPendingActivity = (overrides: Partial<any> = {}): any => ({
+      id: 'activity-uuid-pending',
+      user_id: mockUser.id,
+      shift_id: mockActiveShift.id,
+      status: ActivityStatus.PENDING,
+      reviewed_by: null,
+      reviewed_at: null,
+      rejection_reason: null,
+      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
+      user: { ...mockUser, role: UserRole.SATGAS },
+      photo_urls: [],
+      description: 'Test activity',
+      created_at: new Date(),
+      updated_at: new Date(),
+      ...overrides,
+    });
+
+    it('should approve a pending activity when Korlap is in the correct area', async () => {
+      const activity = buildPendingActivity();
+      const approvedActivity = {
+        ...activity,
+        status: ActivityStatus.APPROVED,
+        reviewed_by: korlapReviewer.id,
+        reviewed_at: new Date(),
+      };
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(korlapReviewer as any);
+      mockActivitiesRepo.save.mockResolvedValue(approvedActivity);
+      mockActivitiesRepo.findOneOrFail.mockResolvedValue(approvedActivity);
+
+      const result = await service.approveActivity(activity.id, korlapReviewer.id);
+
+      expect(result.status).toBe(ActivityStatus.APPROVED);
+      expect(mockActivitiesRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: ActivityStatus.APPROVED,
+          reviewed_by: korlapReviewer.id,
+        }),
+      );
+    });
+
+    it('should throw NotFoundException when activity does not exist', async () => {
+      mockActivitiesRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.approveActivity('non-existent-id', korlapReviewer.id)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException when activity is already processed', async () => {
+      const activity = buildPendingActivity({ status: ActivityStatus.APPROVED });
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+
+      await expect(service.approveActivity(activity.id, korlapReviewer.id)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw ForbiddenException when Korlap tries to approve Korlap activity', async () => {
+      const activity = buildPendingActivity({ user: { ...mockUser, role: UserRole.KORLAP } });
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(korlapReviewer as any);
+
+      await expect(service.approveActivity(activity.id, korlapReviewer.id)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ForbiddenException when Korlap area does not match activity area', async () => {
+      const activity = buildPendingActivity();
+      const differentAreaKorlap = { ...korlapReviewer, area_id: 'different-area-uuid' };
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(differentAreaKorlap as any);
+
+      await expect(service.approveActivity(activity.id, differentAreaKorlap.id)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should allow Kepala Rayon to approve Korlap activity in same rayon', async () => {
+      const activity = buildPendingActivity({
+        user: { ...mockUser, role: UserRole.KORLAP },
+        area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
+      });
+      const approvedActivity = {
+        ...activity,
+        status: ActivityStatus.APPROVED,
+        reviewed_by: kepalaRayonReviewer.id,
+        reviewed_at: new Date(),
+      };
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(kepalaRayonReviewer as any);
+      mockActivitiesRepo.save.mockResolvedValue(approvedActivity);
+      mockActivitiesRepo.findOneOrFail.mockResolvedValue(approvedActivity);
+
+      const result = await service.approveActivity(activity.id, kepalaRayonReviewer.id);
+
+      expect(result.status).toBe(ActivityStatus.APPROVED);
+    });
+
+    it('should throw ForbiddenException when Kepala Rayon rayon does not match Korlap area rayon', async () => {
+      const activity = buildPendingActivity({
+        user: { ...mockUser, role: UserRole.KORLAP },
+        area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'different-rayon-uuid' },
+      });
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(kepalaRayonReviewer as any);
+
+      await expect(service.approveActivity(activity.id, kepalaRayonReviewer.id)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('rejectActivity', () => {
+    const korlapReviewer = {
+      id: 'korlap-uuid-1',
+      role: UserRole.KORLAP,
+      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      rayon_id: 'rayon-uuid-1',
+    };
+
+    /** Build a fresh pending activity object to avoid cross-test mutation */
+    const buildPendingActivity = (overrides: Partial<any> = {}): any => ({
+      id: 'activity-uuid-pending-reject',
+      user_id: mockUser.id,
+      shift_id: mockActiveShift.id,
+      status: ActivityStatus.PENDING,
+      reviewed_by: null,
+      reviewed_at: null,
+      rejection_reason: null,
+      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
+      user: { ...mockUser, role: UserRole.SATGAS },
+      photo_urls: [],
+      description: 'Test activity',
+      created_at: new Date(),
+      updated_at: new Date(),
+      ...overrides,
+    });
+
+    it('should reject a pending activity with a reason', async () => {
+      const rejectionReason = 'Foto tidak jelas';
+      const activity = buildPendingActivity();
+      const rejectedActivity = {
+        ...activity,
+        status: ActivityStatus.REJECTED,
+        reviewed_by: korlapReviewer.id,
+        reviewed_at: new Date(),
+        rejection_reason: rejectionReason,
+      };
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(korlapReviewer as any);
+      mockActivitiesRepo.save.mockResolvedValue(rejectedActivity);
+      mockActivitiesRepo.findOneOrFail.mockResolvedValue(rejectedActivity);
+
+      const result = await service.rejectActivity(activity.id, korlapReviewer.id, rejectionReason);
+
+      expect(result.status).toBe(ActivityStatus.REJECTED);
+      expect(mockActivitiesRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: ActivityStatus.REJECTED,
+          rejection_reason: rejectionReason,
+          reviewed_by: korlapReviewer.id,
+        }),
+      );
+    });
+
+    it('should throw NotFoundException when activity does not exist', async () => {
+      mockActivitiesRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.rejectActivity('non-existent-id', korlapReviewer.id, 'reason'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when activity is already rejected', async () => {
+      const activity = buildPendingActivity({ status: ActivityStatus.REJECTED });
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+
+      await expect(
+        service.rejectActivity(activity.id, korlapReviewer.id, 'reason'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ForbiddenException when reviewer has no valid role', async () => {
+      const activity = buildPendingActivity();
+      const invalidReviewer = { id: 'user-uuid', role: UserRole.SATGAS, area_id: null, rayon_id: null };
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(invalidReviewer as any);
+
+      await expect(
+        service.rejectActivity(activity.id, invalidReviewer.id, 'reason'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

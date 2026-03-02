@@ -4,8 +4,6 @@ export const CLOCKABLE_ROLES = [
   UserRole.SATGAS,
   UserRole.LINMAS,
   UserRole.KORLAP,
-  UserRole.ADMIN_DATA,
-  UserRole.KEPALA_RAYON,
 ];
 
 export const ACTIVITY_SUBMITTERS = [
@@ -30,9 +28,11 @@ export const TASK_RECEIVERS = [
   UserRole.KEPALA_RAYON,
 ];
 
-export const OVERTIME_SUBMITTERS = [UserRole.SATGAS, UserRole.LINMAS];
+export const OVERTIME_SUBMITTERS = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_DATA];
 
-export const OVERTIME_APPROVERS = [UserRole.KORLAP];
+export const OVERTIME_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
+
+export const ACTIVITY_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
 
 export const MONITORING_CITY = [
   UserRole.TOP_MANAGEMENT,
@@ -52,4 +52,12 @@ export const VALID_TASK_ASSIGNMENTS: Record<string, string[]> = {
   [UserRole.KORLAP]: [UserRole.SATGAS, UserRole.LINMAS],
   [UserRole.ADMIN_SYSTEM]: [UserRole.KEPALA_RAYON, UserRole.KORLAP],
   [UserRole.SUPERADMIN]: [UserRole.KEPALA_RAYON, UserRole.KORLAP],
+};
+
+export const TASK_VERIFIERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT];
+
+export const VERIFY_MAP: Record<string, string[]> = {
+  [UserRole.KORLAP]: [UserRole.SATGAS, UserRole.LINMAS],
+  [UserRole.KEPALA_RAYON]: [UserRole.KORLAP],
+  [UserRole.TOP_MANAGEMENT]: [UserRole.KEPALA_RAYON],
 };

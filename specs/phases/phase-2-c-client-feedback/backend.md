@@ -1,7 +1,7 @@
 # Phase 2C: Backend Requirements
 
-**Last Updated:** 2026-02-16
-**Status:** Spec Rewrite (Terminology Cleanup + Schema Redesign)
+**Last Updated:** 2026-02-19
+**Status:** Complete (Terminology + Activity Approval + Task Verification + Scope Security)
 **Framework:** NestJS 11.x, TypeScript 5.9, TypeORM
 **Related ADR:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
 **See also:** [Seeder Updates](./seeder-updates.md) for test data implementation
@@ -407,6 +407,193 @@ async createActivity(userId: string, dto: CreateActivityDto): Promise<Activity> 
 
 ---
 
+## C-bis. Activity Approval Workflow
+
+### ActivityStatus Enum
+
+**File:** `be/src/modules/activities/entities/activity.entity.ts`
+
+```typescript
+export enum ActivityStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+```
+
+### New Columns on Activity Entity
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `status` | varchar(20), enum ActivityStatus | NO | 'pending' | Approval status |
+| `reviewed_by` | uuid FK→users | YES | null | Who approved/rejected |
+| `reviewed_at` | timestamptz | YES | null | When approved/rejected |
+| `rejection_reason` | text | YES | null | Why rejected (required for rejection) |
+
+### New Relation on Activity Entity
+
+```typescript
+@ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+@JoinColumn({ name: 'reviewed_by' })
+reviewer: User | null;
+```
+
+### Activity Approval Hierarchy
+
+| Submitter Role | Approved By | Scope Check Logic |
+|---------------|------------|-------------------|
+| satgas | korlap | `activity.area_id === approver.area_id` |
+| linmas | korlap | `activity.area_id === approver.area_id` |
+| korlap | kepala_rayon | Lookup area: `SELECT rayon_id FROM areas WHERE id = activity.area_id`, then `area.rayon_id === approver.rayon_id` |
+| admin_data | kepala_rayon | `activity.user.rayon_id === approver.rayon_id` (admin_data has rayon_id on user, NOT area_id) |
+
+**Important rules:**
+1. Korlap can ONLY approve satgas and linmas activities (NOT korlap or admin_data)
+2. Kepala Rayon can ONLY approve korlap and admin_data activities (NOT satgas or linmas directly)
+3. Each level approves only the level directly below it
+4. admin_system and superadmin CANNOT approve activities (they manage the system, not field work)
+
+### New Role Group
+
+**File:** `be/src/modules/users/constants/role-groups.ts`
+
+```typescript
+export const ACTIVITY_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
+```
+
+### New DTO
+
+**File:** `be/src/modules/activities/dto/reject-activity.dto.ts`
+
+```typescript
+export class RejectActivityDto {
+  @ApiProperty({ description: 'Alasan penolakan' })
+  @IsString()
+  @IsNotEmpty({ message: 'Alasan penolakan wajib diisi' })
+  @MaxLength(1000)
+  reason: string;
+}
+```
+
+### New Endpoints
+
+| Method | Path | Roles | Description | Request Body |
+|--------|------|-------|-------------|-------------|
+| PATCH | `/activities/:id/approve` | ACTIVITY_APPROVERS | Approve pending activity | None |
+| PATCH | `/activities/:id/reject` | ACTIVITY_APPROVERS | Reject pending activity | `{ reason: string }` |
+
+### Service Implementation: `approveActivity()`
+
+```typescript
+async approveActivity(activityId: string, reviewerId: string): Promise<Activity> {
+  // 1. Find activity with user and area relations
+  const activity = await this.activitiesRepository.findOne({
+    where: { id: activityId },
+    relations: ['user', 'area'],
+  });
+  if (!activity) throw new NotFoundException('Aktivitas tidak ditemukan');
+
+  // 2. Check activity is pending
+  if (activity.status !== ActivityStatus.PENDING) {
+    throw new BadRequestException('Aktivitas sudah diproses');
+  }
+
+  // 3. Find reviewer
+  const reviewer = await this.usersService.findOne(reviewerId);
+
+  // 4. Hierarchical scope validation
+  if (reviewer.role === UserRole.KORLAP) {
+    if (!['satgas', 'linmas'].includes(activity.user.role)) {
+      throw new ForbiddenException('Korlap hanya dapat menyetujui aktivitas satgas dan linmas');
+    }
+    if (!reviewer.area_id || activity.area_id !== reviewer.area_id) {
+      throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di area Anda');
+    }
+  } else if (reviewer.role === UserRole.KEPALA_RAYON) {
+    if (!['korlap', 'admin_data'].includes(activity.user.role)) {
+      throw new ForbiddenException('Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data');
+    }
+    if (activity.user.role === 'korlap') {
+      const area = activity.area;
+      if (!area || !area.rayon_id || area.rayon_id !== reviewer.rayon_id) {
+        throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di rayon Anda');
+      }
+    }
+    if (activity.user.role === 'admin_data') {
+      if (!activity.user.rayon_id || activity.user.rayon_id !== reviewer.rayon_id) {
+        throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di rayon Anda');
+      }
+    }
+  } else {
+    throw new ForbiddenException('Anda tidak memiliki wewenang untuk menyetujui aktivitas');
+  }
+
+  // 5. Update activity
+  activity.status = ActivityStatus.APPROVED;
+  activity.reviewed_by = reviewerId;
+  activity.reviewed_at = new Date();
+  return this.activitiesRepository.save(activity);
+}
+```
+
+### Service Implementation: `rejectActivity()`
+
+Same as `approveActivity()` but:
+- Sets `status = REJECTED`
+- Sets `rejection_reason = dto.reason`
+- Still sets `reviewed_by` and `reviewed_at`
+
+### Filter Support
+
+Final `ActivitiesFilterDto` (extends `PaginationDto`):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `user_id` | UUID | Filter by submitter |
+| `shift_id` | UUID | Filter by shift |
+| `area_id` | UUID | Filter by area (supervisor use) |
+| `rayon_id` | UUID | Filter by rayon (supervisor use) |
+| `activity_type_id` | UUID | Filter by activity type |
+| `from_date` | YYYY-MM-DD | Start date (inclusive) |
+| `to_date` | YYYY-MM-DD | End date (inclusive, `T23:59:59.999` applied) |
+| `status` | enum | `pending` / `approved` / `rejected` |
+| `sort_by` | `created_at` | Default: `created_at` |
+| `sort_dir` | `asc` / `desc` | Default: `desc` |
+| `page` / `limit` | number | Pagination |
+
+**Date boundary fix:** `to_date` is automatically set to `T23:59:59.999` so the full day is included. A `to_date`-only query (no `from_date`) is also supported with `<= toDate`.
+
+### Error Codes
+
+| Code | HTTP | Message |
+|------|------|---------|
+| `ACTIVITY_005` | 400 | Aktivitas sudah diproses |
+| `ACTIVITY_006` | 403 | Korlap hanya dapat menyetujui aktivitas satgas dan linmas |
+| `ACTIVITY_007` | 403 | Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data |
+| `ACTIVITY_008` | 403 | Anda hanya dapat menyetujui aktivitas di area/rayon Anda |
+| `ACTIVITY_009` | 400 | Alasan penolakan wajib diisi |
+
+### Self-Approval Prevention
+
+Reviewers cannot approve their own activities:
+```typescript
+if (activity.user_id === reviewerId) {
+  throw new ForbiddenException('Anda tidak dapat menyetujui aktivitas Anda sendiri');
+}
+```
+
+### Edge Cases
+
+1. **Activity with `area_id = null`**: Cannot be approved by korlap. Can be approved by kepala_rayon if submitter has matching rayon_id.
+2. **Korlap with `area_id = null`**: Cannot approve any activity.
+3. **Kepala Rayon with `rayon_id = null`**: Cannot approve any activity.
+4. **admin_data with no `rayon_id`**: Their activities cannot be approved by any kepala_rayon.
+5. **Double approval**: Returns 400 "Aktivitas sudah diproses".
+6. **Deleted activity**: `findOne` uses soft delete filter, returns 404.
+7. **Self-approval**: Returns 403 "Anda tidak dapat menyetujui aktivitas Anda sendiri".
+
+---
+
 ## D. Schedules Module (formerly WorkerSchedules)
 
 ### Module Rename
@@ -453,9 +640,9 @@ The `worker-assignments/` module is **deleted entirely**:
 
 ## F. Tasks Module
 
-### TaskStatus Simplification
+### TaskStatus (Base — expanded in F-bis)
 
-**Target (4 statuses):**
+**Base 4 statuses (from Phase 2C spec rewrite):**
 ```typescript
 export enum TaskStatus {
   PENDING = 'pending',
@@ -465,7 +652,7 @@ export enum TaskStatus {
 }
 ```
 
-**Removed:** `ACCEPTED`, `DECLINED`
+> **NOTE:** Section F-bis below expands this to 8 statuses with accept/decline/verify/revision support.
 
 ### Task Entity Changes
 
@@ -560,6 +747,167 @@ async createTask(creatorId: string, dto: CreateTaskDto): Promise<Task> {
   return task;
 }
 ```
+
+### F-bis. Task Acceptance & Verification
+
+#### TaskStatus Enum (expanded to 7+1 values)
+
+```typescript
+export enum TaskStatus {
+  PENDING = 'pending',
+  ASSIGNED = 'assigned',
+  ACCEPTED = 'accepted',
+  DECLINED = 'declined',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  VERIFIED = 'verified',
+  REVISION_NEEDED = 'revision_needed',
+}
+```
+
+#### New Columns on Task Entity
+
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| `accepted_at` | timestamptz | YES | When assignee accepted |
+| `declined_at` | timestamptz | YES | When assignee declined |
+| `decline_reason` | text | YES | Why assignee declined (required) |
+| `verified_by` | uuid FK→users | YES | Who verified completion |
+| `verified_at` | timestamptz | YES | When verified |
+| `revision_reason` | text | YES | Why revision requested (required) |
+
+#### New Relation
+
+```typescript
+@ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+@JoinColumn({ name: 'verified_by' })
+verifier: User | null;
+```
+
+#### Task Status Flow
+
+```
+pending → assigned → accepted → in_progress → completed → verified (FINAL)
+                                                        → revision_needed → in_progress (cycle)
+                  → declined (TERMINAL)
+```
+
+#### Valid Status Transitions
+
+| From | To | Who | Method |
+|------|----|-----|--------|
+| pending | assigned | Task creator | `assign()` (existing) |
+| assigned | accepted | Assignee only | `accept()` (new) |
+| assigned | declined | Assignee only | `decline()` (new) |
+| accepted | in_progress | Assignee only | `start()` (updated) |
+| in_progress | completed | Assignee only | `complete()` (existing) |
+| completed | verified | Direct supervisor | `verify()` (new) |
+| completed | revision_needed | Direct supervisor | `requestRevision()` (new) |
+| revision_needed | in_progress | Assignee only | `start()` (updated) |
+
+#### Task Verification Hierarchy
+
+| Assignee Role | Verified By | Scope Check |
+|---------------|------------|-------------|
+| satgas | korlap | `verifier.area_id === assignee.area_id` |
+| linmas | korlap | `verifier.area_id === assignee.area_id` |
+| korlap | kepala_rayon | `area(assignee.area_id).rayon_id === verifier.rayon_id` |
+| kepala_rayon | top_management | No scope restriction |
+
+#### New Role Groups
+
+```typescript
+export const ACTIVITY_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
+export const TASK_VERIFIERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT];
+
+export const VERIFY_MAP: Record<string, string[]> = {
+  [UserRole.KORLAP]: [UserRole.SATGAS, UserRole.LINMAS],
+  [UserRole.KEPALA_RAYON]: [UserRole.KORLAP],
+  [UserRole.TOP_MANAGEMENT]: [UserRole.KEPALA_RAYON],
+};
+```
+
+#### New DTOs
+
+**`decline-task.dto.ts`:**
+```typescript
+export class DeclineTaskDto {
+  @IsString() @IsNotEmpty({ message: 'Alasan penolakan wajib diisi' })
+  @MaxLength(1000)
+  reason: string;
+}
+```
+
+**`reject-completion.dto.ts`:**
+```typescript
+export class RejectCompletionDto {
+  @IsString() @IsNotEmpty({ message: 'Alasan revisi wajib diisi' })
+  @MaxLength(1000)
+  reason: string;
+}
+```
+
+#### New Endpoints
+
+| Method | Path | Roles | Description | Body |
+|--------|------|-------|-------------|------|
+| POST | `/tasks/:id/accept` | TASK_RECEIVERS | Assignee accepts | None |
+| POST | `/tasks/:id/decline` | TASK_RECEIVERS | Assignee declines | `{ reason }` |
+| PATCH | `/tasks/:id/verify` | TASK_VERIFIERS | Supervisor verifies | None |
+| PATCH | `/tasks/:id/revision` | TASK_VERIFIERS | Supervisor requests revision | `{ reason }` |
+
+#### Breaking Change: `start()` method
+
+**Before:** Requires `status === ASSIGNED`
+**After:** Requires `status === ACCEPTED` OR `status === REVISION_NEEDED`
+
+#### Error Codes
+
+| Code | HTTP | Message |
+|------|------|---------|
+| `TASK_010` | 403 | Anda bukan penerima tugas ini |
+| `TASK_011` | 400 | Tugas tidak dalam status ditugaskan |
+| `TASK_012` | 400 | Alasan penolakan wajib diisi |
+| `TASK_013` | 400 | Tugas belum diselesaikan |
+| `TASK_014` | 403 | Anda tidak berwenang memverifikasi tugas ini |
+| `TASK_015` | 403 | Anda hanya dapat memverifikasi tugas di area/rayon Anda |
+| `TASK_016` | 400 | Alasan revisi wajib diisi |
+
+#### Scope-Based CRUD Security (Code Review Fixes)
+
+**`findAll(filters?, user?)`** — Role-based scope filtering:
+
+| Role | Scope | Logic |
+|------|-------|-------|
+| satgas, linmas | Own tasks only | `assigned_to = userId OR tagged` |
+| korlap | Area-scoped | `area_id = user.area_id OR created_by = userId` |
+| kepala_rayon | Rayon-scoped | `area.rayon_id = user.rayon_id OR task.rayon_id = user.rayon_id OR created_by = userId` |
+| top_management, admin_system, superadmin | No restriction | See all tasks |
+
+**`findOne(id, user?)`** — Access check via `checkTaskAccess()`:
+- satgas/linmas: Must be assigned, creator, or tagged
+- korlap: Must be in same area, or be creator/assignee/tagged
+- kepala_rayon: Must be in same rayon, or be creator/assignee
+- Others: No restriction
+
+**`update(id, dto, callerId?)`** — Ownership enforcement:
+- Only the task creator can edit a task
+- Returns 403 "Hanya pembuat tugas yang dapat mengedit tugas ini" for non-creators
+
+**`assign(id, dto, callerId?)`** — Caller authority:
+- Uses the **caller's** role for hierarchy validation (not the task creator's role)
+- Prevents privilege escalation when task was created by a higher-role user
+
+#### Edge Cases
+
+1. **Declined task**: Terminal state. Creator must create a new task.
+2. **Multiple revision cycles**: `revision_reason` is overwritten each time.
+3. **Task creator is also direct supervisor**: Allowed.
+4. **Assignee with no area_id**: Korlap scope check fails → only kepala_rayon+ can verify.
+5. **Reassignment after decline**: Not supported — creator creates new task.
+6. **Non-creator editing task**: Returns 403 — only creator can update.
+
+---
 
 ### Task Tagging Endpoints
 
@@ -910,8 +1258,6 @@ async findByRole(role: string): Promise<ActivityType[]> {
 | Path | Reason |
 |------|--------|
 | `/workers/:id/assign` | `worker_assignments` dropped |
-| `/tasks/:id/accept` | Accept workflow removed |
-| `/tasks/:id/decline` | Decline workflow removed |
 
 ---
 
@@ -943,4 +1289,4 @@ async findByRole(role: string): Promise<ActivityType[]> {
 
 ---
 
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-02-19

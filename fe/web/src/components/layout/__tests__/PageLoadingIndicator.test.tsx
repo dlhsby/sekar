@@ -293,3 +293,123 @@ describe.skip('PageLoadingIndicator Component', () => {
     });
   });
 });
+
+/**
+ * Correct implementation of PageLoadingIndicator tests.
+ *
+ * NOTE: The suite above is skipped due to timing issues with the tests.
+ * These tests correctly use act() + fake timers to drive the animation.
+ */
+describe('PageLoadingIndicator — working tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockPathname.mockReturnValue('/dashboard');
+  });
+
+  afterEach(() => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
+  it('returns null before any timers fire', () => {
+    const { container } = render(<PageLoadingIndicator />);
+    expect(container.querySelector('[role="progressbar"]')).not.toBeInTheDocument();
+  });
+
+  it('shows progress bar after startTimer (0ms) fires', async () => {
+    render(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  it('updates progress to 30 after 50ms', async () => {
+    render(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(51);
+    });
+
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuenow', '30');
+  });
+
+  it('updates progress to 60 after 150ms', async () => {
+    render(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(151);
+    });
+
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '60');
+  });
+
+  it('updates progress to 90 after 300ms', async () => {
+    render(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(301);
+    });
+
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '90');
+  });
+
+  it('completes and hides progress bar after full animation', async () => {
+    const { container } = render(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(701); // 500ms (complete) + 200ms (hide)
+    });
+
+    expect(container.querySelector('[role="progressbar"]')).not.toBeInTheDocument();
+  });
+
+  it('has correct ARIA attributes when visible', async () => {
+    render(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuemin', '0');
+    expect(bar).toHaveAttribute('aria-valuemax', '100');
+    expect(bar).toHaveAttribute('aria-label', 'Page loading progress');
+  });
+
+  it('cleans up timers on unmount without errors', async () => {
+    const { unmount } = render(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(100);
+    });
+
+    expect(() => unmount()).not.toThrow();
+  });
+
+  it('restarts animation on pathname change', async () => {
+    const { rerender } = render(<PageLoadingIndicator />);
+
+    // Complete first navigation
+    await act(async () => {
+      jest.advanceTimersByTime(701);
+    });
+
+    // Navigate to new page
+    mockPathname.mockReturnValue('/new-page');
+    rerender(<PageLoadingIndicator />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+});

@@ -36,20 +36,21 @@ jest.mock('@react-navigation/native', () => {
 // Mock tasksApi
 jest.mock('../../../services/api/tasksApi');
 
-// Mock media service
+// Mock media service (used by PhotoUploader component)
 jest.mock('../../../services/media', () => ({
   mediaService: {
     capturePhoto: jest.fn().mockResolvedValue({
       id: 'photo-1',
       uri: 'file:///test-photo.jpg',
+      fileName: 'test.jpg',
+      fileSize: 1000,
       type: 'image/jpeg',
     }),
-    validatePhotoCount: jest.fn().mockReturnValue(true),
-    getMaxPhotos: jest.fn().mockReturnValue(5),
+    convertToBase64: jest.fn().mockResolvedValue('data:image/jpeg;base64,testbase64'),
   },
 }));
 
-// Mock permissions
+// Mock permissions (used by PhotoUploader component)
 jest.mock('../../../services/permissions', () => ({
   requestCameraPermission: jest.fn().mockResolvedValue({ granted: true }),
 }));
@@ -131,7 +132,7 @@ describe('TaskCompleteScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Foto Bukti *')).toBeTruthy();
+      expect(getByText('📸 FOTO BUKTI *')).toBeTruthy();
     });
 
     expect(getByText('Foto')).toBeTruthy(); // The "+" button with "Foto" label
@@ -303,14 +304,14 @@ describe('TaskCompleteScreen', () => {
       expect(getByText('Tugas')).toBeTruthy();
     });
 
-    expect(getByText('Foto Bukti *')).toBeTruthy();
+    expect(getByText('📸 FOTO BUKTI *')).toBeTruthy();
     expect(getByText('Deskripsi Penyelesaian *')).toBeTruthy();
 
     // Phase 2C: No GPS section
     expect(queryByText('📍 LOKASI GPS')).toBeNull();
   });
 
-  it('calls completeTask API with description and photo (Phase 2C: no GPS)', async () => {
+  it('calls completeTask API with base64 photo (photos converted from file URI)', async () => {
     const mediaService = require('../../../services/media').mediaService;
 
     (tasksApi.completeTask as jest.Mock).mockResolvedValue({ data: {} });
@@ -319,6 +320,7 @@ describe('TaskCompleteScreen', () => {
       uri: 'file:///test-photo.jpg',
       type: 'image/jpeg',
     });
+    mediaService.convertToBase64.mockResolvedValue('data:image/jpeg;base64,testbase64');
 
     const { getByText, getByPlaceholderText } = render(
       <NavigationContainer>
@@ -347,7 +349,7 @@ describe('TaskCompleteScreen', () => {
     await waitFor(() => {
       expect(tasksApi.completeTask).toHaveBeenCalledWith('task-123', {
         description: 'Pekerjaan selesai',
-        completion_photo_url: 'file:///test-photo.jpg',
+        completion_photo_urls: ['data:image/jpeg;base64,testbase64'],
       });
     });
   }, 15000);

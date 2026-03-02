@@ -1,0 +1,46 @@
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { TasksTab } from '../tabs/TasksTab';
+
+jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
+  NBBackgroundPattern: ({ children }: any) => children,
+}));
+
+const BASE_PROPS = {
+  tasks: [],
+  loadingTasks: false,
+  isLoadingMore: false,
+  hasMore: false,
+  tasksError: null,
+  refreshing: false,
+  taskFilter: 'assigned' as const,
+  onRefresh: () => {},
+  onRetry: () => {},
+  onLoadMore: () => {},
+  onNavigateToTask: () => {},
+};
+
+describe('TasksTab', () => {
+  it('renders loading state', () => {
+    const { getByText } = render(
+      <TasksTab {...BASE_PROPS} loadingTasks={true} />
+    );
+    expect(getByText('Memuat tugas...')).toBeTruthy();
+  });
+
+  it('renders empty state when no tasks', () => {
+    const { getByText } = render(
+      <TasksTab {...BASE_PROPS} />
+    );
+    expect(getByText('Belum ada tugas')).toBeTruthy();
+  });
+
+  it('renders error state with retry button', () => {
+    const mockRetry = jest.fn();
+    const { getByText } = render(
+      <TasksTab {...BASE_PROPS} tasksError="Gagal memuat tugas" onRetry={mockRetry} />
+    );
+    expect(getByText('Gagal memuat tugas')).toBeTruthy();
+    expect(getByText('Coba Lagi')).toBeTruthy();
+  });
+});

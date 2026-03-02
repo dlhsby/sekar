@@ -2,12 +2,10 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  IsUUID,
   IsArray,
   ArrayMinSize,
   ArrayMaxSize,
   IsDateString,
-  Matches,
   IsNumber,
   Min,
   Max,
@@ -15,28 +13,24 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateOvertimeDto {
-  @ApiProperty({ description: 'Overtime date', example: '2026-02-10' })
+  @ApiProperty({
+    description: 'Start datetime (ISO 8601 with timezone)',
+    example: '2026-02-14T17:00:00+07:00',
+  })
   @IsDateString()
   @IsNotEmpty()
-  date: string;
+  start_datetime: string;
 
-  @ApiProperty({ description: 'Start time', example: '17:00' })
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/, { message: 'start_time must be HH:MM format' })
-  start_time: string;
-
-  @ApiProperty({ description: 'End time', example: '20:00' })
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/, { message: 'end_time must be HH:MM format' })
-  end_time: string;
-
-  @ApiPropertyOptional({ description: 'Optional notes' })
-  @IsString()
-  @IsOptional()
-  notes?: string;
+  @ApiProperty({
+    description: 'End datetime (ISO 8601 with timezone, may cross midnight)',
+    example: '2026-02-14T20:00:00+07:00',
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  end_datetime: string;
 
   @ApiProperty({ description: 'Activity type UUID' })
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   activity_type_id: string;
 
