@@ -52,10 +52,19 @@ export default function MonitoringPage() {
     rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined,
   });
 
+  // Role-based access: korlap → area only; kepala_rayon/admin_data → rayon+area; others → all
+  const canViewCity = user
+    ? ['top_management', 'admin_system', 'superadmin'].includes(user.role)
+    : false;
+  const canViewRayon = user
+    ? ['kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'].includes(user.role)
+    : false;
+
   // Fetch appropriate stats based on filters and role
-  const { data: cityStats, isLoading: cityLoading } = useCityStats();
+  const { data: cityStats, isLoading: cityLoading } = useCityStats(canViewCity);
   const { data: rayonStats, isLoading: rayonLoading } = useRayonMonitoring(
-    rayonFilter !== 'all' ? rayonFilter : ''
+    rayonFilter !== 'all' ? rayonFilter : '',
+    canViewRayon
   );
   const { data: areaStats, isLoading: areaLoading } = useAreaMonitoring(
     areaFilter !== 'all' ? areaFilter : ''
