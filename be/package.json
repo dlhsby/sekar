@@ -105,7 +105,6 @@
     "fast-xml-parser": "^5.3.8",
     "serialize-javascript": "^7.0.3",
     "multer": "^2.1.0",
-    "minimatch": "^10.2.3",
     "@mapbox/node-pre-gyp": {
       "tar": "^7.5.4"
     }
