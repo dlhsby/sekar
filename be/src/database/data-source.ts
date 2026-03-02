@@ -29,9 +29,7 @@ const AppDataSource = new DataSource({
   database: process.env.DATABASE_NAME || 'sekar_db',
 
   // SSL configuration for RDS
-  ssl: process.env.DATABASE_SSL === 'true'
-    ? { rejectUnauthorized: false }
-    : false,
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 
   // Entities - auto-discover all .entity.ts files
   entities: [join(__dirname, '..', 'modules', '**', 'entities', '*.entity.{ts,js}')],

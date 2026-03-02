@@ -253,9 +253,12 @@ describe('TasksService', () => {
     it('should return paginated tasks for user', async () => {
       const result = await service.findMyTasks('user-uuid');
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(task.assigned_to = :userId OR task.created_by = :userId)', {
-        userId: 'user-uuid',
-      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(task.assigned_to = :userId OR task.created_by = :userId)',
+        {
+          userId: 'user-uuid',
+        },
+      );
       // activeOnly defaults to false — no status exclusion applied
       expect(result.data).toEqual([mockTask]);
       expect(result.meta.total).toBe(1);
@@ -713,7 +716,10 @@ describe('TasksService', () => {
       taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
 
       await expect(
-        service.complete('task-uuid', 'user-uuid', { completion_photo_urls: ['https://example.com/photo.jpg'], description: 'Done' } as CompleteTaskDto),
+        service.complete('task-uuid', 'user-uuid', {
+          completion_photo_urls: ['https://example.com/photo.jpg'],
+          description: 'Done',
+        } as CompleteTaskDto),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -963,9 +969,9 @@ describe('TasksService', () => {
 
       taskRepository.findOne.mockResolvedValue(assignedTask as Task);
 
-      await expect(
-        service.declineTask('task-uuid', 'user-uuid', 'Some reason'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.declineTask('task-uuid', 'user-uuid', 'Some reason')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when task is not in ASSIGNED status', async () => {
@@ -977,9 +983,9 @@ describe('TasksService', () => {
 
       taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
 
-      await expect(
-        service.declineTask('task-uuid', 'user-uuid', 'Some reason'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.declineTask('task-uuid', 'user-uuid', 'Some reason')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when task is in COMPLETED status', async () => {
@@ -991,9 +997,9 @@ describe('TasksService', () => {
 
       taskRepository.findOne.mockResolvedValue(completedTask as Task);
 
-      await expect(
-        service.declineTask('task-uuid', 'user-uuid', 'Too late'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.declineTask('task-uuid', 'user-uuid', 'Too late')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

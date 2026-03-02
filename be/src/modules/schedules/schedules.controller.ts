@@ -236,10 +236,7 @@ export class SchedulesController {
     status: 409,
     description: 'Conflict - Schedule overlaps with existing schedule',
   })
-  create(
-    @Body() createDto: CreateScheduleDto,
-    @GetUser() user: User,
-  ): Promise<Schedule> {
+  create(@Body() createDto: CreateScheduleDto, @GetUser() user: User): Promise<Schedule> {
     return this.schedulesService.create(createDto, user.id);
   }
 
@@ -289,10 +286,7 @@ export class SchedulesController {
     status: 409,
     description: 'Conflict - Schedule overlaps with existing schedule',
   })
-  update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateScheduleDto,
-  ): Promise<Schedule> {
+  update(@Param('id') id: string, @Body() updateDto: UpdateScheduleDto): Promise<Schedule> {
     return this.schedulesService.update(id, updateDto);
   }
 

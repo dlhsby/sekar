@@ -92,9 +92,7 @@ async function seedTasks() {
     const [area1, area2, area3] = areas.map((a: any) => a.id);
 
     // Get user IDs (creator - korlap or fallback)
-    let creator = await queryRunner.query(
-      `SELECT id FROM users WHERE role = 'korlap' LIMIT 1`,
-    );
+    let creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
     if (creator.length === 0) {
       creator = await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_system' LIMIT 1`);
     }
@@ -114,12 +112,16 @@ async function seedTasks() {
     const [satgas1Id, satgas2Id, satgas3Id] = workers.map((w: any) => w.id);
 
     // Get linmas users
-    const linmasUsers = await queryRunner.query(`SELECT id FROM users WHERE role = 'linmas' LIMIT 2`);
+    const linmasUsers = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'linmas' LIMIT 2`,
+    );
     const linmas1Id = linmasUsers.length > 0 ? linmasUsers[0].id : null;
     const linmas2Id = linmasUsers.length > 1 ? linmasUsers[1].id : null;
 
     // Get korlap user
-    const korlapUsers = await queryRunner.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
+    const korlapUsers = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'korlap' LIMIT 1`,
+    );
     const korlapId = korlapUsers.length > 0 ? korlapUsers[0].id : null;
 
     // Get kepala rayon for task creation
@@ -709,7 +711,8 @@ async function seedTasks() {
 
     // Date helpers: tasks spread over 60 days (past and future)
     const daysAgo = (d: number) => new Date(now.getTime() - d * 24 * 60 * 60 * 1000).toISOString();
-    const daysFromNow = (d: number) => new Date(now.getTime() + d * 24 * 60 * 60 * 1000).toISOString();
+    const daysFromNow = (d: number) =>
+      new Date(now.getTime() + d * 24 * 60 * 60 * 1000).toISOString();
 
     // 25 additional tasks for scroll testing
     // area IDs are interpolated directly (safe: UUIDs from our own DB query)
@@ -717,7 +720,8 @@ async function seedTasks() {
     const a2 = areaIds[1] ?? areaIds[0];
     const a3 = areaIds[2] ?? areaIds[0];
 
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, created_at, updated_at)
       VALUES
         -- SATGAS additional tasks (varied statuses, spread over past weeks)
@@ -750,23 +754,25 @@ async function seedTasks() {
         ('${TASK_E24_ID}', 'Pembersihan Pasca Event',       'Pembersihan area taman setelah event weekend',          'completed',   'high',   $2, '${a1}', $8,  $13, $2, $2),
         ('${TASK_E25_ID}', 'Pengecatan Mural Taman',        'Pengecatan mural seni pada dinding taman',              'pending',     'medium', $7, '${a2}', NULL,$12, $7, $7)
       ON CONFLICT (id) DO NOTHING;
-    `, [
-      // $1-$7: date params
-      daysAgo(30),    // $1
-      daysAgo(21),    // $2
-      daysAgo(14),    // $3
-      daysAgo(7),     // $4
-      daysAgo(3),     // $5
-      daysAgo(1),     // $6
-      daysFromNow(7), // $7
-      // $8-$13: user IDs (no satgas3 - not a valid task creator)
-      satgas1Id,                     // $8
-      satgas2Id,                     // $9
-      linmas1Id || satgas1Id,        // $10
-      linmas2Id || satgas1Id,        // $11
-      korlapId || creatorId,         // $12
-      kepalaRayonId || creatorId,    // $13
-    ]);
+    `,
+      [
+        // $1-$7: date params
+        daysAgo(30), // $1
+        daysAgo(21), // $2
+        daysAgo(14), // $3
+        daysAgo(7), // $4
+        daysAgo(3), // $5
+        daysAgo(1), // $6
+        daysFromNow(7), // $7
+        // $8-$13: user IDs (no satgas3 - not a valid task creator)
+        satgas1Id, // $8
+        satgas2Id, // $9
+        linmas1Id || satgas1Id, // $10
+        linmas2Id || satgas1Id, // $11
+        korlapId || creatorId, // $12
+        kepalaRayonId || creatorId, // $13
+      ],
+    );
 
     console.log('  ✓ Created 25 extended tasks for scroll/filter testing');
 
@@ -797,16 +803,20 @@ async function seedTasks() {
     `);
 
     // Task 5: COMPLETED → VERIFIED (supervisor verified completion)
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE tasks SET
         status = 'verified',
         verified_by = $1,
         verified_at = NOW() - INTERVAL '1 hour'
       WHERE id = '${TASK_5_ID}'
-    `, [verifierId]);
+    `,
+      [verifierId],
+    );
 
     // Task 7: PENDING → REVISION_NEEDED (completed then revision requested)
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE tasks SET
         status = 'revision_needed',
         assigned_to = $1,
@@ -818,7 +828,9 @@ async function seedTasks() {
         completion_photo_urls = ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/revision-sample.jpg'],
         revision_reason = 'Masih ada sampah di area tikungan, perlu dibersihkan ulang'
       WHERE id = '${TASK_7_ID}'
-    `, [satgas1Id]);
+    `,
+      [satgas1Id],
+    );
 
     // Extended tasks: mix in more new statuses
     // E7, E8: ASSIGNED → ACCEPTED
@@ -830,16 +842,20 @@ async function seedTasks() {
     `);
 
     // E1, E2, E11, E16: COMPLETED → VERIFIED
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE tasks SET
         status = 'verified',
         verified_by = $1,
         verified_at = NOW() - INTERVAL '12 hours'
       WHERE id IN ('${TASK_E1_ID}', '${TASK_E2_ID}', '${TASK_E11_ID}', '${TASK_E16_ID}')
-    `, [verifierId]);
+    `,
+      [verifierId],
+    );
 
     // E15: PENDING → DECLINED
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE tasks SET
         status = 'declined',
         assigned_to = $1,
@@ -847,7 +863,9 @@ async function seedTasks() {
         declined_at = NOW() - INTERVAL '1 day',
         decline_reason = 'Jadwal bentrok dengan tugas lain yang lebih mendesak'
       WHERE id = '${TASK_E15_ID}'
-    `, [linmas1Id || satgas1Id]);
+    `,
+      [linmas1Id || satgas1Id],
+    );
 
     // E18: ASSIGNED → REVISION_NEEDED
     await queryRunner.query(`
@@ -863,13 +881,16 @@ async function seedTasks() {
     `);
 
     // Linmas Task 4: COMPLETED → VERIFIED
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE tasks SET
         status = 'verified',
         verified_by = $1,
         verified_at = NOW() - INTERVAL '10 hours'
       WHERE id = '${LINMAS_TASK_4_ID}'
-    `, [verifierId]);
+    `,
+      [verifierId],
+    );
 
     console.log('  ✓ Updated tasks with all 8 Phase 9 statuses:');
     console.log('    - ACCEPTED: Task 3, E7, E8 (3 tasks)');

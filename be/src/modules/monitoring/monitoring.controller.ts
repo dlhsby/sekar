@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Query, UseGuards, ParseUUIDPipe, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  ParseUUIDPipe,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { CityStatsDto } from './dto/city-stats.dto';
@@ -10,11 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
-import {
-  MONITORING_CITY,
-  MONITORING_RAYON,
-  MONITORING_AREA,
-} from '../users/constants/role-groups';
+import { MONITORING_CITY, MONITORING_RAYON, MONITORING_AREA } from '../users/constants/role-groups';
 
 /**
  * Controller for real-time monitoring
@@ -68,7 +72,10 @@ export class MonitoringController {
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
   ): Promise<RayonStatsDto> {
-    if ((user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) && user.rayon_id !== id) {
+    if (
+      (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) &&
+      user.rayon_id !== id
+    ) {
       throw new ForbiddenException('You can only view monitoring for your own rayon');
     }
     return this.monitoringService.getRayonStats(id);
@@ -112,7 +119,10 @@ export class MonitoringController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Monitoring roles only' })
-  async getLiveUsers(@Query() filters: LiveUsersFilterDto, @GetUser() user: User): Promise<LiveUsersResponseDto> {
+  async getLiveUsers(
+    @Query() filters: LiveUsersFilterDto,
+    @GetUser() user: User,
+  ): Promise<LiveUsersResponseDto> {
     if (user.role === UserRole.KORLAP && user.area_id) {
       filters.area_id = user.area_id;
     } else if (user.role === UserRole.ADMIN_DATA && user.rayon_id) {

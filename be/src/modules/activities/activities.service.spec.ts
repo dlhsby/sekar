@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, Between, IsNull } from 'typeorm';
-import { HttpStatus, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  HttpStatus,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { Activity, ActivityStatus } from './entities/activity.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -126,12 +131,16 @@ describe('ActivitiesService', () => {
     service = module.get<ActivitiesService>(ActivitiesService);
     activitiesRepo = module.get(getRepositoryToken(Activity)) as jest.Mocked<Repository<Activity>>;
     shiftsRepo = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
-    activityTypeRepo = module.get(getRepositoryToken(ActivityType)) as jest.Mocked<Repository<ActivityType>>;
+    activityTypeRepo = module.get(getRepositoryToken(ActivityType)) as jest.Mocked<
+      Repository<ActivityType>
+    >;
     s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
     usersService = module.get(UsersService) as jest.Mocked<UsersService>;
 
     // Reset S3 mock implementation to avoid appending to same string reference
-    mockS3Service.convertToPresignedUrl.mockImplementation((url) => Promise.resolve(`presigned-${url}`));
+    mockS3Service.convertToPresignedUrl.mockImplementation((url) =>
+      Promise.resolve(`presigned-${url}`),
+    );
   });
 
   afterEach(async () => {
@@ -251,10 +260,20 @@ describe('ActivitiesService', () => {
 
       mockShiftsRepo.findOne.mockResolvedValue(mockActiveShift);
       mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType as any);
-      mockActivitiesRepo.create.mockReturnValue({ ...mockActivity, photo_urls: dtoWithMultiplePhotos.photo_urls });
-      mockActivitiesRepo.save.mockResolvedValue({ ...mockActivity, photo_urls: dtoWithMultiplePhotos.photo_urls });
+      mockActivitiesRepo.create.mockReturnValue({
+        ...mockActivity,
+        photo_urls: dtoWithMultiplePhotos.photo_urls,
+      });
+      mockActivitiesRepo.save.mockResolvedValue({
+        ...mockActivity,
+        photo_urls: dtoWithMultiplePhotos.photo_urls,
+      });
 
-      const result = await service.createActivity(mockUser.id, mockUser.role, dtoWithMultiplePhotos);
+      const result = await service.createActivity(
+        mockUser.id,
+        mockUser.role,
+        dtoWithMultiplePhotos,
+      );
 
       expect(result.photo_urls).toHaveLength(3);
     });
@@ -281,7 +300,9 @@ describe('ActivitiesService', () => {
 
       expect(result.data).toHaveLength(1);
       expect(result.meta.total).toBe(1);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('activity.user_id = :userId', { userId: mockUser.id });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('activity.user_id = :userId', {
+        userId: mockUser.id,
+      });
     });
 
     it('should return paginated activities for KORLAP (area-scoped)', async () => {
@@ -291,7 +312,9 @@ describe('ActivitiesService', () => {
       const result = await service.findAllPaginated({}, korlapUser as any, 1, 50);
 
       expect(result.data).toHaveLength(1);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('activity.area_id = :areaId', { areaId: korlapUser.area_id });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('activity.area_id = :areaId', {
+        areaId: korlapUser.area_id,
+      });
     });
 
     it('should return paginated activities for KEPALA_RAYON (rayon-scoped)', async () => {
@@ -301,7 +324,9 @@ describe('ActivitiesService', () => {
       const result = await service.findAllPaginated({}, kepalaRayonUser as any, 1, 50);
 
       expect(result.data).toHaveLength(1);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId: kepalaRayonUser.rayon_id });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: kepalaRayonUser.rayon_id,
+      });
     });
 
     it('should return all activities for ADMIN_SYSTEM (no scope restriction)', async () => {
@@ -322,7 +347,9 @@ describe('ActivitiesService', () => {
       const result = await service.findAllPaginated({}, adminDataUser as any, 1, 50);
 
       expect(result.data).toHaveLength(1);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId: adminDataUser.rayon_id });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: adminDataUser.rayon_id,
+      });
     });
 
     it('should apply date range filter when provided', async () => {
@@ -352,10 +379,9 @@ describe('ActivitiesService', () => {
 
       await service.findAllPaginated(filters, mockUser as any, 1, 50);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'activity.created_at >= :fromDate',
-        { fromDate: new Date(filters.from_date) },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('activity.created_at >= :fromDate', {
+        fromDate: new Date(filters.from_date),
+      });
     });
 
     it('should apply user_id filter when provided', async () => {
@@ -401,7 +427,10 @@ describe('ActivitiesService', () => {
 
       const result = await service.findAllPaginated({}, mockUser as any, 1, 50);
 
-      expect(s3Service.convertToPresignedUrl).toHaveBeenCalledWith('https://s3.amazonaws.com/activities/photo1.jpg', 86400);
+      expect(s3Service.convertToPresignedUrl).toHaveBeenCalledWith(
+        'https://s3.amazonaws.com/activities/photo1.jpg',
+        86400,
+      );
       expect(result.data[0].photo_urls[0]).toContain('presigned-');
     });
   });
@@ -441,7 +470,10 @@ describe('ActivitiesService', () => {
 
       await service.findMyActivities(mockUser.id);
 
-      expect(s3Service.convertToPresignedUrl).toHaveBeenCalledWith('https://s3.amazonaws.com/activities/photo1.jpg', 86400);
+      expect(s3Service.convertToPresignedUrl).toHaveBeenCalledWith(
+        'https://s3.amazonaws.com/activities/photo1.jpg',
+        86400,
+      );
     });
   });
 
@@ -508,7 +540,11 @@ describe('ActivitiesService', () => {
     });
 
     it('should allow KEPALA_RAYON to access activities from their rayon', async () => {
-      const kepalaRayonUser = { ...mockUser, role: UserRole.KEPALA_RAYON, rayon_id: 'rayon-uuid-1' };
+      const kepalaRayonUser = {
+        ...mockUser,
+        role: UserRole.KEPALA_RAYON,
+        rayon_id: 'rayon-uuid-1',
+      };
       const activityWithRayon = {
         ...mockActivity,
         shift: {
@@ -524,7 +560,11 @@ describe('ActivitiesService', () => {
     });
 
     it('should throw ApiException when KEPALA_RAYON tries to access activity outside their rayon', async () => {
-      const kepalaRayonUser = { ...mockUser, role: UserRole.KEPALA_RAYON, rayon_id: 'different-rayon-uuid' };
+      const kepalaRayonUser = {
+        ...mockUser,
+        role: UserRole.KEPALA_RAYON,
+        rayon_id: 'different-rayon-uuid',
+      };
       const activityWithRayon = {
         ...mockActivity,
         shift: {
@@ -571,7 +611,11 @@ describe('ActivitiesService', () => {
     });
 
     it('should throw ApiException when ADMIN_DATA tries to access activity outside their rayon', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA, rayon_id: 'different-rayon-uuid' };
+      const adminDataUser = {
+        ...mockUser,
+        role: UserRole.ADMIN_DATA,
+        rayon_id: 'different-rayon-uuid',
+      };
       const activityWithRayon = {
         ...mockActivity,
         shift: {
@@ -639,7 +683,10 @@ describe('ActivitiesService', () => {
     });
 
     it('should throw ApiException when edit window has expired (>1 hour)', async () => {
-      const oldActivity = { ...mockActivity, created_at: new Date(Date.now() - 2 * 60 * 60 * 1000) }; // 2 hours ago
+      const oldActivity = {
+        ...mockActivity,
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      }; // 2 hours ago
       mockActivitiesRepo.findOne.mockResolvedValue(oldActivity);
 
       try {
@@ -656,9 +703,16 @@ describe('ActivitiesService', () => {
     it('should update only description when photo_urls not provided', async () => {
       const recentActivity = { ...mockActivity, created_at: new Date(Date.now() - 30 * 60 * 1000) };
       mockActivitiesRepo.findOne.mockResolvedValue(recentActivity);
-      mockActivitiesRepo.save.mockResolvedValue({ ...recentActivity, description: updateDto.description });
+      mockActivitiesRepo.save.mockResolvedValue({
+        ...recentActivity,
+        description: updateDto.description,
+      });
 
-      const result = await service.update(mockActivity.id, { description: updateDto.description }, mockUser.id);
+      const result = await service.update(
+        mockActivity.id,
+        { description: updateDto.description },
+        mockUser.id,
+      );
 
       expect(result.description).toBe(updateDto.description);
       expect(mockActivitiesRepo.save).toHaveBeenCalledWith(
@@ -669,9 +723,16 @@ describe('ActivitiesService', () => {
     it('should update only photo_urls when description not provided', async () => {
       const recentActivity = { ...mockActivity, created_at: new Date(Date.now() - 30 * 60 * 1000) };
       mockActivitiesRepo.findOne.mockResolvedValue(recentActivity);
-      mockActivitiesRepo.save.mockResolvedValue({ ...recentActivity, photo_urls: updateDto.photo_urls });
+      mockActivitiesRepo.save.mockResolvedValue({
+        ...recentActivity,
+        photo_urls: updateDto.photo_urls,
+      });
 
-      const result = await service.update(mockActivity.id, { photo_urls: updateDto.photo_urls }, mockUser.id);
+      const result = await service.update(
+        mockActivity.id,
+        { photo_urls: updateDto.photo_urls },
+        mockUser.id,
+      );
 
       expect(result.photo_urls).toEqual(updateDto.photo_urls);
     });
@@ -865,7 +926,10 @@ describe('ActivitiesService', () => {
     it('should throw ForbiddenException when Kepala Rayon rayon does not match Korlap area rayon', async () => {
       const activity = buildPendingActivity({
         user: { ...mockUser, role: UserRole.KORLAP },
-        area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'different-rayon-uuid' },
+        area: {
+          id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+          rayon_id: 'different-rayon-uuid',
+        },
       });
       mockActivitiesRepo.findOne.mockResolvedValue(activity);
       mockUsersService.findOne.mockResolvedValue(kepalaRayonReviewer as any);
@@ -949,7 +1013,12 @@ describe('ActivitiesService', () => {
 
     it('should throw ForbiddenException when reviewer has no valid role', async () => {
       const activity = buildPendingActivity();
-      const invalidReviewer = { id: 'user-uuid', role: UserRole.SATGAS, area_id: null, rayon_id: null };
+      const invalidReviewer = {
+        id: 'user-uuid',
+        role: UserRole.SATGAS,
+        area_id: null,
+        rayon_id: null,
+      };
       mockActivitiesRepo.findOne.mockResolvedValue(activity);
       mockUsersService.findOne.mockResolvedValue(invalidReviewer as any);
 

@@ -295,7 +295,9 @@ describe('ActivitiesPage', () => {
     it('should render the Daftar Aktivitas section heading', () => {
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /daftar aktivitas/i, level: 2 })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /daftar aktivitas/i, level: 2 })
+      ).toBeInTheDocument();
     });
   });
 
@@ -851,9 +853,7 @@ describe('ActivitiesPage', () => {
         error: null,
       });
 
-      expect(() =>
-        render(<ActivitiesPage />, { wrapper: createWrapper() })
-      ).not.toThrow();
+      expect(() => render(<ActivitiesPage />, { wrapper: createWrapper() })).not.toThrow();
     });
 
     it('should handle undefined activity types gracefully without throwing', () => {
@@ -862,9 +862,7 @@ describe('ActivitiesPage', () => {
         isLoading: false,
       });
 
-      expect(() =>
-        render(<ActivitiesPage />, { wrapper: createWrapper() })
-      ).not.toThrow();
+      expect(() => render(<ActivitiesPage />, { wrapper: createWrapper() })).not.toThrow();
     });
 
     it('should handle undefined areas data gracefully without throwing', () => {
@@ -873,9 +871,7 @@ describe('ActivitiesPage', () => {
         isLoading: false,
       });
 
-      expect(() =>
-        render(<ActivitiesPage />, { wrapper: createWrapper() })
-      ).not.toThrow();
+      expect(() => render(<ActivitiesPage />, { wrapper: createWrapper() })).not.toThrow();
     });
   });
 });

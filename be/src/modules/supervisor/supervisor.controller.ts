@@ -74,10 +74,7 @@ export class SupervisorController {
   async getActiveUsers(
     @Query() paginationDto: PaginationDto,
   ): Promise<PaginatedResponseDto<ActiveUserDto>> {
-    return this.supervisorService.getActiveUsersPaginated(
-      paginationDto.page,
-      paginationDto.limit,
-    );
+    return this.supervisorService.getActiveUsersPaginated(paginationDto.page, paginationDto.limit);
   }
 
   /**

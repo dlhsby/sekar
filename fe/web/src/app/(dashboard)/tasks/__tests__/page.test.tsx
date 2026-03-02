@@ -123,8 +123,14 @@ function createWrapper() {
 // ---------------------------------------------------------------------------
 function setupDefaultApiMocks() {
   (tasksApi.useTasks as jest.Mock).mockReturnValue(defaultQueryResult);
-  (tasksApi.useTaggedTasks as jest.Mock).mockReturnValue({ ...defaultQueryResult, data: emptyPaginatedResponse });
-  (tasksApi.useMyTasks as jest.Mock).mockReturnValue({ ...defaultQueryResult, data: emptyPaginatedResponse });
+  (tasksApi.useTaggedTasks as jest.Mock).mockReturnValue({
+    ...defaultQueryResult,
+    data: emptyPaginatedResponse,
+  });
+  (tasksApi.useMyTasks as jest.Mock).mockReturnValue({
+    ...defaultQueryResult,
+    data: emptyPaginatedResponse,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +219,7 @@ describe('TasksPage', () => {
 
       // On initial render the "all" tab is active; useTasks receives filters object
       expect(tasksApi.useTasks as jest.Mock).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 20 }),
+        expect.objectContaining({ page: 1, limit: 20 })
       );
       // Other hooks called with undefined (inactive tabs)
       expect(tasksApi.useTaggedTasks as jest.Mock).toHaveBeenCalledWith(undefined);
@@ -227,7 +233,7 @@ describe('TasksPage', () => {
       await user.click(screen.getByRole('button', { name: 'Ditandai' }));
 
       expect(tasksApi.useTaggedTasks as jest.Mock).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 20 }),
+        expect.objectContaining({ page: 1, limit: 20 })
       );
       expect(tasksApi.useTasks as jest.Mock).toHaveBeenCalledWith(undefined);
     });

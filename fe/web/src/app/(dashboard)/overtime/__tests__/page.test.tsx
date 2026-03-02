@@ -19,8 +19,18 @@ jest.mock('next/navigation', () => ({
 
 // Mock next/link so hrefs are rendered as simple anchors
 jest.mock('next/link', () => {
-  const MockLink = ({ href, children, ...rest }: { href: string; children: React.ReactNode; [key: string]: unknown }) => (
-    <a href={href} {...rest}>{children}</a>
+  const MockLink = ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   );
   MockLink.displayName = 'MockLink';
   return MockLink;
@@ -243,7 +253,10 @@ describe('OvertimePage', () => {
 
     it('should display the "Disetujui" status badge for an approved record', () => {
       (overtimeApi.useOvertimes as jest.Mock).mockReturnValue({
-        data: { data: [mockOvertimeApproved], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } },
+        data: {
+          data: [mockOvertimeApproved],
+          meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+        },
         isLoading: false,
         error: null,
       });
@@ -347,7 +360,10 @@ describe('OvertimePage', () => {
     it('should NOT show Setujui / Tolak buttons when the overtime is already approved', () => {
       mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
       (overtimeApi.useOvertimes as jest.Mock).mockReturnValue({
-        data: { data: [mockOvertimeApproved], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } },
+        data: {
+          data: [mockOvertimeApproved],
+          meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+        },
         isLoading: false,
         error: null,
       });

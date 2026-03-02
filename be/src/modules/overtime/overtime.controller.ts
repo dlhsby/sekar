@@ -1,19 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { OvertimeService } from './overtime.service';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
@@ -124,10 +110,7 @@ export class OvertimeController {
     description: 'Access denied - not your area/rayon or wrong role',
   })
   @ApiResponse({ status: 404, description: 'Overtime not found' })
-  async approve(
-    @Param('id') id: string,
-    @GetUser() user: User,
-  ): Promise<Overtime> {
+  async approve(@Param('id') id: string, @GetUser() user: User): Promise<Overtime> {
     return this.overtimeService.approve(id, user.id);
   }
 

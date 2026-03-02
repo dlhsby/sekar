@@ -56,9 +56,7 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
       autoLoadEntities: true,
 
       // SSL configuration for RDS
-      ssl: process.env.DATABASE_SSL === 'true'
-        ? { rejectUnauthorized: false }
-        : false,
+      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 
       // Control synchronize via environment variable for flexibility
       synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',

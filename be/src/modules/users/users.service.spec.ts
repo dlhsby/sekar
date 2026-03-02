@@ -112,7 +112,16 @@ describe('UsersService', () => {
 
       expect(result).toEqual(users);
       expect(mockUserRepository.find).toHaveBeenCalledWith({
-        select: ['id', 'username', 'full_name', 'role', 'is_active', 'area_id', 'rayon_id', 'created_at'],
+        select: [
+          'id',
+          'username',
+          'full_name',
+          'role',
+          'is_active',
+          'area_id',
+          'rayon_id',
+          'created_at',
+        ],
       });
     });
   });
@@ -129,7 +138,16 @@ describe('UsersService', () => {
       expect(result.meta.page).toBe(1);
       expect(result.meta.limit).toBe(50);
       expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        select: ['id', 'username', 'full_name', 'role', 'is_active', 'area_id', 'rayon_id', 'created_at'],
+        select: [
+          'id',
+          'username',
+          'full_name',
+          'role',
+          'is_active',
+          'area_id',
+          'rayon_id',
+          'created_at',
+        ],
         skip: 0,
         take: 50,
         order: { created_at: 'DESC' },
@@ -146,7 +164,16 @@ describe('UsersService', () => {
       expect(result.meta.limit).toBe(5);
       expect(result.meta.totalPages).toBe(2);
       expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        select: ['id', 'username', 'full_name', 'role', 'is_active', 'area_id', 'rayon_id', 'created_at'],
+        select: [
+          'id',
+          'username',
+          'full_name',
+          'role',
+          'is_active',
+          'area_id',
+          'rayon_id',
+          'created_at',
+        ],
         skip: 5,
         take: 5,
         order: { created_at: 'DESC' },
@@ -186,7 +213,9 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId: 'rayon-uuid-1' });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: 'rayon-uuid-1',
+      });
     });
 
     it('should filter users by rayon for kepala_rayon user', async () => {
@@ -212,7 +241,9 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId: 'rayon-uuid-2' });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: 'rayon-uuid-2',
+      });
     });
 
     it('should not filter users for admin_system user', async () => {
@@ -227,7 +258,16 @@ describe('UsersService', () => {
       await service.findAllPaginated(1, 50, adminSystemUser as any);
 
       expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        select: ['id', 'username', 'full_name', 'role', 'is_active', 'area_id', 'rayon_id', 'created_at'],
+        select: [
+          'id',
+          'username',
+          'full_name',
+          'role',
+          'is_active',
+          'area_id',
+          'rayon_id',
+          'created_at',
+        ],
         skip: 0,
         take: 50,
         order: { created_at: 'DESC' },

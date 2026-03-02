@@ -45,7 +45,9 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class Phase2CSchema1739390400000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     console.log('Starting Phase 2C database migration...');
-    console.log('This migration includes role system overhaul, terminology cleanup, and schema refinements.');
+    console.log(
+      'This migration includes role system overhaul, terminology cleanup, and schema refinements.',
+    );
     console.log('');
 
     // ==========================================
@@ -272,14 +274,30 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
 
     // Step 11: Rename indexes to match new table/column names
     console.log('  - Renaming indexes...');
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_work_reports_shift_id RENAME TO idx_activities_shift_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_work_reports_activity_type RENAME TO idx_activities_activity_type_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_work_reports_worker_id RENAME TO idx_activities_user_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_shifts_worker_id RENAME TO idx_shifts_user_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_location_logs_worker_id RENAME TO idx_location_logs_user_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_worker_schedules_user RENAME TO idx_schedules_user_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_worker_schedules_date RENAME TO idx_schedules_date;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_worker_schedules_area RENAME TO idx_schedules_area;`);
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_work_reports_shift_id RENAME TO idx_activities_shift_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_work_reports_activity_type RENAME TO idx_activities_activity_type_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_work_reports_worker_id RENAME TO idx_activities_user_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_shifts_worker_id RENAME TO idx_shifts_user_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_location_logs_worker_id RENAME TO idx_location_logs_user_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_worker_schedules_user RENAME TO idx_schedules_user_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_worker_schedules_date RENAME TO idx_schedules_date;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_worker_schedules_area RENAME TO idx_schedules_area;`,
+    );
 
     console.log('✅ [Migration 2] Terminology cleanup completed.');
     console.log('');
@@ -464,8 +482,12 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     console.log('  ✅ [M0] Role system: 7 → 8 roles, added users.area_id');
     console.log('  ✅ [M1] Activity types: PascalCase → lowercase, 10 → 20 types');
     console.log('  ✅ [M2] Terminology: 2 tables renamed, 2 tables dropped, 3 column renames');
-    console.log('  ✅ [M3] Tasks: +rayon_id, area_id nullable, 6 → 4 statuses, task_tags table created');
-    console.log('  ✅ [M4] Activities: multi-photo support, activity_type_id required, legacy columns dropped');
+    console.log(
+      '  ✅ [M3] Tasks: +rayon_id, area_id nullable, 6 → 4 statuses, task_tags table created',
+    );
+    console.log(
+      '  ✅ [M4] Activities: multi-photo support, activity_type_id required, legacy columns dropped',
+    );
     console.log('');
     console.log('Final table count: 17 tables');
     console.log('');
@@ -498,7 +520,9 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     `);
 
     // Cannot restore dropped columns (flag for manual review)
-    console.log('  ⚠️  Cannot restore: photo_url, condition, is_reviewed, reviewed_by, reviewed_at');
+    console.log(
+      '  ⚠️  Cannot restore: photo_url, condition, is_reviewed, reviewed_by, reviewed_at',
+    );
 
     // Revert activity_type_id to nullable
     await queryRunner.query(`
@@ -528,7 +552,9 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     `);
 
     // Cannot restore dropped columns (flag for manual review)
-    console.log('  ⚠️  Cannot restore: accepted_at, declined_at, decline_reason, completion_gps_lat, completion_gps_lng, activity_type_id');
+    console.log(
+      '  ⚠️  Cannot restore: accepted_at, declined_at, decline_reason, completion_gps_lat, completion_gps_lng, activity_type_id',
+    );
 
     // Revert area_id to NOT NULL
     await queryRunner.query(`
@@ -552,14 +578,30 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     console.log('[Rollback M2] Reverting terminology cleanup...');
 
     // Reverse index renames
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_schedules_area RENAME TO idx_worker_schedules_area;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_schedules_date RENAME TO idx_worker_schedules_date;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_schedules_user_id RENAME TO idx_worker_schedules_user;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_location_logs_user_id RENAME TO idx_location_logs_worker_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_shifts_user_id RENAME TO idx_shifts_worker_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_activities_user_id RENAME TO idx_work_reports_worker_id;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_activities_activity_type_id RENAME TO idx_work_reports_activity_type;`);
-    await queryRunner.query(`ALTER INDEX IF EXISTS idx_activities_shift_id RENAME TO idx_work_reports_shift_id;`);
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_schedules_area RENAME TO idx_worker_schedules_area;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_schedules_date RENAME TO idx_worker_schedules_date;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_schedules_user_id RENAME TO idx_worker_schedules_user;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_location_logs_user_id RENAME TO idx_location_logs_worker_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_shifts_user_id RENAME TO idx_shifts_worker_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_activities_user_id RENAME TO idx_work_reports_worker_id;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_activities_activity_type_id RENAME TO idx_work_reports_activity_type;`,
+    );
+    await queryRunner.query(
+      `ALTER INDEX IF EXISTS idx_activities_shift_id RENAME TO idx_work_reports_shift_id;`,
+    );
 
     // Drop boundary flags
     await queryRunner.query(`

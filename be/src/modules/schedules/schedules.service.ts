@@ -57,7 +57,12 @@ export class SchedulesService {
       .leftJoinAndSelect('schedule.shiftDefinition', 'shiftDefinition');
 
     // Rayon-scoped roles see only schedules in their rayon
-    if (requestingUser && (requestingUser.role === UserRole.ADMIN_DATA || requestingUser.role === UserRole.KEPALA_RAYON) && requestingUser.rayon_id) {
+    if (
+      requestingUser &&
+      (requestingUser.role === UserRole.ADMIN_DATA ||
+        requestingUser.role === UserRole.KEPALA_RAYON) &&
+      requestingUser.rayon_id
+    ) {
       queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: requestingUser.rayon_id });
     }
 

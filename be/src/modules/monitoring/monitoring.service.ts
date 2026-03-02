@@ -18,11 +18,7 @@ import {
   TaskSummaryDto,
   StaffRequirementStatusDto,
 } from './dto/area-stats.dto';
-import {
-  LiveUsersResponseDto,
-  LiveUserDto,
-  LiveUsersFilterDto,
-} from './dto/live-users.dto';
+import { LiveUsersResponseDto, LiveUserDto, LiveUsersFilterDto } from './dto/live-users.dto';
 
 /**
  * Service for real-time monitoring statistics
@@ -73,9 +69,7 @@ export class MonitoringService {
     const rayons = await this.rayonRepository.find();
 
     // Parallel execution: get all rayon summaries at once
-    const rayonSummaries = await Promise.all(
-      rayons.map(rayon => this.getRayonSummary(rayon))
-    );
+    const rayonSummaries = await Promise.all(rayons.map((rayon) => this.getRayonSummary(rayon)));
 
     // Aggregate totals
     const totalWorkers = rayonSummaries.reduce((sum, s) => sum + s.worker_count, 0);
@@ -147,16 +141,17 @@ export class MonitoringService {
     });
 
     // Parallel execution: get all area summaries at once
-    const areaSummaries = await Promise.all(
-      areas.map(area => this.getAreaSummary(area))
-    );
+    const areaSummaries = await Promise.all(areas.map((area) => this.getAreaSummary(area)));
 
     // Aggregate totals and alerts
-    const totalWorkers = areaSummaries.reduce((sum, s) => sum + s.workers_online + s.workers_offline, 0);
+    const totalWorkers = areaSummaries.reduce(
+      (sum, s) => sum + s.workers_online + s.workers_offline,
+      0,
+    );
     const workersOnline = areaSummaries.reduce((sum, s) => sum + s.workers_online, 0);
     const workersOffline = areaSummaries.reduce((sum, s) => sum + s.workers_offline, 0);
     const alerts = areaSummaries
-      .filter(s => !s.is_fully_staffed)
+      .filter((s) => !s.is_fully_staffed)
       .map((s, idx) => `${areas[idx].name} - needs ${Math.abs(s.staffing_delta)} more workers`);
 
     // Get shift summaries
@@ -372,7 +367,8 @@ export class MonitoringService {
 
         // Consider online if location updated within last 10 minutes
         const isOnline = !!(
-          latestLocation && new Date().getTime() - latestLocation.logged_at.getTime() < this.ONLINE_THRESHOLD_MS
+          latestLocation &&
+          new Date().getTime() - latestLocation.logged_at.getTime() < this.ONLINE_THRESHOLD_MS
         );
 
         return {
@@ -401,7 +397,7 @@ export class MonitoringService {
           },
           isOnline,
         };
-      })
+      }),
     );
 
     const totalOnline = users.filter((u) => u.isOnline).length;
@@ -498,15 +494,10 @@ export class MonitoringService {
     }
 
     // Parallel execution: get latest locations for all shifts
-    const shiftIds = activeShifts.map(s => s.id);
+    const shiftIds = activeShifts.map((s) => s.id);
     const latestLocations = await this.locationRepository
       .createQueryBuilder('location')
-      .select([
-        'location.shift_id',
-        'location.gps_lat',
-        'location.gps_lng',
-        'location.logged_at',
-      ])
+      .select(['location.shift_id', 'location.gps_lat', 'location.gps_lng', 'location.logged_at'])
       .where((qb) => {
         const subQuery = qb
           .subQuery()
@@ -519,13 +510,14 @@ export class MonitoringService {
       .andWhere('location.shift_id IN (:...shiftIds)', { shiftIds })
       .getMany();
 
-    const locationMap = new Map(latestLocations.map(loc => [loc.shift_id, loc]));
+    const locationMap = new Map(latestLocations.map((loc) => [loc.shift_id, loc]));
     const currentTime = new Date().getTime();
 
-    const workers: UserStatusDto[] = activeShifts.map(shift => {
+    const workers: UserStatusDto[] = activeShifts.map((shift) => {
       const latestLocation = locationMap.get(shift.id);
       const isOnline = !!(
-        latestLocation && currentTime - latestLocation.logged_at.getTime() < this.ONLINE_THRESHOLD_MS
+        latestLocation &&
+        currentTime - latestLocation.logged_at.getTime() < this.ONLINE_THRESHOLD_MS
       );
 
       return {
@@ -577,7 +569,7 @@ export class MonitoringService {
 
     // Map all requirements with the same current count (simplified)
     // Note: This is simplified - in a real scenario, you'd need to count by role
-    const result: StaffRequirementStatusDto[] = requirements.map(req => {
+    const result: StaffRequirementStatusDto[] = requirements.map((req) => {
       const delta = currentCount - req.required_count;
       return {
         id: req.id,

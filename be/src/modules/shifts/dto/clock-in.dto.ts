@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsUUID, IsOptional, Min, Max, MaxLength, Matches } from 'class-validator';
+import {
+  IsNumber,
+  IsString,
+  IsUUID,
+  IsOptional,
+  Min,
+  Max,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 
 /**
  * Clock-In DTO
@@ -10,7 +19,8 @@ import { IsNumber, IsString, IsUUID, IsOptional, Min, Max, MaxLength, Matches } 
  */
 export class ClockInDto {
   @ApiProperty({
-    description: 'Area UUID where user is clocking in (optional - auto-detected from schedule if not provided)',
+    description:
+      'Area UUID where user is clocking in (optional - auto-detected from schedule if not provided)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     required: false,
   })

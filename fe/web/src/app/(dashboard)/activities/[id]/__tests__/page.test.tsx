@@ -17,8 +17,18 @@ jest.mock('next/navigation', () => ({
 }));
 
 jest.mock('next/link', () => {
-  const MockLink = ({ href, children, ...rest }: { href: string; children: React.ReactNode; [k: string]: unknown }) => (
-    <a href={href} {...rest}>{children}</a>
+  const MockLink = ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+    [k: string]: unknown;
+  }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   );
   MockLink.displayName = 'MockLink';
   return MockLink;
@@ -99,10 +109,9 @@ async function renderPage(id = 'activity-1') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let result: any;
   await act(async () => {
-    result = render(
-      <ActivityDetailPage params={Promise.resolve({ id })} />,
-      { wrapper: createWrapper() }
-    );
+    result = render(<ActivityDetailPage params={Promise.resolve({ id })} />, {
+      wrapper: createWrapper(),
+    });
   });
   return result as ReturnType<typeof render>;
 }

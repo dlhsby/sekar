@@ -45,15 +45,15 @@ const ACT_KOR_2_ID = '22222222-cccc-2222-cccc-222222222222';
 const ACT_KOR_3_ID = '33333333-cccc-3333-cccc-333333333333';
 
 // Extended activity UUIDs (for scroll test coverage - 30 more)
-const ACT_X1_ID  = 'a1000000-dddd-a100-dddd-a10000000001';
-const ACT_X2_ID  = 'a2000000-dddd-a200-dddd-a20000000002';
-const ACT_X3_ID  = 'a3000000-dddd-a300-dddd-a30000000003';
-const ACT_X4_ID  = 'a4000000-dddd-a400-dddd-a40000000004';
-const ACT_X5_ID  = 'a5000000-dddd-a500-dddd-a50000000005';
-const ACT_X6_ID  = 'a6000000-dddd-a600-dddd-a60000000006';
-const ACT_X7_ID  = 'a7000000-dddd-a700-dddd-a70000000007';
-const ACT_X8_ID  = 'a8000000-dddd-a800-dddd-a80000000008';
-const ACT_X9_ID  = 'a9000000-dddd-a900-dddd-a90000000009';
+const ACT_X1_ID = 'a1000000-dddd-a100-dddd-a10000000001';
+const ACT_X2_ID = 'a2000000-dddd-a200-dddd-a20000000002';
+const ACT_X3_ID = 'a3000000-dddd-a300-dddd-a30000000003';
+const ACT_X4_ID = 'a4000000-dddd-a400-dddd-a40000000004';
+const ACT_X5_ID = 'a5000000-dddd-a500-dddd-a50000000005';
+const ACT_X6_ID = 'a6000000-dddd-a600-dddd-a60000000006';
+const ACT_X7_ID = 'a7000000-dddd-a700-dddd-a70000000007';
+const ACT_X8_ID = 'a8000000-dddd-a800-dddd-a80000000008';
+const ACT_X9_ID = 'a9000000-dddd-a900-dddd-a90000000009';
 const ACT_X10_ID = 'aa000000-dddd-aa00-dddd-aa0000000010';
 const ACT_X11_ID = 'ab000000-dddd-ab00-dddd-ab0000000011';
 const ACT_X12_ID = 'ac000000-dddd-ac00-dddd-ac0000000012';
@@ -113,9 +113,7 @@ async function seedActivities() {
     const linmas2 = await queryRunner.query(
       `SELECT id FROM users WHERE username = 'linmas2' LIMIT 1`,
     );
-    const korlap = await queryRunner.query(
-      `SELECT id FROM users WHERE role = 'korlap' LIMIT 1`,
-    );
+    const korlap = await queryRunner.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
 
     if (satgas1.length === 0 || linmas1.length === 0 || korlap.length === 0) {
       throw new Error('Required users not found. Please run main seeder first.');
@@ -183,8 +181,8 @@ async function seedActivities() {
       const baseLng = 112.7395;
       const variance = 0.0005; // ±50m approx
       return {
-        lat: (baseLat + (offset * variance)).toFixed(6),
-        lng: (baseLng + (offset * variance)).toFixed(6),
+        lat: (baseLat + offset * variance).toFixed(6),
+        lng: (baseLng + offset * variance).toFixed(6),
       };
     };
 
@@ -980,11 +978,25 @@ async function seedActivities() {
     // --- APPROVED satgas/linmas activities (by korlap) ---
     // 19 activities approved: SAT 1-5, 8-9, 11; LIN 1, 3, 5; X1-X3, X7, X10, X19, X21, X23
     const approvedByKorlap = [
-      ACT_SAT_1_ID, ACT_SAT_2_ID, ACT_SAT_3_ID, ACT_SAT_4_ID, ACT_SAT_5_ID,
-      ACT_SAT_8_ID, ACT_SAT_9_ID, ACT_SAT_11_ID,
-      ACT_LIN_1_ID, ACT_LIN_3_ID, ACT_LIN_5_ID,
-      ACT_X1_ID, ACT_X2_ID, ACT_X3_ID, ACT_X7_ID, ACT_X10_ID,
-      ACT_X19_ID, ACT_X21_ID, ACT_X23_ID,
+      ACT_SAT_1_ID,
+      ACT_SAT_2_ID,
+      ACT_SAT_3_ID,
+      ACT_SAT_4_ID,
+      ACT_SAT_5_ID,
+      ACT_SAT_8_ID,
+      ACT_SAT_9_ID,
+      ACT_SAT_11_ID,
+      ACT_LIN_1_ID,
+      ACT_LIN_3_ID,
+      ACT_LIN_5_ID,
+      ACT_X1_ID,
+      ACT_X2_ID,
+      ACT_X3_ID,
+      ACT_X7_ID,
+      ACT_X10_ID,
+      ACT_X19_ID,
+      ACT_X21_ID,
+      ACT_X23_ID,
     ];
 
     for (const actId of approvedByKorlap) {
@@ -1030,19 +1042,23 @@ async function seedActivities() {
       },
       {
         id: ACT_SAT_10_ID,
-        reason: 'Lokasi GPS tidak sesuai dengan area tugas. Silakan ajukan ulang dengan lokasi yang benar.',
+        reason:
+          'Lokasi GPS tidak sesuai dengan area tugas. Silakan ajukan ulang dengan lokasi yang benar.',
       },
       {
         id: ACT_LIN_2_ID,
-        reason: 'Laporan insiden belum lengkap - mohon sertakan kronologi dan tindakan yang diambil.',
+        reason:
+          'Laporan insiden belum lengkap - mohon sertakan kronologi dan tindakan yang diambil.',
       },
       {
         id: ACT_X5_ID,
-        reason: 'Aktivitas penanaman ulang belum mendapat persetujuan dari kepala rayon. Ajukan izin terlebih dahulu.',
+        reason:
+          'Aktivitas penanaman ulang belum mendapat persetujuan dari kepala rayon. Ajukan izin terlebih dahulu.',
       },
       {
         id: ACT_X22_ID,
-        reason: 'Dokumentasi vandalisme kurang detail - perlu foto dari berbagai sudut dan estimasi kerusakan.',
+        reason:
+          'Dokumentasi vandalisme kurang detail - perlu foto dari berbagai sudut dan estimasi kerusakan.',
       },
     ];
 

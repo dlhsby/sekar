@@ -497,7 +497,12 @@ describe('Error Codes (e2e)', () => {
     // Tests verify error codes are consistent across endpoints
     it('should return same error code for same error across different endpoints', async () => {
       // Test AUTH_TOKEN_INVALID across multiple endpoints (without auth token)
-      const endpoints = ['/api/v1/users', '/api/v1/shifts/my-shifts', '/api/v1/activities', '/api/v1/areas'];
+      const endpoints = [
+        '/api/v1/users',
+        '/api/v1/shifts/my-shifts',
+        '/api/v1/activities',
+        '/api/v1/areas',
+      ];
 
       for (const endpoint of endpoints) {
         const response = await request(app.getHttpServer()).get(endpoint).expect(401);

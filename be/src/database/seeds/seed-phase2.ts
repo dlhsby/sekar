@@ -394,10 +394,14 @@ async function seedPhase2() {
       `);
 
       if (otActivityTypes.length > 0) {
-        const perawatanId = otActivityTypes.find((a: any) => a.code === 'perawatan')?.id ?? otActivityTypes[0].id;
-        const patroliId = otActivityTypes.find((a: any) => a.code === 'patroli')?.id ?? otActivityTypes[0].id;
-        const cekKendaraanId = otActivityTypes.find((a: any) => a.code === 'cek_kendaraan')?.id ?? otActivityTypes[0].id;
-        const penyiramanId = otActivityTypes.find((a: any) => a.code === 'penyiraman')?.id ?? otActivityTypes[0].id;
+        const perawatanId =
+          otActivityTypes.find((a: any) => a.code === 'perawatan')?.id ?? otActivityTypes[0].id;
+        const patroliId =
+          otActivityTypes.find((a: any) => a.code === 'patroli')?.id ?? otActivityTypes[0].id;
+        const cekKendaraanId =
+          otActivityTypes.find((a: any) => a.code === 'cek_kendaraan')?.id ?? otActivityTypes[0].id;
+        const penyiramanId =
+          otActivityTypes.find((a: any) => a.code === 'penyiraman')?.id ?? otActivityTypes[0].id;
 
         const OVERTIME_1_ID = '01100000-0000-0000-0000-000000000001';
         const OVERTIME_2_ID = '02200000-0000-0000-0000-000000000002';
@@ -562,10 +566,18 @@ async function seedPhase2() {
     // ==========================================
     console.log('🕐 Seeding shifts for Phase 2C role users...');
 
-    const shiftLinmas = await queryRunner.query(`SELECT id, area_id FROM users WHERE username = 'linmas1' LIMIT 1`);
-    const shiftKorlap1 = await queryRunner.query(`SELECT id, area_id FROM users WHERE username = 'korlap1' LIMIT 1`);
-    const shiftAdminData = await queryRunner.query(`SELECT id FROM users WHERE username = 'admin_data1' LIMIT 1`);
-    const shiftKepalaRayon = await queryRunner.query(`SELECT id FROM users WHERE username = 'kepala_rayon_selatan' LIMIT 1`);
+    const shiftLinmas = await queryRunner.query(
+      `SELECT id, area_id FROM users WHERE username = 'linmas1' LIMIT 1`,
+    );
+    const shiftKorlap1 = await queryRunner.query(
+      `SELECT id, area_id FROM users WHERE username = 'korlap1' LIMIT 1`,
+    );
+    const shiftAdminData = await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'admin_data1' LIMIT 1`,
+    );
+    const shiftKepalaRayon = await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'kepala_rayon_selatan' LIMIT 1`,
+    );
     const shiftArea = await queryRunner.query(`SELECT id FROM areas LIMIT 1`);
 
     if (shiftArea.length > 0) {

@@ -94,10 +94,7 @@ describe('AreaForm', () => {
 
   describe('Create mode', () => {
     it('renders all form fields in create mode', () => {
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/nama area/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/kode area/i)).toBeInTheDocument();
@@ -108,20 +105,14 @@ describe('AreaForm', () => {
     });
 
     it('shows rayons in dropdown', () => {
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       expect(screen.getByText('Rayon Utara')).toBeInTheDocument();
       expect(screen.getByText('Rayon Selatan')).toBeInTheDocument();
     });
 
     it('shows area types in dropdown', () => {
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       expect(screen.getByText(/taman kota/i)).toBeInTheDocument();
       expect(screen.getByText(/jalur hijau/i)).toBeInTheDocument();
@@ -130,10 +121,7 @@ describe('AreaForm', () => {
     it('shows loading state when rayons are loading', () => {
       (useRayons as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
 
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       // Rayon select should show empty options while loading
       const rayonSelects = screen.getAllByRole('combobox');
@@ -143,10 +131,7 @@ describe('AreaForm', () => {
     it('shows loading state when area types are loading', () => {
       (useAreaTypes as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
 
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       expect(screen.getByTestId('polygon-editor')).toBeInTheDocument();
     });
@@ -179,29 +164,26 @@ describe('AreaForm', () => {
     };
 
     it('pre-populates form with existing data', () => {
-      render(
-        <AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByDisplayValue('Taman Bungkul')).toBeInTheDocument();
       expect(screen.getByDisplayValue('TMNBKL')).toBeInTheDocument();
     });
 
     it('shows update button in edit mode', () => {
-      render(
-        <AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByRole('button', { name: /perbarui area/i })).toBeInTheDocument();
     });
 
     it('displays center coordinates when area has boundary', () => {
-      render(
-        <AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByText(/koordinat pusat/i)).toBeInTheDocument();
     });
@@ -209,10 +191,7 @@ describe('AreaForm', () => {
 
   describe('Polygon interaction', () => {
     it('shows coordinates after polygon is drawn', async () => {
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       const polygonEditor = screen.getByTestId('polygon-editor');
       fireEvent.click(polygonEditor);
@@ -225,19 +204,17 @@ describe('AreaForm', () => {
 
   describe('Loading state', () => {
     it('shows loading text on submit button when isLoading is true', () => {
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} isLoading />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} isLoading />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByRole('button', { name: /menyimpan/i })).toBeInTheDocument();
     });
 
     it('shows updating text in edit mode when isLoading', () => {
-      render(
-        <AreaForm mode="edit" onSubmit={mockOnSubmit} isLoading />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="edit" onSubmit={mockOnSubmit} isLoading />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByRole('button', { name: /memperbarui/i })).toBeInTheDocument();
     });
@@ -246,10 +223,7 @@ describe('AreaForm', () => {
   describe('Code auto-uppercase', () => {
     it('auto-uppercases the code field input', async () => {
       const user = userEvent.setup();
-      render(
-        <AreaForm mode="create" onSubmit={mockOnSubmit} />,
-        { wrapper: createWrapper() }
-      );
+      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       const codeInput = screen.getByLabelText(/kode area/i);
       await user.type(codeInput, 'tmnbkl');

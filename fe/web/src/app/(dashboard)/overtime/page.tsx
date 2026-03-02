@@ -108,9 +108,7 @@ export default function OvertimePage() {
     {
       key: 'date',
       header: 'Tanggal',
-      cell: (ot) => (
-        <div className="text-sm">{formatDateTime(ot.start_datetime).date}</div>
-      ),
+      cell: (ot) => <div className="text-sm">{formatDateTime(ot.start_datetime).date}</div>,
     },
     {
       key: 'user',

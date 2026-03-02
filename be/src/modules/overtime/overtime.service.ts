@@ -36,15 +36,9 @@ export class OvertimeService {
     private shiftsService: ShiftsService,
   ) {}
 
-  async submit(
-    userId: string,
-    userRole: UserRole,
-    dto: CreateOvertimeDto,
-  ): Promise<Overtime> {
+  async submit(userId: string, userRole: UserRole, dto: CreateOvertimeDto): Promise<Overtime> {
     if (!OVERTIME_SUBMITTERS.includes(userRole as any)) {
-      throw new ForbiddenException(
-        'Only overtime submitters can submit overtime',
-      );
+      throw new ForbiddenException('Only overtime submitters can submit overtime');
     }
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
@@ -54,14 +48,10 @@ export class OvertimeService {
       where: { id: dto.activity_type_id, is_active: true },
     });
     if (!actType) {
-      throw new BadRequestException(
-        `Activity type ${dto.activity_type_id} not found`,
-      );
+      throw new BadRequestException(`Activity type ${dto.activity_type_id} not found`);
     }
     if (!actType.applicable_roles.includes(userRole)) {
-      throw new ForbiddenException(
-        `Activity type ${actType.name} is not available for your role`,
-      );
+      throw new ForbiddenException(`Activity type ${actType.name} is not available for your role`);
     }
 
     // Validate that end_datetime > start_datetime
@@ -89,10 +79,7 @@ export class OvertimeService {
     return saved;
   }
 
-  async approve(
-    overtimeId: string,
-    approverId: string,
-  ): Promise<Overtime> {
+  async approve(overtimeId: string, approverId: string): Promise<Overtime> {
     const overtime = await this.findOneOrFail(overtimeId);
     if (overtime.status !== OvertimeStatus.PENDING) {
       throw new BadRequestException('Only pending overtime can be approved');
@@ -116,11 +103,7 @@ export class OvertimeService {
     return saved;
   }
 
-  async reject(
-    overtimeId: string,
-    approverId: string,
-    dto: RejectOvertimeDto,
-  ): Promise<Overtime> {
+  async reject(overtimeId: string, approverId: string, dto: RejectOvertimeDto): Promise<Overtime> {
     const overtime = await this.findOneOrFail(overtimeId);
     if (overtime.status !== OvertimeStatus.PENDING) {
       throw new BadRequestException('Only pending overtime can be rejected');
@@ -158,7 +141,8 @@ export class OvertimeService {
 
     this.applyFilters(qb, filters);
 
-    const orderField = ALLOWED_SORT_FIELDS[filters.sort_by ?? 'created_at'] ?? 'overtime.created_at';
+    const orderField =
+      ALLOWED_SORT_FIELDS[filters.sort_by ?? 'created_at'] ?? 'overtime.created_at';
     const sortDir = (filters.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 50;
@@ -203,7 +187,8 @@ export class OvertimeService {
 
     this.applyFilters(qb, filters);
 
-    const orderField = ALLOWED_SORT_FIELDS[filters.sort_by ?? 'created_at'] ?? 'overtime.created_at';
+    const orderField =
+      ALLOWED_SORT_FIELDS[filters.sort_by ?? 'created_at'] ?? 'overtime.created_at';
     const sortDir = (filters.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 50;
@@ -238,9 +223,15 @@ export class OvertimeService {
         throw new ForbiddenException('Kepala Rayon account has no assigned rayon');
       }
       if (!['korlap', 'admin_data'].includes(submitterRole)) {
-        throw new ForbiddenException('Kepala Rayon can only approve overtime from korlap and admin_data');
+        throw new ForbiddenException(
+          'Kepala Rayon can only approve overtime from korlap and admin_data',
+        );
       }
-      if (!overtime.area || !overtime.area.rayon_id || overtime.area.rayon_id !== approver.rayon_id) {
+      if (
+        !overtime.area ||
+        !overtime.area.rayon_id ||
+        overtime.area.rayon_id !== approver.rayon_id
+      ) {
         throw new ForbiddenException('You can only approve overtime for your rayon');
       }
     } else {
@@ -258,10 +249,14 @@ export class OvertimeService {
     }
 
     if (filters.from_date) {
-      qb.andWhere("DATE(overtime.start_datetime AT TIME ZONE 'Asia/Jakarta') >= :fromDate", { fromDate: filters.from_date });
+      qb.andWhere("DATE(overtime.start_datetime AT TIME ZONE 'Asia/Jakarta') >= :fromDate", {
+        fromDate: filters.from_date,
+      });
     }
     if (filters.to_date) {
-      qb.andWhere("DATE(overtime.start_datetime AT TIME ZONE 'Asia/Jakarta') <= :toDate", { toDate: filters.to_date });
+      qb.andWhere("DATE(overtime.start_datetime AT TIME ZONE 'Asia/Jakarta') <= :toDate", {
+        toDate: filters.to_date,
+      });
     }
   }
 

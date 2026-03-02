@@ -131,9 +131,7 @@ export class GpsUtil {
       const yj = polygon[j][1];
       const xj = polygon[j][0];
 
-      const intersect =
-        yi > lat !== yj > lat &&
-        lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+      const intersect = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
 
       if (intersect) inside = !inside;
     }
@@ -165,10 +163,7 @@ export class GpsUtil {
     },
   ): boolean {
     // 1. Polygon check (preferred)
-    if (
-      area.boundary_polygon?.coordinates &&
-      area.boundary_polygon.coordinates.length > 0
-    ) {
+    if (area.boundary_polygon?.coordinates && area.boundary_polygon.coordinates.length > 0) {
       const outerRing = area.boundary_polygon.coordinates[0];
       if (outerRing && outerRing.length >= 3) {
         return this.isPointInPolygon(lat, lng, outerRing);

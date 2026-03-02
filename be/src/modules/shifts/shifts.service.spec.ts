@@ -103,9 +103,7 @@ describe('ShiftsService', () => {
 
     service = module.get<ShiftsService>(ShiftsService);
     repository = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
-    scheduleRepo = module.get(getRepositoryToken(Schedule)) as jest.Mocked<
-      Repository<Schedule>
-    >;
+    scheduleRepo = module.get(getRepositoryToken(Schedule)) as jest.Mocked<Repository<Schedule>>;
     areasService = module.get(AreasService) as jest.Mocked<AreasService>;
     s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
   });

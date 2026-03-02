@@ -8,11 +8,7 @@ import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
 import { OvertimeFilterDto } from './dto/overtime-filter.dto';
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ShiftsService } from '../shifts/shifts.service';
 
 describe('OvertimeService', () => {
@@ -78,12 +74,8 @@ describe('OvertimeService', () => {
     }).compile();
 
     service = module.get<OvertimeService>(OvertimeService);
-    overtimeRepo = module.get<Repository<Overtime>>(
-      getRepositoryToken(Overtime),
-    );
-    activityTypeRepo = module.get<Repository<ActivityType>>(
-      getRepositoryToken(ActivityType),
-    );
+    overtimeRepo = module.get<Repository<Overtime>>(getRepositoryToken(Overtime));
+    activityTypeRepo = module.get<Repository<ActivityType>>(getRepositoryToken(ActivityType));
     userRepo = module.get<Repository<User>>(getRepositoryToken(User));
   });
 
@@ -187,9 +179,9 @@ describe('OvertimeService', () => {
     });
 
     it('should reject submission for non-OVERTIME_SUBMITTERS role', async () => {
-      await expect(
-        service.submit(userId, UserRole.KEPALA_RAYON, createDto),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.submit(userId, UserRole.KEPALA_RAYON, createDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should validate activity_type against user role', async () => {
@@ -199,9 +191,9 @@ describe('OvertimeService', () => {
         applicable_roles: [UserRole.KORLAP],
       });
 
-      await expect(
-        service.submit(userId, UserRole.SATGAS, createDto),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.submit(userId, UserRole.SATGAS, createDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should submit overnight overtime (end_datetime crosses midnight)', async () => {
@@ -238,9 +230,9 @@ describe('OvertimeService', () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
       mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType);
 
-      await expect(
-        service.submit(userId, UserRole.SATGAS, invalidDto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.submit(userId, UserRole.SATGAS, invalidDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -273,10 +265,7 @@ describe('OvertimeService', () => {
         approved_by: approverId,
       });
 
-      const result = await service.approve(
-        overtimeId,
-        approverId,
-      );
+      const result = await service.approve(overtimeId, approverId);
 
       expect(result.status).toBe(OvertimeStatus.APPROVED);
       expect(result.approved_by).toBe(approverId);
@@ -304,10 +293,7 @@ describe('OvertimeService', () => {
         approved_by: kepalaRayonApprover.id,
       });
 
-      const result = await service.approve(
-        overtimeId,
-        kepalaRayonApprover.id,
-      );
+      const result = await service.approve(overtimeId, kepalaRayonApprover.id);
 
       expect(result.status).toBe(OvertimeStatus.APPROVED);
     });
@@ -322,9 +308,7 @@ describe('OvertimeService', () => {
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
       });
 
-      await expect(
-        service.approve(overtimeId, approverId),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.approve(overtimeId, approverId)).rejects.toThrow(ForbiddenException);
     });
 
     it('should reject approval if already approved', async () => {
@@ -337,9 +321,7 @@ describe('OvertimeService', () => {
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
       });
 
-      await expect(
-        service.approve(overtimeId, approverId),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.approve(overtimeId, approverId)).rejects.toThrow(BadRequestException);
     });
 
     it('should reject approval if area mismatch for korlap', async () => {
@@ -357,9 +339,7 @@ describe('OvertimeService', () => {
         role: UserRole.KORLAP,
       });
 
-      await expect(
-        service.approve(overtimeId, approverId),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.approve(overtimeId, approverId)).rejects.toThrow(ForbiddenException);
     });
 
     it('should reject korlap approving korlap overtime', async () => {
@@ -373,9 +353,7 @@ describe('OvertimeService', () => {
       });
       mockUserRepo.findOne.mockResolvedValue(mockApprover);
 
-      await expect(
-        service.approve(overtimeId, approverId),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.approve(overtimeId, approverId)).rejects.toThrow(ForbiddenException);
     });
 
     it('should reject kepala_rayon approving satgas overtime', async () => {
@@ -394,9 +372,9 @@ describe('OvertimeService', () => {
       });
       mockUserRepo.findOne.mockResolvedValue(kepalaRayonApprover);
 
-      await expect(
-        service.approve(overtimeId, kepalaRayonApprover.id),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.approve(overtimeId, kepalaRayonApprover.id)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -432,11 +410,7 @@ describe('OvertimeService', () => {
         rejection_reason: rejectDto.reason,
       });
 
-      const result = await service.reject(
-        overtimeId,
-        approverId,
-        rejectDto,
-      );
+      const result = await service.reject(overtimeId, approverId, rejectDto);
 
       expect(result.status).toBe(OvertimeStatus.REJECTED);
       expect(result.rejection_reason).toBe(rejectDto.reason);
@@ -452,9 +426,9 @@ describe('OvertimeService', () => {
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
       });
 
-      await expect(
-        service.reject(overtimeId, approverId, rejectDto),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.reject(overtimeId, approverId, rejectDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should reject rejection if area mismatch', async () => {
@@ -472,9 +446,9 @@ describe('OvertimeService', () => {
         role: UserRole.KORLAP,
       });
 
-      await expect(
-        service.reject(overtimeId, approverId, rejectDto),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.reject(overtimeId, approverId, rejectDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -491,10 +465,7 @@ describe('OvertimeService', () => {
 
       const result = await service.findMyPaginated(userId, {});
 
-      expect(mockQb.where).toHaveBeenCalledWith(
-        'overtime.user_id = :userId',
-        { userId },
-      );
+      expect(mockQb.where).toHaveBeenCalledWith('overtime.user_id = :userId', { userId });
       expect(result.data).toHaveLength(2);
       expect(result.meta.total).toBe(2);
     });
@@ -505,10 +476,9 @@ describe('OvertimeService', () => {
 
       await service.findMyPaginated(userId, { status: OvertimeStatus.APPROVED });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'overtime.status = :status',
-        { status: OvertimeStatus.APPROVED },
-      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith('overtime.status = :status', {
+        status: OvertimeStatus.APPROVED,
+      });
     });
 
     it('should apply date range filter', async () => {
@@ -520,14 +490,12 @@ describe('OvertimeService', () => {
         to_date: '2026-01-31',
       });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('start_datetime'),
-        { fromDate: '2026-01-01' },
-      );
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('start_datetime'),
-        { toDate: '2026-01-31' },
-      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith(expect.stringContaining('start_datetime'), {
+        fromDate: '2026-01-01',
+      });
+      expect(mockQb.andWhere).toHaveBeenCalledWith(expect.stringContaining('start_datetime'), {
+        toDate: '2026-01-31',
+      });
     });
 
     it('should sort by start_datetime ascending', async () => {
@@ -556,22 +524,12 @@ describe('OvertimeService', () => {
       };
       mockUserRepo.findOne.mockResolvedValue(mockApprover);
 
-      const mockQb = createMockQueryBuilder(
-        [{ id: 'overtime-1', area_id: areaId }],
-        1,
-      );
+      const mockQb = createMockQueryBuilder([{ id: 'overtime-1', area_id: areaId }], 1);
       mockOvertimeRepo.createQueryBuilder.mockReturnValue(mockQb);
 
-      const result = await service.findAllPaginated(
-        approverId,
-        UserRole.KORLAP,
-        {},
-      );
+      const result = await service.findAllPaginated(approverId, UserRole.KORLAP, {});
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'overtime.area_id = :areaId',
-        { areaId },
-      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith('overtime.area_id = :areaId', { areaId });
       expect(result.data).toHaveLength(1);
     });
 
@@ -583,22 +541,12 @@ describe('OvertimeService', () => {
       };
       mockUserRepo.findOne.mockResolvedValue(kepalaRayon);
 
-      const mockQb = createMockQueryBuilder(
-        [{ id: 'overtime-1' }, { id: 'overtime-2' }],
-        2,
-      );
+      const mockQb = createMockQueryBuilder([{ id: 'overtime-1' }, { id: 'overtime-2' }], 2);
       mockOvertimeRepo.createQueryBuilder.mockReturnValue(mockQb);
 
-      const result = await service.findAllPaginated(
-        kepalaRayon.id,
-        UserRole.KEPALA_RAYON,
-        {},
-      );
+      const result = await service.findAllPaginated(kepalaRayon.id, UserRole.KEPALA_RAYON, {});
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'area.rayon_id = :rayonId',
-        { rayonId },
-      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', { rayonId });
       expect(result.data).toHaveLength(2);
     });
 
@@ -615,11 +563,7 @@ describe('OvertimeService', () => {
       );
       mockOvertimeRepo.createQueryBuilder.mockReturnValue(mockQb);
 
-      const result = await service.findAllPaginated(
-        superadmin.id,
-        UserRole.SUPERADMIN,
-        {},
-      );
+      const result = await service.findAllPaginated(superadmin.id, UserRole.SUPERADMIN, {});
 
       expect(result.data).toHaveLength(3);
     });
@@ -640,14 +584,12 @@ describe('OvertimeService', () => {
         from_date: '2026-01-01',
       });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'overtime.status = :status',
-        { status: OvertimeStatus.PENDING },
-      );
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('start_datetime'),
-        { fromDate: '2026-01-01' },
-      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith('overtime.status = :status', {
+        status: OvertimeStatus.PENDING,
+      });
+      expect(mockQb.andWhere).toHaveBeenCalledWith(expect.stringContaining('start_datetime'), {
+        fromDate: '2026-01-01',
+      });
     });
   });
 
@@ -666,9 +608,7 @@ describe('OvertimeService', () => {
     it('should throw NotFoundException if not found', async () => {
       mockOvertimeRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne(overtimeId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(overtimeId)).rejects.toThrow(NotFoundException);
     });
   });
 });

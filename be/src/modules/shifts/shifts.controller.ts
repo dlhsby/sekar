@@ -106,8 +106,7 @@ export class ShiftsController {
   @Roles(...CLOCKABLE_ROLES)
   @ApiOperation({
     summary: 'Get current active shift',
-    description:
-      'Returns the active shift for the authenticated user, or null if not clocked in.',
+    description: 'Returns the active shift for the authenticated user, or null if not clocked in.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
