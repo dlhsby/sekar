@@ -38,8 +38,10 @@ export default function MonitoringPage() {
   useEffect(() => {
     if (!user) return;
     if (user.role === 'korlap' && user.area_id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAreaFilter(user.area_id);
     } else if (user.role === 'kepala_rayon' && user.rayon_id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRayonFilter(user.rayon_id);
     }
   }, [user]);
