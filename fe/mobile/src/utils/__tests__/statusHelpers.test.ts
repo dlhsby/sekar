@@ -81,8 +81,8 @@ describe('statusHelpers', () => {
       expect(getActivityStatusLabel('approved')).toBe('Disetujui');
     });
 
-    it('returns Menunggu for pending', () => {
-      expect(getActivityStatusLabel('pending')).toBe('Menunggu');
+    it('returns Menunggu Persetujuan for pending', () => {
+      expect(getActivityStatusLabel('pending')).toBe('Menunggu Persetujuan');
     });
 
     it('returns Ditolak for rejected', () => {
@@ -97,8 +97,8 @@ describe('statusHelpers', () => {
   // ─── Task ──────────────────────────────────────────────────────────────────
 
   describe('getTaskStatusColor', () => {
-    it('returns success for completed', () => {
-      expect(getTaskStatusColor('completed')).toBe('success');
+    it('returns primary for completed', () => {
+      expect(getTaskStatusColor('completed')).toBe('primary');
     });
 
     it('returns primary for in_progress', () => {
@@ -111,6 +111,22 @@ describe('statusHelpers', () => {
 
     it('returns danger for declined', () => {
       expect(getTaskStatusColor('declined')).toBe('danger');
+    });
+
+    it('returns success for verified', () => {
+      expect(getTaskStatusColor('verified')).toBe('success');
+    });
+
+    it('returns success for accepted', () => {
+      expect(getTaskStatusColor('accepted')).toBe('success');
+    });
+
+    it('returns warning for assigned', () => {
+      expect(getTaskStatusColor('assigned')).toBe('warning');
+    });
+
+    it('returns warning for revision_needed', () => {
+      expect(getTaskStatusColor('revision_needed')).toBe('warning');
     });
 
     it('returns gray for unknown status (default)', () => {

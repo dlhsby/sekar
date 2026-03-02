@@ -262,6 +262,18 @@ describe('LocationTracker', () => {
       expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
     });
 
+    it('should upload first ping immediately without waiting for full batch', async () => {
+      // First ping was captured during initialize in beforeEach.
+      // Even though buffer < BATCH_UPLOAD_SIZE (20), it must be uploaded right away
+      // so supervisors can see worker location immediately after clock-in.
+      await Promise.resolve(); // Flush uploadLocations promise
+      await Promise.resolve(); // Flush inner uploadLocationBatch promise
+
+      expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
+      // Buffer cleared after immediate upload
+      expect(locationTracker.getBufferCount()).toBe(0);
+    });
+
     it('should capture location at random interval between 5-10 minutes', async () => {
       const initialCalls = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
 
@@ -273,7 +285,10 @@ describe('LocationTracker', () => {
       expect((Geolocation.getCurrentPosition as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
     });
 
-    it('should add location to buffer on capture', () => {
+    it('should add location to buffer on capture', async () => {
+      // First ping is uploaded immediately (buffer cleared); advance time to
+      // trigger a second ping, which is buffered until batch size is reached.
+      await jest.advanceTimersByTimeAsync(61 * 1000);
       expect(locationTracker.getBufferCount()).toBeGreaterThan(0);
     });
 

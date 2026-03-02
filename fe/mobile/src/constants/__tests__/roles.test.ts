@@ -41,15 +41,18 @@ describe('Role Constants', () => {
   });
 
   describe('CLOCKABLE_ROLES', () => {
-    it('should include satgas, linmas, korlap, admin_data, and kepala_rayon', () => {
+    it('should include only field roles with area assignments (satgas, linmas, korlap)', () => {
       expect(CLOCKABLE_ROLES).toEqual([
         'satgas',
         'linmas',
         'korlap',
-        'admin_data',
-        'kepala_rayon',
       ]);
-      expect(CLOCKABLE_ROLES).toHaveLength(5);
+      expect(CLOCKABLE_ROLES).toHaveLength(3);
+    });
+
+    it('should not include admin_data or kepala_rayon', () => {
+      expect(CLOCKABLE_ROLES).not.toContain('admin_data');
+      expect(CLOCKABLE_ROLES).not.toContain('kepala_rayon');
     });
   });
 
@@ -137,11 +140,11 @@ describe('Role Constants', () => {
       expect(isClockableRole('satgas')).toBe(true);
       expect(isClockableRole('linmas')).toBe(true);
       expect(isClockableRole('korlap')).toBe(true);
-      expect(isClockableRole('admin_data')).toBe(true);
-      expect(isClockableRole('kepala_rayon')).toBe(true);
     });
 
     it('should return false for non-clockable roles', () => {
+      expect(isClockableRole('admin_data')).toBe(false);
+      expect(isClockableRole('kepala_rayon')).toBe(false);
       expect(isClockableRole('top_management')).toBe(false);
       expect(isClockableRole('admin_system')).toBe(false);
       expect(isClockableRole('superadmin')).toBe(false);

@@ -180,17 +180,18 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('admin_data has 5 tabs with Monitoring and Overtime', () => {
-      expect(TAB_CONFIGS.admin_data).toHaveLength(5);
-      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Home')).toBe(true);
+    it('admin_data has 4 tabs without Home (not clockable)', () => {
+      expect(TAB_CONFIGS.admin_data).toHaveLength(4);
+      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Home')).toBe(false);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'TasksActivities')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Overtime')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('kepala_rayon has 5 tabs including Overtime', () => {
-      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(5);
+    it('kepala_rayon has 4 tabs without Home (not clockable)', () => {
+      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(4);
+      expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Home')).toBe(false);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Overtime')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Profile')).toBe(true);
@@ -241,11 +242,19 @@ describe('MainNavigator', () => {
       });
     });
 
-    it('field roles have Home tab', () => {
-      const fieldRoles = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'];
-      fieldRoles.forEach((role) => {
+    it('clockable field roles have Home tab', () => {
+      const clockableFieldRoles = ['satgas', 'linmas', 'korlap'];
+      clockableFieldRoles.forEach((role) => {
         const hasHome = TAB_CONFIGS[role].some((tab) => tab.name === 'Home');
         expect(hasHome).toBe(true);
+      });
+    });
+
+    it('non-clockable roles do not have Home tab', () => {
+      const nonClockableRoles = ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
+      nonClockableRoles.forEach((role) => {
+        const hasHome = TAB_CONFIGS[role].some((tab) => tab.name === 'Home');
+        expect(hasHome).toBe(false);
       });
     });
 
@@ -292,18 +301,18 @@ describe('MainNavigator', () => {
       expect(getByText('Profil')).toBeTruthy();
     });
 
-    it('should render for admin_data role with 5 tabs', () => {
-      const { getAllByText, getByText } = renderNavigator('admin_data');
-      expect(getAllByText('Home').length).toBeGreaterThanOrEqual(1);
+    it('should render for admin_data role without Home tab', () => {
+      const { getByText, queryByText } = renderNavigator('admin_data');
+      expect(queryByText('Beranda')).toBeNull();
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
       expect(getByText('Lembur')).toBeTruthy();
-      expect(getAllByText('Profil').length).toBeGreaterThanOrEqual(1);
+      expect(getByText('Profil')).toBeTruthy();
     });
 
-    it('should render for kepala_rayon role', () => {
-      const { getAllByText, getByText } = renderNavigator('kepala_rayon');
-      expect(getAllByText('Home').length).toBeGreaterThanOrEqual(1);
+    it('should render for kepala_rayon role without Home tab', () => {
+      const { getByText, queryByText } = renderNavigator('kepala_rayon');
+      expect(queryByText('Beranda')).toBeNull();
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
       expect(getByText('Profil')).toBeTruthy();

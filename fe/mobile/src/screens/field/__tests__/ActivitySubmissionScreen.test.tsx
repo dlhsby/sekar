@@ -182,7 +182,7 @@ describe('ActivitySubmissionScreen', () => {
     await waitFor(() => {
       expect(getByText('📸 FOTO AKTIVITAS')).toBeTruthy();
       expect(getByText('🏷️ JENIS AKTIVITAS')).toBeTruthy();
-      expect(getByText('📝 DESKRIPSI PEKERJAAN')).toBeTruthy();
+      expect(getByText('📝 Deskripsi Pekerjaan', { exact: false })).toBeTruthy();
       expect(getByText('📍 LOKASI GPS')).toBeTruthy();
     });
   });

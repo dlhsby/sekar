@@ -103,7 +103,7 @@ Content-Type: application/json
 
 {
   "username": "worker1",
-  "password": "worker123"
+  "password": "password123"
 }
 ```
 
@@ -536,7 +536,7 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "current_password": "worker123",
+  "current_password": "password123",
   "new_password": "newsecurepassword456"
 }
 ```
@@ -2173,7 +2173,7 @@ https://sekar-media.s3.ap-southeast-1.amazonaws.com/shifts/2026/01/09/uuid-selfi
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"worker1","password":"worker123"}' \
+  -d '{"username":"worker1","password":"password123"}' \
   | jq -r '.access_token')
 ```
 
@@ -4034,6 +4034,110 @@ Penyiraman selesai, semua tanaman telah disiram dengan baik
   "completed_at": "2026-01-24T11:00:00.000Z",
   "completion_photo_url": "https://s3.../tasks/completion-photo.jpg",
   "completion_notes": "Penyiraman selesai, semua tanaman telah disiram dengan baik"
+}
+```
+
+---
+
+#### PATCH /api/v1/tasks/:id/verify
+
+Verify completed task (supervisor only).
+
+**Roles:** Korlap (for satgas/linmas), Kepala Rayon (for korlap), Top Management (for kepala_rayon)
+
+**Response (200 OK):**
+```json
+{
+  "id": "task-uuid",
+  "status": "verified",
+  "verified_by": "verifier-uuid",
+  "verified_at": "2026-01-24T12:00:00.000Z"
+}
+```
+
+**Response (403 Forbidden):**
+```json
+{
+  "statusCode": 403,
+  "message": "Anda tidak berwenang memverifikasi tugas ini"
+}
+```
+
+---
+
+#### PATCH /api/v1/tasks/:id/revision
+
+Request revision on completed task (supervisor only).
+
+**Roles:** Korlap, Kepala Rayon, Top Management (same hierarchy as verify)
+
+**Request:**
+```json
+{
+  "reason": "Foto dokumentasi kurang jelas, mohon ulangi"
+}
+```
+
+**Request Body Schema:**
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `reason` | string | Yes | Non-empty, max 1000 characters |
+
+**Response (200 OK):**
+```json
+{
+  "id": "task-uuid",
+  "status": "revision_needed",
+  "revision_reason": "Foto dokumentasi kurang jelas, mohon ulangi"
+}
+```
+
+---
+
+#### PATCH /api/v1/activities/:id/approve
+
+Approve pending activity (supervisor only).
+
+**Roles:** Korlap (for satgas/linmas in same area), Kepala Rayon (for korlap/admin_data in same rayon)
+
+**Response (200 OK):**
+```json
+{
+  "id": "activity-uuid",
+  "status": "approved",
+  "reviewed_by": "reviewer-uuid",
+  "reviewed_at": "2026-01-24T12:00:00.000Z"
+}
+```
+
+---
+
+#### PATCH /api/v1/activities/:id/reject
+
+Reject pending activity with reason (supervisor only).
+
+**Roles:** Korlap, Kepala Rayon (same hierarchy as approve)
+
+**Request:**
+```json
+{
+  "reason": "Deskripsi aktivitas tidak lengkap"
+}
+```
+
+**Request Body Schema:**
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `reason` | string | Yes | Non-empty, max 1000 characters |
+
+**Response (200 OK):**
+```json
+{
+  "id": "activity-uuid",
+  "status": "rejected",
+  "reviewed_by": "reviewer-uuid",
+  "reviewed_at": "2026-01-24T12:00:00.000Z",
+  "rejection_reason": "Deskripsi aktivitas tidak lengkap"
 }
 ```
 

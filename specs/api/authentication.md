@@ -2,7 +2,7 @@
 
 Comprehensive authentication and authorization specifications for SEKAR Backend API.
 
-> **Phase 2C Note:** This document reflects the Phase 1-2B role system (Worker, Supervisor, Admin). Phase 2C overhauls to 8 roles: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping and [Phase 2C backend.md](../phases/phase-2-c-client-feedback/backend.md) for updated RBAC and role group constants. The permission matrices in Section 6 below will be updated during Phase 2C implementation.
+> **Phase 2C (Current):** This document has been updated to reflect the 8-role system: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping. Some code examples in the implementation sections still reference the old 3-role system for historical context — the Permission Matrix section is authoritative.
 
 ## Table of Contents
 
@@ -317,43 +317,56 @@ export class ProtectedController {
 
 ### User Roles
 
-SEKAR defines three distinct user roles:
+> **Phase 2C (Current):** SEKAR uses 8 roles. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for migration from the original 3-role system.
 
 ```typescript
 export enum UserRole {
-  WORKER = 'worker',
-  SUPERVISOR = 'supervisor',
-  ADMIN = 'admin',
+  SATGAS = 'satgas',               // Field worker (was 'worker')
+  LINMAS = 'linmas',               // Security officer
+  KORLAP = 'korlap',              // Field coordinator (was 'koordinator_lapangan')
+  ADMIN_DATA = 'admin_data',       // Data administrator
+  KEPALA_RAYON = 'kepala_rayon',   // Rayon manager
+  TOP_MANAGEMENT = 'top_management', // City-wide view
+  ADMIN_SYSTEM = 'admin_system',   // System administrator (was 'admin')
+  SUPERADMIN = 'superadmin',       // Full system access
 }
 ```
 
-### Role Hierarchy
+### Role Hierarchy (Phase 2C)
 
 ```
 ┌──────────────────────────────────────┐
-│             ADMIN                    │  Highest privileges
+│    SUPERADMIN / ADMIN_SYSTEM         │  System administration
 │  - Full system access                │
 │  - User management                   │
 │  - System configuration              │
-│  - View all data                     │
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│         TOP_MANAGEMENT               │  City-wide oversight
+│  - View all rayons/areas             │
+│  - Verify kepala_rayon tasks         │
+│  - Analytics & monitoring            │
 └──────────────────────────────────────┘
                 ▲
-                │
 ┌──────────────────────────────────────┐
-│           SUPERVISOR                 │  Management privileges
-│  - View all workers                  │
-│  - Monitor shifts and reports        │
-│  - Review work reports               │
-│  - View analytics                    │
+│         KEPALA_RAYON                 │  Rayon management
+│  - Manage rayon scope                │
+│  - Approve korlap/admin_data work    │
+│  - Verify korlap tasks              │
 └──────────────────────────────────────┘
                 ▲
-                │
 ┌──────────────────────────────────────┐
-│            WORKER                    │  Basic privileges
-│  - Clock in/out                      │
-│  - Submit reports                    │
+│    KORLAP / ADMIN_DATA               │  Area coordination
+│  - Korlap: field coordination        │
+│  - Admin_data: data management       │
+│  - Approve satgas/linmas activities  │
+└──────────────────────────────────────┘
+                ▲
+┌──────────────────────────────────────┐
+│       SATGAS / LINMAS                │  Field workers
+│  - Clock in/out, submit activities   │
+│  - Accept/decline tasks              │
 │  - View own data only                │
-│  - No access to other workers        │
 └──────────────────────────────────────┘
 ```
 
@@ -468,96 +481,93 @@ export const GetUser = createParamDecorator(
 ```typescript
 @Get('me')
 @UseGuards(JwtAuthGuard)
-async getMe(@GetUser() user: User) {
-  // user is fully typed User entity
+async getMe(@GetUser() user: User): Promise<MeResponseDto> {
+  // Returns typed MeResponseDto with area/rayon resolution
+  // For korlap: uses User.area_id (permanent assignment)
+  // For satgas/linmas: resolves area from active Schedule
   return {
     id: user.id,
     username: user.username,
+    full_name: user.full_name,
     role: user.role,
+    area_id: user.area_id || null,  // resolved from schedule if needed
+    rayon_id: user.rayon_id || null,
+    created_at: user.created_at,
+    assigned_area: { id, name, gps_lat, gps_lng, radius_meters, area_type },
   };
 }
 ```
 
 ---
 
-## Permission Matrix
+## Permission Matrix (Phase 2C — 8 Roles)
 
-Comprehensive permission table for all modules:
+> **Role Groups** are defined in `be/src/modules/users/constants/role-groups.ts`. Endpoints use role group constants (e.g., `FIELD_WORKERS`, `TASK_RECEIVERS`, `ACTIVITY_APPROVERS`) rather than individual roles.
+
+### Key Role Groups
+
+| Group | Roles | Purpose |
+|-------|-------|---------|
+| `FIELD_WORKERS` | satgas, linmas | Clock-in/out, submit activities |
+| `ALL_WORKERS` | satgas, linmas, korlap, admin_data | Activity submission |
+| `TASK_RECEIVERS` | satgas, linmas, korlap, kepala_rayon | Accept/decline tasks |
+| `TASK_CREATORS` | korlap, kepala_rayon, top_management, admin_system, superadmin | Create/assign tasks |
+| `TASK_VERIFIERS` | korlap, kepala_rayon, top_management | Verify completed tasks |
+| `ACTIVITY_APPROVERS` | korlap, kepala_rayon | Approve/reject activities |
+| `SUPERVISORS` | korlap, kepala_rayon, top_management | Monitoring, oversight |
+| `ADMINS` | admin_system, superadmin | System management |
 
 ### Users Module
 
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `POST /users` | ❌ | ❌ | ✅ |
-| `GET /users` | ❌ | ✅ | ✅ |
-| `GET /users/:id` | ❌ | ✅ | ✅ |
-| `PATCH /users/:id` | ❌ | ❌ | ✅ |
-| `DELETE /users/:id` | ❌ | ❌ | ✅ |
+| Endpoint | Field Workers | Korlap | Kepala Rayon | Top Mgmt | Admin Sys | Superadmin |
+|----------|--------------|--------|-------------|----------|-----------|------------|
+| `POST /users` | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| `GET /users` | ❌ | ✅* | ✅* | ✅ | ✅ | ✅ |
+| `PATCH /users/:id` | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| `DELETE /users/:id` | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 
-### Area Types Module
+*Scoped: korlap sees own area, kepala_rayon sees own rayon
 
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `GET /area-types` | ✅ | ✅ | ✅ |
-| `GET /area-types/:id` | ✅ | ✅ | ✅ |
+### Activities Module (Phase 2C)
 
-### Areas Module
+| Endpoint | Satgas/Linmas | Korlap | Admin Data | Kepala Rayon | Top Mgmt+ |
+|----------|--------------|--------|-----------|-------------|-----------|
+| `POST /activities` | ✅ (own shift) | ✅ | ✅ | ❌ | ❌ |
+| `GET /activities` | ✅ (own) | ✅* | ✅ | ✅* | ✅ |
+| `PATCH /activities/:id/approve` | ❌ | ✅* | ❌ | ✅* | ❌ |
+| `PATCH /activities/:id/reject` | ❌ | ✅* | ❌ | ✅* | ❌ |
 
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `POST /areas` | ❌ | ❌ | ✅ |
-| `GET /areas` | ✅ | ✅ | ✅ |
-| `GET /areas/:id` | ✅ | ✅ | ✅ |
-| `PATCH /areas/:id` | ❌ | ❌ | ✅ |
-| `DELETE /areas/:id` | ❌ | ❌ | ✅ |
+*Scoped: hierarchical approval (korlap→satgas/linmas, kepala_rayon→korlap/admin_data)
 
-### Worker Assignments Module
+### Tasks Module (Phase 2C)
 
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `POST /workers/:id/assign` | ❌ | ✅ | ✅ |
-| `DELETE /workers/:id/assign` | ❌ | ✅ | ✅ |
+| Endpoint | Satgas/Linmas | Korlap | Kepala Rayon | Top Mgmt | Admin Sys+ |
+|----------|--------------|--------|-------------|----------|------------|
+| `POST /tasks` | ❌ | ✅ | ✅ | ✅ | ✅ |
+| `GET /tasks/my-tasks` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `POST /tasks/:id/accept` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `POST /tasks/:id/decline` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `PATCH /tasks/:id/start` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `PATCH /tasks/:id/complete` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `PATCH /tasks/:id/verify` | ❌ | ✅* | ✅* | ✅ | ❌ |
+| `PATCH /tasks/:id/revision` | ❌ | ✅* | ✅* | ✅ | ❌ |
+
+*Scoped: hierarchical verification (korlap→satgas/linmas, kepala_rayon→korlap, top_mgmt→kepala_rayon)
 
 ### Shifts Module
 
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `POST /shifts/clock-in` | ✅ (own) | ❌ | ❌ |
-| `POST /shifts/clock-out` | ✅ (own) | ❌ | ❌ |
-| `GET /shifts/current` | ✅ (own) | ❌ | ❌ |
-| `GET /shifts/my-shifts` | ✅ (own) | ❌ | ❌ |
-| `GET /shifts/active` | ❌ | ✅ | ✅ |
-
-### Reports Module
-
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `POST /reports` | ✅ (own shift) | ❌ | ❌ |
-| `GET /reports` | ❌ | ✅ | ✅ |
-| `GET /reports/:id` | ✅ (own) | ✅ | ✅ |
-| `PATCH /reports/:id` | ✅ (own, <1hr) | ❌ | ❌ |
-| `DELETE /reports/:id` | ❌ | ❌ | ✅ |
-
-### Location Module
-
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `POST /location/batch` | ✅ (own) | ❌ | ❌ |
-| `GET /location/worker/:id` | ❌ | ✅ | ✅ |
-| `GET /location/worker/:id/latest` | ❌ | ✅ | ✅ |
-
-### Supervisor Module
-
-| Endpoint | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| `GET /supervisor/active-workers` | ❌ | ✅ | ✅ |
-| `GET /supervisor/area-status` | ❌ | ✅ | ✅ |
-| `GET /supervisor/attendance` | ❌ | ✅ | ✅ |
+| Endpoint | Field Workers | Korlap+ | Admin Sys+ |
+|----------|--------------|---------|------------|
+| `POST /shifts/clock-in` | ✅ (own) | ✅ (own) | ❌ |
+| `POST /shifts/clock-out` | ✅ (own) | ✅ (own) | ❌ |
+| `GET /shifts/current` | ✅ (own) | ✅ (own) | ❌ |
+| `GET /shifts/active` | ❌ | ✅* | ✅ |
 
 **Legend:**
 - ✅ = Allowed
 - ❌ = Forbidden (403 Forbidden)
 - `(own)` = Can only access own resources
+- `*` = Scoped to area/rayon
 
 ---
 
@@ -1083,8 +1093,8 @@ export class UnauthorizedExceptionFilter implements ExceptionFilter {
 describe('AuthService', () => {
   it('should return JWT token on valid login', async () => {
     const result = await service.login({
-      username: 'worker1',
-      password: 'worker123',
+      username: 'satgas1',
+      password: 'password123',
     });
 
     expect(result).toHaveProperty('access_token');
@@ -1113,7 +1123,7 @@ describe('AuthService', () => {
 # Login and get token
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"worker1","password":"worker123"}' \
+  -d '{"username":"satgas1","password":"password123"}' \
   | jq -r '.access_token'
 
 # Use token to access protected endpoint
@@ -1139,9 +1149,9 @@ export const AUTH_CONSTANTS = {
 
 ---
 
-**Document Version:** 1.0.0
-**Last Updated:** 2026-01-16
-**Phase:** 1 - MVP Complete
+**Document Version:** 2.0.0
+**Last Updated:** 2026-02-20
+**Phase:** 2C - 8-role system implemented
 **Related Documents:**
 - [contracts.md](./contracts.md) - API endpoint specifications
 - [error-handling.md](./error-handling.md) - Error handling patterns

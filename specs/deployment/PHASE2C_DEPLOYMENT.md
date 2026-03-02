@@ -99,7 +99,7 @@ npm run seed:phase2:prod
 - Sample tasks and activities
 
 **Test Credentials:**
-- `admin/admin123` (superadmin role)
+- `admin/password123` (superadmin role)
 - `korlap1/password123` (korlap role)
 - `satgas1/password123` (satgas role)
 
@@ -114,7 +114,7 @@ curl http://api.sekar.wahyutrip.com/api/v1/health
 # Login test
 curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"password123"}'
 # → {"access_token":"eyJhbG..."}
 
 # New Phase 2C endpoints

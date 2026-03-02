@@ -209,7 +209,7 @@ describe('TaskDetailScreen', () => {
 
     const { findByText } = renderWithNav(<TaskDetailScreen />);
 
-    expect(await findByText('Rayon:')).toBeTruthy();
+    // Rayon name displayed inline (no "Rayon:" prefix)
     expect(await findByText('Rayon 1')).toBeTruthy();
   });
 
@@ -218,7 +218,7 @@ describe('TaskDetailScreen', () => {
 
     const { findByText } = renderWithNav(<TaskDetailScreen />);
 
-    expect(await findByText('Tag Pengguna')).toBeTruthy();
+    expect(await findByText('Tag Petugas')).toBeTruthy();
     expect(await findByText('Worker 2')).toBeTruthy();
     expect(await findByText('Worker 3')).toBeTruthy();
   });
@@ -234,7 +234,7 @@ describe('TaskDetailScreen', () => {
     });
 
     // Tag section should not be rendered when no tags
-    expect(queryByText('Tag Pengguna')).toBeNull();
+    expect(queryByText('Tag Petugas')).toBeNull();
   });
 
   it('handles task without rayon gracefully (Phase 2C)', async () => {
@@ -247,7 +247,19 @@ describe('TaskDetailScreen', () => {
       expect(tasksApi.getTaskById).toHaveBeenCalled();
     });
 
-    // Rayon section should not be rendered when no rayon
-    expect(queryByText('Rayon:')).toBeNull();
+    // Rayon name should not be in output when rayon is absent
+    expect(queryByText('Rayon 1')).toBeNull();
+  });
+
+  it('shows Riwayat Tugas button for audit trail', async () => {
+    (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
+
+    const { findByText } = renderWithNav(<TaskDetailScreen />);
+
+    const riwayatButton = await findByText('Riwayat Tugas');
+    expect(riwayatButton).toBeTruthy();
+
+    // Pressing should not throw
+    expect(() => fireEvent.press(riwayatButton)).not.toThrow();
   });
 });

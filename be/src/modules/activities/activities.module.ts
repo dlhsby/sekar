@@ -5,7 +5,9 @@ import { ActivitiesService } from './activities.service';
 import { Activity } from './entities/activity.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
+import { User } from '../users/entities/user.entity';
 import { SharedModule } from '../../shared/shared.module';
+import { UsersModule } from '../users/users.module';
 
 /**
  * Activities Module
@@ -17,13 +19,16 @@ import { SharedModule } from '../../shared/shared.module';
  * - Activity listing with scope-based filtering
  * - Activity updates (with time constraints)
  * - Activity deletion (admin only)
+ * - Activity approval/rejection workflow (Phase 2C)
  *
  * Phase 2C: Routes changed from /aktivitas to /activities
+ * Phase 2C: Added approval workflow (Korlap, Kepala Rayon)
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Activity, Shift, ActivityType]),
+    TypeOrmModule.forFeature([Activity, Shift, ActivityType, User]),
     SharedModule, // For S3Service
+    UsersModule,
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService],

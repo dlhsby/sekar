@@ -622,23 +622,51 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           <NBCard style={styles.card}>
             <NBCardHeader>
               <Text style={styles.sectionTitle}>{'📅 BATAS WAKTU'}</Text>
-              <Text style={styles.sectionSubtitle}>Opsional — tentukan tenggat tugas</Text>
+              <Text style={styles.sectionSubtitle}>Opsional — tentukan tenggat tugas (waktu default 23:59)</Text>
             </NBCardHeader>
             <NBCardContent>
+              {/* Date picker */}
               <NBDatePicker
+                label="Tanggal"
                 value={form.deadline}
-                onChange={(date) => setForm((prev) => ({ ...prev, deadline: date }))}
-                placeholder="Pilih batas waktu..."
+                onChange={(date) => {
+                  const d = new Date(date);
+                  // Preserve existing time if set, otherwise default to end of day (23:59)
+                  if (form.deadline) {
+                    d.setHours(form.deadline.getHours(), form.deadline.getMinutes(), 0, 0);
+                  } else {
+                    d.setHours(23, 59, 0, 0);
+                  }
+                  setForm((prev) => ({ ...prev, deadline: d }));
+                }}
+                placeholder="Pilih tanggal batas waktu..."
                 minimumDate={new Date()}
               />
+
+              {/* Time picker — shown only after date is selected */}
               {form.deadline && (
-                <NBButton
-                  title="Hapus Batas Waktu"
-                  variant="secondary"
-                  size="sm"
-                  onPress={() => setForm((prev) => ({ ...prev, deadline: null }))}
-                  style={styles.clearButton}
-                />
+                <>
+                  <View style={styles.fieldSpacer} />
+                  <NBDatePicker
+                    label="Waktu (opsional, default 23:59)"
+                    value={form.deadline}
+                    onChange={(timeDate) => {
+                      if (!form.deadline) return;
+                      const d = new Date(form.deadline);
+                      d.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0);
+                      setForm((prev) => ({ ...prev, deadline: d }));
+                    }}
+                    mode="time"
+                    placeholder="Pilih waktu..."
+                  />
+                  <NBButton
+                    title="Hapus Batas Waktu"
+                    variant="secondary"
+                    size="sm"
+                    onPress={() => setForm((prev) => ({ ...prev, deadline: null }))}
+                    style={styles.clearButton}
+                  />
+                </>
               )}
             </NBCardContent>
           </NBCard>

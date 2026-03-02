@@ -595,8 +595,8 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
     jest.clearAllMocks();
   });
 
-  const clockableRoles = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'];
-  const nonClockableRoles = ['top_management', 'admin_system', 'superadmin'];
+  const clockableRoles = ['satgas', 'linmas', 'korlap'];
+  const nonClockableRoles = ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
 
   clockableRoles.forEach((role) => {
     it(`should show FAB for clockable role: ${role}`, async () => {

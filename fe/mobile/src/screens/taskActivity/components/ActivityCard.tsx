@@ -8,7 +8,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { NBCard, NBBadge } from '../../../components/nb';
 import { nbColors, nbSpacing, nbTypography } from '../../../constants/nbTokens';
 import type { Activity } from '../../../types/models.types';
-import { formatDate, formatTime } from '../../../utils/statusHelpers';
+import { formatDate, formatTime, getActivityStatusLabel, getActivityStatusColor } from '../../../utils/statusHelpers';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -17,7 +17,7 @@ interface ActivityCardProps {
 
 export function ActivityCard({ activity, onPress }: ActivityCardProps): React.JSX.Element {
   return (
-    <TouchableOpacity style={styles.itemCard} onPress={onPress}>
+    <TouchableOpacity style={styles.itemCard} onPress={onPress} testID="activity-card">
       <NBCard variant="elevated" style={styles.cardInner}>
         {/* Header: activity type + created time | status badge */}
         <View style={styles.itemHeader}>
@@ -32,14 +32,8 @@ export function ActivityCard({ activity, onPress }: ActivityCardProps): React.JS
           <View style={styles.itemHeaderRight}>
             {activity.status && (
               <NBBadge
-                text={
-                  activity.status === 'approved' ? 'Disetujui' :
-                  activity.status === 'rejected' ? 'Ditolak' : 'Menunggu Persetujuan'
-                }
-                color={
-                  activity.status === 'approved' ? 'success' :
-                  activity.status === 'rejected' ? 'danger' : 'gray'
-                }
+                text={getActivityStatusLabel(activity.status)}
+                color={getActivityStatusColor(activity.status)}
               />
             )}
           </View>

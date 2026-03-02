@@ -1,19 +1,23 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsArray, ArrayMinSize, ArrayMaxSize } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * DTO for completing a task with evidence
+ * Phase 2C: supports 1-3 completion photos
  */
 export class CompleteTaskDto {
   @ApiProperty({
-    description: 'URL of the completion photo (uploaded separately)',
-    example: 'https://s3.amazonaws.com/sekar-media/tasks/completion-photo-123.jpg',
-    maxLength: 500,
+    description: 'URLs of the completion photos (1-3, uploaded separately)',
+    example: ['https://s3.amazonaws.com/sekar-media/tasks/photo-1.jpg'],
+    type: [String],
+    minItems: 1,
+    maxItems: 3,
   })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(500)
-  completion_photo_url: string;
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(3)
+  completion_photo_urls: string[];
 
   @ApiProperty({
     description: 'Completion description detailing what was done',

@@ -129,6 +129,10 @@ describe('AuthController', () => {
             gps_lat: -7.281234,
             gps_lng: 112.734567,
             radius_meters: 100,
+            boundary_polygon: {
+              type: 'Polygon',
+              coordinates: [[[112.733, -7.280], [112.736, -7.280], [112.736, -7.282], [112.733, -7.282], [112.733, -7.280]]],
+            },
           };
 
           mockAreaRepository.findOne.mockResolvedValue(mockArea);
@@ -145,6 +149,7 @@ describe('AuthController', () => {
             gps_lat: -7.281234,
             gps_lng: 112.734567,
             radius_meters: 100,
+            boundary_polygon: mockArea.boundary_polygon,
             area_type: null,
           });
           expect(mockAreaRepository.findOne).toHaveBeenCalledWith({
@@ -191,6 +196,7 @@ describe('AuthController', () => {
               gps_lat: -7.281234,
               gps_lng: 112.734567,
               radius_meters: 100,
+              boundary_polygon: null,
             },
           };
 
@@ -205,6 +211,7 @@ describe('AuthController', () => {
             gps_lat: -7.281234,
             gps_lng: 112.734567,
             radius_meters: 100,
+            boundary_polygon: null,
             area_type: null,
           });
           expect(mockScheduleRepository.findOne).toHaveBeenCalledWith({
@@ -270,6 +277,7 @@ describe('AuthController', () => {
               gps_lat: -7.285678,
               gps_lng: 112.738901,
               radius_meters: 150,
+              boundary_polygon: null,
             },
           };
 
@@ -278,7 +286,7 @@ describe('AuthController', () => {
           const result = await controller.getMe(satgasUser);
 
           expect(result).toHaveProperty('assigned_area');
-          expect(result.assigned_area.name).toBe('Taman Mayangkara');
+          expect(result.assigned_area!.name).toBe('Taman Mayangkara');
         });
       });
 
@@ -295,7 +303,8 @@ describe('AuthController', () => {
           const result = await controller.getMe(basicUser);
 
           expect(result).toHaveProperty('id', 'basic-user');
-          expect(result).not.toHaveProperty('area_id');
+          expect(result).toHaveProperty('area_id', null);
+          expect(result).toHaveProperty('rayon_id', null);
           expect(result).not.toHaveProperty('assigned_area');
         });
       });

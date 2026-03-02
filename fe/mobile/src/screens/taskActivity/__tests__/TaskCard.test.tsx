@@ -14,7 +14,7 @@ const BASE_TASK: Task = {
   deadline: '2026-02-25T17:00:00Z',
   area: { id: 'area-1', name: 'Area A' } as any,
   rayon: { id: 'rayon-1', name: 'Rayon 1' } as any,
-  assigned_user: { id: 'user-1', full_name: 'Budi Santoso' } as any,
+  assignee: { id: 'user-1', full_name: 'Budi Santoso' } as any,
   tags: [],
 } as unknown as Task;
 

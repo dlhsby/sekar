@@ -37,13 +37,11 @@ export const TASK_MANAGER_ROLES: UserRole[] = [
   'superadmin',
 ];
 
-/** Roles that can clock in/out */
+/** Roles that can clock in/out (field roles with area assignments only) */
 export const CLOCKABLE_ROLES: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
-  'kepala_rayon',
 ];
 
 /** Roles that can approve overtime */

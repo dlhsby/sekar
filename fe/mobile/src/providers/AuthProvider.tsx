@@ -26,7 +26,7 @@ interface AuthProviderProps {
 
 /**
  * Load current shift for clockable role users and start location tracking if active.
- * Only clockable roles (satgas, linmas, korlap, admin_data, kepala_rayon) have shifts.
+ * Only clockable roles (satgas, linmas, korlap) have shifts.
  * This is called after auth restoration to sync shift state with the backend.
  */
 async function loadShiftForClockableRole(userRole: string, dispatch: AppDispatch): Promise<void> {
@@ -95,7 +95,12 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
             if (meResponse.data) {
               // Token is valid, restore auth state with latest area/rayon data
-              const assignedArea = meResponse.data.assigned_area || null;
+              // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils
+              const rawArea = meResponse.data.assigned_area;
+              const rawPolygon = (rawArea as any)?.boundary_polygon;
+              const assignedArea = rawArea
+                ? { ...rawArea, boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined }
+                : null;
               const updatedUser = {
                 ...storedUser,
                 area_id: meResponse.data.area_id ?? storedUser.area_id,

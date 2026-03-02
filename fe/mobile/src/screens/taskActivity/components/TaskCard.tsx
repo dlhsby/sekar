@@ -6,43 +6,19 @@
 import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { NBCard, NBBadge } from '../../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography } from '../../../constants/nbTokens';
 import type { Task, TaskStatus } from '../../../types/models.types';
-import { getTaskStatusLabel, formatDate, formatTime } from '../../../utils/statusHelpers';
+import { getTaskStatusLabel, getTaskStatusColor, TASK_PRIORITY_LABEL, formatDate, formatTime } from '../../../utils/statusHelpers';
 
 interface TaskCardProps {
   task: Task;
   onPress: () => void;
 }
 
-const PRIORITY_LABEL: Record<string, string> = {
-  low: 'Rendah', medium: 'Biasa', high: 'Tinggi', urgent: 'Mendesak',
-};
-
-function getTaskStatusBadgeVariant(
-  status: TaskStatus
-): 'gray' | 'success' | 'warning' | 'danger' | 'primary' {
-  switch (status) {
-    case 'verified':
-    case 'accepted':
-      return 'success';
-    case 'completed':
-    case 'in_progress':
-      return 'primary';
-    case 'assigned':
-    case 'revision_needed':
-      return 'warning';
-    case 'declined':
-      return 'danger';
-    default:
-      return 'gray';
-  }
-}
-
 
 export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
   return (
-    <TouchableOpacity style={styles.itemCard} onPress={onPress}>
+    <TouchableOpacity style={styles.itemCard} onPress={onPress} testID="task-card">
       <NBCard variant="elevated" style={styles.cardInner}>
         {/* Header: primary text + created time | status badge */}
         <View style={styles.itemHeader}>
@@ -57,7 +33,7 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
           <View style={styles.itemHeaderRight}>
             <NBBadge
               text={getTaskStatusLabel(task.status)}
-              color={getTaskStatusBadgeVariant(task.status)}
+              color={getTaskStatusColor(task.status)}
             />
           </View>
         </View>
@@ -69,8 +45,8 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
         ) : null}
         {/* Meta row */}
         <View style={styles.itemMeta}>
-          {task.assigned_user && (
-            <Text style={styles.itemMetaChip}>👤 {task.assigned_user.full_name}</Text>
+          {task.assignee && (
+            <Text style={styles.itemMetaChip}>👤 {task.assignee.full_name}</Text>
           )}
           {task.area && (
             <Text style={styles.itemMetaChip}>📍 {task.area.name}</Text>
@@ -79,12 +55,10 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
             <Text style={styles.itemMetaChip}>🗺️ {task.rayon.name}</Text>
           )}
           {task.priority && (
-            <Text style={styles.itemMetaChip}>🔥 {PRIORITY_LABEL[task.priority] ?? task.priority}</Text>
+            <Text style={styles.itemMetaChip}>🔥 {TASK_PRIORITY_LABEL[task.priority] ?? task.priority}</Text>
           )}
           {task.deadline && (
-            <Text style={styles.itemMetaChip}>
-              ⏰ {new Date(task.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </Text>
+            <Text style={styles.itemMetaChip}>⏰ {formatDate(task.deadline)}</Text>
           )}
           {task.tags && task.tags.length > 0 && (
             <Text style={styles.itemMetaChip}>🏷️ {task.tags.length} tag</Text>

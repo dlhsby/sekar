@@ -23,11 +23,11 @@
 
 | Role | Username | Password |
 |------|----------|----------|
-| Admin | admin | admin123 |
-| Supervisor | supervisor1 | supervisor123 |
-| Worker 1 | worker1 | worker123 |
-| Worker 2 | worker2 | worker123 |
-| Worker 3 | worker3 | worker123 |
+| Admin | admin | password123 |
+| Supervisor | supervisor1 | password123 |
+| Worker 1 | worker1 | password123 |
+| Worker 2 | worker2 | password123 |
+| Worker 3 | worker3 | password123 |
 
 ### API Testing Tools
 
@@ -73,7 +73,7 @@ curl http://localhost:3000/api/health
 
 | # | Test Case | Expected | Status | Verdict |
 |---|-----------|----------|--------|---------|
-| 3 | POST /api/auth/login - Valid worker (worker1/worker123) | 200 + access_token + refresh_token | [x] | |
+| 3 | POST /api/auth/login - Valid worker (worker1/password123) | 200 + access_token + refresh_token | [x] | |
 | 4 | POST /api/auth/login - Valid supervisor | 200 + tokens | [x] | |
 | 5 | POST /api/auth/login - Valid admin | 200 + tokens | [x] | |
 | 6 | POST /api/auth/login - Invalid password | 401 Unauthorized | [x] | |
@@ -95,7 +95,7 @@ curl http://localhost:3000/api/health
 # Login as worker1
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"worker1","password":"worker123"}'
+  -d '{"username":"worker1","password":"password123"}'
 
 # Get current user (replace TOKEN)
 curl http://localhost:3000/api/auth/me \
@@ -237,7 +237,7 @@ curl http://localhost:3000/api/auth/me \
 
 | # | Test Case | Expected | Status | Verdict |
 |---|-----------|----------|--------|---------|
-| 106 | Valid login (worker1/worker123) | Navigate to Home | [x] | |
+| 106 | Valid login (worker1/password123) | Navigate to Home | [x] | |
 | 107 | Invalid password | Error message shown (Indonesian) | [x] | |
 | 108 | Empty username | Validation error | [x] | |
 | 109 | Empty password | Validation error | [x] | |

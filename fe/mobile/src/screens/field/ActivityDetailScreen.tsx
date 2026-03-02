@@ -18,7 +18,7 @@ import {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import { getActivityById, approveActivity, rejectActivity } from '../../services/api/activitiesApi';
-import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBBadge, NBButton, NBTextInput } from '../../components/nb';
+import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBBadge, NBButton, NBCardTextInput } from '../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import type { Activity } from '../../types/models.types';
 import { useAppSelector } from '../../store/hooks';
@@ -343,20 +343,16 @@ export function ActivityDetailScreen(): React.JSX.Element {
 
           {/* Rejection reason input — shown inline in scroll when rejecting */}
           {canApprove && showRejectInput && (
-            <View style={styles.rejectInputSection}>
-              <NBTextInput
-                label="📝 ALASAN PENOLAKAN"
-                placeholder="Jelaskan alasan penolakan aktivitas ini..."
-                multiline
-                numberOfLines={4}
-                maxLength={1000}
-                value={rejectReason}
-                onChangeText={setRejectReason}
-                helperText={`${rejectReason.length}/1000 karakter`}
-                inputStyle={styles.rejectInputField}
-                textAlignVertical="top"
-              />
-            </View>
+            <NBCardTextInput
+              title="📝 Alasan Penolakan"
+              required
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Jelaskan alasan penolakan aktivitas ini..."
+              maxLength={1000}
+              numberOfLines={4}
+              style={styles.rejectInputSection}
+            />
           )}
         </ScrollView>
 
@@ -525,9 +521,6 @@ const styles = StyleSheet.create({
   rejectInputSection: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-  },
-  rejectInputField: {
-    minHeight: 100,
   },
   fab: {
     paddingHorizontal: nbSpacing.md,

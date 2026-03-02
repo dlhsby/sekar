@@ -269,10 +269,10 @@ export interface Task {
   rayon_id?: string;
   rayon?: Rayon;
   assigned_to?: string;
-  assigned_user?: User;
+  assignee?: User;
   created_by: string;
   creator?: User;
-  completion_photo_url?: string;
+  completion_photo_urls?: string[];
   completion_notes?: string;
   completed_at?: string;
   started_at?: string;

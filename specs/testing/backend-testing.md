@@ -573,7 +573,7 @@ describe('AppController (e2e)', () => {
         .post('/api/auth/login')
         .send({
           username: 'worker1',
-          password: 'worker123',
+          password: 'password123',
         })
         .expect(200)
         .expect((res) => {

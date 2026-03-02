@@ -361,8 +361,8 @@ describe('OvertimeSubmitScreen', () => {
       });
     });
 
-    it('shows alert when camera permission denied', async () => {
-      permissions.requestCameraPermission.mockResolvedValue({ granted: false });
+    it('does not add photo when camera permission denied', async () => {
+      permissions.requestCameraPermission.mockResolvedValue({ granted: false, message: 'Izin kamera diperlukan' });
       const { getByTestId } = renderScreen();
 
       await act(async () => {
@@ -370,7 +370,7 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith('Izin Diperlukan', 'Aplikasi memerlukan izin kamera');
+        expect(mediaService.capturePhoto).not.toHaveBeenCalled();
       });
     });
   });

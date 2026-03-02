@@ -28,14 +28,11 @@ export class Overtime {
   @Column('uuid', { nullable: true })
   area_id?: string;
 
-  @Column('date')
-  date: string;
+  @Column({ type: 'timestamptz', default: () => 'NOW()' })
+  start_datetime: Date;
 
-  @Column('time')
-  start_time: string;
-
-  @Column('time')
-  end_time: string;
+  @Column({ type: 'timestamptz', default: () => 'NOW()' })
+  end_datetime: Date;
 
   @Column({
     type: 'varchar',
@@ -53,9 +50,6 @@ export class Overtime {
 
   @Column({ type: 'text', nullable: true })
   rejection_reason?: string;
-
-  @Column({ type: 'text', nullable: true })
-  notes?: string;
 
   @Column('uuid')
   activity_type_id: string;

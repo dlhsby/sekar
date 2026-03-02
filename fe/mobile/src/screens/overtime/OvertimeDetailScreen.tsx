@@ -25,7 +25,7 @@ import {
   NBBackgroundPattern,
   NBBadge,
   NBButton,
-  NBTextInput,
+  NBCardTextInput,
 } from '../../components/nb';
 import {
   nbColors,
@@ -342,20 +342,16 @@ export function OvertimeDetailScreen(): React.JSX.Element {
 
           {/* Inline reject reason input */}
           {canApprove && showRejectInput && (
-            <View style={styles.rejectInputSection}>
-              <NBTextInput
-                label="📝 ALASAN PENOLAKAN"
-                placeholder="Jelaskan alasan penolakan lembur ini..."
-                multiline
-                numberOfLines={4}
-                maxLength={1000}
-                value={rejectReason}
-                onChangeText={setRejectReason}
-                helperText={`${rejectReason.length}/1000 karakter`}
-                inputStyle={styles.rejectInputField}
-                textAlignVertical="top"
-              />
-            </View>
+            <NBCardTextInput
+              title="📝 Alasan Penolakan"
+              required
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Jelaskan alasan penolakan lembur ini..."
+              maxLength={1000}
+              numberOfLines={4}
+              style={styles.rejectInputSection}
+            />
           )}
         </ScrollView>
 
@@ -527,9 +523,6 @@ const styles = StyleSheet.create({
   rejectInputSection: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-  },
-  rejectInputField: {
-    minHeight: 100,
   },
   fab: {
     paddingHorizontal: nbSpacing.md,

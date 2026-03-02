@@ -7,15 +7,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
+  Image,
   StyleSheet,
   ScrollView,
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Platform,
+  Modal,
+  TouchableOpacity,
+  FlatList,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBButton,
@@ -25,60 +27,47 @@ import {
   NBBadge,
   NBBackgroundPattern,
   NBAlert,
+  NBSelect,
+  NBCardTextInput,
 } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbShadows, nbBorders } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
 
 const fontSizes = nbTypography.fontSize;
 import { formatDateTime, formatRelativeTime } from '../../utils/dateUtils';
 import * as tasksApi from '../../services/api/tasksApi';
+import { getUsers } from '../../services/api';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import type { Task, TaskStatus, TaskPriority } from '../../types/models.types';
+import type { User } from '../../types/models.types';
 import { useAppSelector } from '../../store/hooks';
+import { FILTER_SUBORDINATE_ROLES } from '../../constants/roles';
+import { toTitleCase } from '../../utils/filterHelpers';
 
 type TaskDetailRouteProp = RouteProp<MainTabParamList, 'TaskDetail'>;
 type TaskDetailNavigationProp = MainTabScreenProps<'TaskDetail'>['navigation'];
 
-/**
- * Get badge variant based on priority
- */
 function getPriorityVariant(priority: TaskPriority): 'danger' | 'warning' | 'primary' | 'gray' {
   switch (priority) {
-    case 'urgent':
-      return 'danger';
-    case 'high':
-      return 'warning';
-    case 'medium':
-      return 'primary';
-    default:
-      return 'gray';
+    case 'urgent': return 'danger';
+    case 'high': return 'warning';
+    case 'medium': return 'primary';
+    default: return 'gray';
   }
 }
 
-/**
- * Get badge variant based on status
- */
 function getStatusVariant(status: TaskStatus): 'success' | 'primary' | 'warning' | 'gray' | 'danger' {
   switch (status) {
-    case 'verified':
-      return 'success';
+    case 'verified': return 'success';
     case 'completed':
-    case 'in_progress':
-      return 'primary';
+    case 'in_progress': return 'primary';
     case 'assigned':
-    case 'revision_needed':
-      return 'warning';
-    case 'declined':
-      return 'danger';
-    case 'accepted':
-      return 'success';
-    default:
-      return 'gray';
+    case 'revision_needed': return 'warning';
+    case 'declined': return 'danger';
+    case 'accepted': return 'success';
+    default: return 'gray';
   }
 }
 
-/**
- * Get Indonesian label for status (Phase 2C: 8 statuses)
- */
 function getStatusLabel(status: TaskStatus): string {
   const labels: Record<TaskStatus, string> = {
     pending: 'Menunggu',
@@ -93,9 +82,6 @@ function getStatusLabel(status: TaskStatus): string {
   return labels[status] || status;
 }
 
-/**
- * Get Indonesian label for priority
- */
 function getPriorityLabel(priority: TaskPriority): string {
   const labels: Record<TaskPriority, string> = {
     low: 'Rendah',
@@ -106,7 +92,118 @@ function getPriorityLabel(priority: TaskPriority): string {
   return labels[priority] || priority;
 }
 
+/** Format user display as "Role - Nama" */
+function formatUser(user: User | null | undefined): string {
+  if (!user) return '—';
+  return `${toTitleCase(user.role)} - ${user.full_name}`;
+}
+
 const TASK_VERIFIER_ROLES = ['korlap', 'kepala_rayon', 'top_management'];
+
+type AuditEvent = {
+  key: string;
+  event: string;
+  timestamp: Date | string;
+  icon: string;
+  color: string;
+  actor?: string;
+  note?: string;
+};
+
+function buildAuditEvents(task: Task | null): AuditEvent[] {
+  if (!task) { return []; }
+  const events: AuditEvent[] = [];
+
+  events.push({
+    key: 'created',
+    event: 'Dibuat',
+    timestamp: task.created_at,
+    icon: 'plus-circle',
+    color: nbColors.primary,
+    actor: task.creator ? formatUser(task.creator) : undefined,
+  });
+
+  if (task.assigned_at) {
+    events.push({
+      key: 'assigned',
+      event: 'Ditugaskan',
+      timestamp: task.assigned_at,
+      icon: 'account-arrow-right',
+      color: nbColors.accentSunshine,
+      actor: task.assignee ? formatUser(task.assignee) : undefined,
+    });
+  }
+
+  if (task.accepted_at) {
+    events.push({
+      key: 'accepted',
+      event: 'Diterima',
+      timestamp: task.accepted_at,
+      icon: 'check-circle',
+      color: nbColors.success,
+      actor: task.assignee ? formatUser(task.assignee) : undefined,
+    });
+  }
+
+  if (task.declined_at) {
+    events.push({
+      key: 'declined',
+      event: 'Ditolak',
+      timestamp: task.declined_at,
+      icon: 'close-circle',
+      color: nbColors.danger,
+      actor: task.assignee ? formatUser(task.assignee) : undefined,
+      note: task.decline_reason ?? undefined,
+    });
+  }
+
+  if (task.started_at) {
+    events.push({
+      key: 'started',
+      event: 'Dikerjakan',
+      timestamp: task.started_at,
+      icon: 'play-circle',
+      color: nbColors.primary,
+      actor: task.assignee ? formatUser(task.assignee) : undefined,
+    });
+  }
+
+  if (task.completed_at) {
+    events.push({
+      key: 'completed',
+      event: 'Diselesaikan',
+      timestamp: task.completed_at,
+      icon: 'check-all',
+      color: nbColors.success,
+      actor: task.assignee ? formatUser(task.assignee) : undefined,
+    });
+  }
+
+  if (task.revision_reason && task.status === 'revision_needed') {
+    events.push({
+      key: 'revision',
+      event: 'Diminta Revisi',
+      timestamp: task.updated_at,
+      icon: 'pencil-circle',
+      color: nbColors.accentSunshine,
+      actor: task.verifier ? formatUser(task.verifier) : undefined,
+      note: task.revision_reason,
+    });
+  }
+
+  if (task.verified_at) {
+    events.push({
+      key: 'verified',
+      event: 'Terverifikasi',
+      timestamp: task.verified_at,
+      icon: 'shield-check',
+      color: nbColors.success,
+      actor: task.verifier ? formatUser(task.verifier) : undefined,
+    });
+  }
+
+  return events;
+}
 
 export function TaskDetailScreen(): React.JSX.Element {
   const navigation = useNavigation<TaskDetailNavigationProp>();
@@ -120,11 +217,17 @@ export function TaskDetailScreen(): React.JSX.Element {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Inline input states for decline/revision reasons (cross-platform alternative to Alert.prompt)
   const [showDeclineInput, setShowDeclineInput] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [showRevisionInput, setShowRevisionInput] = useState(false);
   const [revisionReason, setRevisionReason] = useState('');
+
+  const [showAssignInput, setShowAssignInput] = useState(false);
+  const [assigneeId, setAssigneeId] = useState('');
+  const [subordinates, setSubordinates] = useState<User[]>([]);
+  const [loadingSubordinates, setLoadingSubordinates] = useState(false);
+
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
 
   const fetchTask = useCallback(async () => {
     try {
@@ -142,24 +245,76 @@ export function TaskDetailScreen(): React.JSX.Element {
     }
   }, [taskId]);
 
+  // Initial load
   useEffect(() => {
     fetchTask();
   }, [fetchTask]);
+
+  // Refresh on every screen focus (e.g. after completing a task and coming back)
+  const isMounted = React.useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (isMounted.current) {
+        fetchTask();
+      } else {
+        isMounted.current = true;
+      }
+    }, [fetchTask]),
+  );
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     fetchTask();
   }, [fetchTask]);
 
+  const loadSubordinates = useCallback(async () => {
+    if (!user?.role) { return; }
+    const subordinateRoles = FILTER_SUBORDINATE_ROLES[user.role] ?? [];
+    if (subordinateRoles.length === 0) { return; }
+    setLoadingSubordinates(true);
+    try {
+      const response = await getUsers(100);
+      const all: User[] = response.data ?? [];
+      setSubordinates(all.filter((u) => subordinateRoles.includes(u.role as any)));
+    } catch {
+      // non-critical
+    } finally {
+      setLoadingSubordinates(false);
+    }
+  }, [user?.role]);
+
+  const handleShowAssign = useCallback(() => {
+    setAssigneeId('');
+    setShowAssignInput(true);
+    loadSubordinates();
+  }, [loadSubordinates]);
+
+  const handleAssignSubmit = useCallback(async () => {
+    if (!task || !assigneeId) { return; }
+    setIsSubmitting(true);
+    try {
+      const response = await tasksApi.assignTask(task.id, { assigned_to: assigneeId });
+      if (response.error) {
+        Alert.alert('Error', response.error);
+        return;
+      }
+      setShowAssignInput(false);
+      setAssigneeId('');
+      Alert.alert('Berhasil', 'Tugas berhasil ditugaskan');
+      fetchTask();
+    } catch {
+      Alert.alert('Error', 'Gagal menugaskan tugas');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [task, assigneeId, fetchTask]);
+
   const handleAccept = useCallback(async () => {
     if (!task) {return;}
     setIsSubmitting(true);
     try {
       const response = await tasksApi.acceptTask(task.id);
-      if (response.error) {
-        Alert.alert('Error', response.error);
-        return;
-      }
+      if (response.error) { Alert.alert('Error', response.error); return; }
       Alert.alert('Berhasil', 'Tugas diterima');
       fetchTask();
     } catch {
@@ -169,23 +324,15 @@ export function TaskDetailScreen(): React.JSX.Element {
     }
   }, [task, fetchTask]);
 
-  const handleDecline = useCallback(() => {
-    setShowDeclineInput(true);
-  }, []);
+  const handleDecline = useCallback(() => { setShowDeclineInput(true); }, []);
 
   const handleDeclineSubmit = useCallback(async () => {
     if (!task) {return;}
-    if (!declineReason.trim()) {
-      Alert.alert('Error', 'Alasan penolakan wajib diisi');
-      return;
-    }
+    if (!declineReason.trim()) { Alert.alert('Error', 'Alasan penolakan wajib diisi'); return; }
     setIsSubmitting(true);
     try {
       const response = await tasksApi.declineTask(task.id, { reason: declineReason.trim() });
-      if (response.error) {
-        Alert.alert('Error', response.error);
-        return;
-      }
+      if (response.error) { Alert.alert('Error', response.error); return; }
       Alert.alert('Berhasil', 'Tugas ditolak');
       setShowDeclineInput(false);
       setDeclineReason('');
@@ -199,14 +346,10 @@ export function TaskDetailScreen(): React.JSX.Element {
 
   const handleStart = useCallback(async () => {
     if (!task) {return;}
-
     setIsSubmitting(true);
     try {
       const response = await tasksApi.startTask(task.id);
-      if (response.error) {
-        Alert.alert('Error', response.error);
-        return;
-      }
+      if (response.error) { Alert.alert('Error', response.error); return; }
       Alert.alert('Berhasil', 'Tugas dimulai');
       fetchTask();
     } catch {
@@ -221,60 +364,70 @@ export function TaskDetailScreen(): React.JSX.Element {
     navigation.navigate('TaskComplete', { taskId: task.id });
   }, [task, navigation]);
 
-  const handleVerify = useCallback(async () => {
+  const handleVerify = useCallback(() => {
     if (!task) {return;}
-    setIsSubmitting(true);
-    try {
-      const response = await tasksApi.verifyTask(task.id);
-      if (response.error) {
-        Alert.alert('Error', response.error);
-        return;
-      }
-      Alert.alert('Berhasil', 'Tugas terverifikasi');
-      fetchTask();
-    } catch {
-      Alert.alert('Error', 'Gagal memverifikasi tugas');
-    } finally {
-      setIsSubmitting(false);
-    }
+    Alert.alert(
+      'Konfirmasi Verifikasi',
+      'Apakah Anda yakin ingin memverifikasi tugas ini? Tindakan ini tidak dapat dibatalkan.',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Ya, Verifikasi',
+          style: 'default',
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              const response = await tasksApi.verifyTask(task.id);
+              if (response.error) { Alert.alert('Error', response.error); return; }
+              Alert.alert('Berhasil', 'Tugas berhasil diverifikasi');
+              fetchTask();
+            } catch {
+              Alert.alert('Error', 'Gagal memverifikasi tugas');
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ],
+    );
   }, [task, fetchTask]);
 
-  const handleRevision = useCallback(() => {
-    setShowRevisionInput(true);
-  }, []);
+  const handleRevision = useCallback(() => { setShowRevisionInput(true); }, []);
 
   const handleRevisionSubmit = useCallback(async () => {
     if (!task) {return;}
-    if (!revisionReason.trim()) {
-      Alert.alert('Error', 'Alasan revisi wajib diisi');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const response = await tasksApi.requestRevision(task.id, { reason: revisionReason.trim() });
-      if (response.error) {
-        Alert.alert('Error', response.error);
-        return;
-      }
-      Alert.alert('Berhasil', 'Permintaan revisi terkirim');
-      setShowRevisionInput(false);
-      setRevisionReason('');
-      fetchTask();
-    } catch {
-      Alert.alert('Error', 'Gagal mengirim permintaan revisi');
-    } finally {
-      setIsSubmitting(false);
-    }
+    if (!revisionReason.trim()) { Alert.alert('Error', 'Alasan revisi wajib diisi'); return; }
+    Alert.alert(
+      'Konfirmasi Minta Revisi',
+      'Apakah Anda yakin ingin meminta revisi? Petugas akan mengerjakan ulang tugas ini.',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Ya, Minta Revisi',
+          style: 'destructive',
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              const response = await tasksApi.requestRevision(task.id, { reason: revisionReason.trim() });
+              if (response.error) { Alert.alert('Error', response.error); return; }
+              Alert.alert('Berhasil', 'Permintaan revisi terkirim');
+              setShowRevisionInput(false);
+              setRevisionReason('');
+              fetchTask();
+            } catch {
+              Alert.alert('Error', 'Gagal mengirim permintaan revisi');
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ],
+    );
   }, [task, revisionReason, fetchTask]);
 
   if (isLoading) {
     return (
-      <NBBackgroundPattern
-        pattern="dots"
-        backgroundColor={nbColors.background}
-        patternColor={nbColors.primary}
-        opacity={0.06}
-      >
+      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
           <Text style={styles.loadingText}>Memuat tugas...</Text>
@@ -285,12 +438,7 @@ export function TaskDetailScreen(): React.JSX.Element {
 
   if (!task) {
     return (
-      <NBBackgroundPattern
-        pattern="dots"
-        backgroundColor={nbColors.background}
-        patternColor={nbColors.primary}
-        opacity={0.06}
-      >
+      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.container}>
           <NBAlert
             variant="danger"
@@ -307,378 +455,428 @@ export function TaskDetailScreen(): React.JSX.Element {
 
   const isDeadlinePast = task.deadline && new Date(task.deadline) < new Date();
 
-  // Phase 2C: role-gated action visibility
   const isAssignee = user?.id === task.assigned_to;
+  const isCreator = user?.id === task.created_by;
   const canVerify = user ? TASK_VERIFIER_ROLES.includes(user.role) : false;
 
-  // Accept/decline/start/complete: only for the assignee
   const showAccept = task.status === 'assigned' && isAssignee;
   const showDecline = task.status === 'assigned' && isAssignee;
   const showStart = (task.status === 'accepted' || task.status === 'revision_needed') && isAssignee;
   const showComplete = task.status === 'in_progress' && isAssignee;
-
-  // Verify/revision: only for supervisor roles
+  const showAssign = task.status === 'pending' && isCreator;
+  const showReassign = task.status === 'declined' && isCreator;
   const showVerify = task.status === 'completed' && canVerify;
   const showRevision = task.status === 'completed' && canVerify;
 
+  const completionPhotos = task.completion_photo_urls ?? [];
+
   return (
-    <NBBackgroundPattern
-      pattern="dots"
-      backgroundColor={nbColors.background}
-      patternColor={nbColors.primary}
-      opacity={0.06}
-    >
+    <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       >
-      {/* Header Card */}
-      <NBCard style={styles.card}>
-        <NBCardHeader>
-          <View style={styles.headerRow}>
-            <NBBadge text={getStatusLabel(task.status)} color={getStatusVariant(task.status)} />
-            <NBBadge text={getPriorityLabel(task.priority)} color={getPriorityVariant(task.priority)} />
-          </View>
-        </NBCardHeader>
-        <NBCardContent>
-          <Text style={styles.title}>{task.title}</Text>
-          {task.description && (
-            <Text style={styles.description}>{task.description}</Text>
-          )}
-        </NBCardContent>
-      </NBCard>
-
-      {/* Details Card */}
-      <NBCard style={styles.card}>
-        <NBCardHeader>
-          <Text style={styles.sectionTitle}>Detail Tugas</Text>
-        </NBCardHeader>
-        <NBCardContent>
-          {task.deadline && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Deadline:</Text>
-              <View style={styles.detailValueContainer}>
-                <Text
-                  style={[
-                    styles.detailValue,
-                    isDeadlinePast && styles.deadlinePast,
-                  ]}
-                >
-                  {formatDateTime(task.deadline)}
-                </Text>
-                <Text
-                  style={[
-                    styles.relativeTime,
-                    isDeadlinePast && styles.deadlinePast,
-                  ]}
-                >
-                  ({formatRelativeTime(new Date(task.deadline))})
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {task.area && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Area:</Text>
-              <Text style={styles.detailValue}>{task.area.name}</Text>
-            </View>
-          )}
-
-          {/* Phase 2C: Show rayon if present */}
-          {task.rayon && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Rayon:</Text>
-              <Text style={styles.detailValue}>{task.rayon.name}</Text>
-            </View>
-          )}
-
-          {task.created_at && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Dibuat:</Text>
-              <Text style={styles.detailValue}>
-                {formatDateTime(task.created_at)}
-              </Text>
-            </View>
-          )}
-
-          {task.creator && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Ditugaskan Oleh:</Text>
-              <Text style={styles.detailValue}>{task.creator.full_name}</Text>
-            </View>
-          )}
-
-          {task.assigned_user ? (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Ditugaskan Ke:</Text>
-              <Text style={styles.detailValue}>{task.assigned_user.full_name}</Text>
-            </View>
-          ) : task.assigned_to ? (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Ditugaskan Ke:</Text>
-              <Text style={styles.detailValue}>(petugas)</Text>
-            </View>
-          ) : (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Ditugaskan Ke:</Text>
-              <Text style={[styles.detailValue, { color: nbColors.gray['600'] }]}>Belum ditugaskan</Text>
-            </View>
-          )}
-        </NBCardContent>
-      </NBCard>
-
-      {/* Phase 2C: Tagged Users */}
-      {task.tags && task.tags.length > 0 && (
+        {/* ── Task Header Card ── */}
         <NBCard style={styles.card}>
-          <NBCardHeader>
-            <Text style={styles.sectionTitle}>Tag Pengguna</Text>
-          </NBCardHeader>
           <NBCardContent>
-            <View style={styles.tagsContainer}>
-              {task.tags.map((tag) => (
-                <View key={tag.id} style={styles.tagItem}>
-                  <Icon name="account-circle" size={20} color={nbColors.gray['600']} />
-                  <Text style={styles.tagName}>
-                    {tag.user?.full_name ?? 'Pengguna'}
+            {/* Status + Priority row */}
+            <View style={styles.badgeRow}>
+              <NBBadge text={getStatusLabel(task.status)} color={getStatusVariant(task.status)} />
+              <NBBadge text={getPriorityLabel(task.priority)} color={getPriorityVariant(task.priority)} />
+            </View>
+
+            {/* Title */}
+            <Text style={styles.title}>{task.title}</Text>
+
+            {/* Description */}
+            {task.description ? (
+              <Text style={styles.description}>{task.description}</Text>
+            ) : (
+              <Text style={styles.descriptionEmpty}>Tidak ada deskripsi</Text>
+            )}
+
+            {/* Divider */}
+            <View style={styles.divider} />
+
+            {/* Key metadata row */}
+            <View style={styles.metaGrid}>
+              {task.deadline && (
+                <View style={styles.metaItem}>
+                  <Icon name="calendar-clock" size={14} color={isDeadlinePast ? nbColors.danger : nbColors.gray['500']} />
+                  <Text style={[styles.metaText, isDeadlinePast && styles.metaTextDanger]}>
+                    {formatDateTime(task.deadline)}
                   </Text>
                 </View>
-              ))}
+              )}
+              {task.area && (
+                <View style={styles.metaItem}>
+                  <Icon name="map-marker" size={14} color={nbColors.gray['500']} />
+                  <Text style={styles.metaText}>{task.area.name}</Text>
+                </View>
+              )}
+              {task.rayon && (
+                <View style={styles.metaItem}>
+                  <Icon name="map" size={14} color={nbColors.gray['500']} />
+                  <Text style={styles.metaText}>{task.rayon.name}</Text>
+                </View>
+              )}
             </View>
           </NBCardContent>
         </NBCard>
-      )}
 
-      {/* Completion Details (if completed or verified) */}
-      {(task.status === 'completed' || task.status === 'verified') && (
+        {/* ── Assignment Info Card ── */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <Text style={styles.sectionTitle}>Detail Penyelesaian</Text>
+            <Text style={styles.sectionTitle}>Penugasan</Text>
           </NBCardHeader>
           <NBCardContent>
-            {task.completed_at && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Selesai Pada:</Text>
-                <Text style={styles.detailValue}>
-                  {formatDateTime(task.completed_at)}
-                </Text>
+            <View style={styles.assignRow}>
+              <View style={styles.assignBlock}>
+                <Text style={styles.assignLabel}>Dibuat oleh</Text>
+                <View style={styles.assignUserRow}>
+                  <Icon name="account-circle" size={16} color={nbColors.gray['500']} />
+                  <Text style={styles.assignValue}>{formatUser(task.creator)}</Text>
+                </View>
+                {task.created_at && (
+                  <Text style={styles.assignDate}>{formatDateTime(task.created_at)}</Text>
+                )}
               </View>
-            )}
-            {task.completion_notes && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Catatan:</Text>
-                <Text style={styles.detailValue}>{task.completion_notes}</Text>
+
+              <View style={styles.assignArrow}>
+                <Icon name="arrow-right" size={20} color={nbColors.gray['400']} />
               </View>
-            )}
+
+              <View style={styles.assignBlock}>
+                <Text style={styles.assignLabel}>Ditugaskan ke</Text>
+                <View style={styles.assignUserRow}>
+                  <Icon
+                    name={task.assigned_to ? 'account' : 'account-question'}
+                    size={16}
+                    color={task.assigned_to ? nbColors.primary : nbColors.gray['400']}
+                  />
+                  <Text style={[styles.assignValue, !task.assigned_to && styles.assignValueEmpty]}>
+                    {task.assignee ? formatUser(task.assignee) : task.assigned_to ? '(petugas)' : 'Belum ditugaskan'}
+                  </Text>
+                </View>
+                {task.assigned_at && (
+                  <Text style={styles.assignDate}>{formatDateTime(task.assigned_at)}</Text>
+                )}
+              </View>
+            </View>
           </NBCardContent>
         </NBCard>
-      )}
 
-      {/* Declined reason */}
-      {task.status === 'declined' && task.decline_reason && (
-        <NBCard style={styles.card}>
-          <NBCardHeader>
-            <Text style={styles.sectionTitle}>Alasan Penolakan</Text>
-          </NBCardHeader>
-          <NBCardContent>
-            <Text style={styles.description}>{task.decline_reason}</Text>
-            {task.declined_at && (
-              <Text style={styles.relativeTime}>Ditolak pada {formatDateTime(task.declined_at)}</Text>
-            )}
-          </NBCardContent>
-        </NBCard>
-      )}
-
-      {/* Revision reason */}
-      {task.status === 'revision_needed' && task.revision_reason && (
-        <NBCard style={styles.card}>
-          <NBCardHeader>
-            <Text style={styles.sectionTitle}>Alasan Revisi</Text>
-          </NBCardHeader>
-          <NBCardContent>
-            <Text style={styles.description}>{task.revision_reason}</Text>
-          </NBCardContent>
-        </NBCard>
-      )}
-
-      {/* Verified info */}
-      {task.status === 'verified' && (
-        <NBCard style={styles.card}>
-          <NBCardHeader>
-            <Text style={styles.sectionTitle}>Verifikasi</Text>
-          </NBCardHeader>
-          <NBCardContent>
-            {task.verifier && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Diverifikasi Oleh:</Text>
-                <Text style={styles.detailValue}>{task.verifier.full_name}</Text>
+        {/* ── Tagged Users ── */}
+        {task.tags && task.tags.length > 0 && (
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>Tag Petugas</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              <View style={styles.tagsContainer}>
+                {task.tags.map((tag) => (
+                  <View key={tag.id} style={styles.tagItem}>
+                    <Icon name="tag-outline" size={14} color={nbColors.gray['500']} />
+                    <Text style={styles.tagName}>{tag.user?.full_name ?? '—'}</Text>
+                  </View>
+                ))}
               </View>
-            )}
-            {task.verified_at && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Pada:</Text>
-                <Text style={styles.detailValue}>{formatDateTime(task.verified_at)}</Text>
-              </View>
-            )}
-          </NBCardContent>
-        </NBCard>
-      )}
-
-      {/* Action Buttons */}
-      <View style={styles.actionContainer}>
-        {/* Accept + Decline (when assigned) */}
-        {(showAccept || showDecline) && !showDeclineInput && (
-          <View style={styles.buttonRow}>
-            {showAccept && (
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Terima"
-                  variant="success"
-                  onPress={handleAccept}
-                  disabled={isSubmitting}
-                  loading={isSubmitting}
-                />
-              </View>
-            )}
-            {showDecline && (
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Tolak"
-                  variant="danger"
-                  onPress={handleDecline}
-                  disabled={isSubmitting}
-                />
-              </View>
-            )}
-          </View>
+            </NBCardContent>
+          </NBCard>
         )}
 
-        {/* Inline Decline Reason Input */}
-        {showDeclineInput && (
-          <View style={styles.inlineInputContainer}>
-            <Text style={styles.inlineInputLabel}>Alasan Penolakan</Text>
-            <TextInput
-              style={styles.reasonInput}
-              placeholder="Masukkan alasan penolakan..."
-              placeholderTextColor={nbColors.gray['400']}
-              value={declineReason}
-              onChangeText={setDeclineReason}
-              multiline
+        {/* ── Declined Reason ── */}
+        {task.status === 'declined' && task.decline_reason && (
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={[styles.sectionTitle, styles.dangerTitle]}>Alasan Penolakan</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              <Text style={styles.description}>{task.decline_reason}</Text>
+              {task.declined_at && (
+                <Text style={styles.subText}>Ditolak pada {formatDateTime(task.declined_at)}</Text>
+              )}
+            </NBCardContent>
+          </NBCard>
+        )}
+
+        {/* ── Revision Reason ── */}
+        {task.status === 'revision_needed' && task.revision_reason && (
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={[styles.sectionTitle, styles.warningTitle]}>Alasan Revisi</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              <Text style={styles.description}>{task.revision_reason}</Text>
+            </NBCardContent>
+          </NBCard>
+        )}
+
+        {/* ── Completion Details (completed / verified) ── */}
+        {(task.status === 'completed' || task.status === 'verified') && (
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>Detail Penyelesaian</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              {task.completed_at && (
+                <View style={styles.detailRow}>
+                  <Icon name="check-circle" size={14} color={nbColors.success} />
+                  <Text style={styles.detailRowText}>Selesai {formatDateTime(task.completed_at)}</Text>
+                </View>
+              )}
+              {task.completion_notes && (
+                <Text style={[styles.description, { marginTop: nbSpacing.sm }]}>{task.completion_notes}</Text>
+              )}
+
+              {/* Completion photos */}
+              {completionPhotos.length > 0 && (
+                <View style={styles.photoGrid}>
+                  <Text style={styles.photoLabel}>Foto Bukti ({completionPhotos.length})</Text>
+                  <View style={styles.photoRow}>
+                    {completionPhotos.map((uri, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri }}
+                        style={[
+                          styles.completionPhoto,
+                          completionPhotos.length === 1 && styles.completionPhotoFull,
+                        ]}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+            </NBCardContent>
+          </NBCard>
+        )}
+
+        {/* ── Verified Info ── */}
+        {task.status === 'verified' && (
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={[styles.sectionTitle, styles.successTitle]}>Verifikasi</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              {task.verifier && (
+                <View style={styles.detailRow}>
+                  <Icon name="shield-check" size={14} color={nbColors.success} />
+                  <Text style={styles.detailRowText}>Diverifikasi oleh {formatUser(task.verifier)}</Text>
+                </View>
+              )}
+              {task.verified_at && (
+                <View style={styles.detailRow}>
+                  <Icon name="clock-check" size={14} color={nbColors.gray['500']} />
+                  <Text style={styles.detailRowText}>{formatDateTime(task.verified_at)}</Text>
+                </View>
+              )}
+            </NBCardContent>
+          </NBCard>
+        )}
+
+        {/* ── Action Buttons ── */}
+        <View style={styles.actionContainer}>
+          {/* Assign (pending) / Reassign (declined) — creator only */}
+          {(showAssign || showReassign) && !showAssignInput && (
+            <NBButton
+              title={showReassign ? 'Tugaskan Ulang' : 'Tugaskan'}
+              variant="primary"
+              onPress={handleShowAssign}
+              disabled={isSubmitting}
             />
-            <View style={styles.buttonRow}>
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Batal"
-                  variant="secondary"
-                  onPress={() => { setShowDeclineInput(false); setDeclineReason(''); }}
-                  disabled={isSubmitting}
-                />
-              </View>
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Kirim Penolakan"
-                  variant="danger"
-                  onPress={handleDeclineSubmit}
-                  disabled={isSubmitting || !declineReason.trim()}
-                  loading={isSubmitting}
-                />
+          )}
+
+          {/* Inline Assign Picker */}
+          {showAssignInput && (
+            <View style={styles.inlineInputContainer}>
+              <Text style={styles.inlineInputLabel}>
+                {showReassign ? 'Pilih Petugas Pengganti' : 'Pilih Petugas'}
+              </Text>
+              <NBSelect
+                value={assigneeId}
+                onValueChange={(v) => setAssigneeId(String(v))}
+                options={[
+                  { label: '— Pilih Petugas —', value: '' },
+                  ...subordinates.map((u) => ({
+                    label: formatUser(u),
+                    value: u.id,
+                  })),
+                ]}
+                disabled={loadingSubordinates}
+                searchable
+              />
+              <View style={[styles.buttonRow, { marginTop: 12 }]}>
+                <View style={styles.buttonHalf}>
+                  <NBButton
+                    title="Batal"
+                    variant="secondary"
+                    onPress={() => { setShowAssignInput(false); setAssigneeId(''); }}
+                    disabled={isSubmitting}
+                  />
+                </View>
+                <View style={styles.buttonHalf}>
+                  <NBButton
+                    title="Tugaskan"
+                    variant="primary"
+                    onPress={handleAssignSubmit}
+                    disabled={isSubmitting || !assigneeId}
+                    loading={isSubmitting}
+                  />
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Start button (accepted or revision_needed) */}
-        {showStart && (
-          <NBButton
-            title="Mulai Kerjakan"
-            variant="primary"
-            onPress={handleStart}
-            disabled={isSubmitting}
-            loading={isSubmitting}
-          />
-        )}
-
-        {/* Complete button (in_progress) */}
-        {showComplete && (
-          <NBButton
-            title="Selesaikan Tugas"
-            variant="success"
-            onPress={handleComplete}
-            disabled={isSubmitting}
-          />
-        )}
-
-        {/* Verify + Revision (when completed) */}
-        {(showVerify || showRevision) && !showRevisionInput && (
-          <View style={styles.buttonRow}>
-            {showVerify && (
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Verifikasi"
-                  variant="success"
-                  onPress={handleVerify}
-                  disabled={isSubmitting}
-                  loading={isSubmitting}
-                />
-              </View>
-            )}
-            {showRevision && (
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Minta Revisi"
-                  variant="info"
-                  onPress={handleRevision}
-                  disabled={isSubmitting}
-                />
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Inline Revision Reason Input */}
-        {showRevisionInput && (
-          <View style={styles.inlineInputContainer}>
-            <Text style={styles.inlineInputLabel}>Alasan Revisi</Text>
-            <TextInput
-              style={styles.reasonInput}
-              placeholder="Masukkan alasan revisi..."
-              placeholderTextColor={nbColors.gray['400']}
-              value={revisionReason}
-              onChangeText={setRevisionReason}
-              multiline
-            />
+          {/* Accept + Decline (when assigned) */}
+          {(showAccept || showDecline) && !showDeclineInput && (
             <View style={styles.buttonRow}>
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Batal"
-                  variant="secondary"
-                  onPress={() => { setShowRevisionInput(false); setRevisionReason(''); }}
-                  disabled={isSubmitting}
-                />
-              </View>
-              <View style={styles.buttonHalf}>
-                <NBButton
-                  title="Kirim Revisi"
-                  variant="info"
-                  onPress={handleRevisionSubmit}
-                  disabled={isSubmitting || !revisionReason.trim()}
-                  loading={isSubmitting}
-                />
+              {showAccept && (
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Terima" variant="success" onPress={handleAccept} disabled={isSubmitting} loading={isSubmitting} />
+                </View>
+              )}
+              {showDecline && (
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Tolak" variant="danger" onPress={handleDecline} disabled={isSubmitting} />
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Inline Decline Reason Input */}
+          {showDeclineInput && (
+            <View style={styles.inputSection}>
+              <NBCardTextInput
+                title="📝 Alasan Penolakan"
+                required
+                value={declineReason}
+                onChangeText={setDeclineReason}
+                placeholder="Jelaskan alasan penolakan tugas ini..."
+                maxLength={1000}
+                numberOfLines={4}
+              />
+              <View style={styles.buttonRow}>
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Batal" variant="secondary" onPress={() => { setShowDeclineInput(false); setDeclineReason(''); }} disabled={isSubmitting} />
+                </View>
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Kirim Penolakan" variant="danger" onPress={handleDeclineSubmit} disabled={isSubmitting || !declineReason.trim()} loading={isSubmitting} />
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        <NBButton
-          title="Kembali"
-          variant="secondary"
-          onPress={() => navigation.navigate('TasksActivities', { initialTab: 'tasks' })}
-        />
-      </View>
+          {/* Start button */}
+          {showStart && (
+            <NBButton title="Mulai Kerjakan" variant="primary" onPress={handleStart} disabled={isSubmitting} loading={isSubmitting} />
+          )}
+
+          {/* Complete button */}
+          {showComplete && (
+            <NBButton title="Selesaikan Tugas" variant="success" onPress={handleComplete} disabled={isSubmitting} />
+          )}
+
+          {/* Verify + Revision */}
+          {(showVerify || showRevision) && !showRevisionInput && (
+            <View style={styles.buttonRow}>
+              {showVerify && (
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Verifikasi" variant="success" onPress={handleVerify} disabled={isSubmitting} loading={isSubmitting} />
+                </View>
+              )}
+              {showRevision && (
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Minta Revisi" variant="info" onPress={handleRevision} disabled={isSubmitting} />
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Inline Revision Reason Input */}
+          {showRevisionInput && (
+            <View style={styles.inputSection}>
+              <NBCardTextInput
+                title="📝 Alasan Revisi"
+                required
+                value={revisionReason}
+                onChangeText={setRevisionReason}
+                placeholder="Jelaskan alasan mengapa tugas perlu direvisi..."
+                maxLength={1000}
+                numberOfLines={4}
+              />
+              <View style={styles.buttonRow}>
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Batal" variant="secondary" onPress={() => { setShowRevisionInput(false); setRevisionReason(''); }} disabled={isSubmitting} />
+                </View>
+                <View style={styles.buttonHalf}>
+                  <NBButton title="Kirim Revisi" variant="info" onPress={handleRevisionSubmit} disabled={isSubmitting || !revisionReason.trim()} loading={isSubmitting} />
+                </View>
+              </View>
+            </View>
+          )}
+
+          <NBButton
+            title="Riwayat Tugas"
+            variant="secondary"
+            onPress={() => setShowAuditTrail(true)}
+          />
+
+          <NBButton
+            title="Kembali"
+            variant="secondary"
+            onPress={() => navigation.navigate('TasksActivities', { initialTab: 'tasks' })}
+          />
+        </View>
       </ScrollView>
+
+      {/* ── Audit Trail Modal ── */}
+      <Modal
+        visible={showAuditTrail}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAuditTrail(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Riwayat Tugas</Text>
+              <TouchableOpacity onPress={() => setShowAuditTrail(false)} style={styles.modalClose}>
+                <Icon name="close" size={22} color={nbColors.black} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={buildAuditEvents(task)}
+              keyExtractor={(item) => item.key}
+              contentContainerStyle={styles.timelineContainer}
+              renderItem={({ item, index }) => (
+                <View style={styles.timelineRow}>
+                  <View style={styles.timelineLeft}>
+                    <View style={[styles.timelineDot, { backgroundColor: item.color }]} />
+                    {index < buildAuditEvents(task).length - 1 && (
+                      <View style={styles.timelineLine} />
+                    )}
+                  </View>
+                  <View style={styles.timelineContent}>
+                    <View style={styles.timelineEventRow}>
+                      <Icon name={item.icon} size={14} color={item.color} />
+                      <Text style={[styles.timelineEvent, { color: item.color }]}>{item.event}</Text>
+                    </View>
+                    <Text style={styles.timelineTime}>{formatDateTime(item.timestamp)}</Text>
+                    {item.actor ? (
+                      <Text style={styles.timelineActor}>{item.actor}</Text>
+                    ) : null}
+                    {item.note ? (
+                      <Text style={styles.timelineNote}>{item.note}</Text>
+                    ) : null}
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </NBBackgroundPattern>
   );
 }
@@ -706,66 +904,158 @@ const styles = StyleSheet.create({
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
   },
-  headerRow: {
+  // Header card
+  badgeRow: {
     flexDirection: 'row',
     gap: nbSpacing.sm,
+    marginBottom: nbSpacing.sm,
   },
   title: {
     fontSize: fontSizes.xl,
     fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.black,
-    marginBottom: nbSpacing.sm,
+    marginBottom: nbSpacing.xs,
   },
   description: {
     fontSize: fontSizes.base,
-    color: nbColors.gray['600'],
+    color: nbColors.gray['700'],
     lineHeight: fontSizes.base * nbTypography.lineHeight.normal,
   },
+  descriptionEmpty: {
+    fontSize: fontSizes.sm,
+    color: nbColors.gray['400'],
+    fontStyle: 'italic',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: nbColors.gray['200'],
+    marginVertical: nbSpacing.sm,
+  },
+  metaGrid: {
+    gap: nbSpacing.xs,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  metaText: {
+    fontSize: fontSizes.sm,
+    color: nbColors.gray['600'],
+  },
+  metaTextDanger: {
+    color: nbColors.danger,
+    fontWeight: nbTypography.fontWeight.semibold,
+  },
+  // Section header
   sectionTitle: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.base,
     fontWeight: nbTypography.fontWeight.semibold,
     color: nbColors.black,
   },
-  detailRow: {
+  dangerTitle: { color: nbColors.danger },
+  warningTitle: { color: nbColors.accentSunshine },
+  successTitle: { color: nbColors.success },
+  subText: {
+    fontSize: fontSizes.xs,
+    color: nbColors.gray['500'],
+    marginTop: nbSpacing.xs,
+  },
+  // Assignment block
+  assignRow: {
     flexDirection: 'row',
-    marginBottom: nbSpacing.sm,
+    alignItems: 'flex-start',
+    gap: nbSpacing.sm,
   },
-  detailLabel: {
-    width: 120,
-    fontSize: fontSizes.sm,
-    color: nbColors.gray['600'],
-    fontWeight: nbTypography.fontWeight.medium,
-  },
-  detailValueContainer: {
+  assignBlock: {
     flex: 1,
   },
-  detailValue: {
+  assignArrow: {
+    paddingTop: nbSpacing.lg,
+    alignItems: 'center',
+  },
+  assignLabel: {
+    fontSize: fontSizes.xs,
+    color: nbColors.gray['500'],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: nbSpacing.xs,
+  },
+  assignUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  assignValue: {
     flex: 1,
     fontSize: fontSizes.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
     color: nbColors.black,
   },
-  relativeTime: {
+  assignValueEmpty: {
+    color: nbColors.gray['400'],
+    fontWeight: nbTypography.fontWeight.regular,
+    fontStyle: 'italic',
+  },
+  assignDate: {
     fontSize: fontSizes.xs,
-    color: nbColors.gray['600'],
+    color: nbColors.gray['500'],
     marginTop: 2,
   },
-  deadlinePast: {
-    color: nbColors.danger,
-  },
+  // Tags
   tagsContainer: {
-    gap: nbSpacing.sm,
+    gap: nbSpacing.xs,
   },
   tagItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nbSpacing.sm,
-    paddingVertical: nbSpacing.xs,
+    gap: nbSpacing.xs,
+    paddingVertical: 2,
   },
   tagName: {
     fontSize: fontSizes.sm,
     color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.medium,
   },
+  // Detail rows
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    marginBottom: nbSpacing.xs,
+  },
+  detailRowText: {
+    flex: 1,
+    fontSize: fontSizes.sm,
+    color: nbColors.gray['700'],
+  },
+  // Photos
+  photoGrid: {
+    marginTop: nbSpacing.sm,
+  },
+  photoLabel: {
+    fontSize: fontSizes.xs,
+    color: nbColors.gray['500'],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: nbSpacing.sm,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: nbSpacing.sm,
+  },
+  completionPhoto: {
+    width: 100,
+    height: 100,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.sm,
+  },
+  completionPhotoFull: {
+    width: '100%',
+    height: 200,
+  },
+  // Actions
   actionContainer: {
     marginHorizontal: nbSpacing.md,
     marginTop: nbSpacing.md,
@@ -786,14 +1076,103 @@ const styles = StyleSheet.create({
     fontWeight: nbTypography.fontWeight.semibold,
     color: nbColors.black,
   },
-  reasonInput: {
+  inputSection: {
+    gap: nbSpacing.sm,
+  },
+  // Audit trail modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: nbColors.white,
+    borderTopLeftRadius: nbBorderRadius.lg,
+    borderTopRightRadius: nbBorderRadius.lg,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    padding: nbSpacing.sm,
-    fontSize: fontSizes.sm,
+    maxHeight: '80%',
+    paddingBottom: nbSpacing.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+    borderBottomWidth: nbBorders.base,
+    borderBottomColor: nbColors.gray['200'],
+  },
+  modalTitle: {
+    fontSize: fontSizes.lg,
+    fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.black,
-    minHeight: 80,
-    ...(Platform.OS === 'android' ? { textAlignVertical: 'top' as const } : {}),
+  },
+  modalClose: {
+    padding: nbSpacing.xs,
+  },
+  timelineContainer: {
+    paddingHorizontal: nbSpacing.md,
+    paddingTop: nbSpacing.md,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    minHeight: 60,
+  },
+  timelineLeft: {
+    width: 24,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: nbColors.white,
+    marginTop: 2,
+    zIndex: 1,
+  },
+  timelineLine: {
+    flex: 1,
+    width: 2,
+    backgroundColor: nbColors.gray['200'],
+    marginTop: 2,
+  },
+  timelineContent: {
+    flex: 1,
+    paddingLeft: nbSpacing.sm,
+    paddingBottom: nbSpacing.md,
+  },
+  timelineEventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  timelineEvent: {
+    fontSize: fontSizes.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
+  },
+  timelineTime: {
+    fontSize: fontSizes.xs,
+    color: nbColors.gray['500'],
+    marginTop: 2,
+  },
+  timelineActor: {
+    fontSize: fontSizes.xs,
+    color: nbColors.gray['600'],
+    marginTop: 2,
+  },
+  timelineNote: {
+    fontSize: fontSizes.xs,
+    color: nbColors.gray['700'],
+    fontStyle: 'italic',
+    marginTop: 4,
+    backgroundColor: nbColors.gray['100'],
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    borderRadius: nbBorderRadius.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: nbColors.gray['300'],
   },
 });
 

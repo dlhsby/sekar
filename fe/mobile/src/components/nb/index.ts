@@ -54,3 +54,7 @@ export type { NBSelectProps, NBSelectOption } from './NBSelect';
 // Date Picker
 export { NBDatePicker } from './NBDatePicker';
 export type { NBDatePickerProps } from './NBDatePicker';
+
+// Card Text Input
+export { NBCardTextInput } from './NBCardTextInput';
+export type { NBCardTextInputProps } from './NBCardTextInput';

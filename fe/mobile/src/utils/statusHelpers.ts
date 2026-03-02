@@ -51,7 +51,7 @@ export function getActivityStatusLabel(status: ActivityStatus): string {
     case 'approved':
       return 'Disetujui';
     case 'pending':
-      return 'Menunggu';
+      return 'Menunggu Persetujuan';
     case 'rejected':
       return 'Ditolak';
     default:
@@ -64,10 +64,14 @@ export function getTaskStatusColor(
   status: TaskStatus,
 ): 'success' | 'warning' | 'danger' | 'primary' | 'gray' {
   switch (status) {
-    case 'completed':
+    case 'verified':
+    case 'accepted':
       return 'success';
+    case 'completed':
     case 'in_progress':
       return 'primary';
+    case 'assigned':
+    case 'revision_needed':
     case 'pending':
       return 'warning';
     case 'declined':
@@ -76,6 +80,10 @@ export function getTaskStatusColor(
       return 'gray';
   }
 }
+
+export const TASK_PRIORITY_LABEL: Record<string, string> = {
+  low: 'Rendah', medium: 'Biasa', high: 'Tinggi', urgent: 'Mendesak',
+};
 
 export function getTaskStatusLabel(status: string): string {
   switch (status) {

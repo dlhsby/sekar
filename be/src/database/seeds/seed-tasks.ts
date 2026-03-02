@@ -256,7 +256,7 @@ async function seedTasks() {
         id, title, description, status, priority, deadline,
         area_id, assigned_to, created_by,
         assigned_at, started_at, completed_at,
-        completion_notes, completion_photo_url,
+        completion_notes, completion_photo_urls,
         created_at, updated_at
       ) VALUES (
         '${TASK_5_ID}',
@@ -272,7 +272,7 @@ async function seedTasks() {
         NOW() - INTERVAL '3 hours',
         NOW() - INTERVAL '2 hours',
         'Penyiraman selesai. Semua tanaman sudah disiram dengan baik.',
-        'https://sekar-media-dev.s3.amazonaws.com/tasks/completion-photo-sample.jpg',
+        ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/completion-photo-sample.jpg'],
         NOW(),
         NOW()
       )
@@ -453,7 +453,7 @@ async function seedTasks() {
           id, title, description, status, priority, deadline,
           area_id, assigned_to, created_by,
           assigned_at, started_at, completed_at,
-          completion_notes, completion_photo_url,
+          completion_notes, completion_photo_urls,
           created_at, updated_at
         ) VALUES (
           '${LINMAS_TASK_4_ID}',
@@ -469,7 +469,7 @@ async function seedTasks() {
           NOW() - INTERVAL '1 day',
           NOW() - INTERVAL '12 hours',
           'Laporan insiden PKL selesai. Sudah dikoordinasikan dengan satpol PP.',
-          'https://sekar-media-dev.s3.amazonaws.com/tasks/linmas-incident-report.jpg',
+          ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/linmas-incident-report.jpg'],
           NOW(),
           NOW()
         )
@@ -550,7 +550,7 @@ async function seedTasks() {
           id, title, description, status, priority, deadline,
           area_id, assigned_to, created_by,
           assigned_at, started_at, completed_at,
-          completion_notes, completion_photo_url,
+          completion_notes, completion_photo_urls,
           created_at, updated_at
         ) VALUES (
           '${KORLAP_TASK_3_ID}',
@@ -566,7 +566,7 @@ async function seedTasks() {
           NOW() - INTERVAL '2 days',
           NOW() - INTERVAL '1 day',
           'Supervisi selesai. Penanaman 50 pohon berhasil dilakukan dengan baik.',
-          'https://sekar-media-dev.s3.amazonaws.com/tasks/korlap-supervision.jpg',
+          ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/korlap-supervision.jpg'],
           NOW(),
           NOW()
         )
@@ -648,6 +648,50 @@ async function seedTasks() {
       );
 
       console.log('  ✓ Created 2 rayon-scoped tasks (rayon_id set, area_id = NULL)');
+
+      // Kepala Rayon-assigned tasks (created by top_management)
+      const topMgmtResult = await queryRunner.query(
+        `SELECT id FROM users WHERE role = 'top_management' LIMIT 1`,
+      );
+      if (topMgmtResult.length > 0) {
+        const topMgmtId = topMgmtResult[0].id;
+        const KEPALA_TASK_1_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+        const KEPALA_TASK_2_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+
+        await queryRunner.query(
+          `
+          INSERT INTO tasks (
+            id, title, description, status, priority, deadline,
+            rayon_id, area_id, assigned_to, created_by,
+            assigned_at, created_at, updated_at
+          ) VALUES
+            (
+              '${KEPALA_TASK_1_ID}',
+              'Laporan Bulanan Rayon Selatan',
+              'Compile laporan bulanan dari semua area di rayon',
+              'assigned', 'high', $3,
+              $1, NULL, $2, $4,
+              NOW() - INTERVAL '1 day', NOW(), NOW()
+            ),
+            (
+              '${KEPALA_TASK_2_ID}',
+              'Review Kinerja Korlap',
+              'Evaluasi kinerja semua korlap di rayon untuk kuartal ini',
+              'in_progress', 'medium', $3,
+              $1, NULL, $2, $4,
+              NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NOW()
+            )
+          ON CONFLICT (id) DO NOTHING;
+          `,
+          [
+            rayonId,
+            kepalaRayonId,
+            new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            topMgmtId,
+          ],
+        );
+        console.log('  ✓ Created 2 kepala_rayon-assigned tasks (created by top_management)');
+      }
     } else {
       console.log('  ⚠ Kepala Rayon or Rayon not found, skipping rayon-scoped tasks');
     }
@@ -677,34 +721,34 @@ async function seedTasks() {
       INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, created_at, updated_at)
       VALUES
         -- SATGAS additional tasks (varied statuses, spread over past weeks)
-        ('${TASK_E1_ID}',  'Pemangkasan Pohon Minggu Lalu', 'Pemangkasan pohon di jalur pedestrian selesai dilakukan', 'completed',   'medium', $1, '${a1}', $8,  $10, $1, $1),
-        ('${TASK_E2_ID}',  'Pengecatan Pagar Taman',        'Pengecatan pagar area bermain anak-anak',                'completed',   'low',    $2, '${a1}', $9,  $10, $2, $2),
-        ('${TASK_E3_ID}',  'Pembersihan Kolam',             'Pembersihan dan pergantian air kolam hias',              'completed',   'high',   $3, '${a1}', $8,  $10, $3, $3),
-        ('${TASK_E4_ID}',  'Perbaikan Jalan Setapak',       'Perbaikan jalan setapak yang rusak di area jogging',    'completed',   'urgent', $4, '${a2}', $9,  $10, $4, $4),
-        ('${TASK_E5_ID}',  'Pemasangan Papan Informasi',    'Pemasangan papan informasi baru di pintu masuk',         'in_progress', 'medium', $5, '${a2}', $9,  $13, $5, $5),
-        ('${TASK_E6_ID}',  'Penyemprotan Hama',             'Penyemprotan hama pada semua tanaman',                  'in_progress', 'high',   $6, '${a1}', $8,  $13, $6, $6),
-        ('${TASK_E7_ID}',  'Inventarisasi Peralatan',       'Cek dan catat seluruh peralatan taman',                 'assigned',    'low',    $7, '${a1}', $9,  $13, $7, $7),
-        ('${TASK_E8_ID}',  'Pemupukan Tanaman Hias',        'Pemupukan rutin seluruh tanaman hias di taman',         'assigned',    'medium', $7, '${a2}', $11, $13, $7, $7),
-        ('${TASK_E9_ID}',  'Perbaikan Saluran Air',         'Perbaikan saluran drainase yang tersumbat',             'pending',     'urgent', $7, '${a1}', NULL,$13, $7, $7),
-        ('${TASK_E10_ID}', 'Pemasangan Tanaman Merambat',   'Pemasangan tanaman merambat di pagar depan',            'pending',     'low',    $7, '${a2}', NULL,$14, $7, $7),
+        ('${TASK_E1_ID}',  'Pemangkasan Pohon Minggu Lalu', 'Pemangkasan pohon di jalur pedestrian selesai dilakukan', 'completed',   'medium', $1, '${a1}', $8,  $12, $1, $1),
+        ('${TASK_E2_ID}',  'Pengecatan Pagar Taman',        'Pengecatan pagar area bermain anak-anak',                'completed',   'low',    $2, '${a1}', $9,  $12, $2, $2),
+        ('${TASK_E3_ID}',  'Pembersihan Kolam',             'Pembersihan dan pergantian air kolam hias',              'completed',   'high',   $3, '${a1}', $8,  $12, $3, $3),
+        ('${TASK_E4_ID}',  'Perbaikan Jalan Setapak',       'Perbaikan jalan setapak yang rusak di area jogging',    'completed',   'urgent', $4, '${a2}', $9,  $13, $4, $4),
+        ('${TASK_E5_ID}',  'Pemasangan Papan Informasi',    'Pemasangan papan informasi baru di pintu masuk',         'in_progress', 'medium', $5, '${a2}', $9,  $12, $5, $5),
+        ('${TASK_E6_ID}',  'Penyemprotan Hama',             'Penyemprotan hama pada semua tanaman',                  'in_progress', 'high',   $6, '${a1}', $8,  $12, $6, $6),
+        ('${TASK_E7_ID}',  'Inventarisasi Peralatan',       'Cek dan catat seluruh peralatan taman',                 'assigned',    'low',    $7, '${a1}', $9,  $12, $7, $7),
+        ('${TASK_E8_ID}',  'Pemupukan Tanaman Hias',        'Pemupukan rutin seluruh tanaman hias di taman',         'assigned',    'medium', $7, '${a2}', $10, $12, $7, $7),
+        ('${TASK_E9_ID}',  'Perbaikan Saluran Air',         'Perbaikan saluran drainase yang tersumbat',             'pending',     'urgent', $7, '${a1}', NULL,$12, $7, $7),
+        ('${TASK_E10_ID}', 'Pemasangan Tanaman Merambat',   'Pemasangan tanaman merambat di pagar depan',            'pending',     'low',    $7, '${a2}', NULL,$13, $7, $7),
         -- LINMAS additional tasks (past 2 weeks)
-        ('${TASK_E11_ID}', 'Patroli Subuh',                 'Patroli keamanan pukul 04:00-06:00',                    'completed',   'high',   $1, '${a1}', $11, $13, $1, $1),
-        ('${TASK_E12_ID}', 'Pengamanan Car Free Day',       'Pengamanan area taman saat car free day',               'completed',   'urgent', $2, '${a1}', $12, $13, $2, $2),
-        ('${TASK_E13_ID}', 'Laporan Keamanan Harian',       'Dokumentasi laporan keamanan harian taman',             'in_progress', 'medium', $6, '${a2}', $11, $13, $6, $6),
-        ('${TASK_E14_ID}', 'Patroli Sore Hari',             'Patroli area taman pukul 17:00-19:00',                  'assigned',    'high',   $7, '${a1}', $12, $13, $7, $7),
-        ('${TASK_E15_ID}', 'Penertiban Pedagang Liar',      'Koordinasi dengan satpol PP untuk penertiban PKL',      'pending',     'urgent', $7, '${a3}', NULL,$13, $7, $7),
+        ('${TASK_E11_ID}', 'Patroli Subuh',                 'Patroli keamanan pukul 04:00-06:00',                    'completed',   'high',   $1, '${a1}', $10, $12, $1, $1),
+        ('${TASK_E12_ID}', 'Pengamanan Car Free Day',       'Pengamanan area taman saat car free day',               'completed',   'urgent', $2, '${a1}', $11, $12, $2, $2),
+        ('${TASK_E13_ID}', 'Laporan Keamanan Harian',       'Dokumentasi laporan keamanan harian taman',             'in_progress', 'medium', $6, '${a2}', $10, $12, $6, $6),
+        ('${TASK_E14_ID}', 'Patroli Sore Hari',             'Patroli area taman pukul 17:00-19:00',                  'assigned',    'high',   $7, '${a1}', $11, $12, $7, $7),
+        ('${TASK_E15_ID}', 'Penertiban Pedagang Liar',      'Koordinasi dengan satpol PP untuk penertiban PKL',      'pending',     'urgent', $7, '${a3}', NULL,$12, $7, $7),
         -- KORLAP additional tasks
-        ('${TASK_E16_ID}', 'Evaluasi Kinerja Tim',          'Evaluasi dan penilaian kinerja seluruh tim lapangan',   'completed',   'high',   $3, '${a1}', $13, $14, $3, $3),
-        ('${TASK_E17_ID}', 'Briefing Prosedur Keselamatan', 'Briefing SOP keselamatan kerja untuk satgas dan linmas','in_progress', 'medium', $6, '${a2}', $13, $14, $6, $6),
-        ('${TASK_E18_ID}', 'Koordinasi Event Bulanan',      'Persiapan dan koordinasi event bulanan rayon',          'assigned',    'high',   $7, '${a1}', $13, $14, $7, $7),
-        ('${TASK_E19_ID}', 'Audit Penggunaan Anggaran',     'Review penggunaan anggaran operasional bulan ini',      'pending',     'low',    $7, '${a3}', NULL,$14, $7, $7),
+        ('${TASK_E16_ID}', 'Evaluasi Kinerja Tim',          'Evaluasi dan penilaian kinerja seluruh tim lapangan',   'completed',   'high',   $3, '${a1}', $12, $13, $3, $3),
+        ('${TASK_E17_ID}', 'Briefing Prosedur Keselamatan', 'Briefing SOP keselamatan kerja untuk satgas dan linmas','in_progress', 'medium', $6, '${a2}', $12, $13, $6, $6),
+        ('${TASK_E18_ID}', 'Koordinasi Event Bulanan',      'Persiapan dan koordinasi event bulanan rayon',          'assigned',    'high',   $7, '${a1}', $12, $13, $7, $7),
+        ('${TASK_E19_ID}', 'Audit Penggunaan Anggaran',     'Review penggunaan anggaran operasional bulan ini',      'pending',     'low',    $7, '${a3}', NULL,$13, $7, $7),
         -- Extra satgas for week 3-4 date range testing
-        ('${TASK_E20_ID}', 'Perawatan Taman Tema',          'Perawatan khusus taman tema mini di area pusat',        'pending',     'medium', $7, '${a1}', NULL,$10, $7, $7),
-        ('${TASK_E21_ID}', 'Pengadaan Benih Tanaman',       'Koordinasi pengadaan benih tanaman untuk bulan depan',  'assigned',    'low',    $7, '${a2}', $9,  $10, $7, $7),
-        ('${TASK_E22_ID}', 'Renovasi Tempat Duduk',         'Pengecatan dan perbaikan tempat duduk taman',           'in_progress', 'medium', $7, '${a1}', $8,  $10, $7, $7),
-        ('${TASK_E23_ID}', 'Dokumentasi Kondisi Taman',     'Foto dan dokumentasi kondisi taman untuk laporan',      'completed',   'low',    $1, '${a3}', $9,  $10, $1, $1),
-        ('${TASK_E24_ID}', 'Pembersihan Pasca Event',       'Pembersihan area taman setelah event weekend',          'completed',   'high',   $2, '${a1}', $8,  $10, $2, $2),
-        ('${TASK_E25_ID}', 'Pengecatan Mural Taman',        'Pengecatan mural seni pada dinding taman',              'pending',     'medium', $7, '${a2}', NULL,$13, $7, $7)
+        ('${TASK_E20_ID}', 'Perawatan Taman Tema',          'Perawatan khusus taman tema mini di area pusat',        'pending',     'medium', $7, '${a1}', NULL,$12, $7, $7),
+        ('${TASK_E21_ID}', 'Pengadaan Benih Tanaman',       'Koordinasi pengadaan benih tanaman untuk bulan depan',  'assigned',    'low',    $7, '${a2}', $9,  $13, $7, $7),
+        ('${TASK_E22_ID}', 'Renovasi Tempat Duduk',         'Pengecatan dan perbaikan tempat duduk taman',           'in_progress', 'medium', $7, '${a1}', $8,  $12, $7, $7),
+        ('${TASK_E23_ID}', 'Dokumentasi Kondisi Taman',     'Foto dan dokumentasi kondisi taman untuk laporan',      'completed',   'low',    $1, '${a3}', $9,  $12, $1, $1),
+        ('${TASK_E24_ID}', 'Pembersihan Pasca Event',       'Pembersihan area taman setelah event weekend',          'completed',   'high',   $2, '${a1}', $8,  $13, $2, $2),
+        ('${TASK_E25_ID}', 'Pengecatan Mural Taman',        'Pengecatan mural seni pada dinding taman',              'pending',     'medium', $7, '${a2}', NULL,$12, $7, $7)
       ON CONFLICT (id) DO NOTHING;
     `, [
       // $1-$7: date params
@@ -715,17 +759,123 @@ async function seedTasks() {
       daysAgo(3),     // $5
       daysAgo(1),     // $6
       daysFromNow(7), // $7
-      // $8-$14: user IDs
+      // $8-$13: user IDs (no satgas3 - not a valid task creator)
       satgas1Id,                     // $8
       satgas2Id,                     // $9
-      satgas3Id,                     // $10
-      linmas1Id || satgas1Id,        // $11
-      linmas2Id || satgas1Id,        // $12
-      korlapId || creatorId,         // $13
-      kepalaRayonId || creatorId,    // $14
+      linmas1Id || satgas1Id,        // $10
+      linmas2Id || satgas1Id,        // $11
+      korlapId || creatorId,         // $12
+      kepalaRayonId || creatorId,    // $13
     ]);
 
     console.log('  ✓ Created 25 extended tasks for scroll/filter testing');
+
+    // ==========================================
+    // Phase 9: Update tasks to cover all 8 statuses
+    // (accepted, declined, verified, revision_needed)
+    // ==========================================
+    console.log('');
+    console.log('🔄 Updating tasks with Phase 9 statuses...');
+
+    const verifierId = korlapId || creatorId;
+
+    // Task 3: ASSIGNED → ACCEPTED (assignee accepted the task)
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'accepted',
+        accepted_at = NOW() - INTERVAL '1 hour'
+      WHERE id = '${TASK_3_ID}'
+    `);
+
+    // Task 6: IN_PROGRESS → DECLINED (assignee declined with reason)
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'declined',
+        declined_at = NOW() - INTERVAL '2 hours',
+        decline_reason = 'Alat pemangkas tidak tersedia saat ini, perlu diservis terlebih dahulu'
+      WHERE id = '${TASK_6_ID}'
+    `);
+
+    // Task 5: COMPLETED → VERIFIED (supervisor verified completion)
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'verified',
+        verified_by = $1,
+        verified_at = NOW() - INTERVAL '1 hour'
+      WHERE id = '${TASK_5_ID}'
+    `, [verifierId]);
+
+    // Task 7: PENDING → REVISION_NEEDED (completed then revision requested)
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'revision_needed',
+        assigned_to = $1,
+        assigned_at = NOW() - INTERVAL '3 days',
+        accepted_at = NOW() - INTERVAL '2 days',
+        started_at = NOW() - INTERVAL '1 day',
+        completed_at = NOW() - INTERVAL '6 hours',
+        completion_notes = 'Jalur jogging sudah dibersihkan dari dedaunan',
+        completion_photo_urls = ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/revision-sample.jpg'],
+        revision_reason = 'Masih ada sampah di area tikungan, perlu dibersihkan ulang'
+      WHERE id = '${TASK_7_ID}'
+    `, [satgas1Id]);
+
+    // Extended tasks: mix in more new statuses
+    // E7, E8: ASSIGNED → ACCEPTED
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'accepted',
+        accepted_at = NOW() - INTERVAL '2 hours'
+      WHERE id IN ('${TASK_E7_ID}', '${TASK_E8_ID}')
+    `);
+
+    // E1, E2, E11, E16: COMPLETED → VERIFIED
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'verified',
+        verified_by = $1,
+        verified_at = NOW() - INTERVAL '12 hours'
+      WHERE id IN ('${TASK_E1_ID}', '${TASK_E2_ID}', '${TASK_E11_ID}', '${TASK_E16_ID}')
+    `, [verifierId]);
+
+    // E15: PENDING → DECLINED
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'declined',
+        assigned_to = $1,
+        assigned_at = NOW() - INTERVAL '2 days',
+        declined_at = NOW() - INTERVAL '1 day',
+        decline_reason = 'Jadwal bentrok dengan tugas lain yang lebih mendesak'
+      WHERE id = '${TASK_E15_ID}'
+    `, [linmas1Id || satgas1Id]);
+
+    // E18: ASSIGNED → REVISION_NEEDED
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'revision_needed',
+        accepted_at = NOW() - INTERVAL '2 days',
+        started_at = NOW() - INTERVAL '1 day',
+        completed_at = NOW() - INTERVAL '3 hours',
+        completion_notes = 'Koordinasi event sudah dilakukan',
+        completion_photo_urls = ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/revision-event.jpg'],
+        revision_reason = 'Detail jadwal event belum lengkap, perlu tambahkan timeline per area'
+      WHERE id = '${TASK_E18_ID}'
+    `);
+
+    // Linmas Task 4: COMPLETED → VERIFIED
+    await queryRunner.query(`
+      UPDATE tasks SET
+        status = 'verified',
+        verified_by = $1,
+        verified_at = NOW() - INTERVAL '10 hours'
+      WHERE id = '${LINMAS_TASK_4_ID}'
+    `, [verifierId]);
+
+    console.log('  ✓ Updated tasks with all 8 Phase 9 statuses:');
+    console.log('    - ACCEPTED: Task 3, E7, E8 (3 tasks)');
+    console.log('    - DECLINED: Task 6, E15 (2 tasks)');
+    console.log('    - VERIFIED: Task 5, Linmas 4, E1, E2, E11, E16 (6 tasks)');
+    console.log('    - REVISION_NEEDED: Task 7, E18 (2 tasks)');
 
     console.log('');
     console.log('✅ Task seeding completed successfully!');
@@ -743,11 +893,15 @@ async function seedTasks() {
     console.log('   - linmas1, linmas2 (security officers)');
     console.log('   - korlap (field coordinator)');
     console.log('');
-    console.log('🔍 Task Status Distribution:');
-    console.log('   - PENDING: 4 tasks');
-    console.log('   - ASSIGNED: 6 tasks');
-    console.log('   - IN_PROGRESS: 4 tasks');
-    console.log('   - COMPLETED: 3 tasks');
+    console.log('🔍 Task Status Distribution (all 8 statuses):');
+    console.log('   - PENDING: ~8 tasks');
+    console.log('   - ASSIGNED: ~5 tasks');
+    console.log('   - ACCEPTED: 3 tasks');
+    console.log('   - DECLINED: 2 tasks');
+    console.log('   - IN_PROGRESS: ~6 tasks');
+    console.log('   - COMPLETED: ~5 tasks');
+    console.log('   - VERIFIED: 6 tasks');
+    console.log('   - REVISION_NEEDED: 2 tasks');
   } catch (error) {
     console.error('❌ Error seeding tasks:', error);
     throw error;

@@ -70,16 +70,14 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   admin_data: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   kepala_rayon: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
+    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],

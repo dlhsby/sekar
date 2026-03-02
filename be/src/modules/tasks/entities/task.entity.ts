@@ -21,8 +21,12 @@ import { TaskTag } from './task-tag.entity';
 export enum TaskStatus {
   PENDING = 'pending',
   ASSIGNED = 'assigned',
+  ACCEPTED = 'accepted',
+  DECLINED = 'declined',
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
+  VERIFIED = 'verified',
+  REVISION_NEEDED = 'revision_needed',
 }
 
 /**
@@ -87,9 +91,9 @@ export class Task {
   @Column({ name: 'created_by', type: 'uuid' })
   created_by: string;
 
-  // Completion fields
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  completion_photo_url: string | null;
+  // Completion fields (Phase 2C: multiple photos, 1-3)
+  @Column('text', { array: true, nullable: true, default: null })
+  completion_photo_urls: string[] | null;
 
   @Column({ type: 'text', nullable: true })
   completion_notes: string | null;
@@ -103,6 +107,24 @@ export class Task {
 
   @Column({ type: 'timestamptz', nullable: true })
   started_at: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  accepted_at: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  declined_at: Date | null;
+
+  @Column({ type: 'text', nullable: true })
+  decline_reason: string | null;
+
+  @Column({ name: 'verified_by', type: 'uuid', nullable: true })
+  verified_by: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  verified_at: Date | null;
+
+  @Column({ type: 'text', nullable: true })
+  revision_reason: string | null;
 
   // Timestamps
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
@@ -130,6 +152,10 @@ export class Task {
   @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'created_by' })
   creator: User;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'verified_by' })
+  verifier: User | null;
 
   @OneToMany(() => TaskTag, (tag) => tag.task, { cascade: true })
   tags: TaskTag[];

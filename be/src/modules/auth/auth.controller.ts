@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { MeResponseDto } from './dto/me-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -234,12 +235,14 @@ export class AuthController {
       },
     },
   })
-  async getMe(@GetUser() user: User): Promise<any> {
-    const userData: any = {
+  async getMe(@GetUser() user: User): Promise<MeResponseDto> {
+    const userData: MeResponseDto = {
       id: user.id,
       username: user.username,
       full_name: user.full_name,
       role: user.role,
+      area_id: user.area_id || null,
+      rayon_id: user.rayon_id || null,
       created_at: user.created_at,
     };
 
@@ -249,7 +252,7 @@ export class AuthController {
     if (user.area_id) {
       // Korlap with permanent area assignment
       userData.area_id = user.area_id;
-      userData.rayon_id = user.rayon_id;
+      userData.rayon_id = user.rayon_id ?? null;
 
       // Fetch full area details for clock-in/out
       const area = await this.areaRepository.findOne({
@@ -263,6 +266,7 @@ export class AuthController {
           gps_lat: area.gps_lat,
           gps_lng: area.gps_lng,
           radius_meters: area.radius_meters,
+          boundary_polygon: area.boundary_polygon || null,
           area_type: area.areaType
             ? { id: area.areaType.id, name: area.areaType.name }
             : null,
@@ -281,12 +285,14 @@ export class AuthController {
       });
 
       if (activeSchedule && activeSchedule.area) {
+        userData.area_id = activeSchedule.area.id;
         userData.assigned_area = {
           id: activeSchedule.area.id,
           name: activeSchedule.area.name,
           gps_lat: activeSchedule.area.gps_lat,
           gps_lng: activeSchedule.area.gps_lng,
           radius_meters: activeSchedule.area.radius_meters,
+          boundary_polygon: activeSchedule.area.boundary_polygon || null,
           area_type: activeSchedule.area.areaType
             ? { id: activeSchedule.area.areaType.id, name: activeSchedule.area.areaType.name }
             : null,

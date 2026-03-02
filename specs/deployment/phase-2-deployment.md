@@ -83,7 +83,7 @@ Schema created from TypeORM entities directly
 
 **API Status:** ✅ Operational at http://api.sekar.wahyutrip.com
 **Web Status:** ✅ Operational at http://sekar.wahyutrip.com (CSR bailout issue)
-**Test Login:** ✅ `admin`/`admin123` works with JWT tokens
+**Test Login:** ✅ `admin`/`password123` works with JWT tokens
 
 ---
 
@@ -320,7 +320,7 @@ curl http://api.sekar.wahyutrip.com/api/v1/health
 # Login test
 curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"password123"}'
 # → {"access_token":"eyJhbG..."}
 
 # New Phase 2C endpoints
@@ -347,7 +347,7 @@ curl http://sekar.wahyutrip.com/login
 **Seeded Users (6 total):**
 | Username | Password | Role |
 |----------|----------|------|
-| admin | admin123 | superadmin |
+| admin | password123 | superadmin |
 | korlap1 | password123 | korlap |
 | korlap2 | password123 | korlap |
 | satgas1 | password123 | satgas |
@@ -825,7 +825,7 @@ client.connect().then(() => {
 # Test login
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"password123"}'
 
 # Expected: JSON with access_token and refresh_token
 ```
@@ -833,12 +833,12 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 **Test Users:**
 | Username | Password | Role |
 |----------|----------|------|
-| admin | admin123 | Admin |
-| supervisor1 | supervisor123 | Supervisor |
-| supervisor2 | supervisor123 | Supervisor |
-| worker1 | worker123 | Worker |
-| worker2 | worker123 | Worker |
-| worker3 | worker123 | Worker |
+| admin | password123 | Admin |
+| supervisor1 | password123 | Supervisor |
+| supervisor2 | password123 | Supervisor |
+| worker1 | password123 | Worker |
+| worker2 | password123 | Worker |
+| worker3 | password123 | Worker |
 
 ---
 
@@ -928,7 +928,7 @@ curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@sekar.com",
-    "password": "admin123"
+    "password": "password123"
   }'
 
 # Expected: { "access_token": "eyJ...", "user": {...} }
@@ -937,7 +937,7 @@ curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
 **Login via Web Dashboard:**
 1. Open: http://sekar.wahyutrip.com/login
 2. Email: `admin@sekar.com`
-3. Password: `admin123`
+3. Password: `password123`
 4. Click "Login"
 5. Expected: Redirects to dashboard
 

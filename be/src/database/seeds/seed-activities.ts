@@ -860,6 +860,230 @@ async function seedActivities() {
     console.log('  ✓ Created 30 extended activities (scroll/filter test coverage)');
 
     // ==========================================
+    // Admin Data Activities (5 activities)
+    // ==========================================
+    console.log('');
+    console.log('📊 Seeding Admin Data Activities...');
+
+    const adminData1 = await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'admin_data1' LIMIT 1`,
+    );
+
+    if (adminData1.length > 0) {
+      const adminDataId = adminData1[0].id;
+
+      // Get admin_data activity types
+      const cekAbsensiTypeId = await getActivityType('cek absensi');
+      const entriLaporanTypeId = await getActivityType('entri laporan');
+      const lainnyaAdminTypeId = await getActivityType('lainnya');
+
+      // Get a shift for admin_data1 (created by seed.service.ts)
+      const adminShift = await queryRunner.query(
+        `SELECT id FROM shifts WHERE user_id = $1 LIMIT 1`,
+        [adminDataId],
+      );
+      const adminShiftId = adminShift.length > 0 ? adminShift[0].id : shiftId;
+
+      const ACT_AD_1_ID = 'ad100000-eeee-ad10-eeee-ad1000000001';
+      const ACT_AD_2_ID = 'ad200000-eeee-ad20-eeee-ad2000000002';
+      const ACT_AD_3_ID = 'ad300000-eeee-ad30-eeee-ad3000000003';
+      const ACT_AD_4_ID = 'ad400000-eeee-ad40-eeee-ad4000000004';
+      const ACT_AD_5_ID = 'ad500000-eeee-ad50-eeee-ad5000000005';
+
+      const adminActivities = [
+        {
+          id: ACT_AD_1_ID,
+          typeId: cekAbsensiTypeId,
+          description: 'Pengecekan data absensi harian - rekap kehadiran satgas dan linmas',
+          photos: ['https://sekar-media-dev.s3.amazonaws.com/activities/ad1-absensi.jpg'],
+          gps: getGPSVariant(30),
+          daysAgo: 3,
+        },
+        {
+          id: ACT_AD_2_ID,
+          typeId: entriLaporanTypeId,
+          description: 'Entri laporan mingguan Rayon Selatan - compile data dari semua korlap',
+          photos: ['https://sekar-media-dev.s3.amazonaws.com/activities/ad2-laporan.jpg'],
+          gps: getGPSVariant(31),
+          daysAgo: 7,
+        },
+        {
+          id: ACT_AD_3_ID,
+          typeId: cekAbsensiTypeId,
+          description: 'Verifikasi jam kerja lembur - cek data overtime satgas dan linmas',
+          photos: [
+            'https://sekar-media-dev.s3.amazonaws.com/activities/ad3-lembur-1.jpg',
+            'https://sekar-media-dev.s3.amazonaws.com/activities/ad3-lembur-2.jpg',
+          ],
+          gps: getGPSVariant(32),
+          daysAgo: 14,
+        },
+        {
+          id: ACT_AD_4_ID,
+          typeId: entriLaporanTypeId,
+          description: 'Update data inventaris alat dan kendaraan rayon ke sistem',
+          photos: ['https://sekar-media-dev.s3.amazonaws.com/activities/ad4-inventaris.jpg'],
+          gps: getGPSVariant(33),
+          daysAgo: 21,
+        },
+        {
+          id: ACT_AD_5_ID,
+          typeId: lainnyaAdminTypeId,
+          description: 'Koordinasi pengiriman data ke Dinas - format laporan bulanan',
+          photos: ['https://sekar-media-dev.s3.amazonaws.com/activities/ad5-koordinasi.jpg'],
+          gps: getGPSVariant(34),
+          daysAgo: 28,
+        },
+      ];
+
+      for (const activity of adminActivities) {
+        if (!activity.typeId) continue;
+        await queryRunner.query(
+          `
+          INSERT INTO activities (
+            id, user_id, shift_id, area_id, activity_type_id,
+            description, photo_urls, gps_lat, gps_lng, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          ON CONFLICT (id) DO NOTHING;
+          `,
+          [
+            activity.id,
+            adminDataId,
+            adminShiftId,
+            areaId,
+            activity.typeId,
+            activity.description,
+            activity.photos,
+            parseFloat(activity.gps.lat),
+            parseFloat(activity.gps.lng),
+            getDateFromDaysAgo(activity.daysAgo),
+          ],
+        );
+      }
+      console.log('  ✓ Created 5 admin_data activities');
+    } else {
+      console.log('  ⚠ admin_data1 user not found, skipping admin_data activities');
+    }
+
+    // ==========================================
+    // Phase 9: Activity Approval Status Updates
+    // ==========================================
+    console.log('');
+    console.log('✅ Setting Phase 9 approval statuses...');
+
+    // Fetch kepala_rayon for korlap activity approval
+    const kepalaRayon = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'kepala_rayon' LIMIT 1`,
+    );
+    const kepalaRayonId = kepalaRayon.length > 0 ? kepalaRayon[0].id : null;
+
+    // --- APPROVED satgas/linmas activities (by korlap) ---
+    // 19 activities approved: SAT 1-5, 8-9, 11; LIN 1, 3, 5; X1-X3, X7, X10, X19, X21, X23
+    const approvedByKorlap = [
+      ACT_SAT_1_ID, ACT_SAT_2_ID, ACT_SAT_3_ID, ACT_SAT_4_ID, ACT_SAT_5_ID,
+      ACT_SAT_8_ID, ACT_SAT_9_ID, ACT_SAT_11_ID,
+      ACT_LIN_1_ID, ACT_LIN_3_ID, ACT_LIN_5_ID,
+      ACT_X1_ID, ACT_X2_ID, ACT_X3_ID, ACT_X7_ID, ACT_X10_ID,
+      ACT_X19_ID, ACT_X21_ID, ACT_X23_ID,
+    ];
+
+    for (const actId of approvedByKorlap) {
+      await queryRunner.query(
+        `UPDATE activities
+         SET status = 'approved', reviewed_by = $1, reviewed_at = created_at + INTERVAL '4 hours'
+         WHERE id = $2`,
+        [korlapId, actId],
+      );
+    }
+    console.log(`  ✓ Approved 19 satgas/linmas activities (by korlap)`);
+
+    // --- APPROVED korlap activities (by kepala_rayon) ---
+    // 4 activities: KOR 1, 2; X27, X29
+    if (kepalaRayonId) {
+      const approvedByKepala = [ACT_KOR_1_ID, ACT_KOR_2_ID, ACT_X27_ID, ACT_X29_ID];
+      for (const actId of approvedByKepala) {
+        await queryRunner.query(
+          `UPDATE activities
+           SET status = 'approved', reviewed_by = $1, reviewed_at = created_at + INTERVAL '6 hours'
+           WHERE id = $2`,
+          [kepalaRayonId, actId],
+        );
+      }
+      console.log(`  ✓ Approved 4 korlap activities (by kepala_rayon)`);
+
+      // Approve 3 admin_data activities (by kepala_rayon — same rayon)
+      await queryRunner.query(
+        `UPDATE activities
+         SET status = 'approved', reviewed_by = $1, reviewed_at = created_at + INTERVAL '5 hours'
+         WHERE id IN ('ad100000-eeee-ad10-eeee-ad1000000001', 'ad200000-eeee-ad20-eeee-ad2000000002', 'ad300000-eeee-ad30-eeee-ad3000000003')`,
+        [kepalaRayonId],
+      );
+      console.log(`  ✓ Approved 3 admin_data activities (by kepala_rayon)`);
+    }
+
+    // --- REJECTED satgas/linmas activities (by korlap) ---
+    // 5 activities rejected with reasons
+    const rejectedActivities = [
+      {
+        id: ACT_SAT_6_ID,
+        reason: 'Foto tidak jelas, tidak terlihat hasil pengecatan bangku. Mohon foto ulang.',
+      },
+      {
+        id: ACT_SAT_10_ID,
+        reason: 'Lokasi GPS tidak sesuai dengan area tugas. Silakan ajukan ulang dengan lokasi yang benar.',
+      },
+      {
+        id: ACT_LIN_2_ID,
+        reason: 'Laporan insiden belum lengkap - mohon sertakan kronologi dan tindakan yang diambil.',
+      },
+      {
+        id: ACT_X5_ID,
+        reason: 'Aktivitas penanaman ulang belum mendapat persetujuan dari kepala rayon. Ajukan izin terlebih dahulu.',
+      },
+      {
+        id: ACT_X22_ID,
+        reason: 'Dokumentasi vandalisme kurang detail - perlu foto dari berbagai sudut dan estimasi kerusakan.',
+      },
+    ];
+
+    for (const act of rejectedActivities) {
+      await queryRunner.query(
+        `UPDATE activities
+         SET status = 'rejected', reviewed_by = $1, reviewed_at = created_at + INTERVAL '3 hours',
+             rejection_reason = $2
+         WHERE id = $3`,
+        [korlapId, act.reason, act.id],
+      );
+    }
+    console.log(`  ✓ Rejected 5 activities with reasons (by korlap)`);
+
+    // --- REJECTED korlap activity (by kepala_rayon) ---
+    if (kepalaRayonId) {
+      await queryRunner.query(
+        `UPDATE activities
+         SET status = 'rejected', reviewed_by = $1, reviewed_at = created_at + INTERVAL '8 hours',
+             rejection_reason = 'Pengecekan alat tidak sesuai prosedur SOP. Ulangi dengan checklist lengkap.'
+         WHERE id = $2`,
+        [kepalaRayonId, ACT_X28_ID],
+      );
+      console.log(`  ✓ Rejected 1 korlap activity (by kepala_rayon)`);
+
+      // Reject 1 admin_data activity (by kepala_rayon)
+      await queryRunner.query(
+        `UPDATE activities
+         SET status = 'rejected', reviewed_by = $1, reviewed_at = created_at + INTERVAL '4 hours',
+             rejection_reason = 'Data laporan tidak lengkap - perlu tambahkan rekap lembur linmas.'
+         WHERE id = 'ad400000-eeee-ad40-eeee-ad4000000004'`,
+        [kepalaRayonId],
+      );
+      console.log(`  ✓ Rejected 1 admin_data activity (by kepala_rayon)`);
+    }
+
+    // Remaining activities stay as 'pending' (default):
+    // SAT 7, 12; LIN 4; KOR 3; X4, X6, X8, X9, X11-X18, X20, X24-X26, X30; AD5
+    // = ~22 pending activities
+
+    // ==========================================
     // Summary
     // ==========================================
     console.log('');
@@ -869,10 +1093,16 @@ async function seedActivities() {
     console.log('   - 12 satgas activities (recent, last 28 days)');
     console.log('   - 5 linmas activities (recent, last 28 days)');
     console.log('   - 3 korlap activities (recent, last 28 days)');
+    console.log('   - 5 admin_data activities (3-28 days ago)');
     console.log('   - 18 satgas extended (30-60 days ago)');
     console.log('   - 8 linmas extended (30-60 days ago)');
     console.log('   - 4 korlap extended (30-60 days ago)');
-    console.log('   Total: 50 activities');
+    console.log('   Total: 55 activities');
+    console.log('');
+    console.log('📋 Approval Status Distribution (Phase 9):');
+    console.log('   - ✅ Approved: 26 (19 by korlap + 4+3 by kepala_rayon)');
+    console.log('   - ❌ Rejected: 7 (5 by korlap + 1+1 by kepala_rayon)');
+    console.log('   - ⏳ Pending: 22 (awaiting review)');
     console.log('');
     console.log('📅 Date Distribution (for filter testing):');
     console.log('   - Week 1-4 (1-28 days ago): 20 activities');

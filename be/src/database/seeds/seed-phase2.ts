@@ -50,19 +50,19 @@ const AT_LAINNYA_SATGAS_ID = '4153cd86-c6bf-4f06-b536-5016a74114d5';
 const AT_PATROLI_ID = 'dd7efc02-36fe-4e70-b4b5-bfa163fc3bb0';
 const AT_INSIDEN_ID = '3a37e00b-7702-4296-b387-96964b45e251';
 const AT_PERIKSA_FASILITAS_ID = 'b4e7c1a2-3d5f-4e8a-9b0c-1d2e3f4a5b6c';
-const AT_HALAU_PKL_ID = 'c5f8d2b3-4e6a-5f9b-0c1d-2e3f4a5b6c7d';
-const AT_LAINNYA_LINMAS_ID = 'd6a9e3c4-5f7b-6a0c-1d2e-3f4a5b6c7d8e';
+const AT_HALAU_PKL_ID = 'c5f8d2b3-4e6a-4f9b-8c1d-2e3f4a5b6c7d';
+const AT_LAINNYA_LINMAS_ID = 'd6a9e3c4-5f7b-4a0c-9d2e-3f4a5b6c7d8e';
 
 // Korlap activity types (4)
-const AT_CEK_KENDARAAN_ID = 'e7b0f4d5-6a8c-7b1d-2e3f-4a5b6c7d8e9f';
-const AT_PATROLI_KORLAP_ID = 'f8c1a5e6-7b9d-8c2e-3f4a-5b6c7d8e9f0a';
-const AT_CEK_ALAT_ID = 'a9d2b6f7-8c0e-9d3f-4a5b-6c7d8e9f0a1b';
-const AT_LAINNYA_KORLAP_ID = 'b0e3c7a8-9d1f-0e4a-5b6c-7d8e9f0a1b2c';
+const AT_CEK_KENDARAAN_ID = 'e7b0f4d5-6a8c-4b1d-8e3f-4a5b6c7d8e9f';
+const AT_PATROLI_KORLAP_ID = 'f8c1a5e6-7b9d-4c2e-9f4a-5b6c7d8e9f0a';
+const AT_CEK_ALAT_ID = 'a9d2b6f7-8c0e-4d3f-8a5b-6c7d8e9f0a1b';
+const AT_LAINNYA_KORLAP_ID = 'b0e3c7a8-9d1f-4e4a-9b6c-7d8e9f0a1b2c';
 
 // Admin Data activity types (3)
-const AT_CEK_ABSENSI_ID = 'c1f4d8b9-0e2a-1f5b-6c7d-8e9f0a1b2c3d';
-const AT_ENTRI_LAPORAN_ID = 'd2a5e9c0-1f3b-2a6c-7d8e-9f0a1b2c3d4e';
-const AT_LAINNYA_ADMIN_DATA_ID = 'e3b6f0d1-2a4c-3b7d-8e9f-0a1b2c3d4e5f';
+const AT_CEK_ABSENSI_ID = 'c1f4d8b9-0e2a-4f5b-8c7d-8e9f0a1b2c3d';
+const AT_ENTRI_LAPORAN_ID = 'd2a5e9c0-1f3b-4a6c-9d8e-9f0a1b2c3d4e';
+const AT_LAINNYA_ADMIN_DATA_ID = 'e3b6f0d1-2a4c-4b7d-8e9f-0a1b2c3d4e5f';
 
 const SPECIAL_DAY_1_ID = 'aee11144-0a99-458f-90b2-3df456f5bdf0';
 const SPECIAL_DAY_2_ID = 'd2bb4962-0d2e-46fb-b45d-c3038254f5c4';
@@ -287,11 +287,50 @@ async function seedPhase2() {
         ('${USER_PHASE2_5_ID}', 'linmas1', '${passwordHash}', 'Linmas Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
         ('${USER_PHASE2_6_ID}', 'linmas2', '${passwordHash}', 'Linmas Dua', '081234567895', 'linmas', NULL, NULL, TRUE),
         ('${USER_PHASE2_7_ID}', 'satgas4', '${passwordHash}', 'Satgas Empat', '081234567896', 'satgas', NULL, NULL, TRUE),
-        ('${USER_PHASE2_8_ID}', 'admin_data1', '${passwordHash}', 'Admin Data Satu', '081234567897', 'admin_data', NULL, NULL, TRUE),
+        ('${USER_PHASE2_8_ID}', 'admin_data1', '${passwordHash}', 'Admin Data Satu', '081234567897', 'admin_data', '${RAYON_1_ID}', NULL, TRUE),
         ('${USER_PHASE2_9_ID}', 'admin_system1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
     console.log('  ✓ Created 9 additional users with Phase 2C roles');
+
+    // ==========================================
+    // STEP 8.5: Assign area_id + rayon_id to field workers
+    // Phase 1 users (satgas1/2/3, korlap1/2) had no area/rayon; Phase 2 users
+    // (linmas1/2, satgas4) were inserted with NULL area/rayon above.
+    // ==========================================
+    console.log('📍 Assigning area_id and rayon_id to field workers...');
+
+    // Taman Bungkul workers → Rayon Selatan
+    await queryRunner.query(`
+      UPDATE users
+      SET area_id = (SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1)
+      WHERE username IN ('satgas1', 'linmas1', 'korlap1')
+        AND area_id IS NULL;
+    `);
+    // Jalan Raya Darmo workers → Rayon Pusat
+    await queryRunner.query(`
+      UPDATE users
+      SET area_id = (SELECT id FROM areas WHERE name = 'Jalan Raya Darmo' LIMIT 1)
+      WHERE username IN ('satgas2', 'korlap2', 'linmas2')
+        AND area_id IS NULL;
+    `);
+    // Taman Harmoni workers → Rayon Selatan
+    await queryRunner.query(`
+      UPDATE users
+      SET area_id = (SELECT id FROM areas WHERE name = 'Taman Harmoni' LIMIT 1)
+      WHERE username IN ('satgas3', 'satgas4')
+        AND area_id IS NULL;
+    `);
+    // Derive rayon_id from the area's rayon for all field workers missing it
+    await queryRunner.query(`
+      UPDATE users u
+      SET rayon_id = a.rayon_id
+      FROM areas a
+      WHERE u.area_id = a.id
+        AND u.rayon_id IS NULL
+        AND u.role IN ('satgas', 'linmas', 'korlap');
+    `);
+    console.log('  ✓ Assigned area_id and rayon_id to all field workers');
 
     // ==========================================
     // STEP 9: Seed Schedules
@@ -324,95 +363,282 @@ async function seedPhase2() {
     // ==========================================
     console.log('⏰ Seeding Overtime records...');
 
-    // Get test users
-    const korlapResult = await queryRunner.query(`
+    // Get test users for overtime
+    const korlapOtResult = await queryRunner.query(`
       SELECT id FROM users WHERE username = 'korlap_bungkul' LIMIT 1
     `);
-    const satgasResult = await queryRunner.query(`
-      SELECT id FROM users WHERE username IN ('satgas1', 'satgas_bungkul') LIMIT 1
+    const satgasOtResult = await queryRunner.query(`
+      SELECT id FROM users WHERE username = 'satgas1' LIMIT 1
+    `);
+    const linmasOtResult = await queryRunner.query(`
+      SELECT id FROM users WHERE username = 'linmas1' LIMIT 1
+    `);
+    const korlap1OtResult = await queryRunner.query(`
+      SELECT id FROM users WHERE username = 'korlap1' LIMIT 1
     `);
 
-    if (korlapResult.length > 0 && satgasResult.length > 0 && tamanBungkulId) {
-      const korlapId = korlapResult[0].id;
-      const satgasId = satgasResult[0].id;
+    const kepalaRayonOtResult = await queryRunner.query(`
+      SELECT id FROM users WHERE username = 'kepala_rayon_selatan' LIMIT 1
+    `);
 
-      // Get activity type ID
-      const activityTypeResult = await queryRunner.query(`
-        SELECT id FROM activity_types WHERE code = 'perawatan' LIMIT 1
+    if (korlapOtResult.length > 0 && satgasOtResult.length > 0 && tamanBungkulId) {
+      const korlapOtId = korlapOtResult[0].id;
+      const satgasOtId = satgasOtResult[0].id;
+      const linmasOtId = linmasOtResult.length > 0 ? linmasOtResult[0].id : null;
+      const korlap1OtId = korlap1OtResult.length > 0 ? korlap1OtResult[0].id : null;
+      const kepalaRayonOtId = kepalaRayonOtResult.length > 0 ? kepalaRayonOtResult[0].id : null;
+
+      // Get activity type IDs for varied overtime
+      const otActivityTypes = await queryRunner.query(`
+        SELECT id, code FROM activity_types WHERE code IN ('perawatan', 'patroli', 'cek_kendaraan', 'penyiraman') LIMIT 4
       `);
 
-      if (activityTypeResult.length > 0) {
-        const activityTypeId = activityTypeResult[0].id;
+      if (otActivityTypes.length > 0) {
+        const perawatanId = otActivityTypes.find((a: any) => a.code === 'perawatan')?.id ?? otActivityTypes[0].id;
+        const patroliId = otActivityTypes.find((a: any) => a.code === 'patroli')?.id ?? otActivityTypes[0].id;
+        const cekKendaraanId = otActivityTypes.find((a: any) => a.code === 'cek_kendaraan')?.id ?? otActivityTypes[0].id;
+        const penyiramanId = otActivityTypes.find((a: any) => a.code === 'penyiraman')?.id ?? otActivityTypes[0].id;
 
-        const OVERTIME_1_ID = '11111111-1111-1111-1111-111111111111';
-        const OVERTIME_2_ID = '22222222-2222-2222-2222-222222222222';
-        const OVERTIME_3_ID = '33333333-3333-3333-3333-333333333333';
+        const OVERTIME_1_ID = '01100000-0000-0000-0000-000000000001';
+        const OVERTIME_2_ID = '02200000-0000-0000-0000-000000000002';
+        const OVERTIME_3_ID = '03300000-0000-0000-0000-000000000003';
+        const OVERTIME_4_ID = '04400000-0000-0000-0000-000000000004';
+        const OVERTIME_5_ID = '05500000-0000-0000-0000-000000000005';
+        const OVERTIME_6_ID = '06600000-0000-0000-0000-000000000006';
+        const OVERTIME_7_ID = '07700000-0000-0000-0000-000000000007';
+        const OVERTIME_8_ID = '08800000-0000-0000-0000-000000000008';
 
-        // Flat overtime structure (Phase 2C - no overtime_aktivitas table)
+        // Satgas overtimes (3: pending, approved, rejected + overnight example)
         await queryRunner.query(`
           INSERT INTO overtimes (
-            id, user_id, area_id, date, start_time, end_time,
+            id, user_id, area_id, start_datetime, end_datetime,
             activity_type_id, description, photo_urls,
-            gps_lat, gps_lng, status,
+            gps_lat, gps_lng, status, approved_by, approved_at,
             created_at, updated_at
           ) VALUES
             (
-              '${OVERTIME_1_ID}',
-              '${satgasId}',
-              '${tamanBungkulId}',
-              '2026-02-10',
-              '17:00:00',
-              '20:00:00',
-              '${activityTypeId}',
-              'Perawatan tambahan setelah jam kerja',
+              '${OVERTIME_1_ID}', '${satgasOtId}', '${tamanBungkulId}',
+              '2026-02-10T17:00:00+07:00', '2026-02-10T20:00:00+07:00',
+              '${perawatanId}', 'Perawatan tambahan setelah jam kerja',
               ARRAY['https://example.com/overtime1.jpg'],
-              -7.2756,
-              112.7395,
-              'PENDING',
-              NOW(),
-              NOW()
+              -7.2756, 112.7395, 'pending', NULL, NULL,
+              NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'
             ),
             (
-              '${OVERTIME_2_ID}',
-              '${korlapId}',
-              '${tamanBungkulId}',
-              '2026-02-09',
-              '16:00:00',
-              '19:00:00',
-              '${activityTypeId}',
-              'Koordinasi tim malam',
-              ARRAY['https://example.com/overtime2.jpg'],
-              -7.2756,
-              112.7395,
-              'APPROVED',
-              NOW(),
-              NOW()
+              '${OVERTIME_2_ID}', '${satgasOtId}', '${tamanBungkulId}',
+              '2026-02-08T16:00:00+07:00', '2026-02-08T19:00:00+07:00',
+              '${penyiramanId}', 'Penyiraman darurat akibat panas ekstrem',
+              ARRAY['https://example.com/overtime-siram.jpg'],
+              -7.2756, 112.7395, 'approved', '${korlapOtId}', NOW() - INTERVAL '11 days',
+              NOW() - INTERVAL '12 days', NOW() - INTERVAL '11 days'
             ),
             (
-              '${OVERTIME_3_ID}',
-              '${satgasId}',
-              '${tamanBungkulId}',
-              '2026-02-08',
-              '15:00:00',
-              '18:00:00',
-              '${activityTypeId}',
-              'Request ditolak - tidak ada budget',
-              '{}',
-              NULL,
-              NULL,
-              'REJECTED',
-              NOW(),
-              NOW()
+              '${OVERTIME_3_ID}', '${satgasOtId}', '${tamanBungkulId}',
+              '2026-02-06T22:00:00+07:00', '2026-02-07T02:00:00+07:00',
+              '${perawatanId}', 'Lembur lintas tengah malam - ditolak tidak ada budget',
+              '{}', NULL, NULL, 'rejected', '${korlapOtId}', NOW() - INTERVAL '13 days',
+              NOW() - INTERVAL '14 days', NOW() - INTERVAL '13 days'
             )
           ON CONFLICT (id) DO NOTHING;
         `);
+        console.log('  ✓ Created 3 satgas overtime records (pending, approved, rejected)');
 
-        console.log('  ✓ Created 3 overtime records (PENDING, APPROVED, REJECTED)');
+        // Linmas overtimes (3: pending, approved, rejected)
+        if (linmasOtId) {
+          await queryRunner.query(`
+            INSERT INTO overtimes (
+              id, user_id, area_id, start_datetime, end_datetime,
+              activity_type_id, description, photo_urls,
+              gps_lat, gps_lng, status, approved_by, approved_at,
+              created_at, updated_at
+            ) VALUES
+              (
+                '${OVERTIME_4_ID}', '${linmasOtId}', '${tamanBungkulId}',
+                '2026-02-11T20:00:00+07:00', '2026-02-11T23:00:00+07:00',
+                '${patroliId}', 'Patroli tambahan malam minggu',
+                ARRAY['https://example.com/overtime-patroli.jpg'],
+                -7.2756, 112.7395, 'pending', NULL, NULL,
+                NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'
+              ),
+              (
+                '${OVERTIME_5_ID}', '${linmasOtId}', '${tamanBungkulId}',
+                '2026-02-07T19:00:00+07:00', '2026-02-07T22:00:00+07:00',
+                '${patroliId}', 'Pengamanan event sore di taman',
+                ARRAY['https://example.com/overtime-event.jpg'],
+                -7.2756, 112.7395, 'approved', '${korlapOtId}', NOW() - INTERVAL '12 days',
+                NOW() - INTERVAL '13 days', NOW() - INTERVAL '12 days'
+              ),
+              (
+                '${OVERTIME_6_ID}', '${linmasOtId}', '${tamanBungkulId}',
+                '2026-02-05T18:00:00+07:00', '2026-02-05T21:00:00+07:00',
+                '${patroliId}', 'Patroli tambahan ditolak - sudah ada jadwal shift 3',
+                '{}', NULL, NULL, 'rejected', '${korlapOtId}', NOW() - INTERVAL '14 days',
+                NOW() - INTERVAL '15 days', NOW() - INTERVAL '14 days'
+              )
+            ON CONFLICT (id) DO NOTHING;
+          `);
+          console.log('  ✓ Created 3 linmas overtime records (pending, approved, rejected)');
+        }
+
+        // Korlap overtimes (2: pending, approved)
+        if (korlap1OtId) {
+          await queryRunner.query(`
+            INSERT INTO overtimes (
+              id, user_id, area_id, start_datetime, end_datetime,
+              activity_type_id, description, photo_urls,
+              gps_lat, gps_lng, status, approved_by, approved_at,
+              created_at, updated_at
+            ) VALUES
+              (
+                '${OVERTIME_7_ID}', '${korlap1OtId}', '${tamanBungkulId}',
+                '2026-02-09T16:00:00+07:00', '2026-02-09T19:00:00+07:00',
+                '${cekKendaraanId}', 'Koordinasi tim malam dan cek kendaraan',
+                ARRAY['https://example.com/overtime-korlap.jpg'],
+                -7.2756, 112.7395, 'approved', ${kepalaRayonOtId ? `'${kepalaRayonOtId}'` : 'NULL'}, ${kepalaRayonOtId ? "NOW() - INTERVAL '10 days'" : 'NULL'},
+                NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days'
+              ),
+              (
+                '${OVERTIME_8_ID}', '${korlap1OtId}', '${tamanBungkulId}',
+                '2026-02-12T17:00:00+07:00', '2026-02-12T20:00:00+07:00',
+                '${cekKendaraanId}', 'Pengecekan kendaraan operasional setelah jam kerja',
+                ARRAY['https://example.com/overtime-korlap2.jpg'],
+                -7.2756, 112.7395, 'pending', NULL, NULL,
+                NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'
+              )
+            ON CONFLICT (id) DO NOTHING;
+          `);
+          console.log('  ✓ Created 2 korlap overtime records (approved, pending)');
+        }
+        // Admin Data overtimes (2: pending, approved)
+        const adminDataOtResult = await queryRunner.query(`
+          SELECT id, area_id FROM users WHERE username = 'admin_data1' LIMIT 1
+        `);
+        if (adminDataOtResult.length > 0) {
+          const OVERTIME_9_ID = '09900000-0000-0000-0000-000000000009';
+          const OVERTIME_10_ID = '10100000-0000-0000-0000-000000000010';
+          const adminDataOtId = adminDataOtResult[0].id;
+          // admin_data is in rayon-1 but may not have area_id; use tamanBungkulId as fallback
+          const adminDataAreaId = adminDataOtResult[0].area_id || tamanBungkulId;
+          const cekAbsensiId = otActivityTypes.find((a: any) => a.code === 'cek_absensi')?.id;
+
+          if (cekAbsensiId) {
+            await queryRunner.query(`
+              INSERT INTO overtimes (
+                id, user_id, area_id, start_datetime, end_datetime,
+                activity_type_id, description, photo_urls,
+                gps_lat, gps_lng, status, approved_by, approved_at,
+                created_at, updated_at
+              ) VALUES
+                (
+                  '${OVERTIME_9_ID}', '${adminDataOtId}', '${adminDataAreaId}',
+                  '2026-02-13T17:00:00+07:00', '2026-02-13T20:00:00+07:00',
+                  '${cekAbsensiId}', 'Entri data absensi bulan sebelumnya',
+                  ARRAY['https://example.com/overtime-admin-data1.jpg'],
+                  -7.2756, 112.7395, 'pending', NULL, NULL,
+                  NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'
+                ),
+                (
+                  '${OVERTIME_10_ID}', '${adminDataOtId}', '${adminDataAreaId}',
+                  '2026-02-11T16:00:00+07:00', '2026-02-11T19:00:00+07:00',
+                  '${cekAbsensiId}', 'Rekap laporan mingguan di luar jam kerja',
+                  ARRAY['https://example.com/overtime-admin-data2.jpg'],
+                  -7.2756, 112.7395, 'approved', ${kepalaRayonOtId ? `'${kepalaRayonOtId}'` : 'NULL'}, ${kepalaRayonOtId ? "NOW() - INTERVAL '8 days'" : 'NULL'},
+                  NOW() - INTERVAL '9 days', NOW() - INTERVAL '8 days'
+                )
+              ON CONFLICT (id) DO NOTHING;
+            `);
+            console.log('  ✓ Created 2 admin_data overtime records (pending, approved)');
+          }
+        }
       } else {
         console.log('  ⚠ Activity types not found, skipping overtime seeding');
       }
     } else {
       console.log('  ⚠ Required users or areas not found, skipping overtime seeding');
+    }
+
+    // ==========================================
+    // STEP 11: Seed Shifts for Phase 2C Roles
+    // ==========================================
+    console.log('🕐 Seeding shifts for Phase 2C role users...');
+
+    const shiftLinmas = await queryRunner.query(`SELECT id, area_id FROM users WHERE username = 'linmas1' LIMIT 1`);
+    const shiftKorlap1 = await queryRunner.query(`SELECT id, area_id FROM users WHERE username = 'korlap1' LIMIT 1`);
+    const shiftAdminData = await queryRunner.query(`SELECT id FROM users WHERE username = 'admin_data1' LIMIT 1`);
+    const shiftKepalaRayon = await queryRunner.query(`SELECT id FROM users WHERE username = 'kepala_rayon_selatan' LIMIT 1`);
+    const shiftArea = await queryRunner.query(`SELECT id FROM areas LIMIT 1`);
+
+    if (shiftArea.length > 0) {
+      const areaId = shiftArea[0].id;
+      let shiftCount = 0;
+
+      if (shiftLinmas.length > 0) {
+        const linmasId = shiftLinmas[0].id;
+        const linmasAreaId = shiftLinmas[0].area_id || areaId;
+        await queryRunner.query(`
+          INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+            clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
+          VALUES
+            ('${linmasId}', '${linmasAreaId}', NOW() - INTERVAL '1 day 8 hours', -7.2905, 112.7398,
+              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/linmas1-001.jpg',
+              NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day'),
+            ('${linmasId}', '${linmasAreaId}', NOW() - INTERVAL '2 hours', -7.2905, 112.7398,
+              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/linmas1-002.jpg',
+              NULL, NULL, NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours')
+        `);
+        shiftCount += 2;
+        console.log('  ✓ Created 2 shifts for linmas1 (1 completed, 1 active)');
+      }
+
+      if (shiftKorlap1.length > 0) {
+        const korlap1Id = shiftKorlap1[0].id;
+        const korlap1AreaId = shiftKorlap1[0].area_id || areaId;
+        await queryRunner.query(`
+          INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+            clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
+          VALUES
+            ('${korlap1Id}', '${korlap1AreaId}', NOW() - INTERVAL '1 day 8 hours', -7.2905, 112.7398,
+              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/korlap1-001.jpg',
+              NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day'),
+            ('${korlap1Id}', '${korlap1AreaId}', NOW() - INTERVAL '2 hours', -7.2905, 112.7398,
+              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/korlap1-002.jpg',
+              NULL, NULL, NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours')
+        `);
+        shiftCount += 2;
+        console.log('  ✓ Created 2 shifts for korlap1 (1 completed, 1 active)');
+      }
+
+      if (shiftAdminData.length > 0) {
+        const adminDataId = shiftAdminData[0].id;
+        await queryRunner.query(`
+          INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+            clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
+          VALUES
+            ('${adminDataId}', '${areaId}', NOW() - INTERVAL '3 days 8 hours', -7.2905, 112.7398,
+              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/admin-data1-001.jpg',
+              NOW() - INTERVAL '3 days', -7.2906, 112.7399, NOW() - INTERVAL '3 days 8 hours', NOW() - INTERVAL '3 days')
+        `);
+        shiftCount += 1;
+        console.log('  ✓ Created 1 shift for admin_data1 (completed)');
+      }
+
+      if (shiftKepalaRayon.length > 0) {
+        const kepalaId = shiftKepalaRayon[0].id;
+        await queryRunner.query(`
+          INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+            clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
+          VALUES
+            ('${kepalaId}', '${areaId}', NOW() - INTERVAL '2 days 8 hours', -7.2905, 112.7398,
+              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/kepala-rayon-001.jpg',
+              NOW() - INTERVAL '2 days', -7.2906, 112.7399, NOW() - INTERVAL '2 days 8 hours', NOW() - INTERVAL '2 days')
+        `);
+        shiftCount += 1;
+        console.log('  ✓ Created 1 shift for kepala_rayon_selatan (completed)');
+      }
+
+      console.log(`  ✓ Total: ${shiftCount} Phase 2C shifts created`);
+    } else {
+      console.log('  ⚠ No areas found, skipping Phase 2C shifts');
     }
 
     console.log('');
@@ -426,7 +652,8 @@ async function seedPhase2() {
     console.log('  - 9 Additional Users (Phase 2C roles)');
     console.log('  - 14 Area Staff Requirements');
     console.log('  - 4 Schedules');
-    console.log('  - 3 Overtime records (PENDING, APPROVED, REJECTED)');
+    console.log('  - 10 Overtime records (satgas×3, linmas×3, korlap×2, admin_data×2)');
+    console.log('  - 6 Phase 2C shifts (korlap1×2, linmas×2, admin_data×1, kepala_rayon×1)');
     console.log('  - Updated Area Types with categories');
     console.log('  - Updated Areas with Rayon assignments');
   } catch (error) {

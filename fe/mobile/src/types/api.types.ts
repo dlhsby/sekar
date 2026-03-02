@@ -254,7 +254,7 @@ export interface AssignTaskRequest {
 
 export interface CompleteTaskRequest {
   description: string; // Phase 2C: required
-  completion_photo_url: string; // Phase 2C: required, S3 URL
+  completion_photo_urls: string[]; // Phase 2C: 1-3 photo URLs
 }
 
 export interface TagTaskRequest {

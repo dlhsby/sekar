@@ -114,11 +114,14 @@ function LoginScreen(): React.JSX.Element {
             };
             if (meResponse.data.assigned_area) {
               // Ensure GPS coordinates are numbers, not strings
+              // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils
+              const rawPolygon = (meResponse.data.assigned_area as any).boundary_polygon;
               assignedArea = {
                 ...meResponse.data.assigned_area,
                 gps_lat: Number(meResponse.data.assigned_area.gps_lat),
                 gps_lng: Number(meResponse.data.assigned_area.gps_lng),
                 radius_meters: Number(meResponse.data.assigned_area.radius_meters),
+                boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined,
               };
             }
           }

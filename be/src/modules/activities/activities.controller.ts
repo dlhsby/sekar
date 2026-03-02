@@ -20,6 +20,7 @@ import {
 import { ActivitiesService } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
+import { RejectActivityDto } from './dto/reject-activity.dto';
 import { Activity } from './entities/activity.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -29,6 +30,7 @@ import { User } from '../users/entities/user.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { ActivitiesFilterDto } from './dto/activities-filter.dto';
 import {
+  ACTIVITY_APPROVERS,
   ACTIVITY_SUBMITTERS,
   MONITORING_AREA,
   USER_MANAGERS,
@@ -88,6 +90,7 @@ export class ActivitiesController {
   @ApiQuery({ name: 'shift_id', required: false, type: String })
   @ApiQuery({ name: 'from_date', required: false, type: String, description: 'ISO date string' })
   @ApiQuery({ name: 'to_date', required: false, type: String, description: 'ISO date string' })
+  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'approved', 'rejected'], description: 'Filter by approval status' })
   @ApiResponse({
     status: 200,
     description: 'Paginated list of activities (scope-filtered)',
@@ -125,6 +128,7 @@ export class ActivitiesController {
         shift_id: filterDto.shift_id,
         from_date: filterDto.from_date,
         to_date: filterDto.to_date,
+        status: filterDto.status,
       },
       user,
       filterDto.page,
@@ -155,6 +159,47 @@ export class ActivitiesController {
     @GetUser() user: User,
   ): Promise<Activity[]> {
     return this.activitiesService.findMyActivities(user.id, date);
+  }
+
+  /**
+   * Approve a pending activity (Phase 2C)
+   * Korlap can approve Satgas/Linmas activities in their area.
+   * Kepala Rayon can approve Korlap/AdminData activities in their rayon.
+   *
+   * IMPORTANT: Must be placed BEFORE @Get(':id') to avoid route conflict.
+   */
+  @Patch(':id/approve')
+  @Roles(...ACTIVITY_APPROVERS)
+  @ApiOperation({ summary: 'Approve a pending activity (Korlap, Kepala Rayon)' })
+  @ApiResponse({ status: 200, description: 'Activity approved', type: Activity })
+  @ApiResponse({ status: 400, description: 'Activity already processed' })
+  @ApiResponse({ status: 403, description: 'Not authorized to approve this activity' })
+  @ApiResponse({ status: 404, description: 'Activity not found' })
+  async approve(@Param('id') id: string, @GetUser() user: User): Promise<Activity> {
+    return this.activitiesService.approveActivity(id, user.id);
+  }
+
+  /**
+   * Reject a pending activity with a reason (Phase 2C)
+   * Korlap can reject Satgas/Linmas activities in their area.
+   * Kepala Rayon can reject Korlap/AdminData activities in their rayon.
+   *
+   * IMPORTANT: Must be placed BEFORE @Get(':id') to avoid route conflict.
+   */
+  @Patch(':id/reject')
+  @Roles(...ACTIVITY_APPROVERS)
+  @ApiOperation({ summary: 'Reject a pending activity (Korlap, Kepala Rayon)' })
+  @ApiBody({ type: RejectActivityDto })
+  @ApiResponse({ status: 200, description: 'Activity rejected', type: Activity })
+  @ApiResponse({ status: 400, description: 'Activity already processed' })
+  @ApiResponse({ status: 403, description: 'Not authorized to reject this activity' })
+  @ApiResponse({ status: 404, description: 'Activity not found' })
+  async reject(
+    @Param('id') id: string,
+    @Body() dto: RejectActivityDto,
+    @GetUser() user: User,
+  ): Promise<Activity> {
+    return this.activitiesService.rejectActivity(id, user.id, dto.reason);
   }
 
   /**

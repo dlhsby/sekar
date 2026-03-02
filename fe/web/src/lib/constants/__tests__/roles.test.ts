@@ -112,18 +112,16 @@ describe('Role Constants', () => {
   });
 
   describe('CLOCKABLE_ROLES', () => {
-    it('should include field roles', () => {
+    it('should include only field roles with area assignments', () => {
       expect(CLOCKABLE_ROLES).toContain('satgas');
       expect(CLOCKABLE_ROLES).toContain('linmas');
       expect(CLOCKABLE_ROLES).toContain('korlap');
+      expect(CLOCKABLE_ROLES).toHaveLength(3);
     });
 
-    it('should include admin_data for clock in/out', () => {
-      expect(CLOCKABLE_ROLES).toContain('admin_data');
-    });
-
-    it('should include kepala_rayon for clock in/out', () => {
-      expect(CLOCKABLE_ROLES).toContain('kepala_rayon');
+    it('should not include admin_data or kepala_rayon', () => {
+      expect(CLOCKABLE_ROLES).not.toContain('admin_data');
+      expect(CLOCKABLE_ROLES).not.toContain('kepala_rayon');
     });
   });
 

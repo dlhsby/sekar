@@ -26,14 +26,12 @@ overtime/
 - `id` (uuid, PK)
 - `user_id` (uuid, FK → users)
 - `area_id` (uuid, FK → areas, nullable)
-- `date` (date) - Overtime date
-- `start_time` (time) - Start time (HH:MM)
-- `end_time` (time) - End time (HH:MM)
+- **`start_datetime`** (timestamptz) - Start datetime (ISO 8601, supports overnight)
+- **`end_datetime`** (timestamptz) - End datetime (ISO 8601, supports overnight)
 - `status` (enum: pending, approved, rejected)
 - `approved_by` (uuid, FK → users, nullable)
 - `approved_at` (timestamptz, nullable)
 - `rejection_reason` (text, nullable)
-- `notes` (text, nullable)
 - **`activity_type_id`** (uuid, FK → activity_types) - Single activity per overtime
 - **`description`** (text) - Activity description
 - **`photo_urls`** (text[]) - Array of photo URLs (1-3)
@@ -41,6 +39,8 @@ overtime/
 - **`gps_lng`** (decimal, nullable) - GPS longitude
 - `created_at` (timestamptz)
 - `updated_at` (timestamptz)
+
+**Removed columns (Phase 2C update):** `date` (date), `start_time` (time), `end_time` (time), `notes` (text)
 
 **Note:** Phase 2C simplified the overtime structure. Each overtime record now contains one activity directly (flat structure), rather than having a separate `overtime_aktivitas` table with nested activities.
 
@@ -56,8 +56,8 @@ All endpoints require authentication (`@UseGuards(JwtAuthGuard, RolesGuard)`).
 - **Validations:**
   - Role must be in OVERTIME_SUBMITTERS
   - activity_type must be available for user's role
-  - Date format: YYYY-MM-DD
-  - Time format: HH:MM
+  - `start_datetime`: ISO 8601 datetime string (e.g. "2026-02-14T17:00:00+07:00")
+  - `end_datetime`: ISO 8601 datetime string — must be after `start_datetime`
   - 1-3 photo URLs required
   - description required
 
@@ -177,10 +177,8 @@ POST /overtime
 Authorization: Bearer <jwt_token>
 
 {
-  "date": "2026-02-10",
-  "start_time": "17:00",
-  "end_time": "20:00",
-  "notes": "Extra cleaning work after regular shift",
+  "start_datetime": "2026-02-14T17:00:00+07:00",
+  "end_datetime": "2026-02-14T20:00:00+07:00",
   "activity_type_id": "uuid-of-cleaning-activity",
   "description": "Cleaned main park area and pathways",
   "photo_urls": [
@@ -189,6 +187,13 @@ Authorization: Bearer <jwt_token>
   ],
   "gps_lat": -7.250445,
   "gps_lng": 112.768845
+}
+
+// Overnight example:
+{
+  "start_datetime": "2026-02-14T22:00:00+07:00",
+  "end_datetime": "2026-02-15T02:00:00+07:00",
+  ...
 }
 ```
 

@@ -151,9 +151,9 @@ export function TaskFilterModal({
   }, [visible, localRayonFilter, canFilterRayon, isAreaFixed, isRayonFixed, userRayonId]);
 
   useEffect(() => {
-    if (!visible) { return; }
+    if (!visible || !hasSubordinates) { return; }
     loadUsers(localAreaFilter);
-  }, [visible, localAreaFilter]);
+  }, [visible, localAreaFilter, hasSubordinates]);
 
   useEffect(() => {
     if (visible) {

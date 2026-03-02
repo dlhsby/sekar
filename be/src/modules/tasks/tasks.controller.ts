@@ -22,18 +22,21 @@ import {
 } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { Task } from './entities/task.entity';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { TagUsersDto } from './dto/tag-users.dto';
+import { DeclineTaskDto } from './dto/decline-task.dto';
+import { RequestRevisionDto } from './dto/request-revision.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
-import { TASK_CREATORS, TASK_RECEIVERS } from '../users/constants/role-groups';
+import { TASK_CREATORS, TASK_RECEIVERS, TASK_VERIFIERS } from '../users/constants/role-groups';
 
 /**
  * Controller for task management
@@ -69,10 +72,10 @@ export class TasksController {
   @Get()
   @Roles(...TASK_CREATORS, ...TASK_RECEIVERS)
   @ApiOperation({ summary: 'Get all tasks with optional filters' })
-  @ApiResponse({ status: 200, description: 'List of tasks', type: [Task] })
+  @ApiResponse({ status: 200, description: 'Paginated list of tasks' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async findAll(@Query() filters: TaskFilterDto): Promise<Task[]> {
-    return this.tasksService.findAll(filters);
+  async findAll(@Query() filters: TaskFilterDto, @GetUser() user: User): Promise<PaginatedResponseDto<Task>> {
+    return this.tasksService.findAll(filters, user);
   }
 
   /**
@@ -85,16 +88,17 @@ export class TasksController {
     name: 'activeOnly',
     required: false,
     type: Boolean,
-    description: 'If true, only return non-completed/declined tasks (default: true)',
+    description: 'If true, only return non-completed/declined tasks (default: false)',
   })
-  @ApiResponse({ status: 200, description: 'List of user tasks', type: [Task] })
+  @ApiResponse({ status: 200, description: 'Paginated list of user tasks' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findMyTasks(
     @GetUser() user: User,
     @Query('activeOnly') activeOnly?: string,
-  ): Promise<Task[]> {
-    const activeOnlyBool = activeOnly !== 'false';
-    return this.tasksService.findMyTasks(user.id, activeOnlyBool);
+    @Query() filters?: TaskFilterDto,
+  ): Promise<PaginatedResponseDto<Task>> {
+    const activeOnlyBool = activeOnly === 'true';
+    return this.tasksService.findMyTasks(user.id, activeOnlyBool, filters);
   }
 
   /**
@@ -103,23 +107,100 @@ export class TasksController {
   @Get('tagged')
   @Roles(...TASK_RECEIVERS)
   @ApiOperation({ summary: 'Get tasks where the current user is tagged' })
-  @ApiResponse({ status: 200, description: 'List of tagged tasks', type: [Task] })
+  @ApiResponse({ status: 200, description: 'Paginated list of tagged tasks' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async findTaggedTasks(@GetUser() user: User): Promise<Task[]> {
-    return this.tasksService.findTaggedTasks(user.id);
+  async findTaggedTasks(
+    @GetUser() user: User,
+    @Query() filters?: TaskFilterDto,
+  ): Promise<PaginatedResponseDto<Task>> {
+    return this.tasksService.findTaggedTasks(user.id, filters);
+  }
+
+  /**
+   * Accept an assigned task (assignee only)
+   */
+  @Post(':id/accept')
+  @Roles(...TASK_RECEIVERS)
+  @ApiOperation({ summary: 'Accept an assigned task (Assignee only)' })
+  @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Task accepted', type: Task })
+  @ApiResponse({ status: 400, description: 'Task not in assigned status' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - not the task assignee' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async accept(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User): Promise<Task> {
+    return this.tasksService.acceptTask(id, user.id);
+  }
+
+  /**
+   * Decline an assigned task (assignee only)
+   */
+  @Post(':id/decline')
+  @Roles(...TASK_RECEIVERS)
+  @ApiOperation({ summary: 'Decline an assigned task (Assignee only)' })
+  @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Task declined', type: Task })
+  @ApiResponse({ status: 400, description: 'Task not in assigned status' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - not the task assignee' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async decline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: DeclineTaskDto,
+    @GetUser() user: User,
+  ): Promise<Task> {
+    return this.tasksService.declineTask(id, user.id, dto.reason);
+  }
+
+  /**
+   * Verify a completed task (direct supervisor only)
+   */
+  @Patch(':id/verify')
+  @Roles(...TASK_VERIFIERS)
+  @ApiOperation({ summary: 'Verify a completed task (Direct supervisor only)' })
+  @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Task verified', type: Task })
+  @ApiResponse({ status: 400, description: 'Task not in completed status' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - not authorized to verify this task' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async verify(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User): Promise<Task> {
+    return this.tasksService.verifyTask(id, user.id);
+  }
+
+  /**
+   * Request revision on a completed task (direct supervisor only)
+   */
+  @Patch(':id/revision')
+  @Roles(...TASK_VERIFIERS)
+  @ApiOperation({ summary: 'Request revision on a completed task (Direct supervisor only)' })
+  @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Revision requested', type: Task })
+  @ApiResponse({ status: 400, description: 'Task not in completed status' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - not authorized to request revision' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async requestRevision(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RequestRevisionDto,
+    @GetUser() user: User,
+  ): Promise<Task> {
+    return this.tasksService.requestRevision(id, user.id, dto.reason);
   }
 
   /**
    * Get a specific task by ID
    */
   @Get(':id')
+  @Roles(...TASK_CREATORS, ...TASK_RECEIVERS)
   @ApiOperation({ summary: 'Get a task by ID' })
   @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Task found', type: Task })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - no access to this task' })
   @ApiResponse({ status: 404, description: 'Task not found' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Task> {
-    return this.tasksService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User): Promise<Task> {
+    return this.tasksService.findOne(id, user);
   }
 
   /**
@@ -137,8 +218,9 @@ export class TasksController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateTaskDto: UpdateTaskDto,
+    @GetUser() user: User,
   ): Promise<Task> {
-    return this.tasksService.update(id, updateTaskDto);
+    return this.tasksService.update(id, updateTaskDto, user.id);
   }
 
   /**
@@ -172,8 +254,9 @@ export class TasksController {
   async assign(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() assignTaskDto: AssignTaskDto,
+    @GetUser() user: User,
   ): Promise<Task> {
-    return this.tasksService.assign(id, assignTaskDto);
+    return this.tasksService.assign(id, assignTaskDto, user.id);
   }
 
   /**

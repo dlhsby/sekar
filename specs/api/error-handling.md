@@ -28,7 +28,7 @@ All API errors follow a consistent JSON structure:
 
 ---
 
-## Standardized Error Codes (31 Total)
+## Standardized Error Codes (47 Total)
 
 The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for consistent error handling.
 
@@ -71,6 +71,22 @@ The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for c
 | `ACTIVITY_ROLE_MISMATCH` | 403 | Activity type not applicable to user's role |
 | `ACTIVITY_MAX_PHOTOS` | 400 | Maximum 3 photos per activity |
 | `ACTIVITY_MIN_PHOTOS` | 400 | Minimum 1 photo required |
+| `ACTIVITY_ALREADY_PROCESSED` | 400 | Aktivitas sudah diproses (approve/reject on non-pending activity) |
+| `ACTIVITY_HIERARCHY_MISMATCH` | 403 | Approver role doesn't match submitter's hierarchy level |
+| `ACTIVITY_SCOPE_MISMATCH` | 403 | Approver not in same area/rayon as activity |
+| `ACTIVITY_REJECTION_REASON_REQUIRED` | 400 | Alasan penolakan wajib diisi |
+
+### Task Workflow Errors (7 codes) ✅ Implemented (Phase 2C)
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `TASK_NOT_ASSIGNEE` | 403 | Anda bukan penerima tugas ini (accept/decline by non-assignee) |
+| `TASK_INVALID_STATUS_FOR_ACCEPT` | 400 | Tugas tidak dalam status ditugaskan (accept when not assigned) |
+| `TASK_DECLINE_REASON_REQUIRED` | 400 | Alasan penolakan wajib diisi |
+| `TASK_NOT_COMPLETED` | 400 | Tugas belum diselesaikan (verify on non-completed task) |
+| `TASK_VERIFY_UNAUTHORIZED` | 403 | Anda tidak berwenang memverifikasi tugas ini (wrong hierarchy) |
+| `TASK_VERIFY_SCOPE_MISMATCH` | 403 | Anda hanya dapat memverifikasi tugas di area/rayon Anda |
+| `TASK_REVISION_REASON_REQUIRED` | 400 | Alasan revisi wajib diisi |
 
 ### Sync Errors (3 codes)
 
@@ -788,7 +804,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 ---
 
 **Document Owner:** Backend Developer
-**Last Updated:** 2026-01-21
+**Last Updated:** 2026-02-20
 **Status:** Active
-**Error Codes:** 31 standardized codes (verified from `be/src/common/enums/api-error-codes.enum.ts`)
+**Error Codes:** 47 standardized codes (Phase 2C: +11 activity approval + 7 task workflow codes)
 **Related Docs:** [`contracts.md`](./contracts.md), [`authentication.md`](./authentication.md), [`../architecture/security.md`](../architecture/security.md)

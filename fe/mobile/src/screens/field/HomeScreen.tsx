@@ -392,7 +392,7 @@ export function HomeScreen(): React.JSX.Element {
         )}
       </ScrollView>
 
-      {/* Fixed Clock In/Out button — only for clockable field roles (satgas, linmas, korlap, admin_data, kepala_rayon) */}
+      {/* Fixed Clock In/Out button — only for clockable field roles (satgas, linmas, korlap) */}
       {/* Fix 8: user.role is typed as UserRole, no cast needed */}
       {user?.role && CLOCKABLE_ROLES.includes(user.role) && (
         <View style={styles.fab}>

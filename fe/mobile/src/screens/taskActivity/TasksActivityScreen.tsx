@@ -165,19 +165,33 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
 
     try {
       const params = buildTaskParams(page);
+      // Strip fields not accepted by /my-tasks or /tagged endpoints (rayon_id, area_id, assigned_to)
+      const allParams = params as Record<string, unknown>;
+      const baseParams = {
+        ...(allParams.status ? { status: allParams.status as string } : {}),
+        ...(allParams.deadline_after ? { deadline_after: allParams.deadline_after as string } : {}),
+        ...(allParams.deadline_before ? { deadline_before: allParams.deadline_before as string } : {}),
+        ...(allParams.created_after ? { created_after: allParams.created_after as string } : {}),
+        ...(allParams.created_before ? { created_before: allParams.created_before as string } : {}),
+        sort_by: allParams.sort_by as string,
+        sort_dir: allParams.sort_dir as 'asc' | 'desc',
+        page: allParams.page as number,
+        limit: allParams.limit as number,
+      };
+      const myTasksParams = baseParams;
       let fetchedTasks: Task[] = [];
       let totalPages = 1;
 
       if (taskFilter === 'tagged') {
-        const response = await getTaggedTasks(params);
+        const response = await getTaggedTasks(baseParams);
         const paged = response.data;
         fetchedTasks = paged?.data ?? [];
         totalPages = paged?.meta?.totalPages ?? 1;
       } else if (taskFilter === 'all') {
         // Fetch both assigned + tagged, merge, no multi-page for 'all'
         const [myRes, tagRes] = await Promise.all([
-          getMyTasks({ ...params, limit: 50, page: 1 }),
-          getTaggedTasks({ ...params, limit: 50, page: 1 }),
+          getMyTasks({ ...myTasksParams, limit: 50, page: 1 }),
+          getTaggedTasks({ ...baseParams, limit: 50, page: 1 }),
         ]);
         const seen = new Set<string>();
         const merged: Task[] = [];
@@ -188,7 +202,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
         totalPages = 1; // single fetch for 'all'
       } else {
         // 'assigned' or 'created_by_me'
-        const response = await getMyTasks(params);
+        const response = await getMyTasks(myTasksParams);
         const paged = response.data;
         fetchedTasks = paged?.data ?? [];
         totalPages = paged?.meta?.totalPages ?? 1;
@@ -197,7 +211,10 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
       if (reset || page === 1) {
         setAllTasks(fetchedTasks);
       } else {
-        setAllTasks((prev) => [...prev, ...fetchedTasks]);
+        setAllTasks((prev) => {
+          const existingIds = new Set(prev.map((t) => t.id));
+          return [...prev, ...fetchedTasks.filter((t) => !existingIds.has(t.id))];
+        });
       }
       setTaskPage(page);
       setHasMoreTasks(page < totalPages);

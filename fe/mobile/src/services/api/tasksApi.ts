@@ -41,7 +41,6 @@ export async function getMyTasks(
     sort_dir?: 'asc' | 'desc';
     page?: number;
     limit?: number;
-    activeOnly?: boolean;
   },
 ): Promise<ApiResponse<TasksListResponse>> {
   return get<TasksListResponse>('/tasks/my-tasks', filters);

@@ -12,9 +12,7 @@ import {
   SafeAreaView,
   Alert,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
-  FlatList,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -27,16 +25,16 @@ import { selectOvertimeSubmitting, setSubmitting, addOvertime, setError } from '
 import { submitOvertime } from '../../services/api/overtimeApi';
 import { useActivityTypes } from '../../hooks/useActivityTypes';
 import { mediaService, type Photo } from '../../services/media';
-import { requestCameraPermission } from '../../services/permissions';
+import { PhotoUploader } from '../../components/common';
 import {
   NBButton,
-  NBTextInput,
   NBCard,
   NBCardHeader,
   NBCardContent,
   NBBackgroundPattern,
   NBDatePicker,
   NBSelect,
+  NBCardTextInput,
 } from '../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import { GPSLocationSection } from '../../components/common';
@@ -109,7 +107,6 @@ export const OvertimeSubmitScreen: React.FC<MainTabScreenProps<'OvertimeSubmit'>
   const dispatch = useAppDispatch();
   const isSubmitting = useAppSelector(selectOvertimeSubmitting);
   const { activityTypes, isLoading: loadingActivityTypes } = useActivityTypes();
-  const photoListRef = useRef<FlatList>(null);
 
   // Datetime state
   const today = toDateOnly(new Date());
@@ -323,55 +320,14 @@ export const OvertimeSubmitScreen: React.FC<MainTabScreenProps<'OvertimeSubmit'>
 
   // ─── Photos ──────────────────────────────────────────────────────────────────
 
-  const handleCapturePhoto = useCallback(async () => {
-    if (photos.length >= 3) {
-      Alert.alert('Peringatan', 'Maksimal 3 foto');
-      return;
-    }
-    const permissionResult = await requestCameraPermission();
-    if (!permissionResult.granted) {
-      Alert.alert('Izin Diperlukan', 'Aplikasi memerlukan izin kamera');
-      return;
-    }
-    const photo = await mediaService.capturePhoto(false);
-    if (photo) {
-      setPhotos((prev) => [...prev, photo]);
-      markDirty();
-    }
-  }, [photos.length, markDirty]);
+  const handleAddPhoto = useCallback((photo: Photo) => {
+    setPhotos((prev) => [...prev, photo]);
+    markDirty();
+  }, [markDirty]);
 
   const handleRemovePhoto = useCallback((photoId: string) => {
     setPhotos((prev) => prev.filter((p) => p.id !== photoId));
   }, []);
-
-  const renderPhotoItem = useCallback(({ item }: { item: Photo }) => (
-    <View style={styles.photoItem}>
-      <Image source={{ uri: item.uri }} style={styles.photoThumbnail} />
-      <TouchableOpacity
-        style={styles.removePhotoButton}
-        onPress={() => handleRemovePhoto(item.id)}
-        accessibilityRole="button"
-        accessibilityLabel="Hapus foto"
-      >
-        <Text style={styles.removePhotoText}>✕</Text>
-      </TouchableOpacity>
-    </View>
-  ), [handleRemovePhoto]);
-
-  const renderAddPhotoButton = useCallback(() => {
-    if (photos.length >= 3) { return null; }
-    return (
-      <TouchableOpacity
-        style={styles.addPhotoButton}
-        onPress={handleCapturePhoto}
-        testID="add-photo-button"
-        accessibilityLabel="Tambah foto"
-      >
-        <Text style={styles.addPhotoIcon}>+</Text>
-        <Text style={styles.addPhotoText}>Foto</Text>
-      </TouchableOpacity>
-    );
-  }, [photos.length, handleCapturePhoto]);
 
   // ─── Validation ──────────────────────────────────────────────────────────────
 
@@ -593,27 +549,18 @@ export const OvertimeSubmitScreen: React.FC<MainTabScreenProps<'OvertimeSubmit'>
           </NBCard>
 
           {/* Deskripsi Card */}
-          <NBCard style={styles.card}>
-            <NBCardHeader>
-              <Text style={styles.sectionTitle}>
-                📝 DESKRIPSI{' '}
-                <Text style={styles.requiredAsterisk}>*</Text>
-              </Text>
-            </NBCardHeader>
-            <NBCardContent>
-              <NBTextInput
-                label="Deskripsi Aktivitas"
-                value={description}
-                onChangeText={(text) => { setDescription(text); markDirty(); }}
-                placeholder="Jelaskan aktivitas lembur yang dilakukan..."
-                multiline
-                numberOfLines={5}
-                error={errors.description}
-              />
-            </NBCardContent>
-          </NBCard>
+          <NBCardTextInput
+            title="📝 Deskripsi"
+            required
+            value={description}
+            onChangeText={(text) => { setDescription(text); markDirty(); }}
+            placeholder="Jelaskan aktivitas lembur yang dilakukan..."
+            numberOfLines={5}
+            error={errors.description}
+            style={styles.card}
+          />
 
-          {/* Foto Card — 160×160 horizontal FlatList matching ActivitySubmissionScreen */}
+          {/* Foto Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
               <Text style={styles.sectionTitle}>
@@ -623,16 +570,11 @@ export const OvertimeSubmitScreen: React.FC<MainTabScreenProps<'OvertimeSubmit'>
               <Text style={styles.sectionSubtitle}>Tambahkan 1-3 foto pekerjaan lembur</Text>
             </NBCardHeader>
             <NBCardContent>
-              {errors.photos && <Text style={styles.errorText}>{errors.photos}</Text>}
-              <FlatList
-                ref={photoListRef}
-                data={photos}
-                renderItem={renderPhotoItem}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                ListFooterComponent={renderAddPhotoButton}
-                style={styles.photoList}
+              <PhotoUploader
+                photos={photos}
+                onAdd={handleAddPhoto}
+                onRemove={handleRemovePhoto}
+                error={errors.photos}
               />
             </NBCardContent>
           </NBCard>
@@ -760,60 +702,6 @@ const styles = StyleSheet.create({
   },
   activityIndicator: {
     marginVertical: nbSpacing.sm,
-  },
-  // Photo section — matches ActivitySubmissionScreen 160×160 horizontal FlatList
-  photoList: {
-    marginTop: nbSpacing.sm,
-  },
-  photoItem: {
-    marginRight: nbSpacing.sm,
-    position: 'relative',
-  },
-  photoThumbnail: {
-    width: 160,
-    height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-  },
-  removePhotoButton: {
-    position: 'absolute',
-    top: -12,
-    right: -12,
-    backgroundColor: nbColors.danger,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...nbShadows.sm,
-  },
-  removePhotoText: {
-    color: nbColors.white,
-    fontSize: 24,
-    fontWeight: nbTypography.fontWeight.bold,
-  },
-  addPhotoButton: {
-    width: 160,
-    height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.gray['50'],
-  },
-  addPhotoIcon: {
-    fontSize: 32,
-    color: nbColors.gray['600'],
-  },
-  addPhotoText: {
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.xs,
-    marginTop: nbSpacing.xs,
   },
   errorText: {
     fontSize: nbTypography.fontSize.sm,

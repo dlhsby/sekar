@@ -17,13 +17,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   superadmin: 'Superadmin',
 };
 
-/** Roles that can clock in/out */
+/** Roles that can clock in/out (field roles with area assignments only) */
 export const CLOCKABLE_ROLES: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
-  'kepala_rayon',
 ];
 
 /** Roles that can submit activities */

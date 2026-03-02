@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-**Last Updated:** February 5, 2026
-**Status:** Phase 2 Complete ✅ | Dependencies Updated (RN 0.83.1) | Phase 3 Next
+**Last Updated:** March 2, 2026
+**Status:** Phase 2C Complete ✅ | Deployed to Production | Phase 3 Next
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -111,7 +111,7 @@ fe/mobile/src/
 ├── components/           # Common + Neo Brutalism (NB*) components
 ├── store/slices/         # Redux (auth, shifts, reports, tasks, notifications)
 ├── services/             # API, FCM, WebSocket, location, sync
-└── __tests__/            # 2,141 tests, 80.31% coverage
+└── __tests__/            # ~3,298 tests, 80.31%+ coverage
 ```
 
 ### Web Structure
@@ -278,7 +278,7 @@ API_VERSION=v1
 
 **Phase 2 Enhanced Features** ✅ Complete (Jan 27, 2026)
 - Backend: 15 modules, 83 endpoints, 845 tests (90.77%)
-- Mobile: 17 screens, 2,141 tests (80.31%), Neo Brutalism UI, WCAG 2.1 AA
+- Mobile: 17 screens, ~3,298 tests (80.31%+), Neo Brutalism UI, WCAG 2.1 AA
 - Web: 18 pages, Next.js 16.1.4, Mapbox GL
 - Features: Rayons (7), Tasks, Notifications, Monitoring, KMZ Import, WebSocket
 
@@ -286,6 +286,12 @@ API_VERSION=v1
 - Fixed critical bugs (withAlpha(), ErrorBoundary)
 - Added 84 tests (2,057 → 2,141)
 - Improved coverage: API +6.22%, Sync +5.02%
+
+**Phase 2C Client Feedback** ✅ Complete + Deployed (Feb 10-28, 2026)
+- 8-role system (ADR-009), Overtime module, Task redesign, Activity rename
+- GPS soft geofencing, filter modal improvements, subordinate hierarchy filters
+- Backend: 16 modules, 113 endpoints, 888 tests; Mobile: 3,264 tests
+- Deployed: api.sekar.wahyutrip.com + sekar.wahyutrip.com (Feb 16, 2026)
 
 **Phase 3 Polishing & E2E Testing** - NOT STARTED
 - E2E testing (Detox mobile, Playwright web)
@@ -334,7 +340,7 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **Project Status** | `specs/COMPLETION_STATUS.md` | Single source of truth |
 | **Phase 2** | `specs/phases/phase-2-enhanced/STATUS.md` | Implementation tracking |
 | **Phase 3** | `specs/phases/phase-3-polishing/STATUS.md` | Polishing & E2E Testing |
-| **API Docs** | `specs/api/contracts.md` | All 83 endpoints |
+| **API Docs** | `specs/api/contracts.md` | All 113 endpoints |
 | **Errors** | `specs/api/error-handling.md` | 31 error codes |
 | **Security** | `specs/architecture/security.md` | Security architecture + dependency audit |
 | **Mobile Updates** | `specs/mobile/dependency-updates.md` | React Native 0.83.1 upgrade + policy |
@@ -381,19 +387,19 @@ docker-compose down -v                      # Clean restart (deletes data!)
 
 ## Current Status
 
-**Phase 2B Complete** ✅ (126/126 tasks)
+**Phase 2C Complete** ✅ | Deployed to Production (Feb 16, 2026)
 
 | Component | Metrics |
 |-----------|---------|
-| **Backend** | 15 modules, 83 endpoints, 845 tests (90.77%) |
-| **Mobile** | 17 screens, 16 NB 2.0 components, 2,141 tests (99.07% pass rate, 80.31% coverage) |
-| **Web** | 18 pages, 16 NB 2.0 components, 11 tests |
-| **Database** | 16 tables, migrations complete |
-| **DevOps** | 3 CI/CD pipelines, Docker, Firebase guide |
-| **UI/UX** | Neo Brutalism 2.0 complete (supervisor components migrated), WCAG 2.1 AA |
+| **Backend** | 16 modules, 113 endpoints, 888 tests (89.57% stmt, 81.64% branch) |
+| **Mobile** | 17 screens, 3,264 tests passing, 80.31%+ coverage |
+| **Web** | 18 pages, role constants updated (8 roles) |
+| **Database** | 18 tables (+2: task_tags, overtimes), 8-role system |
+| **DevOps** | 3 CI/CD pipelines, deployed to production |
+| **UI/UX** | Neo Brutalism 2.0, filter modals improved (subordinate hierarchy, date pickers) |
 
-**Ready for Production:** All tests passing, deployment guides complete, NB 2.0 design system fully implemented.
+**Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com
 
 **Next:** Phase 3 - Polishing & E2E Testing
 
-**Deployment Guide:** `specs/deployment/phase-2-deployment.md`
+**Deployment Guide:** `specs/deployment/PHASE2C_DEPLOYMENT.md`

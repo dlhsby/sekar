@@ -10,18 +10,18 @@ import { Repository } from 'typeorm';
 import { Overtime, OvertimeStatus } from './entities/overtime.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
+import { OvertimeFilterDto } from './dto/overtime-filter.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { OVERTIME_SUBMITTERS } from '../users/constants/role-groups';
 import { ShiftsService } from '../shifts/shifts.service';
 
-/**
- * Overtime Service
- *
- * Handles business logic for overtime submission and approval.
- * Satgas and Linmas submit overtime with activity.
- * Korlap approves/rejects overtime within their area.
- */
+const ALLOWED_SORT_FIELDS: Record<string, string> = {
+  created_at: 'overtime.created_at',
+  start_datetime: 'overtime.start_datetime',
+};
+
 @Injectable()
 export class OvertimeService {
   private readonly logger = new Logger(OvertimeService.name);
@@ -36,31 +36,20 @@ export class OvertimeService {
     private shiftsService: ShiftsService,
   ) {}
 
-  /**
-   * Submit overtime request
-   *
-   * @param userId User UUID (satgas or linmas)
-   * @param userRole User role
-   * @param dto Overtime creation data
-   * @returns Created overtime
-   */
   async submit(
     userId: string,
     userRole: UserRole,
     dto: CreateOvertimeDto,
   ): Promise<Overtime> {
-    // Validate role
     if (!OVERTIME_SUBMITTERS.includes(userRole as any)) {
       throw new ForbiddenException(
-        'Only satgas and linmas can submit overtime',
+        'Only overtime submitters can submit overtime',
       );
     }
 
-    // Get user to find area
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    // Validate activity_type matches user's role
     const actType = await this.activityTypeRepo.findOne({
       where: { id: dto.activity_type_id, is_active: true },
     });
@@ -75,14 +64,18 @@ export class OvertimeService {
       );
     }
 
-    // Create flat overtime
+    // Validate that end_datetime > start_datetime
+    const startDt = new Date(dto.start_datetime);
+    const endDt = new Date(dto.end_datetime);
+    if (endDt <= startDt) {
+      throw new BadRequestException('end_datetime must be after start_datetime');
+    }
+
     const overtime = this.overtimeRepo.create({
       user_id: userId,
       area_id: (await this.shiftsService.getActiveArea(userId))?.id || user.area_id || undefined,
-      date: dto.date,
-      start_time: dto.start_time,
-      end_time: dto.end_time,
-      notes: dto.notes,
+      start_datetime: startDt,
+      end_datetime: endDt,
       status: OvertimeStatus.PENDING,
       activity_type_id: dto.activity_type_id,
       description: dto.description,
@@ -96,39 +89,23 @@ export class OvertimeService {
     return saved;
   }
 
-  /**
-   * Approve overtime request
-   *
-   * @param overtimeId Overtime UUID
-   * @param approverId Korlap UUID
-   * @param approverRole Korlap role
-   * @returns Updated overtime
-   */
   async approve(
     overtimeId: string,
     approverId: string,
-    approverRole: UserRole,
   ): Promise<Overtime> {
-    if (approverRole !== UserRole.KORLAP) {
-      throw new ForbiddenException('Only korlap can approve overtime');
-    }
-
     const overtime = await this.findOneOrFail(overtimeId);
     if (overtime.status !== OvertimeStatus.PENDING) {
       throw new BadRequestException('Only pending overtime can be approved');
     }
 
-    // Scope check: korlap can only approve for their area
-    const approver = await this.userRepo.findOne({ where: { id: approverId } });
-    if (
-      approver?.area_id &&
-      overtime.area_id &&
-      approver.area_id !== overtime.area_id
-    ) {
-      throw new ForbiddenException(
-        'You can only approve overtime for your area',
-      );
+    if (overtime.user_id === approverId) {
+      throw new ForbiddenException('Cannot approve your own overtime submission');
     }
+
+    const approver = await this.userRepo.findOne({ where: { id: approverId } });
+    if (!approver) throw new NotFoundException('Approver not found');
+
+    this.validateApprovalHierarchy(overtime, approver);
 
     overtime.status = OvertimeStatus.APPROVED;
     overtime.approved_by = approverId;
@@ -139,41 +116,24 @@ export class OvertimeService {
     return saved;
   }
 
-  /**
-   * Reject overtime request
-   *
-   * @param overtimeId Overtime UUID
-   * @param approverId Korlap UUID
-   * @param approverRole Korlap role
-   * @param dto Rejection reason
-   * @returns Updated overtime
-   */
   async reject(
     overtimeId: string,
     approverId: string,
-    approverRole: UserRole,
     dto: RejectOvertimeDto,
   ): Promise<Overtime> {
-    if (approverRole !== UserRole.KORLAP) {
-      throw new ForbiddenException('Only korlap can reject overtime');
-    }
-
     const overtime = await this.findOneOrFail(overtimeId);
     if (overtime.status !== OvertimeStatus.PENDING) {
       throw new BadRequestException('Only pending overtime can be rejected');
     }
 
-    // Scope check: korlap can only reject for their area
-    const approver = await this.userRepo.findOne({ where: { id: approverId } });
-    if (
-      approver?.area_id &&
-      overtime.area_id &&
-      approver.area_id !== overtime.area_id
-    ) {
-      throw new ForbiddenException(
-        'You can only reject overtime for your area',
-      );
+    if (overtime.user_id === approverId) {
+      throw new ForbiddenException('Cannot reject your own overtime submission');
     }
+
+    const approver = await this.userRepo.findOne({ where: { id: approverId } });
+    if (!approver) throw new NotFoundException('Approver not found');
+
+    this.validateApprovalHierarchy(overtime, approver);
 
     overtime.status = OvertimeStatus.REJECTED;
     overtime.approved_by = approverId;
@@ -185,66 +145,126 @@ export class OvertimeService {
     return saved;
   }
 
-  /**
-   * Find user's own overtime submissions
-   *
-   * @param userId User UUID
-   * @returns List of overtime submissions
-   */
-  async findMy(userId: string): Promise<Overtime[]> {
-    return this.overtimeRepo.find({
-      where: { user_id: userId },
-      relations: ['activityType', 'area'],
-      order: { created_at: 'DESC' },
-    });
+  async findMyPaginated(
+    userId: string,
+    filters: OvertimeFilterDto,
+  ): Promise<PaginatedResponseDto<Overtime>> {
+    const qb = this.overtimeRepo
+      .createQueryBuilder('overtime')
+      .leftJoinAndSelect('overtime.activityType', 'activityType')
+      .leftJoinAndSelect('overtime.area', 'area')
+      .leftJoinAndSelect('overtime.approver', 'approver')
+      .where('overtime.user_id = :userId', { userId });
+
+    this.applyFilters(qb, filters);
+
+    const orderField = ALLOWED_SORT_FIELDS[filters.sort_by ?? 'created_at'] ?? 'overtime.created_at';
+    const sortDir = (filters.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 50;
+
+    qb.orderBy(orderField, sortDir)
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
-  /**
-   * Find pending overtime for approval
-   * Korlap sees only their area
-   *
-   * @param approverId Korlap UUID
-   * @param approverRole Korlap role
-   * @returns List of pending overtime
-   */
-  async findPending(
-    approverId: string,
-    approverRole: UserRole,
-  ): Promise<Overtime[]> {
-    const approver = await this.userRepo.findOne({ where: { id: approverId } });
+  async findAllPaginated(
+    requesterId: string,
+    requesterRole: UserRole,
+    filters: OvertimeFilterDto,
+  ): Promise<PaginatedResponseDto<Overtime>> {
+    const requester = await this.userRepo.findOne({ where: { id: requesterId } });
 
     const qb = this.overtimeRepo
       .createQueryBuilder('overtime')
       .leftJoinAndSelect('overtime.activityType', 'activityType')
       .leftJoinAndSelect('overtime.user', 'user')
       .leftJoinAndSelect('overtime.area', 'area')
-      .where('overtime.status = :status', { status: OvertimeStatus.PENDING });
+      .leftJoinAndSelect('overtime.approver', 'approver');
 
-    // Scope: korlap sees only their area, admin_data sees only their rayon
-    if (approverRole === UserRole.KORLAP && approver?.area_id) {
-      qb.andWhere('overtime.area_id = :areaId', { areaId: approver.area_id });
-    } else if (approverRole === UserRole.ADMIN_DATA && approver?.rayon_id) {
-      qb.leftJoin('overtime.area', 'area');
-      qb.andWhere('area.rayon_id = :rayonId', { rayonId: approver.rayon_id });
+    // Role-based scoping
+    if (requesterRole === UserRole.KORLAP && requester?.area_id) {
+      qb.andWhere('overtime.area_id = :areaId', { areaId: requester.area_id });
+    } else if (requesterRole === UserRole.KEPALA_RAYON) {
+      if (!requester?.rayon_id) {
+        throw new ForbiddenException('Kepala Rayon account has no assigned rayon');
+      }
+      qb.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
+    } else if (requesterRole === UserRole.ADMIN_DATA) {
+      if (!requester?.rayon_id) {
+        throw new ForbiddenException('Admin Data account has no assigned rayon');
+      }
+      qb.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
     }
+    // ADMIN_SYSTEM, SUPERADMIN see all
 
-    qb.orderBy('overtime.created_at', 'DESC');
-    return qb.getMany();
+    this.applyFilters(qb, filters);
+
+    const orderField = ALLOWED_SORT_FIELDS[filters.sort_by ?? 'created_at'] ?? 'overtime.created_at';
+    const sortDir = (filters.sort_dir?.toUpperCase() ?? 'DESC') as 'ASC' | 'DESC';
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 50;
+
+    qb.orderBy(orderField, sortDir)
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
-  /**
-   * Find overtime by ID
-   *
-   * @param overtimeId Overtime UUID
-   * @returns Overtime details
-   */
   async findOne(overtimeId: string): Promise<Overtime> {
     return this.findOneOrFail(overtimeId);
   }
 
-  /**
-   * Internal helper to find overtime or throw NotFoundException
-   */
+  private validateApprovalHierarchy(overtime: Overtime, approver: User): void {
+    if (!overtime.user) {
+      throw new NotFoundException('Overtime submitter not found');
+    }
+    const submitterRole = overtime.user.role;
+
+    if (approver.role === UserRole.KORLAP) {
+      if (!['satgas', 'linmas'].includes(submitterRole)) {
+        throw new ForbiddenException('Korlap can only approve overtime from satgas and linmas');
+      }
+      if (!approver.area_id || overtime.area_id !== approver.area_id) {
+        throw new ForbiddenException('You can only approve overtime for your area');
+      }
+    } else if (approver.role === UserRole.KEPALA_RAYON) {
+      if (!approver.rayon_id) {
+        throw new ForbiddenException('Kepala Rayon account has no assigned rayon');
+      }
+      if (!['korlap', 'admin_data'].includes(submitterRole)) {
+        throw new ForbiddenException('Kepala Rayon can only approve overtime from korlap and admin_data');
+      }
+      if (!overtime.area || !overtime.area.rayon_id || overtime.area.rayon_id !== approver.rayon_id) {
+        throw new ForbiddenException('You can only approve overtime for your rayon');
+      }
+    } else {
+      throw new ForbiddenException('You do not have authority to approve overtime');
+    }
+  }
+
+  private applyFilters(qb: any, filters: OvertimeFilterDto): void {
+    if (filters.status) {
+      qb.andWhere('overtime.status = :status', { status: filters.status });
+    }
+
+    if (filters.area_id) {
+      qb.andWhere('overtime.area_id = :filterAreaId', { filterAreaId: filters.area_id });
+    }
+
+    if (filters.from_date) {
+      qb.andWhere("DATE(overtime.start_datetime AT TIME ZONE 'Asia/Jakarta') >= :fromDate", { fromDate: filters.from_date });
+    }
+    if (filters.to_date) {
+      qb.andWhere("DATE(overtime.start_datetime AT TIME ZONE 'Asia/Jakarta') <= :toDate", { toDate: filters.to_date });
+    }
+  }
+
   private async findOneOrFail(overtimeId: string): Promise<Overtime> {
     const overtime = await this.overtimeRepo.findOne({
       where: { id: overtimeId },
