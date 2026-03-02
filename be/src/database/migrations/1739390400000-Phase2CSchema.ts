@@ -578,6 +578,11 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       ALTER TABLE activities ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
     `);
 
+    // Add task_id (optional link to a task, Phase 2C)
+    await queryRunner.query(`
+      ALTER TABLE activities ADD COLUMN IF NOT EXISTS task_id UUID REFERENCES tasks(id) ON DELETE SET NULL;
+    `);
+
     // Drop legacy columns
     console.log('  - Dropping legacy columns...');
     await queryRunner.query(`
