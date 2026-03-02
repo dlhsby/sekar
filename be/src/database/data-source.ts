@@ -37,7 +37,7 @@ const AppDataSource = new DataSource({
   // Migrations
   migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
   migrationsTableName: 'typeorm_migrations',
-  migrationsTransactionMode: 'all', // Run all migrations in a single transaction
+  migrationsTransactionMode: 'each', // Each migration runs in its own transaction for safe partial rollback
 
   // Logging
   logging: process.env.NODE_ENV === 'development',

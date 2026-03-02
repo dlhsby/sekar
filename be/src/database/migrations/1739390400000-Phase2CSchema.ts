@@ -340,6 +340,25 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     // ==========================================
     console.log('[Migration 3] Updating tasks schema...');
 
+    // Create tasks table if it doesn't exist yet
+    // (Phase 2 migration omitted this table; this ensures fresh-DB compatibility)
+    console.log('  - Ensuring tasks table exists (fresh-DB compatibility)...');
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        priority VARCHAR(20) NOT NULL DEFAULT 'medium',
+        deadline TIMESTAMPTZ,
+        area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+        assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
+        created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // Add rayon_id for rayon-scoped tasks
     console.log('  - Adding rayon_id column to tasks...');
     await queryRunner.query(`
