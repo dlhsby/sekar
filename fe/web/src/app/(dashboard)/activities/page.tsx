@@ -256,9 +256,7 @@ export default function ActivitiesPage() {
             <FormSelect
               label="Area"
               value={filters.areaId}
-              onChange={(value) =>
-                setFilters((prev) => ({ ...prev, areaId: value, page: 1 }))
-              }
+              onChange={(value) => setFilters((prev) => ({ ...prev, areaId: value, page: 1 }))}
               options={areaOptions}
             />
             <FormInput

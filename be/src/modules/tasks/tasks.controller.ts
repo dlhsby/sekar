@@ -74,7 +74,10 @@ export class TasksController {
   @ApiOperation({ summary: 'Get all tasks with optional filters' })
   @ApiResponse({ status: 200, description: 'Paginated list of tasks' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async findAll(@Query() filters: TaskFilterDto, @GetUser() user: User): Promise<PaginatedResponseDto<Task>> {
+  async findAll(
+    @Query() filters: TaskFilterDto,
+    @GetUser() user: User,
+  ): Promise<PaginatedResponseDto<Task>> {
     return this.tasksService.findAll(filters, user);
   }
 

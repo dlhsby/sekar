@@ -66,9 +66,7 @@ export class SupervisorService {
           shift: {
             id: shift.id,
             clock_in_time: shift.clock_in_time,
-            area: shift.area
-              ? { id: shift.area.id, name: shift.area.name }
-              : null,
+            area: shift.area ? { id: shift.area.id, name: shift.area.name } : null,
           },
           latest_location: latestLocation
             ? {
@@ -124,9 +122,7 @@ export class SupervisorService {
           shift: {
             id: shift.id,
             clock_in_time: shift.clock_in_time,
-            area: shift.area
-              ? { id: shift.area.id, name: shift.area.name }
-              : null,
+            area: shift.area ? { id: shift.area.id, name: shift.area.name } : null,
           },
           latest_location: latestLocation
             ? {

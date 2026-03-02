@@ -40,13 +40,12 @@ const PRIORITY_LABELS: Record<TaskPriority, string> = {
   urgent: 'Mendesak',
 };
 
-const PRIORITY_BADGES: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> =
-  {
-    low: 'secondary',
-    normal: 'success',
-    high: 'warning',
-    urgent: 'destructive',
-  };
+const PRIORITY_BADGES: Record<TaskPriority, 'secondary' | 'success' | 'warning' | 'destructive'> = {
+  low: 'secondary',
+  normal: 'success',
+  high: 'warning',
+  urgent: 'destructive',
+};
 
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuth();

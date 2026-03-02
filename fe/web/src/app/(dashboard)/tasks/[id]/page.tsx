@@ -76,8 +76,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
     );
   }
 
-  const canVerify =
-    hasRole(user.role, TASK_VERIFIER_ROLES) && task.status === 'completed';
+  const canVerify = hasRole(user.role, TASK_VERIFIER_ROLES) && task.status === 'completed';
 
   const handleVerify = async () => {
     await verifyMutation.mutateAsync(taskId);
@@ -282,9 +281,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {task.tags && task.tags.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">
-              Ditandai ({task.tags.length})
-            </h2>
+            <h2 className="text-xl font-bold text-nb-black">Ditandai ({task.tags.length})</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

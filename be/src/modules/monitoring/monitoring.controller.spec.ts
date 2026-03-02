@@ -275,7 +275,9 @@ describe('MonitoringController', () => {
         new NotFoundException('Rayon with ID rayon-1 not found'),
       );
 
-      await expect(controller.getRayonStats('rayon-1', mockSuperadmin)).rejects.toThrow(NotFoundException);
+      await expect(controller.getRayonStats('rayon-1', mockSuperadmin)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should allow kepala_rayon to access own rayon', async () => {
@@ -288,9 +290,9 @@ describe('MonitoringController', () => {
     });
 
     it('should deny kepala_rayon access to other rayon', async () => {
-      await expect(
-        controller.getRayonStats('rayon-other', mockKepalaRayon),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getRayonStats('rayon-other', mockKepalaRayon)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should allow admin_data to access own rayon', async () => {
@@ -303,9 +305,9 @@ describe('MonitoringController', () => {
     });
 
     it('should deny admin_data access to other rayon', async () => {
-      await expect(
-        controller.getRayonStats('rayon-other', mockAdminData),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getRayonStats('rayon-other', mockAdminData)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should return statistics with area summaries', async () => {
@@ -357,7 +359,9 @@ describe('MonitoringController', () => {
         new NotFoundException('Area with ID area-1 not found'),
       );
 
-      await expect(controller.getAreaStats('area-1', mockSuperadmin)).rejects.toThrow(NotFoundException);
+      await expect(controller.getAreaStats('area-1', mockSuperadmin)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should allow korlap to access own area', async () => {
@@ -370,9 +374,9 @@ describe('MonitoringController', () => {
     });
 
     it('should deny korlap access to other area', async () => {
-      await expect(
-        controller.getAreaStats('area-other', mockKorlap),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getAreaStats('area-other', mockKorlap)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should return statistics with worker list', async () => {

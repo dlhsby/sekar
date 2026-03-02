@@ -1,10 +1,6 @@
 import { UserRole } from '../entities/user.entity';
 
-export const CLOCKABLE_ROLES = [
-  UserRole.SATGAS,
-  UserRole.LINMAS,
-  UserRole.KORLAP,
-];
+export const CLOCKABLE_ROLES = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP];
 
 export const ACTIVITY_SUBMITTERS = [
   UserRole.SATGAS,
@@ -28,7 +24,12 @@ export const TASK_RECEIVERS = [
   UserRole.KEPALA_RAYON,
 ];
 
-export const OVERTIME_SUBMITTERS = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_DATA];
+export const OVERTIME_SUBMITTERS = [
+  UserRole.SATGAS,
+  UserRole.LINMAS,
+  UserRole.KORLAP,
+  UserRole.ADMIN_DATA,
+];
 
 export const OVERTIME_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
 

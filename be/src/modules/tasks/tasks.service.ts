@@ -527,7 +527,7 @@ export class TasksService {
       .groupBy('t.status')
       .getRawMany<{ status: string; count: string }>();
 
-    const map = Object.fromEntries(rows.map(r => [r.status, Number(r.count)]));
+    const map = Object.fromEntries(rows.map((r) => [r.status, Number(r.count)]));
     const g = (s: string) => map[s] ?? 0;
     return {
       total: rows.reduce((sum, r) => sum + Number(r.count), 0),
@@ -825,12 +825,7 @@ export class TasksService {
    * Validate that a user can be assigned tasks
    */
   private validateAssignee(user: User): void {
-    const validRoles = [
-      UserRole.SATGAS,
-      UserRole.LINMAS,
-      UserRole.KORLAP,
-      UserRole.KEPALA_RAYON,
-    ];
+    const validRoles = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.KEPALA_RAYON];
 
     if (!validRoles.includes(user.role)) {
       throw new BadRequestException(
@@ -877,9 +872,7 @@ export class TasksService {
 
     if (creator.role === UserRole.KORLAP && creator.area_id && areaId) {
       if (areaId !== creator.area_id) {
-        throw new ForbiddenException(
-          'Korlap can only create tasks for their own area',
-        );
+        throw new ForbiddenException('Korlap can only create tasks for their own area');
       }
     }
   }

@@ -82,13 +82,20 @@ export class Activity {
 
   @ApiProperty({
     description: 'S3 URLs of uploaded photos (1-3 photos)',
-    example: ['https://sekar-bucket.s3.amazonaws.com/activities/photo1.jpg', 'https://sekar-bucket.s3.amazonaws.com/activities/photo2.jpg'],
+    example: [
+      'https://sekar-bucket.s3.amazonaws.com/activities/photo1.jpg',
+      'https://sekar-bucket.s3.amazonaws.com/activities/photo2.jpg',
+    ],
     type: [String],
   })
   @Column('text', { array: true, default: '{}' })
   photo_urls: string[];
 
-  @ApiProperty({ description: 'GPS latitude where activity was created', example: -7.2905, nullable: true })
+  @ApiProperty({
+    description: 'GPS latitude where activity was created',
+    example: -7.2905,
+    nullable: true,
+  })
   @Column({
     type: 'decimal',
     precision: 10,
@@ -101,7 +108,11 @@ export class Activity {
   })
   gps_lat: number | null;
 
-  @ApiProperty({ description: 'GPS longitude where activity was created', example: 112.7398, nullable: true })
+  @ApiProperty({
+    description: 'GPS longitude where activity was created',
+    example: 112.7398,
+    nullable: true,
+  })
   @Column({
     type: 'decimal',
     precision: 11,

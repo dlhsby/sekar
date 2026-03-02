@@ -19,10 +19,7 @@ import { UsersService } from '../users/users.service';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import {
-  ACTIVITY_SUBMITTERS,
-  MONITORING_CITY,
-} from '../users/constants/role-groups';
+import { ACTIVITY_SUBMITTERS, MONITORING_CITY } from '../users/constants/role-groups';
 
 /**
  * Activities Service
@@ -54,8 +51,14 @@ export class ActivitiesService {
    * @param dto Activity creation data
    * @returns Created activity
    */
-  async createActivity(userId: string, userRole: UserRole, dto: CreateActivityDto): Promise<Activity> {
-    this.logger.log(`User ${userId} (${userRole}) creating activity with activity type ${dto.activity_type_id}`);
+  async createActivity(
+    userId: string,
+    userRole: UserRole,
+    dto: CreateActivityDto,
+  ): Promise<Activity> {
+    this.logger.log(
+      `User ${userId} (${userRole}) creating activity with activity type ${dto.activity_type_id}`,
+    );
 
     // 1. Auto-detect active shift
     const activeShift = await this.shiftsRepository.findOne({
@@ -64,7 +67,9 @@ export class ActivitiesService {
     });
 
     if (!activeShift) {
-      throw new BadRequestException('No active shift found. Please clock in first before submitting activity.');
+      throw new BadRequestException(
+        'No active shift found. Please clock in first before submitting activity.',
+      );
     }
 
     // 2. Validate activity_type exists and is active
@@ -297,11 +302,7 @@ export class ActivitiesService {
    * @param userId UUID of the requesting user
    * @returns Updated activity
    */
-  async update(
-    id: string,
-    dto: UpdateActivityDto,
-    userId: string,
-  ): Promise<Activity> {
+  async update(id: string, dto: UpdateActivityDto, userId: string): Promise<Activity> {
     const activity = await this.activitiesRepository.findOne({
       where: { id },
       relations: ['user'],
@@ -483,10 +484,16 @@ export class ActivitiesService {
         throw new ForbiddenException('Akun Kepala Rayon Anda belum memiliki rayon');
       }
       if (!['korlap', 'admin_data'].includes(submitterRole)) {
-        throw new ForbiddenException('Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data');
+        throw new ForbiddenException(
+          'Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data',
+        );
       }
       if (submitterRole === 'korlap') {
-        if (!activity.area || !activity.area.rayon_id || activity.area.rayon_id !== reviewer.rayon_id) {
+        if (
+          !activity.area ||
+          !activity.area.rayon_id ||
+          activity.area.rayon_id !== reviewer.rayon_id
+        ) {
           throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di rayon Anda');
         }
       }
@@ -514,7 +521,9 @@ export class ActivitiesService {
           activity.photo_urls.map((url) => this.s3Service.convertToPresignedUrl(url, 86400)),
         );
       } catch (error) {
-        this.logger.error(`Failed to convert photo_urls for activity ${activity.id}: ${error.message}`);
+        this.logger.error(
+          `Failed to convert photo_urls for activity ${activity.id}: ${error.message}`,
+        );
         // Keep original URLs on error
       }
     }

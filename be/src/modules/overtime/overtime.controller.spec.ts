@@ -62,11 +62,7 @@ describe('OvertimeController', () => {
 
       const result = await controller.submit(createDto, user);
 
-      expect(service.submit).toHaveBeenCalledWith(
-        user.id,
-        user.role,
-        createDto,
-      );
+      expect(service.submit).toHaveBeenCalledWith(user.id, user.role, createDto);
       expect(result).toEqual(mockOvertime);
     });
   });
@@ -107,11 +103,7 @@ describe('OvertimeController', () => {
 
       const result = await controller.findAll(user, filterDto);
 
-      expect(service.findAllPaginated).toHaveBeenCalledWith(
-        user.id,
-        user.role,
-        filterDto,
-      );
+      expect(service.findAllPaginated).toHaveBeenCalledWith(user.id, user.role, filterDto);
       expect(result.data).toHaveLength(1);
     });
 
@@ -169,10 +161,7 @@ describe('OvertimeController', () => {
 
       const result = await controller.approve(overtimeId, user);
 
-      expect(service.approve).toHaveBeenCalledWith(
-        overtimeId,
-        user.id,
-      );
+      expect(service.approve).toHaveBeenCalledWith(overtimeId, user.id);
       expect(result).toEqual(mockOvertime);
     });
   });
@@ -192,11 +181,7 @@ describe('OvertimeController', () => {
 
       const result = await controller.reject(overtimeId, rejectDto, user);
 
-      expect(service.reject).toHaveBeenCalledWith(
-        overtimeId,
-        user.id,
-        rejectDto,
-      );
+      expect(service.reject).toHaveBeenCalledWith(overtimeId, user.id, rejectDto);
       expect(result).toEqual(mockOvertime);
     });
   });

@@ -97,7 +97,11 @@ describe('ActivitiesController', () => {
       const result = await controller.create(createDto, linmasUser as any);
 
       expect(result).toEqual(mockActivity);
-      expect(service.createActivity).toHaveBeenCalledWith(linmasUser.id, linmasUser.role, createDto);
+      expect(service.createActivity).toHaveBeenCalledWith(
+        linmasUser.id,
+        linmasUser.role,
+        createDto,
+      );
     });
 
     it('should create an activity for KORLAP', async () => {
@@ -107,7 +111,11 @@ describe('ActivitiesController', () => {
       const result = await controller.create(createDto, korlapUser as any);
 
       expect(result).toEqual(mockActivity);
-      expect(service.createActivity).toHaveBeenCalledWith(korlapUser.id, korlapUser.role, createDto);
+      expect(service.createActivity).toHaveBeenCalledWith(
+        korlapUser.id,
+        korlapUser.role,
+        createDto,
+      );
     });
 
     it('should create an activity for ADMIN_DATA', async () => {
@@ -117,7 +125,11 @@ describe('ActivitiesController', () => {
       const result = await controller.create(createDto, adminDataUser as any);
 
       expect(result).toEqual(mockActivity);
-      expect(service.createActivity).toHaveBeenCalledWith(adminDataUser.id, adminDataUser.role, createDto);
+      expect(service.createActivity).toHaveBeenCalledWith(
+        adminDataUser.id,
+        adminDataUser.role,
+        createDto,
+      );
     });
 
     it('should handle activity creation with multiple photos', async () => {
@@ -129,7 +141,10 @@ describe('ActivitiesController', () => {
           'https://s3.amazonaws.com/activities/photo3.jpg',
         ],
       };
-      mockService.createActivity.mockResolvedValue({ ...mockActivity, photo_urls: dtoWithMultiplePhotos.photo_urls });
+      mockService.createActivity.mockResolvedValue({
+        ...mockActivity,
+        photo_urls: dtoWithMultiplePhotos.photo_urls,
+      });
 
       const result = await controller.create(dtoWithMultiplePhotos, mockUser as any);
 
@@ -186,12 +201,7 @@ describe('ActivitiesController', () => {
       const result = await controller.findAll(filterDto, korlapUser as any);
 
       expect(result).toEqual(mockPaginatedResponse);
-      expect(service.findAllPaginated).toHaveBeenCalledWith(
-        expect.any(Object),
-        korlapUser,
-        1,
-        50,
-      );
+      expect(service.findAllPaginated).toHaveBeenCalledWith(expect.any(Object), korlapUser, 1, 50);
     });
 
     it('should return paginated activities for KEPALA_RAYON (rayon-scoped)', async () => {
@@ -224,12 +234,7 @@ describe('ActivitiesController', () => {
       const result = await controller.findAll(filterDto, adminUser as any);
 
       expect(result).toEqual(mockPaginatedResponse);
-      expect(service.findAllPaginated).toHaveBeenCalledWith(
-        expect.any(Object),
-        adminUser,
-        1,
-        50,
-      );
+      expect(service.findAllPaginated).toHaveBeenCalledWith(expect.any(Object), adminUser, 1, 50);
     });
 
     it('should apply user_id filter when provided', async () => {
@@ -299,12 +304,7 @@ describe('ActivitiesController', () => {
 
       await controller.findAll(filterDto, mockUser as any);
 
-      expect(service.findAllPaginated).toHaveBeenCalledWith(
-        expect.any(Object),
-        mockUser,
-        2,
-        20,
-      );
+      expect(service.findAllPaginated).toHaveBeenCalledWith(expect.any(Object), mockUser, 2, 20);
     });
 
     it('should use default pagination when not provided', async () => {

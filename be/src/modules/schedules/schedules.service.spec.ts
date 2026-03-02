@@ -1,11 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, IsNull, Or, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
-import {
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import { Schedule } from './entities/schedule.entity';
 import { UsersService } from '../users/users.service';
@@ -127,9 +123,9 @@ describe('SchedulesService', () => {
     repository = module.get(getRepositoryToken(Schedule)) as jest.Mocked<Repository<Schedule>>;
     usersService = module.get(UsersService) as jest.Mocked<UsersService>;
     areasService = module.get(AreasService) as jest.Mocked<AreasService>;
-    shiftDefinitionsService = module.get(ShiftDefinitionsService) as jest.Mocked<
-      ShiftDefinitionsService
-    >;
+    shiftDefinitionsService = module.get(
+      ShiftDefinitionsService,
+    ) as jest.Mocked<ShiftDefinitionsService>;
   });
 
   afterEach(async () => {
@@ -623,7 +619,9 @@ describe('SchedulesService', () => {
       mockRepository.save.mockResolvedValue({
         ...existingSchedule,
         ...updateDto,
-        effective_date: updateDto.effective_date ? new Date(updateDto.effective_date) : existingSchedule.effective_date,
+        effective_date: updateDto.effective_date
+          ? new Date(updateDto.effective_date)
+          : existingSchedule.effective_date,
         end_date: updateDto.end_date ? new Date(updateDto.end_date) : existingSchedule.end_date,
       });
 
@@ -726,7 +724,9 @@ describe('SchedulesService', () => {
       mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
       mockQueryBuilder.getOne.mockResolvedValue(overlappingSchedule);
 
-      await expect(service.update(mockSchedule.id, conflictUpdateDto)).rejects.toThrow(ConflictException);
+      await expect(service.update(mockSchedule.id, conflictUpdateDto)).rejects.toThrow(
+        ConflictException,
+      );
       await expect(service.update(mockSchedule.id, conflictUpdateDto)).rejects.toThrow(
         `Schedule overlaps with existing schedule (ID: ${overlappingSchedule.id})`,
       );

@@ -57,7 +57,9 @@ export function initializeFirebase(): admin.app.App {
 
     // Validate service account structure
     if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
-      throw new Error('Invalid service account: missing required fields (project_id, private_key, client_email)');
+      throw new Error(
+        'Invalid service account: missing required fields (project_id, private_key, client_email)',
+      );
     }
 
     // Initialize Firebase Admin SDK

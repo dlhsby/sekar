@@ -67,7 +67,10 @@ export class ActivitiesController {
   @ApiResponse({ status: 400, description: 'No active shift found. Clock in first.' })
   @ApiResponse({ status: 403, description: 'Activity type not available for your role' })
   @ApiResponse({ status: 404, description: 'Activity type not found or inactive' })
-  async create(@Body() createActivityDto: CreateActivityDto, @GetUser() user: User): Promise<Activity> {
+  async create(
+    @Body() createActivityDto: CreateActivityDto,
+    @GetUser() user: User,
+  ): Promise<Activity> {
     return this.activitiesService.createActivity(user.id, user.role, createActivityDto);
   }
 
@@ -81,8 +84,7 @@ export class ActivitiesController {
   @Get()
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)
   @ApiOperation({
-    summary:
-      'List activities with filters and pagination (Scope-based: Own/Area/Rayon/City)',
+    summary: 'List activities with filters and pagination (Scope-based: Own/Area/Rayon/City)',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
@@ -90,7 +92,12 @@ export class ActivitiesController {
   @ApiQuery({ name: 'shift_id', required: false, type: String })
   @ApiQuery({ name: 'from_date', required: false, type: String, description: 'ISO date string' })
   @ApiQuery({ name: 'to_date', required: false, type: String, description: 'ISO date string' })
-  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'approved', 'rejected'], description: 'Filter by approval status' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['pending', 'approved', 'rejected'],
+    description: 'Filter by approval status',
+  })
   @ApiResponse({
     status: 200,
     description: 'Paginated list of activities (scope-filtered)',

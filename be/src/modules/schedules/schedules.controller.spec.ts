@@ -181,7 +181,12 @@ describe('SchedulesController', () => {
     it('should apply all filters together', async () => {
       mockService.findAll.mockResolvedValue([mockSchedule]);
 
-      const result = await controller.findAll(mockAdminUser as any, mockArea.id, mockUser.id, 'true');
+      const result = await controller.findAll(
+        mockAdminUser as any,
+        mockArea.id,
+        mockUser.id,
+        'true',
+      );
 
       expect(result).toEqual([mockSchedule]);
       expect(service.findAll).toHaveBeenCalledWith(mockArea.id, mockUser.id, true, mockAdminUser);

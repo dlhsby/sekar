@@ -40,9 +40,13 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       );
     `);
 
-    await queryRunner.query(`CREATE UNIQUE INDEX idx_users_username ON users(username) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX idx_users_username ON users(username) WHERE deleted_at IS NULL;`,
+    );
     await queryRunner.query(`CREATE INDEX idx_users_role ON users(role) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_users_active ON users(is_active) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(
+      `CREATE INDEX idx_users_active ON users(is_active) WHERE deleted_at IS NULL;`,
+    );
 
     console.log('  ✓ users');
 
@@ -92,8 +96,12 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX idx_areas_type ON areas(area_type_id) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_areas_active ON areas(is_active) WHERE deleted_at IS NULL AND is_active = TRUE;`);
+    await queryRunner.query(
+      `CREATE INDEX idx_areas_type ON areas(area_type_id) WHERE deleted_at IS NULL;`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_areas_active ON areas(is_active) WHERE deleted_at IS NULL AND is_active = TRUE;`,
+    );
 
     console.log('  ✓ areas');
 
@@ -112,8 +120,12 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       );
     `);
 
-    await queryRunner.query(`CREATE UNIQUE INDEX idx_worker_assignments_worker ON worker_assignments(worker_id);`);
-    await queryRunner.query(`CREATE INDEX idx_worker_assignments_area ON worker_assignments(area_id);`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX idx_worker_assignments_worker ON worker_assignments(worker_id);`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_worker_assignments_area ON worker_assignments(area_id);`,
+    );
 
     console.log('  ✓ worker_assignments');
 
@@ -144,10 +156,18 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX idx_shifts_worker_date ON shifts(worker_id, clock_in_time DESC) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_shifts_area_date ON shifts(area_id, clock_in_time DESC) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_shifts_active ON shifts(worker_id) WHERE clock_out_time IS NULL AND deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_shifts_date_range ON shifts(clock_in_time DESC) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(
+      `CREATE INDEX idx_shifts_worker_date ON shifts(worker_id, clock_in_time DESC) WHERE deleted_at IS NULL;`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_shifts_area_date ON shifts(area_id, clock_in_time DESC) WHERE deleted_at IS NULL;`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_shifts_active ON shifts(worker_id) WHERE clock_out_time IS NULL AND deleted_at IS NULL;`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_shifts_date_range ON shifts(clock_in_time DESC) WHERE deleted_at IS NULL;`,
+    );
 
     console.log('  ✓ shifts');
 
@@ -181,10 +201,18 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX idx_reports_shift_created ON work_reports(shift_id, created_at DESC) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_reports_worker_date ON work_reports(worker_id, created_at DESC) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_reports_type_date ON work_reports(report_type, created_at DESC) WHERE deleted_at IS NULL;`);
-    await queryRunner.query(`CREATE INDEX idx_reports_unreviewed ON work_reports(is_reviewed, created_at DESC) WHERE is_reviewed = FALSE AND deleted_at IS NULL;`);
+    await queryRunner.query(
+      `CREATE INDEX idx_reports_shift_created ON work_reports(shift_id, created_at DESC) WHERE deleted_at IS NULL;`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_reports_worker_date ON work_reports(worker_id, created_at DESC) WHERE deleted_at IS NULL;`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_reports_type_date ON work_reports(report_type, created_at DESC) WHERE deleted_at IS NULL;`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_reports_unreviewed ON work_reports(is_reviewed, created_at DESC) WHERE is_reviewed = FALSE AND deleted_at IS NULL;`,
+    );
 
     console.log('  ✓ work_reports');
 
@@ -210,8 +238,12 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX idx_location_logs_worker_latest ON location_logs(worker_id, logged_at DESC);`);
-    await queryRunner.query(`CREATE INDEX idx_location_logs_shift_time ON location_logs(shift_id, logged_at DESC);`);
+    await queryRunner.query(
+      `CREATE INDEX idx_location_logs_worker_latest ON location_logs(worker_id, logged_at DESC);`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_location_logs_shift_time ON location_logs(shift_id, logged_at DESC);`,
+    );
 
     console.log('  ✓ location_logs');
 
