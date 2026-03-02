@@ -274,6 +274,34 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       ALTER TABLE overtimes ALTER COLUMN activity_type_id SET NOT NULL;
     `);
 
+    // Add start_datetime / end_datetime (Phase 2C replaces date+start_time+end_time)
+    console.log('  - Adding start_datetime/end_datetime to overtimes...');
+    await queryRunner.query(`
+      ALTER TABLE overtimes ADD COLUMN IF NOT EXISTS start_datetime TIMESTAMPTZ;
+    `);
+    await queryRunner.query(`
+      ALTER TABLE overtimes ADD COLUMN IF NOT EXISTS end_datetime TIMESTAMPTZ;
+    `);
+    // Migrate old date+time columns to timestamptz (for existing rows)
+    await queryRunner.query(`
+      UPDATE overtimes
+      SET
+        start_datetime = COALESCE((date::TEXT || ' ' || COALESCE(start_time::TEXT, '00:00:00'))::TIMESTAMPTZ, NOW()),
+        end_datetime   = COALESCE((date::TEXT || ' ' || COALESCE(end_time::TEXT,   '01:00:00'))::TIMESTAMPTZ, NOW() + INTERVAL '1 hour')
+      WHERE start_datetime IS NULL;
+    `);
+    // Make NOT NULL after data migration
+    await queryRunner.query(`
+      ALTER TABLE overtimes ALTER COLUMN start_datetime SET NOT NULL;
+    `);
+    await queryRunner.query(`
+      ALTER TABLE overtimes ALTER COLUMN end_datetime SET NOT NULL;
+    `);
+    // Drop old date/time columns
+    await queryRunner.query(`ALTER TABLE overtimes DROP COLUMN IF EXISTS date;`);
+    await queryRunner.query(`ALTER TABLE overtimes DROP COLUMN IF EXISTS start_time;`);
+    await queryRunner.query(`ALTER TABLE overtimes DROP COLUMN IF EXISTS end_time;`);
+
     // Now safe to drop overtime_aktivitas
     console.log('  - Dropping overtime_aktivitas table...');
     await queryRunner.query(`DROP TABLE IF EXISTS overtime_aktivitas CASCADE;`);
