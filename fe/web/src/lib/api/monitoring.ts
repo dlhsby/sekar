@@ -122,7 +122,7 @@ export const monitoringKeys = {
 /**
  * Fetch City-Wide Statistics
  */
-export function useCityStats() {
+export function useCityStats(enabled = true) {
   return useQuery({
     queryKey: monitoringKeys.city(),
     queryFn: async () => {
@@ -131,13 +131,14 @@ export function useCityStats() {
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
+    enabled,
   });
 }
 
 /**
  * Fetch Rayon Statistics
  */
-export function useRayonMonitoring(rayonId: string) {
+export function useRayonMonitoring(rayonId: string, enabled = true) {
   return useQuery({
     queryKey: monitoringKeys.rayon(rayonId),
     queryFn: async () => {
@@ -146,14 +147,14 @@ export function useRayonMonitoring(rayonId: string) {
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
-    enabled: !!rayonId,
+    enabled: enabled && !!rayonId,
   });
 }
 
 /**
  * Fetch Area Statistics
  */
-export function useAreaMonitoring(areaId: string) {
+export function useAreaMonitoring(areaId: string, enabled = true) {
   return useQuery({
     queryKey: monitoringKeys.area(areaId),
     queryFn: async () => {
@@ -162,7 +163,7 @@ export function useAreaMonitoring(areaId: string) {
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
-    enabled: !!areaId,
+    enabled: enabled && !!areaId,
   });
 }
 
