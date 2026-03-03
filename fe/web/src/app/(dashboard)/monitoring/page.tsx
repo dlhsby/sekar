@@ -97,23 +97,44 @@ export default function MonitoringPage() {
   }
 
   // Determine which stats to display
-  const displayStats =
-    areaFilter && areaFilter !== 'all'
-      ? areaStats
-      : rayonFilter && rayonFilter !== 'all'
-        ? rayonStats
-        : cityStats;
-
-  const displayLoading =
-    areaFilter && areaFilter !== 'all'
-      ? areaLoading
-      : rayonFilter && rayonFilter !== 'all'
-        ? rayonLoading
-        : cityLoading;
+  const isAreaView = areaFilter && areaFilter !== 'all';
+  const isRayonView = !isAreaView && rayonFilter && rayonFilter !== 'all';
+  const displayLoading = isAreaView ? areaLoading : isRayonView ? rayonLoading : cityLoading;
 
   const users = liveUsersData?.users || [];
-  const onlineUsers = users.filter((u) => u.status === 'online');
-  const offlineUsers = users.filter((u) => u.status === 'offline');
+  const onlineUsers = users.filter((u) => u.is_within_area);
+  const offlineUsers = users.filter((u) => !u.is_within_area);
+
+  // Derive stat values from actual backend field names
+  const statUsersOnline = isAreaView
+    ? (areaStats?.users_online ?? 0)
+    : isRayonView
+      ? (rayonStats?.workers_online ?? 0)
+      : (cityStats?.workers_online ?? 0);
+
+  const statUsersTotal = isAreaView
+    ? (areaStats?.total_users_assigned ?? 0)
+    : isRayonView
+      ? (rayonStats?.total_workers ?? 0)
+      : (cityStats?.total_workers ?? 0);
+
+  const statTasksPending = isAreaView
+    ? (areaStats?.tasks_pending ?? 0)
+    : isRayonView
+      ? (rayonStats?.tasks_pending ?? 0)
+      : (cityStats?.tasks_pending ?? 0);
+
+  const statActiveShifts = isRayonView
+    ? (rayonStats?.active_shifts ?? 0)
+    : (cityStats?.active_shifts ?? 0);
+
+  const statActivities = isAreaView
+    ? (areaStats?.activities_submitted_today ?? 0)
+    : isRayonView
+      ? (rayonStats?.activities_submitted_today ?? 0)
+      : (cityStats?.activities_submitted_today ?? 0);
+
+  const hasStats = isAreaView ? !!areaStats : isRayonView ? !!rayonStats : !!cityStats;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -195,98 +216,58 @@ export default function MonitoringPage() {
             <div key={i} className="h-32 bg-nb-gray-200 border-2 border-nb-black animate-pulse" />
           ))}
         </div>
-      ) : displayStats ? (
+      ) : hasStats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Users Online */}
           <Card variant="elevated">
             <CardContent>
               <div className="text-sm font-semibold text-nb-gray-600 mb-2">Petugas Online</div>
               <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-black text-nb-success">
-                  {areaFilter && areaFilter !== 'all'
-                    ? (areaStats?.current_shift?.active_users ?? 0)
-                    : rayonFilter && rayonFilter !== 'all'
-                      ? (rayonStats?.summary?.users_online ?? 0)
-                      : (cityStats?.summary?.users_online ?? 0)}
-                </div>
-                <div className="text-nb-gray-600">
-                  /{' '}
-                  {areaFilter && areaFilter !== 'all'
-                    ? (areaStats?.current_shift?.assigned_users ?? 0)
-                    : rayonFilter && rayonFilter !== 'all'
-                      ? (rayonStats?.summary?.total_users ?? 0)
-                      : (cityStats?.summary?.total_users ?? 0)}
-                </div>
+                <div className="text-3xl font-black text-nb-success">{statUsersOnline}</div>
+                <div className="text-nb-gray-600">/ {statUsersTotal}</div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Linmas Online */}
+          {/* Tasks Pending */}
           <Card variant="elevated">
             <CardContent>
-              <div className="text-sm font-semibold text-nb-gray-600 mb-2">Linmas Online</div>
-              <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-black text-nb-primary">
-                  {areaFilter && areaFilter !== 'all'
-                    ? (areaStats?.current_shift?.active_linmas ?? 0)
-                    : rayonFilter && rayonFilter !== 'all'
-                      ? (rayonStats?.summary?.linmas_online ?? 0)
-                      : (cityStats?.summary?.linmas_online ?? 0)}
-                </div>
-                <div className="text-nb-gray-600">
-                  /{' '}
-                  {areaFilter && areaFilter !== 'all'
-                    ? (areaStats?.current_shift?.assigned_linmas ?? 0)
-                    : rayonFilter && rayonFilter !== 'all'
-                      ? (rayonStats?.summary?.total_linmas ?? 0)
-                      : (cityStats?.summary?.total_linmas ?? 0)}
-                </div>
-              </div>
+              <div className="text-sm font-semibold text-nb-gray-600 mb-2">Tugas Pending</div>
+              <div className="text-3xl font-black text-nb-primary">{statTasksPending}</div>
             </CardContent>
           </Card>
 
-          {/* Active Shifts */}
-          {(!areaFilter || areaFilter === 'all') && (
+          {/* Active Shifts (city/rayon only) */}
+          {!isAreaView && (
             <Card variant="elevated">
               <CardContent>
                 <div className="text-sm font-semibold text-nb-gray-600 mb-2">Shift Aktif</div>
-                <div className="text-3xl font-black text-nb-warning">
-                  {rayonFilter && rayonFilter !== 'all'
-                    ? (rayonStats?.summary?.active_shifts ?? 0)
-                    : (cityStats?.summary?.active_shifts ?? 0)}
-                </div>
+                <div className="text-3xl font-black text-nb-warning">{statActiveShifts}</div>
               </CardContent>
             </Card>
           )}
 
           {/* Activities Today */}
-          {(!areaFilter || areaFilter === 'all') && (
+          <Card variant="elevated">
+            <CardContent>
+              <div className="text-sm font-semibold text-nb-gray-600 mb-2">Aktivitas Hari Ini</div>
+              <div className="text-3xl font-black text-nb-black">{statActivities}</div>
+            </CardContent>
+          </Card>
+
+          {/* Area-specific: staffing status */}
+          {isAreaView && areaStats && (
             <Card variant="elevated">
               <CardContent>
                 <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-                  Aktivitas Hari Ini
+                  Status Kepegawaian
                 </div>
-                <div className="text-3xl font-black text-nb-black">
-                  {rayonFilter && rayonFilter !== 'all'
-                    ? (rayonStats?.summary?.activities_today ?? 0)
-                    : (cityStats?.summary?.activities_today ?? 0)}
+                <div
+                  className={`font-black text-lg ${areaStats.is_fully_staffed ? 'text-nb-success' : 'text-nb-danger'}`}
+                >
+                  {areaStats.is_fully_staffed ? 'Terpenuhi' : 'Kurang Petugas'}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Area-specific: Shift Info */}
-          {areaFilter && areaFilter !== 'all' && areaStats && (
-            <Card variant="elevated">
-              <CardContent>
-                <div className="text-sm font-semibold text-nb-gray-600 mb-2">Shift Saat Ini</div>
-                <div className="font-black text-nb-black">
-                  {areaStats.current_shift.definition.name}
-                </div>
-                <div className="text-sm text-nb-gray-600">
-                  {areaStats.current_shift.definition.start_time} -{' '}
-                  {areaStats.current_shift.definition.end_time}
-                </div>
+                <div className="text-sm text-nb-gray-600 mt-1">{areaStats.name}</div>
               </CardContent>
             </Card>
           )}
@@ -307,8 +288,8 @@ export default function MonitoringPage() {
               <p className="text-nb-gray-600 font-semibold mb-2">Peta Monitoring Real-Time</p>
               <p className="text-sm text-nb-gray-500">Integrasi Mapbox akan ditambahkan di sini</p>
               <p className="text-xs text-nb-gray-400 mt-2">
-                {users.length} petugas terdeteksi ({onlineUsers.length} online,{' '}
-                {offlineUsers.length} offline)
+                {users.length} petugas terdeteksi ({onlineUsers.length} dalam area,{' '}
+                {offlineUsers.length} di luar area)
               </p>
             </div>
           </div>
@@ -334,14 +315,14 @@ export default function MonitoringPage() {
             <div className="space-y-3">
               {users.map((liveUser, index) => (
                 <div
-                  key={liveUser.user_id || `user-${index}`}
+                  key={liveUser.id || `user-${index}`}
                   className="flex items-center justify-between p-4 border-2 border-nb-black bg-white hover:bg-nb-gray-50 transition-colors"
                 >
                   {/* User Info */}
                   <div className="flex items-center gap-4">
                     <div
                       className={`h-3 w-3 rounded-full ${
-                        liveUser.status === 'online' ? 'bg-nb-success' : 'bg-nb-gray-400'
+                        liveUser.is_within_area ? 'bg-nb-success' : 'bg-nb-gray-400'
                       }`}
                     />
                     <div>
@@ -355,13 +336,10 @@ export default function MonitoringPage() {
                     <Badge variant="default" size="sm">
                       {ROLE_LABELS[liveUser.role as UserRole] || liveUser.role}
                     </Badge>
-                    <Badge
-                      variant={liveUser.status === 'online' ? 'success' : 'secondary'}
-                      size="sm"
-                    >
-                      {liveUser.status === 'online' ? 'Online' : 'Offline'}
+                    <Badge variant={liveUser.is_within_area ? 'success' : 'secondary'} size="sm">
+                      {liveUser.is_within_area ? 'Dalam Area' : 'Di Luar Area'}
                     </Badge>
-                    {liveUser.battery_level < 20 && (
+                    {liveUser.battery_level !== null && liveUser.battery_level < 20 && (
                       <Badge variant="destructive" size="sm">
                         {liveUser.battery_level}%
                       </Badge>
@@ -377,7 +355,7 @@ export default function MonitoringPage() {
       {/* Last Updated */}
       {liveUsersData && (
         <div className="text-center text-sm text-nb-gray-500">
-          Terakhir diperbarui: {new Date(liveUsersData.timestamp).toLocaleString('id-ID')}
+          Terakhir diperbarui: {new Date(liveUsersData.generated_at).toLocaleString('id-ID')}
         </div>
       )}
     </div>

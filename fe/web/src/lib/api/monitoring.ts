@@ -1,5 +1,7 @@
 /**
  * Monitoring API Client (Phase 2C - terminology updated)
+ * Interfaces match backend DTOs exactly:
+ *  CityStatsDto, RayonStatsDto, AreaStatsDto, LiveUsersResponseDto
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -7,96 +9,94 @@ import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
 
 /**
- * City-Wide Statistics Interface (Phase 2C)
+ * City-Wide Statistics Interface — matches CityStatsDto
  */
 export interface CityStats {
-  timestamp: string;
-  summary: {
-    total_rayons: number;
-    total_areas: number;
-    total_users: number;
-    total_linmas: number;
-    users_online: number;
-    linmas_online: number;
-    active_shifts: number;
-    activities_today: number;
-    tasks_pending: number;
-    tasks_in_progress: number;
-  };
+  total_rayons: number;
+  total_areas: number;
+  total_workers: number;
+  workers_online: number;
+  workers_offline: number;
+  active_shifts: number;
+  tasks_pending: number;
+  tasks_in_progress: number;
+  tasks_completed_today: number;
+  activities_submitted_today: number;
+  generated_at: string;
 }
 
 /**
- * Rayon Statistics Interface
+ * Rayon Statistics Interface — matches RayonStatsDto
  */
 export interface RayonMonitoringStats {
-  timestamp: string;
-  rayon: {
-    id: string;
-    name: string;
-  };
-  summary: {
-    total_areas: number;
-    total_users: number;
-    total_linmas: number;
-    users_online: number;
-    linmas_online: number;
-    active_shifts: number;
-    activities_today: number;
-    understaffed_areas: number;
-  };
+  id: string;
+  name: string;
+  code: string;
+  total_areas: number;
+  total_workers: number;
+  workers_online: number;
+  workers_offline: number;
+  active_shifts: number;
+  tasks_pending: number;
+  tasks_in_progress: number;
+  tasks_completed_today: number;
+  activities_submitted_today: number;
+  alerts: string[];
+  generated_at: string;
 }
 
 /**
- * Area Statistics Interface
+ * Area Statistics Interface — matches AreaStatsDto
  */
 export interface AreaMonitoringStats {
-  timestamp: string;
-  area: {
-    id: string;
-    name: string;
-    rayon: string;
-    coverage_area: number;
-  };
-  current_shift: {
-    definition: {
-      id: string;
-      name: string;
-      start_time: string;
-      end_time: string;
-    };
-    required_users: number;
-    required_linmas: number;
-    assigned_users: number;
-    assigned_linmas: number;
-    active_users: number;
-    active_linmas: number;
-  };
+  id: string;
+  name: string;
+  area_type: string;
+  rayon_id: string;
+  rayon_name: string;
+  coverage_area: number | null;
+  total_users_assigned: number;
+  users_online: number;
+  users_offline: number;
+  is_fully_staffed: boolean;
+  tasks_pending: number;
+  tasks_in_progress: number;
+  tasks_completed_today: number;
+  activities_submitted_today: number;
+  alerts: string[];
+  generated_at: string;
 }
 
 /**
- * Live User Position Interface (Phase 2C - renamed from LiveWorker)
+ * Live User Position Interface — matches LiveUserDto
  */
 export interface LiveUser {
-  user_id: string;
+  id: string;
   full_name: string;
   role: UserRole;
-  area_id: string;
+  area_id: string | null;
   area_name: string;
+  rayon_id: string | null;
+  rayon_name: string | null;
+  latitude: number;
+  longitude: number;
+  battery_level: number | null;
+  last_update: string;
+  is_within_area: boolean;
+  outside_boundary: boolean;
   shift_id: string;
-  gps_lat: number;
-  gps_lng: number;
-  location_timestamp: string;
-  battery_level: number;
-  status: 'online' | 'offline';
+  shift_name: string;
+  clock_in_time: string;
 }
 
 /**
- * Live Users Response
+ * Live Users Response — matches LiveUsersResponseDto
  */
 export interface LiveUsersResponse {
-  timestamp: string;
+  total_online: number;
+  total_offline: number;
   users: LiveUser[];
-  total: number;
+  generated_at: string;
 }
 
 /**
@@ -168,7 +168,7 @@ export function useAreaMonitoring(areaId: string, enabled = true) {
 }
 
 /**
- * Fetch Live User Positions (Phase 2C - renamed from useLiveWorkers)
+ * Fetch Live User Positions
  */
 export function useLiveUsers(filters?: LiveUsersFilters) {
   return useQuery({
