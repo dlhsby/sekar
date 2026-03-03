@@ -57,7 +57,9 @@ export default function MonitoringPage() {
     ? ['top_management', 'admin_system', 'superadmin'].includes(user.role)
     : false;
   const canViewRayon = user
-    ? ['kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'].includes(user.role)
+    ? ['kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'].includes(
+        user.role
+      )
     : false;
 
   // Fetch appropriate stats based on filters and role
