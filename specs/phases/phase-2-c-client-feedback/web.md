@@ -1,6 +1,6 @@
 # Phase 2C: Web Requirements
 
-**Last Updated:** 2026-03-02
+**Last Updated:** 2026-03-03
 **Status:** ✅ Implementation Complete (Web aligned with Phase 2C backend)
 **Platform:** Next.js 16.x, React 19, TailwindCSS 4.x
 **Related ADR:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
@@ -190,10 +190,59 @@ const SIDEBAR_ITEMS: Record<string, SidebarItem[]> = {
 
 ## /monitoring Page Updates
 
-- Add boundary warning indicators on live user map
-- Users outside boundary shown with yellow/red marker
-- Filter: "Tampilkan di luar area saja"
-- Auto-scope by role
+- Role-based auto-scoping on mount: korlap → auto-set `areaFilter` to `user.area_id`; kepala_rayon → auto-set `rayonFilter` to `user.rayon_id`
+- Filter: Rayon select + Area select (area disabled until rayon selected)
+- Stats cards adapt by view level (city/rayon/area)
+- Live user list with `is_within_area` status badges ("Dalam Area" / "Di Luar Area")
+- Battery level warning badge shown when `battery_level < 20`
+- Last updated timestamp from `liveUsersData.generated_at`
+
+### Monitoring TypeScript Interfaces (actual backend DTOs)
+
+**`CityStats`** — flat structure, no nested wrappers:
+```typescript
+total_rayons, total_areas, total_workers, workers_online, workers_offline,
+active_shifts, tasks_pending, tasks_in_progress, tasks_completed_today,
+activities_submitted_today, generated_at
+```
+
+**`RayonMonitoringStats`** — flat structure:
+```typescript
+id, name, code, total_areas, total_workers, workers_online, workers_offline,
+active_shifts, tasks_pending, tasks_in_progress, tasks_completed_today,
+activities_submitted_today, alerts: string[], generated_at
+```
+
+**`AreaMonitoringStats`** — NO `current_shift` field:
+```typescript
+id, name, area_type, rayon_id, rayon_name, coverage_area: number | null,
+total_users_assigned, users_online, users_offline, is_fully_staffed: boolean,
+tasks_pending, tasks_in_progress, tasks_completed_today,
+activities_submitted_today, alerts: string[], generated_at
+```
+
+**`LiveUser`**:
+```typescript
+id,           // NOT user_id
+full_name, role,
+area_id: string | null, area_name,
+rayon_id: string | null, rayon_name: string | null,
+latitude, longitude,    // NOT gps_lat/gps_lng
+battery_level: number | null,
+last_update,            // NOT timestamp
+is_within_area: boolean,
+outside_boundary: boolean,
+shift_id, shift_name, clock_in_time
+```
+
+**`LiveUsersResponse`**:
+```typescript
+total_online, total_offline,   // NOT total
+users: LiveUser[],
+generated_at                   // NOT timestamp
+```
+
+> ⚠️ **Lesson learned:** `AuthErrorBoundary` catches ANY React render error and shows a misleading "Terjadi kesalahan saat memproses autentikasi" message in production. When a monitoring page crashes due to interface mismatch (e.g., accessing `undefined.definition.name`), the error appears as an auth failure. Always verify frontend interfaces against backend DTOs before deployment.
 
 ---
 
@@ -366,4 +415,4 @@ rejectOvertime(id, reason) // PATCH /overtime/:id/reject
 
 ---
 
-**Last Updated:** 2026-03-02
+**Last Updated:** 2026-03-03

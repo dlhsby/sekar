@@ -1,7 +1,7 @@
 # Phase 2C - Implementation Progress
 
-**Last Updated:** March 2, 2026
-**Status:** ✅ COMPLETE - Deployed to Production
+**Last Updated:** March 3, 2026
+**Status:** ✅ COMPLETE - Deployed to Production (+ Production Hotfix Mar 3)
 
 ---
 
@@ -22,6 +22,9 @@
 - ⚠️ DATABASE_SYNCHRONIZE=true needs disabling after stability period
 - ⚠️ Web login page CSR bailout (functional but shows skeleton loaders)
 - ⚠️ Web CI/CD pipeline didn't trigger
+
+**Production Hotfix (March 3, 2026):**
+- ✅ Fixed monitoring page crash for korlap — frontend `AreaMonitoringStats` interface expected a non-existent `current_shift.definition.name` field (TypeError, no optional chaining), causing `AuthErrorBoundary` to swallow the error and show a misleading auth error message. Fixed by aligning all 4 monitoring interfaces (`CityStats`, `RayonMonitoringStats`, `AreaMonitoringStats`, `LiveUser`) with actual backend DTOs. See Phase 5c below.
 
 ---
 
@@ -280,6 +283,21 @@
 - [x] API hooks tests updated
 
 **Metrics:** 66 test suites, 1336 tests passing, 0 TypeScript errors
+
+### Phase 5c: Production Hotfix — Monitoring Interface Mismatch (Mar 3, 2026)
+
+**Root cause:** Frontend interfaces in `fe/web/src/lib/api/monitoring.ts` were written against an incorrect assumption of the backend DTO shape. The production crash (korlap gets "Terjadi kesalahan saat memproses autentikasi") was caused by `areaStats.current_shift.definition.name` (no optional chaining) where `current_shift` does not exist in `AreaStatsDto`. The `AuthErrorBoundary` catches any React render error and shows a misleading auth error in production (dev detail hidden by `NODE_ENV` check).
+
+**Why it worked locally:** korlap1's `area_id` was null in the Phase 1 local seeder, so the auto-scoping effect (`if (user.role === 'korlap' && user.area_id)`) never fired and area stats were never fetched. In production the seeder sets `area_id`, so area stats loaded and crashed.
+
+**Fixes applied:**
+- [x] `CityStats` interface: removed `summary` wrapper, fields are flat (`workers_online`, not `summary.workers_online`)
+- [x] `RayonMonitoringStats` interface: removed `rayon`/`summary` wrappers; all flat
+- [x] `AreaMonitoringStats` interface: removed `current_shift` entirely; added `users_online`, `total_users_assigned`, `is_fully_staffed`, `activities_submitted_today`
+- [x] `LiveUser` interface: `id` (not `user_id`), `latitude`/`longitude` (not `gps_lat`/`gps_lng`), `is_within_area` (not `status`), `last_update`/`generated_at` (not `timestamp`)
+- [x] `LiveUsersResponse`: `total_online`/`total_offline` (not `total`), `generated_at` (not `timestamp`)
+- [x] `monitoring/page.tsx`: removed `current_shift` section; correct stat field names per view level; live user `id` + `is_within_area` + `generated_at`
+- [x] `monitoring/__tests__/page.test.tsx`: all mock data updated to flat DTO shapes; added regression test for korlap with `area_id`
 
 ---
 
