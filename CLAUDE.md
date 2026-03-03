@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**Last Updated:** March 2, 2026
+**Last Updated:** March 3, 2026
 **Status:** Phase 2C Complete ✅ | Deployed to Production | Phase 3 Next
 
 This file provides guidance to Claude Code when working with this repository.
@@ -393,7 +393,7 @@ docker-compose down -v                      # Clean restart (deletes data!)
 |-----------|---------|
 | **Backend** | 16 modules, 113 endpoints, 888 tests (89.57% stmt, 81.64% branch) |
 | **Mobile** | 17 screens, 3,264 tests passing, 80.31%+ coverage |
-| **Web** | 18 pages, role constants updated (8 roles) |
+| **Web** | 18 pages, monitoring interfaces aligned with backend DTOs, 1,336 tests |
 | **Database** | 18 tables (+2: task_tags, overtimes), 8-role system |
 | **DevOps** | 3 CI/CD pipelines, deployed to production |
 | **UI/UX** | Neo Brutalism 2.0, filter modals improved (subordinate hierarchy, date pickers) |
