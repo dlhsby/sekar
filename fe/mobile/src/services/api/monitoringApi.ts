@@ -1,6 +1,6 @@
 /**
  * Monitoring API Service
- * Phase 2C: consolidated monitoring + supervisor endpoints
+ * Phase 2D: consolidated monitoring + supervisor endpoints + new Phase 2D endpoints
  */
 
 import { get } from './apiClient';
@@ -16,8 +16,14 @@ import type {
   LiveUsersResponse,
   LiveUsersFilter,
   MonitoringFilter,
+  StaffingSummaryResponse,
 } from '../../types/api.types';
-import type { Activity } from '../../types/models.types';
+import type {
+  Activity,
+  UserDaySummary,
+  LocationHistory,
+  StaffingSummaryItem,
+} from '../../types/models.types';
 
 export async function getCityMonitoring(
   filters?: MonitoringFilter,
@@ -72,6 +78,35 @@ export async function getAttendance(
   return get<AttendanceResponse>('/supervisor/attendance', filters);
 }
 
+// ─── Phase 2D New Endpoints ────────────────────────────────────────────────────
+
+export async function getUserDaySummary(
+  userId: string,
+): Promise<ApiResponse<UserDaySummary>> {
+  return get<UserDaySummary>(`/monitoring/users/${userId}/day-summary`);
+}
+
+export async function getUserLocationHistory(
+  userId: string,
+  date: string,
+  shiftId?: string,
+): Promise<ApiResponse<LocationHistory>> {
+  const params: Record<string, string> = { date };
+  if (shiftId) {
+    params.shift_id = shiftId;
+  }
+  return get<LocationHistory>(
+    `/monitoring/users/${userId}/location-history`,
+    params,
+  );
+}
+
+export async function getStaffingSummary(
+  filters?: { rayon_id?: string; area_id?: string },
+): Promise<ApiResponse<StaffingSummaryResponse>> {
+  return get<StaffingSummaryResponse>('/monitoring/staffing-summary', filters);
+}
+
 export default {
   getCityMonitoring,
   getRayonMonitoring,
@@ -81,4 +116,7 @@ export default {
   getAllActivities,
   getActivityDetails,
   getAttendance,
+  getUserDaySummary,
+  getUserLocationHistory,
+  getStaffingSummary,
 };

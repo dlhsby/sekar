@@ -1,12 +1,69 @@
 /**
  * Map Utilities
- * Helper functions for map operations and worker status calculations
+ * Helper functions for map operations and user status calculations
+ * Phase 2D: Four-status model (active/inactive/outside_area/missing/offline)
  */
 
 import { calculateDistance, isPointInPolygon } from './gpsUtils';
 import type { ActiveUserData } from '../types/api.types';
+import type { TrackingStatus, LiveUser } from '../types/models.types';
 import type { UserStatus } from '../components/monitoring/UserMarker';
 import type { Region } from 'react-native-maps';
+
+// ─── Phase 2D: Four-Status Model ──────────────────────────────────────────────
+
+/**
+ * Get server-computed tracking status from LiveUser.
+ * Phase 2D: No client-side calculation — server provides the status.
+ */
+export function getStatusFromUser(user: LiveUser): TrackingStatus {
+  return user.status;
+}
+
+/**
+ * Get hex color for a tracking status.
+ */
+export function getStatusColor(status: TrackingStatus): string {
+  const colors: Record<TrackingStatus, string> = {
+    active: '#15803D',
+    inactive: '#D97706',
+    outside_area: '#9333EA',
+    missing: '#DC2626',
+    offline: '#6B7280',
+  };
+  return colors[status] ?? '#6B7280';
+}
+
+/**
+ * Get Indonesian display label for a tracking status.
+ */
+export function getStatusLabel(status: TrackingStatus): string {
+  const labels: Record<TrackingStatus, string> = {
+    active: 'Aktif',
+    inactive: 'Idle',
+    outside_area: 'Di Luar Area',
+    missing: 'Tidak Terdeteksi',
+    offline: 'Offline',
+  };
+  return labels[status] ?? 'Unknown';
+}
+
+/**
+ * Get MaterialCommunityIcons icon name for a user role.
+ */
+export function getRoleIcon(role: string): string {
+  const icons: Record<string, string> = {
+    satgas: 'account-hard-hat',
+    linmas: 'shield-account',
+    korlap: 'clipboard-account',
+    admin_data: 'file-document-edit',
+    kepala_rayon: 'account-star',
+    top_management: 'crown',
+    admin_system: 'cog-outline',
+    superadmin: 'shield-crown',
+  };
+  return icons[role] ?? 'account-hard-hat';
+}
 
 /**
  * Calculate worker status based on boundary check

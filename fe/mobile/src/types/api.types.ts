@@ -24,6 +24,7 @@ import type {
   UserRole,
   Overtime,
   OvertimeStatus,
+  TrackingStatus,
 } from './models.types';
 
 // Auth API
@@ -427,11 +428,33 @@ export interface LiveUsersFilter {
   area_id?: string;
   rayon_id?: string;
   shift_definition_id?: string;
+  status?: TrackingStatus[];
+  role?: string;
+  search?: string;
+}
+
+// Phase 2D: MonitoringFilters (used in filter modal and slice)
+export interface MonitoringFilters {
+  rayon_id?: string;
+  area_id?: string;
+  role?: string;
+  status?: TrackingStatus[];
+  search?: string;
 }
 
 export interface LiveUsersResponse {
-  total_online: number;
+  total_active: number;
+  total_inactive: number;
+  total_outside_area: number;
+  total_missing: number;
   total_offline: number;
+  /** @deprecated Use total_active */
+  total_online: number;
   users: LiveUser[];
   generated_at: string;
+}
+
+// Phase 2D: Staffing summary response wrapper
+export interface StaffingSummaryResponse {
+  items: import('./models.types').StaffingSummaryItem[];
 }

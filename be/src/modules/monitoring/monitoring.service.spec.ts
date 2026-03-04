@@ -179,6 +179,7 @@ describe('MonitoringService', () => {
     select: jest.fn().mockReturnThis(),
     addSelect: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
+    addGroupBy: jest.fn().mockReturnThis(),
     subQuery: jest.fn().mockReturnThis(),
     from: jest.fn().mockReturnThis(),
     getQuery: jest.fn().mockReturnValue('subquery'),
@@ -858,6 +859,294 @@ describe('MonitoringService', () => {
       // Check that the rayon has the correct structure
       expect(result.total_workers).toBeGreaterThanOrEqual(0);
       expect(result.areas).toBeDefined();
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Phase 2D-3: New Endpoints
+  // ──────────────────────────────────────────────────────────────────────────
+
+  describe('getLocationHistory', () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    it('should throw NotFoundException for unknown user', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.getLocationHistory('unknown', today)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return empty trail when no logs exist', async () => {
+      userRepository.findOne.mockResolvedValue(mockUser);
+      shiftRepository.findOne.mockResolvedValue(null);
+      const qb = createMockQueryBuilder([]);
+      locationRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      const result = await service.getLocationHistory('user-1', today);
+
+      expect(result.user_id).toBe('user-1');
+      expect(result.points).toEqual([]);
+      expect(result.total_points).toBe(0);
+      expect(result.total_distance_meters).toBe(0);
+    });
+
+    it('should return location history with points when logs exist', async () => {
+      userRepository.findOne.mockResolvedValue(mockUser);
+      shiftRepository.findOne.mockResolvedValue({ ...mockShift, shift_definition_id: 'shift-def-1', area_id: 'area-1' });
+      areaRepository.findOne.mockResolvedValue(mockArea);
+      shiftDefinitionRepository.findOne.mockResolvedValue(mockShiftDefinition);
+
+      const loggedAt1 = new Date('2026-03-04T07:00:00Z');
+      const loggedAt2 = new Date('2026-03-04T07:05:00Z');
+      const logs = [
+        { ...mockLocationLog, logged_at: loggedAt1 },
+        { ...mockLocationLog, logged_at: loggedAt2, gps_lat: -7.291, gps_lng: 112.740 },
+      ];
+      const qb = createMockQueryBuilder(logs);
+      locationRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      const result = await service.getLocationHistory('user-1', today, 'shift-1');
+
+      expect(result.points).toHaveLength(2);
+      expect(result.shift_name).toBe('Shift 1');
+      expect(result.area_name).toBe('Taman Bungkul');
+      expect(result.total_distance_meters).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should compute inside/outside time correctly', async () => {
+      userRepository.findOne.mockResolvedValue(mockUser);
+      shiftRepository.findOne.mockResolvedValue(null);
+      areaRepository.findOne.mockResolvedValue(null);
+
+      const base = new Date('2026-03-04T07:00:00Z');
+      const logs = [
+        { ...mockLocationLog, logged_at: new Date(base.getTime()), gps_lat: -7.290, gps_lng: 112.739 },
+        { ...mockLocationLog, logged_at: new Date(base.getTime() + 10 * 60_000), gps_lat: -7.290, gps_lng: 112.739 },
+      ];
+      const qb = createMockQueryBuilder(logs);
+      locationRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      const result = await service.getLocationHistory('user-1', today);
+
+      expect(result.time_inside_area_minutes + result.time_outside_area_minutes).toBe(10);
+    });
+  });
+
+  describe('getUserDaySummary', () => {
+    it('should throw NotFoundException for unknown user', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.getUserDaySummary('unknown')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return summary with tracking data', async () => {
+      userRepository.findOne.mockResolvedValue(mockUser);
+      const tracking: any = {
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        shift_definition_id: 'shift-def-1',
+        shift: mockShift,
+        shift_definition: null,
+        user: mockUser,
+        area_id: 'area-1',
+        area: mockArea,
+        status: TrackingStatus.ACTIVE,
+        last_latitude: -7.2905,
+        last_longitude: 112.7398,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        is_within_area: true,
+        updated_at: new Date(),
+      };
+      trackingRepository.findOne.mockResolvedValue(tracking);
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      shiftRepository.findOne.mockResolvedValue(mockShift);
+      shiftDefinitionRepository.findOne.mockResolvedValue(mockShiftDefinition);
+      activityRepository.find.mockResolvedValue([]);
+      taskRepository.find.mockResolvedValue([]);
+
+      const result = await service.getUserDaySummary('user-1');
+
+      expect(result.user_id).toBe('user-1');
+      expect(result.status).toBe(TrackingStatus.ACTIVE);
+      expect(result.activities_today).toEqual([]);
+      expect(result.tasks_today).toEqual([]);
+      expect(result.whatsapp_links).not.toBeNull();
+    });
+
+    it('should return OFFLINE status when no tracking record', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUser, area_id: undefined, phone: undefined });
+      trackingRepository.findOne.mockResolvedValue(null);
+      activityRepository.find.mockResolvedValue([]);
+      taskRepository.find.mockResolvedValue([]);
+
+      const result = await service.getUserDaySummary('user-1');
+
+      expect(result.status).toBe(TrackingStatus.OFFLINE);
+      expect(result.shift).toBeNull();
+      expect(result.last_location).toBeNull();
+      expect(result.whatsapp_links).toBeNull();
+    });
+
+    it('should include activities and tasks in summary', async () => {
+      userRepository.findOne.mockResolvedValue(mockUser);
+      const tracking: any = {
+        user_id: 'user-1',
+        shift_id: null,
+        shift_definition_id: null,
+        shift: null,
+        shift_definition: null,
+        user: mockUser,
+        area: null,
+        area_id: null,
+        status: TrackingStatus.OFFLINE,
+        last_location_at: null,
+        last_latitude: null,
+        last_longitude: null,
+        last_accuracy_meters: null,
+        last_battery_level: null,
+        is_within_area: true,
+        updated_at: new Date(),
+      };
+      trackingRepository.findOne.mockResolvedValue(tracking);
+
+      const mockActivity = {
+        id: 'act-1',
+        description: 'Penyiraman',
+        activity_type_id: 'type-1',
+        created_at: new Date(),
+        photo_urls: ['https://example.com/photo.jpg'],
+        user_id: 'user-1',
+      };
+      const tracking2: any = {
+        user_id: 'user-1',
+        shift_id: null,
+        shift_definition_id: null,
+        shift: null,
+        shift_definition: null,
+        user: mockUser,
+        area: null,
+        area_id: null,
+        status: TrackingStatus.OFFLINE,
+        last_location_at: null,
+        last_latitude: null,
+        last_longitude: null,
+        last_accuracy_meters: null,
+        last_battery_level: null,
+        is_within_area: true,
+        updated_at: new Date(),
+      };
+      trackingRepository.findOne.mockResolvedValue(tracking2);
+      activityRepository.find.mockResolvedValue([mockActivity as any]);
+      taskRepository.find.mockResolvedValue([{ ...mockTask, assigned_to: 'user-1' }]);
+
+      const result = await service.getUserDaySummary('user-1');
+
+      expect(result.activities_today).toHaveLength(1);
+      expect(result.activities_today[0].title).toBe('Penyiraman');
+      expect(result.activities_today[0].photo_url).toBe('https://example.com/photo.jpg');
+      expect(result.tasks_today).toHaveLength(1);
+    });
+
+    it('should resolve area from user.area_id when tracking has no area', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUser, area_id: 'area-1' });
+      const tracking: any = {
+        user_id: 'user-1',
+        shift_id: null,
+        shift_definition_id: null,
+        shift: null,
+        shift_definition: null,
+        user: mockUser,
+        area: null,
+        area_id: null,
+        status: TrackingStatus.OFFLINE,
+        last_location_at: null,
+        last_latitude: null,
+        last_longitude: null,
+        last_accuracy_meters: null,
+        last_battery_level: null,
+        is_within_area: true,
+        updated_at: new Date(),
+      };
+      trackingRepository.findOne.mockResolvedValue(tracking);
+      areaRepository.findOne.mockResolvedValue(mockArea);
+      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      activityRepository.find.mockResolvedValue([]);
+      taskRepository.find.mockResolvedValue([]);
+
+      const result = await service.getUserDaySummary('user-1');
+
+      expect(result.area_name).toBe('Taman Bungkul');
+      expect(result.rayon_name).toBe('Rayon Selatan');
+    });
+  });
+
+  describe('getStaffingSummary', () => {
+    it('should return empty items when no areas found', async () => {
+      areaRepository.find.mockResolvedValue([]);
+      shiftDefinitionRepository.find.mockResolvedValue([]);
+
+      const result = await service.getStaffingSummary({});
+
+      expect(result.items).toEqual([]);
+      expect(result.generated_at).toBeDefined();
+    });
+
+    it('should return staffing summary for a specific area', async () => {
+      areaRepository.findOne.mockResolvedValue(mockArea);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+      staffRequirementRepository.find.mockResolvedValue([mockStaffRequirement]);
+
+      // Mock tracking counts (getTrackingRoleCounts uses createQueryBuilder)
+      const qb = createMockQueryBuilder();
+      qb.getRawMany = jest.fn().mockResolvedValue([
+        { role: 'satgas', active: '3', inactive: '1', outside_area: '0', missing: '0', offline: '1' },
+      ]);
+      trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      // Mock assigned counts (getAssignedRoleCounts uses find)
+      userRepository.find.mockResolvedValue([
+        { ...mockUser, role: UserRole.SATGAS },
+        { ...mockUser, id: 'user-2', role: UserRole.SATGAS },
+      ]);
+
+      const result = await service.getStaffingSummary({ area_id: 'area-1' });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].id).toBe('area-1');
+    });
+
+    it('should filter by rayon_id', async () => {
+      areaRepository.find.mockResolvedValue([mockArea]);
+      shiftDefinitionRepository.find.mockResolvedValue([]);
+      staffRequirementRepository.find.mockResolvedValue([]);
+
+      const qb = createMockQueryBuilder();
+      qb.getRawMany = jest.fn().mockResolvedValue([]);
+      trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
+      userRepository.find.mockResolvedValue([]);
+
+      const result = await service.getStaffingSummary({ rayon_id: 'rayon-1' });
+
+      expect(result.items).toHaveLength(1);
+      expect(areaRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ rayon_id: 'rayon-1' }) })
+      );
+    });
+
+    it('should handle areas with no requirements (no shift)', async () => {
+      areaRepository.find.mockResolvedValue([mockArea]);
+      shiftDefinitionRepository.find.mockResolvedValue([]); // no current shift
+
+      const qb = createMockQueryBuilder();
+      qb.getRawMany = jest.fn().mockResolvedValue([]);
+      trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
+      userRepository.find.mockResolvedValue([]);
+
+      const result = await service.getStaffingSummary({});
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].roles).toEqual([]);
     });
   });
 });
