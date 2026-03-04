@@ -4,12 +4,18 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { StatusCalculatorService, StatusInput } from './status-calculator.service';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
+import { User } from '../../users/entities/user.entity';
+import { Area } from '../../areas/entities/area.entity';
+import { EventsGateway } from '../../../gateways/events.gateway';
 
 describe('StatusCalculatorService', () => {
   let service: StatusCalculatorService;
   let trackingRepository: any;
   let cacheService: any;
   let eventEmitter: any;
+  let eventsGateway: any;
+  let userRepository: any;
+  let areaRepository: any;
 
   const defaultThresholds: StatusThresholds = {
     active_max_age_seconds: 300,
@@ -34,12 +40,30 @@ describe('StatusCalculatorService', () => {
       emit: jest.fn(),
     };
 
+    eventsGateway = {
+      emitUserStatusChanged: jest.fn(),
+      emitUserLeftArea: jest.fn(),
+      emitUserEnteredArea: jest.fn(),
+      emitUserLocation: jest.fn(),
+    };
+
+    userRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
+    areaRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StatusCalculatorService,
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
+        { provide: getRepositoryToken(User), useValue: userRepository },
+        { provide: getRepositoryToken(Area), useValue: areaRepository },
         { provide: MonitoringCacheService, useValue: cacheService },
         { provide: EventEmitter2, useValue: eventEmitter },
+        { provide: EventsGateway, useValue: eventsGateway },
       ],
     }).compile();
 

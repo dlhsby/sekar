@@ -1201,6 +1201,71 @@ focus-ring:
 
 ---
 
+## Phase 2D: Monitoring Status Color Tokens
+
+### Five-Status Color System
+
+| Status | Primary Hex | Tailwind | Background | Text | Border |
+|--------|------------|----------|------------|------|--------|
+| Active | `#15803D` | `green-700` | `#DCFCE7` (green-100) | `#15803D` (green-700) | `#15803D` |
+| Idle | `#D97706` | `amber-600` | `#FEF3C7` (amber-100) | `#92400E` (amber-800) | `#D97706` |
+| Outside Area | `#9333EA` | `purple-600` | `#F3E8FF` (purple-100) | `#6B21A8` (purple-800) | `#9333EA` |
+| Missing | `#DC2626` | `red-600` | `#FEE2E2` (red-100) | `#991B1B` (red-800) | `#DC2626` |
+| Offline | `#6B7280` | `gray-500` | `#F3F4F6` (gray-100) | `#374151` (gray-700) | `#6B7280` |
+
+### CSS Variables (Web)
+
+```css
+/* Status Colors */
+--status-active: #15803D;   --status-active-bg: #DCFCE7;   --status-active-text: #15803D;
+--status-idle: #D97706;     --status-idle-bg: #FEF3C7;     --status-idle-text: #92400E;
+--status-outside: #9333EA;  --status-outside-bg: #F3E8FF;  --status-outside-text: #6B21A8;
+--status-missing: #DC2626;  --status-missing-bg: #FEE2E2;  --status-missing-text: #991B1B;
+--status-offline: #6B7280;  --status-offline-bg: #F3F4F6;  --status-offline-text: #374151;
+
+/* Monitoring Layout */
+--marker-size: 36px;        --marker-icon-size: 20px;      --marker-touch-target: 44px;
+--panel-width-xl: 35%;      --panel-width-lg: 40%;         --panel-min-width: 320px;
+
+/* Action Button Colors */
+--whatsapp-color: #25D366;  --call-color: #3B82F6;         --trail-color: #9333EA;
+```
+
+### Mobile Constants (`monitoringTokens`)
+
+```typescript
+// In fe/mobile/src/constants/nbTokens.ts
+export const monitoringTokens = {
+  status: {
+    active: { color: '#15803D', bg: '#DCFCE7', label: 'Aktif' },
+    inactive: { color: '#D97706', bg: '#FEF3C7', label: 'Idle' },
+    outside_area: { color: '#9333EA', bg: '#F3E8FF', label: 'Di Luar Area' },
+    missing: { color: '#DC2626', bg: '#FEE2E2', label: 'Tidak Terdeteksi' },
+    offline: { color: '#6B7280', bg: '#F3F4F6', label: 'Offline' },
+  },
+  marker: { outerSize: 36, iconSize: 20, labelFontSize: 10, touchTarget: 44, selectionRingSize: 44 },
+  summaryBar: { height: 48, chipHeight: 32, chipGap: 8, chipPaddingH: 12 },
+  userListStrip: { height: 80, cardWidth: 160, cardGap: 8 },
+  fab: { size: 44, gap: 8, borderWidth: 2, shadowOffset: { width: 2, height: 2 } },
+  detailSheet: { initialSnapPoint: '50%', maxSnapPoint: '85%', handleWidth: 32, handleHeight: 4, padding: 16 },
+};
+```
+
+### Chip/Badge Variants
+
+```typescript
+// Status chip variant mapping for NBBadge
+const statusBadgeVariant = {
+  active: { bg: '#DCFCE7', text: '#15803D', border: '#15803D' },
+  inactive: { bg: '#FEF3C7', text: '#92400E', border: '#D97706' },
+  outside_area: { bg: '#F3E8FF', text: '#6B21A8', border: '#9333EA' },
+  missing: { bg: '#FEE2E2', text: '#991B1B', border: '#DC2626' },
+  offline: { bg: '#F3F4F6', text: '#374151', border: '#6B7280' },
+};
+```
+
+---
+
 ## Related Documentation
 
 | Document | Description |

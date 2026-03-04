@@ -7,11 +7,12 @@
 
 import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2, Users } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Users, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { Map } from '@/components/maps/Map';
+import { PolygonEditor } from '@/components/maps/PolygonEditor';
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
-import { useArea } from '@/lib/api/areas';
+import { useArea, useAreaBoundary, useUpdateAreaBoundary } from '@/lib/api/areas';
 import { useAuth } from '@/lib/auth/hooks';
 import { formatArea, formatCoordinates, polygonToFeature } from '@/lib/utils/geo';
 import { polygonColors } from '@/lib/maps/styles';
@@ -23,9 +24,26 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
   const { user } = useAuth();
   const { data: area, isLoading, error } = useArea(id);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [editingBoundary, setEditingBoundary] = useState(false);
+  const [boundaryDraft, setBoundaryDraft] = useState<GeoJSON.Polygon | null>(null);
 
   const isAdmin =
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
+
+  const { data: boundaryData } = useAreaBoundary(id);
+  const { mutate: updateBoundary, isPending: isSavingBoundary } = useUpdateAreaBoundary();
+
+  const handleSaveBoundary = () => {
+    updateBoundary(
+      { id, data: { boundary_polygon: boundaryDraft } },
+      {
+        onSuccess: () => {
+          setEditingBoundary(false);
+          setBoundaryDraft(null);
+        },
+      }
+    );
+  };
 
   // Handle map load - draw polygon
   const handleMapLoad = (map: mapboxgl.Map) => {
@@ -249,6 +267,119 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             <Button variant="secondary" disabled leftIcon={<Users className="w-4 h-4" />}>
               Atur Kebutuhan Staff
             </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Boundary Section (Phase 2D) */}
+      <Card variant="elevated">
+        <CardHeader className="bg-nb-gray-100">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-lg flex items-center gap-2">
+              <MapIcon className="w-5 h-5" />
+              Batas Area (Boundary)
+            </h2>
+            {isAdmin && !editingBoundary && (
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<Edit className="w-4 h-4" />}
+                onClick={() => {
+                  setBoundaryDraft(boundaryData?.boundary_polygon ?? null);
+                  setEditingBoundary(true);
+                }}
+              >
+                {boundaryData?.boundary_polygon ? 'Edit Boundary' : 'Tambah Boundary'}
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {editingBoundary ? (
+            <div className="space-y-4">
+              <PolygonEditor
+                initialPolygon={boundaryDraft ?? undefined}
+                onChange={setBoundaryDraft}
+                center={area ? [area.center_longitude, area.center_latitude] : undefined}
+                zoom={15}
+                className="h-[480px]"
+              />
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleSaveBoundary}
+                  loading={isSavingBoundary}
+                  disabled={isSavingBoundary}
+                >
+                  Simpan Boundary
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingBoundary(false);
+                    setBoundaryDraft(null);
+                  }}
+                  disabled={isSavingBoundary}
+                >
+                  Batal
+                </Button>
+              </div>
+            </div>
+          ) : boundaryData?.boundary_polygon ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-sm text-nb-gray-600">
+                <span>
+                  Polygon aktif dengan{' '}
+                  <strong>
+                    {boundaryData.boundary_polygon.coordinates[0].length - 1} titik
+                  </strong>
+                </span>
+                {boundaryData.coverage_area && (
+                  <span>· Luas: {formatArea(boundaryData.coverage_area)}</span>
+                )}
+              </div>
+              <div aria-label="Preview batas area">
+                <Map
+                  center={[boundaryData.gps_lng, boundaryData.gps_lat]}
+                  zoom={15}
+                  className="h-[300px]"
+                  onLoad={(map) => {
+                    if (!boundaryData.boundary_polygon) return;
+                    map.addSource('preview-polygon', {
+                      type: 'geojson',
+                      data: polygonToFeature(boundaryData.boundary_polygon as GeoJSON.Polygon),
+                    });
+                    map.addLayer({
+                      id: 'preview-fill',
+                      type: 'fill',
+                      source: 'preview-polygon',
+                      paint: {
+                        'fill-color': polygonColors.fill,
+                        'fill-opacity': polygonColors.fillOpacity,
+                      },
+                    });
+                    map.addLayer({
+                      id: 'preview-outline',
+                      type: 'line',
+                      source: 'preview-polygon',
+                      paint: {
+                        'line-color': polygonColors.stroke,
+                        'line-width': polygonColors.strokeWidth,
+                      },
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-nb-gray-500">
+              <MapIcon className="w-10 h-10 mx-auto mb-3 text-nb-gray-300" />
+              <p className="font-semibold">Belum ada boundary polygon</p>
+              <p className="text-sm mt-1">
+                {isAdmin
+                  ? 'Klik "Tambah Boundary" untuk menggambar batas area.'
+                  : 'Boundary polygon belum dikonfigurasi.'}
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>

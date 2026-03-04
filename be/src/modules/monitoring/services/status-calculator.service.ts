@@ -1,9 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
+import { User, UserRole } from '../../users/entities/user.entity';
+import { Area } from '../../areas/entities/area.entity';
+import { EventsGateway } from '../../../gateways/events.gateway';
+import {
+  UserStatusChangedEvent,
+  UserAreaEvent,
+  UserLocationEvent,
+} from '../../../gateways/dto/events.dto';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -18,8 +26,14 @@ export class StatusCalculatorService {
   constructor(
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Area)
+    private readonly areaRepository: Repository<Area>,
     private readonly cacheService: MonitoringCacheService,
     private readonly eventEmitter: EventEmitter2,
+    @Inject(forwardRef(() => EventsGateway))
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   calculateStatus(
@@ -92,6 +106,8 @@ export class StatusCalculatorService {
         shiftId: existing.shift_id,
         timestamp: now,
       });
+
+      await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
     }
@@ -175,6 +191,7 @@ export class StatusCalculatorService {
   ): Promise<void> {
     const existing = await this.trackingRepository.findOne({
       where: { user_id: userId },
+      relations: ['shift_definition'],
     });
 
     if (!existing || !existing.shift_id) {
@@ -213,6 +230,7 @@ export class StatusCalculatorService {
 
     await this.trackingRepository.save(existing);
 
+    // Emit boundary crossing events
     if (previousWithinArea && !isWithinArea) {
       this.eventEmitter.emit('monitoring.user-left-area', {
         userId,
@@ -221,6 +239,7 @@ export class StatusCalculatorService {
         lng,
         timestamp: now,
       });
+      await this.broadcastAreaEvent('left', existing, lat, lng, now);
     } else if (!previousWithinArea && isWithinArea) {
       this.eventEmitter.emit('monitoring.user-entered-area', {
         userId,
@@ -229,8 +248,10 @@ export class StatusCalculatorService {
         lng,
         timestamp: now,
       });
+      await this.broadcastAreaEvent('entered', existing, lat, lng, now);
     }
 
+    // Emit status change event if changed
     if (newStatus !== previousStatus) {
       this.eventEmitter.emit('monitoring.status-changed', {
         userId,
@@ -240,7 +261,124 @@ export class StatusCalculatorService {
         shiftId: existing.shift_id,
         timestamp: now,
       });
+      await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
     }
+
+    // Always emit location update
+    await this.broadcastLocationUpdate(existing, lat, lng, accuracy, battery, newStatus, isWithinArea, now);
+  }
+
+  // ---- Private broadcast helpers ----
+
+  private async broadcastStatusChanged(
+    tracking: UserTrackingStatus,
+    previousStatus: TrackingStatus,
+    newStatus: TrackingStatus,
+    timestamp: Date,
+  ): Promise<void> {
+    const context = await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    if (!context) return;
+
+    const event: UserStatusChangedEvent = {
+      user_id: tracking.user_id,
+      user_name: context.user.full_name,
+      role: context.user.role as UserRole,
+      area_id: tracking.area_id,
+      area_name: context.area?.name || null,
+      rayon_id: context.area?.rayon_id || null,
+      previous_status: previousStatus,
+      new_status: newStatus,
+      latitude: tracking.last_latitude,
+      longitude: tracking.last_longitude,
+      timestamp,
+    };
+
+    this.eventsGateway.emitUserStatusChanged(event);
+  }
+
+  private async broadcastAreaEvent(
+    direction: 'left' | 'entered',
+    tracking: UserTrackingStatus,
+    lat: number,
+    lng: number,
+    timestamp: Date,
+  ): Promise<void> {
+    if (!tracking.area_id) return;
+
+    const context = await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    if (!context || !context.area) return;
+
+    const event: UserAreaEvent = {
+      user_id: tracking.user_id,
+      user_name: context.user.full_name,
+      role: context.user.role as UserRole,
+      area_id: tracking.area_id,
+      area_name: context.area.name,
+      rayon_id: context.area.rayon_id || null,
+      latitude: lat,
+      longitude: lng,
+      timestamp,
+    };
+
+    if (direction === 'left') {
+      this.eventsGateway.emitUserLeftArea(event);
+    } else {
+      this.eventsGateway.emitUserEnteredArea(event);
+    }
+  }
+
+  private async broadcastLocationUpdate(
+    tracking: UserTrackingStatus,
+    lat: number,
+    lng: number,
+    accuracy: number | null,
+    battery: number | null,
+    status: TrackingStatus,
+    isWithinArea: boolean,
+    timestamp: Date,
+  ): Promise<void> {
+    if (!tracking.area_id || !tracking.shift_id) return;
+
+    const context = await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    if (!context) return;
+
+    const event: UserLocationEvent = {
+      user_id: tracking.user_id,
+      user_name: context.user.full_name,
+      role: context.user.role as UserRole,
+      shift_id: tracking.shift_id,
+      shift_name: tracking.shift_definition?.name || 'Active Shift',
+      area_id: tracking.area_id,
+      area_name: context.area?.name || 'Unknown',
+      rayon_id: context.area?.rayon_id || null,
+      latitude: lat,
+      longitude: lng,
+      accuracy,
+      battery_level: battery,
+      status,
+      is_within_area: isWithinArea,
+      timestamp,
+    };
+
+    this.eventsGateway.emitUserLocation(event);
+  }
+
+  private async resolveUserContext(
+    userId: string,
+    areaId: string | null,
+  ): Promise<{ user: User; area: Area | null } | null> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'full_name', 'role'],
+    });
+
+    if (!user) return null;
+
+    const area = areaId
+      ? await this.areaRepository.findOne({ where: { id: areaId }, select: ['id', 'name', 'rayon_id'] })
+      : null;
+
+    return { user, area };
   }
 
   private async checkWithinArea(

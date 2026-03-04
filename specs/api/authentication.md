@@ -563,9 +563,37 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 | `GET /shifts/current` | ✅ (own) | ✅ (own) | ❌ |
 | `GET /shifts/active` | ❌ | ✅* | ✅ |
 
+### Monitoring Module (Phase 2D)
+
+| Endpoint | satgas | linmas | korlap | admin_data | kepala_rayon | top_management | admin_system | superadmin |
+|----------|--------|--------|--------|------------|-------------|---------------|-------------|-----------|
+| GET /monitoring/city | - | - | - | - | - | ✅ | ✅ | ✅ |
+| GET /monitoring/rayon/:id | - | - | - | - | ✅ (own) | ✅ | ✅ | ✅ |
+| GET /monitoring/area/:id | - | - | ✅ (own) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/live-users | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/users/:id/location-history | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/users/:id/day-summary | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/staffing-summary | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/config | - | - | - | - | - | - | ✅ | ✅ |
+| PATCH /monitoring/config/:key | - | - | - | - | - | - | ✅ | ✅ |
+| GET /areas/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
+| PUT /areas/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
+
+**Scope Rules:**
+- `korlap`: Filtered to own area_id automatically
+- `kepala_rayon`: Filtered to own rayon_id automatically
+- `top_management`, `admin_system`, `superadmin`: No scope restrictions
+- `satgas`, `linmas`, `admin_data`: No direct monitoring access (they are monitored, not monitors)
+
+**WebSocket Room Assignment:**
+- `superadmin`, `admin_system`, `top_management` → join `city` room
+- `kepala_rayon`, `admin_data` → join `rayon:{rayon_id}` room
+- `korlap` → join `area:{area_id}` room
+
 **Legend:**
 - ✅ = Allowed
 - ❌ = Forbidden (403 Forbidden)
+- `-` = No access
 - `(own)` = Can only access own resources
 - `*` = Scoped to area/rayon
 
@@ -1149,9 +1177,9 @@ export const AUTH_CONSTANTS = {
 
 ---
 
-**Document Version:** 2.0.0
-**Last Updated:** 2026-02-20
-**Phase:** 2C - 8-role system implemented
+**Document Version:** 2.1.0
+**Last Updated:** 2026-03-03
+**Phase:** 2D - Monitoring module access added
 **Related Documents:**
 - [contracts.md](./contracts.md) - API endpoint specifications
 - [error-handling.md](./error-handling.md) - Error handling patterns

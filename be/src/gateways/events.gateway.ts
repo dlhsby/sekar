@@ -25,6 +25,8 @@ import {
   AreaStaffingEvent,
   TaskAssignedEvent,
   TaskCompletedEvent,
+  UserStatusChangedEvent,
+  UserAreaEvent,
   EventType,
 } from './dto/events.dto';
 
@@ -307,6 +309,51 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Emit to city subscribers
     this.server.to('city').emit(EventType.TASK_COMPLETED, event);
+  }
+
+  /**
+   * Emit user status changed event (Phase 2D)
+   *
+   * Broadcasts to the user's area, rayon, and city rooms.
+   */
+  emitUserStatusChanged(event: UserStatusChangedEvent): void {
+    this.logger.log(
+      `Status change: ${event.user_name} ${event.previous_status} → ${event.new_status}`,
+    );
+
+    if (event.area_id) {
+      this.server.to(`area:${event.area_id}`).emit(EventType.USER_STATUS_CHANGED, event);
+    }
+    if (event.rayon_id) {
+      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_STATUS_CHANGED, event);
+    }
+    this.server.to('city').emit(EventType.USER_STATUS_CHANGED, event);
+  }
+
+  /**
+   * Emit user left area event (Phase 2D)
+   */
+  emitUserLeftArea(event: UserAreaEvent): void {
+    this.logger.log(`User left area: ${event.user_name} left ${event.area_name}`);
+
+    this.server.to(`area:${event.area_id}`).emit(EventType.USER_LEFT_AREA, event);
+    if (event.rayon_id) {
+      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_LEFT_AREA, event);
+    }
+    this.server.to('city').emit(EventType.USER_LEFT_AREA, event);
+  }
+
+  /**
+   * Emit user entered area event (Phase 2D)
+   */
+  emitUserEnteredArea(event: UserAreaEvent): void {
+    this.logger.log(`User entered area: ${event.user_name} entered ${event.area_name}`);
+
+    this.server.to(`area:${event.area_id}`).emit(EventType.USER_ENTERED_AREA, event);
+    if (event.rayon_id) {
+      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_ENTERED_AREA, event);
+    }
+    this.server.to('city').emit(EventType.USER_ENTERED_AREA, event);
   }
 
   /**

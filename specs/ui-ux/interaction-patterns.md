@@ -530,3 +530,64 @@ When `prefers-reduced-motion` is enabled, patterns should remain visible (they a
 **Status:** Active - Updated for Neo Brutalism 2.0
 **Animation Library:** `react-native-reanimated`, `expo-haptics`
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference
+
+---
+
+## Phase 2D: Map & Timeline Interaction Patterns
+
+### Map Marker Interactions
+
+| Interaction | Mobile | Web | Result |
+|-------------|--------|-----|--------|
+| Tap/Click marker | onPress | onClick | Select user, show popup/tooltip |
+| Long press marker | onLongPress | — | Quick actions menu (WhatsApp, Call) |
+| Tap selected marker | onPress | onClick | Open UserDetailSheet / UserDetailPanel |
+| Tap map background | onPress | onClick | Deselect user, close popups |
+| Pinch zoom | Native gesture | Mouse wheel / buttons | Zoom map, toggle name labels at zoom >= 14 |
+| Pan map | Native gesture | Mouse drag | Move map view |
+| Tap cluster | onPress | onClick | Zoom to cluster bounds |
+
+### Bottom Sheet Navigation (Mobile)
+
+```
+Collapsed (0%) → Half (50%) → Expanded (85%)
+  ↕ drag handle    ↕ scroll content    ↕ pull down
+```
+
+| State | Height | Content Visible | Map Interaction |
+|-------|--------|----------------|-----------------|
+| Collapsed | 0% | Nothing (closed) | Full |
+| Half | 50% | Header, shift info, actions | Partial (top half) |
+| Expanded | 85% | Full detail + activities/tasks | Minimal (map visible but not interactive) |
+
+### Location Timeline Interactions
+
+| Interaction | Action |
+|-------------|--------|
+| Click timeline point | Animate map to that coordinate, show accuracy circle |
+| Scroll timeline | Auto-scroll synchronized with map viewport (optional) |
+| Click "clock-in" event | Highlight start location on map |
+| Click "area-exit" event | Show boundary crossing point with direction arrow |
+| Click "area-enter" event | Show re-entry point |
+
+### Filter Modal (Mobile)
+
+| Interaction | Behavior |
+|-------------|----------|
+| Tap status chip | Toggle filter (multi-select), update map markers immediately |
+| Select rayon | Cascade: populate area dropdown with rayon's areas |
+| Select area | Cascade: update map bounds to area, update user list |
+| Type in search | Debounced 300ms, filter user list by name |
+| Tap "Reset" | Clear all filters, restore default view |
+| Tap "Apply" | Close modal, apply filters to map + list |
+
+### Side Panel Push Navigation (Web)
+
+```
+UserList → [click user] → UserDetailPanel (slide left 200ms)
+UserDetailPanel → [click "History"] → LocationTimeline (slide left 200ms)
+LocationTimeline → [click "Back"] → UserDetailPanel (slide right 200ms)
+UserDetailPanel → [click "Back"] → UserList (slide right 200ms)
+```
+
+**Transition:** `transform: translateX()` with `ease-out` 200ms

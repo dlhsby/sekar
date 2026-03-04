@@ -905,3 +905,82 @@ it('should have accessible button', () => {
 **Status:** Active - Updated for Neo Brutalism 2.0
 **Compliance Target:** WCAG 2.1 Level AA
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference
+
+---
+
+## Phase 2D: Monitoring Accessibility
+
+### Map Keyboard Navigation (Web)
+
+| Key | Action |
+|-----|--------|
+| Tab | Move focus to next marker (sorted by status priority) |
+| Shift+Tab | Move focus to previous marker |
+| Enter/Space | Select focused marker, open detail panel |
+| Escape | Deselect marker, close panel |
+| Arrow keys | Pan map |
+| +/- | Zoom in/out |
+
+```typescript
+// Marker ARIA attributes
+<div
+  role="button"
+  aria-label={`${user.full_name}, ${user.role}, status: ${statusLabel}, area: ${user.area_name}`}
+  aria-pressed={isSelected}
+  tabIndex={0}
+/>
+```
+
+### Color Blindness Support
+
+All monitoring statuses use **shape + icon modifiers** in addition to color:
+
+| Status | Color | Shape | Icon | Ensures |
+|--------|-------|-------|------|---------|
+| Active | Green | Circle | ✓ | Distinguishable without color |
+| Idle | Amber | Triangle | ⏸ | Distinguishable without color |
+| Outside Area | Purple | Diamond | ↗ | Distinguishable without color |
+| Missing | Red | Square | ! | Distinguishable without color |
+
+**Testing:** Verify with Sim Daltonism (macOS) or Color Oracle (Windows) for protanopia, deuteranopia, tritanopia.
+
+### Screen Reader Announcements
+
+| Event | Announcement (Indonesian) |
+|-------|--------------------------|
+| Status changed to missing | "Peringatan: {name} tidak terdeteksi di {area}" |
+| User left area | "{name} keluar dari area {area}" |
+| User entered area | "{name} masuk ke area {area}" |
+| Filter applied | "Filter diterapkan: {count} pengguna ditampilkan" |
+| Map zoom changed | "Peta zoom level {level}" |
+
+```typescript
+// React Native
+AccessibilityInfo.announceForAccessibility(
+  `Peringatan: ${user.full_name} tidak terdeteksi di ${area.name}`
+);
+
+// Web
+const announcement = document.createElement('div');
+announcement.setAttribute('role', 'status');
+announcement.setAttribute('aria-live', 'assertive');
+```
+
+### Outdoor Visibility for Monitoring
+
+| Element | Requirement | Implementation |
+|---------|-------------|----------------|
+| Map markers | Min 36px outer, 44px touch target | `monitoringTokens.marker` |
+| Status chips | Min 32px height, high contrast text | `monitoringTokens.summaryBar.chipHeight` |
+| FAB buttons | 44px, 3px NB border, shadow | `monitoringTokens.fab.size` |
+| User list cards | 160x80px, clear status dot | `monitoringTokens.userListStrip` |
+| Bottom sheet handle | 32x4px, visible on all backgrounds | `monitoringTokens.detailSheet.handleWidth` |
+
+### Touch Target Compliance
+
+All monitoring interactive elements meet WCAG 2.5.5 (Enhanced, 44x44px):
+- Map markers: 44x44px touch target (36px visual + padding)
+- FAB buttons: 44x44px
+- Status chips: 32px height × variable width (min 44px)
+- User list cards: 160x80px
+- Timeline points: 44x44px tap area

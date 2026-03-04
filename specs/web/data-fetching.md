@@ -621,4 +621,108 @@ onError: (err, newData, context) => {
 **Document Owner:** Web Developer
 **Last Updated:** 2026-01-16
 **Status:** Planned - Phase 6
+
+---
+
+## Phase 2D: Monitoring Query Hooks
+
+### New TanStack Query Hooks
+
+```typescript
+// Enhanced live users with status filter
+function useLiveUsers(filters?: MonitoringFilters) {
+  return useQuery({
+    queryKey: ['monitoring', 'live-users', filters],
+    queryFn: () => monitoringApi.getLiveUsers(filters),
+    refetchInterval: 30_000, // 30s polling fallback
+    staleTime: 10_000,
+  });
+}
+
+// User day summary (for detail panel)
+function useUserDaySummary(userId: string | null) {
+  return useQuery({
+    queryKey: ['monitoring', 'users', userId, 'day-summary'],
+    queryFn: () => monitoringApi.getUserDaySummary(userId!),
+    enabled: !!userId,
+    staleTime: 60_000,
+  });
+}
+
+// Location history (for timeline/trail)
+function useLocationHistory(userId: string | null, date: string) {
+  return useQuery({
+    queryKey: ['monitoring', 'users', userId, 'location-history', date],
+    queryFn: () => monitoringApi.getLocationHistory(userId!, date),
+    enabled: !!userId && !!date,
+    staleTime: 120_000,
+  });
+}
+
+// Staffing summary (for filter modal)
+function useStaffingSummary(filters?: { rayon_id?: string; area_id?: string }) {
+  return useQuery({
+    queryKey: ['monitoring', 'staffing-summary', filters],
+    queryFn: () => monitoringApi.getStaffingSummary(filters),
+    staleTime: 60_000,
+  });
+}
+
+// Monitoring config (admin only)
+function useMonitoringConfig() {
+  return useQuery({
+    queryKey: ['monitoring', 'config'],
+    queryFn: () => monitoringApi.getConfig(),
+    staleTime: 300_000, // 5 min
+  });
+}
+
+// Update config mutation
+function useUpdateMonitoringConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, value }: { key: string; value: Record<string, any> }) =>
+      monitoringApi.updateConfig(key, value),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monitoring', 'config'] });
+      toast.success('Konfigurasi berhasil diperbarui');
+    },
+  });
+}
+
+// Area boundary
+function useAreaBoundary(areaId: string | null) {
+  return useQuery({
+    queryKey: ['areas', areaId, 'boundary'],
+    queryFn: () => areasApi.getBoundary(areaId!),
+    enabled: !!areaId,
+    staleTime: 300_000,
+  });
+}
+
+// Update area boundary mutation
+function useUpdateAreaBoundary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ areaId, data }: { areaId: string; data: UpdateAreaBoundaryDto }) =>
+      areasApi.updateBoundary(areaId, data),
+    onSuccess: (_, { areaId }) => {
+      queryClient.invalidateQueries({ queryKey: ['areas', areaId, 'boundary'] });
+      queryClient.invalidateQueries({ queryKey: ['monitoring'] });
+      toast.success('Batas area berhasil diperbarui');
+    },
+  });
+}
+```
+
+### Cache Invalidation Strategy
+
+| Event | Invalidate |
+|-------|-----------|
+| `user:status-changed` | `['monitoring', 'live-users']` — setQueryData for specific user |
+| `user:left-area` / `user:entered-area` | `['monitoring', 'live-users']` — update is_within_area |
+| Config update | `['monitoring', 'config']` — full invalidate |
+| Boundary update | `['areas', areaId, 'boundary']` + `['monitoring']` — recalculate is_within_area |
+
+**Last Updated:** 2026-03-03
 **Dependencies:** `@tanstack/react-query`, `axios`, `next`

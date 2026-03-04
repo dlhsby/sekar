@@ -13,6 +13,7 @@ import {
   TaskCompletedEvent,
   EventType,
 } from './dto/events.dto';
+import { TrackingStatus } from '../modules/monitoring/entities/user-tracking-status.entity';
 import { User, UserRole } from '../modules/users/entities/user.entity';
 
 describe('EventsGateway', () => {
@@ -281,6 +282,7 @@ describe('EventsGateway', () => {
       user_name: 'Worker One',
       role: UserRole.SATGAS,
       shift_id: 'shift-1',
+      shift_name: 'Shift Pagi',
       area_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
@@ -288,6 +290,8 @@ describe('EventsGateway', () => {
       longitude: 112.7398,
       accuracy: 10,
       battery_level: 85,
+      status: TrackingStatus.ACTIVE,
+      is_within_area: true,
       timestamp: new Date(),
     };
 
@@ -311,7 +315,7 @@ describe('EventsGateway', () => {
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...locationEvent, rayon_id: undefined };
+      const eventNoRayon = { ...locationEvent, rayon_id: null };
       mockServer.to.mockClear();
 
       gateway.emitUserLocation(eventNoRayon);
@@ -347,7 +351,7 @@ describe('EventsGateway', () => {
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...clockInEvent, rayon_id: undefined };
+      const eventNoRayon = { ...clockInEvent, rayon_id: null };
       mockServer.to.mockClear();
 
       gateway.emitUserClockIn(eventNoRayon);
@@ -381,7 +385,7 @@ describe('EventsGateway', () => {
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...clockOutEvent, rayon_id: undefined };
+      const eventNoRayon = { ...clockOutEvent, rayon_id: null };
       mockServer.to.mockClear();
 
       gateway.emitUserClockOut(eventNoRayon);
@@ -416,7 +420,7 @@ describe('EventsGateway', () => {
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...staffingEvent, rayon_id: undefined };
+      const eventNoRayon = { ...staffingEvent, rayon_id: null };
       mockServer.to.mockClear();
 
       gateway.emitAreaStaffing(eventNoRayon);
@@ -452,7 +456,7 @@ describe('EventsGateway', () => {
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...taskAssignedEvent, rayon_id: undefined };
+      const eventNoRayon = { ...taskAssignedEvent, rayon_id: null };
       mockServer.to.mockClear();
 
       gateway.emitTaskAssigned(eventNoRayon);
@@ -495,7 +499,7 @@ describe('EventsGateway', () => {
     });
 
     it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...taskCompletedEvent, rayon_id: undefined };
+      const eventNoRayon = { ...taskCompletedEvent, rayon_id: null };
       mockServer.to.mockClear();
 
       gateway.emitTaskCompleted(eventNoRayon);

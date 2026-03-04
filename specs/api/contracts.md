@@ -8,14 +8,15 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 - **Swagger Documentation:** `/api/v1/docs`
 - **Authentication:** JWT Bearer token (15-min access + 7-day refresh with rotation)
 - **Content Type:** `application/json` (except file uploads: `multipart/form-data`)
-- **Total Endpoints:** 84 (41 Phase 1 + 43 Phase 2) → **Phase 2C: implemented**
+- **Total Endpoints:** 120 (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 7 Phase 2D)
 - **Backend:** NestJS 11.x, Node.js >=24.13.0, TypeScript 5.x
 - **Database:** PostgreSQL 14+ with TypeORM
-- **Testing:** 769 tests passing (50 suites)
+- **Testing:** 888 tests passing (Phase 2C complete)
 - **Error Codes:** 40+ standardized codes (see `error-handling.md`)
 - **Rate Limiting:** 100 req/min global, 5 req/min auth endpoints
-- **Last Updated:** February 11, 2026
+- **Last Updated:** March 3, 2026
 - **Phase 2C Note:** Terminology cleanup (ADR-010) has implemented route renames: `/aktivitas`→`/activities`, `/worker-schedules`→`/schedules`. Dropped `/workers/:id/assign`. Flattened overtime DTO. See Phase 2C specs for full details.
+- **Phase 2D Note:** Monitoring enhancements — 7 new endpoints (location history, day summary, config CRUD, staffing summary, area boundary GET/PUT), 4 enhanced endpoints (live-users filters + new fields, area/:id per-role counts).
 
 ## Table of Contents
 
@@ -37,10 +38,13 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 13. [Activity Types Module](#activity-types-module) (4 endpoints)
 14. [Area Staff Requirements Module](#area-staff-requirements-module) (4 endpoints)
 15. [Worker Schedules Module](#worker-schedules-module) (5 endpoints) **→ Renamed to Schedules (`/schedules`) ✅ Implemented**
-16. [Monitoring Module](#monitoring-module) (4 endpoints)
-17. [Areas Extensions](#areas-module-extensions-phase-2) (3 endpoints)
+16. [Monitoring Module](#monitoring-module) (4 endpoints + 7 Phase 2D)
+17. [Areas Extensions](#areas-module-extensions-phase-2) (3 endpoints + 2 Phase 2D)
 18. [Notifications Module](#notifications-module-phase-2) (5 endpoints)
 19. [Tasks Module](#tasks-module-phase-2) (10 endpoints)
+
+### Phase 2D (Monitoring Enhancements)
+20. [Phase 2D Monitoring Enhancements](#phase-2d-monitoring-enhancements) (7 new endpoints)
 
 ---
 
@@ -3089,14 +3093,24 @@ Mobile and web clients must update type definitions before backend deployment.
       "start_time": "06:00:00",
       "end_time": "15:00:00"
     },
-    "requirements": {
-      "workers": 6,
-      "linmas": 2
-    },
-    "actual": {
-      "workers": 5,
-      "linmas": 2
-    },
+    "requirements": [
+      {
+        "role": "satgas",
+        "required_count": 6,
+        "active_count": 4,
+        "inactive_count": 1,
+        "outside_area_count": 0,
+        "missing_count": 1
+      },
+      {
+        "role": "linmas",
+        "required_count": 2,
+        "active_count": 2,
+        "inactive_count": 0,
+        "outside_area_count": 0,
+        "missing_count": 0
+      }
+    ],
     "status": "understaffed"
   },
   "active_workers": [
@@ -3126,36 +3140,366 @@ Mobile and web clients must update type definitions before backend deployment.
 
 ---
 
-#### GET /api/v1/monitoring/live-workers
+#### GET /api/v1/monitoring/live-users
 
-Get real-time worker positions for map display.
+Get real-time user positions for map display.
+
+> **Phase 2D Enhancement:** Route renamed from `/live-workers` to `/live-users`. New `status` query filter added. Response includes additional fields: `phone`, `status` (TrackingStatus), `is_within_area`, `shift_name`, `shift_definition_id`, `accuracy`, `battery_level`. Totals expanded from single `total` to per-status counts.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `korlap` (own area), `kepala_rayon` (own rayon), `top_management`, `admin_system`, `superadmin`
 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `rayon_id` | UUID | - | Filter by rayon |
 | `area_id` | UUID | - | Filter by area |
+| `status` | TrackingStatus | - | Filter by tracking status: `active`, `inactive`, `outside_area`, `missing`, `offline` |
 
 **Response (200 OK):**
 ```json
 {
   "timestamp": "2026-01-24T10:00:00.000Z",
-  "workers": [
+  "users": [
     {
       "user_id": "worker-uuid",
       "full_name": "Pekerja Satu",
-      "role": "Worker",
+      "role": "satgas",
+      "phone": "08123456789",
       "area_id": "area-uuid",
       "area_name": "Taman Bungkul",
       "shift_id": "shift-uuid",
+      "shift_definition_id": "22222222-2222-2222-2222-222222222201",
+      "shift_name": "Shift 1",
       "gps_lat": -7.2905,
       "gps_lng": 112.7398,
+      "accuracy": 8.5,
       "location_timestamp": "2026-01-24T09:55:00.000Z",
       "battery_level": 85,
-      "status": "online"
+      "status": "active",
+      "is_within_area": true
     }
   ],
-  "total": 120
+  "total_active": 98,
+  "total_inactive": 12,
+  "total_outside_area": 5,
+  "total_missing": 3,
+  "total_offline": 2
+}
+```
+
+---
+
+## Phase 2D Monitoring Enhancements
+
+> **Phase 2D** adds 7 new monitoring endpoints and enhances 4 existing ones. New database tables: `monitoring_configs`, `user_tracking_status`. New TypeScript enum: `TrackingStatus` (`active | inactive | outside_area | missing | offline`).
+
+### GET /api/v1/monitoring/users/:userId/location-history
+
+Get GPS location history for a specific user on a specific date.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `korlap` (own area only), `kepala_rayon` (own rayon only), `top_management`, `admin_system`, `superadmin`
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `date` | string (YYYY-MM-DD) | Yes | Date to retrieve history for |
+| `shift_id` | UUID | No | Filter by specific shift |
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "worker-uuid",
+  "user_name": "Pekerja Satu",
+  "role": "satgas",
+  "date": "2026-03-03",
+  "shift_id": "shift-uuid",
+  "shift_name": "Shift 1",
+  "area_id": "area-uuid",
+  "area_name": "Taman Bungkul",
+  "clock_in_time": "2026-03-03T06:05:00.000Z",
+  "clock_out_time": "2026-03-03T15:02:00.000Z",
+  "points": [
+    {
+      "latitude": -7.2905,
+      "longitude": 112.7398,
+      "accuracy": 8.5,
+      "battery_level": 85,
+      "logged_at": "2026-03-03T06:10:00.000Z",
+      "is_within_area": true
+    }
+  ],
+  "total_points": 320,
+  "total_distance_meters": 4250.5,
+  "time_inside_area_minutes": 498,
+  "time_outside_area_minutes": 42,
+  "generated_at": "2026-03-03T15:30:00.000Z"
+}
+```
+
+---
+
+### GET /api/v1/monitoring/users/:userId/day-summary
+
+Get a comprehensive day-level summary for a specific user including shift, activities, tasks, and contact links.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `korlap` (own area only), `kepala_rayon` (own rayon only), `top_management`, `admin_system`, `superadmin`
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "worker-uuid",
+  "full_name": "Pekerja Satu",
+  "username": "satgas1",
+  "role": "satgas",
+  "phone": "08123456789",
+  "status": "active",
+  "area_id": "area-uuid",
+  "area_name": "Taman Bungkul",
+  "rayon_id": "rayon-uuid",
+  "rayon_name": "Rayon Selatan",
+  "shift": {
+    "id": "shift-uuid",
+    "definition_id": "22222222-2222-2222-2222-222222222201",
+    "name": "Shift 1",
+    "start_time": "06:00:00",
+    "end_time": "15:00:00",
+    "clock_in_time": "2026-03-03T06:05:00.000Z",
+    "clock_out_time": null
+  },
+  "last_location": {
+    "latitude": -7.2905,
+    "longitude": 112.7398,
+    "accuracy": 8.5,
+    "logged_at": "2026-03-03T09:55:00.000Z",
+    "is_within_area": true
+  },
+  "activities_today": [
+    {
+      "id": "activity-uuid",
+      "activity_type": "Pemeliharaan Tanaman",
+      "submitted_at": "2026-03-03T08:30:00.000Z",
+      "photo_count": 2
+    }
+  ],
+  "tasks_today": [
+    {
+      "id": "task-uuid",
+      "title": "Perbaikan Pagar",
+      "status": "in_progress",
+      "assigned_at": "2026-03-03T07:00:00.000Z"
+    }
+  ],
+  "whatsapp_links": {
+    "direct": "https://wa.me/628123456789",
+    "prefilled": "https://wa.me/628123456789?text=Halo%20Pekerja%20Satu"
+  }
+}
+```
+
+---
+
+### GET /api/v1/monitoring/config
+
+Get all monitoring configuration entries.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `admin_system`, `superadmin`
+
+**Response (200 OK):**
+```json
+{
+  "configs": [
+    {
+      "key": "tracking_interval_seconds",
+      "value": { "interval": 30 },
+      "description": "GPS tracking upload interval in seconds",
+      "updated_at": "2026-03-01T10:00:00.000Z"
+    },
+    {
+      "key": "missing_threshold_minutes",
+      "value": { "threshold": 15 },
+      "description": "Minutes without location before user is marked as missing",
+      "updated_at": "2026-03-01T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### PATCH /api/v1/monitoring/config/:key
+
+Update a specific monitoring configuration value.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `admin_system`, `superadmin`
+
+**Request Body:**
+```json
+{
+  "value": { "interval": 60 }
+}
+```
+
+**Request Body Schema:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `value` | `Record<string, any>` | Yes | JSON configuration value |
+
+**Response (200 OK):**
+```json
+{
+  "key": "tracking_interval_seconds",
+  "value": { "interval": 60 },
+  "description": "GPS tracking upload interval in seconds",
+  "updated_at": "2026-03-03T12:00:00.000Z"
+}
+```
+
+---
+
+### GET /api/v1/monitoring/staffing-summary
+
+Get aggregated staffing status grouped by rayon or area.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `korlap` (own area only), `kepala_rayon` (own rayon only), `top_management`, `admin_system`, `superadmin`
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `rayon_id` | UUID | No | Filter summary to a specific rayon |
+| `area_id` | UUID | No | Filter summary to a specific area |
+
+**Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "rayon-uuid",
+      "name": "Rayon Selatan",
+      "type": "rayon",
+      "roles": ["satgas", "linmas", "korlap"],
+      "total_active": 22,
+      "total_idle": 4,
+      "total_outside_area": 2,
+      "total_missing": 1,
+      "total_offline": 1,
+      "is_fully_staffed": false
+    },
+    {
+      "id": "area-uuid",
+      "name": "Taman Bungkul",
+      "type": "area",
+      "roles": ["satgas", "linmas"],
+      "total_active": 5,
+      "total_idle": 1,
+      "total_outside_area": 0,
+      "total_missing": 0,
+      "total_offline": 0,
+      "is_fully_staffed": false
+    }
+  ],
+  "generated_at": "2026-03-03T10:00:00.000Z"
+}
+```
+
+---
+
+### GET /api/v1/areas/:id/boundary
+
+Get the boundary polygon and coverage data for a specific area.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `admin_system`, `superadmin`
+
+**Response (200 OK):**
+```json
+{
+  "area_id": "area-uuid",
+  "name": "Taman Bungkul",
+  "boundary_polygon": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [112.7395, -7.2900],
+        [112.7401, -7.2900],
+        [112.7401, -7.2910],
+        [112.7395, -7.2910],
+        [112.7395, -7.2900]
+      ]
+    ]
+  },
+  "gps_lat": -7.2905,
+  "gps_lng": 112.7398,
+  "radius_meters": 150,
+  "coverage_area": 25000.00
+}
+```
+
+Returns `boundary_polygon: null` if no polygon has been set for the area.
+
+---
+
+### PUT /api/v1/areas/:id/boundary
+
+Create or replace the boundary polygon for a specific area.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `admin_system`, `superadmin`
+
+**Request:**
+```http
+PUT /api/v1/areas/area-uuid/boundary HTTP/1.1
+Host: localhost:3000
+Authorization: Bearer {admin_system_token}
+Content-Type: application/json
+
+{
+  "boundary_polygon": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [112.7395, -7.2900],
+        [112.7401, -7.2900],
+        [112.7401, -7.2910],
+        [112.7395, -7.2910],
+        [112.7395, -7.2900]
+      ]
+    ]
+  },
+  "coverage_area": 26000.00
+}
+```
+
+**Request Body Schema:**
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `boundary_polygon` | GeoJSON Polygon | Yes | Valid GeoJSON Polygon, must be within Surabaya bounds |
+| `coverage_area` | number | No | Auto-computed from polygon if omitted |
+
+**Notes:**
+- Validates that all coordinates fall within Surabaya geographic bounds
+- If `coverage_area` is omitted, it is automatically computed from the polygon geometry
+- Invalidates area boundary cache on success
+- Triggers re-evaluation of `is_within_area` status for all users currently in this area
+
+**Response (200 OK):**
+```json
+{
+  "area_id": "area-uuid",
+  "name": "Taman Bungkul",
+  "boundary_polygon": {
+    "type": "Polygon",
+    "coordinates": [...]
+  },
+  "gps_lat": -7.2905,
+  "gps_lng": 112.7398,
+  "radius_meters": 150,
+  "coverage_area": 26000.00
 }
 ```
 
@@ -4185,6 +4529,18 @@ Cancel/delete task (soft delete).
 
 **Total Phase 2 Endpoints:** 43
 
+## Phase 2D Endpoint Summary
+
+| Module | New Endpoints | Enhanced Endpoints | Methods |
+|--------|---------------|--------------------|---------|
+| Monitoring | 5 | 2 | GET, PATCH |
+| Areas (boundary) | 2 | 0 | GET, PUT |
+
+**New Phase 2D Endpoints:** 7
+**Enhanced Phase 2D Endpoints:** 4
+
+**Grand Total (all phases):** 120
+
 ---
 
 ## Pagination & Limits
@@ -4223,11 +4579,11 @@ Phase 2 implementation:
 
 ## Document Information
 
-**Document Version:** 2.0.0
-**Last Updated:** January 24, 2026
-**Phase:** 1 Complete + Phase 2 Planned
-**Total Endpoints:** 84 (41 Phase 1 implemented + 43 Phase 2 planned)
-**Test Coverage:** 416 tests passing (99.06% statements, 94.27% branches)
+**Document Version:** 2.1.0
+**Last Updated:** March 3, 2026
+**Phase:** Phase 2C Complete + Phase 2D Planned
+**Total Endpoints:** 120 (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 7 Phase 2D)
+**Test Coverage:** 888 tests passing (89.57% statements, 81.64% branches)
 
 ### Technology Stack
 
@@ -4283,7 +4639,71 @@ All endpoints using old role names must update:
 
 ---
 
+## Phase 2D: Monitoring Enhancements
+
+> **Status:** Planned | **Target:** March 2026
+
+### New Endpoints (+7)
+
+| # | Method | Path | Description | Roles |
+|---|--------|------|-------------|-------|
+| 1 | `GET` | `/monitoring/users/:userId/location-history` | GPS track history for a user on a date | korlap, kepala_rayon, top_management, admin_system, superadmin |
+| 2 | `GET` | `/monitoring/users/:userId/day-summary` | Full day summary: shift, activities, tasks, WhatsApp links | korlap, kepala_rayon, top_management, admin_system, superadmin |
+| 3 | `GET` | `/monitoring/config` | List all monitoring configuration entries | admin_system, superadmin |
+| 4 | `PATCH` | `/monitoring/config/:key` | Update a monitoring configuration value | admin_system, superadmin |
+| 5 | `GET` | `/monitoring/staffing-summary` | Aggregated staffing status by rayon/area | korlap, kepala_rayon, top_management, admin_system, superadmin |
+| 6 | `GET` | `/areas/:id/boundary` | Get area boundary polygon and coverage | admin_system, superadmin |
+| 7 | `PUT` | `/areas/:id/boundary` | Create or replace area boundary polygon | admin_system, superadmin |
+
+### Enhanced Endpoints (4)
+
+| Method | Path | Changes |
+|--------|------|---------|
+| `GET` | `/monitoring/live-users` | Renamed from `/live-workers`; new `status` query filter; response adds `phone`, `status` (TrackingStatus), `is_within_area`, `shift_name`, `shift_definition_id`, `accuracy`; totals split into per-status counts |
+| `GET` | `/monitoring/area/:id` | `requirements` now returns `StaffRequirementStatusDto[]` with per-role `active_count`, `inactive_count`, `outside_area_count`, `missing_count` instead of a simple two-field summary |
+| `GET` | `/monitoring/city` | (minor) `workers_online` / `linmas_online` now reflect TrackingStatus-based active count |
+| `GET` | `/monitoring/rayon/:id` | (minor) Per-area row now includes TrackingStatus breakdown |
+
+### New DTOs
+
+| DTO | Fields |
+|-----|--------|
+| `TrackingStatus` (enum) | `active`, `inactive`, `outside_area`, `missing`, `offline` |
+| `LiveUserDto` (enhanced) | All previous fields + `phone`, `status`, `is_within_area`, `shift_name`, `shift_definition_id`, `accuracy` |
+| `LocationHistoryPointDto` | `latitude`, `longitude`, `accuracy`, `battery_level`, `logged_at`, `is_within_area` |
+| `LocationHistoryResponseDto` | `user_id`, `user_name`, `role`, `date`, `shift_id`, `shift_name`, `area_id`, `area_name`, `clock_in_time`, `clock_out_time`, `points[]`, `total_points`, `total_distance_meters`, `time_inside_area_minutes`, `time_outside_area_minutes`, `generated_at` |
+| `UserDaySummaryDto` | `user_id`, `full_name`, `username`, `role`, `phone`, `status`, `area_id`, `area_name`, `rayon_id`, `rayon_name`, `shift`, `last_location`, `activities_today[]`, `tasks_today[]`, `whatsapp_links` |
+| `MonitoringConfigDto` | `key`, `value` (JSON), `description`, `updated_at` |
+| `MonitoringConfigResponseDto` | `configs: MonitoringConfigDto[]` |
+| `UpdateMonitoringConfigDto` | `value: Record<string, any>` |
+| `StaffingSummaryItemDto` | `id`, `name`, `type` (`rayon`\|`area`), `roles[]`, `total_active`, `total_idle`, `total_outside_area`, `total_missing`, `total_offline`, `is_fully_staffed` |
+| `StaffingSummaryResponseDto` | `items: StaffingSummaryItemDto[]`, `generated_at` |
+| `AreaBoundaryResponseDto` | `area_id`, `name`, `boundary_polygon` (GeoJSON\|null), `gps_lat`, `gps_lng`, `radius_meters`, `coverage_area` |
+| `UpdateAreaBoundaryDto` | `boundary_polygon: GeoJsonPolygon`, `coverage_area?: number` |
+| `StaffRequirementStatusDto` | `role`, `required_count`, `active_count`, `inactive_count`, `outside_area_count`, `missing_count` |
+
+### New Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `monitoring_configs` | Key-value store for monitoring system settings (JSON values) |
+| `user_tracking_status` | Materialised per-user tracking status cache (refreshed on each GPS upload) |
+
+---
+
 ### Changelog
+
+**v2.1.0 - March 3, 2026 (Phase 2D Monitoring Enhancements)**
+- Added 7 new monitoring/boundary endpoints
+- Enhanced 4 existing monitoring endpoints (live-users, area/:id, city, rayon/:id)
+- Introduced `TrackingStatus` enum and per-status totals on live-users
+- Added per-role `StaffRequirementStatusDto` to area/:id requirements
+- Renamed `/live-workers` → `/live-users`
+- Added PUT `/areas/:id/boundary` (full replace) alongside existing PATCH
+- Added GET `/areas/:id/boundary` for boundary retrieval
+- Documented new DB tables: `monitoring_configs`, `user_tracking_status`
+- Updated total endpoint count: 113 → 120
+- Updated document version: 2.0.0 → 2.1.0
 
 **v2.0.0 - February 10, 2026 (Phase 2C Planning)**
 - Added 8 new endpoints (overtime module + task tagging)
