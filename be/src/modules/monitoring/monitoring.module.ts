@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { MonitoringController } from './monitoring.controller';
 import { MonitoringService } from './monitoring.service';
 import { User } from '../users/entities/user.entity';
@@ -11,18 +12,17 @@ import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-staff-requirement.entity';
+import { MonitoringConfig } from './entities/monitoring-config.entity';
+import { UserTrackingStatus } from './entities/user-tracking-status.entity';
+import { MonitoringCacheService } from './services/monitoring-cache.service';
+import { MonitoringConfigService } from './services/monitoring-config.service';
+import { StatusCalculatorService } from './services/status-calculator.service';
+import { MonitoringSchedulerService } from './services/monitoring-scheduler.service';
+import { EventsModule } from '../../gateways/events.module';
 
-/**
- * Module for real-time monitoring
- *
- * Provides:
- * - City-wide statistics (Admin/TopManagement)
- * - Rayon-level statistics (KepalaRayon+)
- * - Area-level statistics (Korlap+)
- * - Live user positions
- */
 @Module({
   imports: [
+    ScheduleModule,
     TypeOrmModule.forFeature([
       User,
       Area,
@@ -33,10 +33,24 @@ import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-s
       Rayon,
       ShiftDefinition,
       AreaStaffRequirement,
+      MonitoringConfig,
+      UserTrackingStatus,
     ]),
+    forwardRef(() => EventsModule),
   ],
   controllers: [MonitoringController],
-  providers: [MonitoringService],
-  exports: [MonitoringService],
+  providers: [
+    MonitoringService,
+    MonitoringCacheService,
+    MonitoringConfigService,
+    StatusCalculatorService,
+    MonitoringSchedulerService,
+  ],
+  exports: [
+    MonitoringService,
+    MonitoringCacheService,
+    MonitoringConfigService,
+    StatusCalculatorService,
+  ],
 })
 export class MonitoringModule {}

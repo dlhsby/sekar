@@ -11,6 +11,7 @@ echo "  📦 Phase 1: Users, Areas, Shifts, Activities (base data)"
 echo "  🚀 Phase 2: Rayons, Activity Types, Schedules (7 rayons, 20 activity types)"
 echo "  🎯 Tasks: Task workflow data (17 tasks)"
 echo "  📋 Activities: Comprehensive activity test data (50 activities, 60 days)"
+echo "  📡 Phase 2D: Monitoring configs and user tracking status"
 echo ""
 
 # Confirmation prompt
@@ -24,7 +25,7 @@ fi
 echo ""
 
 # Phase 1
-echo "📦 [1/4] Seeding Phase 1 MVP..."
+echo "📦 [1/5] Seeding Phase 1 MVP..."
 npm run seed:phase1
 if [ $? -ne 0 ]; then
   echo "❌ Phase 1 seeding failed"
@@ -34,7 +35,7 @@ echo "✅ Phase 1 complete"
 echo ""
 
 # Phase 2
-echo "🚀 [2/4] Seeding Phase 2 Enhanced..."
+echo "🚀 [2/5] Seeding Phase 2 Enhanced..."
 npm run seed:phase2
 if [ $? -ne 0 ]; then
   echo "❌ Phase 2 seeding failed"
@@ -44,7 +45,7 @@ echo "✅ Phase 2 complete"
 echo ""
 
 # Tasks
-echo "🎯 [3/4] Seeding Tasks..."
+echo "🎯 [3/5] Seeding Tasks..."
 npm run seed:tasks
 if [ $? -ne 0 ]; then
   echo "❌ Task seeding failed"
@@ -54,13 +55,23 @@ echo "✅ Tasks complete"
 echo ""
 
 # Activities
-echo "📋 [4/4] Seeding Activities..."
+echo "📋 [4/5] Seeding Activities..."
 npm run seed:activities
 if [ $? -ne 0 ]; then
   echo "❌ Activity seeding failed"
   exit 1
 fi
 echo "✅ Activities complete"
+echo ""
+
+# Phase 2D Monitoring
+echo "📡 [5/5] Seeding Phase 2D Monitoring..."
+npm run seed:phase2d
+if [ $? -ne 0 ]; then
+  echo "❌ Phase 2D seeding failed"
+  exit 1
+fi
+echo "✅ Phase 2D complete"
 echo ""
 
 echo "🎉 All seeding completed!"
@@ -72,6 +83,7 @@ echo "   • 3 shift definitions"
 echo "   • 20 activity types (8 satgas + 5 linmas + 4 korlap + 3 admin_data)"
 echo "   • 17 tasks (satgas + linmas + korlap + rayon-scoped)"
 echo "   • 50 activities (60-day range for filter testing)"
+echo "   • 5 monitoring configs (thresholds, geofencing, map, alerts, ping)"
 echo ""
 echo "🔐 Login credentials (all passwords: password123):"
 echo ""

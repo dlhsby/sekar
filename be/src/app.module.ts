@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -44,6 +46,12 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
         limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10), // Maximum requests per time window
       },
     ]),
+
+    // Schedule module for cron jobs (Phase 2D)
+    ScheduleModule.forRoot(),
+
+    // Event emitter for internal events (Phase 2D)
+    EventEmitterModule.forRoot(),
 
     // Database module with connection pooling
     TypeOrmModule.forRoot({

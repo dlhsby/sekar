@@ -21,6 +21,7 @@
     "seed:phase2": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase2.ts",
     "seed:tasks": "ts-node -r tsconfig-paths/register src/database/seeds/seed-tasks.ts",
     "seed:activities": "ts-node -r tsconfig-paths/register src/database/seeds/seed-activities.ts",
+    "seed:phase2d": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase2d.ts",
     "seed:prod": "node dist/database/seeds/seed.js",
     "seed:phase2:prod": "node dist/database/seeds/seed-phase2.js",
     "seed:tasks:prod": "node dist/database/seeds/seed-tasks.js",
@@ -45,10 +46,12 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/platform-socket.io": "^11.1.12",
+    "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^11.2.5",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
@@ -69,7 +72,8 @@
     "socket.io": "^4.8.3",
     "typeorm": "^0.3.17",
     "uuid": "^13.0.0",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",

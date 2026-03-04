@@ -89,6 +89,8 @@ describe('MonitoringService', () => {
     clock_out_gps_lng: null as unknown as number,
     clock_in_outside_boundary: false,
     clock_out_outside_boundary: false,
+    shift_definition_id: null,
+    shift_definition: null as unknown as any,
     created_at: new Date(),
     updated_at: new Date(),
   };
