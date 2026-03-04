@@ -252,4 +252,98 @@ describe('AreasService', () => {
       expect(result).toBe(false);
     });
   });
+
+  describe('getBoundary', () => {
+    const areaWithBoundary: Area = {
+      ...mockArea,
+      boundary_polygon: {
+        type: 'Polygon',
+        coordinates: [[[112.7388, -7.2905], [112.7395, -7.2905], [112.7395, -7.2910], [112.7388, -7.2910], [112.7388, -7.2905]]],
+      },
+      coverage_area: 2500.5,
+    };
+
+    it('should return boundary response for area with polygon', async () => {
+      mockRepository.findOne.mockResolvedValue(areaWithBoundary);
+
+      const result = await service.getBoundary(areaWithBoundary.id);
+
+      expect(result.area_id).toBe(areaWithBoundary.id);
+      expect(result.name).toBe(areaWithBoundary.name);
+      expect(result.boundary_polygon).toEqual(areaWithBoundary.boundary_polygon);
+      expect(result.coverage_area).toBeCloseTo(2500.5);
+    });
+
+    it('should return null boundary_polygon when area has no polygon', async () => {
+      mockRepository.findOne.mockResolvedValue(mockArea);
+
+      const result = await service.getBoundary(mockArea.id);
+
+      expect(result.boundary_polygon).toBeNull();
+      expect(result.coverage_area).toBeNull();
+    });
+
+    it('should throw NotFoundException when area not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.getBoundary('non-existent-id')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateBoundary', () => {
+    const validPolygon = {
+      type: 'Polygon' as const,
+      coordinates: [
+        [
+          [112.7388, -7.2905],
+          [112.7395, -7.2905],
+          [112.7395, -7.2910],
+          [112.7388, -7.2910],
+          [112.7388, -7.2905],
+        ],
+      ],
+    };
+
+    it('should update boundary and compute area when no coverage_area provided', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockArea });
+      mockRepository.save.mockImplementation((area) => Promise.resolve({ ...area }));
+
+      const result = await service.updateBoundary(mockArea.id, {
+        boundary_polygon: validPolygon,
+      });
+
+      expect(result.boundary_polygon).toEqual(validPolygon);
+      expect(result.coverage_area).toBeGreaterThan(0);
+    });
+
+    it('should use provided coverage_area instead of computing it', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockArea });
+      mockRepository.save.mockImplementation((area) => Promise.resolve({ ...area }));
+
+      const result = await service.updateBoundary(mockArea.id, {
+        boundary_polygon: validPolygon,
+        coverage_area: 9999,
+      });
+
+      expect(result.coverage_area).toBeCloseTo(9999);
+    });
+
+    it('should throw BadRequestException for invalid polygon', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockArea });
+
+      const invalidPolygon = { type: 'Polygon' as const, coordinates: [] };
+
+      await expect(
+        service.updateBoundary(mockArea.id, { boundary_polygon: invalidPolygon as any }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when area not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.updateBoundary('non-existent', { boundary_polygon: validPolygon }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });

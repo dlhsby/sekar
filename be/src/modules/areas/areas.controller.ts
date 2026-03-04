@@ -2,12 +2,14 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
   Delete,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,11 +23,12 @@ import { AreasService } from './areas.service';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { Area } from './entities/area.entity';
+import { AreaBoundaryResponseDto, UpdateAreaBoundaryDto } from '../monitoring/dto/area-boundary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { USER_MANAGERS } from '../users/constants/role-groups';
+import { USER_MANAGERS, MONITORING_AREA } from '../users/constants/role-groups';
 
 /**
  * Controller for area management
@@ -234,5 +237,31 @@ export class AreasController {
   })
   remove(@Param('id') id: string): Promise<void> {
     return this.areasService.remove(id);
+  }
+
+  @Get(':id/boundary')
+  @Roles(...MONITORING_AREA)
+  @ApiOperation({ summary: 'Get area boundary polygon' })
+  @ApiParam({ name: 'id', description: 'Area UUID' })
+  @ApiResponse({ status: 200, type: AreaBoundaryResponseDto })
+  @ApiResponse({ status: 404, description: 'Area not found' })
+  getBoundary(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<AreaBoundaryResponseDto> {
+    return this.areasService.getBoundary(id);
+  }
+
+  @Put(':id/boundary')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Update area boundary polygon' })
+  @ApiParam({ name: 'id', description: 'Area UUID' })
+  @ApiResponse({ status: 200, type: AreaBoundaryResponseDto })
+  @ApiResponse({ status: 400, description: 'Invalid GeoJSON polygon' })
+  @ApiResponse({ status: 404, description: 'Area not found' })
+  updateBoundary(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAreaBoundaryDto,
+  ): Promise<AreaBoundaryResponseDto> {
+    return this.areasService.updateBoundary(id, dto);
   }
 }

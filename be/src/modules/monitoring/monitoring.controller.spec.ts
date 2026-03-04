@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MonitoringController } from './monitoring.controller';
 import { MonitoringService } from './monitoring.service';
+import { MonitoringConfigService } from './services/monitoring-config.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
@@ -223,6 +224,16 @@ describe('MonitoringController', () => {
             getRayonStats: jest.fn(),
             getAreaStats: jest.fn(),
             getLiveUsers: jest.fn(),
+            getLocationHistory: jest.fn(),
+            getUserDaySummary: jest.fn(),
+            getStaffingSummary: jest.fn(),
+          },
+        },
+        {
+          provide: MonitoringConfigService,
+          useValue: {
+            findAll: jest.fn().mockResolvedValue([]),
+            updateByKey: jest.fn(),
           },
         },
       ],

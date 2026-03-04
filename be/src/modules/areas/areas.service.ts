@@ -6,6 +6,8 @@ import { User } from '../users/entities/user.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { AreaTypesService } from '../area-types/area-types.service';
+import { AreaBoundaryResponseDto, UpdateAreaBoundaryDto, GeoJsonPolygon } from '../monitoring/dto/area-boundary.dto';
+import { GeoJsonValidator } from '../../common/utils/geojson-validator.util';
 
 /**
  * Service for managing work areas
@@ -154,5 +156,50 @@ export class AreasService {
       where: { id, is_active: true },
     });
     return count > 0;
+  }
+
+  async getBoundary(id: string): Promise<AreaBoundaryResponseDto> {
+    const area = await this.findOne(id);
+
+    return {
+      area_id: area.id,
+      name: area.name,
+      boundary_polygon: (area.boundary_polygon as GeoJsonPolygon) || null,
+      gps_lat: parseFloat(area.gps_lat?.toString() || '0'),
+      gps_lng: parseFloat(area.gps_lng?.toString() || '0'),
+      radius_meters: area.radius_meters,
+      coverage_area: area.coverage_area ? parseFloat(area.coverage_area.toString()) : null,
+    };
+  }
+
+  async updateBoundary(
+    id: string,
+    dto: UpdateAreaBoundaryDto,
+  ): Promise<AreaBoundaryResponseDto> {
+    const area = await this.findOne(id);
+    const errors = GeoJsonValidator.validatePolygon(dto.boundary_polygon);
+
+    if (errors.length > 0) {
+      throw new BadRequestException(`Invalid polygon: ${errors.join('; ')}`);
+    }
+
+    const coverageArea = dto.coverage_area
+      ?? GeoJsonValidator.computeAreaSqMeters(dto.boundary_polygon.coordinates[0]);
+
+    area.boundary_polygon = dto.boundary_polygon;
+    area.coverage_area = coverageArea;
+
+    const saved = await this.areaRepository.save(area);
+    this.logger.log(`Updated boundary for area ${id}`);
+
+    return {
+      area_id: saved.id,
+      name: saved.name,
+      boundary_polygon: (saved.boundary_polygon as GeoJsonPolygon) || null,
+      gps_lat: parseFloat(saved.gps_lat?.toString() || '0'),
+      gps_lng: parseFloat(saved.gps_lng?.toString() || '0'),
+      radius_meters: saved.radius_meters,
+      coverage_area: saved.coverage_area ? parseFloat(saved.coverage_area.toString()) : null,
+    };
   }
 }

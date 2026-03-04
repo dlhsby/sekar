@@ -20,6 +20,10 @@ import {
   StaffRequirementStatusDto,
 } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUserDto, LiveUsersFilterDto } from './dto/live-users.dto';
+import { LocationHistoryResponseDto, LocationHistoryPointDto } from './dto/location-history.dto';
+import { UserDaySummaryDto } from './dto/user-day-summary.dto';
+import { StaffingSummaryResponseDto, StaffingSummaryItemDto, RoleStaffingDto } from './dto/staffing-summary.dto';
+import { GpsUtil } from '../../common/utils/gps.util';
 
 @Injectable()
 export class MonitoringService {
@@ -689,6 +693,437 @@ export class MonitoringService {
       .where('shift.area_id IN (:...areaIds)', { areaIds })
       .andWhere('shift.clock_out_time IS NULL')
       .getCount();
+  }
+
+  // =========================================================================
+  // Phase 2D-3: New Endpoint Service Methods
+  // =========================================================================
+
+  async getLocationHistory(
+    userId: string,
+    date: string,
+    shiftId?: string,
+  ): Promise<LocationHistoryResponseDto> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
+
+    const dayRange = this.parseDateRange(date);
+    const shift = await this.findShiftForHistory(userId, dayRange, shiftId);
+    const area = shift?.area_id
+      ? await this.areaRepository.findOne({ where: { id: shift.area_id } })
+      : null;
+
+    const shiftDef = shift?.shift_definition_id
+      ? await this.shiftDefinitionRepository.findOne({ where: { id: shift.shift_definition_id } })
+      : null;
+
+    const logs = await this.fetchLocationLogs(userId, dayRange, shiftId);
+    const points = this.buildLocationPoints(logs, area);
+    const analytics = this.computeTrailAnalytics(points);
+
+    return {
+      user_id: userId,
+      user_name: user.full_name,
+      role: user.role,
+      date,
+      shift_id: shift?.id || null,
+      shift_name: shiftDef?.name || null,
+      area_id: area?.id || null,
+      area_name: area?.name || null,
+      clock_in_time: shift?.clock_in_time || null,
+      clock_out_time: shift?.clock_out_time || null,
+      points,
+      total_points: points.length,
+      total_distance_meters: analytics.totalDistance,
+      time_inside_area_minutes: analytics.timeInsideMinutes,
+      time_outside_area_minutes: analytics.timeOutsideMinutes,
+      generated_at: new Date(),
+    };
+  }
+
+  async getUserDaySummary(userId: string): Promise<UserDaySummaryDto> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
+
+    const tracking = await this.trackingRepository.findOne({
+      where: { user_id: userId },
+      relations: ['shift', 'area'],
+    });
+
+    const area = tracking?.area || (user.area_id
+      ? await this.areaRepository.findOne({ where: { id: user.area_id } })
+      : null);
+
+    const rayon = area?.rayon_id
+      ? await this.rayonRepository.findOne({ where: { id: area.rayon_id } })
+      : null;
+
+    const shiftInfo = await this.buildShiftInfo(tracking);
+    const lastLocation = this.buildLastLocation(tracking, area);
+    const today = this.getTodayRange();
+
+    const [activitiesToday, tasksToday] = await Promise.all([
+      this.fetchTodayActivities(userId, today),
+      this.fetchTodayTasks(userId, today),
+    ]);
+
+    return {
+      user_id: userId,
+      full_name: user.full_name,
+      username: user.username,
+      role: user.role,
+      phone: user.phone || null,
+      status: tracking?.status || TrackingStatus.OFFLINE,
+      area_id: area?.id || null,
+      area_name: area?.name || null,
+      rayon_id: rayon?.id || null,
+      rayon_name: rayon?.name || null,
+      shift: shiftInfo,
+      last_location: lastLocation,
+      activities_today: activitiesToday,
+      tasks_today: tasksToday,
+      whatsapp_links: this.buildWhatsAppLinks(user.phone),
+    };
+  }
+
+  async getStaffingSummary(
+    filters: { rayon_id?: string; area_id?: string },
+  ): Promise<StaffingSummaryResponseDto> {
+    const areas = await this.resolveAreas(filters);
+    const currentShift = await this.getCurrentShiftDefinition();
+    const items: StaffingSummaryItemDto[] = [];
+
+    for (const area of areas) {
+      const item = await this.buildStaffingItem(area, currentShift);
+      items.push(item);
+    }
+
+    return { items, generated_at: new Date() };
+  }
+
+  // ---- Private helpers for new endpoints ----
+
+  private parseDateRange(date: string): { start: Date; end: Date } {
+    const start = new Date(`${date}T00:00:00`);
+    const end = new Date(`${date}T23:59:59.999`);
+    return { start, end };
+  }
+
+  private async findShiftForHistory(
+    userId: string,
+    dayRange: { start: Date; end: Date },
+    shiftId?: string,
+  ): Promise<Shift | null> {
+    if (shiftId) {
+      return this.shiftRepository.findOne({
+        where: { id: shiftId, user_id: userId },
+      });
+    }
+    return this.shiftRepository.findOne({
+      where: {
+        user_id: userId,
+        clock_in_time: Between(dayRange.start, dayRange.end),
+      },
+      order: { clock_in_time: 'DESC' },
+    });
+  }
+
+  private async fetchLocationLogs(
+    userId: string,
+    dayRange: { start: Date; end: Date },
+    shiftId?: string,
+  ): Promise<LocationLog[]> {
+    const qb = this.locationRepository
+      .createQueryBuilder('loc')
+      .where('loc.user_id = :userId', { userId })
+      .andWhere('loc.logged_at BETWEEN :start AND :end', dayRange)
+      .orderBy('loc.logged_at', 'ASC');
+
+    if (shiftId) {
+      qb.andWhere('loc.shift_id = :shiftId', { shiftId });
+    }
+
+    return qb.getMany();
+  }
+
+  private buildLocationPoints(
+    logs: LocationLog[],
+    area: Area | null,
+  ): LocationHistoryPointDto[] {
+    return logs.map((log) => ({
+      latitude: Number(log.gps_lat),
+      longitude: Number(log.gps_lng),
+      accuracy: log.accuracy_meters ?? null,
+      battery_level: log.battery_level ?? null,
+      logged_at: log.logged_at,
+      is_within_area: area
+        ? GpsUtil.isWithinAreaBoundary(Number(log.gps_lat), Number(log.gps_lng), area)
+        : true,
+    }));
+  }
+
+  private computeTrailAnalytics(points: LocationHistoryPointDto[]): {
+    totalDistance: number;
+    timeInsideMinutes: number;
+    timeOutsideMinutes: number;
+  } {
+    let totalDistance = 0;
+    let timeInsideMs = 0;
+    let timeOutsideMs = 0;
+
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      totalDistance += GpsUtil.calculateDistance(
+        prev.latitude, prev.longitude,
+        curr.latitude, curr.longitude,
+      );
+      const timeDelta = curr.logged_at.getTime() - prev.logged_at.getTime();
+      if (prev.is_within_area) {
+        timeInsideMs += timeDelta;
+      } else {
+        timeOutsideMs += timeDelta;
+      }
+    }
+
+    return {
+      totalDistance: Math.round(totalDistance * 100) / 100,
+      timeInsideMinutes: Math.round(timeInsideMs / 60000),
+      timeOutsideMinutes: Math.round(timeOutsideMs / 60000),
+    };
+  }
+
+  private async buildShiftInfo(
+    tracking: UserTrackingStatus | null,
+  ): Promise<UserDaySummaryDto['shift']> {
+    if (!tracking?.shift_id) return null;
+
+    const shift = tracking.shift || await this.shiftRepository.findOne({
+      where: { id: tracking.shift_id },
+    });
+    if (!shift) return null;
+
+    const shiftDef = tracking.shift_definition_id
+      ? await this.shiftDefinitionRepository.findOne({
+          where: { id: tracking.shift_definition_id },
+        })
+      : null;
+
+    const now = shift.clock_out_time || new Date();
+    const durationMs = now.getTime() - shift.clock_in_time.getTime();
+
+    return {
+      id: shift.id,
+      name: shiftDef?.name || 'Active Shift',
+      clock_in_time: shift.clock_in_time,
+      clock_out_time: shift.clock_out_time || null,
+      duration_minutes: Math.round(durationMs / 60000),
+      outside_boundary: shift.clock_in_outside_boundary || false,
+    };
+  }
+
+  private buildLastLocation(
+    tracking: UserTrackingStatus | null,
+    area: Area | null,
+  ): UserDaySummaryDto['last_location'] {
+    if (!tracking?.last_latitude || !tracking?.last_longitude) return null;
+
+    return {
+      latitude: Number(tracking.last_latitude),
+      longitude: Number(tracking.last_longitude),
+      accuracy: tracking.last_accuracy_meters ? Number(tracking.last_accuracy_meters) : null,
+      battery_level: tracking.last_battery_level,
+      logged_at: tracking.last_location_at!,
+      is_within_area: tracking.is_within_area,
+    };
+  }
+
+  private async fetchTodayActivities(
+    userId: string,
+    today: { start: Date; end: Date },
+  ): Promise<UserDaySummaryDto['activities_today']> {
+    const activities = await this.activityRepository.find({
+      where: {
+        user_id: userId,
+        created_at: Between(today.start, today.end),
+      },
+      order: { created_at: 'DESC' },
+      take: 20,
+    });
+
+    return activities.map((a) => ({
+      id: a.id,
+      title: a.description,
+      activity_type: a.activity_type_id,
+      created_at: a.created_at,
+      photo_url: a.photo_urls?.[0] || null,
+    }));
+  }
+
+  private async fetchTodayTasks(
+    userId: string,
+    today: { start: Date; end: Date },
+  ): Promise<UserDaySummaryDto['tasks_today']> {
+    const tasks = await this.taskRepository.find({
+      where: { assigned_to: userId },
+      order: { priority: 'DESC', created_at: 'DESC' },
+      take: 20,
+    });
+
+    return tasks
+      .filter((t) => t.status !== TaskStatus.COMPLETED || (
+        t.completed_at && t.completed_at >= today.start && t.completed_at <= today.end
+      ))
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+      }));
+  }
+
+  private buildWhatsAppLinks(phone: string | null | undefined): UserDaySummaryDto['whatsapp_links'] {
+    if (!phone) return null;
+
+    const cleaned = phone.replace(/\D/g, '');
+    const international = cleaned.startsWith('0')
+      ? `62${cleaned.substring(1)}`
+      : cleaned;
+
+    return {
+      chat: `https://wa.me/${international}`,
+      call: `tel:+${international}`,
+    };
+  }
+
+  private async resolveAreas(
+    filters: { rayon_id?: string; area_id?: string },
+  ): Promise<Area[]> {
+    if (filters.area_id) {
+      const area = await this.areaRepository.findOne({
+        where: { id: filters.area_id, is_active: true },
+      });
+      return area ? [area] : [];
+    }
+
+    const where: Record<string, any> = { is_active: true };
+    if (filters.rayon_id) where.rayon_id = filters.rayon_id;
+
+    return this.areaRepository.find({ where });
+  }
+
+  private async buildStaffingItem(
+    area: Area,
+    currentShift: ShiftDefinition | null,
+  ): Promise<StaffingSummaryItemDto> {
+    const roleCounts = await this.getTrackingRoleCounts(area.id);
+    const requirements = currentShift
+      ? await this.staffRequirementRepository.find({
+          where: { area_id: area.id, shift_definition_id: currentShift.id },
+        })
+      : [];
+
+    const reqMap = new Map(requirements.map((r) => [r.role, r.required_count]));
+    const assignedCounts = await this.getAssignedRoleCounts(area.id);
+
+    const roles: RoleStaffingDto[] = this.buildRoleStaffing(
+      roleCounts,
+      assignedCounts,
+      reqMap,
+    );
+
+    const totals = this.sumRoleTotals(roles);
+
+    return {
+      id: area.id,
+      name: area.name,
+      type: 'area',
+      roles,
+      ...totals,
+      is_fully_staffed: roles.every((r) =>
+        (r.active + r.idle + r.outside_area) >= r.total_required,
+      ),
+    };
+  }
+
+  private async getTrackingRoleCounts(
+    areaId: string,
+  ): Promise<Map<string, Record<string, number>>> {
+    const rows = await this.trackingRepository
+      .createQueryBuilder('uts')
+      .innerJoin('uts.user', 'user')
+      .select('user.role', 'role')
+      .addSelect('uts.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('uts.area_id = :areaId', { areaId })
+      .groupBy('user.role')
+      .addGroupBy('uts.status')
+      .getRawMany();
+
+    const map = new Map<string, Record<string, number>>();
+    for (const row of rows) {
+      const existing = map.get(row.role) || {};
+      existing[row.status] = parseInt(row.count);
+      map.set(row.role, existing);
+    }
+    return map;
+  }
+
+  private async getAssignedRoleCounts(
+    areaId: string,
+  ): Promise<Map<string, number>> {
+    const rows = await this.userRepository
+      .createQueryBuilder('user')
+      .select('user.role', 'role')
+      .addSelect('COUNT(*)', 'count')
+      .where('user.area_id = :areaId', { areaId })
+      .andWhere('user.deleted_at IS NULL')
+      .groupBy('user.role')
+      .getRawMany();
+
+    return new Map(rows.map((r: any) => [r.role, parseInt(r.count)]));
+  }
+
+  private buildRoleStaffing(
+    roleCounts: Map<string, Record<string, number>>,
+    assignedCounts: Map<string, number>,
+    reqMap: Map<string, number>,
+  ): RoleStaffingDto[] {
+    const allRoles = new Set([
+      ...roleCounts.keys(),
+      ...assignedCounts.keys(),
+      ...reqMap.keys(),
+    ]);
+
+    return Array.from(allRoles).map((role) => {
+      const statuses = roleCounts.get(role) || {};
+      return {
+        role,
+        active: statuses[TrackingStatus.ACTIVE] || 0,
+        idle: statuses[TrackingStatus.INACTIVE] || 0,
+        outside_area: statuses[TrackingStatus.OUTSIDE_AREA] || 0,
+        missing: statuses[TrackingStatus.MISSING] || 0,
+        offline: statuses[TrackingStatus.OFFLINE] || 0,
+        total_assigned: assignedCounts.get(role) || 0,
+        total_required: reqMap.get(role) || 0,
+      };
+    });
+  }
+
+  private sumRoleTotals(roles: RoleStaffingDto[]): {
+    total_active: number;
+    total_idle: number;
+    total_outside_area: number;
+    total_missing: number;
+    total_offline: number;
+  } {
+    return {
+      total_active: roles.reduce((s, r) => s + r.active, 0),
+      total_idle: roles.reduce((s, r) => s + r.idle, 0),
+      total_outside_area: roles.reduce((s, r) => s + r.outside_area, 0),
+      total_missing: roles.reduce((s, r) => s + r.missing, 0),
+      total_offline: roles.reduce((s, r) => s + r.offline, 0),
+    };
   }
 }
 
