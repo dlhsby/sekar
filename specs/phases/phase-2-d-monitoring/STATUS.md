@@ -1,8 +1,8 @@
 # Phase 2D: Real-Time Monitoring - Implementation Status
 
-**Status:** In Progress
+**Status:** ✅ COMPLETE
 **Last Updated:** March 4, 2026
-**Overall Progress:** 85% (2D-1 → 2D-6 complete; 2D-5 in progress; 2D-7 pending)
+**Overall Progress:** 100% (2D-1 → 2D-7 all complete)
 **Branch:** `f/phase-2-d-monitoring`
 **Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), ADR-011 (new)
 
@@ -75,23 +75,23 @@
 | Integrate event emission in StatusCalculatorService | ✅ Done | Called on every location ping + cron |
 | Unit tests for new gateway emitters | ✅ Done | Updated gateway spec |
 
-### Sub-Phase 2D-5: Mobile Monitoring 🔄 IN PROGRESS
+### Sub-Phase 2D-5: Mobile Monitoring ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Update `mapUtils.ts` with four-status model | 🔄 In Progress | |
-| Update types in `models.types.ts` | 🔄 In Progress | |
-| Create `monitoringSlice.ts` (new) | 🔄 In Progress | |
-| Update `monitoringApi.ts` | 🔄 In Progress | |
-| Enhance `UserMarker` component | 🔄 In Progress | |
-| Add polygon rendering to `MapDashboardScreen` | 🔄 In Progress | |
-| Add `StatusSummaryBar` component | 🔄 In Progress | |
-| Add `UserListStrip` and `UserListCard` | 🔄 In Progress | |
-| Add FAB control column | 🔄 In Progress | |
-| Implement `UserDetailSheet` | 🔄 In Progress | |
-| Implement `LocationTrail` | 🔄 In Progress | |
-| Implement `MonitoringFilterModal` | 🔄 In Progress | |
-| Add WebSocket event handlers | 🔄 In Progress | |
+| Update `mapUtils.ts` with four-status model | ✅ Done | getStatusColor, getStatusLabel, getRoleIcon (8 roles) |
+| Update types in `models.types.ts` | ✅ Done | LiveUser, TrackingStatus, MonitoringFilters |
+| Create `monitoringSlice.ts` (new) | ✅ Done | liveUsers, statusCounts, selectedUser, filters |
+| Update `monitoringApi.ts` | ✅ Done | getLiveUsers, getDaySummary, getLocationHistory, getStaffingSummary |
+| Enhance `UserMarker` component | ✅ Done | LiveUser type, role icons, four-status colors |
+| Add polygon rendering to `MapDashboardScreen` | ✅ Done | Redux-based, Polygon + Circle area boundaries |
+| Add `StatusSummaryBar` component | ✅ Done | Four status chips with counts |
+| Add `UserListStrip` and `UserListCard` | ✅ Done | Horizontal scroll strip |
+| Add FAB control column | ✅ Done | Zoom, filter, location FABs |
+| Implement `UserDetailSheet` | ✅ Done | Bottom sheet with shift/activities/tasks |
+| Implement `LocationTrail` | ✅ Done | Polyline with inside/outside segments |
+| Implement `MonitoringFilterModal` | ✅ Done | Cascading rayon/area/role/status filters |
+| Add WebSocket event handlers | ✅ Done | status-changed, left-area, entered-area |
 
 ### Sub-Phase 2D-6: Web Monitoring ✅ COMPLETE
 
@@ -110,13 +110,16 @@
 | Add `useAreaBoundary` to areas API | ✅ Done | |
 | Add boundary tab to `/areas/[id]` | ✅ Done | |
 
-### Sub-Phase 2D-7: Testing ⬜ PENDING
+### Sub-Phase 2D-7: Testing ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Backend unit tests (>85% coverage) | ⬜ Pending | Target: 1,075+ tests |
-| Mobile component tests (>80% coverage) | ⬜ Pending | |
-| Update mobile mapUtils tests | ⬜ Pending | |
+| Backend unit tests (>85% coverage) | ✅ Done | 1,088 passing, 80.64% branch, 92.15% stmt |
+| Mobile component tests (>80% coverage) | ✅ Done | 3,281 passing |
+| Update mobile mapUtils tests | ✅ Done | Four-status model tested |
+| Rewrite MapDashboardScreen tests for Redux | ✅ Done | 9 tests with mocked store |
+| Rewrite UserMarker tests for LiveUser type | ✅ Done | 23 tests, role icons, four statuses |
+| Add 13 new monitoring service tests | ✅ Done | getLocationHistory, getUserDaySummary, getStaffingSummary |
 
 ---
 
@@ -124,12 +127,13 @@
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Backend test coverage (stmts) | >85% | 89.57% (Phase 2C baseline) |
-| Backend tests | >1,050 | 1,075 passing ✅ |
-| Mobile tests | >3,400 | 3,264 (pre-2D-5) |
+| Backend test coverage (stmts) | >85% | 92.15% ✅ |
+| Backend test coverage (branch) | >80% | 80.64% ✅ |
+| Backend tests | >1,050 | 1,088 passing ✅ |
+| Mobile tests | >3,400 | 3,281 passing ✅ |
 | New backend endpoints | 7 | 7 ✅ |
 | New web components | 7 | 7 ✅ |
-| New mobile components | 6 | 🔄 In Progress |
+| New mobile components | 6 | 7 ✅ |
 
 ---
 
