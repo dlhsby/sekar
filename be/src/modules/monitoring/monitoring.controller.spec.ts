@@ -6,6 +6,7 @@ import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { User, UserRole } from '../users/entities/user.entity';
+import { TrackingStatus } from './entities/user-tracking-status.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('MonitoringController', () => {
@@ -158,7 +159,7 @@ describe('MonitoringController', () => {
         id: 'user-1',
         full_name: 'Worker One',
         role: UserRole.SATGAS,
-        is_online: true,
+        status: TrackingStatus.ACTIVE,
         last_lat: -7.2905,
         last_lng: 112.7398,
         last_location_update: new Date(),
@@ -178,13 +179,18 @@ describe('MonitoringController', () => {
   };
 
   const mockLiveUsers: LiveUsersResponseDto = {
-    total_online: 150,
+    total_active: 100,
+    total_inactive: 30,
+    total_outside_area: 10,
+    total_missing: 10,
     total_offline: 50,
     users: [
       {
         id: 'user-1',
         full_name: 'Worker One',
         role: UserRole.SATGAS,
+        phone: '081234567890',
+        status: TrackingStatus.ACTIVE,
         area_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
@@ -388,7 +394,7 @@ describe('MonitoringController', () => {
       expect(result.users.length).toBeGreaterThan(0);
       expect(result.users[0]).toHaveProperty('id');
       expect(result.users[0]).toHaveProperty('full_name');
-      expect(result.users[0]).toHaveProperty('is_online');
+      expect(result.users[0]).toHaveProperty('status');
     });
 
     it('should return statistics with staff requirements', async () => {
@@ -450,14 +456,17 @@ describe('MonitoringController', () => {
       expect(result.users[0]).toHaveProperty('last_update');
     });
 
-    it('should return online/offline counts', async () => {
+    it('should return status counts', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 
       const result = await controller.getLiveUsers({}, mockSuperadmin);
 
-      expect(result.total_online).toBeDefined();
+      expect(result.total_active).toBeDefined();
+      expect(result.total_inactive).toBeDefined();
+      expect(result.total_outside_area).toBeDefined();
+      expect(result.total_missing).toBeDefined();
       expect(result.total_offline).toBeDefined();
-      expect(result.total_online + result.total_offline).toBe(200);
+      expect(result.total_active + result.total_inactive + result.total_outside_area + result.total_missing + result.total_offline).toBe(200);
     });
 
     it('should return user task information', async () => {

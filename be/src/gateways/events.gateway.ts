@@ -11,6 +11,9 @@ import { Server, Socket } from 'socket.io';
 import { Logger, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User, UserRole } from '../modules/users/entities/user.entity';
 import {
   SubscribeAreaDto,
   UnsubscribeAreaDto,
@@ -58,6 +61,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   /**
@@ -83,10 +88,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         role: payload.role,
       });
 
-      // Auto-join city room for Admin/TopManagement
-      if (payload.role === 'Admin' || payload.role === 'TopManagement') {
+      // Auto-join personal room
+      client.join(`user:${payload.sub}`);
+
+      // Auto-join rooms based on role
+      const cityRoles = [
+        UserRole.SUPERADMIN,
+        UserRole.ADMIN_SYSTEM,
+        UserRole.TOP_MANAGEMENT,
+      ];
+      if (cityRoles.includes(payload.role)) {
         client.join('city');
         this.logger.log(`Client ${client.id} (${payload.role}) joined city room`);
+      }
+
+      // Auto-join rayon/area rooms for scoped roles
+      if (
+        payload.role === UserRole.KEPALA_RAYON ||
+        payload.role === UserRole.ADMIN_DATA ||
+        payload.role === UserRole.KORLAP
+      ) {
+        await this.autoJoinScopedRooms(client, payload.sub, payload.role);
       }
 
       this.logger.log(
@@ -320,6 +342,39 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     return null;
+  }
+
+  /**
+   * Auto-join rayon/area rooms based on user's assigned scope
+   */
+  private async autoJoinScopedRooms(
+    client: Socket,
+    userId: string,
+    role: string,
+  ): Promise<void> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'rayon_id', 'area_id'],
+      });
+
+      if (!user) return;
+
+      if (
+        (role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_DATA) &&
+        user.rayon_id
+      ) {
+        client.join(`rayon:${user.rayon_id}`);
+        this.logger.log(`Client ${client.id} auto-joined rayon:${user.rayon_id}`);
+      }
+
+      if (role === UserRole.KORLAP && user.area_id) {
+        client.join(`area:${user.area_id}`);
+        this.logger.log(`Client ${client.id} auto-joined area:${user.area_id}`);
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to auto-join rooms for user ${userId}: ${error.message}`);
+    }
   }
 
   /**

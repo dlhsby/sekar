@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { Socket, Server } from 'socket.io';
 import { EventsGateway } from './events.gateway';
 import {
@@ -12,7 +13,7 @@ import {
   TaskCompletedEvent,
   EventType,
 } from './dto/events.dto';
-import { UserRole } from '../modules/users/entities/user.entity';
+import { User, UserRole } from '../modules/users/entities/user.entity';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
@@ -56,6 +57,12 @@ describe('EventsGateway', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue('test-secret'),
+          },
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            findOne: jest.fn().mockResolvedValue(null),
           },
         },
       ],
@@ -115,29 +122,31 @@ describe('EventsGateway', () => {
       expect(mockClient.disconnect).toHaveBeenCalled();
     });
 
-    it('should auto-join city room for Admin role', async () => {
+    it('should auto-join city room for superadmin role', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'admin-1',
-        role: 'Admin',
+        role: UserRole.SUPERADMIN,
       });
 
       await gateway.handleConnection(mockClient);
 
+      expect(mockClient.join).toHaveBeenCalledWith(`user:admin-1`);
       expect(mockClient.join).toHaveBeenCalledWith('city');
     });
 
-    it('should auto-join city room for TopManagement role', async () => {
+    it('should auto-join city room for top_management role', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'manager-1',
-        role: 'TopManagement',
+        role: UserRole.TOP_MANAGEMENT,
       });
 
       await gateway.handleConnection(mockClient);
 
+      expect(mockClient.join).toHaveBeenCalledWith(`user:manager-1`);
       expect(mockClient.join).toHaveBeenCalledWith('city');
     });
 
-    it('should not join city room for Worker role', async () => {
+    it('should not join city room for satgas role', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'worker-1',
         role: UserRole.SATGAS,
@@ -145,6 +154,7 @@ describe('EventsGateway', () => {
 
       await gateway.handleConnection(mockClient);
 
+      expect(mockClient.join).toHaveBeenCalledWith(`user:worker-1`);
       expect(mockClient.join).not.toHaveBeenCalledWith('city');
     });
 

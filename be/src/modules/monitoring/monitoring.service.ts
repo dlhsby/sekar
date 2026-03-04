@@ -10,6 +10,7 @@ import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-staff-requirement.entity';
+import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
 import { CityStatsDto, RayonSummaryDto } from './dto/city-stats.dto';
 import { RayonStatsDto, AreaSummaryDto, ShiftSummaryDto } from './dto/rayon-stats.dto';
 import {
@@ -20,19 +21,10 @@ import {
 } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUserDto, LiveUsersFilterDto } from './dto/live-users.dto';
 
-/**
- * Service for real-time monitoring statistics
- *
- * Provides aggregated statistics for:
- * - City-wide overview (Admin/TopManagement)
- * - Rayon-level details (KepalaRayon)
- * - Area-level details (KoordinatorLapangan)
- * - Live worker positions
- */
 @Injectable()
 export class MonitoringService {
   private readonly logger = new Logger(MonitoringService.name);
-  private readonly ONLINE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+  private readonly ONLINE_THRESHOLD_MS = 10 * 60 * 1000;
 
   constructor(
     @InjectRepository(User)
@@ -53,36 +45,26 @@ export class MonitoringService {
     private readonly shiftDefinitionRepository: Repository<ShiftDefinition>,
     @InjectRepository(AreaStaffRequirement)
     private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
+    @InjectRepository(UserTrackingStatus)
+    private readonly trackingRepository: Repository<UserTrackingStatus>,
   ) {}
 
-  /**
-   * Get city-wide statistics
-   *
-   * @returns City-wide statistics including all rayons
-   */
   async getCityStats(): Promise<CityStatsDto> {
     this.logger.log('Generating city-wide statistics');
 
     const today = this.getTodayRange();
-
-    // Get all rayons with areas
     const rayons = await this.rayonRepository.find();
-
-    // Parallel execution: get all rayon summaries at once
     const rayonSummaries = await Promise.all(rayons.map((rayon) => this.getRayonSummary(rayon)));
 
-    // Aggregate totals
     const totalWorkers = rayonSummaries.reduce((sum, s) => sum + s.worker_count, 0);
     const workersOnline = rayonSummaries.reduce((sum, s) => sum + s.workers_online, 0);
     const workersOffline = rayonSummaries.reduce((sum, s) => sum + s.workers_offline, 0);
     const totalAreas = rayonSummaries.reduce((sum, s) => sum + s.area_count, 0);
 
-    // Get active shifts count
     const activeShifts = await this.shiftRepository.count({
       where: { clock_out_time: IsNull() },
     });
 
-    // Get task statistics
     const [tasksPending, tasksInProgress, tasksCompletedToday] = await Promise.all([
       this.taskRepository.count({ where: { status: TaskStatus.PENDING } }),
       this.taskRepository.count({ where: { status: TaskStatus.IN_PROGRESS } }),
@@ -94,7 +76,6 @@ export class MonitoringService {
       }),
     ]);
 
-    // Get activities submitted today
     const activitiesSubmittedToday = await this.activityRepository.count({
       where: { created_at: Between(today.start, today.end) },
     });
@@ -115,35 +96,22 @@ export class MonitoringService {
     };
   }
 
-  /**
-   * Get rayon-level statistics
-   *
-   * @param rayonId - Rayon ID
-   * @returns Rayon statistics with all areas
-   */
   async getRayonStats(rayonId: string): Promise<RayonStatsDto> {
     this.logger.log(`Generating statistics for rayon: ${rayonId}`);
 
-    const rayon = await this.rayonRepository.findOne({
-      where: { id: rayonId },
-    });
-
+    const rayon = await this.rayonRepository.findOne({ where: { id: rayonId } });
     if (!rayon) {
       throw new NotFoundException(`Rayon with ID ${rayonId} not found`);
     }
 
     const today = this.getTodayRange();
-
-    // Get areas in this rayon
     const areas = await this.areaRepository.find({
       where: { rayon_id: rayonId },
       relations: ['areaType'],
     });
 
-    // Parallel execution: get all area summaries at once
     const areaSummaries = await Promise.all(areas.map((area) => this.getAreaSummary(area)));
 
-    // Aggregate totals and alerts
     const totalWorkers = areaSummaries.reduce(
       (sum, s) => sum + s.workers_online + s.workers_offline,
       0,
@@ -154,7 +122,6 @@ export class MonitoringService {
       .filter((s) => !s.is_fully_staffed)
       .map((s, idx) => `${areas[idx].name} - needs ${Math.abs(s.staffing_delta)} more workers`);
 
-    // Get shift summaries
     const shiftDefinitions = await this.shiftDefinitionRepository.find({
       where: { is_active: true },
     });
@@ -165,11 +132,10 @@ export class MonitoringService {
       start_time: sd.start_time,
       end_time: sd.end_time,
       is_current: this.isShiftActive(sd, currentTime),
-      workers_required: 0, // Would need to sum from staff requirements
-      workers_on_shift: 0, // Would need to count from active shifts
+      workers_required: 0,
+      workers_on_shift: 0,
     }));
 
-    // Get task statistics
     const areaIds = areas.map((a) => a.id);
     const [tasksPending, tasksInProgress, tasksCompletedToday] = await Promise.all([
       this.countTasksByAreaIds(areaIds, TaskStatus.PENDING),
@@ -177,10 +143,7 @@ export class MonitoringService {
       this.countTasksCompletedTodayByAreaIds(areaIds, today),
     ]);
 
-    // Get activities count
     const activitiesSubmittedToday = await this.countActivitiesByAreaIds(areaIds, today);
-
-    // Get active shifts count
     const activeShifts = await this.countActiveShiftsByAreaIds(areaIds);
 
     return {
@@ -203,12 +166,6 @@ export class MonitoringService {
     };
   }
 
-  /**
-   * Get area-level statistics
-   *
-   * @param areaId - Area ID
-   * @returns Detailed area statistics
-   */
   async getAreaStats(areaId: string): Promise<AreaStatsDto> {
     this.logger.log(`Generating statistics for area: ${areaId}`);
 
@@ -216,12 +173,10 @@ export class MonitoringService {
       where: { id: areaId },
       relations: ['areaType'],
     });
-
     if (!area) {
       throw new NotFoundException(`Area with ID ${areaId} not found`);
     }
 
-    // Get rayon name if area has rayon_id
     let rayonName = 'Unassigned';
     if (area.rayon_id) {
       const rayon = await this.rayonRepository.findOne({ where: { id: area.rayon_id } });
@@ -229,20 +184,18 @@ export class MonitoringService {
     }
 
     const today = this.getTodayRange();
-
-    // Get workers assigned to this area with their latest location
     const workers = await this.getAreaWorkers(areaId);
 
-    const workersOnline = workers.filter((w) => w.is_online).length;
-    const workersOffline = workers.filter((w) => !w.is_online).length;
+    const workersOnline = workers.filter(
+      (w) => w.status === TrackingStatus.ACTIVE || w.status === TrackingStatus.OUTSIDE_AREA,
+    ).length;
+    const workersOffline = workers.filter(
+      (w) => w.status === TrackingStatus.OFFLINE || w.status === TrackingStatus.MISSING,
+    ).length;
 
-    // Get staff requirements for current shift
     const staffRequirements = await this.getAreaStaffRequirements(areaId);
-
-    // Check if fully staffed
     const isFullyStaffed = staffRequirements.every((r) => r.is_met);
 
-    // Get tasks
     const tasks = await this.taskRepository.find({
       where: { area_id: areaId },
       relations: ['assignee'],
@@ -273,7 +226,6 @@ export class MonitoringService {
         t.completed_at <= today.end,
     ).length;
 
-    // Get activities count
     const activitiesSubmittedToday = await this.activityRepository.count({
       where: {
         area_id: areaId,
@@ -281,7 +233,6 @@ export class MonitoringService {
       },
     });
 
-    // Generate alerts
     const alerts: string[] = [];
     for (const req of staffRequirements) {
       if (!req.is_met) {
@@ -317,121 +268,151 @@ export class MonitoringService {
   }
 
   /**
-   * Get live user positions
-   *
-   * @param filters - Optional filters
-   * @returns Live user positions
+   * Get live user positions - refactored to use user_tracking_status table
+   * Eliminates N+1 queries by joining all needed data in a single query
    */
   async getLiveUsers(filters?: LiveUsersFilterDto): Promise<LiveUsersResponseDto> {
     this.logger.log('Fetching live user positions');
 
-    // Get users with active shifts
-    const queryBuilder = this.shiftRepository
-      .createQueryBuilder('shift')
-      .leftJoinAndSelect('shift.user', 'user')
-      .leftJoinAndSelect('shift.area', 'area')
-      .where('shift.clock_out_time IS NULL');
+    const qb = this.trackingRepository
+      .createQueryBuilder('uts')
+      .innerJoinAndSelect('uts.user', 'user')
+      .leftJoinAndSelect('uts.shift', 'shift')
+      .leftJoinAndSelect('uts.shift_definition', 'sd')
+      .leftJoinAndSelect('uts.area', 'area')
+      .leftJoin('area.areaType', 'areaType')
+      .where('uts.shift_id IS NOT NULL');
 
     if (filters?.area_id) {
-      queryBuilder.andWhere('shift.area_id = :areaId', { areaId: filters.area_id });
+      qb.andWhere('uts.area_id = :areaId', { areaId: filters.area_id });
     }
 
     if (filters?.rayon_id) {
-      queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: filters.rayon_id });
+      qb.andWhere('area.rayon_id = :rayonId', { rayonId: filters.rayon_id });
     }
 
     if (filters?.role) {
-      queryBuilder.andWhere('user.role = :role', { role: filters.role });
+      qb.andWhere('user.role = :role', { role: filters.role });
     }
 
-    const activeShifts = await queryBuilder.getMany();
+    if (filters?.status) {
+      qb.andWhere('uts.status = :status', { status: filters.status });
+    }
 
-    // Parallel execution: fetch all data for all shifts at once
-    const users = await Promise.all(
-      activeShifts.map(async (shift) => {
-        const [latestLocation, currentTask, rayon] = await Promise.all([
-          this.locationRepository.findOne({
-            where: { shift_id: shift.id },
-            order: { logged_at: 'DESC' },
-          }),
-          this.taskRepository.findOne({
-            where: {
-              assigned_to: shift.user_id,
-              status: TaskStatus.IN_PROGRESS,
-            },
-          }),
-          shift.area?.rayon_id
-            ? this.rayonRepository.findOne({ where: { id: shift.area.rayon_id } })
-            : Promise.resolve(null),
-        ]);
+    const trackingRecords = await qb.getMany();
 
-        // Consider online if location updated within last 10 minutes
-        const isOnline = !!(
-          latestLocation &&
-          new Date().getTime() - latestLocation.logged_at.getTime() < this.ONLINE_THRESHOLD_MS
-        );
+    // Batch fetch rayon names and current tasks
+    const areaIds = [...new Set(trackingRecords.map((r) => r.area_id).filter(Boolean))];
+    const userIds = trackingRecords.map((r) => r.user_id);
 
-        return {
-          user: {
-            id: shift.user.id,
-            full_name: shift.user.full_name,
-            role: shift.user.role,
-            area_id: shift.area_id,
-            area_name: shift.area?.name || 'Unknown',
-            rayon_id: shift.area?.rayon_id || null,
-            rayon_name: rayon?.name || null,
-            latitude: latestLocation ? parseFloat(latestLocation.gps_lat.toString()) : 0,
-            longitude: latestLocation ? parseFloat(latestLocation.gps_lng.toString()) : 0,
-            accuracy: latestLocation?.accuracy_meters
-              ? parseFloat(latestLocation.accuracy_meters.toString())
-              : null,
-            battery_level: latestLocation?.battery_level || null,
-            last_update: latestLocation?.logged_at || shift.clock_in_time,
-            is_within_area: true, // Simplified - would need GPS calculation
-            outside_boundary: shift.clock_in_outside_boundary || false,
-            shift_id: shift.id,
-            shift_name: 'Active Shift', // Would need shift definition relation
-            clock_in_time: shift.clock_in_time,
-            current_task_status: currentTask?.status || null,
-            current_task_title: currentTask?.title || null,
-          },
-          isOnline,
-        };
-      }),
-    );
+    const [rayonMap, taskMap] = await Promise.all([
+      this.buildRayonMap(areaIds as string[]),
+      this.buildCurrentTaskMap(userIds),
+    ]);
 
-    const totalOnline = users.filter((u) => u.isOnline).length;
-    const totalOffline = users.length - totalOnline;
+    const users: LiveUserDto[] = trackingRecords.map((uts) => {
+      const rayonId = uts.area?.rayon_id || null;
+      return {
+        id: uts.user.id,
+        full_name: uts.user.full_name,
+        phone: uts.user.phone || null,
+        role: uts.user.role,
+        area_id: uts.area_id,
+        area_name: uts.area?.name || 'Unknown',
+        rayon_id: rayonId,
+        rayon_name: rayonId ? rayonMap.get(rayonId) || null : null,
+        latitude: uts.last_latitude || 0,
+        longitude: uts.last_longitude || 0,
+        accuracy: uts.last_accuracy_meters,
+        battery_level: uts.last_battery_level,
+        last_update: uts.last_location_at || uts.shift?.clock_in_time || new Date(),
+        status: uts.status,
+        is_within_area: uts.is_within_area,
+        outside_boundary: uts.shift?.clock_in_outside_boundary || false,
+        shift_id: uts.shift_id || '',
+        shift_name: uts.shift_definition?.name || 'Active Shift',
+        clock_in_time: uts.shift?.clock_in_time || new Date(),
+        current_task_status: taskMap.get(uts.user_id)?.status || null,
+        current_task_title: taskMap.get(uts.user_id)?.title || null,
+      };
+    });
+
+    const statusCounts = this.countByStatus(trackingRecords);
 
     return {
-      total_online: totalOnline,
-      total_offline: totalOffline,
-      users: users.map((u) => u.user),
+      total_active: statusCounts.active,
+      total_inactive: statusCounts.inactive,
+      total_outside_area: statusCounts.outside_area,
+      total_missing: statusCounts.missing,
+      total_offline: statusCounts.offline,
+      users,
       generated_at: new Date(),
     };
   }
 
-  /**
-   * Helper: Get today's date range
-   */
+  private countByStatus(records: UserTrackingStatus[]): Record<string, number> {
+    const counts: Record<string, number> = {
+      active: 0,
+      inactive: 0,
+      outside_area: 0,
+      missing: 0,
+      offline: 0,
+    };
+    for (const r of records) {
+      counts[r.status] = (counts[r.status] || 0) + 1;
+    }
+    return counts;
+  }
+
+  private async buildRayonMap(areaIds: string[]): Promise<Map<string, string>> {
+    if (areaIds.length === 0) return new Map();
+
+    const areas = await this.areaRepository
+      .createQueryBuilder('area')
+      .where('area.id IN (:...areaIds)', { areaIds })
+      .andWhere('area.rayon_id IS NOT NULL')
+      .getMany();
+
+    const rayonIds = [...new Set(areas.map((a) => a.rayon_id).filter(Boolean))] as string[];
+    if (rayonIds.length === 0) return new Map();
+
+    const rayons = await this.rayonRepository.find({
+      where: { id: In(rayonIds) },
+    });
+
+    return new Map(rayons.map((r) => [r.id, r.name]));
+  }
+
+  private async buildCurrentTaskMap(
+    userIds: string[],
+  ): Promise<Map<string, { status: string; title: string }>> {
+    if (userIds.length === 0) return new Map();
+
+    const tasks = await this.taskRepository
+      .createQueryBuilder('task')
+      .where('task.assigned_to IN (:...userIds)', { userIds })
+      .andWhere('task.status = :status', { status: TaskStatus.IN_PROGRESS })
+      .getMany();
+
+    return new Map(
+      tasks
+        .filter((t) => t.assigned_to !== null)
+        .map((t) => [t.assigned_to as string, { status: t.status, title: t.title }]),
+    );
+  }
+
+  // ---- Helper methods ----
+
   private getTodayRange(): { start: Date; end: Date } {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
-
     const end = new Date();
     end.setHours(23, 59, 59, 999);
-
     return { start, end };
   }
 
-  /**
-   * Helper: Get rayon summary
-   */
   private async getRayonSummary(rayon: Rayon): Promise<RayonSummaryDto> {
-    const areas = await this.areaRepository.find({
-      where: { rayon_id: rayon.id },
-    });
-
+    const areas = await this.areaRepository.find({ where: { rayon_id: rayon.id } });
     const areaIds = areas.map((a) => a.id);
     const workerCount = await this.countWorkersByAreaIds(areaIds);
     const workersOnline = await this.countOnlineWorkersByAreaIds(areaIds);
@@ -450,9 +431,6 @@ export class MonitoringService {
     };
   }
 
-  /**
-   * Helper: Get area summary
-   */
   private async getAreaSummary(area: Area): Promise<AreaSummaryDto> {
     const workersOnline = await this.countOnlineWorkersByAreaIds([area.id]);
     const workersOffline = await this.countOfflineWorkersByAreaIds([area.id]);
@@ -481,19 +459,41 @@ export class MonitoringService {
   }
 
   /**
-   * Helper: Get workers for an area
+   * Get workers for an area - uses user_tracking_status for real status
    */
   private async getAreaWorkers(areaId: string): Promise<UserStatusDto[]> {
+    const trackingRecords = await this.trackingRepository.find({
+      where: { area_id: areaId, shift_id: Not_Null_Workaround() },
+      relations: ['user', 'shift'],
+    });
+
+    // Fallback: if no tracking records, check active shifts directly
+    if (trackingRecords.length === 0) {
+      return this.getAreaWorkersLegacy(areaId);
+    }
+
+    return trackingRecords.map((uts) => ({
+      id: uts.user.id,
+      full_name: uts.user.full_name,
+      role: uts.user.role,
+      status: uts.status,
+      last_lat: uts.last_latitude,
+      last_lng: uts.last_longitude,
+      last_location_update: uts.last_location_at,
+      is_within_area: uts.is_within_area,
+      current_shift_id: uts.shift_id,
+      clock_in_time: uts.shift?.clock_in_time || null,
+    }));
+  }
+
+  private async getAreaWorkersLegacy(areaId: string): Promise<UserStatusDto[]> {
     const activeShifts = await this.shiftRepository.find({
       where: { area_id: areaId, clock_out_time: IsNull() },
       relations: ['user'],
     });
 
-    if (activeShifts.length === 0) {
-      return [];
-    }
+    if (activeShifts.length === 0) return [];
 
-    // Parallel execution: get latest locations for all shifts
     const shiftIds = activeShifts.map((s) => s.id);
     const latestLocations = await this.locationRepository
       .createQueryBuilder('location')
@@ -511,9 +511,9 @@ export class MonitoringService {
       .getMany();
 
     const locationMap = new Map(latestLocations.map((loc) => [loc.shift_id, loc]));
-    const currentTime = new Date().getTime();
+    const currentTime = Date.now();
 
-    const workers: UserStatusDto[] = activeShifts.map((shift) => {
+    return activeShifts.map((shift) => {
       const latestLocation = locationMap.get(shift.id);
       const isOnline = !!(
         latestLocation &&
@@ -524,52 +524,50 @@ export class MonitoringService {
         id: shift.user.id,
         full_name: shift.user.full_name,
         role: shift.user.role,
-        is_online: isOnline,
+        status: isOnline ? TrackingStatus.ACTIVE : TrackingStatus.OFFLINE,
         last_lat: latestLocation ? parseFloat(latestLocation.gps_lat.toString()) : null,
         last_lng: latestLocation ? parseFloat(latestLocation.gps_lng.toString()) : null,
         last_location_update: latestLocation?.logged_at || null,
-        is_within_area: true, // Simplified - would need GPS calculation
+        is_within_area: true,
         current_shift_id: shift.id,
         clock_in_time: shift.clock_in_time,
       };
     });
-
-    return workers;
   }
 
   /**
-   * Helper: Get staff requirements for an area
+   * Get staff requirements for area - now counts by role
    */
   private async getAreaStaffRequirements(areaId: string): Promise<StaffRequirementStatusDto[]> {
-    // Get current shift definition
     const currentShift = await this.getCurrentShiftDefinition();
-
-    if (!currentShift) {
-      return [];
-    }
+    if (!currentShift) return [];
 
     const requirements = await this.staffRequirementRepository.find({
-      where: {
-        area_id: areaId,
-        shift_definition_id: currentShift.id,
-      },
+      where: { area_id: areaId, shift_definition_id: currentShift.id },
     });
 
-    if (requirements.length === 0) {
-      return [];
-    }
+    if (requirements.length === 0) return [];
 
-    // Get current worker count once for the area
-    const currentCount = await this.shiftRepository.count({
-      where: {
-        area_id: areaId,
-        clock_out_time: IsNull(),
-      },
-    });
+    // Count active workers by role using user_tracking_status
+    const roleCounts = await this.trackingRepository
+      .createQueryBuilder('uts')
+      .innerJoin('uts.user', 'user')
+      .select('user.role', 'role')
+      .addSelect('COUNT(*)', 'count')
+      .where('uts.area_id = :areaId', { areaId })
+      .andWhere('uts.shift_id IS NOT NULL')
+      .andWhere('uts.status IN (:...statuses)', {
+        statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
+      })
+      .groupBy('user.role')
+      .getRawMany();
 
-    // Map all requirements with the same current count (simplified)
-    // Note: This is simplified - in a real scenario, you'd need to count by role
-    const result: StaffRequirementStatusDto[] = requirements.map((req) => {
+    const roleCountMap = new Map<string, number>(
+      roleCounts.map((rc: any) => [rc.role, parseInt(rc.count)]),
+    );
+
+    return requirements.map((req) => {
+      const currentCount = roleCountMap.get(req.role) || 0;
       const delta = currentCount - req.required_count;
       return {
         id: req.id,
@@ -580,43 +578,30 @@ export class MonitoringService {
         is_met: delta >= 0,
       };
     });
-
-    return result;
   }
 
-  /**
-   * Helper: Check if shift definition is currently active
-   */
   private isShiftActive(shift: ShiftDefinition, currentTime: Date): boolean {
     const [startHour, startMin] = shift.start_time.split(':').map(Number);
     const [endHour, endMin] = shift.end_time.split(':').map(Number);
-
-    const currentHour = currentTime.getHours();
-    const currentMin = currentTime.getMinutes();
-    const currentMinutes = currentHour * 60 + currentMin;
+    const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
 
     if (shift.crosses_midnight) {
       return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
     }
-
     return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
   }
 
-  /**
-   * Helper: Get current shift definition
-   */
   private async getCurrentShiftDefinition(): Promise<ShiftDefinition | null> {
     const shifts = await this.shiftDefinitionRepository.find({
       where: { is_active: true },
     });
-
     const now = new Date();
     return shifts.find((s) => this.isShiftActive(s, now)) || null;
   }
 
-  // Count helper methods
+  // Count helpers
   private async countWorkersByAreaIds(areaIds: string[]): Promise<number> {
     if (areaIds.length === 0) return 0;
     return this.shiftRepository
@@ -705,4 +690,14 @@ export class MonitoringService {
       .andWhere('shift.clock_out_time IS NULL')
       .getCount();
   }
+}
+
+/**
+ * TypeORM workaround: find where column IS NOT NULL
+ * Using raw Not(IsNull()) approach
+ */
+function Not_Null_Workaround(): any {
+  // Import dynamically to avoid circular dependency issues at module level
+  const { Not, IsNull } = require('typeorm');
+  return Not(IsNull());
 }

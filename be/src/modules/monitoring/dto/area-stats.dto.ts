@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TrackingStatus } from '../entities/user-tracking-status.entity';
 
 /**
  * User status within an area
@@ -13,8 +14,8 @@ export class UserStatusDto {
   @ApiProperty({ example: 'satgas' })
   role: string;
 
-  @ApiProperty({ example: true })
-  is_online: boolean;
+  @ApiProperty({ enum: TrackingStatus, example: 'active' })
+  status: TrackingStatus;
 
   @ApiProperty({ example: -7.2575 })
   last_lat: number | null;
