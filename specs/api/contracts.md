@@ -8,7 +8,7 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 - **Swagger Documentation:** `/api/v1/docs`
 - **Authentication:** JWT Bearer token (15-min access + 7-day refresh with rotation)
 - **Content Type:** `application/json` (except file uploads: `multipart/form-data`)
-- **Total Endpoints:** 120 (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 7 Phase 2D)
+- **Total Endpoints:** 122 (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 9 Phase 2D)
 - **Backend:** NestJS 11.x, Node.js >=24.13.0, TypeScript 5.x
 - **Database:** PostgreSQL 14+ with TypeORM
 - **Testing:** 888 tests passing (Phase 2C complete)
@@ -16,7 +16,7 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 - **Rate Limiting:** 100 req/min global, 5 req/min auth endpoints
 - **Last Updated:** March 3, 2026
 - **Phase 2C Note:** Terminology cleanup (ADR-010) has implemented route renames: `/aktivitas`→`/activities`, `/worker-schedules`→`/schedules`. Dropped `/workers/:id/assign`. Flattened overtime DTO. See Phase 2C specs for full details.
-- **Phase 2D Note:** Monitoring enhancements — 7 new endpoints (location history, day summary, config CRUD, staffing summary, area boundary GET/PUT), 4 enhanced endpoints (live-users filters + new fields, area/:id per-role counts).
+- **Phase 2D Note:** Monitoring enhancements — 9 new endpoints (location history, day summary, config CRUD, staffing summary, area boundary GET/PUT, boundaries, reassign), 4 enhanced endpoints (live-users filters + new fields, area/:id per-role counts).
 
 ## Table of Contents
 
@@ -44,7 +44,7 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 19. [Tasks Module](#tasks-module-phase-2) (10 endpoints)
 
 ### Phase 2D (Monitoring Enhancements)
-20. [Phase 2D Monitoring Enhancements](#phase-2d-monitoring-enhancements) (7 new endpoints)
+20. [Phase 2D Monitoring Enhancements](#phase-2d-monitoring-enhancements) (9 new endpoints)
 
 ---
 
@@ -3188,6 +3188,8 @@ Get real-time user positions for map display.
 }
 ```
 
+> **Naming note:** The response field is `total_inactive` (not `total_idle`) for consistency with the four-status enum values (`active`, `inactive`, `outside_area`, `missing`). The UI displays "Idle" as the human-readable label for the `inactive` status, but the API contract and TypeScript enum always use `inactive`.
+
 ---
 
 ## Phase 2D Monitoring Enhancements
@@ -3293,8 +3295,8 @@ Get a comprehensive day-level summary for a specific user including shift, activ
     }
   ],
   "whatsapp_links": {
-    "direct": "https://wa.me/628123456789",
-    "prefilled": "https://wa.me/628123456789?text=Halo%20Pekerja%20Satu"
+    "chat": "https://wa.me/628123456789",
+    "call": "https://wa.me/628123456789?text=Halo%20Pekerja%20Satu"
   }
 }
 ```
@@ -3313,15 +3315,45 @@ Get all monitoring configuration entries.
 {
   "configs": [
     {
-      "key": "tracking_interval_seconds",
-      "value": { "interval": 30 },
-      "description": "GPS tracking upload interval in seconds",
+      "key": "status_thresholds",
+      "value": {
+        "active_max_age_seconds": 300,
+        "inactive_threshold_seconds": 900,
+        "missing_threshold_seconds": 3600,
+        "location_ping_interval_seconds": 60
+      },
+      "description": "User tracking status thresholds. Active: GPS within 5min. Idle: 5-15min. Missing: >1hr or no clock-in.",
       "updated_at": "2026-03-01T10:00:00.000Z"
     },
     {
-      "key": "missing_threshold_minutes",
-      "value": { "threshold": 15 },
-      "description": "Minutes without location before user is marked as missing",
+      "key": "geofencing",
+      "value": {
+        "tolerance_meters": 50,
+        "outside_area_grace_seconds": 120
+      },
+      "description": "Geofencing tolerance for boundary checking. Grace period before outside_area status triggers.",
+      "updated_at": "2026-03-01T10:00:00.000Z"
+    },
+    {
+      "key": "map_defaults",
+      "value": {
+        "center_lat": -7.2575,
+        "center_lng": 112.7521,
+        "zoom": 12,
+        "cluster_threshold": 30,
+        "cluster_zoom_threshold": 14
+      },
+      "description": "Default map view settings for Surabaya area.",
+      "updated_at": "2026-03-01T10:00:00.000Z"
+    },
+    {
+      "key": "alerts",
+      "value": {
+        "low_battery_threshold": 15,
+        "understaffed_notify": true,
+        "missing_user_notify": true
+      },
+      "description": "Alert trigger settings for monitoring dashboard.",
       "updated_at": "2026-03-01T10:00:00.000Z"
     }
   ]
@@ -3382,9 +3414,13 @@ Get aggregated staffing status grouped by rayon or area.
       "id": "rayon-uuid",
       "name": "Rayon Selatan",
       "type": "rayon",
-      "roles": ["satgas", "linmas", "korlap"],
+      "roles": [
+        { "role": "satgas", "active": 15, "idle": 2, "outside_area": 1, "missing": 0, "offline": 0, "total_assigned": 18, "total_required": 20, "requirements_by_day_type": { "weekday": 20, "weekend": 10, "holiday": 5 } },
+        { "role": "linmas", "active": 5, "idle": 0, "outside_area": 1, "missing": 0, "offline": 0, "total_assigned": 6, "total_required": 8, "requirements_by_day_type": { "weekday": 8, "weekend": 4, "holiday": 2 } },
+        { "role": "korlap", "active": 2, "idle": 0, "outside_area": 0, "missing": 0, "offline": 0, "total_assigned": 2, "total_required": 2, "requirements_by_day_type": { "weekday": 2, "weekend": 1, "holiday": 1 } }
+      ],
       "total_active": 22,
-      "total_idle": 4,
+      "total_inactive": 4,
       "total_outside_area": 2,
       "total_missing": 1,
       "total_offline": 1,
@@ -3394,16 +3430,21 @@ Get aggregated staffing status grouped by rayon or area.
       "id": "area-uuid",
       "name": "Taman Bungkul",
       "type": "area",
-      "roles": ["satgas", "linmas"],
+      "roles": [
+        { "role": "satgas", "active": 4, "idle": 0, "outside_area": 0, "missing": 0, "offline": 0, "total_assigned": 4, "total_required": 5, "requirements_by_day_type": { "weekday": 5, "weekend": 3, "holiday": 1 } },
+        { "role": "linmas", "active": 1, "idle": 1, "outside_area": 0, "missing": 0, "offline": 0, "total_assigned": 2, "total_required": 3, "requirements_by_day_type": { "weekday": 3, "weekend": 2, "holiday": 1 } }
+      ],
       "total_active": 5,
-      "total_idle": 1,
+      "total_inactive": 1,
       "total_outside_area": 0,
       "total_missing": 0,
       "total_offline": 0,
       "is_fully_staffed": false
     }
   ],
-  "generated_at": "2026-03-03T10:00:00.000Z"
+  "current_day_type": "weekday",
+  "current_day_type_label": "Hari Kerja",
+  "generated_at": "2026-03-05T10:00:00.000Z"
 }
 ```
 
@@ -3502,6 +3543,116 @@ Content-Type: application/json
   "coverage_area": 26000.00
 }
 ```
+
+---
+
+### GET /api/v1/monitoring/boundaries
+
+Get all rayon and area boundaries for map rendering.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `korlap` (own area/rayon only), `kepala_rayon` (own rayon only), `top_management`, `admin_system`, `superadmin`
+
+**Response (200 OK):**
+```json
+{
+  "rayons": [
+    {
+      "id": "rayon-uuid",
+      "name": "Rayon Selatan",
+      "code": "RS",
+      "boundary_polygon": {
+        "type": "Polygon",
+        "coordinates": [[[112.73, -7.29], [112.74, -7.29], [112.74, -7.30], [112.73, -7.30], [112.73, -7.29]]]
+      },
+      "center_lat": -7.295,
+      "center_lng": 112.735,
+      "area_count": 5,
+      "is_understaffed": true,
+      "understaffed_area_count": 2
+    }
+  ],
+  "areas": [
+    {
+      "id": "area-uuid",
+      "name": "Taman Bungkul",
+      "rayon_id": "rayon-uuid",
+      "rayon_name": "Rayon Selatan",
+      "boundary_polygon": {
+        "type": "Polygon",
+        "coordinates": [[[112.7395, -7.2900], [112.7401, -7.2900], [112.7401, -7.2910], [112.7395, -7.2910], [112.7395, -7.2900]]]
+      },
+      "center_lat": -7.2905,
+      "center_lng": 112.7398,
+      "radius_meters": 150,
+      "is_understaffed": true,
+      "staffing_summary": {
+        "roles": [
+          { "role": "satgas", "active": 7, "total_required": 10, "is_met": false },
+          { "role": "linmas", "active": 3, "total_required": 5, "is_met": false },
+          { "role": "korlap", "active": 1, "total_required": 1, "is_met": true }
+        ]
+      }
+    }
+  ],
+  "generated_at": "2026-03-05T10:00:00.000Z"
+}
+```
+
+---
+
+### POST /api/v1/monitoring/reassign
+
+Reassign a worker from one area to another.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `superadmin`, `admin_system`, `kepala_rayon` (own rayon only)
+
+**Request:**
+```http
+POST /api/v1/monitoring/reassign HTTP/1.1
+Host: localhost:3000
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "user_id": "worker-uuid",
+  "target_area_id": "area-uuid",
+  "shift_definition_id": "shift-def-uuid",
+  "effective_date": "2026-03-05",
+  "end_current_schedule": true,
+  "reason": "Area Taman Bungkul kurang staf satgas"
+}
+```
+
+**Request Body Schema:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `user_id` | UUID | Yes | Worker to reassign |
+| `target_area_id` | UUID | Yes | Target area |
+| `shift_definition_id` | UUID | No | Defaults to current shift definition |
+| `effective_date` | string (YYYY-MM-DD) | No | Defaults to today |
+| `end_current_schedule` | boolean | No | Default true. End current schedule. |
+| `reason` | string | No | Audit trail reason |
+
+**Response (200 OK):**
+```json
+{
+  "new_schedule_id": "schedule-uuid",
+  "previous_area_id": "old-area-uuid",
+  "previous_area_name": "Taman Prestasi",
+  "new_area_id": "area-uuid",
+  "new_area_name": "Taman Bungkul",
+  "effective_date": "2026-03-05",
+  "user_name": "Ahmad Satgas"
+}
+```
+
+**Error Responses:**
+- `403 Forbidden` — kepala_rayon trying to reassign outside own rayon
+- `404 Not Found` — user_id or target_area_id not found
+- `409 Conflict` — worker already assigned to target area
+- `422 Unprocessable Entity` — worker role not compatible with area requirements
 
 ---
 
@@ -4676,7 +4827,8 @@ All endpoints using old role names must update:
 | `MonitoringConfigDto` | `key`, `value` (JSON), `description`, `updated_at` |
 | `MonitoringConfigResponseDto` | `configs: MonitoringConfigDto[]` |
 | `UpdateMonitoringConfigDto` | `value: Record<string, any>` |
-| `StaffingSummaryItemDto` | `id`, `name`, `type` (`rayon`\|`area`), `roles[]`, `total_active`, `total_idle`, `total_outside_area`, `total_missing`, `total_offline`, `is_fully_staffed` |
+| `RoleStaffingDto` | `role`, `count`, `online_count` |
+| `StaffingSummaryItemDto` | `id`, `name`, `type` (`rayon`\|`area`), `roles: RoleStaffingDto[]`, `total_active`, `total_inactive`, `total_outside_area`, `total_missing`, `total_offline`, `is_fully_staffed` |
 | `StaffingSummaryResponseDto` | `items: StaffingSummaryItemDto[]`, `generated_at` |
 | `AreaBoundaryResponseDto` | `area_id`, `name`, `boundary_polygon` (GeoJSON\|null), `gps_lat`, `gps_lng`, `radius_meters`, `coverage_area` |
 | `UpdateAreaBoundaryDto` | `boundary_polygon: GeoJsonPolygon`, `coverage_area?: number` |

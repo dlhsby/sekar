@@ -293,6 +293,14 @@ function MainNavigator(): React.JSX.Element {
           tabBarButton: () => null,
         })}
       />
+      <Tab.Screen
+        name="Attendance"
+        component={AttendanceScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => <FieldHomeHeader title="Kehadiran" onBack={() => navigation.goBack()} />,
+          tabBarButton: () => null,
+        })}
+      />
     </Tab.Navigator>
   );
 }

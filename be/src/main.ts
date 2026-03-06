@@ -9,6 +9,25 @@ import * as os from 'os';
 import * as bodyParser from 'body-parser';
 
 /**
+ * Validate critical environment variables before startup.
+ * Prevents accidental data loss in staging/prod from DATABASE_SYNCHRONIZE.
+ */
+function validateEnv(): void {
+  const env = process.env.NODE_ENV ?? 'development';
+  if (env !== 'development' && process.env.DATABASE_SYNCHRONIZE === 'true') {
+    throw new Error(
+      `DATABASE_SYNCHRONIZE must be false in ${env} environment! ` +
+        'Use migrations instead: npm run migration:run:prod',
+    );
+  }
+  const required = ['DATABASE_HOST', 'DATABASE_PASSWORD', 'JWT_SECRET'];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
+/**
  * Get the local network IP address
  * Returns the first non-internal IPv4 address found
  */
@@ -134,4 +153,5 @@ async function bootstrap() {
   console.log(`📚 API Documentation available at: http://localhost:${port}/api/v1/docs`);
 }
 
+validateEnv();
 bootstrap();

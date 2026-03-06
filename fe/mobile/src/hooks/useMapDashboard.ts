@@ -59,7 +59,7 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
 
       const response = await getActiveUsers();
       if (response.data) {
-        setUsers(response.data.users);
+        setUsers(Array.isArray(response.data.users) ? response.data.users : []);
       }
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -74,7 +74,7 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
   const fetchAreas = useCallback(async () => {
     try {
       const response = await get<Area[]>('/areas');
-      if (response.data) { setAreas(response.data); }
+      if (response.data) { setAreas(Array.isArray(response.data) ? response.data : []); }
     } catch (err) {
       console.error('Failed to fetch areas:', err);
     }
@@ -153,7 +153,7 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
 
   // Memoized computed values
   const filteredUsers = useMemo(
-    () => filterUsersByArea(users, selectedAreaFilter),
+    () => filterUsersByArea(users ?? [], selectedAreaFilter),
     [users, selectedAreaFilter]
   );
 

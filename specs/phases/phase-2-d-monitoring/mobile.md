@@ -1,10 +1,11 @@
 # Phase 2D: Mobile Requirements
 
-**Last Updated:** 2026-03-03
-**Status:** Planning
+**Last Updated:** 2026-03-05
+**Status:** ✅ COMPLETE (Implementation + Review)
 **Platform:** React Native 0.83.1, TypeScript, Redux Toolkit, react-native-maps
-**Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), ADR-011 (new)
+**Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md)
 **See also:** [Backend Requirements](./backend.md), [UI/UX Design](./ui-ux.md), [README](./README.md)
+**Tests:** 3,493 passing (142 suites, 0 failures)
 
 ---
 
@@ -147,6 +148,55 @@ When a user marker is tapped:
 1. Center map on marker with animation
 2. Open `UserDetailSheet` (bottom sheet)
 
+#### A7. Rayon and Area Boundary Rendering (NEW - Gap #2)
+
+Render BOTH rayon and area boundaries on the map with distinct visual styles.
+
+**Data source:** `GET /monitoring/boundaries` returns all boundaries in one call.
+
+**Rayon polygons:**
+- Fill: `#60A5FA` (blue-400) at 8% opacity
+- Border: `#2563EB` (blue-600), 3px, dashed style
+- Rendered below area polygons
+
+**Area polygons:**
+- Fill: `#FBBF24` (amber-400) at 15% opacity
+- Border: `#1C1917` (black), 2px, solid style
+- Rendered above rayon polygons
+
+**Center markers (rayon):**
+- Icon: `office-building` (MaterialCommunityIcons), 32px
+- Background: `#2563EB` (blue-600), white text
+- Badge: Rayon name below icon
+- Tap: open detail modal (NBCard pattern) showing:
+  - Rayon name, code
+  - Aggregate staffing: per-role breakdown with status counts
+  - List of areas with staffing status (understaffed highlighted red)
+  - "Filter Rayon Ini" button -> applies filter and focuses map
+- Understaffed indicator: aggregate badge "2 area kurang" if any child area understaffed
+
+**Center markers (area):**
+- Icon: `map-marker` (MaterialCommunityIcons), 28px
+- Background: `#D97706` (amber-600), white text
+- Badge: Area name below icon
+- Tap: open detail modal (NBCard pattern) showing:
+  - Area name, rayon name
+  - Per-role staffing: `Korlap 1/1 OK | Satgas 7/10 (2 idle, 1 luar) | Linmas 3/5`
+  - Worker list with status dots
+  - "Filter Area Ini" button -> applies filter and focuses map
+  - "Reassign Petugas" button if understaffed
+
+**Understaffed area visual:**
+- Area center markers with understaffed status get a RED pulsing border/glow
+- In filter modal, understaffed areas sort to top with warning icon
+
+**Layer order (bottom to top):**
+rayon-fill -> rayon-border -> area-fill -> area-border -> area-center-markers -> rayon-center-markers -> user-markers
+
+#### A8. Map Auto-Focus on Filter Selection
+
+When filters are applied via MonitoringFilterModal, the map automatically adjusts its viewport. See also [E6. Map Focus on Filter Selection](#e6-map-focus-on-filter-selection-new---gap-3) for detailed behavior.
+
 ---
 
 ## B. UserMarker Enhancement
@@ -179,10 +229,24 @@ Use four-status color system (see A2 above).
 
 #### B3. Name Label
 
-Display user's first name below the marker:
-- Font: 10px, bold, white text with black outline (readable on any map tile)
-- Max width: 60px, truncated with ellipsis
-- Only visible at zoom level >= 14 (avoid clutter at wide zoom)
+Display abbreviated role + first name below the marker.
+
+**Format by zoom level:**
+- Zoom < 14: No label (too cluttered)
+- Zoom 14-15: `STG - Ahmad` (abbreviated role + first name)
+- Zoom >= 16: `Satgas - Ahmad Wijaya` (full role + full name)
+
+**Role abbreviation constants:**
+| Role | Abbreviation |
+|------|-------------|
+| `satgas` | STG |
+| `linmas` | LMS |
+| `korlap` | KLP |
+
+**Label style:**
+- Font: 10px, bold
+- White text with 1px black outline (readable on any map tile)
+- Max width: 80px, truncated with ellipsis
 
 #### B4. Props Interface
 
@@ -265,11 +329,12 @@ Fetches from `GET /monitoring/users/:userId/day-summary` (see [backend.md](./bac
 
 ### Action Buttons
 
-| Button | Action |
-|--------|--------|
-| WhatsApp | Open `https://wa.me/62${phone}` deeplink |
-| Call | Open `tel:+62${phone}` deeplink |
-| Trail | Navigate to location history view (inline map overlay) |
+| Button | Action | Icon |
+|--------|--------|------|
+| WhatsApp | Open `https://wa.me/62${phone}` deeplink | WhatsApp icon |
+| Call | Open `tel:+62${phone}` deeplink | Phone icon |
+| Trail | Navigate to location history view (inline map overlay) | Map-marker-path icon |
+| Reassign | Open `ReassignWorkerModal` — only if user has supervisor role and area is understaffed | People-swap icon |
 
 **WhatsApp phone formatting:**
 - Strip leading `0` or `+62`, prepend `62`
@@ -280,6 +345,44 @@ Fetches from `GET /monitoring/users/:userId/day-summary` (see [backend.md](./bac
 - Expandable to 85% by dragging
 - Dismiss by swiping down or tapping `×`
 - Uses `@gorhom/bottom-sheet` (already in project dependencies)
+
+### C2. ReassignWorkerModal (NEW - Gap #5)
+
+Modal for reassigning a worker from one area to another.
+
+**Trigger:** Tap "Reassign" button in UserDetailSheet or area detail modal.
+
+**Layout:**
+```
++-------------------------------------+
+|  Reassign Petugas                [x] |
+|--------------------------------------|
+|  Dari: [Current Area Name]           |
+|  Peran yang dibutuhkan: Satgas       |
+|                                      |
+|  Petugas tersedia:                   |
+|  (from nearby/overstaffed areas,     |
+|   same rayon, filtered by role)      |
+|                                      |
+|  [o] Ahmad - Satgas - Taman A  Aktif |
+|  [ ] Budi  - Satgas - Taman B  Idle  |
+|  [ ] Citra - Satgas - Taman C  Aktif |
+|                                      |
+|  Ke Area: [Target Area Selector]     |
+|  Alasan: [Optional text input]       |
+|                                      |
+|  [         Konfirmasi Reassign     ] |
++-------------------------------------+
+```
+
+**Data source:** `POST /monitoring/reassign`
+
+**Accessible from:**
+- UserDetailSheet action buttons
+- Area detail modal (understaffed warning)
+- StaffingSummaryCard in filter modal
+
+**Permission:** superadmin, admin_system, kepala_rayon (own rayon only)
 
 ---
 
@@ -328,6 +431,45 @@ interface LocationTrailProps {
 4. Top bar shows: user name, date, total distance, time inside/outside
 5. Tap "×" to dismiss trail and return to normal map view
 
+### D2. Clickable Trail Points (NEW - Gap #6)
+
+Each GPS point on the map trail is tappable:
+- Tap map point -> callout popup with: timestamp, accuracy, battery, is_within_area
+- Tap timeline list item -> map flies to that point, highlights it
+- Bidirectional sync: map click highlights timeline item, timeline click focuses map
+
+### D3. First/Last Point Markers (NEW - Gap #6)
+
+- First: Green flag icon, labeled "Mulai [HH:MM]"
+- Last: Red flag icon, labeled "Akhir [HH:MM]"
+- Visually distinct from intermediate points (larger, different shape: 14px vs 6px)
+
+### D4. Hide Other Users During Trail View (NEW - Gap #6)
+
+- When trail is active, all other UserMarkers are dimmed to 20% opacity
+- Only selected user's current position + trail visible
+- Toggle: "Tampilkan hanya petugas ini" checkbox in trail header
+
+### D5. Date Picker (NEW - Gap #6)
+
+- Calendar icon in trail header bar
+- Opens date picker modal to select any date for that user's trail
+- Defaults to today
+- Max date: today
+
+### D6. Shift Filter (NEW - Gap #6)
+
+- Dropdown in trail header showing available shifts on selected date
+- Pre-populated from user's shifts for that date
+- Selecting a shift filters trail points to that shift only
+
+### D7. Trail Info Bar (NEW - Gap #6)
+
+Top bar above trail map showing:
+```
+[User Name] | [Date] | [Distance]km | Di area: [Time] | Di luar: [Time]
+```
+
 ---
 
 ## E. MonitoringFilterModal (New)
@@ -336,44 +478,53 @@ interface LocationTrailProps {
 
 Full-screen modal for filtering the monitoring map.
 
-### Layout
+### Layout (Bottom Sheet Modal - matching ActivityFilterModal pattern)
 
+Use bottom-sheet Modal pattern (same as ActivityFilterModal):
+- `animationType="slide"`, `transparent={true}`, max 85% height
+- Header: "Filter Monitoring" + close button + Reset link
+- Footer: Reset + Terapkan buttons (same actionButtons style)
+
+**Filter sections (using NB components):**
+
+1. **Status** -- `NBSelect` with multi-select mode (built-in checkboxes):
+   Options: [Aktif, Idle, Di Luar Area, Tidak Terdeteksi]
+
+2. **Rayon** -- `NBSelect` searchable, role-gated:
+   - Each option shows inline staffing: `Rayon Selatan  KLP 1/1 | STG 8/10 | LMS 3/5`
+   - Custom `renderOption` for staffing counts inline
+   - Understaffed rayons get warning icon
+
+3. **Area** -- `NBSelect` searchable, cascading from rayon:
+   - Each option shows inline staffing: `Taman Bungkul  KLP 1/1 | STG 7/10 ! | LMS 3/5`
+   - Understaffed areas highlighted with red border
+
+4. **Peran** -- `NBSelect` multi-select: [Satgas, Linmas, Korlap]
+
+5. **Cari Pengguna** -- `NBTextInput` with search icon
+
+**Staffing summary (always visible, not just when area selected):**
+- When NO area selected but rayon selected: show rayon-level staffing
+- When NO rayon selected (city view): show top-level summary with per-rayon expandable rows
+- When area selected: show area-level staffing (existing, enhanced)
+
+**Staffing display format:**
 ```
-┌─────────────────────────────────────┐
-│  ← Filter Monitoring           Reset│
-│─────────────────────────────────────│
-│                                     │
-│  Status                             │
-│  [Active] [Idle] [Outside] [Missing]│
-│  (multi-select chips)               │
-│                                     │
-│  Rayon                              │
-│  [▼ Select Rayon          ]         │
-│  (role-gated: korlap=hidden,       │
-│   kepala_rayon=fixed own rayon)     │
-│                                     │
-│  Area                               │
-│  [▼ Select Area           ]         │
-│  (cascades from rayon selection)    │
-│                                     │
-│  Role                               │
-│  [Satgas] [Linmas] [Korlap]        │
-│  (multi-select chips)               │
-│                                     │
-│  Search User                        │
-│  [🔍 Type user name...    ]         │
-│                                     │
-│  ┌─── Staffing Summary ──────────┐ │
-│  │ Area Kebun Bibit:              │ │
-│  │   Satgas: 8/10 (2 idle, 1 out)│ │
-│  │   Linmas: 3/5 (1 missing)     │ │
-│  │   Korlap: 1/1 ✅               │ │
-│  └────────────────────────────────┘ │
-│                                     │
-│  [          Terapkan              ] │
-│                                     │
-└─────────────────────────────────────┘
+Kepegawaian Shift Saat Ini (Hari Kerja)
+Taman Bungkul
+  Korlap:  1 aktif dari 1  (1/1) OK
+  Satgas:  5 aktif dari 10 (5/10) ! Kurang 5
+           2 idle, 1 di luar area, 2 tidak terdeteksi
+  Linmas:  2 aktif dari 5  (2/5) ! Kurang 3
+           1 idle, 1 tidak terdeteksi, 1 offline
+  [Reassign Petugas]
 ```
+
+**Existing NB components to reuse:**
+- `NBSelect.tsx` -- multi-select with checkbox (supports `selectedValues` + `onValuesChange`)
+- `NBCard.tsx` -- for detail modals
+- `ActivityFilterModal.tsx` -- reference pattern for modal structure
+- `NBTextInput.tsx` -- for search input
 
 ### Role-Based Filter Access
 
@@ -390,6 +541,9 @@ Full-screen modal for filtering the monitoring map.
 Shown when an area is selected. Fetches from `GET /monitoring/staffing-summary?area_id=X`.
 
 Displays per-role breakdown:
+- Day type badge: "Hari Kerja" / "Akhir Pekan" / "Hari Libur" (from `current_day_type_label`)
+- Current requirement: "Kebutuhan hari ini: 10 Satgas, 5 Linmas"
+- Expandable row showing requirements_by_day_type for comparison
 - Role name
 - `active/total_assigned` count
 - Status breakdown: `(N idle, N outside, N missing)`
@@ -402,6 +556,91 @@ Filter change → dispatch(setMonitoringFilters(filters))
              → refetch GET /monitoring/live-users with query params
              → update map markers
 ```
+
+#### E1. Use NB Components (Standardized Pattern)
+
+Use bottom-sheet `Modal` pattern matching `ActivityFilterModal`:
+- `animationType="slide"`, `transparent={true}`, max 85% height
+- Header: "Filter Monitoring" + close button + Reset link
+- Footer: Reset + Terapkan buttons (same `actionButtons` style)
+
+**Filter sections (using NB components):**
+
+1. **Status** — `NBSelect` with `multi-select` mode (built-in checkboxes):
+   - Options: Aktif, Idle, Di Luar Area, Tidak Terdeteksi
+
+2. **Rayon** — `NBSelect` searchable, role-gated (same as current but with inline staffing):
+   - Each option shows: `Rayon Selatan  KLP 1/1 • STG 8/10 • LMS 3/5`
+   - Custom `renderOption` to show staffing counts inline
+   - Understaffed rayons get warning icon
+
+3. **Area** — `NBSelect` searchable, cascading from rayon:
+   - Each option shows: `Taman Bungkul  KLP 1/1 • STG 7/10 ⚠️ • LMS 3/5`
+   - Understaffed areas highlighted with red border
+
+4. **Peran** — `NBSelect` multi-select: [Satgas, Linmas, Korlap]
+
+5. **Cari Pengguna** — `NBTextInput` with search icon
+
+**Existing components to reuse:**
+- `fe/mobile/src/components/nb/NBSelect.tsx` — multi-select with checkbox
+- `fe/mobile/src/components/nb/NBCard.tsx` — for detail modals
+- `fe/mobile/src/components/modals/ActivityFilterModal.tsx` — reference pattern
+- `fe/mobile/src/components/nb/NBTextInput.tsx` — search input
+
+#### E2. Staffing Summary (Always Visible)
+
+Staffing summary should be visible at ALL filter levels, not just when area is selected:
+- When NO area selected but rayon selected → show rayon-level staffing
+- When NO rayon selected (city view) → show top-level summary with per-rayon expandable rows
+- When area selected → show area-level staffing (current behavior, but enhanced)
+
+**Format per stakeholder requirement:**
+```
+Kepegawaian Shift Saat Ini (Hari Kerja)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Taman Bungkul                           ⚠️
+  Korlap:  1 aktif dari 1  (1/1) ✅
+  Satgas:  5 aktif dari 10 (5/10) ⚠️ Kurang 5
+           ├ 2 idle, 1 di luar area, 2 tidak terdeteksi
+  Linmas:  2 aktif dari 5  (2/5) ⚠️ Kurang 3
+           ├ 1 idle, 1 tidak terdeteksi, 1 offline
+  [Reassign Petugas]
+```
+
+Show day type badge: "Hari Kerja" / "Akhir Pekan" / "Hari Libur"
+Show current requirement prominently: "Kebutuhan hari ini: 10 Satgas, 5 Linmas"
+
+#### E3. Reassign Button
+
+When an area is understaffed, show "Reassign Petugas" button in:
+- StaffingSummaryCard in filter modal
+- UserDetailSheet action buttons
+
+Tapping opens `ReassignWorkerModal` (new component) showing:
+- Source area (understaffed one, pre-filled)
+- Role needed (from unmet requirement)
+- Available workers from nearby/overstaffed areas (same rayon), filtered by role
+- Each worker shows current status, area, distance
+- Confirm button → `POST /monitoring/reassign`
+
+### E6. Map Focus on Filter Selection (NEW - Gap #3)
+
+When filters are applied via the MonitoringFilterModal, the map automatically adjusts its viewport:
+
+| Filter Action | Map Behavior |
+|--------------|-------------|
+| Select rayon | `mapRef.current.fitToCoordinates()` to rayon boundary bbox with padding |
+| Select area | `mapRef.current.animateToRegion()` to area center, zoom 15-16 |
+| Select specific user | `mapRef.current.animateToRegion()` to user's last known location, zoom 16 |
+| Filter by status only | No map movement (markers filter in place) |
+| Reset all filters | `mapRef.current.animateToRegion()` to Surabaya city center, zoom 12 |
+
+**Implementation:**
+- On filter apply (`Terapkan` button press), check which filter changed most recently
+- Priority: user > area > rayon > status-only
+- Animation duration: 1000ms
+- Padding: 50px on all sides for fitToCoordinates
 
 ---
 
@@ -784,6 +1023,7 @@ fe/mobile/src/
 
   components/modals/
     MonitoringFilterModal.tsx                 NEW
+    ReassignWorkerModal.tsx                   NEW
 
   utils/
     mapUtils.ts                              MODIFIED
@@ -801,7 +1041,7 @@ fe/mobile/src/
     models.types.ts                          MODIFIED (new interfaces)
 ```
 
-**Total new files:** 6
+**Total new files:** 7
 **Total modified files:** 6
 
 ---
@@ -821,25 +1061,47 @@ fe/mobile/src/
 
 ## M. Implementation Checklist
 
-### Phase 2D-6: Mobile Monitoring
+### Phase 2D-5: Mobile Monitoring — ✅ COMPLETE
 
-- [ ] Update `mapUtils.ts` with four-status model
-- [ ] Update `LiveUser` and related types in `models.types.ts`
-- [ ] Update `monitoringSlice.ts` with new state and actions
-- [ ] Update `monitoringApi.ts` with new endpoints
-- [ ] Enhance `UserMarker` with role icons, status colors, name labels
-- [ ] Add polygon rendering to `MapDashboardScreen`
-- [ ] Add `StatusSummaryBar` component
-- [ ] Add `UserListStrip` and `UserListCard` components
-- [ ] Add FAB control column
-- [ ] Implement `UserDetailSheet` bottom sheet
-- [ ] Implement `LocationTrail` polyline component
-- [ ] Implement `MonitoringFilterModal` with cascading filters
-- [ ] Add WebSocket event handlers for new events
-- [ ] Write unit tests for new components (>80% coverage)
-- [ ] Write unit tests for `mapUtils.ts` updates
+- [x] Update `mapUtils.ts` with four-status model
+- [x] Update `LiveUser` and related types in `models.types.ts`
+- [x] Update `monitoringSlice.ts` with new state and actions
+- [x] Update `monitoringApi.ts` with new endpoints
+- [x] Enhance `UserMarker` with role icons, status colors, name labels
+- [x] Add polygon rendering to `MapDashboardScreen`
+- [x] Add `StatusSummaryBar` component
+- [x] Add `UserListStrip` and `UserListCard` components
+- [x] Add FAB control column
+- [x] Implement `UserDetailSheet` bottom sheet
+- [x] Implement `LocationTrail` polyline component
+- [x] Implement `MonitoringFilterModal` with cascading filters
+- [x] Add WebSocket event handlers for new events
+- [x] Write unit tests for new components (>80% coverage)
+- [x] Write unit tests for `mapUtils.ts` updates
 - [ ] Manual testing on Android emulator and physical device
+
+### Phase 2D-8: Mobile Review & Refactoring — ✅ COMPLETE
+
+- [x] Register `monitoringReducer` in Redux store (CRITICAL)
+- [x] Fix `as any` type casts → `TrackingStatus`/`UserRole`
+- [x] Fix string dispatch → action creator
+- [x] Update barrel exports (6 new + 1 deprecated)
+- [x] Register `AttendanceScreen` in navigation
+- [x] Fix `UserListCard` relative time to Indonesian format
+- [x] Add 212 new tests across 8 test files
+- [x] Extract monitoring role constants to shared `roles.ts`
+- [x] Consolidate duplicate `LiveUsersResponse` type
+
+### Phase 2D-10: Gap Fixes (Mobile) — NOT STARTED
+- [ ] Update marker labels to "Role - Name" format with zoom-level behavior
+- [ ] Add rayon + area polygon rendering with center markers
+- [ ] Add map auto-focus on filter selection
+- [ ] Enhance LocationTrail with clickable points, first/last markers, hide others, date picker, shift filter
+- [ ] Refactor MonitoringFilterModal to use NB components (NBSelect, bottom-sheet pattern)
+- [ ] Make staffing summary always visible in filter modal
+- [ ] Add ReassignWorkerModal component
+- [ ] Add day-type badge to staffing display
 
 ---
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-05

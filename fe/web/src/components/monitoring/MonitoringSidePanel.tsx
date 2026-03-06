@@ -5,9 +5,11 @@
  * Shows status cards, search/filter, and scrollable user list
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useDebounce } from '@/lib/hooks/useDebounce';
+import { STATUS_LABELS as MONITORING_STATUS_LABELS } from '@/lib/constants/monitoring';
 import { StatusCard } from './StatusCard';
 import { UserListItem } from './UserListItem';
 import type { LiveUser, LiveUsersResponse, TrackingStatus } from '@/lib/api/monitoring';
@@ -20,24 +22,11 @@ export interface MonitoringSidePanelProps {
 }
 
 const STATUS_CARDS: Array<{ status: TrackingStatus; label: string }> = [
-  { status: 'active', label: 'Aktif' },
-  { status: 'inactive', label: 'Idle' },
-  { status: 'outside_area', label: 'Luar Area' },
-  { status: 'missing', label: 'Hilang' },
+  { status: 'active', label: MONITORING_STATUS_LABELS.active },
+  { status: 'inactive', label: MONITORING_STATUS_LABELS.inactive },
+  { status: 'outside_area', label: MONITORING_STATUS_LABELS.outside_area },
+  { status: 'missing', label: MONITORING_STATUS_LABELS.missing },
 ];
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-}
 
 export function MonitoringSidePanel({
   data,

@@ -41,15 +41,19 @@ import {
 } from '../../utils/mapUtils';
 import { useMapDashboard } from '../../hooks';
 import type { AppDispatch, RootState } from '../../store';
-import type { LiveUser, TrackingStatus } from '../../types/models.types';
+import type { LiveUser, TrackingStatus, UserRole } from '../../types/models.types';
 import type { MonitoringFilters } from '../../types/api.types';
 import {
+  setLiveUsers,
   setSelectedUser,
   setMonitoringFilters,
   resetMonitoringFilters,
   fetchUserDaySummary,
+  updateLiveUser,
 } from '../../store/slices/monitoringSlice';
 import { getLiveUsers } from '../../services/api/monitoringApi';
+import websocketService from '../../services/websocket/websocketService';
+import type { UserLocationEvent } from '../../services/websocket/websocketService';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -80,12 +84,51 @@ export function MapDashboardScreen(): React.JSX.Element {
   const [currentRegion, setCurrentRegion] = useState(SURABAYA_CITY_REGION);
 
   // Legacy hook for areas data (boundary polygons and circles)
-  const { areas, fetchUsers } = useMapDashboard(mapRef);
+  const { areas } = useMapDashboard(mapRef);
 
   // Fetch live users on mount and when filters change
   useEffect(() => {
     void fetchLiveUsersWithFilters(filters);
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // WebSocket: subscribe to real-time user updates
+  useEffect(() => {
+    let mounted = true;
+
+    const setupWebSocket = async () => {
+      const connected = await websocketService.connect();
+      if (!connected || !mounted) return;
+    };
+
+    void setupWebSocket();
+
+    const unsubLocation = websocketService.onUserLocation((data: UserLocationEvent) => {
+      if (!mounted) return;
+      dispatch(updateLiveUser({
+        id: data.user_id,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        status: data.status as TrackingStatus,
+        battery_level: data.battery_level,
+        last_update: typeof data.timestamp === 'string' ? data.timestamp : new Date(data.timestamp).toISOString(),
+        is_within_area: data.is_within_area,
+      }));
+    });
+
+    const unsubStatus = websocketService.onUserStatusChanged((data) => {
+      if (!mounted) return;
+      dispatch(updateLiveUser({
+        id: data.user_id,
+        status: data.new_status as TrackingStatus,
+      }));
+    });
+
+    return () => {
+      mounted = false;
+      unsubLocation();
+      unsubStatus();
+    };
+  }, [dispatch]);
 
   const fetchLiveUsersWithFilters = useCallback(
     async (currentFilters: MonitoringFilters) => {
@@ -95,8 +138,8 @@ export function MapDashboardScreen(): React.JSX.Element {
       }
       try {
         const res = await getLiveUsers(filterPayload);
-        if (res.data) {
-          dispatch({ type: 'monitoring/setLiveUsers', payload: res.data.users });
+        if (res.data?.users) {
+          dispatch(setLiveUsers(res.data.users));
         }
       } catch {
         // handled via slice error state
@@ -111,6 +154,7 @@ export function MapDashboardScreen(): React.JSX.Element {
 
   // Filtered users for display
   const visibleUsers = React.useMemo(() => {
+    if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
     if (statusFilter) {
       users = users.filter(u => u.status === statusFilter);
@@ -131,7 +175,7 @@ export function MapDashboardScreen(): React.JSX.Element {
               id: u.id,
               username: u.full_name,
               full_name: u.full_name,
-              role: u.role as any,
+              role: u.role as UserRole,
               shift: { id: u.shift_id, clock_in_time: u.clock_in_time, area: { id: u.area_id ?? '', name: u.area_name } },
               latest_location: { gps_lat: u.latitude, gps_lng: u.longitude, logged_at: u.last_update },
             })),
@@ -220,7 +264,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
-  if (isLoading && liveUsers.length === 0) {
+  if (isLoading && (!liveUsers || liveUsers.length === 0)) {
     return (
       <NBBackgroundPattern
         pattern="dots"
@@ -236,7 +280,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     );
   }
 
-  if (error && liveUsers.length === 0) {
+  if (error && (!liveUsers || liveUsers.length === 0)) {
     return (
       <NBBackgroundPattern
         pattern="dots"
@@ -281,11 +325,14 @@ export function MapDashboardScreen(): React.JSX.Element {
               showsUserLocation={false}
               showsMyLocationButton={false}
               toolbarEnabled={false}
-              onMapReady={() => setMapReady(true)}
+              onMapReady={() => {
+                setMapReady(true);
+                mapRef.current?.animateToRegion(SURABAYA_CITY_REGION, 0);
+              }}
               onRegionChangeComplete={setCurrentRegion}
             >
               {/* Area boundaries */}
-              {mapReady && areas.map(area => {
+              {mapReady && Array.isArray(areas) && areas.map(area => {
                 const poly = (area as any).boundary_polygon;
                 if (
                   poly?.coordinates?.length > 0 &&
@@ -329,7 +376,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                 );
               })}
 
-              {/* User markers */}
+              {/* User markers (individual) */}
               {!useClustering && visibleUsers.map(user => (
                 <UserMarker
                   key={`user-${user.id}`}
@@ -338,6 +385,39 @@ export function MapDashboardScreen(): React.JSX.Element {
                   showLabel={currentRegion.latitudeDelta < 0.03}
                 />
               ))}
+
+              {/* Cluster markers */}
+              {useClustering && clusters.map(cluster => {
+                const representative: LiveUser = cluster.workers.length > 0
+                  ? {
+                      ...cluster.workers[0],
+                      id: cluster.id,
+                      latitude: cluster.coordinate.latitude,
+                      longitude: cluster.coordinate.longitude,
+                      full_name: `${cluster.pointCount} petugas`,
+                    } as unknown as LiveUser
+                  : null as unknown as LiveUser;
+                if (!representative) return null;
+                return (
+                  <UserMarker
+                    key={cluster.id}
+                    user={representative}
+                    onPress={() => {
+                      mapRef.current?.animateToRegion(
+                        {
+                          latitude: cluster.coordinate.latitude,
+                          longitude: cluster.coordinate.longitude,
+                          latitudeDelta: currentRegion.latitudeDelta / 3,
+                          longitudeDelta: currentRegion.longitudeDelta / 3,
+                        },
+                        300,
+                      );
+                    }}
+                    clusterCount={cluster.pointCount}
+                    showLabel={false}
+                  />
+                );
+              })}
 
               {/* Location trail overlay */}
               {showTrail && trailUser && (

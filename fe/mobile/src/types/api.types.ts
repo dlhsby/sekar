@@ -442,17 +442,8 @@ export interface MonitoringFilters {
   search?: string;
 }
 
-export interface LiveUsersResponse {
-  total_active: number;
-  total_inactive: number;
-  total_outside_area: number;
-  total_missing: number;
-  total_offline: number;
-  /** @deprecated Use total_active */
-  total_online: number;
-  users: LiveUser[];
-  generated_at: string;
-}
+// Phase 2D: Re-export from models.types to avoid duplication
+export type { LiveUsersResponse } from './models.types';
 
 // Phase 2D: Staffing summary response wrapper
 export interface StaffingSummaryResponse {

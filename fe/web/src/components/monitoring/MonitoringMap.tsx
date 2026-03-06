@@ -5,11 +5,12 @@
  * Shows user markers with status colors and area polygons
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { surabayaCenter } from '@/lib/maps/styles';
 import { cn } from '@/lib/utils/cn';
-import type { LiveUser, TrackingStatus } from '@/lib/api/monitoring';
+import { STATUS_COLORS, STATUS_LABELS, ROLE_MARKER_ICONS } from '@/lib/constants/monitoring';
+import type { LiveUser, TrackingStatus, LocationHistoryPoint } from '@/lib/api/monitoring';
 import type { Area } from '@/types/models';
 
 // Set Mapbox token once
@@ -25,50 +26,103 @@ export interface MonitoringMapProps {
   areas?: Area[];
   selectedUserId: string | null;
   onUserSelect: (user: LiveUser) => void;
+  trailPoints?: LocationHistoryPoint[];
   className?: string;
 }
 
-const STATUS_COLORS: Record<TrackingStatus, string> = {
-  active: '#4ade80',
-  inactive: '#fbbf24',
-  outside_area: '#c084fc',
-  missing: '#f87171',
-  offline: '#9ca3af',
+// SVG icon paths for role markers (all hardcoded, safe)
+const ROLE_SVG_PATHS: Record<string, string> = {
+  user: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+  shield: 'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z',
+  star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
 };
 
-function createMarkerElement(user: LiveUser): HTMLElement {
-  const el = document.createElement('div');
-  const color = STATUS_COLORS[user.status] ?? '#9ca3af';
+function createRoleIconSvg(role: string): SVGSVGElement {
+  const iconName = ROLE_MARKER_ICONS[role] ?? 'user';
+  const pathData = ROLE_SVG_PATHS[iconName] ?? ROLE_SVG_PATHS.user;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '14');
+  svg.setAttribute('height', '14');
+  svg.setAttribute('fill', 'white');
+  svg.style.display = 'block';
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', pathData);
+  svg.appendChild(path);
+  return svg;
+}
 
+function getMarkerAnimation(status: TrackingStatus): string {
+  switch (status) {
+    case 'inactive': return 'animation: marker-pulse-slow 2s infinite;';
+    case 'missing': return 'animation: marker-pulse-fast 1s infinite;';
+    default: return '';
+  }
+}
+
+function createMarkerElement(user: LiveUser): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'monitoring-marker-wrapper';
+  wrapper.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  `;
+
+  const color = STATUS_COLORS[user.status] ?? '#6B7280';
+  const statusLabel = STATUS_LABELS[user.status] ?? user.status;
+
+  // Main marker circle (36px)
+  const el = document.createElement('div');
   el.className = 'monitoring-marker';
   el.style.cssText = `
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background-color: ${color};
-    border: 3px solid #000;
+    border: 3px ${user.status === 'outside_area' ? 'dashed' : 'solid'} #000;
     box-shadow: 2px 2px 0 #000;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
-    font-weight: 900;
-    color: #000;
-    user-select: none;
     transition: transform 0.15s;
+    ${getMarkerAnimation(user.status)}
   `;
+  el.appendChild(createRoleIconSvg(user.role));
 
-  el.setAttribute('role', 'button');
-  el.setAttribute('aria-label', `${user.full_name} - ${user.status}`);
-  el.setAttribute('tabindex', '0');
+  // Name label below marker
+  const label = document.createElement('div');
+  label.style.cssText = `
+    font-size: 10px;
+    font-weight: 700;
+    color: #1C1917;
+    background: rgba(255,255,255,0.9);
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid #000;
+    margin-top: 2px;
+    white-space: nowrap;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    line-height: 1.2;
+  `;
+  label.textContent = user.full_name.split(' ')[0];
 
-  // Pulse animation for missing users
-  if (user.status === 'missing') {
-    el.style.animation = 'pulse 1.5s infinite';
-  }
+  wrapper.appendChild(el);
+  wrapper.appendChild(label);
 
-  return el;
+  wrapper.setAttribute('role', 'button');
+  wrapper.setAttribute('aria-label', `${user.full_name} - ${statusLabel}`);
+  wrapper.setAttribute('tabindex', '0');
+
+  return wrapper;
 }
 
 export function MonitoringMap({
@@ -76,6 +130,7 @@ export function MonitoringMap({
   areas = [],
   selectedUserId,
   onUserSelect,
+  trailPoints,
   className = '',
 }: MonitoringMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +139,7 @@ export function MonitoringMap({
     new Map()
   );
   const isLoadedRef = useRef(false);
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
 
   const hasToken =
     typeof window !== 'undefined' &&
@@ -103,6 +159,7 @@ export function MonitoringMap({
     });
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
 
     map.on('load', () => {
@@ -156,10 +213,14 @@ export function MonitoringMap({
       if (existing) {
         // Update position and color
         existing.marker.setLngLat([user.longitude, user.latitude]);
-        const el = existing.marker.getElement();
-        const color = STATUS_COLORS[user.status] ?? '#9ca3af';
-        el.style.backgroundColor = color;
-        el.style.animation = user.status === 'missing' ? 'pulse 1.5s infinite' : '';
+        const wrapperEl = existing.marker.getElement();
+        const markerDot = wrapperEl.querySelector('.monitoring-marker') as HTMLElement;
+        if (markerDot) {
+          const color = STATUS_COLORS[user.status] ?? '#6B7280';
+          markerDot.style.backgroundColor = color;
+          markerDot.style.borderStyle = user.status === 'outside_area' ? 'dashed' : 'solid';
+          markerDot.style.animation = getMarkerAnimation(user.status).replace('animation: ', '').replace(';', '');
+        }
         return;
       }
 
@@ -256,6 +317,94 @@ export function MonitoringMap({
     }
   }, [drawAreas]);
 
+  // Style toggle
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoadedRef.current) return;
+
+    const styleUrl = mapStyle === 'satellite'
+      ? 'mapbox://styles/mapbox/satellite-streets-v12'
+      : 'mapbox://styles/mapbox/streets-v12';
+
+    map.setStyle(styleUrl);
+
+    // Redraw areas after style change
+    map.once('style.load', () => {
+      drawAreas();
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapStyle]);
+
+  // Draw trail polyline
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoadedRef.current) return;
+
+    // Clean up previous trail layers
+    if (map.getLayer('trail-inside')) map.removeLayer('trail-inside');
+    if (map.getLayer('trail-outside')) map.removeLayer('trail-outside');
+    if (map.getSource('trail-inside')) map.removeSource('trail-inside');
+    if (map.getSource('trail-outside')) map.removeSource('trail-outside');
+
+    if (!trailPoints || trailPoints.length < 2) return;
+
+    // Split points into inside/outside segments
+    const insideCoords: [number, number][] = [];
+    const outsideCoords: [number, number][] = [];
+
+    for (let i = 0; i < trailPoints.length - 1; i++) {
+      const p1 = trailPoints[i];
+      const p2 = trailPoints[i + 1];
+      const coord1: [number, number] = [p1.longitude, p1.latitude];
+      const coord2: [number, number] = [p2.longitude, p2.latitude];
+
+      if (p1.is_within_area && p2.is_within_area) {
+        insideCoords.push(coord1, coord2);
+      } else {
+        outsideCoords.push(coord1, coord2);
+      }
+    }
+
+    if (insideCoords.length > 0) {
+      map.addSource('trail-inside', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: insideCoords },
+          properties: {},
+        },
+      });
+      map.addLayer({
+        id: 'trail-inside',
+        type: 'line',
+        source: 'trail-inside',
+        paint: { 'line-color': '#15803D', 'line-width': 3, 'line-opacity': 0.8 },
+      });
+    }
+
+    if (outsideCoords.length > 0) {
+      map.addSource('trail-outside', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: outsideCoords },
+          properties: {},
+        },
+      });
+      map.addLayer({
+        id: 'trail-outside',
+        type: 'line',
+        source: 'trail-outside',
+        paint: {
+          'line-color': '#9333EA',
+          'line-width': 3,
+          'line-opacity': 0.8,
+          'line-dasharray': [2, 2],
+        },
+      });
+    }
+  }, [trailPoints]);
+
   if (!hasToken) {
     return (
       <div
@@ -283,11 +432,35 @@ export function MonitoringMap({
   return (
     <div className={cn('relative', className)}>
       <div ref={containerRef} className="absolute inset-0" />
-      {/* Pulse keyframe — injected inline for simplicity */}
+
+      {/* Style toggle button */}
+      <button
+        type="button"
+        onClick={() => setMapStyle((s) => s === 'streets' ? 'satellite' : 'streets')}
+        className={cn(
+          'absolute top-2 left-2 z-10 px-3 py-1.5 text-xs font-bold',
+          'border-2 border-nb-black rounded-nb-base bg-white shadow-nb-sm',
+          'hover:shadow-nb-md transition-all duration-150'
+        )}
+        aria-label="Ganti gaya peta"
+      >
+        {mapStyle === 'streets' ? 'Satelit' : 'Peta'}
+      </button>
+
+      {/* Keyframes for marker animations */}
       <style>{`
-        @keyframes pulse {
+        @keyframes marker-pulse-slow {
           0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.15); opacity: 0.8; }
+          50% { transform: scale(1.1); opacity: 0.85; }
+        }
+        @keyframes marker-pulse-fast {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.2); opacity: 0.7; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .monitoring-marker {
+            animation: none !important;
+          }
         }
         .mapboxgl-popup-content {
           padding: 6px 10px;

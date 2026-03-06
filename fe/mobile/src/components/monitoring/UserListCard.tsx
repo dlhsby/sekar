@@ -32,11 +32,12 @@ function getRelativeTime(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
   const seconds = Math.floor(diff / 1000);
 
-  if (seconds < 60) { return `${seconds}d`; }
+  if (seconds < 5) { return 'baru saja'; }
+  if (seconds < 60) { return `${seconds} dtk lalu`; }
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) { return `${minutes}m lalu`; }
+  if (minutes < 60) { return `${minutes} mnt lalu`; }
   const hours = Math.floor(minutes / 60);
-  return `${hours}j lalu`;
+  return `${hours} jam lalu`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────

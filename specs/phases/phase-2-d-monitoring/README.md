@@ -1,11 +1,11 @@
 # Phase 2D: Real-Time Monitoring Reimplementation
 
-**Date:** March 3, 2026
+**Date:** March 5, 2026
 **Status:** Planning
 **Priority:** High
 **Duration:** 17-24 developer-days (estimated)
 **Depends On:** Phase 2C (Complete)
-**Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-role-system-redesign.md), [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md), ADR-011 (new, this phase)
+**Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md) (this phase)
 
 ---
 
@@ -29,6 +29,12 @@ This phase addresses all gaps by introducing a proper four-status tracking syste
 10. **Area Boundary Management** -- Web CRUD for area boundaries with polygon editor and KMZ import (review existing)
 11. **Per-Role Staff Requirements** -- Break down staffing counts by role (satgas vs linmas) instead of aggregate totals
 12. **Role-Scoped Monitoring** -- Enforce hierarchy: top_management (all), kepala_rayon (own rayon), korlap (own area)
+13. **Day-Type Staffing Resolution** -- All staffing queries filter by current day type (weekday/weekend/holiday) using `special_day_overrides` table; show day-type context in staffing displays
+14. **Rayon Boundary Polygons** -- Auto-computed convex hull from child area polygons, with configurable center markers and understaffed indicators
+15. **Map Auto-Focus** -- Map viewport automatically adjusts when rayon/area/user filters are applied
+16. **Worker Reassignment** -- Supervisors can reassign workers from nearby/overstaffed areas to understaffed areas via monitoring dashboard
+17. **Enhanced Location History** -- Clickable trail points, first/last markers, date picker, shift filter, hide other users during trail view
+18. **Standardized Icon/Color System** -- Comprehensive visual system for all entity types (rayon polygons, area polygons, center markers, user markers) with dual encoding for accessibility
 
 ---
 
@@ -48,6 +54,8 @@ This phase addresses all gaps by introducing a proper four-status tracking syste
 | KMZ Import (Web) | - | - | - | Y | Y |
 | Configure Thresholds | - | - | - | Y | Y |
 | WhatsApp Deeplinks | Y | Y | Y | Y | Y |
+| Reassign Workers | - | Y (within rayon) | - | Y | Y |
+| View Rayon Boundaries | Y | Y | Y | Y | Y |
 
 **Legend:** `Y` = Full access, `Y (scope)` = Scoped to organizational unit, `-` = No access
 
@@ -77,12 +85,15 @@ korlap
 
 ### Four-Status Model
 
-| Status | Color | Hex | Condition | Action Required |
-|--------|-------|-----|-----------|-----------------|
-| **Active** | Dark Green | `#15803D` | Active shift + GPS ping <= 5 min + inside area boundary | None |
-| **Idle** | Amber | `#D97706` | Active shift + GPS ping > 5 min but <= 15 min (configurable) | Check on worker |
-| **Outside Area** | Purple | `#9333EA` | Active shift + GPS ping <= 5 min + outside area boundary | Investigate |
-| **Missing/Offline** | Red | `#DC2626` | Scheduled but no clock-in, OR active shift but GPS > 1 hr | Urgent action |
+> **Enum vs UI Label Clarification:** The code uses English enum values (`TrackingStatus` in `user-tracking-status.entity.ts`). "Idle" is the **UI label** displayed to users for the `inactive` enum value. Always use the enum value in code; use the UI label in frontend display and Indonesian translations.
+
+| Enum Value | UI Label (EN) | UI Label (ID) | Color | Hex | Condition | Action Required |
+|------------|--------------|----------------|-------|-----|-----------|-----------------|
+| `active` | Active | Aktif | Dark Green | `#15803D` | Active shift + GPS ping <= 5 min + inside area boundary | None |
+| `inactive` | Idle | Idle | Amber | `#D97706` | Active shift + GPS ping > 5 min but <= 15 min (configurable) | Check on worker |
+| `outside_area` | Outside Area | Di Luar Area | Purple | `#9333EA` | Active shift + GPS ping <= 5 min + outside area boundary | Investigate |
+| `missing` | Missing | Tidak Terdeteksi | Red | `#DC2626` | Scheduled but no clock-in, OR active shift but GPS > 1 hr | Urgent action |
+| `offline` | Offline | Offline | Gray | `#6B7280` | No active shift | Not shown on map |
 
 ### Status Resolution Priority
 
@@ -121,6 +132,24 @@ This preserves the Phase 2C soft geofencing approach (never block clock-in, just
 
 ---
 
+## Gap Analysis (March 5, 2026)
+
+Post-implementation review identified 9 gaps between the original brief and the delivered specs. All gaps have been addressed in spec revisions below.
+
+| # | Gap | Severity | Resolution |
+|---|-----|----------|-----------|
+| 1 | Day-type bug in staffing queries | CRITICAL | All staffing queries now filter by `getCurrentDayType()` |
+| 2 | Rayon + Area polygons & center markers on map | HIGH | New `GET /monitoring/boundaries` endpoint + map rendering specs |
+| 3 | Map auto-focus on filter selection | HIGH | Auto-viewport adjustment on filter change |
+| 4 | Staff requirements by schedule type | HIGH | Day-type context in staffing displays with comparison table |
+| 5 | Worker reassignment from monitoring | HIGH | New `POST /monitoring/reassign` endpoint + ReassignWorkerModal |
+| 6 | Location history UX enhancements | MEDIUM | Clickable points, first/last markers, date picker, shift filter |
+| 7 | User marker "role - name" format | MEDIUM | Zoom-dependent label format: STG - Ahmad / Satgas - Ahmad Wijaya |
+| 8 | Enhanced filter modal with prominent staffing | MEDIUM | Always-visible staffing, NB components, bottom-sheet pattern |
+| 9 | Standardized icon/color system across entities | MEDIUM | Complete visual system for polygons, markers, and labels |
+
+---
+
 ## Implementation Phases
 
 > **Priority:** Mobile-first implementation. The mobile app is the primary tool used by field supervisors (korlap, kepala_rayon) for real-time monitoring in the field. Web follows as the desktop companion for top_management and admin roles.
@@ -134,6 +163,7 @@ This preserves the Phase 2C soft geofencing approach (never block clock-in, just
 | **2D-5: Mobile Monitoring** | Polygon rendering, four-status colors, enhanced UserMarker, StatusSummaryBar, UserListStrip, UserDetailSheet, LocationTrail, MonitoringFilterModal, WebSocket event handlers | 3-4 days | 2D-3, 2D-4 |
 | **2D-6: Web Monitoring** | Mapbox GL JS integration, MonitoringMap, MonitoringSidePanel, UserDetailPanel, LocationTimeline, StatusCards, `/monitoring/config` page, polygon editor, TanStack Query hooks | 4-5 days | 2D-3, 2D-4 |
 | **2D-7: Testing** | Unit tests (>80%), integration tests, E2E (Playwright web, manual mobile) | 3-4 days | All above |
+| **2D-10: Gap Fixes** | Day-type filtering, rayon boundaries, map auto-focus, worker reassignment, enhanced location history, marker labels, filter modal, visual system | 5-7 days | 2D-7 |
 
 ### Implementation Order Rationale
 
@@ -187,4 +217,4 @@ This preserves the Phase 2C soft geofencing approach (never block clock-in, just
 
 ---
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-05

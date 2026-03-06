@@ -1,7 +1,6 @@
 import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
 import { User, UserRole } from '../../users/entities/user.entity';
@@ -31,7 +30,6 @@ export class StatusCalculatorService {
     @InjectRepository(Area)
     private readonly areaRepository: Repository<Area>,
     private readonly cacheService: MonitoringCacheService,
-    private readonly eventEmitter: EventEmitter2,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
   ) {}
@@ -98,15 +96,6 @@ export class StatusCalculatorService {
       existing.updated_at = now;
       await this.trackingRepository.save(existing);
 
-      this.eventEmitter.emit('monitoring.status-changed', {
-        userId,
-        previousStatus,
-        newStatus,
-        areaId: existing.area_id,
-        shiftId: existing.shift_id,
-        timestamp: now,
-      });
-
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
@@ -136,15 +125,6 @@ export class StatusCalculatorService {
       ['user_id'],
     );
 
-    this.eventEmitter.emit('monitoring.status-changed', {
-      userId,
-      previousStatus: TrackingStatus.OFFLINE,
-      newStatus: TrackingStatus.ACTIVE,
-      areaId,
-      shiftId,
-      timestamp: now,
-    });
-
     this.logger.log(`User ${userId} clocked in → ACTIVE`);
   }
 
@@ -168,15 +148,6 @@ export class StatusCalculatorService {
       },
       ['user_id'],
     );
-
-    this.eventEmitter.emit('monitoring.status-changed', {
-      userId,
-      previousStatus,
-      newStatus: TrackingStatus.OFFLINE,
-      areaId,
-      shiftId: null,
-      timestamp: now,
-    });
 
     this.logger.log(`User ${userId} clocked out → OFFLINE`);
   }
@@ -230,42 +201,23 @@ export class StatusCalculatorService {
 
     await this.trackingRepository.save(existing);
 
-    // Emit boundary crossing events
+    // Resolve context once for all broadcasts
+    const context = await this.resolveUserContext(existing.user_id, existing.area_id);
+
+    // Broadcast boundary crossing events via WebSocket
     if (previousWithinArea && !isWithinArea) {
-      this.eventEmitter.emit('monitoring.user-left-area', {
-        userId,
-        areaId: existing.area_id,
-        lat,
-        lng,
-        timestamp: now,
-      });
-      await this.broadcastAreaEvent('left', existing, lat, lng, now);
+      await this.broadcastAreaEvent('left', existing, lat, lng, now, context);
     } else if (!previousWithinArea && isWithinArea) {
-      this.eventEmitter.emit('monitoring.user-entered-area', {
-        userId,
-        areaId: existing.area_id,
-        lat,
-        lng,
-        timestamp: now,
-      });
-      await this.broadcastAreaEvent('entered', existing, lat, lng, now);
+      await this.broadcastAreaEvent('entered', existing, lat, lng, now, context);
     }
 
-    // Emit status change event if changed
+    // Broadcast status change via WebSocket if changed
     if (newStatus !== previousStatus) {
-      this.eventEmitter.emit('monitoring.status-changed', {
-        userId,
-        previousStatus,
-        newStatus,
-        areaId: existing.area_id,
-        shiftId: existing.shift_id,
-        timestamp: now,
-      });
-      await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
+      await this.broadcastStatusChanged(existing, previousStatus, newStatus, now, context);
     }
 
     // Always emit location update
-    await this.broadcastLocationUpdate(existing, lat, lng, accuracy, battery, newStatus, isWithinArea, now);
+    await this.broadcastLocationUpdate(existing, lat, lng, accuracy, battery, newStatus, isWithinArea, now, context);
   }
 
   // ---- Private broadcast helpers ----
@@ -275,8 +227,9 @@ export class StatusCalculatorService {
     previousStatus: TrackingStatus,
     newStatus: TrackingStatus,
     timestamp: Date,
+    preResolved?: { user: User; area: Area | null } | null,
   ): Promise<void> {
-    const context = await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    const context = preResolved ?? await this.resolveUserContext(tracking.user_id, tracking.area_id);
     if (!context) return;
 
     const event: UserStatusChangedEvent = {
@@ -302,10 +255,11 @@ export class StatusCalculatorService {
     lat: number,
     lng: number,
     timestamp: Date,
+    preResolved?: { user: User; area: Area | null } | null,
   ): Promise<void> {
     if (!tracking.area_id) return;
 
-    const context = await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    const context = preResolved ?? await this.resolveUserContext(tracking.user_id, tracking.area_id);
     if (!context || !context.area) return;
 
     const event: UserAreaEvent = {
@@ -336,10 +290,11 @@ export class StatusCalculatorService {
     status: TrackingStatus,
     isWithinArea: boolean,
     timestamp: Date,
+    preResolved?: { user: User; area: Area | null } | null,
   ): Promise<void> {
     if (!tracking.area_id || !tracking.shift_id) return;
 
-    const context = await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    const context = preResolved ?? await this.resolveUserContext(tracking.user_id, tracking.area_id);
     if (!context) return;
 
     const event: UserLocationEvent = {

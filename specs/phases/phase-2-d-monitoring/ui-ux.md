@@ -1,6 +1,6 @@
 # Phase 2D: UI/UX Design Specification
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-05
 **Status:** Planning
 **Design System:** Neo Brutalism 2.0 (WCAG 2.1 AA)
 **Related ADR:** ADR-011 (new)
@@ -91,17 +91,130 @@ The outer ring of the marker changes color based on status. For additional diffe
 - **Outside Area:** Dashed ring (4px dash, 4px gap)
 - **Missing:** Solid ring, fast pulse (1s period)
 
-### B4. Area/Rayon Markers
+### B4. Comprehensive Entity Visual System
 
-For area center points (not user positions):
+Standardized icon/color system for ALL entity types on the map.
 
-| Element | Design |
-|---------|--------|
-| Shape | Flag icon (distinct from user circles) |
-| Size | 28px |
-| Color | Area type color or rayon color |
-| Label | Area name, 11px, below flag |
-| Behavior | Click to zoom to area boundaries |
+#### Polygon Styles
+
+| Entity | Fill Color | Opacity | Border Color | Border Width | Border Style |
+|--------|-----------|---------|-------------|-------------|-------------|
+| Rayon | `#60A5FA` (blue-400) | 0.08 | `#2563EB` (blue-600) | 3px | dashed |
+| Area | `#FBBF24` (amber-400) | 0.15 | `#1C1917` (black) | 2px | solid |
+
+#### Center Marker Styles
+
+| Entity | Icon (Web/Lucide) | Icon (Mobile/MCI) | Size | BG Color | Text Color |
+|--------|------------------|-------------------|------|----------|------------|
+| Rayon | `building-2` | `office-building` | 32px | `#2563EB` (blue-600) | white |
+| Area | `map-pin` | `map-marker` | 28px | `#D97706` (amber-600) | white |
+
+#### User Marker Styles
+
+| Role | Icon (Web/Lucide) | Icon (Mobile/MCI) | Size | Border Color |
+|------|------------------|-------------------|------|-------------|
+| Satgas | `user` | `account-hard-hat` | 36px | `#1C1917` (black) |
+| Linmas | `shield` | `shield-account` | 36px | `#1E40AF` (blue-800) |
+| Korlap | `star` | `clipboard-account` | 36px | `#92400E` (amber-800) |
+
+User marker fill color = status color (active=#15803D, inactive=#D97706, outside_area=#9333EA, missing=#DC2626)
+
+#### Dual Encoding for Accessibility
+
+Status communicated via fill color + role via border color + icon shape. All combinations are WCAG 2.1 AA compliant:
+- Color encodes status (green/amber/purple/red)
+- Border color encodes role (black/blue/amber)
+- Icon shape encodes role (person/shield/star)
+- No single channel carries all information — redundant encoding ensures color-blind users can differentiate
+
+#### Understaffed Area Visual Indicators
+
+| Indicator | Style |
+|-----------|-------|
+| Area center marker (understaffed) | RED pulsing border/glow animation (2s period) |
+| Rayon center marker badge | "2 area kurang" text badge in red |
+| Filter modal option | Warning icon ⚠️ + red border on understaffed items |
+| Map polygon border | Dashed red overlay on understaffed area polygons |
+
+### B5. Standardized Entity Visual System (NEW - Gap #9)
+
+Comprehensive visual system for ALL entity types on the map.
+
+#### Polygon Styles
+
+| Entity | Fill Color | Fill Opacity | Border Color | Border Width | Border Style |
+|--------|-----------|-------------|-------------|-------------|-------------|
+| Rayon | #60A5FA (blue-400) | 0.08 | #2563EB (blue-600) | 3px | dashed (4px dash, 4px gap) |
+| Area | #FBBF24 (amber-400) | 0.15 | #1C1917 (black) | 2px | solid |
+
+#### Center Marker Styles
+
+| Entity | Icon (Web/Lucide) | Icon (Mobile/MCI) | Size | BG Color | Text Color |
+|--------|------------------|-------------------|------|----------|------------|
+| Rayon | building-2 | office-building | 32px | #2563EB (blue-600) | white |
+| Area | map-pin | map-marker | 28px | #D97706 (amber-600) | white |
+
+#### User Marker Styles
+
+| Role | Icon (Web/Lucide) | Icon (Mobile/MCI) | Size | Border Color |
+|------|------------------|-------------------|------|-------------|
+| Satgas | user | account-hard-hat | 36px | #1C1917 (black) |
+| Linmas | shield | shield-account | 36px | #1E40AF (blue-800) |
+| Korlap | star | clipboard-account | 36px | #92400E (amber-800) |
+
+User marker fill color = status color:
+- active: #15803D (green-700)
+- inactive: #D97706 (amber-600)
+- outside_area: #9333EA (purple-600)
+- missing: #DC2626 (red-600)
+
+#### Dual Encoding for Accessibility
+
+Status is encoded via fill color + role via border color + icon shape. This ensures WCAG 2.1 AA compliance for users with color vision deficiencies:
+- **Color** differentiates status (green/amber/purple/red)
+- **Border color** differentiates role (black/blue/amber)
+- **Icon shape** provides tertiary differentiation
+
+#### Layer Render Order (bottom to top)
+
+1. rayon-fill (polygon)
+2. rayon-border (polygon outline)
+3. area-fill (polygon)
+4. area-border (polygon outline)
+5. area-center-markers
+6. rayon-center-markers
+7. user-markers (highest z-index)
+
+#### Understaffed Area Indicators
+
+- Area center markers with understaffed status: RED pulsing border/glow animation
+- In filter modal: understaffed areas sort to top with warning icon
+- City-level view: rayon center markers show aggregate understaffing badge (e.g., "2 area kurang")
+
+### B6. User Marker Label Format (NEW - Gap #7)
+
+Display abbreviated role + name below the marker, varying by zoom level.
+
+| Zoom Level | Label Format | Example |
+|-----------|-------------|---------|
+| < 14 | No label | (markers only) |
+| 14-15 | Abbreviated role + first name | `STG - Ahmad` |
+| >= 16 | Full role + full name | `Satgas - Ahmad Wijaya` |
+
+**Role abbreviation constants:**
+
+| Role | Full Label | Abbreviation |
+|------|-----------|-------------|
+| `satgas` | Satgas | STG |
+| `linmas` | Linmas | LMS |
+| `korlap` | Korlap | KLP |
+
+**Label styling:**
+- Font: 10px, bold, monospace fallback
+- Color: white text
+- Outline: 1px black stroke (readable on light/dark/satellite tiles)
+- Max width: 80px (abbreviated), 120px (full), truncated with ellipsis
+- Position: centered below marker, 4px gap
 
 ---
 
@@ -362,6 +475,81 @@ Filters rendered inline at the top of the side panel:
 | Progress bar | 4px height, status-weighted color |
 | Warning icon | Show when `!is_fully_staffed` |
 
+### G4. Staffing Summary Display Rules (NEW - Gap #8)
+
+Staffing summary is ALWAYS visible in the monitoring interface (not just when area is selected).
+
+#### Mobile: MonitoringFilterModal
+
+Staffing summary appears immediately below the Area selector:
+
+| Filter Level | Display |
+|-------------|---------|
+| City view (no rayon/area) | Top-level summary with per-rayon expandable rows |
+| Rayon selected | Rayon-level staffing with per-area expandable rows |
+| Area selected | Area-level detailed staffing |
+
+#### Web: MonitoringSidePanel
+
+StaffingSummaryCard always renders in the side panel above the user list:
+
+| Filter Level | Display |
+|-------------|---------|
+| City view | Per-rayon summary cards, expandable |
+| Rayon view | Per-area summary cards |
+| Area view | Detailed per-role breakdown |
+
+#### Staffing Card Format (per client brief)
+
+```
+Kepegawaian Shift Saat Ini (Hari Kerja)
+[Area Name]                                    [!]
+  Korlap:  1 aktif dari 1  (1/1) OK
+  Satgas:  5 aktif dari 10 (5/10) ! Kurang 5
+           2 idle, 1 di luar area, 2 tidak terdeteksi
+  Linmas:  2 aktif dari 5  (2/5) ! Kurang 3
+           1 idle, 1 tidak terdeteksi, 1 offline
+  [Reassign Petugas]
+```
+
+| Element | Style |
+|---------|-------|
+| Day type badge | Chip with: "Hari Kerja" (blue) / "Akhir Pekan" (amber) / "Hari Libur" (red) |
+| Met requirement | Green text, checkmark icon |
+| Unmet requirement | Red text, warning icon, "Kurang N" suffix |
+| Status breakdown | Gray sub-text, indented under role |
+| Reassign button | Only shown for unmet requirements, purple bg |
+| Progress bar | 4px height, green if >= 80%, amber if >= 50%, red if < 50% |
+
+### G5. Day Type Display
+
+Show current schedule type prominently in the staffing summary:
+
+| Day Type | Indonesian Label | Badge Color |
+|----------|-----------------|-------------|
+| WEEKDAY | Hari Kerja | `#15803D` green bg |
+| WEEKEND | Akhir Pekan | `#D97706` amber bg |
+| HOLIDAY | Hari Libur | `#DC2626` red bg |
+
+Display: "Kebutuhan hari ini (Hari Kerja): 10 Satgas, 5 Linmas"
+
+Expandable comparison table:
+```
+Kebutuhan per Tipe Hari:
+| Peran   | Hari Kerja | Akhir Pekan | Hari Libur |
+|---------|-----------|-------------|-----------|
+| Satgas  | 10        | 5           | 3          |
+| Linmas  | 5         | 3           | 2          |
+| Korlap  | 1         | 1           | 1          |
+```
+
+### G6. Reassign Action from Staffing Card
+
+When staffing shows understaffed status:
+- "Reassign Petugas" button appears below staffing summary
+- Button: red border, white bg, "Reassign Petugas" text, warning icon
+- Opens ReassignWorkerModal (web) or ReassignWorkerModal sheet (mobile)
+
 ---
 
 ## H. Accessibility
@@ -487,10 +675,45 @@ accessibilityLabel={`${user.full_name}, ${getRoleLabel(user.role)}, ${getStatusL
   --panel-min-width: 320px;
   --panel-max-width: 480px;
 
+  /* Polygon colors */
+  --polygon-rayon-fill: #60A5FA;
+  --polygon-rayon-stroke: #2563EB;
+  --polygon-area-fill: #FBBF24;
+  --polygon-area-stroke: #1C1917;
+
+  /* Center markers */
+  --center-rayon-bg: #2563EB;
+  --center-area-bg: #D97706;
+
+  /* Role borders */
+  --role-satgas-border: #1C1917;
+  --role-linmas-border: #1E40AF;
+  --role-korlap-border: #92400E;
+
   /* Action buttons */
   --whatsapp-color: #25D366;
   --call-color: #3B82F6;
   --trail-color: #9333EA;
+
+  /* Entity polygon colors (NEW - Gap #9) */
+  --rayon-fill: #60A5FA;
+  --rayon-fill-opacity: 0.08;
+  --rayon-border: #2563EB;
+  --area-fill: #FBBF24;
+  --area-fill-opacity: 0.15;
+  --area-border: #1C1917;
+
+  /* Role border colors (NEW - Gap #9) */
+  --role-satgas-border: #1C1917;
+  --role-linmas-border: #1E40AF;
+  --role-korlap-border: #92400E;
+
+  /* Center marker colors */
+  --rayon-marker-bg: #2563EB;
+  --area-marker-bg: #D97706;
+
+  /* Reassign button */
+  --reassign-color: #7C3AED;
 }
 ```
 
@@ -539,6 +762,32 @@ export const monitoringTokens = {
     handleHeight: 4,
     padding: 16,
   },
+  polygon: {
+    rayon: { fill: '#60A5FA', fillOpacity: 0.08, stroke: '#2563EB', strokeWidth: 3 },
+    area: { fill: '#FBBF24', fillOpacity: 0.15, stroke: '#1C1917', strokeWidth: 2 },
+  },
+  centerMarker: {
+    rayon: { icon: 'office-building', size: 32, bg: '#2563EB' },
+    area: { icon: 'map-marker', size: 28, bg: '#D97706' },
+  },
+  roleAbbreviations: {
+    satgas: 'STG',
+    linmas: 'LMS',
+    korlap: 'KLP',
+  },
+  entityPolygons: {
+    rayon: { fill: '#60A5FA', fillOpacity: 0.08, border: '#2563EB', borderWidth: 3, borderStyle: 'dashed' },
+    area: { fill: '#FBBF24', fillOpacity: 0.15, border: '#1C1917', borderWidth: 2, borderStyle: 'solid' },
+  },
+  centerMarkers: {
+    rayon: { icon: 'office-building', size: 32, bg: '#2563EB', text: 'white' },
+    area: { icon: 'map-marker', size: 28, bg: '#D97706', text: 'white' },
+  },
+  roleBorders: {
+    satgas: '#1C1917',
+    linmas: '#1E40AF',
+    korlap: '#92400E',
+  },
 } as const;
 ```
 
@@ -571,7 +820,28 @@ export const monitoringTokens = {
 | No workers found | Tidak ada petugas ditemukan | Empty state |
 | Connection lost | Koneksi terputus | Error state |
 | Map unavailable | Peta tidak tersedia | Error state |
+| Reassign | Reassign Petugas | Button label |
+| Reassign Worker | Reassign Petugas | Button label |
+| Understaffed | Kurang Staf | Staffing warning |
+| Understaffed detailed | Kurang X | Staffing status |
+| Requirement met | Terpenuhi | Staffing indicator |
+| Requirement short | Kurang N | Staffing indicator (N = delta) |
+| Current shift requirement | Kebutuhan Shift Saat Ini | Section label |
+| Weekday | Hari Kerja | Day type label |
+| Weekend | Akhir Pekan | Day type label |
+| Holiday | Hari Libur | Day type label |
+| Today's requirement | Kebutuhan hari ini | Staffing header |
+| Show only this worker | Tampilkan hanya petugas ini | Trail toggle |
+| Show all | Tampilkan semua | Trail toggle |
+| Start | Mulai | Trail first point |
+| End | Akhir | Trail last point |
+| From area | Dari area | Reassign label |
+| To area | Ke area | Reassign label |
+| Available workers | Petugas tersedia | Reassign list |
+| Confirm reassign | Konfirmasi Reassign | Button label |
+| Reassign now | Reassign Sekarang | Reassign confirm |
+| Reason | Alasan | Reassign form |
 
 ---
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-05

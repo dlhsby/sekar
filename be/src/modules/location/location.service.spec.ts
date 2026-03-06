@@ -6,6 +6,7 @@ import { LocationService } from './location.service';
 import { LocationLog } from './entities/location-log.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
+import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 
 describe('LocationService', () => {
   let module: TestingModule;
@@ -13,6 +14,7 @@ describe('LocationService', () => {
   let shiftsRepository: jest.Mocked<Repository<Shift>>;
   let dataSource: jest.Mocked<DataSource>;
   let locationLogsRepository: Repository<LocationLog>;
+  let statusCalculator: jest.Mocked<StatusCalculatorService>;
 
   const mockLocationLogsRepository = {
     create: jest.fn(),
@@ -40,6 +42,10 @@ describe('LocationService', () => {
     createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
   };
 
+  const mockStatusCalculator = {
+    onLocationPing: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -56,6 +62,10 @@ describe('LocationService', () => {
           provide: DataSource,
           useValue: mockDataSource,
         },
+        {
+          provide: StatusCalculatorService,
+          useValue: mockStatusCalculator,
+        },
       ],
     }).compile();
 
@@ -63,6 +73,7 @@ describe('LocationService', () => {
     locationLogsRepository = module.get<Repository<LocationLog>>(getRepositoryToken(LocationLog));
     shiftsRepository = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
     dataSource = module.get(DataSource) as jest.Mocked<DataSource>;
+    statusCalculator = module.get(StatusCalculatorService) as jest.Mocked<StatusCalculatorService>;
   });
 
   afterEach(async () => {
@@ -136,6 +147,65 @@ describe('LocationService', () => {
       await expect(service.createBatch(createDto, userId)).rejects.toThrow();
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it('should call statusCalculator.onLocationPing with the latest log after batch insert', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(mockShift);
+      const savedLogs = [
+        {
+          gps_lat: '-7.29050000',
+          gps_lng: '112.73980000',
+          accuracy_meters: '12.5',
+          battery_level: 85,
+          logged_at: new Date('2026-01-09T10:30:00Z'),
+        },
+        {
+          gps_lat: '-7.29060000',
+          gps_lng: '112.73990000',
+          accuracy_meters: '10.0',
+          battery_level: 83,
+          logged_at: new Date('2026-01-09T10:35:00Z'), // latest
+        },
+      ];
+      mockLocationLogsRepository.create.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockResolvedValue(savedLogs);
+
+      await service.createBatch(createDto, userId);
+
+      expect(mockStatusCalculator.onLocationPing).toHaveBeenCalledWith(
+        userId,
+        -7.2906,
+        112.7399,
+        10.0,
+        83,
+        savedLogs[1].logged_at,
+      );
+    });
+
+    it('should call statusCalculator.onLocationPing with null accuracy/battery when absent', async () => {
+      mockShiftsRepository.findOne.mockResolvedValue(mockShift);
+      const savedLogs = [
+        {
+          gps_lat: '-7.29050000',
+          gps_lng: '112.73980000',
+          accuracy_meters: null,
+          battery_level: null,
+          logged_at: new Date('2026-01-09T10:30:00Z'),
+        },
+      ];
+      mockLocationLogsRepository.create.mockImplementation((data) => data);
+      mockQueryRunner.manager.save.mockResolvedValue(savedLogs);
+
+      await service.createBatch(createDto, userId);
+
+      expect(mockStatusCalculator.onLocationPing).toHaveBeenCalledWith(
+        userId,
+        -7.2905,
+        112.7398,
+        null,
+        null,
+        savedLogs[0].logged_at,
+      );
     });
   });
 

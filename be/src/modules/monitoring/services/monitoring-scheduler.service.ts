@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, In } from 'typeorm';
+import { Repository, Not, In, LessThanOrEqual } from 'typeorm';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { StatusCalculatorService } from './status-calculator.service';
 import { MonitoringCacheService } from './monitoring-cache.service';
@@ -28,6 +28,7 @@ export class MonitoringSchedulerService {
     const staleUsers = await this.trackingRepository.find({
       where: {
         status: Not(In([TrackingStatus.OFFLINE])),
+        updated_at: LessThanOrEqual(staleThreshold),
       },
       order: { updated_at: 'ASC' },
       take: this.BATCH_SIZE,

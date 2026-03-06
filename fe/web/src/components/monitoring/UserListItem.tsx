@@ -6,8 +6,10 @@
  */
 
 import { cn } from '@/lib/utils/cn';
+import { formatRelativeTime } from '@/lib/utils/formatters';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import type { LiveUser, TrackingStatus } from '@/lib/api/monitoring';
+import { STATUS_DOT_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import type { LiveUser } from '@/lib/api/monitoring';
 import type { UserRole } from '@/types/models';
 
 export interface UserListItemProps {
@@ -16,34 +18,8 @@ export interface UserListItemProps {
   onClick: () => void;
 }
 
-const STATUS_DOT_COLORS: Record<TrackingStatus, string> = {
-  active: 'bg-green-500',
-  inactive: 'bg-amber-400',
-  outside_area: 'bg-purple-500',
-  missing: 'bg-red-500 animate-pulse',
-  offline: 'bg-gray-400',
-};
-
-const STATUS_LABELS: Record<TrackingStatus, string> = {
-  active: 'Aktif',
-  inactive: 'Idle',
-  outside_area: 'Luar Area',
-  missing: 'Hilang',
-  offline: 'Offline',
-};
-
-function formatRelativeTime(isoString: string): string {
-  const diff = Date.now() - new Date(isoString).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'baru saja';
-  if (minutes < 60) return `${minutes} mnt lalu`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} jam lalu`;
-  return `${Math.floor(hours / 24)} hr lalu`;
-}
-
 export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
-  const dotColor = STATUS_DOT_COLORS[user.status] ?? 'bg-gray-400';
+  const dotColor = STATUS_DOT_CLASSES[user.status] ?? 'bg-[var(--color-status-offline)]';
   const statusLabel = STATUS_LABELS[user.status] ?? user.status;
   const roleLabel = ROLE_LABELS[user.role as UserRole] || user.role;
   const isLowBattery = user.battery_level !== null && user.battery_level < 20;

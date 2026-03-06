@@ -1,10 +1,19 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  Optional,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between } from 'typeorm';
 import { LocationLog } from './entities/location-log.entity';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
 import { Shift } from '../shifts/entities/shift.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 
 /**
  * Location Service
@@ -22,6 +31,9 @@ export class LocationService {
     @InjectRepository(Shift)
     private shiftsRepository: Repository<Shift>,
     private dataSource: DataSource,
+    @Optional()
+    @Inject(forwardRef(() => StatusCalculatorService))
+    private readonly statusCalculator: StatusCalculatorService | undefined,
   ) {}
 
   /**
@@ -71,10 +83,29 @@ export class LocationService {
         });
       });
 
-      await queryRunner.manager.save(LocationLog, locationEntities);
+      const savedLogs = await queryRunner.manager.save(LocationLog, locationEntities);
       await queryRunner.commitTransaction();
 
       this.logger.log(`Successfully inserted ${locationEntities.length} location logs`);
+
+      if (this.statusCalculator && savedLogs?.length > 0) {
+        const latestLog = savedLogs.reduce((latest, log) =>
+          log.logged_at > latest.logged_at ? log : latest,
+        );
+        await this.statusCalculator
+          .onLocationPing(
+            userId,
+            parseFloat(latestLog.gps_lat.toString()),
+            parseFloat(latestLog.gps_lng.toString()),
+            latestLog.accuracy_meters ? parseFloat(latestLog.accuracy_meters.toString()) : null,
+            latestLog.battery_level ?? null,
+            latestLog.logged_at,
+          )
+          .catch((err) => this.logger.error(
+            `StatusCalculator.onLocationPing failed for user ${userId}: ${err.message}`,
+            err.stack,
+          ));
+      }
 
       return { count: locationEntities.length };
     } catch (error) {

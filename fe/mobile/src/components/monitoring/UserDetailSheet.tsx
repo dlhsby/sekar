@@ -270,7 +270,7 @@ function DaySummaryContent({ daySummary, user }: DaySummaryContentProps): React.
       </View>
 
       {/* Activities Today */}
-      {daySummary && daySummary.activities_today.length > 0 && (
+      {daySummary && Array.isArray(daySummary.activities_today) && daySummary.activities_today.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             Aktivitas Hari Ini ({daySummary.activities_today.length})
@@ -288,7 +288,7 @@ function DaySummaryContent({ daySummary, user }: DaySummaryContentProps): React.
       )}
 
       {/* Tasks Today */}
-      {daySummary && daySummary.tasks_today.length > 0 && (
+      {daySummary && Array.isArray(daySummary.tasks_today) && daySummary.tasks_today.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             Tugas Hari Ini ({daySummary.tasks_today.length})

@@ -17,6 +17,7 @@ import {
   type LiveUser,
   type LiveUsersFilters,
   type UserStatusChangedEvent,
+  type UserAreaEvent,
 } from '@/lib/api/monitoring';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
@@ -25,23 +26,20 @@ import { MonitoringMap } from '@/components/monitoring/MonitoringMap';
 import { MonitoringSidePanel } from '@/components/monitoring/MonitoringSidePanel';
 import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
 import { LocationTimeline } from '@/components/monitoring/LocationTimeline';
+import { StaffingSummaryCard } from '@/components/monitoring/StaffingSummaryCard';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { MONITORING_ROLES, hasRole } from '@/lib/constants/roles';
 import { monitoringKeys } from '@/lib/api/monitoring';
 import { cn } from '@/lib/utils/cn';
+import { formatTime } from '@/lib/utils/formatters';
 import type { UserRole } from '@/types/models';
 import io, { type Socket } from 'socket.io-client';
+import { getCookie } from '@/lib/utils/cookies';
+import { toast } from 'sonner';
 
 type PanelView = 'list' | 'detail' | 'timeline';
-
-function formatTimeShort(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export default function MonitoringPage() {
   const { user, loading: authLoading } = useAuth();
@@ -126,11 +124,13 @@ export default function MonitoringPage() {
   // WebSocket integration
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const token = getCookie('access_token');
     const socket = io(apiUrl, {
       path: '/socket.io',
       transports: ['websocket'],
       reconnectionDelay: 2000,
       reconnectionDelayMax: 10000,
+      auth: { token },
     });
 
     socketRef.current = socket;
@@ -165,10 +165,15 @@ export default function MonitoringPage() {
           };
         }
       );
+      if (event.new_status === 'missing') {
+        toast.warning(`${event.user_name} tidak terdeteksi`, {
+          description: event.area_name ? `Area: ${event.area_name}` : undefined,
+        });
+      }
     });
 
     // User left area
-    socket.on('user:left-area', (event: { user_id: string }) => {
+    socket.on('user:left-area', (event: UserAreaEvent) => {
       queryClient.setQueryData(
         monitoringKeys.liveUsers(filters),
         (old: typeof liveUsersData) => {
@@ -183,10 +188,11 @@ export default function MonitoringPage() {
           };
         }
       );
+      toast.info(`${event.user_name} keluar dari ${event.area_name}`);
     });
 
     // User entered area
-    socket.on('user:entered-area', (event: { user_id: string }) => {
+    socket.on('user:entered-area', (event: UserAreaEvent) => {
       queryClient.setQueryData(
         monitoringKeys.liveUsers(filters),
         (old: typeof liveUsersData) => {
@@ -201,6 +207,7 @@ export default function MonitoringPage() {
           };
         }
       );
+      toast.success(`${event.user_name} masuk ke ${event.area_name}`);
     });
 
     return () => {
@@ -276,7 +283,7 @@ export default function MonitoringPage() {
               </span>
               {liveUsersData && (
                 <span className="text-xs text-nb-gray-400">
-                  · {formatTimeShort(liveUsersData.generated_at)}
+                  · {formatTime(liveUsersData.generated_at)}
                 </span>
               )}
             </div>
@@ -344,6 +351,7 @@ export default function MonitoringPage() {
             areas={allAreas}
             selectedUserId={selectedUser?.id ?? null}
             onUserSelect={handleUserSelect}
+            trailPoints={panelView === 'timeline' ? locationHistory?.points : undefined}
             className="h-full"
           />
         </div>
@@ -357,12 +365,17 @@ export default function MonitoringPage() {
           )}
         >
           {panelView === 'list' && (
-            <MonitoringSidePanel
-              data={liveUsersData}
-              isLoading={usersLoading}
-              selectedUserId={selectedUser?.id ?? null}
-              onUserSelect={handleUserSelect}
-            />
+            <>
+              {isAreaView && areaFilter !== 'all' && (
+                <StaffingSummaryCard areaId={areaFilter} />
+              )}
+              <MonitoringSidePanel
+                data={liveUsersData}
+                isLoading={usersLoading}
+                selectedUserId={selectedUser?.id ?? null}
+                onUserSelect={handleUserSelect}
+              />
+            </>
           )}
 
           {panelView === 'detail' && (

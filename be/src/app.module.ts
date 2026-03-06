@@ -16,7 +16,6 @@ import { ActivitiesModule } from './modules/activities/activities.module';
 import { LocationModule } from './modules/location/location.module';
 import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { SharedModule } from './shared/shared.module';
-import { SeedModule } from './database/seeds/seed.module';
 // Phase 2 modules
 import { RayonsModule } from './modules/rayons/rayons.module';
 import { ShiftDefinitionsModule } from './modules/shift-definitions/shift-definitions.module';
@@ -103,7 +102,6 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
     ActivitiesModule, // Depends on Shifts, SharedModule (Phase 2C: renamed from ReportsModule)
     LocationModule, // Depends on Shifts
     SupervisorModule, // Depends on all above modules
-    SeedModule,
     // Phase 2 modules
     RayonsModule, // Geographic sectors
     ShiftDefinitionsModule, // Fixed shift definitions

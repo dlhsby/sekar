@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { StatusCalculatorService, StatusInput } from './status-calculator.service';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
@@ -12,7 +11,6 @@ describe('StatusCalculatorService', () => {
   let service: StatusCalculatorService;
   let trackingRepository: any;
   let cacheService: any;
-  let eventEmitter: any;
   let eventsGateway: any;
   let userRepository: any;
   let areaRepository: any;
@@ -34,10 +32,6 @@ describe('StatusCalculatorService', () => {
       getThresholds: jest.fn().mockResolvedValue(defaultThresholds),
       getGeofencing: jest.fn().mockResolvedValue({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
       getAreaBoundary: jest.fn().mockResolvedValue(null),
-    };
-
-    eventEmitter = {
-      emit: jest.fn(),
     };
 
     eventsGateway = {
@@ -62,7 +56,6 @@ describe('StatusCalculatorService', () => {
         { provide: getRepositoryToken(User), useValue: userRepository },
         { provide: getRepositoryToken(Area), useValue: areaRepository },
         { provide: MonitoringCacheService, useValue: cacheService },
-        { provide: EventEmitter2, useValue: eventEmitter },
         { provide: EventsGateway, useValue: eventsGateway },
       ],
     }).compile();
@@ -144,7 +137,7 @@ describe('StatusCalculatorService', () => {
   });
 
   describe('onClockIn', () => {
-    it('should upsert tracking status and emit event', async () => {
+    it('should upsert tracking status to ACTIVE', async () => {
       await service.onClockIn('user-1', 'shift-1', 'area-1', 'sd-1');
 
       expect(trackingRepository.upsert).toHaveBeenCalledWith(
@@ -157,20 +150,11 @@ describe('StatusCalculatorService', () => {
         }),
         ['user_id'],
       );
-
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        'monitoring.status-changed',
-        expect.objectContaining({
-          userId: 'user-1',
-          previousStatus: TrackingStatus.OFFLINE,
-          newStatus: TrackingStatus.ACTIVE,
-        }),
-      );
     });
   });
 
   describe('onClockOut', () => {
-    it('should set status to OFFLINE and emit event', async () => {
+    it('should set status to OFFLINE', async () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         status: TrackingStatus.ACTIVE,
@@ -186,14 +170,6 @@ describe('StatusCalculatorService', () => {
           status: TrackingStatus.OFFLINE,
         }),
         ['user_id'],
-      );
-
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        'monitoring.status-changed',
-        expect.objectContaining({
-          userId: 'user-1',
-          newStatus: TrackingStatus.OFFLINE,
-        }),
       );
     });
   });
@@ -239,7 +215,10 @@ describe('StatusCalculatorService', () => {
       expect(trackingRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should emit user-left-area when transitioning outside', async () => {
+    it('should broadcast user-left-area via WebSocket when transitioning outside', async () => {
+      const mockUser = { id: 'user-1', full_name: 'Test User', role: 'satgas' };
+      const mockArea = { id: 'area-1', name: 'Test Area', rayon_id: 'rayon-1' };
+
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
@@ -259,13 +238,15 @@ describe('StatusCalculatorService', () => {
         [[112.73, -7.28], [112.735, -7.28], [112.735, -7.285], [112.73, -7.285], [112.73, -7.28]],
       ]);
 
+      userRepository.findOne.mockResolvedValue(mockUser);
+      areaRepository.findOne.mockResolvedValue(mockArea);
+
       await service.onLocationPing(
         'user-1', -7.5, 112.9, 10, 80, new Date(),
       );
 
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        'monitoring.user-left-area',
-        expect.objectContaining({ userId: 'user-1', areaId: 'area-1' }),
+      expect(eventsGateway.emitUserLeftArea).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 'user-1', area_id: 'area-1' }),
       );
     });
   });
@@ -277,8 +258,10 @@ describe('StatusCalculatorService', () => {
       expect(result).toBeNull();
     });
 
-    it('should emit event on status change', async () => {
+    it('should broadcast status change via WebSocket', async () => {
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const mockUser = { id: 'user-1', full_name: 'Test User', role: 'satgas' };
+
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
@@ -286,24 +269,28 @@ describe('StatusCalculatorService', () => {
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(Date.now() - 20 * 60 * 1000), // 20 min ago
+        last_latitude: -7.29,
+        last_longitude: 112.74,
         updated_at: fiveMinAgo,
       });
 
       trackingRepository.save.mockImplementation((entity: any) => Promise.resolve(entity));
+      userRepository.findOne.mockResolvedValue(mockUser);
+      areaRepository.findOne.mockResolvedValue(null);
 
       const result = await service.recalculate('user-1');
 
       expect(result?.status).toBe(TrackingStatus.INACTIVE);
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        'monitoring.status-changed',
+      expect(eventsGateway.emitUserStatusChanged).toHaveBeenCalledWith(
         expect.objectContaining({
-          previousStatus: TrackingStatus.ACTIVE,
-          newStatus: TrackingStatus.INACTIVE,
+          user_id: 'user-1',
+          previous_status: TrackingStatus.ACTIVE,
+          new_status: TrackingStatus.INACTIVE,
         }),
       );
     });
 
-    it('should not emit event when status unchanged', async () => {
+    it('should not broadcast when status unchanged', async () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
@@ -316,7 +303,7 @@ describe('StatusCalculatorService', () => {
 
       await service.recalculate('user-1');
 
-      expect(eventEmitter.emit).not.toHaveBeenCalled();
+      expect(eventsGateway.emitUserStatusChanged).not.toHaveBeenCalled();
     });
   });
 });

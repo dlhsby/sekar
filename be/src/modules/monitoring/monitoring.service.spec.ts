@@ -3,6 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MonitoringService } from './monitoring.service';
+import { MonitoringStatsService } from './services/monitoring-stats.service';
+import { MonitoringUserService } from './services/monitoring-user.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -194,6 +196,8 @@ describe('MonitoringService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringService,
+        MonitoringStatsService,
+        MonitoringUserService,
         {
           provide: getRepositoryToken(User),
           useValue: {
@@ -704,7 +708,7 @@ describe('MonitoringService', () => {
   describe('helper methods - edge cases', () => {
     it('should handle empty area IDs in countWorkersByAreaIds', async () => {
       const qb = createMockQueryBuilder([], 0);
-      shiftRepository.createQueryBuilder = jest.fn(() => qb as any);
+      trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
 
       // This is a private method, so we test it indirectly through getRayonStats
       rayonRepository.findOne.mockResolvedValue(mockRayon);
@@ -713,8 +717,8 @@ describe('MonitoringService', () => {
 
       await service.getRayonStats('rayon-1');
 
-      // Empty area IDs should not cause errors
-      expect(shiftRepository.createQueryBuilder).not.toHaveBeenCalled();
+      // Empty area IDs should not cause errors - trackingRepository not called for empty arrays
+      expect(trackingRepository.createQueryBuilder).not.toHaveBeenCalled();
     });
 
     it('should handle area without rayon_id in getAreaStats', async () => {

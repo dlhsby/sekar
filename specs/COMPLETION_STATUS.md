@@ -1,9 +1,9 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** March 3, 2026 (Phase 2D monitoring reimplementation spec created)
-**Current Phase:** Phase 2D Real-Time Monitoring - 🟡 Planning
+**Last Updated:** March 5, 2026 (Phase 2D reviewed & refactored, pending merge & deploy)
+**Current Phase:** Phase 2D Real-Time Monitoring - ✅ Reviewed & Refactored
 **Next Phase:** Phase 3 Polishing & E2E Testing
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 0% 🟡 PLANNING | Phase 3: 0% | Phase 4: 0%
+**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ CODE-COMPLETE | Phase 3: 0% | Phase 4: 0%
 
 ---
 
@@ -30,12 +30,12 @@
 
 | Component | Status | Progress | Tests | Coverage | Notes |
 |-----------|--------|----------|-------|----------|-------|
-| **Backend** | ✅ Phase 2C Complete | 100% | 961 passing (54 suites) | 95.64% stmts / 87.48% branches ✅ | Phase 2C: Activities, Schedules, Overtime, Monitoring scope auth |
-| **Mobile** | ✅ Phase 2C Complete | 100% | 3264 (3257 pass, 7 skip / 133 suites) | 85.3% stmts ✅ | 5 new + 12 modified screens, unified 8-role navigator; Lembur 11-point client feedback + deep review pass complete |
-| **Web** | ✅ Phase 2C Complete | 100% | 1213 (1161 pass, 52 skip / 60 suites) | 96.46% stmts / 91.01% branches ✅ | 8-role system, activities/schedules/overtime/tasks, monitoring |
-| **Database** | ✅ Phase 2C Complete | 100% | 957 BE tests | - | 18 tables, migrations M0-M4 executed in production |
-| **Documentation** | ✅ Phase 2C Complete | 100% | 12 spec files | - | Database, backend, mobile, web, testing, status docs complete |
-| **DevOps** | ✅ Phase 2C Deployed | 100% | - | - | Backend + Web deployed to production (Feb 16) |
+| **Backend** | ✅ Phase 2D Code-Complete | 100% | 1,095 passing | 92.15% stmts / 80.64% branches ✅ | Phase 2D: StatusCalculator, monitoring config, 120 endpoints |
+| **Mobile** | ✅ Phase 2D Code-Complete | 100% | 3,281 passing | 80.31%+ stmts ✅ | 21 screens, four-status map, WebSocket real-time updates |
+| **Web** | ✅ Phase 2D Code-Complete | 100% | 1,336+ passing | 96%+ stmts ✅ | 21 pages + config, Mapbox GL monitoring, socket.io integration |
+| **Database** | ✅ Phase 2D Code-Complete | 100% | 1,095 BE tests | - | 20 tables (+user_tracking_status, monitoring_configs) |
+| **Documentation** | ✅ Phase 2D Complete | 100% | 12+ spec files | - | Updated specs, ADR-011, deployment guide |
+| **DevOps** | ✅ Phase 2C Deployed | 100% | - | - | Backend + Web deployed to production (Feb 16); Phase 2D pending deploy |
 
 ---
 
@@ -47,6 +47,7 @@
 | 2A | Enhanced Features | ✅ Complete | 2 weeks |
 | 2B | UI/UX Revamp | ✅ Complete | 3-4 weeks |
 | **2C** | **Client Feedback** | **✅ Complete & Deployed (Feb 16, 2026)** | **4-6 weeks** |
+| **2D** | **Real-Time Monitoring** | **✅ Code-Complete (Mar 4, 2026) — pending merge & deploy** | **1 week** |
 | 3 | Polishing & E2E Testing | Not Started | 2-3 weeks |
 | 4 | Advanced Features (Analytics + Assets + iOS) | Not Started | 6-8 weeks |
 

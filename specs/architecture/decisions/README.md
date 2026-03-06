@@ -50,6 +50,9 @@ Each ADR follows this structure:
 | [006](./ADR-006-postgresql-partitioning.md) | PostgreSQL Partitioning for Location Logs | Accepted | 2026-01-16 |
 | [007](./ADR-007-react-native-over-flutter.md) | React Native over Flutter | Accepted | 2026-01-09 |
 | [008](./ADR-008-modular-monolith.md) | Modular Monolith over Microservices | Accepted | 2026-01-09 |
+| [009](./ADR-009-phase2c-role-system-overhaul.md) | Phase 2C 8-Role System Overhaul | Accepted | 2026-02-10 |
+| [010](./ADR-010-phase2c-terminology-cleanup.md) | Phase 2C Terminology Cleanup | Accepted | 2026-02-10 |
+| [011](./ADR-011-phase2d-monitoring-status-model.md) | Phase 2D Materialized Status Tracking with Configurable Thresholds | Accepted | 2026-03-03 |
 
 ## How to Create a New ADR
 
@@ -65,5 +68,5 @@ Each ADR follows this structure:
 - [Tech Stack](../tech-stack.md)
 - [Business Rules](../../business-rules.md)
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-03-03
 **Maintained By:** System Architect

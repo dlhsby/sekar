@@ -106,7 +106,6 @@ export class MonitoringConfigService {
   }
 
   private async loadAreaBoundary(areaId: string): Promise<number[][][] | null> {
-    const { DataSource } = await import('typeorm');
     const area = await this.configRepository.manager.query(
       'SELECT boundary_polygon FROM areas WHERE id = $1',
       [areaId],

@@ -539,6 +539,6 @@ ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
 
 ---
 
-**Last Deployment:** Run 21852949840 (successful - Phase 2B)
-**Next Deployment:** Phase 2C (infrastructure ready, awaiting deployment window)
-**Deployment Plan:** See `PHASE_2C_DEPLOYMENT_SUMMARY.md` in project root
+**Last Deployment:** Phase 2C (Feb 16, 2026) — api.sekar.wahyutrip.com + sekar.wahyutrip.com
+**Next Deployment:** Phase 2D (branch `f/phase-2-d-monitoring`, pending merge)
+**Deployment Guide:** See `specs/deployment/phase-2-deployment.md`

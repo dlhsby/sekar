@@ -9,7 +9,9 @@ import { ArrowLeft, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide
 import { Badge } from '@/components/ui';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { cn } from '@/lib/utils/cn';
-import type { UserDaySummary, TrackingStatus } from '@/lib/api/monitoring';
+import { formatRelativeTime, formatDuration, formatTime } from '@/lib/utils/formatters';
+import { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import type { UserDaySummary } from '@/lib/api/monitoring';
 import type { UserRole } from '@/types/models';
 
 export interface UserDetailPanelProps {
@@ -18,22 +20,6 @@ export interface UserDetailPanelProps {
   onBack: () => void;
   onViewLocationHistory: () => void;
 }
-
-const STATUS_COLORS: Record<TrackingStatus, string> = {
-  active: 'bg-green-100 text-green-800 border-green-300',
-  inactive: 'bg-amber-100 text-amber-800 border-amber-300',
-  outside_area: 'bg-purple-100 text-purple-800 border-purple-300',
-  missing: 'bg-red-100 text-red-800 border-red-300',
-  offline: 'bg-gray-100 text-gray-700 border-gray-300',
-};
-
-const STATUS_LABELS: Record<TrackingStatus, string> = {
-  active: 'Aktif',
-  inactive: 'Idle',
-  outside_area: 'Luar Area',
-  missing: 'Hilang',
-  offline: 'Offline',
-};
 
 const TASK_STATUS_VARIANT: Record<
   string,
@@ -45,30 +31,6 @@ const TASK_STATUS_VARIANT: Record<
   verified: 'success',
   rejected: 'destructive',
 };
-
-function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}m`;
-  return `${h}j ${m}m`;
-}
-
-function formatRelativeTime(isoString: string): string {
-  const diff = Date.now() - new Date(isoString).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'baru saja';
-  if (minutes < 60) return `${minutes} mnt lalu`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} jam lalu`;
-  return `${Math.floor(hours / 24)} hr lalu`;
-}
-
-function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export function UserDetailPanel({
   summary,
@@ -104,7 +66,7 @@ export function UserDetailPanel({
   }
 
   const statusClass =
-    STATUS_COLORS[summary.status] ?? 'bg-gray-100 text-gray-700 border-gray-300';
+    STATUS_BADGE_CLASSES[summary.status] ?? 'bg-[var(--color-status-offline-bg)] text-[#374151] border-[var(--color-status-offline)]';
   const statusLabel = STATUS_LABELS[summary.status] ?? summary.status;
   const roleLabel = ROLE_LABELS[summary.role as UserRole] || summary.role;
 
@@ -180,7 +142,7 @@ export function UserDetailPanel({
                 <span className="font-semibold">{formatDuration(summary.shift.duration_minutes)}</span>
               </div>
               {summary.shift.outside_boundary && (
-                <div className="text-purple-700 font-semibold">Di luar batas area</div>
+                <div className="text-[var(--color-status-outside)] font-semibold">Di luar batas area</div>
               )}
             </div>
           </div>
@@ -217,7 +179,7 @@ export function UserDetailPanel({
               </div>
               <div
                 className={
-                  summary.last_location.is_within_area ? 'text-green-700' : 'text-purple-700'
+                  summary.last_location.is_within_area ? 'text-[var(--color-status-active)]' : 'text-[var(--color-status-outside)]'
                 }
               >
                 {summary.last_location.is_within_area ? 'Dalam area' : 'Di luar area'}

@@ -1,8 +1,8 @@
 # Phase 2D: Real-Time Monitoring - Implementation Status
 
 **Status:** ✅ COMPLETE
-**Last Updated:** March 4, 2026
-**Overall Progress:** 100% (2D-1 → 2D-7 all complete)
+**Last Updated:** March 5, 2026
+**Overall Progress:** 100% (2D-1 → 2D-9 all complete)
 **Branch:** `f/phase-2-d-monitoring`
 **Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), ADR-011 (new)
 
@@ -123,14 +123,55 @@
 
 ---
 
+## Post-Review Refactoring ✅ COMPLETE (March 5, 2026)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Fix data inconsistency (city/rayon stats) | ✅ Done | `countWorkersByAreaIds()` now queries `user_tracking_status` instead of `shifts` |
+| Upgrade error logging | ✅ Done | StatusCalculator `.catch()` handlers upgraded from `warn` to `error` with stack trace |
+| Complete DTO barrel exports | ✅ Done | Added 5 missing exports to `dto/index.ts` |
+| Refactor MonitoringService | ✅ Done | Split 1,136→220 lines; extracted `MonitoringStatsService` (549), `MonitoringUserService` (458) |
+| Verify Postman collection | ✅ Done | All 9 endpoints present with examples |
+| Update specs/documentation | ✅ Done | Endpoint counts, test counts verified |
+
+## Web Review & Refactoring ✅ COMPLETE (March 5, 2026)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Create shared constants file (`monitoring.ts`) | ✅ Done | WCAG 2.1 AA colors, labels, icons, Tailwind class maps |
+| Add CSS variables to `globals.css` | ✅ Done | `--color-status-*` vars in `@theme` block |
+| Extract shared utilities | ✅ Done | `useDebounce` hook, `formatters.ts` (6 functions) |
+| Fix status colors & labels (WCAG compliance) | ✅ Done | All 5 components updated to CSS variables |
+| Enhanced map markers | ✅ Done | 36px markers, role SVG icons, name labels, per-status animations, 44px touch targets |
+| Config page restructure | ✅ Done | JSON textarea → structured form with sections, validation, toggles |
+| Create `StaffingSummaryCard` component | ✅ Done | Per-role progress bars, understaffing warnings |
+| Add toast notifications (sonner) | ✅ Done | Missing status, left-area, entered-area events |
+| Map enhancements | ✅ Done | FullscreenControl, style toggle (streets/satellite), trail polylines |
+| Update test assertions | ✅ Done | 6 test files updated for new CSS classes and labels |
+
+## Mobile Review & Refactoring ✅ COMPLETE (March 5, 2026)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Register `monitoringReducer` in Redux store | ✅ Done | CRITICAL: store.ts was missing monitoring slice |
+| Fix type safety in MapDashboardScreen | ✅ Done | Replace `as any` casts, string dispatch, stale closure |
+| Update barrel exports for Phase 2D components | ✅ Done | 6 new exports, deprecated `UserInfoCard` |
+| Register `AttendanceScreen` in navigation | ✅ Done | Hidden tab with `tabBarButton: () => null` |
+| Fix `UserListCard` relative time format | ✅ Done | Indonesian: `baru saja`, `dtk lalu`, `mnt lalu`, `jam lalu` |
+| Add Phase 2D component tests (~212 new) | ✅ Done | monitoringSlice, StatusSummaryBar, UserListStrip, UserListCard, UserDetailSheet, LocationTrail, MonitoringFilterModal, monitoringApi |
+| Extract monitoring role constants | ✅ Done | `ROLES_WITH_RAYON`, `ROLES_WITH_FIXED_RAYON`, `ROLES_WITHOUT_RAYON` |
+| Consolidate duplicate `LiveUsersResponse` type | ✅ Done | Re-export from `models.types` in `api.types` |
+
+---
+
 ## Quality Summary
 
 | Metric | Target | Current |
 |--------|--------|---------|
 | Backend test coverage (stmts) | >85% | 92.15% ✅ |
 | Backend test coverage (branch) | >80% | 80.64% ✅ |
-| Backend tests | >1,050 | 1,088 passing ✅ |
-| Mobile tests | >3,400 | 3,281 passing ✅ |
+| Backend tests | >1,050 | 1,095 passing ✅ |
+| Mobile tests | >3,400 | 3,493 passing ✅ |
 | New backend endpoints | 7 | 7 ✅ |
 | New web components | 7 | 7 ✅ |
 | New mobile components | 6 | 7 ✅ |
@@ -141,8 +182,8 @@
 
 | Component | Phase 2C Baseline | Phase 2D Current |
 |-----------|-------------------|-----------------|
-| **Backend** | 16 modules, 113 endpoints, 888 tests | 16 modules, 120 endpoints, 1,075 tests |
-| **Mobile** | 17 screens, 3,264 tests | 🔄 2D-5 in progress |
+| **Backend** | 16 modules, 113 endpoints, 888 tests | 16 modules, 120 endpoints, 1,095 tests |
+| **Mobile** | 17 screens, 3,264 tests | 21 screens, 3,493 tests |
 | **Web** | 20 pages, 1,336 tests | 21 pages (+1 config), all components done |
 | **Database** | 18 tables | 20 tables (+2: user_tracking_status, monitoring_configs) |
 
@@ -153,7 +194,7 @@
 ```bash
 # Backend
 cd be
-npm test                          # All tests (1,075 passing)
+npm test                          # All tests (1,095 passing)
 npm run test:cov                  # With coverage
 npm test -- --testPathPattern monitoring  # Monitoring module only
 
@@ -181,4 +222,49 @@ npm run test:e2e                  # All Playwright tests
 
 ---
 
-**Last Updated:** 2026-03-04
+## Manual Verification Checklist
+
+### Database
+- [ ] `user_tracking_status` table exists with correct columns
+- [ ] `monitoring_configs` table exists with seed data (4 config keys)
+- [ ] Indexes on `user_tracking_status(user_id)`, `user_tracking_status(area_id, status)` exist
+
+### API Endpoints
+- [ ] `GET /monitoring/city` — returns flat CityStats
+- [ ] `GET /monitoring/rayon/:id` — returns flat RayonMonitoringStats
+- [ ] `GET /monitoring/area/:id` — returns flat AreaMonitoringStats
+- [ ] `GET /monitoring/live-users` — returns LiveUsersResponse with total_active/inactive/outside_area/missing/offline
+- [ ] `GET /monitoring/users/:id/day-summary` — returns UserDaySummary
+- [ ] `GET /monitoring/users/:id/location-history` — returns LocationHistory
+- [ ] `GET /monitoring/staffing-summary` — returns StaffingSummaryResponse
+- [ ] `GET /monitoring/config` — returns all config items (admin only)
+- [ ] `PATCH /monitoring/config/:key` — updates config item (admin only)
+
+### WebSocket Events
+- [ ] `user:location` event fires on location ping (includes status, is_within_area)
+- [ ] `user:status-changed` event fires on status transitions
+- [ ] `user:left-area` / `user:entered-area` events fire on boundary crossings
+- [ ] JWT auth required for WebSocket connection
+
+### Web UI
+- [ ] `/monitoring` page loads with Mapbox map (65% map + 35% panel)
+- [ ] Status cards show correct counts and are clickable filters
+- [ ] User list displays with status dots, battery, role
+- [ ] Click user → detail panel with shift info, activities, WhatsApp links
+- [ ] Location timeline renders GPS trail
+- [ ] `/monitoring/config` page allows threshold editing (admin only)
+
+### Mobile UI
+- [ ] MapDashboardScreen shows Google Maps with area polygons
+- [ ] Four-status markers (active=green, inactive=yellow, outside_area=red, missing=gray)
+- [ ] StatusSummaryBar shows counts for each status
+- [ ] UserListStrip horizontal scroll
+- [ ] UserDetailSheet opens on marker press
+- [ ] LocationTrail shows polyline with inside/outside segments
+- [ ] MonitoringFilterModal cascading filters work
+- [ ] WebSocket real-time updates reflect on markers
+- [ ] Cluster markers appear when zoomed out
+
+---
+
+**Last Updated:** 2026-03-05

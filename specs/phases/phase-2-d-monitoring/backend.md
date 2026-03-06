@@ -1,10 +1,11 @@
 # Phase 2D: Backend Requirements
 
-**Last Updated:** 2026-03-03
-**Status:** Planning
+**Last Updated:** 2026-03-05
+**Status:** ✅ COMPLETE (Implementation + Review)
 **Framework:** NestJS 11.x, TypeScript 5.9, TypeORM
-**Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), ADR-011 (new)
+**Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md)
 **See also:** [Database Schema](./database.md), [README](./README.md)
+**Tests:** 1,095 passing (64 suites, 92.15% stmt, 80.64% branch)
 
 ---
 
@@ -656,6 +657,11 @@ export class StaffingSummaryItemDto {
     offline: number;
     total_assigned: number;
     total_required: number;              // From shift_definitions for current shift
+    requirements_by_day_type: {
+      weekday: number;
+      weekend: number;
+      holiday: number;
+    };
   }[];
   total_active: number;
   total_idle: number;
@@ -666,10 +672,186 @@ export class StaffingSummaryItemDto {
 }
 
 export class StaffingSummaryResponseDto {
+  current_day_type: DayType;                    // NEW: resolved day type
+  current_day_type_label: string;               // NEW: "Hari Kerja" | "Akhir Pekan" | "Hari Libur"
   items: StaffingSummaryItemDto[];
   generated_at: Date;
 }
 ```
+
+### D5a. Day-Type Resolution for Staffing Queries (NEW - Gap Fix)
+
+**Problem:** `area_staff_requirements` table has `day_type: DayType` (WEEKDAY/WEEKEND/HOLIDAY) but current staffing queries do NOT filter by day_type, causing incorrect counts (all day types summed).
+
+**Required utility:**
+
+```typescript
+/**
+ * Resolve the current day type for a given date.
+ * 1. Check special_day_overrides table for exact date match
+ * 2. Fall back to day-of-week (Mon-Fri = WEEKDAY, Sat-Sun = WEEKEND)
+ */
+async getCurrentDayType(date?: Date): Promise<DayType> {
+  const targetDate = date ?? new Date();
+
+  // Check special_day_overrides first
+  const override = await this.specialDayOverrideRepo.findOne({
+    where: { date: targetDate },
+  });
+  if (override) return override.day_type;
+
+  // Fall back to day-of-week
+  const dayOfWeek = targetDate.getDay();
+  return (dayOfWeek === 0 || dayOfWeek === 6) ? DayType.WEEKEND : DayType.WEEKDAY;
+}
+```
+
+**All staffing queries MUST filter by current day_type:**
+- `MonitoringService.buildStaffingItem()` — filter `area_staff_requirements` by resolved day_type
+- `MonitoringStatsService.getAreaStaffRequirements()` — filter by resolved day_type
+- `MonitoringStatsService.countRequiredWorkersByAreaIds()` — filter by resolved day_type
+
+**Enhanced StaffingSummaryResponseDto** (add fields):
+
+```typescript
+export class StaffingSummaryResponseDto {
+  items: StaffingSummaryItemDto[];
+  current_day_type: DayType;                    // NEW: 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY'
+  current_day_type_label: string;               // NEW: 'Hari Kerja' | 'Akhir Pekan' | 'Hari Libur'
+  generated_at: Date;
+}
+
+// Each StaffingSummaryItemDto role entry also gets:
+export interface StaffingRoleDto {
+  // ... existing fields ...
+  total_required: number;                       // NOW: uses requirement for current day_type only
+  requirements_by_day_type: {                   // NEW: for comparison context
+    weekday: number;
+    weekend: number;
+    holiday: number;
+  };
+}
+```
+
+**Enhanced AreaStatsDto** (add fields):
+```typescript
+export class AreaStatsDto {
+  // ... existing fields ...
+  current_day_type: DayType;                    // NEW
+  current_day_type_label: string;               // NEW
+}
+```
+
+### D6. `GET /monitoring/boundaries` (NEW)
+
+Returns all rayon and area boundaries in a single call for map rendering.
+
+**Auth:** `@Roles(...MONITORING_AREA)` with scope check
+
+```typescript
+export class BoundariesResponseDto {
+  rayons: RayonBoundaryDto[];
+  areas: AreaBoundaryDto[];
+  generated_at: Date;
+}
+
+export class RayonBoundaryDto {
+  id: string;
+  name: string;
+  code: string;
+  boundary_polygon: GeoJsonPolygon | null;      // Auto-computed convex hull of child areas
+  center_lat: number | null;                     // Centroid or manual override (rayon office)
+  center_lng: number | null;
+  area_count: number;
+  is_understaffed: boolean;                      // Any child area understaffed
+  understaffed_area_count: number;
+}
+
+export class AreaBoundaryDto {
+  id: string;
+  name: string;
+  rayon_id: string;
+  rayon_name: string;
+  boundary_polygon: GeoJsonPolygon | null;
+  center_lat: number;                            // Area GPS center
+  center_lng: number;
+  radius_meters: number;
+  is_understaffed: boolean;
+  staffing_summary: {                            // Inline staffing for center marker tap
+    roles: {
+      role: string;
+      active: number;
+      total_required: number;
+      is_met: boolean;
+    }[];
+  };
+}
+```
+
+**Caching:** Rayon boundaries cached with 5-min TTL in `MonitoringCacheService`.
+
+**Rayon boundary auto-computation:**
+- When an area's boundary_polygon changes (via `PUT /areas/:id/boundary`), recompute the parent rayon's boundary as the convex hull of all child area polygons
+- Center position defaults to centroid but is manually overridable (for rayon office location)
+- Hook into area CRUD: `AreasService.updateBoundary()` -> `RayonBoundaryService.recompute(rayonId)`
+
+### D7. `POST /monitoring/reassign` (NEW)
+
+Reassign a worker from one area to another. Used by supervisors to move workers from overstaffed/nearby areas to understaffed areas.
+
+**Auth:** `@Roles('superadmin', 'admin_system', 'kepala_rayon')`
+**Scope:** `kepala_rayon` can only reassign within own rayon
+
+```typescript
+export class ReassignWorkerDto {
+  @IsUUID()
+  user_id: string;                              // Worker to reassign
+
+  @IsUUID()
+  target_area_id: string;                       // New area
+
+  @IsUUID()
+  @IsOptional()
+  shift_definition_id?: string;                 // Defaults to current
+
+  @IsDateString()
+  @IsOptional()
+  effective_date?: string;                      // Defaults to today
+
+  @IsBoolean()
+  @IsOptional()
+  end_current_schedule?: boolean;               // Default true
+
+  @IsString()
+  @IsOptional()
+  reason?: string;                              // Audit trail
+}
+
+export class ReassignWorkerResponseDto {
+  new_schedule_id: string;
+  previous_area_id: string;
+  previous_area_name: string;
+  new_area_id: string;
+  new_area_name: string;
+  effective_date: string;
+  user_name: string;
+}
+```
+
+**Backend logic:**
+1. Validate permission (kepala_rayon can only reassign within own rayon)
+2. Verify target area exists and worker has compatible role
+3. End current schedule if `end_current_schedule = true`
+4. Create new schedule for target area
+5. Update `user_tracking_status.area_id` to target area
+6. Send push notification to worker (optional, if FCM enabled)
+7. Emit WebSocket `user:reassigned` event
+
+**Error responses:**
+- `403 Forbidden` — kepala_rayon trying to reassign outside own rayon
+- `404 Not Found` — user or target area not found
+- `409 Conflict` — worker already assigned to target area
+- `422 Unprocessable Entity` — worker role not compatible with area requirements
 
 ---
 
@@ -986,46 +1168,67 @@ be/src/database/migrations/
 | GET | `/monitoring/staffing-summary` | korlap+ | **NEW** | Filter modal data |
 | GET | `/areas/:id/boundary` | admin_system+ | **NEW** | Get area polygon |
 | PUT | `/areas/:id/boundary` | admin_system+ | **NEW** | Update area polygon |
+| GET | `/monitoring/boundaries` | korlap+ | **NEW** | All rayon + area boundaries |
+| POST | `/monitoring/reassign` | admin_system+ | **NEW** | Reassign worker to new area |
 
-**Total new endpoints:** 7
+**Total new endpoints:** 9
 **Total modified endpoints:** 4
 
 ---
 
 ## K. Implementation Checklist
 
-### Phase 2D-1: Foundation
-- [ ] Create `MonitoringConfig` entity
-- [ ] Create `UserTrackingStatus` entity
-- [ ] Write database migration (tables, indexes)
-- [ ] Implement `StatusCalculatorService` with unit tests
-- [ ] Implement `MonitoringSchedulerService` with unit tests
-- [ ] Implement `MonitoringCacheService` with unit tests
-- [ ] Implement `MonitoringConfigService` with unit tests
-- [ ] Add `shift_definition_id` to Shift entity
-- [ ] Run backfill scripts
+### Phase 2D-1: Foundation — ✅ COMPLETE
+- [x] Create `MonitoringConfig` entity
+- [x] Create `UserTrackingStatus` entity
+- [x] Write database migration (tables, indexes)
+- [x] Implement `StatusCalculatorService` with unit tests (16 tests)
+- [x] Implement `MonitoringSchedulerService` with unit tests
+- [x] Implement `MonitoringCacheService` with unit tests
+- [x] Implement `MonitoringConfigService` with unit tests
+- [x] Add `shift_definition_id` to Shift entity
+- [x] Run backfill scripts
 
-### Phase 2D-2: Fix Hardcodes
-- [ ] Fix `is_within_area` computation in MonitoringService
-- [ ] Fix `shift_name` to use ShiftDefinition join
-- [ ] Fix WebSocket role checks (PascalCase -> lowercase)
-- [ ] Fix per-role staff requirement counting
+### Phase 2D-2: Fix Hardcodes — ✅ COMPLETE
+- [x] Fix `is_within_area` computation in MonitoringService
+- [x] Fix `shift_name` to use ShiftDefinition join
+- [x] Fix WebSocket role checks (PascalCase -> lowercase)
+- [x] Fix per-role staff requirement counting
 
-### Phase 2D-3: New Endpoints
-- [ ] Implement location history endpoint with tests
-- [ ] Implement user day summary endpoint with tests
-- [ ] Implement monitoring config CRUD with tests
-- [ ] Implement area boundary CRUD with tests
-- [ ] Implement staffing summary endpoint with tests
-- [ ] Add GeoJSON validator utility with tests
+### Phase 2D-3: New Endpoints — ✅ COMPLETE
+- [x] Implement location history endpoint with tests
+- [x] Implement user day summary endpoint with tests
+- [x] Implement monitoring config CRUD with tests
+- [x] Implement area boundary CRUD with tests (GeoJSON validator: 28 tests)
+- [x] Implement staffing summary endpoint with tests
+- [x] Add GeoJSON validator utility with tests
 
-### Phase 2D-4: WebSocket
-- [ ] Fix `handleConnection` auto-join logic
-- [ ] Add `USER_STATUS_CHANGED` event
-- [ ] Add `USER_LEFT_AREA` / `USER_ENTERED_AREA` events
-- [ ] Enhance `USER_LOCATION` event with new fields
-- [ ] Integrate event emission in StatusCalculatorService
+### Phase 2D-4: WebSocket — ✅ COMPLETE
+- [x] Fix `handleConnection` auto-join logic
+- [x] Add `USER_STATUS_CHANGED` event
+- [x] Add `USER_LEFT_AREA` / `USER_ENTERED_AREA` events
+- [x] Enhance `USER_LOCATION` event with new fields
+- [x] Integrate event emission in StatusCalculatorService
+
+### Post-Review Refactoring — ✅ COMPLETE
+- [x] Fix data inconsistency: city/rayon stats now query `user_tracking_status`
+- [x] Upgrade error logging: `.catch(() => {})` → `.catch(err => logger.error(...))`
+- [x] Complete DTO barrel exports (5 missing exports added)
+- [x] Refactor MonitoringService: split 1,136→220 lines (extracted MonitoringStatsService + MonitoringUserService)
+- [x] Verify Postman collection (all 9 endpoints present)
+
+### Phase 2D-10: Gap Fixes — NOT STARTED
+- [ ] Implement `getCurrentDayType()` utility with special_day_overrides lookup
+- [ ] Fix all staffing queries to filter by current day_type
+- [ ] Add day_type fields to StaffingSummaryResponseDto and AreaStatsDto
+- [ ] Add rayon boundary columns to database
+- [ ] Implement RayonBoundaryService (convex hull computation)
+- [ ] Implement `GET /monitoring/boundaries` endpoint
+- [ ] Implement `POST /monitoring/reassign` endpoint with scope validation
+- [ ] Add WebSocket `user:reassigned` event
+- [ ] Update marker label format to "Role - Name"
+- [ ] Enhance location history with clickable points and first/last markers
 
 ---
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-05

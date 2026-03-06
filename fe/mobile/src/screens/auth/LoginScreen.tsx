@@ -136,31 +136,8 @@ function LoginScreen(): React.JSX.Element {
       // Update Redux state with user and assigned area (null -> undefined to match payload type)
       dispatch(setUser({ user: enrichedUser, area: assignedArea ?? undefined }));
 
-      // Register FCM token after successful login
-      try {
-        const fcmService = (await import('../../services/notifications/fcmService')).default;
-        const token = await fcmService.getToken();
-        if (token) {
-          const success = await fcmService.registerToken(token);
-          if (!success) {
-            // Fix 1: Gate FCM console calls behind __DEV__
-            if (__DEV__) {
-              console.error('[Login] FCM token registration returned false');
-            }
-          }
-        } else {
-          // Fix 1: Gate FCM console calls behind __DEV__
-          if (__DEV__) {
-            console.warn('[Login] No FCM token available');
-          }
-        }
-      } catch (err) {
-        // Fix 1: Gate FCM console calls behind __DEV__
-        if (__DEV__) {
-          console.error('[Login] FCM token registration exception:', err);
-        }
-        // Don't block login if FCM fails
-      }
+      // FCM token registration is handled by App.tsx after permissions are granted.
+      // Do not call fcmService.getToken() here — service isn't initialized yet.
 
       // Load current shift for clockable roles only
       // This ensures the home screen shows correct shift status immediately after login

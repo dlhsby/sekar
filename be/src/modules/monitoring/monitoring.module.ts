@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MonitoringController } from './monitoring.controller';
 import { MonitoringService } from './monitoring.service';
+import { MonitoringStatsService } from './services/monitoring-stats.service';
+import { MonitoringUserService } from './services/monitoring-user.service';
 import { User } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -41,6 +43,8 @@ import { EventsModule } from '../../gateways/events.module';
   controllers: [MonitoringController],
   providers: [
     MonitoringService,
+    MonitoringStatsService,
+    MonitoringUserService,
     MonitoringCacheService,
     MonitoringConfigService,
     StatusCalculatorService,
@@ -48,6 +52,8 @@ import { EventsModule } from '../../gateways/events.module';
   ],
   exports: [
     MonitoringService,
+    MonitoringStatsService,
+    MonitoringUserService,
     MonitoringCacheService,
     MonitoringConfigService,
     StatusCalculatorService,

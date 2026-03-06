@@ -35,6 +35,7 @@ export type MainTabParamList = {
   OvertimeDetail: { overtimeId: string };
   ShiftHistory: undefined;
   Settings: undefined;
+  Attendance: undefined;
 };
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> =

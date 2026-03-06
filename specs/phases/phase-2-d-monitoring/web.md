@@ -1,6 +1,6 @@
 # Phase 2D: Web Requirements
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-05
 **Status:** Planning
 **Platform:** Next.js 16.x, React 19, TailwindCSS 4.x, Mapbox GL JS
 **Related ADR:** ADR-011 (new)
@@ -113,7 +113,11 @@
    - Custom marker icons using Mapbox `Marker` or `Symbol` layer
    - Color: status-based (green/amber/purple/red)
    - Shape: role-based (circle/shield/star)
-   - Label: user name visible at zoom >= 14
+   - Label format by zoom level:
+     - Zoom < 14: No label (too cluttered)
+     - Zoom 14-15: Abbreviated `STG - Ahmad` format
+     - Zoom >= 16: Full `Satgas - Ahmad Wijaya` format
+   - Role abbreviations: satgas → STG, linmas → LMS, korlap → KLP
    - Click: select user → show in side panel detail view
 
 4. **Marker Clustering**
@@ -129,6 +133,50 @@
 5. **Popups**
    - Hover on marker: small tooltip with name + status
    - Click on marker: select user, fly-to, open detail in panel
+
+6. **Rayon + Area Polygon Layers**
+
+   Render both rayon and area boundaries using Mapbox source/layer system.
+
+   **Data source:** `GET /monitoring/boundaries` (returns both rayon + area boundaries in one call)
+
+   **Polygon styles:**
+
+   | Entity | Fill Color | Opacity | Border Color | Width | Style |
+   |--------|-----------|---------|-------------|-------|-------|
+   | Rayon | `#60A5FA` (blue-400) | 0.08 | `#2563EB` (blue-600) | 3px | dashed (dasharray [8, 4]) |
+   | Area | `#FBBF24` (amber-400) | 0.15 | `#1C1917` (black) | 2px | solid |
+
+   **Layer order (bottom to top):** rayon-fill → rayon-line → area-fill → area-line → area-center-markers → rayon-center-markers → user-markers
+
+   **Center markers at polygon centroids:**
+
+   | Entity | Icon (Lucide) | Size | BG Color | Badge Text |
+   |--------|--------------|------|----------|------------|
+   | Rayon | `building-2` | 32px | `#2563EB` | Rayon name |
+   | Area | `map-pin` | 28px | `#D97706` | Area name |
+
+   **Tap behavior for center markers:**
+   - **Rayon marker click:** Popup with rayon name, aggregate staffing per-role, list of areas with staffing status (understaffed highlighted), "Filter Rayon" button
+   - **Area marker click:** Popup with area name, per-role staffing breakdown (`Korlap 1/1 ✅ • Satgas 7/10 ⚠️`), worker list, "Filter Area" button, "Reassign" button if understaffed
+
+   **Understaffed area UX:**
+   - Area center markers with understaffed status get a RED pulsing CSS animation border
+   - Rayon center markers show aggregate understaffing badge (e.g., "2 area kurang")
+
+7. **Map Auto-Focus on Filter Change**
+
+   When filters change, the map automatically adjusts its viewport:
+
+   | Filter Action | Map Behavior |
+   |--------------|-------------|
+   | Select rayon | `map.fitBounds()` to rayon boundary bbox with 50px padding |
+   | Select area | `map.flyTo()` to area center, zoom 15-16 |
+   | Select specific user | `map.flyTo()` to user's last known location, zoom 16 |
+   | Filter by status only | No map movement (markers filter only) |
+   | Reset all filters | `map.flyTo()` to Surabaya city center (-7.2575, 112.7521), zoom 12 |
+
+   **Implementation:** Use `useEffect` watching filter state changes, determine which filter changed, call appropriate Mapbox method.
 
 ### Props
 
@@ -193,6 +241,19 @@ Scrollable list of users matching current filters:
 - Sort: missing first, then outside, idle, active
 - Virtual scroll for performance with 200+ users
 - Battery icon: shown when < 20%, yellow/red color
+
+#### C4. Staffing Summary (Always Visible - Gap #8)
+
+The StaffingSummaryCard is always visible in the side panel, not just in area detail view:
+
+| Filter State | Staffing Display |
+|-------------|-----------------|
+| No rayon selected (city view) | Top-level summary with per-rayon expandable rows |
+| Rayon selected | Rayon-level staffing with per-area expandable rows |
+| Area selected | Area-level detailed staffing (existing, enhanced) |
+
+Each area row is clickable to drill down. Understaffed areas are prominently flagged with red border and warning icon.
+Day-type badge: "Hari Kerja" / "Akhir Pekan" / "Hari Libur" shown at top of staffing section.
 
 ---
 
@@ -312,6 +373,40 @@ Fetches from `GET /monitoring/users/:userId/location-history?date=YYYY-MM-DD`.
 
 Simple date input (default: today). Restricted to past dates only.
 
+### E1. Clickable Trail Points on Map
+
+When LocationTimeline is active, the map renders the GPS trail:
+- Each GPS point rendered as an 8px circle on the Mapbox map
+- Click on map point → highlight in timeline list, show popup with time/accuracy/battery
+- Click on timeline list item → map flies to that point, highlights it
+- Bidirectional sync between timeline list and map points
+
+### E2. First/Last Point Markers
+
+- **First point:** Green flag marker, labeled "Mulai [HH:MM]" (e.g., "Mulai 07:12")
+- **Last point:** Red flag marker, labeled "Akhir [HH:MM]" (e.g., "Akhir 15:00")
+- Visually distinct from intermediate points (larger, different icon)
+
+### E3. Hide Other Users During Trail View
+
+When trail is active:
+- All other user markers hidden or dimmed to 20% opacity
+- Only selected user's trail + current position visible
+- Toggle: "Tampilkan hanya petugas ini" / "Tampilkan semua"
+
+### E4. Shift Filter
+
+- Dropdown above timeline showing shifts available on selected date
+- Pre-populated from user's shift data for that date
+- Default: current/latest shift
+
+### E5. Summary Info Bar
+
+Always visible at top of LocationTimeline:
+```
+[User Name] • [Date] • [Distance]km • Dalam area [Time] / Luar area [Time]
+```
+
 ---
 
 ## F. API Hooks (TanStack Query)
@@ -372,6 +467,26 @@ export function useUpdateMonitoringConfig() {
     mutationFn: ({ key, value }: { key: string; value: Record<string, any> }) =>
       api.patch(`/monitoring/config/${key}`, { value }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['monitoring', 'config'] }),
+  });
+}
+
+// NEW hooks (Gap #2, #5)
+export function useBoundaries() {
+  return useQuery({
+    queryKey: ['monitoring', 'boundaries'],
+    queryFn: () => api.get<BoundariesResponse>('/monitoring/boundaries'),
+    staleTime: 300_000, // 5 min cache
+  });
+}
+
+export function useReassignWorker() {
+  return useMutation({
+    mutationFn: (data: ReassignWorkerDto) =>
+      api.post('/monitoring/reassign', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monitoring'] });
+      toast.success('Petugas berhasil dipindahkan');
+    },
   });
 }
 ```
@@ -713,6 +828,7 @@ fe/web/src/
     LocationTimeline.tsx                      NEW
     StatusCard.tsx                            NEW
     UserListItem.tsx                          NEW
+    ReassignWorkerModal.tsx                  NEW
 
   lib/api/
     monitoring.ts                            MODIFIED (new hooks)
@@ -721,7 +837,7 @@ fe/web/src/
     types.ts                                 MODIFIED (new interfaces)
 ```
 
-**Total new files:** 7
+**Total new files:** 8
 **Total modified files:** 3
 
 ---
@@ -758,6 +874,90 @@ fe/web/src/
 - [ ] Write Playwright E2E tests for monitoring page
 - [ ] Test responsive behavior on all breakpoints
 
+### Phase 2D-10: Gap Fixes (Web) — NOT STARTED
+- [ ] Add rayon + area Mapbox polygon layers with center markers
+- [ ] Implement map auto-focus on filter change
+- [ ] Update marker labels to "Role - Name" format with zoom-level behavior
+- [ ] Enhance LocationTimeline with clickable points, first/last markers, hide others, shift filter
+- [ ] Create ReassignWorkerModal component
+- [ ] Make StaffingSummaryCard always visible in side panel
+- [ ] Add day-type badge to staffing display
+- [ ] Add new TanStack Query hooks: useBoundaries, useReassignWorker
+
 ---
 
-**Last Updated:** 2026-03-03
+## P. Worker Reassignment
+
+### P1. ReassignWorkerModal Component
+
+**File:** `fe/web/src/components/monitoring/ReassignWorkerModal.tsx`
+
+Dialog modal for reassigning workers from overstaffed to understaffed areas.
+
+**Layout:**
+```
+┌──────────────────────────────────┐
+│  Reassign Petugas           [×]  │
+├──────────────────────────────────┤
+│                                  │
+│  Area Tujuan (Kurang Staf)       │
+│  [Taman Bungkul ▼]              │
+│  Membutuhkan: 3 Satgas          │
+│                                  │
+│  Peran yang Dibutuhkan           │
+│  [Satgas ▼]                     │
+│                                  │
+│  Petugas Tersedia                │
+│  (Dari area lain di rayon ini)  │
+│  ┌──────────────────────────┐    │
+│  │ ● Ahmad S.  | STG       │    │
+│  │   Taman Harmoni (idle)  │    │
+│  │   1.2 km dari tujuan    │    │
+│  ├──────────────────────────┤    │
+│  │ ● Budi R.   | STG       │    │
+│  │   Taman Flora (active)  │    │
+│  │   2.5 km dari tujuan    │    │
+│  └──────────────────────────┘    │
+│                                  │
+│  Alasan (opsional)               │
+│  [_________________________]     │
+│                                  │
+│  [Batal]  [Reassign Sekarang]   │
+└──────────────────────────────────┘
+```
+
+**Accessible from:**
+- StaffingSummaryCard (understaffed warning click)
+- UserDetailPanel (reassign button for workers in overstaffed areas)
+
+**API:** `POST /monitoring/reassign`
+
+### P2. StaffingSummaryCard Enhancement
+
+The existing `StaffingSummaryCard` component should:
+- Always be visible in MonitoringSidePanel (not just in area detail view)
+- Show at ALL filter levels:
+  - City view → per-rayon breakdown with expandable areas
+  - Rayon view → rayon-level summary with expandable areas
+  - Area view → area-level staffing (current behavior, enhanced)
+- Show day type badge: "Hari Kerja" / "Akhir Pekan" / "Hari Libur"
+- Show "Reassign Petugas" button when understaffed
+- Each area row clickable to drill down
+- Understaffed areas prominently flagged with red border
+
+**Enhanced per stakeholder requirement:**
+```
+Kepegawaian Shift Saat Ini (Hari Kerja)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Taman Bungkul                           ⚠️
+  Korlap:  1 aktif dari 1  (1/1) ✅
+  Satgas:  5 aktif dari 10 (5/10) ⚠️ Kurang 5
+           ├ 2 idle, 1 di luar area, 2 tidak terdeteksi
+  Linmas:  2 aktif dari 5  (2/5) ⚠️ Kurang 3
+           ├ 1 idle, 1 tidak terdeteksi, 1 offline
+  [Reassign Petugas]
+```
+
+---
+
+**Last Updated:** 2026-03-05

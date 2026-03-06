@@ -1,12 +1,12 @@
 /**
  * Monitoring Configuration Page (Phase 2D - Admin Only)
- * Manage monitoring system configuration keys
+ * Structured form with individual inputs, ranges, and validation
  * Access: admin_system, superadmin
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useMonitoringConfig,
@@ -18,94 +18,153 @@ import { cn } from '@/lib/utils/cn';
 import { useRouter } from 'next/navigation';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
-import { Settings, Save, AlertCircle } from 'lucide-react';
+import { Settings, Save, AlertCircle, Check } from 'lucide-react';
 
-type ConfigDraft = Record<string, string>;
+// Configuration field definition for structured rendering
+interface ConfigField {
+  key: string;
+  label: string;
+  type: 'number' | 'toggle';
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
+  description?: string;
+}
 
-function ConfigCard({
-  item,
-  draft,
-  onDraftChange,
-  onSave,
-  isSaving,
-}: {
-  item: MonitoringConfigItem;
-  draft: string;
-  onDraftChange: (val: string) => void;
-  onSave: () => void;
-  isSaving: boolean;
-}) {
-  const isModified = draft !== JSON.stringify(item.value, null, 2);
-  let parseError = '';
-  try {
-    if (draft) JSON.parse(draft);
-  } catch {
-    parseError = 'Format JSON tidak valid';
+interface ConfigSection {
+  title: string;
+  description: string;
+  configKey: string;
+  fields: ConfigField[];
+}
+
+const CONFIG_SECTIONS: ConfigSection[] = [
+  {
+    title: 'Ambang Batas Status',
+    description: 'Konfigurasi waktu untuk perubahan status otomatis',
+    configKey: 'status_thresholds',
+    fields: [
+      { key: 'active_max_age_seconds', label: 'Batas Aktif Maks', type: 'number', min: 60, max: 600, step: 30, unit: 'detik', description: 'Waktu maksimum sebelum status berubah dari aktif' },
+      { key: 'inactive_threshold_seconds', label: 'Ambang Batas Idle', type: 'number', min: 300, max: 3600, step: 60, unit: 'detik', description: 'Waktu sebelum petugas ditandai idle' },
+      { key: 'missing_threshold_seconds', label: 'Ambang Batas Tidak Terdeteksi', type: 'number', min: 1800, max: 7200, step: 300, unit: 'detik', description: 'Waktu sebelum petugas ditandai tidak terdeteksi' },
+    ],
+  },
+  {
+    title: 'Geofencing',
+    description: 'Pengaturan batas area dan toleransi',
+    configKey: 'geofencing',
+    fields: [
+      { key: 'boundary_tolerance_meters', label: 'Toleransi Batas', type: 'number', min: 0, max: 500, step: 10, unit: 'meter', description: 'Toleransi jarak dari batas area' },
+      { key: 'outside_area_grace_period_seconds', label: 'Masa Tenggang Luar Area', type: 'number', min: 0, max: 600, step: 30, unit: 'detik', description: 'Waktu sebelum status berubah saat keluar area' },
+    ],
+  },
+  {
+    title: 'Default Peta',
+    description: 'Pengaturan tampilan peta default',
+    configKey: 'map_defaults',
+    fields: [
+      { key: 'default_zoom', label: 'Zoom Default', type: 'number', min: 8, max: 18, step: 1 },
+      { key: 'cluster_threshold_zoom', label: 'Zoom Klaster', type: 'number', min: 8, max: 18, step: 1, description: 'Di bawah level ini, marker dikelompokkan' },
+      { key: 'default_center_lat', label: 'Latitude Default', type: 'number', min: -90, max: 90, step: 0.0001 },
+      { key: 'default_center_lng', label: 'Longitude Default', type: 'number', min: -180, max: 180, step: 0.0001 },
+    ],
+  },
+  {
+    title: 'Pengaturan Notifikasi',
+    description: 'Konfigurasi peringatan dan notifikasi',
+    configKey: 'alert_settings',
+    fields: [
+      { key: 'low_battery_threshold', label: 'Ambang Batas Baterai Rendah', type: 'number', min: 1, max: 50, step: 1, unit: '%' },
+      { key: 'boundary_alerts_enabled', label: 'Peringatan Batas Area', type: 'toggle', description: 'Kirim notifikasi saat petugas keluar area' },
+      { key: 'missing_worker_alerts_enabled', label: 'Peringatan Petugas Tidak Terdeteksi', type: 'toggle', description: 'Kirim notifikasi saat petugas tidak terdeteksi' },
+    ],
+  },
+];
+
+interface FieldInputProps {
+  field: ConfigField;
+  value: unknown;
+  onChange: (key: string, value: unknown) => void;
+  error?: string;
+}
+
+function FieldInput({ field, value, onChange, error }: FieldInputProps) {
+  if (field.type === 'toggle') {
+    const isOn = !!value;
+    return (
+      <div className="flex items-center justify-between py-2">
+        <div className="flex-1 min-w-0 mr-4">
+          <label className="text-sm font-bold text-nb-black">{field.label}</label>
+          {field.description && (
+            <p className="text-xs text-nb-gray-500 mt-0.5">{field.description}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(field.key, !isOn)}
+          className={cn(
+            'relative inline-flex h-7 w-12 items-center rounded-full border-2 border-nb-black transition-colors',
+            isOn ? 'bg-nb-primary' : 'bg-nb-gray-200'
+          )}
+          role="switch"
+          aria-checked={isOn}
+          aria-label={field.label}
+        >
+          <span
+            className={cn(
+              'inline-block h-5 w-5 transform rounded-full bg-white border border-nb-black transition-transform',
+              isOn ? 'translate-x-5' : 'translate-x-0.5'
+            )}
+          />
+        </button>
+      </div>
+    );
   }
 
+  const numValue = typeof value === 'number' ? value : 0;
+  const isOutOfRange = field.min !== undefined && field.max !== undefined &&
+    (numValue < field.min || numValue > field.max);
+
   return (
-    <Card variant="elevated" className="overflow-hidden">
-      <CardHeader className="bg-nb-gray-50 py-3 px-4">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <code className="text-sm font-mono font-bold text-nb-black">{item.key}</code>
-            <p className="text-xs text-nb-gray-500 mt-0.5">{item.description}</p>
-          </div>
-          {isModified && !parseError && (
-            <Button
-              size="sm"
-              onClick={onSave}
-              loading={isSaving}
-              leftIcon={<Save className="w-3.5 h-3.5" />}
-              aria-label={`Simpan konfigurasi ${item.key}`}
-            >
-              Simpan
-            </Button>
+    <div className="py-2">
+      <label className="text-sm font-bold text-nb-black block mb-1">
+        {field.label}
+        {field.unit && <span className="text-xs font-normal text-nb-gray-500 ml-1">({field.unit})</span>}
+      </label>
+      {field.description && (
+        <p className="text-xs text-nb-gray-500 mb-1.5">{field.description}</p>
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          value={numValue}
+          min={field.min}
+          max={field.max}
+          step={field.step}
+          onChange={(e) => onChange(field.key, Number(e.target.value))}
+          className={cn(
+            'w-full px-3 py-2 text-sm border-2 border-nb-black rounded-nb-base',
+            'bg-white focus:outline-none focus:ring-2 focus:ring-nb-primary focus:ring-offset-1',
+            'font-mono',
+            (isOutOfRange || error) && 'border-nb-danger'
           )}
-        </div>
-      </CardHeader>
-      <CardContent className="p-4">
-        <div>
-          <label
-            htmlFor={`config-${item.key}`}
-            className="text-xs font-bold text-nb-gray-600 mb-1.5 block"
-          >
-            Nilai (JSON)
-          </label>
-          <textarea
-            id={`config-${item.key}`}
-            value={draft}
-            onChange={(e) => onDraftChange(e.target.value)}
-            rows={Math.max(3, draft.split('\n').length)}
-            className={cn(
-              'w-full font-mono text-sm border-2 border-nb-black rounded-nb-base p-3',
-              'bg-white focus:outline-none focus:ring-2 focus:ring-nb-primary focus:ring-offset-1',
-              'resize-y min-h-[80px]',
-              parseError ? 'border-nb-danger' : ''
-            )}
-            aria-invalid={!!parseError}
-            aria-describedby={parseError ? `config-error-${item.key}` : undefined}
-            spellCheck={false}
-          />
-          {parseError && (
-            <p
-              id={`config-error-${item.key}`}
-              className="mt-1 text-xs text-nb-danger flex items-center gap-1"
-            >
-              <AlertCircle className="w-3 h-3" />
-              {parseError}
-            </p>
-          )}
-          <p className="mt-1.5 text-xs text-nb-gray-400">
-            Terakhir diubah:{' '}
-            {new Date(item.updated_at).toLocaleString('id-ID', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            })}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+          aria-invalid={isOutOfRange || !!error}
+        />
+      </div>
+      {isOutOfRange && (
+        <p className="mt-1 text-xs text-nb-danger flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          Rentang valid: {field.min} - {field.max}
+        </p>
+      )}
+      {error && !isOutOfRange && (
+        <p className="mt-1 text-xs text-nb-danger flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -115,13 +174,88 @@ export default function MonitoringConfigPage() {
   const { data, isLoading, error } = useMonitoringConfig();
   const { mutate: updateConfig, isPending } = useUpdateMonitoringConfig();
 
-  const [drafts, setDrafts] = useState<ConfigDraft>({});
+  // Drafts: configKey -> { fieldKey: value }
+  const [drafts, setDrafts] = useState<Record<string, Record<string, unknown>>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [successKeys, setSuccessKeys] = useState<Set<string>>(new Set());
 
   const isAdmin = user
     ? hasRole(user.role as UserRole, ADMIN_ROLES)
     : false;
+
+  const getConfigValue = useCallback(
+    (configKey: string): Record<string, unknown> => {
+      // Find the config item from the API data
+      const configItem = data?.configs.find((c) => c.key === configKey);
+      const baseValue = (configItem?.value ?? {}) as Record<string, unknown>;
+      const draft = drafts[configKey];
+      if (!draft) return baseValue;
+      return { ...baseValue, ...draft };
+    },
+    [data, drafts]
+  );
+
+  const handleFieldChange = useCallback((configKey: string, fieldKey: string, value: unknown) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [configKey]: {
+        ...(prev[configKey] ?? {}),
+        [fieldKey]: value,
+      },
+    }));
+    setSuccessKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(configKey);
+      return next;
+    });
+  }, []);
+
+  const isModified = useCallback(
+    (configKey: string): boolean => {
+      return !!drafts[configKey] && Object.keys(drafts[configKey]).length > 0;
+    },
+    [drafts]
+  );
+
+  const hasValidationErrors = useCallback(
+    (section: ConfigSection): boolean => {
+      const values = getConfigValue(section.configKey);
+      return section.fields.some((field) => {
+        if (field.type !== 'number') return false;
+        const val = values[field.key];
+        if (typeof val !== 'number') return false;
+        if (field.min !== undefined && val < field.min) return true;
+        if (field.max !== undefined && val > field.max) return true;
+        return false;
+      });
+    },
+    [getConfigValue]
+  );
+
+  const handleSave = useCallback(
+    (section: ConfigSection) => {
+      const values = getConfigValue(section.configKey);
+      setSavingKey(section.configKey);
+      updateConfig(
+        { key: section.configKey, value: values },
+        {
+          onSuccess: () => {
+            setSavingKey(null);
+            setDrafts((prev) => {
+              const next = { ...prev };
+              delete next[section.configKey];
+              return next;
+            });
+            setSuccessKeys((prev) => new Set(prev).add(section.configKey));
+          },
+          onError: () => {
+            setSavingKey(null);
+          },
+        }
+      );
+    },
+    [getConfigValue, updateConfig]
+  );
 
   if (authLoading || !user) {
     return (
@@ -148,49 +282,6 @@ export default function MonitoringConfigPage() {
     );
   }
 
-  const getDraft = (item: MonitoringConfigItem): string => {
-    if (item.key in drafts) return drafts[item.key];
-    return JSON.stringify(item.value, null, 2);
-  };
-
-  const handleDraftChange = (key: string, val: string) => {
-    setDrafts((prev) => ({ ...prev, [key]: val }));
-    setSuccessKeys((prev) => {
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
-  };
-
-  const handleSave = (item: MonitoringConfigItem) => {
-    const draft = getDraft(item);
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(draft) as Record<string, unknown>;
-    } catch {
-      return;
-    }
-
-    setSavingKey(item.key);
-    updateConfig(
-      { key: item.key, value: parsed },
-      {
-        onSuccess: () => {
-          setSavingKey(null);
-          setDrafts((prev) => {
-            const next = { ...prev };
-            delete next[item.key];
-            return next;
-          });
-          setSuccessKeys((prev) => new Set(prev).add(item.key));
-        },
-        onError: () => {
-          setSavingKey(null);
-        },
-      }
-    );
-  };
-
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-4xl">
       {/* Header */}
@@ -208,7 +299,7 @@ export default function MonitoringConfigPage() {
       {isLoading ? (
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-40 bg-nb-gray-200 border-2 border-nb-black animate-pulse rounded-nb-base" />
+            <div key={i} className="h-48 bg-nb-gray-200 border-2 border-nb-black animate-pulse rounded-nb-base" />
           ))}
         </div>
       ) : error ? (
@@ -219,31 +310,61 @@ export default function MonitoringConfigPage() {
             <p className="text-sm text-nb-gray-500 mt-1">Periksa koneksi atau coba lagi</p>
           </CardContent>
         </Card>
-      ) : !data || data.configs.length === 0 ? (
-        <Card variant="outlined">
-          <CardContent className="p-8 text-center">
-            <Settings className="w-10 h-10 mx-auto text-nb-gray-300 mb-3" />
-            <p className="font-semibold text-nb-gray-600">Tidak ada konfigurasi tersedia</p>
-          </CardContent>
-        </Card>
       ) : (
-        <div className="space-y-4">
-          {data.configs.map((item) => (
-            <div key={item.key} className="relative">
-              {successKeys.has(item.key) && (
-                <div className="absolute -top-2 right-4 z-10 bg-green-400 border-2 border-nb-black text-green-900 text-xs font-bold px-3 py-1 rounded-nb-sm shadow-nb-xs">
-                  Disimpan
-                </div>
-              )}
-              <ConfigCard
-                item={item}
-                draft={getDraft(item)}
-                onDraftChange={(val) => handleDraftChange(item.key, val)}
-                onSave={() => handleSave(item)}
-                isSaving={savingKey === item.key && isPending}
-              />
-            </div>
-          ))}
+        <div className="space-y-6">
+          {CONFIG_SECTIONS.map((section) => {
+            const sectionModified = isModified(section.configKey);
+            const sectionHasErrors = hasValidationErrors(section);
+            const values = getConfigValue(section.configKey);
+            const isSaving = savingKey === section.configKey && isPending;
+            const isSuccess = successKeys.has(section.configKey);
+
+            return (
+              <Card key={section.configKey} variant="elevated" className="overflow-hidden">
+                <CardHeader className="bg-nb-gray-50 py-3 px-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h2 className="text-sm font-black text-nb-black">{section.title}</h2>
+                      <p className="text-xs text-nb-gray-500 mt-0.5">{section.description}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isSuccess && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-green-700">
+                          <Check className="w-3.5 h-3.5" />
+                          Disimpan
+                        </span>
+                      )}
+                      {sectionModified && !sectionHasErrors && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSave(section)}
+                          loading={isSaving}
+                          leftIcon={<Save className="w-3.5 h-3.5" />}
+                          aria-label={`Simpan konfigurasi ${section.title}`}
+                        >
+                          Simpan
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="divide-y divide-nb-gray-100">
+                    {section.fields.map((field) => (
+                      <FieldInput
+                        key={field.key}
+                        field={field}
+                        value={values[field.key]}
+                        onChange={(fieldKey, val) =>
+                          handleFieldChange(section.configKey, fieldKey, val)
+                        }
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

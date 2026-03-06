@@ -36,7 +36,12 @@ import { getStaffingSummary } from '../../services/api/monitoringApi';
 import type { MonitoringFilters } from '../../types/api.types';
 import type { TrackingStatus, StaffingSummaryItem, User } from '../../types/models.types';
 import type { Area, Rayon } from '../../types/models.types';
-import { ROLE_LABELS } from '../../constants/roles';
+import {
+  ROLE_LABELS,
+  ROLES_WITH_RAYON,
+  ROLES_WITH_FIXED_RAYON,
+  ROLES_WITHOUT_RAYON,
+} from '../../constants/roles';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,10 +63,6 @@ const STATUS_OPTIONS: TrackingStatus[] = [
 ];
 
 const FIELD_ROLES = ['satgas', 'linmas', 'korlap'] as const;
-
-const ROLES_WITH_RAYON = ['top_management', 'admin_system', 'superadmin'];
-const ROLES_WITH_FIXED_RAYON = ['kepala_rayon'];
-const ROLES_WITHOUT_RAYON = ['korlap'];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 

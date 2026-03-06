@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 import { store } from './src/store/store';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -93,13 +94,15 @@ function AppContent(): React.JSX.Element {
 
 function App(): React.JSX.Element {
   return (
-    <ErrorBoundary>
-      <Provider store={store}>
-        <NetworkProvider>
-          <AppContent />
-        </NetworkProvider>
-      </Provider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <Provider store={store}>
+          <NetworkProvider>
+            <AppContent />
+          </NetworkProvider>
+        </Provider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
 

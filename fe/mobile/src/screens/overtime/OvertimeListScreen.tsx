@@ -10,7 +10,6 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  SafeAreaView,
   RefreshControl,
   TouchableOpacity,
   ScrollView,
@@ -19,6 +18,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { NBBackgroundPattern, NBButton, NBEmptyState } from '../../components/nb';

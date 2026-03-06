@@ -7,6 +7,7 @@
 
 import { ArrowLeft, MapPin, Clock, Navigation } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { formatMinutes, formatDistance, formatTimeWithSeconds } from '@/lib/utils/formatters';
 import type { LocationHistory } from '@/lib/api/monitoring';
 
 export interface LocationTimelineProps {
@@ -16,26 +17,6 @@ export interface LocationTimelineProps {
   onDateChange: (date: string) => void;
   onBack: () => void;
   userName: string;
-}
-
-function formatMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}m`;
-  return `${h}j ${m}m`;
-}
-
-function formatDistance(meters: number): string {
-  if (meters < 1000) return `${Math.round(meters)}m`;
-  return `${(meters / 1000).toFixed(1)}km`;
-}
-
-function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
 }
 
 export function LocationTimeline({
@@ -95,15 +76,15 @@ export function LocationTimeline({
               <div className="text-xs text-nb-gray-500 font-semibold">Titik</div>
               <div className="text-sm font-black">{history.total_points}</div>
             </div>
-            <div className="bg-green-100 border-2 border-nb-black rounded-nb-base p-2 text-center">
-              <div className="text-xs text-green-700 font-semibold">Dalam Area</div>
-              <div className="text-sm font-black text-green-900">
+            <div className="bg-[var(--color-status-active-bg)] border-2 border-nb-black rounded-nb-base p-2 text-center">
+              <div className="text-xs text-[#14532D] font-semibold">Dalam Area</div>
+              <div className="text-sm font-black text-[#14532D]">
                 {formatMinutes(history.time_inside_area_minutes)}
               </div>
             </div>
-            <div className="bg-purple-100 border-2 border-nb-black rounded-nb-base p-2 text-center">
-              <div className="text-xs text-purple-700 font-semibold">Luar Area</div>
-              <div className="text-sm font-black text-purple-900">
+            <div className="bg-[var(--color-status-outside-bg)] border-2 border-nb-black rounded-nb-base p-2 text-center">
+              <div className="text-xs text-[#581C87] font-semibold">Di Luar Area</div>
+              <div className="text-sm font-black text-[#581C87]">
                 {formatMinutes(history.time_outside_area_minutes)}
               </div>
             </div>
@@ -115,7 +96,7 @@ export function LocationTimeline({
               <Clock className="w-3 h-3" />
               Shift: <span className="font-semibold">{history.shift_name}</span>
               {history.clock_in_time && (
-                <span className="ml-1">· Masuk: {formatTime(history.clock_in_time)}</span>
+                <span className="ml-1">· Masuk: {formatTimeWithSeconds(history.clock_in_time)}</span>
               )}
             </div>
           )}
@@ -156,7 +137,7 @@ export function LocationTimeline({
                 <span
                   className={cn(
                     'mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 border border-white shadow-sm',
-                    point.is_within_area ? 'bg-green-500' : 'bg-purple-500'
+                    point.is_within_area ? 'bg-[var(--color-status-active)]' : 'bg-[var(--color-status-outside)]'
                   )}
                   aria-hidden="true"
                 />
@@ -165,17 +146,17 @@ export function LocationTimeline({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-nb-black">
-                      {formatTime(point.logged_at)}
+                      {formatTimeWithSeconds(point.logged_at)}
                     </span>
                     <span
                       className={cn(
                         'text-[10px] font-semibold px-1.5 py-0.5 rounded border',
                         point.is_within_area
-                          ? 'bg-green-100 text-green-700 border-green-300'
-                          : 'bg-purple-100 text-purple-700 border-purple-300'
+                          ? 'bg-[var(--color-status-active-bg)] text-[#14532D] border-[var(--color-status-active)]'
+                          : 'bg-[var(--color-status-outside-bg)] text-[#581C87] border-[var(--color-status-outside)]'
                       )}
                     >
-                      {point.is_within_area ? 'Dalam Area' : 'Luar Area'}
+                      {point.is_within_area ? 'Dalam Area' : 'Di Luar Area'}
                     </span>
                   </div>
                   <div className="text-xs font-mono text-nb-gray-500 mt-0.5">

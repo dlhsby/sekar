@@ -1,9 +1,9 @@
 # Phase 2D: Database Schema Changes
 
-**Last Updated:** 2026-03-03
-**Status:** Planning
+**Last Updated:** 2026-03-05
+**Status:** ✅ COMPLETE (Migration: `1741000000000-Phase2DMonitoringSchema.ts`)
 **Migration Strategy:** Single atomic migration with rollback support
-**Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), ADR-011 (new)
+**Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md)
 **See also:** [Backend Requirements](./backend.md), [README](./README.md)
 
 ---
@@ -33,6 +33,7 @@
 | New index: `location_logs` | CREATE INDEX | Composite for history query |
 | New index: `areas` | CREATE INDEX | GIN on boundary_polygon |
 | New indexes: `user_tracking_status` | CREATE INDEX | status, area_id, shift_id, updated_at |
+| Alter table: `rayons` | ADD COLUMNS | `boundary_polygon`, `center_lat`, `center_lng`, `boundary_computed_at` |
 
 ---
 
@@ -71,7 +72,7 @@ INSERT INTO monitoring_configs (key, value, description) VALUES
     "center_lng": 112.7521,
     "zoom": 12,
     "cluster_threshold": 30,
-    "cluster_zoom_delta": 0.05
+    "cluster_zoom_threshold": 14
 }'::jsonb, 'Default map view settings for Surabaya area.'),
 
 ('alerts', '{
@@ -242,9 +243,58 @@ WHERE s.area_id = sd.area_id
 
 ---
 
+## Migration 4: Rayon Boundary Columns (NEW - Gap #2)
+
+### 4A. Add Boundary Columns to `rayons`
+
+Support rayon-level polygon boundaries (auto-computed from child area polygons) and configurable center markers (for rayon office location).
+
+```sql
+ALTER TABLE rayons
+    ADD COLUMN boundary_polygon JSONB NULL,
+    ADD COLUMN center_lat DECIMAL(10, 8) NULL,
+    ADD COLUMN center_lng DECIMAL(11, 8) NULL,
+    ADD COLUMN boundary_computed_at TIMESTAMPTZ NULL;
+
+-- GIN index for future spatial queries
+CREATE INDEX idx_rayons_boundary_polygon ON rayons USING GIN (boundary_polygon);
+```
+
+**Column descriptions:**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `boundary_polygon` | JSONB | Auto-computed convex hull of child area polygons. GeoJSON Polygon format. |
+| `center_lat` | DECIMAL(10,8) | Center latitude for rayon marker. Defaults to centroid; manually overridable for rayon office. |
+| `center_lng` | DECIMAL(11,8) | Center longitude for rayon marker. Same override logic. |
+| `boundary_computed_at` | TIMESTAMPTZ | Timestamp of last boundary recomputation. NULL if never computed. |
+
+**Auto-computation trigger:**
+- When any area's `boundary_polygon` is updated (via `PUT /areas/:id/boundary`), recompute the parent rayon's boundary
+- Algorithm: convex hull of all child area polygon vertices
+- Center: centroid of convex hull, unless manually overridden (center_lat/center_lng already set)
+- If no child areas have polygons, rayon boundary_polygon remains NULL
+
+### 4B. Backfill Rayon Boundaries
+
+```sql
+-- One-time backfill: compute rayon boundaries from existing area polygons
+-- This is executed by the RayonBoundaryService on first run or via admin action
+-- No SQL backfill needed — computed at runtime
+```
+
+---
+
 ## Rollback Script
 
 ```sql
+-- Rollback Migration 4
+DROP INDEX IF EXISTS idx_rayons_boundary_polygon;
+ALTER TABLE rayons DROP COLUMN IF EXISTS boundary_polygon;
+ALTER TABLE rayons DROP COLUMN IF EXISTS center_lat;
+ALTER TABLE rayons DROP COLUMN IF EXISTS center_lng;
+ALTER TABLE rayons DROP COLUMN IF EXISTS boundary_computed_at;
+
 -- Rollback Migration 3
 DELETE FROM user_tracking_status;
 UPDATE shifts SET shift_definition_id = NULL;
@@ -271,8 +321,9 @@ users 1──1 user_tracking_status (NEW: live status cache)
   |     +──* location_logs (ENHANCED: new composite index)
   |
   +──? areas ──* rayons
-         |
-         +── boundary_polygon JSONB (ENHANCED: GIN index)
+         |            |
+         +── boundary_polygon JSONB    +── boundary_polygon JSONB (NEW: auto-computed convex hull)
+             (ENHANCED: GIN index)         center_lat/lng (NEW: configurable center)
 
 monitoring_configs (NEW: standalone config table)
 ```
@@ -287,7 +338,25 @@ monitoring_configs (NEW: standalone config table)
 | `monitoring_configs` | ~4 rows | Static | Unique on key |
 | `location_logs` | ~480,000/month | ~16,000/day | Partitioned by month, composite index |
 | `shifts` | ~500/day new | Grows daily | Existing indexes + new shift_definition_id |
+| `rayons` | 7 rows | Static | GIN on boundary_polygon. Additional JSONB column; no significant performance impact at 7 rows. |
 
 ---
 
-**Last Updated:** 2026-03-03
+## Implementation Status
+
+All database changes have been implemented and verified:
+
+- ✅ `monitoring_configs` table created with 5 seed entries (status_thresholds, geofencing, map_defaults, alerts, location_ping)
+- ✅ `user_tracking_status` table created with CHECK constraint and all indexes
+- ✅ `shifts.shift_definition_id` column added with FK and index
+- ✅ `location_logs` composite index created (`user_id, shift_id, logged_at DESC`)
+- ✅ `areas.boundary_polygon` GIN index created
+- ✅ Backfill scripts executed for existing users and shifts
+- ✅ Seed script: `npm run seed:phase2d`
+- ✅ Migration file: `1741000000000-Phase2DMonitoringSchema.ts`
+- [ ] `rayons` boundary columns added (boundary_polygon, center_lat, center_lng, boundary_computed_at)
+- [ ] `rayons` boundary GIN index created
+
+---
+
+**Last Updated:** 2026-03-05

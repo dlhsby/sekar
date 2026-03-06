@@ -138,6 +138,25 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-shimmer: shimmer 2s infinite;
 
+  /* ===== MONITORING STATUS COLORS - WCAG 2.1 AA Compliant ===== */
+  --color-status-active: #15803D;
+  --color-status-active-bg: #DCFCE7;
+  --color-status-idle: #D97706;
+  --color-status-idle-bg: #FEF3C7;
+  --color-status-outside: #9333EA;
+  --color-status-outside-bg: #F3E8FF;
+  --color-status-missing: #DC2626;
+  --color-status-missing-bg: #FEE2E2;
+  --color-status-offline: #6B7280;
+  --color-status-offline-bg: #F3F4F6;
+
+  /* ===== MONITORING LAYOUT ===== */
+  --marker-size: 36px;
+  --marker-touch-target: 44px;
+  --panel-width-xl: 35%;
+  --panel-min-width: 320px;
+  --panel-max-width: 480px;
+
   /* ===== BREAKPOINTS (reference) ===== */
   /* sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px */
 

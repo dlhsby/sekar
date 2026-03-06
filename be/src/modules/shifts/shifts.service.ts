@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, HttpStatus, Optional, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, LessThanOrEqual, Or, MoreThanOrEqual } from 'typeorm';
 import { v4 as uuid } from 'uuid';
@@ -17,6 +17,8 @@ import {
 } from '../../common/constants/shift.constants';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
+import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 
 /**
  * Service for managing user shifts
@@ -33,8 +35,13 @@ export class ShiftsService {
     private readonly shiftRepository: Repository<Shift>,
     @InjectRepository(Schedule)
     private readonly scheduleRepo: Repository<Schedule>,
+    @InjectRepository(ShiftDefinition)
+    private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     private readonly areasService: AreasService,
     private readonly s3Service: S3Service,
+    @Optional()
+    @Inject(forwardRef(() => StatusCalculatorService))
+    private readonly statusCalculator: StatusCalculatorService | undefined,
   ) {}
 
   /**
@@ -59,6 +66,39 @@ export class ShiftsService {
       order: { effective_date: 'DESC' },
     });
     if (schedule?.area) return schedule.area;
+
+    return null;
+  }
+
+  /**
+   * Find the active shift definition matching the current time
+   *
+   * @returns Matching ShiftDefinition or null if none match
+   */
+  async findCurrentShiftDefinition(): Promise<ShiftDefinition | null> {
+    const definitions = await this.shiftDefinitionRepo.find({
+      where: { is_active: true },
+    });
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    for (const def of definitions) {
+      const [startHour, startMin] = def.start_time.split(':').map(Number);
+      const [endHour, endMin] = def.end_time.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+
+      if (def.crosses_midnight) {
+        if (currentMinutes >= startMinutes || currentMinutes <= endMinutes) {
+          return def;
+        }
+      } else {
+        if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+          return def;
+        }
+      }
+    }
 
     return null;
   }
@@ -123,10 +163,14 @@ export class ShiftsService {
       }
     }
 
-    // 5. Create shift record
+    // 5. Match current shift definition
+    const shiftDefinition = await this.findCurrentShiftDefinition();
+
+    // 6. Create shift record
     const shift = this.shiftRepository.create({
       user_id: userId,
       area_id: area?.id || null,
+      shift_definition_id: shiftDefinition?.id || null,
       clock_in_time: new Date(),
       clock_in_gps_lat: dto.gps_lat,
       clock_in_gps_lng: dto.gps_lng,
@@ -138,6 +182,15 @@ export class ShiftsService {
     this.logger.log(
       `User ${userId} clocked in successfully. Shift ID: ${savedShift.id}, Area: ${area?.name || 'None'}`,
     );
+
+    if (this.statusCalculator) {
+      await this.statusCalculator
+        .onClockIn(userId, savedShift.id, savedShift.area_id, savedShift.shift_definition_id ?? null)
+        .catch((err) => this.logger.error(
+          `StatusCalculator.onClockIn failed for user ${userId}: ${err.message}`,
+          err.stack,
+        ));
+    }
 
     return savedShift;
   }
@@ -207,6 +260,15 @@ export class ShiftsService {
 
     const hoursWorked = this.calculateHoursWorked(shift.clock_in_time, shift.clock_out_time);
     this.logger.log(`User ${userId} clocked out successfully. Hours worked: ${hoursWorked}`);
+
+    if (this.statusCalculator) {
+      await this.statusCalculator
+        .onClockOut(userId)
+        .catch((err) => this.logger.error(
+          `StatusCalculator.onClockOut failed for user ${userId}: ${err.message}`,
+          err.stack,
+        ));
+    }
 
     return updatedShift;
   }

@@ -2,3 +2,8 @@ export * from './city-stats.dto';
 export * from './rayon-stats.dto';
 export * from './area-stats.dto';
 export * from './live-users.dto';
+export * from './location-history.dto';
+export * from './area-boundary.dto';
+export * from './monitoring-config.dto';
+export * from './user-day-summary.dto';
+export * from './staffing-summary.dto';
