@@ -58,7 +58,9 @@ describe('MonitoringCacheService', () => {
 
     it('should return defaults when loader throws', async () => {
       service.setLoaders({
-        thresholds: async () => { throw new Error('DB down'); },
+        thresholds: async () => {
+          throw new Error('DB down');
+        },
         geofencing: async () => ({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
         boundary: async () => null,
       });
@@ -83,9 +85,21 @@ describe('MonitoringCacheService', () => {
     });
 
     it('should cache boundary per area', async () => {
-      const loader = jest.fn().mockResolvedValue([[[0, 0], [1, 0], [1, 1], [0, 0]]]);
+      const loader = jest.fn().mockResolvedValue([
+        [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 0],
+        ],
+      ]);
       service.setLoaders({
-        thresholds: async () => ({ active_max_age_seconds: 300, inactive_threshold_seconds: 900, missing_threshold_seconds: 3600, location_ping_interval_seconds: 60 }),
+        thresholds: async () => ({
+          active_max_age_seconds: 300,
+          inactive_threshold_seconds: 900,
+          missing_threshold_seconds: 3600,
+          location_ping_interval_seconds: 60,
+        }),
         geofencing: async () => ({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
         boundary: loader,
       });
@@ -109,7 +123,9 @@ describe('MonitoringCacheService', () => {
     });
 
     it('should cache geofencing on second call', async () => {
-      const loader = jest.fn().mockResolvedValue({ tolerance_meters: 100, outside_area_grace_seconds: 200 });
+      const loader = jest
+        .fn()
+        .mockResolvedValue({ tolerance_meters: 100, outside_area_grace_seconds: 200 });
       service.setLoaders({ geofencing: loader });
 
       await service.getGeofencing();
@@ -119,7 +135,9 @@ describe('MonitoringCacheService', () => {
 
     it('should return defaults when geofencing loader throws', async () => {
       service.setLoaders({
-        geofencing: async () => { throw new Error('fail'); },
+        geofencing: async () => {
+          throw new Error('fail');
+        },
       });
       const result = await service.getGeofencing();
       expect(result.tolerance_meters).toBe(50);
@@ -129,7 +147,9 @@ describe('MonitoringCacheService', () => {
   describe('getAreaBoundary (extended)', () => {
     it('should return null when boundary loader throws', async () => {
       service.setLoaders({
-        boundary: async () => { throw new Error('fail'); },
+        boundary: async () => {
+          throw new Error('fail');
+        },
       });
       const result = await service.getAreaBoundary('area-1');
       expect(result).toBeNull();
@@ -161,7 +181,9 @@ describe('MonitoringCacheService', () => {
 
     it('should use fallback when day type loader throws', async () => {
       service.setLoaders({
-        dayType: async () => { throw new Error('fail'); },
+        dayType: async () => {
+          throw new Error('fail');
+        },
       });
       const result = await service.getDayType();
       expect(['WEEKDAY', 'WEEKEND']).toContain(result);
@@ -178,7 +200,6 @@ describe('MonitoringCacheService', () => {
       await service.getDayType();
       expect(loader).toHaveBeenCalledTimes(2);
     });
-
 
     it('should invalidate thresholds cache', async () => {
       const loader = jest.fn().mockResolvedValue({
@@ -201,9 +222,21 @@ describe('MonitoringCacheService', () => {
     });
 
     it('should invalidate specific area boundary', async () => {
-      const loader = jest.fn().mockResolvedValue([[[0, 0], [1, 0], [1, 1], [0, 0]]]);
+      const loader = jest.fn().mockResolvedValue([
+        [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 0],
+        ],
+      ]);
       service.setLoaders({
-        thresholds: async () => ({ active_max_age_seconds: 300, inactive_threshold_seconds: 900, missing_threshold_seconds: 3600, location_ping_interval_seconds: 60 }),
+        thresholds: async () => ({
+          active_max_age_seconds: 300,
+          inactive_threshold_seconds: 900,
+          missing_threshold_seconds: 3600,
+          location_ping_interval_seconds: 60,
+        }),
         geofencing: async () => ({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
         boundary: loader,
       });

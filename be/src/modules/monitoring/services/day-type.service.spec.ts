@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DayTypeService } from './day-type.service';
 import { MonitoringCacheService, DayTypeEnum } from './monitoring-cache.service';
-import { SpecialDayOverride, SpecialDayType } from '../../special-day-overrides/entities/special-day-override.entity';
+import {
+  SpecialDayOverride,
+  SpecialDayType,
+} from '../../special-day-overrides/entities/special-day-override.entity';
 import { DayType } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 
 describe('DayTypeService', () => {

@@ -1,10 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MonitoringReassignService } from './monitoring-reassign.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
@@ -119,7 +115,9 @@ describe('MonitoringReassignService', () => {
     scheduleRepository = {
       find: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockImplementation((data: any) => ({ id: 'new-schedule-uuid', ...data })),
-      save: jest.fn().mockImplementation((data: any) => Promise.resolve({ id: 'new-schedule-uuid', ...data })),
+      save: jest
+        .fn()
+        .mockImplementation((data: any) => Promise.resolve({ id: 'new-schedule-uuid', ...data })),
     };
 
     eventsGateway = {
@@ -168,9 +166,7 @@ describe('MonitoringReassignService', () => {
       const dto = makeDto({ user_id: 'non-existent-uuid' });
 
       await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow(NotFoundException);
-      await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow(
-        'non-existent-uuid',
-      );
+      await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow('non-existent-uuid');
     });
 
     // 3. Non-reassignable role (top_management)
@@ -207,9 +203,7 @@ describe('MonitoringReassignService', () => {
       const dto = makeDto({ target_area_id: 'non-existent-area' });
 
       await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow(NotFoundException);
-      await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow(
-        'non-existent-area',
-      );
+      await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow('non-existent-area');
     });
 
     // 5. kepala_rayon can reassign within own rayon
@@ -248,9 +242,7 @@ describe('MonitoringReassignService', () => {
       areaRepository.findOne.mockResolvedValue(targetArea);
 
       await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow(ForbiddenException);
-      await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow(
-        'within your own rayon',
-      );
+      await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow('within your own rayon');
     });
 
     // 7. kepala_rayon forbidden: target area in different rayon
@@ -262,7 +254,11 @@ describe('MonitoringReassignService', () => {
         area_id: AREA_A1_ID,
       });
       // Target area is in RAYON_B — cross-rayon move, forbidden
-      const targetAreaInRayonB = makeArea({ id: AREA_B1_ID, name: 'Taman Rayon B', rayon_id: RAYON_B });
+      const targetAreaInRayonB = makeArea({
+        id: AREA_B1_ID,
+        name: 'Taman Rayon B',
+        rayon_id: RAYON_B,
+      });
       const dto = makeDto({ target_area_id: AREA_B1_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
@@ -280,7 +276,11 @@ describe('MonitoringReassignService', () => {
         area_id: AREA_A1_ID,
       });
       // Target area is in RAYON_B — cross-rayon, allowed for superadmin
-      const targetAreaInRayonB = makeArea({ id: AREA_B1_ID, name: 'Taman Rayon B', rayon_id: RAYON_B });
+      const targetAreaInRayonB = makeArea({
+        id: AREA_B1_ID,
+        name: 'Taman Rayon B',
+        rayon_id: RAYON_B,
+      });
       const dto = makeDto({ target_area_id: AREA_B1_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
@@ -503,7 +503,12 @@ describe('MonitoringReassignService', () => {
         end_current_schedule: true,
       });
 
-      const existingSchedule = { id: 'old-schedule', user_id: worker.id, area_id: AREA_A1_ID, end_date: null };
+      const existingSchedule = {
+        id: 'old-schedule',
+        user_id: worker.id,
+        area_id: AREA_A1_ID,
+        end_date: null,
+      };
       scheduleRepository.find.mockResolvedValue([existingSchedule]);
 
       userRepository.findOne.mockResolvedValue(worker);

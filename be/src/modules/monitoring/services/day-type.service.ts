@@ -1,7 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SpecialDayOverride, SpecialDayType } from '../../special-day-overrides/entities/special-day-override.entity';
+import {
+  SpecialDayOverride,
+  SpecialDayType,
+} from '../../special-day-overrides/entities/special-day-override.entity';
 import { DayType } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 import { MonitoringCacheService, DayTypeEnum } from './monitoring-cache.service';
 
@@ -58,7 +61,7 @@ export class DayTypeService implements OnModuleInit {
     }
 
     const day = date.getDay();
-    return (day === 0 || day === 6) ? DayType.WEEKEND : DayType.WEEKDAY;
+    return day === 0 || day === 6 ? DayType.WEEKEND : DayType.WEEKDAY;
   }
 
   private mapSpecialDayType(specialType: SpecialDayType): DayType {

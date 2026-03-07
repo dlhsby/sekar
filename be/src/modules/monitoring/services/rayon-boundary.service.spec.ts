@@ -25,13 +25,11 @@ describe('RayonBoundaryService', () => {
       created_at: new Date('2026-01-01T00:00:00Z'),
       updated_at: new Date('2026-01-01T00:00:00Z'),
       ...overrides,
-    } as Rayon);
+    }) as Rayon;
 
   const makeArea = (coordinates: number[][][] | null): Partial<Area> => ({
     id: 'area-uuid-0001',
-    boundary_polygon: coordinates
-      ? { type: 'Polygon', coordinates }
-      : undefined,
+    boundary_polygon: coordinates ? { type: 'Polygon', coordinates } : undefined,
   });
 
   beforeEach(async () => {
@@ -82,7 +80,12 @@ describe('RayonBoundaryService', () => {
       // Arrange — only 2 unique coordinate points across all areas
       rayonRepository.findOne.mockResolvedValue(makeRayon());
       areaRepository.find.mockResolvedValue([
-        makeArea([[[112.74, -7.29], [112.75, -7.29]]]),
+        makeArea([
+          [
+            [112.74, -7.29],
+            [112.75, -7.29],
+          ],
+        ]),
       ]);
 
       // Act
@@ -104,7 +107,12 @@ describe('RayonBoundaryService', () => {
       // Arrange
       rayonRepository.findOne.mockResolvedValue(makeRayon());
       areaRepository.find.mockResolvedValue([
-        makeArea([[[112.74, -7.29], [112.75, -7.30]]]),
+        makeArea([
+          [
+            [112.74, -7.29],
+            [112.75, -7.3],
+          ],
+        ]),
       ]);
 
       const before = new Date();
@@ -122,8 +130,24 @@ describe('RayonBoundaryService', () => {
       // Arrange — a simple square supplied via two areas
       rayonRepository.findOne.mockResolvedValue(makeRayon());
       areaRepository.find.mockResolvedValue([
-        makeArea([[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]),
-        makeArea([[[0.2, 0.2], [0.8, 0.2], [0.8, 0.8], [0.2, 0.8], [0.2, 0.2]]]),
+        makeArea([
+          [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0],
+          ],
+        ]),
+        makeArea([
+          [
+            [0.2, 0.2],
+            [0.8, 0.2],
+            [0.8, 0.8],
+            [0.2, 0.8],
+            [0.2, 0.2],
+          ],
+        ]),
       ]);
 
       // Act
@@ -144,7 +168,15 @@ describe('RayonBoundaryService', () => {
       // In GeoJSON [lng, lat] order: lng=col, lat=row
       rayonRepository.findOne.mockResolvedValue(makeRayon());
       areaRepository.find.mockResolvedValue([
-        makeArea([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]]),
+        makeArea([
+          [
+            [0, 0],
+            [2, 0],
+            [2, 2],
+            [0, 2],
+            [0, 0],
+          ],
+        ]),
       ]);
 
       // Act
@@ -161,7 +193,15 @@ describe('RayonBoundaryService', () => {
       // Arrange
       rayonRepository.findOne.mockResolvedValue(makeRayon());
       areaRepository.find.mockResolvedValue([
-        makeArea([[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]),
+        makeArea([
+          [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0],
+          ],
+        ]),
       ]);
 
       const before = new Date();
@@ -179,7 +219,15 @@ describe('RayonBoundaryService', () => {
       // Arrange
       rayonRepository.findOne.mockResolvedValue(makeRayon());
       areaRepository.find.mockResolvedValue([
-        makeArea([[[0, 0], [3, 0], [3, 3], [0, 3], [0, 0]]]),
+        makeArea([
+          [
+            [0, 0],
+            [3, 0],
+            [3, 3],
+            [0, 3],
+            [0, 0],
+          ],
+        ]),
       ]);
       rayonRepository.save.mockResolvedValue(undefined);
 
@@ -195,8 +243,16 @@ describe('RayonBoundaryService', () => {
       // Arrange — one area has no polygon; the other supplies 4 unique corners
       rayonRepository.findOne.mockResolvedValue(makeRayon());
       areaRepository.find.mockResolvedValue([
-        makeArea(null),                                               // no polygon
-        makeArea([[[10, 10], [20, 10], [20, 20], [10, 20], [10, 10]]]), // valid square
+        makeArea(null), // no polygon
+        makeArea([
+          [
+            [10, 10],
+            [20, 10],
+            [20, 20],
+            [10, 20],
+            [10, 10],
+          ],
+        ]), // valid square
       ]);
 
       // Act
@@ -217,13 +273,19 @@ describe('RayonBoundaryService', () => {
   describe('computeConvexHull', () => {
     it('should return the original sorted points when the input has 2 or fewer points', () => {
       // Arrange
-      const twoPoints = [[3, 1], [1, 2]];
+      const twoPoints = [
+        [3, 1],
+        [1, 2],
+      ];
 
       // Act
       const result = service.computeConvexHull(twoPoints);
 
       // Assert — sorted by x then y
-      expect(result).toEqual([[1, 2], [3, 1]]);
+      expect(result).toEqual([
+        [1, 2],
+        [3, 1],
+      ]);
     });
 
     it('should return the single input point unchanged when given exactly 1 point', () => {
@@ -286,7 +348,11 @@ describe('RayonBoundaryService', () => {
     it('should return the arithmetic mean of all vertex coordinates', () => {
       // Arrange — right-angle triangle with vertices [0,0], [4,0], [0,4]
       // Expected centroid: lng = (0+4+0)/3 ≈ 1.333, lat = (0+0+4)/3 ≈ 1.333
-      const triangle = [[0, 0], [4, 0], [0, 4]];
+      const triangle = [
+        [0, 0],
+        [4, 0],
+        [0, 4],
+      ];
 
       // Act
       const centroid = service.computeCentroid(triangle);

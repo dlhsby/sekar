@@ -656,7 +656,9 @@ describe('MonitoringService', () => {
 
       await service.getLiveUsers({ status: TrackingStatus.ACTIVE });
 
-      expect(qb.andWhere).toHaveBeenCalledWith('uts.status = :status', { status: TrackingStatus.ACTIVE });
+      expect(qb.andWhere).toHaveBeenCalledWith('uts.status = :status', {
+        status: TrackingStatus.ACTIVE,
+      });
     });
 
     it('should return empty list when no tracking records', async () => {
@@ -685,7 +687,11 @@ describe('MonitoringService', () => {
     });
 
     it('should include is_within_area from tracking status', async () => {
-      const outsideRecord = { ...mockTrackingRecord, is_within_area: false, status: TrackingStatus.OUTSIDE_AREA };
+      const outsideRecord = {
+        ...mockTrackingRecord,
+        is_within_area: false,
+        status: TrackingStatus.OUTSIDE_AREA,
+      };
       const qb = createMockQueryBuilder([outsideRecord], 1);
       trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
       areaRepository.createQueryBuilder = jest.fn(() => createMockQueryBuilder([]) as any);
@@ -904,7 +910,11 @@ describe('MonitoringService', () => {
 
     it('should return location history with points when logs exist', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
-      shiftRepository.findOne.mockResolvedValue({ ...mockShift, shift_definition_id: 'shift-def-1', area_id: 'area-1' });
+      shiftRepository.findOne.mockResolvedValue({
+        ...mockShift,
+        shift_definition_id: 'shift-def-1',
+        area_id: 'area-1',
+      });
       areaRepository.findOne.mockResolvedValue(mockArea);
       shiftDefinitionRepository.findOne.mockResolvedValue(mockShiftDefinition);
 
@@ -912,7 +922,7 @@ describe('MonitoringService', () => {
       const loggedAt2 = new Date('2026-03-04T07:05:00Z');
       const logs = [
         { ...mockLocationLog, logged_at: loggedAt1 },
-        { ...mockLocationLog, logged_at: loggedAt2, gps_lat: -7.291, gps_lng: 112.740 },
+        { ...mockLocationLog, logged_at: loggedAt2, gps_lat: -7.291, gps_lng: 112.74 },
       ];
       const qb = createMockQueryBuilder(logs);
       locationRepository.createQueryBuilder = jest.fn(() => qb as any);
@@ -932,8 +942,18 @@ describe('MonitoringService', () => {
 
       const base = new Date('2026-03-04T07:00:00Z');
       const logs = [
-        { ...mockLocationLog, logged_at: new Date(base.getTime()), gps_lat: -7.290, gps_lng: 112.739 },
-        { ...mockLocationLog, logged_at: new Date(base.getTime() + 10 * 60_000), gps_lat: -7.290, gps_lng: 112.739 },
+        {
+          ...mockLocationLog,
+          logged_at: new Date(base.getTime()),
+          gps_lat: -7.29,
+          gps_lng: 112.739,
+        },
+        {
+          ...mockLocationLog,
+          logged_at: new Date(base.getTime() + 10 * 60_000),
+          gps_lat: -7.29,
+          gps_lng: 112.739,
+        },
       ];
       const qb = createMockQueryBuilder(logs);
       locationRepository.createQueryBuilder = jest.fn(() => qb as any);
@@ -988,7 +1008,11 @@ describe('MonitoringService', () => {
     });
 
     it('should return OFFLINE status when no tracking record', async () => {
-      userRepository.findOne.mockResolvedValue({ ...mockUser, area_id: undefined, phone: undefined });
+      userRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        area_id: undefined,
+        phone: undefined,
+      });
       trackingRepository.findOne.mockResolvedValue(null);
       activityRepository.find.mockResolvedValue([]);
       taskRepository.find.mockResolvedValue([]);
@@ -1113,7 +1137,14 @@ describe('MonitoringService', () => {
       // Mock tracking counts (getTrackingRoleCounts uses createQueryBuilder)
       const qb = createMockQueryBuilder();
       qb.getRawMany = jest.fn().mockResolvedValue([
-        { role: 'satgas', active: '3', inactive: '1', outside_area: '0', missing: '0', offline: '1' },
+        {
+          role: 'satgas',
+          active: '3',
+          inactive: '1',
+          outside_area: '0',
+          missing: '0',
+          offline: '1',
+        },
       ]);
       trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
 
@@ -1143,7 +1174,7 @@ describe('MonitoringService', () => {
 
       expect(result.items).toHaveLength(1);
       expect(areaRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ rayon_id: 'rayon-1' }) })
+        expect.objectContaining({ where: expect.objectContaining({ rayon_id: 'rayon-1' }) }),
       );
     });
 
@@ -1228,16 +1259,17 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
 
       const trackQb = createMockQueryBuilder();
-      trackQb.getRawMany = jest.fn()
+      trackQb.getRawMany = jest
+        .fn()
         .mockResolvedValueOnce([{ area_id: 'area-1', count: '3' }]) // assigned counts
         .mockResolvedValueOnce([{ area_id: 'area-1', role: 'satgas', count: '2' }]); // active counts
       trackingRepository.createQueryBuilder = jest.fn(() => trackQb as any);
 
       const reqQb = createMockQueryBuilder();
       reqQb.getRawMany = jest.fn().mockResolvedValue([{ area_id: 'area-1', total: '5' }]);
-      reqQb.getMany = jest.fn().mockResolvedValue([
-        { area_id: 'area-1', role: 'satgas', required_count: 5 },
-      ]);
+      reqQb.getMany = jest
+        .fn()
+        .mockResolvedValue([{ area_id: 'area-1', role: 'satgas', required_count: 5 }]);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => reqQb as any);
 
       const result = await statsService.getBoundaries();

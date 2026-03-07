@@ -229,7 +229,9 @@ async function seedPhase1() {
         ORDER BY s.clock_in_time ASC LIMIT 1
       )
     `);
-    console.log('  ✓ Created 5 shifts (satgas1×2 active/completed, satgas2×2 active/completed, satgas3×1 completed)');
+    console.log(
+      '  ✓ Created 5 shifts (satgas1×2 active/completed, satgas2×2 active/completed, satgas3×1 completed)',
+    );
 
     // ============================================================
     // BASIC ACTIVITIES (2) — skipped if activity_types not seeded yet
@@ -265,7 +267,9 @@ async function seedPhase1() {
       `);
       console.log('  ✓ Created 2 basic activities for satgas1');
     } else {
-      console.log('  ⚠️  activity_types not found — activities skipped (Phase 2 will seed 50 comprehensive ones)');
+      console.log(
+        '  ⚠️  activity_types not found — activities skipped (Phase 2 will seed 50 comprehensive ones)',
+      );
     }
 
     // ============================================================

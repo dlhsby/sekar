@@ -81,9 +81,7 @@ export class MonitoringConfigService {
     if (schema) {
       const result = schema.safeParse(value);
       if (!result.success) {
-        throw new BadRequestException(
-          `Invalid config value for '${key}': ${result.error.message}`,
-        );
+        throw new BadRequestException(`Invalid config value for '${key}': ${result.error.message}`);
       }
     }
 

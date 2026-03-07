@@ -64,7 +64,9 @@ export class RayonBoundaryService {
     await this.rayonRepository.save(rayon);
     this.cacheService.invalidateAreaBoundary();
 
-    this.logger.log(`Rayon ${rayonId} boundary recomputed from ${allPoints.length} points, hull has ${hull.length} vertices`);
+    this.logger.log(
+      `Rayon ${rayonId} boundary recomputed from ${allPoints.length} points, hull has ${hull.length} vertices`,
+    );
   }
 
   private collectPoints(areas: Area[]): number[][] {
@@ -91,7 +93,10 @@ export class RayonBoundaryService {
 
     const lower: number[][] = [];
     for (const p of sorted) {
-      while (lower.length >= 2 && this.cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+      while (
+        lower.length >= 2 &&
+        this.cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+      ) {
         lower.pop();
       }
       lower.push(p);
@@ -100,7 +105,10 @@ export class RayonBoundaryService {
     const upper: number[][] = [];
     for (let i = sorted.length - 1; i >= 0; i--) {
       const p = sorted[i];
-      while (upper.length >= 2 && this.cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+      while (
+        upper.length >= 2 &&
+        this.cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+      ) {
         upper.pop();
       }
       upper.push(p);

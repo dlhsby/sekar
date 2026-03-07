@@ -86,9 +86,7 @@ describe('MonitoringSchedulerService', () => {
 
       await service.reevaluateStaleStatuses();
 
-      expect(trackingRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 50 }),
-      );
+      expect(trackingRepository.find).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
     });
   });
 });

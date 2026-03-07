@@ -21,7 +21,10 @@ import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { LocationHistoryQueryDto, LocationHistoryResponseDto } from './dto/location-history.dto';
 import { UserDaySummaryDto } from './dto/user-day-summary.dto';
-import { MonitoringConfigResponseDto, UpdateMonitoringConfigDto } from './dto/monitoring-config.dto';
+import {
+  MonitoringConfigResponseDto,
+  UpdateMonitoringConfigDto,
+} from './dto/monitoring-config.dto';
 import { StaffingSummaryQueryDto, StaffingSummaryResponseDto } from './dto/staffing-summary.dto';
 import { BoundariesResponseDto } from './dto/boundaries.dto';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from './dto/reassign-worker.dto';
@@ -210,10 +213,7 @@ export class MonitoringController {
     }
   }
 
-  private applyScopeFilters(
-    user: User,
-    filters: { area_id?: string; rayon_id?: string },
-  ): void {
+  private applyScopeFilters(user: User, filters: { area_id?: string; rayon_id?: string }): void {
     if (user.role === UserRole.KORLAP && user.area_id) {
       filters.area_id = user.area_id;
     } else if (user.role === UserRole.ADMIN_DATA && user.rayon_id) {

@@ -68,7 +68,11 @@ describe('MonitoringConfigService', () => {
       const existing = {
         id: '1',
         key: 'status_thresholds',
-        value: { active_max_age_seconds: 300, inactive_threshold_seconds: 900, missing_threshold_seconds: 3600 },
+        value: {
+          active_max_age_seconds: 300,
+          inactive_threshold_seconds: 900,
+          missing_threshold_seconds: 3600,
+        },
       };
       repository.findOne.mockResolvedValue(existing);
 
@@ -89,7 +93,9 @@ describe('MonitoringConfigService', () => {
       repository.findOne.mockResolvedValue(existing);
 
       const invalid = { active_max_age_seconds: -1 };
-      await expect(service.updateByKey('status_thresholds', invalid as any)).rejects.toThrow(BadRequestException);
+      await expect(service.updateByKey('status_thresholds', invalid as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should allow unknown keys without validation', async () => {
@@ -158,7 +164,13 @@ describe('MonitoringConfigService', () => {
 
     it('boundary loader should return polygon coordinates', async () => {
       const loaders = cacheService.setLoaders.mock.calls[0][0];
-      const coords = [[[112.7, -7.2], [112.8, -7.2], [112.8, -7.3]]];
+      const coords = [
+        [
+          [112.7, -7.2],
+          [112.8, -7.2],
+          [112.8, -7.3],
+        ],
+      ];
       repository.manager.query.mockResolvedValue([{ boundary_polygon: { coordinates: coords } }]);
 
       const result = await loaders.boundary('area-1');

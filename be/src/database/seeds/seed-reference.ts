@@ -190,6 +190,7 @@ async function seedReference() {
           active_max_age_seconds: 300,
           inactive_threshold_seconds: 900,
           missing_threshold_seconds: 3600,
+          location_ping_interval_seconds: 60,
         }),
         description: 'Status calculation thresholds',
       },
@@ -207,15 +208,16 @@ async function seedReference() {
           center_lat: -7.2575,
           center_lng: 112.7521,
           zoom: 12,
-          cluster_zoom_threshold: 13,
+          cluster_zoom_threshold: 14,
+          cluster_threshold: 30,
         }),
         description: 'Map default view settings (Surabaya)',
       },
       {
         key: 'alerts',
         value: JSON.stringify({
-          notify_on_missing: true,
-          notify_on_outside_area: true,
+          missing_user_notify: true,
+          understaffed_notify: true,
           low_battery_threshold: 20,
         }),
         description: 'Alert configuration',
@@ -250,10 +252,14 @@ async function seedReference() {
        ON CONFLICT (username) DO NOTHING`,
       [PASSWORD_HASH],
     );
-    console.log('  ✓ Default superadmin (admin / password123) — change password after first login!');
+    console.log(
+      '  ✓ Default superadmin (admin / password123) — change password after first login!',
+    );
 
     console.log('\n✅ Reference Data Seeding Completed!');
-    console.log('\n⚠️  Production note: Change the default admin password immediately after first login.');
+    console.log(
+      '\n⚠️  Production note: Change the default admin password immediately after first login.',
+    );
     console.log('\nSummary:');
     console.log('  - 4 area types');
     console.log('  - 3 shift definitions');

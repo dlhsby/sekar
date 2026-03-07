@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-**Last Updated:** March 5, 2026
-**Status:** Phase 2C Complete ✅ | Deployed to Production | Phase 3 Next
+**Last Updated:** March 7, 2026
+**Status:** Phase 2D Complete ✅ | Deployed to Production | Phase 3 Next
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -29,7 +29,7 @@ This file provides guidance to Claude Code when working with this repository.
 **Core Features:** Real-time GPS tracking, digital clock-in/out with photo verification, work reports with multimedia evidence, supervisor dashboards, 7 Rayon organizational structure, shift scheduling, task workflow, push notifications.
 
 **Tech Stack:**
-- **Backend:** NestJS 11.1.13, TypeScript 5.9.3, PostgreSQL 14+, TypeORM, JWT, WebSocket, AWS S3, Jest 30
+- **Backend:** NestJS 11.1.13, TypeScript 5.9.3, PostgreSQL 14+, TypeORM, JWT, WebSocket, AWS S3, Jest 30, ESLint 10
 - **Mobile:** React Native 0.83.1, React 19.2.4, Redux Toolkit, FCM, Neo Brutalism UI (WCAG 2.1 AA)
 - **Web:** Next.js 16.1.6, React 19.2.3, TailwindCSS 4.x, Mapbox GL, Playwright 1.58.1
 - **Runtime:** Node.js >=24.13.0, npm >=10.0.0
@@ -260,7 +260,7 @@ API_VERSION=v1
 
 ### Dependency Management
 - **Last Update:** February 5, 2026 (All components updated)
-- **Backend:** TypeScript 5.9, ESLint 9, Jest 30, NestJS 11.1.13
+- **Backend:** TypeScript 5.9, ESLint 10, Jest 30, NestJS 11.1.13
 - **Web:** Next.js 16.1.6, React 19.2.3, Playwright 1.58.1
 - **Mobile:** React Native 0.83.1, React 19.2.4, React Navigation 7.x
 - **Dependabot:** Enabled (patch-only updates weekly, prevents breaking changes)
@@ -293,13 +293,17 @@ API_VERSION=v1
 - Backend: 16 modules, 113 endpoints, 888 tests; Mobile: 3,264 tests
 - Deployed: api.sekar.wahyutrip.com + sekar.wahyutrip.com (Feb 16, 2026)
 
-**Phase 2D Real-Time Monitoring** ✅ Code-Complete (Mar 3-4, 2026) — pending merge & deploy
-- Four-status tracking (active/inactive/outside_area/missing/offline) backed by `user_tracking_status` table
+**Phase 2D Real-Time Monitoring** ✅ Complete + Deployed (Mar 3-7, 2026)
+- Five-status tracking (active/inactive/outside_area/missing/offline) backed by `user_tracking_status` table
 - `StatusCalculatorService` integrated into `LocationService` (onLocationPing) and `ShiftsService` (onClockIn/onClockOut)
-- Configurable thresholds via `monitoring_configs` table; WebSocket boundary events (USER_LEFT_AREA, USER_ENTERED_AREA)
+- Configurable thresholds via `monitoring_configs` table (5 configs); WebSocket `monitoring:` room prefix
+- 5 new WebSocket events: status-changed, left-area, entered-area, reassigned, area:staffing-changed
+- 3 new services: DayTypeService, RayonBoundaryService, MonitoringReassignService
 - Web: full Mapbox GL map with markers/polygons, filter sidebar, worker detail panel, staffing summary
 - Mobile: enhanced MapDashboard, UserDetailSheet, four-status marker colors, location history
-- Backend: 120 endpoints, 1,095 tests; Mobile: 3,493 tests
+- Backend: 122 endpoints, 1,204 tests (94.55% line coverage); Mobile: 3,493 tests
+- 2 migrations: Phase2DMonitoringSchema + Phase2DGapFixes (rayon boundary columns)
+- Deployed: api.sekar.wahyutrip.com (Mar 7, 2026)
 
 **Phase 3 Polishing & E2E Testing** - NOT STARTED
 - E2E testing (Detox mobile, Playwright web)
@@ -348,7 +352,8 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **Project Status** | `specs/COMPLETION_STATUS.md` | Single source of truth |
 | **Phase 2** | `specs/phases/phase-2-enhanced/STATUS.md` | Implementation tracking |
 | **Phase 3** | `specs/phases/phase-3-polishing/STATUS.md` | Polishing & E2E Testing |
-| **API Docs** | `specs/api/contracts.md` | All 113 endpoints |
+| **Phase 2D** | `specs/phases/phase-2-d-monitoring/STATUS.md` | Monitoring implementation |
+| **API Docs** | `specs/api/contracts.md` | All 122 endpoints |
 | **Errors** | `specs/api/error-handling.md` | 31 error codes |
 | **Security** | `specs/architecture/security.md` | Security architecture + dependency audit |
 | **Mobile Updates** | `specs/mobile/dependency-updates.md` | React Native 0.83.1 upgrade + policy |
@@ -356,7 +361,7 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **WSL2** | `specs/deployment/wsl2-network-setup.md` | Mobile testing network |
 | **Infrastructure** | `specs/deployment/infrastructure-setup.md` | Docker services |
 | **E2E Testing** | `specs/testing/e2e-testing.md` | Playwright guide |
-| **Architecture** | `specs/architecture/decisions/` | 8 ADRs |
+| **Architecture** | `specs/architecture/decisions/` | 9 ADRs |
 | **All Specs** | `specs/README.md` | Complete navigation |
 
 ---
@@ -395,21 +400,19 @@ docker-compose down -v                      # Clean restart (deletes data!)
 
 ## Current Status
 
-**Phase 2D Complete** ✅ | Branch: `f/phase-2-d-monitoring` (ready to merge)
+**Phase 2D Complete + Deployed** ✅ (Mar 7, 2026)
 
 | Component | Metrics |
 |-----------|---------|
-| **Backend** | 16 modules, 120 endpoints, 1,095 tests (92.15% stmt, 80.64% branch) |
+| **Backend** | 16 modules, 122 endpoints, 1,204 tests (94.55% line, 83.65% branch) |
 | **Mobile** | 21 screens, 3,493 tests passing, 80.31%+ coverage |
 | **Web** | 21 pages (+1 config), full Mapbox GL + monitoring components |
-| **Database** | 20 tables (+2: user_tracking_status, monitoring_configs), 8-role system |
-| **DevOps** | 3 CI/CD pipelines, Phase 2C deployed to production |
-| **UI/UX** | Neo Brutalism 2.0, four-status monitoring (active/inactive/outside_area/missing) |
+| **Database** | 20 tables (+2: user_tracking_status, monitoring_configs), 8-role system, 5 migrations |
+| **DevOps** | 3 CI/CD pipelines, ESLint 10, Phase 2D deployed to production |
+| **UI/UX** | Neo Brutalism 2.0, five-status monitoring (active/inactive/outside_area/missing/offline) |
 
-**Deployed to Production (Phase 2C):** api.sekar.wahyutrip.com + sekar.wahyutrip.com
+**Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com
 
-**Phase 2D:** Code-complete on branch `f/phase-2-d-monitoring` — pending merge & deploy
+**Next:** Phase 3 Polishing & E2E Testing
 
-**Next:** Merge Phase 2D → deploy → Phase 3 Polishing & E2E Testing
-
-**Deployment Guide:** `specs/deployment/phase-2-deployment.md` (Phase 2D section)
+**Deployment Guide:** `specs/deployment/phase-2-deployment.md`

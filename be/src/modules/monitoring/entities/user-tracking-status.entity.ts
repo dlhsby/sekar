@@ -1,11 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryColumn,
-  ManyToOne,
-  JoinColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, UpdateDateColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Shift } from '../../shifts/entities/shift.entity';

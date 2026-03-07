@@ -442,7 +442,9 @@ async function seedPhase2() {
         ('${USER_NEW_15_ID}', 'satgas_barat2_2',     '${passwordHash}', 'Satgas Barat2 Dua',    '081300000015', 'satgas',       '${RAYON_7_ID}', NULL, TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
-    console.log('  ✓ Created 15 additional users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)');
+    console.log(
+      '  ✓ Created 15 additional users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)',
+    );
 
     // ==========================================
     // STEP 8.1: Create Areas for 5 Missing Rayons + Staff Requirements
@@ -921,29 +923,39 @@ async function seedPhase2() {
     await queryRunner.query(`DELETE FROM tasks`);
     console.log('  ✓ Cleared tasks and task_tags');
 
-    const taskCreator = await queryRunner.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
-    const taskSatgas = await queryRunner.query(`SELECT id FROM users WHERE role = 'satgas' ORDER BY username LIMIT 3`);
-    const taskLinmas  = await queryRunner.query(`SELECT id FROM users WHERE role = 'linmas'  ORDER BY username LIMIT 2`);
-    const taskKepala  = await queryRunner.query(`SELECT id FROM users WHERE role = 'kepala_rayon' LIMIT 1`);
-    const taskTopMgmt = await queryRunner.query(`SELECT id FROM users WHERE role = 'top_management' LIMIT 1`);
-    const taskAreas   = await queryRunner.query(`SELECT id FROM areas ORDER BY name LIMIT 5`);
+    const taskCreator = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'korlap' LIMIT 1`,
+    );
+    const taskSatgas = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'satgas' ORDER BY username LIMIT 3`,
+    );
+    const taskLinmas = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'linmas'  ORDER BY username LIMIT 2`,
+    );
+    const taskKepala = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'kepala_rayon' LIMIT 1`,
+    );
+    const taskTopMgmt = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'top_management' LIMIT 1`,
+    );
+    const taskAreas = await queryRunner.query(`SELECT id FROM areas ORDER BY name LIMIT 5`);
 
     if (taskCreator.length === 0 || taskSatgas.length === 0 || taskAreas.length === 0) {
       console.log('  ⚠ Required users/areas not found, skipping tasks');
     } else {
-      const cId  = taskCreator[0].id;
+      const cId = taskCreator[0].id;
       const s1Id = taskSatgas[0]?.id;
       const s2Id = taskSatgas[1]?.id ?? s1Id;
       const s3Id = taskSatgas[2]?.id ?? s1Id;
       const l1Id = taskLinmas[0]?.id ?? null;
       const l2Id = taskLinmas[1]?.id ?? l1Id;
-      const kId  = taskKepala[0]?.id  ?? null;
+      const kId = taskKepala[0]?.id ?? null;
       const tmId = taskTopMgmt[0]?.id ?? null;
-      const a1   = taskAreas[0]?.id;
-      const a2   = taskAreas[1]?.id ?? a1;
-      const a3   = taskAreas[2]?.id ?? a1;
-      const a4   = taskAreas[3]?.id ?? a1;
-      const a5   = taskAreas[4]?.id ?? a1;
+      const a1 = taskAreas[0]?.id;
+      const a2 = taskAreas[1]?.id ?? a1;
+      const a3 = taskAreas[2]?.id ?? a1;
+      const a4 = taskAreas[3]?.id ?? a1;
+      const a5 = taskAreas[4]?.id ?? a1;
 
       // 8 core satgas tasks — covers all 8 statuses after UPDATE pass below
       await queryRunner.query(`
@@ -999,7 +1011,9 @@ async function seedPhase2() {
           revision_reason = 'Masih ada sampah di area tikungan, perlu dibersihkan ulang'
         WHERE id = '${TASK_7_ID}'
       `);
-      console.log('  ✓ Updated 4 tasks to cover statuses: accepted, declined, verified, revision_needed');
+      console.log(
+        '  ✓ Updated 4 tasks to cover statuses: accepted, declined, verified, revision_needed',
+      );
 
       // Linmas tasks (4)
       if (l1Id) {
@@ -1101,10 +1115,10 @@ async function seedPhase2() {
           new Date(Date.now() - 30 * 86400000).toISOString(), // $1 30 days ago
           new Date(Date.now() - 21 * 86400000).toISOString(), // $2 21 days ago
           new Date(Date.now() - 14 * 86400000).toISOString(), // $3 14 days ago
-          new Date(Date.now() -  7 * 86400000).toISOString(), // $4  7 days ago
-          new Date(Date.now() -  3 * 86400000).toISOString(), // $5  3 days ago
-          new Date(Date.now() -  1 * 86400000).toISOString(), // $6  1 day ago
-          new Date(Date.now() +  7 * 86400000).toISOString(), // $7  7 days from now
+          new Date(Date.now() - 7 * 86400000).toISOString(), // $4  7 days ago
+          new Date(Date.now() - 3 * 86400000).toISOString(), // $5  3 days ago
+          new Date(Date.now() - 1 * 86400000).toISOString(), // $6  1 day ago
+          new Date(Date.now() + 7 * 86400000).toISOString(), // $7  7 days from now
         ],
       );
       console.log('  ✓ Created 25 extended tasks for scroll/filter testing');
@@ -1120,22 +1134,38 @@ async function seedPhase2() {
     console.log('  ✓ Cleared activities table');
 
     // Fetch user + shift + area refs for activities
-    const actSatgas1  = await queryRunner.query(`SELECT id FROM users WHERE username = 'satgas1' LIMIT 1`);
-    const actSatgas2  = await queryRunner.query(`SELECT id FROM users WHERE username = 'satgas2' LIMIT 1`);
-    const actLinmas1  = await queryRunner.query(`SELECT id FROM users WHERE username = 'linmas1' LIMIT 1`);
-    const actLinmas2  = await queryRunner.query(`SELECT id FROM users WHERE username = 'linmas2' LIMIT 1`);
-    const actKorlap   = await queryRunner.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
-    const actShift    = await queryRunner.query(`SELECT id FROM shifts LIMIT 1`);
-    const actArea     = await queryRunner.query(`SELECT id FROM areas WHERE name ILIKE '%bungkul%' LIMIT 1`);
+    const actSatgas1 = await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'satgas1' LIMIT 1`,
+    );
+    const actSatgas2 = await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'satgas2' LIMIT 1`,
+    );
+    const actLinmas1 = await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'linmas1' LIMIT 1`,
+    );
+    const actLinmas2 = await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'linmas2' LIMIT 1`,
+    );
+    const actKorlap = await queryRunner.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
+    const actShift = await queryRunner.query(`SELECT id FROM shifts LIMIT 1`);
+    const actArea = await queryRunner.query(
+      `SELECT id FROM areas WHERE name ILIKE '%bungkul%' LIMIT 1`,
+    );
 
-    if (actSatgas1.length === 0 || actLinmas1.length === 0 || actKorlap.length === 0 || actShift.length === 0 || actArea.length === 0) {
+    if (
+      actSatgas1.length === 0 ||
+      actLinmas1.length === 0 ||
+      actKorlap.length === 0 ||
+      actShift.length === 0 ||
+      actArea.length === 0
+    ) {
       console.log('  ⚠ Required refs not found, skipping activities');
     } else {
       const aS1 = actSatgas1[0].id;
       const aS2 = actSatgas2.length > 0 ? actSatgas2[0].id : aS1;
       const aL1 = actLinmas1[0].id;
       const aL2 = actLinmas2.length > 0 ? actLinmas2[0].id : aL1;
-      const aK  = actKorlap[0].id;
+      const aK = actKorlap[0].id;
       const aSh = actShift[0].id;
       const aAr = actArea[0].id;
 
@@ -1148,21 +1178,21 @@ async function seedPhase2() {
       const atypes = await queryRunner.query(`SELECT id, code FROM activity_types`);
       const at = (code: string) => atypes.find((a: any) => a.code === code)?.id ?? null;
 
-      const perawatanId    = at('perawatan');
-      const penanamanId    = at('penanaman');
-      const penyiramanId   = at('penyiraman');
+      const perawatanId = at('perawatan');
+      const penanamanId = at('penanaman');
+      const penyiramanId = at('penyiraman');
       const potongRumputId = at('potong_rumput');
       const angkutSampahId = at('angkut_sampah');
       const lainnySatgasId = at('lainnya_satgas');
-      const patroliId      = at('patroli');
-      const insidenId      = at('insiden');
-      const periksaFasId   = at('periksa_fasilitas');
-      const halauPklId     = at('halau_pkl');
-      const lainnasLinmasId= at('lainnya_linmas');
+      const patroliId = at('patroli');
+      const insidenId = at('insiden');
+      const periksaFasId = at('periksa_fasilitas');
+      const halauPklId = at('halau_pkl');
+      const lainnasLinmasId = at('lainnya_linmas');
       const cekKendaraanId = at('cek_kendaraan');
-      const patroliKorlapId= at('patroli_korlap');
-      const cekAlatId      = at('cek_alat');
-      const lainnyaKorlapId= at('lainnya_korlap');
+      const patroliKorlapId = at('patroli_korlap');
+      const cekAlatId = at('cek_alat');
+      const lainnyaKorlapId = at('lainnya_korlap');
 
       if (perawatanId && patroliId && cekKendaraanId) {
         // 12 Satgas activities spanning 4 weeks
@@ -1253,11 +1283,46 @@ async function seedPhase2() {
     // D.1: Monitoring configs (idempotent)
     console.log('  [D.1] Seeding monitoring configs...');
     const monitoringConfigs = [
-      { key: 'status_thresholds', value: JSON.stringify({ active_max_age_seconds: 300, inactive_threshold_seconds: 900, missing_threshold_seconds: 3600, location_ping_interval_seconds: 60 }), description: 'Status calculation thresholds' },
-      { key: 'geofencing', value: JSON.stringify({ tolerance_meters: 50, outside_area_grace_seconds: 120 }), description: 'Geofencing tolerance settings' },
-      { key: 'map_defaults', value: JSON.stringify({ center_lat: -7.2575, center_lng: 112.7521, zoom: 12, cluster_zoom_threshold: 14, cluster_threshold: 30 }), description: 'Map default view (Surabaya)' },
-      { key: 'alerts', value: JSON.stringify({ missing_user_notify: true, understaffed_notify: true, low_battery_threshold: 15 }), description: 'Alert configuration' },
-      { key: 'location_ping', value: JSON.stringify({ interval_seconds: 60, batch_size: 10 }), description: 'Mobile location ping settings' },
+      {
+        key: 'status_thresholds',
+        value: JSON.stringify({
+          active_max_age_seconds: 300,
+          inactive_threshold_seconds: 900,
+          missing_threshold_seconds: 3600,
+          location_ping_interval_seconds: 60,
+        }),
+        description: 'Status calculation thresholds',
+      },
+      {
+        key: 'geofencing',
+        value: JSON.stringify({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
+        description: 'Geofencing tolerance settings',
+      },
+      {
+        key: 'map_defaults',
+        value: JSON.stringify({
+          center_lat: -7.2575,
+          center_lng: 112.7521,
+          zoom: 12,
+          cluster_zoom_threshold: 14,
+          cluster_threshold: 30,
+        }),
+        description: 'Map default view (Surabaya)',
+      },
+      {
+        key: 'alerts',
+        value: JSON.stringify({
+          missing_user_notify: true,
+          understaffed_notify: true,
+          low_battery_threshold: 15,
+        }),
+        description: 'Alert configuration',
+      },
+      {
+        key: 'location_ping',
+        value: JSON.stringify({ interval_seconds: 60, batch_size: 10 }),
+        description: 'Mobile location ping settings',
+      },
     ];
     for (const cfg of monitoringConfigs) {
       await queryRunner.query(
@@ -1388,7 +1453,9 @@ async function seedPhase2() {
     console.log('  Section D (Monitoring Phase 2D):');
     console.log('    - 5 monitoring configs (thresholds, geofencing, map, alerts, ping)');
     console.log('    - user_tracking_status backfilled for all clockable users');
-    console.log('    - Status variants: active×2, inactive×1, outside_area×1, missing×1, offline×rest');
+    console.log(
+      '    - Status variants: active×2, inactive×1, outside_area×1, missing×1, offline×rest',
+    );
   } catch (error) {
     console.error('❌ Error during Phase 2 seeding:', error);
     throw error;

@@ -101,10 +101,12 @@ export class LocationService {
             latestLog.battery_level ?? null,
             latestLog.logged_at,
           )
-          .catch((err) => this.logger.error(
-            `StatusCalculator.onLocationPing failed for user ${userId}: ${err.message}`,
-            err.stack,
-          ));
+          .catch((err) =>
+            this.logger.error(
+              `StatusCalculator.onLocationPing failed for user ${userId}: ${err.message}`,
+              err.stack,
+            ),
+          );
       }
 
       return { count: locationEntities.length };

@@ -75,9 +75,10 @@ export class MonitoringService {
 
   // ---- Staffing Summary (combines user & stats concerns, stays here) ----
 
-  async getStaffingSummary(
-    filters: { rayon_id?: string; area_id?: string },
-  ): Promise<StaffingSummaryResponseDto> {
+  async getStaffingSummary(filters: {
+    rayon_id?: string;
+    area_id?: string;
+  }): Promise<StaffingSummaryResponseDto> {
     const areas = await this.resolveAreas(filters);
     const currentShift = await this.statsService.getCurrentShiftDefinition();
     const currentDayType = await this.dayTypeService.getCurrentDayType();
@@ -98,9 +99,7 @@ export class MonitoringService {
 
   // ---- Private helpers ----
 
-  private async resolveAreas(
-    filters: { rayon_id?: string; area_id?: string },
-  ): Promise<Area[]> {
+  private async resolveAreas(filters: { rayon_id?: string; area_id?: string }): Promise<Area[]> {
     if (filters.area_id) {
       const area = await this.areaRepository.findOne({
         where: { id: filters.area_id, is_active: true },
@@ -123,7 +122,11 @@ export class MonitoringService {
 
     const requirements = currentShift
       ? await this.staffRequirementRepository.find({
-          where: { area_id: area.id, shift_definition_id: currentShift.id, day_type: currentDayType },
+          where: {
+            area_id: area.id,
+            shift_definition_id: currentShift.id,
+            day_type: currentDayType,
+          },
         })
       : [];
 
@@ -153,9 +156,7 @@ export class MonitoringService {
       type: 'area',
       roles,
       ...totals,
-      is_fully_staffed: roles.every((r) =>
-        (r.active + r.idle + r.outside_area) >= r.total_required,
-      ),
+      is_fully_staffed: roles.every((r) => r.active + r.idle + r.outside_area >= r.total_required),
     };
   }
 
@@ -208,9 +209,7 @@ export class MonitoringService {
     return map;
   }
 
-  private async getAssignedRoleCounts(
-    areaId: string,
-  ): Promise<Map<string, number>> {
+  private async getAssignedRoleCounts(areaId: string): Promise<Map<string, number>> {
     const rows = await this.userRepository
       .createQueryBuilder('user')
       .select('user.role', 'role')
@@ -229,11 +228,7 @@ export class MonitoringService {
     reqMap: Map<string, number>,
     requirementsByDayType: Map<string, DayTypeRequirementsDto>,
   ): RoleStaffingDto[] {
-    const allRoles = new Set([
-      ...roleCounts.keys(),
-      ...assignedCounts.keys(),
-      ...reqMap.keys(),
-    ]);
+    const allRoles = new Set([...roleCounts.keys(), ...assignedCounts.keys(), ...reqMap.keys()]);
 
     return Array.from(allRoles).map((role) => {
       const statuses = roleCounts.get(role) || {};
@@ -246,7 +241,11 @@ export class MonitoringService {
         offline: statuses[TrackingStatus.OFFLINE] || 0,
         total_assigned: assignedCounts.get(role) || 0,
         total_required: reqMap.get(role) || 0,
-        requirements_by_day_type: requirementsByDayType.get(role) ?? { weekday: 0, weekend: 0, holiday: 0 },
+        requirements_by_day_type: requirementsByDayType.get(role) ?? {
+          weekday: 0,
+          weekend: 0,
+          holiday: 0,
+        },
       };
     });
   }

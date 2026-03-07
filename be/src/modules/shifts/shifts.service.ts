@@ -185,11 +185,20 @@ export class ShiftsService {
 
     if (this.statusCalculator) {
       await this.statusCalculator
-        .onClockIn(userId, savedShift.id, savedShift.area_id, savedShift.shift_definition_id ?? null, dto.gps_lat, dto.gps_lng)
-        .catch((err) => this.logger.error(
-          `StatusCalculator.onClockIn failed for user ${userId}: ${err.message}`,
-          err.stack,
-        ));
+        .onClockIn(
+          userId,
+          savedShift.id,
+          savedShift.area_id,
+          savedShift.shift_definition_id ?? null,
+          dto.gps_lat,
+          dto.gps_lng,
+        )
+        .catch((err) =>
+          this.logger.error(
+            `StatusCalculator.onClockIn failed for user ${userId}: ${err.message}`,
+            err.stack,
+          ),
+        );
     }
 
     return savedShift;
@@ -264,10 +273,12 @@ export class ShiftsService {
     if (this.statusCalculator) {
       await this.statusCalculator
         .onClockOut(userId)
-        .catch((err) => this.logger.error(
-          `StatusCalculator.onClockOut failed for user ${userId}: ${err.message}`,
-          err.stack,
-        ));
+        .catch((err) =>
+          this.logger.error(
+            `StatusCalculator.onClockOut failed for user ${userId}: ${err.message}`,
+            err.stack,
+          ),
+        );
     }
 
     return updatedShift;

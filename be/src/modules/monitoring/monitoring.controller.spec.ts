@@ -501,7 +501,13 @@ describe('MonitoringController', () => {
       expect(result.total_outside_area).toBeDefined();
       expect(result.total_missing).toBeDefined();
       expect(result.total_offline).toBeDefined();
-      expect(result.total_active + result.total_inactive + result.total_outside_area + result.total_missing + result.total_offline).toBe(200);
+      expect(
+        result.total_active +
+          result.total_inactive +
+          result.total_outside_area +
+          result.total_missing +
+          result.total_offline,
+      ).toBe(200);
     });
 
     it('should return user task information', async () => {
@@ -561,16 +567,26 @@ describe('MonitoringController', () => {
     it('should return location history for a user', async () => {
       const mockHistory = { user_id: 'user-1', points: [], date: '2026-03-04' };
       service.getLocationHistory.mockResolvedValue(mockHistory as any);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-1', rayon_id: 'rayon-1' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-1',
+        rayon_id: 'rayon-1',
+      } as any);
 
-      const result = await controller.getLocationHistory('user-1', { date: '2026-03-04' }, mockSuperadmin);
+      const result = await controller.getLocationHistory(
+        'user-1',
+        { date: '2026-03-04' },
+        mockSuperadmin,
+      );
 
       expect(service.getLocationHistory).toHaveBeenCalledWith('user-1', '2026-03-04', undefined);
       expect(result).toEqual(mockHistory);
     });
 
     it('should deny korlap access to user in different area', async () => {
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-other', rayon_id: 'rayon-1' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-other',
+        rayon_id: 'rayon-1',
+      } as any);
 
       await expect(
         controller.getLocationHistory('user-2', { date: '2026-03-04' }, mockKorlap),
@@ -578,7 +594,10 @@ describe('MonitoringController', () => {
     });
 
     it('should deny kepala_rayon access to user in different rayon', async () => {
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-1', rayon_id: 'rayon-other' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-1',
+        rayon_id: 'rayon-other',
+      } as any);
 
       await expect(
         controller.getLocationHistory('user-2', { date: '2026-03-04' }, mockKepalaRayon),
@@ -651,7 +670,12 @@ describe('MonitoringController', () => {
     it('should return monitoring configurations', async () => {
       const configService = controller['configService'] as any;
       configService.findAll.mockResolvedValue([
-        { key: 'status_thresholds', value: { active_max_age_seconds: 300 }, description: 'Thresholds', updated_at: new Date() },
+        {
+          key: 'status_thresholds',
+          value: { active_max_age_seconds: 300 },
+          description: 'Thresholds',
+          updated_at: new Date(),
+        },
       ]);
 
       const result = await controller.getConfig();

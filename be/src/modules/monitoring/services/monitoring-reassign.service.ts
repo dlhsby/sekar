@@ -1,4 +1,10 @@
-import { Injectable, Logger, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { User, UserRole } from '../../users/entities/user.entity';
@@ -8,10 +14,7 @@ import { Schedule } from '../../schedules/entities/schedule.entity';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from '../dto/reassign-worker.dto';
 import { EventsGateway } from '../../../gateways/events.gateway';
 
-const REASSIGNABLE_ROLES: string[] = [
-  UserRole.SATGAS,
-  UserRole.LINMAS,
-];
+const REASSIGNABLE_ROLES: string[] = [UserRole.SATGAS, UserRole.LINMAS];
 
 @Injectable()
 export class MonitoringReassignService {
@@ -29,10 +32,7 @@ export class MonitoringReassignService {
     private readonly eventsGateway: EventsGateway,
   ) {}
 
-  async reassign(
-    dto: ReassignWorkerDto,
-    requestingUser: User,
-  ): Promise<ReassignWorkerResponseDto> {
+  async reassign(dto: ReassignWorkerDto, requestingUser: User): Promise<ReassignWorkerResponseDto> {
     const worker = await this.userRepository.findOne({
       where: { id: dto.user_id },
       relations: ['area'],
@@ -71,10 +71,7 @@ export class MonitoringReassignService {
     worker.area_id = dto.target_area_id;
     await this.userRepository.save(worker);
 
-    await this.trackingRepository.update(
-      { user_id: worker.id },
-      { area_id: dto.target_area_id },
-    );
+    await this.trackingRepository.update({ user_id: worker.id }, { area_id: dto.target_area_id });
 
     // End current schedule if requested
     if (dto.end_current_schedule && previousAreaId) {
@@ -109,7 +106,9 @@ export class MonitoringReassignService {
       timestamp: now,
     });
 
-    this.logger.log(`User ${worker.id} reassigned from area ${previousAreaId} to ${dto.target_area_id}`);
+    this.logger.log(
+      `User ${worker.id} reassigned from area ${previousAreaId} to ${dto.target_area_id}`,
+    );
 
     return {
       user_id: worker.id,
@@ -143,7 +142,9 @@ export class MonitoringReassignService {
     }
 
     if (activeSchedules.length > 0) {
-      this.logger.log(`Ended ${activeSchedules.length} active schedule(s) for user ${userId} at area ${areaId}`);
+      this.logger.log(
+        `Ended ${activeSchedules.length} active schedule(s) for user ${userId} at area ${areaId}`,
+      );
     }
   }
 }

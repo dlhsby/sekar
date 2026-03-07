@@ -10,22 +10,34 @@ export class ReassignWorkerDto {
   @IsUUID()
   target_area_id: string;
 
-  @ApiPropertyOptional({ example: 'shift-def-uuid', description: 'Shift definition ID for the new schedule' })
+  @ApiPropertyOptional({
+    example: 'shift-def-uuid',
+    description: 'Shift definition ID for the new schedule',
+  })
   @IsUUID()
   @IsOptional()
   shift_definition_id?: string;
 
-  @ApiPropertyOptional({ example: '2026-03-07', description: 'Effective date for reassignment (defaults to today)' })
+  @ApiPropertyOptional({
+    example: '2026-03-07',
+    description: 'Effective date for reassignment (defaults to today)',
+  })
   @IsDateString()
   @IsOptional()
   effective_date?: string;
 
-  @ApiPropertyOptional({ example: false, description: 'Whether to end current schedule before reassigning' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether to end current schedule before reassigning',
+  })
   @IsBoolean()
   @IsOptional()
   end_current_schedule?: boolean;
 
-  @ApiPropertyOptional({ example: 'Understaffed at target area', description: 'Reason for reassignment' })
+  @ApiPropertyOptional({
+    example: 'Understaffed at target area',
+    description: 'Reason for reassignment',
+  })
   @IsString()
   @IsOptional()
   reason?: string;

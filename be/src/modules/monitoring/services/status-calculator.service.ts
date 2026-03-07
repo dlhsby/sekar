@@ -230,7 +230,17 @@ export class StatusCalculatorService {
     }
 
     // Always emit location update
-    await this.broadcastLocationUpdate(existing, lat, lng, accuracy, battery, newStatus, isWithinArea, now, context);
+    await this.broadcastLocationUpdate(
+      existing,
+      lat,
+      lng,
+      accuracy,
+      battery,
+      newStatus,
+      isWithinArea,
+      now,
+      context,
+    );
   }
 
   // ---- Private broadcast helpers ----
@@ -242,7 +252,8 @@ export class StatusCalculatorService {
     timestamp: Date,
     preResolved?: { user: User; area: Area | null } | null,
   ): Promise<void> {
-    const context = preResolved ?? await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    const context =
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
     if (!context) return;
 
     const event: UserStatusChangedEvent = {
@@ -272,7 +283,8 @@ export class StatusCalculatorService {
   ): Promise<void> {
     if (!tracking.area_id) return;
 
-    const context = preResolved ?? await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    const context =
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
     if (!context || !context.area) return;
 
     const event: UserAreaEvent = {
@@ -307,7 +319,8 @@ export class StatusCalculatorService {
   ): Promise<void> {
     if (!tracking.area_id || !tracking.shift_id) return;
 
-    const context = preResolved ?? await this.resolveUserContext(tracking.user_id, tracking.area_id);
+    const context =
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
     if (!context) return;
 
     const event: UserLocationEvent = {
@@ -332,7 +345,11 @@ export class StatusCalculatorService {
   }
 
   private isActiveStatus(status: TrackingStatus): boolean {
-    return status === TrackingStatus.ACTIVE || status === TrackingStatus.INACTIVE || status === TrackingStatus.OUTSIDE_AREA;
+    return (
+      status === TrackingStatus.ACTIVE ||
+      status === TrackingStatus.INACTIVE ||
+      status === TrackingStatus.OUTSIDE_AREA
+    );
   }
 
   private async emitStaffingChangedIfNeeded(
@@ -364,7 +381,10 @@ export class StatusCalculatorService {
     const requiredCount = parseInt(reqResult?.total || '0');
     if (requiredCount === 0) return;
 
-    const area = await this.areaRepository.findOne({ where: { id: areaId }, select: ['id', 'rayon_id'] });
+    const area = await this.areaRepository.findOne({
+      where: { id: areaId },
+      select: ['id', 'rayon_id'],
+    });
 
     const event: AreaStaffingChangedEvent = {
       area_id: areaId,
@@ -390,29 +410,23 @@ export class StatusCalculatorService {
     if (!user) return null;
 
     const area = areaId
-      ? await this.areaRepository.findOne({ where: { id: areaId }, select: ['id', 'name', 'rayon_id'] })
+      ? await this.areaRepository.findOne({
+          where: { id: areaId },
+          select: ['id', 'name', 'rayon_id'],
+        })
       : null;
 
     return { user, area };
   }
 
-  private async checkWithinArea(
-    areaId: string,
-    lat: number,
-    lng: number,
-  ): Promise<boolean> {
+  private async checkWithinArea(areaId: string, lat: number, lng: number): Promise<boolean> {
     const boundary = await this.cacheService.getAreaBoundary(areaId);
     if (!boundary || boundary.length === 0) {
       return true;
     }
 
     const geofencing = await this.cacheService.getGeofencing();
-    return this.isPointInPolygonWithTolerance(
-      lat,
-      lng,
-      boundary[0],
-      geofencing.tolerance_meters,
-    );
+    return this.isPointInPolygonWithTolerance(lat, lng, boundary[0], geofencing.tolerance_meters);
   }
 
   private isPointInPolygonWithTolerance(
@@ -438,8 +452,7 @@ export class StatusCalculatorService {
       const xj = polygon[j][1];
       const yj = polygon[j][0];
 
-      const intersect =
-        yi > lng !== yj > lng && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi;
+      const intersect = yi > lng !== yj > lng && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi;
       if (intersect) inside = !inside;
     }
     return inside;
@@ -448,10 +461,8 @@ export class StatusCalculatorService {
   private expandPolygon(polygon: number[][], degrees: number): number[][] {
     if (polygon.length < 3) return polygon;
 
-    const centroidLng =
-      polygon.reduce((sum, p) => sum + p[0], 0) / polygon.length;
-    const centroidLat =
-      polygon.reduce((sum, p) => sum + p[1], 0) / polygon.length;
+    const centroidLng = polygon.reduce((sum, p) => sum + p[0], 0) / polygon.length;
+    const centroidLat = polygon.reduce((sum, p) => sum + p[1], 0) / polygon.length;
 
     return polygon.map((point) => {
       const dx = point[0] - centroidLng;

@@ -129,7 +129,9 @@ describe('ShiftsService', () => {
     areasService = module.get(AreasService) as jest.Mocked<AreasService>;
     s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
     statusCalculator = module.get(StatusCalculatorService) as jest.Mocked<StatusCalculatorService>;
-    shiftDefinitionRepo = module.get(getRepositoryToken(ShiftDefinition)) as jest.Mocked<Repository<ShiftDefinition>>;
+    shiftDefinitionRepo = module.get(getRepositoryToken(ShiftDefinition)) as jest.Mocked<
+      Repository<ShiftDefinition>
+    >;
   });
 
   afterEach(async () => {

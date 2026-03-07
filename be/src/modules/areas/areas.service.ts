@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, Inject, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Area } from './entities/area.entity';
@@ -6,7 +13,11 @@ import { User } from '../users/entities/user.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { AreaTypesService } from '../area-types/area-types.service';
-import { AreaBoundaryResponseDto, UpdateAreaBoundaryDto, GeoJsonPolygon } from '../monitoring/dto/area-boundary.dto';
+import {
+  AreaBoundaryResponseDto,
+  UpdateAreaBoundaryDto,
+  GeoJsonPolygon,
+} from '../monitoring/dto/area-boundary.dto';
 import { GeoJsonValidator } from '../../common/utils/geojson-validator.util';
 import { RayonBoundaryService } from '../monitoring/services/rayon-boundary.service';
 
@@ -26,7 +37,8 @@ export class AreasService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly areaTypesService: AreaTypesService,
-    @Optional() @Inject(RayonBoundaryService)
+    @Optional()
+    @Inject(RayonBoundaryService)
     private readonly rayonBoundaryService?: RayonBoundaryService,
   ) {}
 
@@ -175,10 +187,7 @@ export class AreasService {
     };
   }
 
-  async updateBoundary(
-    id: string,
-    dto: UpdateAreaBoundaryDto,
-  ): Promise<AreaBoundaryResponseDto> {
+  async updateBoundary(id: string, dto: UpdateAreaBoundaryDto): Promise<AreaBoundaryResponseDto> {
     const area = await this.findOne(id);
     const errors = GeoJsonValidator.validatePolygon(dto.boundary_polygon);
 
@@ -186,8 +195,9 @@ export class AreasService {
       throw new BadRequestException(`Invalid polygon: ${errors.join('; ')}`);
     }
 
-    const coverageArea = dto.coverage_area
-      ?? GeoJsonValidator.computeAreaSqMeters(dto.boundary_polygon.coordinates[0]);
+    const coverageArea =
+      dto.coverage_area ??
+      GeoJsonValidator.computeAreaSqMeters(dto.boundary_polygon.coordinates[0]);
 
     area.boundary_polygon = dto.boundary_polygon;
     area.coverage_area = coverageArea;

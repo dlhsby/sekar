@@ -38,7 +38,9 @@ describe('StatusCalculatorService', () => {
 
     cacheService = {
       getThresholds: jest.fn().mockResolvedValue(defaultThresholds),
-      getGeofencing: jest.fn().mockResolvedValue({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
+      getGeofencing: jest
+        .fn()
+        .mockResolvedValue({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
       getAreaBoundary: jest.fn().mockResolvedValue(null),
     };
 
@@ -85,7 +87,11 @@ describe('StatusCalculatorService', () => {
     const now = new Date('2026-03-04T10:00:00Z');
 
     it('should return OFFLINE when no active shift', () => {
-      const input: StatusInput = { hasActiveShift: false, lastLocationAt: null, isWithinArea: true };
+      const input: StatusInput = {
+        hasActiveShift: false,
+        lastLocationAt: null,
+        isWithinArea: true,
+      };
       expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.OFFLINE);
     });
 
@@ -109,7 +115,9 @@ describe('StatusCalculatorService', () => {
         lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
         isWithinArea: false,
       };
-      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.OUTSIDE_AREA);
+      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(
+        TrackingStatus.OUTSIDE_AREA,
+      );
     });
 
     it('should return INACTIVE when location age exceeds active threshold but below inactive', () => {
@@ -175,7 +183,13 @@ describe('StatusCalculatorService', () => {
     it('should check boundary when GPS coords provided', async () => {
       // Mock boundary - polygon that contains the clock-in point
       cacheService.getAreaBoundary.mockResolvedValue([
-        [[112.73, -7.28], [112.76, -7.28], [112.76, -7.31], [112.73, -7.31], [112.73, -7.28]],
+        [
+          [112.73, -7.28],
+          [112.76, -7.28],
+          [112.76, -7.31],
+          [112.73, -7.31],
+          [112.73, -7.28],
+        ],
       ]);
 
       await service.onClockIn('user-1', 'shift-1', 'area-1', 'sd-1', -7.29, 112.74);
@@ -191,7 +205,13 @@ describe('StatusCalculatorService', () => {
     it('should set is_within_area false when clock-in outside boundary', async () => {
       // Mock boundary - polygon that does NOT contain the clock-in point
       cacheService.getAreaBoundary.mockResolvedValue([
-        [[112.73, -7.28], [112.735, -7.28], [112.735, -7.285], [112.73, -7.285], [112.73, -7.28]],
+        [
+          [112.73, -7.28],
+          [112.735, -7.28],
+          [112.735, -7.285],
+          [112.73, -7.285],
+          [112.73, -7.28],
+        ],
       ]);
 
       await service.onClockIn('user-1', 'shift-1', 'area-1', 'sd-1', -7.5, 112.9);
@@ -253,9 +273,7 @@ describe('StatusCalculatorService', () => {
         updated_at: new Date(),
       });
 
-      await service.onLocationPing(
-        'user-1', -7.29, 112.74, 10, 85, new Date(),
-      );
+      await service.onLocationPing('user-1', -7.29, 112.74, 10, 85, new Date());
 
       expect(trackingRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -298,15 +316,19 @@ describe('StatusCalculatorService', () => {
 
       // Mock boundary check to return a polygon that excludes the new point
       cacheService.getAreaBoundary.mockResolvedValue([
-        [[112.73, -7.28], [112.735, -7.28], [112.735, -7.285], [112.73, -7.285], [112.73, -7.28]],
+        [
+          [112.73, -7.28],
+          [112.735, -7.28],
+          [112.735, -7.285],
+          [112.73, -7.285],
+          [112.73, -7.28],
+        ],
       ]);
 
       userRepository.findOne.mockResolvedValue(mockUser);
       areaRepository.findOne.mockResolvedValue(mockArea);
 
-      await service.onLocationPing(
-        'user-1', -7.5, 112.9, 10, 80, new Date(),
-      );
+      await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
 
       expect(eventsGateway.emitUserLeftArea).toHaveBeenCalledWith(
         expect.objectContaining({ user_id: 'user-1', area_id: 'area-1' }),

@@ -455,7 +455,9 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
 
     // Add completion workflow columns (photo array, notes, timestamps)
     console.log('  - Adding completion and verification workflow columns...');
-    await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_photo_urls TEXT[];`);
+    await queryRunner.query(
+      `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_photo_urls TEXT[];`,
+    );
     await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_notes TEXT;`);
     await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;`);
     await queryRunner.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMPTZ;`);

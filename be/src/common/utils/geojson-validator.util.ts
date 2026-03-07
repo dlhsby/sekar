@@ -48,7 +48,9 @@ export class GeoJsonValidator {
     }
 
     if (outerRing.length < 4) {
-      errors.push(`Outer ring must have >= 4 points (3 vertices + closing), got ${outerRing.length}`);
+      errors.push(
+        `Outer ring must have >= 4 points (3 vertices + closing), got ${outerRing.length}`,
+      );
     }
 
     if (!this.isClosedRing(outerRing)) {
@@ -56,7 +58,9 @@ export class GeoJsonValidator {
     }
 
     if (!this.isWithinSurabayaBounds(outerRing)) {
-      errors.push('All coordinates must be within Surabaya bounds (lng: 112.5-113.0, lat: -7.5 to -7.0)');
+      errors.push(
+        'All coordinates must be within Surabaya bounds (lng: 112.5-113.0, lat: -7.5 to -7.0)',
+      );
     }
 
     for (let i = 0; i < outerRing.length; i++) {

@@ -6,8 +6,8 @@ const VALID_POLYGON = {
     [
       [112.7388, -7.2905],
       [112.7395, -7.2905],
-      [112.7395, -7.2910],
-      [112.7388, -7.2910],
+      [112.7395, -7.291],
+      [112.7388, -7.291],
       [112.7388, -7.2905], // closed
     ],
   ],
@@ -30,7 +30,10 @@ describe('GeoJsonValidator', () => {
     });
 
     it('returns error when coordinates is not an array', () => {
-      const errors = GeoJsonValidator.validatePolygon({ ...VALID_POLYGON, coordinates: 'bad' as any });
+      const errors = GeoJsonValidator.validatePolygon({
+        ...VALID_POLYGON,
+        coordinates: 'bad' as any,
+      });
       expect(errors.some((e) => e.includes('Coordinates must be an array'))).toBe(true);
     });
 
@@ -42,7 +45,13 @@ describe('GeoJsonValidator', () => {
     it('returns error when outer ring has fewer than 4 points', () => {
       const errors = GeoJsonValidator.validatePolygon({
         ...VALID_POLYGON,
-        coordinates: [[[112.7388, -7.2905], [112.7395, -7.2905], [112.7388, -7.2905]]],
+        coordinates: [
+          [
+            [112.7388, -7.2905],
+            [112.7395, -7.2905],
+            [112.7388, -7.2905],
+          ],
+        ],
       });
       expect(errors.some((e) => e.includes('>= 4 points'))).toBe(true);
     });
@@ -54,8 +63,8 @@ describe('GeoJsonValidator', () => {
           [
             [112.7388, -7.2905],
             [112.7395, -7.2905],
-            [112.7395, -7.2910],
-            [112.7388, -7.2910], // NOT closed
+            [112.7395, -7.291],
+            [112.7388, -7.291], // NOT closed
           ],
         ],
       });
@@ -85,8 +94,8 @@ describe('GeoJsonValidator', () => {
           [
             ['bad', -7.2905] as any,
             [112.7395, -7.2905],
-            [112.7395, -7.2910],
-            [112.7388, -7.2910],
+            [112.7395, -7.291],
+            [112.7388, -7.291],
             ['bad', -7.2905] as any,
           ],
         ],
@@ -97,25 +106,46 @@ describe('GeoJsonValidator', () => {
     it('returns error for point with insufficient elements', () => {
       const errors = GeoJsonValidator.validatePolygon({
         ...VALID_POLYGON,
-        coordinates: [[[112.7388] as any, [112.7395, -7.2905], [112.7395, -7.2910], [112.7388, -7.2910], [112.7388] as any]],
+        coordinates: [
+          [
+            [112.7388] as any,
+            [112.7395, -7.2905],
+            [112.7395, -7.291],
+            [112.7388, -7.291],
+            [112.7388] as any,
+          ],
+        ],
       });
       expect(errors.some((e) => e.includes('[longitude, latitude]'))).toBe(true);
     });
 
     it('accumulates multiple errors', () => {
-      const errors = GeoJsonValidator.validatePolygon({ type: 'LineString' as any, coordinates: [] });
+      const errors = GeoJsonValidator.validatePolygon({
+        type: 'LineString' as any,
+        coordinates: [],
+      });
       expect(errors.length).toBeGreaterThan(1);
     });
   });
 
   describe('isClosedRing', () => {
     it('returns true when first and last points are identical', () => {
-      const ring = [[112.7, -7.29], [112.8, -7.29], [112.8, -7.3], [112.7, -7.29]];
+      const ring = [
+        [112.7, -7.29],
+        [112.8, -7.29],
+        [112.8, -7.3],
+        [112.7, -7.29],
+      ];
       expect(GeoJsonValidator.isClosedRing(ring)).toBe(true);
     });
 
     it('returns false when first and last points differ', () => {
-      const ring = [[112.7, -7.29], [112.8, -7.29], [112.8, -7.3], [112.7, -7.31]];
+      const ring = [
+        [112.7, -7.29],
+        [112.8, -7.29],
+        [112.8, -7.3],
+        [112.7, -7.31],
+      ];
       expect(GeoJsonValidator.isClosedRing(ring)).toBe(false);
     });
 
@@ -131,12 +161,22 @@ describe('GeoJsonValidator', () => {
 
   describe('isWithinSurabayaBounds', () => {
     it('returns true for coordinates within Surabaya', () => {
-      const ring = [[112.7, -7.2], [112.8, -7.2], [112.8, -7.3], [112.7, -7.2]];
+      const ring = [
+        [112.7, -7.2],
+        [112.8, -7.2],
+        [112.8, -7.3],
+        [112.7, -7.2],
+      ];
       expect(GeoJsonValidator.isWithinSurabayaBounds(ring)).toBe(true);
     });
 
     it('returns false for coordinates outside Surabaya', () => {
-      const ring = [[106.8, -6.2], [106.9, -6.2], [106.9, -6.3], [106.8, -6.2]];
+      const ring = [
+        [106.8, -6.2],
+        [106.9, -6.2],
+        [106.9, -6.3],
+        [106.8, -6.2],
+      ];
       expect(GeoJsonValidator.isWithinSurabayaBounds(ring)).toBe(false);
     });
 
@@ -154,9 +194,23 @@ describe('GeoJsonValidator', () => {
 
     it('enforces boundary edges (112.5, 113.0, -7.5, -7.0)', () => {
       // Exactly on boundary - valid
-      expect(GeoJsonValidator.isWithinSurabayaBounds([[112.5, -7.0], [113.0, -7.5], [112.5, -7.5], [112.5, -7.0]])).toBe(true);
+      expect(
+        GeoJsonValidator.isWithinSurabayaBounds([
+          [112.5, -7.0],
+          [113.0, -7.5],
+          [112.5, -7.5],
+          [112.5, -7.0],
+        ]),
+      ).toBe(true);
       // Just outside lng max
-      expect(GeoJsonValidator.isWithinSurabayaBounds([[113.1, -7.2], [112.7, -7.2], [112.7, -7.3], [113.1, -7.2]])).toBe(false);
+      expect(
+        GeoJsonValidator.isWithinSurabayaBounds([
+          [113.1, -7.2],
+          [112.7, -7.2],
+          [112.7, -7.3],
+          [113.1, -7.2],
+        ]),
+      ).toBe(false);
     });
   });
 
@@ -167,7 +221,12 @@ describe('GeoJsonValidator', () => {
     });
 
     it('returns 0 for ring with fewer than 4 points', () => {
-      expect(GeoJsonValidator.computeAreaSqMeters([[112.7, -7.2], [112.8, -7.2]])).toBe(0);
+      expect(
+        GeoJsonValidator.computeAreaSqMeters([
+          [112.7, -7.2],
+          [112.8, -7.2],
+        ]),
+      ).toBe(0);
     });
 
     it('returns 0 for null input', () => {
@@ -181,11 +240,11 @@ describe('GeoJsonValidator', () => {
     it('computes approximate area within 10% for a 100m x 100m square near Surabaya', () => {
       // ~0.001 degrees ≈ 111m lat, ~90m lng at -7.3°
       const ring = [
-        [112.7388, -7.2900],
-        [112.7399, -7.2900],
+        [112.7388, -7.29],
+        [112.7399, -7.29],
         [112.7399, -7.2909],
         [112.7388, -7.2909],
-        [112.7388, -7.2900],
+        [112.7388, -7.29],
       ];
       const area = GeoJsonValidator.computeAreaSqMeters(ring);
       // Rough ~1000 sqm range accepted (lat correction varies)

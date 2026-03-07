@@ -96,11 +96,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.join(`user:${payload.sub}`);
 
       // Auto-join rooms based on role
-      const cityRoles = [
-        UserRole.SUPERADMIN,
-        UserRole.ADMIN_SYSTEM,
-        UserRole.TOP_MANAGEMENT,
-      ];
+      const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
       if (cityRoles.includes(payload.role)) {
         client.join('monitoring:city');
         this.logger.log(`Client ${client.id} (${payload.role}) joined monitoring:city room`);
@@ -301,7 +297,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_STATUS_CHANGED, event);
     }
     if (event.rayon_id) {
-      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_STATUS_CHANGED, event);
+      this.server
+        .to(`monitoring:rayon:${event.rayon_id}`)
+        .emit(EventType.USER_STATUS_CHANGED, event);
     }
     this.server.to('monitoring:city').emit(EventType.USER_STATUS_CHANGED, event);
   }
@@ -339,7 +337,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`User reassigned: ${event.user_name} to ${event.new_area_name}`);
 
     if (event.previous_area_id) {
-      this.server.to(`monitoring:area:${event.previous_area_id}`).emit(EventType.USER_REASSIGNED, event);
+      this.server
+        .to(`monitoring:area:${event.previous_area_id}`)
+        .emit(EventType.USER_REASSIGNED, event);
     }
     this.server.to(`monitoring:area:${event.new_area_id}`).emit(EventType.USER_REASSIGNED, event);
     if (event.rayon_id) {
@@ -360,7 +360,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.AREA_STAFFING_CHANGED, event);
     if (event.rayon_id) {
-      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.AREA_STAFFING_CHANGED, event);
+      this.server
+        .to(`monitoring:rayon:${event.rayon_id}`)
+        .emit(EventType.AREA_STAFFING_CHANGED, event);
     }
     this.server.to('monitoring:city').emit(EventType.AREA_STAFFING_CHANGED, event);
   }
@@ -403,11 +405,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /**
    * Auto-join rayon/area rooms based on user's assigned scope
    */
-  private async autoJoinScopedRooms(
-    client: Socket,
-    userId: string,
-    role: string,
-  ): Promise<void> {
+  private async autoJoinScopedRooms(client: Socket, userId: string, role: string): Promise<void> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
@@ -416,10 +414,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (!user) return;
 
-      if (
-        (role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_DATA) &&
-        user.rayon_id
-      ) {
+      if ((role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_DATA) && user.rayon_id) {
         client.join(`monitoring:rayon:${user.rayon_id}`);
         this.logger.log(`Client ${client.id} auto-joined monitoring:rayon:${user.rayon_id}`);
       }

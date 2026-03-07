@@ -45,7 +45,15 @@ describe('AreasController', () => {
     name: 'Taman Bungkul',
     boundary_polygon: {
       type: 'Polygon' as const,
-      coordinates: [[[112.7388, -7.2905], [112.7395, -7.2905], [112.7395, -7.291], [112.7388, -7.291], [112.7388, -7.2905]]],
+      coordinates: [
+        [
+          [112.7388, -7.2905],
+          [112.7395, -7.2905],
+          [112.7395, -7.291],
+          [112.7388, -7.291],
+          [112.7388, -7.2905],
+        ],
+      ],
     },
     gps_lat: -7.2905,
     gps_lng: 112.7398,
@@ -222,7 +230,15 @@ describe('AreasController', () => {
     const validDto = {
       boundary_polygon: {
         type: 'Polygon' as const,
-        coordinates: [[[112.7388, -7.2905], [112.7395, -7.2905], [112.7395, -7.291], [112.7388, -7.291], [112.7388, -7.2905]]],
+        coordinates: [
+          [
+            [112.7388, -7.2905],
+            [112.7395, -7.2905],
+            [112.7395, -7.291],
+            [112.7388, -7.291],
+            [112.7388, -7.2905],
+          ],
+        ],
       },
     };
 
@@ -241,9 +257,9 @@ describe('AreasController', () => {
         new BadRequestException('Invalid polygon: ring must be closed'),
       );
 
-      await expect(
-        controller.updateBoundary(mockArea.id, validDto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.updateBoundary(mockArea.id, validDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

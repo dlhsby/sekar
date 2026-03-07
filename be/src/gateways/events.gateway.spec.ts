@@ -316,8 +316,8 @@ describe('EventsGateway', () => {
       mockServer.to.mockClear();
       gateway.emitUserLocation(locationEvent);
 
-      const cityCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
-        call[0] === 'monitoring:city',
+      const cityCalls = (mockServer.to as jest.Mock).mock.calls.filter(
+        (call) => call[0] === 'monitoring:city',
       );
       expect(cityCalls.length).toBe(0);
     });
@@ -633,7 +633,9 @@ describe('EventsGateway', () => {
 
       gateway.emitUserStatusChanged(noAreaEvent);
 
-      const areaCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) => c[0]?.startsWith('monitoring:area:'));
+      const areaCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:area:'),
+      );
       expect(areaCalls.length).toBe(0);
     });
 
@@ -643,7 +645,9 @@ describe('EventsGateway', () => {
 
       gateway.emitUserStatusChanged(noRayonEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) => c[0]?.startsWith('monitoring:rayon:'));
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:rayon:'),
+      );
       expect(rayonCalls.length).toBe(0);
     });
   });
@@ -676,7 +680,9 @@ describe('EventsGateway', () => {
 
       gateway.emitUserLeftArea(noRayonEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) => c[0]?.startsWith('monitoring:rayon:'));
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:rayon:'),
+      );
       expect(rayonCalls.length).toBe(0);
     });
   });
@@ -733,7 +739,9 @@ describe('EventsGateway', () => {
 
       gateway.emitUserReassigned(noPrevEvent);
 
-      const areaCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) => c[0] === 'monitoring:area:area-old');
+      const areaCalls = (mockServer.to as jest.Mock).mock.calls.filter(
+        (c) => c[0] === 'monitoring:area:area-old',
+      );
       expect(areaCalls.length).toBe(0);
       // Should still emit to new area
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-new');
@@ -745,7 +753,9 @@ describe('EventsGateway', () => {
 
       gateway.emitUserReassigned(noRayonEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) => c[0]?.startsWith('monitoring:rayon:'));
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:rayon:'),
+      );
       expect(rayonCalls.length).toBe(0);
     });
   });
@@ -766,7 +776,10 @@ describe('EventsGateway', () => {
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
-      expect(mockServer.emit).toHaveBeenCalledWith(EventType.AREA_STAFFING_CHANGED, staffingChangedEvent);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        EventType.AREA_STAFFING_CHANGED,
+        staffingChangedEvent,
+      );
     });
 
     it('should skip rayon room when rayon_id is null', () => {
@@ -775,7 +788,9 @@ describe('EventsGateway', () => {
 
       gateway.emitAreaStaffingChanged(noRayonEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) => c[0]?.startsWith('monitoring:rayon:'));
+      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:rayon:'),
+      );
       expect(rayonCalls.length).toBe(0);
     });
   });

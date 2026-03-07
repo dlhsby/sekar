@@ -23,7 +23,10 @@ import { AreasService } from './areas.service';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { Area } from './entities/area.entity';
-import { AreaBoundaryResponseDto, UpdateAreaBoundaryDto } from '../monitoring/dto/area-boundary.dto';
+import {
+  AreaBoundaryResponseDto,
+  UpdateAreaBoundaryDto,
+} from '../monitoring/dto/area-boundary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -245,9 +248,7 @@ export class AreasController {
   @ApiParam({ name: 'id', description: 'Area UUID' })
   @ApiResponse({ status: 200, type: AreaBoundaryResponseDto })
   @ApiResponse({ status: 404, description: 'Area not found' })
-  getBoundary(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<AreaBoundaryResponseDto> {
+  getBoundary(@Param('id', ParseUUIDPipe) id: string): Promise<AreaBoundaryResponseDto> {
     return this.areasService.getBoundary(id);
   }
 

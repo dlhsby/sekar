@@ -156,7 +156,7 @@ export class MonitoringCacheService {
     }
 
     const day = new Date().getDay();
-    return (day === 0 || day === 6) ? DayTypeEnum.WEEKEND : DayTypeEnum.WEEKDAY;
+    return day === 0 || day === 6 ? DayTypeEnum.WEEKEND : DayTypeEnum.WEEKDAY;
   }
 
   invalidateDayType(): void {

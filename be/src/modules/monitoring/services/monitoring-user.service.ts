@@ -168,9 +168,9 @@ export class MonitoringUserService {
       relations: ['shift', 'area'],
     });
 
-    const area = tracking?.area || (user.area_id
-      ? await this.areaRepository.findOne({ where: { id: user.area_id } })
-      : null);
+    const area =
+      tracking?.area ||
+      (user.area_id ? await this.areaRepository.findOne({ where: { id: user.area_id } }) : null);
 
     const rayon = area?.rayon_id
       ? await this.rayonRepository.findOne({ where: { id: area.rayon_id } })
@@ -308,10 +308,7 @@ export class MonitoringUserService {
     return qb.getMany();
   }
 
-  private buildLocationPoints(
-    logs: LocationLog[],
-    area: Area | null,
-  ): LocationHistoryPointDto[] {
+  private buildLocationPoints(logs: LocationLog[], area: Area | null): LocationHistoryPointDto[] {
     return logs.map((log) => ({
       latitude: Number(log.gps_lat),
       longitude: Number(log.gps_lng),
@@ -337,8 +334,10 @@ export class MonitoringUserService {
       const prev = points[i - 1];
       const curr = points[i];
       totalDistance += GpsUtil.calculateDistance(
-        prev.latitude, prev.longitude,
-        curr.latitude, curr.longitude,
+        prev.latitude,
+        prev.longitude,
+        curr.latitude,
+        curr.longitude,
       );
       const timeDelta = curr.logged_at.getTime() - prev.logged_at.getTime();
       if (prev.is_within_area) {
@@ -360,9 +359,11 @@ export class MonitoringUserService {
   ): Promise<UserDaySummaryDto['shift']> {
     if (!tracking?.shift_id) return null;
 
-    const shift = tracking.shift || await this.shiftRepository.findOne({
-      where: { id: tracking.shift_id },
-    });
+    const shift =
+      tracking.shift ||
+      (await this.shiftRepository.findOne({
+        where: { id: tracking.shift_id },
+      }));
     if (!shift) return null;
 
     const shiftDef = tracking.shift_definition_id
@@ -433,9 +434,11 @@ export class MonitoringUserService {
     });
 
     return tasks
-      .filter((t) => t.status !== TaskStatus.COMPLETED || (
-        t.completed_at && t.completed_at >= today.start && t.completed_at <= today.end
-      ))
+      .filter(
+        (t) =>
+          t.status !== TaskStatus.COMPLETED ||
+          (t.completed_at && t.completed_at >= today.start && t.completed_at <= today.end),
+      )
       .map((t) => ({
         id: t.id,
         title: t.title,
@@ -444,13 +447,13 @@ export class MonitoringUserService {
       }));
   }
 
-  private buildWhatsAppLinks(phone: string | null | undefined): UserDaySummaryDto['whatsapp_links'] {
+  private buildWhatsAppLinks(
+    phone: string | null | undefined,
+  ): UserDaySummaryDto['whatsapp_links'] {
     if (!phone) return null;
 
     const cleaned = phone.replace(/\D/g, '');
-    const international = cleaned.startsWith('0')
-      ? `62${cleaned.substring(1)}`
-      : cleaned;
+    const international = cleaned.startsWith('0') ? `62${cleaned.substring(1)}` : cleaned;
 
     return {
       chat: `https://wa.me/${international}`,

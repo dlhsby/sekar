@@ -21,9 +21,7 @@ export class MonitoringSchedulerService {
   @Cron(CronExpression.EVERY_MINUTE)
   async reevaluateStaleStatuses(): Promise<void> {
     const thresholds = await this.cacheService.getThresholds();
-    const staleThreshold = new Date(
-      Date.now() - thresholds.active_max_age_seconds * 1000,
-    );
+    const staleThreshold = new Date(Date.now() - thresholds.active_max_age_seconds * 1000);
 
     const staleUsers = await this.trackingRepository.find({
       where: {

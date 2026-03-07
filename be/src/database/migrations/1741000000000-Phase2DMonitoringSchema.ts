@@ -172,7 +172,9 @@ export class Phase2DMonitoringSchema1741000000000 implements MigrationInterface 
 
     // Remove shift_definition_id from shifts
     await queryRunner.query(`DROP INDEX IF EXISTS idx_shifts_shift_definition_id;`);
-    await queryRunner.query(`ALTER TABLE shifts DROP CONSTRAINT IF EXISTS FK_shifts_shift_definition_id;`);
+    await queryRunner.query(
+      `ALTER TABLE shifts DROP CONSTRAINT IF EXISTS FK_shifts_shift_definition_id;`,
+    );
     await queryRunner.query(`ALTER TABLE shifts DROP COLUMN IF EXISTS shift_definition_id;`);
 
     console.log('Phase 2D migration reverted.');

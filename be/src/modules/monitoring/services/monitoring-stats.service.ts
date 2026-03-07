@@ -18,7 +18,12 @@ import {
   TaskSummaryDto,
   StaffRequirementStatusDto,
 } from '../dto/area-stats.dto';
-import { BoundariesResponseDto, RayonBoundaryDto, AreaBoundaryDto, RoleStaffingItemDto } from '../dto/boundaries.dto';
+import {
+  BoundariesResponseDto,
+  RayonBoundaryDto,
+  AreaBoundaryDto,
+  RoleStaffingItemDto,
+} from '../dto/boundaries.dto';
 import { DayTypeService } from './day-type.service';
 import { User } from '../../users/entities/user.entity';
 
@@ -384,8 +389,7 @@ export class MonitoringStatsService {
     return activeShifts.map((shift) => {
       const latestLocation = locationMap.get(shift.id);
       const isOnline = !!(
-        latestLocation &&
-        currentTime - latestLocation.logged_at.getTime() < ONLINE_THRESHOLD_MS
+        latestLocation && currentTime - latestLocation.logged_at.getTime() < ONLINE_THRESHOLD_MS
       );
 
       return {
@@ -590,25 +594,24 @@ export class MonitoringStatsService {
         });
 
         const areaIds = areas.map((a) => a.id);
-        const assignedCounts = areaIds.length > 0
-          ? await this.trackingRepository
-              .createQueryBuilder('uts')
-              .select('uts.area_id', 'area_id')
-              .addSelect('COUNT(*)', 'count')
-              .where('uts.area_id IN (:...areaIds)', { areaIds })
-              .groupBy('uts.area_id')
-              .getRawMany()
-          : [];
+        const assignedCounts =
+          areaIds.length > 0
+            ? await this.trackingRepository
+                .createQueryBuilder('uts')
+                .select('uts.area_id', 'area_id')
+                .addSelect('COUNT(*)', 'count')
+                .where('uts.area_id IN (:...areaIds)', { areaIds })
+                .groupBy('uts.area_id')
+                .getRawMany()
+            : [];
 
         const countMap = new Map(assignedCounts.map((r: any) => [r.area_id, parseInt(r.count)]));
 
-        const requiredCounts = areaIds.length > 0
-          ? await this.countRequiredWorkersByAreaIdsMap(areaIds)
-          : new Map();
+        const requiredCounts =
+          areaIds.length > 0 ? await this.countRequiredWorkersByAreaIdsMap(areaIds) : new Map();
 
-        const staffingByArea = areaIds.length > 0
-          ? await this.getStaffingByArea(areaIds)
-          : new Map();
+        const staffingByArea =
+          areaIds.length > 0 ? await this.getStaffingByArea(areaIds) : new Map();
 
         const areaBoundaries: AreaBoundaryDto[] = areas.map((area) => {
           const assigned = countMap.get(area.id) || 0;
@@ -635,8 +638,12 @@ export class MonitoringStatsService {
           name: rayon.name,
           code: rayon.code,
           boundary_polygon: (rayon as any).boundary_polygon || null,
-          center_lat: (rayon as any).center_lat ? parseFloat((rayon as any).center_lat.toString()) : null,
-          center_lng: (rayon as any).center_lng ? parseFloat((rayon as any).center_lng.toString()) : null,
+          center_lat: (rayon as any).center_lat
+            ? parseFloat((rayon as any).center_lat.toString())
+            : null,
+          center_lng: (rayon as any).center_lng
+            ? parseFloat((rayon as any).center_lng.toString())
+            : null,
           area_count: areas.length,
           is_understaffed: understaffedCount > 0,
           understaffed_area_count: understaffedCount,
