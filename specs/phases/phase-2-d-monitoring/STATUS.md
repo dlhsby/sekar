@@ -1,8 +1,8 @@
 # Phase 2D: Real-Time Monitoring - Implementation Status
 
-**Status:** ✅ COMPLETE
-**Last Updated:** March 5, 2026
-**Overall Progress:** 100% (2D-1 → 2D-9 all complete)
+**Status:** ✅ COMPLETE (pending merge & deploy)
+**Last Updated:** March 7, 2026
+**Overall Progress:** 98% (2D-1 → 2D-10 complete; 2D-11 not started)
 **Branch:** `f/phase-2-d-monitoring`
 **Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), ADR-011 (new)
 
@@ -79,13 +79,13 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Update `mapUtils.ts` with four-status model | ✅ Done | getStatusColor, getStatusLabel, getRoleIcon (8 roles) |
+| Update `mapUtils.ts` with five-status model | ✅ Done | getStatusColor, getStatusLabel, getRoleIcon (8 roles) |
 | Update types in `models.types.ts` | ✅ Done | LiveUser, TrackingStatus, MonitoringFilters |
 | Create `monitoringSlice.ts` (new) | ✅ Done | liveUsers, statusCounts, selectedUser, filters |
 | Update `monitoringApi.ts` | ✅ Done | getLiveUsers, getDaySummary, getLocationHistory, getStaffingSummary |
-| Enhance `UserMarker` component | ✅ Done | LiveUser type, role icons, four-status colors |
+| Enhance `UserMarker` component | ✅ Done | LiveUser type, role icons, five-status colors |
 | Add polygon rendering to `MapDashboardScreen` | ✅ Done | Redux-based, Polygon + Circle area boundaries |
-| Add `StatusSummaryBar` component | ✅ Done | Four status chips with counts |
+| Add `StatusSummaryBar` component | ✅ Done | Five status chips with counts |
 | Add `UserListStrip` and `UserListCard` | ✅ Done | Horizontal scroll strip |
 | Add FAB control column | ✅ Done | Zoom, filter, location FABs |
 | Implement `UserDetailSheet` | ✅ Done | Bottom sheet with shift/activities/tasks |
@@ -116,9 +116,9 @@
 |------|--------|-------|
 | Backend unit tests (>85% coverage) | ✅ Done | 1,088 passing, 80.64% branch, 92.15% stmt |
 | Mobile component tests (>80% coverage) | ✅ Done | 3,281 passing |
-| Update mobile mapUtils tests | ✅ Done | Four-status model tested |
+| Update mobile mapUtils tests | ✅ Done | Five-status model tested |
 | Rewrite MapDashboardScreen tests for Redux | ✅ Done | 9 tests with mocked store |
-| Rewrite UserMarker tests for LiveUser type | ✅ Done | 23 tests, role icons, four statuses |
+| Rewrite UserMarker tests for LiveUser type | ✅ Done | 23 tests, role icons, five statuses |
 | Add 13 new monitoring service tests | ✅ Done | getLocationHistory, getUserDaySummary, getStaffingSummary |
 
 ---
@@ -162,17 +162,41 @@
 | Extract monitoring role constants | ✅ Done | `ROLES_WITH_RAYON`, `ROLES_WITH_FIXED_RAYON`, `ROLES_WITHOUT_RAYON` |
 | Consolidate duplicate `LiveUsersResponse` type | ✅ Done | Re-export from `models.types` in `api.types` |
 
+### Sub-Phase 2D-10: Gap Fixes & Spec Alignment ✅ COMPLETE (March 7, 2026)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Wire RayonBoundaryService into AreasService | ✅ Done | `forwardRef(() => MonitoringModule)` + `@Optional() @Inject()` |
+| Fix ReassignWorkerDto (6 fields, schedule mgmt) | ✅ Done | Added shift_definition_id, effective_date, end_current_schedule, reason |
+| Fix ReassignWorkerResponseDto | ✅ Done | Added new_schedule_id, effective_date; kept reassigned_at |
+| Enhance ReassignService with schedule creation | ✅ Done | Creates Schedule, ends current schedules, returns new_schedule_id |
+| Fix BoundariesResponseDto (hierarchical + new fields) | ✅ Done | AreaBoundaryDto: rayon_id/name, radius_meters, staffing_summary; RayonBoundaryDto: is_understaffed, understaffed_area_count |
+| Add AREA_STAFFING_CHANGED event | ✅ Done | Emitted when status change crosses staffing threshold |
+| Fix onClockIn boundary check | ✅ Done | Passes GPS coords, computes is_within_area dynamically |
+| Fix seed cluster_zoom_threshold | ✅ Done | 13 → 14 |
+| Add 77 new tests | ✅ Done | Total: 1,172 tests, 62 suites, 91.81% stmt, 80.37% branch |
+
+### Sub-Phase 2D-11: Home Screen Location Card - NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Create `useHomeLocation` hook | Not Started | Hook to fetch current user location status for home screen |
+| Create `LocationStatusCard` component | Not Started | Card showing current location, status, and area info |
+| HomeScreen layout integration | Not Started | Integrate LocationStatusCard into worker/supervisor home screens |
+| Specs update (mobile.md, screens.md) | Not Started | Update mobile specs to document new home screen card |
+
 ---
 
 ## Quality Summary
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Backend test coverage (stmts) | >85% | 92.15% ✅ |
-| Backend test coverage (branch) | >80% | 80.64% ✅ |
-| Backend tests | >1,050 | 1,095 passing ✅ |
+| Backend test coverage (stmts) | >85% | 91.81% ✅ |
+| Backend test coverage (branch) | >80% | 80.37% ✅ |
+| Backend tests | >1,050 | 1,172 passing ✅ |
+| Backend suites | - | 62 suites ✅ |
 | Mobile tests | >3,400 | 3,493 passing ✅ |
-| New backend endpoints | 7 | 7 ✅ |
+| New backend endpoints | 9 | 9 ✅ |
 | New web components | 7 | 7 ✅ |
 | New mobile components | 6 | 7 ✅ |
 
@@ -182,7 +206,7 @@
 
 | Component | Phase 2C Baseline | Phase 2D Current |
 |-----------|-------------------|-----------------|
-| **Backend** | 16 modules, 113 endpoints, 888 tests | 16 modules, 120 endpoints, 1,095 tests |
+| **Backend** | 16 modules, 113 endpoints, 888 tests | 16 modules, 122 endpoints, 1,172 tests (62 suites) |
 | **Mobile** | 17 screens, 3,264 tests | 21 screens, 3,493 tests |
 | **Web** | 20 pages, 1,336 tests | 21 pages (+1 config), all components done |
 | **Database** | 18 tables | 20 tables (+2: user_tracking_status, monitoring_configs) |
@@ -194,7 +218,7 @@
 ```bash
 # Backend
 cd be
-npm test                          # All tests (1,095 passing)
+npm test                          # All tests (1,172 passing)
 npm run test:cov                  # With coverage
 npm test -- --testPathPattern monitoring  # Monitoring module only
 
@@ -239,11 +263,14 @@ npm run test:e2e                  # All Playwright tests
 - [ ] `GET /monitoring/staffing-summary` — returns StaffingSummaryResponse
 - [ ] `GET /monitoring/config` — returns all config items (admin only)
 - [ ] `PATCH /monitoring/config/:key` — updates config item (admin only)
+- [ ] `GET /monitoring/boundaries` — returns hierarchical rayons[].areas[] with staffing_summary
+- [ ] `POST /monitoring/reassign` — reassigns worker, creates schedule if shift_definition_id provided
 
 ### WebSocket Events
 - [ ] `user:location` event fires on location ping (includes status, is_within_area)
 - [ ] `user:status-changed` event fires on status transitions
 - [ ] `user:left-area` / `user:entered-area` events fire on boundary crossings
+- [ ] `area:staffing-changed` event fires when status change crosses staffing threshold
 - [ ] JWT auth required for WebSocket connection
 
 ### Web UI
@@ -256,7 +283,7 @@ npm run test:e2e                  # All Playwright tests
 
 ### Mobile UI
 - [ ] MapDashboardScreen shows Google Maps with area polygons
-- [ ] Four-status markers (active=green, inactive=yellow, outside_area=red, missing=gray)
+- [ ] Five-status markers (active=#15803D green, inactive=#D97706 amber, outside_area=#9333EA purple, missing=#DC2626 red, offline=#6B7280 gray)
 - [ ] StatusSummaryBar shows counts for each status
 - [ ] UserListStrip horizontal scroll
 - [ ] UserDetailSheet opens on marker press
@@ -267,4 +294,4 @@ npm run test:e2e                  # All Playwright tests
 
 ---
 
-**Last Updated:** 2026-03-05
+**Last Updated:** 2026-03-07

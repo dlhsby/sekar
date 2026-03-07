@@ -1,9 +1,9 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** March 5, 2026 (Phase 2D reviewed & refactored, pending merge & deploy)
-**Current Phase:** Phase 2D Real-Time Monitoring - ✅ Reviewed & Refactored
+**Last Updated:** March 6, 2026 (Phase 2D code-complete, pending 2D-10 gap fixes & 2D-11 home card)
+**Current Phase:** Phase 2D Real-Time Monitoring - Code-Complete (pending 2D-10, 2D-11)
 **Next Phase:** Phase 3 Polishing & E2E Testing
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ CODE-COMPLETE | Phase 3: 0% | Phase 4: 0%
+**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: Code-Complete (pending 2D-10, 2D-11) | Phase 3: 0% | Phase 4: 0%
 
 ---
 
@@ -30,8 +30,8 @@
 
 | Component | Status | Progress | Tests | Coverage | Notes |
 |-----------|--------|----------|-------|----------|-------|
-| **Backend** | ✅ Phase 2D Code-Complete | 100% | 1,095 passing | 92.15% stmts / 80.64% branches ✅ | Phase 2D: StatusCalculator, monitoring config, 120 endpoints |
-| **Mobile** | ✅ Phase 2D Code-Complete | 100% | 3,281 passing | 80.31%+ stmts ✅ | 21 screens, four-status map, WebSocket real-time updates |
+| **Backend** | ✅ Phase 2D Code-Complete | 100% | 1,095 passing | 92.15% stmts / 80.64% branches ✅ | Phase 2D: StatusCalculator, monitoring config, 122 endpoints |
+| **Mobile** | ✅ Phase 2D Code-Complete | 100% | 3,493 passing | 80.31%+ stmts ✅ | 21 screens, five-status map, WebSocket real-time updates |
 | **Web** | ✅ Phase 2D Code-Complete | 100% | 1,336+ passing | 96%+ stmts ✅ | 21 pages + config, Mapbox GL monitoring, socket.io integration |
 | **Database** | ✅ Phase 2D Code-Complete | 100% | 1,095 BE tests | - | 20 tables (+user_tracking_status, monitoring_configs) |
 | **Documentation** | ✅ Phase 2D Complete | 100% | 12+ spec files | - | Updated specs, ADR-011, deployment guide |
@@ -47,7 +47,7 @@
 | 2A | Enhanced Features | ✅ Complete | 2 weeks |
 | 2B | UI/UX Revamp | ✅ Complete | 3-4 weeks |
 | **2C** | **Client Feedback** | **✅ Complete & Deployed (Feb 16, 2026)** | **4-6 weeks** |
-| **2D** | **Real-Time Monitoring** | **✅ Code-Complete (Mar 4, 2026) — pending merge & deploy** | **1 week** |
+| **2D** | **Real-Time Monitoring** | **Code-Complete (pending 2D-10, 2D-11)** | **1 week** |
 | 3 | Polishing & E2E Testing | Not Started | 2-3 weeks |
 | 4 | Advanced Features (Analytics + Assets + iOS) | Not Started | 6-8 weeks |
 
@@ -783,12 +783,29 @@ Comprehensive architectural and specification improvements to ensure production 
 - ✅ Mobile task workflow screens (TaskDetailScreen, TaskCompleteScreen)
 - ✅ Background location service (mocked for testing)
 
-**Phase 2D ⬜ PENDING:**
-- Next.js 14+ web dashboard
-- Firebase project setup + mobile package installation
-- Socket.IO client installation
-- Web CRUD interfaces (User, Area, Rayon, Scheduling)
-- Real-time monitoring map (web)
+**Phase 2D Code-Complete (pending 2D-10, 2D-11):**
+- Backend: 16 modules, 122 endpoints, 1,095 tests (92.15% stmt, 80.64% branch)
+- Mobile: 21 screens, 3,493 tests, 80.31%+ coverage
+- Web: 21 pages (+1 config), 7 monitoring components
+- Database: 20 tables (including user_tracking_status and monitoring_configs)
+- Five-status tracking (active/inactive/outside_area/missing/offline)
+- StatusCalculatorService, WebSocket boundary events, Mapbox GL monitoring dashboard
+
+**Phase 2D Sub-phases:**
+
+| Sub-phase | Description | Status |
+|-----------|-------------|--------|
+| 2D-1 | Status Tracking Model | ✅ Complete |
+| 2D-2 | StatusCalculatorService | ✅ Complete |
+| 2D-3 | Backend API Endpoints | ✅ Complete |
+| 2D-4 | WebSocket Events | ✅ Complete |
+| 2D-5 | Mobile Monitoring UI | ✅ Complete |
+| 2D-6 | Web Monitoring Dashboard | ✅ Complete |
+| 2D-7 | Monitoring Config Admin | ✅ Complete |
+| 2D-8 | Testing | ✅ Complete |
+| 2D-9 | Documentation | ✅ Complete |
+| 2D-10 | Gap Fixes & Spec Alignment | Not Started |
+| 2D-11 | Home Screen Location Card | Not Started |
 
 **Phase 2E ✅ COMPLETE:**
 - Backend CI/CD pipeline (464 lines)

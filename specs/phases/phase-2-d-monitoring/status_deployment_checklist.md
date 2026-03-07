@@ -252,7 +252,7 @@ cd fe/web && npm test -- --testPathPatterns monitoring
   - [ ] WhatsApp chat/call links
 - [ ] Location timeline renders GPS trail for selected user
 - [ ] Map shows area polygons with boundary overlay
-- [ ] Map markers show correct four-status colors (green/yellow/red/gray)
+- [ ] Map markers show correct five-status colors (green/amber/purple/red/gray)
 - [ ] Real-time updates: move worker → marker updates without page refresh
 - [ ] `/monitoring/config` page (admin only):
   - [ ] Shows all 5 config entries
@@ -262,7 +262,7 @@ cd fe/web && npm test -- --testPathPatterns monitoring
 ### Section 6: Mobile Dashboard
 
 - [ ] MapDashboardScreen shows Google Maps with area polygons
-- [ ] Four-status markers: active=green, inactive=yellow, outside_area=red, missing=gray
+- [ ] Five-status markers: active=green (#15803D), inactive=amber (#D97706), outside_area=purple (#9333EA), missing=red (#DC2626), offline=gray (#6B7280)
 - [ ] StatusSummaryBar shows counts for each status
 - [ ] UserListStrip horizontal scroll works
 - [ ] Press marker → UserDetailSheet opens with:

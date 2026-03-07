@@ -48,6 +48,36 @@ export class Rayon {
   description?: string;
 
   @ApiProperty({
+    description: 'GeoJSON Polygon boundary computed from child area polygons',
+    required: false,
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  boundary_polygon?: object;
+
+  @ApiProperty({
+    description: 'Center latitude of the rayon boundary',
+    example: -7.2575,
+    required: false,
+  })
+  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+  center_lat?: number;
+
+  @ApiProperty({
+    description: 'Center longitude of the rayon boundary',
+    example: 112.7521,
+    required: false,
+  })
+  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+  center_lng?: number;
+
+  @ApiProperty({
+    description: 'Timestamp when the boundary was last computed',
+    required: false,
+  })
+  @Column({ type: 'timestamptz', nullable: true })
+  boundary_computed_at?: Date;
+
+  @ApiProperty({
     description: 'Timestamp when the rayon was created',
   })
   @CreateDateColumn({ type: 'timestamptz' })

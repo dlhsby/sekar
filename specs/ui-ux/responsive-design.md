@@ -558,8 +558,63 @@ const Screen = () => {
 
 ---
 
+## Monitoring Dashboard Responsive Layouts
+
+### Breakpoint Layout Matrix
+
+| Breakpoint | Map Width | Side Panel | Status Cards | Map Controls |
+|------------|-----------|------------|--------------|--------------|
+| xl (>=1280px) | 65% | 35% fixed right (320-480px) | 1x4 horizontal row | Top-right cluster |
+| lg (>=1024px) | 60% | 40% fixed right (320px min) | 1x4 horizontal row | Top-right cluster |
+| md (>=768px) | 100% | Bottom drawer (draggable) | 2x2 grid | Bottom-right stack |
+| sm (<768px) | 100% | Bottom sheet (swipe-up) | 2x2 grid, compact | Bottom-right, minimal |
+
+### Map Control Responsive Behavior
+
+| Control | xl/lg | md | sm |
+|---------|-------|----|----|
+| Zoom +/- | Visible, top-right | Visible, bottom-right | Hidden (use pinch) |
+| Compass | Visible | Visible | Hidden |
+| Fullscreen toggle | Visible | Visible | N/A (always full) |
+| Filter button | In side panel | FAB (bottom-left) | FAB (bottom-left) |
+| Refresh | In side panel header | FAB | FAB |
+| Current location | Visible, bottom-right | Visible | Visible |
+
+### Side Panel Responsive Rules
+
+| Rule | Value |
+|------|-------|
+| Min width | 320px |
+| Max width | 480px |
+| Collapse trigger | Screen width < 1024px |
+| Collapsed state | Bottom drawer (md) or bottom sheet (sm) |
+| Drawer peek height | 120px (shows status cards) |
+| Sheet peek height | 80px (shows handle + status summary) |
+| Full expansion | 70% of viewport height |
+| Transition | Slide from right (lg+), slide from bottom (md-) |
+
+### Role-Specific Layout Adaptation
+
+| Role | Default View | Side Panel Default | Extra Controls |
+|------|-------------|-------------------|----------------|
+| top_management | City-wide map, all rayons | Rayon summary list | Rayon selector dropdown |
+| kepala_rayon | Rayon-focused map | Area summary list | Area selector, staffing overview |
+| korlap | Area-focused map | Worker list | Worker search, quick actions |
+| admin_system | City-wide map | Full worker list | Config access, all filters |
+
+### Status Card Responsive Sizing
+
+| Breakpoint | Card Size | Font Size (count) | Font Size (label) | Gap |
+|------------|-----------|-------------------|-------------------|-----|
+| xl | 180x80px | 28px bold | 12px | 16px |
+| lg | 160x72px | 24px bold | 11px | 12px |
+| md | calc(50%-8px) x 64px | 22px bold | 11px | 8px |
+| sm | calc(50%-6px) x 56px | 20px bold | 10px | 6px |
+
+---
+
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-02-05
-**Status:** Active - Updated for Neo Brutalism 2.0
+**Last Updated:** 2026-03-06
+**Status:** Active - Updated for Neo Brutalism 2.0 + Phase 2D Monitoring
 **Implementation:** `fe/mobile/src/constants/nbTokens.ts` (breakpoints)
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

@@ -1,11 +1,11 @@
 # Phase 2D: Backend Requirements
 
-**Last Updated:** 2026-03-05
-**Status:** ✅ COMPLETE (Implementation + Review)
+**Last Updated:** 2026-03-07
+**Status:** ✅ COMPLETE (Implementation + Review + Gap Fixes)
 **Framework:** NestJS 11.x, TypeScript 5.9, TypeORM
 **Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md)
 **See also:** [Database Schema](./database.md), [README](./README.md)
-**Tests:** 1,095 passing (64 suites, 92.15% stmt, 80.64% branch)
+**Tests:** 1,172 passing (62 suites, 91.81% stmt, 80.37% branch)
 
 ---
 
@@ -184,8 +184,11 @@ export class StatusCalculatorService {
 
   /**
    * Update tracking status on clock-in event.
+   * When clockInLat/clockInLng are provided and the area has a boundary,
+   * computes is_within_area dynamically via checkWithinArea().
+   * Otherwise defaults is_within_area to true.
    */
-  async onClockIn(userId: string, shiftId: string, areaId: string | null, shiftDefinitionId: string | null): Promise<void>;
+  async onClockIn(userId: string, shiftId: string, areaId: string | null, shiftDefinitionId: string | null, clockInLat?: number, clockInLng?: number): Promise<void>;
 
   /**
    * Update tracking status on clock-out event.
@@ -194,8 +197,17 @@ export class StatusCalculatorService {
 
   /**
    * Update tracking status on location ping.
+   * Also checks if status change crosses area staffing threshold
+   * and emits AREA_STAFFING_CHANGED event if needed.
    */
   async onLocationPing(userId: string, latitude: number, longitude: number, accuracy: number | null, batteryLevel: number | null, loggedAt: Date): Promise<void>;
+
+  /**
+   * Emit AREA_STAFFING_CHANGED WebSocket event when a status transition
+   * causes the area's active worker count to cross the staffing threshold.
+   * Called from recalculate() and onLocationPing() when status changes.
+   */
+  private async emitStaffingChangedIfNeeded(areaId: string, previousStatus: TrackingStatus, newStatus: TrackingStatus, timestamp: Date): Promise<void>;
 }
 ```
 
@@ -204,16 +216,8 @@ export class StatusCalculatorService {
 ```typescript
 interface StatusInput {
   hasActiveShift: boolean;
-  isScheduledNow: boolean;
   lastLocationAt: Date | null;
-  latitude: number | null;
-  longitude: number | null;
-  area: {
-    boundary_polygon?: { type?: string; coordinates?: number[][][] };
-    gps_lat?: number;
-    gps_lng?: number;
-    radius_meters?: number;
-  } | null;
+  isWithinArea: boolean;
 }
 
 interface StatusThresholds {
@@ -223,11 +227,13 @@ interface StatusThresholds {
 }
 
 function calculateStatus(input: StatusInput, thresholds: StatusThresholds, now: Date): TrackingStatus {
+  // 1. No active shift → OFFLINE
   if (!input.hasActiveShift) {
-    return input.isScheduledNow ? TrackingStatus.MISSING : TrackingStatus.OFFLINE;
+    return TrackingStatus.OFFLINE;
   }
 
-  if (!input.lastLocationAt || !input.latitude || !input.longitude) {
+  // 2. No location data or older than missing_threshold → MISSING
+  if (!input.lastLocationAt) {
     return TrackingStatus.MISSING;
   }
 
@@ -237,20 +243,18 @@ function calculateStatus(input: StatusInput, thresholds: StatusThresholds, now: 
     return TrackingStatus.MISSING;
   }
 
+  // 3. Location older than inactive_threshold → INACTIVE
   if (ageSeconds > thresholds.inactive_threshold_seconds) {
     return TrackingStatus.INACTIVE;
   }
 
-  if (ageSeconds <= thresholds.active_max_age_seconds && input.area) {
-    const isInside = GpsUtil.isWithinAreaBoundary(input.latitude, input.longitude, input.area);
-    return isInside ? TrackingStatus.ACTIVE : TrackingStatus.OUTSIDE_AREA;
+  // 4. Outside assigned area → OUTSIDE_AREA
+  if (!input.isWithinArea) {
+    return TrackingStatus.OUTSIDE_AREA;
   }
 
-  if (ageSeconds <= thresholds.active_max_age_seconds) {
-    return TrackingStatus.ACTIVE; // No area boundary defined
-  }
-
-  return TrackingStatus.INACTIVE;
+  // 5. Otherwise → ACTIVE
+  return TrackingStatus.ACTIVE;
 }
 ```
 
@@ -270,10 +274,13 @@ export class MonitoringSchedulerService {
     private readonly logger: Logger,
   ) {}
 
+  private readonly BATCH_SIZE = 50;
+
   /**
    * Every 60 seconds: find users with active/inactive/outside_area status
    * whose last_location_at is older than active_max_age_seconds.
    * Re-evaluate their status (may transition from active -> inactive -> missing).
+   * Users are processed in batches of BATCH_SIZE (50) to limit memory and DB pressure.
    */
   @Cron(CronExpression.EVERY_MINUTE)
   async reevaluateStaleStatuses(): Promise<void>;
@@ -333,6 +340,85 @@ export class MonitoringConfigService {
 }
 ```
 
+### B5. MonitoringStatsService
+
+**File:** `be/src/modules/monitoring/services/monitoring-stats.service.ts`
+
+Extracted from `MonitoringService` during post-review refactoring. Provides aggregated status counts scoped by role hierarchy.
+
+```typescript
+@Injectable()
+export class MonitoringStatsService {
+  constructor(
+    private readonly trackingStatusRepo: Repository<UserTrackingStatus>,
+    private readonly areaRepo: Repository<Area>,
+    private readonly staffRequirementRepo: Repository<AreaStaffRequirement>,
+    private readonly dayTypeService: DayTypeService,
+  ) {}
+
+  /**
+   * City-wide stats for top_management / superadmin / admin_system.
+   * Aggregates all rayon stats into a single response.
+   */
+  async getCityStats(): Promise<CityStatsDto>;
+
+  /**
+   * Per-rayon aggregation for kepala_rayon.
+   * Returns counts by status (active, inactive, outside_area, missing, offline)
+   * for all areas within the specified rayon.
+   */
+  async getRayonStats(rayonId: string): Promise<RayonStatsDto>;
+
+  /**
+   * Per-area stats for korlap.
+   * Returns counts by status (active, inactive, outside_area, missing, offline)
+   * along with staff requirements filtered by current day_type.
+   */
+  async getAreaStats(areaId: string): Promise<AreaStatsDto>;
+}
+```
+
+All three methods return counts broken down by status: `active`, `inactive`, `outside_area`, `missing`, `offline`.
+
+### B6. MonitoringUserService
+
+**File:** `be/src/modules/monitoring/services/monitoring-user.service.ts`
+
+Extracted from `MonitoringService` during post-review refactoring. Provides user-level monitoring data.
+
+```typescript
+@Injectable()
+export class MonitoringUserService {
+  constructor(
+    private readonly trackingStatusRepo: Repository<UserTrackingStatus>,
+    private readonly locationLogRepo: Repository<LocationLog>,
+    private readonly shiftRepo: Repository<Shift>,
+    private readonly activityRepo: Repository<Activity>,
+    private readonly taskRepo: Repository<Task>,
+  ) {}
+
+  /**
+   * Returns active users with tracking status, scoped by the caller's role.
+   * korlap sees own area; kepala_rayon sees own rayon; top_management sees all.
+   */
+  async getLiveUsers(scope: MonitoringScope): Promise<LiveUsersResponseDto>;
+
+  /**
+   * Daily aggregated data for a specific user (shift, activities, tasks, last location).
+   * Used by the worker detail panel / modal on map marker click.
+   */
+  async getUserDaySummary(userId: string, date: Date): Promise<UserDaySummaryDto>;
+
+  /**
+   * GPS trail for a specific user on a specific date with analytics.
+   * Returns location points plus computed metrics:
+   * - total_distance_meters: sum of haversine distances between consecutive points
+   * - time_inside_area_minutes: total time spent within assigned area boundary
+   */
+  async getUserLocationHistory(userId: string, date: Date): Promise<LocationHistoryResponseDto>;
+}
+```
+
 ---
 
 ## C. Modified Endpoints
@@ -343,7 +429,7 @@ export class MonitoringConfigService {
 - Response uses `user_tracking_status` table (single join query, replaces N+1)
 - `is_within_area` now computed from GPS + boundary (not hardcoded)
 - `shift_name` from `shift_definitions.name` join (not hardcoded)
-- New `status` field with four-status model
+- New `status` field with five-status model
 - New `phone` field for WhatsApp deeplinks
 - New filter: `status` parameter
 - Response totals: `total_active`, `total_inactive`, `total_outside_area`, `total_missing` (replaces `total_online`)
@@ -706,6 +792,8 @@ async getCurrentDayType(date?: Date): Promise<DayType> {
 }
 ```
 
+**Day-type caching strategy:** The resolved day-type is cached in-memory with a **5-minute TTL** to avoid repeated `special_day_overrides` table lookups on every staffing query. Cache is stored in `MonitoringCacheService` alongside threshold and boundary caches.
+
 **All staffing queries MUST filter by current day_type:**
 - `MonitoringService.buildStaffingItem()` — filter `area_staff_requirements` by resolved day_type
 - `MonitoringStatsService.getAreaStaffRequirements()` — filter by resolved day_type
@@ -749,9 +837,9 @@ Returns all rayon and area boundaries in a single call for map rendering.
 **Auth:** `@Roles(...MONITORING_AREA)` with scope check
 
 ```typescript
+// Hierarchical structure: rayons contain their child areas
 export class BoundariesResponseDto {
   rayons: RayonBoundaryDto[];
-  areas: AreaBoundaryDto[];
   generated_at: Date;
 }
 
@@ -765,6 +853,13 @@ export class RayonBoundaryDto {
   area_count: number;
   is_understaffed: boolean;                      // Any child area understaffed
   understaffed_area_count: number;
+  areas: AreaBoundaryDto[];                      // Child areas nested within rayon
+}
+
+export class RoleStaffingItemDto {
+  role: string;                                  // 'satgas' | 'linmas' | 'korlap'
+  required: number;
+  active: number;
 }
 
 export class AreaBoundaryDto {
@@ -776,24 +871,20 @@ export class AreaBoundaryDto {
   center_lat: number;                            // Area GPS center
   center_lng: number;
   radius_meters: number;
+  assigned_count: number;
   is_understaffed: boolean;
-  staffing_summary: {                            // Inline staffing for center marker tap
-    roles: {
-      role: string;
-      active: number;
-      total_required: number;
-      is_met: boolean;
-    }[];
-  };
+  staffing_summary: RoleStaffingItemDto[];       // Per-role staffing for center marker tap
 }
 ```
 
 **Caching:** Rayon boundaries cached with 5-min TTL in `MonitoringCacheService`.
 
-**Rayon boundary auto-computation:**
+**Rayon boundary auto-computation (convex hull algorithm):**
 - When an area's boundary_polygon changes (via `PUT /areas/:id/boundary`), recompute the parent rayon's boundary as the convex hull of all child area polygons
-- Center position defaults to centroid but is manually overridable (for rayon office location)
-- Hook into area CRUD: `AreasService.updateBoundary()` -> `RayonBoundaryService.recompute(rayonId)`
+- Algorithm: collect all exterior ring vertices from constituent area polygons, then compute the convex hull using Graham scan or gift-wrapping. The result is a single GeoJSON Polygon encompassing all child areas.
+- Center position defaults to centroid of the convex hull but is manually overridable (for rayon office location)
+- Hook into area CRUD: `AreasService.updateBoundary()` -> `RayonBoundaryService.recompute(rayonId)` ✅ **WIRED** (via `@Optional() @Inject(RayonBoundaryService)` in AreasService, using `forwardRef(() => MonitoringModule)` to resolve circular dependency)
+- Recomputed rayon boundary is cached with 5-min TTL in `MonitoringCacheService`; cache is invalidated on any child area boundary update
 
 ### D7. `POST /monitoring/reassign` (NEW)
 
@@ -828,24 +919,26 @@ export class ReassignWorkerDto {
 }
 
 export class ReassignWorkerResponseDto {
-  new_schedule_id: string;
-  previous_area_id: string;
-  previous_area_name: string;
+  user_id: string;
+  user_name: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
   new_area_id: string;
   new_area_name: string;
-  effective_date: string;
-  user_name: string;
+  new_schedule_id: string | null;               // Non-null when shift_definition_id provided
+  effective_date: string;                        // Defaults to today if not specified
+  reassigned_at: Date;
 }
 ```
 
 **Backend logic:**
 1. Validate permission (kepala_rayon can only reassign within own rayon)
 2. Verify target area exists and worker has compatible role
-3. End current schedule if `end_current_schedule = true`
-4. Create new schedule for target area
-5. Update `user_tracking_status.area_id` to target area
-6. Send push notification to worker (optional, if FCM enabled)
-7. Emit WebSocket `user:reassigned` event
+3. End current active schedules for old area if `end_current_schedule = true` (sets `end_date` to effective date)
+4. Create new Schedule record for target area when `shift_definition_id` is provided
+5. Update `user.area_id` and `user_tracking_status.area_id` to target area
+6. Send push notification to worker (optional, if FCM enabled — TODO)
+7. Emit WebSocket `USER_REASSIGNED` event to old/new area rooms, rayon rooms, and city room
 
 **Error responses:**
 - `403 Forbidden` — kepala_rayon trying to reassign outside own rayon
@@ -870,7 +963,7 @@ if (payload.role === 'Admin' || payload.role === 'TopManagement') {
 // AFTER (correct):
 const CITY_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
 if (CITY_ROLES.includes(payload.role)) {
-  client.join('city');
+  client.join('monitoring:city');
 }
 ```
 
@@ -886,20 +979,20 @@ async handleConnection(client: Socket): Promise<void> {
 
   // Role-based auto-join
   if ([UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT].includes(role)) {
-    client.join('city');
+    client.join('monitoring:city');
   }
 
   if ([UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA].includes(role)) {
     const user = await this.userService.findById(userId);
     if (user?.rayon_id) {
-      client.join(`rayon:${user.rayon_id}`);
+      client.join(`monitoring:rayon:${user.rayon_id}`);
     }
   }
 
   if (role === UserRole.KORLAP) {
     const user = await this.userService.findById(userId);
     if (user?.area_id) {
-      client.join(`area:${user.area_id}`);
+      client.join(`monitoring:area:${user.area_id}`);
     }
   }
 }
@@ -921,6 +1014,8 @@ export enum EventType {
   USER_STATUS_CHANGED = 'user:status-changed',
   USER_LEFT_AREA = 'user:left-area',
   USER_ENTERED_AREA = 'user:entered-area',
+  USER_REASSIGNED = 'user:reassigned',
+  AREA_STAFFING_CHANGED = 'area:staffing-changed',  // NEW (Gap Fix)
 }
 ```
 
@@ -950,6 +1045,15 @@ export class UserAreaEvent {
   rayon_id: string | null;
   latitude: number;
   longitude: number;
+  timestamp: Date;
+}
+
+export class AreaStaffingChangedEvent {
+  area_id: string;
+  rayon_id: string | null;
+  active_count: number;
+  required_count: number;
+  is_met: boolean;
   timestamp: Date;
 }
 ```
@@ -1004,7 +1108,29 @@ if (!wasInsideArea && isInsideArea) {
 
 // Always emit location update
 this.eventsGateway.emitUserLocation({ ... });
+
+// Check if staffing threshold crossed (Gap Fix)
+if (statusChanged && areaId) {
+  await this.emitStaffingChangedIfNeeded(areaId, oldStatus, newStatus, new Date());
+}
 ```
+
+### E5. WebSocket Room Broadcasting Logic
+
+Events are broadcast to hierarchical rooms so each role receives only relevant updates.
+
+**Room structure:**
+- `monitoring:city` — receives all status changes, boundary events, and reassignments (for top_management, admin_system, superadmin)
+- `monitoring:rayon:{id}` — receives events for users within the rayon (for kepala_rayon, admin_data)
+- `monitoring:area:{id}` — receives events for users within the area (for korlap)
+
+**Broadcasting rules:**
+
+1. **On status change** (`USER_STATUS_CHANGED`): emit to `monitoring:area:{areaId}`, `monitoring:rayon:{rayonId}`, and `monitoring:city`.
+2. **On boundary event** (`USER_LEFT_AREA` / `USER_ENTERED_AREA`): emit to `monitoring:area:{areaId}`, `monitoring:rayon:{rayonId}`, and `monitoring:city`.
+3. **On reassignment** (`USER_REASSIGNED`): emit to **both** the old area room (`monitoring:area:{previousAreaId}`) and the new area room (`monitoring:area:{newAreaId}`), plus both parent rayon rooms and `monitoring:city`.
+4. **On location update** (`USER_LOCATION`): emit to `monitoring:area:{areaId}` and `monitoring:rayon:{rayonId}` only (city room does not receive high-frequency location pings to reduce bandwidth).
+5. **On staffing threshold crossing** (`AREA_STAFFING_CHANGED`): emit to `monitoring:area:{areaId}`, `monitoring:rayon:{rayonId}`, and `monitoring:city`. Triggered when any status change causes the area's active worker count to cross above or below the required staffing threshold.
 
 ---
 
@@ -1066,8 +1192,8 @@ async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
 
   const saved = await this.shiftRepo.save(shift);
 
-  // NEW: Update tracking status
-  await this.statusCalculator.onClockIn(userId, saved.id, area?.id ?? null, shiftDefinition?.id ?? null);
+  // NEW: Update tracking status (passes GPS coords for boundary check)
+  await this.statusCalculator.onClockIn(userId, saved.id, area?.id ?? null, shiftDefinition?.id ?? null, dto.gps_lat, dto.gps_lng);
 
   return saved;
 }
@@ -1118,7 +1244,12 @@ be/src/modules/monitoring/
     monitoring-scheduler.service.ts             NEW
     monitoring-cache.service.ts                 NEW
     monitoring-config.service.ts                NEW
-    monitoring.service.ts                       MODIFIED
+    monitoring-stats.service.ts                 NEW (extracted from MonitoringService)
+    monitoring-user.service.ts                  NEW (extracted from MonitoringService)
+    monitoring-reassign.service.ts              NEW (Gap Fix: worker reassignment with schedule mgmt)
+    day-type.service.ts                         NEW (Gap Fix: day-type resolution with cache)
+    rayon-boundary.service.ts                   NEW (Gap Fix: convex hull boundary computation)
+    monitoring.service.ts                       MODIFIED (slimmed to 220 lines)
   dto/
     live-users.dto.ts                           MODIFIED
     area-stats.dto.ts                           MODIFIED
@@ -1127,6 +1258,8 @@ be/src/modules/monitoring/
     monitoring-config.dto.ts                    NEW
     area-boundary.dto.ts                        NEW
     staffing-summary.dto.ts                     NEW
+    boundaries.dto.ts                           NEW (Gap Fix: rayon + area boundaries)
+    reassign-worker.dto.ts                      NEW (Gap Fix: reassign request/response)
   monitoring.controller.ts                      MODIFIED
   monitoring.module.ts                          MODIFIED
 
@@ -1160,7 +1293,7 @@ be/src/database/migrations/
 | GET | `/monitoring/city` | top_management+ | Enhanced | Uses tracking status table |
 | GET | `/monitoring/rayon/:id` | kepala_rayon+ | Enhanced | Uses tracking status table |
 | GET | `/monitoring/area/:id` | korlap+ | Enhanced | Per-role staff counts |
-| GET | `/monitoring/live-users` | korlap+ | Enhanced | Four-status, computed fields |
+| GET | `/monitoring/live-users` | korlap+ | Enhanced | Five-status, computed fields |
 | GET | `/monitoring/users/:userId/location-history` | korlap+ | **NEW** | GPS trail for playback |
 | GET | `/monitoring/users/:userId/day-summary` | korlap+ | **NEW** | Detail modal data |
 | GET | `/monitoring/config` | admin_system+ | **NEW** | List config values |
@@ -1217,18 +1350,24 @@ be/src/database/migrations/
 - [x] Refactor MonitoringService: split 1,136→220 lines (extracted MonitoringStatsService + MonitoringUserService)
 - [x] Verify Postman collection (all 9 endpoints present)
 
-### Phase 2D-10: Gap Fixes — NOT STARTED
-- [ ] Implement `getCurrentDayType()` utility with special_day_overrides lookup
-- [ ] Fix all staffing queries to filter by current day_type
-- [ ] Add day_type fields to StaffingSummaryResponseDto and AreaStatsDto
-- [ ] Add rayon boundary columns to database
-- [ ] Implement RayonBoundaryService (convex hull computation)
-- [ ] Implement `GET /monitoring/boundaries` endpoint
-- [ ] Implement `POST /monitoring/reassign` endpoint with scope validation
-- [ ] Add WebSocket `user:reassigned` event
-- [ ] Update marker label format to "Role - Name"
-- [ ] Enhance location history with clickable points and first/last markers
+### Phase 2D-10: Gap Fixes — ✅ COMPLETE (March 7, 2026)
+- [x] Implement `DayTypeService` with `getCurrentDayType()` and special_day_overrides lookup
+- [x] Fix all staffing queries to filter by current day_type
+- [x] Add day_type fields to StaffingSummaryResponseDto and AreaStatsDto
+- [x] Add rayon boundary columns to database (migration: `1741100000000-Phase2DGapFixes.ts`)
+- [x] Implement `RayonBoundaryService` (convex hull computation)
+- [x] Wire `RayonBoundaryService.recompute()` into `AreasService.updateBoundary()` (via `forwardRef`)
+- [x] Implement `GET /monitoring/boundaries` endpoint with hierarchical response
+- [x] Implement `POST /monitoring/reassign` endpoint with schedule management
+- [x] Add `ReassignWorkerDto` (6 fields: user_id, target_area_id, shift_definition_id?, effective_date?, end_current_schedule?, reason?)
+- [x] Add schedule creation and `endCurrentSchedules()` logic in MonitoringReassignService
+- [x] Add WebSocket `USER_REASSIGNED` and `AREA_STAFFING_CHANGED` events
+- [x] Fix `onClockIn()` to check boundary with GPS coordinates (was hardcoded `is_within_area: true`)
+- [x] Emit `AREA_STAFFING_CHANGED` when status transitions cross staffing threshold
+- [x] Update seed `cluster_zoom_threshold: 13` → `14`
+- [x] Add 77 new tests (total: 1,172 tests, 62 suites)
+- [x] Maintain >80% branch coverage (80.37%)
 
 ---
 
-**Last Updated:** 2026-03-05
+**Last Updated:** 2026-03-07

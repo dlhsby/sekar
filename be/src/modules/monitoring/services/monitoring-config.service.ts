@@ -10,13 +10,14 @@ import {
 } from './monitoring-cache.service';
 
 const statusThresholdsSchema = z.object({
-  active_max_age_seconds: z.number().int().min(30).max(600),
-  inactive_threshold_seconds: z.number().int().min(60).max(3600),
-  missing_threshold_seconds: z.number().int().min(300).max(86400),
+  active_max_age_seconds: z.number().int().min(60).max(600),
+  inactive_threshold_seconds: z.number().int().min(300).max(3600),
+  missing_threshold_seconds: z.number().int().min(1800).max(7200),
+  location_ping_interval_seconds: z.number().int().min(30).max(300),
 });
 
 const geofencingSchema = z.object({
-  tolerance_meters: z.number().min(10).max(500),
+  tolerance_meters: z.number().min(0).max(500),
   outside_area_grace_seconds: z.number().int().min(0).max(600),
 });
 
@@ -25,11 +26,12 @@ const mapDefaultsSchema = z.object({
   center_lng: z.number().min(-180).max(180),
   zoom: z.number().int().min(1).max(20),
   cluster_zoom_threshold: z.number().int().min(1).max(20),
+  cluster_threshold: z.number().int().min(10).max(100),
 });
 
 const alertsSchema = z.object({
-  notify_on_missing: z.boolean(),
-  notify_on_outside_area: z.boolean(),
+  missing_user_notify: z.boolean(),
+  understaffed_notify: z.boolean(),
   low_battery_threshold: z.number().int().min(0).max(100),
 });
 

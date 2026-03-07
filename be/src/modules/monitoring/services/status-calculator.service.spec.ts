@@ -5,6 +5,7 @@ import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-st
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
 import { User } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
+import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 import { EventsGateway } from '../../../gateways/events.gateway';
 
 describe('StatusCalculatorService', () => {
@@ -14,11 +15,13 @@ describe('StatusCalculatorService', () => {
   let eventsGateway: any;
   let userRepository: any;
   let areaRepository: any;
+  let staffRequirementRepository: any;
 
   const defaultThresholds: StatusThresholds = {
     active_max_age_seconds: 300,
     inactive_threshold_seconds: 900,
     missing_threshold_seconds: 3600,
+    location_ping_interval_seconds: 60,
   };
 
   beforeEach(async () => {
@@ -26,6 +29,11 @@ describe('StatusCalculatorService', () => {
       findOne: jest.fn(),
       save: jest.fn(),
       upsert: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      }),
     };
 
     cacheService = {
@@ -39,6 +47,7 @@ describe('StatusCalculatorService', () => {
       emitUserLeftArea: jest.fn(),
       emitUserEnteredArea: jest.fn(),
       emitUserLocation: jest.fn(),
+      emitAreaStaffingChanged: jest.fn(),
     };
 
     userRepository = {
@@ -49,12 +58,21 @@ describe('StatusCalculatorService', () => {
       findOne: jest.fn().mockResolvedValue(null),
     };
 
+    staffRequirementRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StatusCalculatorService,
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
         { provide: getRepositoryToken(User), useValue: userRepository },
         { provide: getRepositoryToken(Area), useValue: areaRepository },
+        { provide: getRepositoryToken(AreaStaffRequirement), useValue: staffRequirementRepository },
         { provide: MonitoringCacheService, useValue: cacheService },
         { provide: EventsGateway, useValue: eventsGateway },
       ],
@@ -71,9 +89,9 @@ describe('StatusCalculatorService', () => {
       expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.OFFLINE);
     });
 
-    it('should return INACTIVE when active shift but no location', () => {
+    it('should return MISSING when active shift but no location (SVC-3 fix)', () => {
       const input: StatusInput = { hasActiveShift: true, lastLocationAt: null, isWithinArea: true };
-      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.INACTIVE);
+      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.MISSING);
     });
 
     it('should return ACTIVE when location is fresh and within area', () => {
@@ -126,6 +144,7 @@ describe('StatusCalculatorService', () => {
         active_max_age_seconds: 60,
         inactive_threshold_seconds: 120,
         missing_threshold_seconds: 300,
+        location_ping_interval_seconds: 60,
       };
       const input: StatusInput = {
         hasActiveShift: true,
@@ -147,6 +166,50 @@ describe('StatusCalculatorService', () => {
           area_id: 'area-1',
           shift_definition_id: 'sd-1',
           status: TrackingStatus.ACTIVE,
+          is_within_area: true,
+        }),
+        ['user_id'],
+      );
+    });
+
+    it('should check boundary when GPS coords provided', async () => {
+      // Mock boundary - polygon that contains the clock-in point
+      cacheService.getAreaBoundary.mockResolvedValue([
+        [[112.73, -7.28], [112.76, -7.28], [112.76, -7.31], [112.73, -7.31], [112.73, -7.28]],
+      ]);
+
+      await service.onClockIn('user-1', 'shift-1', 'area-1', 'sd-1', -7.29, 112.74);
+
+      expect(trackingRepository.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          is_within_area: true,
+        }),
+        ['user_id'],
+      );
+    });
+
+    it('should set is_within_area false when clock-in outside boundary', async () => {
+      // Mock boundary - polygon that does NOT contain the clock-in point
+      cacheService.getAreaBoundary.mockResolvedValue([
+        [[112.73, -7.28], [112.735, -7.28], [112.735, -7.285], [112.73, -7.285], [112.73, -7.28]],
+      ]);
+
+      await service.onClockIn('user-1', 'shift-1', 'area-1', 'sd-1', -7.5, 112.9);
+
+      expect(trackingRepository.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          is_within_area: false,
+        }),
+        ['user_id'],
+      );
+    });
+
+    it('should default is_within_area to true when no GPS coords provided', async () => {
+      await service.onClockIn('user-1', 'shift-1', 'area-1', 'sd-1');
+
+      expect(trackingRepository.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          is_within_area: true,
         }),
         ['user_id'],
       );

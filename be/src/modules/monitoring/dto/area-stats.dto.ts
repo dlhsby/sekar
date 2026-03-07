@@ -1,9 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TrackingStatus } from '../entities/user-tracking-status.entity';
 
-/**
- * User status within an area
- */
 export class UserStatusDto {
   @ApiProperty({ example: 'user-uuid' })
   id: string;
@@ -13,6 +10,9 @@ export class UserStatusDto {
 
   @ApiProperty({ example: 'satgas' })
   role: string;
+
+  @ApiPropertyOptional({ example: '08123456789', nullable: true })
+  phone: string | null;
 
   @ApiProperty({ enum: TrackingStatus, example: 'active' })
   status: TrackingStatus;
@@ -32,13 +32,13 @@ export class UserStatusDto {
   @ApiProperty({ example: 'shift-uuid' })
   current_shift_id: string | null;
 
+  @ApiPropertyOptional({ example: 'Shift Pagi', nullable: true })
+  shift_name: string | null;
+
   @ApiProperty({ example: '2024-01-24T06:00:00Z' })
   clock_in_time: Date | null;
 }
 
-/**
- * Task summary within an area
- */
 export class TaskSummaryDto {
   @ApiProperty({ example: 'task-uuid' })
   id: string;
@@ -62,9 +62,6 @@ export class TaskSummaryDto {
   deadline: Date | null;
 }
 
-/**
- * Staff requirement status for current shift
- */
 export class StaffRequirementStatusDto {
   @ApiProperty({ example: 'requirement-uuid' })
   id: string;
@@ -83,11 +80,20 @@ export class StaffRequirementStatusDto {
 
   @ApiProperty({ example: false })
   is_met: boolean;
+
+  @ApiProperty({ example: 3 })
+  active_count: number;
+
+  @ApiProperty({ example: 1 })
+  inactive_count: number;
+
+  @ApiProperty({ example: 1 })
+  outside_area_count: number;
+
+  @ApiProperty({ example: 0 })
+  missing_count: number;
 }
 
-/**
- * Area-level statistics DTO
- */
 export class AreaStatsDto {
   @ApiProperty({ example: 'area-uuid' })
   id: string;
@@ -154,6 +160,12 @@ export class AreaStatsDto {
 
   @ApiProperty({ example: ['Understaffed: need 1 more satgas'] })
   alerts: string[];
+
+  @ApiProperty({ example: 'WEEKDAY', enum: ['WEEKDAY', 'WEEKEND', 'HOLIDAY'] })
+  current_day_type: string;
+
+  @ApiProperty({ example: 'Hari Kerja' })
+  current_day_type_label: string;
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })
   generated_at: Date;

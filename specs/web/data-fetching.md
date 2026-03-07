@@ -626,9 +626,53 @@ onError: (err, newData, context) => {
 
 ## Phase 2D: Monitoring Query Hooks
 
+All Phase 2D monitoring hooks use TanStack Query with a shared `monitoringKeys` query key factory for consistent cache management.
+
+### Query Key Factory
+
+```typescript
+// lib/queries/monitoringKeys.ts
+export const monitoringKeys = {
+  all: ['monitoring'] as const,
+  stats: (scope?: MonitoringScope) => [...monitoringKeys.all, 'stats', scope] as const,
+  liveUsers: (scope?: MonitoringScope) => [...monitoringKeys.all, 'live-users', scope] as const,
+  userDaySummary: (userId: string, date: string) =>
+    [...monitoringKeys.all, 'users', userId, 'day-summary', date] as const,
+  locationHistory: (userId: string, date: string) =>
+    [...monitoringKeys.all, 'users', userId, 'location-history', date] as const,
+  staffingSummary: (scope?: MonitoringScope) =>
+    [...monitoringKeys.all, 'staffing-summary', scope] as const,
+  config: () => [...monitoringKeys.all, 'config'] as const,
+  boundaries: (scope?: MonitoringScope) =>
+    [...monitoringKeys.all, 'boundaries', scope] as const,
+};
+```
+
+### Polling Intervals
+
+| Hook | Polling Interval | Rationale |
+|------|-----------------|-----------|
+| `useLiveUsers` | 30s | Near-real-time user positions |
+| `useMonitoringStats` | 60s | Aggregated counts change less frequently |
+| `useStaffingSummary` | 60s | Staffing numbers update with clock-in/out |
+| `useMonitoringConfig` | On-demand | Admin config rarely changes |
+| `useBoundaries` | On-demand | Boundary polygons are static |
+| `useUserDaySummary` | On-demand | Fetched when detail panel opens |
+| `useLocationHistory` | On-demand | Fetched when trail view opens |
+
 ### New TanStack Query Hooks
 
 ```typescript
+// City/rayon/area statistics
+function useMonitoringStats(scope?: MonitoringScope) {
+  return useQuery({
+    queryKey: monitoringKeys.stats(scope),
+    queryFn: () => monitoringApi.getStats(scope),
+    refetchInterval: 60_000, // 60s polling
+    staleTime: 30_000,
+  });
+}
+
 // Enhanced live users with status filter
 function useLiveUsers(filters?: MonitoringFilters) {
   return useQuery({
@@ -690,7 +734,16 @@ function useUpdateMonitoringConfig() {
   });
 }
 
-// Area boundary
+// Area/rayon boundary polygons
+function useBoundaries(scope?: MonitoringScope) {
+  return useQuery({
+    queryKey: monitoringKeys.boundaries(scope),
+    queryFn: () => monitoringApi.getBoundaries(scope),
+    staleTime: 300_000, // 5 min — boundaries rarely change
+  });
+}
+
+// Area boundary (single area)
 function useAreaBoundary(areaId: string | null) {
   return useQuery({
     queryKey: ['areas', areaId, 'boundary'],
@@ -724,5 +777,5 @@ function useUpdateAreaBoundary() {
 | Config update | `['monitoring', 'config']` — full invalidate |
 | Boundary update | `['areas', areaId, 'boundary']` + `['monitoring']` — recalculate is_within_area |
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-06
 **Dependencies:** `@tanstack/react-query`, `axios`, `next`

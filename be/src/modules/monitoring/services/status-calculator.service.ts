@@ -10,7 +10,9 @@ import {
   UserStatusChangedEvent,
   UserAreaEvent,
   UserLocationEvent,
+  AreaStaffingChangedEvent,
 } from '../../../gateways/dto/events.dto';
+import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -29,6 +31,8 @@ export class StatusCalculatorService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Area)
     private readonly areaRepository: Repository<Area>,
+    @InjectRepository(AreaStaffRequirement)
+    private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
     private readonly cacheService: MonitoringCacheService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
@@ -44,7 +48,7 @@ export class StatusCalculatorService {
     }
 
     if (!input.lastLocationAt) {
-      return TrackingStatus.INACTIVE;
+      return TrackingStatus.MISSING;
     }
 
     const ageSeconds = (now.getTime() - input.lastLocationAt.getTime()) / 1000;
@@ -97,6 +101,7 @@ export class StatusCalculatorService {
       await this.trackingRepository.save(existing);
 
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
+      await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
     }
@@ -109,8 +114,15 @@ export class StatusCalculatorService {
     shiftId: string,
     areaId: string | null,
     shiftDefinitionId: string | null,
+    clockInLat?: number,
+    clockInLng?: number,
   ): Promise<void> {
     const now = new Date();
+
+    let isWithinArea = true;
+    if (areaId && clockInLat !== undefined && clockInLng !== undefined) {
+      isWithinArea = await this.checkWithinArea(areaId, clockInLat, clockInLng);
+    }
 
     await this.trackingRepository.upsert(
       {
@@ -119,13 +131,13 @@ export class StatusCalculatorService {
         shift_definition_id: shiftDefinitionId,
         area_id: areaId,
         status: TrackingStatus.ACTIVE,
-        is_within_area: true,
+        is_within_area: isWithinArea,
         updated_at: now,
       },
       ['user_id'],
     );
 
-    this.logger.log(`User ${userId} clocked in → ACTIVE`);
+    this.logger.log(`User ${userId} clocked in → ACTIVE (within_area: ${isWithinArea})`);
   }
 
   async onClockOut(userId: string): Promise<void> {
@@ -214,6 +226,7 @@ export class StatusCalculatorService {
     // Broadcast status change via WebSocket if changed
     if (newStatus !== previousStatus) {
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now, context);
+      await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
     }
 
     // Always emit location update
@@ -316,6 +329,53 @@ export class StatusCalculatorService {
     };
 
     this.eventsGateway.emitUserLocation(event);
+  }
+
+  private isActiveStatus(status: TrackingStatus): boolean {
+    return status === TrackingStatus.ACTIVE || status === TrackingStatus.INACTIVE || status === TrackingStatus.OUTSIDE_AREA;
+  }
+
+  private async emitStaffingChangedIfNeeded(
+    areaId: string | null,
+    previousStatus: TrackingStatus,
+    newStatus: TrackingStatus,
+    timestamp: Date,
+  ): Promise<void> {
+    if (!areaId) return;
+
+    const wasActive = this.isActiveStatus(previousStatus);
+    const isNowActive = this.isActiveStatus(newStatus);
+    if (wasActive === isNowActive) return;
+
+    const activeCount = await this.trackingRepository
+      .createQueryBuilder('uts')
+      .where('uts.area_id = :areaId', { areaId })
+      .andWhere('uts.status IN (:...statuses)', {
+        statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
+      })
+      .getCount();
+
+    const reqResult = await this.staffRequirementRepository
+      .createQueryBuilder('req')
+      .select('SUM(req.required_count)', 'total')
+      .where('req.area_id = :areaId', { areaId })
+      .getRawOne();
+
+    const requiredCount = parseInt(reqResult?.total || '0');
+    if (requiredCount === 0) return;
+
+    const area = await this.areaRepository.findOne({ where: { id: areaId }, select: ['id', 'rayon_id'] });
+
+    const event: AreaStaffingChangedEvent = {
+      area_id: areaId,
+      rayon_id: area?.rayon_id || null,
+      active_count: activeCount,
+      required_count: requiredCount,
+      is_met: activeCount >= requiredCount,
+      timestamp,
+    };
+
+    this.eventsGateway.emitAreaStaffingChanged(event);
   }
 
   private async resolveUserContext(

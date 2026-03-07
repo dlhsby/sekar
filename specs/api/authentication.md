@@ -2,7 +2,7 @@
 
 Comprehensive authentication and authorization specifications for SEKAR Backend API.
 
-> **Phase 2C (Current):** This document has been updated to reflect the 8-role system: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping. Some code examples in the implementation sections still reference the old 3-role system for historical context — the Permission Matrix section is authoritative.
+> **Phase 2D (Current):** This document reflects the 8-role system: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping from the original 3-role system. All code examples and permission matrices use the current 8-role system. Phase 2D adds scope-based monitoring authorization and boundary/reassign permissions.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ SEKAR uses a stateless JWT (JSON Web Token) based authentication system combined
 
 - **Stateless Authentication:** No server-side session storage
 - **Two-Token System:** Access tokens (15 min) + Refresh tokens (7 days) with rotation
-- **Role-Based Access:** Three roles (Worker, Supervisor, Admin) with distinct permissions
+- **Role-Based Access:** Eight roles (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin) with distinct permissions (see ADR-009)
 - **Password Security:** Bcrypt hashing with 10 rounds
 - **Passport.js Integration:** Standard authentication middleware
 - **Swagger Integration:** Bearer token authentication in API docs
@@ -55,8 +55,10 @@ Access tokens are JWTs consisting of three parts: Header, Payload, and Signature
 ```json
 {
   "sub": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
-  "username": "worker1",
-  "role": "worker",
+  "username": "satgas1",
+  "role": "satgas",
+  "rayon_id": "uuid-or-null",
+  "area_id": "uuid-or-null",
   "iat": 1736420400,
   "exp": 1736421300
 }
@@ -67,7 +69,9 @@ Access tokens are JWTs consisting of three parts: Header, Payload, and Signature
 |-------|------|-------------|
 | `sub` | string | User ID (UUID) - Subject claim |
 | `username` | string | Username for logging/debugging |
-| `role` | string | User role (`worker`, `supervisor`, `admin`) |
+| `role` | string | User role (one of 8 roles: `satgas`, `linmas`, `korlap`, `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`) |
+| `rayon_id` | string\|null | User's assigned rayon UUID (null for superadmin/admin_system) |
+| `area_id` | string\|null | User's assigned area UUID (null for roles above area level) |
 | `iat` | number | Issued At timestamp (Unix epoch) |
 | `exp` | number | Expiration timestamp (Unix epoch, +15 minutes) |
 
@@ -430,23 +434,23 @@ import { UserRole } from '../users/entities/user.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)  // Apply both guards
 export class UsersController {
 
-  // Only Admin can create users
+  // Only admin_system/superadmin can create users
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
 
-  // Admin or Supervisor can list users
+  // Supervisory+ roles can list users (scoped by rayon/area)
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
+  @Roles(UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   findAll() {
     return this.usersService.findAll();
   }
 
-  // Only Workers can clock in
+  // Field workers can clock in
   @Post('clock-in')
-  @Roles(UserRole.WORKER)
+  @Roles(UserRole.SATGAS, UserRole.LINMAS)
   clockIn(@GetUser() user: User, @Body() dto: ClockInDto) {
     return this.shiftsService.clockIn(user.id, dto);
   }
@@ -578,6 +582,12 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 | PATCH /monitoring/config/:key | - | - | - | - | - | - | ✅ | ✅ |
 | GET /areas/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
 | PUT /areas/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
+| GET /monitoring/boundaries | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | - |
+| POST /monitoring/reassign | - | - | ✅* (own area) | - | ✅ | ✅ | ✅ | - |
+| GET /monitoring/config | - | - | - | - | - | - | ✅ | ✅ |
+| PUT /monitoring/config | - | - | - | - | - | - | ✅ | ✅ |
+
+*korlap can only reassign workers within their own area
 
 **Scope Rules:**
 - `korlap`: Filtered to own area_id automatically
@@ -596,6 +606,22 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 - `-` = No access
 - `(own)` = Can only access own resources
 - `*` = Scoped to area/rayon
+
+### Monitoring Scope-Based Authorization (Phase 2D)
+
+Monitoring endpoints enforce scope-based authorization at the service level. The requesting user's `rayon_id` and `area_id` are extracted from the JWT token and used to filter results automatically.
+
+| Role | Monitoring Scope | Details |
+|------|-----------------|---------|
+| `top_management` | All rayons, all areas, all workers | City-wide visibility with no scope restrictions |
+| `admin_system` | All rayons, all areas, all workers | Full system access for administration and configuration |
+| `kepala_rayon` | Own rayon's areas and workers only | Filtered by `rayon_id` from JWT; cannot see other rayons |
+| `korlap` | Own area's workers only | Filtered by `area_id` from JWT; cannot see other areas |
+| `satgas`, `linmas` | No monitoring access | Field workers are monitored, not monitors |
+| `admin_data` | No monitoring access | Data entry role; no real-time monitoring privileges |
+| `superadmin` | All rayons, all areas, all workers | Full access including config management |
+
+**Enforcement mechanism:** The `MonitoringService` reads `user.rayon_id` and `user.area_id` from the authenticated request (populated by JWT strategy) and applies WHERE clauses to all database queries. A `kepala_rayon` requesting `/monitoring/live-users` will only receive users whose area belongs to their rayon. A `korlap` will only receive users assigned to their specific area. Requests for resources outside the user's scope return 403 Forbidden.
 
 ---
 
@@ -1128,16 +1154,16 @@ describe('AuthService', () => {
     expect(result).toHaveProperty('access_token');
     expect(result.user).toEqual({
       id: expect.any(String),
-      username: 'worker1',
-      full_name: 'Pekerja Satu',
-      role: 'worker',
+      username: 'satgas1',
+      full_name: 'Satgas Satu',
+      role: 'satgas',
     });
   });
 
   it('should throw UnauthorizedException on invalid password', async () => {
     await expect(
       service.login({
-        username: 'worker1',
+        username: 'satgas1',
         password: 'wrongpassword',
       }),
     ).rejects.toThrow(UnauthorizedException);
@@ -1177,9 +1203,9 @@ export const AUTH_CONSTANTS = {
 
 ---
 
-**Document Version:** 2.1.0
-**Last Updated:** 2026-03-03
-**Phase:** 2D - Monitoring module access added
+**Document Version:** 2.2.0
+**Last Updated:** 2026-03-06
+**Phase:** 2D - Monitoring scope authorization, boundaries, reassign permissions added
 **Related Documents:**
 - [contracts.md](./contracts.md) - API endpoint specifications
 - [error-handling.md](./error-handling.md) - Error handling patterns

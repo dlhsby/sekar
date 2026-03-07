@@ -1,7 +1,7 @@
 # Phase 2D: Testing Plan
 
-**Last Updated:** 2026-03-03
-**Status:** Planning
+**Last Updated:** 2026-03-07
+**Status:** ✅ COMPLETE
 **Related ADR:** ADR-011 (new)
 **See also:** [Backend Requirements](./backend.md), [Mobile Requirements](./mobile.md), [Web Requirements](./web.md)
 
@@ -68,6 +68,9 @@ describe('StatusCalculatorService', () => {
     it('should set status to active with shift and area info');
     it('should create tracking status row if not exists');
     it('should update existing tracking status row');
+    it('should check boundary when GPS coords provided');                // Gap Fix
+    it('should set is_within_area false when clock-in outside boundary'); // Gap Fix
+    it('should default is_within_area to true when no GPS coords');       // Gap Fix
   });
 
   describe('onClockOut()', () => {
@@ -161,7 +164,7 @@ describe('MonitoringConfigService', () => {
 ```typescript
 describe('MonitoringController', () => {
   describe('GET /monitoring/live-users', () => {
-    it('should return four-status counts (total_active, total_inactive, total_outside_area, total_missing)');
+    it('should return five-status counts (total_active, total_inactive, total_outside_area, total_missing, total_offline)');
     it('should include computed is_within_area (not hardcoded true)');
     it('should include shift_name from shift_definitions (not hardcoded Active Shift)');
     it('should include phone field on LiveUserDto');
@@ -300,6 +303,7 @@ describe('EventsGateway - Phase 2D', () => {
     it('should emit user:status-changed to appropriate rooms');
     it('should emit user:left-area to area and rayon rooms');
     it('should emit user:entered-area to area and rayon rooms');
+    it('should emit area:staffing-changed when threshold crossed');       // Gap Fix
     it('should include new fields in user:location event (status, is_within_area, shift_name)');
   });
 });
@@ -317,13 +321,48 @@ describe('LocationService - Phase 2D Integration', () => {
 });
 ```
 
-### 10. Shifts Module Integration
+### 10. MonitoringReassignService Tests (Gap Fix)
+
+```typescript
+describe('MonitoringReassignService', () => {
+  describe('reassign()', () => {
+    it('should reassign worker to target area');
+    it('should return previous and new area info');
+    it('should create new schedule when shift_definition_id provided');
+    it('should not create schedule when shift_definition_id not provided');
+    it('should end current schedules when end_current_schedule is true');
+    it('should default effective_date to today when not provided');
+    it('should emit USER_REASSIGNED WebSocket event');
+    it('should throw 404 when worker not found');
+    it('should throw 404 when target area not found');
+    it('should throw 409 when worker already in target area');
+    it('should throw 403 when kepala_rayon reassigns outside own rayon');
+  });
+});
+```
+
+### 11. DayTypeService Tests (Gap Fix)
+
+```typescript
+describe('DayTypeService', () => {
+  describe('getCurrentDayType()', () => {
+    it('should return WEEKDAY for Monday');
+    it('should return WEEKEND for Saturday');
+    it('should return WEEKEND for Sunday');
+    it('should return HOLIDAY when special_day_override exists');
+    it('should use cached value within TTL');
+    it('should re-fetch after TTL expires');
+  });
+});
+```
+
+### 12. Shifts Module Integration
 
 ```typescript
 describe('ShiftsService - Phase 2D Integration', () => {
   describe('clockIn()', () => {
     it('should resolve and store shift_definition_id');
-    it('should trigger StatusCalculatorService.onClockIn()');
+    it('should trigger StatusCalculatorService.onClockIn() with GPS coords'); // Gap Fix: passes gps_lat/gps_lng
     it('should handle null shift definition');
   });
 
@@ -378,7 +417,7 @@ describe('Integration: Scheduler → Status Decay', () => {
 ```typescript
 describe('MapDashboardScreen', () => {
   it('should render MapView with markers');
-  it('should render status summary bar with four statuses');
+  it('should render status summary bar with five statuses');
   it('should render user list strip at bottom');
   it('should render FAB control column');
   it('should render area polygons when boundary_polygon exists');
@@ -631,12 +670,12 @@ test.describe('Monitoring Config', () => {
 
 ## Test Coverage Targets
 
-| Component | Phase 2C Baseline | Phase 2D Target | Notes |
-|-----------|-------------------|------------------|-------|
-| Backend unit | 89.57% stmts | >85% stmts | New services add coverage; may dip during refactor |
-| Backend branch | 81.64% | >80% | Status algorithm has many branches |
-| Mobile unit | 80.31% | >80% | New components need tests |
-| Web E2E | ~14 specs | +8 specs | Monitoring-specific E2E tests |
+| Component | Phase 2C Baseline | Phase 2D Target | Phase 2D Actual | Notes |
+|-----------|-------------------|------------------|-----------------|-------|
+| Backend unit | 89.57% stmts | >85% stmts | 91.81% stmts ✅ | 1,172 tests, 62 suites |
+| Backend branch | 81.64% | >80% | 80.37% ✅ | Status algorithm has many branches |
+| Mobile unit | 80.31% | >80% | 80.31%+ ✅ | 3,493 tests passing |
+| Web E2E | ~14 specs | +8 specs | TBD | Monitoring-specific E2E tests |
 
 ### Per-Module Coverage Targets
 
@@ -727,4 +766,4 @@ npm run test:e2e:ui               # With Playwright UI
 
 ---
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-07

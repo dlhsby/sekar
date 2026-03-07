@@ -23,6 +23,8 @@ import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/s
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { formatDateTime, calculateDuration, isToday } from '../../utils/dateUtils';
 import { useLocationPermission } from '../../hooks';
+import { useHomeLocation } from '../../hooks/useHomeLocation';
+import { LocationStatusCard } from '../../components/home/LocationStatusCard';
 import type { Activity } from '../../types/models.types';
 
 /**
@@ -75,6 +77,9 @@ export function HomeScreen(): React.JSX.Element {
       // GPS was disabled - UI will show alert
     },
   });
+
+  // Phase 2D-11: Home screen location status
+  const { location: homeLocation, refresh: refreshHomeLocation, hasActiveShift } = useHomeLocation();
 
   // Calculate today's activities count from Redux state
   const todayActivitiesCount = useMemo(() => {
@@ -301,6 +306,14 @@ export function HomeScreen(): React.JSX.Element {
           />
         )}
 
+        {/* Phase 2D-11: Location Status Card - only visible during active shift */}
+        {hasActiveShift && (
+          <LocationStatusCard
+            location={homeLocation}
+            onRefresh={refreshHomeLocation}
+          />
+        )}
+
         {/* Current Shift Card */}
         {currentShift ? (
           <TouchableOpacity
@@ -440,11 +453,10 @@ const styles = StyleSheet.create({
   content: {
     padding: nbSpacing.md,
     flexGrow: 1,
-    justifyContent: 'center',
     paddingBottom: 88, // Reserve space for fixed Clock button (button 56px + 16px gap + 16px bottom)
   },
   shiftCard: {
-    marginBottom: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
     padding: 12,
   },
   cardTitle: {
@@ -503,7 +515,7 @@ const styles = StyleSheet.create({
     color: nbColors.primary,
   },
   summaryCard: {
-    marginBottom: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
     padding: 12,
   },
   summaryRow: {

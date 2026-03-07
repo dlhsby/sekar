@@ -6,6 +6,7 @@ import { Area } from './entities/area.entity';
 import { User } from '../users/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { AreaTypesModule } from '../area-types/area-types.module';
+import { MonitoringModule } from '../monitoring/monitoring.module';
 
 /**
  * Areas Module
@@ -16,8 +17,9 @@ import { AreaTypesModule } from '../area-types/area-types.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Area, User]),
-    forwardRef(() => AuthModule), // For JwtAuthGuard and RolesGuard (circular dependency)
-    AreaTypesModule, // For validating area_type_id
+    forwardRef(() => AuthModule),
+    AreaTypesModule,
+    forwardRef(() => MonitoringModule),
   ],
   controllers: [AreasController],
   providers: [AreasService],

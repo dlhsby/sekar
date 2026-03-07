@@ -638,7 +638,7 @@ describe('NBButton', () => {
 
 | Component | File | Changes |
 |-----------|------|---------|
-| UserMarker | `UserMarker.tsx` | Role icons (MaterialCommunityIcons: account-circle/shield-account/star-circle), four-status color ring, name label (10px, zoom >= 14), 44x44px touch target |
+| UserMarker | `UserMarker.tsx` | Role icons (MaterialCommunityIcons: account-circle/shield-account/star-circle), five-status color ring, name label (10px, zoom >= 14), 44x44px touch target |
 
 ### Design Tokens
 

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MonitoringController } from './monitoring.controller';
 import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
+import { MonitoringStatsService } from './services/monitoring-stats.service';
+import { MonitoringReassignService } from './services/monitoring-reassign.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
@@ -153,6 +155,10 @@ describe('MonitoringController', () => {
         current_count: 5,
         delta: -1,
         is_met: false,
+        active_count: 3,
+        inactive_count: 1,
+        outside_area_count: 1,
+        missing_count: 0,
       },
     ],
     users: [
@@ -160,12 +166,14 @@ describe('MonitoringController', () => {
         id: 'user-1',
         full_name: 'Worker One',
         role: UserRole.SATGAS,
+        phone: null,
         status: TrackingStatus.ACTIVE,
         last_lat: -7.2905,
         last_lng: 112.7398,
         last_location_update: new Date(),
         is_within_area: true,
         current_shift_id: 'shift-1',
+        shift_name: null,
         clock_in_time: new Date(),
       },
     ],
@@ -176,6 +184,8 @@ describe('MonitoringController', () => {
     active_tasks: [],
     activities_submitted_today: 15,
     alerts: ['Understaffed: need 1 more Worker'],
+    current_day_type: 'WEEKDAY',
+    current_day_type_label: 'Hari Kerja',
     generated_at: new Date(),
   };
 
@@ -185,6 +195,7 @@ describe('MonitoringController', () => {
     total_outside_area: 10,
     total_missing: 10,
     total_offline: 50,
+    total_online: 100,
     users: [
       {
         id: 'user-1',
@@ -204,6 +215,7 @@ describe('MonitoringController', () => {
         is_within_area: true,
         outside_boundary: false,
         shift_id: 'shift-1',
+        shift_definition_id: null,
         shift_name: 'Shift 1',
         clock_in_time: new Date(),
         current_task_status: null,
@@ -234,6 +246,18 @@ describe('MonitoringController', () => {
           useValue: {
             findAll: jest.fn().mockResolvedValue([]),
             updateByKey: jest.fn(),
+          },
+        },
+        {
+          provide: MonitoringStatsService,
+          useValue: {
+            getBoundaries: jest.fn(),
+          },
+        },
+        {
+          provide: MonitoringReassignService,
+          useValue: {
+            reassign: jest.fn(),
           },
         },
       ],
@@ -530,6 +554,179 @@ describe('MonitoringController', () => {
       expect(service.getLiveUsers).toHaveBeenCalledWith(
         expect.objectContaining({ rayon_id: 'rayon-1' }),
       );
+    });
+  });
+
+  describe('getLocationHistory', () => {
+    it('should return location history for a user', async () => {
+      const mockHistory = { user_id: 'user-1', points: [], date: '2026-03-04' };
+      service.getLocationHistory.mockResolvedValue(mockHistory as any);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-1', rayon_id: 'rayon-1' } as any);
+
+      const result = await controller.getLocationHistory('user-1', { date: '2026-03-04' }, mockSuperadmin);
+
+      expect(service.getLocationHistory).toHaveBeenCalledWith('user-1', '2026-03-04', undefined);
+      expect(result).toEqual(mockHistory);
+    });
+
+    it('should deny korlap access to user in different area', async () => {
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-other', rayon_id: 'rayon-1' } as any);
+
+      await expect(
+        controller.getLocationHistory('user-2', { date: '2026-03-04' }, mockKorlap),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should deny kepala_rayon access to user in different rayon', async () => {
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-1', rayon_id: 'rayon-other' } as any);
+
+      await expect(
+        controller.getLocationHistory('user-2', { date: '2026-03-04' }, mockKepalaRayon),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('getUserDaySummary', () => {
+    it('should return user day summary', async () => {
+      const mockSummary = { user_id: 'user-1', area_id: 'area-1', rayon_id: 'rayon-1' };
+      service.getUserDaySummary.mockResolvedValue(mockSummary as any);
+
+      const result = await controller.getUserDaySummary('user-1', mockSuperadmin);
+
+      expect(service.getUserDaySummary).toHaveBeenCalledWith('user-1');
+      expect(result).toEqual(mockSummary);
+    });
+  });
+
+  describe('getBoundaries', () => {
+    let statsService: any;
+
+    beforeEach(() => {
+      statsService = controller['statsService'];
+    });
+
+    it('should return boundaries without filters for superadmin', async () => {
+      const mockBoundaries = { rayons: [], generated_at: new Date() };
+      statsService.getBoundaries.mockResolvedValue(mockBoundaries);
+
+      const result = await controller.getBoundaries(undefined, mockSuperadmin);
+
+      expect(statsService.getBoundaries).toHaveBeenCalledWith({});
+      expect(result).toEqual(mockBoundaries);
+    });
+
+    it('should pass rayon_id filter', async () => {
+      const mockBoundaries = { rayons: [], generated_at: new Date() };
+      statsService.getBoundaries.mockResolvedValue(mockBoundaries);
+
+      await controller.getBoundaries('rayon-1', mockSuperadmin);
+
+      expect(statsService.getBoundaries).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
+    });
+
+    it('should scope korlap to own area', async () => {
+      const mockBoundaries = { rayons: [], generated_at: new Date() };
+      statsService.getBoundaries.mockResolvedValue(mockBoundaries);
+
+      await controller.getBoundaries(undefined, mockKorlap);
+
+      expect(statsService.getBoundaries).toHaveBeenCalledWith(
+        expect.objectContaining({ area_id: 'area-1' }),
+      );
+    });
+
+    it('should scope admin_data to own rayon', async () => {
+      const mockBoundaries = { rayons: [], generated_at: new Date() };
+      statsService.getBoundaries.mockResolvedValue(mockBoundaries);
+
+      await controller.getBoundaries(undefined, mockAdminData);
+
+      expect(statsService.getBoundaries).toHaveBeenCalledWith(
+        expect.objectContaining({ rayon_id: 'rayon-1' }),
+      );
+    });
+  });
+
+  describe('getConfig', () => {
+    it('should return monitoring configurations', async () => {
+      const configService = controller['configService'] as any;
+      configService.findAll.mockResolvedValue([
+        { key: 'status_thresholds', value: { active_max_age_seconds: 300 }, description: 'Thresholds', updated_at: new Date() },
+      ]);
+
+      const result = await controller.getConfig();
+
+      expect(result.configs).toHaveLength(1);
+      expect(result.configs[0].key).toBe('status_thresholds');
+    });
+  });
+
+  describe('updateConfig', () => {
+    it('should update a config key', async () => {
+      const configService = controller['configService'] as any;
+      const now = new Date();
+      configService.updateByKey.mockResolvedValue({
+        key: 'status_thresholds',
+        value: { active_max_age_seconds: 120 },
+        updated_at: now,
+      });
+
+      const result = await controller.updateConfig('status_thresholds', {
+        value: { active_max_age_seconds: 120 },
+      });
+
+      expect(result.key).toBe('status_thresholds');
+      expect(result.updated_at).toBe(now);
+    });
+  });
+
+  describe('getStaffingSummary', () => {
+    it('should return staffing summary', async () => {
+      const mockStaffing = { items: [], generated_at: new Date() };
+      service.getStaffingSummary.mockResolvedValue(mockStaffing as any);
+
+      const result = await controller.getStaffingSummary({}, mockSuperadmin);
+
+      expect(service.getStaffingSummary).toHaveBeenCalledWith({});
+      expect(result).toEqual(mockStaffing);
+    });
+
+    it('should scope korlap filters', async () => {
+      service.getStaffingSummary.mockResolvedValue({ items: [], generated_at: new Date() } as any);
+
+      await controller.getStaffingSummary({}, mockKorlap);
+
+      expect(service.getStaffingSummary).toHaveBeenCalledWith(
+        expect.objectContaining({ area_id: 'area-1' }),
+      );
+    });
+  });
+
+  describe('reassignWorker', () => {
+    let reassignService: any;
+
+    beforeEach(() => {
+      reassignService = controller['reassignService'];
+    });
+
+    it('should reassign worker and return response', async () => {
+      const now = new Date();
+      const mockResponse = {
+        user_id: 'user-1',
+        user_name: 'Worker One',
+        previous_area_id: 'area-1',
+        previous_area_name: 'Taman Bungkul',
+        new_area_id: 'area-2',
+        new_area_name: 'Taman Pelangi',
+        reassigned_at: now,
+      };
+      reassignService.reassign.mockResolvedValue(mockResponse);
+
+      const dto = { user_id: 'user-1', target_area_id: 'area-2' };
+      const result = await controller.reassignWorker(dto, mockSuperadmin);
+
+      expect(reassignService.reassign).toHaveBeenCalledWith(dto, mockSuperadmin);
+      expect(result).toEqual(mockResponse);
     });
   });
 });

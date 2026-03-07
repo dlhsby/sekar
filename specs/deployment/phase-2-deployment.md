@@ -1,6 +1,6 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** March 3, 2026 (Phase 2D Code-Complete)
+**Last Updated:** March 7, 2026 (Phase 2D Gap Fixes Complete)
 **Status:** ✅ Phase 2C Deployed | 🔄 Phase 2D Pending Deployment
 **Deployment Time:** Backend 15-20 min (automated) | Web 10-15 min (manual)
 
@@ -115,6 +115,7 @@ Schema created from TypeORM entities directly
 2. `AddProductionIndexesAndConstraints1737006000000` — Production indexes
 3. `Phase2CSchema1739390400000` — 8-role system, rename tables/columns, tasks, overtimes, schedules
 4. `Phase2DMonitoringSchema1741000000000` — monitoring_configs, user_tracking_status, indexes
+5. `Phase2DGapFixes1741100000000` — rayon boundary columns (boundary_polygon, center_lat, center_lng), composite index fix, GIN index on rayon boundaries
 
 > **Note:** `notification_tokens` and `notifications` tables are NOT created by migrations. They are created by TypeORM entity sync. For staging/prod, either:
 > - Run the app once with `DATABASE_SYNCHRONIZE=true`, then disable it, OR
@@ -152,7 +153,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 # 3. Run all migrations
 docker exec sekar-backend npm run migration:run:prod
-# Expected: 4 migrations executed
+# Expected: 5 migrations executed
 
 # 4. Create tables not covered by migrations (notification_tokens, notifications)
 docker exec sekar-backend sh -c "DATABASE_SYNCHRONIZE=true node -e \"
@@ -165,7 +166,7 @@ docker exec sekar-backend sh -c "DATABASE_SYNCHRONIZE=true node -e \"
 # 5. Seed reference data (idempotent — safe to re-run)
 docker exec sekar-backend npm run db:seed:prod
 # Creates: 4 area types, 7 rayons, 3 shift defs, 20 activity types,
-#          5 monitoring configs, 4 special day overrides, 1 superadmin
+#          5 monitoring configs (cluster_zoom_threshold=14), 4 special day overrides, 1 superadmin
 
 # 6. (Optional) Seed demo data for staging testing
 docker exec sekar-backend npm run db:seed:phase1:prod
@@ -1502,13 +1503,14 @@ docker-compose -f docker-compose.prod.yml restart web
 
 ### Pre-Deployment Checklist
 
-- [ ] All backend tests passing (~1,095 tests)
-- [ ] All mobile tests passing (~3,281 tests)
-- [ ] Database migration scripts reviewed and tested
+- [ ] All backend tests passing (1,204 tests, 62 suites, 94.55% line coverage)
+- [ ] All mobile tests passing (~3,493 tests)
+- [ ] Database migration scripts reviewed and tested (2 migrations: `1741000000000` + `1741100000000`)
 - [ ] Backfill script for `user_tracking_status` tested on staging
 - [ ] Mapbox token configured for production domain (`NEXT_PUBLIC_MAPBOX_TOKEN`)
-- [ ] WebSocket event handlers verified on staging
-- [ ] Monitoring config seed data reviewed
+- [ ] WebSocket event handlers verified on staging (including `AREA_STAFFING_CHANGED`)
+- [ ] Monitoring config seed data reviewed (`cluster_zoom_threshold: 14`)
+- [ ] Rayon boundary recompute verified after area boundary updates
 
 ### Database Migration
 
@@ -1560,7 +1562,8 @@ INSERT INTO monitoring_configs (key, value, description) VALUES
 ('status_thresholds', '{"active_max_age_seconds": 300, "inactive_threshold_seconds": 900, "missing_threshold_seconds": 3600, "location_ping_interval_seconds": 60}', 'Thresholds for determining user tracking status'),
 ('geofencing', '{"tolerance_meters": 50, "outside_area_grace_seconds": 120}', 'Geofencing tolerance and grace period settings'),
 ('map_defaults', '{"center_lat": -7.2575, "center_lng": 112.7521, "zoom": 12, "cluster_zoom_threshold": 14}', 'Default map view configuration'),
-('alerts', '{"low_battery_threshold": 15, "understaffed_notify": true, "missing_notify": true}', 'Alert notification settings');
+('alerts', '{"low_battery_threshold": 15, "understaffed_notify": true, "missing_user_notify": true}', 'Alert notification settings'),
+('location_ping', '{"interval_seconds": 60, "batch_size": 10}', 'Location ping batch settings');
 
 -- 6. Backfill user_tracking_status from active shifts
 INSERT INTO user_tracking_status (user_id, shift_id, status, area_id, updated_at)
@@ -1604,22 +1607,33 @@ NEXT_PUBLIC_MAPBOX_STYLE=mapbox://styles/mapbox/streets-v12
 NEXT_PUBLIC_WS_URL=wss://api.sekar.wahyutrip.com
 ```
 
-### New Endpoints (7)
+### New Endpoints (9)
 
 - `GET /monitoring/users/:userId/location-history`
 - `GET /monitoring/users/:userId/day-summary`
 - `GET /monitoring/config`
 - `PATCH /monitoring/config/:key`
 - `GET /monitoring/staffing-summary`
+- `GET /monitoring/boundaries` — rayon/area boundary polygons with staffing summary (hierarchical)
+- `POST /monitoring/reassign` — reassign worker to different area (creates new schedule)
 - `GET /areas/:id/boundary`
-- `PUT /areas/:id/boundary`
+- `PUT /areas/:id/boundary` — also triggers `RayonBoundaryService.recompute()`
 
 ### New WebSocket Events
 
 - `user:status-changed` — emitted when tracking status changes
 - `user:left-area` — emitted when user moves outside area boundary
 - `user:entered-area` — emitted when user moves inside area boundary
+- `user:reassigned` — emitted when worker is reassigned to a new area
+- `area:staffing-changed` — emitted when area staffing crosses threshold (payload: `areaId`, `rayonId`, `activeCount`, `requiredCount`, `isMet`)
 - Enhanced `user:location` — now includes `status`, `is_within_area`, `shift_name`
+
+### WebSocket Room Prefix
+
+All monitoring events use `monitoring:` room prefix:
+- `monitoring:city` — city-wide events
+- `monitoring:rayon:{rayonId}` — rayon-scoped events
+- `monitoring:area:{areaId}` — area-scoped events
 
 ### Post-Deployment Verification
 
@@ -1629,20 +1643,31 @@ TOKEN=$(curl -s -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -d '{"username":"admin","password":"password123"}' | jq -r '.access_token')
 
 curl -s -H "Authorization: Bearer $TOKEN" http://api.sekar.wahyutrip.com/api/v1/monitoring/config
-# → 4 config entries
+# → 5 config entries (status_thresholds, geofencing, map_defaults, alerts, location_ping)
 
 curl -s -H "Authorization: Bearer $TOKEN" http://api.sekar.wahyutrip.com/api/v1/monitoring/staffing-summary
 # → per-role breakdown
 
 curl -s -H "Authorization: Bearer $TOKEN" "http://api.sekar.wahyutrip.com/api/v1/monitoring/live-users?status=active"
 # → active users from user_tracking_status
+
+curl -s -H "Authorization: Bearer $TOKEN" http://api.sekar.wahyutrip.com/api/v1/monitoring/boundaries
+# → hierarchical rayon/area boundaries with staffing_summary
+
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"user_id":"<user-id>","target_area_id":"<area-id>"}' \
+  http://api.sekar.wahyutrip.com/api/v1/monitoring/reassign
+# → reassignment response with new_schedule_id
 ```
 
 **Database checks:**
 ```sql
-SELECT COUNT(*) FROM monitoring_configs;   -- Should be 4
+SELECT COUNT(*) FROM monitoring_configs;   -- Should be 5
 SELECT COUNT(*) FROM user_tracking_status; -- Should match user count
 SELECT indexname FROM pg_indexes WHERE tablename = 'user_tracking_status';
+-- Should include: idx_uts_status, idx_uts_area_id, idx_uts_shift_id, idx_uts_updated_at, idx_uts_status_area
+SELECT column_name FROM information_schema.columns WHERE table_name = 'rayons' AND column_name IN ('boundary_polygon', 'center_lat', 'center_lng');
+-- Should return 3 rows (rayon boundary columns from gap fix migration)
 ```
 
 **Web checks:**
@@ -1650,6 +1675,8 @@ SELECT indexname FROM pg_indexes WHERE tablename = 'user_tracking_status';
 - [ ] User markers show correct status colors (green/amber/purple/red/gray)
 - [ ] Side panel filters work and show staffing summary
 - [ ] `/monitoring/config` accessible for admin_system/superadmin only (403 for others)
+- [ ] Rayon boundaries display on map when available
+- [ ] Staffing threshold alerts visible (area:staffing-changed events)
 
 ### Phase 2D Rollback
 
@@ -1660,6 +1687,13 @@ docker tag <ECR_URI>/sekar-backend:phase-2c <ECR_URI>/sekar-backend:latest
 # Restart ECS service
 
 # Database: drop Phase 2D additions (WARNING: destroys monitoring data)
+-- Revert gap fix migration (1741100000000)
+ALTER TABLE rayons DROP COLUMN IF EXISTS boundary_polygon;
+ALTER TABLE rayons DROP COLUMN IF EXISTS center_lat;
+ALTER TABLE rayons DROP COLUMN IF EXISTS center_lng;
+DROP INDEX IF EXISTS idx_rayons_boundary_polygon;
+
+-- Revert base Phase 2D migration (1741000000000)
 DROP TABLE IF EXISTS user_tracking_status;
 DROP TABLE IF EXISTS monitoring_configs;
 ALTER TABLE shifts DROP COLUMN IF EXISTS shift_definition_id;

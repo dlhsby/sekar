@@ -14,12 +14,17 @@ import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-staff-requirement.entity';
+import { SpecialDayOverride } from '../special-day-overrides/entities/special-day-override.entity';
 import { MonitoringConfig } from './entities/monitoring-config.entity';
 import { UserTrackingStatus } from './entities/user-tracking-status.entity';
 import { MonitoringCacheService } from './services/monitoring-cache.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { StatusCalculatorService } from './services/status-calculator.service';
 import { MonitoringSchedulerService } from './services/monitoring-scheduler.service';
+import { DayTypeService } from './services/day-type.service';
+import { RayonBoundaryService } from './services/rayon-boundary.service';
+import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { Schedule } from '../schedules/entities/schedule.entity';
 import { EventsModule } from '../../gateways/events.module';
 
 @Module({
@@ -35,8 +40,10 @@ import { EventsModule } from '../../gateways/events.module';
       Rayon,
       ShiftDefinition,
       AreaStaffRequirement,
+      SpecialDayOverride,
       MonitoringConfig,
       UserTrackingStatus,
+      Schedule,
     ]),
     forwardRef(() => EventsModule),
   ],
@@ -49,6 +56,9 @@ import { EventsModule } from '../../gateways/events.module';
     MonitoringConfigService,
     StatusCalculatorService,
     MonitoringSchedulerService,
+    DayTypeService,
+    RayonBoundaryService,
+    MonitoringReassignService,
   ],
   exports: [
     MonitoringService,
@@ -57,6 +67,8 @@ import { EventsModule } from '../../gateways/events.module';
     MonitoringCacheService,
     MonitoringConfigService,
     StatusCalculatorService,
+    DayTypeService,
+    RayonBoundaryService,
   ],
 })
 export class MonitoringModule {}

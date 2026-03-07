@@ -28,7 +28,7 @@ All API errors follow a consistent JSON structure:
 
 ---
 
-## Standardized Error Codes (47 Total)
+## Standardized Error Codes (53 Total)
 
 The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for consistent error handling.
 
@@ -106,6 +106,17 @@ The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for c
 ### Worker Assignment Errors ~~(2 codes)~~ ✅ REMOVED (Phase 2C)
 
 > `worker_assignments` table dropped. Area association managed via `schedules` table. Error codes `ASSIGNMENT_NOT_FOUND` and `ASSIGNMENT_ALREADY_EXISTS` removed.
+
+### Monitoring Errors (6 codes) ✅ Implemented (Phase 2D)
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `MONITORING_CONFIG_INVALID` | 400 | Invalid monitoring configuration value. Threshold value outside allowed range (e.g., active_max_age < 60 or > 600) |
+| `MONITORING_CONFIG_NOT_FOUND` | 404 | Monitoring configuration not found. Requested config key does not exist |
+| `MONITORING_BOUNDARY_INVALID` | 400 | Invalid boundary polygon. GeoJSON polygon is malformed or has < 3 points |
+| `MONITORING_BOUNDARY_OUTSIDE_BOUNDS` | 400 | Boundary outside Surabaya. Polygon coordinates fall outside Surabaya city bounds |
+| `MONITORING_REASSIGN_SCOPE_DENIED` | 403 | Cannot reassign outside your scope. Supervisor trying to reassign worker outside their rayon/area scope |
+| `MONITORING_REASSIGN_CONFLICT` | 409 | Worker already reassigned. Worker has a pending reassignment that hasn't been processed |
 
 ### General Errors (5 codes)
 
@@ -806,5 +817,5 @@ export class AllExceptionsFilter implements ExceptionFilter {
 **Document Owner:** Backend Developer
 **Last Updated:** 2026-02-20
 **Status:** Active
-**Error Codes:** 47 standardized codes (Phase 2C: +11 activity approval + 7 task workflow codes)
+**Error Codes:** 53 standardized codes (Phase 2C: +11 activity approval + 7 task workflow codes; Phase 2D: +6 monitoring codes)
 **Related Docs:** [`contracts.md`](./contracts.md), [`authentication.md`](./authentication.md), [`../architecture/security.md`](../architecture/security.md)

@@ -1,6 +1,6 @@
 # API Contracts - Complete Endpoint Specifications
 
-Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend (Phase 1 MVP Complete).
+Comprehensive API endpoint specifications for all 122 endpoints in SEKAR Backend (Phase 2D Code-Complete).
 
 ## Overview
 
@@ -38,13 +38,14 @@ Comprehensive API endpoint specifications for all 41 endpoints in SEKAR Backend 
 13. [Activity Types Module](#activity-types-module) (4 endpoints)
 14. [Area Staff Requirements Module](#area-staff-requirements-module) (4 endpoints)
 15. [Worker Schedules Module](#worker-schedules-module) (5 endpoints) **→ Renamed to Schedules (`/schedules`) ✅ Implemented**
-16. [Monitoring Module](#monitoring-module) (4 endpoints + 7 Phase 2D)
+16. [Monitoring Module](#monitoring-module) (4 endpoints + 9 Phase 2D)
 17. [Areas Extensions](#areas-module-extensions-phase-2) (3 endpoints + 2 Phase 2D)
 18. [Notifications Module](#notifications-module-phase-2) (5 endpoints)
 19. [Tasks Module](#tasks-module-phase-2) (10 endpoints)
 
 ### Phase 2D (Monitoring Enhancements)
 20. [Phase 2D Monitoring Enhancements](#phase-2d-monitoring-enhancements) (9 new endpoints)
+21. [WebSocket Events (Monitoring)](#websocket-events-monitoring)
 
 ---
 
@@ -125,7 +126,7 @@ Content-Type: application/json
     "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
     "username": "worker1",
     "full_name": "Pekerja Satu",
-    "role": "worker"
+    "role": "satgas"
   }
 }
 ```
@@ -188,7 +189,7 @@ Content-Type: application/json
     "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
     "username": "worker1",
     "full_name": "Pekerja Satu",
-    "role": "worker"
+    "role": "satgas"
   }
 }
 ```
@@ -229,7 +230,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
   "username": "worker1",
   "full_name": "Pekerja Satu",
-  "role": "worker",
+  "role": "satgas",
   "created_at": "2026-01-09T10:00:00.000Z",
   "assigned_area": {
     "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
@@ -251,13 +252,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
-**Response (200 OK) - Admin/Supervisor:**
+**Response (200 OK) - admin_system/korlap/kepala_rayon:**
 ```json
 {
   "id": "9237ec92-08df-5d7f-b2c5-c2bdf395fb89",
   "username": "supervisor1",
   "full_name": "Supervisor Satu",
-  "role": "supervisor",
+  "role": "korlap",
   "created_at": "2026-01-09T10:00:00.000Z"
 }
 ```
@@ -315,7 +316,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### POST /api/v1/users
 
-Create a new user (Admin only).
+Create a new user (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -328,7 +329,7 @@ Content-Type: application/json
   "username": "worker4",
   "password": "securepassword123",
   "full_name": "Pekerja Empat",
-  "role": "worker"
+  "role": "satgas"
 }
 ```
 
@@ -346,7 +347,7 @@ Content-Type: application/json
   "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
   "username": "worker4",
   "full_name": "Pekerja Empat",
-  "role": "worker",
+  "role": "satgas",
   "is_active": true,
   "created_at": "2026-01-09T10:00:00.000Z"
 }
@@ -382,7 +383,7 @@ Content-Type: application/json
 
 ### GET /api/v1/users
 
-Get all users (Admin or Supervisor).
+Get all users (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -398,7 +399,7 @@ Authorization: Bearer {token}
     "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
     "username": "worker1",
     "full_name": "Pekerja Satu",
-    "role": "worker",
+    "role": "satgas",
     "is_active": true,
     "created_at": "2026-01-09T10:00:00.000Z"
   },
@@ -406,7 +407,7 @@ Authorization: Bearer {token}
     "id": "9237ec92-08df-5d7f-b2c5-c2bdf395fb89",
     "username": "supervisor1",
     "full_name": "Supervisor Satu",
-    "role": "supervisor",
+    "role": "korlap",
     "is_active": true,
     "created_at": "2026-01-09T10:00:00.000Z"
   }
@@ -417,7 +418,7 @@ Authorization: Bearer {token}
 
 ### GET /api/v1/users/:id
 
-Get user by ID (Admin or Supervisor).
+Get user by ID (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -437,7 +438,7 @@ Authorization: Bearer {token}
   "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
   "username": "worker1",
   "full_name": "Pekerja Satu",
-  "role": "worker",
+  "role": "satgas",
   "is_active": true,
   "created_at": "2026-01-09T10:00:00.000Z",
   "updated_at": "2026-01-09T10:00:00.000Z"
@@ -466,7 +467,7 @@ Authorization: Bearer {token}
 
 ### PATCH /api/v1/users/:id
 
-Update user (Admin only).
+Update user (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -496,7 +497,7 @@ Content-Type: application/json
   "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
   "username": "worker1",
   "full_name": "Pekerja Satu Updated",
-  "role": "worker",
+  "role": "satgas",
   "is_active": true,
   "created_at": "2026-01-09T10:00:00.000Z",
   "updated_at": "2026-01-09T11:00:00.000Z"
@@ -507,7 +508,7 @@ Content-Type: application/json
 
 ### DELETE /api/v1/users/:id
 
-Soft delete user (Admin only).
+Soft delete user (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -575,7 +576,7 @@ Content-Type: application/json
 ```
 
 **Notes:**
-- All authenticated users (Worker, Supervisor, Admin) can change their own password
+- All authenticated users can change their own password
 - Current password must be verified before change
 - New password must be different from current password
 - Password is hashed using bcrypt with 10 salt rounds
@@ -668,7 +669,7 @@ Authorization: Bearer {token}
 
 ### POST /api/v1/area-types
 
-Create a new area type (Admin only).
+Create a new area type (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -725,7 +726,7 @@ Content-Type: application/json
 
 ### PATCH /api/v1/area-types/:id
 
-Update an existing area type (Admin only).
+Update an existing area type (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -781,7 +782,7 @@ Content-Type: application/json
 
 ### DELETE /api/v1/area-types/:id
 
-Soft delete an area type (Admin only). Cannot delete if areas reference this type.
+Soft delete an area type (admin_system/superadmin only). Cannot delete if areas reference this type.
 
 **Request:**
 ```http
@@ -817,7 +818,7 @@ Authorization: Bearer {admin_token}
 
 ### POST /api/v1/areas
 
-Create a new area (Admin only).
+Create a new area (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -955,7 +956,7 @@ Authorization: Bearer {token}
 
 ### PATCH /api/v1/areas/:id
 
-Update area (Admin only).
+Update area (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -1000,7 +1001,7 @@ Content-Type: application/json
 
 ### DELETE /api/v1/areas/:id
 
-Soft delete area (Admin only).
+Soft delete area (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -1034,7 +1035,7 @@ Authorization: Bearer {admin_token}
 
 ### POST /api/v1/workers/:id/assign
 
-Assign worker to an area (Admin or Supervisor).
+Assign worker to an area (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -1096,7 +1097,7 @@ Content-Type: application/json
 
 ### DELETE /api/v1/workers/:id/assign
 
-Remove worker's area assignment (Admin or Supervisor).
+Remove worker's area assignment (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -1125,7 +1126,7 @@ Authorization: Bearer {token}
 
 ### POST /api/v1/shifts/clock-in
 
-Clock in to start a shift (Worker only).
+Clock in to start a shift (satgas/linmas/korlap only).
 
 **Request:**
 ```http
@@ -1218,7 +1219,7 @@ Content-Type: application/json
 
 ### POST /api/v1/shifts/clock-out
 
-Clock out to end a shift (Worker only).
+Clock out to end a shift (satgas/linmas/korlap only).
 
 **Request:**
 ```http
@@ -1288,7 +1289,7 @@ Content-Type: application/json
 
 ### GET /api/v1/shifts/current
 
-Get current active shift (Worker only).
+Get current active shift (satgas/linmas/korlap only).
 
 **Request:**
 ```http
@@ -1329,7 +1330,7 @@ null
 
 ### GET /api/v1/shifts/my-shifts
 
-Get shift history (Worker only).
+Get shift history (satgas/linmas/korlap only).
 
 **Request:**
 ```http
@@ -1367,7 +1368,7 @@ Authorization: Bearer {worker_token}
 
 ### GET /api/v1/shifts/active
 
-Get all active shifts (Admin or Supervisor).
+Get all active shifts (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -1407,7 +1408,7 @@ Authorization: Bearer {token}
 
 ### POST /api/v1/reports
 
-Create a work report (Worker only).
+Create a work report (satgas/linmas only).
 
 **Request:**
 ```http
@@ -1500,7 +1501,7 @@ Content-Type: image/jpeg
 
 ### GET /api/v1/reports
 
-Get all reports with filters (Admin or Supervisor).
+Get all reports with filters (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -1538,7 +1539,7 @@ Authorization: Bearer {token}
       "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
       "username": "worker1",
       "full_name": "Pekerja Satu",
-      "role": "worker"
+      "role": "satgas"
     },
     "area": {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -1563,7 +1564,7 @@ Authorization: Bearer {token}
         "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
         "username": "worker1",
         "full_name": "Pekerja Satu",
-        "role": "worker"
+        "role": "satgas"
       }
     }
   }
@@ -1609,7 +1610,7 @@ Authorization: Bearer {worker_token}
       "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
       "username": "worker1",
       "full_name": "Pekerja Satu",
-      "role": "worker"
+      "role": "satgas"
     },
     "area": {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -1634,7 +1635,7 @@ Authorization: Bearer {worker_token}
         "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
         "username": "worker1",
         "full_name": "Pekerja Satu",
-        "role": "worker"
+        "role": "satgas"
       }
     }
   }
@@ -1644,14 +1645,14 @@ Authorization: Bearer {worker_token}
 **Notes:**
 - Returns only reports belonging to the authenticated worker
 - Ordered by creation date (newest first)
-- Workers use this endpoint instead of GET /api/v1/reports
+- satgas/linmas use this endpoint instead of GET /api/v1/reports
 - Response includes nested relations: `worker`, `area`, and `shift` (same as GET /api/v1/reports)
 
 ---
 
 ### GET /api/v1/reports/:id
 
-Get report by ID (Admin, Supervisor, or Owner).
+Get report by ID (admin_system/superadmin/korlap/kepala_rayon, or owner).
 
 **Request:**
 ```http
@@ -1679,7 +1680,7 @@ Authorization: Bearer {token}
     "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
     "username": "worker1",
     "full_name": "Pekerja Satu",
-    "role": "worker"
+    "role": "satgas"
   },
   "area": {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -1704,7 +1705,7 @@ Authorization: Bearer {token}
       "id": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
       "username": "worker1",
       "full_name": "Pekerja Satu",
-      "role": "worker"
+      "role": "satgas"
     }
   }
 }
@@ -1720,14 +1721,14 @@ Authorization: Bearer {token}
 ```
 
 **Notes:**
-- Workers can only view their own reports
-- Admin/Supervisor can view all reports
+- satgas/linmas can only view their own reports
+- admin_system/korlap/kepala_rayon can view all reports
 
 ---
 
 ### PATCH /api/v1/reports/:id
 
-Update report (Worker only, own reports, within 1 hour).
+Update report (satgas/linmas only, own reports, within 1 hour).
 
 **Request:**
 ```http
@@ -1782,7 +1783,7 @@ Content-Type: image/jpeg
 
 ### DELETE /api/v1/reports/:id
 
-Delete report (Admin only).
+Delete report (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -1806,7 +1807,7 @@ Authorization: Bearer {admin_token}
 
 ### POST /api/v1/location/batch
 
-Batch upload location logs (Worker only).
+Batch upload location logs (satgas/linmas/korlap only).
 
 **Request:**
 ```http
@@ -1876,7 +1877,7 @@ Content-Type: application/json
 
 ### GET /api/v1/location/worker/:workerId
 
-Get worker location history (Admin or Supervisor).
+Get worker location history (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -1922,7 +1923,7 @@ Authorization: Bearer {token}
 
 ### GET /api/v1/location/worker/:workerId/latest
 
-Get latest location for a worker (Admin or Supervisor).
+Get latest location for a worker (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -1961,7 +1962,7 @@ null
 
 ### GET /api/v1/supervisor/active-workers
 
-Get all active workers with real-time locations (Admin or Supervisor).
+Get all active workers with real-time locations (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -2010,7 +2011,7 @@ Authorization: Bearer {token}
 
 ### GET /api/v1/supervisor/area-status
 
-Get area status overview (Admin or Supervisor).
+Get area status overview (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -2052,7 +2053,7 @@ Authorization: Bearer {token}
 
 ### GET /api/v1/supervisor/attendance
 
-Get daily attendance report (Admin or Supervisor).
+Get daily attendance report (admin_system/superadmin/korlap/kepala_rayon).
 
 **Request:**
 ```http
@@ -2244,7 +2245,7 @@ curl -X POST http://localhost:3000/api/v1/location/batch \
 
 #### POST /api/v1/rayons
 
-Create a new rayon (Admin only).
+Create a new rayon (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -2352,7 +2353,7 @@ Get rayon details.
 
 #### PATCH /api/v1/rayons/:id
 
-Update rayon (Admin only).
+Update rayon (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -2381,7 +2382,7 @@ Content-Type: application/json
 
 #### DELETE /api/v1/rayons/:id
 
-Delete rayon (Admin only, must have no areas assigned).
+Delete rayon (admin_system/superadmin only, must have no areas assigned).
 
 **Response (204 No Content)**
 
@@ -2428,7 +2429,7 @@ Get all areas in a rayon.
 
 #### GET /api/v1/rayons/:id/stats
 
-Get rayon statistics (TopManagement, KepalaRayon, Admin).
+Get rayon statistics (top_management, kepala_rayon, admin_system/superadmin).
 
 **Response (200 OK):**
 ```json
@@ -2531,7 +2532,7 @@ Get shift definition details.
 
 #### POST /api/v1/activity-types
 
-Create activity type (Admin only).
+Create activity type (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -2544,7 +2545,7 @@ Content-Type: application/json
   "name": "Penyiraman",
   "code": "WATERING",
   "description": "Penyiraman tanaman dan rumput",
-  "applicable_roles": ["Worker"]
+  "applicable_roles": ["satgas"]
 }
 ```
 
@@ -2554,7 +2555,7 @@ Content-Type: application/json
 | `name` | string | Yes | Max 100 characters |
 | `code` | string | Yes | Max 50 characters, unique, uppercase |
 | `description` | string | No | Max 500 characters |
-| `applicable_roles` | string[] | Yes | Array of ['Worker', 'Linmas'] |
+| `applicable_roles` | string[] | Yes | Array of ['satgas', 'linmas'] |
 
 **Response (201 Created):**
 ```json
@@ -2563,7 +2564,7 @@ Content-Type: application/json
   "name": "Penyiraman",
   "code": "WATERING",
   "description": "Penyiraman tanaman dan rumput",
-  "applicable_roles": ["Worker"],
+  "applicable_roles": ["satgas"],
   "is_active": true,
   "created_at": "2026-01-24T10:00:00.000Z"
 }
@@ -2573,7 +2574,7 @@ Content-Type: application/json
 
 #### GET /api/v1/activity-types
 
-List activity types (filtered by role for Worker/Linmas).
+List activity types (filtered by role for satgas/linmas).
 
 **Request:**
 ```http
@@ -2597,7 +2598,7 @@ Authorization: Bearer {worker_token}
       "name": "Penyiraman",
       "code": "WATERING",
       "description": "Penyiraman tanaman dan rumput",
-      "applicable_roles": ["Worker"],
+      "applicable_roles": ["satgas"],
       "is_active": true
     },
     {
@@ -2605,7 +2606,7 @@ Authorization: Bearer {worker_token}
       "name": "Pembersihan",
       "code": "CLEANING",
       "description": "Pembersihan area dari sampah",
-      "applicable_roles": ["Worker", "Linmas"],
+      "applicable_roles": ["satgas", "linmas"],
       "is_active": true
     }
   ]
@@ -2613,15 +2614,15 @@ Authorization: Bearer {worker_token}
 ```
 
 **Notes:**
-- Workers see only Worker-applicable activity types
+- satgas see only satgas-applicable activity types
 - Linmas see only Linmas-applicable activity types
-- Admin sees all activity types
+- admin_system/superadmin sees all activity types
 
 ---
 
 #### PATCH /api/v1/activity-types/:id
 
-Update activity type (Admin only).
+Update activity type (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -2643,7 +2644,7 @@ Content-Type: application/json
   "name": "Penyiraman",
   "code": "WATERING",
   "description": "Updated description",
-  "applicable_roles": ["Worker"],
+  "applicable_roles": ["satgas"],
   "is_active": false,
   "updated_at": "2026-01-24T11:00:00.000Z"
 }
@@ -2653,7 +2654,7 @@ Content-Type: application/json
 
 #### DELETE /api/v1/activity-types/:id
 
-Delete activity type (Admin only, soft delete).
+Delete activity type (admin_system/superadmin only, soft delete).
 
 **Response (204 No Content)**
 
@@ -2663,7 +2664,7 @@ Delete activity type (Admin only, soft delete).
 
 #### POST /api/v1/areas/:id/staff-requirements
 
-Set staff requirements for an area (Admin only).
+Set staff requirements for an area (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -2674,7 +2675,7 @@ Content-Type: application/json
 
 {
   "shift_definition_id": "22222222-2222-2222-2222-222222222201",
-  "role": "Worker",
+  "role": "satgas",
   "required_count": 6,
   "day_type": "WEEKDAY"
 }
@@ -2684,7 +2685,7 @@ Content-Type: application/json
 | Field | Type | Required | Validation |
 |-------|------|----------|------------|
 | `shift_definition_id` | UUID | Yes | Valid shift definition ID |
-| `role` | string | Yes | 'Worker' or 'Linmas' |
+| `role` | string | Yes | 'satgas' or 'linmas' |
 | `required_count` | number | Yes | Min 1 |
 | `day_type` | string | No | 'WEEKDAY', 'WEEKEND', 'HOLIDAY' (default: 'WEEKDAY') |
 
@@ -2694,7 +2695,7 @@ Content-Type: application/json
   "id": "44444444-4444-4444-4444-444444444401",
   "area_id": "area-uuid",
   "shift_definition_id": "22222222-2222-2222-2222-222222222201",
-  "role": "Worker",
+  "role": "satgas",
   "required_count": 6,
   "day_type": "WEEKDAY",
   "created_at": "2026-01-24T10:00:00.000Z"
@@ -2722,7 +2723,7 @@ Get staff requirements for an area.
         "name": "Shift 1",
         "code": "SHIFT1"
       },
-      "role": "Worker",
+      "role": "satgas",
       "required_count": 6,
       "day_type": "WEEKDAY"
     },
@@ -2733,7 +2734,7 @@ Get staff requirements for an area.
         "name": "Shift 1",
         "code": "SHIFT1"
       },
-      "role": "Linmas",
+      "role": "linmas",
       "required_count": 2,
       "day_type": "WEEKDAY"
     }
@@ -2772,7 +2773,7 @@ Content-Type: application/json
 
 #### DELETE /api/v1/areas/:areaId/staff-requirements/:id
 
-Delete staff requirement (Admin only).
+Delete staff requirement (admin_system/superadmin only).
 
 **Response (204 No Content)**
 
@@ -2846,7 +2847,7 @@ List worker schedules.
       "user": {
         "id": "worker-uuid",
         "full_name": "Pekerja Satu",
-        "role": "Worker"
+        "role": "satgas"
       },
       "area": {
         "id": "area-uuid",
@@ -2932,7 +2933,7 @@ Content-Type: application/json
 
 #### DELETE /api/v1/schedules/:id
 
-Delete schedule (Admin only).
+Delete schedule (admin_system/superadmin only).
 
 **Response (204 No Content)**
 
@@ -2955,7 +2956,7 @@ Get all schedules for an area.
       "user": {
         "id": "worker-uuid",
         "full_name": "Pekerja Satu",
-        "role": "Worker"
+        "role": "satgas"
       },
       "shift_definition": {
         "id": "22222222-2222-2222-2222-222222222201",
@@ -3117,7 +3118,7 @@ Mobile and web clients must update type definitions before backend deployment.
     {
       "user_id": "worker-uuid",
       "full_name": "Pekerja Satu",
-      "role": "Worker",
+      "role": "satgas",
       "shift_id": "shift-uuid",
       "clock_in_time": "2026-01-24T06:05:00.000Z",
       "last_location": {
@@ -3188,13 +3189,13 @@ Get real-time user positions for map display.
 }
 ```
 
-> **Naming note:** The response field is `total_inactive` (not `total_idle`) for consistency with the four-status enum values (`active`, `inactive`, `outside_area`, `missing`). The UI displays "Idle" as the human-readable label for the `inactive` status, but the API contract and TypeScript enum always use `inactive`.
+> **Naming note:** The response field is `total_inactive` (not `total_idle`) for consistency with the five-status enum values (`active`, `inactive`, `outside_area`, `missing`, `offline`). The UI displays "Idle" as the human-readable label for the `inactive` status, but the API contract and TypeScript enum always use `inactive`.
 
 ---
 
 ## Phase 2D Monitoring Enhancements
 
-> **Phase 2D** adds 7 new monitoring endpoints and enhances 4 existing ones. New database tables: `monitoring_configs`, `user_tracking_status`. New TypeScript enum: `TrackingStatus` (`active | inactive | outside_area | missing | offline`).
+> **Phase 2D** adds 9 new monitoring endpoints and enhances 4 existing ones. New database tables: `monitoring_configs`, `user_tracking_status`. New TypeScript enum: `TrackingStatus` (`active | inactive | outside_area | missing | offline`).
 
 ### GET /api/v1/monitoring/users/:userId/location-history
 
@@ -3553,6 +3554,19 @@ Get all rayon and area boundaries for map rendering.
 **Auth:** JwtAuthGuard + RolesGuard
 **Roles:** `korlap` (own area/rayon only), `kepala_rayon` (own rayon only), `top_management`, `admin_system`, `superadmin`
 
+**Request:**
+```http
+GET /api/v1/monitoring/boundaries HTTP/1.1
+Host: localhost:3000
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `rayon_id` | UUID | No | Filter to specific rayon (auto-applied for kepala_rayon) |
+| `include_staffing` | boolean | No | Include staffing summary per area (default: true) |
+
 **Response (200 OK):**
 ```json
 {
@@ -3660,7 +3674,7 @@ Content-Type: application/json
 
 #### PATCH /api/v1/areas/:id/boundary
 
-Update area boundary polygon (Admin only).
+Update area boundary polygon (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -3708,7 +3722,7 @@ Content-Type: application/json
 
 #### POST /api/v1/areas/import-kmz
 
-Import areas from KMZ file (Admin only).
+Import areas from KMZ file (admin_system/superadmin only).
 
 **Request:**
 ```http
@@ -3812,7 +3826,7 @@ Content-Type: application/json
 
 ```
 Backend Notification Flow:
-Admin/Supervisor → POST /notifications/send
+admin_system/korlap/kepala_rayon → POST /notifications/send
                  ↓
          Create notification in DB
                  ↓
@@ -4031,7 +4045,7 @@ Content-Type: application/json
 **Error Responses:**
 - **400 Bad Request:** Invalid input data
 - **401 Unauthorized:** Missing or invalid token
-- **403 Forbidden:** Insufficient permissions (not Admin/Supervisor)
+- **403 Forbidden:** Insufficient permissions (not admin_system/korlap/kepala_rayon)
 - **404 Not Found:** User not found
 
 ---
@@ -4040,7 +4054,7 @@ Content-Type: application/json
 
 Broadcast notification to multiple users by role.
 
-**Roles:** Admin only
+**Roles:** admin_system/superadmin only
 
 **Request:**
 ```http
@@ -4053,7 +4067,7 @@ Content-Type: application/json
   "title": "System Maintenance",
   "body": "The system will be under maintenance on Sunday",
   "type": "announcement",
-  "target_roles": ["Worker", "Supervisor"],
+  "target_roles": ["satgas", "korlap"],
   "data": {
     "priority": "high",
     "maintenance_date": "2026-02-02"
@@ -4103,7 +4117,7 @@ Get unread notification count.
 | Feature | POST /send | POST /broadcast |
 |---------|------------|-----------------|
 | **Target** | Single user by ID | Multiple users by role |
-| **Authorization** | Admin, Supervisor | Admin only |
+| **Authorization** | admin_system, korlap, kepala_rayon | admin_system/superadmin only |
 | **Use Case** | Task assignment, personal alerts | Announcements, system messages |
 | **Request** | `user_id` (UUID) | `target_roles` (array) |
 | **Response** | Notification object | `{sent, failed}` counts |
@@ -4148,7 +4162,7 @@ POST /api/v1/notifications/broadcast
   "title": "System Maintenance",
   "body": "The system will be under maintenance on Sunday 2PM-4PM",
   "type": "announcement",
-  "target_roles": ["Worker", "Supervisor"],
+  "target_roles": ["satgas", "korlap"],
   "data": {
     "priority": "high",
     "maintenance_date": "2026-02-02"
@@ -4684,13 +4698,13 @@ Cancel/delete task (soft delete).
 
 | Module | New Endpoints | Enhanced Endpoints | Methods |
 |--------|---------------|--------------------|---------|
-| Monitoring | 5 | 2 | GET, PATCH |
+| Monitoring | 7 | 2 | GET, PATCH, POST |
 | Areas (boundary) | 2 | 0 | GET, PUT |
 
-**New Phase 2D Endpoints:** 7
+**New Phase 2D Endpoints:** 9
 **Enhanced Phase 2D Endpoints:** 4
 
-**Grand Total (all phases):** 120
+**Grand Total (all phases):** 122
 
 ---
 
@@ -4732,8 +4746,8 @@ Phase 2 implementation:
 
 **Document Version:** 2.1.0
 **Last Updated:** March 3, 2026
-**Phase:** Phase 2C Complete + Phase 2D Planned
-**Total Endpoints:** 120 (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 7 Phase 2D)
+**Phase:** Phase 2C Complete + Phase 2D Code-Complete
+**Total Endpoints:** 122 (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 9 Phase 2D)
 **Test Coverage:** 888 tests passing (89.57% statements, 81.64% branches)
 
 ### Technology Stack
@@ -4794,7 +4808,7 @@ All endpoints using old role names must update:
 
 > **Status:** Planned | **Target:** March 2026
 
-### New Endpoints (+7)
+### New Endpoints (+9)
 
 | # | Method | Path | Description | Roles |
 |---|--------|------|-------------|-------|
@@ -4805,6 +4819,8 @@ All endpoints using old role names must update:
 | 5 | `GET` | `/monitoring/staffing-summary` | Aggregated staffing status by rayon/area | korlap, kepala_rayon, top_management, admin_system, superadmin |
 | 6 | `GET` | `/areas/:id/boundary` | Get area boundary polygon and coverage | admin_system, superadmin |
 | 7 | `PUT` | `/areas/:id/boundary` | Create or replace area boundary polygon | admin_system, superadmin |
+| 8 | `GET` | `/monitoring/boundaries` | Get area/rayon boundary polygons | korlap, kepala_rayon, top_management, admin_system, superadmin |
+| 9 | `POST` | `/monitoring/reassign` | Reassign worker to different area | kepala_rayon, admin_system, superadmin |
 
 ### Enhanced Endpoints (4)
 
@@ -4841,12 +4857,73 @@ All endpoints using old role names must update:
 | `monitoring_configs` | Key-value store for monitoring system settings (JSON values) |
 | `user_tracking_status` | Materialised per-user tracking status cache (refreshed on each GPS upload) |
 
+### WebSocket Events (Monitoring)
+
+**Connection:** `ws://api.host/monitoring`
+
+**Authentication:** JWT token passed as `Authorization` header or `token` query parameter on connection.
+
+**Rooms:**
+
+| Room | Pattern | Access |
+|------|---------|--------|
+| City-wide | `monitoring:city` | top_management, admin_system, superadmin |
+| Rayon | `monitoring:rayon:{rayonId}` | kepala_rayon (own rayon), top_management, admin_system, superadmin |
+| Area | `monitoring:area:{areaId}` | korlap (own area), kepala_rayon (own rayon), top_management, admin_system, superadmin |
+
+**Events (Server to Client):**
+
+| Event | Payload | Rooms | Description |
+|-------|---------|-------|-------------|
+| `USER_STATUS_CHANGED` | `{ userId, previousStatus, newStatus, timestamp }` | city, rayon, area | User tracking status changed (active/inactive/outside_area/missing/offline) |
+| `USER_LEFT_AREA` | `{ userId, areaId, timestamp, lastLocation: { lat, lng } }` | city, rayon, area | User exited area boundary polygon |
+| `USER_ENTERED_AREA` | `{ userId, areaId, timestamp }` | city, rayon, area | User entered area boundary polygon |
+| `AREA_STAFFING_CHANGED` | `{ areaId, activeCount, requiredCount }` | city, rayon | Area staffing level changed (understaffed/fully staffed) |
+| `USER_REASSIGNED` | `{ userId, fromAreaId, toAreaId, reason }` | city, rayon (both), area (both) | Worker reassigned to a different area |
+
+**Events (Client to Server):**
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `JOIN_ROOM` | `{ room: string }` | Join a monitoring room (e.g., `monitoring:city`) |
+| `LEAVE_ROOM` | `{ room: string }` | Leave a monitoring room |
+
+**Example: Subscribing to city-wide events**
+```javascript
+// Connect
+const socket = io('ws://api.host/monitoring', {
+  auth: { token: 'Bearer <jwt>' }
+});
+
+// Join city room
+socket.emit('JOIN_ROOM', { room: 'monitoring:city' });
+
+// Listen for status changes
+socket.on('USER_STATUS_CHANGED', (payload) => {
+  console.log(`User ${payload.userId}: ${payload.previousStatus} → ${payload.newStatus}`);
+});
+
+// Listen for boundary events
+socket.on('USER_LEFT_AREA', (payload) => {
+  console.log(`User ${payload.userId} left area ${payload.areaId}`);
+});
+```
+
+**Example: Subscribing to rayon-level events**
+```javascript
+socket.emit('JOIN_ROOM', { room: 'monitoring:rayon:rayon-uuid' });
+
+socket.on('AREA_STAFFING_CHANGED', (payload) => {
+  console.log(`Area ${payload.areaId}: ${payload.activeCount}/${payload.requiredCount} staff`);
+});
+```
+
 ---
 
 ### Changelog
 
 **v2.1.0 - March 3, 2026 (Phase 2D Monitoring Enhancements)**
-- Added 7 new monitoring/boundary endpoints
+- Added 9 new monitoring/boundary endpoints
 - Enhanced 4 existing monitoring endpoints (live-users, area/:id, city, rayon/:id)
 - Introduced `TrackingStatus` enum and per-status totals on live-users
 - Added per-role `StaffRequirementStatusDto` to area/:id requirements
@@ -4854,7 +4931,7 @@ All endpoints using old role names must update:
 - Added PUT `/areas/:id/boundary` (full replace) alongside existing PATCH
 - Added GET `/areas/:id/boundary` for boundary retrieval
 - Documented new DB tables: `monitoring_configs`, `user_tracking_status`
-- Updated total endpoint count: 113 → 120
+- Updated total endpoint count: 113 → 122
 - Updated document version: 2.0.0 → 2.1.0
 
 **v2.0.0 - February 10, 2026 (Phase 2C Planning)**

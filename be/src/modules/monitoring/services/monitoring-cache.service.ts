@@ -9,6 +9,13 @@ export interface StatusThresholds {
   active_max_age_seconds: number;
   inactive_threshold_seconds: number;
   missing_threshold_seconds: number;
+  location_ping_interval_seconds: number;
+}
+
+export enum DayTypeEnum {
+  WEEKDAY = 'WEEKDAY',
+  WEEKEND = 'WEEKEND',
+  HOLIDAY = 'HOLIDAY',
 }
 
 export interface GeofencingConfig {
@@ -20,6 +27,7 @@ const DEFAULT_THRESHOLDS: StatusThresholds = {
   active_max_age_seconds: 300,
   inactive_threshold_seconds: 900,
   missing_threshold_seconds: 3600,
+  location_ping_interval_seconds: 60,
 };
 
 const DEFAULT_GEOFENCING: GeofencingConfig = {
@@ -34,22 +42,27 @@ export class MonitoringCacheService {
   private thresholdsCache: CacheEntry<StatusThresholds> | null = null;
   private geofencingCache: CacheEntry<GeofencingConfig> | null = null;
   private areaBoundaryCache = new Map<string, CacheEntry<number[][][] | null>>();
+  private dayTypeCache: CacheEntry<DayTypeEnum> | null = null;
 
   private readonly THRESHOLDS_TTL_MS = 60_000;
   private readonly BOUNDARY_TTL_MS = 300_000;
+  private readonly DAY_TYPE_TTL_MS = 300_000;
 
   private thresholdsLoader: (() => Promise<StatusThresholds>) | null = null;
   private geofencingLoader: (() => Promise<GeofencingConfig>) | null = null;
   private boundaryLoader: ((areaId: string) => Promise<number[][][] | null>) | null = null;
+  private dayTypeLoader: (() => Promise<DayTypeEnum>) | null = null;
 
   setLoaders(loaders: {
-    thresholds: () => Promise<StatusThresholds>;
-    geofencing: () => Promise<GeofencingConfig>;
-    boundary: (areaId: string) => Promise<number[][][] | null>;
+    thresholds?: () => Promise<StatusThresholds>;
+    geofencing?: () => Promise<GeofencingConfig>;
+    boundary?: (areaId: string) => Promise<number[][][] | null>;
+    dayType?: () => Promise<DayTypeEnum>;
   }): void {
-    this.thresholdsLoader = loaders.thresholds;
-    this.geofencingLoader = loaders.geofencing;
-    this.boundaryLoader = loaders.boundary;
+    if (loaders.thresholds) this.thresholdsLoader = loaders.thresholds;
+    if (loaders.geofencing) this.geofencingLoader = loaders.geofencing;
+    if (loaders.boundary) this.boundaryLoader = loaders.boundary;
+    if (loaders.dayType) this.dayTypeLoader = loaders.dayType;
   }
 
   async getThresholds(): Promise<StatusThresholds> {
@@ -126,10 +139,36 @@ export class MonitoringCacheService {
     }
   }
 
+  async getDayType(): Promise<DayTypeEnum> {
+    const now = Date.now();
+    if (this.dayTypeCache && this.dayTypeCache.expiresAt > now) {
+      return this.dayTypeCache.data;
+    }
+
+    if (this.dayTypeLoader) {
+      try {
+        const data = await this.dayTypeLoader();
+        this.dayTypeCache = { data, expiresAt: now + this.DAY_TYPE_TTL_MS };
+        return data;
+      } catch (error) {
+        this.logger.warn(`Failed to load day type, using fallback: ${error.message}`);
+      }
+    }
+
+    const day = new Date().getDay();
+    return (day === 0 || day === 6) ? DayTypeEnum.WEEKEND : DayTypeEnum.WEEKDAY;
+  }
+
+  invalidateDayType(): void {
+    this.dayTypeCache = null;
+    this.logger.debug('Invalidated day type cache');
+  }
+
   invalidateAll(): void {
     this.thresholdsCache = null;
     this.geofencingCache = null;
     this.areaBoundaryCache.clear();
+    this.dayTypeCache = null;
     this.logger.debug('Invalidated all caches');
   }
 }

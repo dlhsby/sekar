@@ -367,6 +367,18 @@ interface WorkerHomeState {
    - Shows pending sync count
    - Tappable to view sync queue
 
+#### LocationStatusCard (Phase 2D-11)
+- Position: Above "Shift Aktif" card, below greeting header
+- Visibility: Only when user has an active shift
+- Content:
+  - GPS coordinates (lat/lng, 6 decimal places)
+  - GPS accuracy badge (±Xm, amber warning if >50m)
+  - Area status banner: green "Di dalam area kerja" or orange "Di luar area kerja"
+  - Sync/refresh icon button (triggers captureNow + forceUpload)
+- Hook: `useHomeLocation` — manages location state, refresh, boundary check
+- Pattern: Reuses display pattern from ClockInOutScreen "Lokasi Anda" card
+- Component: `fe/mobile/src/components/home/LocationStatusCard.tsx`
+
 #### Real-Time Updates
 
 **Shift Timer:**
@@ -2664,7 +2676,7 @@ fontSize: {
 
 | Screen | Route | Changes |
 |--------|-------|---------|
-| MapDashboardScreen | `MonitoringMap` | Major rewrite: polygon rendering (falls back to circle), four-status color markers (active/idle/outside_area/missing), FAB column (5 buttons: filter/location/zoom+/zoom-/refresh), StatusSummaryBar, UserListStrip, marker tap opens UserDetailSheet |
+| MapDashboardScreen | `MonitoringMap` | Major rewrite: polygon rendering (falls back to circle), five-status color markers (active/inactive/outside_area/missing/offline), FAB column (5 buttons: filter/location/zoom+/zoom-/refresh), StatusSummaryBar, UserListStrip, marker tap opens UserDetailSheet |
 
 #### New Sub-Components (Bottom Sheet Navigation)
 

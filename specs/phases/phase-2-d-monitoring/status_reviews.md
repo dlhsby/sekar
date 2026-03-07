@@ -60,7 +60,7 @@ This document contains implementation reviews for Phase 2D Real-Time Monitoring 
 
 | # | Severity | File | Issue | Fix |
 |---|----------|------|-------|-----|
-| D-1 | MEDIUM | (new) `ADR-011-phase2d-monitoring-status-model.md` | Missing ADR for four-status model decision | Created ADR-011 documenting status model, materialized tracking table, configurable thresholds |
+| D-1 | MEDIUM | (new) `ADR-011-phase2d-monitoring-status-model.md` | Missing ADR for five-status model decision | Created ADR-011 documenting status model, materialized tracking table, configurable thresholds |
 | D-2 | LOW | `phase-2-d-monitoring/README.md` | ADR-009 link wrong filename | Fixed: `ADR-009-role-system-redesign.md` → `ADR-009-phase2c-role-system-overhaul.md` |
 | D-3 | LOW | `contracts.md` | Monitoring config example keys wrong | Fixed to `status_thresholds`, `geofencing`, `map_defaults`, `alerts` |
 | D-4 | LOW | `contracts.md` | Staffing summary `roles` field typed as `string[]` | Fixed to `RoleStaffingDto[]` with correct shape |

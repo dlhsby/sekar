@@ -297,6 +297,18 @@ enum PermissionType {
 
 ---
 
+## Phase 2D Monitoring Permissions
+
+### Phase 2D Monitoring Permissions
+- `ACCESS_FINE_LOCATION` — Required for GPS tracking during shifts
+- `ACCESS_BACKGROUND_LOCATION` — Required for continuous tracking when app backgrounded
+- `FOREGROUND_SERVICE_LOCATION` — Android 14+ requirement for location foreground service
+- Permission request flow: Check on app launch → request on first clock-in → explain via rationale dialog if denied
+- Location accuracy: Request high accuracy (GPS), fall back to balanced if GPS unavailable
+- Battery optimization: Monitoring uses existing locationTracker service intervals (not separate)
+
+---
+
 ## Known Limitations
 
 1. **Cannot force "Allow all the time":** Android doesn't allow apps to programmatically grant this

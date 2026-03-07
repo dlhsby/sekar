@@ -1253,10 +1253,10 @@ async function seedPhase2() {
     // D.1: Monitoring configs (idempotent)
     console.log('  [D.1] Seeding monitoring configs...');
     const monitoringConfigs = [
-      { key: 'status_thresholds', value: JSON.stringify({ active_max_age_seconds: 300, inactive_threshold_seconds: 900, missing_threshold_seconds: 3600 }), description: 'Status calculation thresholds' },
+      { key: 'status_thresholds', value: JSON.stringify({ active_max_age_seconds: 300, inactive_threshold_seconds: 900, missing_threshold_seconds: 3600, location_ping_interval_seconds: 60 }), description: 'Status calculation thresholds' },
       { key: 'geofencing', value: JSON.stringify({ tolerance_meters: 50, outside_area_grace_seconds: 120 }), description: 'Geofencing tolerance settings' },
-      { key: 'map_defaults', value: JSON.stringify({ center_lat: -7.2575, center_lng: 112.7521, zoom: 12, cluster_zoom_threshold: 13 }), description: 'Map default view (Surabaya)' },
-      { key: 'alerts', value: JSON.stringify({ notify_on_missing: true, notify_on_outside_area: true, low_battery_threshold: 20 }), description: 'Alert configuration' },
+      { key: 'map_defaults', value: JSON.stringify({ center_lat: -7.2575, center_lng: 112.7521, zoom: 12, cluster_zoom_threshold: 14, cluster_threshold: 30 }), description: 'Map default view (Surabaya)' },
+      { key: 'alerts', value: JSON.stringify({ missing_user_notify: true, understaffed_notify: true, low_battery_threshold: 15 }), description: 'Alert configuration' },
       { key: 'location_ping', value: JSON.stringify({ interval_seconds: 60, batch_size: 10 }), description: 'Mobile location ping settings' },
     ];
     for (const cfg of monitoringConfigs) {

@@ -126,6 +126,19 @@ Components:     fe/web/src/components/nb/
                 └── NBTextarea.tsx
 ```
 
+### Monitoring Components (Phase 2D)
+```
+Web:            fe/web/src/app/(dashboard)/monitoring/
+                ├── MonitoringMap        — Mapbox GL interactive map with markers, polygons, clusters
+                ├── MonitoringSidePanel  — Filterable worker list with status counts
+                ├── UserDetailPanel      — Detailed worker view with shift info and actions
+                ├── LocationTimeline     — GPS history trail with date picker
+                ├── StatusCard           — Status count cards with filter action
+                └── UserListItem         — Individual worker row with status indicator
+Mobile:         fe/mobile/src/screens/supervisor/
+                └── LocationStatusCard   — Home screen GPS/boundary status (mobile only)
+```
+
 ---
 
 ## ⚡ Design Tokens Quick Reference
@@ -243,6 +256,12 @@ easeInOut: cubic-bezier(0.4, 0, 0.2, 1)           /* Moving elements */
 bounce:    cubic-bezier(0.68, -0.55, 0.265, 1.55) /* Playful bounce */
 ```
 
+### Monitoring Design Tokens
+- Status colors: See `specs/phases/phase-2-d-monitoring/ui-ux.md` Section J
+- Map tokens: marker size (36px), touch target (44x44px), cluster threshold (zoom < 13)
+- Animation durations: marker appear (200ms), status transition (300ms), fly-to (1000ms)
+- Responsive breakpoints: xl (65/35 split), lg (60/40), md (stacked+drawer), sm (stacked+sheet)
+
 ### Background Patterns
 ```css
 /* Grid Pattern (3% opacity) */
@@ -297,6 +316,7 @@ background-size: 24px 24px;
 | **Phase 1 MVP** | 14 core components | ✅ Complete (Material Design - Archived) |
 | **Phase 2C Mobile** | 5 Neo Brutalism components | ✅ Complete (needs token update for v2.0) |
 | **Phase 2D Web** | 10 Neo Brutalism components | ✅ Complete (needs token update for v2.0) |
+| **Phase 2D: Real-Time Monitoring** | Five-status tracking (active/inactive/outside_area/missing/offline), Mapbox GL map with markers and polygons, filter sidebar, worker detail panel, staffing summary, monitoring config admin | ✅ Code-complete (pending merge & deploy) |
 | **Phase 3** | 5 components (Charts, Dashboard, Builder) | ✅ Specified in future-phases-patterns.md |
 | **Phase 4** | 3 components (QR, Asset, Maintenance) | ✅ Specified in future-phases-patterns.md |
 | **Phase 5** | 4 patterns (iOS-specific) | ✅ Specified in future-phases-patterns.md |

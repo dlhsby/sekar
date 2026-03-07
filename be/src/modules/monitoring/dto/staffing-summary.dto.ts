@@ -13,6 +13,17 @@ export class StaffingSummaryQueryDto {
   area_id?: string;
 }
 
+export class DayTypeRequirementsDto {
+  @ApiProperty({ example: 6 })
+  weekday: number;
+
+  @ApiProperty({ example: 4 })
+  weekend: number;
+
+  @ApiProperty({ example: 3 })
+  holiday: number;
+}
+
 export class RoleStaffingDto {
   @ApiProperty({ example: 'satgas' })
   role: string;
@@ -37,6 +48,9 @@ export class RoleStaffingDto {
 
   @ApiProperty({ example: 5 })
   total_required: number;
+
+  @ApiProperty({ type: DayTypeRequirementsDto })
+  requirements_by_day_type: DayTypeRequirementsDto;
 }
 
 export class StaffingSummaryItemDto {
@@ -74,6 +88,12 @@ export class StaffingSummaryItemDto {
 export class StaffingSummaryResponseDto {
   @ApiProperty({ type: [StaffingSummaryItemDto] })
   items: StaffingSummaryItemDto[];
+
+  @ApiProperty({ example: 'WEEKDAY', enum: ['WEEKDAY', 'WEEKEND', 'HOLIDAY'] })
+  current_day_type: string;
+
+  @ApiProperty({ example: 'Hari Kerja' })
+  current_day_type_label: string;
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })
   generated_at: Date;

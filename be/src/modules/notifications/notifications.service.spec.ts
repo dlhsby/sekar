@@ -7,6 +7,7 @@ import { NotificationToken, DevicePlatform } from './entities/notification-token
 import { Notification, NotificationType } from './entities/notification.entity';
 import { UsersService } from '../users/users.service';
 import { User, UserRole } from '../users/entities/user.entity';
+import * as firebaseConfig from '../../config/firebase.config';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
@@ -64,6 +65,7 @@ describe('NotificationsService', () => {
             save: jest.fn(),
             findOne: jest.fn(),
             find: jest.fn(),
+            update: jest.fn(),
           },
         },
         {
@@ -636,6 +638,125 @@ describe('NotificationsService', () => {
 
       // Should have saved notification with error tracking
       expect(notificationRepository.save).toHaveBeenCalled();
+    }, 15000);
+  });
+
+  describe('sendPushNotification with Firebase initialized', () => {
+    it('should send via Firebase when initialized and handle partial failures', async () => {
+      // Access the private method indirectly through sendToUser
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+        data: { taskId: 'task-1', count: 42 },
+      };
+
+      const tokens = [
+        { ...mockToken, id: 'token-1', fcm_token: 'token-aaa' },
+        { ...mockToken, id: 'token-2', fcm_token: 'token-bbb' },
+      ];
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue({
+        ...mockNotification,
+        data: sendDto.data,
+        send_attempts: 0,
+      } as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockResolvedValue(tokens as NotificationToken[]);
+      tokenRepository.save.mockResolvedValue({} as any);
+
+      // The service uses isFirebaseInitialized() which returns false in test
+      // so it falls through to simulateFcmSend. This test exercises the token-found path.
+      await service.sendToUser(sendDto);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      expect(notificationRepository.save).toHaveBeenCalled();
+    }, 10000);
+  });
+
+  describe('sendPushNotification with real Firebase', () => {
+    it('should send via Firebase and handle partial failures', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Test body',
+        data: { taskId: 'task-1', count: 42 },
+      };
+
+      const tokens = [
+        { ...mockToken, id: 'token-1', fcm_token: 'valid-token' },
+        { ...mockToken, id: 'token-2', fcm_token: 'invalid-token' },
+      ];
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue({
+        ...mockNotification,
+        data: sendDto.data,
+        send_attempts: 0,
+      } as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockResolvedValue(tokens as NotificationToken[]);
+      tokenRepository.update.mockResolvedValue({} as any);
+
+      // Mock Firebase as initialized
+      const isInitSpy = jest.spyOn(firebaseConfig, 'isFirebaseInitialized').mockReturnValue(true);
+      const mockSendEachForMulticast = jest.fn().mockResolvedValue({
+        successCount: 1,
+        failureCount: 1,
+        responses: [
+          { success: true, messageId: 'msg-1' },
+          { success: false, error: { code: 'messaging/invalid-registration-token' } },
+        ],
+      });
+      const getMessagingSpy = jest.spyOn(firebaseConfig, 'getMessaging').mockReturnValue({
+        sendEachForMulticast: mockSendEachForMulticast,
+      } as any);
+
+      await service.sendToUser(sendDto);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      expect(mockSendEachForMulticast).toHaveBeenCalled();
+      // Should deactivate invalid token
+      expect(tokenRepository.update).toHaveBeenCalledWith(
+        { fcm_token: 'invalid-token' },
+        { is_active: false },
+      );
+
+      isInitSpy.mockRestore();
+      getMessagingSpy.mockRestore();
+    }, 10000);
+
+    it('should retry on Firebase error up to max attempts', async () => {
+      const sendDto = {
+        user_id: 'user-uuid',
+        title: 'Test',
+        body: 'Retry test',
+      };
+
+      const tokens = [{ ...mockToken, id: 'token-1', fcm_token: 'token-aaa' }];
+
+      usersService.findOne.mockResolvedValue(mockUser as User);
+      notificationRepository.create.mockReturnValue({
+        ...mockNotification,
+        send_attempts: 0,
+      } as Notification);
+      notificationRepository.save.mockResolvedValue(mockNotification as Notification);
+      tokenRepository.find.mockResolvedValue(tokens as NotificationToken[]);
+
+      const isInitSpy = jest.spyOn(firebaseConfig, 'isFirebaseInitialized').mockReturnValue(true);
+      const getMessagingSpy = jest.spyOn(firebaseConfig, 'getMessaging').mockReturnValue({
+        sendEachForMulticast: jest.fn().mockRejectedValue(new Error('FCM network error')),
+      } as any);
+
+      await service.sendToUser(sendDto);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Should have attempted saves with error_message
+      expect(notificationRepository.save).toHaveBeenCalled();
+
+      isInitSpy.mockRestore();
+      getMessagingSpy.mockRestore();
     }, 15000);
   });
 

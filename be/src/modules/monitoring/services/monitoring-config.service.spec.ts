@@ -76,6 +76,7 @@ describe('MonitoringConfigService', () => {
         active_max_age_seconds: 120,
         inactive_threshold_seconds: 600,
         missing_threshold_seconds: 1800,
+        location_ping_interval_seconds: 60,
       };
 
       const result = await service.updateByKey('status_thresholds', newValue);
@@ -113,6 +114,71 @@ describe('MonitoringConfigService', () => {
       });
 
       expect(cacheService.invalidateThresholds).toHaveBeenCalled();
+    });
+
+    it('should not invalidate cache for non-threshold keys', async () => {
+      const existing = { id: '1', key: 'alerts', value: {} };
+      repository.findOne.mockResolvedValue(existing);
+
+      await service.updateByKey('alerts', {
+        missing_user_notify: true,
+        understaffed_notify: false,
+        low_battery_threshold: 20,
+      });
+
+      expect(cacheService.invalidateThresholds).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cache loaders (via constructor)', () => {
+    it('should register cache loaders with thresholds, geofencing, and boundary', () => {
+      expect(cacheService.setLoaders).toHaveBeenCalledWith({
+        thresholds: expect.any(Function),
+        geofencing: expect.any(Function),
+        boundary: expect.any(Function),
+      });
+    });
+
+    it('thresholds loader should call getTypedConfig for status_thresholds', async () => {
+      const loaders = cacheService.setLoaders.mock.calls[0][0];
+      const config = { id: '1', key: 'status_thresholds', value: { active_max_age_seconds: 300 } };
+      repository.findOne.mockResolvedValue(config);
+
+      const result = await loaders.thresholds();
+      expect(result).toEqual(config.value);
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { key: 'status_thresholds' } });
+    });
+
+    it('thresholds loader should throw if config not found', async () => {
+      const loaders = cacheService.setLoaders.mock.calls[0][0];
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(loaders.thresholds()).rejects.toThrow(NotFoundException);
+    });
+
+    it('boundary loader should return polygon coordinates', async () => {
+      const loaders = cacheService.setLoaders.mock.calls[0][0];
+      const coords = [[[112.7, -7.2], [112.8, -7.2], [112.8, -7.3]]];
+      repository.manager.query.mockResolvedValue([{ boundary_polygon: { coordinates: coords } }]);
+
+      const result = await loaders.boundary('area-1');
+      expect(result).toEqual(coords);
+    });
+
+    it('boundary loader should return null when area has no polygon', async () => {
+      const loaders = cacheService.setLoaders.mock.calls[0][0];
+      repository.manager.query.mockResolvedValue([{ boundary_polygon: null }]);
+
+      const result = await loaders.boundary('area-1');
+      expect(result).toBeNull();
+    });
+
+    it('boundary loader should return null when area not found', async () => {
+      const loaders = cacheService.setLoaders.mock.calls[0][0];
+      repository.manager.query.mockResolvedValue([]);
+
+      const result = await loaders.boundary('nonexistent');
+      expect(result).toBeNull();
     });
   });
 });

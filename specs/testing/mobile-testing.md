@@ -805,6 +805,19 @@ describe('Clock In Flow', () => {
 
 ---
 
+### Phase 2D Monitoring Mobile Tests
+
+| Screen/Component | Test Coverage | Key Test Cases |
+|------------------|--------------|----------------|
+| MapDashboardScreen | Unit + Integration | Map render, marker colors by status, summary bar counts, filter selection, user tap → detail sheet |
+| UserDetailSheet | Unit | User info display, status badge color, shift time, action buttons (call/WhatsApp), close gesture |
+| LocationTrail | Unit | Trail point rendering, date navigation, distance summary, map sync |
+| LocationStatusCard | Unit | GPS coords display, accuracy badge, area status banner (green/orange), refresh button, visibility gate (shift active) |
+| useHomeLocation | Hook test | getCurrentLocation call, boundary check, refresh triggers captureNow+forceUpload, error handling |
+| MonitoringSummaryBar | Unit | 5 status counts, color coding, tap filter interaction |
+
+---
+
 ## E2E Testing (Future - Phase 3+)
 
 ### Detox Setup (Planned)

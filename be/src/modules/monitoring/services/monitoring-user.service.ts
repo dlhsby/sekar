@@ -97,6 +97,7 @@ export class MonitoringUserService {
         shift_id: uts.shift_id || '',
         shift_name: uts.shift_definition?.name || 'Active Shift',
         clock_in_time: uts.shift?.clock_in_time || new Date(),
+        shift_definition_id: uts.shift_definition_id ?? null,
         current_task_status: taskMap.get(uts.user_id)?.status || null,
         current_task_title: taskMap.get(uts.user_id)?.title || null,
       };
@@ -110,6 +111,7 @@ export class MonitoringUserService {
       total_outside_area: statusCounts.outside_area,
       total_missing: statusCounts.missing,
       total_offline: statusCounts.offline,
+      total_online: statusCounts.active,
       users,
       generated_at: new Date(),
     };

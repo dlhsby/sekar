@@ -55,6 +55,9 @@ export class LiveUserDto {
   @ApiProperty({ example: 'shift-uuid' })
   shift_id: string;
 
+  @ApiProperty({ example: 'shift-def-uuid', nullable: true })
+  shift_definition_id: string | null;
+
   @ApiProperty({ example: 'Shift 1' })
   shift_name: string;
 
@@ -105,6 +108,9 @@ export class LiveUsersResponseDto {
 
   @ApiProperty({ example: 5 })
   total_offline: number;
+
+  @ApiProperty({ example: 30, description: 'Deprecated alias for total_active', deprecated: true })
+  total_online: number;
 
   @ApiProperty({ type: [LiveUserDto] })
   users: LiveUserDto[];

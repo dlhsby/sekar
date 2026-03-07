@@ -1266,6 +1266,73 @@ const statusBadgeVariant = {
 
 ---
 
+## Monitoring Color Tokens
+
+### Status Colors
+| Status | Hex | RGB | WCAG Ratio (on white) | Usage |
+|--------|-----|-----|----------------------|-------|
+| ACTIVE | #15803D | 21, 128, 61 | 4.96:1 (AA) | Map markers, status chips, badges |
+| INACTIVE | #D97706 | 217, 119, 6 | 3.24:1 (AA Large) | Map markers, warning indicators |
+| OUTSIDE_AREA | #9333EA | 147, 51, 234 | 4.63:1 (AA) | Map markers, boundary alerts |
+| MISSING | #DC2626 | 220, 38, 38 | 4.52:1 (AA) | Map markers, critical alerts |
+| OFFLINE | #6B7280 | 107, 114, 128 | 4.69:1 (AA) | List items only (not on map) |
+
+### Map Polygon Colors
+| Element | Fill | Stroke | Opacity |
+|---------|------|--------|---------|
+| Area boundary | Status color | Status color | Fill: 0.1, Stroke: 1.0, Width: 2px |
+| Rayon boundary | #3B82F6 | #2563EB | Fill: 0.05, Stroke: 1.0, Width: 3px |
+| Cluster circle | Severity color | #000000 | Fill: 0.8, Stroke: 1.0, Width: 2px |
+
+### Role Border Colors (NB-style 3px solid)
+| Role | Border Color | Abbreviation |
+|------|-------------|--------------|
+| satgas | #000000 | STG |
+| linmas | #1D4ED8 | LMS |
+| korlap | #B45309 | KLP |
+
+### Center Marker
+- 8px circle, white fill, 2px black border
+- Positioned at area centroid
+- Shows area name on hover
+
+---
+
+## Map Component Patterns (Neo Brutalism)
+
+### Map Container
+- 3px solid black border (NB standard)
+- No border-radius (sharp corners)
+- Box-shadow: 4px 4px 0px #000 on desktop, none on mobile
+
+### Map Controls (zoom, compass)
+- NB-styled buttons: white bg, 3px black border, 4px shadow
+- 44x44px touch targets
+- Position: top-right cluster
+
+### Map Popups / Tooltips
+- White background, 3px solid black border
+- 4px 4px 0px #000 box-shadow
+- Bold 14px heading, 12px body text
+- Max-width: 280px
+
+### Marker Specifications
+- Outer ring: 36px diameter, 3px border, status color fill
+- Inner icon: 20px, role-specific (account/shield/star)
+- Name label: 10px white text, 1px black outline, below marker
+- Touch target: 44x44px (invisible expanded hitbox)
+
+### Map Animation Tokens
+| Animation | Duration | Easing | Description |
+|-----------|----------|--------|-------------|
+| Marker appear | 200ms | ease-out | Scale 0→1 on new marker |
+| Status transition | 300ms | ease | Color change on status update |
+| Fly-to | 1000ms | Mapbox default | Camera movement to location |
+| Trail draw | 500ms | linear | Location history path animation |
+| Pulse (missing) | 2000ms | ease-in-out | Repeating pulse on missing markers |
+
+---
+
 ## Related Documentation
 
 | Document | Description |

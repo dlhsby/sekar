@@ -357,6 +357,25 @@ Configured in `playwright.config.ts`:
 - ✅ Filter by rayon/area
 - ✅ Performance metrics
 
+### Phase 2D Monitoring Component Tests
+
+| Component | Test File | Key Test Cases |
+|-----------|----------|----------------|
+| MonitoringMap | MonitoringMap.test.tsx | Map initialization, marker rendering by status, polygon rendering, cluster behavior, marker click events, fly-to animation |
+| MonitoringSidePanel | MonitoringSidePanel.test.tsx | User list rendering, status filter chips, search filtering, empty state, loading skeleton, virtual scroll |
+| UserDetailPanel | UserDetailPanel.test.tsx | User info display, shift details, WhatsApp/call buttons, location history link, reassign action |
+| LocationTimeline | LocationTimeline.test.tsx | GPS point list, date picker, map sync on point click, empty state, distance calculation display |
+| StatusCard | StatusCard.test.tsx | Count display, status color, click filter action, loading state, accessibility labels |
+| UserListItem | UserListItem.test.tsx | Name/role display, status indicator, battery warning, last seen time, click navigation |
+| MonitoringConfigPage | config/page.test.tsx | Threshold inputs, validation ranges, save mutation, role gate (admin only), error display |
+
+### Monitoring E2E Tests (Playwright)
+- Dashboard load with mock WebSocket
+- Filter by status → verify list updates
+- Click marker → side panel shows user detail
+- Navigate to location history → verify GPS trail
+- Admin config page → modify threshold → save
+
 ---
 
 ## Test Patterns

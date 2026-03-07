@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Query,
@@ -12,6 +13,8 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
+import { MonitoringStatsService } from './services/monitoring-stats.service';
+import { MonitoringReassignService } from './services/monitoring-reassign.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
@@ -20,6 +23,8 @@ import { LocationHistoryQueryDto, LocationHistoryResponseDto } from './dto/locat
 import { UserDaySummaryDto } from './dto/user-day-summary.dto';
 import { MonitoringConfigResponseDto, UpdateMonitoringConfigDto } from './dto/monitoring-config.dto';
 import { StaffingSummaryQueryDto, StaffingSummaryResponseDto } from './dto/staffing-summary.dto';
+import { BoundariesResponseDto } from './dto/boundaries.dto';
+import { ReassignWorkerDto, ReassignWorkerResponseDto } from './dto/reassign-worker.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -40,6 +45,8 @@ export class MonitoringController {
   constructor(
     private readonly monitoringService: MonitoringService,
     private readonly configService: MonitoringConfigService,
+    private readonly statsService: MonitoringStatsService,
+    private readonly reassignService: MonitoringReassignService,
   ) {}
 
   @Get('city')
@@ -119,6 +126,20 @@ export class MonitoringController {
     return this.monitoringService.getUserDaySummary(userId);
   }
 
+  @Get('boundaries')
+  @Roles(...MONITORING_AREA)
+  @ApiOperation({ summary: 'Get rayon and area boundary polygons' })
+  @ApiResponse({ status: 200, type: BoundariesResponseDto })
+  async getBoundaries(
+    @Query('rayon_id') rayonId: string | undefined,
+    @GetUser() user: User,
+  ): Promise<BoundariesResponseDto> {
+    const filters: { rayon_id?: string } = {};
+    if (rayonId) filters.rayon_id = rayonId;
+    this.applyScopeFilters(user, filters);
+    return this.statsService.getBoundaries(filters);
+  }
+
   @Get('config')
   @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'List all monitoring configuration' })
@@ -159,6 +180,19 @@ export class MonitoringController {
     const filters = { ...query };
     this.applyScopeFilters(user, filters);
     return this.monitoringService.getStaffingSummary(filters);
+  }
+
+  @Post('reassign')
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.KEPALA_RAYON)
+  @ApiOperation({ summary: 'Reassign a worker to a different area' })
+  @ApiResponse({ status: 201, type: ReassignWorkerResponseDto })
+  @ApiResponse({ status: 403, description: 'Forbidden - wrong rayon' })
+  @ApiResponse({ status: 404, description: 'User or area not found' })
+  async reassignWorker(
+    @Body() dto: ReassignWorkerDto,
+    @GetUser() user: User,
+  ): Promise<ReassignWorkerResponseDto> {
+    return this.reassignService.reassign(dto, user);
   }
 
   // ---- Scope enforcement helpers ----

@@ -18,6 +18,9 @@ import {
   TaskSummaryDto,
   StaffRequirementStatusDto,
 } from '../dto/area-stats.dto';
+import { BoundariesResponseDto, RayonBoundaryDto, AreaBoundaryDto, RoleStaffingItemDto } from '../dto/boundaries.dto';
+import { DayTypeService } from './day-type.service';
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class MonitoringStatsService {
@@ -42,6 +45,7 @@ export class MonitoringStatsService {
     private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
+    private readonly dayTypeService: DayTypeService,
   ) {}
 
   async getCityStats(): Promise<CityStatsDto> {
@@ -235,6 +239,8 @@ export class MonitoringStatsService {
       }
     }
 
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
+
     return {
       id: area.id,
       name: area.name,
@@ -258,6 +264,8 @@ export class MonitoringStatsService {
       active_tasks: activeTasks,
       activities_submitted_today: activitiesSubmittedToday,
       alerts,
+      current_day_type: currentDayType,
+      current_day_type_label: this.dayTypeService.getDayTypeLabel(currentDayType),
       generated_at: new Date(),
     };
   }
@@ -322,7 +330,7 @@ export class MonitoringStatsService {
   async getAreaWorkers(areaId: string): Promise<UserStatusDto[]> {
     const trackingRecords = await this.trackingRepository.find({
       where: { area_id: areaId, shift_id: Not(IsNull()) },
-      relations: ['user', 'shift'],
+      relations: ['user', 'shift', 'shift_definition'],
     });
 
     if (trackingRecords.length === 0) {
@@ -333,12 +341,14 @@ export class MonitoringStatsService {
       id: uts.user.id,
       full_name: uts.user.full_name,
       role: uts.user.role,
+      phone: (uts.user as any).phone ?? null,
       status: uts.status,
       last_lat: uts.last_latitude,
       last_lng: uts.last_longitude,
       last_location_update: uts.last_location_at,
       is_within_area: uts.is_within_area,
       current_shift_id: uts.shift_id,
+      shift_name: uts.shift_definition?.name ?? null,
       clock_in_time: uts.shift?.clock_in_time || null,
     }));
   }
@@ -382,12 +392,14 @@ export class MonitoringStatsService {
         id: shift.user.id,
         full_name: shift.user.full_name,
         role: shift.user.role,
+        phone: (shift.user as any).phone ?? null,
         status: isOnline ? TrackingStatus.ACTIVE : TrackingStatus.OFFLINE,
         last_lat: latestLocation ? parseFloat(latestLocation.gps_lat.toString()) : null,
         last_lng: latestLocation ? parseFloat(latestLocation.gps_lng.toString()) : null,
         last_location_update: latestLocation?.logged_at || null,
         is_within_area: true,
         current_shift_id: shift.id,
+        shift_name: null,
         clock_in_time: shift.clock_in_time,
       };
     });
@@ -397,31 +409,40 @@ export class MonitoringStatsService {
     const currentShift = await this.getCurrentShiftDefinition();
     if (!currentShift) return [];
 
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
+
     const requirements = await this.staffRequirementRepository.find({
-      where: { area_id: areaId, shift_definition_id: currentShift.id },
+      where: { area_id: areaId, shift_definition_id: currentShift.id, day_type: currentDayType },
     });
 
     if (requirements.length === 0) return [];
 
-    const roleCounts = await this.trackingRepository
+    const roleStatusCounts = await this.trackingRepository
       .createQueryBuilder('uts')
       .innerJoin('uts.user', 'user')
       .select('user.role', 'role')
+      .addSelect('uts.status', 'status')
       .addSelect('COUNT(*)', 'count')
       .where('uts.area_id = :areaId', { areaId })
       .andWhere('uts.shift_id IS NOT NULL')
-      .andWhere('uts.status IN (:...statuses)', {
-        statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
-      })
       .groupBy('user.role')
+      .addGroupBy('uts.status')
       .getRawMany();
 
-    const roleCountMap = new Map<string, number>(
-      roleCounts.map((rc: any) => [rc.role, parseInt(rc.count)]),
-    );
+    const roleStatusMap = new Map<string, Record<string, number>>();
+    for (const row of roleStatusCounts) {
+      const existing = roleStatusMap.get(row.role) || {};
+      existing[row.status] = parseInt(row.count);
+      roleStatusMap.set(row.role, existing);
+    }
 
     return requirements.map((req) => {
-      const currentCount = roleCountMap.get(req.role) || 0;
+      const statuses = roleStatusMap.get(req.role) || {};
+      const activeCount = statuses[TrackingStatus.ACTIVE] || 0;
+      const inactiveCount = statuses[TrackingStatus.INACTIVE] || 0;
+      const outsideAreaCount = statuses[TrackingStatus.OUTSIDE_AREA] || 0;
+      const missingCount = statuses[TrackingStatus.MISSING] || 0;
+      const currentCount = activeCount + inactiveCount + outsideAreaCount;
       const delta = currentCount - req.required_count;
       return {
         id: req.id,
@@ -430,6 +451,10 @@ export class MonitoringStatsService {
         current_count: currentCount,
         delta,
         is_met: delta >= 0,
+        active_count: activeCount,
+        inactive_count: inactiveCount,
+        outside_area_count: outsideAreaCount,
+        missing_count: missingCount,
       };
     });
   }
@@ -494,10 +519,13 @@ export class MonitoringStatsService {
     const currentShift = await this.getCurrentShiftDefinition();
     if (!currentShift) return 0;
 
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
+
     const result = await this.staffRequirementRepository
       .createQueryBuilder('req')
       .where('req.area_id IN (:...areaIds)', { areaIds })
       .andWhere('req.shift_definition_id = :shiftId', { shiftId: currentShift.id })
+      .andWhere('req.day_type = :dayType', { dayType: currentDayType })
       .select('SUM(req.required_count)', 'total')
       .getRawOne();
 
@@ -545,5 +573,147 @@ export class MonitoringStatsService {
       .where('shift.area_id IN (:...areaIds)', { areaIds })
       .andWhere('shift.clock_out_time IS NULL')
       .getCount();
+  }
+
+  async getBoundaries(filters?: { rayon_id?: string }): Promise<BoundariesResponseDto> {
+    const rayonWhere: Record<string, any> = {};
+    if (filters?.rayon_id) {
+      rayonWhere.id = filters.rayon_id;
+    }
+
+    const rayons = await this.rayonRepository.find({ where: rayonWhere });
+
+    const rayonBoundaries: RayonBoundaryDto[] = await Promise.all(
+      rayons.map(async (rayon) => {
+        const areas = await this.areaRepository.find({
+          where: { rayon_id: rayon.id, is_active: true },
+        });
+
+        const areaIds = areas.map((a) => a.id);
+        const assignedCounts = areaIds.length > 0
+          ? await this.trackingRepository
+              .createQueryBuilder('uts')
+              .select('uts.area_id', 'area_id')
+              .addSelect('COUNT(*)', 'count')
+              .where('uts.area_id IN (:...areaIds)', { areaIds })
+              .groupBy('uts.area_id')
+              .getRawMany()
+          : [];
+
+        const countMap = new Map(assignedCounts.map((r: any) => [r.area_id, parseInt(r.count)]));
+
+        const requiredCounts = areaIds.length > 0
+          ? await this.countRequiredWorkersByAreaIdsMap(areaIds)
+          : new Map();
+
+        const staffingByArea = areaIds.length > 0
+          ? await this.getStaffingByArea(areaIds)
+          : new Map();
+
+        const areaBoundaries: AreaBoundaryDto[] = areas.map((area) => {
+          const assigned = countMap.get(area.id) || 0;
+          const required = requiredCounts.get(area.id) || 0;
+          return {
+            id: area.id,
+            name: area.name,
+            boundary_polygon: area.boundary_polygon || null,
+            center_lat: parseFloat(area.gps_lat?.toString() || '0'),
+            center_lng: parseFloat(area.gps_lng?.toString() || '0'),
+            rayon_id: rayon.id,
+            rayon_name: rayon.name,
+            radius_meters: area.radius_meters ?? null,
+            assigned_count: assigned,
+            is_understaffed: assigned < required,
+            staffing_summary: staffingByArea.get(area.id) || [],
+          };
+        });
+
+        const understaffedCount = areaBoundaries.filter((a) => a.is_understaffed).length;
+
+        return {
+          id: rayon.id,
+          name: rayon.name,
+          code: rayon.code,
+          boundary_polygon: (rayon as any).boundary_polygon || null,
+          center_lat: (rayon as any).center_lat ? parseFloat((rayon as any).center_lat.toString()) : null,
+          center_lng: (rayon as any).center_lng ? parseFloat((rayon as any).center_lng.toString()) : null,
+          area_count: areas.length,
+          is_understaffed: understaffedCount > 0,
+          understaffed_area_count: understaffedCount,
+          areas: areaBoundaries,
+        };
+      }),
+    );
+
+    return {
+      rayons: rayonBoundaries,
+      generated_at: new Date(),
+    };
+  }
+
+  private async getStaffingByArea(areaIds: string[]): Promise<Map<string, RoleStaffingItemDto[]>> {
+    const currentShift = await this.getCurrentShiftDefinition();
+    if (!currentShift) return new Map();
+
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
+
+    const requirements = await this.staffRequirementRepository
+      .createQueryBuilder('req')
+      .select(['req.area_id', 'req.role', 'req.required_count'])
+      .where('req.area_id IN (:...areaIds)', { areaIds })
+      .andWhere('req.shift_definition_id = :shiftId', { shiftId: currentShift.id })
+      .andWhere('req.day_type = :dayType', { dayType: currentDayType })
+      .getMany();
+
+    const activeCounts = await this.trackingRepository
+      .createQueryBuilder('uts')
+      .innerJoin('uts.user', 'user')
+      .select('uts.area_id', 'area_id')
+      .addSelect('user.role', 'role')
+      .addSelect('COUNT(*)', 'count')
+      .where('uts.area_id IN (:...areaIds)', { areaIds })
+      .andWhere('uts.status = :status', { status: TrackingStatus.ACTIVE })
+      .groupBy('uts.area_id')
+      .addGroupBy('user.role')
+      .getRawMany();
+
+    const activeMap = new Map<string, Map<string, number>>();
+    for (const row of activeCounts) {
+      if (!activeMap.has(row.area_id)) activeMap.set(row.area_id, new Map());
+      activeMap.get(row.area_id)!.set(row.role, parseInt(row.count));
+    }
+
+    const result = new Map<string, RoleStaffingItemDto[]>();
+    for (const req of requirements) {
+      const areaStaffing = result.get(req.area_id) || [];
+      areaStaffing.push({
+        role: req.role,
+        required: req.required_count,
+        active: activeMap.get(req.area_id)?.get(req.role) || 0,
+      });
+      result.set(req.area_id, areaStaffing);
+    }
+
+    return result;
+  }
+
+  private async countRequiredWorkersByAreaIdsMap(areaIds: string[]): Promise<Map<string, number>> {
+    if (areaIds.length === 0) return new Map();
+    const currentShift = await this.getCurrentShiftDefinition();
+    if (!currentShift) return new Map();
+
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
+
+    const rows = await this.staffRequirementRepository
+      .createQueryBuilder('req')
+      .select('req.area_id', 'area_id')
+      .addSelect('SUM(req.required_count)', 'total')
+      .where('req.area_id IN (:...areaIds)', { areaIds })
+      .andWhere('req.shift_definition_id = :shiftId', { shiftId: currentShift.id })
+      .andWhere('req.day_type = :dayType', { dayType: currentDayType })
+      .groupBy('req.area_id')
+      .getRawMany();
+
+    return new Map(rows.map((r: any) => [r.area_id, parseInt(r.total)]));
   }
 }

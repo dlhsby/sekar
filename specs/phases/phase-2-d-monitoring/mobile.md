@@ -1,6 +1,6 @@
 # Phase 2D: Mobile Requirements
 
-**Last Updated:** 2026-03-05
+**Last Updated:** 2026-03-06
 **Status:** ✅ COMPLETE (Implementation + Review)
 **Platform:** React Native 0.83.1, TypeScript, Redux Toolkit, react-native-maps
 **Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md)
@@ -27,14 +27,14 @@
 
 | Component | Change Type | Description |
 |-----------|-------------|-------------|
-| `MapDashboardScreen` | Major enhancement | Four-status model, polygon rendering, summary bar, FAB controls |
+| `MapDashboardScreen` | Major enhancement | Five-status model, polygon rendering, summary bar, FAB controls |
 | `UserMarker` | Major enhancement | Role-specific icons, status shapes, name labels |
-| `mapUtils.ts` | Update | Four-status model replaces three-status |
+| `mapUtils.ts` | Update | Five-status model replaces three-status |
 | `monitoringSlice.ts` | Enhancement | New state for location history, day summary, staffing, config |
 | New: `UserDetailSheet` | New component | Bottom sheet with shift info, activities, WhatsApp deeplinks |
 | New: `LocationTrail` | New component | Polyline rendering for location history playback |
 | New: `MonitoringFilterModal` | New component | Full-screen filter with cascading rayon/area/user |
-| New: `StatusSummaryBar` | New component | Four-status chips with counts |
+| New: `StatusSummaryBar` | New component | Five-status chips with counts |
 | New: `UserListStrip` | New component | Bottom horizontal scroll cards |
 | Navigation | No changes | Monitoring tab already configured for correct roles |
 
@@ -80,9 +80,9 @@ if (area.boundary_polygon?.coordinates?.length > 0) {
 
 **Performance:** Set `tracksViewChanges={false}` on Polygon; pre-compute coordinate arrays outside render.
 
-#### A2. Four-Status Color Model
+#### A2. Five-Status Color Model
 
-Replace the three-status model with four statuses:
+Replace the three-status model with five statuses:
 
 | Status | Marker Color | Hex |
 |--------|-------------|-----|
@@ -90,6 +90,7 @@ Replace the three-status model with four statuses:
 | `inactive` | Amber | `#D97706` |
 | `outside_area` | Purple | `#9333EA` |
 | `missing` | Red | `#DC2626` |
+| `offline` | Gray | `#6B7280` |
 
 Users with `status === 'offline'` are NOT shown on the map (no active shift, gray in lists only).
 
@@ -110,10 +111,10 @@ Add a vertical FAB column on the right side of the map:
 
 #### A4. Summary Bar (Top)
 
-Horizontal bar below the header showing four-status counts:
+Horizontal bar below the header showing five-status counts:
 
 ```
-[● 12 Active] [● 5 Idle] [● 2 Outside] [● 1 Missing]
+[● 12 Active] [● 5 Idle] [● 2 Outside] [● 1 Missing] [● 3 Offline]
 ```
 
 - Each chip: colored dot + count + label
@@ -212,7 +213,7 @@ When filters are applied via MonitoringFilterModal, the map automatically adjust
 
 #### B1. Status-Based Color
 
-Use four-status color system (see A2 above).
+Use five-status color system (see A2 above).
 
 #### B2. Role-Specific Icon Shape
 
@@ -376,6 +377,21 @@ Modal for reassigning a worker from one area to another.
 ```
 
 **Data source:** `POST /monitoring/reassign`
+
+**Implementation steps:**
+1. Modal is triggered from UserDetailSheet "Reassign" button or area detail modal
+2. On open, fetch available areas within the supervisor's scope via `GET /monitoring/staffing-summary?rayon_id=X`
+3. Filter candidate areas: same rayon, exclude current area, show only areas with capacity
+4. User selects target area from the filtered list (NBSelect component)
+5. Optionally enters a reason text (NBTextInput, max 200 chars)
+6. On "Konfirmasi Reassign" tap, call `POST /monitoring/reassign` with payload:
+   `{ user_id, source_area_id, target_area_id, reason? }`
+7. Backend validates permissions and emits `USER_REASSIGNED` WebSocket event
+8. On success: dismiss modal, show toast "Berhasil reassign [name] ke [area]"
+9. WebSocket event triggers updates in both source and destination area stats
+10. TanStack Query cache is invalidated for `live-users` and `staffing-summary` keys
+11. The reassigned user's marker moves to the new area on the next location ping
+12. Error handling: show inline error in modal, do not dismiss on failure
 
 **Accessible from:**
 - UserDetailSheet action buttons
@@ -823,6 +839,32 @@ WebSocket 'user:entered-area' event received
   → Recalculate status based on GPS age
 ```
 
+### H4. Dual Data Source Pattern
+
+Mobile monitoring combines two data sources to balance reliability with real-time responsiveness:
+
+**1. TanStack Query hooks (baseline data):**
+- `useMonitoringLiveUsers()` polls `GET /monitoring/live-users` every 30 seconds
+- `useMonitoringDaySummary(userId)` fetches on-demand when UserDetailSheet opens
+- `useMonitoringStaffing(filters)` polls every 60 seconds
+- Provides consistent, server-validated state on every poll cycle
+
+**2. Redux store (WebSocket real-time updates):**
+- `monitoringSlice` receives WebSocket events between poll intervals
+- Events: `user:status-changed`, `user:location`, `user:left-area`, `user:entered-area`
+- Dispatches optimistic updates to Redux state immediately on receipt
+
+**Merge strategy:**
+- TanStack Query is the source of truth; WebSocket updates are merged optimistically into the query cache via `queryClient.setQueryData()`
+- On each poll response, the full dataset replaces any optimistic updates, preventing drift
+- If a WebSocket event arrives for a user not in the current query cache (e.g., new clock-in), it is appended and the next poll cycle reconciles
+- Components read from TanStack Query hooks, not directly from Redux monitoring state for live user data
+
+**Why not pure WebSocket?**
+- WebSocket connections can drop silently on mobile networks
+- Polling provides a recovery mechanism and ensures no events are permanently missed
+- 30-second polling is cheap (single GET, gzipped ~2-5 KB for 50 users)
+
 ---
 
 ## I. Type Updates
@@ -993,16 +1035,91 @@ export interface UserAreaEvent {
 
 ---
 
-## J. Navigation
+## J. Navigation & Role Gating
 
-**No navigation changes required.** The Monitoring tab is already configured in `MainNavigator.tsx` TAB_CONFIGS for:
-- `korlap`
-- `kepala_rayon`
-- `top_management`
-- `admin_system`
-- `superadmin`
+**No navigation changes required.** The Monitoring tab is already configured in `MainNavigator.tsx` TAB_CONFIGS for the roles listed below.
 
 The `MapDashboardScreen` is already registered as the Monitoring screen target.
+
+### J1. MONITORING_ROLES Constant
+
+Role-gating for monitoring screens uses a shared constant defined in `fe/mobile/src/constants/roles.ts`:
+
+```typescript
+export const MONITORING_ROLES = ['admin_system', 'top_management', 'kepala_rayon', 'korlap'] as const;
+export type MonitoringRole = (typeof MONITORING_ROLES)[number];
+```
+
+Only users with one of these four roles can access monitoring screens. The `superadmin` role also has access via a separate superadmin override check, but is not listed in `MONITORING_ROLES` because superadmin bypasses role checks globally.
+
+All monitoring-related visibility checks (navigation tabs, filter access, feature toggles) reference `MONITORING_ROLES` instead of hardcoding role strings, ensuring a single point of change if roles are added or removed.
+
+---
+
+## J2. Home Screen Location Status Card
+
+**File:** `fe/mobile/src/components/home/LocationStatusCard.tsx`
+**Hook:** `fe/mobile/src/hooks/useHomeLocation.ts`
+
+New card component displayed on the HomeScreen, positioned above the "Shift Aktif" card. Only visible when the user has an active shift.
+
+### Layout
+
+```
++-----------------------------------------------+
+|  Lokasi Anda                        [Sync]    |
+|-----------------------------------------------|
+|  Koordinat: -7.283205, 112.753412             |
+|  Akurasi GPS: +/-12m                           |
+|                                                |
+|  [GREEN BANNER] Di dalam area kerja            |
+|  -- or --                                      |
+|  [ORANGE BANNER] Di luar area kerja            |
++-----------------------------------------------+
+```
+
+### Behavior
+
+- **GPS coordinates:** Displayed to 6 decimal places (lat, lng)
+- **GPS accuracy:** Shown as "+/-Xm" where X is `accuracy` from the location service
+- **Area status banner:**
+  - Green (`#15803D` background, white text): "Di dalam area kerja" when `is_within_area === true`
+  - Orange (`#D97706` background, white text): "Di luar area kerja" when `is_within_area === false`
+- **Sync button:** Circular icon button (refresh icon) in the top-right corner
+  - On tap: calls `captureNow()` to get fresh GPS fix, then `forceUpload()` to send immediately
+  - Shows spinner while syncing, checkmark for 2 seconds on success
+  - Disabled during active sync (prevents rapid taps)
+- **Visibility:** Only rendered when `activeShift !== null` in auth/shift state
+- **Update frequency:** Location updates via `useHomeLocation` hook, which subscribes to the location service's last known position (updates on each GPS fix, typically every 30-60 seconds)
+
+### useHomeLocation Hook
+
+```typescript
+function useHomeLocation(): {
+  latitude: number | null;
+  longitude: number | null;
+  accuracy: number | null;
+  isWithinArea: boolean | null;
+  lastUpdate: Date | null;
+  isSyncing: boolean;
+  syncLocation: () => Promise<void>;
+}
+```
+
+- Reads from `LocationTrackerService` last known position
+- Computes `isWithinArea` by checking against the user's assigned area boundary (from shift data)
+- `syncLocation()` wraps `captureNow()` + `forceUpload()` with loading state management
+- Cleans up location subscription on unmount
+
+### Design Pattern
+
+This component reuses the pattern from `ClockInOutScreen`'s "Lokasi Anda" collapsible card (same coordinate display format, same accuracy indicator). The key difference is that LocationStatusCard is always expanded (not collapsible) and adds the area status banner + sync button.
+
+### Integration
+
+- Added to `HomeScreen.tsx` between the greeting header and the "Shift Aktif" card
+- Wrapped in a conditional: `{activeShift && <LocationStatusCard />}`
+- Uses NBCard styling (Neo Brutalism border, shadow)
 
 ---
 
@@ -1021,9 +1138,18 @@ fe/mobile/src/
     UserListStrip.tsx                         NEW
     UserListCard.tsx                          NEW
 
+  components/home/
+    LocationStatusCard.tsx                    NEW
+
   components/modals/
     MonitoringFilterModal.tsx                 NEW
     ReassignWorkerModal.tsx                   NEW
+
+  constants/
+    roles.ts                                 MODIFIED (MONITORING_ROLES added)
+
+  hooks/
+    useHomeLocation.ts                       NEW
 
   utils/
     mapUtils.ts                              MODIFIED
@@ -1041,8 +1167,8 @@ fe/mobile/src/
     models.types.ts                          MODIFIED (new interfaces)
 ```
 
-**Total new files:** 7
-**Total modified files:** 6
+**Total new files:** 9
+**Total modified files:** 7
 
 ---
 
@@ -1063,7 +1189,7 @@ fe/mobile/src/
 
 ### Phase 2D-5: Mobile Monitoring — ✅ COMPLETE
 
-- [x] Update `mapUtils.ts` with four-status model
+- [x] Update `mapUtils.ts` with five-status model
 - [x] Update `LiveUser` and related types in `models.types.ts`
 - [x] Update `monitoringSlice.ts` with new state and actions
 - [x] Update `monitoringApi.ts` with new endpoints
@@ -1093,15 +1219,36 @@ fe/mobile/src/
 - [x] Consolidate duplicate `LiveUsersResponse` type
 
 ### Phase 2D-10: Gap Fixes (Mobile) — NOT STARTED
+
 - [ ] Update marker labels to "Role - Name" format with zoom-level behavior
+  - File: `fe/mobile/src/components/monitoring/UserMarker.tsx` (section B3)
+  - Use `getRoleAbbreviation()` from `fe/mobile/src/utils/mapUtils.ts`
 - [ ] Add rayon + area polygon rendering with center markers
+  - File: `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx` (section A7)
+  - API: `GET /monitoring/boundaries` — returns all rayon/area polygons in one call
 - [ ] Add map auto-focus on filter selection
+  - File: `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx` (section E6)
+  - Uses `mapRef.current.fitToCoordinates()` / `animateToRegion()`
 - [ ] Enhance LocationTrail with clickable points, first/last markers, hide others, date picker, shift filter
+  - File: `fe/mobile/src/components/monitoring/LocationTrail.tsx` (sections D2-D7)
+  - API: `GET /monitoring/users/:userId/location-history?date=YYYY-MM-DD&shift_id=X`
 - [ ] Refactor MonitoringFilterModal to use NB components (NBSelect, bottom-sheet pattern)
+  - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E1)
+  - Reference: `fe/mobile/src/components/modals/ActivityFilterModal.tsx`
 - [ ] Make staffing summary always visible in filter modal
+  - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
+  - API: `GET /monitoring/staffing-summary?rayon_id=X&area_id=Y`
 - [ ] Add ReassignWorkerModal component
+  - File: `fe/mobile/src/components/modals/ReassignWorkerModal.tsx` (section C2)
+  - API: `POST /monitoring/reassign` with `{ user_id, source_area_id, target_area_id, reason? }`
+  - WebSocket event: `USER_REASSIGNED`
 - [ ] Add day-type badge to staffing display
+  - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
+  - Uses `current_day_type_label` from staffing-summary response
+- [ ] Add LocationStatusCard to HomeScreen
+  - Files: `fe/mobile/src/components/home/LocationStatusCard.tsx`, `fe/mobile/src/hooks/useHomeLocation.ts` (section J2)
+  - Integrates with `LocationTrackerService.captureNow()` + `forceUpload()`
 
 ---
 
-**Last Updated:** 2026-03-05
+**Last Updated:** 2026-03-06

@@ -12,13 +12,15 @@
 
 ### A1. Primary Status Colors
 
-| Status | Use | Hex | RGB | Tailwind | NB Token |
-|--------|-----|-----|-----|----------|----------|
-| **Active** | Marker, chip, card bg | `#15803D` | 21, 128, 61 | `green-700` | `nbColors.success` |
-| **Idle** | Marker, chip, card bg | `#D97706` | 217, 119, 6 | `amber-600` | `nbColors.warning` |
-| **Outside Area** | Marker, chip, card bg | `#9333EA` | 147, 51, 234 | `purple-600` | `nbColors.info` (override) |
-| **Missing** | Marker, chip, card bg | `#DC2626` | 220, 38, 38 | `red-600` | `nbColors.danger` |
-| **Offline** | List only (not on map) | `#6B7280` | 107, 114, 128 | `gray-500` | `nbColors.muted` |
+| Status | Use | Hex | RGB | Tailwind | NB Token | WCAG Ratio |
+|--------|-----|-----|-----|----------|----------|------------|
+| **ACTIVE** | Marker, chip, card bg | `#15803D` | 21, 128, 61 | `green-700` | `nbColors.success` | 4.96:1 |
+| **INACTIVE** | Marker, chip, card bg | `#D97706` | 217, 119, 6 | `amber-600` | `nbColors.warning` | 3.24:1 |
+| **OUTSIDE_AREA** | Marker, chip, card bg | `#9333EA` | 147, 51, 234 | `purple-600` | `nbColors.info` (override) | 4.63:1 |
+| **MISSING** | Marker, chip, card bg | `#DC2626` | 220, 38, 38 | `red-600` | `nbColors.danger` | 4.52:1 |
+| **OFFLINE** | List only (not on map) | `#6B7280` | 107, 114, 128 | `gray-500` | `nbColors.muted` | 4.69:1 |
+
+All five statuses meet WCAG 2.1 AA contrast requirements against white backgrounds.
 
 ### A2. Status Chip Colors (Background + Text)
 
@@ -91,15 +93,15 @@ The outer ring of the marker changes color based on status. For additional diffe
 - **Outside Area:** Dashed ring (4px dash, 4px gap)
 - **Missing:** Solid ring, fast pulse (1s period)
 
-### B4. Comprehensive Entity Visual System
+### B4. Entity Visual System
 
-Standardized icon/color system for ALL entity types on the map.
+Standardized icon/color system for all entity types on the map (polygons, center markers, user markers).
 
 #### Polygon Styles
 
 | Entity | Fill Color | Opacity | Border Color | Border Width | Border Style |
 |--------|-----------|---------|-------------|-------------|-------------|
-| Rayon | `#60A5FA` (blue-400) | 0.08 | `#2563EB` (blue-600) | 3px | dashed |
+| Rayon | `#60A5FA` (blue-400) | 0.08 | `#2563EB` (blue-600) | 3px | dashed (4px dash, 4px gap) |
 | Area | `#FBBF24` (amber-400) | 0.15 | `#1C1917` (black) | 2px | solid |
 
 #### Center Marker Styles
@@ -117,63 +119,15 @@ Standardized icon/color system for ALL entity types on the map.
 | Linmas | `shield` | `shield-account` | 36px | `#1E40AF` (blue-800) |
 | Korlap | `star` | `clipboard-account` | 36px | `#92400E` (amber-800) |
 
-User marker fill color = status color (active=#15803D, inactive=#D97706, outside_area=#9333EA, missing=#DC2626)
+User marker fill color = status color (active=#15803D, inactive=#D97706, outside_area=#9333EA, missing=#DC2626, offline=#6B7280)
 
 #### Dual Encoding for Accessibility
 
 Status communicated via fill color + role via border color + icon shape. All combinations are WCAG 2.1 AA compliant:
-- Color encodes status (green/amber/purple/red)
+- Color encodes status (green/amber/purple/red/gray)
 - Border color encodes role (black/blue/amber)
 - Icon shape encodes role (person/shield/star)
 - No single channel carries all information — redundant encoding ensures color-blind users can differentiate
-
-#### Understaffed Area Visual Indicators
-
-| Indicator | Style |
-|-----------|-------|
-| Area center marker (understaffed) | RED pulsing border/glow animation (2s period) |
-| Rayon center marker badge | "2 area kurang" text badge in red |
-| Filter modal option | Warning icon ⚠️ + red border on understaffed items |
-| Map polygon border | Dashed red overlay on understaffed area polygons |
-
-### B5. Standardized Entity Visual System (NEW - Gap #9)
-
-Comprehensive visual system for ALL entity types on the map.
-
-#### Polygon Styles
-
-| Entity | Fill Color | Fill Opacity | Border Color | Border Width | Border Style |
-|--------|-----------|-------------|-------------|-------------|-------------|
-| Rayon | #60A5FA (blue-400) | 0.08 | #2563EB (blue-600) | 3px | dashed (4px dash, 4px gap) |
-| Area | #FBBF24 (amber-400) | 0.15 | #1C1917 (black) | 2px | solid |
-
-#### Center Marker Styles
-
-| Entity | Icon (Web/Lucide) | Icon (Mobile/MCI) | Size | BG Color | Text Color |
-|--------|------------------|-------------------|------|----------|------------|
-| Rayon | building-2 | office-building | 32px | #2563EB (blue-600) | white |
-| Area | map-pin | map-marker | 28px | #D97706 (amber-600) | white |
-
-#### User Marker Styles
-
-| Role | Icon (Web/Lucide) | Icon (Mobile/MCI) | Size | Border Color |
-|------|------------------|-------------------|------|-------------|
-| Satgas | user | account-hard-hat | 36px | #1C1917 (black) |
-| Linmas | shield | shield-account | 36px | #1E40AF (blue-800) |
-| Korlap | star | clipboard-account | 36px | #92400E (amber-800) |
-
-User marker fill color = status color:
-- active: #15803D (green-700)
-- inactive: #D97706 (amber-600)
-- outside_area: #9333EA (purple-600)
-- missing: #DC2626 (red-600)
-
-#### Dual Encoding for Accessibility
-
-Status is encoded via fill color + role via border color + icon shape. This ensures WCAG 2.1 AA compliance for users with color vision deficiencies:
-- **Color** differentiates status (green/amber/purple/red)
-- **Border color** differentiates role (black/blue/amber)
-- **Icon shape** provides tertiary differentiation
 
 #### Layer Render Order (bottom to top)
 
@@ -185,13 +139,16 @@ Status is encoded via fill color + role via border color + icon shape. This ensu
 6. rayon-center-markers
 7. user-markers (highest z-index)
 
-#### Understaffed Area Indicators
+#### Understaffed Area Visual Indicators
 
-- Area center markers with understaffed status: RED pulsing border/glow animation
-- In filter modal: understaffed areas sort to top with warning icon
-- City-level view: rayon center markers show aggregate understaffing badge (e.g., "2 area kurang")
+| Indicator | Style |
+|-----------|-------|
+| Area center marker (understaffed) | RED pulsing border/glow animation (2s period) |
+| Rayon center marker badge | "2 area kurang" text badge in red |
+| Filter modal option | Warning icon ⚠️ + red border on understaffed items |
+| Map polygon border | Dashed red overlay on understaffed area polygons |
 
-### B6. User Marker Label Format (NEW - Gap #7)
+### B5. User Marker Label Format
 
 Display abbreviated role + name below the marker, varying by zoom level.
 
@@ -282,6 +239,8 @@ Display abbreviated role + name below the marker, varying by zoom level.
 ---
 
 ## D. Web Layout Specifications
+
+> **Mapbox GL Token:** The web monitoring map requires a valid Mapbox GL JS access token configured via the environment variable `NEXT_PUBLIC_MAPBOX_TOKEN`. Without this token, the map will not render.
 
 ### D1. Split Panel (Desktop xl)
 
@@ -614,7 +573,7 @@ accessibilityLabel={`${user.full_name}, ${getRoleLabel(user.role)}, ${getStatusL
 |-----------|--------------|
 | Map | Skeleton map with pulsing overlay |
 | User list | 5 skeleton rows with animated gradient |
-| Status cards | 4 skeleton cards with pulsing numbers |
+| Status cards | 5 skeleton cards with pulsing numbers |
 | Detail panel | Section-by-section skeleton loading |
 | Location trail | Spinner overlay on map |
 | Filter results | Inline spinner below filter bar |
@@ -642,7 +601,9 @@ accessibilityLabel={`${user.full_name}, ${getRoleLabel(user.role)}, ${getStatusL
 
 ## J. Design Tokens
 
-### J1. CSS Variables (Web)
+All status colors, marker dimensions, polygon styles, and role borders are defined once below. Web uses CSS custom properties; mobile uses TypeScript constants. Both sources reference the same canonical values from Section A.
+
+### J1. Web — CSS Custom Properties
 
 ```css
 :root {
@@ -695,29 +656,12 @@ accessibilityLabel={`${user.full_name}, ${getRoleLabel(user.role)}, ${getStatusL
   --call-color: #3B82F6;
   --trail-color: #9333EA;
 
-  /* Entity polygon colors (NEW - Gap #9) */
-  --rayon-fill: #60A5FA;
-  --rayon-fill-opacity: 0.08;
-  --rayon-border: #2563EB;
-  --area-fill: #FBBF24;
-  --area-fill-opacity: 0.15;
-  --area-border: #1C1917;
-
-  /* Role border colors (NEW - Gap #9) */
-  --role-satgas-border: #1C1917;
-  --role-linmas-border: #1E40AF;
-  --role-korlap-border: #92400E;
-
-  /* Center marker colors */
-  --rayon-marker-bg: #2563EB;
-  --area-marker-bg: #D97706;
-
   /* Reassign button */
   --reassign-color: #7C3AED;
 }
 ```
 
-### J2. Mobile Constants
+### J2. Mobile — TypeScript Constants
 
 Add to `fe/mobile/src/constants/nbTokens.ts`:
 
@@ -763,30 +707,22 @@ export const monitoringTokens = {
     padding: 16,
   },
   polygon: {
-    rayon: { fill: '#60A5FA', fillOpacity: 0.08, stroke: '#2563EB', strokeWidth: 3 },
-    area: { fill: '#FBBF24', fillOpacity: 0.15, stroke: '#1C1917', strokeWidth: 2 },
+    rayon: { fill: '#60A5FA', fillOpacity: 0.08, stroke: '#2563EB', strokeWidth: 3, strokeStyle: 'dashed' },
+    area: { fill: '#FBBF24', fillOpacity: 0.15, stroke: '#1C1917', strokeWidth: 2, strokeStyle: 'solid' },
   },
   centerMarker: {
-    rayon: { icon: 'office-building', size: 32, bg: '#2563EB' },
-    area: { icon: 'map-marker', size: 28, bg: '#D97706' },
+    rayon: { icon: 'office-building', size: 32, bg: '#2563EB', text: 'white' },
+    area: { icon: 'map-marker', size: 28, bg: '#D97706', text: 'white' },
+  },
+  roleBorder: {
+    satgas: '#1C1917',
+    linmas: '#1E40AF',
+    korlap: '#92400E',
   },
   roleAbbreviations: {
     satgas: 'STG',
     linmas: 'LMS',
     korlap: 'KLP',
-  },
-  entityPolygons: {
-    rayon: { fill: '#60A5FA', fillOpacity: 0.08, border: '#2563EB', borderWidth: 3, borderStyle: 'dashed' },
-    area: { fill: '#FBBF24', fillOpacity: 0.15, border: '#1C1917', borderWidth: 2, borderStyle: 'solid' },
-  },
-  centerMarkers: {
-    rayon: { icon: 'office-building', size: 32, bg: '#2563EB', text: 'white' },
-    area: { icon: 'map-marker', size: 28, bg: '#D97706', text: 'white' },
-  },
-  roleBorders: {
-    satgas: '#1C1917',
-    linmas: '#1E40AF',
-    korlap: '#92400E',
   },
 } as const;
 ```

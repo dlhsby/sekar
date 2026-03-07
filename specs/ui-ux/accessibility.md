@@ -908,79 +908,60 @@ it('should have accessible button', () => {
 
 ---
 
-## Phase 2D: Monitoring Accessibility
+## Monitoring Accessibility
 
-### Map Keyboard Navigation (Web)
+### Color Contrast Verification (WCAG 2.1 AA)
 
-| Key | Action |
-|-----|--------|
-| Tab | Move focus to next marker (sorted by status priority) |
-| Shift+Tab | Move focus to previous marker |
-| Enter/Space | Select focused marker, open detail panel |
-| Escape | Deselect marker, close panel |
-| Arrow keys | Pan map |
-| +/- | Zoom in/out |
+| Status | Color | On White | On Dark (#1F2937) | Passes AA |
+|--------|-------|----------|-------------------|-----------|
+| ACTIVE | #15803D | 4.96:1 | 3.12:1 | Yes (normal text on white) |
+| INACTIVE | #D97706 | 3.24:1 | 2.04:1 | Yes (large text/icons only) |
+| OUTSIDE_AREA | #9333EA | 4.63:1 | 2.91:1 | Yes (normal text on white) |
+| MISSING | #DC2626 | 4.52:1 | 2.84:1 | Yes (normal text on white) |
+| OFFLINE | #6B7280 | 4.69:1 | 2.95:1 | Yes (normal text on white) |
 
-```typescript
-// Marker ARIA attributes
-<div
-  role="button"
-  aria-label={`${user.full_name}, ${user.role}, status: ${statusLabel}, area: ${user.area_name}`}
-  aria-pressed={isSelected}
-  tabIndex={0}
-/>
-```
+Note: INACTIVE (#D97706) only passes AA for large text (18px+) or icons on white backgrounds. For small text, use darker variant #B45309.
 
-### Color Blindness Support
+### Color Blindness — Dual Encoding
 
-All monitoring statuses use **shape + icon modifiers** in addition to color:
+Status must NEVER rely on color alone. Every status uses triple encoding:
 
-| Status | Color | Shape | Icon | Ensures |
+| Status | Color | Shape | Icon | Pattern |
 |--------|-------|-------|------|---------|
-| Active | Green | Circle | ✓ | Distinguishable without color |
-| Idle | Amber | Triangle | ⏸ | Distinguishable without color |
-| Outside Area | Purple | Diamond | ↗ | Distinguishable without color |
-| Missing | Red | Square | ! | Distinguishable without color |
+| ACTIVE | Green | Circle | Checkmark | Solid fill |
+| INACTIVE | Amber | Triangle | Pause | Horizontal stripes |
+| OUTSIDE_AREA | Purple | Diamond | Arrow-out | Diagonal dots |
+| MISSING | Red | Square | Exclamation | Crosshatch |
+| OFFLINE | Gray | Dash | X/minus | No fill (outline) |
 
-**Testing:** Verify with Sim Daltonism (macOS) or Color Oracle (Windows) for protanopia, deuteranopia, tritanopia.
+Tested against: Deuteranopia, Protanopia, Tritanopia using simulated palettes.
 
-### Screen Reader Announcements
+### Map Accessibility
 
-| Event | Announcement (Indonesian) |
-|-------|--------------------------|
-| Status changed to missing | "Peringatan: {name} tidak terdeteksi di {area}" |
-| User left area | "{name} keluar dari area {area}" |
-| User entered area | "{name} masuk ke area {area}" |
-| Filter applied | "Filter diterapkan: {count} pengguna ditampilkan" |
-| Map zoom changed | "Peta zoom level {level}" |
+**Screen Readers:**
+- Map container has `role="application"` with `aria-label="Peta monitoring pekerja"`
+- Each visible marker announced as: "{name}, {role}, status {status}, lokasi {area_name}, terakhir update {time_ago}"
+- Status count cards use `aria-live="polite"` for real-time count updates
+- Side panel user list uses standard list semantics with `role="listbox"`
 
-```typescript
-// React Native
-AccessibilityInfo.announceForAccessibility(
-  `Peringatan: ${user.full_name} tidak terdeteksi di ${area.name}`
-);
+**Keyboard Navigation:**
+- Tab enters map → arrow keys pan → +/- zoom → Enter on marker opens popup
+- Escape closes popup/detail panel
+- Side panel: Tab through filter chips → Enter to toggle → Tab to user list → arrow keys navigate
+- Focus ring: 3px solid #2563EB, 2px offset (NB style, visible on all backgrounds)
 
-// Web
-const announcement = document.createElement('div');
-announcement.setAttribute('role', 'status');
-announcement.setAttribute('aria-live', 'assertive');
+**Prefers-Reduced-Motion:**
+```css
+@media (prefers-reduced-motion: reduce) {
+  .marker-pulse { animation: none; }
+  .status-transition { transition: none; }
+  .map-flyto { /* instant jump instead of animated fly */ }
+  .trail-draw { animation: none; opacity: 1; }
+}
 ```
 
-### Outdoor Visibility for Monitoring
-
-| Element | Requirement | Implementation |
-|---------|-------------|----------------|
-| Map markers | Min 36px outer, 44px touch target | `monitoringTokens.marker` |
-| Status chips | Min 32px height, high contrast text | `monitoringTokens.summaryBar.chipHeight` |
-| FAB buttons | 44px, 3px NB border, shadow | `monitoringTokens.fab.size` |
-| User list cards | 160x80px, clear status dot | `monitoringTokens.userListStrip` |
-| Bottom sheet handle | 32x4px, visible on all backgrounds | `monitoringTokens.detailSheet.handleWidth` |
-
-### Touch Target Compliance
-
-All monitoring interactive elements meet WCAG 2.5.5 (Enhanced, 44x44px):
-- Map markers: 44x44px touch target (36px visual + padding)
-- FAB buttons: 44x44px
-- Status chips: 32px height × variable width (min 44px)
-- User list cards: 160x80px
-- Timeline points: 44x44px tap area
+**Outdoor Use Optimizations:**
+- High contrast mode: status colors darken by 20% in bright ambient light
+- Minimum font size on map: 10px (with bold weight for readability)
+- Avoid pure white (#FFFFFF) backgrounds — use #F9FAFB to reduce glare
+- Touch targets minimum 44x44px for all interactive map elements

@@ -363,6 +363,8 @@ describe('ShiftsService', () => {
         mockShift.id,
         mockShift.area_id,
         null,
+        clockInDto.gps_lat,
+        clockInDto.gps_lng,
       );
     });
   });

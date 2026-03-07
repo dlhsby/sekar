@@ -114,13 +114,13 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Update `mapUtils.ts` with four-status model | ✅ Complete | getStatusColor, getStatusLabel, getRoleIcon (8 roles) |
+| Update `mapUtils.ts` with five-status model | ✅ Complete | getStatusColor, getStatusLabel, getRoleIcon (8 roles) |
 | Update types in `models.types.ts` | ✅ Complete | LiveUser, TrackingStatus, MonitoringFilters |
 | Create `monitoringSlice.ts` | ✅ Complete | liveUsers, statusCounts, selectedUser, filters |
 | Update `monitoringApi.ts` | ✅ Complete | getLiveUsers, getDaySummary, getLocationHistory, getStaffingSummary |
-| Enhance `UserMarker` component | ✅ Complete | LiveUser type, role icons, four-status colors |
+| Enhance `UserMarker` component | ✅ Complete | LiveUser type, role icons, five-status colors |
 | Add polygon rendering to `MapDashboardScreen` | ✅ Complete | Redux-based, Polygon + Circle area boundaries |
-| Add `StatusSummaryBar` component | ✅ Complete | Four status chips with counts |
+| Add `StatusSummaryBar` component | ✅ Complete | Five status chips with counts |
 | Add `UserListStrip` and `UserListCard` | ✅ Complete | Horizontal scroll strip |
 | Add FAB control column | ✅ Complete | Zoom, filter, location FABs |
 | Implement `UserDetailSheet` | ✅ Complete | Bottom sheet with shift/activities/tasks |
@@ -173,7 +173,7 @@
 | Mobile component tests (>80% coverage) | ✅ Complete | 3,493 passing (3,281 + 212 from 2D-8) |
 | Update mobile mapUtils tests | ✅ Complete | Four-status model tested |
 | Rewrite MapDashboardScreen tests for Redux | ✅ Complete | 9 tests with mocked store |
-| Rewrite UserMarker tests for LiveUser type | ✅ Complete | 23 tests, role icons, four statuses |
+| Rewrite UserMarker tests for LiveUser type | ✅ Complete | 23 tests, role icons, five statuses |
 | Add 13 new monitoring service tests | ✅ Complete | getLocationHistory, getUserDaySummary, getStaffingSummary |
 
 ---

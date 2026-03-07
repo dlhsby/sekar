@@ -5,6 +5,7 @@ import { NotFoundException } from '@nestjs/common';
 import { MonitoringService } from './monitoring.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringUserService } from './services/monitoring-user.service';
+import { DayTypeService } from './services/day-type.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -198,6 +199,14 @@ describe('MonitoringService', () => {
         MonitoringService,
         MonitoringStatsService,
         MonitoringUserService,
+        {
+          provide: DayTypeService,
+          useValue: {
+            getCurrentDayType: jest.fn().mockResolvedValue('WEEKDAY'),
+            getDayTypeLabel: jest.fn().mockReturnValue('Hari Kerja'),
+            loadDayType: jest.fn().mockResolvedValue('WEEKDAY'),
+          },
+        },
         {
           provide: getRepositoryToken(User),
           useValue: {
@@ -1151,6 +1160,100 @@ describe('MonitoringService', () => {
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].roles).toEqual([]);
+    });
+  });
+
+  describe('getBoundaries (MonitoringStatsService)', () => {
+    let statsService: MonitoringStatsService;
+
+    beforeEach(() => {
+      statsService = (service as any).statsService;
+    });
+
+    it('should return boundaries for all rayons', async () => {
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+      areaRepository.find.mockResolvedValue([mockArea]);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+
+      const qb = createMockQueryBuilder();
+      qb.getRawMany = jest.fn().mockResolvedValue([]);
+      trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
+      staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      const result = await statsService.getBoundaries();
+
+      expect(result.rayons).toHaveLength(1);
+      expect(result.rayons[0].id).toBe('rayon-1');
+      expect(result.rayons[0].areas).toHaveLength(1);
+      expect(result.rayons[0].areas[0].id).toBe('area-1');
+      expect(result.rayons[0].areas[0].rayon_id).toBe('rayon-1');
+      expect(result.rayons[0].areas[0].rayon_name).toBe('Rayon Selatan');
+      expect(result.generated_at).toBeInstanceOf(Date);
+    });
+
+    it('should filter by rayon_id when provided', async () => {
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+      areaRepository.find.mockResolvedValue([]);
+
+      const result = await statsService.getBoundaries({ rayon_id: 'rayon-1' });
+
+      expect(rayonRepository.find).toHaveBeenCalledWith({ where: { id: 'rayon-1' } });
+      expect(result.rayons).toHaveLength(1);
+      expect(result.rayons[0].areas).toHaveLength(0);
+      expect(result.rayons[0].area_count).toBe(0);
+    });
+
+    it('should compute understaffed status based on assigned vs required', async () => {
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+      areaRepository.find.mockResolvedValue([mockArea]);
+      // No current shift → required = 0, so understaffed depends on assigned vs 0
+      shiftDefinitionRepository.find.mockResolvedValue([]);
+
+      const qb = createMockQueryBuilder();
+      qb.getRawMany = jest.fn().mockResolvedValue([{ area_id: 'area-1', count: '3' }]);
+      trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
+      staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
+
+      const result = await statsService.getBoundaries();
+
+      // With no shift definition, required=0, assigned=3, so not understaffed
+      expect(result.rayons[0].areas[0].assigned_count).toBe(3);
+      expect(result.rayons[0].areas[0].is_understaffed).toBe(false);
+      expect(result.rayons[0].is_understaffed).toBe(false);
+    });
+
+    it('should include staffing_summary with role details', async () => {
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+      areaRepository.find.mockResolvedValue([mockArea]);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDefinition]);
+
+      const trackQb = createMockQueryBuilder();
+      trackQb.getRawMany = jest.fn()
+        .mockResolvedValueOnce([{ area_id: 'area-1', count: '3' }]) // assigned counts
+        .mockResolvedValueOnce([{ area_id: 'area-1', role: 'satgas', count: '2' }]); // active counts
+      trackingRepository.createQueryBuilder = jest.fn(() => trackQb as any);
+
+      const reqQb = createMockQueryBuilder();
+      reqQb.getRawMany = jest.fn().mockResolvedValue([{ area_id: 'area-1', total: '5' }]);
+      reqQb.getMany = jest.fn().mockResolvedValue([
+        { area_id: 'area-1', role: 'satgas', required_count: 5 },
+      ]);
+      staffRequirementRepository.createQueryBuilder = jest.fn(() => reqQb as any);
+
+      const result = await statsService.getBoundaries();
+
+      expect(result.rayons[0].areas[0].staffing_summary).toBeDefined();
+    });
+
+    it('should return empty areas for rayon with no active areas', async () => {
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+      areaRepository.find.mockResolvedValue([]);
+
+      const result = await statsService.getBoundaries();
+
+      expect(result.rayons[0].areas).toHaveLength(0);
+      expect(result.rayons[0].area_count).toBe(0);
+      expect(result.rayons[0].is_understaffed).toBe(false);
     });
   });
 });

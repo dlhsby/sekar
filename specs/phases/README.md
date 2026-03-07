@@ -156,7 +156,7 @@ Breaking changes based on client feedback from February 10, 2026 meeting.
 
 **Duration:** 3-4 weeks | **Status:** 🟡 PLANNING (Mar 2026)
 
-Comprehensive reimplementation of the monitoring system with four-status tracking, full Mapbox integration, and location history playback.
+Comprehensive reimplementation of the monitoring system with five-status tracking (four visible on map), full Mapbox integration, and location history playback.
 
 ### Key Deliverables
 - Four-status tracking system (active, idle, outside_area, missing) with materialized `user_tracking_status` table

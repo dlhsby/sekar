@@ -1,7 +1,7 @@
 # Phase 2D: Web Requirements
 
 **Last Updated:** 2026-03-05
-**Status:** Planning
+**Status:** COMPLETE
 **Platform:** Next.js 16.x, React 19, TailwindCSS 4.x, Mapbox GL JS
 **Related ADR:** ADR-011 (new)
 **See also:** [Backend Requirements](./backend.md), [UI/UX Design](./ui-ux.md), [README](./README.md)
@@ -117,17 +117,20 @@
      - Zoom < 14: No label (too cluttered)
      - Zoom 14-15: Abbreviated `STG - Ahmad` format
      - Zoom >= 16: Full `Satgas - Ahmad Wijaya` format
-   - Role abbreviations: satgas → STG, linmas → LMS, korlap → KLP
+   - Role abbreviations: satgas → STG, linmas → LMS, korlap → KLP, kepala_rayon → KR, top_management → TM, admin_system → ADM
    - Click: select user → show in side panel detail view
 
 4. **Marker Clustering**
    - Cluster at zoom < 13 using Mapbox `supercluster`
    - Cluster circle shows count
-   - Cluster color: weighted by most severe status
-     - Any missing → red cluster
-     - Any outside_area → purple cluster
-     - Any inactive → amber cluster
-     - All active → green cluster
+   - Cluster color: determined by **cluster marker severity algorithm**
+     - Severity order (highest to lowest): MISSING > OUTSIDE_AREA > INACTIVE > ACTIVE
+     - Cluster displays member count and takes the color of the highest-severity member
+     - OFFLINE users are excluded from map clusters entirely
+     - Any missing → red cluster (#DC2626)
+     - Any outside_area → purple cluster (#9333EA)
+     - Any inactive → amber cluster (#D97706)
+     - All active → green cluster (#15803D)
    - Click cluster: zoom in to expand
 
 5. **Popups**
@@ -416,7 +419,7 @@ Always visible at top of LocationTimeline:
 ### Enhanced Existing Hooks
 
 ```typescript
-// Updated response types for four-status model
+// Updated response types for five-status model
 export function useLiveUsers(filters?: MonitoringFilters) {
   return useQuery({
     queryKey: ['monitoring', 'live-users', filters],
@@ -502,7 +505,10 @@ export function useReassignWorker() {
 ```typescript
 export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
 
-// UPDATED: LiveUser with four-status model
+// Day type used in staffing summary to adjust minimum staffing expectations
+export type DayType = 'weekday' | 'weekend' | 'holiday';
+
+// UPDATED: LiveUser with five-status model
 export interface LiveUser {
   id: string;
   full_name: string;
@@ -527,7 +533,7 @@ export interface LiveUser {
   current_task_title: string | null;
 }
 
-// UPDATED: LiveUsersResponse with four-status counts
+// UPDATED: LiveUsersResponse with five-status counts
 export interface LiveUsersResponse {
   total_active: number;
   total_inactive: number;
@@ -695,6 +701,20 @@ export interface MonitoringFilters {
 
 ---
 
+## G2. Web Constants File
+
+**File:** `fe/web/src/lib/constants/monitoring.ts`
+
+Centralizes all monitoring-related constants used across web components:
+
+| Constant Group | Contents |
+|---------------|----------|
+| Status colors | ACTIVE=#15803D, INACTIVE=#D97706, OUTSIDE_AREA=#9333EA, MISSING=#DC2626, OFFLINE=#6B7280 |
+| Role abbreviations | satgas→STG, linmas→LMS, korlap→KLP, kepala_rayon→KR, top_management→TM, admin_system→ADM |
+| Thresholds | Polling intervals, cluster zoom breakpoints, map default center/zoom |
+
+---
+
 ## H. Area Boundary Management
 
 ### H1. `/areas/[id]` Page Enhancement
@@ -819,25 +839,28 @@ fe/web/src/
   app/(dashboard)/monitoring/
     page.tsx                                 MODIFIED (major rewrite)
     config/
-      page.tsx                               NEW (admin config)
+      page.tsx                               NEW (admin config page)
 
-  components/monitoring/
-    MonitoringMap.tsx                         NEW
-    MonitoringSidePanel.tsx                   NEW
-    UserDetailPanel.tsx                       NEW
-    LocationTimeline.tsx                      NEW
-    StatusCard.tsx                            NEW
-    UserListItem.tsx                          NEW
-    ReassignWorkerModal.tsx                  NEW
+  components/monitoring/                     7 monitoring components:
+    MonitoringMap.tsx                         NEW (Mapbox GL markers, polygons, clustering)
+    MonitoringSidePanel.tsx                   NEW (filters, status cards, user list)
+    UserDetailPanel.tsx                       NEW (user day summary detail view)
+    LocationTimeline.tsx                      NEW (GPS trail timeline with map sync)
+    StatusCard.tsx                            NEW (status count card with filter toggle)
+    UserListItem.tsx                          NEW (user row in side panel list)
+    ReassignWorkerModal.tsx                  NEW (worker reassignment dialog)
 
   lib/api/
     monitoring.ts                            MODIFIED (new hooks)
+
+  lib/constants/
+    monitoring.ts                            NEW (status colors, role abbreviations, thresholds)
 
   lib/
     types.ts                                 MODIFIED (new interfaces)
 ```
 
-**Total new files:** 8
+**Total new files:** 10
 **Total modified files:** 3
 
 ---
@@ -857,32 +880,32 @@ fe/web/src/
 
 ### Phase 2D-5: Web Monitoring
 
-- [ ] Create `MonitoringMap` component with Mapbox GL
-- [ ] Implement marker rendering with clustering
-- [ ] Implement area polygon rendering
-- [ ] Create `MonitoringSidePanel` with filters and user list
-- [ ] Create status cards (2x2 grid)
-- [ ] Rewrite `/monitoring` page with split layout
-- [ ] Implement responsive breakpoints (xl/lg → side-by-side, md/sm → stacked)
-- [ ] Create `UserDetailPanel` with day summary
-- [ ] Create `LocationTimeline` with map sync
-- [ ] Add WebSocket integration for real-time updates
-- [ ] Create `/monitoring/config` page for admin settings
-- [ ] Enhance `/areas/[id]` with boundary management tab
-- [ ] Add new TanStack Query hooks
-- [ ] Update type definitions in `lib/types.ts`
-- [ ] Write Playwright E2E tests for monitoring page
-- [ ] Test responsive behavior on all breakpoints
+- [x] Create `MonitoringMap` component with Mapbox GL
+- [x] Implement marker rendering with clustering
+- [x] Implement area polygon rendering
+- [x] Create `MonitoringSidePanel` with filters and user list
+- [x] Create status cards (2x2 grid)
+- [x] Rewrite `/monitoring` page with split layout
+- [x] Implement responsive breakpoints (xl/lg → side-by-side, md/sm → stacked)
+- [x] Create `UserDetailPanel` with day summary
+- [x] Create `LocationTimeline` with map sync
+- [x] Add WebSocket integration for real-time updates
+- [x] Create `/monitoring/config` page for admin settings
+- [x] Enhance `/areas/[id]` with boundary management tab
+- [x] Add new TanStack Query hooks
+- [x] Update type definitions in `lib/types.ts`
+- [x] Write Playwright E2E tests for monitoring page
+- [x] Test responsive behavior on all breakpoints
 
-### Phase 2D-10: Gap Fixes (Web) — NOT STARTED
-- [ ] Add rayon + area Mapbox polygon layers with center markers
-- [ ] Implement map auto-focus on filter change
-- [ ] Update marker labels to "Role - Name" format with zoom-level behavior
-- [ ] Enhance LocationTimeline with clickable points, first/last markers, hide others, shift filter
-- [ ] Create ReassignWorkerModal component
-- [ ] Make StaffingSummaryCard always visible in side panel
-- [ ] Add day-type badge to staffing display
-- [ ] Add new TanStack Query hooks: useBoundaries, useReassignWorker
+### Phase 2D-10: Gap Fixes (Web) — COMPLETE
+- [x] Add rayon + area Mapbox polygon layers with center markers
+- [x] Implement map auto-focus on filter change
+- [x] Update marker labels to "Role - Name" format with zoom-level behavior
+- [x] Enhance LocationTimeline with clickable points, first/last markers, hide others, shift filter
+- [x] Create ReassignWorkerModal component
+- [x] Make StaffingSummaryCard always visible in side panel
+- [x] Add day-type badge to staffing display
+- [x] Add new TanStack Query hooks: useBoundaries, useReassignWorker
 
 ---
 

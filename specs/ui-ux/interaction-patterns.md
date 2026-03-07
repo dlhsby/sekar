@@ -591,3 +591,55 @@ UserDetailPanel → [click "Back"] → UserList (slide right 200ms)
 ```
 
 **Transition:** `transform: translateX()` with `ease-out` 200ms
+
+---
+
+## Monitoring Interaction Patterns
+
+### Map Gesture Patterns
+
+| Gesture | Action | Platform |
+|---------|--------|----------|
+| Single tap on marker | Open user popup/detail | Both |
+| Single tap on empty map | Close popup, deselect user | Both |
+| Pinch zoom | Map zoom in/out | Mobile |
+| Double tap | Zoom in one level | Both |
+| Two-finger tap | Zoom out one level | Mobile |
+| Long press on marker | Open quick action menu (call/WhatsApp) | Mobile |
+| Scroll wheel | Map zoom | Web |
+| Click + drag | Map pan | Web |
+| Hover on marker | Show name tooltip (200ms delay) | Web |
+| Right-click on marker | Context menu (view detail, reassign, contact) | Web |
+
+### WebSocket-Driven Animations
+
+| Event | Animation | Duration | Notes |
+|-------|-----------|----------|-------|
+| Position update | Marker slides to new position | 500ms ease | Smooth interpolation between coordinates |
+| Status change | Color cross-fade + brief scale pulse | 300ms + 200ms | Old color → new color with 1.2x scale bump |
+| Boundary exit | Area polygon flashes orange border | 800ms | 3 quick flashes, then settles |
+| Boundary enter | Area polygon briefly glows green | 500ms | Single fade-in/fade-out |
+| New user online | Marker appears with scale-up | 200ms ease-out | From 0 to 1 scale |
+| User goes offline | Marker fades out + shrinks | 300ms ease-in | From 1 to 0 opacity + scale |
+
+### Status Transition Animations
+
+| Element | Animation | Duration | Trigger |
+|---------|-----------|----------|---------|
+| Status chip count | Number rolls up/down | 250ms | Status count changes |
+| Staffing progress bar | Width fills/shrinks | 400ms ease | Active count changes |
+| Missing pulse ring | Expanding ring from marker | 2000ms loop | Status = MISSING |
+| Side panel badge | Brief bounce | 200ms | New user appears in filtered list |
+
+### Bottom Sheet Gestures (Mobile)
+
+| Gesture | Action | Threshold |
+|---------|--------|-----------|
+| Swipe up | Expand to full height | Velocity > 0.5 or distance > 30% |
+| Swipe down | Collapse to peek height | Velocity > 0.5 or distance > 30% |
+| Swipe down from peek | Dismiss sheet | Distance > 50% |
+| Tap on handle | Toggle between peek/expanded | — |
+| Scroll content at top + swipe down | Collapse sheet | Content scrollTop === 0 |
+
+**Snap points:** peek (30% height), half (50%), full (90%)
+**Background dim:** 0.3 opacity black overlay, tap to dismiss

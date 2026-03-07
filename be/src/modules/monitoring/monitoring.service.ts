@@ -5,6 +5,7 @@ import { User } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-staff-requirement.entity';
+import { DayType } from '../area-staff-requirements/entities/area-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
@@ -16,9 +17,11 @@ import {
   StaffingSummaryResponseDto,
   StaffingSummaryItemDto,
   RoleStaffingDto,
+  DayTypeRequirementsDto,
 } from './dto/staffing-summary.dto';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringUserService } from './services/monitoring-user.service';
+import { DayTypeService } from './services/day-type.service';
 
 @Injectable()
 export class MonitoringService {
@@ -35,6 +38,7 @@ export class MonitoringService {
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     private readonly statsService: MonitoringStatsService,
     private readonly userService: MonitoringUserService,
+    private readonly dayTypeService: DayTypeService,
   ) {}
 
   // ---- Delegated to MonitoringStatsService ----
@@ -76,14 +80,20 @@ export class MonitoringService {
   ): Promise<StaffingSummaryResponseDto> {
     const areas = await this.resolveAreas(filters);
     const currentShift = await this.statsService.getCurrentShiftDefinition();
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
     const items: StaffingSummaryItemDto[] = [];
 
     for (const area of areas) {
-      const item = await this.buildStaffingItem(area, currentShift);
+      const item = await this.buildStaffingItem(area, currentShift, currentDayType);
       items.push(item);
     }
 
-    return { items, generated_at: new Date() };
+    return {
+      items,
+      current_day_type: currentDayType,
+      current_day_type_label: this.dayTypeService.getDayTypeLabel(currentDayType),
+      generated_at: new Date(),
+    };
   }
 
   // ---- Private helpers ----
@@ -107,9 +117,17 @@ export class MonitoringService {
   private async buildStaffingItem(
     area: Area,
     currentShift: ShiftDefinition | null,
+    currentDayType: DayType,
   ): Promise<StaffingSummaryItemDto> {
     const roleCounts = await this.getTrackingRoleCounts(area.id);
+
     const requirements = currentShift
+      ? await this.staffRequirementRepository.find({
+          where: { area_id: area.id, shift_definition_id: currentShift.id, day_type: currentDayType },
+        })
+      : [];
+
+    const allRequirements = currentShift
       ? await this.staffRequirementRepository.find({
           where: { area_id: area.id, shift_definition_id: currentShift.id },
         })
@@ -118,10 +136,13 @@ export class MonitoringService {
     const reqMap = new Map(requirements.map((r) => [r.role, r.required_count]));
     const assignedCounts = await this.getAssignedRoleCounts(area.id);
 
+    const requirementsByDayType = this.buildRequirementsByDayType(allRequirements);
+
     const roles: RoleStaffingDto[] = this.buildRoleStaffing(
       roleCounts,
       assignedCounts,
       reqMap,
+      requirementsByDayType,
     );
 
     const totals = this.sumRoleTotals(roles);
@@ -136,6 +157,32 @@ export class MonitoringService {
         (r.active + r.idle + r.outside_area) >= r.total_required,
       ),
     };
+  }
+
+  private buildRequirementsByDayType(
+    allRequirements: AreaStaffRequirement[],
+  ): Map<string, DayTypeRequirementsDto> {
+    const map = new Map<string, DayTypeRequirementsDto>();
+
+    for (const req of allRequirements) {
+      const existing = map.get(req.role) ?? { weekday: 0, weekend: 0, holiday: 0 };
+
+      switch (req.day_type) {
+        case DayType.WEEKDAY:
+          existing.weekday = req.required_count;
+          break;
+        case DayType.WEEKEND:
+          existing.weekend = req.required_count;
+          break;
+        case DayType.HOLIDAY:
+          existing.holiday = req.required_count;
+          break;
+      }
+
+      map.set(req.role, existing);
+    }
+
+    return map;
   }
 
   private async getTrackingRoleCounts(
@@ -180,6 +227,7 @@ export class MonitoringService {
     roleCounts: Map<string, Record<string, number>>,
     assignedCounts: Map<string, number>,
     reqMap: Map<string, number>,
+    requirementsByDayType: Map<string, DayTypeRequirementsDto>,
   ): RoleStaffingDto[] {
     const allRoles = new Set([
       ...roleCounts.keys(),
@@ -198,6 +246,7 @@ export class MonitoringService {
         offline: statuses[TrackingStatus.OFFLINE] || 0,
         total_assigned: assignedCounts.get(role) || 0,
         total_required: reqMap.get(role) || 0,
+        requirements_by_day_type: requirementsByDayType.get(role) ?? { weekday: 0, weekend: 0, holiday: 0 },
       };
     });
   }
