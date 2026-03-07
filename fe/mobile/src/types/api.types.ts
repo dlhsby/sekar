@@ -24,6 +24,7 @@ import type {
   UserRole,
   Overtime,
   OvertimeStatus,
+  TrackingStatus,
 } from './models.types';
 
 // Auth API
@@ -427,11 +428,24 @@ export interface LiveUsersFilter {
   area_id?: string;
   rayon_id?: string;
   shift_definition_id?: string;
+  status?: TrackingStatus[];
+  role?: string;
+  search?: string;
 }
 
-export interface LiveUsersResponse {
-  total_online: number;
-  total_offline: number;
-  users: LiveUser[];
-  generated_at: string;
+// Phase 2D: MonitoringFilters (used in filter modal and slice)
+export interface MonitoringFilters {
+  rayon_id?: string;
+  area_id?: string;
+  role?: string;
+  status?: TrackingStatus[];
+  search?: string;
+}
+
+// Phase 2D: Re-export from models.types to avoid duplication
+export type { LiveUsersResponse } from './models.types';
+
+// Phase 2D: Staffing summary response wrapper
+export interface StaffingSummaryResponse {
+  items: import('./models.types').StaffingSummaryItem[];
 }

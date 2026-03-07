@@ -16,14 +16,14 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "seed": "./seed-all.sh",
-    "seed:phase1": "ts-node -r tsconfig-paths/register src/database/seeds/seed.ts",
-    "seed:phase2": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase2.ts",
-    "seed:tasks": "ts-node -r tsconfig-paths/register src/database/seeds/seed-tasks.ts",
-    "seed:activities": "ts-node -r tsconfig-paths/register src/database/seeds/seed-activities.ts",
-    "seed:prod": "node dist/database/seeds/seed.js",
-    "seed:phase2:prod": "node dist/database/seeds/seed-phase2.js",
-    "seed:tasks:prod": "node dist/database/seeds/seed-tasks.js",
+    "db:seed": "npm run db:seed:phase1 && npm run db:seed:phase2",
+    "db:seed:phase1": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase1.ts",
+    "db:seed:phase2": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase2.ts",
+    "db:seed:reference": "ts-node -r tsconfig-paths/register src/database/seeds/seed-reference.ts",
+    "db:reset": "npm run db:seed",
+    "db:seed:prod": "node dist/database/seeds/seed-reference.js",
+    "db:seed:phase1:prod": "node dist/database/seeds/seed-phase1.js",
+    "db:seed:phase2:prod": "node dist/database/seeds/seed-phase2.js",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
     "migration:run:prod": "node ./node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js",
     "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts",
@@ -45,10 +45,12 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/platform-socket.io": "^11.1.12",
+    "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^11.2.5",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
@@ -69,7 +71,8 @@
     "socket.io": "^4.8.3",
     "typeorm": "^0.3.17",
     "uuid": "^13.0.0",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
@@ -101,12 +104,14 @@
   },
   "overrides": {
     "lodash": "^4.17.21",
-    "tar": "^7.5.4",
+    "tar": "^7.5.10",
     "fast-xml-parser": "^5.3.8",
     "serialize-javascript": "^7.0.3",
-    "multer": "^2.1.0",
+    "multer": "^2.1.1",
+    "http-proxy-agent": "^7.0.0",
+    "ajv": "^8.18.0",
     "@mapbox/node-pre-gyp": {
-      "tar": "^7.5.4"
+      "tar": "^7.5.10"
     }
   },
   "jest": {
@@ -128,9 +133,6 @@
       "!**/*.spec.ts",
       "!**/*.module.ts",
       "!**/main.ts",
-      "!**/seed.ts",
-      "!**/seed.service.ts",
-      "!**/seed.module.ts",
       "!**/seed-*.ts",
       "!**/config/firebase.config.ts",
       "!**/*.interface.ts",

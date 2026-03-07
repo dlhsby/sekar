@@ -295,6 +295,121 @@ export default {
 
 ---
 
+## Real-Time Monitoring Testing Patterns (Phase 2D)
+
+### WebSocket Mocking
+
+- Use `MockWebSocket` class that simulates server events
+- Test event handling: USER_STATUS_CHANGED, USER_LEFT_AREA, USER_ENTERED_AREA
+- Verify optimistic cache updates via `queryClient.setQueryData`
+- Test reconnection behavior and stale data handling
+
+```typescript
+class MockWebSocket {
+  private handlers: Map<string, Function[]> = new Map();
+
+  on(event: string, handler: Function) {
+    const list = this.handlers.get(event) || [];
+    list.push(handler);
+    this.handlers.set(event, list);
+  }
+
+  emit(event: string, data: any) {
+    (this.handlers.get(event) || []).forEach(h => h(data));
+  }
+
+  simulateStatusChange(userId: string, status: string) {
+    this.emit('USER_STATUS_CHANGED', { userId, status, timestamp: new Date() });
+  }
+
+  simulateBoundaryEvent(userId: string, event: 'USER_LEFT_AREA' | 'USER_ENTERED_AREA') {
+    this.emit(event, { userId, timestamp: new Date() });
+  }
+}
+```
+
+### Map Interaction Testing
+
+- Mock Mapbox GL with `jest-mapbox-gl` or custom mock
+- Test marker rendering without actual map tiles
+- Verify click handlers, popup content, fly-to calls
+- Test cluster/uncluster at different zoom levels
+
+```typescript
+// Custom Mapbox GL mock
+jest.mock('mapbox-gl', () => ({
+  Map: jest.fn(() => ({
+    on: jest.fn(),
+    addSource: jest.fn(),
+    addLayer: jest.fn(),
+    flyTo: jest.fn(),
+    remove: jest.fn(),
+    getSource: jest.fn(() => ({ setData: jest.fn() })),
+  })),
+  Marker: jest.fn(() => ({
+    setLngLat: jest.fn().mockReturnThis(),
+    addTo: jest.fn().mockReturnThis(),
+    remove: jest.fn(),
+    getElement: jest.fn(() => document.createElement('div')),
+  })),
+  Popup: jest.fn(() => ({
+    setHTML: jest.fn().mockReturnThis(),
+    addTo: jest.fn().mockReturnThis(),
+  })),
+}));
+```
+
+### Status Calculation Testing
+
+- Test all 5 status transitions with boundary conditions
+- Test threshold edge cases (exactly at threshold, 1ms before/after)
+- Test batch processing with mixed statuses
+- Test concurrent status updates (race conditions)
+
+```typescript
+describe('StatusCalculatorService', () => {
+  it.each([
+    ['ACTIVE', 299],      // 1s before inactive threshold (300s)
+    ['INACTIVE', 300],     // exactly at inactive threshold
+    ['INACTIVE', 899],     // 1s before missing threshold (900s)
+    ['MISSING', 900],      // exactly at missing threshold
+    ['MISSING', 3600],     // well past missing threshold
+  ])('should return %s when last ping was %d seconds ago', (expected, seconds) => {
+    const lastPing = new Date(Date.now() - seconds * 1000);
+    expect(calculator.calculateStatus(lastPing)).toBe(expected);
+  });
+});
+```
+
+### Performance Testing
+
+- Benchmark rendering with 200+ markers
+- Measure WebSocket event processing latency
+- Test virtual scroll with 500+ user list
+- Verify no memory leaks from marker/subscription cleanup
+
+```typescript
+describe('Monitoring Performance', () => {
+  it('should render 200 markers within 100ms', () => {
+    const markers = Array.from({ length: 200 }, (_, i) =>
+      createTestTrackingStatus({ user_id: `user-${i}` })
+    );
+    const start = performance.now();
+    renderMarkers(markers);
+    expect(performance.now() - start).toBeLessThan(100);
+  });
+
+  it('should not leak subscriptions on unmount', () => {
+    const { unmount } = render(<MonitoringMap />);
+    const subCount = mockWebSocket.listenerCount('USER_STATUS_CHANGED');
+    unmount();
+    expect(mockWebSocket.listenerCount('USER_STATUS_CHANGED')).toBe(subCount - 1);
+  });
+});
+```
+
+---
+
 ## Test Execution
 
 ### Backend Commands
@@ -547,12 +662,10 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 ---
 
-*Last Updated: January 26, 2026*
+*Last Updated: March 6, 2026*
 *Current Test Status:*
-- **Backend**: 401 tests passing, 84.23% coverage
-- **Mobile**: 2,000+ tests passing, 80.31% overall coverage (lines: 3224/4014)
-  - Statements: 80.04% (3306/4130)
-  - Branches: 75.17% (1732/2304)
-  - Functions: 80.96% (740/914)
+- **Backend**: 1,095 tests passing, 92.15% stmt coverage, 80.64% branch coverage
+- **Mobile**: 3,493 tests passing, 80.31%+ overall coverage
+- **Web**: 21 pages, full Mapbox GL + monitoring components
 
 *Project: SEKAR - Worker Tracking System*

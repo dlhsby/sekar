@@ -1,7 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { MonitoringController } from './monitoring.controller';
 import { MonitoringService } from './monitoring.service';
+import { MonitoringStatsService } from './services/monitoring-stats.service';
+import { MonitoringUserService } from './services/monitoring-user.service';
 import { User } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -11,18 +14,22 @@ import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-staff-requirement.entity';
+import { SpecialDayOverride } from '../special-day-overrides/entities/special-day-override.entity';
+import { MonitoringConfig } from './entities/monitoring-config.entity';
+import { UserTrackingStatus } from './entities/user-tracking-status.entity';
+import { MonitoringCacheService } from './services/monitoring-cache.service';
+import { MonitoringConfigService } from './services/monitoring-config.service';
+import { StatusCalculatorService } from './services/status-calculator.service';
+import { MonitoringSchedulerService } from './services/monitoring-scheduler.service';
+import { DayTypeService } from './services/day-type.service';
+import { RayonBoundaryService } from './services/rayon-boundary.service';
+import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { Schedule } from '../schedules/entities/schedule.entity';
+import { EventsModule } from '../../gateways/events.module';
 
-/**
- * Module for real-time monitoring
- *
- * Provides:
- * - City-wide statistics (Admin/TopManagement)
- * - Rayon-level statistics (KepalaRayon+)
- * - Area-level statistics (Korlap+)
- * - Live user positions
- */
 @Module({
   imports: [
+    ScheduleModule,
     TypeOrmModule.forFeature([
       User,
       Area,
@@ -33,10 +40,35 @@ import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-s
       Rayon,
       ShiftDefinition,
       AreaStaffRequirement,
+      SpecialDayOverride,
+      MonitoringConfig,
+      UserTrackingStatus,
+      Schedule,
     ]),
+    forwardRef(() => EventsModule),
   ],
   controllers: [MonitoringController],
-  providers: [MonitoringService],
-  exports: [MonitoringService],
+  providers: [
+    MonitoringService,
+    MonitoringStatsService,
+    MonitoringUserService,
+    MonitoringCacheService,
+    MonitoringConfigService,
+    StatusCalculatorService,
+    MonitoringSchedulerService,
+    DayTypeService,
+    RayonBoundaryService,
+    MonitoringReassignService,
+  ],
+  exports: [
+    MonitoringService,
+    MonitoringStatsService,
+    MonitoringUserService,
+    MonitoringCacheService,
+    MonitoringConfigService,
+    StatusCalculatorService,
+    DayTypeService,
+    RayonBoundaryService,
+  ],
 })
 export class MonitoringModule {}

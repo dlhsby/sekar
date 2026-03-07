@@ -1228,3 +1228,37 @@ Root
 **Last Updated:** 2026-02-20
 **Status:** Active - Phase 2C Implemented
 **Related Docs:** [`screens.md`](./screens.md), [`state-management.md`](./state-management.md)
+
+### Phase 2D: Monitoring Navigation Enhancements
+
+#### Bottom Sheet Navigation Pattern (New)
+
+Phase 2D introduces a bottom sheet navigation pattern within the Monitoring tab, replacing traditional screen navigation for user details:
+
+```
+MonitoringMap (MapDashboardScreen)
+  ├── [marker tap] → UserDetailSheet (bottom sheet, 50-85%)
+  │     ├── [trail button] → LocationTrail (overlay on map)
+  │     ├── [WhatsApp button] → External: WhatsApp deeplink
+  │     └── [Call button] → External: Phone dialer
+  └── [filter FAB] → MonitoringFilterModal (full-screen modal)
+```
+
+**Key Points:**
+- No new screens added to the navigation stack
+- UserDetailSheet uses `@gorhom/bottom-sheet` (not React Navigation modal)
+- LocationTrail renders as a MapView overlay, controlled by MapDashboardScreen state
+- MonitoringFilterModal is a React Native Modal, not a navigation screen
+- Map remains interactive while bottom sheet is open (gestures pass through transparent areas)
+
+#### Role-Based Map Scope
+
+| Role | Default Map View | Filter Constraints |
+|------|-----------------|-------------------|
+| korlap | Own area, zoom 15 | Area fixed to own, no rayon filter |
+| kepala_rayon | Own rayon areas, zoom 13 | Rayon fixed to own, area selectable within rayon |
+| top_management | All 7 rayons, zoom 12 | No constraints |
+| admin_system | All 7 rayons, zoom 12 | No constraints |
+| superadmin | All 7 rayons, zoom 12 | No constraints |
+
+**Last Updated:** 2026-03-03 | **Status:** Active - Phase 2D

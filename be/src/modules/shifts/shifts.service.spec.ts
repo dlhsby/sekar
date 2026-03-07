@@ -12,6 +12,8 @@ import { ClockOutDto } from './dto/clock-out.dto';
 import { UserRole } from '../users/entities/user.entity';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
+import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
+import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 
 describe('ShiftsService', () => {
   let module: TestingModule;
@@ -20,6 +22,8 @@ describe('ShiftsService', () => {
   let scheduleRepo: jest.Mocked<Repository<Schedule>>;
   let areasService: jest.Mocked<AreasService>;
   let s3Service: jest.Mocked<S3Service>;
+  let statusCalculator: jest.Mocked<StatusCalculatorService>;
+  let shiftDefinitionRepo: jest.Mocked<Repository<ShiftDefinition>>;
 
   const mockUser = {
     id: 'user-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
@@ -44,6 +48,7 @@ describe('ShiftsService', () => {
     user: mockUser as any,
     area_id: mockArea.id,
     area: mockArea as any,
+    shift_definition_id: null,
     clock_in_time: new Date('2026-01-09T08:00:00Z'),
     clock_in_gps_lat: -7.2905,
     clock_in_gps_lng: 112.7398,
@@ -78,6 +83,15 @@ describe('ShiftsService', () => {
     findOne: jest.fn(),
   };
 
+  const mockShiftDefinitionRepo = {
+    find: jest.fn(),
+  };
+
+  const mockStatusCalculator = {
+    onClockIn: jest.fn().mockResolvedValue(undefined),
+    onClockOut: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -91,12 +105,20 @@ describe('ShiftsService', () => {
           useValue: mockScheduleRepo,
         },
         {
+          provide: getRepositoryToken(ShiftDefinition),
+          useValue: mockShiftDefinitionRepo,
+        },
+        {
           provide: AreasService,
           useValue: mockAreasService,
         },
         {
           provide: S3Service,
           useValue: mockS3Service,
+        },
+        {
+          provide: StatusCalculatorService,
+          useValue: mockStatusCalculator,
         },
       ],
     }).compile();
@@ -106,6 +128,8 @@ describe('ShiftsService', () => {
     scheduleRepo = module.get(getRepositoryToken(Schedule)) as jest.Mocked<Repository<Schedule>>;
     areasService = module.get(AreasService) as jest.Mocked<AreasService>;
     s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
+    statusCalculator = module.get(StatusCalculatorService) as jest.Mocked<StatusCalculatorService>;
+    shiftDefinitionRepo = module.get(getRepositoryToken(ShiftDefinition)) as jest.Mocked<Repository<ShiftDefinition>>;
   });
 
   afterEach(async () => {
@@ -140,6 +164,72 @@ describe('ShiftsService', () => {
     });
   });
 
+  describe('findCurrentShiftDefinition', () => {
+    const mockShiftDefs = [
+      {
+        id: 'sd-1',
+        name: 'Shift 1',
+        code: 'SHIFT1',
+        start_time: '06:00:00',
+        end_time: '15:00:00',
+        crosses_midnight: false,
+        is_active: true,
+      },
+      {
+        id: 'sd-2',
+        name: 'Shift 2',
+        code: 'SHIFT2',
+        start_time: '15:00:00',
+        end_time: '23:00:00',
+        crosses_midnight: false,
+        is_active: true,
+      },
+      {
+        id: 'sd-3',
+        name: 'Shift 3',
+        code: 'SHIFT3',
+        start_time: '21:00:00',
+        end_time: '05:00:00',
+        crosses_midnight: true,
+        is_active: true,
+      },
+    ];
+
+    it('should return matching shift definition for current time', async () => {
+      mockShiftDefinitionRepo.find.mockResolvedValue(mockShiftDefs as any);
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-01-09T10:00:00'));
+
+      const result = await service.findCurrentShiftDefinition();
+
+      expect(result).toEqual(mockShiftDefs[0]); // Shift 1: 06:00-15:00
+      jest.useRealTimers();
+    });
+
+    it('should return null when no shift definition matches', async () => {
+      const nonMidnightDefs = mockShiftDefs.filter((d) => !d.crosses_midnight);
+      mockShiftDefinitionRepo.find.mockResolvedValue(nonMidnightDefs as any);
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-01-09T23:30:00'));
+
+      const result = await service.findCurrentShiftDefinition();
+
+      expect(result).toBeNull();
+      jest.useRealTimers();
+    });
+
+    it('should match crosses_midnight shift definition', async () => {
+      mockShiftDefinitionRepo.find.mockResolvedValue(mockShiftDefs as any);
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-01-09T03:00:00'));
+
+      const result = await service.findCurrentShiftDefinition();
+
+      expect(result).toEqual(mockShiftDefs[2]); // Shift 3: 21:00-05:00
+      jest.useRealTimers();
+    });
+  });
+
   describe('clockIn', () => {
     const clockInDto: ClockInDto = {
       area_id: mockArea.id,
@@ -151,6 +241,7 @@ describe('ShiftsService', () => {
     it('should successfully clock in a user with area_id provided', async () => {
       mockRepository.findOne.mockResolvedValue(null); // No active shift
       mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
       mockRepository.create.mockReturnValue(mockShift);
@@ -184,6 +275,7 @@ describe('ShiftsService', () => {
 
       mockRepository.findOne.mockResolvedValue(null);
       mockScheduleRepo.findOne.mockResolvedValue(mockSchedule as any);
+      mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
       mockRepository.create.mockReturnValue(mockShift);
@@ -211,6 +303,7 @@ describe('ShiftsService', () => {
 
       mockRepository.findOne.mockResolvedValue(null);
       mockScheduleRepo.findOne.mockResolvedValue(null);
+      mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
       mockRepository.create.mockReturnValue(shiftWithoutArea);
@@ -240,6 +333,7 @@ describe('ShiftsService', () => {
     it('should throw ApiException with SHIFT_PHOTO_UPLOAD_FAILED if selfie upload fails', async () => {
       mockRepository.findOne.mockResolvedValue(null);
       mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockRejectedValue(new Error('S3 upload failed'));
 
@@ -251,6 +345,27 @@ describe('ShiftsService', () => {
         expect(error.getCode()).toBe(ApiErrorCode.SHIFT_PHOTO_UPLOAD_FAILED);
         expect(error.message).toContain('Failed to upload selfie photo');
       }
+    });
+
+    it('should call statusCalculator.onClockIn after successful clock-in', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockShiftDefinitionRepo.find.mockResolvedValue([]);
+      mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
+      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
+      mockRepository.create.mockReturnValue(mockShift);
+      mockRepository.save.mockResolvedValue(mockShift);
+
+      await service.clockIn(mockUser.id, clockInDto);
+
+      expect(mockStatusCalculator.onClockIn).toHaveBeenCalledWith(
+        mockUser.id,
+        mockShift.id,
+        mockShift.area_id,
+        null,
+        clockInDto.gps_lat,
+        clockInDto.gps_lng,
+      );
     });
   });
 
@@ -289,6 +404,21 @@ describe('ShiftsService', () => {
         expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_ACTIVE);
         expect(error.message).toContain('No active shift found');
       }
+    });
+
+    it('should call statusCalculator.onClockOut after successful clock-out', async () => {
+      const activeShift = { ...mockShift };
+      mockRepository.findOne.mockResolvedValue(activeShift);
+      mockRepository.save.mockResolvedValue({
+        ...activeShift,
+        clock_out_time: new Date(),
+        clock_out_gps_lat: clockOutDto.gps_lat,
+        clock_out_gps_lng: clockOutDto.gps_lng,
+      });
+
+      await service.clockOut(mockUser.id, clockOutDto);
+
+      expect(mockStatusCalculator.onClockOut).toHaveBeenCalledWith(mockUser.id);
     });
   });
 

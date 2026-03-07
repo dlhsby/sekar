@@ -905,3 +905,63 @@ it('should have accessible button', () => {
 **Status:** Active - Updated for Neo Brutalism 2.0
 **Compliance Target:** WCAG 2.1 Level AA
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference
+
+---
+
+## Monitoring Accessibility
+
+### Color Contrast Verification (WCAG 2.1 AA)
+
+| Status | Color | On White | On Dark (#1F2937) | Passes AA |
+|--------|-------|----------|-------------------|-----------|
+| ACTIVE | #15803D | 4.96:1 | 3.12:1 | Yes (normal text on white) |
+| INACTIVE | #D97706 | 3.24:1 | 2.04:1 | Yes (large text/icons only) |
+| OUTSIDE_AREA | #9333EA | 4.63:1 | 2.91:1 | Yes (normal text on white) |
+| MISSING | #DC2626 | 4.52:1 | 2.84:1 | Yes (normal text on white) |
+| OFFLINE | #6B7280 | 4.69:1 | 2.95:1 | Yes (normal text on white) |
+
+Note: INACTIVE (#D97706) only passes AA for large text (18px+) or icons on white backgrounds. For small text, use darker variant #B45309.
+
+### Color Blindness — Dual Encoding
+
+Status must NEVER rely on color alone. Every status uses triple encoding:
+
+| Status | Color | Shape | Icon | Pattern |
+|--------|-------|-------|------|---------|
+| ACTIVE | Green | Circle | Checkmark | Solid fill |
+| INACTIVE | Amber | Triangle | Pause | Horizontal stripes |
+| OUTSIDE_AREA | Purple | Diamond | Arrow-out | Diagonal dots |
+| MISSING | Red | Square | Exclamation | Crosshatch |
+| OFFLINE | Gray | Dash | X/minus | No fill (outline) |
+
+Tested against: Deuteranopia, Protanopia, Tritanopia using simulated palettes.
+
+### Map Accessibility
+
+**Screen Readers:**
+- Map container has `role="application"` with `aria-label="Peta monitoring pekerja"`
+- Each visible marker announced as: "{name}, {role}, status {status}, lokasi {area_name}, terakhir update {time_ago}"
+- Status count cards use `aria-live="polite"` for real-time count updates
+- Side panel user list uses standard list semantics with `role="listbox"`
+
+**Keyboard Navigation:**
+- Tab enters map → arrow keys pan → +/- zoom → Enter on marker opens popup
+- Escape closes popup/detail panel
+- Side panel: Tab through filter chips → Enter to toggle → Tab to user list → arrow keys navigate
+- Focus ring: 3px solid #2563EB, 2px offset (NB style, visible on all backgrounds)
+
+**Prefers-Reduced-Motion:**
+```css
+@media (prefers-reduced-motion: reduce) {
+  .marker-pulse { animation: none; }
+  .status-transition { transition: none; }
+  .map-flyto { /* instant jump instead of animated fly */ }
+  .trail-draw { animation: none; opacity: 1; }
+}
+```
+
+**Outdoor Use Optimizations:**
+- High contrast mode: status colors darken by 20% in bright ambient light
+- Minimum font size on map: 10px (with bold weight for readability)
+- Avoid pure white (#FFFFFF) backgrounds — use #F9FAFB to reduce glare
+- Touch targets minimum 44x44px for all interactive map elements

@@ -2508,4 +2508,76 @@ The dashboard provides supervisors and administrators with powerful tools to mon
 **Document Version:** 1.0
 **Last Updated:** January 16, 2026
 **Phase:** 6 - Web Dashboard
+
+---
+
+## Phase 2D: Monitoring Page Enhancements
+
+### Updated: `/monitoring` Page
+
+**Route:** `/monitoring`
+**Access:** korlap, kepala_rayon, top_management, admin_system, superadmin
+**Layout:** Split view — 65% map (left) + 35% side panel (right) at xl breakpoint; stacked at md/sm
+
+#### Map Panel (65%)
+- **Engine:** Mapbox GL JS (`mapbox-gl` + `react-map-gl`)
+- **Center:** Surabaya (-7.2575, 112.7521), zoom 12, `streets-v12` style
+- **Features:**
+  - Area polygons with fill opacity 0.1, border 2px; understaffed areas: dashed red border
+  - Custom user markers: role-shaped (circle=satgas, shield=linmas, star=korlap), status-colored (active=#15803D, idle=#D97706, outside_area=#9333EA, missing=#DC2626)
+  - Supercluster clustering at zoom < 13, severity-weighted cluster color
+  - Hover tooltip: name, role, status, last update
+  - Click marker: select user, scroll side panel to user, open UserDetailPanel
+
+#### Side Panel (35%)
+- **Min width:** 320px, **Max width:** 480px
+- **Sections:**
+  1. Filter bar (inline: rayon, area, role, status dropdowns)
+  2. Status cards (2×2 grid: Active, Idle, Outside Area, Missing — clickable to filter)
+  3. User list (virtual scroll, sorted: missing > outside > idle > active)
+  4. User detail panel (push navigation, slide 200ms transition)
+  5. Location timeline (vertical scroll, click syncs map)
+
+#### Real-Time Updates
+- WebSocket subscription to monitoring events
+- TanStack Query cache invalidation on `user:location`, `user:status-changed` events
+- Toast notification on `user:status-changed` to 'missing'
+
+### New: `/monitoring/config` Page
+
+**Route:** `/monitoring/config`
+**Access:** admin_system, superadmin only
+**Description:** Admin threshold management page
+
+#### Configuration Form
+- **Status Thresholds:**
+  - `active_max_age_seconds`: number input (60-600, default 300)
+  - `inactive_threshold_seconds`: number input (300-3600, default 900)
+  - `missing_threshold_seconds`: number input (1800-7200, default 3600)
+  - `location_ping_interval_seconds`: number input (30-300, default 60)
+- **Geofencing:**
+  - `tolerance_meters`: number input (0-500, default 50)
+  - `outside_area_grace_seconds`: number input (0-600, default 120)
+- **Alerts:**
+  - `low_battery_threshold`: number input (5-50, default 15)
+  - `understaffed_notify`: toggle (default true)
+  - `missing_notify`: toggle (default true)
+- **Map Defaults:**
+  - Center coordinates, default zoom, cluster threshold
+
+#### API Integration
+- Load: `GET /monitoring/config`
+- Save: `PATCH /monitoring/config/:key` per section
+- Optimistic update with rollback on error
+
+### Updated: `/areas/[id]` Page
+
+Add a **Boundary Management** tab (admin_system, superadmin only):
+- View current area polygon on map
+- Edit polygon vertices interactively via Mapbox Draw
+- Upload replacement boundary
+- API: `GET /areas/:id/boundary`, `PUT /areas/:id/boundary`
+
+### Page Count Update
+- Total pages: 21 (was 20, +1: `/monitoring/config`)
 **Status:** Ready for Implementation

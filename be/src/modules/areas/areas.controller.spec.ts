@@ -40,12 +40,27 @@ describe('AreasController', () => {
     updated_at: new Date(),
   };
 
+  const mockBoundaryResponse = {
+    area_id: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+    name: 'Taman Bungkul',
+    boundary_polygon: {
+      type: 'Polygon' as const,
+      coordinates: [[[112.7388, -7.2905], [112.7395, -7.2905], [112.7395, -7.291], [112.7388, -7.291], [112.7388, -7.2905]]],
+    },
+    gps_lat: -7.2905,
+    gps_lng: 112.7398,
+    radius_meters: 100,
+    coverage_area: 4250.5,
+  };
+
   const mockAreasService = {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    getBoundary: jest.fn(),
+    updateBoundary: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -183,6 +198,52 @@ describe('AreasController', () => {
       );
 
       await expect(controller.remove(invalidUUID)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getBoundary', () => {
+    it('should return boundary response', async () => {
+      mockAreasService.getBoundary.mockResolvedValue(mockBoundaryResponse);
+
+      const result = await controller.getBoundary(mockArea.id);
+
+      expect(result).toEqual(mockBoundaryResponse);
+      expect(service.getBoundary).toHaveBeenCalledWith(mockArea.id);
+    });
+
+    it('should throw NotFoundException when area not found', async () => {
+      mockAreasService.getBoundary.mockRejectedValue(new NotFoundException('Area not found'));
+
+      await expect(controller.getBoundary('non-existent-id')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateBoundary', () => {
+    const validDto = {
+      boundary_polygon: {
+        type: 'Polygon' as const,
+        coordinates: [[[112.7388, -7.2905], [112.7395, -7.2905], [112.7395, -7.291], [112.7388, -7.291], [112.7388, -7.2905]]],
+      },
+    };
+
+    it('should update and return boundary', async () => {
+      mockAreasService.updateBoundary.mockResolvedValue(mockBoundaryResponse);
+
+      const result = await controller.updateBoundary(mockArea.id, validDto);
+
+      expect(result).toEqual(mockBoundaryResponse);
+      expect(service.updateBoundary).toHaveBeenCalledWith(mockArea.id, validDto);
+    });
+
+    it('should throw BadRequestException on invalid polygon', async () => {
+      const { BadRequestException } = await import('@nestjs/common');
+      mockAreasService.updateBoundary.mockRejectedValue(
+        new BadRequestException('Invalid polygon: ring must be closed'),
+      );
+
+      await expect(
+        controller.updateBoundary(mockArea.id, validDto),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

@@ -4,8 +4,10 @@ import { ShiftsController } from './shifts.controller';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
+import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { AreasModule } from '../areas/areas.module';
 import { SharedModule } from '../../shared/shared.module';
+import { MonitoringModule } from '../monitoring/monitoring.module';
 
 /**
  * Shifts Module
@@ -16,9 +18,10 @@ import { SharedModule } from '../../shared/shared.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Shift, Schedule]),
+    TypeOrmModule.forFeature([Shift, Schedule, ShiftDefinition]),
     forwardRef(() => AreasModule),
     SharedModule,
+    forwardRef(() => MonitoringModule),
   ],
   controllers: [ShiftsController],
   providers: [ShiftsService],

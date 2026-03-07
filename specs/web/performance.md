@@ -524,6 +524,47 @@ export function StatsSkeleton() {
 
 ---
 
+## Phase 2D: Monitoring Performance
+
+Monitoring pages render a full-screen Mapbox GL map with hundreds of user markers, boundary polygons, and a scrollable side panel. The following optimizations keep the UI responsive.
+
+### Mapbox Tile Loading
+
+- Use **vector tiles** (`mapbox://styles/...`) instead of raster tiles for smaller payloads and crisp rendering at all zoom levels.
+- **Lazy-load** the map component below the fold using `next/dynamic` with `ssr: false`. The Mapbox GL JS bundle (~230 KB gzipped) should not block initial page render.
+
+### Marker Clustering
+
+- Use the **supercluster** algorithm (via `mapbox-gl`'s built-in cluster source or the `supercluster` library) to group nearby markers.
+- **Cluster at zoom < 13**; show individual markers only at zoom >= 13.
+- Cap at **max 200 individual markers** visible at any time. At lower zoom levels, clusters replace individual markers to avoid DOM overload.
+
+### Virtual Scrolling (Side Panel)
+
+- Use **react-window** (or `@tanstack/react-virtual`) for the user list side panel when displaying 500+ users.
+- Set `estimateSize` to match the monitoring card height (~72 px) with `overscan: 5` rows.
+- Avoid rendering off-screen user cards to keep the DOM node count under 200 in the panel.
+
+### WebSocket Throttling
+
+- **Batch UI updates** from WebSocket position events. Accumulate incoming `user:location-updated` events in a buffer.
+- Flush the buffer to React state at **max 1 re-render per 500 ms** using `requestAnimationFrame` + a 500 ms throttle.
+- This prevents cascading re-renders when many users send location pings simultaneously.
+
+### Map Re-Render Optimization
+
+- Wrap marker components with **`React.memo`** and compare only `lat`, `lng`, and `status` props to skip unnecessary re-renders.
+- Avoid re-rendering the entire map layer on every Redux/Zustand state change. Use **selectors** to subscribe only to the slice of state each component needs.
+- Move marker position updates to `mapbox-gl` source `setData()` calls instead of React state when possible, bypassing the React render cycle entirely.
+
+### Image Optimization (Role Icons)
+
+- **Preload role icons as a single sprite sheet** (`/sprites/monitoring-icons.png` + JSON index) rather than loading individual PNGs per marker.
+- Mapbox `addImage()` at map load time so markers render immediately without icon pop-in.
+- Sprite contains icons for all four tracking statuses (active, inactive, outside_area, missing) across all 8 roles.
+
+---
+
 ## Optimization Checklist
 
 ### Build Time
@@ -575,4 +616,4 @@ npm install @next/bundle-analyzer    # Bundle analysis (dev)
 
 ---
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-03-06

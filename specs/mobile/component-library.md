@@ -616,4 +616,48 @@ describe('NBButton', () => {
     expect(getByRole('button').props.accessibilityState.disabled).toBe(true);
   });
 });
+
+---
+
+## Phase 2D: Monitoring Components
+
+**Location:** `fe/mobile/src/components/monitoring/`
+
+### New Components (6)
+
+| Component | File | Props | Description |
+|-----------|------|-------|-------------|
+| UserDetailSheet | `UserDetailSheet.tsx` | `userId: string`, `onClose`, `onTrailPress` | Bottom sheet with shift info, location, activities, tasks, WhatsApp/Call/Trail actions |
+| LocationTrail | `LocationTrail.tsx` | `points: LocationHistoryPointDto[]`, `areaPolygon?` | Polyline overlay with green (inside) / purple (outside) segments, start/end pins |
+| StatusSummaryBar | `StatusSummaryBar.tsx` | `counts: StatusCounts`, `activeFilter?`, `onFilterPress` | 48px bar with four status chips showing counts |
+| UserListStrip | `UserListStrip.tsx` | `users: LiveUserDto[]`, `selectedId?`, `onUserPress` | 80px horizontal scroll of UserListCards |
+| UserListCard | `UserListCard.tsx` | `user: LiveUserDto`, `isSelected`, `onPress` | 160x80px card with status dot, name, role badge, area, last update |
+| MonitoringFilterModal | `MonitoringFilterModal.tsx` | `visible`, `filters`, `onApply`, `onClose`, `userRole` | Full-screen modal with cascading filters, role-gated presets |
+
+### Modified Components
+
+| Component | File | Changes |
+|-----------|------|---------|
+| UserMarker | `UserMarker.tsx` | Role icons (MaterialCommunityIcons: account-circle/shield-account/star-circle), five-status color ring, name label (10px, zoom >= 14), 44x44px touch target |
+
+### Design Tokens
+
+Located in `fe/mobile/src/constants/nbTokens.ts` as `monitoringTokens`:
+
+```typescript
+monitoringTokens = {
+  status: {
+    active: { color: '#15803D', bg: '#DCFCE7', label: 'Aktif' },
+    inactive: { color: '#D97706', bg: '#FEF3C7', label: 'Idle' },
+    outside_area: { color: '#9333EA', bg: '#F3E8FF', label: 'Di Luar Area' },
+    missing: { color: '#DC2626', bg: '#FEE2E2', label: 'Tidak Terdeteksi' },
+    offline: { color: '#6B7280', bg: '#F3F4F6', label: 'Offline' },
+  },
+  marker: { outerSize: 36, iconSize: 20, labelFontSize: 10, touchTarget: 44 },
+  summaryBar: { height: 48, chipHeight: 32, chipGap: 8 },
+  userListStrip: { height: 80, cardWidth: 160, cardGap: 8 },
+  fab: { size: 44, gap: 8, borderWidth: 2 },
+  detailSheet: { initialSnapPoint: '50%', maxSnapPoint: '85%' },
+}
+```
 ```

@@ -11,7 +11,8 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 | 1 | [MVP - Core Tracking](./phase-1-mvp/) | 2 weeks | ✅ COMPLETE | Clock-in/out, Reports, GPS |
 | 2A | [Enhanced Features](./phase-2-a-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
 | 2B | [UI/UX Revamp](./phase-2-b-ui-ux-revamp/) | 3-4 weeks | ✅ COMPLETE | Neo Brutalism 2.0, Design Tokens |
-| **2C** | **[Client Feedback](./phase-2-c-client-feedback/)** | **4-6 weeks** | **🟡 PLANNING** | **Role overhaul, Overtime, Aktivitas** |
+| **2C** | **[Client Feedback](./phase-2-c-client-feedback/)** | **4-6 weeks** | **✅ COMPLETE** | **Role overhaul, Overtime, Aktivitas** |
+| **2D** | **[Real-Time Monitoring](./phase-2-d-monitoring/)** | **3-4 weeks** | **🟡 PLANNING** | **Four-status tracking, Mapbox, location history** |
 | 3 | [Polishing & E2E Testing](./phase-3-polishing/) | 2-3 weeks | Not Started | Manual Testing, E2E, Polish |
 | 4 | [Finishing & Advanced Features](./phase-4-finishing/) | 6-8 weeks | Not Started | Analytics, Assets, iOS |
 
@@ -127,14 +128,14 @@ Neo Brutalism 2.0 design system application across web and mobile platforms.
 
 ## Phase 2C: Client Feedback
 
-**Duration:** 4-6 weeks | **Status:** 🟡 PLANNING (Feb 2026)
+**Duration:** 4-6 weeks | **Status:** ✅ COMPLETE (Feb 2026)
 
 Breaking changes based on client feedback from February 10, 2026 meeting.
 
 ### Key Deliverables
 - Role system overhaul (7 → 8 roles: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
 - GPS boundary removal (clock-in from anywhere)
-- Reports → Aktivitas rename with multi-photo (max 3, camera only)
+- Reports → Activities rename with multi-photo (max 3, camera only)
 - Task hierarchy (downward assignment) with tagging (CC-like)
 - New overtime module (submit + korlap approval)
 - Activity types update (20 types across 4 roles)
@@ -148,6 +149,35 @@ Breaking changes based on client feedback from February 10, 2026 meeting.
 - [Mobile Guide](./phase-2-c-client-feedback/mobile.md)
 - [Web Guide](./phase-2-c-client-feedback/web.md)
 - [Testing](./phase-2-c-client-feedback/testing.md)
+
+---
+
+## Phase 2D: Real-Time Monitoring
+
+**Duration:** 3-4 weeks | **Status:** 🟡 PLANNING (Mar 2026)
+
+Comprehensive reimplementation of the monitoring system with five-status tracking (four visible on map), full Mapbox integration, and location history playback.
+
+### Key Deliverables
+- Four-status tracking system (active, idle, outside_area, missing) with materialized `user_tracking_status` table
+- Full Mapbox GL JS integration on web (replacing placeholder)
+- Mobile map enhancement: polygon rendering, role-specific markers, name labels
+- Location history playback with GPS trail visualization
+- User detail modal/panel with WhatsApp deeplinks
+- Configurable monitoring thresholds (admin UI)
+- Filter system with per-role staffing summary
+- WebSocket fixes (legacy PascalCase role checks) and new events
+- Area boundary management with polygon editor
+
+### Documents
+- [Overview](./phase-2-d-monitoring/README.md)
+- [Status](./phase-2-d-monitoring/STATUS.md)
+- [Database Guide](./phase-2-d-monitoring/database.md)
+- [Backend Guide](./phase-2-d-monitoring/backend.md)
+- [Mobile Guide](./phase-2-d-monitoring/mobile.md)
+- [Web Guide](./phase-2-d-monitoring/web.md)
+- [UI/UX Design](./phase-2-d-monitoring/ui-ux.md)
+- [Testing](./phase-2-d-monitoring/testing.md)
 
 ---
 
@@ -228,7 +258,10 @@ The following folders contain original specifications before the January 30, 202
            Phase 2B (UI/UX Revamp)
                      |
                      v
-       Phase 2C (Client Feedback) ← CURRENT
+       Phase 2C (Client Feedback) ✅
+                     |
+                     v
+       Phase 2D (Monitoring Reimpl) ← CURRENT
                      |
                      v
          Phase 3 (Polishing & E2E)
@@ -244,7 +277,8 @@ The following folders contain original specifications before the January 30, 202
 - **Phase 1 → Phase 2A:** Phase 1 MVP must complete before Phase 2A
 - **Phase 2A → Phase 2B:** Phase 2A implementation provides components to revamp
 - **Phase 2B → Phase 2C:** Design system established before client feedback changes
-- **Phase 2C → Phase 3:** All breaking changes must be stable before E2E testing
+- **Phase 2C → Phase 2D:** Monitoring reimplementation builds on Phase 2C role system
+- **Phase 2D → Phase 3:** All monitoring changes must be stable before E2E testing
 - **Phase 3 → Phase 4:** Polishing should complete before adding new features
 - **Phase 4 sub-phases:** Can run in parallel with separate teams
 
@@ -252,10 +286,11 @@ The following folders contain original specifications before the January 30, 202
 1. **Phase 1** (Weeks 1-2) - MVP foundation ✅
 2. **Phase 2A** (Weeks 3-4) - Enhanced features + Web ✅
 3. **Phase 2B** (Weeks 5-8) - UI/UX Revamp ✅
-4. **Phase 2C** (Weeks 9-14) - Client Feedback 🟡
-5. **Phase 3** (Weeks 15-17) - Polishing & E2E Testing
-6. **Phase 4A+4B** (Weeks 18-21) - Analytics + Assets (parallel)
-7. **Phase 4C** (Weeks 22-25) - iOS platform
+4. **Phase 2C** (Weeks 9-14) - Client Feedback ✅
+5. **Phase 2D** (Weeks 15-18) - Monitoring Reimplementation 🟡
+6. **Phase 3** (Weeks 19-21) - Polishing & E2E Testing
+7. **Phase 4A+4B** (Weeks 22-25) - Analytics + Assets (parallel)
+8. **Phase 4C** (Weeks 26-29) - iOS platform
 
 ---
 
@@ -271,4 +306,4 @@ The following folders contain original specifications before the January 30, 202
 
 ---
 
-**Last Updated:** 2026-02-10
+**Last Updated:** 2026-03-03

@@ -655,4 +655,62 @@ npm install socket.io-client
 
 ---
 
+## Phase 2D: Enhanced WebSocket Events
+
+### New Events (3)
+
+| Event | Payload | Action |
+|-------|---------|--------|
+| `user:status-changed` | `{ user_id, user_name, role, area_id, area_name, rayon_id, previous_status, new_status, latitude, longitude, timestamp }` | Update user in TanStack Query cache, recalculate status counts, toast if new_status is 'missing' |
+| `user:left-area` | `{ user_id, user_name, role, area_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to false, visual warning on marker |
+| `user:entered-area` | `{ user_id, user_name, role, area_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to true, clear warning |
+
+### Enhanced Existing Event
+
+| Event | New Fields | Description |
+|-------|-----------|-------------|
+| `user:location` | `status: TrackingStatus`, `is_within_area: boolean`, `shift_name: string` | Real-time location with computed status and boundary check |
+
+### TanStack Query Cache Invalidation
+
+```typescript
+// On user:status-changed event
+queryClient.setQueryData(['monitoring', 'live-users'], (old) => {
+  // Update specific user's status in cached data
+  // Recalculate status count totals
+});
+
+// On user:left-area / user:entered-area
+queryClient.setQueryData(['monitoring', 'live-users'], (old) => {
+  // Update specific user's is_within_area flag
+});
+
+// Toast notification for missing status
+if (event.new_status === 'missing') {
+  toast.warning(`${event.user_name} tidak terdeteksi di ${event.area_name}`);
+}
+```
+
+### WebSocket Room Assignment (Phase 2D Fix)
+
+```typescript
+// Auto-join based on role (fixed PascalCase bug)
+switch (user.role) {
+  case 'superadmin':
+  case 'admin_system':
+  case 'top_management':
+    socket.emit('join', { room: 'city' });
+    break;
+  case 'kepala_rayon':
+  case 'admin_data':
+    socket.emit('join', { room: `rayon:${user.rayon_id}` });
+    break;
+  case 'korlap':
+    socket.emit('join', { room: `area:${user.area_id}` });
+    break;
+}
+```
+
+**Last Updated:** 2026-03-03
+
 **Last Updated:** 2026-01-16

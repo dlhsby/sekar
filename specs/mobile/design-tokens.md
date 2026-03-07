@@ -77,6 +77,22 @@ This document provides the complete design token reference for the SEKAR mobile 
 | `nbColors.infoLight` | #A7DBD8 | Info backgrounds |
 | `nbColors.infoBorder` | #69D2E7 | Info borders |
 
+### Monitoring Status Colors (Phase 2D)
+
+| Token | Color | Hex | Usage |
+|-------|-------|-----|-------|
+| statusActive | Green | #15803D | Active worker markers, badges |
+| statusInactive | Amber | #D97706 | Inactive worker markers, warnings |
+| statusOutsideArea | Purple | #9333EA | Outside area markers, alerts |
+| statusMissing | Red | #DC2626 | Missing worker markers, critical |
+| statusOffline | Gray | #6B7280 | Offline indicators (list only, not map) |
+
+These colors are defined in `fe/mobile/src/styles/monitoringColors.ts` and used by:
+- Map markers (MapDashboardScreen)
+- Status chips and badges (UserDetailSheet)
+- Summary bar counts (MonitoringSummaryBar)
+- Home screen LocationStatusCard border accent
+
 ### Sidebar Colors (Reference - Web Only)
 
 | Token | Value | Usage |

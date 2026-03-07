@@ -818,6 +818,112 @@ describe('HomeScreen', () => {
 
 ---
 
+## Phase 2D Monitoring Test Fixtures
+
+### Status Fixtures (5 statuses x 3 roles = 15 combinations)
+
+| User | Role | Status | Last Location | Shift | Area |
+|------|------|--------|--------------|-------|------|
+| satgas_active | satgas | ACTIVE | 2min ago | Active | Taman Bungkul |
+| satgas_inactive | satgas | INACTIVE | 20min ago | Active | Taman Bungkul |
+| satgas_outside | satgas | OUTSIDE_AREA | 1min ago | Active | Outside boundary |
+| satgas_missing | satgas | MISSING | 2hr ago | Active | Unknown |
+| satgas_offline | satgas | OFFLINE | N/A | None | N/A |
+| linmas_active | linmas | ACTIVE | 1min ago | Active | Taman Flora |
+| linmas_inactive | linmas | INACTIVE | 15min ago | Active | Taman Flora |
+| linmas_outside | linmas | OUTSIDE_AREA | 3min ago | Active | Outside boundary |
+| linmas_missing | linmas | MISSING | 1.5hr ago | Active | Unknown |
+| linmas_offline | linmas | OFFLINE | N/A | None | N/A |
+| korlap_active | korlap | ACTIVE | 30s ago | Active | Taman Bungkul |
+| korlap_inactive | korlap | INACTIVE | 10min ago | Active | Taman Bungkul |
+| korlap_outside | korlap | OUTSIDE_AREA | 2min ago | Active | Outside boundary |
+| korlap_missing | korlap | MISSING | 3hr ago | Active | Unknown |
+| korlap_offline | korlap | OFFLINE | N/A | None | N/A |
+
+### Config Fixtures
+
+| Key | Test Value | Description |
+|-----|-----------|-------------|
+| active_max_age | 300 | 5 minutes |
+| inactive_threshold | 900 | 15 minutes |
+| missing_threshold | 3600 | 1 hour |
+| min_gps_accuracy | 50 | 50 meters |
+| boundary_tolerance | 100 | 100 meters |
+
+### GPS Trail Fixture (10 points for location history testing)
+
+- Points along Taman Bungkul perimeter, 5-minute intervals
+- Mix of inside/outside boundary points
+- Varying accuracy values (5m to 150m)
+
+```typescript
+export const TEST_GPS_TRAIL = [
+  { lat: -7.2903, lng: 112.7396, accuracy: 5,   timestamp: '2026-01-15T08:00:00Z', inside: true },
+  { lat: -7.2905, lng: 112.7398, accuracy: 8,   timestamp: '2026-01-15T08:05:00Z', inside: true },
+  { lat: -7.2907, lng: 112.7400, accuracy: 12,  timestamp: '2026-01-15T08:10:00Z', inside: true },
+  { lat: -7.2910, lng: 112.7402, accuracy: 10,  timestamp: '2026-01-15T08:15:00Z', inside: true },
+  { lat: -7.2915, lng: 112.7405, accuracy: 25,  timestamp: '2026-01-15T08:20:00Z', inside: false },
+  { lat: -7.2920, lng: 112.7410, accuracy: 30,  timestamp: '2026-01-15T08:25:00Z', inside: false },
+  { lat: -7.2912, lng: 112.7403, accuracy: 15,  timestamp: '2026-01-15T08:30:00Z', inside: true },
+  { lat: -7.2906, lng: 112.7399, accuracy: 7,   timestamp: '2026-01-15T08:35:00Z', inside: true },
+  { lat: -7.2904, lng: 112.7397, accuracy: 150, timestamp: '2026-01-15T08:40:00Z', inside: true },
+  { lat: -7.2905, lng: 112.7398, accuracy: 10,  timestamp: '2026-01-15T08:45:00Z', inside: true },
+];
+```
+
+### Tracking Status Factory
+
+```typescript
+export function createTestTrackingStatus(overrides?: Partial<UserTrackingStatus>): UserTrackingStatus {
+  return {
+    id: uuidv4(),
+    user_id: TEST_USERS.worker1.id,
+    status: 'ACTIVE',
+    last_latitude: -7.2905,
+    last_longitude: 112.7398,
+    last_accuracy: 10,
+    last_location_at: new Date(),
+    shift_id: TEST_SHIFTS.activeShift.id,
+    area_id: TEST_AREAS.tamanBungkul.id,
+    is_inside_boundary: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...overrides,
+  };
+}
+
+// Usage
+const outsideStatus = createTestTrackingStatus({
+  status: 'OUTSIDE_AREA',
+  is_inside_boundary: false,
+  last_latitude: -7.2923,
+  last_longitude: 112.7398,
+});
+
+const missingStatus = createTestTrackingStatus({
+  status: 'MISSING',
+  last_location_at: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+});
+```
+
+### Monitoring Config Factory
+
+```typescript
+export function createTestMonitoringConfig(overrides?: Partial<MonitoringConfig>): MonitoringConfig {
+  return {
+    id: uuidv4(),
+    key: 'active_max_age',
+    value: 300,
+    description: 'Maximum age in seconds for ACTIVE status',
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...overrides,
+  };
+}
+```
+
+---
+
 ## Maintenance
 
 ### Updating Test Data
@@ -839,5 +945,5 @@ When updating test data:
 
 ---
 
-*Last Updated: January 2026*
+*Last Updated: March 2026*
 *Use these fixtures for consistent, repeatable testing*

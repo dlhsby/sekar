@@ -814,6 +814,24 @@ if (__DEV__) {
 
 ---
 
+## Monitoring Data Cache Strategy (Phase 2D)
+
+| Data | Cache Duration | Invalidation | Storage |
+|------|---------------|--------------|---------|
+| Live users list | 30 seconds | WebSocket update, manual refresh | TanStack Query cache |
+| Area boundaries | 24 hours | App restart, manual refresh | AsyncStorage |
+| Monitoring config | 5 minutes | Admin update WebSocket event | TanStack Query cache |
+| User day summary | Until date change | New activity submission | TanStack Query cache |
+| Location history | Until date change | New location ping | TanStack Query cache |
+
+**Conflict Resolution:**
+- WebSocket updates take priority over cached polling data
+- Stale cache is served while revalidation happens in background (stale-while-revalidate)
+- If offline: show last known data with "Data terakhir: {timestamp}" indicator
+- Location tracking continues offline; data syncs when connection restored
+
+---
+
 ## Performance Considerations
 
 ### AsyncStorage Limits

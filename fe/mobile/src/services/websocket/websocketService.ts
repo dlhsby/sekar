@@ -17,9 +17,11 @@
 
 import { getToken } from '../storage/secureStorage';
 import config from '../../constants/config';
+import type { UserStatusChangedEvent, UserAreaEvent } from '../../types/models.types';
 
 /**
  * Event type enumeration (matches backend EventType)
+ * Phase 2D: Added user:status-changed, user:left-area, user:entered-area, user:location
  */
 export enum EventType {
   WORKER_LOCATION = 'worker:location',
@@ -28,10 +30,15 @@ export enum EventType {
   AREA_STAFFING = 'area:staffing',
   TASK_ASSIGNED = 'task:assigned',
   TASK_COMPLETED = 'task:completed',
+  // Phase 2D: New monitoring events
+  USER_LOCATION = 'user:location',
+  USER_STATUS_CHANGED = 'user:status-changed',
+  USER_LEFT_AREA = 'user:left-area',
+  USER_ENTERED_AREA = 'user:entered-area',
 }
 
 /**
- * Worker location event data
+ * Worker location event data (legacy, use UserLocationEvent for Phase 2D)
  */
 export interface WorkerLocationEvent {
   worker_id: string;
@@ -45,6 +52,27 @@ export interface WorkerLocationEvent {
   longitude: number;
   accuracy?: number;
   battery_level?: number;
+  timestamp: Date | string;
+}
+
+/**
+ * User location event data — Phase 2D enhanced with status and boundary
+ */
+export interface UserLocationEvent {
+  user_id: string;
+  user_name: string;
+  role: string;
+  shift_id: string;
+  area_id: string | null;
+  area_name: string;
+  rayon_id?: string;
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  battery_level?: number;
+  status: string;
+  is_within_area: boolean;
+  shift_name?: string;
   timestamp: Date | string;
 }
 
@@ -470,6 +498,48 @@ class WebSocketService {
    */
   onAreaStaffing(handler: EventHandler<AreaStaffingEvent>): () => void {
     return this.addEventListener(EventType.AREA_STAFFING, handler);
+  }
+
+  // ─── Phase 2D: New monitoring event listeners ────────────────────────────────
+
+  /**
+   * Add listener for user location events (Phase 2D enhanced)
+   *
+   * @param handler - Callback with status, is_within_area, shift_name fields
+   * @returns Unsubscribe function
+   */
+  onUserLocation(handler: EventHandler<UserLocationEvent>): () => void {
+    return this.addEventListener(EventType.USER_LOCATION, handler);
+  }
+
+  /**
+   * Add listener for user status change events
+   *
+   * @param handler - Callback with previous_status, new_status, user data
+   * @returns Unsubscribe function
+   */
+  onUserStatusChanged(handler: EventHandler<UserStatusChangedEvent>): () => void {
+    return this.addEventListener(EventType.USER_STATUS_CHANGED, handler);
+  }
+
+  /**
+   * Add listener for user left area events
+   *
+   * @param handler - Callback with area data and user coordinates
+   * @returns Unsubscribe function
+   */
+  onUserLeftArea(handler: EventHandler<UserAreaEvent>): () => void {
+    return this.addEventListener(EventType.USER_LEFT_AREA, handler);
+  }
+
+  /**
+   * Add listener for user entered area events
+   *
+   * @param handler - Callback with area data and user coordinates
+   * @returns Unsubscribe function
+   */
+  onUserEnteredArea(handler: EventHandler<UserAreaEvent>): () => void {
+    return this.addEventListener(EventType.USER_ENTERED_AREA, handler);
   }
 
   /**

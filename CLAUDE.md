@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**Last Updated:** March 3, 2026
+**Last Updated:** March 5, 2026
 **Status:** Phase 2C Complete ✅ | Deployed to Production | Phase 3 Next
 
 This file provides guidance to Claude Code when working with this repository.
@@ -45,7 +45,7 @@ npm install
 npm run start:dev          # http://localhost:3000
 npm test                   # Run tests
 npm run test:cov           # With coverage (>80% required)
-npm run seed               # Seed all data (Phase 1 + Phase 2 + Tasks)
+npm run db:seed            # Seed all data (Phase 1 + Phase 2, wipes first)
 ```
 
 **Test Users:** All users use `password123` — e.g. `admin/password123`, `korlap1/password123`, `satgas1/password123`
@@ -254,7 +254,7 @@ API_VERSION=v1
 ### Database
 - **Dev:** TypeORM auto-sync enabled
 - **Prod:** Use migrations (`specs/database/migrations.md`)
-- **Seeding:** `npm run seed` creates test users
+- **Seeding:** `npm run db:seed` creates test data (30 users, tasks, activities, monitoring)
 - **Connection Pool:** 15 connections/instance in production
 - **Soft Delete:** Users use `deleted_at` timestamp
 
@@ -292,6 +292,14 @@ API_VERSION=v1
 - GPS soft geofencing, filter modal improvements, subordinate hierarchy filters
 - Backend: 16 modules, 113 endpoints, 888 tests; Mobile: 3,264 tests
 - Deployed: api.sekar.wahyutrip.com + sekar.wahyutrip.com (Feb 16, 2026)
+
+**Phase 2D Real-Time Monitoring** ✅ Code-Complete (Mar 3-4, 2026) — pending merge & deploy
+- Four-status tracking (active/inactive/outside_area/missing/offline) backed by `user_tracking_status` table
+- `StatusCalculatorService` integrated into `LocationService` (onLocationPing) and `ShiftsService` (onClockIn/onClockOut)
+- Configurable thresholds via `monitoring_configs` table; WebSocket boundary events (USER_LEFT_AREA, USER_ENTERED_AREA)
+- Web: full Mapbox GL map with markers/polygons, filter sidebar, worker detail panel, staffing summary
+- Mobile: enhanced MapDashboard, UserDetailSheet, four-status marker colors, location history
+- Backend: 120 endpoints, 1,095 tests; Mobile: 3,493 tests
 
 **Phase 3 Polishing & E2E Testing** - NOT STARTED
 - E2E testing (Detox mobile, Playwright web)
@@ -387,19 +395,21 @@ docker-compose down -v                      # Clean restart (deletes data!)
 
 ## Current Status
 
-**Phase 2C Complete** ✅ | Deployed to Production (Feb 16, 2026)
+**Phase 2D Complete** ✅ | Branch: `f/phase-2-d-monitoring` (ready to merge)
 
 | Component | Metrics |
 |-----------|---------|
-| **Backend** | 16 modules, 113 endpoints, 888 tests (89.57% stmt, 81.64% branch) |
-| **Mobile** | 17 screens, 3,264 tests passing, 80.31%+ coverage |
-| **Web** | 18 pages, monitoring interfaces aligned with backend DTOs, 1,336 tests |
-| **Database** | 18 tables (+2: task_tags, overtimes), 8-role system |
-| **DevOps** | 3 CI/CD pipelines, deployed to production |
-| **UI/UX** | Neo Brutalism 2.0, filter modals improved (subordinate hierarchy, date pickers) |
+| **Backend** | 16 modules, 120 endpoints, 1,095 tests (92.15% stmt, 80.64% branch) |
+| **Mobile** | 21 screens, 3,493 tests passing, 80.31%+ coverage |
+| **Web** | 21 pages (+1 config), full Mapbox GL + monitoring components |
+| **Database** | 20 tables (+2: user_tracking_status, monitoring_configs), 8-role system |
+| **DevOps** | 3 CI/CD pipelines, Phase 2C deployed to production |
+| **UI/UX** | Neo Brutalism 2.0, four-status monitoring (active/inactive/outside_area/missing) |
 
-**Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com
+**Deployed to Production (Phase 2C):** api.sekar.wahyutrip.com + sekar.wahyutrip.com
 
-**Next:** Phase 3 - Polishing & E2E Testing
+**Phase 2D:** Code-complete on branch `f/phase-2-d-monitoring` — pending merge & deploy
 
-**Deployment Guide:** `specs/deployment/PHASE2C_DEPLOYMENT.md`
+**Next:** Merge Phase 2D → deploy → Phase 3 Polishing & E2E Testing
+
+**Deployment Guide:** `specs/deployment/phase-2-deployment.md` (Phase 2D section)

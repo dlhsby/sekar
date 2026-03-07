@@ -11,6 +11,9 @@ import { Server, Socket } from 'socket.io';
 import { Logger, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User, UserRole } from '../modules/users/entities/user.entity';
 import {
   SubscribeAreaDto,
   UnsubscribeAreaDto,
@@ -22,6 +25,10 @@ import {
   AreaStaffingEvent,
   TaskAssignedEvent,
   TaskCompletedEvent,
+  UserStatusChangedEvent,
+  UserAreaEvent,
+  UserReassignedEvent,
+  AreaStaffingChangedEvent,
   EventType,
 } from './dto/events.dto';
 
@@ -58,6 +65,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   /**
@@ -83,10 +92,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         role: payload.role,
       });
 
-      // Auto-join city room for Admin/TopManagement
-      if (payload.role === 'Admin' || payload.role === 'TopManagement') {
-        client.join('city');
-        this.logger.log(`Client ${client.id} (${payload.role}) joined city room`);
+      // Auto-join personal room
+      client.join(`user:${payload.sub}`);
+
+      // Auto-join rooms based on role
+      const cityRoles = [
+        UserRole.SUPERADMIN,
+        UserRole.ADMIN_SYSTEM,
+        UserRole.TOP_MANAGEMENT,
+      ];
+      if (cityRoles.includes(payload.role)) {
+        client.join('monitoring:city');
+        this.logger.log(`Client ${client.id} (${payload.role}) joined monitoring:city room`);
+      }
+
+      // Auto-join rayon/area rooms for scoped roles
+      if (
+        payload.role === UserRole.KEPALA_RAYON ||
+        payload.role === UserRole.ADMIN_DATA ||
+        payload.role === UserRole.KORLAP
+      ) {
+        await this.autoJoinScopedRooms(client, payload.sub, payload.role);
       }
 
       this.logger.log(
@@ -118,7 +144,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: SubscribeAreaDto,
   ): { success: boolean; room: string } {
-    const room = `area:${dto.area_id}`;
+    const room = `monitoring:area:${dto.area_id}`;
     client.join(room);
 
     this.logger.log(`Client ${client.id} subscribed to ${room}`);
@@ -134,7 +160,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: UnsubscribeAreaDto,
   ): { success: boolean; room: string } {
-    const room = `area:${dto.area_id}`;
+    const room = `monitoring:area:${dto.area_id}`;
     client.leave(room);
 
     this.logger.log(`Client ${client.id} unsubscribed from ${room}`);
@@ -150,7 +176,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: SubscribeRayonDto,
   ): { success: boolean; room: string } {
-    const room = `rayon:${dto.rayon_id}`;
+    const room = `monitoring:rayon:${dto.rayon_id}`;
     client.join(room);
 
     this.logger.log(`Client ${client.id} subscribed to ${room}`);
@@ -166,7 +192,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: UnsubscribeRayonDto,
   ): { success: boolean; room: string } {
-    const room = `rayon:${dto.rayon_id}`;
+    const room = `monitoring:rayon:${dto.rayon_id}`;
     client.leave(room);
 
     this.logger.log(`Client ${client.id} unsubscribed from ${room}`);
@@ -181,15 +207,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.debug(`Emitting user location: ${event.user_id} at ${event.area_name}`);
 
     // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.USER_LOCATION, event);
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_LOCATION, event);
 
     // Emit to rayon subscribers
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_LOCATION, event);
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_LOCATION, event);
     }
 
-    // Emit to city subscribers
-    this.server.to('city').emit(EventType.USER_LOCATION, event);
+    // WS-3: City room does NOT receive high-frequency USER_LOCATION pings
   }
 
   /**
@@ -198,16 +223,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitUserClockIn(event: UserClockInEvent): void {
     this.logger.log(`Emitting user clock-in: ${event.user_name} at ${event.area_name}`);
 
-    // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.USER_CLOCK_IN, event);
-
-    // Emit to rayon subscribers
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_CLOCK_IN, event);
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_IN, event);
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_IN, event);
     }
-
-    // Emit to city subscribers
-    this.server.to('city').emit(EventType.USER_CLOCK_IN, event);
+    this.server.to('monitoring:city').emit(EventType.USER_CLOCK_IN, event);
   }
 
   /**
@@ -216,16 +236,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitUserClockOut(event: UserClockOutEvent): void {
     this.logger.log(`Emitting user clock-out: ${event.user_name} at ${event.area_name}`);
 
-    // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.USER_CLOCK_OUT, event);
-
-    // Emit to rayon subscribers
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_CLOCK_OUT, event);
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_OUT, event);
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_OUT, event);
     }
-
-    // Emit to city subscribers
-    this.server.to('city').emit(EventType.USER_CLOCK_OUT, event);
+    this.server.to('monitoring:city').emit(EventType.USER_CLOCK_OUT, event);
   }
 
   /**
@@ -236,16 +251,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       `Emitting area staffing: ${event.area_name} - ${event.workers_online}/${event.workers_required}`,
     );
 
-    // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.AREA_STAFFING, event);
-
-    // Emit to rayon subscribers
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.AREA_STAFFING, event);
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.AREA_STAFFING, event);
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.AREA_STAFFING, event);
     }
-
-    // Emit to city subscribers
-    this.server.to('city').emit(EventType.AREA_STAFFING, event);
+    this.server.to('monitoring:city').emit(EventType.AREA_STAFFING, event);
   }
 
   /**
@@ -254,16 +264,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitTaskAssigned(event: TaskAssignedEvent): void {
     this.logger.log(`Emitting task assigned: "${event.title}" to ${event.assignee_name}`);
 
-    // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.TASK_ASSIGNED, event);
-
-    // Emit to rayon subscribers
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.TASK_ASSIGNED, event);
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.TASK_ASSIGNED, event);
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.TASK_ASSIGNED, event);
     }
-
-    // Emit to city subscribers
-    this.server.to('city').emit(EventType.TASK_ASSIGNED, event);
+    this.server.to('monitoring:city').emit(EventType.TASK_ASSIGNED, event);
 
     // Also emit to the specific user
     this.emitToUser(event.assigned_to, EventType.TASK_ASSIGNED, event);
@@ -275,16 +280,89 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitTaskCompleted(event: TaskCompletedEvent): void {
     this.logger.log(`Emitting task completed: "${event.title}" by ${event.completer_name}`);
 
-    // Emit to area subscribers
-    this.server.to(`area:${event.area_id}`).emit(EventType.TASK_COMPLETED, event);
-
-    // Emit to rayon subscribers
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.TASK_COMPLETED, event);
     if (event.rayon_id) {
-      this.server.to(`rayon:${event.rayon_id}`).emit(EventType.TASK_COMPLETED, event);
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.TASK_COMPLETED, event);
     }
+    this.server.to('monitoring:city').emit(EventType.TASK_COMPLETED, event);
+  }
 
-    // Emit to city subscribers
-    this.server.to('city').emit(EventType.TASK_COMPLETED, event);
+  /**
+   * Emit user status changed event (Phase 2D)
+   *
+   * Broadcasts to the user's area, rayon, and city rooms.
+   */
+  emitUserStatusChanged(event: UserStatusChangedEvent): void {
+    this.logger.log(
+      `Status change: ${event.user_name} ${event.previous_status} → ${event.new_status}`,
+    );
+
+    if (event.area_id) {
+      this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_STATUS_CHANGED, event);
+    }
+    if (event.rayon_id) {
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_STATUS_CHANGED, event);
+    }
+    this.server.to('monitoring:city').emit(EventType.USER_STATUS_CHANGED, event);
+  }
+
+  /**
+   * Emit user left area event (Phase 2D)
+   */
+  emitUserLeftArea(event: UserAreaEvent): void {
+    this.logger.log(`User left area: ${event.user_name} left ${event.area_name}`);
+
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_LEFT_AREA, event);
+    if (event.rayon_id) {
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_LEFT_AREA, event);
+    }
+    this.server.to('monitoring:city').emit(EventType.USER_LEFT_AREA, event);
+  }
+
+  /**
+   * Emit user entered area event (Phase 2D)
+   */
+  emitUserEnteredArea(event: UserAreaEvent): void {
+    this.logger.log(`User entered area: ${event.user_name} entered ${event.area_name}`);
+
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_ENTERED_AREA, event);
+    if (event.rayon_id) {
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_ENTERED_AREA, event);
+    }
+    this.server.to('monitoring:city').emit(EventType.USER_ENTERED_AREA, event);
+  }
+
+  /**
+   * Emit user reassigned event (Phase 2D)
+   */
+  emitUserReassigned(event: UserReassignedEvent): void {
+    this.logger.log(`User reassigned: ${event.user_name} to ${event.new_area_name}`);
+
+    if (event.previous_area_id) {
+      this.server.to(`monitoring:area:${event.previous_area_id}`).emit(EventType.USER_REASSIGNED, event);
+    }
+    this.server.to(`monitoring:area:${event.new_area_id}`).emit(EventType.USER_REASSIGNED, event);
+    if (event.rayon_id) {
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_REASSIGNED, event);
+    }
+    this.server.to('monitoring:city').emit(EventType.USER_REASSIGNED, event);
+  }
+
+  /**
+   * Emit area staffing changed event (Phase 2D)
+   *
+   * Triggered when a status change causes area staffing to cross threshold.
+   */
+  emitAreaStaffingChanged(event: AreaStaffingChangedEvent): void {
+    this.logger.log(
+      `Area staffing changed: area ${event.area_id} - ${event.active_count}/${event.required_count} (met: ${event.is_met})`,
+    );
+
+    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.AREA_STAFFING_CHANGED, event);
+    if (event.rayon_id) {
+      this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.AREA_STAFFING_CHANGED, event);
+    }
+    this.server.to('monitoring:city').emit(EventType.AREA_STAFFING_CHANGED, event);
   }
 
   /**
@@ -320,6 +398,39 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     return null;
+  }
+
+  /**
+   * Auto-join rayon/area rooms based on user's assigned scope
+   */
+  private async autoJoinScopedRooms(
+    client: Socket,
+    userId: string,
+    role: string,
+  ): Promise<void> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'rayon_id', 'area_id'],
+      });
+
+      if (!user) return;
+
+      if (
+        (role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_DATA) &&
+        user.rayon_id
+      ) {
+        client.join(`monitoring:rayon:${user.rayon_id}`);
+        this.logger.log(`Client ${client.id} auto-joined monitoring:rayon:${user.rayon_id}`);
+      }
+
+      if (role === UserRole.KORLAP && user.area_id) {
+        client.join(`monitoring:area:${user.area_id}`);
+        this.logger.log(`Client ${client.id} auto-joined monitoring:area:${user.area_id}`);
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to auto-join rooms for user ${userId}: ${error.message}`);
+    }
   }
 
   /**

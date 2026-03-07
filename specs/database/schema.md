@@ -3,8 +3,8 @@
 Complete PostgreSQL database schema for SEKAR system with production-ready optimizations.
 
 **Document Owner:** Database Engineer
-**Last Updated:** 2026-02-10
-**Status:** Phase 2C Implemented
+**Last Updated:** 2026-03-06
+**Status:** Phase 2D Implemented (20 tables)
 
 ---
 
@@ -2082,8 +2082,117 @@ CREATE TABLE overtime_aktivitas (
 
 ---
 
+## Phase 2D: Schema Changes (Real-Time Monitoring)
+
+> **Full specification:** See [`specs/phases/phase-2-d-monitoring/`](../phases/phase-2-d-monitoring/)
+
+### user_tracking_status
+
+Materialized tracking status for each user. Updated by StatusCalculatorService on location pings, clock-in/out, and periodic scheduler.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| user_id | UUID | PK, FK → users.id | One status per user |
+| status | VARCHAR(20) | NOT NULL, CHECK(IN 'active','inactive','outside_area','missing','offline') | Current tracking status |
+| last_location_at | TIMESTAMP | NULL | Last GPS ping timestamp |
+| last_location_lat | DECIMAL(10,7) | NULL | Last known latitude |
+| last_location_lng | DECIMAL(10,7) | NULL | Last known longitude |
+| is_within_area | BOOLEAN | DEFAULT false | Whether inside assigned area boundary |
+| current_shift_id | UUID | NULL, FK → shifts.id | Active shift reference |
+| current_area_id | UUID | NULL, FK → areas.id | Currently assigned area |
+| updated_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | Last status update |
+
+**Indexes:**
+- `idx_uts_status` — B-tree on `status` (filter by status)
+- `idx_uts_area_status` — Composite on `(current_area_id, status)` (area stats queries)
+- `idx_uts_updated` — B-tree on `updated_at` (stale detection)
+
+**Relationships:**
+- user_tracking_status.user_id → users.id (1:1)
+- user_tracking_status.current_shift_id → shifts.id (N:1)
+- user_tracking_status.current_area_id → areas.id (N:1)
+
+```sql
+CREATE TABLE user_tracking_status (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL DEFAULT 'offline',
+  last_location_at TIMESTAMPTZ,
+  last_location_lat DECIMAL(10, 7),
+  last_location_lng DECIMAL(10, 7),
+  is_within_area BOOLEAN DEFAULT FALSE,
+  current_shift_id UUID REFERENCES shifts(id) ON DELETE SET NULL,
+  current_area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  CONSTRAINT chk_uts_status CHECK (status IN ('active', 'inactive', 'outside_area', 'missing', 'offline'))
+);
+
+CREATE INDEX idx_uts_status ON user_tracking_status(status);
+CREATE INDEX idx_uts_area_status ON user_tracking_status(current_area_id, status);
+CREATE INDEX idx_uts_updated ON user_tracking_status(updated_at);
+```
+
+### monitoring_configs
+
+Admin-configurable thresholds for the monitoring system. Key-value store with JSON schema validation.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| key | VARCHAR(50) | PK | Configuration key |
+| value | JSONB | NOT NULL | Configuration value |
+| description | TEXT | NULL | Human-readable description |
+| updated_by | UUID | NULL, FK → users.id | Last admin who modified |
+| updated_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | Last modification |
+
+**Default Keys:**
+| Key | Default Value | Range | Description |
+|-----|---------------|-------|-------------|
+| active_max_age | 300 | 60-600 (seconds) | Max age of last ping to be "active" |
+| inactive_threshold | 900 | 300-3600 (seconds) | Seconds without ping → "inactive" |
+| missing_threshold | 3600 | 1800-7200 (seconds) | Seconds without ping → "missing" |
+| min_gps_accuracy | 50 | 10-200 (meters) | Minimum acceptable GPS accuracy |
+| boundary_tolerance | 100 | 0-500 (meters) | Buffer zone around area boundary |
+
+**Access:** Read by StatusCalculatorService (cached 5min), write by admin_system/superadmin only.
+
+```sql
+CREATE TABLE monitoring_configs (
+  key VARCHAR(50) PRIMARY KEY,
+  value JSONB NOT NULL,
+  description TEXT,
+  updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Seed default values
+INSERT INTO monitoring_configs (key, value, description) VALUES
+  ('active_max_age', '300', 'Max age of last ping (seconds) to be active'),
+  ('inactive_threshold', '900', 'Seconds without ping to become inactive'),
+  ('missing_threshold', '3600', 'Seconds without ping to become missing'),
+  ('min_gps_accuracy', '50', 'Minimum acceptable GPS accuracy (meters)'),
+  ('boundary_tolerance', '100', 'Buffer zone around area boundary (meters)');
+```
+
+### ERD Extensions (Phase 2D)
+
+The two new tables connect to existing entities as follows:
+
+```
+users ─────1:1────► user_tracking_status
+                        │
+                        ├── N:1 ──► shifts
+                        └── N:1 ──► areas
+
+users ─────1:N────► monitoring_configs (updated_by)
+```
+
+- `user_tracking_status` is a **materialized view** pattern: one row per user, updated in real-time by StatusCalculatorService when location pings arrive, shifts start/end, or the periodic stale-check scheduler runs.
+- `monitoring_configs` is a **configuration store**: read frequently (cached 5min), written rarely by admin_system/superadmin roles.
+
+---
+
 **Related Documents:**
-- [ERD](./erd.md) - Entity relationship diagrams (Phase 2C)
+- [ERD](./erd.md) - Entity relationship diagrams (Phase 2D)
 - [Migrations](./migrations.md) - Migration strategy
 - [Seed Data](./seed-data.md) - Test data specifications
 - [Phase 2C Database](../phases/phase-2-c-client-feedback/database.md) - Phase 2C migration details

@@ -1,8 +1,8 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** February 16, 2026 (Phase 2C Deployment Complete)
-**Status:** ✅ Phase 2C Deployed (Backend + Web)
-**Deployment Time:** Backend 15-20 min (automated) | Web 10-15 min (manual) | Total ~1h20m with fixes
+**Last Updated:** March 7, 2026 (Phase 2D Gap Fixes Complete)
+**Status:** ✅ Phase 2C Deployed | 🔄 Phase 2D Pending Deployment
+**Deployment Time:** Backend 15-20 min (automated) | Web 10-15 min (manual)
 
 > **⚠️ IMPORTANT:** This guide references domain names that need to be set up manually.
 > For current deployment status and actual URLs, see: `specs/deployment/DEPLOYMENT_STATUS.md`
@@ -11,12 +11,21 @@
 
 ## 📋 Quick Reference
 
-**Current Production URLs (Phase 2C):**
+**Current Production URLs:**
 - API: http://api.sekar.wahyutrip.com (sekar-backend:3000)
 - Web Dashboard: http://sekar.wahyutrip.com (sekar-web:3001)
-- Database: RDS PostgreSQL 14 (18 tables)
+- Database: RDS PostgreSQL 14 (20 tables as of Phase 2D)
 
-**What's New in Phase 2C:**
+**Phase 2D (Pending Deployment):**
+- ✅ Four-status tracking system (active/inactive/outside_area/missing/offline)
+- ✅ Materialized `user_tracking_status` table (O(1) lookups)
+- ✅ `monitoring_configs` table (runtime-adjustable thresholds)
+- ✅ Full Mapbox GL JS integration on web monitoring page
+- ✅ Mobile map: polygon rendering, status colors, location trail
+- ✅ WebSocket fixes (PascalCase role bug) + 3 new events
+- ⚠️ Requires Mapbox production token for web
+
+**Phase 2C (Deployed Feb 16, 2026):**
 - ✅ 8-role system (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
 - ✅ Terminology cleanup (activities, schedules, overtime - no more Indonesian paths)
 - ✅ New modules: Activities, Schedules, Overtime (flat structure)
@@ -28,7 +37,7 @@
 - [ ] All 16 GitHub Secrets configured
 - [ ] Firebase project created with FCM
 - [ ] AWS infrastructure ready (EC2, RDS, S3, ECR)
-- [ ] All tests passing (845/845, 90.77% coverage)
+- [ ] All tests passing (1,088 tests, 92.15% coverage)
 
 ---
 
@@ -87,65 +96,216 @@ Schema created from TypeORM entities directly
 
 ---
 
-## 🔄 Reproducibility for Future Phases
+## 📦 Deployment Guide — Staging & Production
 
-### Current Migration System Status
+### Overview
 
-✅ **WORKING** - Both migrations executed correctly via TypeORM
-✅ **TRACKED** - typeorm_migrations table exists with both entries
-⚠️ **MANUAL** - Migrations don't run automatically on deployment
+| Environment | Migration Command | Seed Command | Notes |
+|-------------|-------------------|--------------|-------|
+| **Dev** | `npm run migration:run` | `npm run db:seed` | Full wipe+seed OK |
+| **Staging (fresh)** | `npm run migration:run:prod` | `npm run db:seed:prod` | Reference data + 1 superadmin |
+| **Staging (incremental)** | `npm run migration:run:prod` | *(skip unless new ref data)* | Migrations only |
+| **Production (fresh)** | `npm run migration:run:prod` | `npm run db:seed:prod` | Reference data + 1 superadmin |
+| **Production (incremental)** | `npm run migration:run:prod` | *(skip unless new ref data)* | Migrations only |
 
-### How Migrations Currently Execute
+### Migrations
 
-The migrations were executed through TypeORM's auto-sync mechanism when:
-1. DATABASE_SYNCHRONIZE was temporarily enabled, OR
-2. Entities were loaded and TypeORM created missing tables
+4 migrations run in order:
+1. `InitialSchema1737000000000` — Phase 1 base tables (users, areas, shifts, location_logs, etc.)
+2. `AddProductionIndexesAndConstraints1737006000000` — Production indexes
+3. `Phase2CSchema1739390400000` — 8-role system, rename tables/columns, tasks, overtimes, schedules
+4. `Phase2DMonitoringSchema1741000000000` — monitoring_configs, user_tracking_status, indexes
+5. `Phase2DGapFixes1741100000000` — rayon boundary columns (boundary_polygon, center_lat, center_lng), composite index fix, GIN index on rayon boundaries
 
-**Issue:** No explicit migration runner in deployment pipeline.
+> **Note:** `notification_tokens` and `notifications` tables are NOT created by migrations. They are created by TypeORM entity sync. For staging/prod, either:
+> - Run the app once with `DATABASE_SYNCHRONIZE=true`, then disable it, OR
+> - Add a one-time SQL script (see Fresh Deploy below)
 
-### Making Future Deployments Reproducible
+### Seeder Commands
 
-For **Phase 2C**, **Phase 3**, and beyond, use one of these approaches:
-
-**Option A: Enable Auto-Migration (Recommended for Now)**
-```typescript
-// be/src/app.module.ts - TypeOrmModule.forRoot()
-{
-  // ... existing config
-  synchronize: false, // Keep false for safety
-  migrationsRun: true, // ADD THIS - runs migrations on startup
-  migrations: ['dist/database/migrations/*.js'],
-}
-```
-
-**Option B: Add Migration Step to Deployment**
-```yaml
-# .github/workflows/backend-ci-cd.yml
-- name: Run Migrations
-  run: |
-    docker exec sekar-backend npm run migration:run
-  # Add after container starts, before health check
-```
-
-**Option C: Manual Migration Script (Current Approach)**
 ```bash
-# After deployment, run manually:
-ssh -i key.pem user@server "docker exec sekar-backend npm run migration:run"
+# Dev (destructive — wipes all data)
+npm run db:seed            # Phase 1 + Phase 2 (30 users, tasks, activities, monitoring)
+npm run db:seed:phase1     # Phase 1 only (wipes + 6 base users)
+npm run db:seed:phase2     # Phase 2 only (24 more users, tasks, activities, monitoring)
+
+# Staging / Production (idempotent — safe to re-run)
+npm run db:seed:prod       # Reference data only + 1 superadmin (ON CONFLICT DO NOTHING)
+
+# Staging only — optional demo data (destructive!)
+npm run db:seed:phase1:prod && npm run db:seed:phase2:prod
 ```
 
-### For Next Phase Deployment (Phase 2C/3)
+---
 
-1. **Create migration:** `npm run migration:create src/database/migrations/Phase3Schema`
-2. **Write migration SQL:** Follow InitialSchema pattern
-3. **Test locally:** Drop DB, run migrations, verify schema
-4. **Deploy to production:** Push to main (triggers CI/CD)
-5. **Verify migration executed:** Check typeorm_migrations table
-6. **Run seeding if needed:** `npm run seed:prod`
+### Fresh Deploy — Staging
 
-### Seeding Strategy
+Prerequisites: EC2 instance, RDS PostgreSQL 14+, S3 bucket, ECR repository, GitHub Secrets configured.
 
-**Phase 1 data** (users, areas): Safe to re-run (clears old data)
-**Phase 2+ data** (rayons, tasks): Consider incremental seeding scripts
+```bash
+# 1. SSH into staging server
+ssh -i sekar-staging-key.pem ec2-user@<STAGING_IP>
+
+# 2. Pull and start backend container
+cd ~/sekar/backend
+docker pull <ECR_URI>/sekar-backend:latest
+docker-compose -f docker-compose.prod.yml up -d
+
+# 3. Run all migrations
+docker exec sekar-backend npm run migration:run:prod
+# Expected: 5 migrations executed
+
+# 4. Create tables not covered by migrations (notification_tokens, notifications)
+docker exec sekar-backend sh -c "DATABASE_SYNCHRONIZE=true node -e \"
+  const {DataSource} = require('typeorm');
+  const ds = new DataSource(require('./dist/database/data-source').default || require('./dist/database/data-source'));
+  ds.initialize().then(() => ds.synchronize().then(() => {console.log('Sync done'); ds.destroy()}));
+\"" || echo "Sync via env var instead"
+# Alternative: temporarily set DATABASE_SYNCHRONIZE=true in .env, restart, then disable
+
+# 5. Seed reference data (idempotent — safe to re-run)
+docker exec sekar-backend npm run db:seed:prod
+# Creates: 4 area types, 7 rayons, 3 shift defs, 20 activity types,
+#          5 monitoring configs (cluster_zoom_threshold=14), 4 special day overrides, 1 superadmin
+
+# 6. (Optional) Seed demo data for staging testing
+docker exec sekar-backend npm run db:seed:phase1:prod
+docker exec sekar-backend npm run db:seed:phase2:prod
+# Creates: 30 users, tasks, activities, monitoring status variants
+
+# 7. Verify
+curl http://<STAGING_IP>:3000/api/v1/health
+# → {"status":"ok"}
+
+TOKEN=$(curl -s -X POST http://<STAGING_IP>:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"password123"}' | jq -r '.access_token')
+
+curl -s -H "Authorization: Bearer $TOKEN" http://<STAGING_IP>:3000/api/v1/monitoring/config | jq
+# → 5 monitoring config entries
+
+# 8. Deploy web dashboard
+cd ~/sekar/web
+docker pull <ECR_URI>/sekar-web:latest
+docker-compose up -d
+
+# 9. Configure Nginx (see Phase 2C section below for template)
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Fresh Deploy — Production
+
+Same as staging, but:
+- Use production credentials and domains
+- **Do NOT seed demo data** — only `npm run db:seed:prod` (reference + 1 superadmin)
+- Change the default admin password immediately after first login
+- Ensure `DATABASE_SYNCHRONIZE=false` in `.env.production`
+- Ensure `CORS_ORIGIN` matches production domain
+
+```bash
+# 1-4: Same as staging (pull, start, migrate, sync tables)
+
+# 5. Seed reference data only (no demo data!)
+docker exec sekar-backend npm run db:seed:prod
+
+# 6. Verify
+curl https://api.sekar.wahyutrip.com/api/v1/health
+
+# 7. Change default admin password via API or direct DB update
+docker exec sekar-backend sh -c "node -e \"
+  const bcrypt = require('bcrypt');
+  bcrypt.hash('<NEW_SECURE_PASSWORD>', 10).then(h => console.log(h));
+\""
+# Then UPDATE users SET password_hash = '<hash>' WHERE username = 'admin';
+
+# 8. Deploy web, configure Nginx, verify
+```
+
+---
+
+### Incremental Deploy — Staging & Production
+
+For subsequent deploys (new features, bug fixes):
+
+```bash
+# 1. SSH into server
+ssh -i <KEY>.pem ec2-user@<SERVER_IP>
+
+# 2. Pull new backend image
+cd ~/sekar/backend
+docker pull <ECR_URI>/sekar-backend:latest
+
+# 3. Run pending migrations (safe — only runs new ones)
+docker exec sekar-backend npm run migration:run:prod
+# If no new migrations: "No migrations are pending"
+
+# 4. (Only if new reference data was added) Seed reference data
+docker exec sekar-backend npm run db:seed:prod
+# Idempotent — ON CONFLICT DO NOTHING for all inserts
+
+# 5. Restart with new image
+docker-compose -f docker-compose.prod.yml up -d
+
+# 6. Verify health
+curl http://<SERVER>:3000/api/v1/health
+
+# 7. (If web changes) Pull and restart web
+cd ~/sekar/web
+docker pull <ECR_URI>/sekar-web:latest
+docker-compose up -d
+```
+
+**What NOT to do on incremental deploys:**
+- Never run `npm run db:seed` (destructive — wipes all data)
+- Never run `npm run db:seed:phase1:prod` (destructive — wipes all data)
+- Never set `DATABASE_SYNCHRONIZE=true` (except during initial setup)
+- Never drop the schema
+
+---
+
+### Environment Variables
+
+**Staging** — see `be/.env.staging.example`
+**Production** — see `be/.env.production.example`
+
+Critical settings for non-dev environments:
+```env
+DATABASE_SYNCHRONIZE=false    # CRITICAL: must be false
+DATABASE_MIGRATIONS_RUN=false # Run migrations manually, not on startup
+NODE_ENV=staging              # or 'production'
+DATABASE_SSL=true             # Required for RDS
+```
+
+`main.ts` has a startup guard that throws if `DATABASE_SYNCHRONIZE=true` in non-development environments.
+
+---
+
+### Rollback Procedures
+
+**Backend (any phase):**
+```bash
+# Revert to previous image
+docker pull <ECR_URI>/sekar-backend:<PREVIOUS_TAG>
+docker tag <ECR_URI>/sekar-backend:<PREVIOUS_TAG> <ECR_URI>/sekar-backend:latest
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Database migration rollback:**
+```bash
+# Revert the most recent migration
+docker exec sekar-backend npm run migration:revert:prod
+# Repeat for each migration to undo
+```
+
+**Full database rollback (last resort):**
+```bash
+# Restore from RDS snapshot
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier sekar-prod \
+  --db-snapshot-identifier <SNAPSHOT_ID>
+```
+
+> Always prefer "fix forward" over database rollbacks. Migration reverts can lose data.
 
 ---
 
@@ -1332,6 +1492,230 @@ docker-compose -f docker-compose.prod.yml restart web
 
 **Last deployed:** Check GitHub Actions for latest successful deployment
 **Next maintenance:** Quarterly secret rotation (90 days from deployment)
+
+---
+
+## 🚀 Phase 2D Deployment (Monitoring Reimplementation) — PENDING
+
+**Status:** ✅ Code-Complete | 🔄 Awaiting Deployment
+**Branch:** `f/phase-2-d-monitoring` (pending merge to main)
+**Breaking Changes:** Additive only (non-breaking for Phase 2C clients)
+
+### Pre-Deployment Checklist
+
+- [ ] All backend tests passing (1,204 tests, 62 suites, 94.55% line coverage)
+- [ ] All mobile tests passing (~3,493 tests)
+- [ ] Database migration scripts reviewed and tested (2 migrations: `1741000000000` + `1741100000000`)
+- [ ] Backfill script for `user_tracking_status` tested on staging
+- [ ] Mapbox token configured for production domain (`NEXT_PUBLIC_MAPBOX_TOKEN`)
+- [ ] WebSocket event handlers verified on staging (including `AREA_STAFFING_CHANGED`)
+- [ ] Monitoring config seed data reviewed (`cluster_zoom_threshold: 14`)
+- [ ] Rayon boundary recompute verified after area boundary updates
+
+### Database Migration
+
+Run in order after merging to main:
+
+```sql
+-- 1. monitoring_configs table
+CREATE TABLE monitoring_configs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key VARCHAR(100) UNIQUE NOT NULL,
+    value JSONB NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. user_tracking_status table
+CREATE TABLE user_tracking_status (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    shift_id UUID REFERENCES shifts(id) ON DELETE SET NULL,
+    shift_definition_id UUID REFERENCES shift_definitions(id) ON DELETE SET NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'offline',
+    last_latitude DECIMAL(10, 8),
+    last_longitude DECIMAL(11, 8),
+    last_accuracy_meters DECIMAL(6, 2),
+    last_battery_level INTEGER,
+    last_location_at TIMESTAMPTZ,
+    is_within_area BOOLEAN DEFAULT TRUE,
+    area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT chk_tracking_status CHECK (status IN ('active','inactive','outside_area','missing','offline'))
+);
+
+-- 3. Add shift_definition_id to shifts table
+ALTER TABLE shifts ADD COLUMN shift_definition_id UUID REFERENCES shift_definitions(id) ON DELETE SET NULL;
+
+-- 4. Indexes
+CREATE INDEX idx_uts_status ON user_tracking_status(status);
+CREATE INDEX idx_uts_area_id ON user_tracking_status(area_id);
+CREATE INDEX idx_uts_shift_id ON user_tracking_status(shift_id);
+CREATE INDEX idx_uts_updated_at ON user_tracking_status(updated_at);
+CREATE INDEX idx_uts_status_area ON user_tracking_status(status, area_id);
+CREATE INDEX CONCURRENTLY idx_location_logs_user_shift_time ON location_logs(user_id, shift_id, logged_at DESC);
+CREATE INDEX idx_areas_boundary_polygon ON areas USING GIN(boundary_polygon);
+CREATE INDEX idx_shifts_shift_definition_id ON shifts(shift_definition_id);
+
+-- 5. Seed default monitoring config
+INSERT INTO monitoring_configs (key, value, description) VALUES
+('status_thresholds', '{"active_max_age_seconds": 300, "inactive_threshold_seconds": 900, "missing_threshold_seconds": 3600, "location_ping_interval_seconds": 60}', 'Thresholds for determining user tracking status'),
+('geofencing', '{"tolerance_meters": 50, "outside_area_grace_seconds": 120}', 'Geofencing tolerance and grace period settings'),
+('map_defaults', '{"center_lat": -7.2575, "center_lng": 112.7521, "zoom": 12, "cluster_zoom_threshold": 14}', 'Default map view configuration'),
+('alerts', '{"low_battery_threshold": 15, "understaffed_notify": true, "missing_user_notify": true}', 'Alert notification settings'),
+('location_ping', '{"interval_seconds": 60, "batch_size": 10}', 'Location ping batch settings');
+
+-- 6. Backfill user_tracking_status from active shifts
+INSERT INTO user_tracking_status (user_id, shift_id, status, area_id, updated_at)
+SELECT s.user_id, s.id, 'offline', u.area_id, NOW()
+FROM shifts s JOIN users u ON s.user_id = u.id
+WHERE s.clock_out_time IS NULL
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO user_tracking_status (user_id, status, area_id, updated_at)
+SELECT id, 'offline', area_id, NOW() FROM users
+WHERE deleted_at IS NULL AND id NOT IN (SELECT user_id FROM user_tracking_status)
+ON CONFLICT (user_id) DO NOTHING;
+```
+
+### Backend Deployment Steps
+
+```bash
+# 1. Run database migrations
+cd be && npm run migration:run
+
+# 2. Seed monitoring configs
+cd be && npm run seed
+
+# 3. Deploy backend image
+docker build -t sekar-backend .
+docker tag sekar-backend:latest <ECR_URI>/sekar-backend:phase-2d
+docker push <ECR_URI>/sekar-backend:phase-2d
+
+# 4. Verify cron job running (every 60s)
+docker logs sekar-backend --since 5m | grep "MonitoringScheduler"
+```
+
+### Web Environment Variables (Phase 2D additions)
+
+```env
+# Mapbox (NEW — required for Phase 2D monitoring map)
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.xxxx
+NEXT_PUBLIC_MAPBOX_STYLE=mapbox://styles/mapbox/streets-v12
+
+# WebSocket (existing)
+NEXT_PUBLIC_WS_URL=wss://api.sekar.wahyutrip.com
+```
+
+### New Endpoints (9)
+
+- `GET /monitoring/users/:userId/location-history`
+- `GET /monitoring/users/:userId/day-summary`
+- `GET /monitoring/config`
+- `PATCH /monitoring/config/:key`
+- `GET /monitoring/staffing-summary`
+- `GET /monitoring/boundaries` — rayon/area boundary polygons with staffing summary (hierarchical)
+- `POST /monitoring/reassign` — reassign worker to different area (creates new schedule)
+- `GET /areas/:id/boundary`
+- `PUT /areas/:id/boundary` — also triggers `RayonBoundaryService.recompute()`
+
+### New WebSocket Events
+
+- `user:status-changed` — emitted when tracking status changes
+- `user:left-area` — emitted when user moves outside area boundary
+- `user:entered-area` — emitted when user moves inside area boundary
+- `user:reassigned` — emitted when worker is reassigned to a new area
+- `area:staffing-changed` — emitted when area staffing crosses threshold (payload: `areaId`, `rayonId`, `activeCount`, `requiredCount`, `isMet`)
+- Enhanced `user:location` — now includes `status`, `is_within_area`, `shift_name`
+
+### WebSocket Room Prefix
+
+All monitoring events use `monitoring:` room prefix:
+- `monitoring:city` — city-wide events
+- `monitoring:rayon:{rayonId}` — rayon-scoped events
+- `monitoring:area:{areaId}` — area-scoped events
+
+### Post-Deployment Verification
+
+```bash
+TOKEN=$(curl -s -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"password123"}' | jq -r '.access_token')
+
+curl -s -H "Authorization: Bearer $TOKEN" http://api.sekar.wahyutrip.com/api/v1/monitoring/config
+# → 5 config entries (status_thresholds, geofencing, map_defaults, alerts, location_ping)
+
+curl -s -H "Authorization: Bearer $TOKEN" http://api.sekar.wahyutrip.com/api/v1/monitoring/staffing-summary
+# → per-role breakdown
+
+curl -s -H "Authorization: Bearer $TOKEN" "http://api.sekar.wahyutrip.com/api/v1/monitoring/live-users?status=active"
+# → active users from user_tracking_status
+
+curl -s -H "Authorization: Bearer $TOKEN" http://api.sekar.wahyutrip.com/api/v1/monitoring/boundaries
+# → hierarchical rayon/area boundaries with staffing_summary
+
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"user_id":"<user-id>","target_area_id":"<area-id>"}' \
+  http://api.sekar.wahyutrip.com/api/v1/monitoring/reassign
+# → reassignment response with new_schedule_id
+```
+
+**Database checks:**
+```sql
+SELECT COUNT(*) FROM monitoring_configs;   -- Should be 5
+SELECT COUNT(*) FROM user_tracking_status; -- Should match user count
+SELECT indexname FROM pg_indexes WHERE tablename = 'user_tracking_status';
+-- Should include: idx_uts_status, idx_uts_area_id, idx_uts_shift_id, idx_uts_updated_at, idx_uts_status_area
+SELECT column_name FROM information_schema.columns WHERE table_name = 'rayons' AND column_name IN ('boundary_polygon', 'center_lat', 'center_lng');
+-- Should return 3 rows (rayon boundary columns from gap fix migration)
+```
+
+**Web checks:**
+- [ ] `/monitoring` loads with Mapbox map and area polygons
+- [ ] User markers show correct status colors (green/amber/purple/red/gray)
+- [ ] Side panel filters work and show staffing summary
+- [ ] `/monitoring/config` accessible for admin_system/superadmin only (403 for others)
+- [ ] Rayon boundaries display on map when available
+- [ ] Staffing threshold alerts visible (area:staffing-changed events)
+
+### Phase 2D Rollback
+
+```bash
+# Backend: revert to Phase 2C image
+docker pull <ECR_URI>/sekar-backend:phase-2c
+docker tag <ECR_URI>/sekar-backend:phase-2c <ECR_URI>/sekar-backend:latest
+# Restart ECS service
+
+# Database: drop Phase 2D additions (WARNING: destroys monitoring data)
+-- Revert gap fix migration (1741100000000)
+ALTER TABLE rayons DROP COLUMN IF EXISTS boundary_polygon;
+ALTER TABLE rayons DROP COLUMN IF EXISTS center_lat;
+ALTER TABLE rayons DROP COLUMN IF EXISTS center_lng;
+DROP INDEX IF EXISTS idx_rayons_boundary_polygon;
+
+-- Revert base Phase 2D migration (1741000000000)
+DROP TABLE IF EXISTS user_tracking_status;
+DROP TABLE IF EXISTS monitoring_configs;
+ALTER TABLE shifts DROP COLUMN IF EXISTS shift_definition_id;
+DROP INDEX IF EXISTS idx_location_logs_user_shift_time;
+DROP INDEX IF EXISTS idx_areas_boundary_polygon;
+```
+
+### Breaking Changes (Phase 2D)
+
+- `GET /monitoring/live-users`: `total_online` deprecated → use `total_active` (alias kept for backwards compat)
+- `GET /monitoring/area/:id`: staff requirements now per-role instead of aggregate
+- Phase 2C mobile app continues to work with deprecated `total_online` field
+
+### Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| `/monitoring/live-users` response | < 200ms |
+| `/monitoring/city` response | < 500ms (was N+1, now single join) |
+| WebSocket event delivery | < 100ms |
+| Cron job cycle | < 10s |
+| Cache hit rate (thresholds) | > 90% |
 
 ---
 

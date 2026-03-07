@@ -714,3 +714,69 @@ export const selectActiveShift = createSelector(
 **Status:** Active - Phase 1
 **Implementation:** `fe/mobile/src/store/`
 **Dependencies:** `@reduxjs/toolkit`, `react-redux`
+
+---
+
+## Phase 2D: Monitoring State Enhancements
+
+### Enhanced Monitoring Slice
+
+**File:** `store/slices/monitoringSlice.ts`
+
+```typescript
+interface MonitoringState {
+  // Existing (enhanced)
+  liveUsers: LiveUserDto[];
+  statusCounts: { active: number; inactive: number; outside_area: number; missing: number; offline: number };
+
+  // New state
+  filters: MonitoringFilters;
+  selectedUserId: string | null;
+  userDaySummary: UserDaySummaryDto | null;
+  locationHistory: LocationHistoryResponseDto | null;
+  staffingSummary: StaffingSummaryResponseDto | null;
+
+  // Separate loading states
+  isLoadingLiveUsers: boolean;
+  isLoadingDaySummary: boolean;
+  isLoadingLocationHistory: boolean;
+  isLoadingStaffingSummary: boolean;
+  error: string | null;
+}
+
+interface MonitoringFilters {
+  rayon_id?: string;
+  area_id?: string;
+  role?: string;
+  status?: TrackingStatus;
+  search?: string;
+}
+
+type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
+```
+
+### New Async Thunks
+
+| Thunk | API Call | Description |
+|-------|----------|-------------|
+| `fetchLiveUsers` | `GET /monitoring/live-users` | Enhanced with status filter param |
+| `fetchUserDaySummary` | `GET /monitoring/users/:id/day-summary` | User detail modal data |
+| `fetchLocationHistory` | `GET /monitoring/users/:id/location-history` | GPS trail for a date |
+| `fetchStaffingSummary` | `GET /monitoring/staffing-summary` | Per-role staffing for filter modal |
+
+### WebSocket Event Handlers
+
+| Event | Action | Description |
+|-------|--------|-------------|
+| `user:location` | Update user in `liveUsers` array | Enhanced with status, is_within_area, shift_name |
+| `user:status-changed` | Update user status + recalculate statusCounts | Trigger toast if status becomes 'missing' |
+| `user:left-area` | Update user is_within_area to false | Visual alert on map |
+| `user:entered-area` | Update user is_within_area to true | Clear area warning |
+
+### Custom Hooks
+
+- `useMonitoringFilters()` — Filter state + dispatchers
+- `useSelectedUser()` — Selected user + day summary
+- `useLocationHistory(userId, date)` — Location trail data
+
+**Last Updated:** 2026-03-03 | **Status:** Active - Phase 2D

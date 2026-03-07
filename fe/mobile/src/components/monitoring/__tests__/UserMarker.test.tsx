@@ -1,12 +1,12 @@
 /**
  * UserMarker Component Tests
- * Tests for custom map marker showing user status, role, and position
+ * Phase 2D: Tests for custom map marker with LiveUser data, role icons, four-status colors
  */
 
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { UserMarker, UserStatus } from '../UserMarker';
-import type { ActiveUserData } from '../../../types/api.types';
+import { UserMarker } from '../UserMarker';
+import type { LiveUser } from '../../../types/models.types';
 
 // Mock react-native-maps components
 jest.mock('react-native-maps', () => {
@@ -28,49 +28,46 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   return (props: any) => React.createElement(Text, { testID: 'icon', ...props }, props.name);
 });
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const createMockUser = (overrides?: Partial<LiveUser>): LiveUser => ({
+  id: 'user-123',
+  full_name: 'Ahmad Satgas',
+  role: 'satgas',
+  phone: '08123456789',
+  status: 'active',
+  area_id: 'area-123',
+  area_name: 'Taman A',
+  rayon_id: 'rayon-1',
+  rayon_name: 'Rayon 1',
+  latitude: -7.250445,
+  longitude: 112.768845,
+  accuracy: 10,
+  battery_level: 85,
+  last_update: '2026-02-15T08:00:00Z',
+  is_within_area: true,
+  shift_id: 'shift-123',
+  shift_name: 'Shift Pagi',
+  shift_definition_id: null,
+  clock_in_time: '2026-02-15T07:00:00Z',
+  current_task_status: null,
+  current_task_title: null,
+  ...overrides,
+});
+
+// ─── Tests ───────────────────────────────────────────────────────────────────
+
 describe('UserMarker', () => {
   const mockOnPress = jest.fn();
-
-  const createMockUser = (overrides?: Partial<ActiveUserData>): ActiveUserData => ({
-    id: 'user-123',
-    username: 'satgas1',
-    full_name: 'Ahmad Satgas',
-    role: 'satgas',
-    shift: {
-      id: 'shift-123',
-      clock_in_time: '2026-02-15T07:00:00Z',
-      area: {
-        id: 'area-123',
-        name: 'Taman A',
-      },
-    },
-    latest_location: {
-      gps_lat: -7.250445,
-      gps_lng: 112.768845,
-      logged_at: '2026-02-15T08:00:00Z',
-    },
-    ...overrides,
-  });
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('rendering', () => {
-    it('should render marker with coordinates from user location', () => {
-      // Arrange
+    it('should render marker with coordinates from LiveUser', () => {
       const user = createMockUser();
-
-      // Act
-      const { getByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert
+      const { getByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const marker = getByTestId('marker');
       expect(marker).toBeTruthy();
       expect(marker.props.coordinate).toEqual({
@@ -79,214 +76,75 @@ describe('UserMarker', () => {
       });
     });
 
-    it('should return null if user has no location', () => {
-      // Arrange
-      const user = createMockUser({ latest_location: null });
-
-      // Act
-      const { queryByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert
-      expect(queryByTestId('marker')).toBeNull();
-    });
-
-    it('should render with string coordinates converted to numbers', () => {
-      // Arrange
-      const user = createMockUser({
-        latest_location: {
-          gps_lat: '-7.250445' as any,
-          gps_lng: '112.768845' as any,
-          logged_at: '2026-02-15T08:00:00Z',
-        },
-      });
-
-      // Act
-      const { getByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert
-      const marker = getByTestId('marker');
-      expect(marker.props.coordinate).toEqual({
-        latitude: -7.250445,
-        longitude: 112.768845,
-      });
-    });
-  });
-
-  describe('status colors', () => {
-    it('should use success color for active status', () => {
-      // Arrange
+    it('should render callout for single marker', () => {
       const user = createMockUser();
-
-      // Act
-      const { UNSAFE_getAllByType } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - marker container should be rendered
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+      const { getByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(getByTestId('callout')).toBeTruthy();
     });
 
-    it('should use warning color for warning status', () => {
-      // Arrange
-      const user = createMockUser();
-
-      // Act
-      const { UNSAFE_getAllByType } = render(
-        <UserMarker
-          user={user}
-          status="warning"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - marker container should be rendered
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+    it('should display user full name', () => {
+      const user = createMockUser({ full_name: 'Budi Santoso' });
+      const { getByText } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(getByText('Budi Santoso')).toBeTruthy();
     });
 
-    it('should use danger color for outside status', () => {
-      // Arrange
-      const user = createMockUser();
+    it('should display area name in callout', () => {
+      const user = createMockUser({ area_name: 'Taman Bungkul' });
+      const { getByText } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(getByText('Taman Bungkul')).toBeTruthy();
+    });
 
-      // Act
-      const { UNSAFE_getAllByType } = render(
-        <UserMarker
-          user={user}
-          status="outside"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - marker container should be rendered
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+    it('should display role label in callout', () => {
+      const user = createMockUser({ role: 'satgas' });
+      const { getByText } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(getByText('Satgas')).toBeTruthy();
     });
   });
 
   describe('role-specific rendering', () => {
     it('should render satgas role icon', () => {
-      // Arrange
       const user = createMockUser({ role: 'satgas' });
-
-      // Act
-      const { getAllByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - icon appears in marker and callout
+      const { getAllByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const icons = getAllByTestId('icon');
       expect(icons.length).toBeGreaterThan(0);
       expect(icons[0].props.children).toBe('account-hard-hat');
     });
 
     it('should render linmas role icon', () => {
-      // Arrange
       const user = createMockUser({ role: 'linmas' });
-
-      // Act
-      const { getAllByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - icon appears in marker and callout
+      const { getAllByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const icons = getAllByTestId('icon');
       expect(icons.length).toBeGreaterThan(0);
       expect(icons[0].props.children).toBe('shield-account');
     });
 
     it('should render korlap role icon', () => {
-      // Arrange
       const user = createMockUser({ role: 'korlap' });
-
-      // Act
-      const { getAllByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - icon appears in marker and callout
+      const { getAllByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const icons = getAllByTestId('icon');
       expect(icons.length).toBeGreaterThan(0);
       expect(icons[0].props.children).toBe('clipboard-account');
     });
 
     it('should render admin_data role icon', () => {
-      // Arrange
       const user = createMockUser({ role: 'admin_data' });
-
-      // Act
-      const { getAllByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - icon appears in marker and callout
+      const { getAllByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const icons = getAllByTestId('icon');
       expect(icons.length).toBeGreaterThan(0);
       expect(icons[0].props.children).toBe('file-document-edit');
     });
 
     it('should render kepala_rayon role icon', () => {
-      // Arrange
       const user = createMockUser({ role: 'kepala_rayon' });
-
-      // Act
-      const { getAllByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - icon appears in marker and callout
+      const { getAllByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const icons = getAllByTestId('icon');
       expect(icons.length).toBeGreaterThan(0);
       expect(icons[0].props.children).toBe('account-star');
     });
 
-    it('should default to satgas icon for undefined role', () => {
-      // Arrange
-      const user = createMockUser({ role: undefined });
-
-      // Act
-      const { getAllByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - icon appears in marker and callout
+    it('should default to satgas icon for unknown role', () => {
+      const user = createMockUser({ role: 'unknown_role' });
+      const { getAllByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const icons = getAllByTestId('icon');
       expect(icons.length).toBeGreaterThan(0);
       expect(icons[0].props.children).toBe('account-hard-hat');
@@ -295,226 +153,93 @@ describe('UserMarker', () => {
 
   describe('cluster rendering', () => {
     it('should render cluster marker when clusterCount > 1', () => {
-      // Arrange
       const user = createMockUser();
-
-      // Act
       const { getByText, queryByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-          clusterCount={5}
-        />
+        <UserMarker user={user} onPress={mockOnPress} clusterCount={5} />
       );
-
-      // Assert
       expect(getByText('5')).toBeTruthy();
-      // Callout should not be rendered for clusters
       expect(queryByTestId('callout')).toBeNull();
     });
 
     it('should render normal marker when clusterCount is 1', () => {
-      // Arrange
       const user = createMockUser();
-
-      // Act
       const { queryByText, getByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-          clusterCount={1}
-        />
+        <UserMarker user={user} onPress={mockOnPress} clusterCount={1} />
       );
-
-      // Assert - should not render cluster text
       expect(queryByText('1')).toBeNull();
-      // Should render callout
       expect(getByTestId('callout')).toBeTruthy();
     });
 
     it('should render normal marker when clusterCount is undefined', () => {
-      // Arrange
       const user = createMockUser();
-
-      // Act
-      const { getByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - should render callout
+      const { getByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       expect(getByTestId('callout')).toBeTruthy();
-    });
-  });
-
-  describe('callout information', () => {
-    it('should display user full name in callout', () => {
-      // Arrange
-      const user = createMockUser({ full_name: 'Budi Santoso' });
-
-      // Act
-      const { getByText } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert
-      expect(getByText('Budi Santoso')).toBeTruthy();
-    });
-
-    it('should display area name in callout', () => {
-      // Arrange
-      const user = createMockUser({
-        shift: {
-          id: 'shift-123',
-          clock_in_time: '2026-02-15T07:00:00Z',
-          area: {
-            id: 'area-123',
-            name: 'Taman Bungkul',
-          },
-        },
-      });
-
-      // Act
-      const { getByText } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert
-      expect(getByText('Taman Bungkul')).toBeTruthy();
-    });
-
-    it('should display role label in callout', () => {
-      // Arrange
-      const user = createMockUser({ role: 'satgas' });
-
-      // Act
-      const { getByText } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - Satgas label should be present
-      expect(getByText('Satgas')).toBeTruthy();
     });
   });
 
   describe('interaction', () => {
     it('should call onPress when marker is pressed', () => {
-      // Arrange
       const user = createMockUser();
-
-      // Act
-      const { getByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
+      const { getByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const marker = getByTestId('marker');
       marker.props.onPress();
-
-      // Assert
       expect(mockOnPress).toHaveBeenCalledTimes(1);
     });
 
     it('should set tracksViewChanges to false for performance', () => {
-      // Arrange
       const user = createMockUser();
-
-      // Act
-      const { getByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert
+      const { getByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const marker = getByTestId('marker');
       expect(marker.props.tracksViewChanges).toBe(false);
     });
   });
 
+  describe('status colors', () => {
+    it('should render for active status', () => {
+      const user = createMockUser({ status: 'active' });
+      const { UNSAFE_getAllByType } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+    });
+
+    it('should render for inactive status', () => {
+      const user = createMockUser({ status: 'inactive' });
+      const { UNSAFE_getAllByType } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+    });
+
+    it('should render for outside_area status', () => {
+      const user = createMockUser({ status: 'outside_area' });
+      const { UNSAFE_getAllByType } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+    });
+
+    it('should render for missing status', () => {
+      const user = createMockUser({ status: 'missing' });
+      const { UNSAFE_getAllByType } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+    });
+  });
+
   describe('edge cases', () => {
-    it('should handle user with no role gracefully', () => {
-      // Arrange
-      const user = createMockUser({ role: undefined });
-
-      // Act
-      const { getByText } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert - should default to Satgas
-      expect(getByText('Satgas')).toBeTruthy();
+    it('should handle user with unknown role gracefully', () => {
+      const user = createMockUser({ role: 'unknown' });
+      // Should render without crashing — getRoleIcon returns default 'account-hard-hat'
+      const { getAllByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      const icons = getAllByTestId('icon');
+      expect(icons[0].props.children).toBe('account-hard-hat');
     });
 
     it('should handle location with zero coordinates', () => {
-      // Arrange
-      const user = createMockUser({
-        latest_location: {
-          gps_lat: 0,
-          gps_lng: 0,
-          logged_at: '2026-02-15T08:00:00Z',
-        },
-      });
-
-      // Act
-      const { getByTestId } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-        />
-      );
-
-      // Assert
+      const user = createMockUser({ latitude: 0, longitude: 0 });
+      const { getByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
       const marker = getByTestId('marker');
-      expect(marker.props.coordinate).toEqual({
-        latitude: 0,
-        longitude: 0,
-      });
+      expect(marker.props.coordinate).toEqual({ latitude: 0, longitude: 0 });
     });
 
-    it('should handle very large cluster count', () => {
-      // Arrange
-      const user = createMockUser();
-
-      // Act
-      const { getByText } = render(
-        <UserMarker
-          user={user}
-          status="active"
-          onPress={mockOnPress}
-          clusterCount={999}
-        />
-      );
-
-      // Assert
-      expect(getByText('999')).toBeTruthy();
+    it('should render without battery level', () => {
+      const user = createMockUser({ battery_level: null });
+      const { getByTestId } = render(<UserMarker user={user} onPress={mockOnPress} />);
+      expect(getByTestId('marker')).toBeTruthy();
     });
   });
 });

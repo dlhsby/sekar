@@ -1,16 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsUUID, IsEnum } from 'class-validator';
 import { CLOCKABLE_ROLES } from '../../users/constants/role-groups';
+import { TrackingStatus } from '../entities/user-tracking-status.entity';
 
-/**
- * Live user position data
- */
 export class LiveUserDto {
   @ApiProperty({ example: 'user-uuid' })
   id: string;
 
   @ApiProperty({ example: 'John Doe' })
   full_name: string;
+
+  @ApiProperty({ example: '08123456789', nullable: true })
+  phone: string | null;
 
   @ApiProperty({ example: 'satgas' })
   role: string;
@@ -42,6 +43,9 @@ export class LiveUserDto {
   @ApiProperty({ example: '2024-01-24T10:25:00Z' })
   last_update: Date;
 
+  @ApiProperty({ enum: TrackingStatus, example: 'active' })
+  status: TrackingStatus;
+
   @ApiProperty({ example: true })
   is_within_area: boolean;
 
@@ -50,6 +54,9 @@ export class LiveUserDto {
 
   @ApiProperty({ example: 'shift-uuid' })
   shift_id: string;
+
+  @ApiProperty({ example: 'shift-def-uuid', nullable: true })
+  shift_definition_id: string | null;
 
   @ApiProperty({ example: 'Shift 1' })
   shift_name: string;
@@ -64,45 +71,46 @@ export class LiveUserDto {
   current_task_title: string | null;
 }
 
-/**
- * Filter for live users query
- */
 export class LiveUsersFilterDto {
-  @ApiPropertyOptional({
-    description: 'Filter by rayon ID',
-    example: 'rayon-uuid',
-  })
+  @ApiPropertyOptional({ description: 'Filter by rayon ID' })
   @IsUUID()
   @IsOptional()
   rayon_id?: string;
 
-  @ApiPropertyOptional({
-    description: 'Filter by area ID',
-    example: 'area-uuid',
-  })
+  @ApiPropertyOptional({ description: 'Filter by area ID' })
   @IsUUID()
   @IsOptional()
   area_id?: string;
 
-  @ApiPropertyOptional({
-    description: 'Filter by role',
-    enum: CLOCKABLE_ROLES,
-    example: 'satgas',
-  })
+  @ApiPropertyOptional({ description: 'Filter by role', enum: CLOCKABLE_ROLES })
   @IsEnum(CLOCKABLE_ROLES)
   @IsOptional()
   role?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by tracking status', enum: TrackingStatus })
+  @IsEnum(TrackingStatus)
+  @IsOptional()
+  status?: TrackingStatus;
 }
 
-/**
- * Live users response DTO
- */
 export class LiveUsersResponseDto {
-  @ApiProperty({ example: 45 })
-  total_online: number;
+  @ApiProperty({ example: 30 })
+  total_active: number;
+
+  @ApiProperty({ example: 10 })
+  total_inactive: number;
+
+  @ApiProperty({ example: 3 })
+  total_outside_area: number;
+
+  @ApiProperty({ example: 2 })
+  total_missing: number;
 
   @ApiProperty({ example: 5 })
   total_offline: number;
+
+  @ApiProperty({ example: 30, description: 'Deprecated alias for total_active', deprecated: true })
+  total_online: number;
 
   @ApiProperty({ type: [LiveUserDto] })
   users: LiveUserDto[];

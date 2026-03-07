@@ -1,24 +1,13 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventsGateway } from './events.gateway';
+import { User } from '../modules/users/entities/user.entity';
 
-/**
- * Module for WebSocket events
- *
- * Provides real-time event broadcasting for:
- * - Worker location updates
- * - Clock-in/clock-out events
- * - Area staffing changes
- * - Task assignments and completions
- *
- * Clients can subscribe to:
- * - Specific areas (area:{areaId})
- * - Specific rayons (rayon:{rayonId})
- * - City-wide events (Admin/TopManagement only)
- */
 @Module({
   imports: [
+    TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

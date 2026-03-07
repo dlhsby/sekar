@@ -11,6 +11,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
+import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
 /**
  * Shift Entity
@@ -58,6 +59,17 @@ export class Shift {
   @ManyToOne(() => Area, { eager: true, nullable: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'area_id' })
   area?: Area;
+
+  @ApiProperty({
+    description: 'Shift definition ID (Phase 2D)',
+    nullable: true,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  shift_definition_id: string | null;
+
+  @ManyToOne(() => ShiftDefinition, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'shift_definition_id' })
+  shift_definition: ShiftDefinition;
 
   @ApiProperty({
     description: 'Whether user was outside area boundary at clock-in',

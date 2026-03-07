@@ -367,6 +367,18 @@ interface WorkerHomeState {
    - Shows pending sync count
    - Tappable to view sync queue
 
+#### LocationStatusCard (Phase 2D-11)
+- Position: Above "Shift Aktif" card, below greeting header
+- Visibility: Only when user has an active shift
+- Content:
+  - GPS coordinates (lat/lng, 6 decimal places)
+  - GPS accuracy badge (±Xm, amber warning if >50m)
+  - Area status banner: green "Di dalam area kerja" or orange "Di luar area kerja"
+  - Sync/refresh icon button (triggers captureNow + forceUpload)
+- Hook: `useHomeLocation` — manages location state, refresh, boundary check
+- Pattern: Reuses display pattern from ClockInOutScreen "Lokasi Anda" card
+- Component: `fe/mobile/src/components/home/LocationStatusCard.tsx`
+
 #### Real-Time Updates
 
 **Shift Timer:**
@@ -2657,3 +2669,25 @@ fontSize: {
 | top_management | Monitoring, Tugas, Profil |
 | admin_system | Monitoring, Tugas, Profil |
 | superadmin | Monitoring, Tugas, Profil |
+
+### Phase 2D: Monitoring Enhancements
+
+#### Modified Screens
+
+| Screen | Route | Changes |
+|--------|-------|---------|
+| MapDashboardScreen | `MonitoringMap` | Major rewrite: polygon rendering (falls back to circle), five-status color markers (active/inactive/outside_area/missing/offline), FAB column (5 buttons: filter/location/zoom+/zoom-/refresh), StatusSummaryBar, UserListStrip, marker tap opens UserDetailSheet |
+
+#### New Sub-Components (Bottom Sheet Navigation)
+
+| Component | Description |
+|-----------|-------------|
+| UserDetailSheet | Bottom sheet (50-85% snap, `@gorhom/bottom-sheet`) showing shift info, last location, activities/tasks today, WhatsApp/Call/Trail action buttons. Fetches from `GET /monitoring/users/:userId/day-summary` |
+| LocationTrail | Polyline overlay on MapView. Green segments inside area, purple outside. Start "S" pin, end "E" pin, clickable points show time/accuracy/battery callout. Fetches from `GET /monitoring/users/:userId/location-history` |
+| StatusSummaryBar | 48px horizontal bar below header. Four colored chips (Active/Idle/Outside/Missing) with counts. Tappable to filter map |
+| UserListStrip | 80px horizontal scroll at map bottom. Cards sorted: missing > outside > idle > active. Tap to center map + open detail sheet |
+| MonitoringFilterModal | Full-screen modal with status multi-select chips, cascading rayon/area dropdowns, role chips, user search, staffing summary card |
+
+#### Updated Screen Count
+- Total screens: 17 (no new screens, 1 major rewrite)
+- New sub-components: 5 (bottom sheet navigation pattern)

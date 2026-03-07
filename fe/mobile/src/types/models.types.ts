@@ -326,6 +326,9 @@ export interface Notification {
   created_at: string;
 }
 
+// Tracking status — Phase 2D: server-computed five-status model
+export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
+
 // Monitoring Stats
 export interface MonitoringStats {
   total_users: number;
@@ -339,18 +342,167 @@ export interface MonitoringStats {
   activities_submitted_today: number;
 }
 
-// Live User (was LiveWorker) — matches backend LiveUserDto
+// Live User (was LiveWorker) — matches backend Phase 2D LiveUserDto
 export interface LiveUser {
   id: string;
   full_name: string;
-  role: UserRole;
-  area_id: string;
+  role: string;
+  phone: string | null;
+  status: TrackingStatus;
+  area_id: string | null;
   area_name: string;
-  shift_id: string;
-  clock_in_time: string;
+  rayon_id: string | null;
+  rayon_name: string | null;
   latitude: number;
   longitude: number;
+  accuracy: number | null;
+  battery_level: number | null;
   last_update: string;
-  battery_level?: number;
-  outside_boundary?: boolean;
+  is_within_area: boolean;
+  shift_id: string;
+  shift_name: string;
+  shift_definition_id: string | null;
+  clock_in_time: string;
+  current_task_status: string | null;
+  current_task_title: string | null;
+}
+
+// Live Users Response — Phase 2D
+export interface LiveUsersResponse {
+  total_active: number;
+  total_inactive: number;
+  total_outside_area: number;
+  total_missing: number;
+  total_offline: number;
+  /** @deprecated Use total_active */
+  total_online: number;
+  users: LiveUser[];
+  generated_at: string;
+}
+
+// User Day Summary — Phase 2D
+export interface UserDaySummary {
+  user_id: string;
+  full_name: string;
+  username: string;
+  role: string;
+  phone: string | null;
+  status: TrackingStatus;
+  area_id: string | null;
+  area_name: string | null;
+  rayon_id: string | null;
+  rayon_name: string | null;
+  shift: {
+    id: string;
+    name: string;
+    clock_in_time: string;
+    clock_out_time: string | null;
+    duration_minutes: number;
+    outside_boundary: boolean;
+  } | null;
+  last_location: {
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+    battery_level: number | null;
+    logged_at: string;
+    is_within_area: boolean;
+  } | null;
+  activities_today: {
+    id: string;
+    title: string;
+    activity_type: string;
+    created_at: string;
+    photo_url: string | null;
+  }[];
+  tasks_today: {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+  }[];
+  whatsapp_links: {
+    chat: string;
+    call: string;
+  } | null;
+}
+
+// Location History Point — Phase 2D
+export interface LocationHistoryPoint {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  battery_level: number | null;
+  logged_at: string;
+  is_within_area: boolean;
+}
+
+// Location History — Phase 2D
+export interface LocationHistory {
+  user_id: string;
+  user_name: string;
+  role: string;
+  date: string;
+  shift_id: string | null;
+  shift_name: string | null;
+  area_id: string | null;
+  area_name: string | null;
+  clock_in_time: string | null;
+  clock_out_time: string | null;
+  points: LocationHistoryPoint[];
+  total_points: number;
+  total_distance_meters: number;
+  time_inside_area_minutes: number;
+  time_outside_area_minutes: number;
+  generated_at: string;
+}
+
+// Staffing Summary Item — Phase 2D
+export interface StaffingSummaryItem {
+  id: string;
+  name: string;
+  type: 'rayon' | 'area';
+  roles: {
+    role: string;
+    active: number;
+    idle: number;
+    outside_area: number;
+    missing: number;
+    offline: number;
+    total_assigned: number;
+    total_required: number;
+  }[];
+  total_active: number;
+  total_idle: number;
+  total_outside_area: number;
+  total_missing: number;
+  total_offline: number;
+  is_fully_staffed: boolean;
+}
+
+// WebSocket event types — Phase 2D
+export interface UserStatusChangedEvent {
+  user_id: string;
+  user_name: string;
+  role: string;
+  area_id: string | null;
+  area_name: string | null;
+  rayon_id: string | null;
+  previous_status: TrackingStatus;
+  new_status: TrackingStatus;
+  latitude: number | null;
+  longitude: number | null;
+  timestamp: string;
+}
+
+export interface UserAreaEvent {
+  user_id: string;
+  user_name: string;
+  role: string;
+  area_id: string;
+  area_name: string;
+  rayon_id: string | null;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
 }

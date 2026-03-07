@@ -10,6 +10,7 @@ import { PageLoadingIndicator } from '@/components/layout/PageLoadingIndicator';
 import { navigationItems, filterNavigationByRole } from '@/lib/navigation';
 import { useAuth } from '@/lib/auth/hooks';
 import { AuthErrorBoundary } from '@/components/auth/AuthErrorBoundary';
+import { Toaster } from 'sonner';
 
 export interface DashboardLayoutProps {
   children: ReactNode;
@@ -77,6 +78,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <AuthErrorBoundary>
+      <Toaster position="top-right" richColors closeButton />
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"

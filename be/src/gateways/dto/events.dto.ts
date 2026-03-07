@@ -1,5 +1,6 @@
-import { IsString, IsUUID, IsNumber, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsUUID, IsNumber, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { UserRole } from '../../modules/users/entities/user.entity';
+import { TrackingStatus } from '../../modules/monitoring/entities/user-tracking-status.entity';
 
 /**
  * Subscribe to area events
@@ -34,7 +35,9 @@ export class UnsubscribeRayonDto {
 }
 
 /**
- * User location update event
+ * User location update event (Phase 2D enhanced)
+ *
+ * New fields: status, is_within_area, shift_name
  */
 export class UserLocationEvent {
   @IsUUID()
@@ -49,6 +52,9 @@ export class UserLocationEvent {
   @IsUUID()
   shift_id: string;
 
+  @IsString()
+  shift_name: string;
+
   @IsUUID()
   area_id: string;
 
@@ -57,7 +63,7 @@ export class UserLocationEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  rayon_id: string | null;
 
   @IsNumber()
   latitude: number;
@@ -67,11 +73,17 @@ export class UserLocationEvent {
 
   @IsNumber()
   @IsOptional()
-  accuracy?: number;
+  accuracy: number | null;
 
   @IsNumber()
   @IsOptional()
-  battery_level?: number;
+  battery_level: number | null;
+
+  @IsEnum(TrackingStatus)
+  status: TrackingStatus;
+
+  @IsBoolean()
+  is_within_area: boolean;
 
   timestamp: Date;
 }
@@ -100,7 +112,7 @@ export class UserClockInEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  rayon_id: string | null;
 
   @IsNumber()
   latitude: number;
@@ -132,7 +144,7 @@ export class UserClockOutEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  rayon_id: string | null;
 
   timestamp: Date;
 
@@ -152,7 +164,7 @@ export class AreaStaffingEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  rayon_id: string | null;
 
   workers_required: number;
   workers_online: number;
@@ -181,7 +193,7 @@ export class TaskAssignedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  rayon_id: string | null;
 
   @IsUUID()
   assigned_to: string;
@@ -215,7 +227,7 @@ export class TaskCompletedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  rayon_id: string | null;
 
   @IsUUID()
   completed_by: string;
@@ -227,13 +239,154 @@ export class TaskCompletedEvent {
 }
 
 /**
+ * User status changed event (Phase 2D)
+ *
+ * Emitted when a user's tracking status transitions between states.
+ * Broadcast to: area room, rayon room, city room
+ */
+export class UserStatusChangedEvent {
+  @IsUUID()
+  user_id: string;
+
+  @IsString()
+  user_name: string;
+
+  @IsEnum(UserRole)
+  role: UserRole;
+
+  @IsUUID()
+  @IsOptional()
+  area_id: string | null;
+
+  @IsString()
+  @IsOptional()
+  area_name: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  rayon_id: string | null;
+
+  @IsEnum(TrackingStatus)
+  previous_status: TrackingStatus;
+
+  @IsEnum(TrackingStatus)
+  new_status: TrackingStatus;
+
+  @IsNumber()
+  @IsOptional()
+  latitude: number | null;
+
+  @IsNumber()
+  @IsOptional()
+  longitude: number | null;
+
+  timestamp: Date;
+}
+
+/**
+ * User left area / entered area event (Phase 2D)
+ *
+ * Emitted when boundary crossing is detected.
+ * Broadcast to: area room, rayon room, city room
+ */
+export class UserAreaEvent {
+  @IsUUID()
+  user_id: string;
+
+  @IsString()
+  user_name: string;
+
+  @IsEnum(UserRole)
+  role: UserRole;
+
+  @IsUUID()
+  area_id: string;
+
+  @IsString()
+  area_name: string;
+
+  @IsUUID()
+  @IsOptional()
+  rayon_id: string | null;
+
+  @IsNumber()
+  latitude: number;
+
+  @IsNumber()
+  longitude: number;
+
+  timestamp: Date;
+}
+
+/**
  * Event types enumeration
  */
+export class UserReassignedEvent {
+  @IsUUID()
+  user_id: string;
+
+  @IsString()
+  user_name: string;
+
+  @IsEnum(UserRole)
+  role: UserRole;
+
+  @IsUUID()
+  @IsOptional()
+  previous_area_id: string | null;
+
+  @IsString()
+  @IsOptional()
+  previous_area_name: string | null;
+
+  @IsUUID()
+  new_area_id: string;
+
+  @IsString()
+  new_area_name: string;
+
+  @IsUUID()
+  @IsOptional()
+  rayon_id: string | null;
+
+  timestamp: Date;
+}
+
+export class AreaStaffingChangedEvent {
+  @IsUUID()
+  area_id: string;
+
+  @IsUUID()
+  @IsOptional()
+  rayon_id: string | null;
+
+  @IsNumber()
+  active_count: number;
+
+  @IsNumber()
+  required_count: number;
+
+  @IsBoolean()
+  is_met: boolean;
+
+  timestamp: Date;
+}
+
 export enum EventType {
+  // Location & status
   USER_LOCATION = 'user:location',
+  USER_STATUS_CHANGED = 'user:status-changed',
+  USER_LEFT_AREA = 'user:left-area',
+  USER_ENTERED_AREA = 'user:entered-area',
+  USER_REASSIGNED = 'user:reassigned',
+
+  // Shift lifecycle
   USER_CLOCK_IN = 'user:clock-in',
   USER_CLOCK_OUT = 'user:clock-out',
+
+  // Operational
   AREA_STAFFING = 'area:staffing',
+  AREA_STAFFING_CHANGED = 'area:staffing-changed',
   TASK_ASSIGNED = 'task:assigned',
   TASK_COMPLETED = 'task:completed',
 }

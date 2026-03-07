@@ -650,9 +650,65 @@ When adding new text content:
 
 ---
 
+## Monitoring Typography
+
+### Status Count Display
+| Element | Font | Size | Weight | Color | Usage |
+|---------|------|------|--------|-------|-------|
+| Status count number | System default | 28px (xl), 24px (lg), 20px (sm) | 700 (bold) | Status color | StatusCard primary number |
+| Status label | System default | 12px | 500 (medium) | #374151 | StatusCard label below count |
+| Total count | System default | 14px | 600 (semibold) | #111827 | "Total: 200" in header |
+
+### Map Marker Labels
+| Element | Font | Size | Weight | Color | Stroke | Max Width |
+|---------|------|------|--------|-------|--------|-----------|
+| Worker name | System default | 10px | 600 | #FFFFFF | 1px #000000 outline | 80px |
+| Area name | System default | 12px | 700 | #1F2937 | 1px #FFFFFF halo | 120px |
+| Cluster count | System default | 14px | 700 | #FFFFFF | None | — |
+
+### Staffing Summary
+| Element | Size | Weight | Color |
+|---------|------|--------|-------|
+| Area name heading | 16px | 700 | #111827 |
+| Active/Required ratio | 14px | 600 | Status-dependent |
+| Role breakdown label | 12px | 400 | #6B7280 |
+| Role count | 12px | 600 | #374151 |
+
+### Timestamps
+| Context | Format | Size | Color | Example |
+|---------|--------|------|-------|---------|
+| Last seen (recent) | Relative | 11px | #6B7280 | "2 menit lalu" |
+| Last seen (>1hr) | Time | 11px | #DC2626 | "08:45 WIB" |
+| Location history | Full datetime | 12px | #374151 | "06 Mar 2026, 08:45" |
+| Shift time | Time range | 13px | #111827 | "06:00 - 14:00 WIB" |
+
+### Indonesian Monitoring Labels
+| English Key | Indonesian Label | Context |
+|-------------|-----------------|---------|
+| Active | Aktif | Status chip, card |
+| Inactive | Tidak Aktif | Status chip, card |
+| Outside Area | Di Luar Area | Status chip, card |
+| Missing | Hilang | Status chip, card |
+| Offline | Offline | Status chip, card |
+| Total Workers | Total Pekerja | Summary header |
+| Staffing | Kepegawaian | Staffing summary |
+| Last Updated | Terakhir Diperbarui | Timestamp label |
+| Inside Work Area | Di dalam area kerja | Home screen banner |
+| Outside Work Area | Di luar area kerja | Home screen banner |
+
+### Map Label Truncation Rules
+| Element | Max Characters | Truncation | Example |
+|---------|---------------|------------|---------|
+| Marker name | 12 | Ellipsis | "Muhammad A..." |
+| Area label | 18 | Ellipsis | "Taman Bungkul P..." |
+| Popup title | 25 | Ellipsis | "Muhammad Aris Setiaw..." |
+| Side panel name | 20 | Ellipsis | "Muhammad Aris Se..." |
+
+---
+
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-02-05
-**Status:** Active - Updated for Neo Brutalism 2.0
+**Last Updated:** 2026-03-06
+**Status:** Active - Updated for Neo Brutalism 2.0 + Phase 2D Monitoring
 **Implementation:**
 - Mobile: `fe/mobile/src/constants/nbTokens.ts`
 - Web: `fe/web/src/app/globals.css`

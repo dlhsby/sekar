@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "1e98228b-6063-442d-a730-5cb0a62dc3dc",
     "name": "SEKAR API",
-    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n- **Total Endpoints:** 113\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n- **Tests:** 922 passing (54 test suites, 87.93% coverage)\n\n## Test Users (Phase 2C - 8 roles)\n- admin / admin123 (Superadmin)\n- admin_system1 / password123 (Admin System)\n- admin_data1 / password123 (Admin Data)\n- korlap1 / korlap123 (Korlap)\n- satgas1,2,3 / satgas123 (Satgas)\n- linmas1,2 / satgas123 (Linmas)\n- kepala_rayon_selatan / password123 (Kepala Rayon)\n- top_management1 / password123 (Top Management)\n\n## Collection Structure\n\n### Phase 1 MVP\n- 00-11: Core endpoints (auth, users, areas, shifts, activities, location, supervisor)\n\n### Phase 2A - Backend Foundation\n- 12-17: Special Day Overrides, Rayons, Shift Definitions, Activity Types, Area Staff, Schedules\n\n### Phase 2B - Backend Core Features\n- 18. Tasks (12 endpoints)\n- 19. Notifications (7 endpoints)\n- 20. Monitoring (4 endpoints)\n- 21. KMZ Import (3 endpoints)\n\n### Phase 2C - Client Feedback\n- 22. Overtime (6 endpoints)\n\n## Phase 2C Terminology Changes\n- /aktivitas → /activities (Indonesian → English)\n- /worker-schedules → /schedules (simplified)\n- worker_id → user_id (generalized)\n- Reports → Activities (entity rename)\n- WorkerSchedule → Schedule (entity rename)\n- worker/supervisor roles → satgas/korlap (Indonesian official titles)\n\n## Status\n- ✅ Phase 1 MVP Complete\n- ✅ Phase 2A Backend Foundation Complete\n- ✅ Phase 2B Backend Core Features Complete\n- ✅ Phase 2C Terminology Cleanup Complete",
+    "description": "SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Complete API Collection\n\n## Overview\n\n> **Phase 2D Update (March 2026):** Added 7 new monitoring/boundary endpoints, renamed `/live-workers` to `/live-users`, added four-status tracking model.\n\n- **Total Endpoints:** 118\n- **Authentication:** JWT Bearer Token (15-min access + 7-day refresh)\n- **Base URL:** http://localhost:3000/api/v1\n- **Tests:** 922 passing (54 test suites, 87.93% coverage)\n\n## Test Users (Phase 2C - 8 roles)\n- admin / admin123 (Superadmin)\n- admin_system1 / password123 (Admin System)\n- admin_data1 / password123 (Admin Data)\n- korlap1 / korlap123 (Korlap)\n- satgas1,2,3 / satgas123 (Satgas)\n- linmas1,2 / satgas123 (Linmas)\n- kepala_rayon_selatan / password123 (Kepala Rayon)\n- top_management1 / password123 (Top Management)\n\n## Collection Structure\n\n### Phase 1 MVP\n- 00-11: Core endpoints (auth, users, areas, shifts, activities, location, supervisor)\n\n### Phase 2A - Backend Foundation\n- 12-17: Special Day Overrides, Rayons, Shift Definitions, Activity Types, Area Staff, Schedules\n\n### Phase 2B - Backend Core Features\n- 18. Tasks (12 endpoints)\n- 19. Notifications (7 endpoints)\n- 20. Monitoring (4 endpoints)\n- 21. KMZ Import (3 endpoints)\n\n### Phase 2C - Client Feedback\n- 22. Overtime (6 endpoints)\n\n## Phase 2C Terminology Changes\n- /aktivitas → /activities (Indonesian → English)\n- /worker-schedules → /schedules (simplified)\n- worker_id → user_id (generalized)\n- Reports → Activities (entity rename)\n- WorkerSchedule → Schedule (entity rename)\n- worker/supervisor roles → satgas/korlap (Indonesian official titles)\n\n## Status\n- ✅ Phase 1 MVP Complete\n- ✅ Phase 2A Backend Foundation Complete\n- ✅ Phase 2B Backend Core Features Complete\n- ✅ Phase 2C Terminology Cleanup Complete",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -1421,6 +1421,91 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Area Boundary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/boundary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "boundary"
+              ]
+            },
+            "description": "Get the GeoJSON boundary polygon for an area.\n\nReturns `boundary` (GeoJSON Polygon/MultiPolygon), `center` (lat/lng), `area_sq_meters`, `coverage_percentage`.\n\n**Phase 2D endpoint.**\n**Roles:** admin_system, superadmin"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Area Boundary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/areas/{{created_area_id}}/boundary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "{{created_area_id}}",
+                "boundary"
+              ]
+            },
+            "description": "Create or replace the boundary polygon for an area.\n\nAccepts GeoJSON Polygon or MultiPolygon in the `boundary` field. Validated with GeoJSON validator utility (min 4 coordinates, valid winding order).\n\n**Phase 2D endpoint.**\n**Roles:** admin_system, superadmin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"boundary\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [\n          112.7,\n          -7.3\n        ],\n        [\n          112.71,\n          -7.3\n        ],\n        [\n          112.71,\n          -7.31\n        ],\n        [\n          112.7,\n          -7.31\n        ],\n        [\n          112.7,\n          -7.3\n        ]\n      ]\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -4970,16 +5055,262 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/monitoring/live-workers",
+              "raw": "{{baseUrl}}/monitoring/live-users",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "monitoring",
-                "live-workers"
+                "live-users"
+              ],
+              "query": [
+                {
+                  "key": "area_id",
+                  "value": "",
+                  "description": "Filter by area ID",
+                  "disabled": true
+                },
+                {
+                  "key": "rayon_id",
+                  "value": "",
+                  "description": "Filter by rayon ID",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter by status: active|inactive|outside_area|missing",
+                  "disabled": true
+                }
               ]
             },
-            "description": "Get real-time user positions and status (renamed from live-workers)"
+            "description": "Get real-time user positions and status.\n\n**Phase 2D:** Renamed from `/live-workers`. Response now includes `status` (TrackingStatus), `is_within_area`, `shift_name`, `shift_definition_id`, `accuracy`, `phone`. Totals split into `total_active`, `total_inactive`, `total_outside_area`, `total_missing`, `total_offline`.\n\n**Roles:** korlap, kepala_rayon, top_management, admin_system, superadmin"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Location History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/users/{{user_id}}/location-history?date=2026-03-05",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "users",
+                "{{user_id}}",
+                "location-history"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-03-05",
+                  "description": "Date in YYYY-MM-DD format (defaults to today)"
+                },
+                {
+                  "key": "shift_id",
+                  "value": "",
+                  "description": "Filter by specific shift ID",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get GPS location history trail for a specific user on a given date.\n\nReturns an array of location points with `latitude`, `longitude`, `accuracy`, `recorded_at`, `is_within_area`, plus trail analytics: `total_distance_km`, `total_points`, `time_inside_area_minutes`, `time_outside_area_minutes`.\n\n**Roles:** korlap, kepala_rayon, top_management, admin_system, superadmin"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Day Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/users/{{user_id}}/day-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "users",
+                "{{user_id}}",
+                "day-summary"
+              ]
+            },
+            "description": "Get a complete day summary for a specific user.\n\nReturns: `user` info, `shift` (current/latest with clock_in/out times, shift_definition name), `last_location`, `today_activities` (array), `today_tasks` (array), `whatsapp_links` ({ chat, call }).\n\n**Roles:** korlap, kepala_rayon, top_management, admin_system, superadmin"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Staffing Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/staffing-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "staffing-summary"
+              ],
+              "query": [
+                {
+                  "key": "rayon_id",
+                  "value": "",
+                  "description": "Filter by rayon ID",
+                  "disabled": true
+                },
+                {
+                  "key": "area_id",
+                  "value": "",
+                  "description": "Filter by area ID",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get aggregated staffing status breakdown by rayon and area.\n\nReturns areas grouped by rayon, each with `roles`: array of `RoleStaffingDto` containing `role`, `required`, `active`, `inactive`, `outside_area`, `missing`, `offline`.\n\n**Roles:** korlap, kepala_rayon, top_management, admin_system, superadmin"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Monitoring Config (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "config"
+              ]
+            },
+            "description": "Get all monitoring configuration entries.\n\nReturns array of config items with keys: `status_thresholds`, `geofencing`, `map_defaults`, `alerts`, `location_ping`. Each has `key`, `value` (JSON), `description`, `updated_at`.\n\n**Roles:** admin_system, superadmin"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Monitoring Config (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is successful', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/config/{{config_key}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "monitoring",
+                "config",
+                "{{config_key}}"
+              ]
+            },
+            "description": "Update a monitoring configuration value. Key must be one of: `status_thresholds`, `geofencing`, `map_defaults`, `alerts`, `location_ping`.\n\nThe `value` object is validated with Zod schemas per key. Updating `status_thresholds` or `geofencing` invalidates the monitoring cache.\n\n**Roles:** admin_system, superadmin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": {\n    \"active_max_age_seconds\": 600,\n    \"inactive_threshold_seconds\": 1800,\n    \"missing_threshold_seconds\": 3600\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }

@@ -530,3 +530,116 @@ When `prefers-reduced-motion` is enabled, patterns should remain visible (they a
 **Status:** Active - Updated for Neo Brutalism 2.0
 **Animation Library:** `react-native-reanimated`, `expo-haptics`
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference
+
+---
+
+## Phase 2D: Map & Timeline Interaction Patterns
+
+### Map Marker Interactions
+
+| Interaction | Mobile | Web | Result |
+|-------------|--------|-----|--------|
+| Tap/Click marker | onPress | onClick | Select user, show popup/tooltip |
+| Long press marker | onLongPress | — | Quick actions menu (WhatsApp, Call) |
+| Tap selected marker | onPress | onClick | Open UserDetailSheet / UserDetailPanel |
+| Tap map background | onPress | onClick | Deselect user, close popups |
+| Pinch zoom | Native gesture | Mouse wheel / buttons | Zoom map, toggle name labels at zoom >= 14 |
+| Pan map | Native gesture | Mouse drag | Move map view |
+| Tap cluster | onPress | onClick | Zoom to cluster bounds |
+
+### Bottom Sheet Navigation (Mobile)
+
+```
+Collapsed (0%) → Half (50%) → Expanded (85%)
+  ↕ drag handle    ↕ scroll content    ↕ pull down
+```
+
+| State | Height | Content Visible | Map Interaction |
+|-------|--------|----------------|-----------------|
+| Collapsed | 0% | Nothing (closed) | Full |
+| Half | 50% | Header, shift info, actions | Partial (top half) |
+| Expanded | 85% | Full detail + activities/tasks | Minimal (map visible but not interactive) |
+
+### Location Timeline Interactions
+
+| Interaction | Action |
+|-------------|--------|
+| Click timeline point | Animate map to that coordinate, show accuracy circle |
+| Scroll timeline | Auto-scroll synchronized with map viewport (optional) |
+| Click "clock-in" event | Highlight start location on map |
+| Click "area-exit" event | Show boundary crossing point with direction arrow |
+| Click "area-enter" event | Show re-entry point |
+
+### Filter Modal (Mobile)
+
+| Interaction | Behavior |
+|-------------|----------|
+| Tap status chip | Toggle filter (multi-select), update map markers immediately |
+| Select rayon | Cascade: populate area dropdown with rayon's areas |
+| Select area | Cascade: update map bounds to area, update user list |
+| Type in search | Debounced 300ms, filter user list by name |
+| Tap "Reset" | Clear all filters, restore default view |
+| Tap "Apply" | Close modal, apply filters to map + list |
+
+### Side Panel Push Navigation (Web)
+
+```
+UserList → [click user] → UserDetailPanel (slide left 200ms)
+UserDetailPanel → [click "History"] → LocationTimeline (slide left 200ms)
+LocationTimeline → [click "Back"] → UserDetailPanel (slide right 200ms)
+UserDetailPanel → [click "Back"] → UserList (slide right 200ms)
+```
+
+**Transition:** `transform: translateX()` with `ease-out` 200ms
+
+---
+
+## Monitoring Interaction Patterns
+
+### Map Gesture Patterns
+
+| Gesture | Action | Platform |
+|---------|--------|----------|
+| Single tap on marker | Open user popup/detail | Both |
+| Single tap on empty map | Close popup, deselect user | Both |
+| Pinch zoom | Map zoom in/out | Mobile |
+| Double tap | Zoom in one level | Both |
+| Two-finger tap | Zoom out one level | Mobile |
+| Long press on marker | Open quick action menu (call/WhatsApp) | Mobile |
+| Scroll wheel | Map zoom | Web |
+| Click + drag | Map pan | Web |
+| Hover on marker | Show name tooltip (200ms delay) | Web |
+| Right-click on marker | Context menu (view detail, reassign, contact) | Web |
+
+### WebSocket-Driven Animations
+
+| Event | Animation | Duration | Notes |
+|-------|-----------|----------|-------|
+| Position update | Marker slides to new position | 500ms ease | Smooth interpolation between coordinates |
+| Status change | Color cross-fade + brief scale pulse | 300ms + 200ms | Old color → new color with 1.2x scale bump |
+| Boundary exit | Area polygon flashes orange border | 800ms | 3 quick flashes, then settles |
+| Boundary enter | Area polygon briefly glows green | 500ms | Single fade-in/fade-out |
+| New user online | Marker appears with scale-up | 200ms ease-out | From 0 to 1 scale |
+| User goes offline | Marker fades out + shrinks | 300ms ease-in | From 1 to 0 opacity + scale |
+
+### Status Transition Animations
+
+| Element | Animation | Duration | Trigger |
+|---------|-----------|----------|---------|
+| Status chip count | Number rolls up/down | 250ms | Status count changes |
+| Staffing progress bar | Width fills/shrinks | 400ms ease | Active count changes |
+| Missing pulse ring | Expanding ring from marker | 2000ms loop | Status = MISSING |
+| Side panel badge | Brief bounce | 200ms | New user appears in filtered list |
+
+### Bottom Sheet Gestures (Mobile)
+
+| Gesture | Action | Threshold |
+|---------|--------|-----------|
+| Swipe up | Expand to full height | Velocity > 0.5 or distance > 30% |
+| Swipe down | Collapse to peek height | Velocity > 0.5 or distance > 30% |
+| Swipe down from peek | Dismiss sheet | Distance > 50% |
+| Tap on handle | Toggle between peek/expanded | — |
+| Scroll content at top + swipe down | Collapse sheet | Content scrollTop === 0 |
+
+**Snap points:** peek (30% height), half (50%), full (90%)
+**Background dim:** 0.3 opacity black overlay, tap to dismiss

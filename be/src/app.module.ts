@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -14,7 +16,6 @@ import { ActivitiesModule } from './modules/activities/activities.module';
 import { LocationModule } from './modules/location/location.module';
 import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { SharedModule } from './shared/shared.module';
-import { SeedModule } from './database/seeds/seed.module';
 // Phase 2 modules
 import { RayonsModule } from './modules/rayons/rayons.module';
 import { ShiftDefinitionsModule } from './modules/shift-definitions/shift-definitions.module';
@@ -44,6 +45,12 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
         limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10), // Maximum requests per time window
       },
     ]),
+
+    // Schedule module for cron jobs (Phase 2D)
+    ScheduleModule.forRoot(),
+
+    // Event emitter for internal events (Phase 2D)
+    EventEmitterModule.forRoot(),
 
     // Database module with connection pooling
     TypeOrmModule.forRoot({
@@ -95,7 +102,6 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
     ActivitiesModule, // Depends on Shifts, SharedModule (Phase 2C: renamed from ReportsModule)
     LocationModule, // Depends on Shifts
     SupervisorModule, // Depends on all above modules
-    SeedModule,
     // Phase 2 modules
     RayonsModule, // Geographic sectors
     ShiftDefinitionsModule, // Fixed shift definitions

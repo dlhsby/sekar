@@ -101,6 +101,15 @@ export const getMonitoringScope = (role: UserRole): 'city' | 'rayon' | 'area' | 
   return null;
 };
 
+/** Roles that can select rayon freely in monitoring filter (city-scope) */
+export const ROLES_WITH_RAYON: UserRole[] = [...MONITORING_ROLES.city];
+
+/** Roles with a fixed rayon assignment in monitoring filter (rayon-scope) */
+export const ROLES_WITH_FIXED_RAYON: UserRole[] = [...MONITORING_ROLES.rayon];
+
+/** Roles without rayon visibility in monitoring filter (area-scope) */
+export const ROLES_WITHOUT_RAYON: UserRole[] = [...MONITORING_ROLES.area];
+
 /**
  * Maps each role to its direct subordinate roles for filter scoping
  * (used by filter modals to show only directly managed users in lists).

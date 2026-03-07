@@ -420,3 +420,65 @@ import FastImage from 'react-native-fast-image';
 **Status:** Active - Updated for Neo Brutalism 2.0
 **Icon Library:** `react-native-vector-icons/MaterialCommunityIcons`
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference
+
+---
+
+## Phase 2D: Monitoring Icons & Markers
+
+### Role Icons (Map Markers)
+
+| Role | Icon Name | Icon Library | Shape | Description |
+|------|-----------|-------------|-------|-------------|
+| `satgas` | `account-circle` | MaterialCommunityIcons | Circle | Field worker — default circle shape |
+| `linmas` | `shield-account` | MaterialCommunityIcons | Shield | Security officer — shield shape for protection role |
+| `korlap` | `star-circle` | MaterialCommunityIcons | Star | Coordinator — star shape for leadership role |
+
+### Status Shape Modifiers (Color Blindness Support)
+
+Each status has both a color AND a shape/icon modifier to ensure accessibility:
+
+| Status | Shape | Modifier Icon | Color | Purpose |
+|--------|-------|--------------|-------|---------|
+| Active | Circle | ✓ (check) | `#15803D` | Normal operation |
+| Idle | Triangle | ⏸ (pause) | `#D97706` | No recent GPS update |
+| Outside Area | Diamond | ↗ (arrow-out) | `#9333EA` | GPS outside boundary |
+| Missing | Square | ! (exclamation) | `#DC2626` | Extended no-contact |
+
+### Map Marker Anatomy
+
+```
+┌─────────────────────┐
+│  44px touch target   │
+│  ┌───────────────┐  │
+│  │  36px outer    │  │
+│  │  ┌─────────┐  │  │
+│  │  │ 20px    │  │  │
+│  │  │ role    │  │  │
+│  │  │ icon    │  │  │
+│  │  └─────────┘  │  │
+│  │ (status color  │  │
+│  │  ring border)  │  │
+│  └───────────────┘  │
+│     Name Label       │
+│   (zoom >= 14 only)  │
+└─────────────────────┘
+```
+
+### Area/Rayon Markers
+
+| Type | Shape | Color | Usage |
+|------|-------|-------|-------|
+| Area center | Flag | Area status color | Area overview, distinct from user markers |
+| Rayon center | Flag (larger) | Rayon aggregate color | Rayon overview |
+| Understaffed area border | Dashed rectangle | `#DC2626` (red) | Warning indicator on area polygon |
+
+### Action Button Icons
+
+| Action | Icon | Color | Library |
+|--------|------|-------|---------|
+| WhatsApp | `whatsapp` | `#25D366` | MaterialCommunityIcons |
+| Phone Call | `phone` | `#3B82F6` | MaterialCommunityIcons |
+| Location Trail | `map-marker-path` | `#9333EA` | MaterialCommunityIcons |
+| Filter | `filter-variant` | NB primary | MaterialCommunityIcons |
+| My Location | `crosshairs-gps` | NB primary | MaterialCommunityIcons |
+| Refresh | `refresh` | NB primary | MaterialCommunityIcons |

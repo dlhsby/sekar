@@ -335,6 +335,160 @@ describe('monitoringApi', () => {
     });
   });
 
+  describe('getUserDaySummary', () => {
+    it('gets user day summary with correct endpoint', async () => {
+      const userId = 'user-abc-123';
+      const mockResponse = {
+        data: {
+          user_id: userId,
+          date: '2026-03-05',
+          total_shifts: 1,
+          total_active_minutes: 420,
+          areas_visited: ['Taman Bungkul', 'Taman Prestasi'],
+          status_breakdown: {
+            active: 380,
+            inactive: 30,
+            outside_area: 10,
+            missing: 0,
+          },
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getUserDaySummary(userId);
+
+      expect(mockGet).toHaveBeenCalledWith(`/monitoring/users/${userId}/day-summary`);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('returns error on failure', async () => {
+      const mockError = { error: 'User not found' };
+      mockGet.mockResolvedValue(mockError);
+
+      const result = await monitoringApi.getUserDaySummary('user-not-found');
+
+      expect(result).toEqual(mockError);
+    });
+  });
+
+  describe('getUserLocationHistory', () => {
+    it('gets location history with date only', async () => {
+      const userId = 'user-abc-123';
+      const date = '2026-03-05';
+      const mockResponse = {
+        data: {
+          user_id: userId,
+          date,
+          locations: [
+            { gps_lat: -7.2575, gps_lng: 112.7521, logged_at: '2026-03-05T08:00:00Z' },
+            { gps_lat: -7.2580, gps_lng: 112.7525, logged_at: '2026-03-05T08:05:00Z' },
+          ],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getUserLocationHistory(userId, date);
+
+      expect(mockGet).toHaveBeenCalledWith(
+        `/monitoring/users/${userId}/location-history`,
+        { date },
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('gets location history with date and shiftId', async () => {
+      const userId = 'user-abc-123';
+      const date = '2026-03-05';
+      const shiftId = 'shift-xyz-456';
+      const mockResponse = {
+        data: {
+          user_id: userId,
+          date,
+          shift_id: shiftId,
+          locations: [
+            { gps_lat: -7.2575, gps_lng: 112.7521, logged_at: '2026-03-05T08:00:00Z' },
+          ],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getUserLocationHistory(userId, date, shiftId);
+
+      expect(mockGet).toHaveBeenCalledWith(
+        `/monitoring/users/${userId}/location-history`,
+        { date, shift_id: shiftId },
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('returns error on failure', async () => {
+      const mockError = { error: 'Failed to fetch location history' };
+      mockGet.mockResolvedValue(mockError);
+
+      const result = await monitoringApi.getUserLocationHistory('user-abc-123', '2026-03-05');
+
+      expect(result).toEqual(mockError);
+    });
+  });
+
+  describe('getStaffingSummary', () => {
+    it('gets staffing summary without filters', async () => {
+      const mockResponse = {
+        data: {
+          total_areas: 42,
+          adequately_staffed: 30,
+          understaffed: 12,
+          overstaffed: 0,
+          areas: [],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getStaffingSummary();
+
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/staffing-summary', undefined);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('gets staffing summary with area_id filter', async () => {
+      const filters = { area_id: 'area-456' };
+      const mockResponse = {
+        data: {
+          total_areas: 1,
+          adequately_staffed: 1,
+          understaffed: 0,
+          overstaffed: 0,
+          areas: [{ area_id: 'area-456', area_name: 'Taman Bungkul', status: 'adequate' }],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getStaffingSummary(filters);
+
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/staffing-summary', filters);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('gets staffing summary with rayon_id filter', async () => {
+      const filters = { rayon_id: 'rayon-789' };
+      const mockResponse = {
+        data: {
+          total_areas: 5,
+          adequately_staffed: 3,
+          understaffed: 2,
+          overstaffed: 0,
+          areas: [],
+        },
+      };
+      mockGet.mockResolvedValue(mockResponse);
+
+      const result = await monitoringApi.getStaffingSummary(filters);
+
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/staffing-summary', filters);
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('default export', () => {
     it('exports all functions', () => {
       const defaultExport = monitoringApi.default;
@@ -346,6 +500,9 @@ describe('monitoringApi', () => {
       expect(defaultExport.getAllActivities).toBeDefined();
       expect(defaultExport.getActivityDetails).toBeDefined();
       expect(defaultExport.getAttendance).toBeDefined();
+      expect(defaultExport.getUserDaySummary).toBeDefined();
+      expect(defaultExport.getUserLocationHistory).toBeDefined();
+      expect(defaultExport.getStaffingSummary).toBeDefined();
     });
   });
 });

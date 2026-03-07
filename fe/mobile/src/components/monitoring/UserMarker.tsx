@@ -1,8 +1,7 @@
 /**
  * UserMarker Component
- * Custom map marker showing user status, role, and position
- *
- * Phase 2C: Supports all 5 clockable roles with distinct markers
+ * Phase 2D: Role-specific icons, four-status colors, name label below marker.
+ * Supports both legacy ActiveUserData (for backward compat) and new LiveUser.
  */
 
 import React from 'react';
@@ -16,93 +15,56 @@ import {
   nbBorders,
   nbBorderRadius,
 } from '../../constants/nbTokens';
-import type { ActiveUserData } from '../../types/api.types';
-import type { UserRole } from '../../types/models.types';
+import { getStatusColor, getRoleIcon } from '../../utils/mapUtils';
 import { ROLE_LABELS } from '../../constants/roles';
+import type { LiveUser, UserRole } from '../../types/models.types';
+import type { ActiveUserData } from '../../types/api.types';
 
+// ─── Public Types ─────────────────────────────────────────────────────────────
+
+/** @deprecated Use TrackingStatus — kept for backward compatibility */
 export type UserStatus = 'active' | 'warning' | 'outside';
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
 interface UserMarkerProps {
-  user: ActiveUserData;
-  status: UserStatus;
-  onPress: () => void;
+  user: LiveUser;
+  onPress: (user: LiveUser) => void;
+  showLabel?: boolean;
   clusterCount?: number;
 }
 
-function getMarkerColor(status: UserStatus): string {
-  switch (status) {
-    case 'active':
-      return nbColors.successDark;
-    case 'warning':
-      return nbColors.warning;
-    case 'outside':
-      return nbColors.dangerDark;
-    default:
-      return nbColors.gray['500'];
-  }
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getRoleIcon(role?: UserRole | string): string {
-  switch (role) {
-    case 'linmas':
-      return 'shield-account';
-    case 'korlap':
-      return 'clipboard-account';
-    case 'admin_data':
-      return 'file-document-edit';
-    case 'kepala_rayon':
-      return 'account-star';
-    case 'satgas':
-    default:
-      return 'account-hard-hat';
-  }
-}
-
-function getRoleLabel(role?: UserRole | string): string {
-  if (role && role in ROLE_LABELS) {
+function getRoleLabel(role: string): string {
+  if (role in ROLE_LABELS) {
     return ROLE_LABELS[role as UserRole];
   }
-  return 'Satgas';
+  return role;
 }
 
-function getRoleColor(role?: UserRole | string): string {
-  switch (role) {
-    case 'linmas':
-      return nbColors.navy;
-    case 'korlap':
-      return nbColors.accentSky;
-    case 'admin_data':
-      return nbColors.warning;
-    case 'kepala_rayon':
-      return nbColors.primary;
-    case 'satgas':
-    default:
-      return nbColors.primary;
-  }
+function getFirstName(fullName: string): string {
+  return fullName.split(' ')[0] ?? fullName;
 }
 
-/**
- * UserMarker - Custom marker for user on map
- */
-export function UserMarker({ user, status, onPress, clusterCount }: UserMarkerProps): React.JSX.Element | null {
-  if (!user.latest_location) {
-    return null;
-  }
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  const markerColor = getMarkerColor(status);
+export function UserMarker({
+  user,
+  onPress,
+  showLabel = true,
+  clusterCount,
+}: UserMarkerProps): React.JSX.Element {
+  const isCluster = (clusterCount ?? 0) > 1;
+  const markerColor = getStatusColor(user.status);
   const roleIcon = getRoleIcon(user.role);
   const roleLabel = getRoleLabel(user.role);
-  const roleColor = getRoleColor(user.role);
-  const isCluster = clusterCount !== undefined && clusterCount > 1;
-  const isNonSatgas = user.role !== 'satgas' && user.role !== undefined;
+  const firstName = getFirstName(user.full_name);
 
   return (
     <Marker
-      coordinate={{
-        latitude: parseFloat(user.latest_location.gps_lat.toString()),
-        longitude: parseFloat(user.latest_location.gps_lng.toString()),
-      }}
-      onPress={onPress}
+      coordinate={{ latitude: user.latitude, longitude: user.longitude }}
+      onPress={() => onPress(user)}
       tracksViewChanges={false}
     >
       <View style={styles.markerContainer}>
@@ -112,18 +74,19 @@ export function UserMarker({ user, status, onPress, clusterCount }: UserMarkerPr
           </View>
         ) : (
           <>
-            <View style={[
-              styles.marker,
-              { backgroundColor: markerColor },
-              isNonSatgas && styles.nonSatgasMarker,
-            ]}>
+            <View style={[styles.marker, { backgroundColor: markerColor }]}>
               <MaterialCommunityIcons
                 name={roleIcon}
                 size={20}
-                color={nbColors.surface}
+                color={nbColors.white}
               />
             </View>
             <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
+            {showLabel && (
+              <Text style={styles.nameLabel} numberOfLines={1}>
+                {firstName}
+              </Text>
+            )}
           </>
         )}
       </View>
@@ -135,20 +98,22 @@ export function UserMarker({ user, status, onPress, clusterCount }: UserMarkerPr
               <MaterialCommunityIcons
                 name={roleIcon}
                 size={16}
-                color={roleColor}
+                color={markerColor}
               />
-              <Text style={[styles.calloutRole, { color: roleColor }]}>
+              <Text style={[styles.calloutRole, { color: markerColor }]}>
                 {roleLabel}
               </Text>
             </View>
             <Text style={styles.calloutName}>{user.full_name}</Text>
-            <Text style={styles.calloutArea}>{user.shift.area.name}</Text>
+            <Text style={styles.calloutArea}>{user.area_name}</Text>
           </View>
         </Callout>
       )}
     </Marker>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   markerContainer: {
@@ -160,12 +125,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: nbColors.surface,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.white,
     ...nbShadows.md,
-  },
-  nonSatgasMarker: {
-    borderRadius: 12,
   },
   markerArrow: {
     width: 0,
@@ -179,18 +141,29 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     marginTop: -1,
   },
+  nameLabel: {
+    fontSize: 10,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
+    textShadowColor: nbColors.black,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    maxWidth: 60,
+    textAlign: 'center',
+    marginTop: 2,
+  },
   clusterMarker: {
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: nbColors.surface,
+    borderWidth: nbBorders.thick,
+    borderColor: nbColors.white,
     ...nbShadows.lg,
   },
   clusterText: {
-    color: nbColors.surface,
+    color: nbColors.white,
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.bold,
   },
@@ -207,11 +180,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
+    gap: 4,
   },
   calloutRole: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.semibold,
-    marginLeft: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

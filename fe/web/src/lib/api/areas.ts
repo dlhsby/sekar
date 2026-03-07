@@ -157,3 +157,62 @@ export function useDeleteArea() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Area Boundary (Phase 2D)
+// ---------------------------------------------------------------------------
+
+export interface AreaBoundaryPayload {
+  boundary_polygon: GeoJSON.Polygon | null;
+}
+
+export interface AreaBoundaryResponse {
+  area_id: string;
+  name: string;
+  boundary_polygon: GeoJSON.Polygon | null;
+  gps_lat: number;
+  gps_lng: number;
+  radius_meters: number;
+  coverage_area: number | null;
+}
+
+export const areaBoundaryKeys = {
+  all: ['area-boundary'] as const,
+  detail: (id: string) => [...areaBoundaryKeys.all, id] as const,
+};
+
+/**
+ * Hook to fetch area boundary data
+ */
+export function useAreaBoundary(
+  areaId: string,
+  options?: Omit<UseQueryOptions<AreaBoundaryResponse>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: areaBoundaryKeys.detail(areaId),
+    queryFn: async () => {
+      const response = await apiClient.get<AreaBoundaryResponse>(`/areas/${areaId}/boundary`);
+      return response.data;
+    },
+    enabled: !!areaId,
+    ...options,
+  });
+}
+
+/**
+ * Hook to update area boundary polygon
+ */
+export function useUpdateAreaBoundary() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: AreaBoundaryPayload }) => {
+      const response = await apiClient.put<AreaBoundaryResponse>(`/areas/${id}/boundary`, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: areaBoundaryKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: areaKeys.detail(variables.id) });
+    },
+  });
+}
