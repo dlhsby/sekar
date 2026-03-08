@@ -254,9 +254,7 @@ describe('ReassignWorkerModal', () => {
   describe('Rendering when closed', () => {
     it('should not render modal content when open is false', () => {
       render(<ReassignWorkerModal {...defaultProps} open={false} />);
-      expect(
-        screen.queryByRole('heading', { name: /pindah petugas/i })
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /pindah petugas/i })).not.toBeInTheDocument();
     });
 
     it('should not render the reason textarea when open is false', () => {
@@ -279,23 +277,17 @@ describe('ReassignWorkerModal', () => {
 
     it('should not show the target area as a source option', () => {
       render(<ReassignWorkerModal {...defaultProps} />);
-      expect(
-        screen.queryByRole('option', { name: /taman bungkul/i })
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: /taman bungkul/i })).not.toBeInTheDocument();
     });
 
     it('should not show areas from a different rayon', () => {
       render(<ReassignWorkerModal {...defaultProps} />);
-      expect(
-        screen.queryByRole('option', { name: /taman apsari/i })
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: /taman apsari/i })).not.toBeInTheDocument();
     });
 
     it('should show a "no sibling areas" message when boundaries are undefined', () => {
       render(<ReassignWorkerModal {...defaultProps} boundaries={undefined} />);
-      expect(
-        screen.getByText(/tidak ada area lain dalam rayon yang sama/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/tidak ada area lain dalam rayon yang sama/i)).toBeInTheDocument();
     });
 
     it('should show a "no sibling areas" message when target area is the only area in its rayon', () => {
@@ -308,15 +300,8 @@ describe('ReassignWorkerModal', () => {
           },
         ],
       };
-      render(
-        <ReassignWorkerModal
-          {...defaultProps}
-          boundaries={singleAreaBoundaries}
-        />
-      );
-      expect(
-        screen.getByText(/tidak ada area lain dalam rayon yang sama/i)
-      ).toBeInTheDocument();
+      render(<ReassignWorkerModal {...defaultProps} boundaries={singleAreaBoundaries} />);
+      expect(screen.getByText(/tidak ada area lain dalam rayon yang sama/i)).toBeInTheDocument();
     });
   });
 
@@ -370,9 +355,7 @@ describe('ReassignWorkerModal', () => {
       await user.selectOptions(screen.getByLabelText(/area asal/i), AREA_2_ID);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/tidak ada petugas aktif di area ini/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/tidak ada petugas aktif di area ini/i)).toBeInTheDocument();
       });
     });
 
@@ -400,17 +383,16 @@ describe('ReassignWorkerModal', () => {
       await waitFor(() => expect(screen.getByText('Budi Santoso')).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: /budi santoso/i }));
-      expect(
-        screen.getByRole('button', { name: /budi santoso/i })
-      ).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: /budi santoso/i })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      );
 
       // Change source area
       await user.selectOptions(screen.getByLabelText(/area asal/i), '');
 
       // Worker list should disappear (no source area selected)
-      await waitFor(() =>
-        expect(screen.queryByText('Budi Santoso')).not.toBeInTheDocument()
-      );
+      await waitFor(() => expect(screen.queryByText('Budi Santoso')).not.toBeInTheDocument());
     });
   });
 
@@ -608,9 +590,7 @@ describe('ReassignWorkerModal', () => {
 
     it('should render the placeholder text in the reason textarea', () => {
       render(<ReassignWorkerModal {...defaultProps} />);
-      expect(
-        screen.getByPlaceholderText(/tuliskan alasan pemindahan/i)
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/tuliskan alasan pemindahan/i)).toBeInTheDocument();
     });
 
     it('should omit reason from payload when textarea is left empty', async () => {

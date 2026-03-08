@@ -158,9 +158,7 @@ describe('MonitoringMap', () => {
 
     it('should not render the no-token fallback', () => {
       render(<MonitoringMap {...defaultProps} />);
-      expect(
-        screen.queryByText(/token mapbox belum dikonfigurasi/i)
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/token mapbox belum dikonfigurasi/i)).not.toBeInTheDocument();
     });
 
     it('should accept a custom className prop', () => {
@@ -171,16 +169,12 @@ describe('MonitoringMap', () => {
     });
 
     it('should render without errors when users array is empty', () => {
-      expect(() =>
-        render(<MonitoringMap {...defaultProps} users={[]} />)
-      ).not.toThrow();
+      expect(() => render(<MonitoringMap {...defaultProps} users={[]} />)).not.toThrow();
     });
 
     it('should render without errors when areas prop is omitted', () => {
       const { areas: _areas, ...propsWithoutAreas } = defaultProps;
-      expect(() =>
-        render(<MonitoringMap {...propsWithoutAreas} />)
-      ).not.toThrow();
+      expect(() => render(<MonitoringMap {...propsWithoutAreas} />)).not.toThrow();
     });
 
     it('should render without errors when users have zero coordinates', () => {
@@ -204,9 +198,7 @@ describe('MonitoringMap', () => {
 
     it('should render the no-token fallback heading', () => {
       render(<MonitoringMap {...defaultProps} />);
-      expect(
-        screen.getByText(/token mapbox belum dikonfigurasi/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/token mapbox belum dikonfigurasi/i)).toBeInTheDocument();
     });
 
     it('should render the instruction to add env var', () => {
@@ -243,9 +235,7 @@ describe('MonitoringMap', () => {
 
     it('should render the no-token fallback when token env var is missing', () => {
       render(<MonitoringMap {...defaultProps} />);
-      expect(
-        screen.getByText(/token mapbox belum dikonfigurasi/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/token mapbox belum dikonfigurasi/i)).toBeInTheDocument();
     });
   });
 });

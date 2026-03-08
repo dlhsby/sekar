@@ -111,7 +111,10 @@ export function MonitoringMap({
 
     return () => {
       isLoadedRef.current = false;
-      markersRef.current.forEach(({ marker, popup }) => { popup.remove(); marker.remove(); });
+      markersRef.current.forEach(({ marker, popup }) => {
+        popup.remove();
+        marker.remove();
+      });
       markersRef.current.clear();
       boundaryMarkersRef.current.forEach((m) => m.remove());
       boundaryMarkersRef.current = [];
@@ -133,11 +136,16 @@ export function MonitoringMap({
     const currentIds = new Set(users.map((u) => u.id));
 
     markersRef.current.forEach(({ marker, popup }, id) => {
-      if (!currentIds.has(id)) { popup.remove(); marker.remove(); markersRef.current.delete(id); }
+      if (!currentIds.has(id)) {
+        popup.remove();
+        marker.remove();
+        markersRef.current.delete(id);
+      }
     });
 
     users.forEach((user) => {
-      if (!user.latitude || !user.longitude || (user.latitude === 0 && user.longitude === 0)) return;
+      if (!user.latitude || !user.longitude || (user.latitude === 0 && user.longitude === 0))
+        return;
 
       const opacity = showOnlyTrailUser && trailUserId && user.id !== trailUserId ? 0.3 : 1;
       const existing = markersRef.current.get(user.id);
@@ -150,7 +158,9 @@ export function MonitoringMap({
         if (dot) {
           dot.style.backgroundColor = STATUS_COLORS[user.status] ?? '#6B7280';
           dot.style.borderStyle = user.status === 'outside_area' ? 'dashed' : 'solid';
-          dot.style.animation = getMarkerAnimation(user.status).replace('animation: ', '').replace(';', '');
+          dot.style.animation = getMarkerAnimation(user.status)
+            .replace('animation: ', '')
+            .replace(';', '');
         }
         updateMarkerLabel(el, user, zoomRef.current);
         existing.user = user;
@@ -158,17 +168,23 @@ export function MonitoringMap({
       }
 
       const el = createMarkerElement(user, zoomRef.current, opacity);
-      const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: 'monitoring-popup' })
-        .setHTML(
-          `<div style="font-weight:700;font-size:12px;white-space:nowrap;">${user.full_name}</div>
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 16,
+        className: 'monitoring-popup',
+      }).setHTML(
+        `<div style="font-weight:700;font-size:12px;white-space:nowrap;">${user.full_name}</div>
            <div style="font-size:11px;color:#666;">${user.area_name || '—'}</div>`
-        );
+      );
 
       const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([user.longitude, user.latitude])
         .addTo(map);
 
-      el.addEventListener('mouseenter', () => popup.setLngLat([user.longitude, user.latitude]).addTo(map));
+      el.addEventListener('mouseenter', () =>
+        popup.setLngLat([user.longitude, user.latitude]).addTo(map)
+      );
       el.addEventListener('mouseleave', () => popup.remove());
       el.addEventListener('click', () => onUserSelect(user));
       el.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -196,8 +212,12 @@ export function MonitoringMap({
 
     const layers = ['rayon-fill', 'rayon-line', 'area-fill', 'area-line', 'area-understaffed-line'];
     const sources = ['rayons', 'areas'];
-    layers.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
-    sources.forEach((id) => { if (map.getSource(id)) map.removeSource(id); });
+    layers.forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    sources.forEach((id) => {
+      if (map.getSource(id)) map.removeSource(id);
+    });
     boundaryMarkersRef.current.forEach((m) => m.remove());
     boundaryMarkersRef.current = [];
 
@@ -205,23 +225,74 @@ export function MonitoringMap({
     const areaFeatures = buildAreaFeatures(boundaries);
 
     if (rayonFeatures.length > 0) {
-      map.addSource('rayons', { type: 'geojson', data: { type: 'FeatureCollection', features: rayonFeatures } });
-      map.addLayer({ id: 'rayon-fill', type: 'fill', source: 'rayons', paint: { 'fill-color': POLYGON_STYLES.rayon.fill, 'fill-opacity': POLYGON_STYLES.rayon.fillOpacity } });
-      map.addLayer({ id: 'rayon-line', type: 'line', source: 'rayons', paint: { 'line-color': POLYGON_STYLES.rayon.stroke, 'line-width': POLYGON_STYLES.rayon.strokeWidth, 'line-dasharray': [...POLYGON_STYLES.rayon.dashArray] } });
+      map.addSource('rayons', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: rayonFeatures },
+      });
+      map.addLayer({
+        id: 'rayon-fill',
+        type: 'fill',
+        source: 'rayons',
+        paint: {
+          'fill-color': POLYGON_STYLES.rayon.fill,
+          'fill-opacity': POLYGON_STYLES.rayon.fillOpacity,
+        },
+      });
+      map.addLayer({
+        id: 'rayon-line',
+        type: 'line',
+        source: 'rayons',
+        paint: {
+          'line-color': POLYGON_STYLES.rayon.stroke,
+          'line-width': POLYGON_STYLES.rayon.strokeWidth,
+          'line-dasharray': [...POLYGON_STYLES.rayon.dashArray],
+        },
+      });
     }
 
     if (areaFeatures.length > 0) {
-      map.addSource('areas', { type: 'geojson', data: { type: 'FeatureCollection', features: areaFeatures } });
-      map.addLayer({ id: 'area-fill', type: 'fill', source: 'areas', paint: { 'fill-color': POLYGON_STYLES.area.fill, 'fill-opacity': POLYGON_STYLES.area.fillOpacity } });
-      map.addLayer({ id: 'area-line', type: 'line', source: 'areas', filter: ['!', ['get', 'is_understaffed']], paint: { 'line-color': POLYGON_STYLES.area.stroke, 'line-width': POLYGON_STYLES.area.strokeWidth } });
-      map.addLayer({ id: 'area-understaffed-line', type: 'line', source: 'areas', filter: ['==', ['get', 'is_understaffed'], true], paint: { 'line-color': '#DC2626', 'line-width': 3 } });
+      map.addSource('areas', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: areaFeatures },
+      });
+      map.addLayer({
+        id: 'area-fill',
+        type: 'fill',
+        source: 'areas',
+        paint: {
+          'fill-color': POLYGON_STYLES.area.fill,
+          'fill-opacity': POLYGON_STYLES.area.fillOpacity,
+        },
+      });
+      map.addLayer({
+        id: 'area-line',
+        type: 'line',
+        source: 'areas',
+        filter: ['!', ['get', 'is_understaffed']],
+        paint: {
+          'line-color': POLYGON_STYLES.area.stroke,
+          'line-width': POLYGON_STYLES.area.strokeWidth,
+        },
+      });
+      map.addLayer({
+        id: 'area-understaffed-line',
+        type: 'line',
+        source: 'areas',
+        filter: ['==', ['get', 'is_understaffed'], true],
+        paint: { 'line-color': '#DC2626', 'line-width': 3 },
+      });
     }
 
     boundaries.rayons.forEach((rayon) => {
       const center = polygonCentroid(rayon.boundary_polygon, rayon.center_lat, rayon.center_lng);
       if (center) {
         const tooltip = `Rayon ${rayon.name} — ${rayon.area_count} area${rayon.is_understaffed ? ' (kekurangan staf)' : ''}`;
-        const el = createCenterMarkerEl(rayon.code?.slice(0, 2) ?? 'R', CENTER_MARKER_STYLES.rayon.size, CENTER_MARKER_STYLES.rayon.bg, tooltip);
+        const el = createCenterMarkerEl(
+          rayon.code?.slice(0, 2) ?? 'R',
+          CENTER_MARKER_STYLES.rayon.size,
+          CENTER_MARKER_STYLES.rayon.bg,
+          tooltip
+        );
         const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, offset: 20 })
           .setHTML(`<div style="font-weight:700;font-size:12px;">Rayon ${rayon.name}</div>
                     <div style="font-size:11px;color:#666;">${rayon.area_count} area</div>
@@ -229,15 +300,24 @@ export function MonitoringMap({
         el.addEventListener('mouseenter', () => popup.setLngLat(center).addTo(map));
         el.addEventListener('mouseleave', () => popup.remove());
         el.addEventListener('click', () => onBoundaryClick?.('rayon', rayon.id));
-        el.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onBoundaryClick?.('rayon', rayon.id); });
-        boundaryMarkersRef.current.push(new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat(center).addTo(map));
+        el.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') onBoundaryClick?.('rayon', rayon.id);
+        });
+        boundaryMarkersRef.current.push(
+          new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat(center).addTo(map)
+        );
       }
 
       rayon.areas.forEach((area) => {
         const aCenter = polygonCentroid(area.boundary_polygon, area.center_lat, area.center_lng);
         if (!aCenter) return;
         const aTooltip = `${area.name} — ${area.assigned_count} petugas${area.is_understaffed ? ' (kekurangan)' : ''}`;
-        const aEl = createCenterMarkerEl('A', CENTER_MARKER_STYLES.area.size, CENTER_MARKER_STYLES.area.bg, aTooltip);
+        const aEl = createCenterMarkerEl(
+          'A',
+          CENTER_MARKER_STYLES.area.size,
+          CENTER_MARKER_STYLES.area.bg,
+          aTooltip
+        );
         const aPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, offset: 16 })
           .setHTML(`<div style="font-weight:700;font-size:12px;">${area.name}</div>
                     <div style="font-size:11px;color:#666;">${rayon.name} — ${area.assigned_count} petugas</div>
@@ -245,8 +325,12 @@ export function MonitoringMap({
         aEl.addEventListener('mouseenter', () => aPopup.setLngLat(aCenter).addTo(map));
         aEl.addEventListener('mouseleave', () => aPopup.remove());
         aEl.addEventListener('click', () => onBoundaryClick?.('area', area.id));
-        aEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onBoundaryClick?.('area', area.id); });
-        boundaryMarkersRef.current.push(new mapboxgl.Marker({ element: aEl, anchor: 'center' }).setLngLat(aCenter).addTo(map));
+        aEl.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') onBoundaryClick?.('area', area.id);
+        });
+        boundaryMarkersRef.current.push(
+          new mapboxgl.Marker({ element: aEl, anchor: 'center' }).setLngLat(aCenter).addTo(map)
+        );
       });
     });
   }, [boundaries, onBoundaryClick]);
@@ -266,11 +350,14 @@ export function MonitoringMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isLoadedRef.current) return;
-    const url = mapStyle === 'satellite'
-      ? 'mapbox://styles/mapbox/satellite-streets-v12'
-      : 'mapbox://styles/mapbox/streets-v12';
+    const url =
+      mapStyle === 'satellite'
+        ? 'mapbox://styles/mapbox/satellite-streets-v12'
+        : 'mapbox://styles/mapbox/streets-v12';
     map.setStyle(url);
-    map.once('style.load', () => { drawBoundaries(); });
+    map.once('style.load', () => {
+      drawBoundaries();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapStyle]);
 
@@ -297,26 +384,67 @@ export function MonitoringMap({
       const p2 = trailPoints[i + 1];
       const c1: [number, number] = [p1.longitude, p1.latitude];
       const c2: [number, number] = [p2.longitude, p2.latitude];
-      if (p1.is_within_area && p2.is_within_area) { insideCoords.push(c1, c2); }
-      else { outsideCoords.push(c1, c2); }
+      if (p1.is_within_area && p2.is_within_area) {
+        insideCoords.push(c1, c2);
+      } else {
+        outsideCoords.push(c1, c2);
+      }
     }
 
     if (insideCoords.length > 0) {
-      map.addSource('trail-inside', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: insideCoords }, properties: {} } });
-      map.addLayer({ id: 'trail-inside', type: 'line', source: 'trail-inside', paint: { 'line-color': '#15803D', 'line-width': 3, 'line-opacity': 0.8 } });
+      map.addSource('trail-inside', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: insideCoords },
+          properties: {},
+        },
+      });
+      map.addLayer({
+        id: 'trail-inside',
+        type: 'line',
+        source: 'trail-inside',
+        paint: { 'line-color': '#15803D', 'line-width': 3, 'line-opacity': 0.8 },
+      });
     }
 
     if (outsideCoords.length > 0) {
-      map.addSource('trail-outside', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: outsideCoords }, properties: {} } });
-      map.addLayer({ id: 'trail-outside', type: 'line', source: 'trail-outside', paint: { 'line-color': '#9333EA', 'line-width': 3, 'line-opacity': 0.8, 'line-dasharray': [2, 2] } });
+      map.addSource('trail-outside', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: outsideCoords },
+          properties: {},
+        },
+      });
+      map.addLayer({
+        id: 'trail-outside',
+        type: 'line',
+        source: 'trail-outside',
+        paint: {
+          'line-color': '#9333EA',
+          'line-width': 3,
+          'line-opacity': 0.8,
+          'line-dasharray': [2, 2],
+        },
+      });
     }
 
     trailPoints.forEach((pt, idx) => {
-      const el = createTrailPointEl(idx === 0, idx === trailPoints.length - 1, pt.is_within_area, trailSelectedIndex === idx);
+      const el = createTrailPointEl(
+        idx === 0,
+        idx === trailPoints.length - 1,
+        pt.is_within_area,
+        trailSelectedIndex === idx
+      );
       el.addEventListener('click', () => onTrailPointClick?.(idx));
-      el.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onTrailPointClick?.(idx); });
+      el.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') onTrailPointClick?.(idx);
+      });
       trailMarkersRef.current.push(
-        new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([pt.longitude, pt.latitude]).addTo(map)
+        new mapboxgl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([pt.longitude, pt.latitude])
+          .addTo(map)
       );
     });
   }, [trailPoints, trailSelectedIndex, onTrailPointClick]);
@@ -375,14 +503,19 @@ export function MonitoringMap({
 
   if (!hasToken) {
     return (
-      <div className={cn('flex items-center justify-center bg-nb-gray-100 border-4 border-nb-black', className)}>
+      <div
+        className={cn(
+          'flex items-center justify-center bg-nb-gray-100 border-4 border-nb-black',
+          className
+        )}
+      >
         <div className="text-center p-8">
           <div className="text-5xl mb-4">&#128506;</div>
           <h3 className="font-bold text-lg mb-2">Token Mapbox Belum Dikonfigurasi</h3>
           <p className="text-sm text-nb-gray-600 max-w-xs">
             Tambahkan{' '}
-            <code className="font-mono bg-nb-gray-200 px-1">NEXT_PUBLIC_MAPBOX_TOKEN</code>{' '}
-            di file <code className="font-mono bg-nb-gray-200 px-1">.env</code> untuk mengaktifkan peta.
+            <code className="font-mono bg-nb-gray-200 px-1">NEXT_PUBLIC_MAPBOX_TOKEN</code> di file{' '}
+            <code className="font-mono bg-nb-gray-200 px-1">.env</code> untuk mengaktifkan peta.
           </p>
           <div className="mt-4 text-sm text-nb-gray-500">{users.length} petugas terdeteksi</div>
         </div>

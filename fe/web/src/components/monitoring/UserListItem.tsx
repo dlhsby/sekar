@@ -31,9 +31,7 @@ export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
       className={cn(
         'w-full text-left px-3 py-2.5 border-b border-nb-gray-200 transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary focus-visible:ring-inset',
-        isSelected
-          ? 'bg-nb-primary/10 border-l-4 border-l-nb-primary'
-          : 'hover:bg-nb-gray-50'
+        isSelected ? 'bg-nb-primary/10 border-l-4 border-l-nb-primary' : 'hover:bg-nb-gray-50'
       )}
       aria-selected={isSelected}
       aria-label={`${user.full_name}, ${statusLabel}`}
@@ -56,9 +54,7 @@ export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-xs text-nb-gray-500 truncate">{user.area_name || '—'}</span>
             <span className="text-xs text-nb-gray-400">·</span>
-            <span className="text-xs text-nb-gray-400">
-              {formatRelativeTime(user.last_update)}
-            </span>
+            <span className="text-xs text-nb-gray-400">{formatRelativeTime(user.last_update)}</span>
           </div>
         </div>
 

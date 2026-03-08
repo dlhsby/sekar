@@ -55,9 +55,7 @@ export default function MonitoringPage() {
   // Panel state
   const [panelView, setPanelView] = useState<PanelView>('list');
   const [selectedUser, setSelectedUser] = useState<LiveUser | null>(null);
-  const [historyDate, setHistoryDate] = useState(
-    () => new Date().toISOString().split('T')[0]
-  );
+  const [historyDate, setHistoryDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Trail sync state (Phase 2D-10)
   const [trailSelectedIndex, setTrailSelectedIndex] = useState<number | null>(null);
@@ -113,16 +111,18 @@ export default function MonitoringPage() {
     rayonFilter !== 'all' ? rayonFilter : '',
     canViewRayon
   );
-  const { data: areaStats } = useAreaMonitoring(
-    areaFilter !== 'all' ? areaFilter : ''
-  );
+  const { data: areaStats } = useAreaMonitoring(areaFilter !== 'all' ? areaFilter : '');
 
   // Live users
   const filters: LiveUsersFilters = {};
   if (rayonFilter && rayonFilter !== 'all') filters.rayon_id = rayonFilter;
   if (areaFilter && areaFilter !== 'all') filters.area_id = areaFilter;
 
-  const { data: liveUsersData, isLoading: usersLoading, refetch: refetchUsers } = useLiveUsers(filters);
+  const {
+    data: liveUsersData,
+    isLoading: usersLoading,
+    refetch: refetchUsers,
+  } = useLiveUsers(filters);
 
   // User day summary (when detail panel is open)
   const { data: userDaySummary, isLoading: summaryLoading } = useUserDaySummary(
@@ -151,34 +151,26 @@ export default function MonitoringPage() {
 
     // User location update
     socket.on('user:location', (payload: Partial<LiveUser> & { user_id: string }) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(filters),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) =>
-              u.id === payload.user_id ? { ...u, ...payload } : u
-            ),
-          };
-        }
-      );
+      queryClient.setQueryData(monitoringKeys.liveUsers(filters), (old: typeof liveUsersData) => {
+        if (!old) return old;
+        return {
+          ...old,
+          users: old.users.map((u) => (u.id === payload.user_id ? { ...u, ...payload } : u)),
+        };
+      });
     });
 
     // Status changed
     socket.on('user:status-changed', (event: UserStatusChangedEvent) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(filters),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) =>
-              u.id === event.user_id ? { ...u, status: event.new_status } : u
-            ),
-          };
-        }
-      );
+      queryClient.setQueryData(monitoringKeys.liveUsers(filters), (old: typeof liveUsersData) => {
+        if (!old) return old;
+        return {
+          ...old,
+          users: old.users.map((u) =>
+            u.id === event.user_id ? { ...u, status: event.new_status } : u
+          ),
+        };
+      });
       if (event.new_status === 'missing') {
         toast.warning(`${event.user_name} tidak terdeteksi`, {
           description: event.area_name ? `Area: ${event.area_name}` : undefined,
@@ -188,39 +180,31 @@ export default function MonitoringPage() {
 
     // User left area
     socket.on('user:left-area', (event: UserAreaEvent) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(filters),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) =>
-              u.id === event.user_id
-                ? { ...u, is_within_area: false, status: 'outside_area' as const }
-                : u
-            ),
-          };
-        }
-      );
+      queryClient.setQueryData(monitoringKeys.liveUsers(filters), (old: typeof liveUsersData) => {
+        if (!old) return old;
+        return {
+          ...old,
+          users: old.users.map((u) =>
+            u.id === event.user_id
+              ? { ...u, is_within_area: false, status: 'outside_area' as const }
+              : u
+          ),
+        };
+      });
       toast.info(`${event.user_name} keluar dari ${event.area_name}`);
     });
 
     // User entered area
     socket.on('user:entered-area', (event: UserAreaEvent) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(filters),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) =>
-              u.id === event.user_id
-                ? { ...u, is_within_area: true, status: 'active' as const }
-                : u
-            ),
-          };
-        }
-      );
+      queryClient.setQueryData(monitoringKeys.liveUsers(filters), (old: typeof liveUsersData) => {
+        if (!old) return old;
+        return {
+          ...old,
+          users: old.users.map((u) =>
+            u.id === event.user_id ? { ...u, is_within_area: true, status: 'active' as const } : u
+          ),
+        };
+      });
       toast.success(`${event.user_name} masuk ke ${event.area_name}`);
     });
 
@@ -256,22 +240,25 @@ export default function MonitoringPage() {
     setShowOnlyTrailUser(false);
   }, []);
 
-  const handleReassign = useCallback((areaId: string) => {
-    // Find area name from boundaries
-    let areaName = '';
-    if (boundariesData) {
-      for (const rayon of boundariesData.rayons) {
-        const area = rayon.areas.find((a) => a.id === areaId);
-        if (area) {
-          areaName = area.name;
-          break;
+  const handleReassign = useCallback(
+    (areaId: string) => {
+      // Find area name from boundaries
+      let areaName = '';
+      if (boundariesData) {
+        for (const rayon of boundariesData.rayons) {
+          const area = rayon.areas.find((a) => a.id === areaId);
+          if (area) {
+            areaName = area.name;
+            break;
+          }
         }
       }
-    }
-    setReassignTargetAreaId(areaId);
-    setReassignTargetAreaName(areaName || 'Area');
-    setReassignModalOpen(true);
-  }, [boundariesData]);
+      setReassignTargetAreaId(areaId);
+      setReassignTargetAreaName(areaName || 'Area');
+      setReassignModalOpen(true);
+    },
+    [boundariesData]
+  );
 
   const handleBoundaryClick = useCallback((_type: 'rayon' | 'area', id: string) => {
     // When a boundary center marker is clicked, filter to that entity

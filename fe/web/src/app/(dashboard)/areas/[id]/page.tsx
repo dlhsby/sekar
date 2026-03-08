@@ -329,9 +329,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               <div className="flex items-center gap-3 text-sm text-nb-gray-600">
                 <span>
                   Polygon aktif dengan{' '}
-                  <strong>
-                    {boundaryData.boundary_polygon.coordinates[0].length - 1} titik
-                  </strong>
+                  <strong>{boundaryData.boundary_polygon.coordinates[0].length - 1} titik</strong>
                 </span>
                 {boundaryData.coverage_area && (
                   <span>· Luas: {formatArea(boundaryData.coverage_area)}</span>

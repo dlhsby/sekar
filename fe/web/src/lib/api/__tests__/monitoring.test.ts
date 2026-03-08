@@ -434,26 +434,24 @@ describe('Monitoring API', () => {
     });
 
     it('should return empty points when no history exists', async () => {
-      mockAxios
-        .onGet(/\/monitoring\/users\/user-1\/location-history\?date=2026-01-01/)
-        .reply(200, {
-          user_id: 'user-1',
-          user_name: 'Satgas Satu',
-          role: 'satgas',
-          date: '2026-01-01',
-          shift_id: null,
-          shift_name: null,
-          area_id: null,
-          area_name: null,
-          clock_in_time: null,
-          clock_out_time: null,
-          points: [],
-          total_points: 0,
-          total_distance_meters: 0,
-          time_inside_area_minutes: 0,
-          time_outside_area_minutes: 0,
-          generated_at: '2026-03-05T08:30:00Z',
-        });
+      mockAxios.onGet(/\/monitoring\/users\/user-1\/location-history\?date=2026-01-01/).reply(200, {
+        user_id: 'user-1',
+        user_name: 'Satgas Satu',
+        role: 'satgas',
+        date: '2026-01-01',
+        shift_id: null,
+        shift_name: null,
+        area_id: null,
+        area_name: null,
+        clock_in_time: null,
+        clock_out_time: null,
+        points: [],
+        total_points: 0,
+        total_distance_meters: 0,
+        time_inside_area_minutes: 0,
+        time_outside_area_minutes: 0,
+        generated_at: '2026-03-05T08:30:00Z',
+      });
 
       const response = await apiClient.get(
         '/monitoring/users/user-1/location-history?date=2026-01-01'
@@ -579,14 +577,11 @@ describe('Monitoring API', () => {
         updated_at: '2026-03-05T09:00:00Z',
       };
 
-      mockAxios
-        .onPatch('/monitoring/config/inactive_threshold_minutes')
-        .reply(200, updatedConfig);
+      mockAxios.onPatch('/monitoring/config/inactive_threshold_minutes').reply(200, updatedConfig);
 
-      const response = await apiClient.patch(
-        '/monitoring/config/inactive_threshold_minutes',
-        { value: { minutes: 20 } }
-      );
+      const response = await apiClient.patch('/monitoring/config/inactive_threshold_minutes', {
+        value: { minutes: 20 },
+      });
 
       expect(response.status).toBe(200);
       expect(response.data.key).toBe('inactive_threshold_minutes');
@@ -637,9 +632,7 @@ describe('Monitoring API', () => {
                 radius_meters: 500,
                 assigned_count: 5,
                 is_understaffed: false,
-                staffing_summary: [
-                  { role: 'satgas', required: 3, active: 3 },
-                ],
+                staffing_summary: [{ role: 'satgas', required: 3, active: 3 }],
               },
             ],
           },

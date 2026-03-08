@@ -21,7 +21,9 @@ jest.mock('mapbox-gl', () => ({}));
 jest.mock('@/components/monitoring/MonitoringMap', () => ({
   MonitoringMap: (props: { users: unknown[] }) => (
     <div data-testid="monitoring-map">
-      {Array.isArray(props.users) ? `${props.users.length} petugas terdeteksi` : '0 petugas terdeteksi'}
+      {Array.isArray(props.users)
+        ? `${props.users.length} petugas terdeteksi`
+        : '0 petugas terdeteksi'}
     </div>
   ),
 }));

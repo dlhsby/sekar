@@ -46,13 +46,21 @@ function RoleRow({ role }: RoleRowProps) {
         {present}/{required}
       </span>
       <div className="flex gap-1 text-[10px] text-nb-gray-400">
-        <span title="Aktif" className="text-[#15803D]">{role.active}</span>
+        <span title="Aktif" className="text-[#15803D]">
+          {role.active}
+        </span>
         <span>/</span>
-        <span title="Idle" className="text-[#D97706]">{role.idle}</span>
+        <span title="Idle" className="text-[#D97706]">
+          {role.idle}
+        </span>
         <span>/</span>
-        <span title="Di Luar" className="text-[#9333EA]">{role.outside_area}</span>
+        <span title="Di Luar" className="text-[#9333EA]">
+          {role.outside_area}
+        </span>
         <span>/</span>
-        <span title="Tidak Terdeteksi" className="text-[#DC2626]">{role.missing}</span>
+        <span title="Tidak Terdeteksi" className="text-[#DC2626]">
+          {role.missing}
+        </span>
       </div>
     </div>
   );
@@ -103,7 +111,9 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
       {/* Overall progress */}
       <div>
         <div className="flex items-center justify-between text-xs mb-1">
-          <span className="font-semibold text-nb-black">{totalPresent} / {totalAll} hadir</span>
+          <span className="font-semibold text-nb-black">
+            {totalPresent} / {totalAll} hadir
+          </span>
           <span className="text-nb-gray-500">
             {totalAll > 0 ? Math.round((totalPresent / totalAll) * 100) : 0}%
           </span>
@@ -187,38 +197,39 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
               onClick={() => toggleArea(area.id)}
               className="w-full flex items-center gap-2 px-2.5 py-2 bg-nb-white hover:bg-nb-gray-50 transition-colors text-left"
             >
-              {isExpanded
-                ? <ChevronDown className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
-                : <ChevronRight className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
-              }
-              <span className="flex-1 text-xs font-semibold text-nb-black truncate">{area.name}</span>
+              {isExpanded ? (
+                <ChevronDown className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
+              )}
+              <span className="flex-1 text-xs font-semibold text-nb-black truncate">
+                {area.name}
+              </span>
               <span className="text-xs font-mono text-nb-gray-600 tabular-nums">
                 {activeCount}/{requiredCount}
               </span>
-              {area.is_understaffed && shortage > 0 && (
-                <UnderstaffedBadge shortage={shortage} />
-              )}
+              {area.is_understaffed && shortage > 0 && <UnderstaffedBadge shortage={shortage} />}
             </button>
 
             {isExpanded && (
-              <div
-                className={cn(
-                  'px-3 py-2 border-t-2 border-nb-black bg-nb-gray-50 space-y-1',
-                )}
-              >
+              <div className={cn('px-3 py-2 border-t-2 border-nb-black bg-nb-gray-50 space-y-1')}>
                 {area.staffing_summary.map((s) => {
                   const roleLabel = ROLE_LABELS[s.role as UserRole] ?? s.role;
                   const isFullyStaffed = s.active >= s.required;
                   return (
                     <div key={s.role} className="flex items-center gap-2 text-xs">
-                      <span className="w-24 truncate font-medium text-nb-gray-700">{roleLabel}</span>
+                      <span className="w-24 truncate font-medium text-nb-gray-700">
+                        {roleLabel}
+                      </span>
                       <div className="flex-1 h-1.5 bg-nb-gray-200 rounded-full overflow-hidden border border-nb-gray-300">
                         <div
                           className={cn(
                             'h-full rounded-full transition-all duration-300',
                             isFullyStaffed ? 'bg-[#15803D]' : 'bg-[#D97706]'
                           )}
-                          style={{ width: `${s.required > 0 ? Math.min((s.active / s.required) * 100, 100) : 0}%` }}
+                          style={{
+                            width: `${s.required > 0 ? Math.min((s.active / s.required) * 100, 100) : 0}%`,
+                          }}
                         />
                       </div>
                       <span className="w-10 text-right font-mono text-nb-gray-500 tabular-nums">
@@ -298,11 +309,14 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
               onClick={() => toggleRayon(rayon.id)}
               className="w-full flex items-center gap-2 px-2.5 py-2 bg-nb-white hover:bg-nb-gray-50 transition-colors text-left"
             >
-              {isExpanded
-                ? <ChevronDown className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
-                : <ChevronRight className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
-              }
-              <span className="flex-1 text-xs font-semibold text-nb-black truncate">{rayon.name}</span>
+              {isExpanded ? (
+                <ChevronDown className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
+              )}
+              <span className="flex-1 text-xs font-semibold text-nb-black truncate">
+                {rayon.name}
+              </span>
               <span className="text-xs font-mono text-nb-gray-600 tabular-nums">
                 {totalActive}/{totalRequired}
               </span>
@@ -315,7 +329,10 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
               <div className="border-t-2 border-nb-black bg-nb-gray-50 px-2 py-2 space-y-1">
                 {rayon.areas.map((area) => {
                   const areaActive = area.staffing_summary.reduce((acc, s) => acc + s.active, 0);
-                  const areaRequired = area.staffing_summary.reduce((acc, s) => acc + s.required, 0);
+                  const areaRequired = area.staffing_summary.reduce(
+                    (acc, s) => acc + s.required,
+                    0
+                  );
                   const shortage = areaRequired - areaActive;
 
                   return (
@@ -326,7 +343,9 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
                         area.is_understaffed && 'border-l-4 border-l-[#DC2626]'
                       )}
                     >
-                      <span className="flex-1 font-medium text-nb-gray-700 truncate">{area.name}</span>
+                      <span className="flex-1 font-medium text-nb-gray-700 truncate">
+                        {area.name}
+                      </span>
                       <span className="font-mono text-nb-gray-500 tabular-nums">
                         {areaActive}/{areaRequired}
                       </span>
@@ -359,11 +378,7 @@ export function StaffingSummaryCard({
   const hasRayonFilter = !!filters.rayon_id && !hasAreaFilter;
   const isCityView = !hasAreaFilter && !hasRayonFilter;
 
-  const viewLabel = hasAreaFilter
-    ? 'Area'
-    : hasRayonFilter
-    ? 'Rayon'
-    : 'Seluruh Kota';
+  const viewLabel = hasAreaFilter ? 'Area' : hasRayonFilter ? 'Rayon' : 'Seluruh Kota';
 
   return (
     <div className="border-2 border-nb-black rounded-nb-base shadow-nb-sm bg-nb-white overflow-hidden">
@@ -390,15 +405,11 @@ export function StaffingSummaryCard({
 
       {/* Body */}
       <div className="px-3 py-2.5">
-        {hasAreaFilter && (
-          <AreaView areaId={filters.area_id!} onReassign={onReassign} />
-        )}
+        {hasAreaFilter && <AreaView areaId={filters.area_id!} onReassign={onReassign} />}
         {hasRayonFilter && (
           <RayonView rayonId={filters.rayon_id!} boundaries={boundaries} onReassign={onReassign} />
         )}
-        {isCityView && (
-          <CityView boundaries={boundaries} onReassign={onReassign} />
-        )}
+        {isCityView && <CityView boundaries={boundaries} onReassign={onReassign} />}
       </div>
     </div>
   );

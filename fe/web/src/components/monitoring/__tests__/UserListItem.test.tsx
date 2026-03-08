@@ -92,10 +92,7 @@ describe('UserListItem', () => {
       'should render status dot with correct color class for status "%s"',
       (status, expectedClass) => {
         const { container } = render(
-          <UserListItem
-            {...defaultProps}
-            user={{ ...BASE_USER, status }}
-          />
+          <UserListItem {...defaultProps} user={{ ...BASE_USER, status }} />
         );
         const dot = container.querySelector('.rounded-full.flex-shrink-0');
         expect(dot).toHaveClass(expectedClass);

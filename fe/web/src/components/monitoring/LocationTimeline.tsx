@@ -95,7 +95,9 @@ export function LocationTimeline({
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-white border-2 border-nb-black rounded-nb-base p-2 text-center">
               <div className="text-xs text-nb-gray-500 font-semibold">Jarak</div>
-              <div className="text-sm font-black">{formatDistance(history.total_distance_meters)}</div>
+              <div className="text-sm font-black">
+                {formatDistance(history.total_distance_meters)}
+              </div>
             </div>
             <div className="bg-white border-2 border-nb-black rounded-nb-base p-2 text-center">
               <div className="text-xs text-nb-gray-500 font-semibold">Titik</div>
@@ -121,7 +123,9 @@ export function LocationTimeline({
               <Clock className="w-3 h-3" />
               Shift: <span className="font-semibold">{history.shift_name}</span>
               {history.clock_in_time && (
-                <span className="ml-1">· Masuk: {formatTimeWithSeconds(history.clock_in_time)}</span>
+                <span className="ml-1">
+                  · Masuk: {formatTimeWithSeconds(history.clock_in_time)}
+                </span>
               )}
             </div>
           )}
@@ -186,12 +190,12 @@ export function LocationTimeline({
                 <li
                   key={`${point.logged_at}-${index}`}
                   role="listitem"
-                  ref={(el) => { pointRefs.current[index] = el; }}
+                  ref={(el) => {
+                    pointRefs.current[index] = el;
+                  }}
                   className={cn(
                     'border-b border-nb-gray-100 transition-colors',
-                    isSelected
-                      ? 'border-l-4 border-l-blue-500 bg-blue-50'
-                      : 'hover:bg-nb-gray-50'
+                    isSelected ? 'border-l-4 border-l-blue-500 bg-blue-50' : 'hover:bg-nb-gray-50'
                   )}
                 >
                   <button

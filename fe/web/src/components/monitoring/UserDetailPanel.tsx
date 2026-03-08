@@ -66,7 +66,8 @@ export function UserDetailPanel({
   }
 
   const statusClass =
-    STATUS_BADGE_CLASSES[summary.status] ?? 'bg-[var(--color-status-offline-bg)] text-[#374151] border-[var(--color-status-offline)]';
+    STATUS_BADGE_CLASSES[summary.status] ??
+    'bg-[var(--color-status-offline-bg)] text-[#374151] border-[var(--color-status-offline)]';
   const statusLabel = STATUS_LABELS[summary.status] ?? summary.status;
   const roleLabel = ROLE_LABELS[summary.role as UserRole] || summary.role;
 
@@ -129,7 +130,8 @@ export function UserDetailPanel({
             <p className="font-bold text-nb-black text-sm">{summary.shift.name}</p>
             <div className="mt-1 text-xs text-nb-gray-600 space-y-0.5">
               <div>
-                Masuk: <span className="font-semibold">{formatTime(summary.shift.clock_in_time)}</span>
+                Masuk:{' '}
+                <span className="font-semibold">{formatTime(summary.shift.clock_in_time)}</span>
               </div>
               {summary.shift.clock_out_time && (
                 <div>
@@ -139,10 +141,14 @@ export function UserDetailPanel({
               )}
               <div>
                 Durasi:{' '}
-                <span className="font-semibold">{formatDuration(summary.shift.duration_minutes)}</span>
+                <span className="font-semibold">
+                  {formatDuration(summary.shift.duration_minutes)}
+                </span>
               </div>
               {summary.shift.outside_boundary && (
-                <div className="text-[var(--color-status-outside)] font-semibold">Di luar batas area</div>
+                <div className="text-[var(--color-status-outside)] font-semibold">
+                  Di luar batas area
+                </div>
               )}
             </div>
           </div>
@@ -179,7 +185,9 @@ export function UserDetailPanel({
               </div>
               <div
                 className={
-                  summary.last_location.is_within_area ? 'text-[var(--color-status-active)]' : 'text-[var(--color-status-outside)]'
+                  summary.last_location.is_within_area
+                    ? 'text-[var(--color-status-active)]'
+                    : 'text-[var(--color-status-outside)]'
                 }
               >
                 {summary.last_location.is_within_area ? 'Dalam area' : 'Di luar area'}

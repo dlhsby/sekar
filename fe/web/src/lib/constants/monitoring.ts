@@ -117,9 +117,12 @@ export const STATUS_DOT_CLASSES: Record<TrackingStatus, string> = {
 export const STATUS_BADGE_CLASSES: Record<TrackingStatus, string> = {
   active: 'bg-[var(--color-status-active-bg)] text-[#14532D] border-[var(--color-status-active)]',
   inactive: 'bg-[var(--color-status-idle-bg)] text-[#78350F] border-[var(--color-status-idle)]',
-  outside_area: 'bg-[var(--color-status-outside-bg)] text-[#581C87] border-[var(--color-status-outside)]',
-  missing: 'bg-[var(--color-status-missing-bg)] text-[#7F1D1D] border-[var(--color-status-missing)]',
-  offline: 'bg-[var(--color-status-offline-bg)] text-[#374151] border-[var(--color-status-offline)]',
+  outside_area:
+    'bg-[var(--color-status-outside-bg)] text-[#581C87] border-[var(--color-status-outside)]',
+  missing:
+    'bg-[var(--color-status-missing-bg)] text-[#7F1D1D] border-[var(--color-status-missing)]',
+  offline:
+    'bg-[var(--color-status-offline-bg)] text-[#374151] border-[var(--color-status-offline)]',
 };
 
 // ---------------------------------------------------------------------------
@@ -152,7 +155,13 @@ export const ROLE_FULL_LABELS: Record<string, string> = {
 
 // Polygon styles for boundary layers
 export const POLYGON_STYLES = {
-  rayon: { fill: '#60A5FA', fillOpacity: 0.08, stroke: '#2563EB', strokeWidth: 3, dashArray: [6, 4] },
+  rayon: {
+    fill: '#60A5FA',
+    fillOpacity: 0.08,
+    stroke: '#2563EB',
+    strokeWidth: 3,
+    dashArray: [6, 4],
+  },
   area: { fill: '#FBBF24', fillOpacity: 0.15, stroke: '#1C1917', strokeWidth: 2 },
 } as const;
 
@@ -187,8 +196,8 @@ export const ZOOM_BREAKPOINTS = {
 
 // Cluster color thresholds
 export const CLUSTER_COLORS = {
-  critical: '#DC2626',   // Has missing users
-  warning: '#D97706',    // Has outside_area users
-  normal: '#15803D',     // All active/inactive
-  neutral: '#6B7280',    // All offline
+  critical: '#DC2626', // Has missing users
+  warning: '#D97706', // Has outside_area users
+  normal: '#15803D', // All active/inactive
+  neutral: '#6B7280', // All offline
 } as const;

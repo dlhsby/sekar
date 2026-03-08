@@ -198,31 +198,18 @@ describe('StaffingSummaryCard', () => {
 
   describe('Header', () => {
     it('should render the "Ketersediaan Petugas" heading', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.getByText(/ketersediaan petugas/i)).toBeInTheDocument();
     });
 
     it('should show "Seluruh Kota" label when no filter is active', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.getByText(/seluruh kota/i)).toBeInTheDocument();
     });
 
     it('should show "Rayon" label when rayon_id filter is active', () => {
       render(
-        <StaffingSummaryCard
-          filters={{ rayon_id: 'rayon-1' }}
-          boundaries={MOCK_BOUNDARIES}
-        />
+        <StaffingSummaryCard filters={{ rayon_id: 'rayon-1' }} boundaries={MOCK_BOUNDARIES} />
       );
       expect(screen.getByText(/rayon/i)).toBeInTheDocument();
     });
@@ -231,12 +218,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={{ area_id: 'area-1' }}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{ area_id: 'area-1' }} boundaries={MOCK_BOUNDARIES} />);
       // The view label is rendered inside a <span> child of the heading
       const heading = screen.getByRole('heading');
       expect(heading).toHaveTextContent(/area/i);
@@ -249,45 +231,22 @@ describe('StaffingSummaryCard', () => {
 
   describe('Day-type badge', () => {
     it('should render "Hari Kerja" badge for weekday dayType', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-          dayType="weekday"
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} dayType="weekday" />);
       expect(screen.getByText('Hari Kerja')).toBeInTheDocument();
     });
 
     it('should render "Akhir Pekan" badge for weekend dayType', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-          dayType="weekend"
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} dayType="weekend" />);
       expect(screen.getByText('Akhir Pekan')).toBeInTheDocument();
     });
 
     it('should render "Hari Libur" badge for holiday dayType', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-          dayType="holiday"
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} dayType="holiday" />);
       expect(screen.getByText('Hari Libur')).toBeInTheDocument();
     });
 
     it('should not render any day-type badge when dayType is not provided', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.queryByText('Hari Kerja')).not.toBeInTheDocument();
       expect(screen.queryByText('Akhir Pekan')).not.toBeInTheDocument();
       expect(screen.queryByText('Hari Libur')).not.toBeInTheDocument();
@@ -300,23 +259,13 @@ describe('StaffingSummaryCard', () => {
 
   describe('City view (no filters)', () => {
     it('should render a row for each rayon in boundaries', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.getByText('Rayon Pusat')).toBeInTheDocument();
       expect(screen.getByText('Rayon Selatan')).toBeInTheDocument();
     });
 
     it('should display active/required counts for each rayon', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       // Rayon Pusat: area-1 (active 2+1=3, required 3+1=4) + area-2 (active 2+1=3, required 2+1=3) = 6/7
       expect(screen.getByText('6/7')).toBeInTheDocument();
       // Rayon Selatan: area-3 (active 2+2=4, required 2+2=4) = 4/4
@@ -324,35 +273,20 @@ describe('StaffingSummaryCard', () => {
     });
 
     it('should show understaffed badge for understaffed rayons', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       // Rayon Pusat has understaffed_area_count=1
       expect(screen.getByText(/kurang 1/i)).toBeInTheDocument();
     });
 
     it('should not show understaffed badge for fully-staffed rayons', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       // Rayon Selatan is not understaffed — only one "Kurang" badge should appear
       const badges = screen.getAllByText(/kurang/i);
       expect(badges).toHaveLength(1);
     });
 
     it('should render "Data wilayah tidak tersedia" when boundaries is undefined', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={undefined}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={undefined} />);
       expect(screen.getByText(/data wilayah tidak tersedia/i)).toBeInTheDocument();
     });
 
@@ -368,23 +302,13 @@ describe('StaffingSummaryCard', () => {
 
     // Accordion expand / collapse
     it('should not show area rows before expanding a rayon', () => {
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.queryByText('Taman Bungkul')).not.toBeInTheDocument();
     });
 
     it('should reveal area rows after clicking the rayon accordion button', async () => {
       const user = userEvent.setup();
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
 
       const rayonButton = screen.getByRole('button', { name: /rayon pusat/i });
       await user.click(rayonButton);
@@ -395,12 +319,7 @@ describe('StaffingSummaryCard', () => {
 
     it('should collapse area rows when the expanded rayon button is clicked again', async () => {
       const user = userEvent.setup();
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
 
       const rayonButton = screen.getByRole('button', { name: /rayon pusat/i });
       await user.click(rayonButton);
@@ -412,12 +331,7 @@ describe('StaffingSummaryCard', () => {
 
     it('should show area-level understaffed badge inside expanded rayon for understaffed area', async () => {
       const user = userEvent.setup();
-      render(
-        <StaffingSummaryCard
-          filters={{}}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{}} boundaries={MOCK_BOUNDARIES} />);
 
       await user.click(screen.getByRole('button', { name: /rayon pusat/i }));
 
@@ -436,23 +350,13 @@ describe('StaffingSummaryCard', () => {
     const rayonFilters = { rayon_id: 'rayon-1' };
 
     it('should render an expandable row for each area in the selected rayon', () => {
-      render(
-        <StaffingSummaryCard
-          filters={rayonFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={rayonFilters} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();
       expect(screen.getByText('Taman Apsari')).toBeInTheDocument();
     });
 
     it('should display active/required counts for each area row', () => {
-      render(
-        <StaffingSummaryCard
-          filters={rayonFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={rayonFilters} boundaries={MOCK_BOUNDARIES} />);
       // Taman Bungkul: active=2+1=3, required=3+1=4 => "3/4"
       expect(screen.getByText('3/4')).toBeInTheDocument();
       // Taman Apsari: active=2+1=3, required=2+1=3 => "3/3"
@@ -460,46 +364,28 @@ describe('StaffingSummaryCard', () => {
     });
 
     it('should show understaffed badge for understaffed area', () => {
-      render(
-        <StaffingSummaryCard
-          filters={rayonFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={rayonFilters} boundaries={MOCK_BOUNDARIES} />);
       // Taman Bungkul shortage = (3-2) = 1
       expect(screen.getByText(/kurang 1/i)).toBeInTheDocument();
     });
 
     it('should render "Data rayon tidak tersedia" when the rayon_id does not match any boundary', () => {
       render(
-        <StaffingSummaryCard
-          filters={{ rayon_id: 'rayon-999' }}
-          boundaries={MOCK_BOUNDARIES}
-        />
+        <StaffingSummaryCard filters={{ rayon_id: 'rayon-999' }} boundaries={MOCK_BOUNDARIES} />
       );
       expect(screen.getByText(/data rayon tidak tersedia/i)).toBeInTheDocument();
     });
 
     // Accordion expand / collapse (area within rayon view)
     it('should not show role breakdown before expanding an area row', () => {
-      render(
-        <StaffingSummaryCard
-          filters={rayonFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={rayonFilters} boundaries={MOCK_BOUNDARIES} />);
       // role label "Satgas" should not be visible until the accordion opens
       expect(screen.queryByText('Satgas')).not.toBeInTheDocument();
     });
 
     it('should reveal role breakdown rows when an area accordion button is clicked', async () => {
       const user = userEvent.setup();
-      render(
-        <StaffingSummaryCard
-          filters={rayonFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={rayonFilters} boundaries={MOCK_BOUNDARIES} />);
 
       const areaButton = screen.getByRole('button', { name: /taman bungkul/i });
       await user.click(areaButton);
@@ -510,12 +396,7 @@ describe('StaffingSummaryCard', () => {
 
     it('should collapse role breakdown when the expanded area button is clicked again', async () => {
       const user = userEvent.setup();
-      render(
-        <StaffingSummaryCard
-          filters={rayonFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={rayonFilters} boundaries={MOCK_BOUNDARIES} />);
 
       const areaButton = screen.getByRole('button', { name: /taman bungkul/i });
       await user.click(areaButton);
@@ -564,12 +445,7 @@ describe('StaffingSummaryCard', () => {
 
     it('should not show reassign button when onReassign prop is not provided', async () => {
       const user = userEvent.setup();
-      render(
-        <StaffingSummaryCard
-          filters={rayonFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={rayonFilters} boundaries={MOCK_BOUNDARIES} />);
 
       const areaButton = screen.getByRole('button', { name: /taman bungkul/i });
       await user.click(areaButton);
@@ -588,10 +464,7 @@ describe('StaffingSummaryCard', () => {
     it('should render loading skeleton while useStaffingSummary is loading', () => {
       mockUseStaffingSummary.mockReturnValue(buildHookReturn({ isLoading: true }));
       const { container } = render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
+        <StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />
       );
       const skeletons = container.querySelectorAll('.animate-pulse');
       expect(skeletons.length).toBeGreaterThan(0);
@@ -604,12 +477,7 @@ describe('StaffingSummaryCard', () => {
           isSuccess: true,
         })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.getByText(/data tidak tersedia/i)).toBeInTheDocument();
     });
 
@@ -617,12 +485,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       // total_active=3, total_idle=0, total_outside_area=0 → present=3
       // totalAll = present(3) + missing(1) + offline(0) = 4
       expect(screen.getByText(/3 \/ 4 hadir/i)).toBeInTheDocument();
@@ -632,12 +495,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.getByText('Satgas')).toBeInTheDocument();
       expect(screen.getByText('Linmas')).toBeInTheDocument();
     });
@@ -646,12 +504,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       // satgas: present = active(2)+idle(0)+outside_area(0) = 2, required = total_required(3)
       expect(screen.getByText('2/3')).toBeInTheDocument();
       // linmas: present = 1+0+0 = 1, required = 1
@@ -662,12 +515,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       // satgas active count
       const activeCountElements = screen.getAllByTitle('Aktif');
       expect(activeCountElements.length).toBeGreaterThanOrEqual(1);
@@ -756,12 +604,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.queryByRole('button', { name: /pindah petugas/i })).not.toBeInTheDocument();
     });
 
@@ -769,12 +612,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       // present=3, totalAll=4 → 75%
       expect(screen.getByText('75%')).toBeInTheDocument();
     });
@@ -811,12 +649,7 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: zeroResponse, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       expect(screen.getByText('0%')).toBeInTheDocument();
       expect(screen.getByText(/0 \/ 3 hadir/i)).toBeInTheDocument();
     });
@@ -853,24 +686,14 @@ describe('StaffingSummaryCard', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: zeroRequiredResponse, isSuccess: true })
       );
-      render(
-        <StaffingSummaryCard
-          filters={areaFilters}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={areaFilters} boundaries={MOCK_BOUNDARIES} />);
       // required falls back to total_assigned(2); present=2 → "2/2"
       expect(screen.getByText('2/2')).toBeInTheDocument();
     });
 
     it('should pass correct area_id filter to useStaffingSummary hook', () => {
       mockUseStaffingSummary.mockReturnValue(buildHookReturn());
-      render(
-        <StaffingSummaryCard
-          filters={{ area_id: 'area-1' }}
-          boundaries={MOCK_BOUNDARIES}
-        />
-      );
+      render(<StaffingSummaryCard filters={{ area_id: 'area-1' }} boundaries={MOCK_BOUNDARIES} />);
       expect(mockUseStaffingSummary).toHaveBeenCalledWith({ area_id: 'area-1' });
     });
   });

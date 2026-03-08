@@ -29,7 +29,11 @@ export function StatusCard({ label, count, status, isActive, onClick }: StatusCa
         'w-full text-left border-2 border-nb-black rounded-nb-base transition-all duration-150',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary focus-visible:ring-offset-1',
         isActive
-          ? cn(styles.activeBg, styles.text, 'shadow-[4px_4px_0_0_#000] translate-x-0 translate-y-0')
+          ? cn(
+              styles.activeBg,
+              styles.text,
+              'shadow-[4px_4px_0_0_#000] translate-x-0 translate-y-0'
+            )
           : cn(styles.bg, 'text-nb-black', 'shadow-nb-sm hover:shadow-[4px_4px_0_0_#000]'),
         'p-3'
       )}
@@ -47,12 +51,7 @@ export function StatusCard({ label, count, status, isActive, onClick }: StatusCa
         </span>
         <span className={cn('h-2 w-2 rounded-full flex-shrink-0', styles.dot)} />
       </div>
-      <div
-        className={cn(
-          'text-2xl font-black',
-          isActive ? styles.text : 'text-nb-black'
-        )}
-      >
+      <div className={cn('text-2xl font-black', isActive ? styles.text : 'text-nb-black')}>
         {count}
       </div>
     </button>

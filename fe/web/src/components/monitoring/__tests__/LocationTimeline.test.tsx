@@ -39,15 +39,15 @@ const MOCK_HISTORY: LocationHistory = {
     },
     {
       latitude: -7.290001,
-      longitude: 112.740000,
+      longitude: 112.74,
       accuracy: 10,
       battery_level: 78,
       logged_at: POINT_2_ISO,
       is_within_area: true,
     },
     {
-      latitude: -7.295000,
-      longitude: 112.745000,
+      latitude: -7.295,
+      longitude: 112.745,
       accuracy: 15,
       battery_level: 15,
       logged_at: POINT_3_ISO,
@@ -97,9 +97,7 @@ describe('LocationTimeline', () => {
 
   describe('Loading state', () => {
     it('should render loading skeletons when isLoading is true', () => {
-      const { container } = render(
-        <LocationTimeline {...defaultProps} isLoading={true} />
-      );
+      const { container } = render(<LocationTimeline {...defaultProps} isLoading={true} />);
       const skeletons = container.querySelectorAll('.animate-pulse');
       expect(skeletons.length).toBeGreaterThan(0);
     });
@@ -241,7 +239,11 @@ describe('LocationTimeline', () => {
     });
 
     it('should not render "Akhir" badge when only one point exists', () => {
-      const singlePointHistory = { ...MOCK_HISTORY, points: [MOCK_HISTORY.points[0]], total_points: 1 };
+      const singlePointHistory = {
+        ...MOCK_HISTORY,
+        points: [MOCK_HISTORY.points[0]],
+        total_points: 1,
+      };
       render(<LocationTimeline {...defaultProps} history={singlePointHistory} />);
       expect(screen.getByText(/Mulai/)).toBeInTheDocument();
       expect(screen.queryByText(/Akhir/)).not.toBeInTheDocument();
@@ -261,9 +263,7 @@ describe('LocationTimeline', () => {
     });
 
     it('should highlight the selected point row', () => {
-      const { container } = render(
-        <LocationTimeline {...defaultProps} selectedPointIndex={0} />
-      );
+      const { container } = render(<LocationTimeline {...defaultProps} selectedPointIndex={0} />);
       const firstItem = container.querySelector('li');
       expect(firstItem).toHaveClass('border-l-4');
     });
@@ -279,11 +279,7 @@ describe('LocationTimeline', () => {
   describe('Hide-others toggle', () => {
     it('should render toggle when onToggleShowOnly is provided', () => {
       render(
-        <LocationTimeline
-          {...defaultProps}
-          onToggleShowOnly={jest.fn()}
-          showOnlyThisUser={false}
-        />
+        <LocationTimeline {...defaultProps} onToggleShowOnly={jest.fn()} showOnlyThisUser={false} />
       );
       expect(screen.getByText(/tampilkan hanya petugas ini/i)).toBeInTheDocument();
     });
@@ -338,9 +334,7 @@ describe('LocationTimeline', () => {
       const handleBack = jest.fn();
       render(<LocationTimeline {...defaultProps} onBack={handleBack} />);
 
-      await user.click(
-        screen.getByRole('button', { name: /kembali ke detail petugas/i })
-      );
+      await user.click(screen.getByRole('button', { name: /kembali ke detail petugas/i }));
 
       expect(handleBack).toHaveBeenCalledTimes(1);
     });

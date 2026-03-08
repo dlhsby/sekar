@@ -64,8 +64,7 @@ export const monitoringKeys = {
   area: (id: string) => [...monitoringKeys.all, 'area', id] as const,
   liveUsers: (filters?: LiveUsersFilters) =>
     [...monitoringKeys.all, 'live-users', filters] as const,
-  userDaySummary: (userId: string) =>
-    [...monitoringKeys.all, 'user-day-summary', userId] as const,
+  userDaySummary: (userId: string) => [...monitoringKeys.all, 'user-day-summary', userId] as const,
   locationHistory: (userId: string, date: string) =>
     [...monitoringKeys.all, 'location-history', userId, date] as const,
   staffingSummary: (filters?: StaffingFilters) =>
@@ -95,9 +94,7 @@ export function useRayonMonitoring(rayonId: string, enabled = true) {
   return useQuery({
     queryKey: monitoringKeys.rayon(rayonId),
     queryFn: async () => {
-      const response = await apiClient.get<RayonMonitoringStats>(
-        `/monitoring/rayon/${rayonId}`
-      );
+      const response = await apiClient.get<RayonMonitoringStats>(`/monitoring/rayon/${rayonId}`);
       return response.data;
     },
     staleTime: 30 * 1000,
@@ -110,9 +107,7 @@ export function useAreaMonitoring(areaId: string, enabled = true) {
   return useQuery({
     queryKey: monitoringKeys.area(areaId),
     queryFn: async () => {
-      const response = await apiClient.get<AreaMonitoringStats>(
-        `/monitoring/area/${areaId}`
-      );
+      const response = await apiClient.get<AreaMonitoringStats>(`/monitoring/area/${areaId}`);
       return response.data;
     },
     staleTime: 30 * 1000,
@@ -215,17 +210,10 @@ export function useUpdateMonitoringConfig() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      key,
-      value,
-    }: {
-      key: string;
-      value: Record<string, unknown>;
-    }) => {
-      const response = await apiClient.patch<MonitoringConfigItem>(
-        `/monitoring/config/${key}`,
-        { value }
-      );
+    mutationFn: async ({ key, value }: { key: string; value: Record<string, unknown> }) => {
+      const response = await apiClient.patch<MonitoringConfigItem>(`/monitoring/config/${key}`, {
+        value,
+      });
       return response.data;
     },
     onSuccess: () => {
@@ -259,10 +247,7 @@ export function useReassignWorker() {
 
   return useMutation({
     mutationFn: async (data: ReassignWorkerPayload) => {
-      const response = await apiClient.post<ReassignWorkerResponse>(
-        '/monitoring/reassign',
-        data
-      );
+      const response = await apiClient.post<ReassignWorkerResponse>('/monitoring/reassign', data);
       return response.data;
     },
     onSuccess: () => {

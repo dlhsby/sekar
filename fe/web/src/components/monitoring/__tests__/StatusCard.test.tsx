@@ -54,13 +54,10 @@ describe('StatusCard', () => {
       ['outside_area', 'bg-[var(--color-status-outside-bg)]'],
       ['missing', 'bg-[var(--color-status-missing-bg)]'],
       ['offline', 'bg-[var(--color-status-offline-bg)]'],
-    ])(
-      'should apply inactive background class for status "%s"',
-      (status, expectedClass) => {
-        render(<StatusCard {...defaultProps} status={status} isActive={false} />);
-        expect(screen.getByRole('button')).toHaveClass(expectedClass);
-      }
-    );
+    ])('should apply inactive background class for status "%s"', (status, expectedClass) => {
+      render(<StatusCard {...defaultProps} status={status} isActive={false} />);
+      expect(screen.getByRole('button')).toHaveClass(expectedClass);
+    });
 
     it.each<[TrackingStatus, string]>([
       ['active', 'bg-[var(--color-status-active)]'],
@@ -85,9 +82,7 @@ describe('StatusCard', () => {
     ])(
       'should render status dot with correct color for status "%s"',
       (status, expectedDotClass) => {
-        const { container } = render(
-          <StatusCard {...defaultProps} status={status} />
-        );
+        const { container } = render(<StatusCard {...defaultProps} status={status} />);
         const dot = container.querySelector('.rounded-full.flex-shrink-0');
         expect(dot).toHaveClass(expectedDotClass);
       }

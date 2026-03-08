@@ -111,7 +111,7 @@ export function createMarkerElement(user: LiveUser, zoom: number, opacity = 1): 
 export function polygonCentroid(
   geometry: GeoJSON.Geometry | null,
   fallbackLat: number | null,
-  fallbackLng: number | null,
+  fallbackLng: number | null
 ): [number, number] | null {
   if (fallbackLat != null && fallbackLng != null) return [fallbackLng, fallbackLat];
   if (!geometry || geometry.type !== 'Polygon') return null;
@@ -132,7 +132,7 @@ export function createCenterMarkerEl(
   label: string,
   size: number,
   bg: string,
-  tooltip: string,
+  tooltip: string
 ): HTMLElement {
   const el = document.createElement('div');
   el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:${bg};
@@ -153,7 +153,7 @@ export function createTrailPointEl(
   isFirst: boolean,
   isLast: boolean,
   isWithin: boolean,
-  isSelected: boolean,
+  isSelected: boolean
 ): HTMLElement {
   let bg = isWithin ? '#15803D' : '#9333EA';
   if (isFirst) bg = '#15803D';
@@ -182,7 +182,7 @@ export function createTrailPointEl(
 // ─── GeoJSON feature builders ─────────────────────────────────────────────────
 
 export function buildRayonFeatures(
-  boundaries: BoundariesResponse,
+  boundaries: BoundariesResponse
 ): GeoJSON.Feature<GeoJSON.Geometry>[] {
   return boundaries.rayons
     .filter((r) => r.boundary_polygon)
@@ -194,7 +194,7 @@ export function buildRayonFeatures(
 }
 
 export function buildAreaFeatures(
-  boundaries: BoundariesResponse,
+  boundaries: BoundariesResponse
 ): GeoJSON.Feature<GeoJSON.Geometry>[] {
   return boundaries.rayons.flatMap((r) =>
     r.areas
@@ -217,7 +217,7 @@ export function buildAreaFeatures(
 
 export function computeRayonBounds(
   boundaries: BoundariesResponse,
-  rayonId: string,
+  rayonId: string
 ): { bounds: [[number, number], [number, number]]; center: [number, number] | null } | null {
   const rayon = boundaries.rayons.find((r) => r.id === rayonId);
   if (!rayon) return null;
@@ -236,7 +236,14 @@ export function computeRayonBounds(
       ? ([rayon.center_lng, rayon.center_lat] as [number, number])
       : null;
 
-  if (allCoords.length === 0) return { bounds: [[0, 0], [0, 0]], center };
+  if (allCoords.length === 0)
+    return {
+      bounds: [
+        [0, 0],
+        [0, 0],
+      ],
+      center,
+    };
 
   const lngs = allCoords.map(([lng]) => lng);
   const lats = allCoords.map(([, lat]) => lat);

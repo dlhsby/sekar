@@ -52,12 +52,9 @@ export function MonitoringSidePanel({
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const handleStatusToggle = useCallback(
-    (status: TrackingStatus) => {
-      setStatusFilter((prev) => (prev === status ? null : status));
-    },
-    []
-  );
+  const handleStatusToggle = useCallback((status: TrackingStatus) => {
+    setStatusFilter((prev) => (prev === status ? null : status));
+  }, []);
 
   const handleRoleToggle = useCallback((role: string) => {
     setRoleFilters((prev) => {
@@ -160,7 +157,11 @@ export function MonitoringSidePanel({
         </div>
 
         {/* Role chip filters */}
-        <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Filter berdasarkan jabatan">
+        <div
+          className="flex gap-1.5 flex-wrap"
+          role="group"
+          aria-label="Filter berdasarkan jabatan"
+        >
           {ROLE_CHIPS.map(({ role, label }) => (
             <button
               key={role}

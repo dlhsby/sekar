@@ -106,9 +106,7 @@ describe('MonitoringSidePanel', () => {
 
   describe('Loading state', () => {
     it('should render loading skeletons when isLoading is true', () => {
-      const { container } = render(
-        <MonitoringSidePanel {...defaultProps} isLoading={true} />
-      );
+      const { container } = render(<MonitoringSidePanel {...defaultProps} isLoading={true} />);
       const skeletons = container.querySelectorAll('.animate-pulse');
       expect(skeletons.length).toBeGreaterThan(0);
     });
@@ -293,9 +291,9 @@ describe('MonitoringSidePanel', () => {
         ],
       };
       render(<MonitoringSidePanel {...defaultProps} data={dataWithMissing} />);
-      const buttons = screen.getAllByRole('button', { name: /user/i }).filter(
-        (b) => b.getAttribute('aria-selected') !== null
-      );
+      const buttons = screen
+        .getAllByRole('button', { name: /user/i })
+        .filter((b) => b.getAttribute('aria-selected') !== null);
       // Missing user should come first in the list
       if (buttons.length >= 2) {
         expect(buttons[0]).toHaveTextContent(/Missing User/);
@@ -316,16 +314,18 @@ describe('MonitoringSidePanel', () => {
 
     it('should mark the selected user item as selected', () => {
       render(<MonitoringSidePanel {...defaultProps} selectedUserId="user-1" />);
-      expect(
-        screen.getByRole('button', { name: /budi santoso/i })
-      ).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('button', { name: /budi santoso/i })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
     });
 
     it('should not mark unselected user items as selected', () => {
       render(<MonitoringSidePanel {...defaultProps} selectedUserId="user-1" />);
-      expect(
-        screen.getByRole('button', { name: /siti rahayu/i })
-      ).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByRole('button', { name: /siti rahayu/i })).toHaveAttribute(
+        'aria-selected',
+        'false'
+      );
     });
   });
 });

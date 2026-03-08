@@ -93,8 +93,7 @@ export function ReassignWorkerModal({
       toast.success('Petugas berhasil dipindahkan');
       handleClose();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Gagal memindahkan petugas';
+      const message = err instanceof Error ? err.message : 'Gagal memindahkan petugas';
       toast.error(message);
     }
   }
@@ -107,18 +106,13 @@ export function ReassignWorkerModal({
             <ArrowRightLeft className="w-5 h-5 text-nb-primary" />
             Pindah Petugas ke {targetAreaName}
           </DialogTitle>
-          <DialogDescription>
-            Pilih petugas dari area lain untuk dipindahkan
-          </DialogDescription>
+          <DialogDescription>Pilih petugas dari area lain untuk dipindahkan</DialogDescription>
         </DialogHeader>
 
         <div className="px-4 pb-2 space-y-4">
           {/* Source area selector */}
           <div className="space-y-1.5">
-            <label
-              htmlFor="source-area"
-              className="text-sm font-bold text-nb-black"
-            >
+            <label htmlFor="source-area" className="text-sm font-bold text-nb-black">
               Area Asal
             </label>
             <select
@@ -143,9 +137,7 @@ export function ReassignWorkerModal({
               ))}
             </select>
             {siblingAreas.length === 0 && (
-              <p className="text-xs text-nb-gray-500">
-                Tidak ada area lain dalam rayon yang sama.
-              </p>
+              <p className="text-xs text-nb-gray-500">Tidak ada area lain dalam rayon yang sama.</p>
             )}
           </div>
 
@@ -159,10 +151,7 @@ export function ReassignWorkerModal({
               {usersLoading ? (
                 <div className="space-y-2">
                   {[1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="h-14 rounded-nb-base bg-nb-gray-200 animate-pulse"
-                    />
+                    <div key={i} className="h-14 rounded-nb-base bg-nb-gray-200 animate-pulse" />
                   ))}
                 </div>
               ) : workers.length === 0 ? (
@@ -225,10 +214,7 @@ export function ReassignWorkerModal({
 
           {/* Reason */}
           <div className="space-y-1.5">
-            <label
-              htmlFor="reason"
-              className="text-sm font-bold text-nb-black"
-            >
+            <label htmlFor="reason" className="text-sm font-bold text-nb-black">
               Alasan <span className="font-normal text-nb-gray-500">(opsional)</span>
             </label>
             <textarea
@@ -248,10 +234,7 @@ export function ReassignWorkerModal({
 
           {/* Effective date */}
           <div className="space-y-1.5">
-            <label
-              htmlFor="effective-date"
-              className="text-sm font-bold text-nb-black"
-            >
+            <label htmlFor="effective-date" className="text-sm font-bold text-nb-black">
               Tanggal Berlaku
             </label>
             <input

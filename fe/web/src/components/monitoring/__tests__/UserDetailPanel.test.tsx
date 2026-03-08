@@ -221,9 +221,7 @@ describe('UserDetailPanel', () => {
     it('should call onViewLocationHistory when location history button is clicked', async () => {
       const user = userEvent.setup();
       const handleViewHistory = jest.fn();
-      render(
-        <UserDetailPanel {...defaultProps} onViewLocationHistory={handleViewHistory} />
-      );
+      render(<UserDetailPanel {...defaultProps} onViewLocationHistory={handleViewHistory} />);
 
       await user.click(screen.getByRole('button', { name: /lihat riwayat lokasi/i }));
 
@@ -233,7 +231,9 @@ describe('UserDetailPanel', () => {
     it('should not render location section when last_location is null', () => {
       const summary = { ...MOCK_SUMMARY, last_location: null };
       render(<UserDetailPanel {...defaultProps} summary={summary} />);
-      expect(screen.queryByRole('button', { name: /lihat riwayat lokasi/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /lihat riwayat lokasi/i })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -283,10 +283,7 @@ describe('UserDetailPanel', () => {
     it('should render Telepon link with correct href', () => {
       render(<UserDetailPanel {...defaultProps} />);
       const callLink = screen.getByRole('link', { name: /telepon/i });
-      expect(callLink).toHaveAttribute(
-        'href',
-        'https://wa.me/6281234567890?action=call'
-      );
+      expect(callLink).toHaveAttribute('href', 'https://wa.me/6281234567890?action=call');
     });
 
     it('should open links in a new tab', () => {
