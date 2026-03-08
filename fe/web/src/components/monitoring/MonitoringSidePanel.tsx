@@ -2,17 +2,29 @@
 
 /**
  * MonitoringSidePanel - Right-side panel for real-time monitoring
- * Shows status cards, search/filter, and scrollable user list
+ * Shows status cards, search/filter, role chips, and scrollable user list
+ * Phase 2D-10: Added role chip filters and severity-based sorting
  */
 
 import { useState, useMemo, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useDebounce } from '@/lib/hooks/useDebounce';
-import { STATUS_LABELS as MONITORING_STATUS_LABELS } from '@/lib/constants/monitoring';
+import {
+  STATUS_LABELS as MONITORING_STATUS_LABELS,
+  STATUS_SEVERITY_ORDER,
+} from '@/lib/constants/monitoring';
+import { ROLE_LABELS } from '@/lib/constants/roles';
 import { StatusCard } from './StatusCard';
 import { UserListItem } from './UserListItem';
 import type { LiveUser, LiveUsersResponse, TrackingStatus } from '@/lib/api/monitoring';
+import type { UserRole } from '@/types/models';
+
+const ROLE_CHIPS: Array<{ role: string; label: string }> = [
+  { role: 'satgas', label: 'Satgas' },
+  { role: 'linmas', label: 'Linmas' },
+  { role: 'korlap', label: 'Korlap' },
+];
 
 export interface MonitoringSidePanelProps {
   data: LiveUsersResponse | undefined;
@@ -36,6 +48,7 @@ export function MonitoringSidePanel({
 }: MonitoringSidePanelProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
+  const [roleFilters, setRoleFilters] = useState<Set<string>>(new Set());
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -46,19 +59,40 @@ export function MonitoringSidePanel({
     []
   );
 
+  const handleRoleToggle = useCallback((role: string) => {
+    setRoleFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(role)) {
+        next.delete(role);
+      } else {
+        next.add(role);
+      }
+      return next;
+    });
+  }, []);
+
   const filteredUsers = useMemo(() => {
     const users = data?.users ?? [];
-    return users.filter((user) => {
+
+    const filtered = users.filter((user) => {
       const matchesSearch =
         !debouncedSearch ||
         user.full_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         user.area_name.toLowerCase().includes(debouncedSearch.toLowerCase());
 
       const matchesStatus = !statusFilter || user.status === statusFilter;
+      const matchesRole = roleFilters.size === 0 || roleFilters.has(user.role);
 
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesRole;
     });
-  }, [data?.users, debouncedSearch, statusFilter]);
+
+    // Sort by severity (most critical first)
+    return filtered.sort((a, b) => {
+      const aIdx = STATUS_SEVERITY_ORDER.indexOf(a.status);
+      const bIdx = STATUS_SEVERITY_ORDER.indexOf(b.status);
+      return aIdx - bIdx;
+    });
+  }, [data?.users, debouncedSearch, statusFilter, roleFilters]);
 
   const totalOnline = (data?.total_active ?? 0) + (data?.total_inactive ?? 0);
   const totalAll =
@@ -67,6 +101,8 @@ export function MonitoringSidePanel({
     (data?.total_outside_area ?? 0) +
     (data?.total_missing ?? 0) +
     (data?.total_offline ?? 0);
+
+  const hasActiveFilters = !!search || !!statusFilter || roleFilters.size > 0;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -105,9 +141,9 @@ export function MonitoringSidePanel({
         </div>
       </div>
 
-      {/* Search input */}
+      {/* Search + Role chips */}
       <div className="px-3 py-2 flex-shrink-0 border-b border-nb-gray-200">
-        <div className="relative">
+        <div className="relative mb-2">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nb-gray-400 pointer-events-none" />
           <input
             type="search"
@@ -122,6 +158,26 @@ export function MonitoringSidePanel({
             aria-label="Cari petugas"
           />
         </div>
+
+        {/* Role chip filters */}
+        <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Filter berdasarkan jabatan">
+          {ROLE_CHIPS.map(({ role, label }) => (
+            <button
+              key={role}
+              type="button"
+              onClick={() => handleRoleToggle(role)}
+              aria-pressed={roleFilters.has(role)}
+              className={cn(
+                'px-2 py-0.5 text-xs font-bold rounded-nb-sm border-2 border-nb-black transition-all',
+                roleFilters.has(role)
+                  ? 'bg-nb-primary text-white shadow-nb-active'
+                  : 'bg-white text-nb-gray-600 shadow-nb-xs hover:bg-nb-gray-100'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* User list */}
@@ -135,12 +191,13 @@ export function MonitoringSidePanel({
         ) : filteredUsers.length === 0 ? (
           <div className="p-6 text-center text-nb-gray-500">
             <p className="font-semibold text-sm">Tidak ada petugas ditemukan</p>
-            {(search || statusFilter) && (
+            {hasActiveFilters && (
               <button
                 type="button"
                 onClick={() => {
                   setSearch('');
                   setStatusFilter(null);
+                  setRoleFilters(new Set());
                 }}
                 className="text-xs text-nb-primary underline mt-2"
               >

@@ -1,10 +1,12 @@
 /**
- * Unit Tests: Monitoring Page
- * Tests real-time monitoring dashboard functionality
+ * Unit Tests: Monitoring Page (Phase 2D-10 Layout)
+ * Full-screen split layout: map 65% + panel 35%
+ * Tests auth/access, header stats, filters, side panel, and map integration.
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import MonitoringPage from '../page';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,15 +14,50 @@ import * as monitoringApi from '@/lib/api/monitoring';
 import * as rayonsApi from '@/lib/api/rayons';
 import * as areasApi from '@/lib/api/areas';
 
+// Mock mapbox-gl (not available in jsdom)
+jest.mock('mapbox-gl', () => ({}));
+
+// Mock MonitoringMap (uses WebGL via mapbox-gl)
+jest.mock('@/components/monitoring/MonitoringMap', () => ({
+  MonitoringMap: (props: { users: unknown[] }) => (
+    <div data-testid="monitoring-map">
+      {Array.isArray(props.users) ? `${props.users.length} petugas terdeteksi` : '0 petugas terdeteksi'}
+    </div>
+  ),
+}));
+
+// Mock StaffingSummaryCard and ReassignWorkerModal (use internal hooks)
+jest.mock('@/components/monitoring/StaffingSummaryCard', () => ({
+  StaffingSummaryCard: () => <div data-testid="staffing-summary">Staffing Summary</div>,
+}));
+
+jest.mock('@/components/monitoring/ReassignWorkerModal', () => ({
+  ReassignWorkerModal: () => null,
+}));
+
+// Mock socket.io-client
+jest.mock('socket.io-client', () => {
+  const mockSocket = {
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+    disconnect: jest.fn(),
+    connected: false,
+  };
+  const io = jest.fn(() => mockSocket);
+  return { __esModule: true, default: io };
+});
+
+// Mock sonner toast
+jest.mock('sonner', () => ({
+  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn(), warning: jest.fn() },
+}));
+
 // Mock next/navigation
 const mockPush = jest.fn();
-const mockPathname = '/monitoring';
-
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
-  usePathname: () => mockPathname,
+  useRouter: () => ({ push: mockPush }),
+  usePathname: () => '/monitoring',
 }));
 
 // Mock auth hook
@@ -34,13 +71,17 @@ jest.mock('@/lib/api/monitoring');
 jest.mock('@/lib/api/rayons');
 jest.mock('@/lib/api/areas');
 
-// Test data — matches actual backend DTOs (flat structure, no nested summary/current_shift)
+// ---------------------------------------------------------------------------
+// Test data
+// ---------------------------------------------------------------------------
+
 const mockAdminUser = {
   id: '1',
   username: 'admin',
   full_name: 'Admin User',
   role: 'admin_system',
   area_id: null,
+  rayon_id: null,
   created_at: '2024-01-01T00:00:00Z',
 };
 
@@ -50,6 +91,7 @@ const mockKorlapUser = {
   full_name: 'Korlap User',
   role: 'korlap',
   area_id: 'area-1',
+  rayon_id: 'rayon-1',
   created_at: '2024-01-01T00:00:00Z',
 };
 
@@ -59,10 +101,10 @@ const mockWorkerUser = {
   full_name: 'Worker User',
   role: 'satgas',
   area_id: 'area-1',
+  rayon_id: 'rayon-1',
   created_at: '2024-01-01T00:00:00Z',
 };
 
-// Matches CityStatsDto (flat, no nested summary)
 const mockCityStats = {
   total_rayons: 7,
   total_areas: 50,
@@ -77,59 +119,26 @@ const mockCityStats = {
   generated_at: '2024-01-01T12:00:00Z',
 };
 
-// Matches RayonStatsDto (flat, no nested rayon/summary)
-const mockRayonStats = {
-  id: 'rayon-1',
-  name: 'Rayon 1',
-  code: 'R1',
-  total_areas: 10,
-  total_workers: 40,
-  workers_online: 30,
-  workers_offline: 10,
-  active_shifts: 9,
-  tasks_pending: 12,
-  tasks_in_progress: 5,
-  tasks_completed_today: 8,
-  activities_submitted_today: 25,
-  alerts: [],
-  generated_at: '2024-01-01T12:00:00Z',
-};
-
-// Matches AreaStatsDto (no current_shift — field does not exist in backend)
-const mockAreaStats = {
-  id: 'area-1',
-  name: 'Area 1',
-  area_type: 'Taman',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
-  coverage_area: 1500,
-  total_users_assigned: 5,
-  users_online: 4,
-  users_offline: 1,
-  is_fully_staffed: true,
-  tasks_pending: 2,
-  tasks_in_progress: 1,
-  tasks_completed_today: 3,
-  activities_submitted_today: 8,
-  alerts: [],
-  generated_at: '2024-01-01T12:00:00Z',
-};
-
-// Matches LiveUsersResponseDto (no timestamp/total — uses total_online/total_offline/generated_at)
 const mockLiveUsers = {
-  total_online: 1,
+  total_active: 1,
+  total_inactive: 0,
+  total_outside_area: 0,
+  total_missing: 0,
   total_offline: 1,
   users: [
     {
       id: 'worker-1',
       full_name: 'Worker 1',
-      role: 'satgas' as const,
+      role: 'satgas',
+      phone: '+628111',
+      status: 'active',
       area_id: 'area-1',
       area_name: 'Area 1',
       rayon_id: 'rayon-1',
       rayon_name: 'Rayon 1',
       latitude: -7.250445,
       longitude: 112.768845,
+      accuracy: 5,
       battery_level: 80,
       last_update: '2024-01-01T12:00:00Z',
       is_within_area: true,
@@ -137,17 +146,22 @@ const mockLiveUsers = {
       shift_id: 'shift-1',
       shift_name: 'Shift Pagi',
       clock_in_time: '2024-01-01T07:00:00Z',
+      current_task_status: null,
+      current_task_title: null,
     },
     {
       id: 'worker-2',
       full_name: 'Worker 2',
-      role: 'satgas' as const,
+      role: 'satgas',
+      phone: '+628222',
+      status: 'active',
       area_id: 'area-1',
       area_name: 'Area 1',
       rayon_id: 'rayon-1',
       rayon_name: 'Rayon 1',
       latitude: -7.251445,
       longitude: 112.769845,
+      accuracy: 10,
       battery_level: 15,
       last_update: '2024-01-01T11:55:00Z',
       is_within_area: false,
@@ -155,6 +169,8 @@ const mockLiveUsers = {
       shift_id: 'shift-1',
       shift_name: 'Shift Pagi',
       clock_in_time: '2024-01-01T07:00:00Z',
+      current_task_status: null,
+      current_task_title: null,
     },
   ],
   generated_at: '2024-01-01T12:00:00Z',
@@ -173,6 +189,10 @@ const mockAreas = {
   meta: { total: 2, page: 1, limit: 20, totalPages: 1 },
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -187,6 +207,10 @@ function createWrapper() {
   return Wrapper;
 }
 
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 describe('MonitoringPage Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -198,19 +222,38 @@ describe('MonitoringPage Component', () => {
     });
 
     (monitoringApi.useRayonMonitoring as jest.Mock).mockReturnValue({
-      data: mockRayonStats,
+      data: null,
       isLoading: false,
       error: null,
     });
 
     (monitoringApi.useAreaMonitoring as jest.Mock).mockReturnValue({
-      data: mockAreaStats,
+      data: null,
       isLoading: false,
       error: null,
     });
 
     (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
       data: mockLiveUsers,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+
+    (monitoringApi.useUserDaySummary as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: null,
+    });
+
+    (monitoringApi.useLocationHistory as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: null,
+    });
+
+    (monitoringApi.useBoundaries as jest.Mock).mockReturnValue({
+      data: undefined,
       isLoading: false,
       error: null,
     });
@@ -227,6 +270,10 @@ describe('MonitoringPage Component', () => {
       error: null,
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Authentication & Authorization
+  // -------------------------------------------------------------------------
 
   describe('Authentication & Authorization', () => {
     it('should show loading state during auth check', () => {
@@ -295,31 +342,109 @@ describe('MonitoringPage Component', () => {
     });
   });
 
-  describe('Statistics Display', () => {
+  // -------------------------------------------------------------------------
+  // Header bar & stats
+  // -------------------------------------------------------------------------
+
+  describe('Header bar', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
     });
 
-    it('should display city-wide statistics by default', () => {
+    it('should display city-wide online/total count in header', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
-      const workersLabel = screen.getByText(/petugas online/i);
-      const workersSection = workersLabel.closest('.p-6');
-      expect(workersSection).toHaveTextContent('150');
-      expect(workersSection).toHaveTextContent('/ 200');
-
-      const shiftsSection = screen.getByText(/shift aktif/i).closest('.p-6');
-      expect(shiftsSection).toHaveTextContent('45');
-
-      const activitiesSection = screen.getByText(/aktivitas hari ini/i).closest('.p-6');
-      expect(activitiesSection).toHaveTextContent('120');
+      // Header shows "150 / 200 online"
+      expect(screen.getByText(/150 \/ 200 online/)).toBeInTheDocument();
     });
 
-    it('should show loading skeleton while fetching stats', () => {
-      (monitoringApi.useCityStats as jest.Mock).mockReturnValue({
+    it('should render the Monitoring Real-Time heading', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByRole('heading', { name: /monitoring real-time/i })).toBeInTheDocument();
+    });
+
+    it('should render the Refresh button', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByRole('button', { name: /refresh data/i })).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Filters
+  // -------------------------------------------------------------------------
+
+  describe('Filters', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
+    });
+
+    it('should render rayon and area filter dropdowns', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      // FormSelect renders combobox role buttons
+      const combos = screen.getAllByRole('combobox');
+      expect(combos.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should not show Reset button when filters are at default', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.queryByRole('button', { name: /reset/i })).not.toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Split layout
+  // -------------------------------------------------------------------------
+
+  describe('Split layout', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
+    });
+
+    it('should render the map component', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByTestId('monitoring-map')).toBeInTheDocument();
+    });
+
+    it('should pass users to the map component', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByText(/2 petugas terdeteksi/i)).toBeInTheDocument();
+    });
+
+    it('should render the staffing summary card', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByTestId('staffing-summary')).toBeInTheDocument();
+    });
+
+    it('should render user names in the side panel list', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Worker 1')).toBeInTheDocument();
+      expect(screen.getByText('Worker 2')).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Side panel interactions
+  // -------------------------------------------------------------------------
+
+  describe('Side panel interactions', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
+    });
+
+    it('should show loading state when users are loading', () => {
+      (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
+        refetch: jest.fn(),
       });
 
       const { container } = render(<MonitoringPage />, { wrapper: createWrapper() });
@@ -328,171 +453,23 @@ describe('MonitoringPage Component', () => {
       expect(skeletons.length).toBeGreaterThan(0);
     });
 
-    it('should display correct stat card labels', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/petugas online/i)).toBeInTheDocument();
-      expect(screen.getByText(/tugas pending/i)).toBeInTheDocument();
-      expect(screen.getByText(/shift aktif/i)).toBeInTheDocument();
-      expect(screen.getByText(/aktivitas hari ini/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Filters', () => {
-    beforeEach(() => {
-      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
-    });
-
-    it('should render rayon filter dropdown', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/filter rayon/i)).toBeInTheDocument();
-    });
-
-    it('should render area filter dropdown', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/filter area/i)).toBeInTheDocument();
-    });
-
-    it('should show reset filter button when viewing filtered data', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      // Initially no reset button (all filters at default 'all')
-      expect(screen.queryByRole('button', { name: /reset filter/i })).not.toBeInTheDocument();
-    });
-
-    it('should display filter card with proper layout', () => {
-      const { container } = render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      const filterSection = container.querySelector('.flex.gap-4');
-      expect(filterSection).toBeInTheDocument();
-    });
-  });
-
-  describe('Live Workers Display', () => {
-    beforeEach(() => {
-      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
-    });
-
-    it('should display live workers list', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText('Worker 1')).toBeInTheDocument();
-      expect(screen.getByText('Worker 2')).toBeInTheDocument();
-    });
-
-    it('should show dalam area / di luar area status badges', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText('Dalam Area')).toBeInTheDocument();
-      expect(screen.getByText('Di Luar Area')).toBeInTheDocument();
-    });
-
-    it('should show battery warning for low battery', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText('15%')).toBeInTheDocument();
-    });
-
-    it('should not show battery warning for normal battery', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.queryByText('80%')).not.toBeInTheDocument();
-    });
-
-    it('should display empty state when no workers', () => {
+    it('should show empty state when no users are available', () => {
       (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
-        data: {
-          total_online: 0,
-          total_offline: 0,
-          users: [],
-          generated_at: '2024-01-01T12:00:00Z',
-        },
+        data: { ...mockLiveUsers, users: [] },
         isLoading: false,
         error: null,
+        refetch: jest.fn(),
       });
 
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/tidak ada petugas aktif/i)).toBeInTheDocument();
-    });
-
-    it('should show loading state while fetching workers', () => {
-      (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
-        data: null,
-        isLoading: true,
-        error: null,
-      });
-
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/memuat data petugas/i)).toBeInTheDocument();
-    });
-
-    it('should display online workers count in map badge', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      // Worker 1 is_within_area=true → onlineUsers.length=1 → "1 Online" badge
-      expect(screen.getByText('1 Online')).toBeInTheDocument();
+      expect(screen.getByText(/tidak ada petugas ditemukan/i)).toBeInTheDocument();
     });
   });
 
-  describe('Auto-refresh Indicator', () => {
-    beforeEach(() => {
-      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
-    });
-
-    it('should show auto-refresh indicator', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/auto-refresh setiap 15 detik/i)).toBeInTheDocument();
-    });
-
-    it('should display last updated timestamp', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/terakhir diperbarui:/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Map Placeholder', () => {
-    beforeEach(() => {
-      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
-    });
-
-    it('should display map placeholder', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/peta monitoring real-time/i)).toBeInTheDocument();
-    });
-
-    it('should show worker count in map placeholder', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/2 petugas terdeteksi/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Responsive Layout', () => {
-    beforeEach(() => {
-      mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
-    });
-
-    it('should render stats in responsive grid', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      const statsGrid = screen.getByText(/petugas online/i).closest('div.grid');
-      expect(statsGrid).toHaveClass('grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-4');
-    });
-
-    it('should render filters in responsive layout', () => {
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      const filterContainer = screen.getByLabelText(/filter rayon/i).closest('div.flex');
-      expect(filterContainer).toHaveClass('gap-4');
-    });
-  });
+  // -------------------------------------------------------------------------
+  // Error Handling
+  // -------------------------------------------------------------------------
 
   describe('Error Handling', () => {
     beforeEach(() => {
@@ -514,20 +491,28 @@ describe('MonitoringPage Component', () => {
         data: null,
         isLoading: false,
         error: null,
+        refetch: jest.fn(),
       });
 
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/tidak ada petugas aktif/i)).toBeInTheDocument();
+      expect(() => render(<MonitoringPage />, { wrapper: createWrapper() })).not.toThrow();
     });
 
     it('should not crash when korlap has area_id and area stats load', () => {
-      // This is the regression test for the original crash:
-      // areaStats.current_shift.definition.name threw TypeError
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
 
       (monitoringApi.useAreaMonitoring as jest.Mock).mockReturnValue({
-        data: mockAreaStats,
+        data: {
+          id: 'area-1',
+          name: 'Area 1',
+          area_type: 'Taman',
+          rayon_id: 'rayon-1',
+          rayon_name: 'Rayon 1',
+          total_users_assigned: 5,
+          users_online: 4,
+          users_offline: 1,
+          is_fully_staffed: true,
+          generated_at: '2024-01-01T12:00:00Z',
+        },
         isLoading: false,
         error: null,
       });

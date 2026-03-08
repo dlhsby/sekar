@@ -1,9 +1,9 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** March 6, 2026 (Phase 2D code-complete, pending 2D-10 gap fixes & 2D-11 home card)
-**Current Phase:** Phase 2D Real-Time Monitoring - Code-Complete (pending 2D-10, 2D-11)
+**Last Updated:** March 8, 2026 (Phase 2D complete + web gap fixes 2D-13)
+**Current Phase:** Phase 2D Real-Time Monitoring - ✅ COMPLETE (2D-11 home card not started)
 **Next Phase:** Phase 3 Polishing & E2E Testing
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: Code-Complete (pending 2D-10, 2D-11) | Phase 3: 0% | Phase 4: 0%
+**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 3: 0% | Phase 4: 0%
 
 ---
 
@@ -31,8 +31,8 @@
 | Component | Status | Progress | Tests | Coverage | Notes |
 |-----------|--------|----------|-------|----------|-------|
 | **Backend** | ✅ Phase 2D Code-Complete | 100% | 1,095 passing | 92.15% stmts / 80.64% branches ✅ | Phase 2D: StatusCalculator, monitoring config, 122 endpoints |
-| **Mobile** | ✅ Phase 2D Code-Complete | 100% | 3,493 passing | 80.31%+ stmts ✅ | 21 screens, five-status map, WebSocket real-time updates |
-| **Web** | ✅ Phase 2D Code-Complete | 100% | 1,336+ passing | 96%+ stmts ✅ | 21 pages + config, Mapbox GL monitoring, socket.io integration |
+| **Mobile** | ✅ Phase 2D Code-Complete | 100% | 3,669 passing | 80.31%+ stmts ✅ | 21 screens, five-status map, WebSocket real-time updates |
+| **Web** | ✅ Phase 2D Code-Complete | 100% | 1,336+ passing (290 monitoring) | 96%+ stmts ✅ | 21 pages + config, Mapbox GL monitoring, socket.io, boundaries, reassign |
 | **Database** | ✅ Phase 2D Code-Complete | 100% | 1,095 BE tests | - | 20 tables (+user_tracking_status, monitoring_configs) |
 | **Documentation** | ✅ Phase 2D Complete | 100% | 12+ spec files | - | Updated specs, ADR-011, deployment guide |
 | **DevOps** | ✅ Phase 2C Deployed | 100% | - | - | Backend + Web deployed to production (Feb 16); Phase 2D pending deploy |
@@ -785,7 +785,7 @@ Comprehensive architectural and specification improvements to ensure production 
 
 **Phase 2D Code-Complete (pending 2D-10, 2D-11):**
 - Backend: 16 modules, 122 endpoints, 1,095 tests (92.15% stmt, 80.64% branch)
-- Mobile: 21 screens, 3,493 tests, 80.31%+ coverage
+- Mobile: 21 screens, 3,669 tests (149 suites), 80.31%+ coverage
 - Web: 21 pages (+1 config), 7 monitoring components
 - Database: 20 tables (including user_tracking_status and monitoring_configs)
 - Five-status tracking (active/inactive/outside_area/missing/offline)

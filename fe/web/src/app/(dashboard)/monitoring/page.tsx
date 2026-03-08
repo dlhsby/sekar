@@ -1,5 +1,5 @@
 /**
- * Real-Time Monitoring Dashboard (Phase 2D - Enhanced)
+ * Real-Time Monitoring Dashboard (Phase 2D - Enhanced with 2D-10 Gap Fixes)
  * Full-screen split layout: map 65% + panel 35%
  * Access: MONITORING_ROLES
  */
@@ -14,6 +14,7 @@ import {
   useLiveUsers,
   useUserDaySummary,
   useLocationHistory,
+  useBoundaries,
   type LiveUser,
   type LiveUsersFilters,
   type UserStatusChangedEvent,
@@ -27,6 +28,7 @@ import { MonitoringSidePanel } from '@/components/monitoring/MonitoringSidePanel
 import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
 import { LocationTimeline } from '@/components/monitoring/LocationTimeline';
 import { StaffingSummaryCard } from '@/components/monitoring/StaffingSummaryCard';
+import { ReassignWorkerModal } from '@/components/monitoring/ReassignWorkerModal';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -56,6 +58,15 @@ export default function MonitoringPage() {
   const [historyDate, setHistoryDate] = useState(
     () => new Date().toISOString().split('T')[0]
   );
+
+  // Trail sync state (Phase 2D-10)
+  const [trailSelectedIndex, setTrailSelectedIndex] = useState<number | null>(null);
+  const [showOnlyTrailUser, setShowOnlyTrailUser] = useState(false);
+
+  // Reassign modal state (Phase 2D-10)
+  const [reassignModalOpen, setReassignModalOpen] = useState(false);
+  const [reassignTargetAreaId, setReassignTargetAreaId] = useState('');
+  const [reassignTargetAreaName, setReassignTargetAreaName] = useState('');
 
   // Socket ref
   const socketRef = useRef<Socket | null>(null);
@@ -92,6 +103,9 @@ export default function MonitoringPage() {
   const { data: areasData } = useAreas({
     rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined,
   });
+
+  // Boundaries (Phase 2D-10)
+  const { data: boundariesData } = useBoundaries();
 
   // Stats queries
   const { data: cityStats } = useCityStats(canViewCity);
@@ -220,19 +234,53 @@ export default function MonitoringPage() {
   const handleUserSelect = useCallback((user: LiveUser) => {
     setSelectedUser(user);
     setPanelView('detail');
+    setTrailSelectedIndex(null);
+    setShowOnlyTrailUser(false);
   }, []);
 
   const handleBackToList = useCallback(() => {
     setPanelView('list');
     setSelectedUser(null);
+    setTrailSelectedIndex(null);
+    setShowOnlyTrailUser(false);
   }, []);
 
   const handleViewLocationHistory = useCallback(() => {
     setPanelView('timeline');
+    setTrailSelectedIndex(null);
   }, []);
 
   const handleBackToDetail = useCallback(() => {
     setPanelView('detail');
+    setTrailSelectedIndex(null);
+    setShowOnlyTrailUser(false);
+  }, []);
+
+  const handleReassign = useCallback((areaId: string) => {
+    // Find area name from boundaries
+    let areaName = '';
+    if (boundariesData) {
+      for (const rayon of boundariesData.rayons) {
+        const area = rayon.areas.find((a) => a.id === areaId);
+        if (area) {
+          areaName = area.name;
+          break;
+        }
+      }
+    }
+    setReassignTargetAreaId(areaId);
+    setReassignTargetAreaName(areaName || 'Area');
+    setReassignModalOpen(true);
+  }, [boundariesData]);
+
+  const handleBoundaryClick = useCallback((_type: 'rayon' | 'area', id: string) => {
+    // When a boundary center marker is clicked, filter to that entity
+    if (_type === 'rayon') {
+      setRayonFilter(id);
+      setAreaFilter('all');
+    } else {
+      setAreaFilter(id);
+    }
   }, []);
 
   // Loading state
@@ -268,6 +316,13 @@ export default function MonitoringPage() {
 
   const users = liveUsersData?.users ?? [];
   const allAreas = areasData?.data ?? [];
+
+  // Map filter props for auto-focus
+  const mapFilters = {
+    rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined,
+    area_id: areaFilter !== 'all' ? areaFilter : undefined,
+    user_id: selectedUser?.id,
+  };
 
   return (
     <div className="flex flex-col h-full -m-4 lg:-m-6">
@@ -348,10 +403,15 @@ export default function MonitoringPage() {
         <div className={cn('relative h-[40vh] lg:h-auto', 'lg:flex-[65]')}>
           <MonitoringMap
             users={users}
-            areas={allAreas}
+            boundaries={boundariesData}
+            filters={mapFilters}
             selectedUserId={selectedUser?.id ?? null}
             onUserSelect={handleUserSelect}
+            onBoundaryClick={handleBoundaryClick}
             trailPoints={panelView === 'timeline' ? locationHistory?.points : undefined}
+            trailSelectedIndex={panelView === 'timeline' ? trailSelectedIndex : undefined}
+            onTrailPointClick={setTrailSelectedIndex}
+            showOnlyTrailUser={showOnlyTrailUser}
             className="h-full"
           />
         </div>
@@ -361,14 +421,19 @@ export default function MonitoringPage() {
           className={cn(
             'lg:flex-[35] border-t-2 lg:border-t-0 lg:border-l-2 border-nb-black',
             'flex flex-col overflow-hidden bg-white',
-            'h-[calc(100vh-40vh-48px)] lg:h-auto' // mobile: remaining height
+            'h-[calc(100vh-40vh-48px)] lg:h-auto'
           )}
         >
           {panelView === 'list' && (
             <>
-              {isAreaView && areaFilter !== 'all' && (
-                <StaffingSummaryCard areaId={areaFilter} />
-              )}
+              <StaffingSummaryCard
+                filters={{
+                  rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined,
+                  area_id: areaFilter !== 'all' ? areaFilter : undefined,
+                }}
+                boundaries={boundariesData}
+                onReassign={handleReassign}
+              />
               <MonitoringSidePanel
                 data={liveUsersData}
                 isLoading={usersLoading}
@@ -395,10 +460,23 @@ export default function MonitoringPage() {
               onDateChange={setHistoryDate}
               onBack={handleBackToDetail}
               userName={selectedUser?.full_name ?? ''}
+              selectedPointIndex={trailSelectedIndex}
+              onPointSelect={setTrailSelectedIndex}
+              showOnlyThisUser={showOnlyTrailUser}
+              onToggleShowOnly={setShowOnlyTrailUser}
             />
           )}
         </div>
       </div>
+
+      {/* Reassign Worker Modal (Phase 2D-10) */}
+      <ReassignWorkerModal
+        open={reassignModalOpen}
+        onOpenChange={setReassignModalOpen}
+        targetAreaId={reassignTargetAreaId}
+        targetAreaName={reassignTargetAreaName}
+        boundaries={boundariesData}
+      />
     </div>
   );
 }

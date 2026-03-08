@@ -606,4 +606,113 @@ describe('Monitoring API', () => {
       ).rejects.toThrow();
     });
   });
+
+  // -------------------------------------------------------------------------
+  // GET /monitoring/boundaries (Phase 2D-10 Gap Fix #9)
+  // -------------------------------------------------------------------------
+
+  describe('GET /monitoring/boundaries', () => {
+    it('should return BoundariesResponse with rayons and areas', async () => {
+      const mockBoundaries = {
+        rayons: [
+          {
+            id: 'rayon-1',
+            name: 'Rayon Selatan',
+            code: 'RS',
+            boundary_polygon: null,
+            center_lat: -7.29,
+            center_lng: 112.74,
+            area_count: 2,
+            is_understaffed: false,
+            understaffed_area_count: 0,
+            areas: [
+              {
+                id: 'area-1',
+                name: 'Taman Bungkul',
+                boundary_polygon: null,
+                center_lat: -7.289659,
+                center_lng: 112.739208,
+                rayon_id: 'rayon-1',
+                rayon_name: 'Rayon Selatan',
+                radius_meters: 500,
+                assigned_count: 5,
+                is_understaffed: false,
+                staffing_summary: [
+                  { role: 'satgas', required: 3, active: 3 },
+                ],
+              },
+            ],
+          },
+        ],
+        generated_at: '2026-03-05T08:30:00Z',
+      };
+
+      mockAxios.onGet('/monitoring/boundaries').reply(200, mockBoundaries);
+
+      const response = await apiClient.get('/monitoring/boundaries');
+
+      expect(response.status).toBe(200);
+      expect(response.data.rayons).toHaveLength(1);
+      expect(response.data.rayons[0].id).toBe('rayon-1');
+      expect(response.data.rayons[0].areas).toHaveLength(1);
+      expect(response.data.rayons[0].areas[0].name).toBe('Taman Bungkul');
+      expect(response.data.rayons[0].areas[0].staffing_summary).toHaveLength(1);
+      expect(response.data.generated_at).toBe('2026-03-05T08:30:00Z');
+    });
+
+    it('should handle server error', async () => {
+      mockAxios.onGet('/monitoring/boundaries').reply(500);
+
+      await expect(apiClient.get('/monitoring/boundaries')).rejects.toThrow();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /monitoring/reassign (Phase 2D-10 Gap Fix #10)
+  // -------------------------------------------------------------------------
+
+  describe('POST /monitoring/reassign', () => {
+    it('should reassign a worker and return ReassignWorkerResponse', async () => {
+      const mockResponse = {
+        user_id: 'user-1',
+        user_name: 'Budi Santoso',
+        previous_area_id: 'area-1',
+        previous_area_name: 'Taman Bungkul',
+        new_area_id: 'area-2',
+        new_area_name: 'Taman Flora',
+        new_schedule_id: null,
+        effective_date: '2026-03-05',
+        reassigned_at: '2026-03-05T09:00:00Z',
+      };
+
+      mockAxios.onPost('/monitoring/reassign').reply(200, mockResponse);
+
+      const response = await apiClient.post('/monitoring/reassign', {
+        user_id: 'user-1',
+        target_area_id: 'area-2',
+        reason: 'Area understaffed',
+        end_current_schedule: true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.user_id).toBe('user-1');
+      expect(response.data.user_name).toBe('Budi Santoso');
+      expect(response.data.previous_area_id).toBe('area-1');
+      expect(response.data.new_area_id).toBe('area-2');
+      expect(response.data.new_area_name).toBe('Taman Flora');
+      expect(response.data.reassigned_at).toBe('2026-03-05T09:00:00Z');
+    });
+
+    it('should handle validation error', async () => {
+      mockAxios.onPost('/monitoring/reassign').reply(400, {
+        statusCode: 400,
+        message: 'user_id is required',
+        error: 'BadRequest',
+      });
+
+      await expect(
+        apiClient.post('/monitoring/reassign', { target_area_id: 'area-2' })
+      ).rejects.toThrow();
+    });
+  });
 });

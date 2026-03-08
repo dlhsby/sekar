@@ -272,3 +272,76 @@ export interface UserAreaEvent {
   longitude: number;
   timestamp: string;
 }
+
+// ---------------------------------------------------------------------------
+// Boundaries (Phase 2D-10 Gap Fix #2)
+// ---------------------------------------------------------------------------
+
+export interface RoleStaffingItem {
+  role: string;
+  required: number;
+  active: number;
+}
+
+export interface AreaBoundary {
+  id: string;
+  name: string;
+  boundary_polygon: GeoJSON.Geometry | null;
+  center_lat: number;
+  center_lng: number;
+  rayon_id: string | null;
+  rayon_name: string;
+  radius_meters: number | null;
+  assigned_count: number;
+  is_understaffed: boolean;
+  staffing_summary: RoleStaffingItem[];
+}
+
+export interface RayonBoundary {
+  id: string;
+  name: string;
+  code: string;
+  boundary_polygon: GeoJSON.Geometry | null;
+  center_lat: number | null;
+  center_lng: number | null;
+  area_count: number;
+  is_understaffed: boolean;
+  understaffed_area_count: number;
+  areas: AreaBoundary[];
+}
+
+export interface BoundariesResponse {
+  rayons: RayonBoundary[];
+  generated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Reassign Worker (Phase 2D-10 Gap Fix #5)
+// ---------------------------------------------------------------------------
+
+export interface ReassignWorkerPayload {
+  user_id: string;
+  target_area_id: string;
+  shift_definition_id?: string;
+  effective_date?: string;
+  end_current_schedule?: boolean;
+  reason?: string;
+}
+
+export interface ReassignWorkerResponse {
+  user_id: string;
+  user_name: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string;
+  new_area_name: string;
+  new_schedule_id: string | null;
+  effective_date: string;
+  reassigned_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Day Type (Phase 2D-10 Gap Fix #7)
+// ---------------------------------------------------------------------------
+
+export type DayType = 'weekday' | 'weekend' | 'holiday';

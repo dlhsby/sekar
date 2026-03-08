@@ -26,6 +26,13 @@ export type {
   MonitoringConfigResponse,
   UserStatusChangedEvent,
   UserAreaEvent,
+  RoleStaffingItem,
+  AreaBoundary,
+  RayonBoundary,
+  BoundariesResponse,
+  ReassignWorkerPayload,
+  ReassignWorkerResponse,
+  DayType,
 } from './monitoring-types';
 
 import type {
@@ -41,6 +48,9 @@ import type {
   StaffingFilters,
   MonitoringConfigItem,
   MonitoringConfigResponse,
+  BoundariesResponse,
+  ReassignWorkerPayload,
+  ReassignWorkerResponse,
 } from './monitoring-types';
 
 // ---------------------------------------------------------------------------
@@ -61,6 +71,7 @@ export const monitoringKeys = {
   staffingSummary: (filters?: StaffingFilters) =>
     [...monitoringKeys.all, 'staffing-summary', filters] as const,
   config: () => [...monitoringKeys.all, 'config'] as const,
+  boundaries: () => [...monitoringKeys.all, 'boundaries'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -219,6 +230,43 @@ export function useUpdateMonitoringConfig() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: monitoringKeys.config() });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Boundaries Hook (Phase 2D-10 Gap Fix #9)
+// ---------------------------------------------------------------------------
+
+export function useBoundaries(enabled = true) {
+  return useQuery({
+    queryKey: monitoringKeys.boundaries(),
+    queryFn: async () => {
+      const response = await apiClient.get<BoundariesResponse>('/monitoring/boundaries');
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Reassign Worker Hook (Phase 2D-10 Gap Fix #10)
+// ---------------------------------------------------------------------------
+
+export function useReassignWorker() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: ReassignWorkerPayload) => {
+      const response = await apiClient.post<ReassignWorkerResponse>(
+        '/monitoring/reassign',
+        data
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
     },
   });
 }

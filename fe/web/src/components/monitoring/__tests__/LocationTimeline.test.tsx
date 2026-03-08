@@ -1,8 +1,9 @@
 /**
  * Unit Tests: LocationTimeline Component
  * Tests loading skeletons, no-history empty state, empty points state,
- * rendering of location points in chronological order, summary stats,
- * date picker, shift info, and callback handlers.
+ * rendering of location points, summary stats, date picker, shift info,
+ * callback handlers, interactive point selection, first/last markers,
+ * summary info bar, and hide-others toggle.
  */
 
 import React from 'react';
@@ -48,7 +49,7 @@ const MOCK_HISTORY: LocationHistory = {
       latitude: -7.295000,
       longitude: 112.745000,
       accuracy: 15,
-      battery_level: 15, // low battery
+      battery_level: 15,
       logged_at: POINT_3_ISO,
       is_within_area: false,
     },
@@ -77,7 +78,9 @@ describe('LocationTimeline', () => {
   describe('Rendering', () => {
     it('should render the user name in the header', () => {
       render(<LocationTimeline {...defaultProps} />);
-      expect(screen.getByText('Budi Santoso')).toBeInTheDocument();
+      // userName appears in header and summary info bar
+      const nameElements = screen.getAllByText('Budi Santoso');
+      expect(nameElements.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should render the "Riwayat Lokasi" subtitle', () => {
@@ -164,6 +167,19 @@ describe('LocationTimeline', () => {
     });
   });
 
+  describe('Summary info bar', () => {
+    it('should render summary info bar with userName and date', () => {
+      render(<LocationTimeline {...defaultProps} />);
+      // The info bar contains userName, date, distance, area times
+      expect(screen.getByText(/2026-03-05/)).toBeInTheDocument();
+    });
+
+    it('should not render summary info bar when history is undefined', () => {
+      render(<LocationTimeline {...defaultProps} history={undefined} />);
+      expect(screen.queryByText(/Dalam/)).not.toBeInTheDocument();
+    });
+  });
+
   describe('Location points list', () => {
     it('should render all three location points', () => {
       render(<LocationTimeline {...defaultProps} />);
@@ -174,7 +190,6 @@ describe('LocationTimeline', () => {
 
     it('should render "Dalam Area" label for within-area points', () => {
       render(<LocationTimeline {...defaultProps} />);
-      // First two points are within area
       const withinLabels = screen.getAllByText('Dalam Area');
       expect(withinLabels.length).toBeGreaterThanOrEqual(2);
     });
@@ -211,6 +226,88 @@ describe('LocationTimeline', () => {
       const { container } = render(<LocationTimeline {...defaultProps} />);
       const purpleDots = container.querySelectorAll('.bg-\\[var\\(--color-status-outside\\)\\]');
       expect(purpleDots.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('First/Last markers', () => {
+    it('should render "Mulai" badge on first point', () => {
+      render(<LocationTimeline {...defaultProps} />);
+      expect(screen.getByText(/Mulai/)).toBeInTheDocument();
+    });
+
+    it('should render "Akhir" badge on last point', () => {
+      render(<LocationTimeline {...defaultProps} />);
+      expect(screen.getByText(/Akhir/)).toBeInTheDocument();
+    });
+
+    it('should not render "Akhir" badge when only one point exists', () => {
+      const singlePointHistory = { ...MOCK_HISTORY, points: [MOCK_HISTORY.points[0]], total_points: 1 };
+      render(<LocationTimeline {...defaultProps} history={singlePointHistory} />);
+      expect(screen.getByText(/Mulai/)).toBeInTheDocument();
+      expect(screen.queryByText(/Akhir/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Interactive point selection', () => {
+    it('should call onPointSelect when a point is clicked', async () => {
+      const user = userEvent.setup();
+      const handleSelect = jest.fn();
+      render(<LocationTimeline {...defaultProps} onPointSelect={handleSelect} />);
+
+      const pointButtons = screen.getAllByRole('button', { name: /titik lokasi/i });
+      await user.click(pointButtons[1]);
+
+      expect(handleSelect).toHaveBeenCalledWith(1);
+    });
+
+    it('should highlight the selected point row', () => {
+      const { container } = render(
+        <LocationTimeline {...defaultProps} selectedPointIndex={0} />
+      );
+      const firstItem = container.querySelector('li');
+      expect(firstItem).toHaveClass('border-l-4');
+    });
+
+    it('should mark selected point button as pressed', () => {
+      render(<LocationTimeline {...defaultProps} selectedPointIndex={1} />);
+      const pointButtons = screen.getAllByRole('button', { name: /titik lokasi/i });
+      expect(pointButtons[1]).toHaveAttribute('aria-pressed', 'true');
+      expect(pointButtons[0]).toHaveAttribute('aria-pressed', 'false');
+    });
+  });
+
+  describe('Hide-others toggle', () => {
+    it('should render toggle when onToggleShowOnly is provided', () => {
+      render(
+        <LocationTimeline
+          {...defaultProps}
+          onToggleShowOnly={jest.fn()}
+          showOnlyThisUser={false}
+        />
+      );
+      expect(screen.getByText(/tampilkan hanya petugas ini/i)).toBeInTheDocument();
+    });
+
+    it('should not render toggle when onToggleShowOnly is not provided', () => {
+      render(<LocationTimeline {...defaultProps} />);
+      expect(screen.queryByText(/tampilkan hanya petugas ini/i)).not.toBeInTheDocument();
+    });
+
+    it('should call onToggleShowOnly when checkbox is clicked', async () => {
+      const user = userEvent.setup();
+      const handleToggle = jest.fn();
+      render(
+        <LocationTimeline
+          {...defaultProps}
+          onToggleShowOnly={handleToggle}
+          showOnlyThisUser={false}
+        />
+      );
+
+      const checkbox = screen.getByRole('checkbox');
+      await user.click(checkbox);
+
+      expect(handleToggle).toHaveBeenCalledWith(true);
     });
   });
 

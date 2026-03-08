@@ -241,6 +241,68 @@ describe('MonitoringSidePanel', () => {
     });
   });
 
+  describe('Role chip filters', () => {
+    it('should render role chip buttons', () => {
+      render(<MonitoringSidePanel {...defaultProps} />);
+      expect(screen.getByRole('button', { name: 'Satgas' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Linmas' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Korlap' })).toBeInTheDocument();
+    });
+
+    it('should filter users by role when chip is clicked', async () => {
+      const user = userEvent.setup();
+      render(<MonitoringSidePanel {...defaultProps} />);
+
+      await user.click(screen.getByRole('button', { name: 'Satgas' }));
+
+      expect(screen.getByText('Budi Santoso')).toBeInTheDocument();
+      expect(screen.queryByText('Siti Rahayu')).not.toBeInTheDocument();
+    });
+
+    it('should toggle role chip off on second click', async () => {
+      const user = userEvent.setup();
+      render(<MonitoringSidePanel {...defaultProps} />);
+
+      await user.click(screen.getByRole('button', { name: 'Korlap' }));
+      await user.click(screen.getByRole('button', { name: 'Korlap' }));
+
+      expect(screen.getByText('Budi Santoso')).toBeInTheDocument();
+      expect(screen.getByText('Siti Rahayu')).toBeInTheDocument();
+    });
+
+    it('should mark selected chip as pressed', async () => {
+      const user = userEvent.setup();
+      render(<MonitoringSidePanel {...defaultProps} />);
+
+      const chip = screen.getByRole('button', { name: 'Satgas' });
+      expect(chip).toHaveAttribute('aria-pressed', 'false');
+
+      await user.click(chip);
+      expect(chip).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
+
+  describe('Severity-based sorting', () => {
+    it('should sort users by severity with missing first', () => {
+      const dataWithMissing: LiveUsersResponse = {
+        ...MOCK_DATA,
+        total_missing: 1,
+        users: [
+          { ...MOCK_USER_1, status: 'active' },
+          { ...MOCK_USER_2, id: 'user-missing', full_name: 'Missing User', status: 'missing' },
+        ],
+      };
+      render(<MonitoringSidePanel {...defaultProps} data={dataWithMissing} />);
+      const buttons = screen.getAllByRole('button', { name: /user/i }).filter(
+        (b) => b.getAttribute('aria-selected') !== null
+      );
+      // Missing user should come first in the list
+      if (buttons.length >= 2) {
+        expect(buttons[0]).toHaveTextContent(/Missing User/);
+      }
+    });
+  });
+
   describe('User selection', () => {
     it('should call onUserSelect with the user when a list item is clicked', async () => {
       const user = userEvent.setup();

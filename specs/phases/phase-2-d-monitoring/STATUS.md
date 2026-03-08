@@ -1,8 +1,8 @@
 # Phase 2D: Real-Time Monitoring - Implementation Status
 
 **Status:** ✅ COMPLETE (pending merge & deploy)
-**Last Updated:** March 7, 2026
-**Overall Progress:** 98% (2D-1 → 2D-10 complete; 2D-11 not started)
+**Last Updated:** March 8, 2026
+**Overall Progress:** 99% (2D-1 → 2D-10, 2D-12, 2D-13 complete; 2D-11 not started)
 **Branch:** `f/phase-2-d-monitoring`
 **Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), ADR-011 (new)
 
@@ -176,6 +176,43 @@
 | Fix seed cluster_zoom_threshold | ✅ Done | 13 → 14 |
 | Add 77 new tests | ✅ Done | Total: 1,172 tests, 62 suites, 91.81% stmt, 80.37% branch |
 
+### Sub-Phase 2D-12: Backend Alignment Fix (Mobile) ✅ COMPLETE (March 8, 2026)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Fix `UserReassignedEvent` field names | ✅ Done | `source_area_id/target_area_id` → `previous_area_id/new_area_id`, removed `reassigned_by` |
+| Fix `AreaStaffingChangedEvent` fields | ✅ Done | Removed `area_name`, changed `is_understaffed` → `is_met` |
+| Fix `ReassignWorkerResponse` contract | ✅ Done | Aligned 9-field response with backend DTO |
+| Fix `RoleStaffingItem` (remove `delta`) | ✅ Done | Computed client-side in BoundaryDetailModal |
+| Fix `AreaBoundary` (add 3 fields) | ✅ Done | Added `rayon_id`, `rayon_name`, `assigned_count` |
+| Fix `RayonBoundary` (add 2 fields, rename 1) | ✅ Done | Added `area_count`, `is_understaffed`; renamed `total_understaffed_areas` |
+| Fix `ReassignWorkerPayload` (add 3 optional) | ✅ Done | Added `shift_definition_id`, `effective_date`, `end_current_schedule` |
+| Fix MapDashboardScreen WS handler | ✅ Done | `data.target_area_id` → `data.new_area_id` |
+| Fix BoundaryOverlay + BoundaryDetailModal | ✅ Done | Field renames + client-side delta |
+| Update 9 test files with new fixtures | ✅ Done | 149 suites, 3,669 tests, 0 regressions |
+
+### Sub-Phase 2D-13: Web Gap Fixes & Spec Alignment ✅ COMPLETE (March 8, 2026)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Add BoundariesResponse, ReassignWorker types | ✅ Done | `monitoring-types.ts` with 7 new interfaces |
+| Add constants (ROLE_ABBREVIATIONS, POLYGON_STYLES, etc.) | ✅ Done | `monitoring.ts` constants file |
+| Add `useBoundaries` and `useReassignWorker` hooks | ✅ Done | 5min staleTime, mutation with cache invalidation |
+| Rewrite MonitoringMap with boundaries/zoom labels/auto-focus | ✅ Done | Rayon + area polygon layers, center markers |
+| Extract `monitoringMapHelpers.ts` | ✅ Done | 249 lines of pure helper functions |
+| Rewrite StaffingSummaryCard (hierarchical, always visible) | ✅ Done | City→rayon→area→role views, day-type badge |
+| Create ReassignWorkerModal | ✅ Done | Source area selector, worker list, reason, effective date |
+| Enhance LocationTimeline (clickable points, hide-others) | ✅ Done | Bidirectional map sync, first/last markers, summary bar |
+| Enhance MonitoringSidePanel (role chips, severity sort) | ✅ Done | Satgas/Linmas/Korlap toggle chips, STATUS_SEVERITY_ORDER |
+| Update monitoring page (boundaries, trail sync, reassign) | ✅ Done | Split layout with all new features integrated |
+| Add StaffingSummaryCard tests | ✅ Done | 43 tests covering all view levels |
+| Add ReassignWorkerModal tests | ✅ Done | 34 tests covering form, submit, errors |
+| Update LocationTimeline tests | ✅ Done | +17 tests for new features |
+| Update MonitoringSidePanel tests | ✅ Done | +11 tests for role chips, severity sort |
+| Update monitoring API tests | ✅ Done | +7 tests for boundaries/reassign hooks |
+| Rewrite monitoring page tests | ✅ Done | 21 tests for new split layout |
+| TypeScript clean compile | ✅ Done | `tsc --noEmit` passes with 0 errors |
+
 ### Sub-Phase 2D-11: Home Screen Location Card - NOT STARTED
 
 | Task | Status | Notes |
@@ -195,9 +232,10 @@
 | Backend test coverage (branch) | >80% | 80.37% ✅ |
 | Backend tests | >1,050 | 1,172 passing ✅ |
 | Backend suites | - | 62 suites ✅ |
-| Mobile tests | >3,400 | 3,493 passing ✅ |
+| Mobile tests | >3,400 | 3,669 passing ✅ |
 | New backend endpoints | 9 | 9 ✅ |
-| New web components | 7 | 7 ✅ |
+| Web monitoring tests | - | 290 passing (11 suites) ✅ |
+| New web components | 7+3 | 10 ✅ |
 | New mobile components | 6 | 7 ✅ |
 
 ---
@@ -207,8 +245,8 @@
 | Component | Phase 2C Baseline | Phase 2D Current |
 |-----------|-------------------|-----------------|
 | **Backend** | 16 modules, 113 endpoints, 888 tests | 16 modules, 122 endpoints, 1,172 tests (62 suites) |
-| **Mobile** | 17 screens, 3,264 tests | 21 screens, 3,493 tests |
-| **Web** | 20 pages, 1,336 tests | 21 pages (+1 config), all components done |
+| **Mobile** | 17 screens, 3,264 tests | 21 screens, 3,669 tests (149 suites) |
+| **Web** | 20 pages, 1,336 tests | 21 pages (+1 config), 290 monitoring tests (11 suites) |
 | **Database** | 18 tables | 20 tables (+2: user_tracking_status, monitoring_configs) |
 
 ---
@@ -294,4 +332,4 @@ npm run test:e2e                  # All Playwright tests
 
 ---
 
-**Last Updated:** 2026-03-07
+**Last Updated:** 2026-03-08
