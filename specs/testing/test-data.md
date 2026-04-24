@@ -945,5 +945,25 @@ When updating test data:
 
 ---
 
+---
+
+## Phase 2E: Planned Test Data (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/testing.md`](../phases/phase-2-e-client-feedback-2/testing.md)
+
+### New Test Fixtures
+
+| Fixture | Purpose |
+|---------|---------|
+| Users with `phone_number` | Phone login testing (all clockable roles) |
+| Users with `profile_picture_url` | Profile picture display testing |
+| `user_areas` entries | Multi-area korlap + task-based satgas/linmas |
+| Shifts with `is_overtime: true` | Overtime shift testing |
+| Overtimes with `shift_id` | Overtime-shift linkage |
+| `audit_logs` entries | Audit trail display testing |
+| Rayon with null `boundary_polygon` | Edge case for rayon-level boundary checking |
+
+---
+
 *Last Updated: March 2026*
 *Use these fixtures for consistent, repeatable testing*

@@ -1584,8 +1584,48 @@ npm run seed:tasks
 
 ---
 
-**Last Updated:** 2026-02-20
-**Seed Data Version:** 3.3 (Phase 2C — Activity Approval + Task Verification)
-**Total Records:** ~158 (Phase 1: 28 + Phase 2: 50 + Phase 2C: 80 tasks+activities)
+---
+
+## Phase 2E: Planned Seed Data (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md) (Seeder Updates section)
+
+### New Phone Numbers
+
+| Username | phone_number |
+|----------|-------------|
+| admin | NULL |
+| superadmin | NULL |
+| korlap1 | 081234567001 |
+| korlap2 | 081234567002 |
+| satgas1 | 081234567011 |
+| satgas2 | 081234567012 |
+| linmas1 | 081234567021 |
+| linmas2 | 081234567022 |
+| admin_data1 | 081234567031 |
+| kepala_rayon1 | 081234567041 |
+| top_management1 | 081234567051 |
+
+### Multi-Area Assignments (user_areas)
+
+| Username | Area | Type |
+|----------|------|------|
+| korlap1 | Taman Bungkul | permanent |
+| korlap1 | Taman Prestasi | permanent |
+| korlap2 | Taman Mundu | permanent |
+| korlap2 | Taman Flora | permanent |
+| satgas1 | Taman Bungkul | permanent |
+| satgas2 | Taman Prestasi | permanent |
+
+### Audit Log Samples
+- Task creation, status changes, revision requests
+- Activity approval/rejection entries
+- Overtime start/end/approval entries
+
+---
+
+**Last Updated:** 2026-03-10
+**Seed Data Version:** 3.4 (Phase 2E Planned — Phone numbers, multi-area, audit logs)
+**Total Records:** ~158 + ~30 planned (user phone numbers, user_areas, audit_logs)
 
 > **Note:** Phase 1/2 sections above use old role names (admin, supervisor, worker) for historical reference. The actual seeder code uses Phase 2C roles (superadmin, korlap, satgas, etc.). See Phase 2C section for current seed user table. `activity_types.applicable_roles` uses PascalCase in DB seeds (`ARRAY['Worker']`) — this is a known legacy pattern from Phase 2 seed SQL.

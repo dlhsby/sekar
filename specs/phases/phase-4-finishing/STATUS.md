@@ -1,357 +1,371 @@
 # Phase 4: Implementation Status
 
-**Last Updated:** January 30, 2026
-**Status:** Not Started
-**Overall Progress:** 0/120 tasks (0%)
-**Estimated Duration:** 10-12 weeks
+**Last Updated:** March 13, 2026
+**Status:** Not Started (Specifications Complete)
+**Overall Progress:** 0/8 sub-phases
 
 ---
 
-## Progress by Component
+## Specification Review
 
-| Component | Tasks | Complete | Progress | Test Coverage | Grade |
-|-----------|-------|----------|----------|---------------|-------|
-| **Backend** | 35 | 0 | 0% | 0% | - |
-| **Mobile** | 30 | 0 | 0% | 0% | - |
-| **Web** | 25 | 0 | 0% | 0% | - |
-| **iOS Platform** | 20 | 0 | 0% | 0% | - |
-| **Integration** | 10 | 0 | 0% | - | - |
-| **Total** | **120** | **0** | **0%** | - | - |
+| Document | Status | Lines | Last Updated |
+|----------|--------|-------|-------------|
+| README.md | ✅ Complete | ~380 | 2026-03-13 |
+| STATUS.md | ✅ Complete | This file | 2026-03-13 |
+| database.md | ✅ Complete | ~550 | 2026-03-13 |
+| backend.md | ✅ Complete | ~900 | 2026-03-13 |
+| reporting.md | ✅ Complete | ~450 | 2026-03-13 |
+| analytics.md | ✅ Complete | ~500 | 2026-03-13 |
+| assets.md | ✅ Complete | ~500 | 2026-03-13 |
+| web.md | ✅ Complete | ~600 | 2026-03-13 |
+| mobile.md | ✅ Complete | ~310 | 2026-03-13 |
+| ios.md | ✅ Complete | ~365 | 2026-03-13 |
+| infrastructure.md | ✅ Complete | ~260 | 2026-03-13 |
+| testing.md | ✅ Complete | ~220 | 2026-03-13 |
+| user-guide-web.md | ✅ Complete | ~450 | 2026-03-13 |
+| user-guide-mobile.md | ✅ Complete | ~420 | 2026-03-13 |
+| maintenance.md | ✅ Complete | ~400 | 2026-03-13 |
+| evaluation.md | ✅ Complete | ~320 | 2026-03-13 |
+| status_deployment_checklist.md | ✅ Complete | ~150 | 2026-03-13 |
+| status_reviews.md | ✅ Complete | ~80 | 2026-03-13 |
 
----
+**ADRs:**
 
-## Part A: Backend Implementation (0/35)
-
-### Analytics Module (0/10)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 1 | Create analytics module structure | ⬜ Not Started | 1 | NestJS module with service/controller |
-| 2 | Implement worker analytics query | ⬜ Not Started | 1 | Performance metrics with filters |
-| 3 | Implement area analytics query | ⬜ Not Started | 1 | Coverage and condition metrics |
-| 4 | Implement operational analytics | ⬜ Not Started | 1 | System-wide KPIs |
-| 5 | Create dashboard summary endpoint | ⬜ Not Started | 1 | Aggregated stats |
-| 6 | Add database indexes | ⬜ Not Started | 1 | Optimize query performance |
-| 7 | Write unit tests | ⬜ Not Started | 1 | >80% coverage target |
-| 8 | Integration tests | ⬜ Not Started | 1 | E2E API tests |
-| 9 | Performance testing | ⬜ Not Started | 1 | Verify <2s response |
-| 10 | Swagger documentation | ⬜ Not Started | 1 | Complete API docs |
-
-### Report Builder Module (0/8)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 11 | Create report-builder module | ⬜ Not Started | 1 | Module structure |
-| 12 | ReportTemplate entity | ⬜ Not Started | 1 | TypeORM entity |
-| 13 | GeneratedReport entity | ⬜ Not Started | 1 | Archive tracking |
-| 14 | PDF generator (Puppeteer) | ⬜ Not Started | 1 | HTML to PDF |
-| 15 | CSV generator | ⬜ Not Started | 1 | Data export |
-| 16 | Excel generator (ExcelJS) | ⬜ Not Started | 1 | Formatted spreadsheets |
-| 17 | S3 upload integration | ⬜ Not Started | 1 | File storage |
-| 18 | Unit tests | ⬜ Not Started | 1 | >80% coverage |
-
-### Scheduler Module (0/4)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 19 | @nestjs/schedule setup | ⬜ Not Started | 2 | Cron job infrastructure |
-| 20 | Daily report job | ⬜ Not Started | 2 | Automated daily reports |
-| 21 | Weekly report job | ⬜ Not Started | 2 | Automated weekly reports |
-| 22 | AWS SES email service | ⬜ Not Started | 2 | Email delivery |
-
-### Assets Module (0/9)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 23 | Create assets module | ⬜ Not Started | 4 | NestJS module |
-| 24 | Asset entity | ⬜ Not Started | 4 | TypeORM with relations |
-| 25 | AssetType entity | ⬜ Not Started | 4 | Asset categories |
-| 26 | AssetAssignment entity | ⬜ Not Started | 4 | Assignment tracking |
-| 27 | Assets CRUD service | ⬜ Not Started | 4 | Business logic |
-| 28 | Assets controller | ⬜ Not Started | 4 | REST endpoints |
-| 29 | Assignment/return endpoints | ⬜ Not Started | 4 | Workflow APIs |
-| 30 | QrCodeService | ⬜ Not Started | 4 | QR generation with qrcode |
-| 31 | Unit tests | ⬜ Not Started | 5 | >80% coverage |
-
-### Maintenance Module (0/6)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 32 | Create maintenance module | ⬜ Not Started | 5 | NestJS module |
-| 33 | MaintenanceRecord entity | ⬜ Not Started | 5 | Schedule tracking |
-| 34 | Maintenance CRUD | ⬜ Not Started | 5 | Service + controller |
-| 35 | Start/complete workflow | ⬜ Not Started | 5 | State transitions |
-| 36 | Calendar data endpoint | ⬜ Not Started | 5 | Monthly events |
-| 37 | Unit tests | ⬜ Not Started | 5 | >80% coverage |
-
-### Apple Auth Module (0/4)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 38 | Install apple-signin-auth | ⬜ Not Started | 7 | npm package |
-| 39 | AppleAuthService | ⬜ Not Started | 7 | Token verification |
-| 40 | POST /auth/apple endpoint | ⬜ Not Started | 7 | Authentication |
-| 41 | Link/unlink endpoints | ⬜ Not Started | 7 | Account management |
-
-### Fraud Detection Module (0/4)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 42 | Create fraud-detection module | ⬜ Not Started | 8 | NestJS module |
-| 43 | FraudLog entity | ⬜ Not Started | 8 | Incident tracking |
-| 44 | FraudDetectionService | ⬜ Not Started | 8 | Validation logic |
-| 45 | Admin endpoints | ⬜ Not Started | 9 | Review interface |
+| ADR | Title | Status |
+|-----|-------|--------|
+| ADR-024 | PDF Report Generation (Puppeteer) | ✅ Written |
+| ADR-025 | Analytics Materialized Views | ✅ Written |
+| ADR-026 | Asset QR Code Strategy | ✅ Written |
+| ADR-027 | iOS Build & Distribution | ✅ Written |
+| ADR-028 | Staging Environment | ✅ Written |
 
 ---
 
-## Part B: Mobile Implementation (0/30)
+## Overall Progress
 
-### Analytics Screens (0/5)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 46 | Worker analytics screen | ⬜ Not Started | 3 | Personal metrics |
-| 47 | Supervisor analytics screen | ⬜ Not Started | 3 | Team overview |
-| 48 | Performance card component | ⬜ Not Started | 3 | Dashboard widget |
-| 49 | Chart components | ⬜ Not Started | 3 | react-native-chart-kit |
-| 50 | Unit tests | ⬜ Not Started | 3 | >70% coverage |
-
-### QR Scanner (0/6)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 51 | Install vision-camera | ⬜ Not Started | 5 | Camera library |
-| 52 | Configure permissions | ⬜ Not Started | 5 | Android + iOS |
-| 53 | QRScanner component | ⬜ Not Started | 5 | Camera + detection |
-| 54 | QRScannerScreen | ⬜ Not Started | 5 | Full screen flow |
-| 55 | Manual code entry | ⬜ Not Started | 5 | Fallback option |
-| 56 | Unit tests | ⬜ Not Started | 5 | >70% coverage |
-
-### Asset Management Screens (0/7)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 57 | AssetDetailsScreen | ⬜ Not Started | 5 | View asset info |
-| 58 | AssetCheckoutScreen | ⬜ Not Started | 5 | Checkout workflow |
-| 59 | AssetReturnScreen | ⬜ Not Started | 6 | Return workflow |
-| 60 | MaintenanceReportScreen | ⬜ Not Started | 6 | Report issues |
-| 61 | MyAssetsScreen | ⬜ Not Started | 6 | Worker's assets |
-| 62 | Asset components | ⬜ Not Started | 6 | AssetCard, StatusBadge |
-| 63 | Unit tests | ⬜ Not Started | 6 | >70% coverage |
-
-### iOS Features (0/12)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 64 | iOS build configuration | ⬜ Not Started | 7 | Xcode + provisioning |
-| 65 | Info.plist permissions | ⬜ Not Started | 7 | iOS permissions |
-| 66 | Install Apple Auth | ⬜ Not Started | 7 | @invertase/react-native-apple-authentication |
-| 67 | AppleSignInButton component | ⬜ Not Started | 7 | Login UI |
-| 68 | Install Siri Shortcuts | ⬜ Not Started | 7 | react-native-siri-shortcut |
-| 69 | Donate shortcuts | ⬜ Not Started | 7 | Clock-in/out/report |
-| 70 | Install Biometrics | ⬜ Not Started | 8 | react-native-biometrics |
-| 71 | BiometricAuth service | ⬜ Not Started | 8 | Face ID / Touch ID |
-| 72 | Fraud detection service | ⬜ Not Started | 8 | Device checks |
-| 73 | Install i18next | ⬜ Not Started | 9 | Internationalization |
-| 74 | Translation files | ⬜ Not Started | 9 | id.json, en.json |
-| 75 | Unit tests | ⬜ Not Started | 9 | >70% coverage |
+| Sub-Phase | Name | Tasks | Done | Progress |
+|-----------|------|-------|------|----------|
+| 4-1 | Reporting Module | 25 | 0 | ⬜ Not Started |
+| 4-2 | Analytics Module | 20 | 0 | ⬜ Not Started |
+| 4-3 | Asset Management | 22 | 0 | ⬜ Not Started |
+| 4-4 | iOS Platform | 18 | 0 | ⬜ Not Started |
+| 4-5 | Release & Deployment | 15 | 0 | ⬜ Not Started |
+| 4-6 | User Guides & Docs | 10 | 0 | ⬜ Not Started |
+| 4-7 | Evaluation & Polish | 8 | 0 | ⬜ Not Started |
+| 4-8 | E2E Testing Extension | 14 | 0 | ⬜ Not Started |
+| **Total** | | **132** | **0** | **0%** |
 
 ---
 
-## Part C: Web Implementation (0/25)
+## Sub-Phase 4-1: Reporting Module (10-13 days)
 
-### Analytics Pages (0/7)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 76 | Analytics dashboard page | ⬜ Not Started | 2 | Overview with KPIs |
-| 77 | Worker analytics page | ⬜ Not Started | 2 | Performance metrics |
-| 78 | Area analytics page | ⬜ Not Started | 2 | Coverage stats |
-| 79 | Chart components | ⬜ Not Started | 2 | Recharts integration |
-| 80 | Filter components | ⬜ Not Started | 2 | Date range, area |
-| 81 | Export functionality | ⬜ Not Started | 2 | CSV download |
-| 82 | Unit tests | ⬜ Not Started | 2 | >70% coverage |
+**Depends On:** Phase 3 ExportModule
 
-### Report Builder (0/4)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 83 | Report builder page | ⬜ Not Started | 2 | Template configuration |
-| 84 | Report type selector | ⬜ Not Started | 2 | Daily/weekly/monthly |
-| 85 | Templates list page | ⬜ Not Started | 2 | Manage templates |
-| 86 | Archive page | ⬜ Not Started | 2 | Download reports |
+### Backend Tasks
 
-### Asset Management Pages (0/8)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 87 | Assets list page | ⬜ Not Started | 6 | Table with filters |
-| 88 | Asset details page | ⬜ Not Started | 6 | View/edit asset |
-| 89 | Add asset page | ⬜ Not Started | 6 | Create new asset |
-| 90 | QR generator page | ⬜ Not Started | 6 | Bulk generation |
-| 91 | QR print template | ⬜ Not Started | 6 | Printable layout |
-| 92 | Maintenance calendar page | ⬜ Not Started | 6 | FullCalendar |
-| 93 | Maintenance modals | ⬜ Not Started | 6 | Create/edit |
-| 94 | Unit tests | ⬜ Not Started | 6 | >70% coverage |
+- [ ] Create ReportingModule (module, controller, service)
+- [ ] Create report_templates table + entity + migration
+- [ ] Create generated_reports table + entity + migration
+- [ ] Create report_schedules table + entity + migration
+- [ ] Implement PdfGeneratorService (Puppeteer + Handlebars)
+- [ ] Create 6 Handlebars PDF templates
+- [ ] Implement CSV/Excel export for all report types
+- [ ] Implement ReportSchedulerService (cron-based)
+- [ ] Implement report cleanup cron (90-day retention)
+- [ ] Add role-based access control (scope enforcement)
+- [ ] Write unit tests (>80% coverage)
+- [ ] Add Swagger documentation
 
-### Fraud Dashboard (0/6)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 95 | Fraud dashboard page | ⬜ Not Started | 9 | Admin overview |
-| 96 | Fraud logs table | ⬜ Not Started | 9 | Incident list |
-| 97 | Fraud detail modal | ⬜ Not Started | 9 | Review interface |
-| 98 | Device management page | ⬜ Not Started | 9 | Trusted devices |
-| 99 | Stats cards | ⬜ Not Started | 9 | Metrics overview |
-| 100 | Unit tests | ⬜ Not Started | 9 | >70% coverage |
+### Frontend Tasks (Web)
+
+- [ ] Create ReportsDashboardPage
+- [ ] Create ReportBuilderPage
+- [ ] Create ReportSchedulesPage (admin)
+- [ ] Add NBReportCard component
+
+### Frontend Tasks (Mobile)
+
+- [ ] Create ReportsScreen
+- [ ] Create ReportDetailScreen
+- [ ] Add reportsSlice to Redux store
+- [ ] Add reports API service
+
+### Definition of Done
+
+- [ ] All 6 report types generate correctly as PDF, CSV, Excel
+- [ ] Scheduled reports execute on time
+- [ ] Reports respect role-based scope
+- [ ] Test coverage >80%
+- [ ] E2E tests pass (3 Maestro + 3 Playwright)
 
 ---
 
-## Part D: iOS Platform (0/20)
+## Sub-Phase 4-2: Analytics Module (8-10 days)
 
-### App Store Preparation (0/10)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 101 | Apple Developer setup | ⬜ Not Started | 7 | Account + certificates |
-| 102 | Create App ID | ⬜ Not Started | 7 | Bundle identifier |
-| 103 | Enable capabilities | ⬜ Not Started | 7 | Sign-In, Push, Siri |
-| 104 | Provisioning profiles | ⬜ Not Started | 7 | Dev + distribution |
-| 105 | Screenshots (6.7", 6.5", 5.5") | ⬜ Not Started | 11 | All required sizes |
-| 106 | App icon (1024x1024) | ⬜ Not Started | 11 | High resolution |
-| 107 | App description (ID + EN) | ⬜ Not Started | 11 | App Store listing |
-| 108 | Privacy policy URL | ⬜ Not Started | 11 | Required link |
-| 109 | Test account | ⬜ Not Started | 11 | For reviewers |
-| 110 | Review notes | ⬜ Not Started | 11 | Special instructions |
+**Depends On:** Phase 3 Redis cache
 
-### TestFlight & Submission (0/5)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 111 | Create archive build | ⬜ Not Started | 11 | Xcode archive |
-| 112 | Upload to App Store Connect | ⬜ Not Started | 11 | TestFlight |
-| 113 | Internal testing | ⬜ Not Started | 11 | Dev team |
-| 114 | External testing | ⬜ Not Started | 11 | Beta users |
-| 115 | Submit for review | ⬜ Not Started | 11 | App Store |
+### Backend Tasks
 
-### iOS Testing (0/5)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 116 | Test on iPhone 14 Pro | ⬜ Not Started | 9 | Face ID |
-| 117 | Test on iPhone SE | ⬜ Not Started | 9 | Touch ID |
-| 118 | Test Siri Shortcuts | ⬜ Not Started | 9 | Voice commands |
-| 119 | Performance testing | ⬜ Not Started | 9 | Memory/battery |
-| 120 | Accessibility testing | ⬜ Not Started | 9 | VoiceOver |
+- [ ] Create AnalyticsModule (module, controller, service)
+- [ ] Create 3 materialized views (migration)
+- [ ] Implement AnalyticsRefreshService (nightly cron)
+- [ ] Implement performance score algorithm (weighted composite)
+- [ ] Add Redis caching (5-min TTL)
+- [ ] Implement 4 analytics endpoints (dashboard, workers, areas, worker-detail)
+- [ ] Add role-based scope enforcement
+- [ ] Write unit tests (>80% coverage)
 
----
+### Frontend Tasks (Web)
 
-## Part E: Integration & Deployment (0/10)
+- [ ] Create AnalyticsDashboardPage with KPI cards
+- [ ] Create AnalyticsWorkersPage with ranking table
+- [ ] Create AnalyticsAreasPage with comparison charts
+- [ ] Add NBKPICard and NBChart components
 
-### Integration Testing (0/5)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 121 | End-to-end testing | ⬜ Not Started | 10 | All features |
-| 122 | Performance benchmarks | ⬜ Not Started | 10 | Verify targets |
-| 123 | Security audit | ⬜ Not Started | 10 | Vulnerability scan |
-| 124 | Cross-platform testing | ⬜ Not Started | 10 | Android + iOS + Web |
-| 125 | Load testing | ⬜ Not Started | 11 | Production load |
+### Frontend Tasks (Mobile)
 
-### Deployment (0/5)
-| # | Task | Status | Week | Notes |
-|---|------|--------|------|-------|
-| 126 | Documentation updates | ⬜ Not Started | 10 | All specs |
-| 127 | Staging deployment | ⬜ Not Started | 12 | Pre-production |
-| 128 | Production deployment | ⬜ Not Started | 12 | Backend + Web |
-| 129 | Monitoring setup | ⬜ Not Started | 12 | 24/7 alerts |
-| 130 | Phase 4 sign-off | ⬜ Not Started | 12 | Complete |
+- [ ] Create WorkerAnalyticsScreen
+- [ ] Create TeamAnalyticsScreen
+- [ ] Add analyticsSlice to Redux store
+
+### Definition of Done
+
+- [ ] All 19 KPIs calculate correctly
+- [ ] Materialized views refresh nightly
+- [ ] Redis cache reduces query load
+- [ ] Charts render on web (Recharts) and mobile
+- [ ] Test coverage >80%
 
 ---
 
-## Acceptance Criteria
+## Sub-Phase 4-3: Asset Management (8-10 days)
 
-### Backend (0/6)
-- [ ] All analytics queries return in <2s with 500 workers
-- [ ] Reports generate successfully (PDF, CSV, Excel)
-- [ ] Automated reports send on schedule
-- [ ] Assets CRUD with QR generation working
-- [ ] Maintenance scheduling functional
-- [ ] >80% test coverage achieved
+**Depends On:** Phase 3 infrastructure
 
-### Mobile (0/6)
-- [ ] Analytics screens display correctly
-- [ ] QR scanner detects codes accurately
-- [ ] Asset checkout/return workflow functional
-- [ ] Apple Sign-In working on iOS
-- [ ] Siri Shortcuts activated by voice
-- [ ] >70% test coverage achieved
+### Backend Tasks
 
-### Web (0/6)
-- [ ] Analytics dashboards render with data
-- [ ] Report builder generates all formats
-- [ ] Assets list displays with filters
-- [ ] QR codes printable in bulk
-- [ ] Maintenance calendar shows events
-- [ ] >70% test coverage achieved
+- [ ] Create AssetsModule (module, controller, service)
+- [ ] Create asset_categories table + entity + migration
+- [ ] Create assets table + entity + migration
+- [ ] Create asset_assignments table + entity + migration
+- [ ] Create asset_maintenances table + entity + migration
+- [ ] Implement QrCodeService (qrcode npm package)
+- [ ] Implement asset lifecycle state machine
+- [ ] Implement scope enforcement (rayon/area)
+- [ ] Implement maintenance overdue cron
+- [ ] Write unit tests (>80% coverage)
 
-### iOS (0/6)
-- [ ] App builds on Xcode without errors
-- [ ] TestFlight build available
-- [ ] App Store submission complete
-- [ ] All iOS features working (Apple Sign-In, Siri, Face ID)
-- [ ] i18n complete (Indonesian + English)
-- [ ] Performance benchmarks met (<3s launch)
+### Frontend Tasks (Web)
 
-### Integration (0/4)
-- [ ] All E2E tests passing
-- [ ] Performance benchmarks met
-- [ ] Security audit passed
+- [ ] Create AssetsListPage with filters
+- [ ] Create AssetDetailPage
+- [ ] Create AssetFormPage (create/edit)
+- [ ] Create AssetQRPage (bulk generation)
+- [ ] Create AssetMaintenancePage
+
+### Frontend Tasks (Mobile)
+
+- [ ] Create AssetListScreen
+- [ ] Create AssetDetailScreen
+- [ ] Create QRScannerScreen (vision-camera)
+- [ ] Create AssetCheckoutScreen
+- [ ] Add assetsSlice to Redux store
+
+### Definition of Done
+
+- [ ] Full CRUD for assets with category filtering
+- [ ] QR codes generate and scan correctly
+- [ ] Checkout/return workflow works end-to-end
+- [ ] Maintenance scheduling and overdue alerts work
+- [ ] Asset scope enforced by role/rayon/area
+- [ ] Test coverage >80%
+
+---
+
+## Sub-Phase 4-4: iOS Platform (8-10 days)
+
+**Depends On:** Independent (can parallel with 4-1..4-3)
+
+### Tasks
+
+- [ ] Configure Xcode project (bundle ID, capabilities, permissions)
+- [ ] Set up CocoaPods dependencies
+- [ ] Implement Apple Sign-In (react-native-apple-authentication)
+- [ ] Add Apple Sign-In backend endpoint
+- [ ] Implement biometric authentication (react-native-biometrics)
+- [ ] Configure APNs via FCM
+- [ ] Verify platform parity (17 features)
+- [ ] Fix iOS-specific UI issues
+- [ ] Set up TestFlight distribution
+- [ ] Create App Store listing (screenshots, description, privacy policy)
+- [ ] Submit to App Store Review
+- [ ] Set up iOS CI/CD pipeline (macos runner)
+
+### Definition of Done
+
+- [ ] All Android features work on iOS
+- [ ] Apple Sign-In creates/links accounts
+- [ ] Face ID/Touch ID unlock works
+- [ ] Push notifications received on iOS
+- [ ] TestFlight build distributed to testers
+- [ ] App Store submission approved
+
+---
+
+## Sub-Phase 4-5: Release & Deployment (5-7 days)
+
+**Depends On:** Sub-Phases 4-1 through 4-4
+
+### Tasks
+
+- [ ] Set up staging environment (EC2 + Vercel + S3)
+- [ ] Configure staging database and Redis
+- [ ] Deploy to staging and verify all features
+- [ ] Run E2E tests against staging
+- [ ] Deploy to production (manual approval)
+- [ ] Run database migrations
+- [ ] Verify health endpoints
+- [ ] Monitor Sentry for 24 hours
+- [ ] Configure automated backups
+- [ ] Set up monitoring alerts
+- [ ] Update DNS records if needed
+
+### Definition of Done
+
+- [ ] Staging environment functional
 - [ ] Production deployment successful
+- [ ] All health checks passing
+- [ ] Backups configured and tested
+- [ ] Monitoring alerts active
+- [ ] Zero critical errors in first 24 hours
 
 ---
 
-## Test Coverage Targets
+## Sub-Phase 4-6: User Guides & Documentation (5-7 days)
 
-| Component | Current | Target | Status |
-|-----------|---------|--------|--------|
-| Backend Analytics | 0% | >80% | ❌ Not Met |
-| Backend Assets | 0% | >80% | ❌ Not Met |
-| Backend iOS Auth | 0% | >80% | ❌ Not Met |
-| Mobile Analytics | 0% | >70% | ❌ Not Met |
-| Mobile Assets | 0% | >70% | ❌ Not Met |
-| Mobile iOS | 0% | >70% | ❌ Not Met |
-| Web Analytics | 0% | >70% | ❌ Not Met |
-| Web Assets | 0% | >70% | ❌ Not Met |
-| Web Fraud Dashboard | 0% | >70% | ❌ Not Met |
+**Depends On:** Sub-Phases 4-1 through 4-5
 
----
+### Tasks
 
-## Performance Benchmarks
+- [ ] Create web user guide (14 sections)
+- [ ] Create mobile user guide (9 sections)
+- [ ] Create maintenance operations guide (10 sections)
+- [ ] Capture screenshots for web guide
+- [ ] Capture screenshots for mobile guide
+- [ ] Update CLAUDE.md with Phase 4 information
+- [ ] Update specs/COMPLETION_STATUS.md
+- [ ] Review all specifications for accuracy
 
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| Worker analytics query | <2s | - | ⏳ Pending |
-| Area analytics query | <2s | - | ⏳ Pending |
-| Dashboard summary | <1s | - | ⏳ Pending |
-| PDF generation | <30s | - | ⏳ Pending |
-| CSV generation | <5s | - | ⏳ Pending |
-| Assets list query | <1s | - | ⏳ Pending |
-| QR generation | <2s | - | ⏳ Pending |
-| Bulk QR (50) | <30s | - | ⏳ Pending |
-| App launch (iOS) | <3s | - | ⏳ Pending |
-| Apple Sign-In | <5s | - | ⏳ Pending |
+### Definition of Done
+
+- [ ] Web guide covers all 35 pages
+- [ ] Mobile guide covers all 30 screens
+- [ ] Maintenance guide covers all operational procedures
+- [ ] Screenshots match current UI
+- [ ] All cross-references updated
 
 ---
 
-## Risk Assessment
+## Sub-Phase 4-7: Evaluation & Final Polish (4-5 days)
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Slow analytics queries | Medium | High | Early indexing, production-like testing |
-| QR scanning accuracy | Low | High | Manual entry fallback |
-| Apple Sign-In complexity | Medium | High | Follow official docs |
-| App Store rejection | Medium | High | Thorough review notes |
-| Performance issues | Medium | Medium | Load testing before deployment |
+**Depends On:** All sub-phases complete
+
+### Tasks
+
+- [ ] Complete requirements traceability matrix
+- [ ] Run architecture audit
+- [ ] Run code quality metrics
+- [ ] Run security audit
+- [ ] Run performance benchmarks
+- [ ] Compile phase-by-phase implementation review
+- [ ] Document technical debt items
+- [ ] Document Phase 5 recommendations
+- [ ] Obtain sign-offs
+
+### Definition of Done
+
+- [ ] All 17 requirements verified as implemented
+- [ ] All non-functional requirements measured
+- [ ] Security audit passed (no critical/high issues)
+- [ ] Performance within targets
+- [ ] Sign-off from all reviewers
 
 ---
 
-## Next Steps
+## Sub-Phase 4-8: E2E Testing Extension (5-7 days)
 
-1. Begin Week 1: Analytics backend implementation
-2. Set up database indexes for analytics queries
-3. Configure Puppeteer for PDF generation
-4. Create analytics module structure
-5. Implement worker performance metrics
+**Depends On:** Sub-Phases 4-1 through 4-4 features implemented
+
+### Maestro (Mobile)
+
+- [ ] report-generate.yaml
+- [ ] report-view.yaml
+- [ ] report-filter.yaml
+- [ ] analytics-worker.yaml
+- [ ] analytics-team.yaml
+- [ ] analytics-dashboard.yaml
+- [ ] asset-browse.yaml
+- [ ] asset-checkout.yaml
+- [ ] asset-return.yaml
+- [ ] asset-maintenance.yaml
+- [ ] asset-qr-manual.yaml
+- [ ] ios-apple-signin.yaml (macOS only)
+- [ ] ios-biometric.yaml (macOS only)
+
+### Playwright (Web)
+
+- [ ] reports-dashboard.spec.ts
+- [ ] reports-builder.spec.ts
+- [ ] reports-schedules.spec.ts
+- [ ] analytics-dashboard.spec.ts
+- [ ] analytics-workers.spec.ts
+- [ ] analytics-areas.spec.ts
+- [ ] assets-list.spec.ts
+- [ ] assets-detail.spec.ts
+- [ ] assets-form.spec.ts
+- [ ] assets-qr.spec.ts
+- [ ] assets-maintenance.spec.ts
+
+### Definition of Done
+
+- [ ] 13 new Maestro flows passing
+- [ ] 11 new Playwright specs passing
+- [ ] k6 performance tests within thresholds
+- [ ] Total: 25+ Maestro flows, 31+ Playwright specs
 
 ---
 
-**Related Documentation:**
-- [README](./README.md) - Phase overview
-- [Backend Implementation](./backend.md)
-- [Mobile Implementation](./mobile.md)
-- [Web Implementation](./web.md)
-- [iOS Platform](./ios.md)
-- [Testing Guide](./testing.md)
-- [Timeline](./timeline.md)
+## Coverage Targets
+
+| Component | Current (Post-P3) | Phase 4 Target | Actual |
+|-----------|-------------------|----------------|--------|
+| Backend stmts | >90% | >90% maintained | ⬜ |
+| Backend new modules | 0% | >80% | ⬜ |
+| Mobile stmts | >80% | >80% maintained | ⬜ |
+| Mobile new screens | 0% | >75% | ⬜ |
+| Web stmts | >90% | >90% maintained | ⬜ |
+| Web new pages | 0% | >75% | ⬜ |
+| Maestro flows | 15+ | 25+ (+13) | ⬜ |
+| Playwright specs | 20+ | 31+ (+11) | ⬜ |
+
+---
+
+## Key Dates
+
+| Milestone | Target Date | Actual Date | Status |
+|-----------|-------------|-------------|--------|
+| Specifications complete | 2026-03-13 | 2026-03-13 | ✅ |
+| Phase 3 complete | TBD | — | ⬜ |
+| 4-1 Reporting complete | TBD | — | ⬜ |
+| 4-2 Analytics complete | TBD | — | ⬜ |
+| 4-3 Assets complete | TBD | — | ⬜ |
+| 4-4 iOS complete | TBD | — | ⬜ |
+| 4-5 Staging deployed | TBD | — | ⬜ |
+| 4-5 Production deployed | TBD | — | ⬜ |
+| 4-6 Docs complete | TBD | — | ⬜ |
+| 4-7 Evaluation complete | TBD | — | ⬜ |
+| 4-8 E2E tests complete | TBD | — | ⬜ |
+
+---
+
+**Next Phase:** Phase 5 (if approved) — Weather, Leave Management, Incident Reporting, Messaging

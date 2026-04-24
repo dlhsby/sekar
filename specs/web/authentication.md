@@ -577,4 +577,26 @@ describe('LoginPage', () => {
 
 ---
 
-**Last Updated:** 2026-01-16
+---
+
+## Phase 2E: Planned Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/web.md`](../phases/phase-2-e-client-feedback-2/web.md)
+> **ADR:** [ADR-012: Phone Number Login](../architecture/decisions/ADR-012-phone-number-login.md)
+
+### Login Form Changes
+- Label: "Username" → "Username atau Nomor HP"
+- Field name: `username` → `identifier`
+- API call: `{ identifier, password }` (accepts phone number or username)
+- Phone format validation: `^(\+62|0)[0-9]{8,13}$` (for input hints, not blocking)
+
+### Type Changes
+```typescript
+// lib/types.ts
+export interface LoginRequest {
+  identifier: string; // was: username
+  password: string;
+}
+```
+
+**Last Updated:** 2026-03-10

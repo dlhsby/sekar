@@ -1203,10 +1203,98 @@ export const AUTH_CONSTANTS = {
 
 ---
 
-**Document Version:** 2.2.0
-**Last Updated:** 2026-03-06
-**Phase:** 2D - Monitoring scope authorization, boundaries, reassign permissions added
+---
+
+## Phase 2E: Planned Authentication Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+> **ADR:** [ADR-012: Phone Number Login](../architecture/decisions/ADR-012-phone-number-login.md)
+
+### Dual-Identifier Login
+
+The `LoginDto` changes from `{ username, password }` to `{ identifier, password }`. The `identifier` field accepts either a username or an Indonesian phone number (starting with `0` or `+62`).
+
+```typescript
+// LoginDto (Phase 2E)
+export class LoginDto {
+  @IsNotEmpty()
+  @IsString()
+  identifier: string; // username OR phone_number
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6)
+  password: string;
+}
+```
+
+**Auth service detection logic:**
+```typescript
+async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+  const { identifier, password } = loginDto;
+  const isPhone = /^(\+62|0)\d+$/.test(identifier);
+
+  let user: User | null;
+  if (isPhone) {
+    user = await this.usersService.findByPhoneNumber(identifier);
+  }
+  if (!user) {
+    user = await this.usersService.findByUsername(identifier);
+  }
+
+  if (!user || !user.is_active) {
+    throw new UnauthorizedException('Invalid credentials');
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+  // ... rest of login flow unchanged
+}
+```
+
+**Breaking change:** `username` field removed from LoginDto, replaced by `identifier`. Requires simultaneous frontend + backend deployment.
+
+### Updated Permission Matrix (Phase 2E)
+
+**Shifts Module (expanded CLOCKABLE_ROLES):**
+
+| Endpoint | satgas | linmas | korlap | admin_data | kepala_rayon | top_mgmt+ |
+|----------|--------|--------|--------|------------|--------------|-----------|
+| `POST /shifts/clock-in` | ✅ | ✅ | ✅ | **✅ (NEW)** | **✅ (NEW)** | ❌ |
+| `POST /shifts/clock-out` | ✅ | ✅ | ✅ | **✅ (NEW)** | **✅ (NEW)** | ❌ |
+
+**Monitoring Module (admin_data scope correction):**
+
+The Phase 2D matrix listed admin_data as "No monitoring access." This is **incorrect** — admin_data already has monitoring access via `MONITORING_RAYON` group since Phase 2C. Phase 2E confirms and documents this:
+
+| Endpoint | admin_data (corrected) |
+|----------|----------------------|
+| GET /monitoring/live-users | ✅ (own rayon) |
+| GET /monitoring/area/:id | ✅ (own rayon areas) |
+| GET /monitoring/rayon/:id | ✅ (own rayon) |
+
+**WebSocket Room (korlap multi-area):**
+- `korlap` → joins `area:{area_id}` rooms for **each assigned area** (was single room)
+
+### New Endpoints (Phase 2E)
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| POST | `/users/:id/profile-picture` | All (own), admin_system, superadmin | Upload profile picture |
+| GET | `/users/:id/areas` | admin_system, superadmin, korlap (own) | Get user area assignments |
+| POST | `/users/:id/areas` | admin_system, superadmin | Assign areas to user |
+| DELETE | `/users/:userId/areas/:areaId` | admin_system, superadmin | Remove area assignment |
+| POST | `/overtime/start` | CLOCKABLE_ROLES | Start overtime (clock-in) |
+| POST | `/overtime/:id/end` | CLOCKABLE_ROLES | End overtime (clock-out + activity) |
+| GET | `/overtime/active` | CLOCKABLE_ROLES | Get active overtime |
+| GET | `/audit/:entityType/:entityId` | Scoped by role hierarchy | Get entity audit trail |
+
+---
+
+**Document Version:** 2.3.0
+**Last Updated:** 2026-03-10
+**Phase:** 2E Planned - Dual-identifier login, expanded clockable roles, multi-area authorization
 **Related Documents:**
 - [contracts.md](./contracts.md) - API endpoint specifications
 - [error-handling.md](./error-handling.md) - Error handling patterns
 - [../architecture/security.md](../architecture/security.md) - Security architecture
+- [Phase 2E Backend](../phases/phase-2-e-client-feedback-2/backend.md) - Full Phase 2E backend specs

@@ -2581,3 +2581,36 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 ### Page Count Update
 - Total pages: 21 (was 20, +1: `/monitoring/config`)
 **Status:** Ready for Implementation
+
+### Phase 2E: Planned Page Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/web.md`](../phases/phase-2-e-client-feedback-2/web.md)
+
+#### Modified Pages
+
+| Page | Changes |
+|------|---------|
+| `/login` | `username` → `identifier` (accepts phone or username) |
+| `/users/[id]` | Profile picture upload, phone number field, multi-area assignment for korlap |
+| `/users/new` | Profile picture upload, phone number field |
+| `/monitoring` | Profile pics in markers, multi-area korlap filter, admin_data access (rayon-scoped) |
+| `/overtime` | Show overtime shift data (clock-in/out times, linked shift) |
+| `/tasks/[id]` | Add audit trail / revision history timeline |
+| `/activities/[id]` | Add audit trail section |
+
+#### New Components
+
+| Component | Description |
+|-----------|-------------|
+| `ProfilePictureUpload` | Drag-and-drop image upload with preview |
+| `MultiAreaSelect` | Multi-select for korlap area assignment |
+| `AuditTimeline` | Vertical timeline for audit log entries |
+
+#### Route Access Updates
+
+| Route | New Access (Phase 2E) |
+|-------|----------------------|
+| `/monitoring` | **+admin_data** (rayon-scoped, same as kepala_rayon) |
+
+#### Page Count (Phase 2E)
+- Total pages: 21 (no new pages, 7 modified)

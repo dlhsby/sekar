@@ -2651,7 +2651,38 @@ Add these to `be/package.json`:
 
 ---
 
-**Last Updated:** 2026-01-21
-**Migration Strategy Version:** 2.0
+---
+
+## Phase 2E Migration: Client Feedback II (Planned)
+
+> **Full SQL + Rollback:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md)
+
+### Migration: Phase2EClientFeedback
+
+**Single atomic migration** covering all Phase 2E schema changes:
+
+| Operation | Table | Change |
+|-----------|-------|--------|
+| ALTER | `users` | ADD `phone_number` VARCHAR(20), ADD `profile_picture_url` TEXT |
+| CREATE INDEX | `users` | UNIQUE partial index on `phone_number` WHERE NOT NULL |
+| CREATE TABLE | `user_areas` | Junction table (user_id, area_id, assignment_type, assigned_by) |
+| ALTER | `shifts` | ADD `is_overtime` BOOLEAN DEFAULT false |
+| ALTER | `overtimes` | ADD `shift_id` UUID FK→shifts |
+| ALTER | `user_tracking_status` | ADD `rayon_id` UUID FK→rayons |
+| CREATE TABLE | `audit_logs` | Audit trail (entity_type, entity_id, action, actor_id, old/new JSONB) |
+| CREATE INDEX | Multiple | 8 new indexes (see database.md for details) |
+
+**Rollback:** Full reverse SQL provided in database.md (DROP tables + columns).
+
+**Notes:**
+- Uses `CREATE INDEX CONCURRENTLY` for indexes on existing large tables (overtimes, user_tracking_status)
+- `audit_logs.actor_id` uses `ON DELETE RESTRICT` (immutable audit records)
+- `user_areas` has composite unique constraint `(user_id, area_id, assignment_type)`
+- OvertimeStatus enum needs `IN_PROGRESS` value added
+
+---
+
+**Last Updated:** 2026-03-10
+**Migration Strategy Version:** 2.1
 **TypeORM Version:** 0.3.x
-**Status:** Phase 1 Migrations Complete | Phases 2-6 Fully Specified
+**Status:** Phase 1 Migrations Complete | Phase 2D Deployed | Phase 2E Planned

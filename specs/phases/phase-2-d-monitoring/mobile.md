@@ -1,11 +1,11 @@
 # Phase 2D: Mobile Requirements
 
-**Last Updated:** 2026-03-06
-**Status:** ✅ COMPLETE (Implementation + Review)
+**Last Updated:** 2026-03-08
+**Status:** ✅ COMPLETE (Implementation + Review + Backend Alignment)
 **Platform:** React Native 0.83.1, TypeScript, Redux Toolkit, react-native-maps
 **Related ADR:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md)
 **See also:** [Backend Requirements](./backend.md), [UI/UX Design](./ui-ux.md), [README](./README.md)
-**Tests:** 3,493 passing (142 suites, 0 failures)
+**Tests:** 3,669 passing (149 suites, 0 failures)
 
 ---
 
@@ -17,7 +17,7 @@
 | `UserMarker.tsx` | Circle marker with color based on online/offline; no role icon differentiation |
 | `mapUtils.ts` | `calculateUserStatus()` returns 3 statuses; `getStatusColor()` maps to green/red |
 | `monitoringSlice.ts` | Stores `liveUsers`, `areaStats`, `cityStats`; polling-based refresh |
-| `LocationTrackerService.ts` | Background GPS upload every 60s; batch upload support |
+| `LocationTrackerService.ts` | GPS captures every 10-60s; batch size=2 → uploads every 2 pings (max 10-60s delay); first ping uploads immediately on clock-in |
 | `WebSocketService.ts` | Listens to `user:location`, `user:clock-in`, `user:clock-out` events |
 | Navigation | Monitoring tab already configured for korlap, kepala_rayon, top_management, admin_system, superadmin |
 
@@ -385,7 +385,7 @@ Modal for reassigning a worker from one area to another.
 4. User selects target area from the filtered list (NBSelect component)
 5. Optionally enters a reason text (NBTextInput, max 200 chars)
 6. On "Konfirmasi Reassign" tap, call `POST /monitoring/reassign` with payload:
-   `{ user_id, source_area_id, target_area_id, reason? }`
+   `{ user_id, target_area_id, shift_definition_id?, effective_date?, end_current_schedule?, reason? }`
 7. Backend validates permissions and emits `USER_REASSIGNED` WebSocket event
 8. On success: dismiss modal, show toast "Berhasil reassign [name] ke [area]"
 9. WebSocket event triggers updates in both source and destination area stats
@@ -841,7 +841,13 @@ WebSocket 'user:entered-area' event received
 
 ### H4. Dual Data Source Pattern
 
-Mobile monitoring combines two data sources to balance reliability with real-time responsiveness:
+Mobile monitoring combines two data sources to balance reliability with real-time responsiveness.
+
+**Location upload flow (fixed Mar 22, 2026):**
+- `LOCATION_BATCH_SIZE=2` — uploads every 2 pings (max 10-60s delay, down from 3-20 min at batch=20)
+- First ping after clock-in uploads immediately (firstPingUploaded flag)
+- `useHomeLocation` subscribes to `locationTracker.on('locationUpdate')` for automatic card updates (no manual refresh needed)
+- Configurable via `LOCATION_BATCH_UPLOAD_SIZE` env var
 
 **1. TanStack Query hooks (baseline data):**
 - `useMonitoringLiveUsers()` polls `GET /monitoring/live-users` every 30 seconds
@@ -1031,6 +1037,95 @@ export interface UserAreaEvent {
   longitude: number;
   timestamp: string;
 }
+
+// ─── WebSocket Event Types (Backend-aligned, 2D-12) ─────────────
+
+export interface UserReassignedEvent {
+  user_id: string;
+  user_name: string;
+  role: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string;
+  new_area_name: string;
+  rayon_id: string | null;
+  timestamp: string;
+}
+
+export interface AreaStaffingChangedEvent {
+  area_id: string;
+  rayon_id: string | null;
+  active_count: number;
+  required_count: number;
+  is_met: boolean;           // true = staffing requirement met
+  timestamp: string;
+}
+
+// ─── Boundary Types (Backend-aligned, 2D-12) ────────────────────
+
+export interface RoleStaffingItem {
+  role: string;
+  required: number;
+  active: number;
+  // delta computed client-side: active - required
+}
+
+export interface AreaBoundary {
+  id: string;
+  name: string;
+  center_lat: number;
+  center_lng: number;
+  boundary_polygon: [number, number][] | null;
+  radius_meters: number;
+  rayon_id: string;
+  rayon_name: string;
+  assigned_count: number;
+  staffing: RoleStaffingItem[];
+  is_understaffed: boolean;
+  total_active: number;
+  total_required: number;
+}
+
+export interface RayonBoundary {
+  id: string;
+  name: string;
+  code: string;
+  center_lat: number;
+  center_lng: number;
+  boundary_polygon: [number, number][] | null;
+  areas: AreaBoundary[];
+  area_count: number;
+  is_understaffed: boolean;
+  understaffed_area_count: number;
+}
+
+export interface BoundariesResponse {
+  rayons: RayonBoundary[];
+  generated_at: string;
+}
+
+// ─── Reassign Types (Backend-aligned, 2D-12) ────────────────────
+
+export interface ReassignWorkerPayload {
+  user_id: string;
+  target_area_id: string;
+  shift_definition_id?: string;
+  effective_date?: string;
+  end_current_schedule?: boolean;
+  reason?: string;
+}
+
+export interface ReassignWorkerResponse {
+  user_id: string;
+  user_name: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string;
+  new_area_name: string;
+  new_schedule_id: string | null;
+  effective_date: string;
+  reassigned_at: string;
+}
 ```
 
 ---
@@ -1218,37 +1313,54 @@ fe/mobile/src/
 - [x] Extract monitoring role constants to shared `roles.ts`
 - [x] Consolidate duplicate `LiveUsersResponse` type
 
-### Phase 2D-10: Gap Fixes (Mobile) — NOT STARTED
+### Phase 2D-10: Gap Fixes (Mobile) — ✅ COMPLETE (March 7, 2026)
 
-- [ ] Update marker labels to "Role - Name" format with zoom-level behavior
+- [x] Update marker labels to "Role - Name" format with zoom-level behavior
   - File: `fe/mobile/src/components/monitoring/UserMarker.tsx` (section B3)
   - Use `getRoleAbbreviation()` from `fe/mobile/src/utils/mapUtils.ts`
-- [ ] Add rayon + area polygon rendering with center markers
+- [x] Add rayon + area polygon rendering with center markers
   - File: `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx` (section A7)
   - API: `GET /monitoring/boundaries` — returns all rayon/area polygons in one call
-- [ ] Add map auto-focus on filter selection
-  - File: `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx` (section E6)
+- [x] Add map auto-focus on filter selection
+  - File: `fe/mobile/src/hooks/useMapAutoFocus.ts` (section E6)
   - Uses `mapRef.current.fitToCoordinates()` / `animateToRegion()`
-- [ ] Enhance LocationTrail with clickable points, first/last markers, hide others, date picker, shift filter
+- [x] Enhance LocationTrail with clickable points, first/last markers, hide others, date picker, shift filter
   - File: `fe/mobile/src/components/monitoring/LocationTrail.tsx` (sections D2-D7)
   - API: `GET /monitoring/users/:userId/location-history?date=YYYY-MM-DD&shift_id=X`
-- [ ] Refactor MonitoringFilterModal to use NB components (NBSelect, bottom-sheet pattern)
+- [x] Refactor MonitoringFilterModal to use NB components (NBSelect, bottom-sheet pattern)
   - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E1)
   - Reference: `fe/mobile/src/components/modals/ActivityFilterModal.tsx`
-- [ ] Make staffing summary always visible in filter modal
+- [x] Make staffing summary always visible in filter modal
   - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
   - API: `GET /monitoring/staffing-summary?rayon_id=X&area_id=Y`
-- [ ] Add ReassignWorkerModal component
+- [x] Add ReassignWorkerModal component
   - File: `fe/mobile/src/components/modals/ReassignWorkerModal.tsx` (section C2)
-  - API: `POST /monitoring/reassign` with `{ user_id, source_area_id, target_area_id, reason? }`
+  - API: `POST /monitoring/reassign` with `{ user_id, target_area_id, shift_definition_id?, effective_date?, end_current_schedule?, reason? }`
   - WebSocket event: `USER_REASSIGNED`
-- [ ] Add day-type badge to staffing display
+- [x] Add day-type badge to staffing display
   - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
   - Uses `current_day_type_label` from staffing-summary response
 - [ ] Add LocationStatusCard to HomeScreen
   - Files: `fe/mobile/src/components/home/LocationStatusCard.tsx`, `fe/mobile/src/hooks/useHomeLocation.ts` (section J2)
   - Integrates with `LocationTrackerService.captureNow()` + `forceUpload()`
 
+### Phase 2D-12: Backend Alignment Fix (Mobile) — ✅ COMPLETE (March 8, 2026)
+
+Fixed field name and type contract mismatches between mobile types and actual backend DTOs/WebSocket events.
+
+- [x] Fix `UserReassignedEvent`: rename `source_area_id/target_area_id` → `previous_area_id/new_area_id`, remove phantom `reassigned_by`
+- [x] Fix `AreaStaffingChangedEvent`: remove phantom `area_name`, change `is_understaffed` → `is_met` (inverted semantics)
+- [x] Fix `ReassignWorkerResponse`: align with backend DTO (9 fields replacing 5)
+- [x] Fix `RoleStaffingItem`: remove `delta` field (computed client-side)
+- [x] Fix `AreaBoundary`: add `rayon_id`, `rayon_name`, `assigned_count`
+- [x] Fix `RayonBoundary`: add `area_count`, `is_understaffed`, rename `total_understaffed_areas` → `understaffed_area_count`
+- [x] Fix `ReassignWorkerPayload`: add optional `shift_definition_id`, `effective_date`, `end_current_schedule`
+- [x] Fix `MapDashboardScreen` WS handler: `data.target_area_id` → `data.new_area_id`
+- [x] Fix `BoundaryOverlay`: rename `total_understaffed_areas` → `understaffed_area_count`
+- [x] Fix `BoundaryDetailModal`: rename field refs + compute `delta` client-side
+- [x] Update all test fixtures (9 test files) to match new field names
+- [x] All 149 suites, 3,669 tests passing with zero regressions
+
 ---
 
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-03-08

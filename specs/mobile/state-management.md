@@ -779,4 +779,28 @@ type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offl
 - `useSelectedUser()` — Selected user + day summary
 - `useLocationHistory(userId, date)` — Location trail data
 
-**Last Updated:** 2026-03-03 | **Status:** Active - Phase 2D
+---
+
+## Phase 2E: Planned State Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/mobile.md`](../phases/phase-2-e-client-feedback-2/mobile.md)
+
+### Auth Changes
+- `LoginRequest` type: `username` → `identifier` (phone or username)
+- `authApi.login()` sends `{ identifier, password }` — no slice change needed (plain `createSlice`)
+
+### Overtime Slice Enhancements
+- New API functions in `overtimeApi.ts`: `startOvertime()`, `endOvertime()`, `getActiveOvertime()`
+- New reducers in `overtimeSlice.ts`: `setActiveOvertime`, `clearActiveOvertime`
+- Pattern: plain `createSlice` with synchronous reducers (matches existing codebase)
+
+### New: Audit API
+- New file `auditApi.ts` with `getAuditTrail(entityType, entityId)` — plain async function
+- No Redux slice needed (fetched on-demand in components via `useState`/`useEffect`)
+
+### User Model Changes
+- `User` type adds: `phone_number`, `profile_picture_url`, `user_areas[]`
+- `Shift` type adds: `is_overtime` boolean
+- `Overtime` type adds: `shift_id`, `shift?` relation
+
+**Last Updated:** 2026-03-10 | **Status:** Active - Phase 2E Planned

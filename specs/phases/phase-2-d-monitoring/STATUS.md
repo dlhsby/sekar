@@ -1,9 +1,9 @@
 # Phase 2D: Real-Time Monitoring - Implementation Status
 
-**Status:** ✅ COMPLETE (pending merge & deploy)
-**Last Updated:** March 8, 2026
-**Overall Progress:** 99% (2D-1 → 2D-10, 2D-12, 2D-13 complete; 2D-11 not started)
-**Branch:** `f/phase-2-d-monitoring`
+**Status:** ✅ COMPLETE & DEPLOYED (March 7, 2026)
+**Last Updated:** March 14, 2026
+**Overall Progress:** 100% (All sub-phases complete including 2D-11)
+**Branch:** main
 **Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), ADR-011 (new)
 
 ---
@@ -213,14 +213,14 @@
 | Rewrite monitoring page tests | ✅ Done | 21 tests for new split layout |
 | TypeScript clean compile | ✅ Done | `tsc --noEmit` passes with 0 errors |
 
-### Sub-Phase 2D-11: Home Screen Location Card - NOT STARTED
+### Sub-Phase 2D-11: Home Screen Location Card ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Create `useHomeLocation` hook | Not Started | Hook to fetch current user location status for home screen |
-| Create `LocationStatusCard` component | Not Started | Card showing current location, status, and area info |
-| HomeScreen layout integration | Not Started | Integrate LocationStatusCard into worker/supervisor home screens |
-| Specs update (mobile.md, screens.md) | Not Started | Update mobile specs to document new home screen card |
+| Create `useHomeLocation` hook | ✅ Done | `hooks/useHomeLocation.ts` — fetches current user location status |
+| Create `LocationStatusCard` component | ✅ Done | `components/home/LocationStatusCard.tsx` (251L) — shows location, status, area info |
+| HomeScreen layout integration | ✅ Done | Integrated into `HomeScreen.tsx` for field workers |
+| Specs update (mobile.md, screens.md) | ✅ Done | Mobile specs updated |
 
 ---
 
@@ -332,4 +332,4 @@ npm run test:e2e                  # All Playwright tests
 
 ---
 
-**Last Updated:** 2026-03-08
+**Last Updated:** 2026-03-14

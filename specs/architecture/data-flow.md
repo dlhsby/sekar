@@ -1455,7 +1455,70 @@ Client: Wait until reset time
 
 ---
 
+---
+
+## Phase 2E: Planned Data Flow Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+
+### New Flow: Phone Number Login
+
+```
+Client → POST /auth/login { identifier, password }
+       → AuthService detects phone vs username
+       → if phone: findByPhoneNumber(identifier)
+       → if username (or phone not found): findByUsername(identifier)
+       → bcrypt.compare(password, user.password_hash)
+       → Generate JWT → Return token
+```
+
+### New Flow: Multi-Area Boundary Check
+
+```
+LocationService.onLocationPing(userId, lat, lng)
+  → UserAreasService.getEffectiveAreas(userId)
+    → permanent areas (from user_areas)
+    → task-based areas (from active tasks)
+  → For each area: GpsUtil.isWithinBoundary(lat, lng, area)
+  → isWithinAnyArea = results.some(r => r.inside)
+  → StatusCalculatorService.calculateStatus(isWithinAnyArea, ...)
+```
+
+### New Flow: Overtime Clock-In/Out
+
+```
+POST /overtime/start { gps, selfie?, reason }
+  → Validate no active normal shift
+  → Create Shift(is_overtime: true)
+  → Create Overtime(shift_id, status: in_progress)
+  → StatusCalculatorService.onClockIn(...)
+  → Return overtime + shift
+
+POST /overtime/:id/end { gps, selfie?, activity }
+  → Validate overtime is in_progress
+  → Create Activity (mandatory)
+  → ShiftsService.clockOut(shift_id)
+  → Update Overtime(status: pending)
+  → Return overtime
+```
+
+### New Flow: Audit Trail Logging
+
+```
+TasksService.requestRevision(taskId, reason, actor)
+  → Update task status
+  → AuditLogService.log({
+      entity_type: 'task', entity_id: taskId,
+      action: 'revision_requested', actor_id: actor.id,
+      old_value: { status: 'in_progress' },
+      new_value: { status: 'revision_needed', revision_reason: reason }
+    })
+  → Audit log created (append-only, immutable)
+```
+
+---
+
 **Document Owner:** Software Architect
-**Last Updated:** 2026-01-16
-**Status:** Active
+**Last Updated:** 2026-03-10
+**Status:** Active — Phase 2E Planned
 **Related Docs:** [`system-overview.md`](./system-overview.md), [`security.md`](./security.md), [`../api/contracts.md`](../api/contracts.md)

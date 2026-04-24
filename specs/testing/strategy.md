@@ -662,10 +662,34 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 ---
 
-*Last Updated: March 6, 2026*
+---
+
+## Phase 2E: Planned Test Scenarios (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/testing.md`](../phases/phase-2-e-client-feedback-2/testing.md)
+
+### New Test Areas
+
+| Area | Tests | Priority |
+|------|-------|----------|
+| Phone number login (dual-identifier) | 8 unit + 3 E2E | CRITICAL |
+| Profile picture upload (S3 integration) | 5 unit | HIGH |
+| Multi-area assignment (user_areas CRUD) | 10 unit + 2 integration | CRITICAL |
+| Multi-area boundary checking | 6 unit | CRITICAL |
+| Admin_data/kepala_rayon clock-in (rayon boundary) | 4 unit | HIGH |
+| Overtime clock-in/out flow | 10 unit + 1 integration | CRITICAL |
+| Optional selfie (shift + overtime) | 3 unit | MEDIUM |
+| Audit trail (CRUD + integration) | 8 unit | HIGH |
+| Rayon null boundary_polygon edge case | 1 unit | HIGH |
+
+**Estimated new tests:** ~60 backend unit + 20 mobile component + 5 web E2E = ~85 tests
+
+---
+
+*Last Updated: March 10, 2026*
 *Current Test Status:*
-- **Backend**: 1,095 tests passing, 92.15% stmt coverage, 80.64% branch coverage
-- **Mobile**: 3,493 tests passing, 80.31%+ overall coverage
+- **Backend**: 1,204 tests passing, 94.55% stmt coverage, 83.65% branch coverage
+- **Mobile**: 3,669 tests passing, 80.31%+ overall coverage
 - **Web**: 21 pages, full Mapbox GL + monitoring components
 
 *Project: SEKAR - Worker Tracking System*

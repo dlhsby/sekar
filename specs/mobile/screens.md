@@ -2691,3 +2691,45 @@ fontSize: {
 #### Updated Screen Count
 - Total screens: 17 (no new screens, 1 major rewrite)
 - New sub-components: 5 (bottom sheet navigation pattern)
+
+### Phase 2E: Planned Screen Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/mobile.md`](../phases/phase-2-e-client-feedback-2/mobile.md)
+
+#### New Screens (2)
+
+| ID | Screen | Description | Roles |
+|----|--------|-------------|-------|
+| OT-CI | OvertimeClockInScreen | Overtime clock-in with GPS + optional selfie + reason | CLOCKABLE_ROLES |
+| OT-CO | OvertimeClockOutScreen | Overtime clock-out with mandatory activity submission | CLOCKABLE_ROLES |
+
+#### Modified Screens (7)
+
+| Screen | Changes |
+|--------|---------|
+| LoginScreen | `username` → `identifier` input; dynamic keyboard (phone vs text) |
+| ProfileScreen | Add profile picture upload/change section |
+| ClockInOutScreen | Make selfie optional (add "Skip" button) |
+| MapDashboardScreen | Profile pictures in markers; multi-area korlap filter |
+| MonitoringFilterModal | Multi-select areas for korlap; admin_data rayon-scoped filter |
+| TaskDetailScreen | Add audit trail / revision history timeline |
+| ActivityDetailScreen | Add audit trail section |
+
+#### New Components (1)
+
+| Component | Description |
+|-----------|-------------|
+| AuditTrailView | Vertical timeline showing entity change history (revision, approval, status changes) |
+
+#### Navigation Changes
+
+| Role | Change |
+|------|--------|
+| admin_data | **+Home tab** (now clockable); Overtime tab → clock-in/out flow |
+| kepala_rayon | **+Home tab** (now clockable); Overtime tab → clock-in/out flow |
+| satgas, linmas, korlap | Overtime tab → clock-in/out flow (replaces submission) |
+
+#### Updated Screen Count (Phase 2E)
+- Total screens: 19 (+2: OvertimeClockInScreen, OvertimeClockOutScreen)
+- Modified: 7 existing screens
+- New components: 1 (AuditTrailView)

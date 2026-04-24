@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-**Last Updated:** March 7, 2026
-**Status:** Phase 2D Complete ✅ | Deployed to Production | Phase 3 Next
+**Last Updated:** April 24, 2026
+**Status:** Phase 2E Complete ✅ + Monitoring Map Bugfixes ✅ | Phase 3 Next + Trees/Plants Management Planning
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -38,34 +38,61 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Quick Start Commands
 
-### Backend
+### Fresh Start (from clean checkout)
 ```bash
+# 1. Start infrastructure (PostgreSQL, Adminer, LocalStack S3)
+./infra/start.sh
+
+# 2. Backend setup
 cd be
 npm install
-npm run start:dev          # http://localhost:3000
-npm test                   # Run tests
-npm run test:cov           # With coverage (>80% required)
+cp .env.example .env       # Edit database credentials if needed
+npm run migration:run      # Run all migrations (creates tables)
 npm run db:seed            # Seed all data (Phase 1 + Phase 2, wipes first)
-```
+npm run start:dev          # http://localhost:3000
 
-**Test Users:** All users use `password123` — e.g. `admin/password123`, `korlap1/password123`, `satgas1/password123`
-**API Docs:** http://localhost:3000/api/docs
-
-### Mobile
-```bash
+# 3. Mobile setup (separate terminal)
 cd fe/mobile
 npm install
 # Edit .env: API_BASE_URL=http://10.0.2.2:3000 (emulator) or http://<YOUR_IP>:3000 (device)
 npm run android            # Android (first connected device)
 npm run android:all        # Android (all connected devices simultaneously)
 npm run ios                # iOS (macOS only)
+
+# 4. Web setup (separate terminal)
+cd fe/web
+npm install
+cp .env.local.example .env.local  # Edit Mapbox token if needed
+npm run dev                # http://localhost:3001
+```
+
+### Backend Commands
+```bash
+cd be
+npm run start:dev          # Start dev server (http://localhost:3000)
+npm run migration:run      # Run pending migrations
+npm run migration:revert   # Revert last migration
+npm run db:seed            # Seed all data (destructive — wipes first)
+npm test                   # Run tests
+npm run test:cov           # With coverage (>80% required)
+```
+
+**Test Users:** All users use `password123` — e.g. `admin/password123`, `korlap1/password123`, `satgas1/password123`
+**Phone Login:** Users can also login with phone number as identifier — e.g. `081200000006/password123` (admin)
+**API Docs:** http://localhost:3000/api/docs
+
+### Mobile Commands
+```bash
+cd fe/mobile
+npm run android            # Android (first connected device)
+npm run android:all        # Android (all connected devices simultaneously)
+npm run ios                # iOS (macOS only)
 npm test                   # Run tests
 ```
 
-### Web
+### Web Commands
 ```bash
 cd fe/web
-npm install
 npm run dev                # http://localhost:3001
 npm run test:e2e           # Playwright E2E tests
 npm run test:e2e:ui        # With UI
@@ -259,12 +286,12 @@ API_VERSION=v1
 - **Soft Delete:** Users use `deleted_at` timestamp
 
 ### Dependency Management
-- **Last Update:** February 5, 2026 (All components updated)
-- **Backend:** TypeScript 5.9, ESLint 10, Jest 30, NestJS 11.1.13
-- **Web:** Next.js 16.1.6, React 19.2.3, Playwright 1.58.1
-- **Mobile:** React Native 0.83.1, React 19.2.4, React Navigation 7.x
+- **Last Update:** March 13, 2026 (All components updated to latest semver-compatible)
+- **Backend:** TypeScript 5.9, ESLint 10, Jest 30.3, NestJS 11.1.16, AWS SDK 3.1008
+- **Web:** Next.js 16.1.6, React 19.2.3, Playwright 1.58.2, Tailwind 4.2.1, Mapbox GL 3.20
+- **Mobile:** React Native 0.83.4, React 19.2.4, Jest 30.3, Firebase 23.8.8
 - **Dependabot:** Enabled (patch-only updates weekly, prevents breaking changes)
-- **Security:** 0 vulnerabilities (web), nested dev deps only (backend/mobile)
+- **Security:** 0 vulnerabilities (web, mobile), 8 moderate nested dev deps (backend — upstream NestJS/Angular)
 - **See:** `specs/architecture/security.md` (DEP-SEC section) for vulnerability assessment
 - **See:** `specs/mobile/dependency-updates.md` for React Native 0.83 upgrade + policy
 
@@ -301,14 +328,30 @@ API_VERSION=v1
 - 3 new services: DayTypeService, RayonBoundaryService, MonitoringReassignService
 - Web: full Mapbox GL map with markers/polygons, filter sidebar, worker detail panel, staffing summary
 - Mobile: enhanced MapDashboard, UserDetailSheet, four-status marker colors, location history
-- Backend: 122 endpoints, 1,204 tests (94.55% line coverage); Mobile: 3,493 tests
+- Backend: 122 endpoints, 1,204 tests (94.55% line coverage); Mobile: 3,669 tests
 - 2 migrations: Phase2DMonitoringSchema + Phase2DGapFixes (rayon boundary columns)
 - Deployed: api.sekar.wahyutrip.com (Mar 7, 2026)
 
-**Phase 3 Polishing & E2E Testing** - NOT STARTED
+**Phase 2E Client Feedback II** ✅ Complete (Mar 11, 2026)
+- Phone number login (identifier-based auth, ADR-012)
+- Profile picture upload (S3), multi-area korlap assignment (ADR-013)
+- Overtime clock-in/clock-out redesign (ADR-014), optional selfie
+- Admin_data + kepala_rayon clockable, audit trail module (ADR-015)
+- Backend: 18 modules, ~130 endpoints, 1,204 tests; 2 new tables (user_areas, audit_logs)
+- Mobile + Web: identifier login, types updated, optional selfie
+
+**Monitoring Map Bugfixes** ✅ Fixed (Apr 24, 2026)
+- Marker sizing: reduced 40→32px, LabelMode enum replaces raw `zoomLevel` float
+- `tracksViewChanges={false}` + key includes `labelMode` → bitmap only redraws on threshold crossing
+- LocationTrail: `requestAnimationFrame` mount guard prevents `addViewAt` bridge crash
+- `useFocusEffect` replaces one-shot `useEffect` for boundary fetch; `boundaryKey` forces Polygon remount on tab re-focus
+- Removed `animateToRegion` from `handleMarkerPress` to eliminate race with bottom-sheet `snapToIndex`
+
+**Phase 3 Polishing & E2E Testing** - IN PLANNING
 - E2E testing (Detox mobile, Playwright web)
 - Manual testing checklist (35 screens/pages)
 - UI/UX polish, performance optimization
+- Trees & Plants Management feature (new — planning session scheduled)
 
 **Phase 4 Advanced Features** - NOT STARTED
 - Analytics & Reporting, Asset Management, iOS Platform
@@ -353,7 +396,8 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **Phase 2** | `specs/phases/phase-2-enhanced/STATUS.md` | Implementation tracking |
 | **Phase 3** | `specs/phases/phase-3-polishing/STATUS.md` | Polishing & E2E Testing |
 | **Phase 2D** | `specs/phases/phase-2-d-monitoring/STATUS.md` | Monitoring implementation |
-| **API Docs** | `specs/api/contracts.md` | All 122 endpoints |
+| **Phase 2E** | `specs/phases/phase-2-e-client-feedback-2/STATUS.md` | Client Feedback II |
+| **API Docs** | `specs/api/contracts.md` | All ~130 endpoints |
 | **Errors** | `specs/api/error-handling.md` | 31 error codes |
 | **Security** | `specs/architecture/security.md` | Security architecture + dependency audit |
 | **Mobile Updates** | `specs/mobile/dependency-updates.md` | React Native 0.83.1 upgrade + policy |
@@ -361,7 +405,7 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **WSL2** | `specs/deployment/wsl2-network-setup.md` | Mobile testing network |
 | **Infrastructure** | `specs/deployment/infrastructure-setup.md` | Docker services |
 | **E2E Testing** | `specs/testing/e2e-testing.md` | Playwright guide |
-| **Architecture** | `specs/architecture/decisions/` | 9 ADRs |
+| **Architecture** | `specs/architecture/decisions/` | 15 ADRs |
 | **All Specs** | `specs/README.md` | Complete navigation |
 
 ---
@@ -400,19 +444,19 @@ docker-compose down -v                      # Clean restart (deletes data!)
 
 ## Current Status
 
-**Phase 2D Complete + Deployed** ✅ (Mar 7, 2026)
+**Phase 2E Complete + Monitoring Map Bugfixes** ✅ (Apr 24, 2026)
 
 | Component | Metrics |
 |-----------|---------|
-| **Backend** | 16 modules, 122 endpoints, 1,204 tests (94.55% line, 83.65% branch) |
-| **Mobile** | 21 screens, 3,493 tests passing, 80.31%+ coverage |
-| **Web** | 21 pages (+1 config), full Mapbox GL + monitoring components |
-| **Database** | 20 tables (+2: user_tracking_status, monitoring_configs), 8-role system, 5 migrations |
+| **Backend** | 18 modules, ~130 endpoints, 1,264 tests (94.51% stmts, 83.49% branches) |
+| **Mobile** | 22 screens (+EditProfileScreen), 3,669+ tests passing, 80.31%+ coverage |
+| **Web** | 21 pages (+1 config), identifier login, auth tests updated |
+| **Database** | 22 tables, 8-role system, 8 migrations (incl. drop-phone, fix-indexes+CHECK) |
 | **DevOps** | 3 CI/CD pipelines, ESLint 10, Phase 2D deployed to production |
-| **UI/UX** | Neo Brutalism 2.0, five-status monitoring (active/inactive/outside_area/missing/offline) |
+| **UI/UX** | Neo Brutalism 2.0, five-status monitoring, optional selfie, overtime clock-in/out |
 
-**Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com
+**Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com (Phase 2D; 2E pending deploy)
 
-**Next:** Phase 3 Polishing & E2E Testing
+**Next:** Phase 3 Polishing & Trees/Plants Management feature planning
 
 **Deployment Guide:** `specs/deployment/phase-2-deployment.md`

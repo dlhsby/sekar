@@ -12,9 +12,10 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 | 2A | [Enhanced Features](./phase-2-a-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
 | 2B | [UI/UX Revamp](./phase-2-b-ui-ux-revamp/) | 3-4 weeks | ✅ COMPLETE | Neo Brutalism 2.0, Design Tokens |
 | **2C** | **[Client Feedback](./phase-2-c-client-feedback/)** | **4-6 weeks** | **✅ COMPLETE** | **Role overhaul, Overtime, Aktivitas** |
-| **2D** | **[Real-Time Monitoring](./phase-2-d-monitoring/)** | **3-4 weeks** | **🟡 PLANNING** | **Four-status tracking, Mapbox, location history** |
-| 3 | [Polishing & E2E Testing](./phase-3-polishing/) | 2-3 weeks | Not Started | Manual Testing, E2E, Polish |
-| 4 | [Finishing & Advanced Features](./phase-4-finishing/) | 6-8 weeks | Not Started | Analytics, Assets, iOS |
+| **2D** | **[Real-Time Monitoring](./phase-2-d-monitoring/)** | **1 week** | **✅ COMPLETE & DEPLOYED** | **Five-status tracking, Mapbox, location history** |
+| **2E** | **[Client Feedback II](./phase-2-e-client-feedback-2/)** | **1 day** | **✅ COMPLETE** | **Phone login, multi-area, overtime redesign, audit trail** |
+| **3** | **[Production Readiness & Polishing](./phase-3-polishing/)** | **6-8 weeks** | **← CURRENT** | **Redis, FCM, export, E2E, security, UI polish** |
+| 4 | [Finishing, Release & iOS](./phase-4-finishing/) | 7-9 weeks | Specs Complete | Reporting, Analytics, Assets, iOS, Release, Docs |
 
 **Total Duration:** ~21-27 weeks
 
@@ -154,20 +155,15 @@ Breaking changes based on client feedback from February 10, 2026 meeting.
 
 ## Phase 2D: Real-Time Monitoring
 
-**Duration:** 3-4 weeks | **Status:** 🟡 PLANNING (Mar 2026)
+**Duration:** 1 week | **Status:** ✅ COMPLETE & DEPLOYED (Mar 7, 2026)
 
-Comprehensive reimplementation of the monitoring system with five-status tracking (four visible on map), full Mapbox integration, and location history playback.
+Comprehensive reimplementation of the monitoring system with five-status tracking, full Mapbox integration, and location history playback.
 
-### Key Deliverables
-- Four-status tracking system (active, idle, outside_area, missing) with materialized `user_tracking_status` table
-- Full Mapbox GL JS integration on web (replacing placeholder)
-- Mobile map enhancement: polygon rendering, role-specific markers, name labels
-- Location history playback with GPS trail visualization
-- User detail modal/panel with WhatsApp deeplinks
-- Configurable monitoring thresholds (admin UI)
-- Filter system with per-role staffing summary
-- WebSocket fixes (legacy PascalCase role checks) and new events
-- Area boundary management with polygon editor
+**Verified Metrics:**
+- Backend: 122 endpoints, 1,204 tests (94.55% coverage)
+- Mobile: 3,669 tests, enhanced MapDashboard
+- Web: Full Mapbox GL map, filter sidebar, worker detail panel
+- 2 migrations, 5 new WebSocket events, 3 new services
 
 ### Documents
 - [Overview](./phase-2-d-monitoring/README.md)
@@ -181,57 +177,97 @@ Comprehensive reimplementation of the monitoring system with five-status trackin
 
 ---
 
-## Phase 3: Polishing & E2E Testing
+## Phase 2E: Client Feedback II
 
-**Duration:** 2-3 weeks | **Status:** Not Started
+**Duration:** 1 day | **Status:** ✅ COMPLETE (Mar 11, 2026)
 
-Comprehensive testing, UI polish, and production readiness verification.
+Breaking changes from March 10, 2026 client meeting: phone login, multi-area korlap, overtime redesign, audit trail.
+
+**Verified Metrics:**
+- Backend: 18 modules, ~130 endpoints, 1,264 tests (94.51% stmts)
+- 2 new tables (user_areas, audit_logs), 4 new ADRs (012-015)
+- Mobile + Web: identifier login, optional selfie, overtime API
+
+### Documents
+- [Overview](./phase-2-e-client-feedback-2/README.md)
+- [Status](./phase-2-e-client-feedback-2/STATUS.md)
+- [Database Guide](./phase-2-e-client-feedback-2/database.md)
+- [Backend Guide](./phase-2-e-client-feedback-2/backend.md)
+- [Mobile Guide](./phase-2-e-client-feedback-2/mobile.md)
+- [Web Guide](./phase-2-e-client-feedback-2/web.md)
+- [Testing](./phase-2-e-client-feedback-2/testing.md)
+
+---
+
+## Phase 3: Production Readiness & Polishing
+
+**Duration:** 6-8 weeks (44-57 dev-days) | **Status:** ← CURRENT
+
+Production hardening with 19 requirements across 10 sub-phases: infrastructure (Redis, Sentry, logging), offline sync, FCM activation, export/import, security, refactoring, UI/UX polish, E2E testing, documentation sync.
 
 ### Key Deliverables
-- Detox E2E tests for mobile (20+ critical flows)
-- Playwright E2E tests for web (15+ flows)
-- Complete manual testing checklist
-- UI/UX polish and consistency audit
-- Performance optimization
-- Documentation finalization
+- Redis adoption for caching, WebSocket scaling, JWT blacklist (ADR-016)
+- FCM activation with 8 trigger points, notification preferences
+- Export module (CSV + Excel via exceljs for 7 entity types, ADR-018)
+- Maestro mobile E2E (15+ flows, ADR-017), Playwright web E2E (20+ specs)
+- JWT refresh token rotation, per-endpoint rate limiting, Helmet.js
+- Offline sync completion with two-tier connectivity model (ADR-019)
+- ProGuard, deep linking, PWA, SEO, NB compliance audit
 
 ### Documents
 - [Overview](./phase-3-polishing/README.md)
 - [Status](./phase-3-polishing/STATUS.md)
-- [E2E Testing](./phase-3-polishing/e2e-testing.md)
+- [Backend Guide](./phase-3-polishing/backend.md)
+- [Mobile Guide](./phase-3-polishing/mobile.md)
+- [Web Guide](./phase-3-polishing/web.md)
+- [Database Guide](./phase-3-polishing/database.md)
+- [Infrastructure](./phase-3-polishing/infrastructure.md)
+- [Testing](./phase-3-polishing/testing.md)
+- [UI/UX](./phase-3-polishing/ui-ux.md)
 - [Manual Testing](./phase-3-polishing/manual-testing.md)
-- [Polishing](./phase-3-polishing/polishing.md)
 
 ---
 
-## Phase 4: Advanced Features
+## Phase 4: Finishing, Release & iOS
 
-**Duration:** 6-8 weeks | **Status:** Not Started
+**Duration:** 7-9 weeks (49-64 dev-days) | **Status:** Not Started (Specifications Complete)
 
-Consolidated phase containing Analytics, Asset Management, and iOS platform support.
+8 sub-phases covering reporting, analytics, asset management, iOS platform, release/deployment, user documentation, evaluation, and E2E testing extension. 5 ADRs (024-028).
 
 ### Sub-Phases
-- **4A: Analytics & Reporting** (2 weeks) - Performance metrics, dashboards, automated reports
-- **4B: Asset Management** (2 weeks) - QR codes, maintenance scheduling, inventory
-- **4C: iOS Platform** (2-4 weeks) - iOS build, Apple Sign-In, App Store submission
+- **4-1: Reporting Module** (10-13 days) — PDF/CSV/Excel reports, Puppeteer (ADR-024), 6 report types, scheduled generation
+- **4-2: Analytics Module** (8-10 days) — 19 KPIs, materialized views (ADR-025), Redis cache, dashboards
+- **4-3: Asset Management** (8-10 days) — QR codes (ADR-026), 6 categories, checkout/return, maintenance
+- **4-4: iOS Platform** (8-10 days) — Apple Sign-In, biometrics, APNs, App Store (ADR-027)
+- **4-5: Release & Deployment** (5-7 days) — Staging environment (ADR-028), production deployment
+- **4-6: User Guides & Documentation** (5-7 days) — Web + mobile user guides, maintenance guide
+- **4-7: Evaluation & Final Polish** (4-5 days) — Cross-phase review, sign-off
+- **4-8: E2E Testing Extension** (5-7 days) — 13 Maestro + 11 Playwright new specs
 
 ### Key Deliverables
-- Custom report builder with templates
-- Scheduled report generation (PDF/Excel)
-- Asset registry with QR codes
-- Maintenance scheduling
-- iOS app with feature parity
-- Apple Sign-In, Siri Shortcuts
+- 3 new backend modules (~25 new endpoints), 7 new DB tables, 3 materialized views
+- 11 new web pages, 8 new mobile screens
+- iOS App Store submission
+- Staging + production deployment
+- Comprehensive user guides and maintenance documentation
 
 ### Documents
 - [Overview](./phase-4-finishing/README.md)
 - [Status](./phase-4-finishing/STATUS.md)
-- [Analytics Backend](./phase-4-finishing/analytics-backend.md)
-- [Analytics Web](./phase-4-finishing/analytics-web.md)
-- [Assets Backend](./phase-4-finishing/assets-backend.md)
-- [Assets Mobile](./phase-4-finishing/assets-mobile.md)
-- [iOS Backend](./phase-4-finishing/ios-backend.md)
-- [iOS Mobile](./phase-4-finishing/ios-mobile.md)
+- [Database Guide](./phase-4-finishing/database.md)
+- [Backend Guide](./phase-4-finishing/backend.md)
+- [Reporting Deep Dive](./phase-4-finishing/reporting.md)
+- [Analytics Deep Dive](./phase-4-finishing/analytics.md)
+- [Assets Deep Dive](./phase-4-finishing/assets.md)
+- [Web Guide](./phase-4-finishing/web.md)
+- [Mobile Guide](./phase-4-finishing/mobile.md)
+- [iOS Guide](./phase-4-finishing/ios.md)
+- [Infrastructure](./phase-4-finishing/infrastructure.md)
+- [Testing](./phase-4-finishing/testing.md)
+- [User Guide (Web)](./phase-4-finishing/user-guide-web.md)
+- [User Guide (Mobile)](./phase-4-finishing/user-guide-mobile.md)
+- [Maintenance](./phase-4-finishing/maintenance.md)
+- [Evaluation](./phase-4-finishing/evaluation.md)
 
 ---
 
@@ -261,16 +297,19 @@ The following folders contain original specifications before the January 30, 202
        Phase 2C (Client Feedback) ✅
                      |
                      v
-       Phase 2D (Monitoring Reimpl) ← CURRENT
+       Phase 2D (Monitoring Reimpl) ✅
                      |
                      v
-         Phase 3 (Polishing & E2E)
+       Phase 2E (Client Feedback II) ✅
                      |
-        +------------+------------+
-        |            |            |
-        v            v            v
-    Phase 4A     Phase 4B     Phase 4C
-   (Analytics)   (Assets)      (iOS)
+                     v
+         Phase 3 (Production Readiness) ← CURRENT
+                     |
+        +------+------+------+------+
+        |      |      |      |      |
+        v      v      v      v      v
+      4-1    4-2    4-3    4-4    4-5..4-8
+   (Report)(Anal.)(Asset) (iOS) (Release+)
 ```
 
 **Critical Dependencies:**
@@ -278,8 +317,9 @@ The following folders contain original specifications before the January 30, 202
 - **Phase 2A → Phase 2B:** Phase 2A implementation provides components to revamp
 - **Phase 2B → Phase 2C:** Design system established before client feedback changes
 - **Phase 2C → Phase 2D:** Monitoring reimplementation builds on Phase 2C role system
-- **Phase 2D → Phase 3:** All monitoring changes must be stable before E2E testing
-- **Phase 3 → Phase 4:** Polishing should complete before adding new features
+- **Phase 2D → Phase 2E:** Monitoring must be stable before client feedback changes
+- **Phase 2E → Phase 3:** All features must be code-complete before production hardening
+- **Phase 3 → Phase 4:** Production readiness should complete before adding new features
 - **Phase 4 sub-phases:** Can run in parallel with separate teams
 
 **Recommended Sequence:**
@@ -306,4 +346,4 @@ The following folders contain original specifications before the January 30, 202
 
 ---
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-12

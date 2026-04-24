@@ -1,313 +1,384 @@
-# Phase 4: Web Dashboard Implementation Guide
+# Phase 4: Web Specifications
 
-**Component:** Web Dashboard (Next.js + TypeScript + React)
-**Developer Role:** Web Developer
-**Duration:** 6-8 weeks
-
----
-
-## Overview
-
-Phase 4 web work adds analytics dashboards, asset management, and iOS-related admin features to the existing Next.js 16.1.4 web dashboard.
+**Date:** March 13, 2026
+**Status:** Not Started
+**Depends On:** Phase 3 Web (Complete)
+**Related Sub-Phases:** 4-1, 4-2, 4-3, 4-8
 
 ---
 
-## Part A: Analytics & Reporting (Weeks 1-2)
+## Current Codebase Facts (Post-Phase 3 Expected Values)
 
-### Pages to Create
+| Fact | Value |
+|------|-------|
+| Framework | Next.js 16.x, React 19.x, TailwindCSS 4.x |
+| Pages | 24+ (Phase 2E: 21 + Phase 3: import, export, notifications) |
+| Design System | Neo Brutalism (NB* components), WCAG 2.1 AA |
+| Charts | Recharts (installed in Phase 2D for monitoring) |
+| Maps | Mapbox GL (monitoring dashboard) |
+| Testing | Playwright 1.58+, 20+ E2E specs (Phase 3), 505+ unit tests |
+| Auth | JWT with refresh token rotation (Phase 3) |
+| State | Server Components (default), Client Components for interactivity |
 
-#### 1. Analytics Dashboard (`/dashboard/analytics`)
+---
 
-**Location:** `fe/web/src/app/(dashboard)/analytics/page.tsx`
+## A. Reports Pages (Sub-Phase 4-1)
 
-**Components:**
+### A1. Reports Dashboard — `/dashboard/reports`
+
+**Route:** `fe/web/src/app/(dashboard)/reports/page.tsx`
+**Type:** Server Component with client islands
+
+```
+┌─────────────────────────────────────────────────┐
+│  Laporan                              [+ Buat]  │
+├─────────────────────────────────────────────────┤
+│  [Harian] [Mingguan] [Bulanan] [Semua]          │
+│                                                  │
+│  ┌─────────────────────────────────────────────┐│
+│  │ Laporan Operasional Harian  │ 13/03/2026    ││
+│  │ Rayon Utara                 │ PDF  [Unduh]  ││
+│  ├─────────────────────────────────────────────┤│
+│  │ Laporan Kinerja Mingguan    │ 10/03/2026    ││
+│  │ Rayon Utara                 │ PDF  [Unduh]  ││
+│  ├─────────────────────────────────────────────┤│
+│  │ ...                                         ││
+│  └─────────────────────────────────────────────┘│
+│                                                  │
+│  Pagination: < 1 2 3 ... 10 >                   │
+└─────────────────────────────────────────────────┘
+```
+
+**Features:**
+- Filter by report type (daily, weekly, monthly, all)
+- Filter by date range
+- Download button generates presigned S3 URL
+- "Buat Laporan" button opens report builder
+
+### A2. Report Builder — `/dashboard/reports/builder`
+
+**Route:** `fe/web/src/app/(dashboard)/reports/builder/page.tsx`
+**Type:** Client Component (interactive form)
+
+```
+┌─────────────────────────────────────────────────┐
+│  Buat Laporan                                    │
+├─────────────────────────────────────────────────┤
+│                                                  │
+│  Tipe Laporan:  [Pilih tipe laporan     ▼]      │
+│                                                  │
+│  Format:        ○ PDF  ○ CSV  ○ Excel            │
+│                                                  │
+│  Periode:       [01/03/2026] — [13/03/2026]     │
+│                                                  │
+│  Area:          [Semua area             ▼]      │
+│  Rayon:         [Semua rayon            ▼]      │
+│  Pekerja:       [Semua pekerja          ▼]      │
+│                  (only for worker-performance)   │
+│                                                  │
+│  [Buat Laporan]                                  │
+│                                                  │
+│  ┌─ Preview ──────────────────────────────────┐ │
+│  │  Report sections shown here after generate  │ │
+│  └────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+### A3. Report Schedules — `/dashboard/reports/schedules`
+
+**Route:** `fe/web/src/app/(dashboard)/reports/schedules/page.tsx`
+**Roles:** `admin_system`, `superadmin` only
+
+```
+┌─────────────────────────────────────────────────┐
+│  Jadwal Laporan                      [+ Buat]   │
+├─────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────┐│
+│  │ Harian - Rayon Utara  │ 06:00 WIB  │ Aktif ││
+│  │ Mingguan - Semua       │ Sen 07:00  │ Aktif ││
+│  │ Bulanan - Sistem       │ Tgl 1 08:00│ Aktif ││
+│  └─────────────────────────────────────────────┘│
+│                                                  │
+│  Each row has: [Edit] [Hapus] [Toggle On/Off]   │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## B. Analytics Pages (Sub-Phase 4-2)
+
+### B1. Analytics Dashboard — `/dashboard/analytics`
+
+**Route:** `fe/web/src/app/(dashboard)/analytics/page.tsx`
+
+```
+┌─────────────────────────────────────────────────┐
+│  Analitik                    [30 Hari ▼]        │
+├─────────────────────────────────────────────────┤
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐        │
+│  │ Kehadiran│ │ Tugas    │ │ Lembur   │        │
+│  │  87.3%   │ │ 142/day  │ │ 156 jam  │        │
+│  │  ▲ 2.1%  │ │  ▲ 5%   │ │  ▼ 3%   │        │
+│  └──────────┘ └──────────┘ └──────────┘        │
+│                                                  │
+│  ┌─ Tren Kehadiran (Line Chart) ──────────────┐│
+│  │  [chart: 30-day attendance trend]           ││
+│  └────────────────────────────────────────────┘│
+│                                                  │
+│  ┌─ Penyelesaian Tugas ──┐ ┌─ Area Coverage ──┐│
+│  │  [bar chart: daily]   │ │  [grouped bars]  ││
+│  └───────────────────────┘ └──────────────────┘│
+└─────────────────────────────────────────────────┘
+```
+
+**Chart components:**
+- `<AttendanceTrendChart />` — Recharts LineChart
+- `<TaskCompletionChart />` — Recharts BarChart
+- `<AreaComparisonChart />` — Recharts GroupedBarChart
+- `<KPICard />` — NB-styled metric card with sparkline
+
+### B2. Worker Analytics — `/dashboard/analytics/workers`
+
+**Route:** `fe/web/src/app/(dashboard)/analytics/workers/page.tsx`
+
+```
+┌─────────────────────────────────────────────────┐
+│  Analitik Pekerja              [Filter ▼]       │
+├─────────────────────────────────────────────────┤
+│  ┌─ Ranking Kinerja (Horizontal Bar) ─────────┐│
+│  │  satgas1  ████████████████████  92.3 (A)    ││
+│  │  satgas2  ███████████████████   89.1 (B)    ││
+│  │  ...                                        ││
+│  └────────────────────────────────────────────┘│
+│                                                  │
+│  ┌─ Table ────────────────────────────────────┐│
+│  │ Nama    │ Area  │ Hadir │ Tugas │ Skor    ││
+│  │ Budi    │ T.B   │ 95%   │ 88%   │ 92.3 A ││
+│  │ Andi    │ T.K   │ 90%   │ 85%   │ 89.1 B ││
+│  └────────────────────────────────────────────┘│
+│                                                  │
+│  Click row -> detailed worker analytics modal   │
+└─────────────────────────────────────────────────┘
+```
+
+### B3. Area Analytics — `/dashboard/analytics/areas`
+
+**Route:** `fe/web/src/app/(dashboard)/analytics/areas/page.tsx`
+
+```
+┌─────────────────────────────────────────────────┐
+│  Analitik Area                 [Rayon ▼]        │
+├─────────────────────────────────────────────────┤
+│  ┌─ Cards Row ────────────────────────────────┐│
+│  │ [Taman Bungkul]  [Taman Apsari]  [...]    ││
+│  │  Staff: 8/10     Staff: 5/5      ...       ││
+│  │  Tasks: 12       Tasks: 8        ...       ││
+│  │  Score: 85 (B)   Score: 91 (A)   ...       ││
+│  └────────────────────────────────────────────┘│
+│                                                  │
+│  ┌─ Area Comparison Chart ────────────────────┐│
+│  │  [grouped bar: staffing + tasks per area]  ││
+│  └────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## C. Asset Management Pages (Sub-Phase 4-3)
+
+### C1. Assets List — `/dashboard/assets`
+
+**Route:** `fe/web/src/app/(dashboard)/assets/page.tsx`
+
+```
+┌─────────────────────────────────────────────────┐
+│  Aset                  [+ Tambah] [QR Batch]    │
+├─────────────────────────────────────────────────┤
+│  [Semua] [Tersedia] [Digunakan] [Perawatan]    │
+│  Kategori: [Semua ▼]  Area: [Semua ▼]          │
+│                                                  │
+│  ┌─ Table ────────────────────────────────────┐│
+│  │ Kode    │ Nama    │ Kategori │ Status │ Loc ││
+│  │ AK-RU-1 │ Sapu    │ Alat Keb │ ● Avail│ T.B││
+│  │ AP-RU-1 │ Mesin   │ Alat Per │ ● InUse│ T.B││
+│  │ KO-RU-1 │ Pickup  │ Kendara  │ ● Maint│ R.U││
+│  └────────────────────────────────────────────┘│
+│                                                  │
+│  Pagination: < 1 2 3 >                          │
+└─────────────────────────────────────────────────┘
+```
+
+### C2. Asset Detail — `/dashboard/assets/[id]`
+
+**Route:** `fe/web/src/app/(dashboard)/assets/[id]/page.tsx`
+
+```
+┌─────────────────────────────────────────────────┐
+│  ← AK-RU-001 - Sapu Lidi #1    [Edit] [Delete] │
+├─────────────────────────────────────────────────┤
+│  ┌─ Info ────────┐  ┌─ QR Code ──────────────┐ │
+│  │ Kategori: AK  │  │  ┌────────┐            │ │
+│  │ Area: T.Bungk │  │  │ QR IMG │  AK-RU-001 │ │
+│  │ Status: Avail │  │  └────────┘            │ │
+│  │ Kondisi: Baik │  │  [Unduh QR] [Cetak]    │ │
+│  └───────────────┘  └───────────────────────-┘ │
+│                                                  │
+│  ┌─ Riwayat Penggunaan ──────────────────────┐ │
+│  │ 12/03 │ Budi (satgas1) │ Checkout │ Baik  │ │
+│  │ 10/03 │ Budi (satgas1) │ Return   │ Baik  │ │
+│  └────────────────────────────────────────────┘ │
+│                                                  │
+│  ┌─ Riwayat Perawatan ──────────────────────┐  │
+│  │ 01/03 │ Routine │ Completed │ Rp 50.000  │  │
+│  └────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+### C3. Asset Form — `/dashboard/assets/new`
+
+**Route:** `fe/web/src/app/(dashboard)/assets/new/page.tsx`
+
+Form fields: name, category (dropdown), area (dropdown), rayon (auto-filled from area), description, purchase_date, purchase_price, photo (upload).
+
+### C4. QR Generator — `/dashboard/assets/qr`
+
+**Route:** `fe/web/src/app/(dashboard)/assets/qr/page.tsx`
+
+```
+┌─────────────────────────────────────────────────┐
+│  Generator QR Code                               │
+├─────────────────────────────────────────────────┤
+│  Pilih Aset:                                     │
+│  ☑ AK-RU-001  Sapu Lidi #1                     │
+│  ☑ AP-RU-001  Mesin Potong                      │
+│  ☐ KO-RU-001  Pickup                            │
+│  [Pilih Semua]  [Hapus Pilihan]                  │
+│                                                  │
+│  [Generate QR (2 terpilih)]                      │
+│                                                  │
+│  ┌─ Preview ─────────────────────────────────┐  │
+│  │  ┌──┐ AK-RU-001    ┌──┐ AP-RU-001        │  │
+│  │  │QR│ Sapu Lidi     │QR│ Mesin Potong     │  │
+│  │  └──┘               └──┘                  │  │
+│  └───────────────────────────────────────────┘  │
+│                                                  │
+│  [Cetak Semua]  [Unduh PDF]                      │
+└─────────────────────────────────────────────────┘
+```
+
+### C5. Maintenance Calendar — `/dashboard/assets/maintenance`
+
+**Route:** `fe/web/src/app/(dashboard)/assets/maintenance/page.tsx`
+
+Uses a calendar component (custom NB-styled, not FullCalendar — to maintain Neo Brutalism consistency):
+
+```
+┌─────────────────────────────────────────────────┐
+│  Perawatan Aset          [+ Jadwalkan]          │
+├─────────────────────────────────────────────────┤
+│  < Maret 2026 >                                  │
+│  Sen  Sel  Rab  Kam  Jum  Sab  Min              │
+│  ┌───┬───┬───┬───┬───┬───┬───┐                 │
+│  │   │   │   │   │ 1 │ 2 │ 3 │                 │
+│  │   │   │   │   │ ● │   │   │                 │
+│  ├───┼───┼───┼───┼───┼───┼───┤                 │
+│  │ 4 │ 5 │ 6 │ 7 │...│...│...│                 │
+│  │   │ ●●│   │   │   │   │   │                 │
+│  └───┴───┴───┴───┴───┴───┴───┘                 │
+│  ● = scheduled maintenance                       │
+│                                                  │
+│  ┌─ Upcoming ────────────────────────────────┐  │
+│  │ 15/03 │ AK-RU-001 │ Routine │ Scheduled  │  │
+│  │ 18/03 │ KO-RU-001 │ Inspect │ Scheduled  │  │
+│  └───────────────────────────────────────────┘  │
+│                                                  │
+│  ┌─ Overdue (Merah) ────────────────────────┐   │
+│  │ 01/03 │ AP-RU-001 │ Routine │ OVERDUE    │   │
+│  └───────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## D. Page Summary
+
+| # | Page | Route | Sub-Phase | Type |
+|---|------|-------|-----------|------|
+| 1 | Reports Dashboard | `/dashboard/reports` | 4-1 | Server + Client |
+| 2 | Report Builder | `/dashboard/reports/builder` | 4-1 | Client |
+| 3 | Report Schedules | `/dashboard/reports/schedules` | 4-1 | Server + Client |
+| 4 | Analytics Dashboard | `/dashboard/analytics` | 4-2 | Server + Client |
+| 5 | Worker Analytics | `/dashboard/analytics/workers` | 4-2 | Server + Client |
+| 6 | Area Analytics | `/dashboard/analytics/areas` | 4-2 | Server + Client |
+| 7 | Assets List | `/dashboard/assets` | 4-3 | Server + Client |
+| 8 | Asset Detail | `/dashboard/assets/[id]` | 4-3 | Server |
+| 9 | Asset Form | `/dashboard/assets/new` | 4-3 | Client |
+| 10 | QR Generator | `/dashboard/assets/qr` | 4-3 | Client |
+| 11 | Maintenance Calendar | `/dashboard/assets/maintenance` | 4-3 | Server + Client |
+
+**Total: 24 existing + 11 new = 35 pages**
+
+---
+
+## E. Navigation Updates
+
+Add to dashboard sidebar:
+
 ```typescript
-export default function AnalyticsPage() {
-  const { data: stats } = useQuery({
-    queryKey: ['analytics', 'dashboard'],
-    queryFn: () => api.analytics.getDashboardStats(),
-  });
+// New navigation items
+{ label: 'Laporan', icon: FileText, href: '/dashboard/reports', roles: ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'] },
+{ label: 'Analitik', icon: BarChart, href: '/dashboard/analytics', roles: ['all'] },
+{ label: 'Aset', icon: Package, href: '/dashboard/assets', roles: ['all'] },
+```
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <NBCard>
-        <h2>Worker Performance</h2>
-        <WorkerPerformanceChart data={stats?.workerPerformance} />
-      </NBCard>
+Sub-navigation for assets:
+```typescript
+{ label: 'Daftar Aset', href: '/dashboard/assets' },
+{ label: 'Generator QR', href: '/dashboard/assets/qr', roles: ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'] },
+{ label: 'Perawatan', href: '/dashboard/assets/maintenance' },
+```
 
-      <NBCard>
-        <h2>Area Coverage</h2>
-        <AreaCoverageHeatmap data={stats?.areaCoverage} />
-      </NBCard>
+---
 
-      <NBCard>
-        <h2>System Metrics</h2>
-        <SystemMetricsTable data={stats?.systemMetrics} />
-      </NBCard>
-    </div>
-  );
+## F. New Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `NBKPICard` | `fe/web/src/components/nb/NBKPICard.tsx` | KPI metric card with sparkline and trend arrow |
+| `NBCalendar` | `fe/web/src/components/nb/NBCalendar.tsx` | NB-styled month calendar for maintenance |
+| `NBChart` | `fe/web/src/components/nb/NBChart.tsx` | Wrapper for Recharts with NB styling |
+| `NBReportCard` | `fe/web/src/components/nb/NBReportCard.tsx` | Report item card with download button |
+| `NBAssetCard` | `fe/web/src/components/nb/NBAssetCard.tsx` | Asset summary card with status badge |
+| `NBQRPreview` | `fe/web/src/components/nb/NBQRPreview.tsx` | QR code image with label |
+
+---
+
+## G. Data Fetching Pattern
+
+All analytics/reporting pages use Next.js Server Components for initial data:
+
+```typescript
+// Server Component pattern
+export default async function AnalyticsDashboardPage() {
+  const data = await fetchAnalyticsDashboard();
+  return <AnalyticsDashboardClient initialData={data} />;
 }
 ```
 
-#### 2. Worker Analytics (`/dashboard/analytics/workers`)
-
-**Features:**
-- List of all workers with performance metrics
-- Sortable table (attendance rate, task completion, punctuality)
-- Filter by Rayon, date range
-- Export to CSV/Excel
-- Drill-down to individual worker details
-
-**Chart Components:**
-- **recharts** for performance trends
-- **leaflet.heat** for geographic heatmaps
-- Custom KPI cards with trend indicators
-
-#### 3. Area Analytics (`/dashboard/analytics/areas`)
-
-**Features:**
-- Coverage rate by area
-- Condition rating trends
-- Issue frequency heatmap
-- Geographic visualization with Mapbox GL
-
-#### 4. Report Builder (`/dashboard/reports/builder`)
-
-**Features:**
-- Template selection (daily attendance, weekly performance, monthly operational)
-- Custom report configuration (columns, filters, format)
-- Schedule reports (cron expression builder)
-- Set email recipients
-- Preview before generation
-
-#### 5. Report Archive (`/dashboard/reports/archive`)
-
-**Features:**
-- List of generated reports
-- Download, regenerate, or delete reports
-
----
-
-## Part B: Asset Management (Weeks 3-4)
-
-### Pages to Create
-
-#### 1. Assets List (`/dashboard/assets`)
-
-**Features:**
-- Table with all assets
-- Filter by type, status, current holder
-- Search by asset code or name
-- Bulk actions (assign, retire)
-- Generate QR codes (batch)
-
-#### 2. Asset Details (`/dashboard/assets/[id]`)
-
-**Sections:**
-- Asset information (editable)
-- Current assignment
-- Assignment history (timeline)
-- Maintenance records
-- QR code (view/download/print)
-- Photos
-
-#### 3. QR Code Generator (`/dashboard/assets/qr-generator`)
-
-**Dependencies:**
-```bash
-npm install qrcode
-```
-
-**Implementation:**
-```typescript
-import QRCode from 'qrcode';
-
-export const QRCodeGenerator = ({ assetCode }: { assetCode: string }) => {
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
-
-  useEffect(() => {
-    QRCode.toDataURL(assetCode, {
-      width: 300,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF',
-      },
-    }).then(setQrDataUrl);
-  }, [assetCode]);
-
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.download = `${assetCode}.png`;
-    link.href = qrDataUrl;
-    link.click();
-  };
-
-  const handlePrint = () => {
-    // Create printable QR code using DOM manipulation
-    const printDiv = document.createElement('div');
-    printDiv.style.textAlign = 'center';
-
-    const title = document.createElement('h2');
-    title.textContent = assetCode;
-    printDiv.appendChild(title);
-
-    const img = document.createElement('img');
-    img.src = qrDataUrl;
-    printDiv.appendChild(img);
-
-    const printWindow = window.open('', '', 'width=600,height=600');
-    printWindow?.document.body.appendChild(printDiv);
-    printWindow?.print();
-  };
-
-  return (
-    <NBCard>
-      <img src={qrDataUrl} alt={`QR Code for ${assetCode}`} />
-      <div className="flex gap-4">
-        <NBButton onClick={handleDownload}>Download</NBButton>
-        <NBButton onClick={handlePrint}>Print</NBButton>
-      </div>
-    </NBCard>
-  );
-};
-```
-
-**Batch Generation:**
-- Select multiple assets
-- Generate all QR codes
-- Download as ZIP file
-- Print all on A4 pages (6 per page)
-
-#### 4. Maintenance Schedule (`/dashboard/maintenance`)
-
-**Dependencies:**
-```bash
-npm install react-big-calendar
-```
-
-**Features:**
-- Calendar view of scheduled maintenance
-- Month/Week/Day views
-- Create maintenance records
-- Assign to technicians
-- Track completion status
-- Send reminders (7 days before)
-
----
-
-## Part C: iOS Platform Support (Weeks 5-6)
-
-### Pages to Create
-
-#### 1. iOS App Configuration (`/dashboard/settings/ios`)
-
-**Features:**
-- APNs certificate upload
-- Apple Developer Team configuration
-- App Store Connect integration status
-- TestFlight beta testing management
-- App version tracking
-
-#### 2. Push Notification Dashboard (`/dashboard/notifications/ios`)
-
-**Features:**
-- View APNs notification delivery stats
-- Test push notifications to iOS devices
-- View failed deliveries and errors
-- Device token management
-
----
-
-## API Integration
-
-### React Query Hooks
+Client-side updates use SWR or React Query for revalidation:
 
 ```typescript
-// lib/api/analytics.ts
-export const analyticsQueries = {
-  dashboard: () => ({
-    queryKey: ['analytics', 'dashboard'],
-    queryFn: () => api.get('/analytics/dashboard'),
-  }),
-
-  workers: (filters: WorkerFilters) => ({
-    queryKey: ['analytics', 'workers', filters],
-    queryFn: () => api.get('/analytics/workers', { params: filters }),
-  }),
-};
-
-// lib/api/assets.ts
-export const assetsQueries = {
-  list: (filters: AssetFilters) => ({
-    queryKey: ['assets', filters],
-    queryFn: () => api.get('/assets', { params: filters }),
-  }),
-
-  details: (id: string) => ({
-    queryKey: ['assets', id],
-    queryFn: () => api.get(`/assets/${id}`),
-  }),
-};
+// Client island pattern
+'use client';
+export function AnalyticsDashboardClient({ initialData }) {
+  const { data } = useSWR('/api/analytics/dashboard', fetcher, {
+    fallbackData: initialData,
+    refreshInterval: 300000, // 5 min
+  });
+  return <Dashboard data={data} />;
+}
 ```
 
 ---
 
-## Charts & Visualizations
-
-### Dependencies
-
-```bash
-npm install recharts          # Charts
-npm install leaflet.heat      # Heat maps
-npm install d3                # Custom visualizations
-```
-
----
-
-## Testing
-
-### Component Tests
-
-```bash
-npm test -- analytics/page.test.tsx
-npm test -- assets/page.test.tsx
-npm test -- reports/builder/page.test.tsx
-```
-
-### E2E Tests (Playwright)
-
-```bash
-npm run test:e2e -- analytics.spec.ts
-npm run test:e2e -- assets.spec.ts
-npm run test:e2e -- reports.spec.ts
-```
-
----
-
-## Success Criteria
-
-**Analytics:**
-- [ ] Dashboards load within 2 seconds
-- [ ] Charts render correctly
-- [ ] Reports can be exported
-- [ ] Automated reports send on schedule
-
-**Assets:**
-- [ ] QR codes generate correctly
-- [ ] Asset assignment workflow works
-- [ ] Maintenance calendar displays properly
-
-**iOS:**
-- [ ] APNs configuration can be saved
-- [ ] Push notification testing works
-
----
-
-## Related Documentation
-
-- [Backend Implementation](./backend.md)
-- [Mobile Implementation](./mobile.md)
-- [iOS Platform](./ios.md)
-- [Testing Guide](./testing.md)
-- [Timeline](./timeline.md)
+**Last Updated:** 2026-03-13

@@ -1,622 +1,310 @@
-# Phase 4: Mobile Implementation Guide
+# Phase 4: Mobile Specifications
 
-**Component:** Mobile App (React Native + TypeScript)
-**Developer Role:** Mobile Developer
-**Duration:** 6-8 weeks
-
----
-
-## Overview
-
-Phase 4 mobile work adds analytics visualization, asset management with QR scanning, and iOS platform support. All features follow Neo Brutalism design system established in Phase 2.
+**Date:** March 13, 2026
+**Status:** Not Started
+**Depends On:** Phase 3 Mobile (Complete)
+**Related Sub-Phases:** 4-1, 4-2, 4-3, 4-4, 4-8
 
 ---
 
-## Part A: Analytics & Reporting (Weeks 1-2)
+## Current Codebase Facts (Post-Phase 3 Expected Values)
 
-### Screens to Create
+| Fact | Value |
+|------|-------|
+| Framework | React Native 0.83.x, React 19.x, Redux Toolkit |
+| Screens | 22 (Phase 2E: 21 + Phase 3: NotificationsScreen) |
+| Tests | >4,000 tests (>80% coverage) |
+| Navigation | React Navigation 7.x, 8-role unified navigation |
+| Design System | Neo Brutalism (NB* components), WCAG 2.1 AA |
+| Offline | SyncManager with 7+ queue types, ConnectivityBanner |
+| FCM | Active (8 trigger points, foreground handling) |
+| Location | GPS tracking, boundary checking via BoundaryCheckService |
+| Auth | JWT with refresh token rotation, Axios interceptor |
 
-#### 1. AnalyticsDashboardScreen
+---
 
-**Location:** `fe/mobile/src/screens/analytics/AnalyticsDashboardScreen.tsx`
+## A. Report Screens (Sub-Phase 4-1)
 
-**Purpose:** Display worker performance metrics and area statistics
+### A1. ReportsScreen
 
-**Components:**
-```typescript
-<SafeAreaView>
-  <ScrollView>
-    <NBCard variant="elevated">
-      <Text>My Performance</Text>
-      {/* Performance metrics */}
-      <MetricRow label="Attendance Rate" value="95%" />
-      <MetricRow label="Tasks Completed" value="24/25" />
-      <MetricRow label="Punctuality Score" value="92/100" />
-    </NBCard>
+**File:** `fe/mobile/src/screens/reports/ReportsScreen.tsx`
+**Navigation:** Bottom tab → "Laporan" (for korlap+)
 
-    <NBCard variant="elevated">
-      <Text>This Month</Text>
-      {/* Charts */}
-      <BarChart data={attendanceData} />
-    </NBCard>
-
-    <NBCard variant="elevated">
-      <Text>Recent Activity</Text>
-      {/* Activity timeline */}
-      <ActivityTimeline items={recentActivity} />
-    </NBCard>
-  </ScrollView>
-</SafeAreaView>
 ```
-
-**API Integration:**
-```typescript
-// services/api/analyticsApi.ts
-export const analyticsApi = {
-  getWorkerStats: async (workerId: string) => {
-    const response = await apiClient.get(`/analytics/workers/${workerId}`);
-    return response.data;
-  },
-
-  getPerformanceTrends: async (workerId: string, period: string) => {
-    const response = await apiClient.get(`/analytics/workers/${workerId}/trends`, {
-      params: { period },
-    });
-    return response.data;
-  },
-};
+┌─────────────────────────────┐
+│ Laporan                     │
+├─────────────────────────────┤
+│ [Harian] [Mingguan] [Bulanan]
+│                              │
+│ ┌──────────────────────────┐│
+│ │ 📄 Laporan Harian        ││
+│ │    Rayon Utara            ││
+│ │    13/03/2026  PDF        ││
+│ │    [Unduh]                ││
+│ ├──────────────────────────┤│
+│ │ 📄 Laporan Mingguan      ││
+│ │    Minggu 11              ││
+│ │    10/03/2026  PDF        ││
+│ │    [Unduh]                ││
+│ └──────────────────────────┘│
+│                              │
+│ [+ Buat Laporan]             │
+└─────────────────────────────┘
 ```
-
-#### 2. ReportsListScreen
-
-**Location:** `fe/mobile/src/screens/analytics/ReportsListScreen.tsx`
-
-**Purpose:** View generated reports and download/share
 
 **Features:**
-- List of available reports (daily, weekly, monthly)
-- Filter by date range and type
-- Download PDF reports
-- Share reports via native share sheet
+- FlatList with pull-to-refresh
+- Filter tabs: daily/weekly/monthly
+- Download triggers file viewer or share sheet
+- "Buat Laporan" navigates to report builder
+
+### A2. ReportDetailScreen
+
+**File:** `fe/mobile/src/screens/reports/ReportDetailScreen.tsx`
+
+Shows report metadata + embedded PDF viewer (react-native-pdf) or chart summary for quick view.
 
 ---
 
-## Part B: Asset Management (Weeks 3-4)
+## B. Analytics Screens (Sub-Phase 4-2)
 
-### Screens to Create
+### B1. WorkerAnalyticsScreen
 
-#### 1. QRScannerScreen
+**File:** `fe/mobile/src/screens/analytics/WorkerAnalyticsScreen.tsx`
+**Audience:** All workers (own data), korlap (team data)
 
-**Location:** `fe/mobile/src/screens/assets/QRScannerScreen.tsx`
-
-**Dependencies:**
-```bash
-npm install react-native-camera
-npm install react-native-permissions
+```
+┌─────────────────────────────┐
+│ Kinerja Saya          [30h] │
+├─────────────────────────────┤
+│ ┌─────────────────────────┐ │
+│ │     Skor Kinerja        │ │
+│ │        87.3              │ │
+│ │       Grade B            │ │
+│ └─────────────────────────┘ │
+│                              │
+│ ┌───┐ ┌───┐ ┌───┐ ┌───┐   │
+│ │95%│ │90%│ │88%│ │97%│   │
+│ │Had│ │Tpw│ │Tgs│ │Lok│   │
+│ └───┘ └───┘ └───┘ └───┘   │
+│                              │
+│ ┌─ Tren Kehadiran ─────────┐│
+│ │ [7-day bar chart]        ││
+│ └──────────────────────────┘│
+│                              │
+│ ┌─ Tugas Bulan Ini ────────┐│
+│ │ Selesai: 23 / 28 (82%)   ││
+│ │ [progress bar]            ││
+│ └──────────────────────────┘│
+└─────────────────────────────┘
 ```
 
-**Implementation:**
-```typescript
-import { RNCamera } from 'react-native-camera';
+### B2. TeamAnalyticsScreen
 
-export const QRScannerScreen = () => {
-  const navigation = useNavigation();
-  const [scanned, setScanned] = useState(false);
+**File:** `fe/mobile/src/screens/analytics/TeamAnalyticsScreen.tsx`
+**Audience:** `korlap`, `kepala_rayon`, admin roles
 
-  const onBarCodeRead = async (barcode: Barcode) => {
-    if (scanned) return;
-    setScanned(true);
-
-    const assetCode = barcode.data;
-
-    try {
-      // Fetch asset details
-      const asset = await assetsApi.getByCode(assetCode);
-
-      // Haptic feedback
-      triggerHaptic('success');
-
-      // Navigate to asset details
-      navigation.navigate('AssetDetails', { assetId: asset.id });
-    } catch (error) {
-      triggerHaptic('error');
-      Alert.alert('Error', 'Asset not found');
-      setScanned(false);
-    }
-  };
-
-  return (
-    <View style={{ flex: 1 }}>
-      <RNCamera
-        style={{ flex: 1 }}
-        onBarCodeRead={onBarCodeRead}
-        barCodeTypes={[RNCamera.Constants.BarCodeType.qr]}
-        captureAudio={false}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.scanArea} />
-          <Text style={styles.instruction}>
-            Point camera at QR code
-          </Text>
-        </View>
-      </RNCamera>
-    </View>
-  );
-};
+```
+┌─────────────────────────────┐
+│ Analitik Tim        [Area ▼]│
+├─────────────────────────────┤
+│ ┌─ Summary Cards ──────────┐│
+│ │ Hadir: 8/10  Tasks: 12   ││
+│ │ Skor Rata: 85.2 (B)      ││
+│ └──────────────────────────┘│
+│                              │
+│ ┌─ Top Performers ─────────┐│
+│ │ 1. Budi    92.3 (A)      ││
+│ │ 2. Andi    89.1 (B)      ││
+│ │ 3. Siti    87.5 (B)      ││
+│ └──────────────────────────┘│
+│                              │
+│ ┌─ Needs Attention ────────┐│
+│ │ 1. Joko    52.1 (D)      ││
+│ │ 2. Rini    58.3 (D)      ││
+│ └──────────────────────────┘│
+└─────────────────────────────┘
 ```
 
-#### 2. AssetDetailsScreen
+---
 
-**Location:** `fe/mobile/src/screens/assets/AssetDetailsScreen.tsx`
+## C. Asset Management Screens (Sub-Phase 4-3)
 
-**Components:**
-```typescript
-<ScrollView>
-  <NBCard variant="elevated">
-    {asset.photoUrl && (
-      <Image source={{ uri: asset.photoUrl }} style={styles.assetPhoto} />
-    )}
+### C1. AssetListScreen
 
-    <Text style={nbTextStyles.h2}>{asset.name}</Text>
-    <NBBadge
-      text={asset.status}
-      color={getStatusColor(asset.status)}
-    />
+**File:** `fe/mobile/src/screens/assets/AssetListScreen.tsx`
 
-    <View style={styles.details}>
-      <DetailRow label="Asset Code" value={asset.assetCode} />
-      <DetailRow label="Type" value={asset.assetType} />
-      <DetailRow label="Status" value={asset.status} />
-      <DetailRow label="Current Holder" value={asset.currentHolder?.name || 'Available'} />
-    </View>
-  </NBCard>
-
-  {asset.status === 'available' && (
-    <NBButton
-      label="Assign to Me"
-      onPress={handleAssignToSelf}
-      variant="primary"
-    />
-  )}
-
-  {asset.currentHolder?.id === currentUser.id && (
-    <NBButton
-      label="Return Asset"
-      onPress={handleReturn}
-      variant="secondary"
-    />
-  )}
-
-  <NBCard variant="outlined">
-    <Text style={nbTextStyles.h3}>Assignment History</Text>
-    <FlatList
-      data={asset.assignments}
-      renderItem={({ item }) => (
-        <AssignmentHistoryItem assignment={item} />
-      )}
-    />
-  </NBCard>
-</ScrollView>
+```
+┌─────────────────────────────┐
+│ Aset               [🔍] [📷]│
+├─────────────────────────────┤
+│ [Semua] [Tersedia] [Saya]   │
+│                              │
+│ ┌──────────────────────────┐│
+│ │ 🧹 Sapu Lidi #1          ││
+│ │ AK-RU-001 │ ● Tersedia   ││
+│ │ Taman Bungkul             ││
+│ ├──────────────────────────┤│
+│ │ ✂️ Mesin Potong           ││
+│ │ AP-RU-001 │ ● Digunakan  ││
+│ │ Taman Bungkul             ││
+│ └──────────────────────────┘│
+└─────────────────────────────┘
 ```
 
-#### 3. MaintenanceReportScreen
+**Features:**
+- Camera icon opens QR scanner
+- Search by name or code
+- Filter: status, category
+- "Saya" tab shows checked-out assets
 
-**Location:** `fe/mobile/src/screens/assets/MaintenanceReportScreen.tsx`
+### C2. AssetDetailScreen
 
-**Purpose:** Submit maintenance reports for assets
+**File:** `fe/mobile/src/screens/assets/AssetDetailScreen.tsx`
 
-**Form Fields:**
-- Asset selection (scanned or manual)
-- Maintenance type (preventive, corrective, inspection)
-- Description
-- Photos
-- Cost (optional)
+Shows asset info, QR code, assignment history, maintenance history.
+Buttons: [Pinjam] (if available), [Kembalikan] (if assigned to user).
 
-### API Integration
+### C3. QRScannerScreen
 
-```typescript
-// services/api/assetsApi.ts
-export const assetsApi = {
-  getByCode: async (assetCode: string) => {
-    const response = await apiClient.get(`/assets`, {
-      params: { assetCode },
-    });
-    return response.data[0];
-  },
+**File:** `fe/mobile/src/screens/assets/QRScannerScreen.tsx`
 
-  getDetails: async (assetId: string) => {
-    const response = await apiClient.get(`/assets/${assetId}`);
-    return response.data;
-  },
-
-  assign: async (assetId: string, userId: string) => {
-    const response = await apiClient.post(`/assets/${assetId}/assign`, {
-      assignedToUser: userId,
-    });
-    return response.data;
-  },
-
-  return: async (assetId: string) => {
-    const response = await apiClient.post(`/assets/${assetId}/return`);
-    return response.data;
-  },
-
-  getHistory: async (assetId: string) => {
-    const response = await apiClient.get(`/assets/${assetId}/history`);
-    return response.data;
-  },
-};
-
-// services/api/maintenanceApi.ts
-export const maintenanceApi = {
-  create: async (data: CreateMaintenanceDto) => {
-    const response = await apiClient.post('/maintenance', data);
-    return response.data;
-  },
-
-  getSchedule: async () => {
-    const response = await apiClient.get('/maintenance/schedule');
-    return response.data;
-  },
-};
+```
+┌─────────────────────────────┐
+│ Scan QR Code        [Torch] │
+├─────────────────────────────┤
+│                              │
+│     ┌─────────────────┐     │
+│     │                 │     │
+│     │   [Camera View] │     │
+│     │                 │     │
+│     │    ┌───────┐    │     │
+│     │    │Scanner│    │     │
+│     │    │ Frame │    │     │
+│     │    └───────┘    │     │
+│     │                 │     │
+│     └─────────────────┘     │
+│                              │
+│  [Ketik Kode Manual]         │
+│                              │
+│  Arahkan kamera ke QR code   │
+│  aset untuk memindai          │
+└─────────────────────────────┘
 ```
 
-### Redux State
+**Implementation:** `react-native-vision-camera` with QR code detection.
+**Fallback:** Manual code entry field for damaged/unreadable QR codes.
+
+### C4. AssetCheckoutScreen
+
+**File:** `fe/mobile/src/screens/assets/AssetCheckoutScreen.tsx`
+
+Confirmation screen after QR scan:
+- Asset details displayed
+- Condition selector (good/fair/poor/damaged)
+- Optional notes
+- Expected return date (optional)
+- [Konfirmasi Pinjam] button
+
+---
+
+## D. Redux Store Updates
+
+### D1. New Slices
 
 ```typescript
-// store/slices/assetsSlice.ts
-interface AssetsState {
-  currentAsset: Asset | null;
-  myAssets: Asset[];
-  recentScans: Asset[];
+// fe/mobile/src/store/slices/reportsSlice.ts
+interface ReportsState {
+  reports: GeneratedReport[];
+  templates: ReportTemplate[];
   loading: boolean;
   error: string | null;
 }
 
-const assetsSlice = createSlice({
-  name: 'assets',
-  initialState,
-  reducers: {
-    setCurrentAsset: (state, action) => {
-      state.currentAsset = action.payload;
-    },
-    addRecentScan: (state, action) => {
-      state.recentScans.unshift(action.payload);
-      if (state.recentScans.length > 10) {
-        state.recentScans.pop();
-      }
-    },
-    clearCurrentAsset: (state) => {
-      state.currentAsset = null;
-    },
-  },
-});
-```
-
----
-
-## Part C: iOS Platform Support (Weeks 5-6)
-
-### iOS Configuration
-
-#### 1. Xcode Project Setup
-
-**Location:** `fe/mobile/ios/`
-
-**Info.plist Additions:**
-```xml
-<!-- Camera for QR scanning -->
-<key>NSCameraUsageDescription</key>
-<string>SEKAR needs camera access to scan asset QR codes</string>
-
-<!-- Location (already configured in Phase 1) -->
-<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>SEKAR tracks your location during work shifts for attendance verification</string>
-
-<!-- Apple Sign-In -->
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>com.dlhsurabaya.sekar</string>
-    </array>
-  </dict>
-</array>
-
-<!-- Background Modes -->
-<key>UIBackgroundModes</key>
-<array>
-  <string>location</string>
-  <string>fetch</string>
-  <string>remote-notification</string>
-</array>
-```
-
-#### 2. Apple Sign-In Implementation
-
-**Dependencies:**
-```bash
-npm install @invertase/react-native-apple-authentication
-```
-
-**Implementation:**
-```typescript
-// services/auth/appleAuth.ts
-import appleAuth from '@invertase/react-native-apple-authentication';
-import { apiClient } from '../api/apiClient';
-
-export class AppleAuth {
-  async signIn(): Promise<AuthResult> {
-    try {
-      const appleAuthRequestResponse = await appleAuth.performRequest({
-        requestedOperation: appleAuth.Operation.LOGIN,
-        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-      });
-
-      const { identityToken, user } = appleAuthRequestResponse;
-
-      // Send to backend for verification
-      const response = await apiClient.post('/auth/apple', {
-        identityToken,
-        user,
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Apple Sign-In failed:', error);
-      throw error;
-    }
-  }
-
-  async getCredentialState(user: string): Promise<string> {
-    return await appleAuth.getCredentialStateForUser(user);
-  }
+// fe/mobile/src/store/slices/analyticsSlice.ts
+interface AnalyticsState {
+  workerAnalytics: WorkerAnalyticsDto | null;
+  teamAnalytics: WorkerAnalyticsDto[];
+  dashboardSummary: DashboardSummaryDto | null;
+  loading: boolean;
+  error: string | null;
 }
 
-export const appleAuthService = new AppleAuth();
-```
-
-**Login Screen Integration:**
-```typescript
-// screens/auth/LoginScreen.tsx
-import { AppleButton } from '@invertase/react-native-apple-authentication';
-
-export const LoginScreen = () => {
-  const handleAppleSignIn = async () => {
-    try {
-      const result = await appleAuthService.signIn();
-      // Handle successful login
-      await storeTokens(result.accessToken, result.refreshToken);
-      navigation.navigate('Dashboard');
-    } catch (error) {
-      Alert.alert('Error', 'Apple Sign-In failed');
-    }
-  };
-
-  return (
-    <View>
-      {/* Existing NIP/Password login */}
-
-      {Platform.OS === 'ios' && (
-        <AppleButton
-          buttonStyle={AppleButton.Style.BLACK}
-          buttonType={AppleButton.Type.SIGN_IN}
-          style={styles.appleButton}
-          onPress={handleAppleSignIn}
-        />
-      )}
-    </View>
-  );
-};
-```
-
-#### 3. Siri Shortcuts
-
-**Dependencies:**
-```bash
-npm install react-native-siri-shortcut
-```
-
-**Implementation:**
-```typescript
-// services/siri/shortcuts.ts
-import { donateShortcut } from 'react-native-siri-shortcut';
-
-export class SiriShortcuts {
-  async donateClockInShortcut(areaName: string) {
-    await donateShortcut({
-      activityType: 'com.dlhsurabaya.sekar.clockin',
-      title: 'Mulai Shift Kerja',
-      userInfo: { action: 'clock_in', area: areaName },
-      isEligibleForSearch: true,
-      isEligibleForPrediction: true,
-      suggestedInvocationPhrase: `Mulai shift di ${areaName}`,
-      persistentIdentifier: `clockin-${areaName}`,
-    });
-  }
-
-  async donateReportShortcut() {
-    await donateShortcut({
-      activityType: 'com.dlhsurabaya.sekar.report',
-      title: 'Buat Laporan',
-      userInfo: { action: 'create_report' },
-      isEligibleForSearch: true,
-      isEligibleForPrediction: true,
-      suggestedInvocationPhrase: 'Buat laporan pekerjaan',
-      persistentIdentifier: 'create-report',
-    });
-  }
-}
-
-export const siriShortcutsService = new SiriShortcuts();
-```
-
-**Usage in App:**
-```typescript
-// After successful clock-in
-await siriShortcutsService.donateClockInShortcut(area.name);
-
-// After report submission
-await siriShortcutsService.donateReportShortcut();
-```
-
-#### 4. APNs Push Notifications
-
-**Configuration already done in Phase 2 with FCM**
-
-Update `fcmService.ts` to handle iOS-specific token registration:
-
-```typescript
-// services/notifications/fcmService.ts
-async getToken(): Promise<string | null> {
-  try {
-    if (Platform.OS === 'ios') {
-      // Request iOS permissions
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-      if (!enabled) {
-        console.log('iOS notification permission not granted');
-        return null;
-      }
-
-      // Get APNs token
-      const apnsToken = await messaging().getAPNSToken();
-      if (apnsToken) {
-        console.log('APNs token:', apnsToken);
-      }
-    }
-
-    // Get FCM token (works for both iOS and Android)
-    const token = await messaging().getToken();
-    return token;
-  } catch (error) {
-    console.error('Error getting token:', error);
-    return null;
-  }
+// fe/mobile/src/store/slices/assetsSlice.ts
+interface AssetsState {
+  assets: Asset[];
+  myAssets: Asset[];
+  categories: AssetCategory[];
+  selectedAsset: Asset | null;
+  loading: boolean;
+  error: string | null;
 }
 ```
 
 ---
 
-## Navigation Updates
+## E. Navigation Updates
 
-Update `fe/mobile/src/navigation/AppNavigator.tsx`:
+### E1. New Screen Routes
+
+Add to navigation config:
 
 ```typescript
-// Add new screens to stack
-<Stack.Screen
-  name="AnalyticsDashboard"
-  component={AnalyticsDashboardScreen}
-  options={{ title: 'Performance' }}
-/>
-<Stack.Screen
-  name="ReportsList"
-  component={ReportsListScreen}
-  options={{ title: 'Reports' }}
-/>
-<Stack.Screen
-  name="QRScanner"
-  component={QRScannerScreen}
-  options={{ title: 'Scan Asset' }}
-/>
-<Stack.Screen
-  name="AssetDetails"
-  component={AssetDetailsScreen}
-  options={{ title: 'Asset Details' }}
-/>
-<Stack.Screen
-  name="MaintenanceReport"
-  component={MaintenanceReportScreen}
-  options={{ title: 'Maintenance Report' }}
-/>
+// Reports stack
+'ReportsScreen': undefined;
+'ReportDetailScreen': { reportId: string };
+
+// Analytics stack
+'WorkerAnalyticsScreen': { workerId?: string };
+'TeamAnalyticsScreen': { areaId?: string };
+
+// Assets stack
+'AssetListScreen': undefined;
+'AssetDetailScreen': { assetId: string };
+'QRScannerScreen': undefined;
+'AssetCheckoutScreen': { assetId: string };
 ```
+
+### E2. Tab Bar Updates
+
+| Role | New Tabs |
+|------|----------|
+| `satgas`, `linmas` | +Aset (bottom tab) |
+| `korlap` | +Laporan, +Analitik, +Aset (bottom tab overflow → "Lainnya") |
+| `kepala_rayon` | +Laporan, +Analitik, +Aset |
+| `admin_system`, `superadmin` | +Laporan, +Analitik, +Aset |
+
+> **Tab limit:** React Navigation bottom tabs support 5 visible tabs. Roles with >5 tabs use "Lainnya" (More) tab with list navigation.
 
 ---
 
-## Testing
+## F. Screen Summary
 
-### Component Tests
+| # | Screen | Route | Sub-Phase | Audience |
+|---|--------|-------|-----------|----------|
+| 1 | ReportsScreen | reports/ReportsScreen | 4-1 | korlap+ |
+| 2 | ReportDetailScreen | reports/ReportDetailScreen | 4-1 | korlap+ |
+| 3 | WorkerAnalyticsScreen | analytics/WorkerAnalyticsScreen | 4-2 | All workers |
+| 4 | TeamAnalyticsScreen | analytics/TeamAnalyticsScreen | 4-2 | korlap+ |
+| 5 | AssetListScreen | assets/AssetListScreen | 4-3 | All |
+| 6 | AssetDetailScreen | assets/AssetDetailScreen | 4-3 | All |
+| 7 | QRScannerScreen | assets/QRScannerScreen | 4-3 | satgas, linmas, korlap |
+| 8 | AssetCheckoutScreen | assets/AssetCheckoutScreen | 4-3 | satgas, linmas, korlap |
 
-```bash
-# Analytics screens
-npm test -- AnalyticsDashboardScreen.test.tsx
-npm test -- ReportsListScreen.test.tsx
-
-# Asset screens
-npm test -- QRScannerScreen.test.tsx
-npm test -- AssetDetailsScreen.test.tsx
-npm test -- MaintenanceReportScreen.test.tsx
-
-# iOS-specific
-npm test -- appleAuth.test.ts
-npm test -- siriShortcuts.test.ts
-```
-
-### Integration Tests
-
-```bash
-# QR scanning flow
-npm test -- qr-scanning.integration.test.ts
-
-# Asset assignment flow
-npm test -- asset-assignment.integration.test.ts
-
-# Apple Sign-In flow
-npm test -- apple-signin.integration.test.ts
-```
+**Total: 22 existing + 8 new = 30 screens**
 
 ---
 
-## Platform-Specific Builds
+## G. iOS-Specific Features (Sub-Phase 4-4)
 
-### Android Build
+See [ios.md](./ios.md) for detailed iOS specifications. Key mobile code changes:
 
-```bash
-cd android
-./gradlew assembleRelease
-```
-
-### iOS Build
-
-```bash
-cd ios
-pod install
-cd ..
-npx react-native run-ios --configuration Release
-```
+| Feature | Files |
+|---------|-------|
+| Apple Sign-In button | `fe/mobile/src/screens/auth/LoginScreen.tsx` (conditional render on iOS) |
+| Biometric auth service | `fe/mobile/src/services/auth/biometricAuth.ts` |
+| APNs token registration | `fe/mobile/src/services/fcm/fcmService.ts` (platform-specific) |
 
 ---
 
-## Success Criteria
-
-**Analytics:**
-- [ ] Performance metrics displayed correctly
-- [ ] Charts render smoothly
-- [ ] Reports can be downloaded and shared
-
-**Assets:**
-- [ ] QR scanner works reliably
-- [ ] Asset assignment tracking works
-- [ ] Maintenance reports submitted successfully
-- [ ] Camera permissions handled properly
-
-**iOS:**
-- [ ] Apple Sign-In works correctly
-- [ ] Siri Shortcuts can be created
-- [ ] APNs notifications work
-- [ ] App builds successfully on iOS
-- [ ] All features work identically to Android
-
----
-
-## Related Documentation
-
-- [Backend Implementation](./backend.md)
-- [Web Implementation](./web.md)
-- [iOS Platform](./ios.md)
-- [Testing Guide](./testing.md)
-- [Timeline](./timeline.md)
+**Last Updated:** 2026-03-13

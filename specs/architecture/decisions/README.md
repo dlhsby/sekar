@@ -53,6 +53,14 @@ Each ADR follows this structure:
 | [009](./ADR-009-phase2c-role-system-overhaul.md) | Phase 2C 8-Role System Overhaul | Accepted | 2026-02-10 |
 | [010](./ADR-010-phase2c-terminology-cleanup.md) | Phase 2C Terminology Cleanup | Accepted | 2026-02-10 |
 | [011](./ADR-011-phase2d-monitoring-status-model.md) | Phase 2D Materialized Status Tracking with Configurable Thresholds | Accepted | 2026-03-03 |
+| [012](./ADR-012-phone-number-login.md) | Phone Number Login (Identifier-Based Auth) | Accepted | 2026-03-10 |
+| [013](./ADR-013-multi-area-assignment.md) | Multi-Area Korlap Assignment | Accepted | 2026-03-10 |
+| [014](./ADR-014-overtime-clock-in-flow.md) | Overtime Clock-In/Clock-Out Flow Redesign | Accepted | 2026-03-10 |
+| [015](./ADR-015-audit-trail.md) | Audit Trail for Entity Revisions | Accepted | 2026-03-10 |
+| [016](./ADR-016-redis-websocket-scaling.md) | Redis for WebSocket Scaling, Caching, and Notification Retry | Accepted | 2026-03-12 |
+| [017](./ADR-017-maestro-mobile-e2e.md) | Maestro for Mobile E2E Testing | Accepted | 2026-03-12 |
+| [018](./ADR-018-export-format-strategy.md) | Export Format Strategy (CSV + Excel via exceljs) | Accepted | 2026-03-12 |
+| [019](./ADR-019-offline-connectivity-model.md) | Two-Tier Offline Connectivity Model | Accepted | 2026-03-12 |
 
 ## How to Create a New ADR
 
@@ -68,5 +76,5 @@ Each ADR follows this structure:
 - [Tech Stack](../tech-stack.md)
 - [Business Rules](../../business-rules.md)
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-12
 **Maintained By:** System Architect

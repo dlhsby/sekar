@@ -814,8 +814,28 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
 ---
 
+---
+
+## Phase 2E: Planned Error Codes (Client Feedback II)
+
+| Code | HTTP | Message | Context |
+|------|------|---------|---------|
+| `IDENTIFIER_NOT_FOUND` | 401 | Invalid credentials | Phone number or username not found (same generic message) |
+| `PHONE_NUMBER_DUPLICATE` | 409 | Phone number already in use | User creation/update with existing phone_number |
+| `PROFILE_PICTURE_INVALID` | 400 | Invalid image format or size exceeded | Profile picture upload validation |
+| `AREA_ASSIGNMENT_INVALID` | 400 | Cannot assign area outside user's rayon | Multi-area assignment validation |
+| `AREA_ASSIGNMENT_DUPLICATE` | 409 | User already assigned to this area | Duplicate user_areas entry |
+| `OVERTIME_NORMAL_SHIFT_ACTIVE` | 400 | Cannot start overtime while normal shift is active | Overtime clock-in validation |
+| `OVERTIME_NOT_IN_PROGRESS` | 400 | No active overtime to end | Overtime clock-out without active overtime |
+| `OVERTIME_ACTIVITY_REQUIRED` | 400 | Activity submission required to end overtime | Missing mandatory activity on overtime clock-out |
+| `AUDIT_LOG_NOT_FOUND` | 404 | No audit history found for entity | Audit trail query with no results |
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+
+---
+
 **Document Owner:** Backend Developer
-**Last Updated:** 2026-02-20
+**Last Updated:** 2026-03-10
 **Status:** Active
-**Error Codes:** 53 standardized codes (Phase 2C: +11 activity approval + 7 task workflow codes; Phase 2D: +6 monitoring codes)
+**Error Codes:** 53 + 9 planned = 62 codes (Phase 2E: +9 planned codes for phone login, profile picture, multi-area, overtime clock-in/out, audit trail)
 **Related Docs:** [`contracts.md`](./contracts.md), [`authentication.md`](./authentication.md), [`../architecture/security.md`](../architecture/security.md)

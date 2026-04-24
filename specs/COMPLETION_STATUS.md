@@ -1,9 +1,9 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** March 8, 2026 (Phase 2D complete + web gap fixes 2D-13)
-**Current Phase:** Phase 2D Real-Time Monitoring - ✅ COMPLETE (2D-11 home card not started)
+**Last Updated:** March 15, 2026 (Phase 2E post-testing + bug fixes: base64 selfie/profile storage, overtime trail UX, shift definition)
+**Current Phase:** Phase 2E Client Feedback II - ✅ COMPLETE
 **Next Phase:** Phase 3 Polishing & E2E Testing
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 3: 0% | Phase 4: 0%
+**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 2E: 100% ✅ | Phase 3: 0% | Phase 4: 0%
 
 ---
 
@@ -12,8 +12,8 @@
 | Aspect | Status | Details |
 |--------|--------|---------|
 | **Backend API** | ✅ Live | http://api.sekar.wahyutrip.com |
-| **Database** | ✅ Seeded | Phase 1 + 2B schema, 6 test users, 3 areas |
-| **Migrations** | ✅ Executed | InitialSchema + Phase2DatabaseSchema |
+| **Database** | ✅ Seeded | Phase 2E schema, 22 tables, ~30 users, 8 areas |
+| **Migrations** | ✅ Executed | 6 migrations through Phase2EClientFeedback |
 | **Auth** | ✅ Working | JWT tokens, admin/password123 verified |
 | **FCM** | ✅ Enabled | Push notifications configured |
 | **CI/CD** | ✅ Green | All 3 pipelines passing (Backend + Web fixed Mar 2) |
@@ -30,16 +30,16 @@
 
 | Component | Status | Progress | Tests | Coverage | Notes |
 |-----------|--------|----------|-------|----------|-------|
-| **Backend** | ✅ Phase 2D Code-Complete | 100% | 1,095 passing | 92.15% stmts / 80.64% branches ✅ | Phase 2D: StatusCalculator, monitoring config, 122 endpoints |
-| **Mobile** | ✅ Phase 2D Code-Complete | 100% | 3,669 passing | 80.31%+ stmts ✅ | 21 screens, five-status map, WebSocket real-time updates |
-| **Web** | ✅ Phase 2D Code-Complete | 100% | 1,336+ passing (290 monitoring) | 96%+ stmts ✅ | 21 pages + config, Mapbox GL monitoring, socket.io, boundaries, reassign |
-| **Database** | ✅ Phase 2D Code-Complete | 100% | 1,095 BE tests | - | 20 tables (+user_tracking_status, monitoring_configs) |
-| **Documentation** | ✅ Phase 2D Complete | 100% | 12+ spec files | - | Updated specs, ADR-011, deployment guide |
-| **DevOps** | ✅ Phase 2C Deployed | 100% | - | - | Backend + Web deployed to production (Feb 16); Phase 2D pending deploy |
+| **Backend** | ✅ Phase 2E Code-Complete | 100% | 1,264 passing | 94.51% stmts / 83.49% branches ✅ | Phase 2E: UserAreas, Audit, Overtime redesign, phone login, ~130 endpoints |
+| **Mobile** | ✅ Phase 2E Code-Complete | 100% | 3,669+ passing | 80.31%+ stmts ✅ | 22 screens (+EditProfileScreen), identifier login, optional selfie, overtime clock-in/out. Mar 15: selfie via `mediaService.capturePhoto` (file:// URI), OvertimeTrailModal (refresh, all markers, zoom, dedup, callout), OvertimeDetailScreen (pull-to-refresh, trail for korlap+) |
+| **Web** | ✅ Phase 2E Code-Complete | 100% | 505+ unit tests | 96%+ stmts ✅ | Login identifier, auth context tests updated |
+| **Database** | ✅ Phase 2E Code-Complete | 100% | 1,264 BE tests | - | 22 tables (+user_areas, audit_logs), 8 migrations (incl. drop-phone, fix-indexes) |
+| **Documentation** | ✅ Phase 2E Complete | 100% | 16+ spec files | - | Updated specs, ADR-012 to ADR-015 |
+| **DevOps** | ✅ Phase 2D Deployed | 100% | - | - | Backend + Web deployed to production; Phase 2E pending deploy |
 
 ---
 
-## 📅 Phase Roadmap (Updated February 10, 2026)
+## 📅 Phase Roadmap (Updated March 10, 2026)
 
 | Phase | Name | Status | Duration |
 |-------|------|--------|----------|
@@ -47,11 +47,18 @@
 | 2A | Enhanced Features | ✅ Complete | 2 weeks |
 | 2B | UI/UX Revamp | ✅ Complete | 3-4 weeks |
 | **2C** | **Client Feedback** | **✅ Complete & Deployed (Feb 16, 2026)** | **4-6 weeks** |
-| **2D** | **Real-Time Monitoring** | **Code-Complete (pending 2D-10, 2D-11)** | **1 week** |
-| 3 | Polishing & E2E Testing | Not Started | 2-3 weeks |
-| 4 | Advanced Features (Analytics + Assets + iOS) | Not Started | 6-8 weeks |
+| **2D** | **Real-Time Monitoring** | **✅ Complete & Deployed (Mar 7, 2026)** | **1 week** |
+| **2E** | **Client Feedback II** | **✅ Complete (Mar 11, 2026)** | **1 day** |
+| **3** | **Production Readiness & Polishing** | **Not Started** | **6-8 weeks (44-57 dev-days)** |
+| 4 | Finishing, Release & iOS (8 sub-phases) | Specs Complete | 7-9 weeks (49-64 dev-days) |
 
 > **Phase 2C** addresses client feedback from February 10, 2026 meeting. Breaking changes include: role system overhaul (7→8 roles), terminology cleanup ([ADR-010](./architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)): `work_reports`→`activities`, `worker_schedules`→`schedules`, `worker_id`→`user_id`; drop `worker_assignments` and `overtime_aktivitas` tables; flat overtime (1:1 with activity); soft polygon geofencing (never blocks clock-in); simplified TaskStatus (6→4 states). See [Phase 2C specs](./phases/phase-2-c-client-feedback/README.md).
+
+> **Phase 2E** addresses client feedback from March 10, 2026 meeting. Breaking changes include: multi-area korlap assignment ([ADR-013](./architecture/decisions/ADR-013-multi-area-assignment.md)), overtime clock-in/clock-out flow ([ADR-014](./architecture/decisions/ADR-014-overtime-clock-in-flow.md)), phone number login ([ADR-012](./architecture/decisions/ADR-012-phone-number-login.md)), admin_data/kepala_rayon clockable, audit trail ([ADR-015](./architecture/decisions/ADR-015-audit-trail.md)). See [Phase 2E specs](./phases/phase-2-e-client-feedback-2/README.md).
+
+> **Phase 3** transforms SEKAR from feature-complete to production-hardened. Covers 19 requirements across 10 sub-phases: Redis adoption ([ADR-016](./architecture/decisions/ADR-016-redis-websocket-scaling.md)), offline sync completion ([ADR-019](./architecture/decisions/ADR-019-offline-connectivity-model.md)), FCM activation (8 trigger points), export/import (CSV + Excel via exceljs, [ADR-018](./architecture/decisions/ADR-018-export-format-strategy.md)), security hardening (JWT refresh, Helmet.js, per-endpoint rate limiting), Maestro E2E ([ADR-017](./architecture/decisions/ADR-017-maestro-mobile-e2e.md)), and UI/UX polish. See [Phase 3 specs](./phases/phase-3-polishing/README.md).
+
+> **Phase 4** covers 8 sub-phases: Reporting (4-1, [ADR-024](./architecture/decisions/ADR-024-pdf-report-generation.md)), Analytics (4-2, [ADR-025](./architecture/decisions/ADR-025-analytics-materialized-views.md)), Asset Management (4-3, [ADR-026](./architecture/decisions/ADR-026-asset-qr-code-strategy.md)), iOS Platform (4-4, [ADR-027](./architecture/decisions/ADR-027-ios-build-distribution.md)), Release & Deployment (4-5, [ADR-028](./architecture/decisions/ADR-028-staging-environment.md)), User Guides (4-6), Evaluation (4-7), E2E Testing (4-8). 18 specification files, 5 ADRs. See [Phase 4 specs](./phases/phase-4-finishing/README.md).
 
 > **Note:** Phase structure was reorganized on January 30, 2026. Original phases 3-6 were consolidated into new phases 3-4.
 
@@ -790,6 +797,7 @@ Comprehensive architectural and specification improvements to ensure production 
 - Database: 20 tables (including user_tracking_status and monitoring_configs)
 - Five-status tracking (active/inactive/outside_area/missing/offline)
 - StatusCalculatorService, WebSocket boundary events, Mapbox GL monitoring dashboard
+- **Fix (Mar 22, 2026):** `LOCATION_BATCH_SIZE` reduced 20→2; `useHomeLocation` subscribes to tracker events for auto-update
 
 **Phase 2D Sub-phases:**
 

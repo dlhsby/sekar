@@ -2191,8 +2191,97 @@ users ─────1:N────► monitoring_configs (updated_by)
 
 ---
 
+## Phase 2E: Schema Changes (Planned — Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md)
+> **Related ADRs:** [ADR-012](../architecture/decisions/ADR-012-phone-number-login.md), [ADR-013](../architecture/decisions/ADR-013-multi-area-assignment.md), [ADR-014](../architecture/decisions/ADR-014-overtime-clock-in-flow.md), [ADR-015](../architecture/decisions/ADR-015-audit-trail.md)
+
+### Altered Tables
+
+**users** — Add phone login + profile picture
+```sql
+ALTER TABLE users ADD COLUMN phone_number VARCHAR(20);
+CREATE UNIQUE INDEX idx_users_phone_number ON users (phone_number) WHERE phone_number IS NOT NULL;
+ALTER TABLE users ADD COLUMN profile_picture_url TEXT;
+```
+
+**shifts** — Flag overtime shifts
+```sql
+ALTER TABLE shifts ADD COLUMN is_overtime BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX idx_shifts_is_overtime ON shifts (is_overtime) WHERE is_overtime = true;
+```
+
+**overtimes** — Link to overtime shift
+```sql
+ALTER TABLE overtimes ADD COLUMN shift_id UUID REFERENCES shifts(id) ON DELETE SET NULL;
+CREATE INDEX CONCURRENTLY idx_overtimes_shift ON overtimes (shift_id) WHERE shift_id IS NOT NULL;
+-- OvertimeStatus enum: add 'in_progress' value
+```
+
+**user_tracking_status** — Add rayon tracking
+```sql
+ALTER TABLE user_tracking_status ADD COLUMN rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL;
+CREATE INDEX CONCURRENTLY idx_tracking_rayon ON user_tracking_status (rayon_id) WHERE rayon_id IS NOT NULL;
+```
+
+### New Tables
+
+**user_areas** — Multi-area assignment junction table (korlap permanent, satgas/linmas task-based)
+```sql
+CREATE TABLE user_areas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+    assignment_type VARCHAR(20) NOT NULL DEFAULT 'permanent',
+    assigned_at TIMESTAMPTZ DEFAULT NOW(),
+    assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT uq_user_area UNIQUE (user_id, area_id, assignment_type),
+    CONSTRAINT chk_user_areas_assignment_type CHECK (assignment_type IN ('permanent', 'task_based'))
+);
+CREATE INDEX idx_user_areas_user_type ON user_areas (user_id, assignment_type);
+CREATE INDEX idx_user_areas_area ON user_areas (area_id);
+```
+
+**audit_logs** — Generic audit trail for entity changes
+```sql
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id UUID NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    actor_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    old_value JSONB,
+    new_value JSONB,
+    metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_audit_entity ON audit_logs (entity_type, entity_id, created_at DESC);
+CREATE INDEX idx_audit_actor ON audit_logs (actor_id);
+CREATE INDEX idx_audit_created ON audit_logs USING BRIN (created_at);
+CREATE INDEX idx_audit_action ON audit_logs (entity_type, action);
+```
+
+### Check Constraint Updates
+
+```sql
+-- overtimes.status (Phase 2E: add in_progress)
+CHECK (status IN ('in_progress', 'pending', 'approved', 'rejected'))
+```
+
+### Table Count Summary (Phase 2E)
+
+| Phase | Tables | New/Changed |
+|-------|--------|-------------|
+| Phase 2E (Feedback II) | +2 | +user_areas, +audit_logs; ALTERED: users, shifts, overtimes, user_tracking_status |
+| **Total** | **22** | Up from 20 in Phase 2D |
+
+---
+
 **Related Documents:**
 - [ERD](./erd.md) - Entity relationship diagrams (Phase 2D)
 - [Migrations](./migrations.md) - Migration strategy
 - [Seed Data](./seed-data.md) - Test data specifications
 - [Phase 2C Database](../phases/phase-2-c-client-feedback/database.md) - Phase 2C migration details
+- [Phase 2E Database](../phases/phase-2-e-client-feedback-2/database.md) - Phase 2E migration details

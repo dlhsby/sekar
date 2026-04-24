@@ -211,14 +211,12 @@ erDiagram
         uuid id PK
         uuid user_id FK "NOT NULL"
         uuid area_id FK "NULL"
-        date date "NOT NULL"
-        time start_time "NOT NULL"
-        time end_time "NOT NULL"
+        timestamptz start_datetime "NOT NULL"
+        timestamptz end_datetime "NOT NULL"
         varchar status "pending/approved/rejected"
         uuid approved_by FK "NULL"
         timestamptz approved_at "NULL"
         text rejection_reason "NULL"
-        text notes "NULL"
         uuid activity_type_id FK "NULL, SET NULL on delete"
         text description "NULL"
         text_array photo_urls "DEFAULT empty array, 1-3 URLs"
@@ -594,10 +592,103 @@ sequenceDiagram
 | Phase 2A (Rayons) | 5 | rayons, shift_definitions, worker_schedules, area_staff_requirements, special_day_overrides |
 | Phase 2B (Tasks) | 3 | tasks, notifications, notification_tokens |
 | Phase 2C (Feedback) | -2 +1 | +task_tags, +overtimes; DROPPED: worker_assignments, overtime_aktivitas; RENAMED: worker_schedules->schedules, work_reports->activities |
-| **Total** | **17** | Down from 18 in Phase 2B (net -1: +2 new, -2 dropped, 2 renamed) |
+| Phase 2D (Monitoring) | +2 | +user_tracking_status, +monitoring_configs |
+| **Total** | **20** | 17 from Phase 2C + 2 from Phase 2D + 1 net adjustment |
 
 ---
 
-**Last Updated:** 2026-02-11
-**ERD Version:** 4.0 (Phase 2C -- Terminology Cleanup Post-Rewrite)
+---
+
+## Phase 2E: Planned ERD Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md)
+
+### New Entities
+
+```mermaid
+erDiagram
+    USERS ||--o{ USER_AREAS : "assigned_to (1:inf)"
+    AREAS ||--o{ USER_AREAS : "assigned_in (1:inf)"
+    USERS ||--o{ AUDIT_LOGS : "performed_by (1:inf)"
+    SHIFTS o|--o| OVERTIMES : "linked_shift (0:1)"
+
+    USER_AREAS {
+        uuid id PK
+        uuid user_id FK "NOT NULL, CASCADE"
+        uuid area_id FK "NOT NULL, CASCADE"
+        varchar assignment_type "permanent or task_based"
+        timestamptz assigned_at
+        uuid assigned_by FK "NULL, SET NULL"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    AUDIT_LOGS {
+        uuid id PK
+        varchar entity_type "task/activity/overtime/shift"
+        uuid entity_id "NOT NULL"
+        varchar action "created/status_changed/approved/etc"
+        uuid actor_id FK "NOT NULL, RESTRICT"
+        jsonb old_value "NULL"
+        jsonb new_value "NULL"
+        jsonb metadata "NULL"
+        timestamptz created_at
+    }
+```
+
+### Modified Entities (Phase 2E)
+
+| Entity | New Columns | Changes |
+|--------|-------------|---------|
+| USERS | `phone_number` VARCHAR(20) UNIQUE NULL, `profile_picture_url` TEXT NULL | New `user_areas` relation |
+| SHIFTS | `is_overtime` BOOLEAN DEFAULT false | Links to overtimes via FK |
+| OVERTIMES | `shift_id` UUID FK→shifts NULL | Status enum adds 'in_progress' |
+| USER_TRACKING_STATUS | `rayon_id` UUID FK→rayons NULL | Rayon-level tracking for admin_data/kepala_rayon |
+
+### Updated Role Assignments (Phase 2E)
+
+```mermaid
+erDiagram
+    USERS ||--o| RAYONS : "kepala_rayon/admin_data manages"
+    USERS ||--o{ USER_AREAS : "korlap assigned (multi-area)"
+    USERS ||--o| SCHEDULES : "satgas/linmas scheduled"
+```
+
+**Assignment Rules (Phase 2E):**
+- **kepala_rayon** → assigned via `users.rayon_id`
+- **admin_data** → assigned via `users.rayon_id` (same as kepala_rayon)
+- **korlap** → assigned via `user_areas` (permanent, multiple areas in 1 rayon); `users.area_id` kept for backward compat
+- **satgas/linmas** → permanent via `schedules` + dynamic `user_areas` (task_based) from active tasks
+
+### Updated Overtime Workflow (Phase 2E — Clock-In/Out Based)
+
+```mermaid
+stateDiagram-v2
+    [*] --> in_progress: Clock-in (POST /overtime/start)
+    in_progress --> pending: Clock-out + activity (POST /overtime/end)
+    pending --> approved: Korlap/Kepala Rayon approves
+    pending --> rejected: Korlap/Kepala Rayon rejects
+```
+
+### Cardinality Additions (Phase 2E)
+
+| Relationship | Parent | Child | Type | Constraint | Notes |
+|-------------|--------|-------|------|------------|-------|
+| User-UserArea | users | user_areas | 1:inf | FK(user_id) CASCADE | Multi-area assignment |
+| Area-UserArea | areas | user_areas | 1:inf | FK(area_id) CASCADE | Area assignment |
+| User-AuditLog | users | audit_logs | 1:inf | FK(actor_id) RESTRICT | Audit actor |
+| Shift-Overtime | shifts | overtimes | 0:1 | FK(shift_id) SET NULL | Overtime shift link |
+| Rayon-TrackingStatus | rayons | user_tracking_status | 1:inf | FK(rayon_id) SET NULL | Rayon-level tracking |
+
+### Updated Table Count
+
+| Phase | Tables | New/Changed |
+|-------|--------|-------------|
+| Phase 2E (Feedback II) | +2 | +user_areas, +audit_logs |
+| **Total** | **22** | Up from 20 in Phase 2D |
+
+---
+
+**Last Updated:** 2026-03-10
+**ERD Version:** 5.0 (Phase 2E — Client Feedback II Planned)
 **Database:** PostgreSQL 14+

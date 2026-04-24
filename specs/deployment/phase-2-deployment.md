@@ -1,7 +1,7 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** March 7, 2026 (Phase 2D Gap Fixes Complete)
-**Status:** ✅ Phase 2C Deployed | 🔄 Phase 2D Pending Deployment
+**Last Updated:** March 14, 2026 (Phase 2E Review & Seed Fix)
+**Status:** ✅ Phase 2D Deployed (Mar 7) | 🔄 Phase 2E Pending Deployment
 **Deployment Time:** Backend 15-20 min (automated) | Web 10-15 min (manual)
 
 > **⚠️ IMPORTANT:** This guide references domain names that need to be set up manually.
@@ -14,16 +14,25 @@
 **Current Production URLs:**
 - API: http://api.sekar.wahyutrip.com (sekar-backend:3000)
 - Web Dashboard: http://sekar.wahyutrip.com (sekar-web:3001)
-- Database: RDS PostgreSQL 14 (20 tables as of Phase 2D)
+- Database: RDS PostgreSQL 14 (22 tables as of Phase 2E)
 
-**Phase 2D (Pending Deployment):**
-- ✅ Four-status tracking system (active/inactive/outside_area/missing/offline)
+**Phase 2E (Pending Deployment):**
+- ✅ Phone number login (identifier-based auth, ADR-012)
+- ✅ Profile picture upload (S3), multi-area korlap assignment (ADR-013)
+- ✅ Overtime clock-in/clock-out redesign (ADR-014), optional selfie
+- ✅ Admin_data + kepala_rayon clockable, audit trail module (ADR-015)
+- ✅ New tables: `user_areas`, `audit_logs`
+- ✅ Migration: `Phase2EClientFeedback`
+- ⚠️ Breaking: Login DTO `username` → `identifier`
+- ⚠️ Re-seed required for phone_number and user_areas data
+
+**Phase 2D (Deployed March 7, 2026):**
+- ✅ Five-status tracking system (active/inactive/outside_area/missing/offline)
 - ✅ Materialized `user_tracking_status` table (O(1) lookups)
 - ✅ `monitoring_configs` table (runtime-adjustable thresholds)
 - ✅ Full Mapbox GL JS integration on web monitoring page
 - ✅ Mobile map: polygon rendering, status colors, location trail
 - ✅ WebSocket fixes (PascalCase role bug) + 3 new events
-- ⚠️ Requires Mapbox production token for web
 
 **Phase 2C (Deployed Feb 16, 2026):**
 - ✅ 8-role system (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
@@ -37,7 +46,7 @@
 - [ ] All 16 GitHub Secrets configured
 - [ ] Firebase project created with FCM
 - [ ] AWS infrastructure ready (EC2, RDS, S3, ECR)
-- [ ] All tests passing (1,088 tests, 92.15% coverage)
+- [ ] All tests passing (1,264 tests, 94.51% coverage)
 
 ---
 
@@ -1495,10 +1504,10 @@ docker-compose -f docker-compose.prod.yml restart web
 
 ---
 
-## 🚀 Phase 2D Deployment (Monitoring Reimplementation) — PENDING
+## 🚀 Phase 2D Deployment (Monitoring Reimplementation) — DEPLOYED
 
-**Status:** ✅ Code-Complete | 🔄 Awaiting Deployment
-**Branch:** `f/phase-2-d-monitoring` (pending merge to main)
+**Status:** ✅ Deployed (March 7, 2026)
+**Branch:** main
 **Breaking Changes:** Additive only (non-breaking for Phase 2C clients)
 
 ### Pre-Deployment Checklist
@@ -1716,6 +1725,85 @@ DROP INDEX IF EXISTS idx_areas_boundary_polygon;
 | WebSocket event delivery | < 100ms |
 | Cron job cycle | < 10s |
 | Cache hit rate (thresholds) | > 90% |
+
+---
+
+## 🚀 Phase 2E Deployment (Client Feedback II) — PENDING
+
+**Status:** ✅ Code-Complete | 🔄 Awaiting Deployment
+**Branch:** main
+**Breaking Changes:** Login DTO `username` → `identifier`
+
+### Pre-Deployment Checklist
+
+- [ ] All backend tests passing (1,264 tests, 66 suites, 94.51% line coverage)
+- [ ] All mobile tests passing (3,669+ tests)
+- [ ] Database migration reviewed: `1741200000000-Phase2EClientFeedback`
+- [ ] Re-seed executed for phone_number data (`npm run db:seed`)
+- [ ] Phone number login verified (e.g., `081300000002/password123`)
+
+### Database Migration
+
+**Migration:** `1741200000000-Phase2EClientFeedback`
+
+**New tables:**
+- `user_areas` — Junction table for multi-area korlap assignment (user_id, area_id, assignment_type, assigned_by)
+- `audit_logs` — Audit trail for entity changes (entity_type, entity_id, action, actor_id, old_value/new_value JSONB)
+
+**Altered tables:**
+- `users` — Added `phone_number` (varchar(20), unique partial index, nullable), `profile_picture_url` (text, nullable)
+- `shifts` — Added `is_overtime` (boolean, default false)
+- `overtimes` — Added `shift_id` (UUID FK, nullable); made `end_datetime`, `activity_type_id`, `description` nullable; added `IN_PROGRESS` to status enum
+- `user_tracking_status` — Added `rayon_id` (UUID FK to rayons, nullable)
+
+### Backend Deployment Steps
+
+```bash
+# 1. Run migration
+npm run migration:run
+# Applies: 1741200000000-Phase2EClientFeedback
+
+# 2. Re-seed data (destructive — wipes and re-creates all data)
+npm run db:seed
+
+# 3. Verify phone login works
+curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"identifier":"081300000002","password":"password123"}'
+```
+
+### Breaking Changes (Phase 2E)
+
+- `POST /auth/login`: Request body changed from `{ username, password }` to `{ identifier, password }`
+  - `identifier` accepts either username or phone number
+  - Phase 2D mobile apps **will not work** without updating login screen
+- `CLOCKABLE_ROLES` expanded: `admin_data` and `kepala_rayon` can now clock in/out
+- New endpoints: `POST /overtime/start`, `POST /overtime/end`, `GET /overtime/active`
+
+### No New Environment Variables
+
+Phase 2E does not require any new environment variables. S3 infrastructure (for profile pictures) reuses existing AWS S3 config.
+
+### Phase 2E Rollback
+
+```bash
+# Backend: revert to Phase 2D image
+docker pull <ECR_URI>/sekar-backend:phase-2d
+docker tag <ECR_URI>/sekar-backend:phase-2d <ECR_URI>/sekar-backend:latest
+# Restart ECS service
+
+# Database: revert Phase 2E migration
+npm run migration:revert
+# Reverts: 1741200000000-Phase2EClientFeedback
+# WARNING: Drops user_areas, audit_logs tables and removes new columns
+```
+
+---
+
+## Known Gaps (Not Bugs — Future Phase Scope)
+
+1. **Web: Multi-area korlap UI** — Backend supports multi-area assignment via `user_areas` table, but web user management form only shows single `area_id` dropdown. Needs multi-select UI.
+2. **Web: Audit trail page** — Backend `AuditModule` fully implemented (entity history, actor history, paginated queries). No web dashboard page to browse audit logs yet.
 
 ---
 

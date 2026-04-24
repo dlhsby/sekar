@@ -4920,7 +4920,46 @@ socket.on('AREA_STAFFING_CHANGED', (payload) => {
 
 ---
 
+### Phase 2E: Planned Endpoint Changes (Client Feedback II)
+
+> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+
+**New Endpoints (8):**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/users/:id/profile-picture` | Upload profile picture (base64 to S3) |
+| GET | `/users/:id/areas` | Get user area assignments |
+| POST | `/users/:id/areas` | Assign areas to user |
+| DELETE | `/users/:userId/areas/:areaId` | Remove area assignment |
+| POST | `/overtime/start` | Start overtime clock-in |
+| POST | `/overtime/:id/end` | End overtime clock-out + activity |
+| GET | `/overtime/active` | Get active overtime for current user |
+| GET | `/audit/:entityType/:entityId` | Get entity audit trail |
+
+**Modified Endpoints (5):**
+
+| Endpoint | Change |
+|----------|--------|
+| `POST /auth/login` | **BREAKING:** `username` → `identifier` (accepts phone or username) |
+| `POST /shifts/clock-in` | `selfie_photo` now optional; expanded to admin_data, kepala_rayon |
+| `POST /shifts/clock-out` | `selfie_photo` now optional; expanded to admin_data, kepala_rayon |
+| `GET /auth/me` | Response adds `phone_number`, `profile_picture_url`, `user_areas[]` |
+| `GET /monitoring/live-users` | Response adds `profile_picture_url` per user |
+
+**Planned Total:** 122 → 130 endpoints
+
+---
+
 ### Changelog
+
+**v2.2.0 - March 10, 2026 (Phase 2E Planned — Client Feedback II)**
+- Planned 8 new endpoints (profile picture, user areas, overtime clock-in/out, audit trail)
+- Planned 5 modified endpoints (login identifier, optional selfie, expanded roles)
+- Breaking change: POST /auth/login request body changes from { username, password } to { identifier, password }
+- New tables documented: user_areas, audit_logs
+- Expanded CLOCKABLE_ROLES: +admin_data, +kepala_rayon
+- See: specs/phases/phase-2-e-client-feedback-2/
 
 **v2.1.0 - March 3, 2026 (Phase 2D Monitoring Enhancements)**
 - Added 9 new monitoring/boundary endpoints

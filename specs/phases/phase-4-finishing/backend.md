@@ -1,571 +1,669 @@
-# Phase 4: Backend Implementation Guide
+# Phase 4: Backend Specifications
 
-**Component:** Backend (NestJS + TypeScript + PostgreSQL)
-**Developer Role:** Backend Developer
-**Duration:** 6-8 weeks
-
----
-
-## Overview
-
-Phase 4 backend work consolidates three major feature sets: Analytics & Reporting, Asset Management, and iOS platform support. This guide provides implementation specifications for all backend components.
+**Date:** March 13, 2026
+**Status:** Not Started
+**Depends On:** Phase 3 Backend (Complete)
+**Related Sub-Phases:** 4-1, 4-2, 4-3, 4-4, 4-8
 
 ---
 
-## Part A: Analytics & Reporting (Weeks 1-2)
+## Current Codebase Facts (Post-Phase 3 Expected Values)
 
-### Module: Analytics
+| Fact | Value |
+|------|-------|
+| Modules | 20 (Phase 2E: 18 + Phase 3: export, health) |
+| Endpoints | ~145 |
+| Tests | >1,500 passing (>90% stmts) |
+| Coverage | >90% stmts, >80% branches |
+| Redis | Installed — cache, Socket.IO adapter, JWT blacklist |
+| Export | ExportModule with CSV/Excel via exceljs, async export_jobs |
+| Cron jobs | ~7 active (monitoring refresh, shift reminder, stale status, retention x3, export retry) |
+| Rate limiting | Global 100 req/min + per-endpoint limits via Redis |
+| JWT | 15-min access + 7-day refresh with Redis blacklist |
+| Logging | Structured JSON logging with Sentry integration |
 
-**Location:** `be/src/modules/analytics/`
+---
 
-#### Files to Create
+## A. Reporting Module (Sub-Phase 4-1)
+
+### A1. Module Structure
 
 ```
-analytics/
+be/src/modules/reporting/
+├── reporting.module.ts
+├── reporting.controller.ts
+├── reporting.controller.spec.ts
+├── reporting.service.ts
+├── reporting.service.spec.ts
+├── dto/
+│   ├── create-report.dto.ts
+│   ├── create-schedule.dto.ts
+│   ├── report-query.dto.ts
+│   └── update-schedule.dto.ts
+├── entities/
+│   ├── report-template.entity.ts
+│   ├── generated-report.entity.ts
+│   └── report-schedule.entity.ts
+├── generators/
+│   ├── pdf.generator.ts
+│   ├── pdf.generator.spec.ts
+│   └── templates/
+│       ├── daily-operations.hbs
+│       ├── weekly-performance.hbs
+│       ├── monthly-summary.hbs
+│       ├── worker-performance.hbs
+│       ├── area-status.hbs
+│       └── overtime-utilization.hbs
+├── reports/
+│   ├── daily-operations.report.ts
+│   ├── weekly-performance.report.ts
+│   ├── monthly-summary.report.ts
+│   ├── worker-performance.report.ts
+│   ├── area-status.report.ts
+│   └── overtime-utilization.report.ts
+└── cron/
+    └── report-scheduler.cron.ts
+```
+
+### A2. Endpoints
+
+```
+GET    /reporting/templates                → ReportTemplate[]
+GET    /reporting/templates/:slug          → ReportTemplate
+POST   /reporting/generate                 → GeneratedReport (202 Accepted)
+GET    /reporting/reports                  → PaginatedResponse<GeneratedReport>
+GET    /reporting/reports/:id              → GeneratedReport (with presigned download URL)
+DELETE /reporting/reports/:id              → void
+
+GET    /reporting/schedules                → ReportSchedule[]
+POST   /reporting/schedules                → ReportSchedule
+PATCH  /reporting/schedules/:id            → ReportSchedule
+DELETE /reporting/schedules/:id            → void
+```
+
+**Auth:** All endpoints require `@UseGuards(JwtAuthGuard, RolesGuard)`
+
+| Endpoint | Roles |
+|----------|-------|
+| Templates (GET) | All authenticated users |
+| Generate report | `admin_system`, `superadmin`, `kepala_rayon`, `korlap` |
+| View own reports | All authenticated users (scoped to own reports) |
+| Manage schedules | `admin_system`, `superadmin` |
+
+### A3. Generate Report DTO
+
+**File:** `be/src/modules/reporting/dto/create-report.dto.ts`
+
+```typescript
+export class CreateReportDto {
+  @IsString()
+  @IsNotEmpty()
+  templateSlug: string;  // e.g., 'daily-operations'
+
+  @IsEnum(['pdf', 'csv', 'xlsx'])
+  @IsOptional()
+  format?: string = 'pdf';
+
+  @IsDateString()
+  @IsOptional()
+  startDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+
+  @IsUUID()
+  @IsOptional()
+  areaId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  rayonId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  workerId?: string;  // For worker-performance report
+}
+```
+
+### A4. PDF Generator (ADR-024)
+
+**File:** `be/src/modules/reporting/generators/pdf.generator.ts`
+
+```typescript
+@Injectable()
+export class PdfGenerator {
+  private browser: Browser | null = null;
+
+  async onModuleInit() {
+    this.browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+  }
+
+  async generatePdf(templateName: string, data: Record<string, unknown>): Promise<Buffer> {
+    const templatePath = join(__dirname, 'templates', `${templateName}.hbs`);
+    const templateSource = await readFile(templatePath, 'utf-8');
+    const template = Handlebars.compile(templateSource);
+    const html = template(data);
+
+    const page = await this.browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdf = await page.pdf({
+      format: 'A4',
+      margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },
+      printBackground: true,
+    });
+    await page.close();
+    return Buffer.from(pdf);
+  }
+}
+```
+
+> **Resource management:** Puppeteer browser instance is shared across requests (singleton). Max 3 concurrent page generations via semaphore to prevent OOM. Browser is recycled every 100 generations to prevent memory leaks.
+
+### A5. Report Scheduler Cron
+
+**File:** `be/src/modules/reporting/cron/report-scheduler.cron.ts`
+
+```typescript
+@Cron('* * * * *', { timeZone: 'Asia/Jakarta' })  // Every minute
+async checkSchedules() {
+  const dueSchedules = await this.reportScheduleRepo.find({
+    where: {
+      is_active: true,
+      next_run_at: LessThanOrEqual(new Date()),
+    },
+  });
+
+  for (const schedule of dueSchedules) {
+    await this.reportingService.generateFromSchedule(schedule);
+    schedule.last_run_at = new Date();
+    schedule.next_run_at = this.calculateNextRun(schedule);
+    await this.reportScheduleRepo.save(schedule);
+  }
+}
+```
+
+**Default schedules (seeded):**
+
+| Report | Frequency | Time (WIB) | Cron Expression |
+|--------|-----------|------------|-----------------|
+| Daily Operations | Daily | 06:00 | `0 6 * * *` |
+| Weekly Performance | Weekly (Monday) | 07:00 | `0 7 * * 1` |
+| Monthly Summary | Monthly (1st) | 08:00 | `0 8 1 * *` |
+
+---
+
+## B. Analytics Module (Sub-Phase 4-2)
+
+### B1. Module Structure
+
+```
+be/src/modules/analytics/
 ├── analytics.module.ts
 ├── analytics.controller.ts
+├── analytics.controller.spec.ts
 ├── analytics.service.ts
+├── analytics.service.spec.ts
 ├── dto/
-│   ├── dashboard-stats.dto.ts
-│   ├── worker-analytics.dto.ts
-│   ├── area-analytics.dto.ts
-│   └── query-filters.dto.ts
-├── interfaces/
-│   └── analytics.interface.ts
-└── __tests__/
-    ├── analytics.controller.spec.ts
-    └── analytics.service.spec.ts
+│   ├── analytics-query.dto.ts
+│   └── analytics-response.dto.ts
+└── cron/
+    └── analytics-refresh.cron.ts
 ```
 
-#### API Endpoints
+### B2. Endpoints
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | /analytics/dashboard | Dashboard summary stats | Admin, TopManagement |
-| GET | /analytics/workers | Worker performance metrics | Admin, TopManagement, KepalaRayon |
-| GET | /analytics/workers/:id | Single worker analytics | Admin, TopManagement, KepalaRayon |
-| GET | /analytics/areas | Area metrics | Admin, TopManagement |
-| GET | /analytics/areas/:id | Single area analytics | Admin, TopManagement, KepalaRayon |
-| GET | /analytics/operations | Operational metrics | Admin, TopManagement |
-| GET | /analytics/trends | Time-series trends | Admin, TopManagement |
+```
+GET /analytics/dashboard              → DashboardSummaryDto
+GET /analytics/workers                → PaginatedResponse<WorkerAnalyticsDto>
+GET /analytics/workers/:id            → WorkerDetailAnalyticsDto
+GET /analytics/areas                  → PaginatedResponse<AreaAnalyticsDto>
+GET /analytics/areas/:id              → AreaDetailAnalyticsDto
+GET /analytics/operational            → OperationalAnalyticsDto
+GET /analytics/operational/trends     → OperationalTrendsDto
 
-#### Worker Performance Metrics
+POST /analytics/refresh               → { message: 'Views refreshed', duration_ms: number }
+```
+
+**Auth:**
+
+| Endpoint | Roles |
+|----------|-------|
+| Dashboard summary | All authenticated users |
+| Worker analytics (own) | `satgas`, `linmas` (own data only) |
+| Worker analytics (team) | `korlap`, `kepala_rayon` (area/rayon scope) |
+| Worker analytics (all) | `admin_system`, `superadmin`, `top_management` |
+| Area analytics | `korlap` (own area), `kepala_rayon` (own rayon), admin roles (all) |
+| Operational analytics | `kepala_rayon`, `top_management`, `admin_system`, `superadmin` |
+| Refresh views | `admin_system`, `superadmin` |
+
+### B3. Worker Analytics DTO
 
 ```typescript
-// dto/worker-analytics.dto.ts
 export class WorkerAnalyticsDto {
-  workerId: string;
-  workerName: string;
-  attendanceRate: number; // % of scheduled days present
-  avgShiftDuration: number; // Average hours per shift
-  reportsPerDay: number; // Average reports submitted per day
-  taskCompletionRate: number; // % of assigned tasks completed
-  avgTaskCompletionTime: number; // Average hours to complete tasks
-  lateClockIns: number; // Count of late arrivals
-  earlyClockOuts: number; // Count of early departures
-  punctualityScore: number; // 0-100 score based on attendance patterns
+  userId: string;
+  fullName: string;
+  role: string;
+  areaName: string;
+  rayonName: string;
+  period: { startDate: string; endDate: string };
+
+  // 8 Worker KPIs
+  attendanceRate: number;         // % days attended / scheduled (0-100)
+  punctualityScore: number;       // % on-time arrivals (0-100)
+  taskCompletionRate: number;     // % completed / assigned (0-100)
+  avgTaskDurationHours: number;   // Average hours to complete a task
+  activitySubmissionRate: number; // % days with activity submission
+  activityApprovalRate: number;   // % approved / submitted (0-100)
+  areaCompliancePercent: number;  // % pings within area boundary
+  overtimeHours: number;          // Total approved overtime hours
+
+  performanceScore: number;       // Weighted composite (0-100)
 }
 ```
 
-#### Database Views
+### B4. Performance Score Algorithm
 
-```sql
--- Create view for worker performance metrics
-CREATE OR REPLACE VIEW worker_performance_metrics AS
-SELECT
-  u.id AS worker_id,
-  u.full_name AS worker_name,
-  COUNT(DISTINCT s.id) AS total_shifts,
-  AVG(EXTRACT(EPOCH FROM (s.clock_out_time - s.clock_in_time)) / 3600) AS avg_hours_per_shift,
-  COUNT(DISTINCT wr.id) AS total_reports,
-  COUNT(DISTINCT wr.id)::float / NULLIF(COUNT(DISTINCT DATE(s.clock_in_time)), 0) AS reports_per_day,
-  SUM(CASE WHEN s.clock_in_time::time <= '08:05:00' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(s.id), 0) AS punctuality_score,
-  COUNT(DISTINCT DATE(s.clock_in_time)) AS days_worked,
-  COUNT(CASE WHEN s.clock_in_time::time > '08:05:00' THEN 1 END) AS late_clock_ins,
-  COUNT(CASE WHEN s.clock_out_time::time < '14:55:00' THEN 1 END) AS early_clock_outs
-FROM users u
-LEFT JOIN shifts s ON s.worker_id = u.id AND s.deleted_at IS NULL
-LEFT JOIN work_reports wr ON wr.submitted_by = u.id AND wr.deleted_at IS NULL
-WHERE u.role IN ('Worker', 'Linmas') AND u.deleted_at IS NULL
-GROUP BY u.id, u.full_name;
+```typescript
+// Weighted composite score (0-100)
+const performanceScore =
+  attendanceRate * 0.25 +           // 25% weight
+  punctualityScore * 0.15 +         // 15% weight
+  taskCompletionRate * 0.20 +       // 20% weight
+  activitySubmissionRate * 0.15 +   // 15% weight
+  activityApprovalRate * 0.10 +     // 10% weight
+  areaCompliancePercent * 0.15;     // 15% weight
 
--- Create view for area analytics
-CREATE OR REPLACE VIEW area_analytics_metrics AS
-SELECT
-  a.id AS area_id,
-  a.name AS area_name,
-  a.rayon_id,
-  COUNT(DISTINCT s.id) AS total_shifts,
-  COUNT(DISTINCT DATE(s.clock_in_time))::float / 30 AS coverage_rate, -- Last 30 days
-  COUNT(DISTINCT wr.id)::float / NULLIF(COUNT(DISTINCT DATE(s.clock_in_time)), 0) AS avg_reports_per_day,
-  AVG(wr.condition_rating) AS avg_condition_rating,
-  COUNT(DISTINCT t.id) AS total_tasks,
-  COUNT(CASE WHEN t.status = 'COMPLETED' THEN 1 END)::float / NULLIF(COUNT(t.id), 0) AS task_completion_rate
-FROM areas a
-LEFT JOIN shifts s ON s.area_id = a.id AND s.deleted_at IS NULL AND s.clock_in_time >= NOW() - INTERVAL '30 days'
-LEFT JOIN work_reports wr ON wr.area_id = a.id AND wr.deleted_at IS NULL AND wr.created_at >= NOW() - INTERVAL '30 days'
-LEFT JOIN tasks t ON t.area_id = a.id AND t.deleted_at IS NULL AND t.created_at >= NOW() - INTERVAL '30 days'
-WHERE a.deleted_at IS NULL
-GROUP BY a.id, a.name, a.rayon_id;
+// Grade thresholds
+// A: >= 90, B: >= 75, C: >= 60, D: >= 40, F: < 40
 ```
 
-#### Performance Indexes
+> **Note:** `avgTaskDurationHours` and `overtimeHours` are informational metrics not included in the composite score — they lack meaningful normalization scales.
 
-```sql
-CREATE INDEX idx_shifts_worker_date ON shifts (worker_id, DATE(clock_in_time));
-CREATE INDEX idx_reports_area_date ON work_reports (area_id, DATE(created_at));
-CREATE INDEX idx_reports_worker_date ON work_reports (submitted_by, DATE(created_at));
-CREATE INDEX idx_tasks_area_status ON tasks (area_id, status);
-CREATE INDEX idx_tasks_assignee_status ON tasks (assigned_to, status);
+### B5. Area Analytics DTO
+
+```typescript
+export class AreaAnalyticsDto {
+  areaId: string;
+  areaName: string;
+  rayonName: string;
+  period: { startDate: string; endDate: string };
+
+  // 5 Area KPIs
+  staffingCoverageRatio: number;    // attended / required (0-200%)
+  taskBacklog: number;              // Open tasks not yet completed
+  maintenanceFrequency: number;     // Maintenance events per month
+  incidentRate: number;             // Outside-area + missing events per day
+  avgWorkerPerformance: number;     // Mean performanceScore of area workers
+}
 ```
 
-### Module: Reports (Report Builder)
+### B6. Operational Analytics DTO
 
-**Location:** `be/src/modules/reports/`
+```typescript
+export class OperationalAnalyticsDto {
+  period: { startDate: string; endDate: string };
 
-#### Database Schema
-
-```sql
--- Report templates
-CREATE TABLE report_templates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name VARCHAR(200) NOT NULL,
-  description TEXT,
-  created_by UUID REFERENCES users(id),
-  config JSONB NOT NULL, -- Report configuration (filters, columns, charts)
-  schedule VARCHAR(50), -- cron expression for scheduled reports
-  recipients TEXT[], -- Email addresses
-  format VARCHAR(20) DEFAULT 'PDF', -- PDF, CSV, EXCEL
-  is_active BOOLEAN DEFAULT TRUE,
-  last_run_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  deleted_at TIMESTAMP WITH TIME ZONE
-);
-
--- Generated reports archive
-CREATE TABLE generated_reports (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  template_id UUID REFERENCES report_templates(id),
-  generated_by UUID REFERENCES users(id),
-  file_url TEXT NOT NULL, -- S3 URL
-  format VARCHAR(20), -- PDF, CSV, EXCEL
-  date_range_start DATE,
-  date_range_end DATE,
-  file_size_kb INT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+  // 6 Operational KPIs
+  systemAttendanceRate: number;     // % system-wide attendance
+  taskThroughput: number;           // Tasks completed per day
+  avgResponseTimeHours: number;     // Avg time from task creation to completion
+  overtimeRatio: number;            // Overtime hours / regular hours
+  workerUtilization: number;        // % workers with active shift on given day
+  geofenceCompliance: number;       // % within-area pings system-wide
+}
 ```
 
-#### API Endpoints
+### B7. Analytics Query DTO
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | /reports/generate | Generate report on-demand | Admin, TopManagement |
-| GET | /reports/templates | List report templates | Admin, TopManagement |
-| POST | /reports/templates | Create report template | Admin |
-| PUT | /reports/templates/:id | Update template | Admin |
-| DELETE | /reports/templates/:id | Delete template | Admin |
-| GET | /reports/archive | List generated reports | Admin, TopManagement |
-| GET | /reports/archive/:id/download | Download report file | Admin, TopManagement |
+```typescript
+export class AnalyticsQueryDto {
+  @IsDateString()
+  @IsOptional()
+  startDate?: string;  // Default: 30 days ago
 
-#### Dependencies
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;    // Default: today
 
-```bash
-npm install puppeteer        # PDF generation
-npm install exceljs          # Excel generation
-npm install @nestjs/schedule # Cron jobs
-npm install @aws-sdk/client-ses # Email delivery
+  @IsUUID()
+  @IsOptional()
+  areaId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  rayonId?: string;
+
+  @IsEnum(['daily', 'weekly', 'monthly'])
+  @IsOptional()
+  granularity?: string = 'daily';
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+}
 ```
 
 ---
 
-## Part B: Asset Management (Weeks 3-4)
+## C. Asset Management Module (Sub-Phase 4-3)
 
-### Module: Assets
+### C1. Module Structure
 
-**Location:** `be/src/modules/assets/`
-
-#### Database Schema
-
-```sql
--- Assets table
-CREATE TABLE assets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  asset_code VARCHAR(50) UNIQUE NOT NULL, -- QR code value
-  name VARCHAR(100) NOT NULL,
-  asset_type VARCHAR(50) NOT NULL, -- tool, equipment, vehicle
-  description TEXT,
-  purchase_date DATE,
-  warranty_expiry DATE,
-  status VARCHAR(20) DEFAULT 'available', -- available, in-use, maintenance, retired
-  current_holder_id UUID REFERENCES users(id), -- Currently assigned worker
-  current_area_id UUID REFERENCES areas(id), -- Currently assigned area
-  photo_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  deleted_at TIMESTAMP WITH TIME ZONE
-);
-
--- Asset assignments history
-CREATE TABLE asset_assignments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  asset_id UUID REFERENCES assets(id),
-  assigned_to_user UUID REFERENCES users(id),
-  assigned_to_area UUID REFERENCES areas(id),
-  assigned_by UUID REFERENCES users(id),
-  assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  returned_at TIMESTAMP WITH TIME ZONE,
-  notes TEXT
-);
-
--- Maintenance records
-CREATE TABLE maintenance_records (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  asset_id UUID REFERENCES assets(id),
-  maintenance_type VARCHAR(50) NOT NULL, -- preventive, corrective, inspection
-  scheduled_date DATE,
-  completed_date DATE,
-  performed_by UUID REFERENCES users(id),
-  cost DECIMAL(10, 2),
-  notes TEXT,
-  status VARCHAR(20) DEFAULT 'scheduled', -- scheduled, in-progress, completed, cancelled
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+```
+be/src/modules/assets/
+├── assets.module.ts
+├── assets.controller.ts
+├── assets.controller.spec.ts
+├── assets.service.ts
+├── assets.service.spec.ts
+├── dto/
+│   ├── create-asset.dto.ts
+│   ├── update-asset.dto.ts
+│   ├── checkout-asset.dto.ts
+│   ├── return-asset.dto.ts
+│   ├── create-maintenance.dto.ts
+│   └── asset-query.dto.ts
+├── entities/
+│   ├── asset.entity.ts
+│   ├── asset-category.entity.ts
+│   ├── asset-assignment.entity.ts
+│   └── asset-maintenance.entity.ts
+└── services/
+    ├── qr-code.service.ts
+    └── qr-code.service.spec.ts
 ```
 
-#### API Endpoints
+### C2. Endpoints
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | /assets | Create asset | Admin |
-| GET | /assets | List assets (filter by type, status) | Admin, KepalaRayon |
-| GET | /assets/:id | Get asset details | Admin, KepalaRayon, Worker |
-| PATCH | /assets/:id | Update asset | Admin |
-| DELETE | /assets/:id | Delete asset (soft delete) | Admin |
-| POST | /assets/:id/assign | Assign to worker/area | Admin, KepalaRayon |
-| POST | /assets/:id/return | Return asset | Admin, KepalaRayon, Worker |
-| GET | /assets/:id/history | Assignment history | Admin, KepalaRayon |
-| POST | /maintenance | Create maintenance record | Admin, KepalaRayon |
-| GET | /maintenance | List maintenance (filter by asset, date) | Admin, KepalaRayon |
-| GET | /maintenance/:id | Get maintenance details | Admin, KepalaRayon |
-| PATCH | /maintenance/:id | Update maintenance | Admin, KepalaRayon |
-| DELETE | /maintenance/:id | Delete maintenance | Admin |
-| GET | /maintenance/schedule | Upcoming maintenance | Admin, KepalaRayon |
-| POST | /maintenance/:id/complete | Mark maintenance complete | Admin, KepalaRayon |
+```
+# Asset Categories
+GET    /assets/categories                  → AssetCategory[]
 
-#### DTOs
+# Assets CRUD
+GET    /assets                             → PaginatedResponse<Asset>
+GET    /assets/:id                         → Asset (with assignments + maintenances)
+POST   /assets                             → Asset
+PATCH  /assets/:id                         → Asset
+DELETE /assets/:id                         → void (soft delete)
+
+# QR Code
+POST   /assets/:id/qr                     → { qrCodeUrl: string }
+POST   /assets/qr/bulk                    → { urls: string[] }
+GET    /assets/scan/:code                  → Asset (lookup by asset_code)
+
+# Assignment
+POST   /assets/:id/checkout               → AssetAssignment
+POST   /assets/:id/return                 → AssetAssignment
+GET    /assets/:id/assignments             → AssetAssignment[]
+GET    /assets/my-assets                   → Asset[] (current user's checked-out assets)
+
+# Maintenance
+POST   /assets/:id/maintenance             → AssetMaintenance
+PATCH  /assets/maintenance/:id             → AssetMaintenance
+GET    /assets/maintenance/calendar         → AssetMaintenance[] (month view)
+GET    /assets/maintenance/overdue          → AssetMaintenance[]
+```
+
+**Auth:**
+
+| Endpoint | Roles |
+|----------|-------|
+| View assets | All authenticated users (scoped to area/rayon) |
+| Create/update/delete assets | `korlap`, `kepala_rayon`, `admin_system`, `superadmin` |
+| Generate QR codes | `korlap`, `kepala_rayon`, `admin_system`, `superadmin` |
+| Checkout asset | `satgas`, `linmas`, `korlap` (own area) |
+| Return asset | `satgas`, `linmas`, `korlap` (own area) |
+| My assets | All clockable roles |
+| Create/update maintenance | `korlap`, `kepala_rayon`, `admin_system`, `superadmin` |
+| View maintenance calendar | All authenticated users (scoped) |
+
+### C3. QR Code Service (ADR-026)
+
+**File:** `be/src/modules/assets/services/qr-code.service.ts`
 
 ```typescript
-// dto/create-asset.dto.ts
-export class CreateAssetDto {
-  @IsString()
-  @IsNotEmpty()
-  assetCode: string;
+@Injectable()
+export class QrCodeService {
+  constructor(private readonly s3Service: S3Service) {}
 
-  @IsString()
-  @IsNotEmpty()
-  name: string;
+  async generateQrCode(assetCode: string, assetId: string): Promise<string> {
+    // ADR-026: Plain string format for scan reliability and offline support
+    const qrData = `SEKAR:${assetCode}`;
 
-  @IsEnum(['tool', 'equipment', 'vehicle'])
-  assetType: string;
+    const qrBuffer = await QRCode.toBuffer(qrData, {
+      width: 300,
+      margin: 2,
+      errorCorrectionLevel: 'H', // High (30%) for outdoor durability per ADR-026
+    });
 
-  @IsString()
-  @IsOptional()
-  description?: string;
+    const s3Key = `qr-codes/${assetCode}.png`;
+    await this.s3Service.upload(s3Key, qrBuffer, 'image/png');
+    return s3Key;
+  }
 
-  @IsDateString()
-  @IsOptional()
-  purchaseDate?: string;
-
-  @IsDateString()
-  @IsOptional()
-  warrantyExpiry?: string;
-
-  @IsUrl()
-  @IsOptional()
-  photoUrl?: string;
+  async generateBulk(assets: { code: string; id: string }[]): Promise<string[]> {
+    return Promise.all(
+      assets.map(a => this.generateQrCode(a.code, a.id)),
+    );
+  }
 }
+```
 
-// dto/assign-asset.dto.ts
-export class AssignAssetDto {
+> **Offline scanning:** QR contains asset_code (human-readable) so mobile can display asset info even without network. Full details fetched via `GET /assets/scan/:code` when online.
+
+### C4. Checkout Asset DTO
+
+```typescript
+export class CheckoutAssetDto {
   @IsUUID()
   @IsOptional()
-  assignedToUser?: string;
+  assignedTo?: string;  // Default: current user
 
-  @IsUUID()
+  @IsDateString()
   @IsOptional()
-  assignedToArea?: string;
+  expectedReturnAt?: string;
+
+  @IsEnum(['good', 'fair', 'poor', 'damaged'])
+  conditionAtCheckout: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(500)
   notes?: string;
 }
 ```
 
----
+### C5. Asset Scope Enforcement
 
-## Part C: iOS Platform Support (Weeks 5-6)
-
-### Module: Auth (Apple Sign-In)
-
-**Location:** `be/src/modules/auth/`
-
-#### Apple Sign-In Verification
+Assets are scoped to rayon and area:
 
 ```typescript
-// auth/strategies/apple.strategy.ts
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-apple';
+async findAll(user: User, query: AssetQueryDto): Promise<PaginatedResponse<Asset>> {
+  const qb = this.assetRepo.createQueryBuilder('asset')
+    .leftJoinAndSelect('asset.category', 'category')
+    .where('asset.deleted_at IS NULL');
 
+  switch (user.role) {
+    case 'satgas':
+    case 'linmas':
+      qb.andWhere('asset.area_id = :areaId', { areaId: user.area_id });
+      break;
+    case 'korlap':
+      qb.andWhere('asset.area_id IN (SELECT area_id FROM user_areas WHERE user_id = :userId)',
+        { userId: user.id });
+      break;
+    case 'kepala_rayon':
+      qb.andWhere('asset.rayon_id = :rayonId', { rayonId: user.rayon_id });
+      break;
+  }
+
+  return this.paginate(qb, query);
+}
+```
+
+---
+
+## D. iOS Backend Support (Sub-Phase 4-4)
+
+### D1. Apple Sign-In Endpoint
+
+```
+POST /auth/apple
+Body: { identityToken: string, authorizationCode: string, fullName?: string }
+Response: { access_token: string, refresh_token: string, user: UserDto }
+```
+
+```typescript
 @Injectable()
-export class AppleStrategy extends PassportStrategy(Strategy, 'apple') {
-  constructor() {
-    super({
-      clientID: process.env.APPLE_CLIENT_ID,
-      teamID: process.env.APPLE_TEAM_ID,
-      keyID: process.env.APPLE_KEY_ID,
-      privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH,
-      callbackURL: process.env.APPLE_CALLBACK_URL,
-      scope: ['name', 'email'],
+export class AppleAuthService {
+  async verifyAndLogin(dto: AppleLoginDto): Promise<AuthResponseDto> {
+    const appleUser = await appleSignin.verifyIdToken(dto.identityToken, {
+      audience: process.env.APPLE_CLIENT_ID,
+      ignoreExpiration: false,
     });
-  }
 
-  async validate(accessToken: string, refreshToken: string, profile: any) {
-    const { email, name } = profile;
-    return {
-      email,
-      firstName: name?.firstName,
-      lastName: name?.lastName,
-      provider: 'apple',
-    };
+    let user = await this.usersService.findByAppleId(appleUser.sub);
+    if (!user) {
+      user = await this.usersService.createFromApple({
+        appleId: appleUser.sub,
+        email: appleUser.email,
+        fullName: dto.fullName,
+      });
+    }
+
+    return this.authService.generateTokenPair(user);
   }
 }
 ```
 
-#### API Endpoints
+> **Database change:** Add `apple_id VARCHAR(255) UNIQUE` column to `users` table. See database.md section D for migration.
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | /auth/apple | Apple Sign-In verification | Public |
-| POST | /auth/apple/verify-token | Verify Apple ID token | Public |
+### D2. Apple Sign-In Migration
 
-### Module: Notifications (APNs)
+```sql
+ALTER TABLE users ADD COLUMN apple_id VARCHAR(255);
+CREATE UNIQUE INDEX idx_users_apple_id ON users(apple_id) WHERE apple_id IS NOT NULL;
+```
 
-**Location:** `be/src/modules/notifications/`
+---
 
-#### APNs Device Token Support
+## E. New Error Codes (Phase 4)
+
+### E1. Reporting Errors
+
+| Code | HTTP Status | Message | Trigger |
+|------|-------------|---------|---------|
+| `REPORT_001` | 404 | Report template not found | Invalid template slug |
+| `REPORT_002` | 400 | Invalid report parameters | Missing required filter for template |
+| `REPORT_003` | 500 | Report generation failed | Puppeteer error or template rendering failure |
+| `REPORT_004` | 404 | Generated report not found | Report ID doesn't exist or access denied |
+| `REPORT_005` | 429 | Report generation rate limited | Max 3 concurrent generations |
+
+### E2. Analytics Errors
+
+| Code | HTTP Status | Message | Trigger |
+|------|-------------|---------|---------|
+| `ANALYTICS_001` | 400 | Invalid date range | Start date after end date, or range > 365 days |
+| `ANALYTICS_002` | 503 | Analytics data refreshing | Materialized view refresh in progress |
+
+### E3. Asset Errors
+
+| Code | HTTP Status | Message | Trigger |
+|------|-------------|---------|---------|
+| `ASSET_001` | 404 | Asset not found | Invalid asset ID or asset_code |
+| `ASSET_002` | 409 | Asset already checked out | Checkout attempted on in-use asset |
+| `ASSET_003` | 409 | Asset not checked out | Return attempted on available asset |
+| `ASSET_004` | 400 | Asset in maintenance | Checkout attempted on asset in maintenance |
+| `ASSET_005` | 400 | Invalid asset code format | QR scan returned invalid format |
+
+### E4. Apple Auth Errors
+
+| Code | HTTP Status | Message | Trigger |
+|------|-------------|---------|---------|
+| `APPLE_001` | 401 | Apple token verification failed | Invalid or expired Apple identity token |
+| `APPLE_002` | 409 | Apple ID already linked | Apple ID associated with different user |
+
+---
+
+## F. Cron Jobs Summary (Phase 4 Additions)
+
+| Cron | Schedule (WIB) | Module | Purpose |
+|------|----------------|--------|---------|
+| Report scheduler | Every minute | Reporting | Check and execute scheduled reports |
+| Analytics refresh | Daily 02:00 (ADR-025) | Analytics | Refresh 3 materialized views + invalidate Redis cache |
+| Maintenance overdue | Daily 08:00 | Assets | Mark overdue maintenances |
+| Generated reports cleanup | Weekly Sun 04:00 | Reporting | Purge reports >90 days + S3 files |
+
+---
+
+## G. Testing Guidance
+
+### G1. Puppeteer Testing
+
+Mock Puppeteer browser in unit tests:
 
 ```typescript
-// notifications/services/apns.service.ts
-import { Injectable } from '@nestjs/common';
-import * as apn from 'apn';
+const mockPage = {
+  setContent: jest.fn(),
+  pdf: jest.fn().mockResolvedValue(Buffer.from('fake-pdf')),
+  close: jest.fn(),
+};
 
-@Injectable()
-export class ApnsService {
-  private provider: apn.Provider;
+const mockBrowser = {
+  newPage: jest.fn().mockResolvedValue(mockPage),
+  close: jest.fn(),
+};
 
-  constructor() {
-    this.provider = new apn.Provider({
-      token: {
-        key: process.env.APNS_KEY_PATH,
-        keyId: process.env.APNS_KEY_ID,
-        teamId: process.env.APPLE_TEAM_ID,
-      },
-      production: process.env.NODE_ENV === 'production',
-    });
-  }
-
-  async sendNotification(deviceToken: string, payload: any) {
-    const notification = new apn.Notification();
-    notification.alert = payload.title;
-    notification.body = payload.body;
-    notification.sound = 'default';
-    notification.badge = 1;
-    notification.payload = payload.data;
-
-    const result = await this.provider.send(notification, deviceToken);
-    return result;
-  }
-}
+jest.mock('puppeteer', () => ({
+  launch: jest.fn().mockResolvedValue(mockBrowser),
+}));
 ```
 
-### Module: Security (App Attest)
+### G2. Materialized View Testing
 
-**Location:** `be/src/modules/security/`
-
-#### App Attest Verification
+Use raw table queries in tests instead of materialized views:
 
 ```typescript
-// security/services/app-attest.service.ts
-import { Injectable } from '@nestjs/common';
-import * as crypto from 'crypto';
-
-@Injectable()
-export class AppAttestService {
-  async generateChallenge(): Promise<string> {
-    return crypto.randomBytes(32).toString('base64');
-  }
-
-  async verifyAttestation(keyId: string, attestation: string, challenge: string): Promise<boolean> {
-    // Verify the attestation against the challenge
-    // Implementation follows Apple's App Attest documentation
-    // https://developer.apple.com/documentation/devicecheck/validating_apps_that_connect_to_your_server
-
-    try {
-      // 1. Decode attestation
-      // 2. Verify certificate chain
-      // 3. Verify nonce matches challenge
-      // 4. Verify app ID
-      // 5. Store public key for future assertions
-
-      return true;
-    } catch (error) {
-      console.error('App Attest verification failed:', error);
-      return false;
-    }
-  }
-
-  async verifyAssertion(keyId: string, assertion: string, clientData: string): Promise<boolean> {
-    // Verify subsequent assertions using stored public key
-    try {
-      // 1. Retrieve stored public key for keyId
-      // 2. Verify signature
-      // 3. Verify client data hash
-      // 4. Update assertion counter
-
-      return true;
-    } catch (error) {
-      console.error('Assertion verification failed:', error);
-      return false;
-    }
-  }
-}
+jest.spyOn(queryRunner, 'query').mockResolvedValue([
+  { user_id: 'uuid', date: '2026-03-01', attended: 1, total_tasks: 5, completed_tasks: 3 },
+]);
 ```
 
-#### API Endpoints
+### G3. QR Code Testing
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | /security/attestation/challenge | Generate attestation challenge | Authenticated |
-| POST | /security/attestation/verify | Verify app attestation | Authenticated |
-| POST | /security/assertion/verify | Verify app assertion | Authenticated |
+Mock `qrcode` package:
 
----
-
-## Environment Variables
-
-Add to `be/.env`:
-
-```bash
-# Analytics & Reporting
-ANALYTICS_CACHE_TTL=300 # 5 minutes
-REPORT_GENERATION_TIMEOUT=60000 # 60 seconds
-REPORT_STORAGE_PATH=reports/
-SES_EMAIL_FROM=noreply@sekar.dlhsurabaya.go.id
-
-# Asset Management
-ASSET_QR_CODE_PREFIX=SEKAR-
-MAINTENANCE_ALERT_DAYS=7 # Days before maintenance due
-
-# iOS Platform
-APPLE_CLIENT_ID=com.dlhsurabaya.sekar
-APPLE_TEAM_ID=<your-team-id>
-APPLE_KEY_ID=<your-key-id>
-APPLE_PRIVATE_KEY_PATH=./config/apple-key.p8
-APPLE_CALLBACK_URL=https://api.sekar.dlhsurabaya.go.id/auth/apple/callback
-
-# APNs
-APNS_KEY_PATH=./config/apns-key.p8
-APNS_KEY_ID=<your-apns-key-id>
-APNS_PRODUCTION=false
-
-# App Attest
-APP_ATTEST_ENABLED=true
-APP_BUNDLE_ID=com.dlhsurabaya.sekar
+```typescript
+jest.mock('qrcode', () => ({
+  toBuffer: jest.fn().mockResolvedValue(Buffer.from('fake-qr')),
+}));
 ```
 
 ---
 
-## Testing Requirements
+## H. Coverage Requirements
 
-### Unit Tests
-
-Each module must have >80% test coverage:
-
-```bash
-# Analytics
-npm test -- analytics.service.spec.ts
-npm test -- analytics.controller.spec.ts
-
-# Reports
-npm test -- reports.service.spec.ts
-npm test -- reports.controller.spec.ts
-
-# Assets
-npm test -- assets.service.spec.ts
-npm test -- assets.controller.spec.ts
-
-# Maintenance
-npm test -- maintenance.service.spec.ts
-npm test -- maintenance.controller.spec.ts
-
-# Apple Auth
-npm test -- apple.strategy.spec.ts
-
-# APNs
-npm test -- apns.service.spec.ts
-
-# App Attest
-npm test -- app-attest.service.spec.ts
-```
-
-### Integration Tests
-
-```bash
-# Test analytics endpoints
-npm run test:e2e -- analytics.e2e-spec.ts
-
-# Test report generation
-npm run test:e2e -- reports.e2e-spec.ts
-
-# Test asset management
-npm run test:e2e -- assets.e2e-spec.ts
-```
+| Module | Target | Notes |
+|--------|--------|-------|
+| Reporting | >80% stmts | Mock Puppeteer, S3, cron |
+| Analytics | >80% stmts | Mock materialized view queries |
+| Assets | >80% stmts | Mock QR generation, S3 |
+| Apple Auth | >80% stmts | Mock Apple token verification |
+| Overall project | >90% stmts maintained | Must not drop below Phase 3 baseline |
 
 ---
 
-## Success Criteria
-
-**Analytics:**
-- [ ] All analytics queries return within 2 seconds
-- [ ] Dashboard metrics are accurate
-- [ ] Reports can be exported in PDF, CSV, Excel
-- [ ] Automated reports send via email on schedule
-- [ ] Test coverage >80%
-
-**Assets:**
-- [ ] QR codes are unique and scannable
-- [ ] Asset assignment tracking works correctly
-- [ ] Maintenance alerts sent 7 days before due
-- [ ] Asset history is complete and accurate
-- [ ] Test coverage >80%
-
-**iOS:**
-- [ ] Apple Sign-In works correctly
-- [ ] APNs notifications delivered successfully
-- [ ] App Attest verification passes
-- [ ] iOS-specific endpoints tested
-- [ ] Test coverage >80%
-
----
-
-## Related Documentation
-
-- [Mobile Implementation](./mobile.md)
-- [Web Implementation](./web.md)
-- [iOS Platform](./ios.md)
-- [Testing Guide](./testing.md)
-- [Timeline](./timeline.md)
+**Last Updated:** 2026-03-13
