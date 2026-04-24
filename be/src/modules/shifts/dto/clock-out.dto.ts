@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, Min, Max } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 
 /**
  * Clock-Out DTO
@@ -29,4 +29,13 @@ export class ClockOutDto {
   @Min(-180)
   @Max(180)
   gps_lng: number;
+
+  @ApiPropertyOptional({ description: 'Optional clock-out selfie (base64)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000)
+  @Matches(/^data:image\/(jpeg|jpg|png);base64,[A-Za-z0-9+/=]+$/, {
+    message: 'Invalid base64 image format',
+  })
+  selfie_photo?: string;
 }

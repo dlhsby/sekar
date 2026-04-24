@@ -19,14 +19,16 @@ import type {
 export async function clockIn(
   gpsLat: number,
   gpsLng: number,
-  selfiePhotoBase64: string,
+  selfiePhotoBase64?: string,
   areaId?: string,
 ): Promise<ApiResponse<ClockInResponse>> {
   const payload: Record<string, unknown> = {
     gps_lat: gpsLat,
     gps_lng: gpsLng,
-    selfie_photo: selfiePhotoBase64,
   };
+  if (selfiePhotoBase64) {
+    payload.selfie_photo = selfiePhotoBase64;
+  }
   if (areaId) {
     payload.area_id = areaId;
   }

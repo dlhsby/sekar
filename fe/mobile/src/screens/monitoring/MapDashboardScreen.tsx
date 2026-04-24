@@ -5,6 +5,7 @@
  */
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -13,7 +14,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import MapView, { Circle, Polygon, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSelector, useDispatch } from 'react-redux';
 import Geolocation from 'react-native-geolocation-service';
 import {
@@ -23,10 +24,9 @@ import {
   nbShadows,
   nbBorders,
   nbBorderRadius,
-  withAlpha,
 } from '../../constants/nbTokens';
 import { NBBackgroundPattern } from '../../components/nb';
-import { UserMarker } from '../../components/monitoring/UserMarker';
+import { UserMarker, type LabelMode } from '../../components/monitoring/UserMarker';
 import { MapErrorBoundary } from '../../components/monitoring/MapErrorBoundary';
 import { StatusSummaryBar } from '../../components/monitoring/StatusSummaryBar';
 import { UserListStrip } from '../../components/monitoring/UserListStrip';
@@ -39,8 +39,7 @@ import {
   shouldCluster,
   clusterUsers,
 } from '../../utils/mapUtils';
-import { useMapDashboard } from '../../hooks';
-import type { AppDispatch, RootState } from '../../store';
+import type { AppDispatch, RootState } from '../../store/store';
 import type { LiveUser, TrackingStatus, UserRole } from '../../types/models.types';
 import type { MonitoringFilters } from '../../types/api.types';
 import {
@@ -49,11 +48,17 @@ import {
   setMonitoringFilters,
   resetMonitoringFilters,
   fetchUserDaySummary,
+  fetchBoundaries,
+  fetchStaffingSummary,
   updateLiveUser,
 } from '../../store/slices/monitoringSlice';
 import { getLiveUsers } from '../../services/api/monitoringApi';
 import websocketService from '../../services/websocket/websocketService';
 import type { UserLocationEvent } from '../../services/websocket/websocketService';
+import { BoundaryOverlay } from '../../components/monitoring/BoundaryOverlay';
+import { BoundaryDetailModal } from '../../components/modals/BoundaryDetailModal';
+import { useMapAutoFocus } from '../../hooks/useMapAutoFocus';
+import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -71,6 +76,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     isLoadingDaySummary,
     isLoading,
     error,
+    boundaries,
   } = useSelector((state: RootState) => state.monitoring);
 
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -81,15 +87,23 @@ export function MapDashboardScreen(): React.JSX.Element {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [showTrail, setShowTrail] = useState(false);
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
+  const [trailHideOthers, setTrailHideOthers] = useState(false);
   const [currentRegion, setCurrentRegion] = useState(SURABAYA_CITY_REGION);
+  const [boundaryDetailVisible, setBoundaryDetailVisible] = useState(false);
+  const [boundaryDetailType, setBoundaryDetailType] = useState<'rayon' | 'area'>('area');
+  const [boundaryDetailData, setBoundaryDetailData] = useState<RayonBoundary | AreaBoundary | null>(null);
+  // Incremented on focus and on manual refresh to force BoundaryOverlay remount,
+  // ensuring Android native Polygon/Circle overlays are recreated when tabs switch.
+  const [boundaryKey, setBoundaryKey] = useState(0);
 
-  // Legacy hook for areas data (boundary polygons and circles)
-  const { areas } = useMapDashboard(mapRef);
+  // Auto-focus on filter changes
+  useMapAutoFocus(mapRef, filters, boundaries, liveUsers);
 
   // Fetch live users on mount and when filters change
   useEffect(() => {
     void fetchLiveUsersWithFilters(filters);
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // WebSocket: subscribe to real-time user updates
   useEffect(() => {
@@ -123,10 +137,47 @@ export function MapDashboardScreen(): React.JSX.Element {
       }));
     });
 
+    const unsubLeftArea = websocketService.onUserLeftArea((data) => {
+      if (!mounted) return;
+      dispatch(updateLiveUser({
+        id: data.user_id,
+        is_within_area: false,
+        outside_boundary: true,
+      }));
+    });
+
+    const unsubEnteredArea = websocketService.onUserEnteredArea((data) => {
+      if (!mounted) return;
+      dispatch(updateLiveUser({
+        id: data.user_id,
+        is_within_area: true,
+        outside_boundary: false,
+      }));
+    });
+
+    const unsubReassigned = websocketService.onUserReassigned((data) => {
+      if (!mounted) return;
+      dispatch(updateLiveUser({
+        id: data.user_id,
+        area_id: data.new_area_id,
+        area_name: data.new_area_name,
+      }));
+      dispatch(fetchBoundaries());
+    });
+
+    const unsubStaffing = websocketService.onAreaStaffingChanged(() => {
+      if (!mounted) return;
+      dispatch(fetchStaffingSummary(undefined));
+    });
+
     return () => {
       mounted = false;
       unsubLocation();
       unsubStatus();
+      unsubLeftArea();
+      unsubEnteredArea();
+      unsubReassigned();
+      unsubStaffing();
     };
   }, [dispatch]);
 
@@ -148,9 +199,22 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch, statusFilter],
   );
 
+  // Refresh boundaries + users whenever this tab gains focus.
+  // Also increments boundaryKey to force BoundaryOverlay remount, since Android
+  // drops native Polygon/Circle overlays when the MapView is hidden by tab switching.
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchBoundaries());
+      void fetchLiveUsersWithFilters(filters);
+      setBoundaryKey(k => k + 1);
+    }, [dispatch, filters, fetchLiveUsersWithFilters]),
+  );
+
   const handleRefresh = useCallback(() => {
+    dispatch(fetchBoundaries());
     void fetchLiveUsersWithFilters(filters);
-  }, [fetchLiveUsersWithFilters, filters]);
+    setBoundaryKey(k => k + 1);
+  }, [dispatch, fetchLiveUsersWithFilters, filters]);
 
   // Filtered users for display
   const visibleUsers = React.useMemo(() => {
@@ -185,20 +249,23 @@ export function MapDashboardScreen(): React.JSX.Element {
     [useClustering, visibleUsers, currentRegion],
   );
 
+  // Derive a discrete label mode from the current zoom level. Passing this enum
+  // (not the raw latitudeDelta float) to UserMarker prevents re-renders on every
+  // map pan — only the 3 threshold crossings trigger a re-render + bitmap redraw.
+  // Including labelMode in the marker key ensures tracksViewChanges={false} never
+  // serves a stale (wrong-size) bitmap when the label appears or disappears.
+  const labelMode = React.useMemo<LabelMode>(() => {
+    const delta = currentRegion.latitudeDelta;
+    if (delta >= 0.015) { return 'none'; }
+    if (delta > 0.005) { return 'abbrev'; }
+    return 'full';
+  }, [currentRegion.latitudeDelta]);
+
   // Marker press
   const handleMarkerPress = useCallback(
     (user: LiveUser) => {
       dispatch(setSelectedUser(user));
       dispatch(fetchUserDaySummary(user.id));
-      mapRef.current?.animateToRegion(
-        {
-          latitude: user.latitude,
-          longitude: user.longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        },
-        300,
-      );
     },
     [dispatch],
   );
@@ -215,6 +282,19 @@ export function MapDashboardScreen(): React.JSX.Element {
   const handleCloseTrail = useCallback(() => {
     setShowTrail(false);
     setTrailUser(null);
+    setTrailHideOthers(false);
+  }, []);
+
+  const handleRayonPress = useCallback((rayon: RayonBoundary) => {
+    setBoundaryDetailType('rayon');
+    setBoundaryDetailData(rayon);
+    setBoundaryDetailVisible(true);
+  }, []);
+
+  const handleAreaPress = useCallback((area: AreaBoundary) => {
+    setBoundaryDetailType('area');
+    setBoundaryDetailData(area);
+    setBoundaryDetailVisible(true);
   }, []);
 
   const handleMyLocation = useCallback(() => {
@@ -325,64 +405,31 @@ export function MapDashboardScreen(): React.JSX.Element {
               showsUserLocation={false}
               showsMyLocationButton={false}
               toolbarEnabled={false}
+              mapPadding={{ top: 0, right: 64, bottom: 0, left: 0 }}
               onMapReady={() => {
                 setMapReady(true);
                 mapRef.current?.animateToRegion(SURABAYA_CITY_REGION, 0);
               }}
               onRegionChangeComplete={setCurrentRegion}
             >
-              {/* Area boundaries */}
-              {mapReady && Array.isArray(areas) && areas.map(area => {
-                const poly = (area as any).boundary_polygon;
-                if (
-                  poly?.coordinates?.length > 0 &&
-                  poly.coordinates[0]?.length >= 3
-                ) {
-                  const coords = poly.coordinates[0].map(
-                    ([lng, lat]: [number, number]) => ({
-                      latitude: lat,
-                      longitude: lng,
-                    }),
-                  );
-                  return (
-                    <Polygon
-                      key={`poly-${area.id}`}
-                      coordinates={coords}
-                      strokeColor={nbColors.primary}
-                      fillColor={withAlpha(nbColors.primary, 0.1)}
-                      strokeWidth={2}
-                    />
-                  );
-                }
-
-                return (
-                  <Circle
-                    key={`circle-${area.id}`}
-                    center={{
-                      latitude: typeof area.gps_lat === 'string'
-                        ? parseFloat(area.gps_lat)
-                        : area.gps_lat,
-                      longitude: typeof area.gps_lng === 'string'
-                        ? parseFloat(area.gps_lng)
-                        : area.gps_lng,
-                    }}
-                    radius={typeof area.radius_meters === 'string'
-                      ? parseFloat(area.radius_meters)
-                      : area.radius_meters}
-                    strokeColor={nbColors.primary}
-                    strokeWidth={2}
-                    fillColor={withAlpha(nbColors.primary, 0.1)}
-                  />
-                );
-              })}
+              {/* Boundary overlays */}
+              {mapReady && boundaries && (
+                <BoundaryOverlay
+                  key={boundaryKey}
+                  rayons={boundaries.rayons}
+                  onRayonPress={handleRayonPress}
+                  onAreaPress={handleAreaPress}
+                />
+              )}
 
               {/* User markers (individual) */}
               {!useClustering && visibleUsers.map(user => (
                 <UserMarker
-                  key={`user-${user.id}`}
+                  key={`user-${user.id}-${user.status}-${labelMode}`}
                   user={user}
                   onPress={handleMarkerPress}
-                  showLabel={currentRegion.latitudeDelta < 0.03}
+                  labelMode={labelMode}
+                  dimmed={trailHideOthers && trailUser?.id !== user.id}
                 />
               ))}
 
@@ -414,7 +461,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                       );
                     }}
                     clusterCount={cluster.pointCount}
-                    showLabel={false}
+                    labelMode={labelMode}
                   />
                 );
               })}
@@ -422,11 +469,13 @@ export function MapDashboardScreen(): React.JSX.Element {
               {/* Location trail overlay */}
               {showTrail && trailUser && (
                 <LocationTrail
+                  key={trailUser.id}
                   userId={trailUser.id}
                   date={new Date().toISOString().split('T')[0]}
                   shiftId={trailUser.shift_id}
                   mapRef={mapRef}
                   onClose={handleCloseTrail}
+                  onHideOthersChange={setTrailHideOthers}
                 />
               )}
             </MapView>
@@ -484,6 +533,14 @@ export function MapDashboardScreen(): React.JSX.Element {
             currentUser={currentUser}
           />
         )}
+
+        {/* Boundary detail modal */}
+        <BoundaryDetailModal
+          type={boundaryDetailType}
+          data={boundaryDetailData}
+          visible={boundaryDetailVisible}
+          onClose={() => setBoundaryDetailVisible(false)}
+        />
       </View>
     </NBBackgroundPattern>
   );

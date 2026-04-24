@@ -16,17 +16,17 @@ export class LoginDto {
    * @example 'satgas1'
    */
   @ApiProperty({
-    description: 'Username for authentication',
+    description: 'Username or phone number for authentication',
     example: 'satgas1',
     minLength: 1,
     maxLength: ValidationConstants.USERNAME_MAX_LENGTH,
   })
   @IsString()
-  @IsNotEmpty({ message: 'Username is required' })
+  @IsNotEmpty({ message: 'Username or phone number is required' })
   @MaxLength(ValidationConstants.USERNAME_MAX_LENGTH, {
-    message: `Username must not exceed ${ValidationConstants.USERNAME_MAX_LENGTH} characters`,
+    message: `Identifier must not exceed ${ValidationConstants.USERNAME_MAX_LENGTH} characters`,
   })
-  username: string;
+  identifier: string;
 
   /**
    * User's password for authentication.

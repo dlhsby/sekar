@@ -19,14 +19,14 @@
  *
  * Updated from 15 minutes based on user feedback during testing.
  */
-export const MINIMUM_SHIFT_DURATION_MINUTES = parseInt(
-  process.env.MINIMUM_SHIFT_DURATION_MINUTES || '5',
-  10,
-);
+// Read at call time so ConfigModule's dotenv loading is respected.
+export function getMinimumShiftDurationMinutes(): number {
+  return parseInt(process.env.MINIMUM_SHIFT_DURATION_MINUTES || '5', 10);
+}
 
-/**
- * Minimum shift duration in milliseconds (calculated)
- */
+/** @deprecated use getMinimumShiftDurationMinutes() */
+export const MINIMUM_SHIFT_DURATION_MINUTES = getMinimumShiftDurationMinutes();
+/** @deprecated use getMinimumShiftDurationMinutes() * 60 * 1000 */
 export const MINIMUM_SHIFT_DURATION_MS = MINIMUM_SHIFT_DURATION_MINUTES * 60 * 1000;
 
 /**

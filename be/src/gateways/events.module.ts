@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventsGateway } from './events.gateway';
 import { User } from '../modules/users/entities/user.entity';
+import { UserAreasModule } from '../modules/user-areas/user-areas.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { User } from '../modules/users/entities/user.entity';
       }),
       inject: [ConfigService],
     }),
+    UserAreasModule,
   ],
   providers: [EventsGateway],
   exports: [EventsGateway],

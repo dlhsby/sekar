@@ -6,9 +6,9 @@
 export { default as websocketService } from './websocketService';
 export { EventType, ConnectionState } from './websocketService';
 export type {
-  WorkerLocationEvent,
-  WorkerClockInEvent,
-  WorkerClockOutEvent,
+  UserLocationEvent,
+  UserClockInEvent,
+  UserClockOutEvent,
   AreaStaffingEvent,
   TaskAssignedEvent,
   TaskCompletedEvent,

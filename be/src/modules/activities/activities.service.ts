@@ -20,6 +20,7 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { ACTIVITY_SUBMITTERS, MONITORING_CITY } from '../users/constants/role-groups';
+import { AuditLogService } from '../audit/audit.service';
 
 /**
  * Activities Service
@@ -40,6 +41,7 @@ export class ActivitiesService {
     private activityTypeRepository: Repository<ActivityType>,
     private s3Service: S3Service,
     private readonly usersService: UsersService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -102,6 +104,16 @@ export class ActivitiesService {
 
     const savedActivity = await this.activitiesRepository.save(activity);
     this.logger.log(`Activity created successfully: ${savedActivity.id}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'activity',
+        entity_id: savedActivity.id,
+        action: 'create',
+        actor_id: userId,
+        new_value: { activity_type_id: dto.activity_type_id, area_id: savedActivity.area_id },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return savedActivity;
   }
@@ -405,6 +417,17 @@ export class ActivitiesService {
 
     await this.activitiesRepository.save(activity);
 
+    this.auditLogService
+      .log({
+        entity_type: 'activity',
+        entity_id: activityId,
+        action: 'approve',
+        actor_id: reviewerId,
+        old_value: { status: ActivityStatus.PENDING },
+        new_value: { status: ActivityStatus.APPROVED, reviewed_by: reviewerId },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
     // Re-fetch with all relations for the response
     return this.activitiesRepository.findOneOrFail({
       where: { id: activityId },
@@ -450,6 +473,17 @@ export class ActivitiesService {
     activity.rejection_reason = reason;
 
     await this.activitiesRepository.save(activity);
+
+    this.auditLogService
+      .log({
+        entity_type: 'activity',
+        entity_id: activityId,
+        action: 'reject',
+        actor_id: reviewerId,
+        old_value: { status: ActivityStatus.PENDING },
+        new_value: { status: ActivityStatus.REJECTED, rejection_reason: reason },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     // Re-fetch with all relations for the response
     return this.activitiesRepository.findOneOrFail({

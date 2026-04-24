@@ -5,6 +5,7 @@ import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
 describe('UsersController', () => {
   let module: TestingModule;
@@ -16,6 +17,8 @@ describe('UsersController', () => {
     username: 'testuser',
     password_hash: 'hashedpassword',
     full_name: 'Test User',
+    phone_number: null,
+    profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
@@ -30,6 +33,7 @@ describe('UsersController', () => {
     update: jest.fn(),
     remove: jest.fn(),
     changePassword: jest.fn(),
+    updateProfilePicture: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -95,6 +99,8 @@ describe('UsersController', () => {
         username: 'admindata1',
         password_hash: 'hashedpassword',
         full_name: 'Admin Data One',
+        phone_number: null,
+        profile_picture_url: null,
         role: UserRole.ADMIN_DATA,
         rayon_id: 'rayon-uuid-1',
         is_active: true,
@@ -120,6 +126,8 @@ describe('UsersController', () => {
         username: 'kepalarayon1',
         password_hash: 'hashedpassword',
         full_name: 'Kepala Rayon One',
+        phone_number: null,
+        profile_picture_url: null,
         role: UserRole.KEPALA_RAYON,
         rayon_id: 'rayon-uuid-2',
         is_active: true,
@@ -201,6 +209,8 @@ describe('UsersController', () => {
         username: 'worker1',
         password_hash: 'hashedpassword',
         full_name: 'Worker One',
+        phone_number: null,
+        profile_picture_url: null,
         role: UserRole.SATGAS,
         is_active: true,
         created_at: new Date(),
@@ -216,6 +226,71 @@ describe('UsersController', () => {
         changePasswordDto.current_password,
         changePasswordDto.new_password,
       );
+    });
+  });
+
+  describe('uploadProfilePicture', () => {
+    const mockFile: Express.Multer.File = {
+      fieldname: 'file',
+      originalname: 'photo.jpg',
+      encoding: '7bit',
+      mimetype: 'image/jpeg',
+      size: 1024 * 100,
+      buffer: Buffer.from('fake-image-data'),
+      stream: null as any,
+      destination: '',
+      filename: '',
+      path: '',
+    };
+
+    it('should upload profile picture for own user as base64', async () => {
+      mockUsersService.updateProfilePicture.mockResolvedValue(undefined);
+
+      const result = await controller.uploadProfilePicture(mockUser.id, mockFile, mockUser);
+      const expectedBase64 = `data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`;
+
+      expect(result).toEqual({ profile_picture_url: expectedBase64 });
+      expect(mockUsersService.updateProfilePicture).toHaveBeenCalledWith(mockUser.id, expectedBase64);
+    });
+
+    it('should allow admin to upload for other user', async () => {
+      const adminUser: User = {
+        ...mockUser,
+        id: 'admin-uuid',
+        role: UserRole.ADMIN_SYSTEM,
+      };
+      mockUsersService.updateProfilePicture.mockResolvedValue(undefined);
+
+      const result = await controller.uploadProfilePicture('other-user-uuid', mockFile, adminUser);
+      const expectedBase64 = `data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`;
+
+      expect(result).toEqual({ profile_picture_url: expectedBase64 });
+    });
+
+    it('should throw ForbiddenException if non-admin uploads for another user', async () => {
+      await expect(
+        controller.uploadProfilePicture('other-user-uuid', mockFile, mockUser),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException if no file provided', async () => {
+      await expect(
+        controller.uploadProfilePicture(mockUser.id, null as any, mockUser),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for invalid mime type', async () => {
+      const invalidFile = { ...mockFile, mimetype: 'application/pdf' };
+      await expect(
+        controller.uploadProfilePicture(mockUser.id, invalidFile as any, mockUser),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for file exceeding 5MB', async () => {
+      const largeFile = { ...mockFile, size: 6 * 1024 * 1024 };
+      await expect(
+        controller.uploadProfilePicture(mockUser.id, largeFile as any, mockUser),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

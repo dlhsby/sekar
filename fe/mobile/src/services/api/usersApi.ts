@@ -6,6 +6,8 @@
 import { get, post } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type { User } from '../../types/models.types';
+import { getToken } from '../storage/secureStorage';
+import config from '../../constants/config';
 
 /**
  * Change password request payload
@@ -27,6 +29,54 @@ export async function getUsers(limit = 100): Promise<ApiResponse<User[]>> {
     return { data: response.data.data };
   }
   return { data: [], error: response.error };
+}
+
+/**
+ * Upload profile picture for a user (Phase 2E)
+ * Sends multipart/form-data with the image file under the 'file' key.
+ * @param userId - Target user's ID
+ * @param imageUri - Local file URI (file://...) of the image to upload
+ * @returns Updated profile_picture_url
+ */
+export async function uploadProfilePicture(
+  userId: string,
+  imageUri: string,
+): Promise<ApiResponse<{ profile_picture_url: string }>> {
+  try {
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('file', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'profile_picture.jpg',
+    } as any);
+
+    const response = await fetch(
+      `${config.API_BASE_URL}/users/${userId}/profile-picture`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      },
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      return {
+        error: errorBody?.message || `Gagal mengunggah foto (${response.status})`,
+      };
+    }
+
+    const data = await response.json();
+    return { data };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Gagal mengunggah foto profil',
+    };
+  }
 }
 
 /**

@@ -29,7 +29,7 @@ import type {
 
 // Auth API
 export interface LoginRequest {
-  username: string;
+  identifier: string; // Phase 2E: username or phone number
   password: string;
 }
 
@@ -54,7 +54,7 @@ export interface ClockInRequest {
   area_id?: string; // Phase 2C: optional, auto-detected from schedule
   gps_lat: number;
   gps_lng: number;
-  selfie_photo: string; // base64 encoded with data URI prefix
+  selfie_photo?: string; // Phase 2E: base64 encoded with data URI prefix, optional
 }
 
 export interface ClockInResponse {
@@ -196,6 +196,7 @@ export interface AreaTypesResponse {
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
+  code?: string;
   message?: string;
 }
 
@@ -303,6 +304,23 @@ export interface CreateOvertimeRequest {
   photo_urls: string[]; // 1-3 S3 URLs
   gps_lat?: number;
   gps_lng?: number;
+}
+
+// Phase 2E: Overtime clock-in/out redesign (matches backend DTOs exactly)
+export interface StartOvertimeRequest {
+  gps_lat: number;
+  gps_lng: number;
+  selfie_photo?: string;   // base64, optional
+  reason?: string;         // optional: why user is doing overtime
+}
+
+export interface EndOvertimeRequest {
+  gps_lat: number;
+  gps_lng: number;
+  selfie_photo?: string;     // base64, optional
+  activity_type_id: string;  // required
+  description: string;       // required
+  photo_urls: string[];      // required, 1-3 S3 URLs
 }
 
 export interface RejectOvertimeRequest {
@@ -448,4 +466,7 @@ export type { LiveUsersResponse } from './models.types';
 // Phase 2D: Staffing summary response wrapper
 export interface StaffingSummaryResponse {
   items: import('./models.types').StaffingSummaryItem[];
+  current_day_type?: string;
+  current_day_type_label?: string;
+  generated_at?: string;
 }

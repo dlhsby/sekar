@@ -19,7 +19,7 @@ jest.mock('../../constants/roles', () => ({
     ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'].includes(role),
   ),
   canSubmitActivities: jest.fn((role: string) =>
-    ['satgas', 'linmas', 'korlap', 'admin_data'].includes(role),
+    ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'].includes(role),
   ),
   canCreateTasks: jest.fn((role: string) =>
     ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'].includes(role),
@@ -28,9 +28,11 @@ jest.mock('../../constants/roles', () => ({
     ['satgas', 'linmas', 'korlap', 'kepala_rayon'].includes(role),
   ),
   canSubmitOvertime: jest.fn((role: string) =>
-    ['satgas', 'linmas'].includes(role),
+    ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'].includes(role),
   ),
-  canApproveOvertime: jest.fn((role: string) => role === 'korlap'),
+  canApproveOvertime: jest.fn((role: string) =>
+    ['korlap', 'kepala_rayon', 'top_management'].includes(role),
+  ),
   canMonitor: jest.fn((role: string) =>
     ['korlap', 'admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'].includes(role),
   ),
@@ -94,7 +96,7 @@ describe('useRoleAccess', () => {
       expect(result.current.canSubmitActivity).toBe(true);
       expect(result.current.canCreateTask).toBe(true);
       expect(result.current.canReceiveTask).toBe(true);
-      expect(result.current.canSubmitOvertime).toBe(false);
+      expect(result.current.canSubmitOvertime).toBe(true);
       expect(result.current.canApproveOvertime).toBe(true);
       expect(result.current.canMonitor).toBe(true);
       expect(result.current.monitoringScope).toBe('area');
@@ -110,7 +112,7 @@ describe('useRoleAccess', () => {
       expect(result.current.canSubmitActivity).toBe(true);
       expect(result.current.canCreateTask).toBe(false);
       expect(result.current.canReceiveTask).toBe(false);
-      expect(result.current.canSubmitOvertime).toBe(false);
+      expect(result.current.canSubmitOvertime).toBe(true);
       expect(result.current.canApproveOvertime).toBe(false);
       expect(result.current.canMonitor).toBe(true);
       expect(result.current.monitoringScope).toBe('rayon');
@@ -123,11 +125,11 @@ describe('useRoleAccess', () => {
       const { result } = renderHook(() => useRoleAccess());
 
       expect(result.current.canClock).toBe(true);
-      expect(result.current.canSubmitActivity).toBe(false);
+      expect(result.current.canSubmitActivity).toBe(true);
       expect(result.current.canCreateTask).toBe(true);
       expect(result.current.canReceiveTask).toBe(true);
-      expect(result.current.canSubmitOvertime).toBe(false);
-      expect(result.current.canApproveOvertime).toBe(false);
+      expect(result.current.canSubmitOvertime).toBe(true);
+      expect(result.current.canApproveOvertime).toBe(true);
       expect(result.current.canMonitor).toBe(true);
       expect(result.current.monitoringScope).toBe('rayon');
     });
@@ -143,7 +145,7 @@ describe('useRoleAccess', () => {
       expect(result.current.canCreateTask).toBe(true);
       expect(result.current.canReceiveTask).toBe(false);
       expect(result.current.canSubmitOvertime).toBe(false);
-      expect(result.current.canApproveOvertime).toBe(false);
+      expect(result.current.canApproveOvertime).toBe(true);
       expect(result.current.canMonitor).toBe(true);
       expect(result.current.monitoringScope).toBe('city');
     });

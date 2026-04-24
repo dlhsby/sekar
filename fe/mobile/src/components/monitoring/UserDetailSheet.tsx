@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import type { BottomSheetDefaultBackdropProps } from '@gorhom/bottom-sheet/lib/typescript/components/bottomSheetBackdrop/types';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -36,6 +37,8 @@ interface UserDetailSheetProps {
   isLoadingDaySummary: boolean;
   onClose: () => void;
   onTrailPress: (user: LiveUser) => void;
+  onReassignPress?: (user: LiveUser) => void;
+  currentUserRole?: UserRole;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -77,12 +80,16 @@ const TASK_STATUS_COLORS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const REASSIGN_ROLES: UserRole[] = ['superadmin', 'admin_system', 'kepala_rayon'];
+
 export function UserDetailSheet({
   user,
   daySummary,
   isLoadingDaySummary,
   onClose,
   onTrailPress,
+  onReassignPress,
+  currentUserRole,
 }: UserDetailSheetProps): React.JSX.Element | null {
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['50%', '85%'], []);
@@ -94,6 +101,19 @@ export function UserDetailSheet({
       sheetRef.current?.close();
     }
   }, [user]);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetDefaultBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.4}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
 
   const handleClose = useCallback(() => {
     sheetRef.current?.close();
@@ -120,7 +140,13 @@ export function UserDetailSheet({
     if (user) { onTrailPress(user); }
   }, [user, onTrailPress]);
 
+  const handleReassign = useCallback(() => {
+    if (user) { onReassignPress?.(user); }
+  }, [user, onReassignPress]);
+
   if (!user) { return null; }
+
+  const canReassign = currentUserRole && REASSIGN_ROLES.includes(currentUserRole);
 
   const statusColor = getStatusColor(user.status);
   const roleIcon = getRoleIcon(user.role);
@@ -133,6 +159,7 @@ export function UserDetailSheet({
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
+      backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.handle}
@@ -201,6 +228,15 @@ export function UserDetailSheet({
             disabled={false}
             onPress={handleTrail}
           />
+          {canReassign && (
+            <ActionButton
+              icon="account-switch"
+              label="Reassign"
+              color="#2563EB"
+              disabled={false}
+              onPress={handleReassign}
+            />
+          )}
         </View>
       </BottomSheetScrollView>
     </BottomSheet>

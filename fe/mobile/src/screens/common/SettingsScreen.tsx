@@ -27,7 +27,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import DeviceInfo from 'react-native-device-info';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { NBCard, NBBackgroundPattern, NBAlert } from '../../components/nb';
-import { ChangePasswordModal } from '../../components/common';
 import { logout } from '../../store/slices/authSlice';
 import { resetState as resetShiftState } from '../../store/slices/shiftSlice';
 import { resetState as resetActivitiesState } from '../../store/slices/activitiesSlice';
@@ -75,7 +74,6 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
   const [analytics, setAnalytics] = useState(false);
 
   // Modal states
-  const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
   // App info
@@ -166,14 +164,6 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
   ];
 
   const accountSettings: SettingItem[] = [
-    {
-      key: 'changePassword',
-      label: 'Ubah Password',
-      description: 'Perbarui password akun Anda',
-      type: 'button',
-      icon: 'lock-reset',
-      onPress: () => setIsChangePasswordModalVisible(true),
-    },
     {
       key: 'logout',
       label: 'Keluar',
@@ -310,11 +300,6 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         </View>
       )}
 
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        visible={isChangePasswordModalVisible}
-        onClose={() => setIsChangePasswordModalVisible(false)}
-      />
     </SafeAreaView>
   );
 }

@@ -133,7 +133,7 @@ export class Shift {
     nullable: true,
   })
   @Column({ type: 'text', nullable: true })
-  clock_in_photo_url: string;
+  clock_in_photo_url: string | null;
 
   @ApiProperty({
     description: 'Clock-out timestamp (null if still active)',
@@ -185,6 +185,13 @@ export class Shift {
   })
   @Column({ type: 'text', nullable: true })
   clock_out_photo_url?: string;
+
+  @ApiProperty({
+    description: 'Whether this shift is an overtime shift',
+    default: false,
+  })
+  @Column({ name: 'is_overtime', type: 'boolean', default: false })
+  is_overtime: boolean;
 
   @ApiProperty({
     description: 'Timestamp when record was created',

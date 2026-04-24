@@ -36,6 +36,7 @@ export type MainTabParamList = {
   ShiftHistory: undefined;
   Settings: undefined;
   Attendance: undefined;
+  EditProfile: undefined;
 };
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> =

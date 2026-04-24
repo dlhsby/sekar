@@ -124,12 +124,29 @@ export class StatusCalculatorService {
       isWithinArea = await this.checkWithinArea(areaId, clockInLat, clockInLng);
     }
 
+    // Resolve rayon_id: from user.rayon_id first, then from area's rayon_id
+    let rayonId: string | null = null;
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'role', 'rayon_id'],
+    });
+    if (user?.rayon_id) {
+      rayonId = user.rayon_id;
+    } else if (areaId) {
+      const area = await this.areaRepository.findOne({
+        where: { id: areaId },
+        select: ['id', 'rayon_id'],
+      });
+      rayonId = area?.rayon_id || null;
+    }
+
     await this.trackingRepository.upsert(
       {
         user_id: userId,
         shift_id: shiftId,
         shift_definition_id: shiftDefinitionId,
         area_id: areaId,
+        rayon_id: rayonId,
         status: TrackingStatus.ACTIVE,
         is_within_area: isWithinArea,
         updated_at: now,
@@ -154,6 +171,8 @@ export class StatusCalculatorService {
         user_id: userId,
         shift_id: null,
         shift_definition_id: null,
+        area_id: null,
+        rayon_id: null,
         status: TrackingStatus.OFFLINE,
         is_within_area: true,
         updated_at: now,

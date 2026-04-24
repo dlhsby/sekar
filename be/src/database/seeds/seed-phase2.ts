@@ -12,15 +12,70 @@ config();
  * - Shift Definitions (3 fixed shifts)
  * - Activity Types (20 work activities across 4 roles)
  * - Special Day Overrides (4 initial holidays)
- * - Additional Users (7 users with new roles)
- * - Area Staff Requirements (14 requirements)
- * - Worker Schedules (4 assignments)
+ * - Users (39 total: admin + 23 Phase2C/rayon-admin + 15 rayon-field)
+ * - Areas (10 total: 3 Phase1 + 5 new for missing rayons + Taman Pelangi + Taman Utara)
+ * - Area Staff Requirements (32 requirements)
+ * - Notification Tokens, Overtimes, Shifts
+ * - Tasks (42 total), Activities (50 total)
+ * - Monitoring configs + user_tracking_status (Phase 2D)
+ * - phone_number + user_areas (Phase 2E)
  *
  * Also updates existing data:
  * - Area Types: Set category (ACTIVE/PASSIVE)
  * - Areas: Assign to Rayons
  *
- * Usage: npx ts-node src/database/seeds/seed-phase2.ts
+ * Usage: npm run db:seed
+ *
+ * =============================================================================
+ * TEST USERS BY ROLE  (all passwords: password123)
+ * Login via username OR phone number as identifier
+ * =============================================================================
+ *
+ * | Role            | Username              | Phone          | Rayon        | Area / Notes                        |
+ * |-----------------|---------------------- |----------------|--------------|-------------------------------------|
+ * | superadmin      | admin                 | 081200000000   | —            | Full system access (Phase 1 admin)  |
+ * | admin_system    | admin_system1         | 081234567898   | —            | System administration               |
+ * | top_management  | top_management1       | 081234567890   | —            | City-wide read-only view            |
+ * | admin_data      | admin_data1           | 081234567897   | Rayon Pusat  | Data entry & reporting              |
+ * | kepala_rayon    | kepala_rayon_pusat    | 081300000001   | Rayon Pusat  | Manages Pusat sector                |
+ * | korlap (multi)  | korlap_bungkul        | 081234567893   | Rayon Pusat  | Taman Bungkul + Jalan Raya Darmo    |
+ * | korlap (single) | korlap_darmo          | 081234567896   | Rayon Pusat  | Jalan Raya Darmo                    |
+ * | satgas (multi)  | satgas_pusat_1        | 081300000002   | Rayon Pusat  | Taman Pusat + Taman Bungkul (multi) |
+ * | satgas          | satgas_pusat_2        | 081300000003   | Rayon Pusat  | Taman Pusat (outside_area status)   |
+ * | linmas          | linmas_bungkul_1      | 081234567894   | Rayon Pusat  | Taman Bungkul (active status)       |
+ * | linmas          | linmas_darmo_1        | 081234567895   | Rayon Pusat  | Jalan Raya Darmo                    |
+ * | satgas          | satgas_timur1_2       | 081300000006   | Rayon Timur 1| Taman Timur 1 [INACTIVE status]     |
+ * | satgas (miss.)  | satgas_timur1_1       | 081300000005   | Rayon Timur 1| Taman Timur 1 (missing status)      |
+ * | satgas          | satgas_bungkul_1      | 081300000016   | Rayon Pusat  | Taman Bungkul (single area)         |
+ * | satgas (multi)  | satgas_bungkul_2      | 081300000017   | Rayon Pusat  | Taman Bungkul + Jalan Raya Darmo    |
+ *
+ * RAYON PUSAT AREAS (for testing active+passive park scenario):
+ *   - Taman Bungkul   → taman aktif  (park type)   — workers: korlap_bungkul, satgas_pusat_1, linmas_bungkul_1
+ *   - Jalan Raya Darmo → taman pasif (pedestrian)  — workers: korlap_bungkul (2nd), korlap_darmo, linmas_darmo_1, satgas_bungkul_2 (2nd)
+ *   - Taman Pusat     → taman aktif  (park type)   — workers: satgas_pusat_1, satgas_pusat_2
+ *
+ * RAYON SELATAN AREAS:
+ *   - Taman Harmoni   → taman aktif  (park type)   — korlap: korlap_harmoni (understaffing test)
+ *   - Taman Pelangi   → taman aktif  (park type, NEW) — empty, for boundary/understaffing testing
+ *
+ * RAYON UTARA AREAS:
+ *   - Taman Utara     → taman aktif  (park type, NEW) — korlap: korlap_utara
+ *
+ * MONITORING STATUS SCENARIOS (Phase 2D):
+ *   active       → satgas_pusat_1, linmas_bungkul_1  (recent GPS ping within boundary)
+ *   inactive     → satgas_timur1_2                   (last ping 35 min ago)
+ *   outside_area → satgas_pusat_2                    (GPS outside boundary polygon)
+ *   missing      → satgas_timur1_1                   (no ping for 3+ hours)
+ *   offline      → all others
+ *
+ * MULTI-AREA ASSIGNMENT (Phase 2E - user_areas table):
+ *   korlap_bungkul  → Taman Bungkul (permanent) + Jalan Raya Darmo (permanent)  [both Rayon Pusat]
+ *   korlap_darmo    → Jalan Raya Darmo (permanent)
+ *   satgas_pusat_1  → Taman Pusat (permanent default) + Taman Bungkul (permanent extra)
+ *   satgas_timur1_2 → Taman Timur 1 only (Rayon Timur 1)  [Timur 2 is a different rayon]
+ *   satgas_bungkul_1 → Taman Bungkul (permanent, single area)
+ *   satgas_bungkul_2 → Taman Bungkul (permanent default) + Jalan Raya Darmo (permanent extra)
+ * =============================================================================
  */
 
 // Real UUID v4 IDs for consistent references
@@ -73,96 +128,92 @@ const USER_PHASE2_1_ID = '72a9cad5-bc9f-44a6-a982-e714080c1643';
 const USER_PHASE2_2_ID = '8dd46350-3bad-4232-be54-23d144c8aefb';
 const USER_PHASE2_3_ID = '1db260a1-446a-41dc-9215-e934ec5eb14f';
 const USER_PHASE2_4_ID = '83ee0766-9cf1-471f-812f-d9b41a5397e3';
-const USER_PHASE2_5_ID = '2598e482-be79-447f-9235-e7ed355b7a30';
-const USER_PHASE2_6_ID = '6d88c343-c4e3-4388-bc68-a652c1d078a7';
-const USER_PHASE2_7_ID = '52be9254-81a1-4ba6-b440-1e7ae6707365';
 const USER_PHASE2_8_ID = '9da22bbf-ea00-4e7a-b2fb-f22339690eb9';
 const USER_PHASE2_9_ID = 'b8c6c6a4-7270-4790-8b2f-ba5e8aec5a7a';
 
-// New users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2) — 15 users total
-const USER_NEW_1_ID = 'a1000000-1111-4000-8000-000000000001'; // kepala_rayon_pusat
-const USER_NEW_2_ID = 'a2000000-2222-4000-8000-000000000002'; // satgas_pusat_1
-const USER_NEW_3_ID = 'a3000000-3333-4000-8000-000000000003'; // satgas_pusat_2
-const USER_NEW_4_ID = 'a4000000-4444-4000-8000-000000000004'; // kepala_rayon_timur1
-const USER_NEW_5_ID = 'a5000000-5555-4000-8000-000000000005'; // satgas_timur1_1 (missing scenario)
-const USER_NEW_6_ID = 'a6000000-6666-4000-8000-000000000006'; // satgas_timur1_2
-const USER_NEW_7_ID = 'a7000000-7777-4000-8000-000000000007'; // kepala_rayon_timur2
-const USER_NEW_8_ID = 'a8000000-8888-4000-8000-000000000008'; // satgas_timur2_1
-const USER_NEW_9_ID = 'a9000000-9999-4000-8000-000000000009'; // satgas_timur2_2
-const USER_NEW_10_ID = 'aa000000-aaaa-4000-8000-00000000000a'; // kepala_rayon_barat1
-const USER_NEW_11_ID = 'ab000000-bbbb-4000-8000-00000000000b'; // satgas_barat1_1
-const USER_NEW_12_ID = 'ac000000-cccc-4000-8000-00000000000c'; // satgas_barat1_2
-const USER_NEW_13_ID = 'ad000000-dddd-4000-8000-00000000000d'; // kepala_rayon_barat2
-const USER_NEW_14_ID = 'ae000000-eeee-4000-8000-00000000000e'; // satgas_barat2_1
-const USER_NEW_15_ID = 'af000000-ffff-4000-8000-00000000000f'; // satgas_barat2_2
+// Real UUID v4 IDs for 5 missing-rayon users
+const USER_NEW_1_ID = '3f7b4a2e-8c91-4d56-b3e7-9a1f2c4d6e8f'; // kepala_rayon_pusat
+const USER_NEW_2_ID = '7a2e9d4f-1b3c-4e8a-9f7b-2c6d0e5f8a1b'; // satgas_pusat_1
+const USER_NEW_3_ID = '5c8f3a1d-4e7b-4f2c-8a9d-1b6e0f4c7d2e'; // satgas_pusat_2
+const USER_NEW_4_ID = '2d9b7e6f-3c4a-4d8e-b1f7-9e0c2a8b4d6f'; // kepala_rayon_timur1
+const USER_NEW_5_ID = '8f1c4a7d-6e2b-4f9c-a3d8-7b0e5f1c3a9d'; // satgas_timur1_1 (missing scenario)
+const USER_NEW_6_ID = '4a7d9e2f-8b1c-4a6d-b5e9-3f7c0a4d2b8e'; // satgas_timur1_2
+const USER_NEW_7_ID = '6e3f1b9a-7c4d-4e2f-a8b5-1d9c7e3f0a6b'; // kepala_rayon_timur2
+const USER_NEW_8_ID = '9b4e7c2f-1a8d-4b3e-a6f9-4d0b8e2c7f1a'; // satgas_timur2_1
+const USER_NEW_9_ID = '1f8b5e3c-4d7a-4c9e-b2f8-6a1b5e9c4d7f'; // satgas_timur2_2
+const USER_NEW_10_ID = '7c2a8f4d-9e1b-4d7c-a5a2-8e4c1f7b3d9a'; // kepala_rayon_barat1
+const USER_NEW_11_ID = '3e9f6b1c-5d8a-4e4f-b7c1-9f3d6a0e8b5c'; // satgas_barat1_1
+const USER_NEW_12_ID = 'a5d2e9f7-6b3c-4f1a-b8e5-2f7d4b9e0a6c'; // satgas_barat1_2
+const USER_NEW_13_ID = 'd8c5f3a9-2e7b-4c8d-a1f6-5b3e9d2c7f4a'; // kepala_rayon_barat2
+const USER_NEW_14_ID = '2f7a4d8e-9c1b-4d6f-b3a7-8c5e2f0d4b9e'; // satgas_barat2_1
+const USER_NEW_15_ID = 'b4e8a3f1-7c2d-4b5e-a9f4-1d6a8e3b5f7c'; // satgas_barat2_2
 
-// New areas for 5 missing rayons
-const AREA_PUSAT_ID = 'b1000000-1111-4000-8000-000000000001';
-const AREA_TIMUR1_ID = 'b2000000-2222-4000-8000-000000000002';
-const AREA_TIMUR2_ID = 'b3000000-3333-4000-8000-000000000003';
-const AREA_BARAT1_ID = 'b4000000-4444-4000-8000-000000000004';
-const AREA_BARAT2_ID = 'b5000000-5555-4000-8000-000000000005';
+// New users replacing legacy linmas1 / linmas2 / satgas4
+const USER_LINMAS_BUNGKUL_1_ID = 'c6d1f4b8-3a7e-4c9d-a5f2-7b4a1e6d9c3f'; // linmas_bungkul_1
+const USER_LINMAS_DARMO_1_ID = 'e9b3a7f2-6d4c-4e1b-b8a5-3c7d0b9e2a6f'; // linmas_darmo_1
+const USER_KORLAP_DARMO_ID = 'f1d4e7a3-2b8c-4f5d-a9e6-4c1b7e3f0d8a'; // korlap_darmo
+
+// Bungkul satgas users (Phase 2E+ demo users)
+const USER_SATGAS_BUNGKUL_1_ID = 'a3c9e7f2-1d5b-4a8e-b6c4-9f2e7a3c5d1b'; // satgas_bungkul_1
+const USER_SATGAS_BUNGKUL_2_ID = 'd7b4f1e9-3c6a-4d2f-a8e5-2b9f4d7c1e6a'; // satgas_bungkul_2
+
+// Taman Utara area (Rayon Utara has no area yet)
+const AREA_UTARA_ID = '8b3e6f1d-4a9c-4b7e-92f8-5d1c9e3b6f4a';
+
+// Admin data per rayon — 6 new users (excluding Pusat which already has admin_data1)
+const USER_ADMIN_DATA_SELATAN_ID = '1a4c7e9b-2d5f-4a8c-93e6-7f9a1c4e7b2d';
+const USER_ADMIN_DATA_UTARA_ID   = '2b5d8f0c-3e6a-4b9d-a4f7-8a0b2d5f8c3e';
+const USER_ADMIN_DATA_TIMUR1_ID  = '3c6e9a1d-4f7b-4c0e-b5a8-9b1c3e6a9d4f';
+const USER_ADMIN_DATA_TIMUR2_ID  = '4d7f0b2e-5a8c-4d1f-86b9-0c2d4f7b0e5a';
+const USER_ADMIN_DATA_BARAT1_ID  = '5e8a1c3f-6b9d-4e2a-97c0-1d3e5a8c1f6b';
+const USER_ADMIN_DATA_BARAT2_ID  = '6f9b2d4a-7c0e-4f3b-a8d1-2e4f6b9d2a7c';
+
+// Korlap per rayon — 6 new users (excluding Pusat which already has korlap_bungkul/korlap_darmo)
+const USER_KORLAP_HARMONI_ID = '7a0c3e5b-8d1f-4a4c-b9e2-3f5a7c0e3b8d';
+const USER_KORLAP_UTARA_ID   = '8b1d4f6c-9e2a-4b5d-a0f3-4a6b8d1f4c9e';
+const USER_KORLAP_TIMUR1_ID  = '9c2e5a7d-0f3b-4c6e-b1a4-5b7c9e2a5d0f';
+const USER_KORLAP_TIMUR2_ID  = 'ad3f6b8e-1a4c-4d7f-82b5-6c8d0f3b6e1a';
+const USER_KORLAP_BARAT1_ID  = 'be4a7c9f-2b5d-4e8a-93c6-7d9e1a4c7f2b';
+const USER_KORLAP_BARAT2_ID  = 'cf5b8d0a-3c6e-4f9b-a4d7-8e0f2b5d8a3c';
+
+// New areas for 5 missing rayons + Taman Pelangi (Selatan)
+const AREA_PUSAT_ID = 'f4e9b2d6-1c7a-4f3e-a8b5-6d2c9f4e1b7a';
+const AREA_TIMUR1_ID = 'a8d3f7e1-9b4c-4a6d-92f9-4e1b8d7f3a9c';
+const AREA_TIMUR2_ID = 'c2f8e4b7-5d1a-4c8f-b6e3-9a5d2c1f8e4b';
+const AREA_BARAT1_ID = '7d5c9f3e-2a8b-4d1c-a7e4-1f6b3e9d5c2f';
+const AREA_BARAT2_ID = '5b1e8d4c-7f3a-4b6e-89c2-8a4f7b1e5d3c';
+const AREA_PELANGI_ID = '6a5b4c3d-2e1f-4a9b-8c7d-6e5f4a3b2c1d'; // Taman Pelangi, Rayon Selatan
 
 // Notification token IDs
-const NOTIF_TOKEN_1_ID = 'c1000000-1111-4000-8000-000000000001'; // satgas1
-const NOTIF_TOKEN_2_ID = 'c2000000-2222-4000-8000-000000000002'; // satgas2
-const NOTIF_TOKEN_3_ID = 'c3000000-3333-4000-8000-000000000003'; // linmas1
+const NOTIF_TOKEN_1_ID = '9f4e2d8b-1c7a-4f9e-b3d6-7a2c5e1f4b8d'; // → satgas_pusat_1
+const NOTIF_TOKEN_2_ID = '3b8f6e2d-5a9c-4b3f-87d1-4c8a3f6b2e9d'; // → satgas_timur1_2
+const NOTIF_TOKEN_3_ID = '7e3c1f9b-4d8a-4e7c-92f6-9b5e3c0f1d7a'; // → linmas_bungkul_1
 
-// Activity IDs for Section C (50 activities)
+// Activity IDs for Section C
 // Satgas recent (12)
-const ACT_SAT_1_ID = '11111111-aaaa-1111-aaaa-111111111111';
-const ACT_SAT_2_ID = '22222222-aaaa-2222-aaaa-222222222222';
-const ACT_SAT_3_ID = '33333333-aaaa-3333-aaaa-333333333333';
-const ACT_SAT_4_ID = '44444444-aaaa-4444-aaaa-444444444444';
-const ACT_SAT_5_ID = '55555555-aaaa-5555-aaaa-555555555555';
-const ACT_SAT_6_ID = '66666666-aaaa-6666-aaaa-666666666666';
-const ACT_SAT_7_ID = '77777777-aaaa-7777-aaaa-777777777777';
-const ACT_SAT_8_ID = '88888888-aaaa-8888-aaaa-888888888888';
-const ACT_SAT_9_ID = '99999999-aaaa-9999-aaaa-999999999999';
-const ACT_SAT_10_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-const ACT_SAT_11_ID = 'bbbbbbbb-aaaa-bbbb-aaaa-bbbbbbbbbbbb';
-const ACT_SAT_12_ID = 'cccccccc-aaaa-cccc-aaaa-cccccccccccc';
+const ACT_SAT_1_ID = 'a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c4d5';
+const ACT_SAT_2_ID = 'b2c3d4e5-f6a7-4b8c-9d0e-f1a2b3c4d5e6';
+const ACT_SAT_3_ID = 'c3d4e5f6-a7b8-4c9d-ae1f-a2b3c4d5e6f7';
+const ACT_SAT_4_ID = 'd4e5f6a7-b8c9-4d0e-bf2a-b3c4d5e6f7a8';
+const ACT_SAT_5_ID = 'e5f6a7b8-c9d0-4e1f-9a3b-c4d5e6f7a8b9';
+const ACT_SAT_6_ID = 'f6a7b8c9-d0e1-4f2a-8b4c-d5e6f7a8b9c0';
+const ACT_SAT_7_ID = 'a7b8c9d0-e1f2-4a3b-ac5d-e6f7a8b9c0d1';
+const ACT_SAT_8_ID = 'b8c9d0e1-f2a3-4b4c-bd6e-f7a8b9c0d1e2';
+const ACT_SAT_9_ID = 'c9d0e1f2-a3b4-4c5d-9e7f-a8b9c0d1e2f3';
+const ACT_SAT_10_ID = 'd0e1f2a3-b4c5-4d6e-af8a-b9c0d1e2f3a4';
+const ACT_SAT_11_ID = 'e1f2a3b4-c5d6-4e7f-b09b-c0d1e2f3a4b5';
+const ACT_SAT_12_ID = 'f2a3b4c5-d6e7-4f8a-9b0c-d1e2f3a4b5c6';
 // Linmas recent (5)
-const ACT_LIN_1_ID = '11111111-bbbb-1111-bbbb-111111111111';
-const ACT_LIN_2_ID = '22222222-bbbb-2222-bbbb-222222222222';
-const ACT_LIN_3_ID = '33333333-bbbb-3333-bbbb-333333333333';
-const ACT_LIN_4_ID = '44444444-bbbb-4444-bbbb-444444444444';
-const ACT_LIN_5_ID = '55555555-bbbb-5555-bbbb-555555555555';
+const ACT_LIN_1_ID = 'a3b4c5d6-e7f8-4a9b-8c1d-e2f3a4b5c6d7';
+const ACT_LIN_2_ID = 'b4c5d6e7-f8a9-4b0c-9d2e-f3a4b5c6d7e8';
+const ACT_LIN_3_ID = 'c5d6e7f8-a9b0-4c1d-ae3f-a4b5c6d7e8f9';
+const ACT_LIN_4_ID = 'd6e7f8a9-b0c1-4d2e-bf4a-b5c6d7e8f9a0';
+const ACT_LIN_5_ID = 'e7f8a9b0-c1d2-4e3f-9a5b-c6d7e8f9a0b1';
 // Korlap recent (3)
-const ACT_KOR_1_ID = '11111111-cccc-1111-cccc-111111111111';
-const ACT_KOR_2_ID = '22222222-cccc-2222-cccc-222222222222';
-const ACT_KOR_3_ID = '33333333-cccc-3333-cccc-333333333333';
-// Extended (30)
-const ACT_X1_ID = 'a1000000-dddd-a100-dddd-a10000000001';
-const ACT_X2_ID = 'a2000000-dddd-a200-dddd-a20000000002';
-const ACT_X3_ID = 'a3000000-dddd-a300-dddd-a30000000003';
-const ACT_X4_ID = 'a4000000-dddd-a400-dddd-a40000000004';
-const ACT_X5_ID = 'a5000000-dddd-a500-dddd-a50000000005';
-const ACT_X6_ID = 'a6000000-dddd-a600-dddd-a60000000006';
-const ACT_X7_ID = 'a7000000-dddd-a700-dddd-a70000000007';
-const ACT_X8_ID = 'a8000000-dddd-a800-dddd-a80000000008';
-const ACT_X9_ID = 'a9000000-dddd-a900-dddd-a90000000009';
-const ACT_X10_ID = 'aa000000-dddd-aa00-dddd-aa0000000010';
-const ACT_X11_ID = 'ab000000-dddd-ab00-dddd-ab0000000011';
-const ACT_X12_ID = 'ac000000-dddd-ac00-dddd-ac0000000012';
-const ACT_X13_ID = 'ad000000-dddd-ad00-dddd-ad0000000013';
-const ACT_X14_ID = 'ae000000-dddd-ae00-dddd-ae0000000014';
-const ACT_X15_ID = 'af000000-dddd-af00-dddd-af0000000015';
-const ACT_X16_ID = 'b0000000-dddd-b000-dddd-b00000000016';
-const ACT_X17_ID = 'b1000000-dddd-b100-dddd-b10000000017';
-const ACT_X18_ID = 'b2000000-dddd-b200-dddd-b20000000018';
-const ACT_X19_ID = 'b3000000-dddd-b300-dddd-b30000000019';
-const ACT_X20_ID = 'b4000000-dddd-b400-dddd-b40000000020';
-const ACT_X21_ID = 'b5000000-dddd-b500-dddd-b50000000021';
-const ACT_X22_ID = 'b6000000-dddd-b600-dddd-b60000000022';
-const ACT_X23_ID = 'b7000000-dddd-b700-dddd-b70000000023';
-const ACT_X24_ID = 'b8000000-dddd-b800-dddd-b80000000024';
-const ACT_X25_ID = 'b9000000-dddd-b900-dddd-b90000000025';
-const ACT_X26_ID = 'ba000000-dddd-ba00-dddd-ba0000000026';
-const ACT_X27_ID = 'bb000000-dddd-bb00-dddd-bb0000000027';
-const ACT_X28_ID = 'bc000000-dddd-bc00-dddd-bc0000000028';
-const ACT_X29_ID = 'bd000000-dddd-bd00-dddd-bd0000000029';
-const ACT_X30_ID = 'be000000-dddd-be00-dddd-be0000000030';
+const ACT_KOR_1_ID = 'f8a9b0c1-d2e3-4f4a-8b6c-d7e8f9a0b1c2';
+const ACT_KOR_2_ID = 'a9b0c1d2-e3f4-4a5b-9c7d-e8f9a0b1c2d3';
+const ACT_KOR_3_ID = 'b0c1d2e3-f4a5-4b6c-ae8d-f9a0b1c2d3e4';
+// Extended activities (30) — IDs generated via gen_random_uuid() in SQL (Section C DELETE clears first)
 
 // Task IDs for Section B
 const TASK_1_ID = '099757d2-ab32-4384-83e7-22a35b0510ec';
@@ -173,42 +224,42 @@ const TASK_5_ID = 'a94b846b-ebbf-41df-bcbf-340187c50b5a';
 const TASK_6_ID = 'a1de5361-6619-454d-af2a-360fe5cc18bc';
 const TASK_7_ID = 'cee9877b-5d88-4528-b339-9bed9a8fb06b';
 const TASK_8_ID = '8ec6c9c4-981c-412d-a1e8-a6c2c80ed189';
-const LINMAS_TASK_1_ID = '11111111-1111-1111-1111-111111111111';
-const LINMAS_TASK_2_ID = '22222222-2222-2222-2222-222222222222';
-const LINMAS_TASK_3_ID = '33333333-3333-3333-3333-333333333333';
-const LINMAS_TASK_4_ID = '44444444-4444-4444-4444-444444444444';
-const KORLAP_TASK_1_ID = '55555555-5555-5555-5555-555555555555';
-const KORLAP_TASK_2_ID = '66666666-6666-6666-6666-666666666666';
-const KORLAP_TASK_3_ID = '77777777-7777-7777-7777-777777777777';
-const TASK_E1_ID = 'e1000000-e100-e100-e100-e10000000001';
-const TASK_E2_ID = 'e2000000-e200-e200-e200-e20000000002';
-const TASK_E3_ID = 'e3000000-e300-e300-e300-e30000000003';
-const TASK_E4_ID = 'e4000000-e400-e400-e400-e40000000004';
-const TASK_E5_ID = 'e5000000-e500-e500-e500-e50000000005';
-const TASK_E6_ID = 'e6000000-e600-e600-e600-e60000000006';
-const TASK_E7_ID = 'e7000000-e700-e700-e700-e70000000007';
-const TASK_E8_ID = 'e8000000-e800-e800-e800-e80000000008';
-const TASK_E9_ID = 'e9000000-e900-e900-e900-e90000000009';
-const TASK_E10_ID = 'ea000000-ea00-ea00-ea00-ea0000000010';
-const TASK_E11_ID = 'eb000000-eb00-eb00-eb00-eb0000000011';
-const TASK_E12_ID = 'ec000000-ec00-ec00-ec00-ec0000000012';
-const TASK_E13_ID = 'ed000000-ed00-ed00-ed00-ed0000000013';
-const TASK_E14_ID = 'ee000000-ee00-ee00-ee00-ee0000000014';
-const TASK_E15_ID = 'ef000000-ef00-ef00-ef00-ef0000000015';
-const TASK_E16_ID = 'f0000000-f000-f000-f000-f00000000016';
-const TASK_E17_ID = 'f1000000-f100-f100-f100-f10000000017';
-const TASK_E18_ID = 'f2000000-f200-f200-f200-f20000000018';
-const TASK_E19_ID = 'f3000000-f300-f300-f300-f30000000019';
-const TASK_E20_ID = 'f4000000-f400-f400-f400-f40000000020';
-const TASK_E21_ID = 'f5000000-f500-f500-f500-f50000000021';
-const TASK_E22_ID = 'f6000000-f600-f600-f600-f60000000022';
-const TASK_E23_ID = 'f7000000-f700-f700-f700-f70000000023';
-const TASK_E24_ID = 'f8000000-f800-f800-f800-f80000000024';
-const TASK_E25_ID = 'f9000000-f900-f900-f900-f90000000025';
+const LINMAS_TASK_1_ID = 'f5e4d3c2-b1a0-4f9e-8d7c-6b5a4c3d2e1f';
+const LINMAS_TASK_2_ID = 'a0b1c2d3-e4f5-4a6b-9c7d-8e9f0a1b2c3d';
+const LINMAS_TASK_3_ID = 'b1c2d3e4-f5a6-4b7c-8d9e-9f0a1b2c3d4e';
+const LINMAS_TASK_4_ID = 'c2d3e4f5-a6b7-4c8d-ae0f-0a1b2c3d4e5f';
+const KORLAP_TASK_1_ID = 'd3e4f5a6-b7c8-4d9e-bf1a-1b2c3d4e5f6a';
+const KORLAP_TASK_2_ID = 'e4f5a6b7-c8d9-4e0f-9a2b-2c3d4e5f6a7b';
+const KORLAP_TASK_3_ID = 'f5a6b7c8-d9e0-4f1a-8b3c-3d4e5f6a7b8c';
+// Rayon-scoped tasks (replaces hardcoded aaa... UUIDs in Section B)
+const RAYON_TASK_1_ID = 'a6b7c8d9-e0f1-4a2b-9c4d-4e5f6a7b8c9d';
+const RAYON_TASK_2_ID = 'b7c8d9e0-f1a2-4b3c-8d5e-5f6a7b8c9d0e';
+const RAYON_TASK_3_ID = 'c8d9e0f1-a2b3-4c4d-ae6f-6a7b8c9d0e1f';
+const RAYON_TASK_4_ID = 'd9e0f1a2-b3c4-4d5e-bf7a-7b8c9d0e1f2a';
+
 
 async function seedPhase2() {
   console.log('🌱 Phase 2 Seeding Started...');
   console.log('');
+
+  // Check if schema exists before deciding to synchronize
+  const probeSource = new DataSource({
+    type: 'postgres',
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: parseInt(process.env.DATABASE_PORT || '5432', 10),
+    username: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'postgres',
+    database: process.env.DATABASE_NAME || 'sekar_db',
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    synchronize: false,
+    logging: false,
+  });
+  await probeSource.initialize();
+  const [{ count }] = await probeSource.query<[{ count: string }]>(
+    `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = 'public'`,
+  );
+  await probeSource.destroy();
+  const schemaIsEmpty = parseInt(count, 10) === 0;
 
   // Create a direct connection using TypeORM
   const dataSource = new DataSource({
@@ -218,7 +269,9 @@ async function seedPhase2() {
     username: process.env.DATABASE_USER || 'postgres',
     password: process.env.DATABASE_PASSWORD || 'postgres',
     database: process.env.DATABASE_NAME || 'sekar_db',
-    synchronize: false,
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    synchronize: schemaIsEmpty,
+    entities: schemaIsEmpty ? [__dirname + '/../../**/*.entity{.ts,.js}'] : [],
     logging: false,
   });
 
@@ -242,6 +295,47 @@ async function seedPhase2() {
       ON CONFLICT (code) DO NOTHING;
     `);
     console.log('  ✓ Created 7 Rayons');
+
+    // Update rayon boundary polygons + center coordinates (dummy — will be replaced with real data)
+    console.log('📐 Seeding Rayon boundaries...');
+    await queryRunner.query(`
+      UPDATE rayons SET
+        center_lat = -7.3200, center_lng = 112.7350,
+        boundary_polygon = '{"type":"Polygon","coordinates":[[[112.72,  -7.30],[112.75,  -7.30],[112.75,  -7.34],[112.72,  -7.34],[112.72,  -7.30]]]}',
+        boundary_computed_at = NOW()
+      WHERE id = '${RAYON_1_ID}';
+      UPDATE rayons SET
+        center_lat = -7.2200, center_lng = 112.7450,
+        boundary_polygon = '{"type":"Polygon","coordinates":[[[112.73,  -7.20],[112.76,  -7.20],[112.76,  -7.24],[112.73,  -7.24],[112.73,  -7.20]]]}',
+        boundary_computed_at = NOW()
+      WHERE id = '${RAYON_2_ID}';
+      UPDATE rayons SET
+        center_lat = -7.2650, center_lng = 112.7400,
+        boundary_polygon = '{"type":"Polygon","coordinates":[[[112.72,  -7.25],[112.76,  -7.25],[112.76,  -7.28],[112.72,  -7.28],[112.72,  -7.25]]]}',
+        boundary_computed_at = NOW()
+      WHERE id = '${RAYON_3_ID}';
+      UPDATE rayons SET
+        center_lat = -7.2500, center_lng = 112.7650,
+        boundary_polygon = '{"type":"Polygon","coordinates":[[[112.75,  -7.23],[112.78,  -7.23],[112.78,  -7.27],[112.75,  -7.27],[112.75,  -7.23]]]}',
+        boundary_computed_at = NOW()
+      WHERE id = '${RAYON_4_ID}';
+      UPDATE rayons SET
+        center_lat = -7.2750, center_lng = 112.7850,
+        boundary_polygon = '{"type":"Polygon","coordinates":[[[112.77,  -7.26],[112.80,  -7.26],[112.80,  -7.29],[112.77,  -7.29],[112.77,  -7.26]]]}',
+        boundary_computed_at = NOW()
+      WHERE id = '${RAYON_5_ID}';
+      UPDATE rayons SET
+        center_lat = -7.2550, center_lng = 112.6950,
+        boundary_polygon = '{"type":"Polygon","coordinates":[[[112.68,  -7.24],[112.71,  -7.24],[112.71,  -7.27],[112.68,  -7.27],[112.68,  -7.24]]]}',
+        boundary_computed_at = NOW()
+      WHERE id = '${RAYON_6_ID}';
+      UPDATE rayons SET
+        center_lat = -7.2850, center_lng = 112.6750,
+        boundary_polygon = '{"type":"Polygon","coordinates":[[[112.66,  -7.27],[112.69,  -7.27],[112.69,  -7.30],[112.66,  -7.30],[112.66,  -7.27]]]}',
+        boundary_computed_at = NOW()
+      WHERE id = '${RAYON_7_ID}';
+    `);
+    console.log('  ✓ Updated 7 Rayon boundaries (dummy)');
 
     // ==========================================
     // STEP 2: Seed Shift Definitions
@@ -325,9 +419,9 @@ async function seedPhase2() {
     // STEP 5: Update Areas with Rayon Assignment
     // ==========================================
     console.log('📍 Updating Areas with Rayon assignments...');
-    // Assign Taman Bungkul to Rayon Selatan
+    // Assign Taman Bungkul to Rayon Pusat
     await queryRunner.query(`
-      UPDATE areas SET rayon_id = '${RAYON_1_ID}'
+      UPDATE areas SET rayon_id = '${RAYON_3_ID}'
       WHERE name = 'Taman Bungkul';
     `);
     // Assign Jalan Raya Darmo to Rayon Pusat
@@ -408,23 +502,25 @@ async function seedPhase2() {
     const passwordHash = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
 
     await queryRunner.query(`
-      INSERT INTO users (id, username, password_hash, full_name, phone, role, rayon_id, area_id, is_active) VALUES
+      INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
         ('${USER_PHASE2_1_ID}', 'top_management1', '${passwordHash}', 'Kepala Dinas RTH', '081234567890', 'top_management', NULL, NULL, TRUE),
         ('${USER_PHASE2_2_ID}', 'kepala_rayon_selatan', '${passwordHash}', 'Kepala Rayon Selatan', '081234567891', 'kepala_rayon', '${RAYON_1_ID}', NULL, TRUE),
         ('${USER_PHASE2_3_ID}', 'kepala_rayon_utara', '${passwordHash}', 'Kepala Rayon Utara', '081234567892', 'kepala_rayon', '${RAYON_2_ID}', NULL, TRUE),
         ('${USER_PHASE2_4_ID}', 'korlap_bungkul', '${passwordHash}', 'Korlap Taman Bungkul', '081234567893', 'korlap', NULL, '${tamanBungkulId}', TRUE),
-        ('${USER_PHASE2_5_ID}', 'linmas1', '${passwordHash}', 'Linmas Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
-        ('${USER_PHASE2_6_ID}', 'linmas2', '${passwordHash}', 'Linmas Dua', '081234567895', 'linmas', NULL, NULL, TRUE),
-        ('${USER_PHASE2_7_ID}', 'satgas4', '${passwordHash}', 'Satgas Empat', '081234567896', 'satgas', NULL, NULL, TRUE),
-        ('${USER_PHASE2_8_ID}', 'admin_data1', '${passwordHash}', 'Admin Data Satu', '081234567897', 'admin_data', '${RAYON_1_ID}', NULL, TRUE),
-        ('${USER_PHASE2_9_ID}', 'admin_system1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE)
+        ('${USER_LINMAS_BUNGKUL_1_ID}', 'linmas_bungkul_1', '${passwordHash}', 'Linmas Bungkul Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
+        ('${USER_LINMAS_DARMO_1_ID}',   'linmas_darmo_1',   '${passwordHash}', 'Linmas Darmo Satu',   '081234567895', 'linmas', NULL, NULL, TRUE),
+        ('${USER_KORLAP_DARMO_ID}',     'korlap_darmo',     '${passwordHash}', 'Korlap Jalan Darmo',  '081234567896', 'korlap', NULL, NULL, TRUE),
+        ('${USER_PHASE2_8_ID}', 'admin_data1', '${passwordHash}', 'Admin Data Satu', '081234567897', 'admin_data', '${RAYON_3_ID}', NULL, TRUE),
+        ('${USER_PHASE2_9_ID}', 'admin_system1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE),
+        ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_bungkul_1', '${passwordHash}', 'Satgas Bungkul Satu', '081300000016', 'satgas', '${RAYON_3_ID}', '${tamanBungkulId}', TRUE),
+        ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_bungkul_2', '${passwordHash}', 'Satgas Bungkul Dua',  '081300000017', 'satgas', '${RAYON_3_ID}', '${tamanBungkulId}', TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
-    console.log('  ✓ Created 9 additional users with Phase 2C roles');
+    console.log('  ✓ Created 11 additional users with Phase 2C roles (incl. linmas_bungkul_1, linmas_darmo_1, korlap_darmo, satgas_bungkul_1, satgas_bungkul_2)');
 
     // Add 15 more users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)
     await queryRunner.query(`
-      INSERT INTO users (id, username, password_hash, full_name, phone, role, rayon_id, area_id, is_active) VALUES
+      INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
         ('${USER_NEW_1_ID}',  'kepala_rayon_pusat',  '${passwordHash}', 'Kepala Rayon Pusat',   '081300000001', 'kepala_rayon', '${RAYON_3_ID}', NULL, TRUE),
         ('${USER_NEW_2_ID}',  'satgas_pusat_1',      '${passwordHash}', 'Satgas Pusat Satu',    '081300000002', 'satgas',       '${RAYON_3_ID}', NULL, TRUE),
         ('${USER_NEW_3_ID}',  'satgas_pusat_2',      '${passwordHash}', 'Satgas Pusat Dua',     '081300000003', 'satgas',       '${RAYON_3_ID}', NULL, TRUE),
@@ -445,6 +541,26 @@ async function seedPhase2() {
     console.log(
       '  ✓ Created 15 additional users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)',
     );
+
+    // Add admin_data + korlap for the 6 remaining rayons (Selatan, Utara, Timur1, Timur2, Barat1, Barat2)
+    // area_id for korlap is set to NULL here and assigned via UPDATE in STEP 8.5 (after areas are created)
+    await queryRunner.query(`
+      INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
+        ('${USER_ADMIN_DATA_SELATAN_ID}', 'admin_data_selatan', '${passwordHash}', 'Admin Data Selatan', '081300000018', 'admin_data', '${RAYON_1_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_UTARA_ID}',   'admin_data_utara',   '${passwordHash}', 'Admin Data Utara',   '081300000019', 'admin_data', '${RAYON_2_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_TIMUR1_ID}',  'admin_data_timur1',  '${passwordHash}', 'Admin Data Timur 1', '081300000020', 'admin_data', '${RAYON_4_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_TIMUR2_ID}',  'admin_data_timur2',  '${passwordHash}', 'Admin Data Timur 2', '081300000021', 'admin_data', '${RAYON_5_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_BARAT1_ID}',  'admin_data_barat1',  '${passwordHash}', 'Admin Data Barat 1', '081300000022', 'admin_data', '${RAYON_6_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_BARAT2_ID}',  'admin_data_barat2',  '${passwordHash}', 'Admin Data Barat 2', '081300000023', 'admin_data', '${RAYON_7_ID}', NULL, TRUE),
+        ('${USER_KORLAP_HARMONI_ID}', 'korlap_harmoni', '${passwordHash}', 'Korlap Taman Harmoni', '081300000024', 'korlap', '${RAYON_1_ID}', NULL, TRUE),
+        ('${USER_KORLAP_UTARA_ID}',   'korlap_utara',   '${passwordHash}', 'Korlap Taman Utara',   '081300000025', 'korlap', '${RAYON_2_ID}', NULL, TRUE),
+        ('${USER_KORLAP_TIMUR1_ID}',  'korlap_timur1',  '${passwordHash}', 'Korlap Taman Timur 1', '081300000026', 'korlap', '${RAYON_4_ID}', NULL, TRUE),
+        ('${USER_KORLAP_TIMUR2_ID}',  'korlap_timur2',  '${passwordHash}', 'Korlap Taman Timur 2', '081300000027', 'korlap', '${RAYON_5_ID}', NULL, TRUE),
+        ('${USER_KORLAP_BARAT1_ID}',  'korlap_barat1',  '${passwordHash}', 'Korlap Taman Barat 1', '081300000028', 'korlap', '${RAYON_6_ID}', NULL, TRUE),
+        ('${USER_KORLAP_BARAT2_ID}',  'korlap_barat2',  '${passwordHash}', 'Korlap Taman Barat 2', '081300000029', 'korlap', '${RAYON_7_ID}', NULL, TRUE)
+      ON CONFLICT (username) DO NOTHING;
+    `);
+    console.log('  ✓ Created 12 users: admin_data + korlap for Selatan, Utara, Timur1, Timur2, Barat1, Barat2');
 
     // ==========================================
     // STEP 8.1: Create Areas for 5 Missing Rayons + Staff Requirements
@@ -473,10 +589,16 @@ async function seedPhase2() {
            TRUE),
           ('${AREA_BARAT2_ID}', 'Taman Barat 2', '${parkTypeId}', '${RAYON_7_ID}', -7.2800, 112.6700,
            '{"type":"Polygon","coordinates":[[[112.669,-7.279],[112.671,-7.279],[112.671,-7.281],[112.669,-7.281],[112.669,-7.279]]]}',
+           TRUE),
+          ('${AREA_PELANGI_ID}', 'Taman Pelangi', '${parkTypeId}', '${RAYON_1_ID}', -7.3450, 112.7250,
+           '{"type":"Polygon","coordinates":[[[112.724,-7.344],[112.726,-7.344],[112.726,-7.346],[112.724,-7.346],[112.724,-7.344]]]}',
+           TRUE),
+          ('${AREA_UTARA_ID}',   'Taman Utara',   '${parkTypeId}', '${RAYON_2_ID}', -7.2100, 112.7450,
+           '{"type":"Polygon","coordinates":[[[112.744,-7.209],[112.746,-7.209],[112.746,-7.211],[112.744,-7.211],[112.744,-7.209]]]}',
            TRUE)
         ON CONFLICT (id) DO NOTHING;
       `);
-      console.log('  ✓ Created 5 areas for missing rayons');
+      console.log('  ✓ Created 7 areas for missing rayons + Taman Pelangi (Selatan) + Taman Utara');
 
       // Assign area_id to new satgas users
       await queryRunner.query(`
@@ -518,10 +640,33 @@ async function seedPhase2() {
           ('${AREA_BARAT1_ID}', '${SHIFT_2_ID}', 'satgas', 3, 'WEEKDAY'),
           ('${AREA_BARAT2_ID}', '${SHIFT_1_ID}', 'satgas', 3, 'WEEKDAY'),
           ('${AREA_BARAT2_ID}', '${SHIFT_1_ID}', 'linmas', 1, 'WEEKDAY'),
-          ('${AREA_BARAT2_ID}', '${SHIFT_2_ID}', 'satgas', 3, 'WEEKDAY')
+          ('${AREA_BARAT2_ID}', '${SHIFT_2_ID}', 'satgas', 3, 'WEEKDAY'),
+          ('${AREA_PELANGI_ID}', '${SHIFT_1_ID}', 'satgas', 4, 'WEEKDAY'),
+          ('${AREA_PELANGI_ID}', '${SHIFT_1_ID}', 'linmas', 1, 'WEEKDAY'),
+          ('${AREA_PELANGI_ID}', '${SHIFT_2_ID}', 'satgas', 2, 'WEEKDAY')
         ON CONFLICT DO NOTHING;
       `);
-      console.log('  ✓ Created 15 staff requirements for 5 new areas');
+      console.log('  ✓ Created 18 staff requirements for 6 new areas (incl. Taman Pelangi)');
+
+      // Staff requirements for Taman Harmoni (Selatan) and Taman Utara
+      await queryRunner.query(`
+        INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type)
+        SELECT a.id, '${SHIFT_1_ID}', 'satgas', 3, 'WEEKDAY' FROM areas a WHERE a.name = 'Taman Harmoni'
+        ON CONFLICT DO NOTHING;
+      `);
+      await queryRunner.query(`
+        INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type)
+        SELECT a.id, '${SHIFT_1_ID}', 'linmas', 1, 'WEEKDAY' FROM areas a WHERE a.name = 'Taman Harmoni'
+        ON CONFLICT DO NOTHING;
+      `);
+      await queryRunner.query(`
+        INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type)
+        VALUES ('${AREA_UTARA_ID}', '${SHIFT_1_ID}', 'satgas', 3, 'WEEKDAY'),
+               ('${AREA_UTARA_ID}', '${SHIFT_1_ID}', 'linmas', 1, 'WEEKDAY'),
+               ('${AREA_UTARA_ID}', '${SHIFT_2_ID}', 'satgas', 3, 'WEEKDAY')
+        ON CONFLICT DO NOTHING;
+      `);
+      console.log('  ✓ Added staff requirements for Taman Harmoni and Taman Utara');
     } else {
       console.log('  ⚠ Park area type not found, skipping new areas');
     }
@@ -533,25 +678,25 @@ async function seedPhase2() {
     await queryRunner.query(`
       INSERT INTO notification_tokens (id, user_id, fcm_token, device_id, platform, is_active, created_at)
       SELECT '${NOTIF_TOKEN_1_ID}', u.id,
-        'ExponentPushToken[satgas1_ABCDEF12345_test]', 'device_satgas1_abc123', 'android', TRUE, NOW() - INTERVAL '7 days'
-      FROM users u WHERE u.username = 'satgas1' LIMIT 1
+        'ExponentPushToken[satgas_pusat_1_ABCDEF12345_test]', 'device_satgas_pusat1_abc123', 'android', TRUE, NOW() - INTERVAL '7 days'
+      FROM users u WHERE u.username = 'satgas_pusat_1' LIMIT 1
       ON CONFLICT (id) DO NOTHING;
     `);
     await queryRunner.query(`
       INSERT INTO notification_tokens (id, user_id, fcm_token, device_id, platform, is_active, created_at)
       SELECT '${NOTIF_TOKEN_2_ID}', u.id,
-        'ExponentPushToken[satgas2_GHIJKL67890_test]', 'device_satgas2_xyz789', 'android', TRUE, NOW() - INTERVAL '5 days'
-      FROM users u WHERE u.username = 'satgas2' LIMIT 1
+        'ExponentPushToken[satgas_timur1_2_GHIJKL67890_test]', 'device_satgas_timur12_xyz789', 'android', TRUE, NOW() - INTERVAL '5 days'
+      FROM users u WHERE u.username = 'satgas_timur1_2' LIMIT 1
       ON CONFLICT (id) DO NOTHING;
     `);
     await queryRunner.query(`
       INSERT INTO notification_tokens (id, user_id, fcm_token, device_id, platform, is_active, created_at)
       SELECT '${NOTIF_TOKEN_3_ID}', u.id,
-        'ExponentPushToken[linmas1_MNOPQR11223_test]', 'device_linmas1_mnp345', 'android', TRUE, NOW() - INTERVAL '3 days'
-      FROM users u WHERE u.username = 'linmas1' LIMIT 1
+        'ExponentPushToken[linmas_bungkul_1_MNOPQR11223_test]', 'device_linmas_bungkul1_mnp345', 'android', TRUE, NOW() - INTERVAL '3 days'
+      FROM users u WHERE u.username = 'linmas_bungkul_1' LIMIT 1
       ON CONFLICT (id) DO NOTHING;
     `);
-    console.log('  ✓ Created 3 notification tokens (satgas1, satgas2, linmas1)');
+    console.log('  ✓ Created 3 notification tokens (satgas_pusat_1, satgas_timur1_2, linmas_bungkul_1)');
 
     // ==========================================
     // STEP 8.5: Assign area_id + rayon_id to field workers
@@ -560,25 +705,18 @@ async function seedPhase2() {
     // ==========================================
     console.log('📍 Assigning area_id and rayon_id to field workers...');
 
-    // Taman Bungkul workers → Rayon Selatan
+    // Taman Bungkul workers → Rayon Pusat
     await queryRunner.query(`
       UPDATE users
       SET area_id = (SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1)
-      WHERE username IN ('satgas1', 'linmas1', 'korlap1')
+      WHERE username IN ('korlap_bungkul', 'linmas_bungkul_1')
         AND area_id IS NULL;
     `);
     // Jalan Raya Darmo workers → Rayon Pusat
     await queryRunner.query(`
       UPDATE users
       SET area_id = (SELECT id FROM areas WHERE name = 'Jalan Raya Darmo' LIMIT 1)
-      WHERE username IN ('satgas2', 'korlap2', 'linmas2')
-        AND area_id IS NULL;
-    `);
-    // Taman Harmoni workers → Rayon Selatan
-    await queryRunner.query(`
-      UPDATE users
-      SET area_id = (SELECT id FROM areas WHERE name = 'Taman Harmoni' LIMIT 1)
-      WHERE username IN ('satgas3', 'satgas4')
+      WHERE username IN ('korlap_darmo', 'linmas_darmo_1')
         AND area_id IS NULL;
     `);
     // Derive rayon_id from the area's rayon for all field workers missing it
@@ -592,24 +730,52 @@ async function seedPhase2() {
     `);
     console.log('  ✓ Assigned area_id and rayon_id to all field workers');
 
+    // Assign area_id to new per-rayon korlap users (areas exist now after STEP 8.1)
+    await queryRunner.query(`
+      UPDATE users SET area_id = (SELECT id FROM areas WHERE name = 'Taman Harmoni' LIMIT 1)
+      WHERE username = 'korlap_harmoni' AND area_id IS NULL;
+    `);
+    await queryRunner.query(`
+      UPDATE users SET area_id = '${AREA_UTARA_ID}'
+      WHERE username = 'korlap_utara' AND area_id IS NULL;
+    `);
+    await queryRunner.query(`
+      UPDATE users SET area_id = '${AREA_TIMUR1_ID}'
+      WHERE username = 'korlap_timur1' AND area_id IS NULL;
+    `);
+    await queryRunner.query(`
+      UPDATE users SET area_id = '${AREA_TIMUR2_ID}'
+      WHERE username = 'korlap_timur2' AND area_id IS NULL;
+    `);
+    await queryRunner.query(`
+      UPDATE users SET area_id = '${AREA_BARAT1_ID}'
+      WHERE username = 'korlap_barat1' AND area_id IS NULL;
+    `);
+    await queryRunner.query(`
+      UPDATE users SET area_id = '${AREA_BARAT2_ID}'
+      WHERE username = 'korlap_barat2' AND area_id IS NULL;
+    `);
+    console.log('  ✓ Assigned area_id to 6 new per-rayon korlap users');
+
     // ==========================================
     // STEP 9: Seed Schedules
     // ==========================================
     console.log('📅 Seeding Schedules...');
 
-    // Get ALL clockable worker IDs (satgas, linmas, AND korlap)
+    // Get ALL clockable worker IDs with their assigned area
     // Phase 2C: korlap is CLOCKABLE but needs schedule entries too!
     const workerResult = await queryRunner.query(`
-      SELECT id, username FROM users WHERE role IN ('satgas', 'linmas', 'korlap');
+      SELECT u.id, u.username, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)) AS area_id
+      FROM users u WHERE u.role IN ('satgas', 'linmas', 'korlap');
     `);
 
-    if (workerResult.length > 0 && tamanBungkulId) {
-      // Create schedules for ALL workers (not just first 4)
+    if (workerResult.length > 0) {
+      // Create schedules for ALL workers using their own area
       for (let i = 0; i < workerResult.length; i++) {
         const shiftId = i % 3 === 0 ? SHIFT_1_ID : i % 3 === 1 ? SHIFT_2_ID : SHIFT_3_ID;
         await queryRunner.query(`
           INSERT INTO schedules (user_id, area_id, shift_definition_id, effective_date, end_date, created_by)
-          VALUES ('${workerResult[i].id}', '${tamanBungkulId}', '${shiftId}', '2026-02-01', NULL, NULL)
+          VALUES ('${workerResult[i].id}', '${workerResult[i].area_id}', '${shiftId}', '2026-02-01', NULL, NULL)
           ON CONFLICT DO NOTHING;
         `);
       }
@@ -628,13 +794,13 @@ async function seedPhase2() {
       SELECT id FROM users WHERE username = 'korlap_bungkul' LIMIT 1
     `);
     const satgasOtResult = await queryRunner.query(`
-      SELECT id FROM users WHERE username = 'satgas1' LIMIT 1
+      SELECT id FROM users WHERE username = 'satgas_pusat_1' LIMIT 1
     `);
     const linmasOtResult = await queryRunner.query(`
-      SELECT id FROM users WHERE username = 'linmas1' LIMIT 1
+      SELECT id FROM users WHERE username = 'linmas_bungkul_1' LIMIT 1
     `);
-    const korlap1OtResult = await queryRunner.query(`
-      SELECT id FROM users WHERE username = 'korlap1' LIMIT 1
+    const korlapDarmoOtResult = await queryRunner.query(`
+      SELECT id FROM users WHERE username = 'korlap_darmo' LIMIT 1
     `);
 
     const kepalaRayonOtResult = await queryRunner.query(`
@@ -645,12 +811,12 @@ async function seedPhase2() {
       const korlapOtId = korlapOtResult[0].id;
       const satgasOtId = satgasOtResult[0].id;
       const linmasOtId = linmasOtResult.length > 0 ? linmasOtResult[0].id : null;
-      const korlap1OtId = korlap1OtResult.length > 0 ? korlap1OtResult[0].id : null;
+      const korlap1OtId = korlapDarmoOtResult.length > 0 ? korlapDarmoOtResult[0].id : null;
       const kepalaRayonOtId = kepalaRayonOtResult.length > 0 ? kepalaRayonOtResult[0].id : null;
 
       // Get activity type IDs for varied overtime
       const otActivityTypes = await queryRunner.query(`
-        SELECT id, code FROM activity_types WHERE code IN ('perawatan', 'patroli', 'cek_kendaraan', 'penyiraman') LIMIT 4
+        SELECT id, code FROM activity_types WHERE code IN ('perawatan', 'patroli', 'cek_kendaraan', 'penyiraman', 'cek_absensi')
       `);
 
       if (otActivityTypes.length > 0) {
@@ -663,14 +829,14 @@ async function seedPhase2() {
         const penyiramanId =
           otActivityTypes.find((a: any) => a.code === 'penyiraman')?.id ?? otActivityTypes[0].id;
 
-        const OVERTIME_1_ID = '01100000-0000-0000-0000-000000000001';
-        const OVERTIME_2_ID = '02200000-0000-0000-0000-000000000002';
-        const OVERTIME_3_ID = '03300000-0000-0000-0000-000000000003';
-        const OVERTIME_4_ID = '04400000-0000-0000-0000-000000000004';
-        const OVERTIME_5_ID = '05500000-0000-0000-0000-000000000005';
-        const OVERTIME_6_ID = '06600000-0000-0000-0000-000000000006';
-        const OVERTIME_7_ID = '07700000-0000-0000-0000-000000000007';
-        const OVERTIME_8_ID = '08800000-0000-0000-0000-000000000008';
+        const OVERTIME_1_ID = 'e0f1a2b3-c4d5-4e6f-9a8b-8c9d0e1f2a3b';
+        const OVERTIME_2_ID = 'f1a2b3c4-d5e6-4f7a-ab9c-9d0e1f2a3b4c';
+        const OVERTIME_3_ID = 'a2b3c4d5-e6f7-4a8b-bc0d-0e1f2a3b4c5d';
+        const OVERTIME_4_ID = 'b3c4d5e6-f7a8-4b9c-8d1e-1f2a3b4c5d6e';
+        const OVERTIME_5_ID = 'c4d5e6f7-a8b9-4c0d-9e2f-2a3b4c5d6e7f';
+        const OVERTIME_6_ID = 'd5e6f7a8-b9c0-4d1e-af3a-3b4c5d6e7f8a';
+        const OVERTIME_7_ID = 'e6f7a8b9-c0d1-4e2f-b04b-4c5d6e7f8a9b';
+        const OVERTIME_8_ID = 'f7a8b9c0-d1e2-4f3a-9a5c-5d6e7f8a9b0c';
 
         // Satgas overtimes (3: pending, approved, rejected + overnight example)
         await queryRunner.query(`
@@ -778,10 +944,10 @@ async function seedPhase2() {
           SELECT id, area_id FROM users WHERE username = 'admin_data1' LIMIT 1
         `);
         if (adminDataOtResult.length > 0) {
-          const OVERTIME_9_ID = '09900000-0000-0000-0000-000000000009';
-          const OVERTIME_10_ID = '10100000-0000-0000-0000-000000000010';
+          const OVERTIME_9_ID = 'a8b9c0d1-e2f3-4a4b-8b6d-6e7f8a9b0c1d';
+          const OVERTIME_10_ID = 'b9c0d1e2-f3a4-4b5c-8d7e-7f8a9b0c1d2e';
           const adminDataOtId = adminDataOtResult[0].id;
-          // admin_data is in rayon-1 but may not have area_id; use tamanBungkulId as fallback
+          // admin_data is in Rayon Pusat but has no area_id; use tamanBungkulId as fallback
           const adminDataAreaId = adminDataOtResult[0].area_id || tamanBungkulId;
           const cekAbsensiId = otActivityTypes.find((a: any) => a.code === 'cek_absensi')?.id;
 
@@ -827,10 +993,10 @@ async function seedPhase2() {
     console.log('🕐 Seeding shifts for Phase 2C role users...');
 
     const shiftLinmas = await queryRunner.query(
-      `SELECT id, area_id FROM users WHERE username = 'linmas1' LIMIT 1`,
+      `SELECT id, area_id FROM users WHERE username = 'linmas_bungkul_1' LIMIT 1`,
     );
     const shiftKorlap1 = await queryRunner.query(
-      `SELECT id, area_id FROM users WHERE username = 'korlap1' LIMIT 1`,
+      `SELECT id, area_id FROM users WHERE username = 'korlap_bungkul' LIMIT 1`,
     );
     const shiftAdminData = await queryRunner.query(
       `SELECT id FROM users WHERE username = 'admin_data1' LIMIT 1`,
@@ -859,7 +1025,7 @@ async function seedPhase2() {
               NULL, NULL, NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours')
         `);
         shiftCount += 2;
-        console.log('  ✓ Created 2 shifts for linmas1 (1 completed, 1 active)');
+        console.log('  ✓ Created 2 shifts for linmas_bungkul_1 (1 completed, 1 active)');
       }
 
       if (shiftKorlap1.length > 0) {
@@ -877,7 +1043,7 @@ async function seedPhase2() {
               NULL, NULL, NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours')
         `);
         shiftCount += 2;
-        console.log('  ✓ Created 2 shifts for korlap1 (1 completed, 1 active)');
+        console.log('  ✓ Created 2 shifts for korlap_bungkul (1 completed, 1 active)');
       }
 
       if (shiftAdminData.length > 0) {
@@ -954,8 +1120,7 @@ async function seedPhase2() {
       const a1 = taskAreas[0]?.id;
       const a2 = taskAreas[1]?.id ?? a1;
       const a3 = taskAreas[2]?.id ?? a1;
-      const a4 = taskAreas[3]?.id ?? a1;
-      const a5 = taskAreas[4]?.id ?? a1;
+
 
       // 8 core satgas tasks — covers all 8 statuses after UPDATE pass below
       await queryRunner.query(`
@@ -1063,15 +1228,15 @@ async function seedPhase2() {
       // Rayon-scoped + kepala_rayon tasks (2+2)
       await queryRunner.query(`
         INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, area_id, assigned_to, created_by, created_at, updated_at) VALUES
-          ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Audit Semua Area di Rayon Selatan', 'Periksa kondisi fasilitas di seluruh area dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '7 days', '${RAYON_1_ID}', NULL, NULL, '${cId}', NOW(), NOW()),
-          ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Koordinasi Event Weekend Rayon', 'Persiapan event di semua taman dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '3 days', '${RAYON_1_ID}', NULL, NULL, '${cId}', NOW(), NOW())
+          ('${RAYON_TASK_1_ID}', 'Audit Semua Area di Rayon Selatan', 'Periksa kondisi fasilitas di seluruh area dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '7 days', '${RAYON_1_ID}', NULL, NULL, '${cId}', NOW(), NOW()),
+          ('${RAYON_TASK_2_ID}', 'Koordinasi Event Weekend Rayon', 'Persiapan event di semua taman dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '3 days', '${RAYON_1_ID}', NULL, NULL, '${cId}', NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
       if (kId && tmId) {
         await queryRunner.query(`
           INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, area_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
-            ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'Laporan Bulanan Rayon Selatan', 'Compile laporan bulanan dari semua area di rayon.', 'assigned', 'high', NOW() + INTERVAL '5 days', '${RAYON_1_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '1 day', NOW(), NOW()),
-            ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'Review Kinerja Korlap', 'Evaluasi kinerja korlap di rayon untuk kuartal ini.', 'in_progress', 'medium', NOW() + INTERVAL '5 days', '${RAYON_1_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NOW())
+            ('${RAYON_TASK_3_ID}', 'Laporan Bulanan Rayon Selatan', 'Compile laporan bulanan dari semua area di rayon.', 'assigned', 'high', NOW() + INTERVAL '5 days', '${RAYON_1_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '1 day', NOW(), NOW()),
+            ('${RAYON_TASK_4_ID}', 'Review Kinerja Korlap', 'Evaluasi kinerja korlap di rayon untuk kuartal ini.', 'in_progress', 'medium', NOW() + INTERVAL '5 days', '${RAYON_1_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NOW())
           ON CONFLICT (id) DO NOTHING;
         `);
         console.log('  ✓ Created 4 rayon-scoped tasks (2 plain + 2 kepala_rayon)');
@@ -1079,37 +1244,37 @@ async function seedPhase2() {
         console.log('  ✓ Created 2 rayon-scoped tasks');
       }
 
-      // 25 extended tasks for scroll/filter testing
+      // 25 extended tasks for scroll/filter testing (IDs via gen_random_uuid — Section B DELETE clears first)
       await queryRunner.query(
         `
         INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, created_at, updated_at)
         VALUES
-          ('${TASK_E1_ID}',  'Pemangkasan Pohon Minggu Lalu',   'Pemangkasan pohon di jalur pedestrian.',         'completed',   'medium', $1,  '${a1}', '${s1Id}', '${cId}', $1,  $1 ),
-          ('${TASK_E2_ID}',  'Pengecatan Pagar Taman',           'Pengecatan pagar area bermain anak.',            'completed',   'low',    $2,  '${a1}', '${s2Id}', '${cId}', $2,  $2 ),
-          ('${TASK_E3_ID}',  'Pembersihan Kolam',                'Pembersihan dan pergantian air kolam hias.',     'completed',   'high',   $3,  '${a1}', '${s1Id}', '${cId}', $3,  $3 ),
-          ('${TASK_E4_ID}',  'Perbaikan Jalan Setapak',          'Perbaikan jalan setapak yang rusak.',            'completed',   'urgent', $4,  '${a2}', '${s2Id}', '${cId}', $4,  $4 ),
-          ('${TASK_E5_ID}',  'Pemasangan Papan Informasi',       'Pemasangan papan informasi baru di pintu masuk.','in_progress', 'medium', $5,  '${a2}', '${s2Id}', '${cId}', $5,  $5 ),
-          ('${TASK_E6_ID}',  'Penyemprotan Hama',                'Penyemprotan hama pada semua tanaman.',          'in_progress', 'high',   $6,  '${a1}', '${s1Id}', '${cId}', $6,  $6 ),
-          ('${TASK_E7_ID}',  'Inventarisasi Peralatan',          'Cek dan catat seluruh peralatan taman.',         'assigned',    'low',    $7,  '${a1}', '${s2Id}', '${cId}', $7,  $7 ),
-          ('${TASK_E8_ID}',  'Pemupukan Tanaman Hias',           'Pemupukan rutin seluruh tanaman hias.',          'assigned',    'medium', $7,  '${a2}', '${s3Id}', '${cId}', $7,  $7 ),
-          ('${TASK_E9_ID}',  'Perbaikan Saluran Air',            'Perbaikan saluran drainase yang tersumbat.',     'pending',     'urgent', $7,  '${a1}', NULL,      '${cId}', $7,  $7 ),
-          ('${TASK_E10_ID}', 'Pemasangan Tanaman Merambat',      'Pemasangan tanaman merambat di pagar depan.',   'pending',     'low',    $7,  '${a2}', NULL,      '${cId}', $7,  $7 ),
-          ('${TASK_E11_ID}', 'Patroli Subuh',                    'Patroli keamanan pukul 04:00-06:00.',           'completed',   'high',   $1,  '${a1}', '${l1Id ?? s1Id}', '${cId}', $1, $1),
-          ('${TASK_E12_ID}', 'Pengamanan Car Free Day',          'Pengamanan area taman saat car free day.',      'completed',   'urgent', $2,  '${a1}', '${l2Id ?? s1Id}', '${cId}', $2, $2),
-          ('${TASK_E13_ID}', 'Laporan Keamanan Harian',          'Dokumentasi laporan keamanan harian.',          'in_progress', 'medium', $6,  '${a2}', '${l1Id ?? s1Id}', '${cId}', $6, $6),
-          ('${TASK_E14_ID}', 'Patroli Sore Hari',                'Patroli area taman pukul 17:00-19:00.',         'assigned',    'high',   $7,  '${a1}', '${l2Id ?? s1Id}', '${cId}', $7, $7),
-          ('${TASK_E15_ID}', 'Penertiban Pedagang Liar',         'Koordinasi dengan satpol PP untuk penertiban.',  'pending',     'urgent', $7,  '${a3}', NULL,      '${cId}', $7,  $7 ),
-          ('${TASK_E16_ID}', 'Evaluasi Kinerja Tim',             'Evaluasi kinerja seluruh tim lapangan.',         'completed',   'high',   $3,  '${a1}', '${cId}',  '${kId ?? cId}', $3, $3),
-          ('${TASK_E17_ID}', 'Briefing Prosedur Keselamatan',    'Briefing SOP keselamatan kerja tim.',            'in_progress', 'medium', $6,  '${a2}', '${cId}',  '${kId ?? cId}', $6, $6),
-          ('${TASK_E18_ID}', 'Koordinasi Event Bulanan',         'Persiapan dan koordinasi event bulanan.',        'assigned',    'high',   $7,  '${a1}', '${cId}',  '${kId ?? cId}', $7, $7),
-          ('${TASK_E19_ID}', 'Audit Penggunaan Anggaran',        'Review penggunaan anggaran operasional.',        'pending',     'low',    $7,  '${a3}', NULL,      '${kId ?? cId}', $7, $7),
-          ('${TASK_E20_ID}', 'Perawatan Taman Tema',             'Perawatan khusus taman tema mini.',              'pending',     'medium', $7,  '${a1}', NULL,      '${cId}', $7,  $7 ),
-          ('${TASK_E21_ID}', 'Pengadaan Benih Tanaman',          'Koordinasi pengadaan benih untuk bulan depan.', 'assigned',    'low',    $7,  '${a2}', '${s1Id}', '${cId}', $7,  $7 ),
-          ('${TASK_E22_ID}', 'Renovasi Tempat Duduk',            'Pengecatan dan perbaikan tempat duduk.',         'in_progress', 'medium', $7,  '${a1}', '${s2Id}', '${cId}', $7,  $7 ),
-          ('${TASK_E23_ID}', 'Dokumentasi Kondisi Taman',        'Foto dan dokumentasi kondisi taman.',            'completed',   'low',    $1,  '${a3}', '${s1Id}', '${cId}', $1,  $1 ),
-          ('${TASK_E24_ID}', 'Pembersihan Pasca Event',          'Pembersihan area taman setelah event.',          'completed',   'high',   $2,  '${a1}', '${s2Id}', '${cId}', $2,  $2 ),
-          ('${TASK_E25_ID}', 'Pengecatan Mural Taman',           'Pengecatan mural seni pada dinding taman.',     'pending',     'medium', $7,  '${a2}', NULL,      '${cId}', $7,  $7 )
-        ON CONFLICT (id) DO NOTHING;
+          (gen_random_uuid(), 'Pemangkasan Pohon Minggu Lalu',   'Pemangkasan pohon di jalur pedestrian.',         'completed',   'medium', $1,  '${a1}', '${s1Id}', '${cId}', $1,  $1 ),
+          (gen_random_uuid(), 'Pengecatan Pagar Taman',           'Pengecatan pagar area bermain anak.',            'completed',   'low',    $2,  '${a1}', '${s2Id}', '${cId}', $2,  $2 ),
+          (gen_random_uuid(), 'Pembersihan Kolam',                'Pembersihan dan pergantian air kolam hias.',     'completed',   'high',   $3,  '${a1}', '${s1Id}', '${cId}', $3,  $3 ),
+          (gen_random_uuid(), 'Perbaikan Jalan Setapak',          'Perbaikan jalan setapak yang rusak.',            'completed',   'urgent', $4,  '${a2}', '${s2Id}', '${cId}', $4,  $4 ),
+          (gen_random_uuid(), 'Pemasangan Papan Informasi',       'Pemasangan papan informasi baru di pintu masuk.','in_progress', 'medium', $5,  '${a2}', '${s2Id}', '${cId}', $5,  $5 ),
+          (gen_random_uuid(), 'Penyemprotan Hama',                'Penyemprotan hama pada semua tanaman.',          'in_progress', 'high',   $6,  '${a1}', '${s1Id}', '${cId}', $6,  $6 ),
+          (gen_random_uuid(), 'Inventarisasi Peralatan',          'Cek dan catat seluruh peralatan taman.',         'assigned',    'low',    $7,  '${a1}', '${s2Id}', '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Pemupukan Tanaman Hias',           'Pemupukan rutin seluruh tanaman hias.',          'assigned',    'medium', $7,  '${a2}', '${s3Id}', '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Perbaikan Saluran Air',            'Perbaikan saluran drainase yang tersumbat.',     'pending',     'urgent', $7,  '${a1}', NULL,      '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Pemasangan Tanaman Merambat',      'Pemasangan tanaman merambat di pagar depan.',   'pending',     'low',    $7,  '${a2}', NULL,      '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Patroli Subuh',                    'Patroli keamanan pukul 04:00-06:00.',           'completed',   'high',   $1,  '${a1}', '${l1Id ?? s1Id}', '${cId}', $1, $1),
+          (gen_random_uuid(), 'Pengamanan Car Free Day',          'Pengamanan area taman saat car free day.',      'completed',   'urgent', $2,  '${a1}', '${l2Id ?? s1Id}', '${cId}', $2, $2),
+          (gen_random_uuid(), 'Laporan Keamanan Harian',          'Dokumentasi laporan keamanan harian.',          'in_progress', 'medium', $6,  '${a2}', '${l1Id ?? s1Id}', '${cId}', $6, $6),
+          (gen_random_uuid(), 'Patroli Sore Hari',                'Patroli area taman pukul 17:00-19:00.',         'assigned',    'high',   $7,  '${a1}', '${l2Id ?? s1Id}', '${cId}', $7, $7),
+          (gen_random_uuid(), 'Penertiban Pedagang Liar',         'Koordinasi dengan satpol PP untuk penertiban.',  'pending',     'urgent', $7,  '${a3}', NULL,      '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Evaluasi Kinerja Tim',             'Evaluasi kinerja seluruh tim lapangan.',         'completed',   'high',   $3,  '${a1}', '${cId}',  '${kId ?? cId}', $3, $3),
+          (gen_random_uuid(), 'Briefing Prosedur Keselamatan',    'Briefing SOP keselamatan kerja tim.',            'in_progress', 'medium', $6,  '${a2}', '${cId}',  '${kId ?? cId}', $6, $6),
+          (gen_random_uuid(), 'Koordinasi Event Bulanan',         'Persiapan dan koordinasi event bulanan.',        'assigned',    'high',   $7,  '${a1}', '${cId}',  '${kId ?? cId}', $7, $7),
+          (gen_random_uuid(), 'Audit Penggunaan Anggaran',        'Review penggunaan anggaran operasional.',        'pending',     'low',    $7,  '${a3}', NULL,      '${kId ?? cId}', $7, $7),
+          (gen_random_uuid(), 'Perawatan Taman Tema',             'Perawatan khusus taman tema mini.',              'pending',     'medium', $7,  '${a1}', NULL,      '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Pengadaan Benih Tanaman',          'Koordinasi pengadaan benih untuk bulan depan.', 'assigned',    'low',    $7,  '${a2}', '${s1Id}', '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Renovasi Tempat Duduk',            'Pengecatan dan perbaikan tempat duduk.',         'in_progress', 'medium', $7,  '${a1}', '${s2Id}', '${cId}', $7,  $7 ),
+          (gen_random_uuid(), 'Dokumentasi Kondisi Taman',        'Foto dan dokumentasi kondisi taman.',            'completed',   'low',    $1,  '${a3}', '${s1Id}', '${cId}', $1,  $1 ),
+          (gen_random_uuid(), 'Pembersihan Pasca Event',          'Pembersihan area taman setelah event.',          'completed',   'high',   $2,  '${a1}', '${s2Id}', '${cId}', $2,  $2 ),
+          (gen_random_uuid(), 'Pengecatan Mural Taman',           'Pengecatan mural seni pada dinding taman.',     'pending',     'medium', $7,  '${a2}', NULL,      '${cId}', $7,  $7 )
+        ;
         `,
         [
           new Date(Date.now() - 30 * 86400000).toISOString(), // $1 30 days ago
@@ -1135,16 +1300,16 @@ async function seedPhase2() {
 
     // Fetch user + shift + area refs for activities
     const actSatgas1 = await queryRunner.query(
-      `SELECT id FROM users WHERE username = 'satgas1' LIMIT 1`,
+      `SELECT id FROM users WHERE username = 'satgas_pusat_1' LIMIT 1`,
     );
     const actSatgas2 = await queryRunner.query(
-      `SELECT id FROM users WHERE username = 'satgas2' LIMIT 1`,
+      `SELECT id FROM users WHERE username = 'satgas_timur1_2' LIMIT 1`,
     );
     const actLinmas1 = await queryRunner.query(
-      `SELECT id FROM users WHERE username = 'linmas1' LIMIT 1`,
+      `SELECT id FROM users WHERE username = 'linmas_bungkul_1' LIMIT 1`,
     );
     const actLinmas2 = await queryRunner.query(
-      `SELECT id FROM users WHERE username = 'linmas2' LIMIT 1`,
+      `SELECT id FROM users WHERE username = 'linmas_darmo_1' LIMIT 1`,
     );
     const actKorlap = await queryRunner.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
     const actShift = await queryRunner.query(`SELECT id FROM shifts LIMIT 1`);
@@ -1192,7 +1357,7 @@ async function seedPhase2() {
       const cekKendaraanId = at('cek_kendaraan');
       const patroliKorlapId = at('patroli_korlap');
       const cekAlatId = at('cek_alat');
-      const lainnyaKorlapId = at('lainnya_korlap');
+
 
       if (perawatanId && patroliId && cekKendaraanId) {
         // 12 Satgas activities spanning 4 weeks
@@ -1236,22 +1401,11 @@ async function seedPhase2() {
         `);
         console.log('  ✓ Created 3 korlap activities');
 
-        // 30 extended activities for scroll testing (batched)
+        // 30 extended activities for scroll testing (IDs via gen_random_uuid — Section C DELETE clears first)
         await queryRunner.query(`
           INSERT INTO activities (id, user_id, shift_id, area_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at)
           SELECT
-            CASE gs.n
-              WHEN  1 THEN '${ACT_X1_ID}'  WHEN  2 THEN '${ACT_X2_ID}'  WHEN  3 THEN '${ACT_X3_ID}'
-              WHEN  4 THEN '${ACT_X4_ID}'  WHEN  5 THEN '${ACT_X5_ID}'  WHEN  6 THEN '${ACT_X6_ID}'
-              WHEN  7 THEN '${ACT_X7_ID}'  WHEN  8 THEN '${ACT_X8_ID}'  WHEN  9 THEN '${ACT_X9_ID}'
-              WHEN 10 THEN '${ACT_X10_ID}' WHEN 11 THEN '${ACT_X11_ID}' WHEN 12 THEN '${ACT_X12_ID}'
-              WHEN 13 THEN '${ACT_X13_ID}' WHEN 14 THEN '${ACT_X14_ID}' WHEN 15 THEN '${ACT_X15_ID}'
-              WHEN 16 THEN '${ACT_X16_ID}' WHEN 17 THEN '${ACT_X17_ID}' WHEN 18 THEN '${ACT_X18_ID}'
-              WHEN 19 THEN '${ACT_X19_ID}' WHEN 20 THEN '${ACT_X20_ID}' WHEN 21 THEN '${ACT_X21_ID}'
-              WHEN 22 THEN '${ACT_X22_ID}' WHEN 23 THEN '${ACT_X23_ID}' WHEN 24 THEN '${ACT_X24_ID}'
-              WHEN 25 THEN '${ACT_X25_ID}' WHEN 26 THEN '${ACT_X26_ID}' WHEN 27 THEN '${ACT_X27_ID}'
-              WHEN 28 THEN '${ACT_X28_ID}' WHEN 29 THEN '${ACT_X29_ID}' ELSE '${ACT_X30_ID}'
-            END::UUID,
+            gen_random_uuid(),
             CASE gs.n % 3
               WHEN 0 THEN '${aS1}'
               WHEN 1 THEN '${aS2}'
@@ -1353,7 +1507,26 @@ async function seedPhase2() {
     // D.3: Set varied status scenarios for monitoring dashboard testing
     console.log('  [D.3] Setting monitoring status variants...');
 
-    // active: satgas1 + linmas1 (has active shift + recent location from Phase 1)
+    // active: satgas_pusat_1 + linmas_bungkul_1 (active shift + recent location ping)
+    // First ensure they have an active shift
+    await queryRunner.query(`
+      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
+      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
+        NOW() - INTERVAL '3 hours', -7.2580, 112.7340,
+        'https://sekar-media-dev.s3.amazonaws.com/clock-in/satgas-pusat1-monitoring.jpg',
+        NULL, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '3 hours'
+      FROM users u WHERE u.username = 'satgas_pusat_1' LIMIT 1
+      ON CONFLICT DO NOTHING;
+    `);
+    await queryRunner.query(`
+      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
+      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
+        NOW() - INTERVAL '4 hours', -7.2905, 112.7398,
+        'https://sekar-media-dev.s3.amazonaws.com/clock-in/linmas-bungkul1-monitoring.jpg',
+        NULL, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '4 hours'
+      FROM users u WHERE u.username = 'linmas_bungkul_1' LIMIT 1
+      ON CONFLICT DO NOTHING;
+    `);
     await queryRunner.query(`
       UPDATE user_tracking_status uts SET
         status = 'active',
@@ -1363,12 +1536,21 @@ async function seedPhase2() {
         updated_at = NOW()
       FROM shifts s
       JOIN users u ON s.user_id = u.id
-      WHERE u.username IN ('satgas1', 'linmas1')
+      WHERE u.username IN ('satgas_pusat_1', 'linmas_bungkul_1')
         AND s.user_id = uts.user_id
         AND s.clock_out_time IS NULL
     `);
 
-    // inactive: satgas2 (active shift but last ping 35min ago — between 15min and 60min threshold)
+    // inactive: satgas_timur1_2 (active shift but last ping 35min ago)
+    await queryRunner.query(`
+      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
+      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
+        NOW() - INTERVAL '6 hours', -7.2450, 112.7600,
+        'https://sekar-media-dev.s3.amazonaws.com/clock-in/satgas-timur12-monitoring.jpg',
+        NULL, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '6 hours'
+      FROM users u WHERE u.username = 'satgas_timur1_2' LIMIT 1
+      ON CONFLICT DO NOTHING;
+    `);
     await queryRunner.query(`
       UPDATE user_tracking_status uts SET
         status = 'inactive',
@@ -1378,12 +1560,21 @@ async function seedPhase2() {
         updated_at = NOW()
       FROM shifts s
       JOIN users u ON s.user_id = u.id
-      WHERE u.username = 'satgas2'
+      WHERE u.username = 'satgas_timur1_2'
         AND s.user_id = uts.user_id
         AND s.clock_out_time IS NULL
     `);
 
-    // outside_area: satgas3 (shift active, but location logs outside boundary — seeded in Phase 1)
+    // outside_area: satgas_pusat_2 (shift active, GPS location outside boundary polygon)
+    await queryRunner.query(`
+      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
+      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
+        NOW() - INTERVAL '2 hours', -7.2580, 112.7340,
+        'https://sekar-media-dev.s3.amazonaws.com/clock-in/satgas-pusat2-monitoring.jpg',
+        NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours'
+      FROM users u WHERE u.username = 'satgas_pusat_2' LIMIT 1
+      ON CONFLICT DO NOTHING;
+    `);
     await queryRunner.query(`
       UPDATE user_tracking_status uts SET
         status = 'outside_area',
@@ -1393,7 +1584,7 @@ async function seedPhase2() {
         updated_at = NOW()
       FROM shifts s
       JOIN users u ON s.user_id = u.id
-      WHERE u.username = 'satgas3'
+      WHERE u.username = 'satgas_pusat_2'
         AND s.user_id = uts.user_id
         AND s.clock_out_time IS NULL
     `);
@@ -1425,37 +1616,292 @@ async function seedPhase2() {
     `);
 
     console.log('    ✓ Status variants set:');
-    console.log('      active:       satgas1, linmas1 (recent location within boundary)');
-    console.log('      inactive:     satgas2 (last ping 35 min ago)');
-    console.log('      outside_area: satgas3 (location outside boundary)');
+    console.log('      active:       satgas_pusat_1, linmas_bungkul_1 (recent location within boundary)');
+    console.log('      inactive:     satgas_timur1_2 (last ping 35 min ago)');
+    console.log('      outside_area: satgas_pusat_2 (GPS outside boundary polygon)');
     console.log('      missing:      satgas_timur1_1 (no ping for 3h+)');
     console.log('      offline:      all others');
 
+    // ==========================================
+    // SECTION E: Phase 2E Data (Client Feedback II)
+    // ==========================================
+    console.log('\n📌 Section E: Phase 2E Data (Client Feedback II)...');
+
+    // E1: Add phone_number as safety-net UPDATE (already set in INSERT above for new users)
+    console.log('  📱 Ensuring phone_number set for all users...');
+    await queryRunner.query(`
+      UPDATE users SET phone_number = '081200000000' WHERE username = 'admin' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567890' WHERE username = 'top_management1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567891' WHERE username = 'kepala_rayon_selatan' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567892' WHERE username = 'kepala_rayon_utara' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567893' WHERE username = 'korlap_bungkul' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567894' WHERE username = 'linmas_bungkul_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567895' WHERE username = 'linmas_darmo_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567896' WHERE username = 'korlap_darmo' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567897' WHERE username = 'admin_data1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567898' WHERE username = 'admin_system1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000001' WHERE username = 'kepala_rayon_pusat' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000002' WHERE username = 'satgas_pusat_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000003' WHERE username = 'satgas_pusat_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000004' WHERE username = 'kepala_rayon_timur1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000005' WHERE username = 'satgas_timur1_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000006' WHERE username = 'satgas_timur1_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000007' WHERE username = 'kepala_rayon_timur2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000008' WHERE username = 'satgas_timur2_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000009' WHERE username = 'satgas_timur2_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000010' WHERE username = 'kepala_rayon_barat1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000011' WHERE username = 'satgas_barat1_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000012' WHERE username = 'satgas_barat1_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000013' WHERE username = 'kepala_rayon_barat2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000014' WHERE username = 'satgas_barat2_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000015' WHERE username = 'satgas_barat2_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000016' WHERE username = 'satgas_bungkul_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000017' WHERE username = 'satgas_bungkul_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000018' WHERE username = 'admin_data_selatan' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000019' WHERE username = 'admin_data_utara' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000020' WHERE username = 'admin_data_timur1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000021' WHERE username = 'admin_data_timur2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000022' WHERE username = 'admin_data_barat1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000023' WHERE username = 'admin_data_barat2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000024' WHERE username = 'korlap_harmoni' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000025' WHERE username = 'korlap_utara' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000026' WHERE username = 'korlap_timur1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000027' WHERE username = 'korlap_timur2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000028' WHERE username = 'korlap_barat1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000029' WHERE username = 'korlap_barat2' AND phone_number IS NULL;
+    `);
+    console.log('    ✓ phone_number ensured for all 39 users (1 admin + 11 phase2c + 12 per-rayon admin_data/korlap + 15 rayon-based)');
+
+    // E2: user_areas — korlap multi-area + satgas multi-area assignments
+    console.log('  🗺️ Creating user_areas assignments...');
+
+    // korlap_bungkul → Taman Bungkul (primary permanent area)
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'korlap_bungkul' AND a.name = 'Taman Bungkul'
+      ON CONFLICT DO NOTHING;
+    `);
+    // korlap_bungkul also → Jalan Raya Darmo (same Rayon Pusat — korlap must stay within one rayon)
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'korlap_bungkul' AND a.name = 'Jalan Raya Darmo'
+      ON CONFLICT DO NOTHING;
+    `);
+    // korlap_darmo → Jalan Raya Darmo (primary permanent area)
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'korlap_darmo' AND a.name = 'Jalan Raya Darmo'
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // satgas_pusat_1 → Taman Pusat (default area) + Taman Bungkul (extra permanent assignment)
+    // This tests: satgas with default area_id can also be assigned to extra areas via user_areas
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_pusat_1' AND a.name = 'Taman Pusat'
+      ON CONFLICT DO NOTHING;
+    `);
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_pusat_1' AND a.name = 'Taman Bungkul'
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // satgas_bungkul_1 → Taman Bungkul (default area, no extra assignments)
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_bungkul_1' AND a.name = 'Taman Bungkul'
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // satgas_bungkul_2 → Taman Bungkul (default area_id) + Jalan Raya Darmo (secondary permanent area)
+    // This tests: satgas with two permanent areas in the same rayon
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_bungkul_2' AND a.name = 'Taman Bungkul'
+      ON CONFLICT DO NOTHING;
+    `);
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_bungkul_2' AND a.name = 'Jalan Raya Darmo'
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // satgas_timur1_2 → Taman Timur 1 only (single rayon — Rayon Timur 1)
+    // Taman Timur 2 is in Rayon Timur 2 (different rayon), so cross-rayon task_based removed
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_timur1_2' AND a.name = 'Taman Timur 1'
+      ON CONFLICT DO NOTHING;
+    `);
+
+    console.log('    ✓ user_areas: korlap_bungkul→Bungkul+Darmo (same rayon), korlap_darmo→Darmo');
+    console.log('    ✓ user_areas: satgas_pusat_1→Pusat+Bungkul (permanent), satgas_timur1_2→Timur1 (single, same rayon)');
+    console.log('    ✓ user_areas: satgas_bungkul_1→Bungkul, satgas_bungkul_2→Bungkul+Darmo (permanent multi-area)');
+
+    // Per-rayon korlap single-area assignments
+    for (const [username, areaName] of [
+      ['korlap_harmoni', 'Taman Harmoni'],
+      ['korlap_utara',   'Taman Utara'],
+      ['korlap_timur1',  'Taman Timur 1'],
+      ['korlap_timur2',  'Taman Timur 2'],
+      ['korlap_barat1',  'Taman Barat 1'],
+      ['korlap_barat2',  'Taman Barat 2'],
+    ] as const) {
+      await queryRunner.query(`
+        INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+        SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+        FROM users u, areas a
+        WHERE u.username = $1 AND a.name = $2
+        ON CONFLICT DO NOTHING
+      `, [username, areaName]);
+    }
+    console.log('    ✓ user_areas: korlap assigned to primary area for all 7 rayons');
+
+    console.log('  ✓ Section E (Phase 2E) complete');
+
     console.log('');
-    console.log('✅ Phase 2 Seeding Completed Successfully!');
+    console.log('╔══════════════════════════════════════════════════════════════════════════════════╗');
+    console.log('║  ✅  Phase 2 Seeding Completed Successfully                                     ║');
+    console.log('╚══════════════════════════════════════════════════════════════════════════════════╝');
     console.log('');
-    console.log('Summary:');
-    console.log('  Section A (Core Phase 2 Data):');
-    console.log('    - 7 Rayons, 3 Shift Definitions, 20 Activity Types, 4 Special Day Overrides');
-    console.log('    - ~30 Users (9 Phase2C roles + 15 new rayon coverage + Phase1 users)');
-    console.log('    - 8 Areas (3 Phase1 + 5 new for missing rayons)');
-    console.log('    - 29 Staff Requirements (14 Taman Bungkul + 15 new areas)');
-    console.log('    - 3 Notification Tokens (satgas1, satgas2, linmas1)');
-    console.log('    - 10 Overtime records, Phase 2C shifts');
-    console.log('  Section B (Tasks):');
-    console.log('    - 8 satgas core tasks (all 8 statuses covered)');
-    console.log('    - 4 linmas tasks, 3 korlap tasks, 4 rayon-scoped tasks');
-    console.log('    - 25 extended tasks for scroll/filter testing');
-    console.log('  Section C (Activities):');
-    console.log('    - 12 satgas + 5 linmas + 3 korlap = 20 core activities');
-    console.log('    - 30 extended activities for scroll testing');
-    console.log('    - Total: 50 activities spanning 60-day date range');
-    console.log('  Section D (Monitoring Phase 2D):');
-    console.log('    - 5 monitoring configs (thresholds, geofencing, map, alerts, ping)');
-    console.log('    - user_tracking_status backfilled for all clockable users');
-    console.log(
-      '    - Status variants: active×2, inactive×1, outside_area×1, missing×1, offline×rest',
-    );
+    console.log('  [A] Core Data');
+    console.log('      7 Rayons · 3 Shifts · 20 Activity Types · 4 Special Day Overrides');
+    console.log('      40 Users (admin + 23 Phase2C/rayon-admin + 15 rayon-field) · 10 Areas · ~50 Staff Reqs');
+    console.log('      3 Notification Tokens · 10 Overtime records · Phase 2C shifts');
+    console.log('');
+    console.log('  [B] Tasks');
+    console.log('      8 satgas (all statuses) · 4 linmas · 3 korlap · 4 rayon-scoped');
+    console.log('      25 extended tasks for scroll/filter testing');
+    console.log('');
+    console.log('  [C] Activities');
+    console.log('      20 core (12 satgas + 5 linmas + 3 korlap) + 30 extended = 50 total');
+    console.log('      Date range: last 60 days');
+    console.log('');
+    console.log('  [D] Monitoring (Phase 2D)');
+    console.log('      5 configs · user_tracking_status backfilled for all clockable users');
+    console.log('      active×2  inactive×1  outside_area×1  missing×1  offline×rest');
+    console.log('');
+    console.log('  [E] Phase 2E (Client Feedback II)');
+    console.log('      phone_number set for all 40 users');
+    console.log('      user_areas: korlap_bungkul → Bungkul + Darmo (permanent, same rayon)');
+    console.log('      user_areas: satgas_pusat_1 → Pusat + Bungkul (permanent multi-area)');
+    console.log('      user_areas: satgas_timur1_2 → Timur 1 (single area)');
+    console.log('      user_areas: satgas_bungkul_2 → Bungkul + Darmo (permanent multi-area)');
+    console.log('      user_areas: korlap_harmoni/utara/timur1/timur2/barat1/barat2 → primary area each');
+    console.log('');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log('🧪  TEST USERS — all passwords: password123');
+    console.log('    Login with username OR phone number as "identifier"');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log('');
+    console.log('  ── SYSTEM-WIDE ROLES (no area scope) ──────────────────────────────────────────────');
+    console.log('  Role            Username           Phone          Notes');
+    console.log('  superadmin      admin              081200000000   Full system access (Phase 1 admin)');
+    console.log('  admin_system    admin_system1      081234567898   System administration');
+    console.log('  top_management  top_management1    081234567890   City-wide read-only view');
+    console.log('');
+    console.log('  ── RAYON PUSAT ─────────────────────────────────────────────────────────────────────');
+    console.log('  Areas: Taman Bungkul (aktif) · Jalan Raya Darmo (pasif) · Taman Pusat (aktif)');
+    console.log('');
+    console.log('  Role            Username           Phone          Area');
+    console.log('  admin_data      admin_data1        081234567897   Rayon Pusat — data entry & reports');
+    console.log('  kepala_rayon    kepala_rayon_pusat 081300000001   Rayon Pusat head');
+    console.log('  korlap          korlap_bungkul     081234567893   Taman Bungkul + Jalan Raya Darmo (multi, same rayon)');
+    console.log('  korlap          korlap_darmo       081234567896   Jalan Raya Darmo');
+    console.log('  satgas          satgas_pusat_1     081300000002   Taman Pusat + Taman Bungkul (multi) [ACTIVE]');
+    console.log('  satgas          satgas_pusat_2     081300000003   Taman Pusat [OUTSIDE_AREA status]');
+    console.log('  linmas          linmas_bungkul_1   081234567894   Taman Bungkul [ACTIVE status]');
+    console.log('  linmas          linmas_darmo_1     081234567895   Jalan Raya Darmo');
+    console.log('  satgas          satgas_bungkul_1   081300000016   Taman Bungkul (single area)');
+    console.log('  satgas          satgas_bungkul_2   081300000017   Taman Bungkul + Jalan Raya Darmo (multi)');
+    console.log('');
+    console.log('  ── RAYON SELATAN ───────────────────────────────────────────────────────────────────');
+    console.log('  Areas: Taman Harmoni (aktif) · Taman Pelangi (aktif, empty — understaffing test)');
+    console.log('');
+    console.log('  Role            Username              Phone          Area');
+    console.log('  kepala_rayon    kepala_rayon_selatan  081234567891   Rayon Selatan head');
+    console.log('  admin_data      admin_data_selatan    081300000018   Rayon Selatan — data entry & reports');
+    console.log('  korlap          korlap_harmoni        081300000024   Taman Harmoni');
+    console.log('');
+    console.log('  ── RAYON UTARA ─────────────────────────────────────────────────────────────────────');
+    console.log('  Area: Taman Utara (NEW)');
+    console.log('');
+    console.log('  Role            Username              Phone          Area');
+    console.log('  kepala_rayon    kepala_rayon_utara    081234567892   Rayon Utara head');
+    console.log('  admin_data      admin_data_utara      081300000019   Rayon Utara — data entry & reports');
+    console.log('  korlap          korlap_utara          081300000025   Taman Utara');
+    console.log('');
+    console.log('  ── RAYON TIMUR 1 ───────────────────────────────────────────────────────────────────');
+    console.log('  Area: Taman Timur 1');
+    console.log('');
+    console.log('  Role            Username              Phone          Area / Monitoring Status');
+    console.log('  kepala_rayon    kepala_rayon_timur1   081300000004   Rayon Timur 1 head');
+    console.log('  admin_data      admin_data_timur1     081300000020   Rayon Timur 1 — data entry & reports');
+    console.log('  korlap          korlap_timur1         081300000026   Taman Timur 1');
+    console.log('  satgas          satgas_timur1_1       081300000005   Taman Timur 1 [MISSING — no ping 3h+]');
+    console.log('  satgas          satgas_timur1_2       081300000006   Taman Timur 1 [INACTIVE 35min]');
+    console.log('');
+    console.log('  ── RAYON TIMUR 2 ───────────────────────────────────────────────────────────────────');
+    console.log('  Area: Taman Timur 2');
+    console.log('');
+    console.log('  Role            Username              Phone          Area');
+    console.log('  kepala_rayon    kepala_rayon_timur2   081300000007   Rayon Timur 2 head');
+    console.log('  admin_data      admin_data_timur2     081300000021   Rayon Timur 2 — data entry & reports');
+    console.log('  korlap          korlap_timur2         081300000027   Taman Timur 2');
+    console.log('  satgas          satgas_timur2_1       081300000008   Taman Timur 2');
+    console.log('  satgas          satgas_timur2_2       081300000009   Taman Timur 2');
+    console.log('');
+    console.log('  ── RAYON BARAT 1 ───────────────────────────────────────────────────────────────────');
+    console.log('  Area: Taman Barat 1');
+    console.log('');
+    console.log('  Role            Username              Phone          Area');
+    console.log('  kepala_rayon    kepala_rayon_barat1   081300000010   Rayon Barat 1 head');
+    console.log('  admin_data      admin_data_barat1     081300000022   Rayon Barat 1 — data entry & reports');
+    console.log('  korlap          korlap_barat1         081300000028   Taman Barat 1');
+    console.log('  satgas          satgas_barat1_1       081300000011   Taman Barat 1');
+    console.log('  satgas          satgas_barat1_2       081300000012   Taman Barat 1');
+    console.log('');
+    console.log('  ── RAYON BARAT 2 ───────────────────────────────────────────────────────────────────');
+    console.log('  Area: Taman Barat 2');
+    console.log('');
+    console.log('  Role            Username              Phone          Area');
+    console.log('  kepala_rayon    kepala_rayon_barat2   081300000013   Rayon Barat 2 head');
+    console.log('  admin_data      admin_data_barat2     081300000023   Rayon Barat 2 — data entry & reports');
+    console.log('  korlap          korlap_barat2         081300000029   Taman Barat 2');
+    console.log('  satgas          satgas_barat2_1       081300000014   Taman Barat 2');
+    console.log('  satgas          satgas_barat2_2       081300000015   Taman Barat 2');
+    console.log('');
+    console.log('  ── MONITORING STATUS SCENARIOS (Phase 2D) ──────────────────────────────────────────');
+    console.log('  ACTIVE       satgas_pusat_1, linmas_bungkul_1   recent GPS ping within boundary');
+    console.log('  INACTIVE     satgas_timur1_2                    last ping 35 min ago');
+    console.log('  OUTSIDE_AREA satgas_pusat_2                     GPS outside boundary polygon');
+    console.log('  MISSING      satgas_timur1_1                    no ping for 3+ hours');
+    console.log('  OFFLINE      all remaining users');
+    console.log('');
+    console.log('  ── MULTI-AREA ASSIGNMENTS (Phase 2E — user_areas table) ────────────────────────────');
+    console.log('  korlap_bungkul  Taman Bungkul (permanent) + Taman Harmoni (permanent)');
+    console.log('  satgas_pusat_1  Taman Pusat (permanent default) + Taman Bungkul (permanent extra)');
+    console.log('  satgas_timur1_2 Taman Timur 1 (permanent default) + Taman Timur 2 (task_based)');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
   } catch (error) {
     console.error('❌ Error during Phase 2 seeding:', error);
     throw error;

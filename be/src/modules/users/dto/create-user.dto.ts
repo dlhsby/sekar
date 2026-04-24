@@ -101,6 +101,15 @@ export class CreateUserDto {
   role?: UserRole;
 
   @ApiPropertyOptional({
+    description: 'Indonesian phone number for login',
+    example: '081234567890',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^(\+62|0)[0-9]{8,13}$/, { message: 'Invalid Indonesian phone number' })
+  phone_number?: string;
+
+  @ApiPropertyOptional({
     description: 'Rayon ID (required for kepala_rayon role)',
   })
   @IsUUID()

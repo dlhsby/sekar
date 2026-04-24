@@ -26,6 +26,8 @@ export interface User extends Record<string, unknown> {
   username: string;
   full_name: string;
   role: UserRole;
+  phone_number?: string;
+  profile_picture_url?: string;
   rayon_id?: string;
   rayon?: Rayon;
   area_id?: string;

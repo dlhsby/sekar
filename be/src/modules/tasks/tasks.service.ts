@@ -19,6 +19,7 @@ import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { VALID_TASK_ASSIGNMENTS, VERIFY_MAP } from '../users/constants/role-groups';
+import { AuditLogService } from '../audit/audit.service';
 
 /**
  * Service for managing tasks
@@ -37,6 +38,7 @@ export class TasksService {
     private readonly taskTagRepository: Repository<TaskTag>,
     private readonly usersService: UsersService,
     private readonly areasService: AreasService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -94,6 +96,16 @@ export class TasksService {
     }
 
     this.logger.log(`Task created with ID: ${savedTask.id}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'task',
+        entity_id: savedTask.id,
+        action: 'create',
+        actor_id: creatorId,
+        new_value: { title: savedTask.title, status: savedTask.status, area_id: savedTask.area_id },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return this.findOne(savedTask.id);
   }
@@ -384,6 +396,16 @@ export class TasksService {
     await this.taskRepository.save(task);
     this.logger.log(`Task ${id} assigned to user ${assignTaskDto.assigned_to}`);
 
+    this.auditLogService
+      .log({
+        entity_type: 'task',
+        entity_id: id,
+        action: 'assign',
+        actor_id: callerId || task.created_by,
+        new_value: { assigned_to: assignTaskDto.assigned_to, status: TaskStatus.ASSIGNED },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
     return this.findOne(id);
   }
 
@@ -452,6 +474,16 @@ export class TasksService {
 
     await this.taskRepository.save(task);
     this.logger.log(`Task ${id} completed by user ${userId}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'task',
+        entity_id: id,
+        action: 'complete',
+        actor_id: userId,
+        new_value: { status: TaskStatus.COMPLETED },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return this.findOne(id);
   }
@@ -748,6 +780,17 @@ export class TasksService {
     await this.taskRepository.save(task);
     this.logger.log(`Task ${taskId} verified by user ${verifierId}`);
 
+    this.auditLogService
+      .log({
+        entity_type: 'task',
+        entity_id: taskId,
+        action: 'verify',
+        actor_id: verifierId,
+        old_value: { status: TaskStatus.COMPLETED },
+        new_value: { status: TaskStatus.VERIFIED, verified_by: verifierId },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
     return this.findOne(taskId);
   }
 
@@ -782,6 +825,17 @@ export class TasksService {
 
     await this.taskRepository.save(task);
     this.logger.log(`Revision requested on task ${taskId} by user ${verifierId}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'task',
+        entity_id: taskId,
+        action: 'request_revision',
+        actor_id: verifierId,
+        old_value: { status: TaskStatus.COMPLETED },
+        new_value: { status: TaskStatus.REVISION_NEEDED, revision_reason: reason },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return this.findOne(taskId);
   }

@@ -17,11 +17,13 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   superadmin: 'Superadmin',
 };
 
-/** Roles that can clock in/out (field roles with area assignments only) */
+/** Roles that can clock in/out (must match backend CLOCKABLE_ROLES) */
 export const CLOCKABLE_ROLES: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
+  'admin_data',
+  'kepala_rayon',
 ];
 
 /** Roles that can submit activities */
@@ -30,6 +32,7 @@ export const ACTIVITY_SUBMITTERS: UserRole[] = [
   'linmas',
   'korlap',
   'admin_data',
+  'kepala_rayon',
 ];
 
 /** Roles that can create tasks */
@@ -50,10 +53,10 @@ export const TASK_RECEIVERS: UserRole[] = [
 ];
 
 /** Roles that can submit overtime */
-export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'admin_data'];
+export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'];
 
 /** Roles that can approve overtime */
-export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
+export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'top_management'];
 
 /** Monitoring access by scope */
 export const MONITORING_ROLES: Record<'city' | 'rayon' | 'area', UserRole[]> = {

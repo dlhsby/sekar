@@ -318,15 +318,12 @@ class SyncManager extends EventEmitter {
   private async processSingleItem(item: QueueItem): Promise<void> {
     console.debug(`[SyncManager] Processing ${item.type} item:`, item.id);
 
-    // Check retry limit
+    // Check retry limit — remove permanently instead of re-queuing
     if (item.retryCount >= MAX_RETRIES) {
       console.warn(
-        `[SyncManager] Max retries reached for item ${item.id}, marking as failed`,
+        `[SyncManager] Max retries reached for item ${item.id}, removing from queue`,
       );
-      await updateQueueItem(item.id, {
-        status: 'failed',
-        error: 'Max retries exceeded',
-      });
+      await removeFromQueue(item.id);
       throw new Error('Max retries exceeded');
     }
 
@@ -360,6 +357,13 @@ class SyncManager extends EventEmitter {
       // Check for conflict errors (server timestamp wins)
       if (this.isConflictError(error)) {
         console.warn('[SyncManager] Conflict detected, removing stale item');
+        await removeFromQueue(item.id);
+        return;
+      }
+
+      // Check for permanently stale items (e.g. location upload for a completed shift)
+      if (this.isStaleError(error)) {
+        console.warn('[SyncManager] Stale item detected (shift completed), dropping:', item.id);
         await removeFromQueue(item.id);
         return;
       }
@@ -461,6 +465,10 @@ class SyncManager extends EventEmitter {
       const result = await uploadLocationBatch(shift_id, locations);
 
       if (!result || result.error) {
+        // BAD_REQUEST (shift completed) or NOT_FOUND (shift deleted) — drop the item
+        if (result?.code === 'BAD_REQUEST' || result?.code === 'NOT_FOUND') {
+          throw new Error('Cannot upload locations for completed shift');
+        }
         throw new Error(result?.error || 'Location batch sync failed');
       }
 
@@ -491,6 +499,10 @@ class SyncManager extends EventEmitter {
       const result = await uploadLocationBatch(String(shiftId), locations);
 
       if (!result || result.error) {
+        // BAD_REQUEST (shift completed) or NOT_FOUND (shift deleted) — drop the item
+        if (result?.code === 'BAD_REQUEST' || result?.code === 'NOT_FOUND') {
+          throw new Error('Cannot upload locations for completed shift');
+        }
         throw new Error(result?.error || 'Location batch sync failed (legacy)');
       }
 
@@ -517,6 +529,16 @@ class SyncManager extends EventEmitter {
       error?.code === 'CONFLICT' ||
       error?.message?.toLowerCase().includes('conflict')
     );
+  }
+
+  /**
+   * Check if error means the item is permanently stale and should be dropped.
+   * Location uploads for completed shifts will never succeed — no point retrying.
+   */
+  private isStaleError(error: any): boolean {
+    const msg: string = error?.message || '';
+    return msg.toLowerCase().includes('completed shift') ||
+           msg.toLowerCase().includes('cannot upload locations');
   }
 
   /**

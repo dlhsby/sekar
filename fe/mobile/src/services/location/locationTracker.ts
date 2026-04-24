@@ -195,7 +195,10 @@ class LocationTracker extends EventEmitter {
   }
 
   /**
-   * Stop location tracking
+   * Stop location tracking with a final upload attempt.
+   * Use stop() when the shift may still be active server-side (e.g. app crash recovery).
+   * Use stopImmediate() when the caller just ended the shift via API — uploading would
+   * race against the completed-shift state and generate a harmless-but-noisy 400 error.
    */
   public async stop(): Promise<void> {
     if (!this.tracking) {
@@ -221,6 +224,30 @@ class LocationTracker extends EventEmitter {
 
     this.emit('trackingStopped');
     console.debug('[LocationTracker] Tracking stopped');
+  }
+
+  /**
+   * Stop immediately without uploading the remaining buffer.
+   * Call this when the shift was just ended via API — the server already
+   * knows the shift is complete so any upload would return 400 anyway.
+   */
+  public stopImmediate(): void {
+    if (!this.tracking) {
+      console.debug('[LocationTracker] Not tracking (stopImmediate)');
+      return;
+    }
+
+    console.debug('[LocationTracker] Stopping immediately (no upload)...');
+    this.stopLocationWatch();
+
+    // Clear buffer without uploading — shift is already ended server-side
+    this.locationBuffer = [];
+    this.shiftId = null;
+    this.tracking = false;
+    this.firstPingUploaded = false;
+
+    this.emit('trackingStopped');
+    console.debug('[LocationTracker] Tracking stopped immediately');
   }
 
   /**
@@ -586,6 +613,14 @@ class LocationTracker extends EventEmitter {
       const result = await uploadLocationBatch(shiftId, apiLocations);
 
       if (result.error) {
+        // BAD_REQUEST (completed shift) or NOT_FOUND (shift deleted) — drop locations, don't queue
+        if (result.code === 'BAD_REQUEST' || result.code === 'NOT_FOUND') {
+          console.warn('[LocationTracker] Shift no longer active, dropping locations:', result.error);
+          this.locationBuffer = this.locationBuffer.slice(uploadCount);
+          await this.persistBuffer();
+          this.emit('batchQueued', 0);
+          return;
+        }
         throw new Error(result.error);
       }
 

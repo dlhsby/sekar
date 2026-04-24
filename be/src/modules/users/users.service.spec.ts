@@ -25,6 +25,8 @@ describe('UsersService', () => {
     username: 'testuser',
     password_hash: '$2b$10$hashedpassword',
     full_name: 'Test User',
+    phone_number: null,
+    profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import { ImagePreviewModal } from '../../components/common';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBCard, NBBackgroundPattern } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -20,6 +21,7 @@ import {
 } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useClockInOut } from '../../hooks';
+import { useAppSelector } from '../../store/hooks';
 import { formatDateTime } from '../../utils/dateUtils';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
@@ -32,10 +34,11 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const navigation = useNavigation<MainTabScreenProps<'ClockInOut'>['navigation']>();
   const [isAreaExpanded, setIsAreaExpanded] = useState(false);
   const [isLocationExpanded, setIsLocationExpanded] = useState(true);
+  const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
 
   const {
     location,
-    selfieUri,
+    selfie,
     isSubmitting,
     isWithinBoundary,
     timer,
@@ -72,8 +75,11 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     }
   }, [navigation, goBack, isClockIn]);
 
-  // No assigned area
-  if (!assignedArea) {
+  // No assigned area — block only for area-scoped roles (satgas/linmas/korlap).
+  // Rayon-scoped roles (admin_data/kepala_rayon) can clock in without a specific area.
+  const userRole = useAppSelector((state) => state.auth.user?.role);
+  const isRayonScoped = userRole === 'admin_data' || userRole === 'kepala_rayon';
+  if (!assignedArea && !isRayonScoped) {
     return (
       <NBBackgroundPattern
         pattern="dots"
@@ -138,51 +144,65 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </Text>
           </View>
 
-          {/* Area Info Card - Collapsible */}
-          <NBCard variant="elevated" style={styles.card}>
-            <TouchableOpacity
-              style={styles.collapsibleHeader}
-              onPress={() => setIsAreaExpanded(v => !v)}
-              accessibilityLabel={isAreaExpanded ? 'Sembunyikan detail area' : 'Tampilkan detail area'}
-            >
-              <View style={styles.collapsibleHeaderLeft}>
-                <Text style={styles.cardTitle}>Area Ditugaskan</Text>
-                <Text style={styles.areaName}>{assignedArea.name}</Text>
-              </View>
-              <Text style={styles.chevron}>{isAreaExpanded ? '▼' : '▶'}</Text>
-            </TouchableOpacity>
-            {isAreaExpanded && (
-              <View style={styles.collapsibleBody}>
-                {assignedArea.address && <Text style={styles.areaAddress}>{assignedArea.address}</Text>}
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Tipe Area:</Text>
-                  <Text style={styles.infoValue}>{assignedArea.area_type?.name || 'N/A'}</Text>
+          {/* Area Info Card - Collapsible (hidden for rayon-scoped roles without area) */}
+          {assignedArea ? (
+            <NBCard variant="elevated" style={styles.card}>
+              <TouchableOpacity
+                style={styles.collapsibleHeader}
+                onPress={() => setIsAreaExpanded(v => !v)}
+                accessibilityLabel={isAreaExpanded ? 'Sembunyikan detail area' : 'Tampilkan detail area'}
+              >
+                <View style={styles.collapsibleHeaderLeft}>
+                  <Text style={styles.cardTitle}>Area Ditugaskan</Text>
+                  <Text style={styles.areaName}>{assignedArea.name}</Text>
                 </View>
-                {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
+                <Text style={styles.chevron}>{isAreaExpanded ? '▼' : '▶'}</Text>
+              </TouchableOpacity>
+              {isAreaExpanded && (
+                <View style={styles.collapsibleBody}>
+                  {assignedArea.address && <Text style={styles.areaAddress}>{assignedArea.address}</Text>}
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Koordinat GPS:</Text>
-                    <Text style={styles.infoValue}>
-                      {Number(assignedArea.gps_lat).toFixed(6)}, {Number(assignedArea.gps_lng).toFixed(6)}
-                    </Text>
+                    <Text style={styles.infoLabel}>Tipe Area:</Text>
+                    <Text style={styles.infoValue}>{assignedArea.area_type?.name || 'N/A'}</Text>
                   </View>
-                )}
-                {assignedArea.radius_meters != null && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Radius Batas:</Text>
-                    <Text style={styles.infoValue}>{assignedArea.radius_meters}m</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </NBCard>
+                  {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Koordinat GPS:</Text>
+                      <Text style={styles.infoValue}>
+                        {Number(assignedArea.gps_lat).toFixed(6)}, {Number(assignedArea.gps_lng).toFixed(6)}
+                      </Text>
+                    </View>
+                  )}
+                  {assignedArea.radius_meters != null && (
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Radius Batas:</Text>
+                      <Text style={styles.infoValue}>{assignedArea.radius_meters}m</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </NBCard>
+          ) : isRayonScoped ? (
+            <NBCard variant="elevated" style={styles.card}>
+              <Text style={styles.cardTitle}>Cakupan Rayon</Text>
+              <Text style={styles.areaName}>Clock in tanpa area spesifik</Text>
+            </NBCard>
+          ) : null}
 
           {/* Selfie Card (Clock In only) */}
           {isClockIn && (
             <NBCard variant="elevated" style={styles.card}>
               <Text style={styles.cardTitle}>Foto Selfie</Text>
-              {selfieUri ? (
+              {selfie ? (
                 <View>
-                  <Image source={{ uri: selfieUri }} style={styles.selfieImage} />
+                  <TouchableOpacity
+                    onPress={() => setSelfiePreviewUri(selfie.uri)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Lihat selfie penuh"
+                    accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                  >
+                    <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
+                  </TouchableOpacity>
                   <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
                 </View>
               ) : (
@@ -277,10 +297,17 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           </View>
         )}
 
+        {/* Selfie full-screen preview modal */}
+        <ImagePreviewModal
+          uri={selfiePreviewUri}
+          onClose={() => setSelfiePreviewUri(null)}
+          title="Selfie Clock In"
+        />
+
         {/* Submit Button — fixed at bottom, scrollable area sits above */}
         <View style={styles.submitBar}>
           <NBButton
-            title="Kirim"
+            title={isClockIn ? 'Clock In' : 'Clock Out'}
             onPress={isClockIn ? () => handleClockIn(goBack) : () => handleClockOut(goBack)}
             variant="primary"
             size="lg"
@@ -288,7 +315,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             loading={isSubmitting}
             disabled={
               isSubmitting || location.loading || !location.latitude || !location.longitude ||
-              (isClockIn && (!selfieUri || !isOnline))
+              (isClockIn && !isOnline)
             }
             accessibilityHint={
               isClockIn ? 'Mulai shift kerja dengan verifikasi foto diri dan lokasi' : 'Akhiri shift kerja saat ini'

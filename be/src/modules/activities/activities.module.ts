@@ -8,6 +8,7 @@ import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { User } from '../users/entities/user.entity';
 import { SharedModule } from '../../shared/shared.module';
 import { UsersModule } from '../users/users.module';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * Activities Module
@@ -29,6 +30,7 @@ import { UsersModule } from '../users/users.module';
     TypeOrmModule.forFeature([Activity, Shift, ActivityType, User]),
     SharedModule, // For S3Service
     UsersModule,
+    AuditModule,
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService],

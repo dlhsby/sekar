@@ -154,18 +154,18 @@ describe('websocketService', () => {
     it('adds event listeners', () => {
       const handler = jest.fn();
 
-      websocketService.onWorkerLocation(handler);
+      websocketService.onUserLocation(handler);
 
-      expect(mockSocket.on).toHaveBeenCalledWith(EventType.WORKER_LOCATION, handler);
+      expect(mockSocket.on).toHaveBeenCalledWith(EventType.USER_LOCATION, handler);
     });
 
     it('removes event listeners', () => {
       const handler = jest.fn();
 
-      const unsubscribe = websocketService.onWorkerLocation(handler);
+      const unsubscribe = websocketService.onUserLocation(handler);
       unsubscribe();
 
-      expect(mockSocket.off).toHaveBeenCalledWith(EventType.WORKER_LOCATION, handler);
+      expect(mockSocket.off).toHaveBeenCalledWith(EventType.USER_LOCATION, handler);
     });
 
     it('disconnects cleanly', () => {
@@ -183,26 +183,26 @@ describe('websocketService', () => {
       (websocketService as any).socket = mockSocket;
     });
 
-    it('onWorkerLocation adds listener', () => {
+    it('onUserLocation adds listener', () => {
       const handler = jest.fn();
-      const unsubscribe = websocketService.onWorkerLocation(handler);
+      const unsubscribe = websocketService.onUserLocation(handler);
 
       expect(typeof unsubscribe).toBe('function');
-      expect(mockSocket.on).toHaveBeenCalledWith(EventType.WORKER_LOCATION, handler);
+      expect(mockSocket.on).toHaveBeenCalledWith(EventType.USER_LOCATION, handler);
     });
 
-    it('onWorkerClockIn adds listener', () => {
+    it('onUserClockIn adds listener', () => {
       const handler = jest.fn();
-      websocketService.onWorkerClockIn(handler);
+      websocketService.onUserClockIn(handler);
 
-      expect(mockSocket.on).toHaveBeenCalledWith(EventType.WORKER_CLOCK_IN, handler);
+      expect(mockSocket.on).toHaveBeenCalledWith(EventType.USER_CLOCK_IN, handler);
     });
 
-    it('onWorkerClockOut adds listener', () => {
+    it('onUserClockOut adds listener', () => {
       const handler = jest.fn();
-      websocketService.onWorkerClockOut(handler);
+      websocketService.onUserClockOut(handler);
 
-      expect(mockSocket.on).toHaveBeenCalledWith(EventType.WORKER_CLOCK_OUT, handler);
+      expect(mockSocket.on).toHaveBeenCalledWith(EventType.USER_CLOCK_OUT, handler);
     });
 
     it('onTaskAssigned adds listener', () => {
@@ -248,8 +248,8 @@ describe('websocketService', () => {
       const handler1 = jest.fn();
       const handler2 = jest.fn();
 
-      websocketService.onWorkerLocation(handler1);
-      websocketService.onWorkerClockIn(handler2);
+      websocketService.onUserLocation(handler1);
+      websocketService.onUserClockIn(handler2);
 
       websocketService.cleanup();
 
@@ -368,7 +368,7 @@ describe('websocketService', () => {
       const consoleWarn = jest.spyOn(console, 'warn').mockImplementation();
       const handler = jest.fn();
 
-      websocketService.onWorkerLocation(handler);
+      websocketService.onUserLocation(handler);
 
       expect(consoleWarn).toHaveBeenCalledWith(
         '[WebSocket] Socket not initialized, listener may not work'
@@ -384,13 +384,13 @@ describe('websocketService', () => {
       const handler1 = jest.fn();
       const handler2 = jest.fn();
 
-      websocketService.onWorkerLocation(handler1);
-      websocketService.onWorkerLocation(handler2);
+      websocketService.onUserLocation(handler1);
+      websocketService.onUserLocation(handler2);
 
-      websocketService.removeAllListeners(EventType.WORKER_LOCATION);
+      websocketService.removeAllListeners(EventType.USER_LOCATION);
 
-      expect(mockSocket.off).toHaveBeenCalledWith(EventType.WORKER_LOCATION, handler1);
-      expect(mockSocket.off).toHaveBeenCalledWith(EventType.WORKER_LOCATION, handler2);
+      expect(mockSocket.off).toHaveBeenCalledWith(EventType.USER_LOCATION, handler1);
+      expect(mockSocket.off).toHaveBeenCalledWith(EventType.USER_LOCATION, handler2);
     });
 
     it('should remove all listeners for all event types', () => {
@@ -401,8 +401,8 @@ describe('websocketService', () => {
       const handler2 = jest.fn();
       const handler3 = jest.fn();
 
-      websocketService.onWorkerLocation(handler1);
-      websocketService.onWorkerClockIn(handler2);
+      websocketService.onUserLocation(handler1);
+      websocketService.onUserClockIn(handler2);
       websocketService.onTaskAssigned(handler3);
 
       websocketService.removeAllListeners();

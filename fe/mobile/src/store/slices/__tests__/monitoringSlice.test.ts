@@ -38,6 +38,7 @@ jest.mock('../../../services/api/monitoringApi', () => ({
   getUserDaySummary: jest.fn(),
   getUserLocationHistory: jest.fn(),
   getStaffingSummary: jest.fn(),
+  getBoundaries: jest.fn(),
 }));
 
 import {
@@ -70,6 +71,7 @@ const mockLiveUser: LiveUser = {
   battery_level: 85,
   last_update: '2026-02-15T08:00:00Z',
   is_within_area: true,
+  outside_boundary: false,
   shift_id: 'shift-123',
   shift_name: 'Shift Pagi',
   shift_definition_id: null,
@@ -204,6 +206,10 @@ const initialState = {
   userDaySummary: null,
   locationHistory: null,
   staffingSummary: [],
+  boundaries: null,
+  isLoadingBoundaries: false,
+  currentDayType: null,
+  currentDayTypeLabel: null,
   statusCounts: {
     active: 0,
     inactive: 0,
@@ -863,21 +869,28 @@ describe('monitoringSlice', () => {
     });
 
     it('should set staffingSummary and clear isLoadingStaffing on fulfilled', () => {
+      const payload = {
+        items: [mockStaffingItem],
+        current_day_type: 'workday' as string | null,
+        current_day_type_label: 'Hari Kerja' as string | null,
+      };
       const state = monitoringReducer(
         { ...initialState, isLoadingStaffing: true },
-        fetchStaffingSummary.fulfilled([mockStaffingItem], 'req-id', undefined),
+        fetchStaffingSummary.fulfilled(payload, 'req-id', undefined),
       );
       expect(state.isLoadingStaffing).toBe(false);
       expect(state.staffingSummary).toEqual([mockStaffingItem]);
+      expect(state.currentDayType).toBe('workday');
+      expect(state.currentDayTypeLabel).toBe('Hari Kerja');
     });
 
-    it('should set staffingSummary to empty array when payload is undefined on fulfilled', () => {
+    it('should not change staffingSummary when payload is undefined on fulfilled', () => {
       const state = monitoringReducer(
         { ...initialState, isLoadingStaffing: true, staffingSummary: [mockStaffingItem] },
         fetchStaffingSummary.fulfilled(undefined, 'req-id', undefined),
       );
       expect(state.isLoadingStaffing).toBe(false);
-      expect(state.staffingSummary).toEqual([]);
+      expect(state.staffingSummary).toEqual([mockStaffingItem]);
     });
 
     it('should clear isLoadingStaffing on rejected', () => {
@@ -904,7 +917,7 @@ describe('monitoringSlice', () => {
       expect(mockGetStaffingSummary).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
     });
 
-    it('should return empty array when getStaffingSummary response has no items', async () => {
+    it('should return empty items when getStaffingSummary response has no items', async () => {
       mockGetStaffingSummary.mockResolvedValueOnce({ data: {} });
       const dispatch = jest.fn();
       const getState = jest.fn();
@@ -914,7 +927,7 @@ describe('monitoringSlice', () => {
         ([action]) => action.type === fetchStaffingSummary.fulfilled.type,
       );
       expect(fulfilledCall).toBeTruthy();
-      expect(fulfilledCall[0].payload).toEqual([]);
+      expect(fulfilledCall[0].payload.items).toEqual([]);
     });
   });
 

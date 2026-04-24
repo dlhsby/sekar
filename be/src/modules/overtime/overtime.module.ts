@@ -6,6 +6,7 @@ import { Overtime } from './entities/overtime.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { User } from '../users/entities/user.entity';
 import { ShiftsModule } from '../shifts/shifts.module';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * Overtime Module
@@ -17,7 +18,7 @@ import { ShiftsModule } from '../shifts/shifts.module';
  * - Area-scoped approvals
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Overtime, ActivityType, User]), ShiftsModule],
+  imports: [TypeOrmModule.forFeature([Overtime, ActivityType, User]), ShiftsModule, AuditModule],
   controllers: [OvertimeController],
   providers: [OvertimeService],
   exports: [OvertimeService],

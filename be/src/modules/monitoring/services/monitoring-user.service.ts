@@ -80,7 +80,7 @@ export class MonitoringUserService {
       return {
         id: uts.user.id,
         full_name: uts.user.full_name,
-        phone: uts.user.phone || null,
+        phone: uts.user.phone_number || null,
         role: uts.user.role,
         area_id: uts.area_id,
         area_name: uts.area?.name || 'Unknown',
@@ -172,8 +172,9 @@ export class MonitoringUserService {
       tracking?.area ||
       (user.area_id ? await this.areaRepository.findOne({ where: { id: user.area_id } }) : null);
 
-    const rayon = area?.rayon_id
-      ? await this.rayonRepository.findOne({ where: { id: area.rayon_id } })
+    const effectiveRayonId = area?.rayon_id ?? user.rayon_id ?? null;
+    const rayon = effectiveRayonId
+      ? await this.rayonRepository.findOne({ where: { id: effectiveRayonId } })
       : null;
 
     const shiftInfo = await this.buildShiftInfo(tracking);
@@ -190,7 +191,7 @@ export class MonitoringUserService {
       full_name: user.full_name,
       username: user.username,
       role: user.role,
-      phone: user.phone || null,
+      phone: user.phone_number || null,
       status: tracking?.status || TrackingStatus.OFFLINE,
       area_id: area?.id || null,
       area_name: area?.name || null,
@@ -200,7 +201,7 @@ export class MonitoringUserService {
       last_location: lastLocation,
       activities_today: activitiesToday,
       tasks_today: tasksToday,
-      whatsapp_links: this.buildWhatsAppLinks(user.phone),
+      whatsapp_links: this.buildWhatsAppLinks(user.phone_number),
     };
   }
 

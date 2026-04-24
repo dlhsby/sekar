@@ -45,6 +45,28 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// Mock LocationMapModal to avoid react-native-maps transpilation
+jest.mock('../../../components/modals/LocationMapModal', () => ({
+  LocationMapModal: () => null,
+}));
+
+// Mock useHomeLocation hook
+jest.mock('../../../hooks/useHomeLocation', () => ({
+  useHomeLocation: jest.fn(() => ({
+    location: {
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+      isWithinArea: false,
+      loading: false,
+      error: null,
+      updatedAt: null,
+    },
+    refresh: jest.fn(),
+    hasActiveShift: false,
+  })),
+}));
+
 // Helper to create test store with optional shift
 const createTestStore = (currentShift: any = null) => {
   // Mock reportsApi to return empty array
@@ -595,8 +617,8 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
     jest.clearAllMocks();
   });
 
-  const clockableRoles = ['satgas', 'linmas', 'korlap'];
-  const nonClockableRoles = ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
+  const clockableRoles = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'];
+  const nonClockableRoles = ['top_management', 'admin_system', 'superadmin'];
 
   clockableRoles.forEach((role) => {
     it(`should show FAB for clockable role: ${role}`, async () => {

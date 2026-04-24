@@ -3,7 +3,7 @@
  * Phase 2C: Read-only view with inline approval/rejection — matches ActivityDetailScreen pattern
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,14 @@ import {
   ActivityIndicator,
   Platform,
   SafeAreaView,
+  TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { ImagePreviewModal } from '../../components/common';
+import { useNavigation, useRoute, useFocusEffect, type RouteProp } from '@react-navigation/native';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import { getOvertimeById, approveOvertime, rejectOvertime } from '../../services/api/overtimeApi';
+import { OvertimeTrailModal } from '../../components/modals/OvertimeTrailModal';
 import {
   NBCard,
   NBCardHeader,
@@ -61,9 +65,17 @@ export function OvertimeDetailScreen(): React.JSX.Element {
 
   const [overtime, setOvertime] = useState<Overtime | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [showTrailModal, setShowTrailModal] = useState(false);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+
+  const canViewTrail = useMemo(
+    () => !!(overtime?.shift_id && user?.role && !['satgas', 'linmas'].includes(user.role)),
+    [overtime, user],
+  );
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -74,27 +86,42 @@ export function OvertimeDetailScreen(): React.JSX.Element {
     }, 150);
   }, []);
 
-  useEffect(() => {
-    const fetchDetail = async () => {
+  const fetchDetail = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
       setIsLoading(true);
-      try {
-        const response = await getOvertimeById(overtimeId);
-        if (response.data) {
-          setOvertime(response.data);
-        } else if (response.error) {
+    }
+    try {
+      const response = await getOvertimeById(overtimeId);
+      if (response.data) {
+        setOvertime(response.data);
+      } else if (response.error) {
+        if (!isRefresh) {
           Alert.alert('Error', response.error);
-          navigation.goBack();
+          navigation.navigate('Overtime' as any);
         }
-      } catch {
-        Alert.alert('Error', 'Gagal memuat detail lembur');
-        navigation.goBack();
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchDetail();
+    } catch {
+      if (!isRefresh) {
+        Alert.alert('Error', 'Gagal memuat detail lembur');
+        navigation.navigate('Overtime' as any);
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, [overtimeId, navigation]);
+
+  useFocusEffect(useCallback(() => { void fetchDetail(false); }, [fetchDetail]));
+
+  const handleRefresh = useCallback(() => { void fetchDetail(true); }, [fetchDetail]);
+
+  // Whether the current user can clock out this overtime (owner + in_progress)
+  const canClockOut = useMemo(
+    () => overtime?.status === 'in_progress' && user?.id === overtime.user_id,
+    [overtime, user],
+  );
 
   // Determine if current user can approve/reject this overtime (mirrors ActivityDetailScreen)
   const canApprove = useMemo(() => {
@@ -192,7 +219,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           <NBButton
             title="Kembali"
             variant="secondary"
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.navigate('Overtime' as any)}
           />
         </View>
       </NBBackgroundPattern>
@@ -212,10 +239,18 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           style={styles.container}
           contentContainerStyle={[
             styles.contentContainer,
-            canApprove && styles.contentContainerWithFooter,
+            (canApprove || canClockOut) && styles.contentContainerWithFooter,
             showRejectInput && styles.contentContainerWithReject,
           ]}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={[nbColors.primary]}
+              tintColor={nbColors.primary}
+            />
+          }
         >
           {/* General Info Card */}
           <NBCard style={styles.card}>
@@ -229,11 +264,15 @@ export function OvertimeDetailScreen(): React.JSX.Element {
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.label}>Selesai</Text>
-                <Text style={styles.value}>{formatDateTimeIndonesian(overtime.end_datetime)}</Text>
+                <Text style={styles.value}>
+                  {overtime.end_datetime ? formatDateTimeIndonesian(overtime.end_datetime) : '(Belum selesai)'}
+                </Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.label}>Durasi</Text>
-                <Text style={styles.value}>{formatDurationHours(overtime.start_datetime, overtime.end_datetime)}</Text>
+                <Text style={styles.value}>
+                  {overtime.end_datetime ? formatDurationHours(overtime.start_datetime, overtime.end_datetime) : '-'}
+                </Text>
               </View>
               {overtime.user && (
                 <View style={styles.infoRow}>
@@ -249,6 +288,18 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                   <Text style={styles.value}>{overtime.area.name}</Text>
                 </View>
               )}
+            </NBCardContent>
+          </NBCard>
+
+          {/* Reason Card */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>💬 ALASAN LEMBUR</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              <Text style={[styles.descriptionText, !overtime.reason && styles.descriptionPlaceholder]}>
+                {overtime.reason || '(Tidak ada alasan)'}
+              </Text>
             </NBCardContent>
           </NBCard>
 
@@ -294,16 +345,18 @@ export function OvertimeDetailScreen(): React.JSX.Element {
               <Text style={styles.sectionTitle}>📝 DESKRIPSI</Text>
             </NBCardHeader>
             <NBCardContent>
-              <Text style={styles.descriptionText}>{overtime.description}</Text>
+              <Text style={[styles.descriptionText, !overtime.description && styles.descriptionPlaceholder]}>
+                {overtime.description || '(Belum diisi)'}
+              </Text>
             </NBCardContent>
           </NBCard>
 
           {/* Photos Card */}
-          {overtime.photo_urls.length > 0 && (
+          {(overtime.photo_urls?.length ?? 0) > 0 && (
             <NBCard style={styles.card}>
               <NBCardHeader>
                 <Text style={styles.sectionTitle}>📸 FOTO BUKTI</Text>
-                <Text style={styles.sectionSubtitle}>{overtime.photo_urls.length} foto dilampirkan</Text>
+                <Text style={styles.sectionSubtitle}>{overtime.photo_urls!.length} foto dilampirkan</Text>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -311,14 +364,70 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.photosContainer}
                 >
-                  {overtime.photo_urls.map((url, index) => (
-                    <Image
+                  {overtime.photo_urls!.map((url, index) => (
+                    <TouchableOpacity
                       key={index}
-                      source={{ uri: url }}
-                      style={styles.photo}
-                      resizeMode="cover"
-                    />
+                      onPress={() => setPreviewUri(url)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Lihat foto penuh"
+                      accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                    >
+                      <Image
+                        source={{ uri: url }}
+                        style={styles.photo}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
                   ))}
+                </ScrollView>
+              </NBCardContent>
+            </NBCard>
+          )}
+
+          {/* Selfie Photos */}
+          {(overtime.shift?.clock_in_photo_url || overtime.shift?.clock_out_photo_url) && (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>🤳 SELFIE VERIFIKASI</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.photosContainer}
+                >
+                  {overtime.shift?.clock_in_photo_url && (
+                    <View style={styles.selfiePhotoContainer}>
+                      <TouchableOpacity
+                        onPress={() => setPreviewUri(overtime.shift!.clock_in_photo_url!)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Lihat selfie mulai lembur"
+                      >
+                        <Image
+                          source={{ uri: overtime.shift.clock_in_photo_url }}
+                          style={styles.photo}
+                          resizeMode="cover"
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.selfiePhotoLabel}>Mulai Lembur</Text>
+                    </View>
+                  )}
+                  {overtime.shift?.clock_out_photo_url && (
+                    <View style={styles.selfiePhotoContainer}>
+                      <TouchableOpacity
+                        onPress={() => setPreviewUri(overtime.shift!.clock_out_photo_url!)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Lihat selfie selesai lembur"
+                      >
+                        <Image
+                          source={{ uri: overtime.shift.clock_out_photo_url }}
+                          style={styles.photo}
+                          resizeMode="cover"
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.selfiePhotoLabel}>Selesai Lembur</Text>
+                    </View>
+                  )}
                 </ScrollView>
               </NBCardContent>
             </NBCard>
@@ -340,6 +449,35 @@ export function OvertimeDetailScreen(): React.JSX.Element {
             </NBCard>
           ) : null}
 
+          {/* Location Trail Card */}
+          {canViewTrail && (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>🗺️ RUTE LOKASI</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <NBButton
+                  title="Lihat Rute Lokasi Lembur"
+                  variant="secondary"
+                  fullWidth
+                  onPress={() => setShowTrailModal(true)}
+                />
+              </NBCardContent>
+            </NBCard>
+          )}
+
+          {showTrailModal && overtime.shift_id && overtime.user_id && (
+            <OvertimeTrailModal
+              visible={showTrailModal}
+              onClose={() => setShowTrailModal(false)}
+              userId={overtime.user_id}
+              shiftId={overtime.shift_id}
+              startDatetime={overtime.start_datetime}
+              userName={overtime.user?.full_name || 'Petugas'}
+              areaName={overtime.area?.name}
+            />
+          )}
+
           {/* Inline reject reason input */}
           {canApprove && showRejectInput && (
             <NBCardTextInput
@@ -354,6 +492,26 @@ export function OvertimeDetailScreen(): React.JSX.Element {
             />
           )}
         </ScrollView>
+
+        {/* Clock Out Lembur FAB — visible to overtime owner when status is in_progress */}
+        {canClockOut && (
+          <View style={styles.fab}>
+            <NBButton
+              title="Clock Out Lembur"
+              variant="danger"
+              size="lg"
+              fullWidth
+              onPress={() => navigation.navigate('OvertimeSubmit' as any)}
+            />
+          </View>
+        )}
+
+        {/* Full-screen image preview */}
+        <ImagePreviewModal
+          uri={previewUri}
+          onClose={() => setPreviewUri(null)}
+          title="Foto Lembur"
+        />
 
         {/* Fixed approval FAB — mirrors ActivityDetailScreen */}
         {canApprove && (
@@ -494,6 +652,10 @@ const styles = StyleSheet.create({
     color: nbColors.black,
     lineHeight: nbTypography.fontSize.base * 1.5,
   },
+  descriptionPlaceholder: {
+    color: nbColors.gray[400],
+    fontStyle: 'italic',
+  },
   photosContainer: {
     gap: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
@@ -523,6 +685,16 @@ const styles = StyleSheet.create({
   rejectInputSection: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
+  },
+  selfiePhotoContainer: {
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  selfiePhotoLabel: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray[600],
+    textAlign: 'center',
   },
   fab: {
     paddingHorizontal: nbSpacing.md,

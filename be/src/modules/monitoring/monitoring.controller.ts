@@ -15,6 +15,7 @@ import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { UserAreasService } from '../user-areas/user-areas.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
@@ -50,6 +51,7 @@ export class MonitoringController {
     private readonly configService: MonitoringConfigService,
     private readonly statsService: MonitoringStatsService,
     private readonly reassignService: MonitoringReassignService,
+    private readonly userAreasService: UserAreasService,
   ) {}
 
   @Get('city')
@@ -84,7 +86,7 @@ export class MonitoringController {
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
   ): Promise<AreaStatsDto> {
-    this.enforceScopeArea(user, id);
+    await this.enforceScopeArea(user, id);
     return this.monitoringService.getAreaStats(id);
   }
 
@@ -96,7 +98,7 @@ export class MonitoringController {
     @Query() filters: LiveUsersFilterDto,
     @GetUser() user: User,
   ): Promise<LiveUsersResponseDto> {
-    this.applyScopeFilters(user, filters);
+    await this.applyScopeFilters(user, filters);
     return this.monitoringService.getLiveUsers(filters);
   }
 
@@ -137,9 +139,9 @@ export class MonitoringController {
     @Query('rayon_id') rayonId: string | undefined,
     @GetUser() user: User,
   ): Promise<BoundariesResponseDto> {
-    const filters: { rayon_id?: string } = {};
+    const filters: { rayon_id?: string; area_ids?: string[] } = {};
     if (rayonId) filters.rayon_id = rayonId;
-    this.applyScopeFilters(user, filters);
+    await this.applyScopeFilters(user, filters);
     return this.statsService.getBoundaries(filters);
   }
 
@@ -180,8 +182,8 @@ export class MonitoringController {
     @Query() query: StaffingSummaryQueryDto,
     @GetUser() user: User,
   ): Promise<StaffingSummaryResponseDto> {
-    const filters = { ...query };
-    this.applyScopeFilters(user, filters);
+    const filters: StaffingSummaryQueryDto & { area_ids?: string[] } = { ...query };
+    await this.applyScopeFilters(user, filters);
     return this.monitoringService.getStaffingSummary(filters);
   }
 
@@ -207,15 +209,33 @@ export class MonitoringController {
     }
   }
 
-  private enforceScopeArea(user: User, areaId: string): void {
-    if (user.role === UserRole.KORLAP && user.area_id !== areaId) {
-      throw new ForbiddenException('You can only view monitoring for your own area');
+  private async enforceScopeArea(user: User, areaId: string): Promise<void> {
+    if (user.role === UserRole.KORLAP) {
+      // Multi-area: check if korlap is assigned to this area
+      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(user.id);
+      if (assignedAreaIds.length > 0) {
+        if (!assignedAreaIds.includes(areaId)) {
+          throw new ForbiddenException('You can only view monitoring for your assigned areas');
+        }
+      } else if (user.area_id !== areaId) {
+        // Fallback to legacy single area
+        throw new ForbiddenException('You can only view monitoring for your own area');
+      }
     }
   }
 
-  private applyScopeFilters(user: User, filters: { area_id?: string; rayon_id?: string }): void {
-    if (user.role === UserRole.KORLAP && user.area_id) {
-      filters.area_id = user.area_id;
+  private async applyScopeFilters(
+    user: User,
+    filters: { area_id?: string; area_ids?: string[]; rayon_id?: string },
+  ): Promise<void> {
+    if (user.role === UserRole.KORLAP) {
+      // Multi-area: get all assigned area IDs
+      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(user.id);
+      if (assignedAreaIds.length > 0) {
+        filters.area_ids = assignedAreaIds;
+      } else if (user.area_id) {
+        filters.area_id = user.area_id;
+      }
     } else if (user.role === UserRole.ADMIN_DATA && user.rayon_id) {
       filters.rayon_id = user.rayon_id;
     }
@@ -227,14 +247,25 @@ export class MonitoringController {
 
     const target = await this.monitoringService.getUserDaySummary(targetUserId);
 
-    if (viewer.role === UserRole.KORLAP && target.area_id !== viewer.area_id) {
-      throw new ForbiddenException('You can only view users in your own area');
+    if (viewer.role === UserRole.KORLAP) {
+      // Allow if target area is unknown (not yet clocked in or rayon-scoped)
+      if (!target.area_id) return;
+      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(viewer.id);
+      if (assignedAreaIds.length > 0) {
+        if (!assignedAreaIds.includes(target.area_id)) {
+          throw new ForbiddenException('You can only view users in your assigned areas');
+        }
+      } else if (target.area_id !== viewer.area_id) {
+        throw new ForbiddenException('You can only view users in your own area');
+      }
+      return;
     }
-    if (
-      (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_DATA) &&
-      target.rayon_id !== viewer.rayon_id
-    ) {
-      throw new ForbiddenException('You can only view users in your own rayon');
+    if (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_DATA) {
+      // Allow if target rayon is unknown (not yet tracked)
+      if (!target.rayon_id) return;
+      if (target.rayon_id !== viewer.rayon_id) {
+        throw new ForbiddenException('You can only view users in your own rayon');
+      }
     }
   }
 }

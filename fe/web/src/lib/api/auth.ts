@@ -2,13 +2,15 @@ import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
 
 /**
- * User interface from backend (Phase 2C)
+ * User interface from backend (Phase 2E)
  */
 export interface User {
   id: string;
   username: string;
   full_name: string;
   role: UserRole;
+  phone_number?: string;
+  profile_picture_url?: string;
   rayon_id?: string;
   area_id?: string;
   assigned_area?: {
@@ -25,10 +27,10 @@ export interface User {
 export type { UserRole };
 
 /**
- * Login credentials
+ * Login credentials (Phase 2E - ADR-012: identifier can be username or phone number)
  */
 export interface LoginCredentials {
-  username: string;
+  identifier: string;
   password: string;
 }
 

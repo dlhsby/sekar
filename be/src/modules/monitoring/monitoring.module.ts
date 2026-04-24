@@ -26,6 +26,7 @@ import { RayonBoundaryService } from './services/rayon-boundary.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { EventsModule } from '../../gateways/events.module';
+import { UserAreasModule } from '../user-areas/user-areas.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { EventsModule } from '../../gateways/events.module';
       Schedule,
     ]),
     forwardRef(() => EventsModule),
+    UserAreasModule,
   ],
   controllers: [MonitoringController],
   providers: [

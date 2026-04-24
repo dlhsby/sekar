@@ -11,6 +11,7 @@ import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { TrackingStatus } from './entities/user-tracking-status.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { UserAreasService } from '../user-areas/user-areas.service';
 
 describe('MonitoringController', () => {
   let controller: MonitoringController;
@@ -259,6 +260,10 @@ describe('MonitoringController', () => {
           useValue: {
             reassign: jest.fn(),
           },
+        },
+        {
+          provide: UserAreasService,
+          useValue: { getPermanentAreaIds: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();

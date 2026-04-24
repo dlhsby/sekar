@@ -13,15 +13,15 @@ import type {
 
 /**
  * Login user
- * @param username - Username
+ * @param identifier - Username or phone number (Phase 2E)
  * @param password - Password
  * @returns Login response with token and user data
  */
 export async function login(
-  username: string,
+  identifier: string,
   password: string,
 ): Promise<ApiResponse<LoginResponse>> {
-  const payload: LoginRequest = { username, password };
+  const payload: LoginRequest = { identifier, password };
   return post<LoginResponse>('/auth/login', payload);
 }
 

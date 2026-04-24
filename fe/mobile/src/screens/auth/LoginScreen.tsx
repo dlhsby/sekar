@@ -36,9 +36,9 @@ import type { LoginResponse } from '../../types/api.types';
 import type { UserRole } from '../../types/models.types';
 
 function LoginScreen(): React.JSX.Element {
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [usernameError, setUsernameError] = useState('');
+  const [identifierError, setIdentifierError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
   const passwordInputRef = useRef<TextInputType>(null);
@@ -53,12 +53,12 @@ function LoginScreen(): React.JSX.Element {
     dispatch(clearError());
 
     // Reset local field errors
-    setUsernameError('');
+    setIdentifierError('');
     setPasswordError('');
 
-    // Validate inputs
-    if (!isValidUsername(username)) {
-      setUsernameError('Username harus diisi (minimal 3 karakter)');
+    // Validate inputs — identifier accepts username (min 3 chars) or phone number
+    if (!isValidUsername(identifier)) {
+      setIdentifierError('Username / No. HP harus diisi (minimal 3 karakter)');
       return;
     }
 
@@ -71,7 +71,7 @@ function LoginScreen(): React.JSX.Element {
     dispatch(setLoading(true));
 
     try {
-      const response = await login(username, password);
+      const response = await login(identifier, password);
 
       if (response.error || !response.data) {
         dispatch(setError(response.error || 'Login gagal'));
@@ -156,7 +156,7 @@ function LoginScreen(): React.JSX.Element {
     } finally {
       dispatch(setLoading(false));
     }
-  }, [username, password, dispatch]);
+  }, [identifier, password, dispatch]);
 
   return (
     <NBBackgroundPattern
@@ -189,16 +189,16 @@ function LoginScreen(): React.JSX.Element {
 
           {/* Login Form */}
           <View style={styles.form}>
-            {/* Username Input */}
+            {/* Identifier Input — accepts username or phone number (Phase 2E) */}
             <NBTextInput
-              label="Username"
-              placeholder="Masukkan username"
-              value={username}
+              label="Username / No. HP"
+              placeholder="Masukkan username atau nomor HP"
+              value={identifier}
               onChangeText={(text) => {
-                setUsername(text);
-                setUsernameError('');
+                setIdentifier(text);
+                setIdentifierError('');
               }}
-              error={usernameError}
+              error={identifierError}
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isLoading}

@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsOptional,
   IsBoolean,
+  Matches,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
@@ -41,6 +42,15 @@ export class UpdateUserDto {
     message: `Password must be at least ${ValidationConstants.PASSWORD_MIN_LENGTH} characters`,
   })
   password?: string;
+
+  @ApiPropertyOptional({
+    description: 'Indonesian phone number for login',
+    example: '081234567890',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^(\+62|0)[0-9]{8,13}$/, { message: 'Invalid Indonesian phone number' })
+  phone_number?: string;
 
   @ApiPropertyOptional({
     description: 'User role',

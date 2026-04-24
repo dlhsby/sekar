@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import {
   nbColors,
   nbTypography,
@@ -50,9 +50,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, testID = 'pr
   return (
     <View style={styles.header} testID={testID}>
       <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getUserInitials(user?.full_name)}</Text>
-        </View>
+        {user?.profile_picture_url ? (
+          <Image
+            source={{ uri: user.profile_picture_url }}
+            style={styles.avatarImage}
+            accessibilityLabel="Foto profil"
+          />
+        ) : (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{getUserInitials(user?.full_name)}</Text>
+          </View>
+        )}
       </View>
       <Text style={styles.fullName}>{user?.full_name || 'Pengguna'}</Text>
       <Text style={styles.username}>@{user?.username || 'unknown'}</Text>
@@ -82,6 +90,14 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    ...nbShadows.md,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: nbBorderRadius.full,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.md,

@@ -35,18 +35,29 @@ jest.mock('../../nb', () => ({
   NBSelect: (props: any) => {
     const React = require('react');
     const { View, Text, TouchableOpacity } = require('react-native');
+    const isMulti = props.selectedValues !== undefined && props.onValuesChange !== undefined;
     return React.createElement(
       View,
       { testID: `select-${props.placeholder}` },
       React.createElement(Text, null, props.placeholder),
-      // Render option buttons so tests can trigger onChange
+      // Render option buttons — multi-select toggles in/out, single-select calls onValueChange
       ...(props.options ?? []).map((opt: any) =>
         React.createElement(
           TouchableOpacity,
           {
             key: opt.value,
             testID: `option-${opt.value}`,
-            onPress: () => props.onChange(opt.value),
+            onPress: () => {
+              if (isMulti) {
+                const cur: string[] = props.selectedValues ?? [];
+                const next = cur.includes(opt.value)
+                  ? cur.filter((v: string) => v !== opt.value)
+                  : [...cur, opt.value];
+                props.onValuesChange(next);
+              } else if (props.onValueChange) {
+                props.onValueChange(opt.value);
+              }
+            },
           },
           React.createElement(Text, null, opt.label),
         ),

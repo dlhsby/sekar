@@ -29,10 +29,11 @@ import {
   nbBorderRadius,
   nbShadows,
 } from '../../constants/nbTokens';
-import { getStatusColor, getStatusLabel } from '../../utils/mapUtils';
+import { getStatusLabel } from '../../utils/mapUtils';
 import { NBSelect } from '../nb';
 import { getAreas, getAreasByRayonId, getRayons } from '../../services/api';
 import { getStaffingSummary } from '../../services/api/monitoringApi';
+import { StaffingSummarySection } from '../monitoring/StaffingSummarySection';
 import type { MonitoringFilters } from '../../types/api.types';
 import type { TrackingStatus, StaffingSummaryItem, User } from '../../types/models.types';
 import type { Area, Rayon } from '../../types/models.types';
@@ -62,7 +63,7 @@ const STATUS_OPTIONS: TrackingStatus[] = [
   'missing',
 ];
 
-const FIELD_ROLES = ['satgas', 'linmas', 'korlap'] as const;
+const FIELD_ROLES = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -82,8 +83,8 @@ export function MonitoringFilterModal({
   const [selectedAreaId, setSelectedAreaId] = useState<string | undefined>(
     currentFilters.area_id,
   );
-  const [selectedRole, setSelectedRole] = useState<string | undefined>(
-    currentFilters.role,
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(
+    currentFilters.role ? [currentFilters.role] : [],
   );
   const [searchText, setSearchText] = useState<string>(
     currentFilters.search ?? '',
@@ -93,6 +94,7 @@ export function MonitoringFilterModal({
   const [areas, setAreas] = useState<Area[]>([]);
   const [staffing, setStaffing] = useState<StaffingSummaryItem[]>([]);
   const [isLoadingStaffing, setIsLoadingStaffing] = useState(false);
+  const [currentDayTypeLabel, setCurrentDayTypeLabel] = useState<string | null>(null);
 
   const userRole = currentUser.role;
 
@@ -120,25 +122,32 @@ export function MonitoringFilterModal({
         .catch(() => {});
     } else if (!hasFixedRayon) {
       getAreas()
-        .then(res => { if (res.data) { setAreas(res.data.areas ?? []); } })
+        .then(res => { if (res.data) { setAreas(Array.isArray(res.data) ? res.data : []); } })
         .catch(() => {});
     }
   }, [visible, selectedRayonId, hasFixedRayon, currentUser.rayon_id]);
 
-  // Load staffing summary when area selected
+  // Load staffing summary always on modal open (filters by rayon/area)
   useEffect(() => {
-    if (!visible || !selectedAreaId) {
+    if (!visible) {
       setStaffing([]);
       return;
     }
     setIsLoadingStaffing(true);
-    getStaffingSummary({ area_id: selectedAreaId })
+    const rayonId = hasFixedRayon ? currentUser.rayon_id : selectedRayonId;
+    const filters: { rayon_id?: string; area_id?: string } = {};
+    if (rayonId) filters.rayon_id = rayonId;
+    if (selectedAreaId) filters.area_id = selectedAreaId;
+    getStaffingSummary(filters)
       .then(res => {
         if (res.data?.items) { setStaffing(res.data.items); }
+        if ((res.data as any)?.current_day_type_label) {
+          setCurrentDayTypeLabel((res.data as any).current_day_type_label);
+        }
       })
       .catch(() => {})
       .finally(() => { setIsLoadingStaffing(false); });
-  }, [visible, selectedAreaId]);
+  }, [visible, selectedRayonId, selectedAreaId, hasFixedRayon, currentUser.rayon_id]);
 
   // Sync with current filters when modal opens
   useEffect(() => {
@@ -146,26 +155,20 @@ export function MonitoringFilterModal({
       setSelectedStatuses(currentFilters.status ?? []);
       setSelectedRayonId(currentFilters.rayon_id);
       setSelectedAreaId(currentFilters.area_id);
-      setSelectedRole(currentFilters.role);
+      setSelectedRoles(currentFilters.role ? [currentFilters.role] : []);
       setSearchText(currentFilters.search ?? '');
     }
   }, [visible, currentFilters]);
 
-  const handleStatusToggle = useCallback((status: TrackingStatus) => {
-    setSelectedStatuses(prev =>
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status],
-    );
-  }, []);
-
-  const handleRoleToggle = useCallback((role: string) => {
-    setSelectedRole(prev => (prev === role ? undefined : role));
+  const handleRoleToggle = useCallback((roles: string[]) => {
+    setSelectedRoles(roles);
   }, []);
 
   const handleReset = useCallback(() => {
     setSelectedStatuses([]);
     setSelectedRayonId(undefined);
     setSelectedAreaId(undefined);
-    setSelectedRole(undefined);
+    setSelectedRoles([]);
     setSearchText('');
   }, []);
 
@@ -174,7 +177,8 @@ export function MonitoringFilterModal({
     if (selectedStatuses.length > 0) { filters.status = selectedStatuses; }
     if (selectedRayonId) { filters.rayon_id = selectedRayonId; }
     if (selectedAreaId) { filters.area_id = selectedAreaId; }
-    if (selectedRole) { filters.role = selectedRole; }
+    if (selectedRoles.length === 1) { filters.role = selectedRoles[0]; }
+    if (selectedRoles.length > 1) { (filters as any).roles = selectedRoles; }
     if (searchText.trim()) { filters.search = searchText.trim(); }
     onApply(filters);
     onClose();
@@ -182,7 +186,7 @@ export function MonitoringFilterModal({
     selectedStatuses,
     selectedRayonId,
     selectedAreaId,
-    selectedRole,
+    selectedRoles,
     searchText,
     onApply,
     onClose,
@@ -198,9 +202,14 @@ export function MonitoringFilterModal({
     [areas],
   );
 
-  const areaStaffing = useMemo(
-    () => staffing.find(s => s.id === selectedAreaId) ?? null,
-    [staffing, selectedAreaId],
+  const statusOptions = useMemo(
+    () => STATUS_OPTIONS.map(s => ({ label: getStatusLabel(s), value: s })),
+    [],
+  );
+
+  const roleOptions = useMemo(
+    () => FIELD_ROLES.map(r => ({ label: ROLE_LABELS[r] ?? r, value: r })),
+    [],
   );
 
   return (
@@ -226,24 +235,15 @@ export function MonitoringFilterModal({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Status chips */}
+          {/* Status multiselect */}
           <FilterSection title="Status">
-            <View style={styles.chipRow}>
-              {STATUS_OPTIONS.map(status => {
-                const isActive = selectedStatuses.includes(status);
-                const color = getStatusColor(status);
-                return (
-                  <StatusFilterChip
-                    key={status}
-                    status={status}
-                    label={getStatusLabel(status)}
-                    color={color}
-                    isActive={isActive}
-                    onPress={handleStatusToggle}
-                  />
-                );
-              })}
-            </View>
+            <NBSelect
+              options={statusOptions}
+              selectedValues={selectedStatuses}
+              onValuesChange={(vals: string[]) => setSelectedStatuses(vals as TrackingStatus[])}
+              placeholder="Pilih Status"
+              searchable
+            />
           </FilterSection>
 
           {/* Rayon picker */}
@@ -263,9 +263,9 @@ export function MonitoringFilterModal({
               ) : (
                 <NBSelect
                   options={rayonOptions}
-                  value={selectedRayonId ?? null}
-                  onChange={val => {
-                    setSelectedRayonId(val ?? undefined);
+                  value={selectedRayonId}
+                  onValueChange={(val: string) => {
+                    setSelectedRayonId(val || undefined);
                     setSelectedAreaId(undefined);
                   }}
                   placeholder="Pilih Rayon"
@@ -278,25 +278,21 @@ export function MonitoringFilterModal({
           <FilterSection title="Area">
             <NBSelect
               options={areaOptions}
-              value={selectedAreaId ?? null}
-              onChange={val => setSelectedAreaId(val ?? undefined)}
+              value={selectedAreaId}
+              onValueChange={(val: string) => setSelectedAreaId(val || undefined)}
               placeholder="Pilih Area"
             />
           </FilterSection>
 
-          {/* Role chips */}
+          {/* Role multiselect */}
           <FilterSection title="Peran">
-            <View style={styles.chipRow}>
-              {FIELD_ROLES.map(role => (
-                <RoleFilterChip
-                  key={role}
-                  role={role}
-                  label={ROLE_LABELS[role] ?? role}
-                  isActive={selectedRole === role}
-                  onPress={handleRoleToggle}
-                />
-              ))}
-            </View>
+            <NBSelect
+              options={roleOptions}
+              selectedValues={selectedRoles}
+              onValuesChange={handleRoleToggle}
+              placeholder="Pilih Peran"
+              searchable
+            />
           </FilterSection>
 
           {/* Search user */}
@@ -327,16 +323,16 @@ export function MonitoringFilterModal({
             </View>
           </FilterSection>
 
-          {/* Staffing summary */}
-          {selectedAreaId && (
-            <FilterSection title="Kepegawaian Area">
-              {isLoadingStaffing ? (
-                <ActivityIndicator size="small" color={nbColors.primary} />
-              ) : areaStaffing ? (
-                <StaffingSummaryCard item={areaStaffing} />
-              ) : null}
-            </FilterSection>
-          )}
+          {/* Staffing summary - always visible */}
+          <FilterSection title="Kepegawaian">
+            <StaffingSummarySection
+              items={staffing}
+              isLoading={isLoadingStaffing}
+              currentDayTypeLabel={currentDayTypeLabel}
+              selectedRayonId={selectedRayonId}
+              selectedAreaId={selectedAreaId}
+            />
+          </FilterSection>
         </ScrollView>
 
         {/* Apply button */}
@@ -367,82 +363,6 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
   );
 }
 
-interface StatusFilterChipProps {
-  status: TrackingStatus;
-  label: string;
-  color: string;
-  isActive: boolean;
-  onPress: (s: TrackingStatus) => void;
-}
-
-function StatusFilterChip({ status, label, color, isActive, onPress }: StatusFilterChipProps): React.JSX.Element {
-  return (
-    <TouchableOpacity
-      style={[styles.chip, isActive && { backgroundColor: color, borderColor: nbColors.black }]}
-      onPress={() => onPress(status)}
-      activeOpacity={0.75}
-    >
-      <View style={[styles.chipDot, { backgroundColor: color }]} />
-      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-interface RoleFilterChipProps {
-  role: string;
-  label: string;
-  isActive: boolean;
-  onPress: (r: string) => void;
-}
-
-function RoleFilterChip({ role, label, isActive, onPress }: RoleFilterChipProps): React.JSX.Element {
-  return (
-    <TouchableOpacity
-      style={[styles.chip, isActive && styles.chipActive]}
-      onPress={() => onPress(role)}
-      activeOpacity={0.75}
-    >
-      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-function StaffingSummaryCard({ item }: { item: StaffingSummaryItem }): React.JSX.Element {
-  return (
-    <View style={styles.staffingCard}>
-      <View style={styles.staffingHeader}>
-        <Text style={styles.staffingAreaName}>{item.name}</Text>
-        <View style={[
-          styles.staffingStatusBadge,
-          { backgroundColor: item.is_fully_staffed ? nbColors.successDark : nbColors.dangerDark },
-        ]}>
-          <MaterialCommunityIcons
-            name={item.is_fully_staffed ? 'check' : 'alert'}
-            size={12}
-            color={nbColors.white}
-          />
-        </View>
-      </View>
-      {item.roles.map(role => (
-        <View key={role.role} style={styles.staffingRow}>
-          <Text style={styles.staffingRoleLabel}>
-            {ROLE_LABELS[role.role as keyof typeof ROLE_LABELS] ?? role.role}
-          </Text>
-          <Text style={styles.staffingCounts}>
-            {role.active}/{role.total_assigned}
-            {role.idle > 0 ? `  ${role.idle} idle` : ''}
-            {role.outside_area > 0 ? `  ${role.outside_area} di luar` : ''}
-            {role.missing > 0 ? `  ${role.missing} hilang` : ''}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
-}
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -495,39 +415,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nbSpacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.full,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.xs,
-    gap: nbSpacing.xs,
-  },
-  chipActive: {
-    backgroundColor: nbColors.primary,
-    borderColor: nbColors.black,
-  },
-  chipDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  chipText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['700'],
-  },
-  chipTextActive: {
-    color: nbColors.white,
-  },
   fixedValue: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -559,46 +446,6 @@ const styles = StyleSheet.create({
     fontSize: nbTypography.fontSize.base,
     color: nbColors.black,
     padding: 0,
-  },
-  staffingCard: {
-    backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
-    padding: nbSpacing.sm,
-    gap: nbSpacing.xs,
-  },
-  staffingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: nbSpacing.xs,
-  },
-  staffingAreaName: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['800'],
-  },
-  staffingStatusBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  staffingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  staffingRoleLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-  },
-  staffingCounts: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
   },
   footer: {
     padding: nbSpacing.md,

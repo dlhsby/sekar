@@ -1,8 +1,8 @@
 /**
  * LocationTrail Component Tests
  * Phase 2D: Polyline overlay on the map showing a user's GPS history.
- * Tests loading, polyline segment rendering, start/end markers, intermediate dots,
- * header bar, error handling, and close callback.
+ * Tests loading, polyline segment rendering, start/end flag markers, intermediate dots,
+ * trail info/control bars, error handling, and close callback.
  */
 
 import React from 'react';
@@ -40,6 +40,44 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
 jest.mock('../../../services/api/monitoringApi', () => ({
   getUserLocationHistory: jest.fn(),
 }));
+
+// Mock TrailControlBar to render a simplified close button
+jest.mock('../TrailControlBar', () => {
+  const React = require('react');
+  const { View, TouchableOpacity, Text } = require('react-native');
+  return {
+    TrailControlBar: ({ onClose }: any) =>
+      React.createElement(
+        View,
+        { testID: 'trail-control-bar' },
+        React.createElement(
+          TouchableOpacity,
+          { onPress: onClose, accessibilityLabel: 'Tutup trail' },
+          React.createElement(Text, null, 'Close'),
+        ),
+      ),
+  };
+});
+
+// Mock TrailInfoBar to render summary text
+jest.mock('../TrailInfoBar', () => {
+  const React = require('react');
+  const { View, Text } = require('react-native');
+  return {
+    TrailInfoBar: ({ history, date }: any) => {
+      if (!history) return null;
+      const dist = history.total_distance_meters;
+      const distText = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${dist} m`;
+      return React.createElement(
+        View,
+        { testID: 'trail-info-bar' },
+        React.createElement(Text, null, history.user_name),
+        React.createElement(Text, null, date),
+        React.createElement(Text, null, distText),
+      );
+    },
+  };
+});
 
 import { getUserLocationHistory } from '../../../services/api/monitoringApi';
 
@@ -107,13 +145,11 @@ describe('LocationTrail', () => {
   // ── Loading state ───────────────────────────────────────────────────────────
 
   describe('loading state', () => {
-    it('shows ActivityIndicator while data is loading', async () => {
-      // Never resolve so we can inspect the loading state
+    it('shows loading text while data is loading', async () => {
       mockGetUserLocationHistory.mockReturnValue(new Promise(() => {}));
 
-      const { UNSAFE_getByType } = render(<LocationTrail {...defaultProps} />);
-      const { ActivityIndicator } = require('react-native');
-      expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+      const { getByText } = render(<LocationTrail {...defaultProps} />);
+      expect(getByText('Memuat riwayat lokasi...')).toBeTruthy();
     });
 
     it('calls getUserLocationHistory with correct arguments', async () => {
@@ -207,10 +243,10 @@ describe('LocationTrail', () => {
     });
   });
 
-  // ── Start and end markers ───────────────────────────────────────────────────
+  // ── Start and end flag markers ──────────────────────────────────────────────
 
   describe('start and end markers', () => {
-    it('renders start marker with "S" label', async () => {
+    it('renders start marker with "Mulai" flag', async () => {
       const points = [
         buildPoint({ latitude: -7.250445 }),
         buildPoint({ latitude: -7.251 }),
@@ -219,14 +255,14 @@ describe('LocationTrail', () => {
         data: buildLocationHistory(points),
       });
 
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
+      const { getAllByText } = render(<LocationTrail {...defaultProps} />);
 
       await waitFor(() => {
-        expect(getByText('S')).toBeTruthy();
+        expect(getAllByText(/Mulai/).length).toBeGreaterThan(0);
       });
     });
 
-    it('renders end marker with "E" label', async () => {
+    it('renders end marker with "Akhir" flag', async () => {
       const points = [
         buildPoint({ latitude: -7.250445 }),
         buildPoint({ latitude: -7.251 }),
@@ -235,10 +271,10 @@ describe('LocationTrail', () => {
         data: buildLocationHistory(points),
       });
 
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
+      const { getAllByText } = render(<LocationTrail {...defaultProps} />);
 
       await waitFor(() => {
-        expect(getByText('E')).toBeTruthy();
+        expect(getAllByText(/Akhir/).length).toBeGreaterThan(0);
       });
     });
 
@@ -251,7 +287,7 @@ describe('LocationTrail', () => {
       const { queryByText } = render(<LocationTrail {...defaultProps} />);
 
       await waitFor(() => {
-        expect(queryByText('E')).toBeNull();
+        expect(queryByText(/Akhir/)).toBeNull();
       });
     });
   });
@@ -261,7 +297,7 @@ describe('LocationTrail', () => {
   describe('intermediate dot markers', () => {
     it('renders intermediate dot markers for every 5th intermediate point', async () => {
       // Build 12 points: index 0 = start, index 11 = end
-      // intermediate = indices 1-10 (10 points), every 5th = indices 1 and 6
+      // intermediate = indices 1-10 (10 points), every 5th = indices 0 and 5
       const points = Array.from({ length: 12 }, (_, i) =>
         buildPoint({ latitude: -7.250445 - i * 0.001 }),
       );
@@ -294,10 +330,10 @@ describe('LocationTrail', () => {
     });
   });
 
-  // ── Header bar ──────────────────────────────────────────────────────────────
+  // ── Trail info bar ─────────────────────────────────────────────────────────
 
-  describe('header bar', () => {
-    it('renders user name and date in the header after data loads', async () => {
+  describe('trail info bar', () => {
+    it('renders user name and date in the info bar after data loads', async () => {
       const points = [buildPoint(), buildPoint({ latitude: -7.251 })];
       mockGetUserLocationHistory.mockResolvedValue({
         data: buildLocationHistory(points),
@@ -306,13 +342,12 @@ describe('LocationTrail', () => {
       const { getByText } = render(<LocationTrail {...defaultProps} />);
 
       await waitFor(() => {
-        // Header text includes user_name and date
         expect(getByText(/Ahmad Satgas/)).toBeTruthy();
         expect(getByText(/2026-03-05/)).toBeTruthy();
       });
     });
 
-    it('renders total distance in the header after data loads', async () => {
+    it('renders total distance in the info bar after data loads', async () => {
       const points = [buildPoint(), buildPoint({ latitude: -7.251 })];
       mockGetUserLocationHistory.mockResolvedValue({
         data: buildLocationHistory(points, { total_distance_meters: 500 }),
@@ -368,7 +403,7 @@ describe('LocationTrail', () => {
   // ── Close button ────────────────────────────────────────────────────────────
 
   describe('close button', () => {
-    it('calls onClose when the close button in the header bar is pressed', async () => {
+    it('calls onClose when the close button is pressed', async () => {
       mockGetUserLocationHistory.mockResolvedValue({
         data: buildLocationHistory([buildPoint(), buildPoint({ latitude: -7.251 })]),
       });

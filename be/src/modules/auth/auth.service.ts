@@ -29,16 +29,34 @@ export class AuthService {
    * @throws UnauthorizedException if credentials are invalid
    */
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const { username, password } = loginDto;
+    const identifier = loginDto.identifier;
+    const password = loginDto.password;
 
-    this.logger.log(`Login attempt for username: ${username}`);
+    this.logger.log(`Login attempt for identifier: ${identifier}`);
 
-    const user = await this.userRepository.findOne({
-      where: { username },
-    });
+    // Detect if identifier looks like a phone number
+    const isPhone = /^[+0]/.test(identifier);
+
+    let user: User | null = null;
+    if (isPhone) {
+      user = await this.userRepository.findOne({
+        where: { phone_number: identifier },
+      });
+    } else {
+      user = await this.userRepository.findOne({
+        where: { username: identifier },
+      });
+    }
+
+    // Fallback: try the other lookup method
+    if (!user) {
+      user = await this.userRepository.findOne({
+        where: isPhone ? { username: identifier } : { phone_number: identifier },
+      });
+    }
 
     if (!user) {
-      this.logger.warn(`Login failed: User not found - ${username}`);
+      this.logger.warn(`Login failed: User not found - ${identifier}`);
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         ApiErrorCode.AUTH_INVALID_CREDENTIALS,
@@ -47,7 +65,7 @@ export class AuthService {
     }
 
     if (!user.is_active) {
-      this.logger.warn(`Login failed: Inactive account - ${username}`);
+      this.logger.warn(`Login failed: Inactive account - ${identifier}`);
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         ApiErrorCode.AUTH_ACCOUNT_INACTIVE,
@@ -57,7 +75,7 @@ export class AuthService {
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      this.logger.warn(`Login failed: Invalid password - ${username}`);
+      this.logger.warn(`Login failed: Invalid password - ${identifier}`);
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         ApiErrorCode.AUTH_INVALID_CREDENTIALS,
@@ -68,7 +86,7 @@ export class AuthService {
     const accessToken = await this.generateAccessToken(user);
     const refreshToken = await this.generateRefreshToken(user);
 
-    this.logger.log(`Login successful for user: ${username} (${user.role})`);
+    this.logger.log(`Login successful for user: ${user.username} (${user.role})`);
 
     return {
       access_token: accessToken,
@@ -80,6 +98,8 @@ export class AuthService {
         role: user.role,
         area_id: user.area_id || null,
         rayon_id: user.rayon_id || null,
+        phone_number: user.phone_number || null,
+        profile_picture_url: user.profile_picture_url || null,
       },
     };
   }
@@ -178,6 +198,8 @@ export class AuthService {
           role: user.role,
           area_id: user.area_id || null,
           rayon_id: user.rayon_id || null,
+          phone_number: user.phone_number || null,
+          profile_picture_url: user.profile_picture_url || null,
         },
       };
     } catch (error) {

@@ -149,8 +149,14 @@ apiClient.interceptors.response.use(
     // Handle specific error cases
     if (error.response) {
       const errorCode = error.response.data?.code || 'UNKNOWN_ERROR';
-      // Use Indonesian message from error code mapping
-      const localizedMessage = getErrorMessage(errorCode, error.response.data?.message);
+      // For SHIFT_DURATION_TOO_SHORT, use actual minimumRequired from details (configurable per env)
+      let localizedMessage: string;
+      if (errorCode === 'SHIFT_DURATION_TOO_SHORT' && error.response.data?.details?.minimumRequired != null) {
+        const min = error.response.data.details.minimumRequired;
+        localizedMessage = `Durasi shift terlalu singkat. Minimal ${min} menit diperlukan sebelum Clock Out.`;
+      } else {
+        localizedMessage = getErrorMessage(errorCode, error.response.data?.message);
+      }
 
       const apiError: ApiError = {
         status: error.response.status,
@@ -259,7 +265,8 @@ export async function get<T>(
     const response = await apiClient.get<T>(url, { params });
     return { data: response.data };
   } catch (error) {
-    return { error: (error as ApiError).message };
+    const e = error as ApiError;
+    return { error: e.message, code: e.code };
   }
 }
 
@@ -275,7 +282,8 @@ export async function post<T>(
     const response = await apiClient.post<T>(url, data, config);
     return { data: response.data };
   } catch (error) {
-    return { error: (error as ApiError).message };
+    const e = error as ApiError;
+    return { error: e.message, code: e.code };
   }
 }
 
@@ -290,7 +298,8 @@ export async function put<T>(
     const response = await apiClient.put<T>(url, data);
     return { data: response.data };
   } catch (error) {
-    return { error: (error as ApiError).message };
+    const e = error as ApiError;
+    return { error: e.message, code: e.code };
   }
 }
 
@@ -305,7 +314,8 @@ export async function patch<T>(
     const response = await apiClient.patch<T>(url, data);
     return { data: response.data };
   } catch (error) {
-    return { error: (error as ApiError).message };
+    const e = error as ApiError;
+    return { error: e.message, code: e.code };
   }
 }
 
@@ -317,7 +327,8 @@ export async function del<T>(url: string): Promise<ApiResponse<T>> {
     const response = await apiClient.delete<T>(url);
     return { data: response.data };
   } catch (error) {
-    return { error: (error as ApiError).message };
+    const e = error as ApiError;
+    return { error: e.message, code: e.code };
   }
 }
 

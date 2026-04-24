@@ -40,6 +40,7 @@ import { TaskCreateScreen } from '../screens/taskActivity';
 
 // Common screens
 import { SettingsScreen } from '../screens/common/SettingsScreen';
+import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -70,12 +71,14 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   admin_data: [
+    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   kepala_rayon: [
+    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
@@ -281,7 +284,7 @@ function MainNavigator(): React.JSX.Element {
         name="OvertimeDetail"
         component={OvertimeDetailScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.goBack()} />,
+          headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.navigate('Overtime' as any)} />,
           tabBarButton: () => null,
         })}
       />
@@ -298,6 +301,16 @@ function MainNavigator(): React.JSX.Element {
         component={AttendanceScreen}
         options={({ navigation }) => ({
           headerTitle: () => <FieldHomeHeader title="Kehadiran" onBack={() => navigation.goBack()} />,
+          tabBarButton: () => null,
+        })}
+      />
+      <Tab.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader title="Edit Profil" onBack={() => navigation.goBack()} />
+          ),
           tabBarButton: () => null,
         })}
       />

@@ -20,6 +20,8 @@ describe('AuthService', () => {
     username: 'testuser',
     password_hash: '$2b$10$hashedpassword',
     full_name: 'Test User',
+    phone_number: null,
+    profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
@@ -69,7 +71,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     const loginDto: LoginDto = {
-      username: 'testuser',
+      identifier: 'testuser',
       password: 'password123',
     };
 
@@ -84,7 +86,7 @@ describe('AuthService', () => {
       expect(result.access_token).toBe('mock.jwt.token');
       expect(result.user.username).toBe(mockUser.username);
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { username: loginDto.username },
+        where: { username: loginDto.identifier },
       });
       expect(jwtService.sign).toHaveBeenCalled();
     });

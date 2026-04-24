@@ -17,6 +17,8 @@ describe('AuthController', () => {
     username: 'testuser',
     password_hash: 'hashedpassword',
     full_name: 'Test User',
+    phone_number: null,
+    profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
@@ -72,7 +74,7 @@ describe('AuthController', () => {
   describe('login', () => {
     it('should call authService.login and return result', async () => {
       const loginDto: LoginDto = {
-        username: 'testuser',
+        identifier: 'testuser',
         password: 'password123',
       };
 

@@ -423,23 +423,20 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       }, { timeout: 5000 });
     });
 
-    it('should show Kirim as the action button title (not Clock In)', async () => {
+    it('should show Clock In as the action button title', async () => {
       const store = createMockStore();
-      const { getByText, queryByText } = renderScreen(store);
+      const { getByText } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
       await waitFor(() => {
-        expect(getByText('Kirim')).toBeTruthy();
+        expect(getByText('Clock In')).toBeTruthy();
       });
-
-      // The old button label should NOT appear (only topBar title uses these)
-      // Clock In appears only as topBar title, not as the action button
     });
 
-    it('should show Kirim button in clock-out mode', async () => {
+    it('should show Clock Out button in clock-out mode', async () => {
       const store = createMockStore({
         shift: {
           currentShift: mockShift,
@@ -450,7 +447,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Kirim')).toBeTruthy();
+        expect(getByText('Clock Out')).toBeTruthy();
       });
     });
   });
@@ -565,9 +562,9 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(launchCamera).toHaveBeenCalled();
       });
 
-      // Press Kirim button (renamed from 'Clock In'/'Clock Out' in Phase 2C refactor)
+      // Press Clock In button
       await act(async () => {
-        fireEvent.press(getByText('Kirim'));
+        fireEvent.press(getByText('Clock In'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -623,22 +620,17 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // Phase 2C: Clock-in button should still be enabled (only disabled if no GPS or no selfie)
     });
 
-    it('should show error when clock in without selfie', async () => {
+    it('should allow clock in without selfie (Phase 2E: optional selfie)', async () => {
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
-      // Try to clock in without selfie — Kirim button should be disabled (no selfie)
-      const submitButton = getByText('Kirim');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        // Kirim button still visible (disabled when no selfie)
-        expect(getByText('Kirim')).toBeTruthy();
-      });
+      // Phase 2E-7: Selfie is optional, Clock In button should be enabled even without selfie
+      const submitButton = getByText('Clock In');
+      expect(submitButton).toBeTruthy();
     });
 
     it('should handle clock in API error', async () => {
@@ -663,7 +655,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Kirim'));
+        fireEvent.press(getByText('Clock In'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -716,16 +708,16 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
       });
 
-      // Kirim button (renamed from 'Clock Out') should be present
+      // Clock Out button should be present
       await waitFor(() => {
-        expect(getByText('Kirim')).toBeTruthy();
+        expect(getByText('Clock Out')).toBeTruthy();
       });
 
-      fireEvent.press(getByText('Kirim'));
+      fireEvent.press(getByText('Clock Out'));
 
       // Confirmation dialog should appear (Alert.alert is mocked globally)
       await waitFor(() => {
-        expect(getByText('Kirim')).toBeTruthy();
+        expect(getByText('Clock Out')).toBeTruthy();
       });
     });
 
@@ -890,7 +882,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Kirim'));
+        fireEvent.press(getByText('Clock In'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -927,7 +919,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Kirim'));
+        fireEvent.press(getByText('Clock In'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 

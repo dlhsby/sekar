@@ -32,7 +32,7 @@ export class UsersService {
    * @throws ConflictException if username already exists
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, password, full_name, role } = createUserDto;
+    const { username, password, full_name, role, phone_number } = createUserDto;
 
     this.logger.log(`Creating new user: ${username}`);
 
@@ -45,6 +45,15 @@ export class UsersService {
       throw new ConflictException('Username already exists');
     }
 
+    if (phone_number) {
+      const phoneExists = await this.userRepository.findOne({
+        where: { phone_number },
+      });
+      if (phoneExists) {
+        throw new ConflictException('Phone number already in use');
+      }
+    }
+
     const password_hash = await this.authService.hashPassword(password);
 
     const user = this.userRepository.create({
@@ -52,6 +61,7 @@ export class UsersService {
       password_hash,
       full_name,
       role,
+      phone_number: phone_number || null,
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -208,14 +218,30 @@ export class UsersService {
     this.logger.log(`Updating user: ID ${id}`);
     const user = await this.findOne(id);
 
-    const { password, ...updateData } = updateUserDto;
+    const { password, phone_number, ...updateData } = updateUserDto;
+
+    if (phone_number) {
+      const phoneExists = await this.userRepository.findOne({
+        where: { phone_number },
+      });
+      if (phoneExists && phoneExists.id !== id) {
+        throw new ConflictException('Phone number already in use');
+      }
+    }
 
     if (password) {
       const password_hash = await this.authService.hashPassword(password);
-      Object.assign(user, { ...updateData, password_hash });
+      Object.assign(user, {
+        ...updateData,
+        password_hash,
+        ...(phone_number !== undefined ? { phone_number } : {}),
+      });
       this.logger.log(`Password updated for user: ID ${id}`);
     } else {
-      Object.assign(user, updateData);
+      Object.assign(user, {
+        ...updateData,
+        ...(phone_number !== undefined ? { phone_number } : {}),
+      });
     }
 
     const savedUser = await this.userRepository.save(user);
@@ -259,6 +285,11 @@ export class UsersService {
    * @throws UnauthorizedException if current password is incorrect
    * @throws BadRequestException if new password is same as current
    */
+  async updateProfilePicture(id: string, url: string): Promise<void> {
+    await this.userRepository.update(id, { profile_picture_url: url });
+    this.logger.log(`Profile picture updated for user: ID ${id}`);
+  }
+
   async changePassword(
     userId: string,
     currentPassword: string,

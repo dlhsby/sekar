@@ -10,8 +10,10 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
 import { ActivityType } from '../../activity-types/entities/activity-type.entity';
+import { Shift } from '../../shifts/entities/shift.entity';
 
 export enum OvertimeStatus {
+  IN_PROGRESS = 'in_progress',
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
@@ -31,8 +33,8 @@ export class Overtime {
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   start_datetime: Date;
 
-  @Column({ type: 'timestamptz', default: () => 'NOW()' })
-  end_datetime: Date;
+  @Column({ type: 'timestamptz', nullable: true })
+  end_datetime: Date | null;
 
   @Column({
     type: 'varchar',
@@ -43,6 +45,13 @@ export class Overtime {
   status: OvertimeStatus;
 
   @Column('uuid', { nullable: true })
+  shift_id: string | null;
+
+  @ManyToOne(() => Shift, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'shift_id' })
+  shift: Shift;
+
+  @Column('uuid', { nullable: true })
   approved_by?: string;
 
   @Column({ type: 'timestamptz', nullable: true })
@@ -51,11 +60,14 @@ export class Overtime {
   @Column({ type: 'text', nullable: true })
   rejection_reason?: string;
 
-  @Column('uuid')
-  activity_type_id: string;
+  @Column('uuid', { nullable: true })
+  activity_type_id: string | null;
 
-  @Column('text')
-  description: string;
+  @Column('text', { nullable: true })
+  description: string | null;
+
+  @Column('text', { nullable: true })
+  reason: string | null;
 
   @Column('text', { array: true, default: '{}' })
   photo_urls: string[];

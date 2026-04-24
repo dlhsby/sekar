@@ -29,6 +29,8 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { ImportModule } from './modules/import/import.module';
 import { EventsModule } from './gateways/events.module';
 import { OvertimeModule } from './modules/overtime/overtime.module';
+import { UserAreasModule } from './modules/user-areas/user-areas.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -115,6 +117,8 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
     ImportModule, // KMZ/KML import for areas
     EventsModule, // WebSocket real-time events
     OvertimeModule, // Overtime submission and approval
+    UserAreasModule, // User-area assignment management (Phase 2E)
+    AuditModule, // Audit logging (Phase 2E)
   ],
   controllers: [AppController],
   providers: [

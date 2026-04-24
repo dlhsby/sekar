@@ -10,12 +10,10 @@ import MapView from 'react-native-maps';
 import { getActiveUsers } from '../services/api/monitoringApi';
 import { get } from '../services/api/apiClient';
 import {
-  calculateUserStatus,
   calculateMapRegion,
   filterUsersByArea,
   filterUsersByRegion,
   getAreaCircles,
-  getStatusSummary,
   clusterUsers,
   shouldCluster,
   isValidRegion,
@@ -37,7 +35,7 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
   const [users, setUsers] = useState<ActiveUserData[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [selectedUser, setSelectedUser] = useState<ActiveUserData | null>(null);
-  const [selectedAreaFilter, setSelectedAreaFilter] = useState<number | null>(null);
+  const [selectedAreaFilter, setSelectedAreaFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,8 +156,13 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
   );
 
   const statusSummary = useMemo(
-    () => getStatusSummary(filteredUsers, areas),
-    [filteredUsers, areas]
+    () => ({
+      total: filteredUsers.length,
+      active: filteredUsers.filter(u => u.latest_location).length,
+      warning: 0,
+      outside: filteredUsers.filter(u => !u.latest_location).length,
+    }),
+    [filteredUsers],
   );
 
   const roleCounts = useMemo(() => {

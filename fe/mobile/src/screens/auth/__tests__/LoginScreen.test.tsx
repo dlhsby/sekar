@@ -77,9 +77,9 @@ describe('LoginScreen', () => {
 
       expect(getByText('SEKAR')).toBeTruthy();
       expect(getByText('Sistem Evaluasi Kerja Satgas RTH')).toBeTruthy();
-      expect(getByText('Username')).toBeTruthy();
+      expect(getByText('Username / No. HP')).toBeTruthy();
       expect(getByText('Password')).toBeTruthy();
-      expect(getByPlaceholderText('Masukkan username')).toBeTruthy();
+      expect(getByPlaceholderText('Masukkan username atau nomor HP')).toBeTruthy();
       expect(getByPlaceholderText('Masukkan password')).toBeTruthy();
       expect(getByText('Masuk')).toBeTruthy();
     });
@@ -103,7 +103,7 @@ describe('LoginScreen', () => {
     it('should show error when username is less than 3 characters', async () => {
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
       const passwordInput = getByPlaceholderText('Masukkan password');
       const loginButton = getByText('Masuk');
 
@@ -112,7 +112,7 @@ describe('LoginScreen', () => {
       fireEvent.press(loginButton);
 
       await waitFor(() => {
-        expect(getByText('Username harus diisi (minimal 3 karakter)')).toBeTruthy();
+        expect(getByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeTruthy();
       });
 
       expect(authApi.login).not.toHaveBeenCalled();
@@ -121,7 +121,7 @@ describe('LoginScreen', () => {
     it('should show error when password is less than 6 characters', async () => {
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
       const passwordInput = getByPlaceholderText('Masukkan password');
       const loginButton = getByText('Masuk');
 
@@ -146,14 +146,14 @@ describe('LoginScreen', () => {
       fireEvent.press(loginButton);
 
       await waitFor(() => {
-        expect(getByText('Username harus diisi (minimal 3 karakter)')).toBeTruthy();
+        expect(getByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeTruthy();
       });
     });
 
     it('should show error when password is empty', async () => {
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
       const loginButton = getByText('Masuk');
 
       fireEvent.changeText(usernameInput, 'worker1');
@@ -167,21 +167,21 @@ describe('LoginScreen', () => {
     it('should clear error when user starts typing', async () => {
       const { getByPlaceholderText, getByText, queryByText } = renderLoginScreen();
 
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
       const loginButton = getByText('Masuk');
 
       // Trigger validation error
       fireEvent.press(loginButton);
 
       await waitFor(() => {
-        expect(getByText('Username harus diisi (minimal 3 karakter)')).toBeTruthy();
+        expect(getByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeTruthy();
       });
 
       // Start typing to clear error
       fireEvent.changeText(usernameInput, 'w');
 
       await waitFor(() => {
-        expect(queryByText('Username harus diisi (minimal 3 karakter)')).toBeNull();
+        expect(queryByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeNull();
       });
     });
   });
@@ -218,7 +218,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
       const passwordInput = getByPlaceholderText('Masukkan password');
       const loginButton = getByText('Masuk');
 
@@ -266,7 +266,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -310,7 +310,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -336,7 +336,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'manager1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'manager1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'manager123');
       fireEvent.press(getByText('Masuk'));
 
@@ -385,7 +385,7 @@ describe('LoginScreen', () => {
         </Provider>
       );
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -441,7 +441,7 @@ describe('LoginScreen', () => {
         </Provider>
       );
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -464,7 +464,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'wrongpassword');
       fireEvent.press(getByText('Masuk'));
 
@@ -480,7 +480,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -499,7 +499,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -513,7 +513,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -546,7 +546,7 @@ describe('LoginScreen', () => {
         </Provider>
       );
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
       fireEvent.press(getByText('Masuk'));
 
@@ -570,7 +570,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
       const passwordInput = getByPlaceholderText('Masukkan password');
       const loginButton = getByText('Masuk');
 
@@ -593,7 +593,7 @@ describe('LoginScreen', () => {
 
       const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-      fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
       fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
 
       const loginButton = getByText('Masuk');
@@ -611,7 +611,7 @@ describe('LoginScreen', () => {
   describe('input handling', () => {
     it('should update username state on change', () => {
       const { getByPlaceholderText } = renderLoginScreen();
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
 
       fireEvent.changeText(usernameInput, 'testuser');
 
@@ -636,7 +636,7 @@ describe('LoginScreen', () => {
 
     it('should have autoCapitalize none for both inputs', () => {
       const { getByPlaceholderText } = renderLoginScreen();
-      const usernameInput = getByPlaceholderText('Masukkan username');
+      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
       const passwordInput = getByPlaceholderText('Masukkan password');
 
       expect(usernameInput.props.autoCapitalize).toBe('none');
@@ -682,7 +682,7 @@ describe('LoginScreen — Fix 1: FCM console calls gated behind __DEV__', () => 
       <Provider store={store}><LoginScreen /></Provider>
     );
 
-    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
     fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
 
     await act(async () => {
@@ -745,7 +745,7 @@ describe('LoginScreen — Fix 4: clearError dispatched at start of handleLogin',
     // Verify stale error exists before login
     expect(store.getState().auth.error).toBe('Previous error from last attempt');
 
-    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
     fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
 
     await act(async () => {
@@ -770,7 +770,7 @@ describe('LoginScreen — Fix 4: clearError dispatched at start of handleLogin',
 
     const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
     fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
     fireEvent.press(getByText('Masuk'));
 
@@ -792,7 +792,7 @@ describe('LoginScreen — Fix 3: catch (err: unknown) with safe narrowing', () =
 
     const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
     fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
     fireEvent.press(getByText('Masuk'));
 
@@ -807,7 +807,7 @@ describe('LoginScreen — Fix 3: catch (err: unknown) with safe narrowing', () =
 
     const { getByPlaceholderText, getByText } = renderLoginScreen();
 
-    fireEvent.changeText(getByPlaceholderText('Masukkan username'), 'worker1');
+    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
     fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
     fireEvent.press(getByText('Masuk'));
 

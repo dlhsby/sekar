@@ -95,17 +95,26 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
     );
   }
 
-  const extraMenuItems: MenuItem[] = isField
-    ? [
-        {
-          key: 'shift-history',
-          icon: 'clock-outline',
-          label: 'Riwayat Shift',
-          onPress: () => navigation.navigate('ShiftHistory'),
-          testID: 'shift-history-button',
-        },
-      ]
-    : [];
+  const extraMenuItems: MenuItem[] = [
+    {
+      key: 'edit-profile',
+      icon: 'account-edit-outline',
+      label: 'Edit Profil',
+      onPress: () => navigation.navigate('EditProfile'),
+      testID: 'edit-profile-button',
+    },
+    ...(isField
+      ? [
+          {
+            key: 'shift-history',
+            icon: 'clock-outline',
+            label: 'Riwayat Shift',
+            onPress: () => navigation.navigate('ShiftHistory'),
+            testID: 'shift-history-button',
+          },
+        ]
+      : []),
+  ];
 
   const areaData = assignedArea || profileData?.assigned_area || null;
 

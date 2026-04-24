@@ -11,3 +11,5 @@ export { ActivityFilterModal } from './ActivityFilterModal';
 export { SortModal } from './SortModal';
 export type { SortOption } from './SortModal';
 export { OvertimeFilterModal } from './OvertimeFilterModal';
+export { LocationMapModal } from './LocationMapModal';
+export { OvertimeTrailModal } from './OvertimeTrailModal';

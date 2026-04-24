@@ -2,6 +2,8 @@ import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@ne
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { OvertimeService } from './overtime.service';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { StartOvertimeDto } from './dto/start-overtime.dto';
+import { EndOvertimeDto } from './dto/end-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
 import { OvertimeFilterDto } from './dto/overtime-filter.dto';
 import { Overtime } from './entities/overtime.entity';
@@ -15,6 +17,7 @@ import {
   OVERTIME_SUBMITTERS,
   OVERTIME_APPROVERS,
   USER_MANAGERS,
+  CLOCKABLE_ROLES,
 } from '../users/constants/role-groups';
 
 @ApiTags('overtime')
@@ -23,6 +26,36 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OvertimeController {
   constructor(private readonly overtimeService: OvertimeService) {}
+
+  @Post('start')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({ summary: 'Start overtime (clock-in to overtime shift)' })
+  @ApiResponse({ status: 201, description: 'Overtime started', type: Overtime })
+  async startOvertime(
+    @Body() dto: StartOvertimeDto,
+    @GetUser() user: User,
+  ): Promise<Overtime> {
+    return this.overtimeService.startOvertime(dto, user);
+  }
+
+  @Post('end')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({ summary: 'End overtime (clock-out + activity submission)' })
+  @ApiResponse({ status: 201, description: 'Overtime ended', type: Overtime })
+  async endOvertime(
+    @Body() dto: EndOvertimeDto,
+    @GetUser() user: User,
+  ): Promise<Overtime> {
+    return this.overtimeService.endOvertime(dto, user);
+  }
+
+  @Get('active')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({ summary: 'Get active overtime for current user' })
+  @ApiResponse({ status: 200, description: 'Active overtime or null' })
+  async getActive(@GetUser() user: User): Promise<Overtime | null> {
+    return this.overtimeService.getActiveOvertime(user.id);
+  }
 
   @Post()
   @Roles(...OVERTIME_SUBMITTERS)

@@ -1,24 +1,22 @@
 import { Injectable, Logger, HttpStatus, Optional, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, LessThanOrEqual, Or, MoreThanOrEqual } from 'typeorm';
-import { v4 as uuid } from 'uuid';
 import { Shift } from './entities/shift.entity';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { AreasService } from '../areas/areas.service';
-import { S3Service } from '../../shared/services/s3.service';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { GpsUtil } from '../../common/utils/gps.util';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import {
-  MINIMUM_SHIFT_DURATION_MS,
-  MINIMUM_SHIFT_DURATION_MINUTES,
+  getMinimumShiftDurationMinutes,
 } from '../../common/constants/shift.constants';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
+import { AuditLogService } from '../audit/audit.service';
 
 /**
  * Service for managing user shifts
@@ -38,10 +36,10 @@ export class ShiftsService {
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     private readonly areasService: AreasService,
-    private readonly s3Service: S3Service,
     @Optional()
     @Inject(forwardRef(() => StatusCalculatorService))
     private readonly statusCalculator: StatusCalculatorService | undefined,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -112,7 +110,7 @@ export class ShiftsService {
    * @returns Created shift entity
    * @throws BadRequestException if already clocked in
    */
-  async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
+  async clockIn(userId: string, dto: ClockInDto, isOvertime: boolean = false): Promise<Shift> {
     this.logger.log(`User ${userId} attempting to clock in`);
 
     // 1. Check if user already has an active shift
@@ -135,23 +133,9 @@ export class ShiftsService {
     }
     // area can be null - allow clock-in without area (GPS still recorded)
 
-    // 3. Upload selfie to S3
-    let photoUrl: string;
-    try {
-      const photoData = dto.selfie_photo.split(',')[1]; // Remove data:image/jpeg;base64, prefix
-      const photoBuffer = Buffer.from(photoData, 'base64');
-      const filename = `${uuid()}.jpg`;
-      const key = this.s3Service.generateKey('clock-in', filename);
-      photoUrl = await this.s3Service.uploadFile(photoBuffer, key, 'image/jpeg');
-    } catch (error) {
-      this.logger.error(`Failed to upload selfie photo: ${error.message}`, error.stack);
-      throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        ApiErrorCode.SHIFT_PHOTO_UPLOAD_FAILED,
-        'Failed to upload selfie photo',
-        { error: error.message },
-      );
-    }
+    // 3. Store selfie as base64 string directly (no S3 upload — avoids URL accessibility
+    //    issues in dev/LocalStack and keeps selfie loading fast on mobile)
+    const photoUrl: string | null = dto.selfie_photo ?? null;
 
     // 4. Check boundary (soft geofencing — never blocks clock-in)
     let clockInOutsideBoundary = false;
@@ -163,8 +147,8 @@ export class ShiftsService {
       }
     }
 
-    // 5. Match current shift definition
-    const shiftDefinition = await this.findCurrentShiftDefinition();
+    // 5. Match current shift definition (not applicable for overtime — null)
+    const shiftDefinition = isOvertime ? null : await this.findCurrentShiftDefinition();
 
     // 6. Create shift record
     const shift = this.shiftRepository.create({
@@ -176,6 +160,7 @@ export class ShiftsService {
       clock_in_gps_lng: dto.gps_lng,
       clock_in_photo_url: photoUrl,
       clock_in_outside_boundary: clockInOutsideBoundary,
+      is_overtime: isOvertime,
     });
 
     const savedShift = await this.shiftRepository.save(shift);
@@ -200,6 +185,20 @@ export class ShiftsService {
           ),
         );
     }
+
+    this.auditLogService
+      .log({
+        entity_type: 'shift',
+        entity_id: savedShift.id,
+        action: 'clock_in',
+        actor_id: userId,
+        new_value: {
+          area_id: savedShift.area_id,
+          is_overtime: isOvertime,
+          clock_in_outside_boundary: clockInOutsideBoundary,
+        },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return savedShift;
   }
@@ -232,22 +231,27 @@ export class ShiftsService {
       );
     }
 
-    // Check minimum shift duration (15 minutes)
+    // Check minimum shift duration (configurable via MINIMUM_SHIFT_DURATION_MINUTES env)
+    const minMinutes = getMinimumShiftDurationMinutes();
+    const minMs = minMinutes * 60 * 1000;
     const shiftDurationMs = Date.now() - shift.clock_in_time.getTime();
 
-    if (shiftDurationMs < MINIMUM_SHIFT_DURATION_MS) {
+    if (shiftDurationMs < minMs) {
       const minutesWorked = Math.floor(shiftDurationMs / (60 * 1000));
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         ApiErrorCode.SHIFT_DURATION_TOO_SHORT,
-        `Shift duration too short. Minimum ${MINIMUM_SHIFT_DURATION_MINUTES} minutes required. Current duration: ${minutesWorked} minutes`,
+        `Shift duration too short. Minimum ${minMinutes} minutes required. Current duration: ${minutesWorked} minutes`,
         {
           minutesWorked,
-          minimumRequired: MINIMUM_SHIFT_DURATION_MINUTES,
+          minimumRequired: minMinutes,
           clockInTime: shift.clock_in_time.toISOString(),
         },
       );
     }
+
+    // Store clock-out selfie as base64 string directly (consistent with clock-in)
+    const clockOutPhotoUrl: string | null = dto.selfie_photo ?? null;
 
     // Check boundary (soft geofencing — never blocks clock-out)
     let clockOutOutsideBoundary = false;
@@ -264,6 +268,7 @@ export class ShiftsService {
     shift.clock_out_gps_lat = dto.gps_lat;
     shift.clock_out_gps_lng = dto.gps_lng;
     shift.clock_out_outside_boundary = clockOutOutsideBoundary;
+    shift.clock_out_photo_url = clockOutPhotoUrl ?? undefined;
 
     const updatedShift = await this.shiftRepository.save(shift);
 
@@ -280,6 +285,19 @@ export class ShiftsService {
           ),
         );
     }
+
+    this.auditLogService
+      .log({
+        entity_type: 'shift',
+        entity_id: updatedShift.id,
+        action: 'clock_out',
+        actor_id: userId,
+        new_value: {
+          hours_worked: hoursWorked,
+          clock_out_outside_boundary: clockOutOutsideBoundary,
+        },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return updatedShift;
   }

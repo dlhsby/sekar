@@ -4,6 +4,13 @@
  * Phase 2C: ADR-009 (8-role system), ADR-010 (terminology cleanup)
  */
 
+/** GeoJSON Polygon as stored in the backend (jsonb column).
+ *  coordinates[0] is the outer ring: [[lng, lat], ...] pairs. */
+export interface GeoJsonPolygon {
+  type: 'Polygon';
+  coordinates: [number, number][][];
+}
+
 // User roles - 8 roles matching backend UserRole enum (lowercase)
 export type UserRole =
   | 'satgas'
@@ -27,8 +34,8 @@ export type TaskStatus = 'pending' | 'assigned' | 'accepted' | 'declined' | 'in_
 // Task priority
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-// Overtime status
-export type OvertimeStatus = 'pending' | 'approved' | 'rejected';
+// Overtime status — Phase 2E adds 'in_progress' for clock-in/out redesign
+export type OvertimeStatus = 'pending' | 'approved' | 'rejected' | 'in_progress';
 
 // Activity approval status
 export type ActivityStatus = 'pending' | 'approved' | 'rejected';
@@ -49,6 +56,8 @@ export interface User {
   rayon?: Rayon;
   area_id?: string;
   area?: Area;
+  phone_number?: string | null;         // Phase 2E: for phone login
+  profile_picture_url?: string | null;  // Phase 2E: profile photo
   created_at: string;
   updated_at: string;
 }
@@ -73,7 +82,7 @@ export interface Area {
   gps_lat: number;
   gps_lng: number;
   radius_meters: number;
-  boundary_polygon?: [number, number][];
+  boundary_polygon?: GeoJsonPolygon;
   address?: string;
   created_at: string;
   updated_at: string;
@@ -95,6 +104,7 @@ export interface Shift {
   clock_out_gps_lat?: number;
   clock_out_gps_lng?: number;
   clock_out_outside_boundary?: boolean;
+  is_overtime?: boolean; // Phase 2E: true when shift is an overtime shift
   created_at: string;
   updated_at: string;
 }
@@ -290,19 +300,27 @@ export interface Task {
 }
 
 // Overtime (Phase 2C: flat structure, datetime-based, overnight support)
+// Phase 2E: adds shift_id for clock-in/out flow redesign; end_datetime optional for in_progress
 export interface Overtime {
   id: string;
   user_id: string;
   user?: User;
   area_id?: string;
   area?: Area;
-  start_datetime: string; // ISO 8601 e.g. "2026-02-14T17:00:00+07:00"
-  end_datetime: string;   // ISO 8601 — may cross midnight
+  shift_id?: string | null;  // Phase 2E: linked shift when using clock-in/out flow
+  shift?: {                  // Phase 2E: shift relation for selfie photo URLs
+    id: string;
+    clock_in_photo_url?: string | null;
+    clock_out_photo_url?: string | null;
+  } | null;
+  start_datetime: string;    // ISO 8601 e.g. "2026-02-14T17:00:00+07:00"
+  end_datetime?: string;     // Phase 2E: optional — null while in_progress
+  reason?: string;           // Phase 2E: why the user is doing overtime (start form)
   status: OvertimeStatus;
-  activity_type_id: string;
+  activity_type_id?: string; // Phase 2E: optional — set on end
   activityType?: ActivityType;
-  description: string;
-  photo_urls: string[];
+  description?: string;      // Phase 2E: optional — set on end
+  photo_urls?: string[];     // Phase 2E: optional — set on end
   gps_lat?: number;
   gps_lng?: number;
   approved_by?: string;
@@ -359,6 +377,7 @@ export interface LiveUser {
   battery_level: number | null;
   last_update: string;
   is_within_area: boolean;
+  outside_boundary: boolean;
   shift_id: string;
   shift_name: string;
   shift_definition_id: string | null;
@@ -505,4 +524,111 @@ export interface UserAreaEvent {
   latitude: number;
   longitude: number;
   timestamp: string;
+}
+
+// Phase 2D: WebSocket reassigned event
+export interface UserReassignedEvent {
+  user_id: string;
+  user_name: string;
+  role: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string;
+  new_area_name: string;
+  rayon_id: string | null;
+  timestamp: string;
+}
+
+// Phase 2D: WebSocket area staffing changed event
+export interface AreaStaffingChangedEvent {
+  area_id: string;
+  rayon_id: string | null;
+  active_count: number;
+  required_count: number;
+  is_met: boolean;
+  timestamp: string;
+}
+
+// Phase 2D: Boundary types for monitoring map
+export interface RoleStaffingItem {
+  role: string;
+  required: number;
+  active: number;
+}
+
+export interface AreaBoundary {
+  id: string;
+  name: string;
+  center_lat: number;
+  center_lng: number;
+  boundary_polygon: GeoJsonPolygon | null;
+  radius_meters: number;
+  rayon_id: string;
+  rayon_name: string;
+  assigned_count: number;
+  staffing: RoleStaffingItem[];
+  is_understaffed: boolean;
+  total_active: number;
+  total_required: number;
+}
+
+export interface RayonBoundary {
+  id: string;
+  name: string;
+  code: string;
+  center_lat: number;
+  center_lng: number;
+  boundary_polygon: GeoJsonPolygon | null;
+  areas: AreaBoundary[];
+  area_count: number;
+  is_understaffed: boolean;
+  understaffed_area_count: number;
+}
+
+export interface BoundariesResponse {
+  rayons: RayonBoundary[];
+  generated_at: string;
+}
+
+// Phase 2D: Staffing summary response wrapper with day type
+export interface StaffingSummaryResponseFull {
+  items: StaffingSummaryItem[];
+  current_day_type: string;
+  current_day_type_label: string;
+  generated_at: string;
+}
+
+// Phase 2D: Reassign worker types
+export interface ReassignWorkerPayload {
+  user_id: string;
+  target_area_id: string;
+  shift_definition_id?: string;
+  effective_date?: string;
+  end_current_schedule?: boolean;
+  reason?: string;
+}
+
+export interface ReassignWorkerResponse {
+  user_id: string;
+  user_name: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string;
+  new_area_name: string;
+  new_schedule_id: string | null;
+  effective_date: string;
+  reassigned_at: string;
+}
+
+// Phase 2E: Audit log entry (ADR-015)
+export interface AuditLog {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  action: string;
+  actor_id: string;
+  old_value?: any;
+  new_value?: any;
+  metadata?: any;
+  created_at: string;
 }

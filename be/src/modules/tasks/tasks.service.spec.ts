@@ -9,6 +9,7 @@ import { CompleteTaskDto } from './dto/complete-task.dto';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
 import { User, UserRole } from '../users/entities/user.entity';
+import { AuditLogService } from '../audit/audit.service';
 
 describe('TasksService', () => {
   let service: TasksService;
@@ -101,6 +102,10 @@ describe('TasksService', () => {
           useValue: {
             findOne: jest.fn(),
           },
+        },
+        {
+          provide: AuditLogService,
+          useValue: { log: jest.fn().mockResolvedValue({}) },
         },
       ],
     }).compile();

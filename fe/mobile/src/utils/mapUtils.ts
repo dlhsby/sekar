@@ -4,10 +4,8 @@
  * Phase 2D: Four-status model (active/inactive/outside_area/missing/offline)
  */
 
-import { calculateDistance, isPointInPolygon } from './gpsUtils';
 import type { ActiveUserData } from '../types/api.types';
 import type { TrackingStatus, LiveUser } from '../types/models.types';
-import type { UserStatus } from '../components/monitoring/UserMarker';
 import type { Region } from 'react-native-maps';
 
 // ─── Phase 2D: Four-Status Model ──────────────────────────────────────────────
@@ -63,56 +61,6 @@ export function getRoleIcon(role: string): string {
     superadmin: 'shield-crown',
   };
   return icons[role] ?? 'account-hard-hat';
-}
-
-/**
- * Calculate worker status based on boundary check
- * Phase 2C: polygon-first, radius fallback (matches backend)
- * - Active (green): Within boundary (polygon or 80% of radius)
- * - Warning (yellow): Near boundary edge (80%-100% of radius, or inside polygon)
- * - Outside (red): Beyond boundary
- */
-export function calculateUserStatus(
-  worker: ActiveUserData,
-  areas: Array<{ id: string | number; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string; boundary_polygon?: [number, number][] }>
-): UserStatus {
-  if (!worker.latest_location) {
-    return 'outside';
-  }
-
-  // Find worker's assigned area
-  const area = areas.find(a => a.id === worker.shift.area.id);
-  if (!area) {
-    return 'outside';
-  }
-
-  const userLat = parseFloat(worker.latest_location.gps_lat.toString());
-  const userLng = parseFloat(worker.latest_location.gps_lng.toString());
-
-  // 1. Polygon check (preferred)
-  if (Array.isArray(area.boundary_polygon) && area.boundary_polygon.length >= 3) {
-    return isPointInPolygon(userLat, userLng, area.boundary_polygon)
-      ? 'active'
-      : 'outside';
-  }
-
-  // 2. Radius fallback
-  const areaLat = typeof area.gps_lat === 'string' ? parseFloat(area.gps_lat) : area.gps_lat;
-  const areaLng = typeof area.gps_lng === 'string' ? parseFloat(area.gps_lng) : area.gps_lng;
-  const radiusMeters = typeof area.radius_meters === 'string' ? parseFloat(area.radius_meters) : area.radius_meters;
-
-  const distance = calculateDistance(userLat, userLng, areaLat, areaLng);
-  const warningThreshold = radiusMeters * 0.8;
-
-  if (distance <= warningThreshold) {
-    return 'active';
-  }
-
-  if (distance <= radiusMeters) {
-    return 'warning';
-  }
-
-  return 'outside';
 }
 
 /**
@@ -179,33 +127,6 @@ export function calculateMapRegion(
     latitudeDelta: Math.max(latDelta, minDelta),
     longitudeDelta: Math.max(lngDelta, minDelta),
   };
-}
-
-/**
- * Get status summary counts
- */
-export function getStatusSummary(
-  workers: ActiveUserData[],
-  areas: Array<{ id: string | number; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string; boundary_polygon?: [number, number][] }>
-): {
-  total: number;
-  active: number;
-  warning: number;
-  outside: number;
-} {
-  const summary = {
-    total: workers.length,
-    active: 0,
-    warning: 0,
-    outside: 0,
-  };
-
-  workers.forEach(worker => {
-    const status = calculateUserStatus(worker, areas);
-    summary[status]++;
-  });
-
-  return summary;
 }
 
 /**

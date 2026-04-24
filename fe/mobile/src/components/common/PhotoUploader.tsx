@@ -13,7 +13,7 @@
  *   style        — optional outer container style override
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
 } from 'react-native';
 import { mediaService, type Photo } from '../../services/media';
 import { requestCameraPermission } from '../../services/permissions';
+import { ImagePreviewModal } from './ImagePreviewModal';
 import {
   nbColors,
   nbSpacing,
@@ -54,6 +55,8 @@ export function PhotoUploader({
   error,
   style,
 }: PhotoUploaderProps): React.JSX.Element {
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+
   const handleCapture = useCallback(async () => {
     if (photos.length >= maxPhotos) {
       Alert.alert('Maksimal Foto', `Anda hanya dapat menambahkan maksimal ${maxPhotos} foto.`);
@@ -89,7 +92,14 @@ export function PhotoUploader({
       >
         {photos.map((photo) => (
           <View key={photo.id} style={styles.photoItem}>
-            <Image source={{ uri: photo.uri }} style={styles.thumbnail} />
+            <TouchableOpacity
+              onPress={() => setPreviewUri(photo.uri)}
+              accessibilityRole="button"
+              accessibilityLabel="Lihat foto penuh"
+              accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+            >
+              <Image source={{ uri: photo.uri }} style={styles.thumbnail} />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.removeButton}
               onPress={() => onRemove(photo.id)}
@@ -113,6 +123,11 @@ export function PhotoUploader({
           </TouchableOpacity>
         )}
       </ScrollView>
+      <ImagePreviewModal
+        uri={previewUri}
+        onClose={() => setPreviewUri(null)}
+        title="Foto Bukti"
+      />
     </View>
   );
 }

@@ -4,17 +4,16 @@
  * Extracted from ClockInOutScreen for separation of concerns
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import { Alert } from 'react-native';
-import { launchCamera } from 'react-native-image-picker';
-import RNFS from 'react-native-fs';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
-import { requestClockInPermissions } from '../services/permissions';
+import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
+import { mediaService, type Photo } from '../services/media';
 
 export interface LocationState {
   latitude: number | null;
@@ -39,7 +38,7 @@ export function useClockInOut() {
     error: null,
   });
 
-  const [selfieUri, setSelfieUri] = useState<string | null>(null);
+  const [selfie, setSelfie] = useState<Photo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithinBoundary, setIsWithinBoundary] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
@@ -145,9 +144,7 @@ export function useClockInOut() {
       );
     };
 
-    if (assignedArea) {
-      initializeLocation();
-    }
+    initializeLocation();
 
     return () => {
       isMounted = false;
@@ -177,29 +174,16 @@ export function useClockInOut() {
   }, [currentShift?.id]);
 
   const handleCaptureSelfie = useCallback(async () => {
+    const permResult = await requestCameraPermission();
+    if (!permResult.granted) {
+      Alert.alert('Izin Kamera', 'Akses kamera diperlukan. Aktifkan di Pengaturan aplikasi.');
+      return;
+    }
     try {
-      const result = await launchCamera({
-        mediaType: 'photo',
-        cameraType: 'front',
-        quality: 0.8,
-        maxWidth: 800,
-        maxHeight: 800,
-        includeBase64: false,
-        saveToPhotos: false,
-        presentationStyle: 'fullScreen',
-      });
-
-      if (result.didCancel) { return; }
-      if (result.errorCode) {
-        Alert.alert('Error', 'Gagal mengambil foto. Silakan coba lagi.');
-        return;
-      }
-      if (result.assets?.[0]) {
-        setSelfieUri(result.assets[0].uri || null);
-      }
-    } catch (error) {
-      console.error('Camera error:', error);
-      Alert.alert('Error', 'Gagal membuka kamera. Periksa izin akses.');
+      const photo = await mediaService.capturePhoto(true);
+      if (photo) { setSelfie(photo); }
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Gagal membuka kamera');
     }
   }, []);
 
@@ -208,16 +192,10 @@ export function useClockInOut() {
       Alert.alert('Error', 'Lokasi belum tersedia. Tunggu GPS mendapatkan lokasi.');
       return;
     }
-    if (!selfieUri) {
-      Alert.alert('Error', 'Silakan ambil selfie sebelum clock in');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
-      const filePath = selfieUri.replace('file://', '');
-      const base64Data = await RNFS.readFile(filePath, 'base64');
-      const selfieBase64 = `data:image/jpeg;base64,${base64Data}`;
+      const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
 
       const response = await clockIn(location.latitude, location.longitude, selfieBase64);
       if (response.error || !response.data) {
@@ -234,7 +212,7 @@ export function useClockInOut() {
         }
       }
 
-      setSelfieUri(null);
+      setSelfie(null);
       Alert.alert('Berhasil', 'Berhasil clock in!', [
         { text: 'OK', onPress: onSuccess },
       ]);
@@ -247,7 +225,7 @@ export function useClockInOut() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [location, selfieUri, dispatch]);
+  }, [location, selfie, dispatch]);
 
   const handleClockOut = useCallback(async (onSuccess: () => void) => {
     if (!currentShift) {
@@ -279,7 +257,8 @@ export function useClockInOut() {
 
               const response = await clockOut(location.latitude!, location.longitude!);
               if (response.error) {
-                Alert.alert('Gagal Clock Out', response.error);
+                const errMsg = response.error;
+                Alert.alert('Gagal Clock Out', errMsg);
                 return;
               }
 
@@ -305,7 +284,7 @@ export function useClockInOut() {
 
   return {
     location,
-    selfieUri,
+    selfie,
     isSubmitting,
     isWithinBoundary,
     timer,

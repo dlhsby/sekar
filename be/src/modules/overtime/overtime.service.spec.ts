@@ -6,10 +6,13 @@ import { Overtime, OvertimeStatus } from './entities/overtime.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { StartOvertimeDto } from './dto/start-overtime.dto';
+import { EndOvertimeDto } from './dto/end-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
 import { OvertimeFilterDto } from './dto/overtime-filter.dto';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ShiftsService } from '../shifts/shifts.service';
+import { AuditLogService } from '../audit/audit.service';
 
 describe('OvertimeService', () => {
   let module: TestingModule;
@@ -36,6 +39,9 @@ describe('OvertimeService', () => {
 
   const mockShiftsService = {
     getActiveArea: jest.fn().mockResolvedValue(null),
+    findActiveShift: jest.fn(),
+    clockIn: jest.fn(),
+    clockOut: jest.fn(),
   };
 
   const createMockQueryBuilder = (result: any[] = [], total = 0) => ({
@@ -69,6 +75,10 @@ describe('OvertimeService', () => {
         {
           provide: ShiftsService,
           useValue: mockShiftsService,
+        },
+        {
+          provide: AuditLogService,
+          useValue: { log: jest.fn().mockResolvedValue({}) },
         },
       ],
     }).compile();
@@ -356,6 +366,52 @@ describe('OvertimeService', () => {
       await expect(service.approve(overtimeId, approverId)).rejects.toThrow(ForbiddenException);
     });
 
+    it('should approve kepala_rayon overtime by top_management', async () => {
+      const topMgmtApprover = {
+        id: 'top-mgmt-uuid',
+        role: UserRole.TOP_MANAGEMENT,
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue({
+        id: overtimeId,
+        user_id: 'kepala-rayon-worker',
+        area_id: areaId,
+        status: OvertimeStatus.PENDING,
+        user: { id: 'kepala-rayon-worker', role: UserRole.KEPALA_RAYON },
+        area: { id: areaId, rayon_id: 'rayon-uuid-1' },
+      });
+      mockUserRepo.findOne.mockResolvedValue(topMgmtApprover);
+      mockOvertimeRepo.save.mockResolvedValue({
+        id: overtimeId,
+        status: OvertimeStatus.APPROVED,
+        approved_by: topMgmtApprover.id,
+      });
+
+      const result = await service.approve(overtimeId, topMgmtApprover.id);
+      expect(result.status).toBe(OvertimeStatus.APPROVED);
+    });
+
+    it('should reject top_management approving non-kepala_rayon overtime', async () => {
+      const topMgmtApprover = {
+        id: 'top-mgmt-uuid',
+        role: UserRole.TOP_MANAGEMENT,
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue({
+        id: overtimeId,
+        user_id: 'korlap-worker',
+        area_id: areaId,
+        status: OvertimeStatus.PENDING,
+        user: { id: 'korlap-worker', role: UserRole.KORLAP },
+        area: { id: areaId, rayon_id: 'rayon-uuid-1' },
+      });
+      mockUserRepo.findOne.mockResolvedValue(topMgmtApprover);
+
+      await expect(service.approve(overtimeId, topMgmtApprover.id)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
     it('should reject kepala_rayon approving satgas overtime', async () => {
       const kepalaRayonApprover = {
         id: 'kepala-rayon-uuid',
@@ -609,6 +665,283 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(overtimeId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('startOvertime', () => {
+    const userId = 'user-uuid-1';
+    const areaId = 'area-uuid-1';
+    const shiftId = 'shift-uuid-1';
+    const overtimeId = 'overtime-uuid-start-1';
+
+    const clockableUser: User = {
+      id: userId,
+      area_id: areaId,
+      role: UserRole.SATGAS,
+    } as User;
+
+    const nonClockableUser: User = {
+      id: userId,
+      area_id: areaId,
+      role: UserRole.SUPERADMIN,
+    } as User;
+
+    const startDto: StartOvertimeDto = {
+      gps_lat: -7.250445,
+      gps_lng: 112.768845,
+      reason: 'Additional cleanup needed after event',
+    };
+
+    const mockCreatedOvertime = {
+      id: overtimeId,
+      user_id: userId,
+      area_id: areaId,
+      status: OvertimeStatus.IN_PROGRESS,
+      shift_id: null,
+      description: startDto.reason,
+      photo_urls: [],
+      gps_lat: startDto.gps_lat,
+      gps_lng: startDto.gps_lng,
+    };
+
+    beforeEach(() => {
+      mockShiftsService.findActiveShift.mockResolvedValue(null);
+      mockShiftsService.getActiveArea.mockResolvedValue(null);
+      mockShiftsService.clockIn.mockResolvedValue({ id: shiftId });
+      mockOvertimeRepo.create.mockReturnValue({ ...mockCreatedOvertime });
+      mockOvertimeRepo.save.mockResolvedValue({ ...mockCreatedOvertime, shift_id: shiftId });
+      mockOvertimeRepo.findOne.mockResolvedValue(null);
+    });
+
+    it('should start overtime for clockable role user', async () => {
+      const result = await service.startOvertime(startDto, clockableUser);
+
+      expect(mockShiftsService.findActiveShift).toHaveBeenCalledWith(userId);
+      expect(mockShiftsService.clockIn).toHaveBeenCalledWith(
+        userId,
+        { gps_lat: startDto.gps_lat, gps_lng: startDto.gps_lng, selfie_photo: undefined },
+        true,
+      );
+      expect(result.shift_id).toBe(shiftId);
+    });
+
+    it('should throw ForbiddenException for non-clockable role', async () => {
+      await expect(service.startOvertime(startDto, nonClockableUser)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockShiftsService.findActiveShift).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if active normal shift exists', async () => {
+      // A normal (non-overtime) active shift blocks starting overtime
+      mockShiftsService.findActiveShift.mockResolvedValue({ id: 'normal-shift', is_overtime: false });
+
+      await expect(service.startOvertime(startDto, clockableUser)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockShiftsService.clockIn).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if active overtime already exists', async () => {
+      // findActiveShift returns null (no normal shift), but overtimeRepo.findOne returns an active overtime
+      mockShiftsService.findActiveShift.mockResolvedValue(null);
+      mockOvertimeRepo.findOne.mockResolvedValue({
+        id: 'existing-overtime',
+        user_id: userId,
+        status: OvertimeStatus.IN_PROGRESS,
+      });
+
+      await expect(service.startOvertime(startDto, clockableUser)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockShiftsService.clockIn).not.toHaveBeenCalled();
+    });
+
+    it('should call shiftsService.clockIn with is_overtime=true', async () => {
+      await service.startOvertime(startDto, clockableUser);
+
+      // Third argument to clockIn must be true (is_overtime flag)
+      expect(mockShiftsService.clockIn).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ gps_lat: startDto.gps_lat, gps_lng: startDto.gps_lng }),
+        true,
+      );
+    });
+
+    it('should link shift_id to overtime record', async () => {
+      const result = await service.startOvertime(startDto, clockableUser);
+
+      // The second save call links shift_id back to the overtime record
+      expect(mockOvertimeRepo.save).toHaveBeenCalledTimes(2);
+      expect(result.shift_id).toBe(shiftId);
+    });
+
+    it('should allow overtime when active shift is itself an overtime shift', async () => {
+      // An existing overtime shift should not block starting a new overtime check
+      // (only normal shifts block; overtime shift means the check passes through to
+      // the next guard which catches active overtime in the overtime table)
+      mockShiftsService.findActiveShift.mockResolvedValue({ id: 'ot-shift', is_overtime: true });
+      mockOvertimeRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.startOvertime(startDto, clockableUser);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('endOvertime', () => {
+    const userId = 'user-uuid-1';
+    const areaId = 'area-uuid-1';
+    const shiftId = 'shift-uuid-end-1';
+    const activityTypeId = 'activity-type-uuid-end-1';
+
+    const clockableUser: User = {
+      id: userId,
+      area_id: areaId,
+      role: UserRole.SATGAS,
+    } as User;
+
+    const endDto: EndOvertimeDto = {
+      gps_lat: -7.250445,
+      gps_lng: 112.768845,
+      activity_type_id: activityTypeId,
+      description: 'Cleaned extra section of park',
+      photo_urls: ['https://s3.amazonaws.com/end-photo1.jpg'],
+    };
+
+    const mockActiveOvertime = {
+      id: 'overtime-active-1',
+      user_id: userId,
+      area_id: areaId,
+      status: OvertimeStatus.IN_PROGRESS,
+      shift_id: shiftId,
+      activityType: null,
+      user: clockableUser,
+      area: { id: areaId },
+    };
+
+    const mockActivityType = {
+      id: activityTypeId,
+      name: 'Park Cleaning',
+      is_active: true,
+      applicable_roles: [UserRole.SATGAS, UserRole.LINMAS],
+    };
+
+    beforeEach(() => {
+      mockOvertimeRepo.findOne.mockResolvedValue({ ...mockActiveOvertime });
+      mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType);
+      mockShiftsService.clockOut.mockResolvedValue(undefined);
+      mockOvertimeRepo.save.mockResolvedValue({
+        ...mockActiveOvertime,
+        status: OvertimeStatus.PENDING,
+        activity_type_id: activityTypeId,
+        description: endDto.description,
+        photo_urls: endDto.photo_urls,
+        end_datetime: expect.any(Date),
+      });
+    });
+
+    it('should end active overtime and update status to pending', async () => {
+      const result = await service.endOvertime(endDto, clockableUser);
+
+      expect(mockOvertimeRepo.findOne).toHaveBeenCalledWith({
+        where: { user_id: userId, status: OvertimeStatus.IN_PROGRESS },
+        relations: ['activityType', 'user', 'area'],
+      });
+      expect(mockShiftsService.clockOut).toHaveBeenCalledWith(userId, {
+        gps_lat: endDto.gps_lat,
+        gps_lng: endDto.gps_lng,
+      });
+      expect(mockOvertimeRepo.save).toHaveBeenCalled();
+      expect(result.status).toBe(OvertimeStatus.PENDING);
+    });
+
+    it('should throw NotFoundException if no active overtime found', async () => {
+      mockOvertimeRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.endOvertime(endDto, clockableUser)).rejects.toThrow(NotFoundException);
+      expect(mockShiftsService.clockOut).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if activity type not found', async () => {
+      mockActivityTypeRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.endOvertime(endDto, clockableUser)).rejects.toThrow(BadRequestException);
+      expect(mockShiftsService.clockOut).not.toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException if activity type not applicable to user role', async () => {
+      // Activity type only available for KORLAP, not SATGAS
+      mockActivityTypeRepo.findOne.mockResolvedValue({
+        ...mockActivityType,
+        applicable_roles: [UserRole.KORLAP],
+      });
+
+      await expect(service.endOvertime(endDto, clockableUser)).rejects.toThrow(ForbiddenException);
+      expect(mockShiftsService.clockOut).not.toHaveBeenCalled();
+    });
+
+    it('should call shiftsService.clockOut when overtime has a linked shift_id', async () => {
+      await service.endOvertime(endDto, clockableUser);
+
+      expect(mockShiftsService.clockOut).toHaveBeenCalledWith(userId, {
+        gps_lat: endDto.gps_lat,
+        gps_lng: endDto.gps_lng,
+      });
+    });
+
+    it('should skip clockOut when overtime has no linked shift_id', async () => {
+      // Overtime without a shift_id (clock-in may have failed or was not linked)
+      mockOvertimeRepo.findOne.mockResolvedValue({ ...mockActiveOvertime, shift_id: null });
+
+      await service.endOvertime(endDto, clockableUser);
+
+      expect(mockShiftsService.clockOut).not.toHaveBeenCalled();
+      expect(mockOvertimeRepo.save).toHaveBeenCalled();
+    });
+
+    it('should set activity details on overtime record', async () => {
+      await service.endOvertime(endDto, clockableUser);
+
+      // Verify save was called and the updated overtime properties reflect the DTO values
+      const saveCall = mockOvertimeRepo.save.mock.calls[0][0];
+      expect(saveCall.activity_type_id).toBe(activityTypeId);
+      expect(saveCall.description).toBe(endDto.description);
+      expect(saveCall.photo_urls).toEqual(endDto.photo_urls);
+      expect(saveCall.status).toBe(OvertimeStatus.PENDING);
+      expect(saveCall.end_datetime).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('getActiveOvertime', () => {
+    const userId = 'user-uuid-1';
+
+    it('should return active overtime for user', async () => {
+      const activeOvertime = {
+        id: 'overtime-active-get-1',
+        user_id: userId,
+        status: OvertimeStatus.IN_PROGRESS,
+        activityType: null,
+        area: { id: 'area-uuid-1' },
+        shift: { id: 'shift-uuid-1' },
+      };
+      mockOvertimeRepo.findOne.mockResolvedValue(activeOvertime);
+
+      const result = await service.getActiveOvertime(userId);
+
+      expect(mockOvertimeRepo.findOne).toHaveBeenCalledWith({
+        where: { user_id: userId, status: OvertimeStatus.IN_PROGRESS },
+        relations: ['activityType', 'area', 'shift'],
+      });
+      expect(result).toEqual(activeOvertime);
+    });
+
+    it('should return null if no active overtime exists', async () => {
+      mockOvertimeRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.getActiveOvertime(userId);
+
+      expect(result).toBeNull();
     });
   });
 });

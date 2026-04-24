@@ -18,6 +18,8 @@ describe('JwtStrategy', () => {
     username: 'testuser',
     password_hash: 'hashed-password',
     full_name: 'Test User',
+    phone_number: null,
+    profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),

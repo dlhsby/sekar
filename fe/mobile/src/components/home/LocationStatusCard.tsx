@@ -34,27 +34,40 @@ interface LocationStatusCardProps {
     isWithinArea: boolean;
     loading: boolean;
     error: string | null;
+    updatedAt: Date | null;
   };
   onRefresh: () => void;
+  onPress?: () => void;
 }
 
-export function LocationStatusCard({ location, onRefresh }: LocationStatusCardProps) {
+function formatUpdatedAt(date: Date | null): string | null {
+  if (!date) return null;
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'Baru saja';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} mnt lalu`;
+  const diffHr = Math.floor(diffMin / 60);
+  return `${diffHr} jam lalu`;
+}
+
+export function LocationStatusCard({ location, onRefresh, onPress }: LocationStatusCardProps) {
   const hasCoords = location.latitude !== null && location.longitude !== null;
   const accuracyWarning = location.accuracy !== null && location.accuracy > GPS_ACCURACY_WARNING;
+  const updatedAtLabel = formatUpdatedAt(location.updatedAt);
 
-  return (
-    <NBCard
-      variant="elevated"
-      style={styles.card}
-      testID="location-status-card"
-    >
+  const cardContent = (
+    <NBCard variant="elevated" style={styles.card} testID="location-status-card">
       <View style={styles.header}>
-        <Text
-          style={styles.cardTitle}
-          accessibilityRole="header"
-        >
-          Lokasi Anda
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.cardTitle} accessibilityRole="header">
+            Lokasi Anda
+          </Text>
+          {updatedAtLabel && (
+            <Text style={styles.updatedAt}>{updatedAtLabel}</Text>
+          )}
+        </View>
         <TouchableOpacity
           onPress={onRefresh}
           disabled={location.loading}
@@ -77,9 +90,7 @@ export function LocationStatusCard({ location, onRefresh }: LocationStatusCardPr
           <Text style={styles.loadingText}>Mendapatkan lokasi...</Text>
         </View>
       ) : location.error ? (
-        <View>
-          <Text style={styles.errorText}>{location.error}</Text>
-        </View>
+        <Text style={styles.errorText}>{location.error}</Text>
       ) : hasCoords ? (
         <View>
           <Text
@@ -99,17 +110,11 @@ export function LocationStatusCard({ location, onRefresh }: LocationStatusCardPr
           )}
 
           {location.isWithinArea ? (
-            <View
-              style={styles.insideAreaBanner}
-              accessibilityLabel="Di dalam area kerja"
-            >
+            <View style={styles.insideAreaBanner} accessibilityLabel="Di dalam area kerja">
               <Text style={styles.insideAreaText}>Di dalam area kerja</Text>
             </View>
           ) : (
-            <View
-              style={styles.outsideAreaBanner}
-              accessibilityLabel="Di luar area kerja"
-            >
+            <View style={styles.outsideAreaBanner} accessibilityLabel="Di luar area kerja">
               <Text style={styles.outsideAreaText}>Di luar area kerja</Text>
             </View>
           )}
@@ -117,8 +122,28 @@ export function LocationStatusCard({ location, onRefresh }: LocationStatusCardPr
       ) : (
         <Text style={styles.unavailableText}>Lokasi tidak tersedia</Text>
       )}
+
+      {onPress && hasCoords && (
+        <Text style={styles.tapHint}>Ketuk untuk lihat di peta</Text>
+      )}
     </NBCard>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Lihat lokasi di peta"
+        accessibilityHint="Ketuk untuk membuka peta lokasi"
+      >
+        {cardContent}
+      </TouchableOpacity>
+    );
+  }
+
+  return cardContent;
 }
 
 const styles = StyleSheet.create({
@@ -129,16 +154,26 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: nbSpacing.xs,
+  },
+  titleRow: {
+    flex: 1,
   },
   cardTitle: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.black,
   },
+  updatedAt: {
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray['500'],
+    fontWeight: nbTypography.fontWeight.regular,
+    marginTop: 2,
+  },
   refreshButton: {
     padding: 4,
+    marginLeft: nbSpacing.sm,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -193,6 +228,14 @@ const styles = StyleSheet.create({
     fontWeight: nbTypography.fontWeight.bold,
     color: '#D97706',
     textAlign: 'center',
+  },
+  tapHint: {
+    fontSize: nbTypography.fontSize.xs,
+    color: nbColors.gray['500'],
+    fontWeight: nbTypography.fontWeight.regular,
+    textAlign: 'center',
+    marginTop: nbSpacing.sm,
+    fontStyle: 'italic',
   },
   errorText: {
     fontSize: nbTypography.fontSize.sm,

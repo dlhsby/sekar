@@ -72,7 +72,8 @@ describe('MonitoringService', () => {
     username: 'worker1',
     password_hash: 'hashed',
     full_name: 'Worker One',
-    phone: '08123456789',
+    phone_number: '08123456789',
+    profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
     created_at: new Date(),
@@ -96,6 +97,7 @@ describe('MonitoringService', () => {
     clock_out_outside_boundary: false,
     shift_definition_id: null,
     shift_definition: null as unknown as any,
+    is_overtime: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -456,6 +458,8 @@ describe('MonitoringService', () => {
       shift_definition: mockShiftDefinition,
       area_id: 'area-1',
       area: mockArea,
+      rayon_id: null,
+      rayon: null as any,
       status: TrackingStatus.ACTIVE,
       last_latitude: -7.2905,
       last_longitude: 112.7398,
@@ -706,7 +710,7 @@ describe('MonitoringService', () => {
     });
 
     it('should include phone number', async () => {
-      const userWithPhone = { ...mockUser, phone: '08123456789' };
+      const userWithPhone = { ...mockUser, phone_number: '08123456789' };
       const recordWithPhone = { ...mockTrackingRecord, user: userWithPhone };
       const qb = createMockQueryBuilder([recordWithPhone], 1);
       trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
@@ -1011,7 +1015,7 @@ describe('MonitoringService', () => {
       userRepository.findOne.mockResolvedValue({
         ...mockUser,
         area_id: undefined,
-        phone: undefined,
+        phone_number: null,
       });
       trackingRepository.findOne.mockResolvedValue(null);
       activityRepository.find.mockResolvedValue([]);

@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import { useAppSelector } from '../store/hooks';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
-import { locationTracker } from '../services/location/locationTracker';
+import { locationTracker, type LocationPing } from '../services/location/locationTracker';
 
 export interface HomeLocationState {
   latitude: number | null;
@@ -17,6 +17,7 @@ export interface HomeLocationState {
   isWithinArea: boolean;
   loading: boolean;
   error: string | null;
+  updatedAt: Date | null;
 }
 
 const INITIAL_STATE: HomeLocationState = {
@@ -26,6 +27,7 @@ const INITIAL_STATE: HomeLocationState = {
   isWithinArea: false,
   loading: false,
   error: null,
+  updatedAt: null,
 };
 
 export function useHomeLocation() {
@@ -53,6 +55,7 @@ export function useHomeLocation() {
           isWithinArea: withinArea,
           loading: false,
           error: null,
+          updatedAt: new Date(),
         });
       },
       (error) => {
@@ -85,6 +88,31 @@ export function useHomeLocation() {
       setLocation(INITIAL_STATE);
     }
   }, [hasActiveShift, fetchLocation]);
+
+  // Auto-update location card on every GPS capture from the tracker
+  useEffect(() => {
+    if (!hasActiveShift) return;
+
+    const handleLocationUpdate = (ping: LocationPing) => {
+      const withinArea = assignedArea
+        ? isWithinAreaBoundary(ping.latitude, ping.longitude, assignedArea)
+        : false;
+      setLocation({
+        latitude: ping.latitude,
+        longitude: ping.longitude,
+        accuracy: ping.accuracy,
+        isWithinArea: withinArea,
+        loading: false,
+        error: null,
+        updatedAt: new Date(),
+      });
+    };
+
+    locationTracker.on('locationUpdate', handleLocationUpdate);
+    return () => {
+      locationTracker.off('locationUpdate', handleLocationUpdate);
+    };
+  }, [hasActiveShift, assignedArea]);
 
   return { location, refresh, hasActiveShift };
 }

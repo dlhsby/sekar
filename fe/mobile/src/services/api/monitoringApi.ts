@@ -3,7 +3,7 @@
  * Phase 2D: consolidated monitoring + supervisor endpoints + new Phase 2D endpoints
  */
 
-import { get } from './apiClient';
+import { get, post } from './apiClient';
 import type {
   ActivitiesFilter,
   AttendanceFilter,
@@ -23,6 +23,9 @@ import type {
   UserDaySummary,
   LocationHistory,
   StaffingSummaryItem,
+  BoundariesResponse,
+  ReassignWorkerPayload,
+  ReassignWorkerResponse,
 } from '../../types/models.types';
 
 export async function getCityMonitoring(
@@ -107,6 +110,31 @@ export async function getStaffingSummary(
   return get<StaffingSummaryResponse>('/monitoring/staffing-summary', filters);
 }
 
+// Phase 2D Gap: Boundaries endpoint
+export async function getBoundaries(
+  rayonId?: string,
+): Promise<ApiResponse<BoundariesResponse>> {
+  const params: Record<string, string> = {};
+  if (rayonId) {
+    params.rayon_id = rayonId;
+  }
+  return get<BoundariesResponse>('/monitoring/boundaries', params);
+}
+
+// Phase 2D Gap: Reassign worker endpoint
+export async function reassignWorker(
+  payload: ReassignWorkerPayload,
+): Promise<ApiResponse<ReassignWorkerResponse>> {
+  return post<ReassignWorkerResponse>('/monitoring/reassign', payload);
+}
+
+// Phase 2D Gap: Monitoring config endpoint (admin only)
+export async function getMonitoringConfig(): Promise<
+  ApiResponse<Record<string, unknown>[]>
+> {
+  return get<Record<string, unknown>[]>('/monitoring/config');
+}
+
 export default {
   getCityMonitoring,
   getRayonMonitoring,
@@ -119,4 +147,7 @@ export default {
   getUserDaySummary,
   getUserLocationHistory,
   getStaffingSummary,
+  getBoundaries,
+  reassignWorker,
+  getMonitoringConfig,
 };

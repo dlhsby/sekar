@@ -5,6 +5,27 @@
 
 // Must be before imports - Jest hoists these
 jest.mock('../../../services/api/monitoringApi');
+jest.mock('../../../services/websocket/websocketService', () => ({
+  __esModule: true,
+  default: {
+    connect: jest.fn(() => Promise.resolve(true)),
+    disconnect: jest.fn(),
+    onUserLocation: jest.fn(() => jest.fn()),
+    onUserStatusChanged: jest.fn(() => jest.fn()),
+    onUserLeftArea: jest.fn(() => jest.fn()),
+    onUserEnteredArea: jest.fn(() => jest.fn()),
+    onUserReassigned: jest.fn(() => jest.fn()),
+    onAreaStaffingChanged: jest.fn(() => jest.fn()),
+    onUserClockIn: jest.fn(() => jest.fn()),
+    onUserClockOut: jest.fn(() => jest.fn()),
+    isConnected: jest.fn(() => false),
+    subscribeToArea: jest.fn(),
+    subscribeToRayon: jest.fn(),
+    unsubscribeFromArea: jest.fn(),
+    unsubscribeFromRayon: jest.fn(),
+    cleanup: jest.fn(),
+  },
+}));
 jest.mock('../../../hooks', () => ({
   useMapDashboard: jest.fn(() => ({
     areas: [],
@@ -16,11 +37,19 @@ jest.mock('../../../hooks', () => ({
   })),
   useNotifications: jest.fn(() => ({})),
 }));
+jest.mock('../../../hooks/useMapAutoFocus', () => ({
+  useMapAutoFocus: jest.fn(),
+}));
 jest.mock('../../../store/slices/monitoringSlice', () => ({
   setSelectedUser: jest.fn((u: any) => ({ type: 'monitoring/setSelectedUser', payload: u })),
+  setLiveUsers: jest.fn((u: any) => ({ type: 'monitoring/setLiveUsers', payload: u })),
   setMonitoringFilters: jest.fn((f: any) => ({ type: 'monitoring/setMonitoringFilters', payload: f })),
   resetMonitoringFilters: jest.fn(() => ({ type: 'monitoring/resetMonitoringFilters' })),
   fetchUserDaySummary: jest.fn(() => ({ type: 'monitoring/fetchUserDaySummary' })),
+  fetchBoundaries: jest.fn(() => ({ type: 'monitoring/fetchBoundaries' })),
+  fetchStaffingSummary: jest.fn(() => ({ type: 'monitoring/fetchStaffingSummary' })),
+  updateLiveUser: jest.fn((u: any) => ({ type: 'monitoring/updateLiveUser', payload: u })),
+  setBoundaries: jest.fn((b: any) => ({ type: 'monitoring/setBoundaries', payload: b })),
 }));
 
 import React from 'react';
@@ -58,8 +87,14 @@ jest.mock('../../../components/monitoring/UserDetailSheet', () => ({
 jest.mock('../../../components/monitoring/LocationTrail', () => ({
   LocationTrail: () => null,
 }));
+jest.mock('../../../components/monitoring/BoundaryOverlay', () => ({
+  BoundaryOverlay: () => null,
+}));
 jest.mock('../../../components/modals/MonitoringFilterModal', () => ({
   MonitoringFilterModal: () => null,
+}));
+jest.mock('../../../components/modals/BoundaryDetailModal', () => ({
+  BoundaryDetailModal: () => null,
 }));
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -73,6 +108,7 @@ type MonitoringState = {
   isLoadingDaySummary: boolean;
   isLoading: boolean;
   error: string | null;
+  boundaries: any;
 };
 
 let mockMonitoringState: MonitoringState = {
@@ -84,6 +120,7 @@ let mockMonitoringState: MonitoringState = {
   isLoadingDaySummary: false,
   isLoading: false,
   error: null,
+  boundaries: null,
 };
 
 const mockDispatch = jest.fn();
@@ -114,6 +151,7 @@ const mockLiveUser1: LiveUser = {
   battery_level: 85,
   last_update: new Date().toISOString(),
   is_within_area: true,
+  outside_boundary: false,
   shift_id: 'shift-1',
   shift_name: 'Shift Pagi',
   shift_definition_id: null,
@@ -145,6 +183,7 @@ describe('MapDashboardScreen', () => {
       isLoadingDaySummary: false,
       isLoading: false,
       error: null,
+      boundaries: null,
     };
   });
 

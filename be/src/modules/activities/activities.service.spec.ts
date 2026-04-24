@@ -18,6 +18,7 @@ import { UpdateActivityDto } from './dto/update-activity.dto';
 import { UserRole } from '../users/entities/user.entity';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
+import { AuditLogService } from '../audit/audit.service';
 
 describe('ActivitiesService', () => {
   let module: TestingModule;
@@ -124,6 +125,10 @@ describe('ActivitiesService', () => {
         {
           provide: UsersService,
           useValue: mockUsersService,
+        },
+        {
+          provide: AuditLogService,
+          useValue: { log: jest.fn().mockResolvedValue({}) },
         },
       ],
     }).compile();

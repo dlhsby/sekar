@@ -35,7 +35,7 @@ describe('authApi', () => {
       const result = await login('worker1', 'password123');
 
       expect(apiClient.post).toHaveBeenCalledWith('/auth/login', {
-        username: 'worker1',
+        identifier: 'worker1',
         password: 'password123',
       });
       expect(result).toEqual(mockResponse);
@@ -56,7 +56,7 @@ describe('authApi', () => {
       const result = await login('', '');
 
       expect(apiClient.post).toHaveBeenCalledWith('/auth/login', {
-        username: '',
+        identifier: '',
         password: '',
       });
     });

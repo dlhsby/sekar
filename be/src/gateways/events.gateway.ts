@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../modules/users/entities/user.entity';
+import { UserAreasService } from '../modules/user-areas/user-areas.service';
 import {
   SubscribeAreaDto,
   UnsubscribeAreaDto,
@@ -49,7 +50,11 @@ import {
  */
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3001'],
+    // Read at connection time so CORS_ORIGIN env var is respected after dotenv loads
+    origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) => {
+      const allowed = process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3001'];
+      callback(null, !origin || allowed.includes(origin));
+    },
     credentials: true,
   },
   namespace: '/events',
@@ -67,6 +72,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly userAreasService: UserAreasService,
   ) {}
 
   /**
@@ -419,9 +425,21 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.logger.log(`Client ${client.id} auto-joined monitoring:rayon:${user.rayon_id}`);
       }
 
-      if (role === UserRole.KORLAP && user.area_id) {
-        client.join(`monitoring:area:${user.area_id}`);
-        this.logger.log(`Client ${client.id} auto-joined monitoring:area:${user.area_id}`);
+      if (role === UserRole.KORLAP) {
+        // Multi-area: join all assigned area rooms
+        const areaIds = await this.userAreasService.getPermanentAreaIds(userId);
+        if (areaIds.length > 0) {
+          for (const areaId of areaIds) {
+            client.join(`monitoring:area:${areaId}`);
+          }
+          this.logger.log(
+            `Client ${client.id} auto-joined ${areaIds.length} area rooms`,
+          );
+        } else if (user.area_id) {
+          // Fallback to legacy single area
+          client.join(`monitoring:area:${user.area_id}`);
+          this.logger.log(`Client ${client.id} auto-joined monitoring:area:${user.area_id}`);
+        }
       }
     } catch (error) {
       this.logger.warn(`Failed to auto-join rooms for user ${userId}: ${error.message}`);

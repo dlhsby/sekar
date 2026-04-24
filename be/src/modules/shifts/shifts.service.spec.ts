@@ -14,6 +14,7 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { AuditLogService } from '../audit/audit.service';
 
 describe('ShiftsService', () => {
   let module: TestingModule;
@@ -119,6 +120,10 @@ describe('ShiftsService', () => {
         {
           provide: StatusCalculatorService,
           useValue: mockStatusCalculator,
+        },
+        {
+          provide: AuditLogService,
+          useValue: { log: jest.fn().mockResolvedValue({}) },
         },
       ],
     }).compile();

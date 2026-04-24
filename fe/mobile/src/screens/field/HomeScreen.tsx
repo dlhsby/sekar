@@ -14,7 +14,7 @@ import { CLOCKABLE_ROLES } from '../../constants/roles';
 import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard } from '../../components/nb';
-import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal } from '../../components/modals';
+import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, LocationMapModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 // Fix 15: canonical import path is store/hooks (matches majority of screens)
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -55,6 +55,7 @@ export function HomeScreen(): React.JSX.Element {
   const [shiftModalVisible, setShiftModalVisible] = useState(false);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
+  const [locationMapVisible, setLocationMapVisible] = useState(false);
 
   // Issue 8: Track last announced minute for accessibility (announce every 5 minutes)
   const lastAnnouncedMinuteRef = useRef<number>(-1);
@@ -221,7 +222,11 @@ export function HomeScreen(): React.JSX.Element {
   }, []);
 
   const handleClockInOut = () => {
-    navigation.navigate('ClockInOut' as never);
+    if (currentShift?.is_overtime) {
+      navigation.navigate('OvertimeSubmit' as never);
+    } else {
+      navigation.navigate('ClockInOut' as never);
+    }
   };
 
   // Fix 10: handleViewActivities is wired to TodayActivitiesModal's onActivityPress
@@ -311,6 +316,7 @@ export function HomeScreen(): React.JSX.Element {
           <LocationStatusCard
             location={homeLocation}
             onRefresh={refreshHomeLocation}
+            onPress={() => setLocationMapVisible(true)}
           />
         )}
 
@@ -320,11 +326,20 @@ export function HomeScreen(): React.JSX.Element {
             onPress={() => setShiftModalVisible(true)}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel="Shift Aktif"
+            accessibilityLabel={currentShift.is_overtime ? 'Shift Lembur Aktif' : 'Shift Aktif'}
             accessibilityHint="Ketuk untuk melihat detail shift"
           >
-            <NBCard variant="elevated" style={styles.shiftCard}>
-              <Text style={styles.cardTitle}>Shift Aktif</Text>
+            <NBCard variant="elevated" style={[styles.shiftCard, currentShift.is_overtime && styles.shiftCardLembur]}>
+              <View style={styles.shiftCardTitleRow}>
+                <Text style={styles.shiftCardTitleText}>
+                  {currentShift.is_overtime ? 'Lembur Aktif' : 'Shift Aktif'}
+                </Text>
+                {currentShift.is_overtime && (
+                  <View style={styles.lemburBadge}>
+                    <Text style={styles.lemburBadgeText}>LEMBUR</Text>
+                  </View>
+                )}
+              </View>
               <Text
                 style={styles.timer}
                 accessibilityLabel={`Waktu shift berjalan: ${timer}`}
@@ -395,8 +410,9 @@ export function HomeScreen(): React.JSX.Element {
           </View>
         </NBCard>
 
-        {/* Empty state message if not assigned */}
-        {!assignedArea && !currentShift && (
+        {/* Empty state message if not assigned — hide for rayon-scoped roles */}
+        {!assignedArea && !currentShift &&
+          user?.role !== 'admin_data' && user?.role !== 'kepala_rayon' && (
           <NBCard style={styles.warningCard}>
             <Text style={styles.warningText}>
               Anda belum ditugaskan ke area manapun. Hubungi supervisor Anda.
@@ -410,9 +426,12 @@ export function HomeScreen(): React.JSX.Element {
       {user?.role && CLOCKABLE_ROLES.includes(user.role) && (
         <View style={styles.fab}>
           <NBButton
-            title={currentShift ? 'Clock Out' : 'Clock In'}
+            title={
+              !currentShift ? 'Clock In' :
+              currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'
+            }
             onPress={handleClockInOut}
-            variant="primary"
+            variant={currentShift ? 'danger' : 'primary'}
             size="lg"
             testID="clock-button"
           />
@@ -438,6 +457,12 @@ export function HomeScreen(): React.JSX.Element {
       onClose={() => setWorkHoursModalVisible(false)}
       shifts={todayShifts}
     />
+    <LocationMapModal
+      visible={locationMapVisible}
+      onClose={() => setLocationMapVisible(false)}
+      location={homeLocation}
+      area={currentShift?.area ?? assignedArea ?? undefined}
+    />
     </NBBackgroundPattern>
   );
 }
@@ -453,11 +478,39 @@ const styles = StyleSheet.create({
   content: {
     padding: nbSpacing.md,
     flexGrow: 1,
-    paddingBottom: 88, // Reserve space for fixed Clock button (button 56px + 16px gap + 16px bottom)
   },
   shiftCard: {
     marginBottom: nbSpacing.sm,
     padding: 12,
+  },
+  shiftCardLembur: {
+    borderColor: nbColors.warning,
+    borderWidth: 2,
+  },
+  shiftCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: nbSpacing.sm,
+  },
+  lemburBadge: {
+    backgroundColor: nbColors.warning,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: nbColors.black,
+  },
+  lemburBadgeText: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.black,
+    letterSpacing: 0.5,
+  },
+  shiftCardTitleText: {
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
   },
   cardTitle: {
     fontSize: nbTypography.fontSize.base,
@@ -553,11 +606,8 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   fab: {
-    position: 'absolute',
-    bottom: nbSpacing.md,
-    left: nbSpacing.md,
-    right: nbSpacing.md,
-    zIndex: 10,
+    padding: nbSpacing.md,
+    paddingTop: nbSpacing.sm,
   },
   warningCard: {
     // Fix 13: Use withAlpha utility instead of hex string concatenation

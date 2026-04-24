@@ -21,7 +21,7 @@ describe('Auth API', () => {
   describe('login', () => {
     it('should successfully login with valid credentials', async () => {
       const credentials: LoginCredentials = {
-        username: 'admin',
+        identifier: 'admin',
         password: 'admin123',
       };
 
@@ -47,7 +47,7 @@ describe('Auth API', () => {
 
     it('should handle invalid credentials', async () => {
       const credentials: LoginCredentials = {
-        username: 'invalid',
+        identifier: 'invalid',
         password: 'wrong',
       };
 
@@ -62,7 +62,7 @@ describe('Auth API', () => {
 
     it('should handle network errors', async () => {
       const credentials: LoginCredentials = {
-        username: 'admin',
+        identifier: 'admin',
         password: 'admin123',
       };
 
@@ -73,7 +73,7 @@ describe('Auth API', () => {
 
     it('should handle server errors', async () => {
       const credentials: LoginCredentials = {
-        username: 'admin',
+        identifier: 'admin',
         password: 'admin123',
       };
 

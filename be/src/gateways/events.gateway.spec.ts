@@ -19,6 +19,7 @@ import {
 } from './dto/events.dto';
 import { TrackingStatus } from '../modules/monitoring/entities/user-tracking-status.entity';
 import { User, UserRole } from '../modules/users/entities/user.entity';
+import { UserAreasService } from '../modules/user-areas/user-areas.service';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
@@ -69,6 +70,10 @@ describe('EventsGateway', () => {
           useValue: {
             findOne: jest.fn().mockResolvedValue(null),
           },
+        },
+        {
+          provide: UserAreasService,
+          useValue: { getPermanentAreaIds: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();

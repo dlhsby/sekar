@@ -20,5 +20,6 @@ export type { LocationState } from './useClockInOut';
 export { useActivityForm } from './useActivityForm';
 export type { FormState, FormErrors } from './useActivityForm';
 export { useMapDashboard } from './useMapDashboard';
+export { useMapAutoFocus } from './useMapAutoFocus';
 export { useHomeLocation } from './useHomeLocation';
 export type { HomeLocationState } from './useHomeLocation';

@@ -72,6 +72,7 @@ type Props = {
 export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
   const { canSubmitOvertime, canApproveOvertime } = useRoleAccess();
   const user = useAppSelector((state) => state.auth.user);
+  const currentShift = useAppSelector((state) => state.shift.currentShift);
 
   // List state
   const [allOvertimes, setAllOvertimes] = useState<Overtime[]>([]);
@@ -194,6 +195,15 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
     (overtimeId: string) => navigation.navigate('OvertimeDetail', { overtimeId }),
     [navigation],
   );
+
+  // Detect active overtime from list (status in_progress = clock-in already done)
+  const activeOvertime = useMemo(
+    () => allOvertimes.find((o) => o.status === 'in_progress') ?? null,
+    [allOvertimes],
+  );
+
+  // Active regular (non-overtime) shift — user must clock out before starting overtime
+  const hasActiveRegularShift = !!(currentShift && !currentShift.is_overtime);
 
   const handleSubmit = useCallback(() => navigation.navigate('OvertimeSubmit'), [navigation]);
 
@@ -349,13 +359,39 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
         {/* FAB */}
         {canSubmitOvertime && (
           <View style={styles.fab}>
-            <NBButton
-              title="+ Ajukan Lembur"
-              onPress={handleSubmit}
-              variant="primary"
-              size="lg"
-              fullWidth
-            />
+            {activeOvertime ? (
+              // Active overtime in progress — go to end-overtime form
+              <NBButton
+                title="Clock Out Lembur"
+                onPress={handleSubmit}
+                variant="danger"
+                size="lg"
+                fullWidth
+              />
+            ) : hasActiveRegularShift ? (
+              // Regular shift still open — block new overtime
+              <>
+                <Text style={styles.fabBlockedHint}>
+                  Selesaikan Clock Out shift biasa terlebih dahulu
+                </Text>
+                <NBButton
+                  title="+ Ajukan Lembur"
+                  onPress={() => {}}
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  disabled
+                />
+              </>
+            ) : (
+              <NBButton
+                title="+ Ajukan Lembur"
+                onPress={handleSubmit}
+                variant="primary"
+                size="lg"
+                fullWidth
+              />
+            )}
           </View>
         )}
 
@@ -509,6 +545,19 @@ const styles = StyleSheet.create({
     left: nbSpacing.md,
     right: nbSpacing.md,
     zIndex: 10,
+  },
+  fabBlockedHint: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.warning,
+    textAlign: 'center',
+    marginBottom: nbSpacing.xs,
+    backgroundColor: nbColors.white,
+    borderWidth: 1,
+    borderColor: nbColors.warning,
+    borderRadius: nbBorderRadius.sm,
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
   },
   footerLoader: {
     paddingVertical: nbSpacing.md,

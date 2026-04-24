@@ -56,5 +56,7 @@ export class AuthResponseDto {
     role: UserRole;
     area_id: string | null;
     rayon_id: string | null;
+    phone_number: string | null;
+    profile_picture_url: string | null;
   };
 }

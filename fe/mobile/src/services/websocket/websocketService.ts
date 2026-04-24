@@ -17,42 +17,25 @@
 
 import { getToken } from '../storage/secureStorage';
 import config from '../../constants/config';
-import type { UserStatusChangedEvent, UserAreaEvent } from '../../types/models.types';
+import type { UserStatusChangedEvent, UserAreaEvent, UserReassignedEvent, AreaStaffingChangedEvent } from '../../types/models.types';
 
 /**
  * Event type enumeration (matches backend EventType)
  * Phase 2D: Added user:status-changed, user:left-area, user:entered-area, user:location
  */
 export enum EventType {
-  WORKER_LOCATION = 'worker:location',
-  WORKER_CLOCK_IN = 'worker:clock-in',
-  WORKER_CLOCK_OUT = 'worker:clock-out',
+  USER_CLOCK_IN = 'user:clock-in',
+  USER_CLOCK_OUT = 'user:clock-out',
   AREA_STAFFING = 'area:staffing',
   TASK_ASSIGNED = 'task:assigned',
   TASK_COMPLETED = 'task:completed',
-  // Phase 2D: New monitoring events
+  // Phase 2D: Monitoring events
   USER_LOCATION = 'user:location',
   USER_STATUS_CHANGED = 'user:status-changed',
   USER_LEFT_AREA = 'user:left-area',
   USER_ENTERED_AREA = 'user:entered-area',
-}
-
-/**
- * Worker location event data (legacy, use UserLocationEvent for Phase 2D)
- */
-export interface WorkerLocationEvent {
-  worker_id: string;
-  worker_name: string;
-  role: string;
-  shift_id: string;
-  area_id: string;
-  area_name: string;
-  rayon_id?: string;
-  latitude: number;
-  longitude: number;
-  accuracy?: number;
-  battery_level?: number;
-  timestamp: Date | string;
+  USER_REASSIGNED = 'user:reassigned',
+  AREA_STAFFING_CHANGED = 'area:staffing-changed',
 }
 
 /**
@@ -63,7 +46,7 @@ export interface UserLocationEvent {
   user_name: string;
   role: string;
   shift_id: string;
-  area_id: string | null;
+  area_id: string;
   area_name: string;
   rayon_id?: string;
   latitude: number;
@@ -72,14 +55,14 @@ export interface UserLocationEvent {
   battery_level?: number;
   status: string;
   is_within_area: boolean;
-  shift_name?: string;
+  shift_name: string;
   timestamp: Date | string;
 }
 
 /**
- * Worker clock-in event data
+ * User clock-in event data
  */
-export interface WorkerClockInEvent {
+export interface UserClockInEvent {
   worker_id: string;
   worker_name: string;
   role: string;
@@ -93,9 +76,9 @@ export interface WorkerClockInEvent {
 }
 
 /**
- * Worker clock-out event data
+ * User clock-out event data
  */
-export interface WorkerClockOutEvent {
+export interface UserClockOutEvent {
   worker_id: string;
   worker_name: string;
   shift_id: string;
@@ -441,33 +424,17 @@ class WebSocketService {
   }
 
   /**
-   * Add listener for worker location updates
-   *
-   * @param handler - Callback function to handle location updates
-   * @returns Unsubscribe function
+   * Add listener for user clock-in events
    */
-  onWorkerLocation(handler: EventHandler<WorkerLocationEvent>): () => void {
-    return this.addEventListener(EventType.WORKER_LOCATION, handler);
+  onUserClockIn(handler: EventHandler<UserClockInEvent>): () => void {
+    return this.addEventListener(EventType.USER_CLOCK_IN, handler);
   }
 
   /**
-   * Add listener for worker clock-in events
-   *
-   * @param handler - Callback function to handle clock-in events
-   * @returns Unsubscribe function
+   * Add listener for user clock-out events
    */
-  onWorkerClockIn(handler: EventHandler<WorkerClockInEvent>): () => void {
-    return this.addEventListener(EventType.WORKER_CLOCK_IN, handler);
-  }
-
-  /**
-   * Add listener for worker clock-out events
-   *
-   * @param handler - Callback function to handle clock-out events
-   * @returns Unsubscribe function
-   */
-  onWorkerClockOut(handler: EventHandler<WorkerClockOutEvent>): () => void {
-    return this.addEventListener(EventType.WORKER_CLOCK_OUT, handler);
+  onUserClockOut(handler: EventHandler<UserClockOutEvent>): () => void {
+    return this.addEventListener(EventType.USER_CLOCK_OUT, handler);
   }
 
   /**
@@ -540,6 +507,20 @@ class WebSocketService {
    */
   onUserEnteredArea(handler: EventHandler<UserAreaEvent>): () => void {
     return this.addEventListener(EventType.USER_ENTERED_AREA, handler);
+  }
+
+  /**
+   * Add listener for user reassigned events
+   */
+  onUserReassigned(handler: EventHandler<UserReassignedEvent>): () => void {
+    return this.addEventListener(EventType.USER_REASSIGNED, handler);
+  }
+
+  /**
+   * Add listener for area staffing changed events
+   */
+  onAreaStaffingChanged(handler: EventHandler<AreaStaffingChangedEvent>): () => void {
+    return this.addEventListener(EventType.AREA_STAFFING_CHANGED, handler);
   }
 
   /**

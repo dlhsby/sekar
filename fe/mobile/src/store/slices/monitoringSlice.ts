@@ -11,6 +11,7 @@ import type {
   LocationHistory,
   StaffingSummaryItem,
   TrackingStatus,
+  BoundariesResponse,
 } from '../../types/models.types';
 import type { MonitoringFilters } from '../../types/api.types';
 import {
@@ -18,6 +19,7 @@ import {
   getUserDaySummary,
   getUserLocationHistory,
   getStaffingSummary,
+  getBoundaries,
 } from '../../services/api/monitoringApi';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -40,6 +42,10 @@ interface MonitoringState {
   userDaySummary: UserDaySummary | null;
   locationHistory: LocationHistory | null;
   staffingSummary: StaffingSummaryItem[];
+  boundaries: BoundariesResponse | null;
+  isLoadingBoundaries: boolean;
+  currentDayType: string | null;
+  currentDayTypeLabel: string | null;
   statusCounts: StatusCounts;
   isLoading: boolean;
   isLoadingDaySummary: boolean;
@@ -66,6 +72,10 @@ const initialState: MonitoringState = {
   userDaySummary: null,
   locationHistory: null,
   staffingSummary: [],
+  boundaries: null,
+  isLoadingBoundaries: false,
+  currentDayType: null,
+  currentDayTypeLabel: null,
   statusCounts: initialStatusCounts,
   isLoading: false,
   isLoadingDaySummary: false,
@@ -163,9 +173,51 @@ export const fetchStaffingSummary = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(response.error);
       }
-      return response.data?.items ?? [];
+      return {
+        items: response.data?.items ?? [],
+        current_day_type: (response.data as any)?.current_day_type ?? null,
+        current_day_type_label: (response.data as any)?.current_day_type_label ?? null,
+      };
     } catch (err) {
       return rejectWithValue('Gagal memuat ringkasan kepegawaian');
+    }
+  },
+);
+
+export const fetchBoundaries = createAsyncThunk(
+  'monitoring/fetchBoundaries',
+  async (
+    filters: { rayon_id?: string } | undefined,
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await getBoundaries(filters?.rayon_id);
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      // Map backend staffing_summary → mobile staffing field + compute totals
+      const data = response.data;
+      if (data?.rayons) {
+        for (const rayon of data.rayons) {
+          for (const area of rayon.areas) {
+            const raw = area as any;
+            if (!area.staffing && raw.staffing_summary) {
+              area.staffing = raw.staffing_summary;
+            }
+            if (area.staffing) {
+              area.total_active = area.staffing.reduce((s, i) => s + i.active, 0);
+              area.total_required = area.staffing.reduce((s, i) => s + i.required, 0);
+            } else {
+              area.staffing = [];
+              area.total_active = area.assigned_count ?? 0;
+              area.total_required = 0;
+            }
+          }
+        }
+      }
+      return data ?? null;
+    } catch (err) {
+      return rejectWithValue('Gagal memuat batas wilayah');
     }
   },
 );
@@ -238,6 +290,10 @@ const monitoringSlice = createSlice({
       state.staffingSummary = action.payload;
     },
 
+    setBoundaries(state, action: PayloadAction<BoundariesResponse | null>) {
+      state.boundaries = action.payload;
+    },
+
     setStatusCounts(state, action: PayloadAction<StatusCounts>) {
       state.statusCounts = action.payload;
     },
@@ -305,10 +361,26 @@ const monitoringSlice = createSlice({
     });
     builder.addCase(fetchStaffingSummary.fulfilled, (state, action) => {
       state.isLoadingStaffing = false;
-      state.staffingSummary = action.payload ?? [];
+      if (action.payload) {
+        state.staffingSummary = action.payload.items;
+        state.currentDayType = action.payload.current_day_type;
+        state.currentDayTypeLabel = action.payload.current_day_type_label;
+      }
     });
     builder.addCase(fetchStaffingSummary.rejected, state => {
       state.isLoadingStaffing = false;
+    });
+
+    // fetchBoundaries
+    builder.addCase(fetchBoundaries.pending, state => {
+      state.isLoadingBoundaries = true;
+    });
+    builder.addCase(fetchBoundaries.fulfilled, (state, action) => {
+      state.isLoadingBoundaries = false;
+      state.boundaries = action.payload ?? null;
+    });
+    builder.addCase(fetchBoundaries.rejected, state => {
+      state.isLoadingBoundaries = false;
     });
   },
 });
@@ -325,6 +397,7 @@ export const {
   setUserDaySummary,
   setLocationHistory,
   setStaffingSummary,
+  setBoundaries,
   setStatusCounts,
   setLoading,
   setError,

@@ -8,9 +8,14 @@ import {
   Delete,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   ParseUUIDPipe,
   HttpStatus,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -19,6 +24,7 @@ import {
   ApiParam,
   ApiBody,
   ApiQuery,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -324,6 +330,47 @@ export class UsersController {
    * @throws UnauthorizedException if current password is incorrect
    * @throws BadRequestException if new password is same as current
    */
+  @Post(':id/profile-picture')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload profile picture' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'Profile picture uploaded' })
+  async uploadProfilePicture(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser() currentUser: User,
+  ): Promise<{ profile_picture_url: string }> {
+    const isAdmin = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN].includes(
+      currentUser.role as UserRole,
+    );
+    if (currentUser.id !== id && !isAdmin) {
+      throw new ForbiddenException('You can only update your own profile picture');
+    }
+
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Only JPEG, PNG, and WebP images are allowed');
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new BadRequestException('File size must not exceed 5MB');
+    }
+
+    // Store as base64 data URI directly — avoids LocalStack URL accessibility issues on physical devices
+    const base64 = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
+    await this.usersService.updateProfilePicture(id, base64);
+
+    return { profile_picture_url: base64 };
+  }
+
   @Patch('me/change-password')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({

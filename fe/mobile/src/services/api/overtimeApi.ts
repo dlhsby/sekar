@@ -6,6 +6,8 @@
 import { get, post, patch } from './apiClient';
 import type {
   CreateOvertimeRequest,
+  StartOvertimeRequest,
+  EndOvertimeRequest,
   RejectOvertimeRequest,
   OvertimeFilter,
   OvertimeListResponse,
@@ -68,6 +70,36 @@ export async function rejectOvertime(
   return patch<Overtime>(`/overtime/${id}/reject`, body);
 }
 
+/**
+ * Start an overtime shift (Phase 2E: clock-in/out redesign)
+ * @param dto - GPS location and optional activity details
+ * @returns The newly created overtime record in 'in_progress' status
+ */
+export async function startOvertime(
+  dto: StartOvertimeRequest,
+): Promise<ApiResponse<Overtime>> {
+  return post<Overtime>('/overtime/start', dto);
+}
+
+/**
+ * End an active overtime shift (Phase 2E: clock-in/out redesign)
+ * @param dto - GPS location and optional notes/photos
+ * @returns The completed overtime record
+ */
+export async function endOvertime(
+  dto: EndOvertimeRequest,
+): Promise<ApiResponse<Overtime>> {
+  return post<Overtime>('/overtime/end', dto);
+}
+
+/**
+ * Get the currently active (in_progress) overtime for the authenticated user (Phase 2E)
+ * @returns The active overtime record, or null if none is active
+ */
+export async function getActiveOvertime(): Promise<ApiResponse<Overtime | null>> {
+  return get<Overtime | null>('/overtime/active');
+}
+
 export default {
   submitOvertime,
   getMyOvertimes,
@@ -75,4 +107,7 @@ export default {
   getOvertimeById,
   approveOvertime,
   rejectOvertime,
+  startOvertime,
+  endOvertime,
+  getActiveOvertime,
 };

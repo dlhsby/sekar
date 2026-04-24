@@ -37,6 +37,8 @@ describe('LocationLog Entity', () => {
       username: 'user1',
       password_hash: 'hashed',
       full_name: 'User One',
+      phone_number: null,
+      profile_picture_url: null,
       role: UserRole.SATGAS,
       is_active: true,
       created_at: new Date(),

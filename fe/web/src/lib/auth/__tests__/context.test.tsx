@@ -131,7 +131,7 @@ describe('Auth Context', () => {
     it('should successfully login user', async () => {
       mockPathname = '/login';
       const credentials: LoginCredentials = {
-        username: 'admin',
+        identifier: 'admin',
         password: 'admin123',
       };
 
@@ -163,7 +163,7 @@ describe('Auth Context', () => {
     it('should set error on login failure', async () => {
       mockPathname = '/login';
       const credentials: LoginCredentials = {
-        username: 'invalid',
+        identifier: 'invalid',
         password: 'wrong',
       };
 
@@ -192,7 +192,7 @@ describe('Auth Context', () => {
     it('should set loading state during login', async () => {
       mockPathname = '/login';
       const credentials: LoginCredentials = {
-        username: 'admin',
+        identifier: 'admin',
         password: 'admin123',
       };
 
@@ -334,7 +334,7 @@ describe('Auth Context', () => {
       await act(async () => {
         try {
           await result.current.login({
-            username: 'invalid',
+            identifier: 'invalid',
             password: 'wrong',
           });
         } catch (err) {

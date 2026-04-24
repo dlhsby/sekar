@@ -9,13 +9,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Overtime, OvertimeStatus } from './entities/overtime.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { StartOvertimeDto } from './dto/start-overtime.dto';
+import { EndOvertimeDto } from './dto/end-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
 import { OvertimeFilterDto } from './dto/overtime-filter.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import { OVERTIME_SUBMITTERS } from '../users/constants/role-groups';
+import { OVERTIME_SUBMITTERS, CLOCKABLE_ROLES } from '../users/constants/role-groups';
 import { ShiftsService } from '../shifts/shifts.service';
+import { ClockInDto } from '../shifts/dto/clock-in.dto';
+import { ClockOutDto } from '../shifts/dto/clock-out.dto';
+import { AuditLogService } from '../audit/audit.service';
 
 const ALLOWED_SORT_FIELDS: Record<string, string> = {
   created_at: 'overtime.created_at',
@@ -34,7 +39,133 @@ export class OvertimeService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
     private shiftsService: ShiftsService,
+    private readonly auditLogService: AuditLogService,
   ) {}
+
+  async startOvertime(dto: StartOvertimeDto, user: User): Promise<Overtime> {
+    if (!CLOCKABLE_ROLES.includes(user.role as any)) {
+      throw new ForbiddenException('Your role cannot start overtime');
+    }
+
+    // Check no active normal shift
+    const activeShift = await this.shiftsService.findActiveShift(user.id);
+    if (activeShift && !activeShift.is_overtime) {
+      throw new BadRequestException('Must end normal shift before starting overtime');
+    }
+
+    // Check no active overtime
+    const activeOvertime = await this.overtimeRepo.findOne({
+      where: { user_id: user.id, status: OvertimeStatus.IN_PROGRESS },
+    });
+    if (activeOvertime) {
+      throw new BadRequestException('Already have active overtime');
+    }
+
+    // Create overtime record
+    const overtime = this.overtimeRepo.create({
+      user_id: user.id,
+      area_id: (await this.shiftsService.getActiveArea(user.id))?.id || user.area_id || undefined,
+      start_datetime: new Date(),
+      end_datetime: null,
+      status: OvertimeStatus.IN_PROGRESS,
+      activity_type_id: null,
+      reason: dto.reason,
+      description: null,
+      photo_urls: [],
+      gps_lat: dto.gps_lat,
+      gps_lng: dto.gps_lng,
+    });
+
+    const savedOvertime = await this.overtimeRepo.save(overtime);
+
+    // Clock in via shifts service
+    const clockInDto: ClockInDto = {
+      gps_lat: dto.gps_lat,
+      gps_lng: dto.gps_lng,
+      selfie_photo: dto.selfie_photo,
+    };
+    const shift = await this.shiftsService.clockIn(user.id, clockInDto, true);
+
+    // Link shift to overtime
+    savedOvertime.shift_id = shift.id;
+    await this.overtimeRepo.save(savedOvertime);
+
+    this.logger.log(`Overtime started by user ${user.id}: ${savedOvertime.id}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'overtime',
+        entity_id: savedOvertime.id,
+        action: 'start',
+        actor_id: user.id,
+        new_value: { status: OvertimeStatus.IN_PROGRESS, shift_id: savedOvertime.shift_id },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
+    return savedOvertime;
+  }
+
+  async endOvertime(dto: EndOvertimeDto, user: User): Promise<Overtime> {
+    const overtime = await this.overtimeRepo.findOne({
+      where: { user_id: user.id, status: OvertimeStatus.IN_PROGRESS },
+      relations: ['activityType', 'user', 'area'],
+    });
+
+    if (!overtime) {
+      throw new NotFoundException('No active overtime found');
+    }
+
+    // Validate activity type
+    const actType = await this.activityTypeRepo.findOne({
+      where: { id: dto.activity_type_id, is_active: true },
+    });
+    if (!actType) {
+      throw new BadRequestException('Activity type not found');
+    }
+    if (!actType.applicable_roles.includes(user.role)) {
+      throw new ForbiddenException(`Activity type ${actType.name} is not available for your role`);
+    }
+
+    // Clock out the overtime shift
+    if (overtime.shift_id) {
+      const clockOutDto: ClockOutDto = {
+        gps_lat: dto.gps_lat,
+        gps_lng: dto.gps_lng,
+        selfie_photo: dto.selfie_photo,
+      };
+      await this.shiftsService.clockOut(user.id, clockOutDto);
+    }
+
+    // Update overtime record
+    overtime.end_datetime = new Date();
+    overtime.status = OvertimeStatus.PENDING;
+    overtime.activity_type_id = dto.activity_type_id;
+    overtime.description = dto.description;
+    overtime.photo_urls = dto.photo_urls;
+
+    const saved = await this.overtimeRepo.save(overtime);
+    this.logger.log(`Overtime ended by user ${user.id}: ${overtime.id}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'overtime',
+        entity_id: overtime.id,
+        action: 'end',
+        actor_id: user.id,
+        old_value: { status: OvertimeStatus.IN_PROGRESS },
+        new_value: { status: OvertimeStatus.PENDING, activity_type_id: dto.activity_type_id },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
+    return saved;
+  }
+
+  async getActiveOvertime(userId: string): Promise<Overtime | null> {
+    return this.overtimeRepo.findOne({
+      where: { user_id: userId, status: OvertimeStatus.IN_PROGRESS },
+      relations: ['activityType', 'area', 'shift'],
+    });
+  }
 
   async submit(userId: string, userRole: UserRole, dto: CreateOvertimeDto): Promise<Overtime> {
     if (!OVERTIME_SUBMITTERS.includes(userRole as any)) {
@@ -100,6 +231,18 @@ export class OvertimeService {
 
     const saved = await this.overtimeRepo.save(overtime);
     this.logger.log(`Overtime ${overtimeId} approved by ${approverId}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'overtime',
+        entity_id: overtimeId,
+        action: 'approve',
+        actor_id: approverId,
+        old_value: { status: OvertimeStatus.PENDING },
+        new_value: { status: OvertimeStatus.APPROVED, approved_by: approverId },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
     return saved;
   }
 
@@ -125,6 +268,18 @@ export class OvertimeService {
 
     const saved = await this.overtimeRepo.save(overtime);
     this.logger.log(`Overtime ${overtimeId} rejected by ${approverId}`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'overtime',
+        entity_id: overtimeId,
+        action: 'reject',
+        actor_id: approverId,
+        old_value: { status: OvertimeStatus.PENDING },
+        new_value: { status: OvertimeStatus.REJECTED, rejection_reason: dto.reason },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
     return saved;
   }
 
@@ -234,6 +389,13 @@ export class OvertimeService {
       ) {
         throw new ForbiddenException('You can only approve overtime for your rayon');
       }
+    } else if (approver.role === UserRole.TOP_MANAGEMENT) {
+      if (submitterRole !== 'kepala_rayon') {
+        throw new ForbiddenException(
+          'Top management can only approve overtime from kepala_rayon',
+        );
+      }
+      // No area/rayon scope check — top_management has city-wide visibility
     } else {
       throw new ForbiddenException('You do not have authority to approve overtime');
     }
@@ -263,7 +425,7 @@ export class OvertimeService {
   private async findOneOrFail(overtimeId: string): Promise<Overtime> {
     const overtime = await this.overtimeRepo.findOne({
       where: { id: overtimeId },
-      relations: ['activityType', 'user', 'area', 'approver'],
+      relations: ['activityType', 'user', 'area', 'approver', 'shift'],
     });
     if (!overtime) {
       throw new NotFoundException('Overtime not found');

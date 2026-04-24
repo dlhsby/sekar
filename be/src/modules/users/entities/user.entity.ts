@@ -51,8 +51,11 @@ export class User {
   @Column({ length: 100 })
   full_name: string;
 
-  @Column({ length: 20, nullable: true })
-  phone?: string;
+  @Column({ name: 'phone_number', type: 'varchar', length: 20, nullable: true })
+  phone_number: string | null;
+
+  @Column({ name: 'profile_picture_url', type: 'text', nullable: true })
+  profile_picture_url: string | null;
 
   @Column({
     type: 'varchar',

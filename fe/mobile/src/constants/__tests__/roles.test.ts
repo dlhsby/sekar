@@ -41,30 +41,34 @@ describe('Role Constants', () => {
   });
 
   describe('CLOCKABLE_ROLES', () => {
-    it('should include only field roles with area assignments (satgas, linmas, korlap)', () => {
+    it('should include all 5 clockable roles matching backend', () => {
       expect(CLOCKABLE_ROLES).toEqual([
         'satgas',
         'linmas',
         'korlap',
+        'admin_data',
+        'kepala_rayon',
       ]);
-      expect(CLOCKABLE_ROLES).toHaveLength(3);
+      expect(CLOCKABLE_ROLES).toHaveLength(5);
     });
 
-    it('should not include admin_data or kepala_rayon', () => {
-      expect(CLOCKABLE_ROLES).not.toContain('admin_data');
-      expect(CLOCKABLE_ROLES).not.toContain('kepala_rayon');
+    it('should not include management/system roles', () => {
+      expect(CLOCKABLE_ROLES).not.toContain('top_management');
+      expect(CLOCKABLE_ROLES).not.toContain('admin_system');
+      expect(CLOCKABLE_ROLES).not.toContain('superadmin');
     });
   });
 
   describe('ACTIVITY_SUBMITTERS', () => {
-    it('should include satgas, linmas, korlap, and admin_data', () => {
+    it('should include satgas, linmas, korlap, admin_data, and kepala_rayon', () => {
       expect(ACTIVITY_SUBMITTERS).toEqual([
         'satgas',
         'linmas',
         'korlap',
         'admin_data',
+        'kepala_rayon',
       ]);
-      expect(ACTIVITY_SUBMITTERS).toHaveLength(4);
+      expect(ACTIVITY_SUBMITTERS).toHaveLength(5);
     });
   });
 
@@ -94,16 +98,16 @@ describe('Role Constants', () => {
   });
 
   describe('OVERTIME_SUBMITTERS', () => {
-    it('should include satgas, linmas, korlap, and admin_data', () => {
-      expect(OVERTIME_SUBMITTERS).toEqual(['satgas', 'linmas', 'korlap', 'admin_data']);
-      expect(OVERTIME_SUBMITTERS).toHaveLength(4);
+    it('should include satgas, linmas, korlap, admin_data, and kepala_rayon', () => {
+      expect(OVERTIME_SUBMITTERS).toEqual(['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon']);
+      expect(OVERTIME_SUBMITTERS).toHaveLength(5);
     });
   });
 
   describe('OVERTIME_APPROVERS', () => {
-    it('should include korlap, kepala_rayon, admin_system, and superadmin', () => {
-      expect(OVERTIME_APPROVERS).toEqual(['korlap', 'kepala_rayon', 'admin_system', 'superadmin']);
-      expect(OVERTIME_APPROVERS).toHaveLength(4);
+    it('should include korlap, kepala_rayon, and top_management', () => {
+      expect(OVERTIME_APPROVERS).toEqual(['korlap', 'kepala_rayon', 'top_management']);
+      expect(OVERTIME_APPROVERS).toHaveLength(3);
     });
   });
 
@@ -140,11 +144,11 @@ describe('Role Constants', () => {
       expect(isClockableRole('satgas')).toBe(true);
       expect(isClockableRole('linmas')).toBe(true);
       expect(isClockableRole('korlap')).toBe(true);
+      expect(isClockableRole('admin_data')).toBe(true);
+      expect(isClockableRole('kepala_rayon')).toBe(true);
     });
 
     it('should return false for non-clockable roles', () => {
-      expect(isClockableRole('admin_data')).toBe(false);
-      expect(isClockableRole('kepala_rayon')).toBe(false);
       expect(isClockableRole('top_management')).toBe(false);
       expect(isClockableRole('admin_system')).toBe(false);
       expect(isClockableRole('superadmin')).toBe(false);
@@ -157,10 +161,10 @@ describe('Role Constants', () => {
       expect(canSubmitActivities('linmas')).toBe(true);
       expect(canSubmitActivities('korlap')).toBe(true);
       expect(canSubmitActivities('admin_data')).toBe(true);
+      expect(canSubmitActivities('kepala_rayon')).toBe(true);
     });
 
     it('should return false for non-submitter roles', () => {
-      expect(canSubmitActivities('kepala_rayon')).toBe(false);
       expect(canSubmitActivities('top_management')).toBe(false);
       expect(canSubmitActivities('admin_system')).toBe(false);
       expect(canSubmitActivities('superadmin')).toBe(false);
@@ -205,10 +209,10 @@ describe('Role Constants', () => {
       expect(canSubmitOvertime('linmas')).toBe(true);
       expect(canSubmitOvertime('korlap')).toBe(true);
       expect(canSubmitOvertime('admin_data')).toBe(true);
+      expect(canSubmitOvertime('kepala_rayon')).toBe(true);
     });
 
     it('should return false for non-submitter roles', () => {
-      expect(canSubmitOvertime('kepala_rayon')).toBe(false);
       expect(canSubmitOvertime('top_management')).toBe(false);
       expect(canSubmitOvertime('admin_system')).toBe(false);
       expect(canSubmitOvertime('superadmin')).toBe(false);
@@ -216,18 +220,18 @@ describe('Role Constants', () => {
   });
 
   describe('canApproveOvertime', () => {
-    it('should return true for korlap, kepala_rayon, admin_system, and superadmin', () => {
+    it('should return true for korlap, kepala_rayon, and top_management', () => {
       expect(canApproveOvertime('korlap')).toBe(true);
       expect(canApproveOvertime('kepala_rayon')).toBe(true);
-      expect(canApproveOvertime('admin_system')).toBe(true);
-      expect(canApproveOvertime('superadmin')).toBe(true);
+      expect(canApproveOvertime('top_management')).toBe(true);
     });
 
     it('should return false for all other roles', () => {
       expect(canApproveOvertime('satgas')).toBe(false);
       expect(canApproveOvertime('linmas')).toBe(false);
       expect(canApproveOvertime('admin_data')).toBe(false);
-      expect(canApproveOvertime('top_management')).toBe(false);
+      expect(canApproveOvertime('admin_system')).toBe(false);
+      expect(canApproveOvertime('superadmin')).toBe(false);
     });
   });
 

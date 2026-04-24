@@ -4,9 +4,7 @@
  */
 
 import {
-  calculateUserStatus,
   calculateMapRegion,
-  getStatusSummary,
   filterUsersByArea,
   getAreaCircles,
   clusterUsers,
@@ -107,37 +105,6 @@ const mockUserNoLocation: ActiveUserData = {
 };
 
 describe('mapUtils', () => {
-  describe('calculateUserStatus', () => {
-    it('should return "active" for worker within 80% of radius', () => {
-      const status = calculateUserStatus(mockUser1, mockAreas);
-      expect(status).toBe('active');
-    });
-
-    it('should return "warning" for worker between 80-100% of radius', () => {
-      const status = calculateUserStatus(mockUser2, mockAreas);
-      expect(status).toBe('warning');
-    });
-
-    it('should return "outside" for worker beyond radius', () => {
-      const status = calculateUserStatus(mockUser3, mockAreas);
-      expect(status).toBe('outside');
-    });
-
-    it('should return "outside" for worker with no location', () => {
-      const status = calculateUserStatus(mockUserNoLocation, mockAreas);
-      expect(status).toBe('outside');
-    });
-
-    it('should return "outside" for worker with area not in list', () => {
-      const workerUnknownArea = {
-        ...mockUser1,
-        shift: { ...mockUser1.shift, area: { id: 999, name: 'Unknown' } },
-      };
-      const status = calculateUserStatus(workerUnknownArea, mockAreas);
-      expect(status).toBe('outside');
-    });
-  });
-
   describe('calculateMapRegion', () => {
     it('should calculate region for single worker', () => {
       const workers = [mockUser1];
@@ -207,38 +174,6 @@ describe('mapUtils', () => {
       // Should have minimum delta
       expect(region.latitudeDelta).toBeGreaterThanOrEqual(0.01);
       expect(region.longitudeDelta).toBeGreaterThanOrEqual(0.01);
-    });
-  });
-
-  describe('getStatusSummary', () => {
-    it('should count workers by status', () => {
-      const workers = [mockUser1, mockUser2, mockUser3, mockUserNoLocation];
-      const summary = getStatusSummary(workers, mockAreas);
-
-      expect(summary.total).toBe(4);
-      expect(summary.active).toBe(1);
-      expect(summary.warning).toBe(1);
-      expect(summary.outside).toBe(2);
-    });
-
-    it('should return zero counts for empty worker list', () => {
-      const workers: ActiveUserData[] = [];
-      const summary = getStatusSummary(workers, mockAreas);
-
-      expect(summary.total).toBe(0);
-      expect(summary.active).toBe(0);
-      expect(summary.warning).toBe(0);
-      expect(summary.outside).toBe(0);
-    });
-
-    it('should handle all workers in same status', () => {
-      const workers = [mockUser1, { ...mockUser1, id: 2 }, { ...mockUser1, id: 3 }];
-      const summary = getStatusSummary(workers, mockAreas);
-
-      expect(summary.total).toBe(3);
-      expect(summary.active).toBe(3);
-      expect(summary.warning).toBe(0);
-      expect(summary.outside).toBe(0);
     });
   });
 

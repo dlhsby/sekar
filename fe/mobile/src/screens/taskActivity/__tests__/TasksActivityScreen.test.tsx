@@ -37,6 +37,11 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: any) => children,
 }));
 
+// Mock LocationMapModal to avoid react-native-maps transpilation
+jest.mock('../../../components/modals/LocationMapModal', () => ({
+  LocationMapModal: () => null,
+}));
+
 // Mock navigation
 const mockNavigate = jest.fn();
 const mockNavigation = { navigate: mockNavigate } as any;

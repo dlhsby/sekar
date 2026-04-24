@@ -446,9 +446,9 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
     });
 
-    // Kirim button should be available (no selfie required for clock-out)
+    // Clock Out button should be available (no selfie required for clock-out)
     await waitFor(() => {
-      expect(getByText('Kirim')).toBeTruthy();
+      expect(getByText('Clock Out')).toBeTruthy();
     });
   });
 

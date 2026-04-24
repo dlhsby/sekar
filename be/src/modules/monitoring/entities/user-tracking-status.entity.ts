@@ -4,6 +4,7 @@ import { User } from '../../users/entities/user.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { Area } from '../../areas/entities/area.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
 
 export enum TrackingStatus {
   ACTIVE = 'active',
@@ -105,6 +106,14 @@ export class UserTrackingStatus {
   @ManyToOne(() => Area, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'area_id' })
   area: Area;
+
+  @ApiProperty({ description: 'Rayon ID for admin_data/kepala_rayon tracking', nullable: true })
+  @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
+  rayon_id: string | null;
+
+  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'rayon_id' })
+  rayon: Rayon;
 
   @UpdateDateColumn()
   updated_at: Date;

@@ -6,6 +6,7 @@ import { Task } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { UsersModule } from '../users/users.module';
 import { AreasModule } from '../areas/areas.module';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * Module for task management
@@ -14,7 +15,7 @@ import { AreasModule } from '../areas/areas.module';
  * and tracking work tasks for field workers.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Task, TaskTag]), UsersModule, AreasModule],
+  imports: [TypeOrmModule.forFeature([Task, TaskTag]), UsersModule, AreasModule, AuditModule],
   controllers: [TasksController],
   providers: [TasksService],
   exports: [TasksService],

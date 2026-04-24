@@ -206,15 +206,16 @@ export function isWithinAreaBoundary(
   lat: number,
   lng: number,
   area: {
-    boundary_polygon?: [number, number][];
+    boundary_polygon?: { type: 'Polygon'; coordinates: [number, number][][] } | null;
     gps_lat?: number | null;
     gps_lng?: number | null;
     radius_meters?: number | null;
   },
 ): boolean {
-  // 1. Polygon check (preferred)
-  if (area.boundary_polygon && area.boundary_polygon.length >= 3) {
-    return isPointInPolygon(lat, lng, area.boundary_polygon);
+  // 1. Polygon check (preferred) — extract outer ring from GeoJSON
+  const ring = area.boundary_polygon?.coordinates?.[0];
+  if (ring && ring.length >= 3) {
+    return isPointInPolygon(lat, lng, ring);
   }
 
   // 2. Radius fallback

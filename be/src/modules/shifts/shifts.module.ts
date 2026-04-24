@@ -8,6 +8,7 @@ import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.
 import { AreasModule } from '../areas/areas.module';
 import { SharedModule } from '../../shared/shared.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * Shifts Module
@@ -22,6 +23,7 @@ import { MonitoringModule } from '../monitoring/monitoring.module';
     forwardRef(() => AreasModule),
     SharedModule,
     forwardRef(() => MonitoringModule),
+    AuditModule,
   ],
   controllers: [ShiftsController],
   providers: [ShiftsService],

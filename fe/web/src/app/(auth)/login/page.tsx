@@ -14,7 +14,10 @@ import { getErrorMessage } from '@/lib/api/client';
  * Login form schema with validation
  */
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username wajib diisi').max(50, 'Username maksimal 50 karakter'),
+  identifier: z
+    .string()
+    .min(1, 'Username / No. HP wajib diisi')
+    .max(50, 'Username / No. HP maksimal 50 karakter'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
 });
 
@@ -41,7 +44,7 @@ function LoginForm() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: '',
+      identifier: '',
       password: '',
     },
   });
@@ -65,7 +68,7 @@ function LoginForm() {
       let errorMessage = getErrorMessage(err);
       // Translate common error messages to Indonesian
       if (errorMessage === 'Invalid credentials') {
-        errorMessage = 'Username atau Password salah';
+        errorMessage = 'Username / No. HP atau Password salah';
       }
       setError(errorMessage);
     }
@@ -112,14 +115,14 @@ function LoginForm() {
                 </div>
               )}
 
-              {/* Username field */}
+              {/* Identifier field (username or phone number) */}
               <FormInput
-                label="Username"
+                label="Username / No. HP"
                 type="text"
-                placeholder="Masukkan username"
-                error={errors.username?.message}
+                placeholder="Masukkan username atau nomor HP"
+                error={errors.identifier?.message}
                 disabled={isSubmitting}
-                {...register('username')}
+                {...register('identifier')}
               />
 
               {/* Password field with toggle */}
