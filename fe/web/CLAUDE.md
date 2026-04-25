@@ -4,6 +4,19 @@
 
 SEKAR Web Dashboard is a Next.js 16.1.4 application with React 19 using the **Neo Brutalism** design system. The UI is built with Tailwind CSS v4 (CSS-first configuration) and shadcn-ui components with custom NB styling.
 
+## Phase 3 Planning (Apr 24, 2026)
+
+New pages planned for Phase 3 (Plants Management + Monitoring Rebuild + Public Intake — see `specs/phases/phase-3-plants-monitoring-rebuild/`):
+- `/monitoring` v2 — supercluster layer, incremental WS patches, virtualized worker list, hierarchy filter panel, plant + overdue overlays, area detail drawer (ADR-029)
+- `/plants/` and `/plants/[areaId]/` — plant species catalog and per-area aggregate inventory (ADR-030)
+- `/tasks/new` — dynamic form per `task_type` with species multi-select + quantities (ADR-031)
+- `/pruning-requests/` + `[id]/` — public intake queue (`admin_data` review) and detail (ADR-032, ADR-033)
+- `/rayons/[id]/capacity/` — weekly service-capacity calendar grid (ADR-035)
+- `/seeds/*` — plant-seed inventory ledger
+- Sidebar updated to 9 roles: 8 existing + new `staff_kecamatan`
+
+Nothing is built yet. Start from `specs/phases/phase-3-plants-monitoring-rebuild/web.md` when implementing.
+
 ## Tech Stack
 
 - **Framework**: Next.js 16.1.4 (App Router)
@@ -63,27 +76,60 @@ npm run test:e2e                  # Playwright E2E tests
 - **High contrast**: Soft black text (#1C1917), strong colors
 - **Space Grotesk headings**: Modern geometric font for h1-h6
 
+### ⚠️ Tokens are generated — never hand-edit
+
+From Phase 3 M1-R sub-phase **3-R2** onward (planned):
+- **Source of truth:** [`specs/ui-ux/tokens.json`](../../specs/ui-ux/tokens.json)
+- **Generated consumer:** `fe/web/src/app/generated/tokens.css` (emitted by `scripts/build-tokens.ts`; CI validates drift via `tokens-verify`)
+- **`@import` wrapper:** `fe/web/src/app/globals.css` becomes `@import './generated/tokens.css';` plus utility classes (`.nb-focus-ring`, `.shadow-nb-*` Tailwind utilities, etc.)
+- **Brand fonts:** `next/font/google` in `fe/web/src/app/layout.tsx` loads Space Grotesk, Inter, JetBrains Mono with `display: 'swap'` and CSS variables `--font-display|body|mono`
+
+ESLint rule `no-inline-hex-colors` (added in 3-R1) blocks PRs with raw hex outside `generated/`. To change a token: edit `tokens.json` → `npm run tokens:build` → commit regenerated CSS.
+
 ### Color Tokens (use `bg-nb-*`, `text-nb-*`, `border-nb-*`)
 ```
-Primary:     nb-primary (#7FBC8C), nb-primary-hover (#5A9468), nb-primary-active (#4A7D56)
-Success:     nb-success (#7FBC8C), nb-success-light (#BAFCA2)
+Primary:     nb-primary (#7FBC8C), nb-primary-hover (#6BA87A), nb-primary-active (#5A9468)
+Secondary:   nb-secondary (#8B7355), nb-secondary-hover (#725E45)
+Success:     nb-success (#7FBC8C), nb-success-light (#BAFCA2), nb-success-dark (#15803D)
 Warning:     nb-warning (#E3A018), nb-warning-light (#FFDB58)
-Danger:      nb-danger (#FF6B6B), nb-danger-light (#FFA07A)
-Info:        nb-info (#A7DBD8), nb-info-light (#A7DBD8)
+Danger:      nb-danger (#FF6B6B), nb-danger-light (#FFA07A), nb-danger-dark (#991B1B)
+Info:        nb-info (#69D2E7), nb-info-light (#A7DBD8)
 Neutral:     nb-black (#1C1917), nb-white (#FFFFFF), nb-background (#F5F0EB)
 Sidebar:     nb-sidebar (#1A4D2E), nb-sidebar-hover (#2D5233), nb-sidebar-active (#0F3520)
 Gray scale:  nb-gray-50 (#FAFAF9) through nb-gray-900 (#1C1917) - warm stone tones
 ```
 
-### Shadow Tokens (Soft-edge with blur)
+> **Drift fixes locked in 3-R2:** previous `nb-primary-hover (#5A9468)` was actually `primary.active`; canonical hover is `#6BA87A`. Previous `nb-info (#A7DBD8)` was actually `info.light`; canonical info is `#69D2E7`. Previous `nb-secondary` and `nb-success-dark` not exposed in Tailwind config — added in 3-R2.
+
+### Shadow Tokens (Hard-edge, opaque — Phase 3 M1-R 3-R2 lock)
 ```
-shadow-nb-xs     → 2px 2px 1px rgba(28,25,23,0.15) (badges)
-shadow-nb-sm     → 4px 4px 2px rgba(28,25,23,0.18) (cards)
-shadow-nb-md     → 6px 6px 3px rgba(28,25,23,0.20) (buttons, inputs)
-shadow-nb-lg     → 8px 8px 4px rgba(28,25,23,0.22) (modals, dropdowns)
-shadow-nb-xl     → 12px 12px 6px rgba(28,25,23,0.25) (large modals)
-shadow-nb-active → 2px 2px 1px rgba(28,25,23,0.15) (pressed state)
+shadow-nb-xs     → 2px 2px 0 #1C1917  (badges)
+shadow-nb-sm     → 4px 4px 0 #1C1917  (cards)
+shadow-nb-md     → 6px 6px 0 #1C1917  (buttons, inputs)
+shadow-nb-lg     → 8px 8px 0 #1C1917  (modals, dropdowns)
+shadow-nb-xl     → 10px 10px 0 #1C1917 (large modals)
+shadow-nb-hover  → 8px 8px 0 #1C1917  (hover-elevated state)
+shadow-nb-active → 2px 2px 0 #1C1917  (pressed state)
 ```
+
+> **All shadows are opaque `#1C1917` with zero blur radius — the NB stamp.** Phase 2 used `rgba(28,25,23, 0.15–0.25)` with 1–6 px blur; that drift is fixed at the generator level in 3-R2 and the `prefer-nb-shadow-utility` lint rule blocks regression. Tailwind utilities `shadow-sm`, `shadow-md`, etc. are forbidden — use `shadow-nb-*` only.
+
+### Type Scale (Phase 3 M1-R 3-R2 lock)
+
+Use `text-nb-h1`, `text-nb-h2`, `text-nb-h3`, `text-nb-body-lg`, `text-nb-body`, `text-nb-body-sm`, `text-nb-caption`, `text-nb-mono-sm`. Never set `text-3xl` / hand-pick font sizes.
+
+| Utility | Family | Weight | Size / line-height |
+|---------|--------|--------|--------------------|
+| `text-nb-display-xl` | display (Space Grotesk) | 800 | 56 / 1.0 |
+| `text-nb-display` | display | 700 | 40 / 1.05 |
+| `text-nb-h1` | display | 700 | **28 / 1.2** |
+| `text-nb-h2` | display | 600 | **22 / 1.3** |
+| `text-nb-h3` | display | 600 | **18 / 1.35** |
+| `text-nb-body-lg` | body (Inter) | 500 | 18 / 1.55 |
+| `text-nb-body` | body | 400 | 16 / 1.5 |
+| `text-nb-body-sm` | body | 400 | 14 / 1.45 |
+| `text-nb-caption` | body | 500 | 12 / 1.4 |
+| `text-nb-mono-sm` | mono (JetBrains Mono) | 500 | 12 / 1.4 |
 
 ### Border Radius Tokens
 ```
@@ -93,6 +139,49 @@ rounded-nb-md   → 8px (dialogs, large containers)
 rounded-nb-lg   → 12px (special containers)
 rounded-nb-xl   → 16px (extra large containers)
 ```
+
+---
+
+## PWA Architecture (Phase 3 M1-R sub-phase 3-R4)
+
+The web becomes an installable, offline-capable PWA in 3-R4 (planned).
+
+**Public assets:**
+- `public/manifest.webmanifest` — `background_color: #F5F0EB`, `theme_color: #1A4D2E`, 192/512/512-maskable + 180 apple-touch icons, 2 shortcuts (Monitoring, Pruning Requests).
+- `public/sw.js` — service worker compiled from `src/sw/sw.ts`. Pre-caches HTML shell + `generated/tokens.css` + main JS bundle + fonts + icons. Runtime caching: SWR 30 s for `/monitoring/snapshot`, network-first for `/pruning-requests/*`, cache-first for `/plant-species`. POST/PUT/DELETE = network-only (web does not queue offline writes).
+- `public/icons/` — SEKAR "S" glyph (Space Grotesk 800 on `#7FBC8C` with 2 px `#1C1917` border + 4 px shadow).
+
+**Components (`src/components/pwa/`):**
+- `InstallBanner` — captures `beforeinstallprompt`; NB callout (yellow `#FDFD96` bg, 2 px border, 4 px shadow); 14-day localStorage suppression on dismiss.
+- `OfflineBanner` — `role="status"` strip when `navigator.onLine === false`.
+- `UpdateToast` — `registration.waiting` → "Versi baru tersedia — Muat ulang".
+- `MobileInstallPush` — role-gated <768 px login banner for `satgas`/`linmas`/`korlap` directing to native app install (Play Store or App Store).
+- `usePushSubscription` hook — admin roles only; subscribes via `POST /api/push/register`.
+
+**Feature flag:** `NEXT_PUBLIC_FEATURE_PWA` controls SW registration. Production-only by default; staging on after smoke test.
+
+---
+
+## Responsive Breakpoints (Phase 3 M1-R sub-phase 3-R4)
+
+Web ships three layouts on every page. Mobile web is **functional**, not a degraded experience.
+
+| Breakpoint | Width | Layout | Navigation |
+|------------|-------|--------|-----------|
+| **Mobile web** | <768 px | Stacked vertical cards; bottom-sheet filters; full-screen edit dialogs | ☰ drawer from left |
+| **Tablet** | 768–1279 px | Single primary column + optional drawer; map 60 / panel 40 | Icon-only rail (64 px), expands on click |
+| **Desktop** | ≥1280 px | Multi-column (map 65 / panel 35; full data tables) | Full sidebar (220 px), 9-role gating |
+
+Every Phase-3 page composes through `src/components/layout/ResponsiveShell.tsx` (added in 3-R4) which applies the breakpoint logic. Mobile-web specifically:
+- Monitoring → full-viewport map + drag-up bottom sheet (3 snap points: 10 / 45 / 90 %).
+- Pruning request queue → vertical card list + bottom-sheet filter.
+- Capacity calendar → vertical week cards (collapsible) + full-screen edit dialog.
+
+### `(kecamatan)` layout
+
+`src/app/(kecamatan)/layout.tsx` (added in 3-R4) — minimal top-bar shell for `staff_kecamatan` role. No dashboard sidebar; only Submit Request / My Requests / Profile. Populated by sub-phase 3-10.
+
+---
 
 ## Component Library
 

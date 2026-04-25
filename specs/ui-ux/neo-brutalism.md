@@ -3,6 +3,8 @@
 **Version:** 2.0.0 (Modern Neo Brutalism)
 **Phase 2+ Design System for SEKAR Web and Mobile Applications**
 
+> **Phase 3 update (ADR-036):** Token **values** now live in [`specs/ui-ux/tokens.json`](./tokens.json) and are reconciled there if they differ from the examples below. Shadows emit with `shadowRadius: 0` (hard-edge) and `shadowOpacity: 1` in the generated mobile file; web `box-shadow` is pure offset with no blur. The shadow samples in Sections 5 / 12 / 13 below retain their Phase-2 soft-blur form for historical reference — the generator overrides them. The canonical page background is `bg.canvas = #F5F0EB` (warm stone); `#FDFD96` pastel yellow is an accent-only token from Phase 3-0 onward. See [design-tokens.md](./design-tokens.md) for the canonical registry and [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md) for rationale.
+
 This document defines the **Modern Neo Brutalism** design system for SEKAR. The system combines bold aesthetics with excellent usability, creating interfaces that are both visually distinctive and highly functional for government field operations in parks and green spaces.
 
 ---
@@ -1348,7 +1350,7 @@ const statusBadgeVariant = {
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-04-25
 **Status:** Phase 2+ Design System - PRIMARY REFERENCE (v2.0.0)
 **Implementation:**
 - Mobile: `fe/mobile/src/constants/nbTokens.ts` + `fe/mobile/src/components/nb/`

@@ -61,6 +61,15 @@ Each ADR follows this structure:
 | [017](./ADR-017-maestro-mobile-e2e.md) | Maestro for Mobile E2E Testing | Accepted | 2026-03-12 |
 | [018](./ADR-018-export-format-strategy.md) | Export Format Strategy (CSV + Excel via exceljs) | Accepted | 2026-03-12 |
 | [019](./ADR-019-offline-connectivity-model.md) | Two-Tier Offline Connectivity Model | Accepted | 2026-03-12 |
+| [029](./ADR-029-monitoring-v2-event-sourced-redis.md) | Monitoring v2: Event-Sourced Status via Redis Streams + Socket.IO Redis Adapter | Accepted (supersedes ADR-011) | 2026-04-24 |
+| [030](./ADR-030-area-aggregate-plant-inventory.md) | Area-Aggregate Plant Inventory with Optional Notable-Plant Records | Accepted | 2026-04-24 |
+| [031](./ADR-031-task-typing-and-custom-fields.md) | Task Typing via `task_type` Enum + JSONB `custom_fields` Validated by Per-Type Schema Registry | Accepted | 2026-04-24 |
+| [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) | Extend `admin_data` with Disposition Authority over `pruning_requests`, Scoped by `users.rayon_id` | Accepted (amends ADR-009) | 2026-04-24 |
+| [033](./ADR-033-staff-kecamatan-role.md) | New External Role `staff_kecamatan` for Public Pruning Intake | Accepted (extends ADR-009) | 2026-04-24 |
+| [034](./ADR-034-pruning-cycle-prediction.md) | Pruning Cycle Prediction: Species × Area_Type Lookup (No ML), with Manual Override | Accepted | 2026-04-24 |
+| [035](./ADR-035-service-capacity-model.md) | Generic `service_capacity` Model (Rayon × ISO-Week × Service_Type) | Accepted | 2026-04-24 |
+| [036](./ADR-036-design-tokens-single-source.md) | Design Tokens — Single Source of Truth at `specs/ui-ux/tokens.json` | Accepted | 2026-04-25 |
+| [037](./ADR-037-web-pwa.md) | Web Becomes an Installable PWA (Service Worker + Offline Shell + Web Push) | Accepted | 2026-04-25 |
 
 ## How to Create a New ADR
 
@@ -76,5 +85,5 @@ Each ADR follows this structure:
 - [Tech Stack](../tech-stack.md)
 - [Business Rules](../../business-rules.md)
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-04-25
 **Maintained By:** System Architect

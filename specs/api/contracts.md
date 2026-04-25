@@ -8,13 +8,13 @@ Comprehensive API endpoint specifications for all 122 endpoints in SEKAR Backend
 - **Swagger Documentation:** `/api/v1/docs`
 - **Authentication:** JWT Bearer token (15-min access + 7-day refresh with rotation)
 - **Content Type:** `application/json` (except file uploads: `multipart/form-data`)
-- **Total Endpoints:** 122 (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 9 Phase 2D)
+- **Total Endpoints:** 122 implemented (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 9 Phase 2D); 130 planned through Phase 2E; ~165 planned through Phase 3
 - **Backend:** NestJS 11.x, Node.js >=24.13.0, TypeScript 5.x
 - **Database:** PostgreSQL 14+ with TypeORM
 - **Testing:** 888 tests passing (Phase 2C complete)
 - **Error Codes:** 40+ standardized codes (see `error-handling.md`)
 - **Rate Limiting:** 100 req/min global, 5 req/min auth endpoints
-- **Last Updated:** March 3, 2026
+- **Last Updated:** 2026-04-24
 - **Phase 2C Note:** Terminology cleanup (ADR-010) has implemented route renames: `/aktivitas`→`/activities`, `/worker-schedules`→`/schedules`. Dropped `/workers/:id/assign`. Flattened overtime DTO. See Phase 2C specs for full details.
 - **Phase 2D Note:** Monitoring enhancements — 9 new endpoints (location history, day summary, config CRUD, staffing summary, area boundary GET/PUT, boundaries, reassign), 4 enhanced endpoints (live-users filters + new fields, area/:id per-role counts).
 
@@ -4951,7 +4951,125 @@ socket.on('AREA_STAFFING_CHANGED', (payload) => {
 
 ---
 
+### Phase 3: Planned Endpoints (Plants Management + Monitoring Rebuild + Public Intake)
+
+> **Full specification:** See [`specs/phases/phase-3-plants-monitoring-rebuild/backend.md`](../phases/phase-3-plants-monitoring-rebuild/backend.md)
+> **Authored:** 2026-04-24
+> **Status:** Not started — specs complete. ~35 new endpoints plus extensions to existing `activities` and `tasks` endpoints.
+
+#### Plants Catalog & Inventory (ADR-030)
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| GET | `/plant-species` | All authenticated | List plant species (131 seeded from CSV). Query: `?q=` (name search), `?category=`. |
+| POST | `/plant-species` | admin_system, superadmin | Create species (`name_id`, `name_latin?`, `category`, `default_pruning_cycle_days?`, `notes?`). |
+| PATCH | `/plant-species/:id` | admin_system, superadmin | Update species attributes (rename, cycle-days override). |
+| GET | `/areas/:id/plants` | Rayon/area scope | Return `area_plants` aggregate rows (species × count × last_pruned_at × next_due_at × status). |
+| PUT | `/areas/:id/plants` | admin_data (rayon), admin_system | Bulk upsert of species × count inventory for area (replace semantics per species). |
+| GET | `/notable-plants?area_id=` | Rayon/area scope | List heritage / flagged individual plants in area. |
+| POST | `/notable-plants` | admin_data (rayon), admin_system | Create notable plant record (species, GPS lat/lng, label, heritage flag, photos). |
+| PATCH | `/notable-plants/:id` | admin_data (rayon), admin_system | Update notable plant. |
+| DELETE | `/notable-plants/:id` | admin_data (rayon), admin_system | Soft delete notable plant. |
+
+#### Activities (Extended — ADR-031)
+
+| Method | Endpoint | Change |
+|--------|----------|--------|
+| POST | `/activities` | Body now accepts `custom_fields` (JSONB, validated per `task_type`), `plant_items[]` (species × count line items → `activity_plant_items`), `photo_before_url`, `photo_after_url`, optional `pruning_request_id` linking the activity to a public-intake request. |
+| GET | `/activities` | New filters: `?task_type=pruning`, `?rayon_id=`, `?area_id=`, `?from=&to=`, `?custom_fields.maintenance_type=` (JSONB path). |
+
+#### Typed Tasks (ADR-031)
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| POST | `/tasks` | korlap, admin_data, kepala_rayon | Extends body with `task_type` (`generic`\|`pruning`\|`watering`\|`planting`\|`removal`\|`inspection`), `custom_fields` (validated against registry), `target_plant_count?`. |
+| POST | `/tasks/:id/partial-complete` | Assignee | Body: `{ progress_plant_count, plant_items[] }`. Server decides whether to spawn child task via `parent_task_id`. |
+| POST | `/tasks/:id/resume` | Assignee | Creates child task linked via `parent_task_id` (resume-tomorrow flow). Returns new task. |
+| GET | `/tasks/:id/lineage` | Task scope | Returns parent + children tree of the task for reporting. |
+
+#### Pruning Requests — Public Intake (ADR-032, ADR-033)
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| POST | `/pruning-requests` | staff_kecamatan | Submit new request (`kecamatan_name`, `address`, `gps_lat?`, `gps_lng?`, `expected_date?`, `estimated_plant_count?`, `photo_urls[]`, `notes?`). Returns `{ id, reference_code }`. |
+| GET | `/pruning-requests` | staff_kecamatan (mine), admin_data (rayon), top_management | Scope inferred. Query: `?mine=true`, `?rayon_id=`, `?status=`. |
+| GET | `/pruning-requests/:id` | Owner / rayon disposition / management | Full detail incl. review history. |
+| POST | `/pruning-requests/:id/review` | admin_data (rayon-scoped via `users.rayon_id`) | Body: `{ decision: 'approved'\|'rejected', rayon_id?, review_notes? }`. Approving resolves `rayon_id`. |
+| POST | `/pruning-requests/:id/convert-to-task` | admin_data (rayon-scoped) | Body: `{ task_type: 'pruning', custom_fields, target_plant_count, assignee_id, service_week? }`. Creates task, books `service_capacity`, links back via `pruning_request_id`. Returns created task. |
+| GET | `/pruning-requests/:id/result` | Owner kecamatan / rayon admin_data / management | Returns resulting task + activities + photos for outcome visibility. |
+
+#### Monitoring v2 (ADR-029)
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| GET | `/monitoring/snapshot` | Role-scoped (city/rayon/area) | Single aggregated payload replacing today's multiple round-trips. Query: `?scope=city\|rayon\|area`, `?id=`, `?includes=workers,plants,overdue,rayons,areas`. |
+| GET | `/monitoring/area/:id/plant-status` | Area scope | Green / yellow / red breakdown + due-date distribution of `area_plants`. |
+
+**WebSocket events (Redis-backed via Socket.IO Redis adapter; room prefix `monitoring:`):**
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `status:v2` | `{ user_id, status, area_id, prev_status, at }` | Incremental user status patch from StatusProjector. |
+| `cluster:update` | `{ scope, cluster_id, count, bbox }` | Supercluster tile refresh for current viewport zoom. |
+| `inventory:updated` | `{ area_id, species_id, count, status }` | Fired when `area_plants` aggregate mutates. |
+| `request:status-changed` | `{ request_id, status, reviewed_by? }` | Fired on pruning-request lifecycle transitions. |
+| `area:plant-status-changed` | `{ area_id, prev_status, status, overdue_count }` | Fired when area color flips ok/due/overdue. |
+
+#### Service Capacity (ADR-035)
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| GET | `/rayons/:id/capacity` | Rayon scope | Weekly capacity grid. Query: `?service_type=pruning`, `?year=`, `?from_week=&to_week=`. Returns `[{ iso_week, capacity_units, booked_units }]`. |
+| PUT | `/rayons/:id/capacity` | admin_data (rayon), top_management | Bulk upsert `capacity_units` per ISO week × service_type. |
+| POST | `/rayons/:id/capacity/book` | admin_data, top_management | Manual booking adjustment (override for non-task bookings). Body: `{ year, iso_week, service_type, delta }`. |
+
+> Booking is implicit on `/pruning-requests/:id/convert-to-task`; this endpoint exists for manual rebalancing.
+
+#### Plant Seeds (Inventory Ledger)
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| GET | `/plant-seeds` | admin_data @ Taman Aktif, top_management | List seed master records (stock balances, units). |
+| POST | `/plant-seeds` | admin_data @ Taman Aktif | Create seed master (`name_id`, `species_id?`, `unit`). |
+| PATCH | `/plant-seeds/:id` | admin_data @ Taman Aktif | Update master (unit, name). |
+| GET | `/seed-transactions` | admin_data @ Taman Aktif, top_management | Query ledger. Filters: `?seed_id=`, `?type=purchase\|distribution\|adjustment`, `?from=&to=`. |
+| POST | `/seed-transactions` | admin_data @ Taman Aktif | Record transaction. Purchase: `{ seed_id, type:'purchase', qty, unit_price, supplier, receipt_url, occurred_at }`. Distribution: `{ seed_id, type:'distribution', qty (negative), to_rayon_id?, to_area_id?, recipient_name, occurred_at }`. |
+
+#### Guards & Role Extensions
+
+- New permission constant `PRUNING_REQUEST_REVIEWERS` adds `admin_data` (rayon-scoped) alongside management roles; amends ADR-009's approval boundaries (ADR-032).
+- `staff_kecamatan` role added (ADR-033): non-clockable, scoped to own `pruning_requests.submitted_by` and their `result`. Swept across every existing `@Roles(...)` decorator for compatibility.
+
+#### Web Push Subscription (Phase 3 M1-R sub-phase 3-R4 / completed in 3-9)
+
+Web PWA admin roles subscribe to FCM web push on login via these endpoints. Native mobile FCM token registration uses the existing `/notifications/devices/*` endpoints (Phase 2B) — these are **web-specific**.
+
+| Method | Endpoint | Roles | Description |
+|--------|----------|-------|-------------|
+| POST | `/api/push/register` | admin_data, kepala_rayon, top_management, admin_system, superadmin | Register a web push subscription. Body: `{ endpoint: string, keys: { p256dh: string, auth: string }, user_agent?: string }`. Returns `{ subscription_id: uuid }`. Idempotent on `(user_id, endpoint)`. |
+| DELETE | `/api/push/register/:subscription_id` | (same; or self-managed via the subscriber's session) | Unsubscribe a specific web push subscription (e.g., on logout or when the user disables notifications). Returns 204. |
+| GET | `/api/push/subscriptions` | admin_system, superadmin | (admin diagnostic) List active subscriptions for the authenticated user. |
+
+**Notification types delivered via web push** (mirror mobile FCM):
+- `pruning_request_submitted` → click deep-link `/pruning-requests/[id]`
+- `task_assigned` / `task_overdue` → click deep-link `/tasks/[id]`
+- `area_plant_overdue` → click deep-link `/monitoring?focus_area=[id]&overlay=plants`
+- `overtime_pending_review` → click deep-link `/overtime/[id]`
+
+**Implementation:** scaffold during 3-R4 (web-side `usePushSubscription` hook + endpoint stubs); backend production implementation lands in 3-9 alongside the pruning-requests notification path.
+
+**Planned Total:** 130 → ~165 endpoints (+~35 Phase 3 + 3 push subscription).
+
+---
+
 ### Changelog
+
+**v2.3.0 - April 24, 2026 (Phase 3 Planned — Plants Management + Monitoring Rebuild + Public Intake)**
+- Planned ~35 new endpoints across 7 new or extended domains (plants, activities, typed tasks, pruning requests, monitoring v2, service capacity, plant seeds)
+- 5 new WebSocket events (Redis-backed via Socket.IO Redis adapter)
+- New role `staff_kecamatan` (ADR-033) and extended `admin_data` disposition authority (ADR-032)
+- 7 new ADRs referenced: 029 (monitoring v2 event sourcing), 030 (area-aggregate inventory), 031 (task typing + custom fields), 032 (admin_data extension), 033 (staff_kecamatan), 034 (pruning cycle prediction), 035 (service capacity)
+- See: specs/phases/phase-3-plants-monitoring-rebuild/
 
 **v2.2.0 - March 10, 2026 (Phase 2E Planned — Client Feedback II)**
 - Planned 8 new endpoints (profile picture, user areas, overtime clock-in/out, audit trail)

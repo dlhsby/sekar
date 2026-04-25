@@ -693,3 +693,43 @@ it('should reject worker accessing supervisor endpoints', async () => {
 - **Web**: 21 pages, full Mapbox GL + monitoring components
 
 *Project: SEKAR - Worker Tracking System*
+
+---
+
+## Phase 3 Testing Additions
+
+**Status:** Planning (aligned with `specs/phases/phase-3-plants-monitoring-rebuild/testing.md`).
+
+### Coverage Targets
+
+| Surface | Target | Notes |
+|---------|--------|-------|
+| New backend modules (plants, pruning-requests, service-capacity, plant-seeds, monitoring v2 services) | ≥ 85% statements | Each new service (StatusProjector, StaffingDebouncer, StaleStatusSweeper, PlantDueDate, PruningRequest, Capacity, TaskTypeRegistry) independently ≥ 85% |
+| Mobile new screens / components | ≥ 80% | Species autocomplete, PruningTaskForm, cluster markers, toggle sheet |
+| Web new pages | ≥ 85% statements | Monitoring v2 WS patch handlers, capacity grid, pruning-request queue |
+
+### Load Testing (new requirement)
+
+Introduced in Phase 3 to validate monitoring v2 at production scale.
+
+- **Tool:** k6 (harness at `infra/loadtest/`)
+- **Scenario:** 500 simulated workers pinging every 12 s for 30 min
+- **SLO targets (pass criteria):**
+  - p95 ingest latency < 200 ms
+  - p95 WebSocket broadcast latency < 500 ms
+  - Postgres connection pool utilization < 70 %
+  - Redis stream consumer-group lag < 5 s
+  - Zero missed status transitions sampled from the event log
+- **Cadence:** Required before every Phase 3+ release that modifies the monitoring pipeline.
+
+### Integration Test Additions
+
+- Task partial-complete → resume-tomorrow → child task completes → parent rollup correct
+- Pruning request submit (staff_kecamatan) → review (admin_data, rayon-scoped) → convert-to-task → activity completion propagates status back to request
+- `service_capacity` booking decrements on convert-to-task and rebalances on task cancellation
+- CSV backfill seeder is idempotent on `activities.reference_code` (re-run produces zero duplicates)
+
+### E2E Additions
+
+- Web: `monitoring-realtime.spec.ts`, `pruning-request-flow.spec.ts`, `pruning-task-assignment.spec.ts`
+- Mobile: Maestro flows for kecamatan submit, admin_data review, pruning partial-complete

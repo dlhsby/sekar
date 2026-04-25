@@ -312,7 +312,7 @@ Single column layout for most content:
 <View style={{
   flex: 1,
   paddingHorizontal: spacing.md, // 16px
-  backgroundColor: colors.bgPrimary, // #FDFD96
+  backgroundColor: colors.bgCanvas, // #F5F0EB (Phase 3-0 canvas, ADR-036)
 }}>
   {/* Full-width content */}
 </View>
@@ -471,7 +471,7 @@ const MapScreen = () => {
     <View style={{
       flex: 1,
       flexDirection: isLandscape ? 'row' : 'column',
-      backgroundColor: colors.bgPrimary, // #FDFD96
+      backgroundColor: colors.bgCanvas, // #F5F0EB (Phase 3-0 canvas, ADR-036)
     }}>
       <MapView style={{ flex: isLandscape ? 2 : 1 }} />
       {!isLandscape && <BottomPanel />}
@@ -614,7 +614,7 @@ const Screen = () => {
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-04-25
 **Status:** Active - Updated for Neo Brutalism 2.0 + Phase 2D Monitoring
 **Implementation:** `fe/mobile/src/constants/nbTokens.ts` (breakpoints)
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

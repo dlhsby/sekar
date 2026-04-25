@@ -1,8 +1,21 @@
 # Mobile Color Palette Standardization
 
-**Date:** February 7, 2026
-**Status:** ✅ Complete
+**Date:** February 7, 2026 (updated April 25, 2026)
+**Status:** ✅ Complete (Phase 2B); superseded for token **values** by Phase 3-0 generated tokens (ADR-036)
 **Related:** Phase 2B UI/UX Revamp - Worker Screen Redesign
+
+> **⚠️ Deprecated as source of truth (Phase 3 M1-R sub-phase 3-R2).** Individual hex values below are historical. The canonical source of truth is [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json); mobile consumes [`fe/mobile/src/constants/generated/tokens.ts`](../../fe/mobile/src/constants/generated/tokens.ts) (emitted by `scripts/build-tokens.ts`). Notable post-Phase-3 reconciliations applied during 3-R2 token-value migration:
+>
+> - `color.primary.hover = #6BA87A` (was `#5A9B6F` mobile / `#5A9468` web — both drifted)
+> - `color.primary.active = #5A9468` (newly explicit; was conflated with hover on web)
+> - `color.secondary = #8B7355` (was `#6B4423` mobile — drifted; web already canonical)
+> - `color.secondary.hover = #725E45` (was `#8B5E3C` mobile — drifted)
+> - `color.success = #7FBC8C` (was `#90EE90` mobile — drifted; web already canonical)
+> - `color.info = #69D2E7` (was `#A7DBD8` on both — that hex is now `info.light`)
+> - `bg.canvas = #F5F0EB` page background (NOT `#FDFD96` — yellow remains an *accent* only)
+> - All shadows: opaque `#1C1917`, zero blur/radius (mobile previously used `shadowRadius: 1–4` + `shadowOpacity: 0.15–0.22`; web previously used `rgba(...)` with 1–4 px blur)
+>
+> See [specs/ui-ux/design-tokens.md](../ui-ux/design-tokens.md) for the full canonical registry.
 
 ---
 
@@ -29,8 +42,10 @@ All colors are exported from the `nbColors` object.
 ### Primary Colors
 ```typescript
 nbColors.primary          // #7FBC8C - Medium green (buttons, headers)
-nbColors.primaryLight     // #90EE90 - Light green (hover states)
-nbColors.primaryDark      // #5A9B6F - Dark green (active states)
+nbColors.primaryLight     // #90EE90 - Light green backgrounds
+nbColors.primaryHover     // #6BA87A - Primary hover (Phase 3-0 canonical, ADR-036)
+nbColors.primaryActive    // #5A9468 - active states (primaryActive in generated tokens, per ADR-036)
+nbColors.primaryDark      // #5A9468 - DEPRECATED alias for primaryActive; #5A9B6F in pre-Phase-3 code was drift
 ```
 
 ### Secondary Colors
@@ -249,4 +264,4 @@ All colors meet **WCAG 2.1 AA** standards:
 ---
 
 **Status:** ✅ All components migrated to standardized palette
-**Last Updated:** February 7, 2026
+**Last Updated:** April 25, 2026

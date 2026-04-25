@@ -37,8 +37,9 @@ This specifications folder is organized by **specialist roles** to enable parall
 | [`phases/phase-2-c-client-feedback/`](./phases/phase-2-c-client-feedback/) | Phase 2C | 4-6 weeks | Client Feedback: 8-role system, terminology cleanup, polygon geofencing |
 | [`phases/phase-2-d-monitoring/`](./phases/phase-2-d-monitoring/) | Phase 2D | 1 week | Real-Time Monitoring: five-status tracking, Mapbox, location history |
 | [`phases/phase-2-e-client-feedback-2/`](./phases/phase-2-e-client-feedback-2/) | Phase 2E | 1 day | Client Feedback II: phone login, multi-area, overtime redesign |
-| [`phases/phase-3-polishing/`](./phases/phase-3-polishing/) | Phase 3 | 6-8 weeks | Production Readiness: Redis, FCM, export, E2E, security, polish |
-| [`phases/phase-4-finishing/`](./phases/phase-4-finishing/) | Phase 4 | 6-8 weeks | Advanced Features: Analytics, Assets, iOS |
+| [`phases/phase-3-plants-monitoring-rebuild/`](./phases/phase-3-plants-monitoring-rebuild/) | Phase 3 | 5-7 weeks (73 dev-days) | Plants Management + Monitoring Rebuild + Public Intake (incl. M1-R Redesign Foundation) — Not Started |
+| [`phases/phase-4-production-readiness/`](./phases/phase-4-production-readiness/) | Phase 4 | 6-8 weeks | Production Readiness: FCM, export, E2E, security, polish (Redis adopted in Phase 3) |
+| [`phases/phase-5-finishing-ios/`](./phases/phase-5-finishing-ios/) | Phase 5 | 7-9 weeks | Finishing, Release & iOS: Reporting, Analytics, Assets, iOS |
 
 **See [`phases/README.md`](./phases/README.md) for detailed navigation of phase documentation.**
 
@@ -183,14 +184,20 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 - ✅ DevOps: 3 CI/CD pipelines, Phase 2D deployed to production
 - ✅ ADRs: 15 architecture decision records (ADR-001 through ADR-015)
 
-**Next Phase:** Phase 3 Production Readiness & Polishing (6-8 weeks)
-- Redis adoption, FCM activation, export/import, security hardening
-- Maestro E2E (mobile), Playwright E2E expansion (web)
-- Offline sync completion, JWT refresh tokens, UI/UX polish
-- See [Phase 3 specs](./phases/phase-3-polishing/README.md)
+**Next Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake (5-7 weeks, 73 dev-days, incl. M1-R Redesign Foundation)
+- Monitoring v2 (Redis Streams event-sourced, Socket.IO Redis adapter, supercluster, staffing debouncer, stale sweep)
+- Plants management (plant_species, area_plants aggregate inventory, notable_plants, per-area pruning cycle)
+- Task typing + custom fields (task_type enum, JSONB schema registry, parent/child resume-tomorrow, partial completion)
+- Public pruning intake (staff_kecamatan role, pruning_requests, admin_data disposition authority, convert-to-task)
+- Service capacity calendar (generic rayon × ISO-week × service_type)
+- Plant-seed inventory ledger
+- CSV historical backfill (5,008 rows)
+- See [Phase 3 specs](./phases/phase-3-plants-monitoring-rebuild/README.md)
+
+**Following Phases:** Phase 4 Production Readiness (FCM, export, E2E, security — Redis inherited from Phase 3), Phase 5 Finishing, Release & iOS (Reporting, Analytics, Assets, iOS).
 
 ---
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-04-24
 **Maintained By:** Development Team
-**Version:** 2.0.0
+**Version:** 2.1.0

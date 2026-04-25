@@ -896,6 +896,67 @@ terraform/
 ---
 
 **Document Owner:** DevOps Engineer
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-04-24
 **Status:** Active
 **Related Docs:** [`ci-cd.md`](./ci-cd.md), [`monitoring.md`](./monitoring.md)
+
+---
+
+## Phase 3 Infrastructure Additions
+
+**Status:** Planning (aligned with `specs/phases/phase-3-plants-monitoring-rebuild/infrastructure.md`, [ADR-016](../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-029](../architecture/decisions/ADR-029-monitoring-v2-event-sourced-redis.md)).
+
+### Redis 7
+
+Redis is promoted from Phase 4 to Phase 3 to support the monitoring v2 rebuild.
+
+**Purposes (all on a single Redis 7 instance):**
+
+- **Socket.IO Redis adapter** — cross-instance room fanout; unlocks horizontal scaling of the backend.
+- **Redis Streams** — `location-pings` stream with consumer group `status-projectors`; decouples location ingest from status projection so bursts don't back up the ingest endpoint.
+- **Cache** — area boundaries (TTL 5 min), `monitoring_configs` rows (TTL 5 min), `area_plants.status` summaries (TTL 1 min), `plant_species` catalog (TTL 1 h).
+- **Reserved for Phase 4** — JWT refresh-token blacklist (per ADR-016), rate-limiting counters.
+
+**Docker Compose entry (`infra/docker-compose.yml`):**
+
+```yaml
+redis:
+  image: redis:7-alpine
+  container_name: sekar_redis
+  ports: ["6379:6379"]
+  volumes: [redis_data:/data]
+  healthcheck:
+    test: ["CMD", "redis-cli", "ping"]
+    interval: 10s
+    timeout: 3s
+    retries: 5
+```
+
+**Backend env vars (added to `.env.example`):**
+
+```
+REDIS_URL=redis://localhost:6379
+REDIS_STREAM_MAX_LEN=100000
+MONITORING_SWEEP_CRON=*/5 * * * *
+STAFFING_DEBOUNCE_SECONDS=30
+```
+
+**Production:** Managed Redis (AWS ElastiCache, cache.t3.small to start) in the same VPC as the backend; same security group as RDS access. Persistence (AOF) ON; daily snapshot to S3.
+
+### Health-check fallback
+
+If Redis becomes unreachable at runtime, the backend degrades gracefully:
+
+- Socket.IO falls back to in-process adapter (single-instance degraded mode).
+- Location pings still persist to Postgres; status projection runs inline (higher latency).
+- `/health` endpoint surfaces `redis: "unavailable"` so ops can page.
+- Cron sweeps continue uninterrupted.
+
+### Cron jobs (new)
+
+- `MonitoringStaleSweeper` — every 5 min; flips `ACTIVE` without a recent ping to `MISSING`.
+- `PlantDueDateRecalculator` — daily at 02:00 local; recomputes `area_plants.next_due_at` and `status`.
+
+### Load-test harness
+
+New directory `infra/loadtest/` with k6 scripts to simulate 500 workers pinging every 12 s (see `specs/testing/strategy.md` for SLOs and pass criteria).

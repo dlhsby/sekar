@@ -692,3 +692,157 @@ stateDiagram-v2
 **Last Updated:** 2026-03-10
 **ERD Version:** 5.0 (Phase 2E — Client Feedback II Planned)
 **Database:** PostgreSQL 14+
+
+---
+
+## Phase 3: Planned ERD Changes (Plants Management + Monitoring Rebuild + Public Intake)
+
+> **Full specification:** See [`specs/phases/phase-3-plants-monitoring-rebuild/database.md`](../phases/phase-3-plants-monitoring-rebuild/database.md)
+> **Authored:** 2026-04-24
+
+### New Entities
+
+```mermaid
+erDiagram
+    PLANT_SPECIES ||--o{ AREA_PLANTS : "inventoried_as"
+    PLANT_SPECIES ||--o{ NOTABLE_PLANTS : "typed_as"
+    PLANT_SPECIES ||--o{ ACTIVITY_PLANT_ITEMS : "counted_in"
+    PLANT_SPECIES ||--o{ PLANT_SEEDS : "produces"
+
+    AREAS ||--o{ AREA_PLANTS : "contains"
+    AREAS ||--o{ NOTABLE_PLANTS : "hosts"
+
+    ACTIVITIES ||--o{ ACTIVITY_PLANT_ITEMS : "line_items"
+    ACTIVITIES o|--o| PRUNING_REQUESTS : "fulfills"
+
+    USERS ||--o{ PRUNING_REQUESTS : "submitted_by (staff_kecamatan)"
+    USERS ||--o{ PRUNING_REQUESTS : "reviewed_by (admin_data)"
+    RAYONS ||--o{ PRUNING_REQUESTS : "assigned_to"
+    TASKS o|--o| PRUNING_REQUESTS : "converted_from"
+
+    RAYONS ||--o{ SERVICE_CAPACITY : "has_weekly_capacity"
+
+    PLANT_SEEDS ||--o{ SEED_TRANSACTIONS : "ledger"
+    RAYONS o|--o{ SEED_TRANSACTIONS : "distributed_to"
+    AREAS o|--o{ SEED_TRANSACTIONS : "distributed_to"
+    USERS ||--o{ SEED_TRANSACTIONS : "recorded_by"
+
+    TASKS ||--o{ TASKS : "parent_of (resume-tomorrow)"
+
+    PLANT_SPECIES {
+        uuid id PK
+        text name_id
+        text name_latin "NULL"
+        text category "tree/shrub/palm/grass/flower/other"
+        int default_pruning_cycle_days "NULL"
+        text notes "NULL"
+    }
+
+    AREA_PLANTS {
+        uuid id PK
+        uuid area_id FK "CASCADE"
+        uuid species_id FK "RESTRICT"
+        int count
+        timestamptz last_pruned_at "NULL"
+        timestamptz next_due_at "NULL"
+        text status "ok/due/overdue"
+    }
+
+    NOTABLE_PLANTS {
+        uuid id PK
+        uuid area_id FK "CASCADE"
+        uuid species_id FK "RESTRICT"
+        numeric gps_lat "NULL"
+        numeric gps_lng "NULL"
+        text label "NULL"
+        bool heritage
+        text_array photo_urls
+        text notes "NULL"
+    }
+
+    ACTIVITY_PLANT_ITEMS {
+        uuid id PK
+        uuid activity_id FK "CASCADE"
+        uuid species_id FK "RESTRICT"
+        int count
+        text notes "NULL"
+    }
+
+    PRUNING_REQUESTS {
+        uuid id PK
+        text reference_code UK
+        uuid submitted_by FK "RESTRICT, staff_kecamatan"
+        text kecamatan_name
+        text address
+        numeric gps_lat "NULL"
+        numeric gps_lng "NULL"
+        date expected_date "NULL"
+        int estimated_plant_count "NULL"
+        text_array photo_urls
+        text notes "NULL"
+        text status "submitted..cancelled"
+        uuid rayon_id FK "NULL, SET NULL"
+        uuid reviewed_by FK "NULL, SET NULL, admin_data"
+        timestamptz reviewed_at "NULL"
+        text review_notes "NULL"
+        uuid converted_task_id FK "NULL, SET NULL"
+    }
+
+    SERVICE_CAPACITY {
+        uuid id PK
+        uuid rayon_id FK "CASCADE"
+        int year
+        int iso_week
+        text service_type "pruning/watering/planting/..."
+        int capacity_units
+        int booked_units
+    }
+
+    PLANT_SEEDS {
+        uuid id PK
+        text name_id
+        uuid species_id FK "NULL, SET NULL"
+        text unit "gram/piece/packet"
+        numeric stock_qty
+        timestamptz last_counted_at "NULL"
+    }
+
+    SEED_TRANSACTIONS {
+        uuid id PK
+        uuid seed_id FK "RESTRICT"
+        text transaction_type "purchase/distribution/adjustment"
+        numeric qty "signed by type"
+        numeric unit_price "NULL, purchase only"
+        text supplier "NULL, purchase only"
+        text receipt_url "NULL, purchase only"
+        uuid to_rayon_id FK "NULL, SET NULL"
+        uuid to_area_id FK "NULL, SET NULL"
+        text recipient_name "NULL"
+        date occurred_at
+        uuid recorded_by FK "RESTRICT"
+        text notes "NULL"
+    }
+```
+
+### Modified Entities (Phase 3)
+
+| Entity | New Columns | Changes |
+|--------|-------------|---------|
+| ACTIVITIES | `custom_fields` JSONB, `photo_before_url` TEXT, `photo_after_url` TEXT, `reference_code` TEXT UNIQUE, `pruning_request_id` UUID FK | New relations to `activity_plant_items` and `pruning_requests`; supports CSV backfill via `reference_code` |
+| TASKS | `task_type` TEXT, `custom_fields` JSONB, `parent_task_id` UUID FK→tasks, `target_plant_count` INT, `completed_plant_count` INT | Self-referential parent/child linkage for resume-tomorrow; typed task registry (ADR-031) |
+| USERS.role | Enum adds `staff_kecamatan` | ADR-033; `admin_data` unchanged at schema level (capability extended via policy per ADR-032) |
+| LOCATION_LOGS | (indexes only) | `(user_id, logged_at DESC)`, `(shift_id, logged_at)`, `(user_id, shift_id, logged_at)` |
+| USER_TRACKING_STATUS | (indexes only) | `(area_id, updated_at DESC)`, `(is_within_area, area_id)` |
+
+### Updated Table Count
+
+| Phase | Tables | New/Changed |
+|-------|--------|-------------|
+| Phase 3 (Plants/Monitoring Rebuild) | +8 | +plant_species, +area_plants, +notable_plants, +activity_plant_items, +pruning_requests, +service_capacity, +plant_seeds, +seed_transactions |
+| **Total** | **30** | Up from 22 in Phase 2E |
+
+---
+
+**Last Updated:** 2026-04-24
+**ERD Version:** 6.0 (Phase 3 — Plants Management + Monitoring Rebuild + Public Intake Planned)
+**Database:** PostgreSQL 14+

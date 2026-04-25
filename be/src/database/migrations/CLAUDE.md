@@ -70,6 +70,21 @@ Rollback is **partially destructive**:
 - **Spec:** `specs/phases/phase-2-c-client-feedback/database.md`
 - **ADRs:** ADR-009 (roles), ADR-010 (terminology)
 
+## Phase 3 Planning (Apr 24, 2026)
+
+Upcoming migration prefix: `17460000*-Phase3*.ts` (additive only). See `specs/phases/phase-3-plants-monitoring-rebuild/database.md`.
+
+**New tables (8):** `plant_species`, `area_plants`, `notable_plants`, `activity_plant_items`, `pruning_requests`, `service_capacity`, `plant_seeds`, `seed_transactions`.
+
+**Altered tables (5):**
+- `activities` +custom_fields JSONB, +photo_before_url, +photo_after_url, +reference_code UNIQUE, +pruning_request_id FK
+- `tasks` +task_type, +custom_fields JSONB, +parent_task_id FK, +target_plant_count, +completed_plant_count
+- `users.role` enum: +`staff_kecamatan` (ADR-033). No new `admin_rayon` role.
+- `location_logs` +idx (user_id, logged_at DESC), (shift_id, logged_at), (user_id, shift_id, logged_at)
+- `user_tracking_status` +idx (area_id, updated_at DESC), (is_within_area, area_id)
+
+All additive; rollback not required (flag-gated feature rollout). Related ADRs: 029–035.
+
 <claude-mem-context>
 # Recent Activity
 

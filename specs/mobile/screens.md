@@ -2733,3 +2733,81 @@ fontSize: {
 - Total screens: 19 (+2: OvertimeClockInScreen, OvertimeClockOutScreen)
 - Modified: 7 existing screens
 - New components: 1 (AuditTrailView)
+
+---
+
+## Phase 3: Plants Management + Monitoring Rebuild + Public Intake
+
+**Status:** Planning (ADR-029–037). Not yet implemented.
+
+### M1-R: Cross-platform parity (mobile native ↔ mobile web ↔ desktop web)
+
+Phase 3 opens with **M1-R Redesign Foundation** (sub-phases 3-R1…3-R5). After M1-R, every mobile screen visually matches its web counterpart at desktop and tablet widths, and the same screens work in mobile web (<768 px) via the web's `ResponsiveShell`. The native app remains the primary field channel; mobile web is a functional escape hatch for supervisors on a phone browser. Roles `satgas`/`linmas`/`korlap` see an install-push banner on mobile-web login directing them to the native app; `staff_kecamatan` submits pruning requests via a dedicated `(kecamatan)` web layout.
+
+| Surface | Native app | Mobile web (<768 px) | Desktop web (≥1280 px) |
+|---------|-----------|----------------------|------------------------|
+| Login | Full-screen NB form | Same, install-push banner for satgas/linmas/korlap | Centered card, branded sidebar |
+| Home (per role) | Bottom-tab nav | ☰ drawer | 220 px sidebar |
+| Tasks list | Vertical NB cards | Vertical NB cards | Filterable table |
+| Pruning task form | Full-screen NB form, sticky CTA | Full-screen, sticky CTA | Dialog (convert flow) or full page (new) |
+| Species autocomplete | Full-screen `NBModal type="fullscreen"` fuzzy | Full-screen sheet | Combobox dropdown |
+| Pruning request submit (kecamatan) | 5-step full-screen flow | 5-step full-screen flow on `(kecamatan)` layout | Same, plus breadcrumb |
+| Pruning request review (admin_data) | Bottom-sheet detail | Vertical card list + filter sheet | Sortable data table + right filter rail |
+| Capacity calendar | Read-only chip in ReviewQueue | Vertical week cards (collapsible) + full-screen edit dialog | 7-column week grid editor |
+| Monitoring map | Full map + bottom sheets | Full-viewport map + drag-up sheet (10/45/90 % snaps) | Sidebar │ map 65 % │ panel 35 % |
+| Modals | `NBModal` (sheet for ≤50 % / fullscreen for complex) | Bottom sheet | Centered Radix Dialog |
+| Toasts | `NBToast` bottom | `NBToast` bottom | Toast top-right |
+
+All three presentations consume the **same generated tokens** — colors, shadows, radii, type, motion — emitted by `scripts/build-tokens.ts` from `specs/ui-ux/tokens.json`. Differences between the three are intentional Layer-3 patterns (input model + screen real estate); never token divergence.
+
+---
+
+### New Screens
+
+| Stack | Screen | File | Role Access |
+|-------|--------|------|-------------|
+| Monitoring | **MapDashboard v2** (rebuild) | `src/screens/monitoring/MapDashboardScreen.tsx` | korlap / kepala_rayon / admin_data / top_management / admin_system / superadmin |
+| Tasks | **Pruning Task Form** (dynamic) | `src/components/tasks/PruningTaskForm.tsx` | satgas / linmas / korlap |
+| Tasks | **Task Resume flow** (resume-tomorrow) | `src/screens/tasks/TaskDetailScreen.tsx` (extend) | assignee |
+| PruningRequests | Submit Request | `src/screens/pruningRequests/SubmitScreen.tsx` | staff_kecamatan |
+| PruningRequests | My Requests | `src/screens/pruningRequests/MyRequestsScreen.tsx` | staff_kecamatan |
+| PruningRequests | Request Detail | `src/screens/pruningRequests/RequestDetailScreen.tsx` | owner / admin_data (rayon) / management |
+| PruningRequests | Review Queue | `src/screens/pruningRequests/ReviewQueueScreen.tsx` | admin_data (rayon) |
+| Seeds | Seeds List | `src/screens/seeds/SeedsListScreen.tsx` | admin_data @ Taman Aktif / top_management |
+| Seeds | Add Transaction | `src/screens/seeds/AddTransactionScreen.tsx` | admin_data @ Taman Aktif / top_management |
+
+### New Components
+
+| Component | File | Notes |
+|-----------|------|-------|
+| ClusteredUserMarkers | `src/components/monitoring/ClusteredUserMarkers.tsx` | supercluster-backed; MUST preserve `tracksViewChanges={false}` + `key` with `labelMode` + `clusterId` |
+| AreaStatusOverlay | `src/components/monitoring/AreaStatusOverlay.tsx` | Polygon fill tinted by `area_plants.status` (ok/due/overdue) |
+| MonitoringToggleSheet | `src/components/monitoring/MonitoringToggleSheet.tsx` | Bottom sheet toggles for rayon/area/worker hierarchy + plants overlay |
+| SpeciesAutocomplete | `src/components/tasks/SpeciesAutocomplete.tsx` | Autocomplete over 131 species from `plant_species` |
+
+### Mandatory Preservation of Apr 24 Map Fixes
+
+New map components MUST carry forward:
+- `tracksViewChanges={false}` on markers; include mode signal in `key`
+- `requestAnimationFrame` mount guard for any MapView child that renders async data
+- `useFocusEffect` (not one-shot `useEffect`) for tab-revisit data fetches
+- LabelMode enum pattern: render bitmap keyed by threshold-zoom mode, not raw zoom float
+- No `animateToRegion` call inside marker-press handlers that also trigger bottom-sheet snap
+
+### Navigation Changes
+
+| Role | Change |
+|------|--------|
+| staff_kecamatan | New role tab set: Submit Request / My Requests / Profile. No Map, no Tasks, no Home. |
+| admin_data | + Review Queue tab (pruning-requests scoped to `users.rayon_id`) |
+| admin_data @ Taman Aktif | + Seeds tab |
+| top_management | + Seeds tab (read-only ledger + transaction insert) |
+
+### Redux Slices
+
+New slices: `monitoringV2`, `plants`, `pruningRequests`, `seeds`. Offline-queue scaffolds for `activity.submit`, `activity.partial`, `pruning_request.submit` (full offline polish deferred to Phase 4, ADR-019).
+
+### Updated Screen Count (Phase 3 target)
+- Total screens: 27 (+8 vs Phase 2E)
+- Modified: MapDashboard, TaskDetail, navigation root
+- New components: 4 (cluster markers, area overlay, toggle sheet, species autocomplete)

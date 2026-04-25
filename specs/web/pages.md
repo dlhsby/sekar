@@ -2614,3 +2614,52 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 
 #### Page Count (Phase 2E)
 - Total pages: 21 (no new pages, 7 modified)
+
+---
+
+## Phase 3: Plants Management + Monitoring Rebuild + Public Intake
+
+**Status:** Planning (ADR-029–035). Not yet implemented.
+
+### New / Redesigned Pages
+
+| Route | Access | Notes |
+|-------|--------|-------|
+| `/monitoring` (v2 **redesign**) | korlap / kepala_rayon / admin_data / top_management / admin_system / superadmin | Mapbox supercluster layer, incremental WebSocket patches, virtualized worker list, role-based hierarchy toggles, plant-status overlay (ok/due/overdue), area-detail drawer with plant inventory breakdown |
+| `/plants` | admin_data / admin_system / superadmin / top_management | Plant species master + per-area inventory entry |
+| `/plants/[areaId]` | same | Bulk upsert of species × count rows for the area |
+| `/pruning-requests` | staff_kecamatan (own) / admin_data (rayon) / admin_system / superadmin / top_management | Queue with status filter; row actions vary by role |
+| `/pruning-requests/[id]` | owner / admin_data (rayon) / management | Detail view with review + convert-to-task actions (admin_data), result view (owner) |
+| `/rayons/[id]/capacity` | admin_data (own rayon) / top_management | Weekly grid editor: `service_capacity` per service_type × ISO week, with booked-vs-capacity bars |
+| `/seeds` | admin_data @ Taman Aktif / top_management | Plant-seed inventory list + balance per seed |
+| `/seeds/[id]` | same | Transaction ledger (purchase / distribution / adjustment), add-transaction form |
+| `/tasks/new` (**enhanced**) | korlap / admin_data / admin_system / superadmin | Dynamic form per `task_type`; pruning variant includes species multi-select with target counts |
+
+### New Components
+
+| Component | File | Notes |
+|-----------|------|-------|
+| ClusterLayer | `src/components/monitoring/ClusterLayer.tsx` | Mapbox cluster source with custom paint for count bubbles |
+| PlantOverlayLayer | `src/components/monitoring/PlantOverlayLayer.tsx` | Area polygon fills tinted by `area_plants.status` |
+| AreaStatusOverlay | `src/components/monitoring/AreaStatusOverlay.tsx` | Legend + area highlight on hover |
+| HierarchyFilterPanel | `src/components/monitoring/HierarchyFilterPanel.tsx` | Toggle groups for rayon / area / worker-role hierarchy (role-aware) |
+| WorkerListVirtual | `src/components/monitoring/WorkerListVirtual.tsx` | react-virtuoso list, updates via WS patches |
+| AreaDetailDrawer | `src/components/monitoring/AreaDetailDrawer.tsx` | Side drawer showing area plants breakdown + recent pruning activities |
+| PruningTaskForm | `src/components/tasks/PruningTaskForm.tsx` | Dynamic form block used by `/tasks/new` when `task_type='pruning'` |
+| CapacityWeekGrid | `src/components/capacity/CapacityWeekGrid.tsx` | Editable weekly grid |
+| SeedTransactionForm | `src/components/seeds/SeedTransactionForm.tsx` | Purchase / distribution / adjustment variants |
+
+### Realtime Pattern Change
+
+Monitoring page replaces full-refresh-on-filter with WebSocket-driven incremental patches:
+- React Query cache keys: `monitoring:snapshot:<scope>:<id>`
+- `onMessage` handler applies patches for `status:v2`, `cluster:update`, `inventory:updated`, `request:status-changed`, `area:plant-status-changed`
+- Reconnection with exponential backoff; fallback to snapshot refetch on 3 consecutive failures
+
+### Sidebar Role Gating
+
+Sidebar now accounts for 9 roles (8 existing + `staff_kecamatan`). `staff_kecamatan` sees only: Submit Request, My Requests, Profile. `admin_data` gains Pruning Requests queue link (scoped to `users.rayon_id`). `admin_data` at Taman Aktif and `top_management` see Seeds link.
+
+### Page Count (Phase 3 target)
+- Total pages: 27 (+6 vs Phase 2E)
+- Redesigned: `/monitoring`, `/tasks/new`

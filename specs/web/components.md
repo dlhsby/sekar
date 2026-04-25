@@ -1,20 +1,27 @@
 # Web Component Library
 
-Component library specifications for SEKAR web dashboard using **Neo Brutalism 2.0** design system.
+Component library specifications for SEKAR web dashboard using **Neo Brutalism 2.1** design system (generated tokens from Phase 3 M1-R sub-phase 3-R2; PWA shell from sub-phase 3-R4; full screen sweep in sub-phase 3-R5).
 
 ## Overview
 
 The web dashboard uses **React 19 with TypeScript** and **Tailwind CSS v4** for styling. Components are built using **shadcn/ui** primitives with custom Neo Brutalism styling to match SEKAR's design system.
 
-**Key Design Principles (NB 2.0):**
-- **Bold borders**: 2px solid #1C1917 (soft black)
-- **Soft-edge shadows**: Slight opacity (0.18-0.22), small blur (2-4px)
+**Key Design Principles (NB 2.1):**
+- **Bold borders**: 2px solid `#1C1917` (stone-900 black)
+- **Hard-edge shadows** (changed in Phase 3): pure offset, zero blur, opaque `#1C1917` — the `rgba()` + blur shadows from Phase 2 are gone at the generator level.
 - **Friendly corners**: 6px border-radius (base)
-- **48px touch targets**: Accessible interactive elements
-- **High contrast**: #1C1917 text, nature-aligned colors
-- **Parks green primary**: #7FBC8C (nature theme)
+- **44 px touch targets** (pointer contexts) / **48 px** (touch contexts)
+- **High contrast**: `#1C1917` text, nature-aligned colors
+- **Parks green primary**: `#7FBC8C`
+- **Canvas background**: `#F5F0EB` (warm stone) — replaces Phase 2's `#FDFD96` yellow, which stays an accent only
 
-> **Reference:** See `specs/ui-ux/neo-brutalism.md` for the complete NB 2.0 design system specification.
+> **Start here (Phase 3 onward):**
+> - [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md) — single source of truth for every token.
+> - [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) — machine-readable source; CI-validated by `tokens.schema.json`.
+> - Web tokens are consumed via generated `fe/web/src/app/generated/tokens.css`, imported by `globals.css`. Do not edit `globals.css` hex variables by hand; edit `tokens.json` and rerun `npm run tokens:build`.
+> - [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md) locks in the generator pipeline; [ADR-037](../architecture/decisions/ADR-037-web-pwa.md) adds the PWA shell.
+>
+> **Legacy reference:** [`specs/ui-ux/neo-brutalism.md`](../ui-ux/neo-brutalism.md) remains the design-language bible (component patterns, typography rules, NB philosophy). Token *values* now live in `tokens.json`.
 
 ---
 

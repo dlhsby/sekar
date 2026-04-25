@@ -1,0 +1,349 @@
+# Phase 3: Backend Requirements
+
+**Last Updated:** 2026-04-24
+**Status:** ⏳ Not Started
+**Framework:** NestJS 11.x, TypeScript 5.9, TypeORM, Redis 7, Socket.IO
+**Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md)
+**Testing target:** ≥ 85 % stmts per new module
+**See also:** [Database Schema](./database.md), [Infrastructure](./infrastructure.md), [README](./README.md)
+
+---
+
+## Current Codebase Facts (Verified)
+
+| File | Key Facts |
+|------|-----------|
+| `be/src/modules/monitoring/services/status-calculator.service.ts:186-263` | `onLocationPing` issues 6+ DB queries per ping — saturates 15-connection pool at 500 workers in ~50 s |
+| `be/src/modules/location/location.service.ts:92-103` | Only the **latest** location in a batch triggers status recalculation — offline batches silently lose transitions |
+| `be/src/gateways/events.gateway.ts:362-418` | `AREA_STAFFING_CHANGED` emits on every flip, no debounce, no Redis adapter |
+| `be/src/modules/users/enums/role.enum.ts` | 8 roles; `admin_data` excluded from `OVERTIME_APPROVERS` and all approval groups |
+| `be/src/modules/tasks/entities/task.entity.ts` | 8 statuses (ADR-009 debt — deferred); no `task_type` / `custom_fields` / `parent_task_id` / partial-completion |
+| `be/src/modules/activities/` | Canonical work record (ADR-010); no `custom_fields` / `plant_items` relation / `reference_code` |
+
+---
+
+## Module Changes Overview
+
+| Module | Change Type | Description |
+|--------|-------------|-------------|
+| `monitoring` | Major rewrite | Redis Streams projector, debouncer, stale sweeper, unified snapshot endpoint, eager-load rewrite of `onLocationPing` |
+| `location` | Minor fix | Iterate full batch (or reservoir sample) when producing to Redis Stream |
+| `tasks` | Major enhancement | `task_type` + `custom_fields` + `TaskTypeRegistry` + parent/child + partial-complete + resume + lineage |
+| `activities` | Minor enhancement | `custom_fields`, `plant_items` relation, `reference_code`, photo columns, `pruning_request_id` |
+| `users` | Enum extension | `+staff_kecamatan`; new `PRUNING_REQUEST_REVIEWERS` role-group constant |
+| `plants` | New module | `plant_species`, `area_plants`, `notable_plants`; `PlantDueDateService` |
+| `pruning-requests` | New module | Entity, service, controller, workflow, notifications |
+| `service-capacity` | New module | Generic weekly grid + booking + calendar query |
+| `plant-seeds` | New module | Seeds catalog + unified transaction ledger |
+| `gateways` | Adapter swap | Socket.IO Redis adapter; event emission routes via `StaffingDebouncerService` |
+| `common` | New service | `RedisService` with connection pool + health check + graceful shutdown |
+
+---
+
+## A. Monitoring v2 (module rewrite)
+
+### A1. New services
+
+| Service | Responsibility | Key methods |
+|---------|----------------|-------------|
+| `RedisService` (common) | Connection lifecycle; `XADD`, `XREADGROUP`, `XACK`, `XLEN` helpers; `/health` report | `publish`, `subscribe`, `streamAdd`, `streamRead`, `ping` |
+| `StatusProjectorService` | Reads Redis Stream `location:pings`, eager-loads user context once, writes `user_tracking_status`, emits events | `@Cron('*/1 * * * * *')` loop (configurable); `processBatch(messages[])` |
+| `StaffingDebouncerService` | Collapses bursts of `AREA_STAFFING_CHANGED` within `STAFFING_DEBOUNCE_SECONDS` | `flag(areaId, areaState)`, internal timer per area |
+| `StaleStatusSweeperService` | `@Cron('*/5 * * * *')`; flips `ACTIVE` without recent ping → `MISSING` | `sweep()`; batch size 50 |
+
+### A2. `onLocationPing` rewrite
+
+Before:
+- 6+ DB queries per ping: user, shift, area, polygon, prior status, staffing count.
+
+After:
+- **One** eager-loaded query at handler entry: `User` with `shift`, `area`, `area.boundary_polygon`, `area.rayon` relations.
+- Queue the `LocationPingEvent` to Redis Stream (`XADD location:pings MAXLEN ~ 100000 * ...`).
+- Return to caller immediately; projector does the writes asynchronously.
+
+Pool impact: down from ~3,000 queries/sec at peak (500 workers × 6 queries ÷ 12 s × headroom) to ~40 queries/sec (one-per-ping fast SELECT on a covered index).
+
+### A3. Batch iteration fix (`location.service.ts:92-103`)
+
+```ts
+// BEFORE — only last entry triggers status
+for (const ping of batch) await this.save(ping);
+await this.statusCalculator.onLocationPing(batch[batch.length - 1]);
+
+// AFTER — every ping queued; projector applies them in order
+for (const ping of batch) {
+  await this.save(ping);
+  await this.redis.streamAdd('location:pings', serialize(ping));
+}
+```
+
+For offline-drain batches > 100 entries, the projector applies a **keep-latest-within-30s-window** reservoir so we don't re-emit identical statuses.
+
+### A4. Unified snapshot endpoint
+
+```http
+GET /api/v1/monitoring/snapshot?scope=city|rayon|area&id=<uuid>
+                               &includes=workers,plants,overdue,rayons,areas
+Authorization: Bearer <jwt>
+```
+
+Response (abbreviated):
+
+```json
+{
+  "success": true,
+  "data": {
+    "scope": "rayon",
+    "scope_id": "…",
+    "generated_at": "2026-04-24T12:00:00+07:00",
+    "workers": [ { "user_id": "…", "status": "active", "lat": -7.25, "lng": 112.75, "area_id": "…" } ],
+    "rayons": [ { "id": "…", "boundary_polygon": {…}, "health_score": 0.87 } ],
+    "areas": [ { "id": "…", "plant_status": "due", "active_count": 4, "required_count": 5 } ],
+    "plant_summary": { "ok": 120, "due": 18, "overdue": 3 },
+    "overdue_areas": [ { "area_id": "…", "name": "Jalan Darmo Sec 1 R", "overdue_species": ["trembesi", "sono"] } ]
+  }
+}
+```
+
+Replaces today's 3–4 round-trips on dashboard load. Cached in React Query under `monitoring:snapshot:<scope>:<id>`; WebSocket patches mutate this cache in place.
+
+### A5. WebSocket events (v2, Redis-adapter-backed)
+
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `status:v2` | `StatusProjectorService` detects status transition | `{ user_id, prev, next, area_id, rayon_id, ts }` |
+| `cluster:update` | Delta of workers in a bbox since last emit | `{ scope, scope_id, added[], removed[], changed[] }` |
+| `inventory:updated` | `area_plants` row change (after activity completion / forecast cron) | `{ area_id, species_id, status, next_due_at }` |
+| `request:status-changed` | `pruning_requests.status` transition | `{ request_id, prev, next, rayon_id, submitted_by, converted_task_id? }` |
+| `area:plant-status-changed` | `area_plants.status` aggregate flips for an area | `{ area_id, prev, next, counts: { ok, due, overdue } }` |
+| `area:staffing-changed` | Debounced aggregate of staffing flips | same as Phase 2D, now debounced by `StaffingDebouncerService` |
+
+---
+
+## B. Plants module (new)
+
+### B1. Endpoints
+
+| Method | Path | Auth / Roles | Description |
+|--------|------|--------------|-------------|
+| `GET` | `/api/v1/plant-species` | JWT / any | List catalog (paginated) |
+| `POST` | `/api/v1/plant-species` | `admin_system`, `superadmin` | Create species (confirm editability with client) |
+| `PATCH` | `/api/v1/plant-species/:id` | `admin_system`, `superadmin` | Update |
+| `GET` | `/api/v1/areas/:id/plants` | JWT / scoped | Area inventory rollup |
+| `PUT` | `/api/v1/areas/:id/plants` | `admin_data` (own rayon), `admin_system`, `superadmin` | Bulk upsert species × count rows |
+| `GET` | `/api/v1/notable-plants?area_id=` | JWT / scoped | List |
+| `POST` | `/api/v1/notable-plants` | `korlap` (own area), `admin_data` (rayon), `admin_system`, `superadmin` | Create |
+| `PATCH DELETE` | `/api/v1/notable-plants/:id` | same | Update/Delete |
+| `GET` | `/api/v1/monitoring/area/:id/plant-status` | JWT / scoped | Green/yellow/red + due-date breakdown |
+
+### B2. `PlantDueDateService`
+
+Deterministic forecast per [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md):
+
+```
+next_due_at = last_pruned_at + (override_cycle_days ?? species.default_pruning_cycle_days ?? area_type_default)
+status = now > next_due_at           → 'overdue'
+       | now > next_due_at - 14 days → 'due'
+       | else                        → 'ok'
+```
+
+Run daily by `PlantDueDateRecalculator` cron (`@Cron('0 2 * * *')` WIB). Also recomputed synchronously when an activity completes with `plant_items` for the area.
+
+---
+
+## C. Task typing (tasks module)
+
+### C1. Entity additions
+
+See [database.md §tasks](./database.md#tasks-additive). Key backend work:
+
+- `TaskTypeRegistry` (injectable, singleton) — per-type Zod schema for `custom_fields`:
+  ```ts
+  registry.register('pruning', z.object({
+    area_type:       z.enum(['road', 'park', 'median']),
+    maintenance_type: z.enum(['PC', 'PM', 'PB']),
+    target_species:   z.array(z.object({ species_id: z.string().uuid(), count: z.int().positive() })),
+  }));
+  ```
+- `TasksService.createTyped(dto)` — validates `custom_fields` against registry.
+
+### C2. New endpoints
+
+| Method | Path | Auth / Roles | Description |
+|--------|------|--------------|-------------|
+| `POST` | `/api/v1/tasks` (extended) | `korlap`, `admin_data`, `kepala_rayon`, `admin_system`, `superadmin` | Accepts `task_type`, `custom_fields`, `target_plant_count` |
+| `POST` | `/api/v1/tasks/:id/partial-complete` | `satgas` (assigned), `korlap` | Body: `{ completed_count, plant_items[], notes }`. Server decides whether to spawn a child task via `TaskResumePolicy` |
+| `POST` | `/api/v1/tasks/:id/resume` | same | Creates child task with `parent_task_id = :id`, remaining `target_plant_count` |
+| `GET` | `/api/v1/tasks/:id/lineage` | JWT / scoped | Returns parent chain + children tree |
+
+### C3. Partial-completion request example
+
+```http
+POST /api/v1/tasks/{id}/partial-complete
+Authorization: Bearer <jwt>
+
+{
+  "completed_count": 5,
+  "plant_items": [
+    { "species_id": "…trembesi-uuid", "count": 5 }
+  ],
+  "notes": "5 of 8 trembesi done, rain stopped work",
+  "resume_tomorrow": true
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "task": { "id": "…", "status": "partial", "completed_plant_count": 5 },
+    "activity_id": "…",
+    "child_task_id": "…"
+  }
+}
+```
+
+---
+
+## D. Activities module (extended)
+
+### D1. Entity additions
+
+See [database.md §activities](./database.md#activities-additive).
+
+### D2. Endpoint updates
+
+| Method | Path | Change |
+|--------|------|--------|
+| `POST` | `/api/v1/activities` | Accepts `custom_fields`, `plant_items[]`, `photo_before_url`, `photo_after_url`, `pruning_request_id`, `reference_code` (optional; server generates if omitted) |
+| `GET` | `/api/v1/activities?task_type=pruning&rayon_id=&area_id=&from=&to=` | New filters; filters on `custom_fields.maintenance_type` via JSONB operators |
+
+When an activity with `pruning_request_id` is created, the originating request transitions `converted → in_progress → done` and emits `request:status-changed`.
+
+---
+
+## E. Pruning requests (new module)
+
+### E1. Endpoints
+
+| Method | Path | Auth / Roles | Description |
+|--------|------|--------------|-------------|
+| `POST` | `/api/v1/pruning-requests` | `staff_kecamatan` | Submit |
+| `GET` | `/api/v1/pruning-requests?mine=true` | `staff_kecamatan` | Own submissions |
+| `GET` | `/api/v1/pruning-requests?rayon_id=&status=` | `admin_data` (own rayon), `top_management` (read-all), `admin_system`, `superadmin` | Queue |
+| `POST` | `/api/v1/pruning-requests/:id/review` | `admin_data` (own rayon), `admin_system`, `superadmin` | `{ decision: 'approved'|'rejected', notes }` |
+| `POST` | `/api/v1/pruning-requests/:id/convert-to-task` | same | `{ area_id, scheduled_for, assign_to_user_id?, target_plant_count?, custom_fields? }` → returns created `task` |
+| `GET` | `/api/v1/pruning-requests/:id/result` | submitter, reviewer, top_management, admins | Task + activities + photos |
+
+### E2. Guard wiring
+
+New permission constant:
+
+```ts
+// be/src/modules/users/constants/role-groups.ts
+export const PRUNING_REQUEST_REVIEWERS = [
+  UserRole.ADMIN_DATA,       // rayon-scoped per ADR-032
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+] as const;
+```
+
+`PruningRequestsController` uses `@Roles(...PRUNING_REQUEST_REVIEWERS)` + a `RayonScopeGuard` that rejects with 403 when `request.rayon_id !== user.rayon_id` (except for `admin_system` / `superadmin`).
+
+### E3. State machine
+
+```
+submitted → under_review → approved → converted → in_progress → done
+                         ↘ rejected
+                         ↘ cancelled (submitter)
+```
+
+Transitions emit `request:status-changed` WS event and FCM notification to submitter.
+
+---
+
+## F. Service capacity (new module)
+
+| Method | Path | Auth / Roles | Description |
+|--------|------|--------------|-------------|
+| `GET` | `/api/v1/rayons/:id/capacity?service_type=&year=&from_week=&to_week=` | scoped | Weekly grid |
+| `PUT` | `/api/v1/rayons/:id/capacity` | `admin_data` (own rayon), `top_management`, `admin_system`, `superadmin` | Bulk upsert capacity_units |
+| `POST` | `/api/v1/rayons/:id/capacity/book` | same | Manual booking `{ year, iso_week, service_type, units, task_id? }` |
+
+Implicit booking happens on `/pruning-requests/:id/convert-to-task`: `CapacityService.book(rayon_id, iso_week_of(scheduled_for), 'pruning', 1, task_id)`.
+
+---
+
+## G. Plant seeds (new module)
+
+| Method | Path | Auth / Roles | Description |
+|--------|------|--------------|-------------|
+| `GET POST PATCH` | `/api/v1/plant-seeds` | `admin_data` (Taman Aktif), `top_management`, `admin_system`, `superadmin` | Seed master CRUD |
+| `GET POST` | `/api/v1/seed-transactions?seed_id=&type=&from=&to=` | same | Ledger query + record |
+
+`SeedTransactionService` updates `plant_seeds.stock_qty` atomically in the same transaction as the insert (sum-signed by `transaction_type`).
+
+---
+
+## H. New role & guards
+
+### H1. Enum extension
+
+`UserRole.STAFF_KECAMATAN = 'staff_kecamatan'` added to `be/src/modules/users/enums/role.enum.ts` per [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md).
+
+### H2. Role-group additions
+
+| Group | Members | Used by |
+|-------|---------|---------|
+| `PRUNING_REQUEST_SUBMITTERS` | `staff_kecamatan` | `POST /pruning-requests` |
+| `PRUNING_REQUEST_REVIEWERS` | `admin_data`, `admin_system`, `superadmin` | review / convert / queue endpoints |
+| `PLANT_SEED_MANAGERS` | `admin_data` (filtered by rayon name = 'Taman Aktif'), `top_management`, `admin_system`, `superadmin` | `/plant-seeds`, `/seed-transactions` |
+
+### H3. Clockability
+
+`staff_kecamatan` is **not** clockable (no shifts, no monitoring, no activities). Enforced by existing `ClockableRolesGuard` (Phase 2E) — no modification required as long as the guard uses a positive allow-list.
+
+### H4. Systematic guard sweep
+
+A role-matrix integration test (new, `test/integration/role-matrix.e2e-spec.ts`) hits every controller route with a JWT for each role and asserts 200/201/403/404 matches the expected matrix. Run in CI after sub-phase 3-2.
+
+---
+
+## I. Notifications
+
+| Trigger | Channel | Recipients |
+|---------|---------|-----------|
+| `pruning_request.status → approved/rejected/converted` | FCM + WS toast | submitter |
+| `pruning_request.status → done` | FCM | submitter |
+| `area_plants.status → overdue` (daily digest) | FCM + email | `top_management`, `admin_data` (rayon) |
+| `task.created from pruning_request` | FCM + WS | assignee |
+| `task.status → partial` with `resume_tomorrow=true` | FCM | korlap of area |
+
+FCM remains `FCM_ENABLED` gated (see Phase 4 activation). In this phase, notification hooks are wired but default to WS + DB-log when FCM is disabled.
+
+---
+
+## J. Test coverage targets
+
+| Module | Lines | Branches | Notes |
+|--------|-------|----------|-------|
+| `monitoring` v2 services | ≥ 88 % | ≥ 80 % | Projector, debouncer, sweeper |
+| `tasks` (extended) | ≥ 85 % | ≥ 78 % | `TaskTypeRegistry` 100 % |
+| `activities` (extended) | ≥ 85 % | ≥ 80 % | |
+| `plants` | ≥ 88 % | ≥ 80 % | `PlantDueDateService` 100 % |
+| `pruning-requests` | ≥ 88 % | ≥ 80 % | State machine 100 % |
+| `service-capacity` | ≥ 85 % | ≥ 78 % | Booking concurrency tests |
+| `plant-seeds` | ≥ 85 % | ≥ 78 % | Ledger arithmetic 100 % |
+
+Integration tests (per sub-phase):
+
+- **3-3:** Redis Streams round-trip; projector applies 10k events without loss; sweeper flips stale ACTIVE → MISSING
+- **3-6:** task partial-complete → resume → complete propagates lineage
+- **3-9:** pruning_request submit → review → convert-to-task → activity completion propagates status back to request
+- **3-11:** capacity booking decrements on convert, rebalances on task cancel
+
+---
+
+**Last Updated:** 2026-04-24

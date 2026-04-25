@@ -901,7 +901,51 @@ npm audit fix --force  # Use with caution
 
 ---
 
+## Phase 3: Planned Security Additions (Plants Management + Monitoring Rebuild + Public Intake)
+
+> **Authored:** 2026-04-24
+> **Status:** Not implemented — specs only.
+
+### Role & Authorization Changes
+
+#### admin_data — Extended with Disposition Authority (ADR-032)
+
+Phase 2C's ADR-009 explicitly excluded `admin_data` from approval flows (overtime, schedules). Phase 3 narrowly amends that boundary so `admin_data` can review and convert `pruning_requests`, scoped by `users.rayon_id`:
+
+- **What changes:** New permission constant `PRUNING_REQUEST_REVIEWERS` (admin_data + top_management + admin_system + superadmin) governs `POST /pruning-requests/:id/review` and `POST /pruning-requests/:id/convert-to-task`. `admin_data` actions are additionally constrained by `pruning_requests.rayon_id = actor.rayon_id` (or null before review, in which case `admin_data` may assign it to their own rayon).
+- **What does NOT change:** `admin_data` gains no rights over overtime approval, schedule approval, or user management. The extension is surgical: a single new capability, scoped tightly, audited via `audit_logs`.
+- **Rationale:** `admin_data` is already rayon-scoped per ADR-013 (multi-area assignment) and is the organizational owner of per-rayon data operations. Creating a new `admin_rayon` role would duplicate responsibility.
+
+#### staff_kecamatan — New External Role (ADR-033)
+
+Kecamatan (sub-district) staff are outside the DLH org chart but need structured access to submit pruning requests and track outcomes. No existing role fits.
+
+- **Capabilities:** `POST /pruning-requests` (own submissions only), `GET /pruning-requests?mine=true`, `GET /pruning-requests/:id` and `/result` for requests they submitted. No clock-in, no location tracking, no task assignment.
+- **Identity model:** Regular `users` row with `role = 'staff_kecamatan'` and `is_active = true`. `rayon_id` is optional (kecamatan boundaries do not align with DLH rayons). Authentication reuses the existing JWT + phone/username identifier pipeline (ADR-012).
+- **Guard sweep:** Every existing `@Roles(...)` decorator is reviewed to ensure `staff_kecamatan` is **not** inadvertently granted access. A role-matrix integration test covering every endpoint is required before Phase 3 ships.
+- **Threat model:** External-facing role with data-submission capability — rate-limited per ADR-009 principles (5 req/min on `POST /pruning-requests`), photo uploads validated for MIME + size, `reference_code` is UUID-derived (no sequential enumeration).
+
+### Infrastructure Trust Boundaries — Redis (ADR-029, ADR-016)
+
+Redis 7 enters the production trust boundary earlier than Phase 4 planning had anticipated. Security implications:
+
+- **Network posture:** Redis binds to a private subnet only, not publicly reachable. ACL user per service (Socket.IO adapter user, Streams consumer user, cache user) with minimum-necessary command access. No default user / no empty password.
+- **Data classification:** Stream entries contain `user_id`, GPS coordinates, area IDs, timestamps — classified the same as `location_logs` (sensitive). `redis_stream_max_len` cap (100,000) prevents unbounded retention; TTL on cache keys is 5 minutes.
+- **Failure mode:** If Redis is unreachable the monitoring pipeline falls back to in-process Socket.IO pub/sub (single-instance degraded mode) and the `/health` endpoint surfaces `redis: degraded`. Degraded mode is a known-state fallback, not a silent failure.
+- **Secrets:** `REDIS_URL` (connection string with password) stored in AWS Secrets Manager; local/dev uses `.env.example` placeholder. Rotation policy: 90 days (matches IAM key rotation).
+- **Audit:** Connection attempts logged via Redis `SLOWLOG` + application-level connect/disconnect events written to `audit_logs` with `entity_type = 'infrastructure'` for operations-initiated actions.
+
+### Public Intake Surface Area
+
+`POST /pruning-requests` is the first endpoint that accepts user-generated content from an external-org role. Additional controls:
+
+- Photo URLs validated as S3 pre-signed puts into a dedicated `pruning-requests-media/` prefix (ACL-restricted, no public read).
+- `notes` and `address` sanitized against XSS; JSON responses rely on existing NestJS class-serializer (no HTML passthrough).
+- Geofence validation on `gps_lat`/`gps_lng` is advisory (request within Surabaya bounding box warns but does not block) — kecamatan staff may report issues near rayon boundaries.
+
+---
+
 **Document Owner:** Software Architect
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-04-24
 **Status:** Active
-**Related Docs:** [`system-overview.md`](./system-overview.md), [`data-flow.md`](./data-flow.md), [`../api/authentication.md`](../api/authentication.md)
+**Related Docs:** [`system-overview.md`](./system-overview.md), [`data-flow.md`](./data-flow.md), [`../api/authentication.md`](../api/authentication.md), [`decisions/ADR-029-monitoring-v2-event-sourced-redis.md`](./decisions/ADR-029-monitoring-v2-event-sourced-redis.md), [`decisions/ADR-032-admin-data-disposition-authority-pruning-requests.md`](./decisions/ADR-032-admin-data-disposition-authority-pruning-requests.md), [`decisions/ADR-033-staff-kecamatan-role.md`](./decisions/ADR-033-staff-kecamatan-role.md)

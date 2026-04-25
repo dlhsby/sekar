@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.1] - planned (Phase 3 M1-R execution — sub-phases 3-R1…3-R5)
+
+**Patch release (planned)** — execution of v2.1.0 spec lock. No new tokens; this entry tracks the implementation rollout.
+
+### Planned
+
+- **3-R1 (Token pipeline + CI + ESLint).** `scripts/build-tokens.ts` generator emits `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts` from `tokens.json`. CI job `tokens-verify` regenerates and `git diff --exit-code`s on every PR. ESLint rules `no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN ban on `shadowRadius > 0`.
+- **3-R2 (Token value migration + brand fonts).** Both platforms consume from `generated/`. Drift fixes locked: `color.primary.hover #6BA87A`, `color.primary.active #5A9468` (newly explicit), `color.secondary #8B7355` (mobile drift fixed), `color.secondary.hover #725E45`, `color.success #7FBC8C` (mobile drift fixed), `color.info #69D2E7` (both platforms previously had `#A7DBD8` light). Type scale converges on `h1 28/1.2`, `h2 22/1.3`, `h3 18/1.35` (mobile catches up to web canonical). Hard-edge shadows: opaque `#1C1917`, zero blur/radius (mobile previously `shadowRadius: 1–4`; web previously `rgba(...)` with 1–4 px blur). Web focus ring `3 px solid #7FBC8C` + 2 px offset (was `4 px rgba 0.4`). Brand fonts bundled: mobile `.ttf` for Space Grotesk + Inter + JetBrains Mono (OFL); web `next/font/google` with `display: swap`.
+- **3-R3 (NB primitives + NBModal/NBToast/NBText + visreg).** All NB primitives migrate to generated tokens. New mobile components: `NBModal` (wraps `@gorhom/bottom-sheet` + RN `<Modal>`), `NBToast` (wraps `react-native-toast-message`), `NBText` (semantic typography variants). Visual regression baselines committed at 375 / 768 / 1280 px (Playwright `toHaveScreenshot` web, Jest `react-test-renderer` mobile).
+- **3-R4 (PWA shell + responsive scaffolding).** Web installable; offline shell + install banner + push subscription for admin roles + `MobileInstallPush` banner for satgas/linmas/korlap on phone browsers. `(kecamatan)` minimal layout for `staff_kecamatan` role. `ResponsiveShell` component drives sidebar (≥1280) / icon rail (768–1279) / ☰ drawer (<768) on every Phase-3 page.
+- **3-R5 (Full redesign sweep).** Every existing screen not being rewritten in M2/M3/M4 migrates onto generated tokens with mobile-web responsive layouts. Promoted from prior Phase 4 backlog. After 3-R5, `git grep '#[0-9a-fA-F]{6}' fe/{web,mobile}/src` returns only `scripts/hex-allowlist.txt` exceptions; no screen left on old tokens.
+
+### Compatibility
+
+No breaking API changes for component consumers; visual sharpening only (hard-edge shadows replace blurred ones). PR-level visual diffs gated by CI visreg.
+
+---
+
+## [2.1.0] - 2026-04-25 (Generated Tokens + PWA)
+
+**Minor release** — token structure harmonized across platforms; new PWA surfaces; no breaking color changes in existing UIs.
+
+### Added
+
+- **[design-tokens.md](./design-tokens.md)** — Layer 1/2/3 model, full registry, generator-pipeline spec, PWA requirements, responsive breakpoints.
+- **[tokens.json](./tokens.json)** — single source of truth for every Layer 1 token (colors, status, plant status, request status, backgrounds, neutrals, gray scale, sidebar, border, radius, shadow, spacing, font, type scale, motion).
+- **[tokens.schema.json](./tokens.schema.json)** — CI validator that catches typos and structural drift on PR.
+- `plant.ok` / `plant.due` / `plant.overdue` tokens (Phase 3 plants overlay).
+- `request.*` tokens for pruning-request status chips (Phase 3).
+- **PWA tokens** — `background_color` `#F5F0EB`, `theme_color` `#1A4D2E`, install-banner styling.
+- **[ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md)** — locks in the single-source-of-truth decision.
+- **[ADR-037](../architecture/decisions/ADR-037-web-pwa.md)** — web becomes installable PWA in Phase 3 M1-R.
+
+### Changed
+
+- **Background token normalized.** `bg.canvas = #F5F0EB` (warm stone) is now the canonical page background on both platforms. Phase 2's `#FDFD96` (pastel yellow) remains an **accent** color only. Existing pages keep their look until they're touched; Phase 3 sub-phases ship on the new canvas. Lock-in decision logged in [design-tokens.md](./design-tokens.md) §Backgrounds.
+- **Shadows are hard-edge, always.** Every `shadow.*` token now emits `radius: 0` — web `box-shadow: Xpx Ypx 0 #1C1917`, mobile `{ shadowRadius: 0, shadowOpacity: 1, elevation: max(X,Y) }`. The blurred-shadow drift from Phase 2 is fixed at the generator level; hand-edits cannot reintroduce it.
+- **Token drift fixed:** mobile `primaryDark = '#5A9B6F'` and web `--color-nb-primary-hover = '#6BA87A'` both converge on the canonical `#6BA87A`.
+- **Type scale is semantic** — `display-xl / display / h1 / h2 / h3 / body-lg / body / body-sm / caption / mono-sm` replaces ad-hoc size literals across components.
+
+### Deprecated
+
+- Hand-editing `fe/web/src/app/globals.css` token variables — replaced by `@import './generated/tokens.css'`.
+- Hand-editing `fe/mobile/src/constants/nbTokens.ts` — becomes a thin `export * from './generated/tokens'`.
+- ESLint rules in Phase 3 M1-R will **fail PRs** that hard-code hex values in component code or that try to use default Tailwind `shadow-*` classes (which include blur).
+
+### Migration
+
+- **Phase 3 M1-R:** rewire both platforms onto generated tokens; rewrite NB primitives (Button, Card, Badge, TextInput, Text, Modal, Toast); capture visual regression snapshots.
+- **Phase 3 sub-phases 3-4 / 3-5 / 3-7 / 3-10 / 3-11 / 3-12:** new monitoring/tasks/pruning/capacity/seeds surfaces ship on tokens by construction.
+- **Phase 4 (backlog):** sweep the remaining untouched pages (attendance, overtime, login, profile, settings, users, areas, rayons index) onto generated tokens.
+
+---
+
 ## [2.0.0] - 2026-02-05 (Modern Neo Brutalism)
 
 **Breaking Changes:** Complete design system modernization based on verified Neo Brutalism sources.

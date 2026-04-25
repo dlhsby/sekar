@@ -2,8 +2,10 @@
 
 **Document Owner:** Project Manager
 **Created:** 2026-01-21
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-04-24
 **Purpose:** Map dependencies across all development phases for effective planning and risk management
+
+> **Note (2026-04-24):** Phase numbering updated. New Phase 3 (Plants Management + Monitoring Rebuild + Public Intake) inserted. Prior Phase 3 (Polishing) renumbered to Phase 4 (Production Readiness); prior Phase 4 (Finishing / iOS) renumbered to Phase 5. The legacy "Phase 3 = Analytics" and "Phase 4 = Assets" references further down this document pre-date the January 30, 2026 reorg — they are retained for historical context only.
 
 ---
 
@@ -25,9 +27,20 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
 |-------|------|----------|--------|---------------|
 | 1 | MVP - Core Tracking | 2 weeks | **COMPLETE** | None |
 | 2A | Enhanced Features | 2 weeks | **COMPLETE** | Phase 1 100% |
-| 2B | UI/UX Revamp | 3-4 weeks | **IN PROGRESS** | Phase 2A complete |
-| 3 | Polishing & E2E Testing | 2-3 weeks | Not Started | Phase 2B complete |
-| 4 | Advanced Features | 6-8 weeks | Not Started | Phase 3 complete |
+| 2B | UI/UX Revamp | 3-4 weeks | **COMPLETE** | Phase 2A complete |
+| 2C | Client Feedback | 4-6 weeks | **COMPLETE & DEPLOYED** | Phase 2B complete |
+| 2D | Real-Time Monitoring | 1 week | **COMPLETE & DEPLOYED** | Phase 2C complete |
+| 2E | Client Feedback II | 1 day | **COMPLETE** | Phase 2D complete |
+| 3 | Plants Management + Monitoring Rebuild + Public Intake (incl. M1-R Redesign Foundation) | 5-7 weeks (73 dev-days) | **Not Started (specs complete)** | Phase 2E complete |
+| 4 | Production Readiness & Polishing | 6-8 weeks | Not Started (specs complete) | Phase 3 complete (Redis + monitoring v2 inherited) |
+| 5 | Finishing, Release & iOS (8 sub-phases) | 7-9 weeks | Not Started (specs complete) | Phase 4 complete |
+
+**Phase 3 Dependency Notes (new phase, 2026-04-24; M1-R milestone added 2026-04-25):**
+- Depends on Phase 2E: consumes 8-role system (adds `staff_kecamatan`, extends `admin_data` via ADR-032), `user_areas` multi-area model, `activities` table (extended with `custom_fields`, `plant_items`, `reference_code`, `pruning_request_id`), `audit_logs`.
+- **Internal gating: M1-R Redesign Foundation gates M2/M3/M4.** Sub-phases 3-R1 (token pipeline + CI + ESLint) → 3-R2 (token values + brand fonts) → 3-R3 (NB primitives + NBModal/NBToast/NBText + visreg) → 3-R4 (PWA shell + ResponsiveShell) → 3-R5 (full sweep). Every UI PR after 3-R1 must import from `generated/` — CI blocks otherwise. Web feature work (3-4, 3-10, 3-11, 3-12) and mobile feature work (3-5, 3-7) explicitly depend on M1-R landing first.
+- M1-S (3-1 spec sync + 3-2 schema/roles) runs in parallel with M1-R; together they form a 14-day + 6-day foundation block.
+- Unblocks Phase 4: Redis 7 infrastructure (ADR-029) becomes available ahead of ADR-016 Phase 4 scope; Phase 4 inherits Socket.IO Redis adapter, Redis Streams, caching layer, and the unified token pipeline. Task-status simplification debt (ADR-009, 8→4 statuses) hands off to Phase 4 backlog. **Promoted into Phase 3:** the full token-migration sweep across non-Phase-3 screens (3-R5), previously deferred to Phase 4.
+- Critical path: **Phase 2E → Phase 3 (M1-R + M1-S → M2/M3/M4 in parallel → M5) → Phase 4 → Phase 5**.
 
 ---
 

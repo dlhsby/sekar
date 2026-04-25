@@ -14,9 +14,10 @@ SEKAR is a comprehensive worker tracking and task management system for DLH Sura
 - Photo/video work reports with offline support
 - Live supervisor dashboards (web + mobile)
 - Task assignment and workflow management
-- 7 Rayon organizational structure with 8-role RBAC
-- Firebase push notifications
-- Four-status monitoring (active/inactive/outside_area/missing)
+- 7 Rayon organizational structure with 8-role RBAC (9th role `staff_kecamatan` planned in Phase 3)
+- Firebase push notifications (mobile FCM + web push admin subscription planned in Phase 3)
+- Five-status monitoring (active/inactive/outside_area/missing/offline)
+- Neo Brutalism 2.0 design system (unified mobile + web tokens planned in Phase 3 M1-R)
 
 ---
 
@@ -89,18 +90,24 @@ See [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md) for all
 
 ## Project Status
 
-**Phase 2D Real-Time Monitoring - Code Complete** (March 2026)
+**Phase 2E Complete + Monitoring Map Bugfixes** ✅ (April 2026)
 
 | Component | Status | Metrics |
 |-----------|--------|---------|
-| **Backend** | Complete | 16 modules, 120 endpoints, 1,095 tests, 92.15% coverage |
-| **Mobile** | Complete | 21 screens, 3,493 tests, 80.31%+ coverage, WCAG 2.1 AA |
-| **Web** | Complete | 21 pages, Mapbox GL, real-time monitoring dashboard |
-| **Database** | Complete | 20 tables, 8-role system, monitoring status tracking |
+| **Backend** | Complete | 18 modules, ~130 endpoints, 1,264 tests, 94.51% coverage |
+| **Mobile** | Complete | 22 screens, 3,669+ tests, 80.31%+ coverage, WCAG 2.1 AA, Neo Brutalism 2.0 |
+| **Web** | Complete | 21 pages, Mapbox GL, real-time monitoring dashboard, identifier login |
+| **Database** | Complete | 22 tables, 8-role system, 8 migrations, monitoring status tracking |
 
-**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com
+**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com (Phase 2D; 2E pending deploy)
 
-**Next:** Phase 3 - Polishing & E2E Testing
+**Next:** Phase 3 — Plants Management + Monitoring Rebuild + Public Intake (5–7 weeks, 73 dev-days, in planning)
+- **M1-R Redesign Foundation (14 d):** unified design-token pipeline + brand-font bundling + NB primitive migration + new mobile NBModal/NBToast/NBText + Web installable PWA + mobile-web responsive layouts at 375/768/1280 px + full screen-level redesign sweep
+- **M1-S Schema + Spec Sync (6 d):** new role `staff_kecamatan`, plant-related tables, obsolete-doc cleanup
+- **M2 Monitoring v2 (21 d):** Redis Streams pipeline, supercluster, virtualized list, k6 500-worker load test
+- **M3 Plants & Typed Tasks (15 d):** pruning task form, due-date forecast, CSV backfill of 5,008 historical records
+- **M4 Public Intake + Capacity + Seeds (16 d):** kecamatan submit → admin_data review → convert-to-task workflow, capacity calendar, seed ledger
+- **M5 Documentation + Deploy (2 d + rollout):** pilot at Rayon Selatan → all rayons
 
 ---
 
@@ -119,10 +126,10 @@ See [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md) for all
 
 ```bash
 # Backend
-cd be && npm run test:cov       # 1,095 tests, 92.15% coverage
+cd be && npm run test:cov       # 1,264 tests, 94.51% coverage
 
 # Mobile
-cd fe/mobile && npm test        # 3,493 tests, 80.31% coverage
+cd fe/mobile && npm test        # 3,669+ tests, 80.31% coverage
 
 # Web
 cd fe/web && npm run test:e2e   # Playwright E2E tests
@@ -170,7 +177,7 @@ See [`specs/deployment/phase-2-deployment.md`](specs/deployment/phase-2-deployme
 
 - **[CLAUDE.md](/CLAUDE.md)** - Complete project guide
 - **[specs/COMPLETION_STATUS.md](/specs/COMPLETION_STATUS.md)** - Project status
-- **[specs/api/contracts.md](/specs/api/contracts.md)** - All 120 API endpoints
+- **[specs/api/contracts.md](/specs/api/contracts.md)** - All ~130 API endpoints (Phase 3 plans add ~35 more)
 - **[be/src/database/seeds/README.md](be/src/database/seeds/README.md)** - Database seeding guide
 - **[specs/deployment/phase-2-deployment.md](specs/deployment/phase-2-deployment.md)** - Deployment guide
 - **[specs/README.md](/specs/README.md)** - All specifications
@@ -181,4 +188,4 @@ See [`specs/deployment/phase-2-deployment.md`](specs/deployment/phase-2-deployme
 
 UNLICENSED - Proprietary project for DLH Surabaya
 
-**Last Updated:** March 5, 2026
+**Last Updated:** April 25, 2026

@@ -38,3 +38,14 @@ This ensures that DECIMAL strings from PostgreSQL are automatically converted to
 - All 41 activities service tests pass
 - GPS coordinates are now returned as numbers in API responses
 - Mobile app can display GPS coordinates correctly
+
+## Phase 3 Planning (Apr 24, 2026)
+
+Activity entity will be extended (additive, not yet implemented) per `specs/phases/phase-3-plants-monitoring-rebuild/backend.md`:
+- `custom_fields` JSONB (maintenance_type PC/PM/PB, road_context JT/JH/ST, handling_status, worker_org)
+- `photo_before_url` / `photo_after_url` TEXT
+- `reference_code` TEXT UNIQUE (preserves CSV "25PR0…" IDs, idempotent backfill key)
+- `pruning_request_id` UUID FK to `pruning_requests`
+- New `activity_plant_items` relation: species × count line items (ADR-030, ADR-031)
+
+`activities` remains the canonical work record (ADR-010). Pruning details attach via `custom_fields` + `activity_plant_items` — no parallel table.

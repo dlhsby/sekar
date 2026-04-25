@@ -3,8 +3,8 @@
 Complete PostgreSQL database schema for SEKAR system with production-ready optimizations.
 
 **Document Owner:** Database Engineer
-**Last Updated:** 2026-03-06
-**Status:** Phase 2D Implemented (20 tables)
+**Last Updated:** 2026-04-24
+**Status:** Phase 2E Implemented (22 tables); Phase 3 Planned (+8 tables → 30 total)
 
 ---
 
@@ -2279,9 +2279,289 @@ CHECK (status IN ('in_progress', 'pending', 'approved', 'rejected'))
 
 ---
 
+## Phase 3: Planned Schema Changes (Plants Management + Monitoring Rebuild + Public Intake)
+
+> **Full specification:** See [`specs/phases/phase-3-plants-monitoring-rebuild/database.md`](../phases/phase-3-plants-monitoring-rebuild/database.md)
+> **Authored:** 2026-04-24
+> **Status:** Not implemented — migrations will be `17460000*-Phase3*.ts`. All additive.
+
+### New Tables (8)
+
+#### plant_species
+
+Master catalog of plant species (covers trees, shrubs, small plants). Seeded with 131 species deduped from the December 2025–April 2026 pruning CSV.
+
+```sql
+CREATE TABLE plant_species (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name_id TEXT NOT NULL,
+  name_latin TEXT,
+  category TEXT NOT NULL, -- 'tree' | 'shrub' | 'palm' | 'grass' | 'flower' | 'other'
+  default_pruning_cycle_days INT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_plant_species_name_id ON plant_species (name_id);
+```
+
+```typescript
+@Entity('plant_species')
+export class PlantSpecies {
+  @PrimaryGeneratedColumn('uuid') id: string;
+  @Column() name_id: string;
+  @Column({ nullable: true }) name_latin?: string;
+  @Column() category: string;
+  @Column({ type: 'int', nullable: true }) default_pruning_cycle_days?: number;
+  @Column({ type: 'text', nullable: true }) notes?: string;
+  @CreateDateColumn() created_at: Date;
+  @UpdateDateColumn() updated_at: Date;
+}
+```
+
+#### area_plants
+
+Area-aggregate inventory (species × count), drives pruning-cycle status and overdue alerts (ADR-030, ADR-034).
+
+```sql
+CREATE TABLE area_plants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  species_id UUID NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
+  count INT NOT NULL DEFAULT 0,
+  last_pruned_at TIMESTAMPTZ,
+  next_due_at TIMESTAMPTZ,
+  status TEXT NOT NULL DEFAULT 'ok', -- 'ok' | 'due' | 'overdue'
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_area_species UNIQUE (area_id, species_id),
+  CONSTRAINT chk_area_plants_status CHECK (status IN ('ok','due','overdue'))
+);
+CREATE INDEX idx_area_plants_area_status ON area_plants (area_id, status);
+CREATE INDEX idx_area_plants_next_due ON area_plants (next_due_at);
+```
+
+#### notable_plants
+
+Optional individual records for heritage or flagged plants (ADR-030).
+
+```sql
+CREATE TABLE notable_plants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  species_id UUID NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
+  gps_lat NUMERIC(10,7),
+  gps_lng NUMERIC(10,7),
+  label TEXT,
+  heritage BOOLEAN DEFAULT FALSE,
+  photo_urls TEXT[] DEFAULT '{}',
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+CREATE INDEX idx_notable_plants_area ON notable_plants (area_id) WHERE deleted_at IS NULL;
+```
+
+#### activity_plant_items
+
+Species line items attached to an activity (completion details for pruning tasks).
+
+```sql
+CREATE TABLE activity_plant_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  species_id UUID NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
+  count INT NOT NULL,
+  notes TEXT
+);
+CREATE INDEX idx_activity_plant_items_activity ON activity_plant_items (activity_id);
+```
+
+#### pruning_requests
+
+Public intake from kecamatan staff (ADR-032, ADR-033).
+
+```sql
+CREATE TABLE pruning_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reference_code TEXT NOT NULL UNIQUE,
+  submitted_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT, -- staff_kecamatan
+  kecamatan_name TEXT NOT NULL,
+  address TEXT NOT NULL,
+  gps_lat NUMERIC(10,7),
+  gps_lng NUMERIC(10,7),
+  expected_date DATE,
+  estimated_plant_count INT,
+  photo_urls TEXT[] DEFAULT '{}',
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'submitted',
+  rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL,
+  reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL, -- admin_data
+  reviewed_at TIMESTAMPTZ,
+  review_notes TEXT,
+  converted_task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT chk_pruning_requests_status CHECK (
+    status IN ('submitted','under_review','approved','rejected','converted','in_progress','done','cancelled')
+  )
+);
+CREATE INDEX idx_pruning_requests_status_rayon ON pruning_requests (status, rayon_id);
+CREATE INDEX idx_pruning_requests_submitter ON pruning_requests (submitted_by, status);
+CREATE UNIQUE INDEX idx_pruning_requests_ref ON pruning_requests (reference_code);
+```
+
+#### service_capacity
+
+Generic weekly capacity grid, reusable for future DLH services (ADR-035).
+
+```sql
+CREATE TABLE service_capacity (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rayon_id UUID NOT NULL REFERENCES rayons(id) ON DELETE CASCADE,
+  year INT NOT NULL,
+  iso_week INT NOT NULL,
+  service_type TEXT NOT NULL, -- 'pruning' | 'watering' | 'planting' | ...
+  capacity_units INT NOT NULL DEFAULT 0,
+  booked_units INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_service_capacity UNIQUE (rayon_id, year, iso_week, service_type)
+);
+CREATE INDEX idx_service_capacity_rayon_week ON service_capacity (rayon_id, year, iso_week);
+```
+
+#### plant_seeds
+
+Seed inventory master.
+
+```sql
+CREATE TABLE plant_seeds (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name_id TEXT NOT NULL,
+  species_id UUID REFERENCES plant_species(id) ON DELETE SET NULL,
+  unit TEXT NOT NULL, -- 'gram' | 'piece' | 'packet'
+  stock_qty NUMERIC(12,2) NOT NULL DEFAULT 0,
+  last_counted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### seed_transactions
+
+Unified ledger (purchase / distribution / adjustment).
+
+```sql
+CREATE TABLE seed_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  seed_id UUID NOT NULL REFERENCES plant_seeds(id) ON DELETE RESTRICT,
+  transaction_type TEXT NOT NULL, -- 'purchase' | 'distribution' | 'adjustment'
+  qty NUMERIC(12,2) NOT NULL, -- signed by type
+  unit_price NUMERIC(12,2),
+  supplier TEXT,
+  receipt_url TEXT,
+  to_rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL,
+  to_area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  recipient_name TEXT,
+  occurred_at DATE NOT NULL,
+  recorded_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT chk_seed_tx_type CHECK (transaction_type IN ('purchase','distribution','adjustment'))
+);
+CREATE INDEX idx_seed_tx_seed_date ON seed_transactions (seed_id, occurred_at);
+CREATE INDEX idx_seed_tx_type_date ON seed_transactions (transaction_type, occurred_at);
+```
+
+### Altered Tables (5)
+
+#### activities (extensions)
+
+```sql
+ALTER TABLE activities ADD COLUMN custom_fields JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE activities ADD COLUMN photo_before_url TEXT;
+ALTER TABLE activities ADD COLUMN photo_after_url TEXT;
+ALTER TABLE activities ADD COLUMN reference_code TEXT UNIQUE;
+ALTER TABLE activities ADD COLUMN pruning_request_id UUID REFERENCES pruning_requests(id) ON DELETE SET NULL;
+CREATE INDEX idx_activities_reference_code ON activities (reference_code);
+CREATE INDEX idx_activities_pruning_request ON activities (pruning_request_id);
+```
+
+`custom_fields` keys for pruning (CSV-derived): `maintenance_type` (PC/PM/PB), `road_context` (JT/JH/ST), `handling_status`, `worker_org`, `damage_cause`.
+
+#### tasks (extensions — ADR-031)
+
+```sql
+ALTER TABLE tasks ADD COLUMN task_type TEXT NOT NULL DEFAULT 'generic';
+ALTER TABLE tasks ADD COLUMN custom_fields JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE tasks ADD COLUMN parent_task_id UUID REFERENCES tasks(id) ON DELETE SET NULL;
+ALTER TABLE tasks ADD COLUMN target_plant_count INT;
+ALTER TABLE tasks ADD COLUMN completed_plant_count INT NOT NULL DEFAULT 0;
+ALTER TABLE tasks ADD CONSTRAINT chk_tasks_task_type
+  CHECK (task_type IN ('generic','pruning','watering','planting','removal','inspection'));
+CREATE INDEX idx_tasks_type_status ON tasks (task_type, status);
+CREATE INDEX idx_tasks_parent ON tasks (parent_task_id);
+```
+
+#### users.role (enum extension — ADR-033)
+
+```sql
+ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_users_role;
+ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (
+  role IN ('satgas','linmas','korlap','admin_data','kepala_rayon',
+           'top_management','admin_system','superadmin','staff_kecamatan')
+);
+```
+
+> `admin_data` is **not** being redefined as a new role — ADR-032 extends its capability (disposition authority over `pruning_requests`, scoped by `users.rayon_id`) via code/policy, not schema.
+
+#### location_logs (missing indexes — surfaced by Phase 3 profiling)
+
+```sql
+CREATE INDEX idx_location_logs_user_time ON location_logs (user_id, logged_at DESC);
+CREATE INDEX idx_location_logs_shift_time ON location_logs (shift_id, logged_at);
+CREATE INDEX idx_location_logs_user_shift_time ON location_logs (user_id, shift_id, logged_at);
+```
+
+#### user_tracking_status (additional indexes)
+
+```sql
+CREATE INDEX idx_uts_area_updated ON user_tracking_status (area_id, updated_at DESC);
+CREATE INDEX idx_uts_within_area ON user_tracking_status (is_within_area, area_id);
+```
+
+#### monitoring_configs (new rows)
+
+```sql
+INSERT INTO monitoring_configs (key, value, description) VALUES
+  ('staffing_debounce_seconds', '30', 'Debounce window for AREA_STAFFING_CHANGED emissions'),
+  ('stale_status_sweep_cron', '*/5 * * * *', 'Cron for StaleStatusSweeperService'),
+  ('cluster_zoom_threshold', '14', 'Zoom level at which clusters break into individual markers'),
+  ('redis_stream_max_len', '100000', 'MAXLEN approximate cap for monitoring: streams');
+```
+
+### Seed Data (Phase 3)
+
+- `plant_species`: 131 rows from CSV column 6, deduped. `default_pruning_cycle_days = NULL` (admin fills later).
+- `service_capacity`: 7 rayons × next 12 ISO weeks × `service_type='pruning'`, `capacity_units=NULL`.
+- `monitoring_configs`: new rows above.
+- Handling-status & worker-org lookup tables seeded with raw enum codes + `display_label` so relabeling requires no migration.
+
+### Table Count Summary (Phase 3)
+
+| Phase | Tables | New/Changed |
+|-------|--------|-------------|
+| Phase 3 (Plants/Monitoring Rebuild) | +8 | +plant_species, +area_plants, +notable_plants, +activity_plant_items, +pruning_requests, +service_capacity, +plant_seeds, +seed_transactions; ALTERED: activities, tasks, users.role, location_logs, user_tracking_status; monitoring_configs rows added |
+| **Total** | **30** | Up from 22 in Phase 2E |
+
+---
+
 **Related Documents:**
-- [ERD](./erd.md) - Entity relationship diagrams (Phase 2D)
+- [ERD](./erd.md) - Entity relationship diagrams (Phase 2D + Phase 3)
 - [Migrations](./migrations.md) - Migration strategy
 - [Seed Data](./seed-data.md) - Test data specifications
 - [Phase 2C Database](../phases/phase-2-c-client-feedback/database.md) - Phase 2C migration details
 - [Phase 2E Database](../phases/phase-2-e-client-feedback-2/database.md) - Phase 2E migration details
+- [Phase 3 Database](../phases/phase-3-plants-monitoring-rebuild/database.md) - Phase 3 full spec

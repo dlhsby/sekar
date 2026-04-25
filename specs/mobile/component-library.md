@@ -1,10 +1,12 @@
 # Mobile Component Library
 
-**Last Updated:** February 5, 2026
-**Version:** Neo Brutalism 2.0
+**Last Updated:** 2026-04-25
+**Version:** Neo Brutalism 2.1 (generated tokens from Phase 3 M1-R sub-phase 3-R2; new NBModal/NBToast/NBText shipping in sub-phase 3-R3)
 **Location:** `fe/mobile/src/components/nb/`
 
 This document provides the complete component library reference for the SEKAR mobile application.
+
+> **Phase 3 update:** Token values (colors, shadows, radii, type scale, motion) now come from **generated** `fe/mobile/src/constants/generated/tokens.ts`, emitted from [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) by `scripts/build-tokens.ts`. Do **not** edit `nbTokens.ts` by hand — it re-exports from the generated file. New NB primitives introduced in Phase 3: `NBModal`, `NBToast`. See [design-tokens.md](../ui-ux/design-tokens.md) and [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md).
 
 ---
 
@@ -660,4 +662,106 @@ monitoringTokens = {
   detailSheet: { initialSnapPoint: '50%', maxSnapPoint: '85%' },
 }
 ```
+
+---
+
+## Phase 3 M1-R: NB Modal / Toast / Text (sub-phase 3-R3)
+
+Three new mobile NB components ship in Phase 3 M1-R sub-phase 3-R3 to complete the Component Parity Matrix in [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md). All three consume only generated tokens — no hand-set hex values, font sizes, or shadows.
+
+### NBModal
+
+**Location:** `fe/mobile/src/components/nb/NBModal.tsx`
+**Library backbone:** `@gorhom/bottom-sheet` (sheet variant) + React Native `<Modal>` (fullscreen variant).
+**Cross-link:** [Neo Brutalism Modal Guidelines](./neo-brutalism-modal-guidelines.md) — drives sheet vs. fullscreen decision matrix.
+
+```tsx
+<NBModal
+  type="sheet" | "fullscreen"
+  visible={boolean}
+  onClose={() => void}
+  snapPoints={['45%']}      // sheet only; default 45%
+  title?: string             // optional NB title bar (uppercase + Lucide back icon)
+  scrollable?: boolean       // sheet content; default true
+  footer?: React.ReactNode   // sticky footer (typically NBButton primary)
+>
+  {children}
+</NBModal>
+```
+
+**Variants:**
+- **`type="sheet"`** — bottom sheet for ≤50 % viewport content (filter sheets, partial-complete confirmations, convert-to-task forms, area detail drawer). Snaps to provided `snapPoints` (default `['45%']`); supports `['10%','45%','90%']` for drag-up monitoring detail. Hard-edge top border (3 px), shadow `0 -4px 0 #1C1917`, 4-px gray grabber. Backdrop tap closes; `Esc` (RN keyboard event) closes.
+- **`type="fullscreen"`** — RN `<Modal>` with NB chrome for complex forms: species autocomplete (131-row fuzzy match), `PartialCompleteSheet`, `ConvertToTaskSheet`, seed transaction form, photo picker, image gallery viewer.
+
+**States:** open / closed; opening animation 200 ms ease-out; closing 250 ms ease-in.
+**Accessibility:** focus trap when open; `Esc` closes; backdrop has `accessibilityLabel="Tutup modal"`; sheet grabber has `accessibilityRole="adjustable"` + `accessibilityActions={['increment','decrement']}` to expose snap-point changes to screen readers.
+
+### NBToast
+
+**Location:** `fe/mobile/src/components/nb/NBToast.tsx`
+**Library backbone:** `react-native-toast-message` configured with NB chrome.
+
+```tsx
+NBToast.show({
+  level: 'info' | 'success' | 'warning' | 'danger',
+  icon?: LucideIcon,        // default: per-level icon (info/check-circle/alert-triangle/x-circle)
+  title: string,            // UPPERCASE auto-applied
+  body?: string,
+  durationMs?: number,      // default 4000
+  action?: { label: string, onPress: () => void },  // optional CTA
+});
+```
+
+**Variants by level:**
+- `info` — `bg.accent.mint`, `info` icon
+- `success` — `bg.accent.green`, `check-circle` icon
+- `warning` — `bg.accent.yellow`, `alert-triangle` icon
+- `danger` — `danger.light` background, `x-circle` icon
+
+**Chrome:** 2 px `border.color`, hard-edge `shadow.md`, uppercase title (Space Grotesk 700, `caption` size), body `body-sm`, Lucide icon paired (WCAG color-blind rule). **Position:** bottom (mobile convention).
+**Accessibility:** `accessibilityLiveRegion="polite"` (Android) + `AccessibilityInfo.announceForAccessibility` (iOS) on show. `action` button is keyboard-focusable.
+
+### NBText
+
+**Location:** `fe/mobile/src/components/nb/NBText.tsx`
+**Purpose:** Replaces every hand-set `fontSize`/`fontWeight`/`lineHeight`/`fontFamily` literal in the mobile codebase with a semantic variant prop. Reads font + size + weight + line-height from generated `type.*` tokens.
+
+```tsx
+<NBText
+  variant="display-xl" | "display" | "h1" | "h2" | "h3" | "body-lg" | "body" | "body-sm" | "caption" | "mono-sm"
+  color?: keyof typeof nbColors  // default 'neutral.black'
+  align?: 'left' | 'center' | 'right'   // default 'left'
+  numberOfLines?: number
+  uppercase?: boolean             // forces uppercase (e.g. badge-style usage of 'caption')
+  style?: TextStyle               // escape hatch for one-off overrides — use sparingly
+>
+  {children}
+</NBText>
+```
+
+**Variant → token mapping** (all values from generated `type.*`, never hand-edited):
+
+| Variant | Family | Weight | Size / line-height |
+|---------|--------|--------|--------------------|
+| `display-xl` | display (Space Grotesk) | 800 | 56 / 1.0 |
+| `display` | display | 700 | 40 / 1.05 |
+| `h1` | display | 700 | 28 / 1.2 |
+| `h2` | display | 600 | 22 / 1.3 |
+| `h3` | display | 600 | 18 / 1.35 |
+| `body-lg` | body (Inter) | 500 | 18 / 1.55 |
+| `body` | body | 400 | 16 / 1.5 |
+| `body-sm` | body | 400 | 14 / 1.45 |
+| `caption` | body | 500 | 12 / 1.4 |
+| `mono-sm` | mono (JetBrains Mono) | 500 | 12 / 1.4 |
+
+**Adoption:** every screen swept in 3-R5 replaces inline typography styles with `<NBText variant="...">`. Lint rule `prefer-nb-text` (added in 3-R1) flags raw `<Text style={{ fontSize: ... }}>` usage outside `NBText.tsx` itself.
+**Accessibility:** inherits RN `<Text>` accessibility props; `numberOfLines` honors RN truncation; high-contrast mode handled by tokens (no hard-coded colors).
+
+### Adoption tracker
+
+| Component | Sub-phase | Status |
+|-----------|-----------|--------|
+| `NBModal` | 3-R3 | ⏳ Not Started |
+| `NBToast` | 3-R3 | ⏳ Not Started |
+| `NBText` | 3-R3 (then propagated by 3-R5 sweep) | ⏳ Not Started |
 ```

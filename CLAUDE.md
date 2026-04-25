@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-**Last Updated:** April 24, 2026
-**Status:** Phase 2E Complete ✅ + Monitoring Map Bugfixes ✅ | Phase 3 Next + Trees/Plants Management Planning
+**Last Updated:** April 25, 2026
+**Status:** Phase 2E Complete ✅ + Monitoring Map Bugfixes ✅ | Phase 3 (Plants Management + Monitoring Rebuild + Public Intake) IN PLANNING — ADR-029…037 drafted; **M1-R Redesign Foundation milestone added (sub-phases 3-R1…3-R5)**: unified token pipeline, brand-font bundling, NB primitive migration with NBModal/NBToast/NBText, web PWA shell with mobile-web responsive layouts, full redesign sweep promoted from Phase 4 backlog. Phase 4/5 renumbered.
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -190,6 +190,10 @@ async method(@GetUser() user: User) { ... }
 
 **Removed roles:** `worker`, `supervisor`, `admin`, `koordinator_lapangan`
 
+**Phase 3 planned additions (ADR-032, ADR-033 — not yet implemented):**
+- `'staff_kecamatan'` - External sub-district staff submitting pruning requests (new, non-clockable)
+- `admin_data` gains **narrow disposition authority** over `pruning_requests` scoped by `users.rayon_id` (capability extension, per ADR-032 — amends ADR-009). **No new `admin_rayon` role.**
+
 **Never use Pascal case for roles** (avoid `'Worker'`, `'Admin'`, `'Supervisor'`).
 
 ### Terminology Convention (Phase 2C -- ADR-010)
@@ -347,14 +351,25 @@ API_VERSION=v1
 - `useFocusEffect` replaces one-shot `useEffect` for boundary fetch; `boundaryKey` forces Polygon remount on tab re-focus
 - Removed `animateToRegion` from `handleMarkerPress` to eliminate race with bottom-sheet `snapToIndex`
 
-**Phase 3 Polishing & E2E Testing** - IN PLANNING
-- E2E testing (Detox mobile, Playwright web)
-- Manual testing checklist (35 screens/pages)
-- UI/UX polish, performance optimization
-- Trees & Plants Management feature (new — planning session scheduled)
+**Phase 3 Plants Management + Monitoring Rebuild + Public Intake** - IN PLANNING (Apr 24–25, 2026)
+- **M1-R Redesign Foundation (NEW, 14 d) — opens Phase 3 BEFORE feature work.** Sub-phases 3-R1…3-R5: token generator pipeline + CI + ESLint, token value migration with hard-edge shadows + brand-font bundling on both platforms, NB primitive migration + new `NBModal`/`NBToast`/`NBText`, web PWA shell with mobile-web responsive scaffolding, full redesign sweep on every non-rewritten screen. After M1-R, mobile native + mobile web (<768 px) + desktop web all share one visual spine; no screen left on old tokens. Promoted full migration sweep from prior Phase 4 backlog (ADR-036, ADR-037).
+- Full monitoring v2 rewrite: Redis Streams projector, Socket.IO Redis adapter, staffing debouncer, stale-status sweep, supercluster rendering (web + mobile), virtualized worker list, incremental WS patches (ADR-029 supersedes ADR-011 at pipeline level)
+- Preserves Apr 24 marker/trail fixes (tracksViewChanges={false}, LabelMode enum, requestAnimationFrame guard, useFocusEffect) via parallel `ClusterMarker` + feature flag + ESLint rule
+- Plants management: `plant_species` (131 rows from CSV), `area_plants` aggregate inventory, optional `notable_plants`, deterministic species × area_type due-date forecast (ADR-030, ADR-034)
+- Task typing: `task_type` enum + JSONB `custom_fields` schema registry, parent/child lineage, partial-complete / resume-tomorrow, `activity_plant_items` line items (ADR-031)
+- Public intake: new `staff_kecamatan` role (ADR-033), `pruning_requests` entity + workflow, `admin_data` disposition extension (ADR-032), generic `service_capacity` booking model (ADR-035)
+- Plant-seed inventory: unified `plant_seeds` + `seed_transactions` ledger
+- Web becomes installable PWA + mobile-responsive at 375 / 768 / 1280 px; install banner directs satgas/linmas/korlap on phone browsers to native app; `staff_kecamatan` submits via dedicated `(kecamatan)` layout
+- Redis 7 adopted earlier than Phase 4's ADR-016 plan; CSV backfill seeder (5,008 rows); k6 500-worker load test
+- 21 sub-phases, ~73 dev-days, 8 new tables, 5 altered tables, ~35 new endpoints + push subscription endpoints, new backend modules: plants, pruning-requests, service-capacity, plant-seeds
+- **Task status simplification (ADR-009 debt, 8→4) deferred to Phase 4 backlog**
 
-**Phase 4 Advanced Features** - NOT STARTED
-- Analytics & Reporting, Asset Management, iOS Platform
+**Phase 4 Production Readiness** - NOT STARTED (renumbered from old Phase 3)
+- E2E testing (Detox mobile, Playwright web), manual testing checklist, UI/UX polish, performance, FCM full activation, offline sync completion, exports, JWT refresh, rate limiting
+- Task status simplification (ADR-009 debt), staging environment
+
+**Phase 5 Finishing / iOS** - NOT STARTED (renumbered from old Phase 4)
+- Analytics & Reporting, Asset Management (QR), iOS Platform, user guides
 
 **See** `specs/COMPLETION_STATUS.md` and `specs/phases/` for detailed tracking.
 
@@ -394,9 +409,11 @@ docker-compose down -v                      # Clean restart (deletes data!)
 |----------|----------|-------------|
 | **Project Status** | `specs/COMPLETION_STATUS.md` | Single source of truth |
 | **Phase 2** | `specs/phases/phase-2-enhanced/STATUS.md` | Implementation tracking |
-| **Phase 3** | `specs/phases/phase-3-polishing/STATUS.md` | Polishing & E2E Testing |
 | **Phase 2D** | `specs/phases/phase-2-d-monitoring/STATUS.md` | Monitoring implementation |
 | **Phase 2E** | `specs/phases/phase-2-e-client-feedback-2/STATUS.md` | Client Feedback II |
+| **Phase 3** | `specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md` | Plants + Monitoring v2 + Public Intake (IN PLANNING) |
+| **Phase 4** | `specs/phases/phase-4-production-readiness/STATUS.md` | Production Readiness (renumbered from old Phase 3) |
+| **Phase 5** | `specs/phases/phase-5-finishing-ios/STATUS.md` | Finishing / iOS (renumbered from old Phase 4) |
 | **API Docs** | `specs/api/contracts.md` | All ~130 endpoints |
 | **Errors** | `specs/api/error-handling.md` | 31 error codes |
 | **Security** | `specs/architecture/security.md` | Security architecture + dependency audit |
@@ -405,7 +422,9 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **WSL2** | `specs/deployment/wsl2-network-setup.md` | Mobile testing network |
 | **Infrastructure** | `specs/deployment/infrastructure-setup.md` | Docker services |
 | **E2E Testing** | `specs/testing/e2e-testing.md` | Playwright guide |
-| **Architecture** | `specs/architecture/decisions/` | 15 ADRs |
+| **Architecture** | `specs/architecture/decisions/` | 24 ADRs (15 existing + ADR-029…037 added for Phase 3; ADR-036 + ADR-037 Accepted) |
+| **Design tokens** | [`specs/ui-ux/design-tokens.md`](specs/ui-ux/design-tokens.md) / [`tokens.json`](specs/ui-ux/tokens.json) | Single source of truth for both platforms from Phase 3 M1-R sub-phase 3-R2 onward (ADR-036). Do not hand-edit generated files. |
+| **Web PWA** | [`specs/phases/phase-3-plants-monitoring-rebuild/web.md`](specs/phases/phase-3-plants-monitoring-rebuild/web.md) §PWA | Web becomes installable in Phase 3 M1-R sub-phase 3-R4 (ADR-037). Offline shell, SWR snapshot caching, web push for admins. |
 | **All Specs** | `specs/README.md` | Complete navigation |
 
 ---
@@ -454,9 +473,10 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **Database** | 22 tables, 8-role system, 8 migrations (incl. drop-phone, fix-indexes+CHECK) |
 | **DevOps** | 3 CI/CD pipelines, ESLint 10, Phase 2D deployed to production |
 | **UI/UX** | Neo Brutalism 2.0, five-status monitoring, optional selfie, overtime clock-in/out |
+| **Phase 3 (planning)** | 9 ADRs drafted (029–037), **21 sub-phases** (incl. M1-R 3-R1…3-R5 redesign foundation), **~73 dev-days**; Phase 4/5 renumbered. Mobile + web unified design tokens + responsive PWA + full migration sweep. No code written yet. |
 
 **Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com (Phase 2D; 2E pending deploy)
 
-**Next:** Phase 3 Polishing & Trees/Plants Management feature planning
+**Next:** Phase 3 — Plants Management + Monitoring Rebuild + Public Intake. Phase 4 (Production Readiness) follows.
 
 **Deployment Guide:** `specs/deployment/phase-2-deployment.md`

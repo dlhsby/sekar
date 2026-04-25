@@ -1,9 +1,10 @@
 # Neo Brutalism Modal Design Guidelines
 
-**Version:** 1.0
-**Last Updated:** February 8, 2026
+**Version:** 1.1
+**Last Updated:** April 25, 2026 (Phase 3 M1-R cross-link added)
 **Status:** Active
 **Platform:** React Native Mobile
+**Implementation:** Component spec + props in [`specs/mobile/component-library.md §NBModal`](./component-library.md#nbmodal); shipping in Phase 3 M1-R sub-phase 3-R3 as a unified `NBModal` wrapping `@gorhom/bottom-sheet` (sheet variant) + RN `<Modal>` (fullscreen variant). All visual rules in this guide are enforced by that component.
 
 ---
 
@@ -94,7 +95,7 @@ borderLeftWidth: 4,
 borderLeftColor: nbColors.successDark,
 
 // Warning section (maintenance, time-sensitive)
-backgroundColor: nbColors.warningLight,  // #FDFD96
+backgroundColor: nbColors.warningLight,  // #FFDB58 (canonical per Phase 3-0, ADR-036 — pastel #FDFD96 was drift)
 borderLeftWidth: 4,
 borderLeftColor: nbColors.warning,
 

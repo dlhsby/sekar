@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SEKAR Design Tokens (Layer 1)",
+  "description": "Schema for the single source of truth at specs/ui-ux/tokens.json. CI validates tokens.json against this. Any structural change needs an ADR bump.",
+  "type": "object",
+  "required": ["_meta", "color", "status", "plant", "request", "bg", "neutral", "gray", "sidebar", "border", "radius", "shadow", "space", "font", "type", "motion"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "_meta": {
+      "type": "object",
+      "required": ["version", "lastUpdated"],
+      "properties": {
+        "version":     { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "lastUpdated": { "type": "string", "format": "date" },
+        "source":      { "type": "string" },
+        "notice":      { "type": "string" }
+      }
+    },
+    "color":    { "$ref": "#/$defs/colorMap" },
+    "status":   { "$ref": "#/$defs/statusMap" },
+    "plant":    { "$ref": "#/$defs/plantMap" },
+    "request":  { "$ref": "#/$defs/requestMap" },
+    "bg":       { "$ref": "#/$defs/bgMap" },
+    "neutral":  { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+    "gray":     { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+    "sidebar":  { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+    "border":   { "type": "object", "additionalProperties": { "type": "string" } },
+    "radius":   { "type": "object", "additionalProperties": { "type": "string" } },
+    "shadow":   { "$ref": "#/$defs/shadowMap" },
+    "space":    {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "object", "properties": { "mobile": { "type": "string" }, "web": { "type": "string" } }, "required": ["mobile", "web"] }
+        ]
+      }
+    },
+    "font":     { "type": "object", "additionalProperties": { "type": "string" } },
+    "type":     { "$ref": "#/$defs/typeMap" },
+    "motion":   { "$ref": "#/$defs/motionMap" }
+  },
+  "$defs": {
+    "hex":  { "type": "string", "pattern": "^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$" },
+    "rgba": { "type": "string", "pattern": "^rgba?\\(.+\\)$" },
+    "hexOrRgba": { "oneOf": [ { "$ref": "#/$defs/hex" }, { "$ref": "#/$defs/rgba" } ] },
+    "colorEntry": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value":     { "$ref": "#/$defs/hexOrRgba" },
+        "webVar":    { "type": "string" },
+        "mobileKey": { "type": "string" },
+        "icon":      { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "colorMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/colorEntry" } },
+    "statusEntry": {
+      "type": "object",
+      "required": ["value", "background"],
+      "properties": {
+        "value":      { "$ref": "#/$defs/hex" },
+        "background": { "$ref": "#/$defs/hex" }
+      }
+    },
+    "statusMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/statusEntry" } },
+    "plantEntry": {
+      "type": "object",
+      "required": ["value", "polygonOpacity"],
+      "properties": {
+        "value":          { "$ref": "#/$defs/hex" },
+        "polygonOpacity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "plantMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/plantEntry" } },
+    "requestEntry": {
+      "type": "object",
+      "required": ["value", "icon"],
+      "properties": {
+        "value": { "$ref": "#/$defs/hex" },
+        "icon":  { "type": "string" }
+      }
+    },
+    "requestMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/requestEntry" } },
+    "bgEntry": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": { "$ref": "#/$defs/hexOrRgba" },
+        "usage": { "type": "string" }
+      }
+    },
+    "bgMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/bgEntry" } },
+    "shadowEntry": {
+      "type": "object",
+      "required": ["x", "y", "color", "radius"],
+      "properties": {
+        "x":      { "type": "number" },
+        "y":      { "type": "number" },
+        "color":  { "oneOf": [ { "$ref": "#/$defs/hex" }, { "const": "transparent" } ] },
+        "radius": { "type": "integer", "const": 0, "description": "Hard-edge shadows only. NB identity." }
+      }
+    },
+    "shadowMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/shadowEntry" } },
+    "typeEntry": {
+      "type": "object",
+      "required": ["font", "weight", "size", "lineHeight"],
+      "properties": {
+        "font":       { "type": "string", "enum": ["display", "body", "mono"] },
+        "weight":     { "type": "integer", "minimum": 100, "maximum": 900 },
+        "size":       { "type": "integer", "minimum": 10 },
+        "lineHeight": { "type": "number", "minimum": 1.0, "maximum": 2.0 }
+      }
+    },
+    "typeMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/typeEntry" } },
+    "motionEntry": {
+      "type": "object",
+      "required": ["duration", "easing"],
+      "properties": {
+        "duration": { "type": "string", "pattern": "^\\d+ms$" },
+        "easing":   { "type": "string" }
+      }
+    },
+    "motionMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/motionEntry" } }
+  }
+}
