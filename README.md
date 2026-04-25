@@ -99,7 +99,7 @@ See [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md) for all
 | **Web** | Complete | 21 pages, Mapbox GL, real-time monitoring dashboard, identifier login |
 | **Database** | Complete | 22 tables, 8-role system, 8 migrations, monitoring status tracking |
 
-**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com (Phase 2D; 2E pending deploy)
+**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2D (Mar 7) + Phase 2E (Apr 25)** both live in production.
 
 **Next:** Phase 3 — Plants Management + Monitoring Rebuild + Public Intake (5–7 weeks, 73 dev-days, in planning)
 - **M1-R Redesign Foundation (14 d):** unified design-token pipeline + brand-font bundling + NB primitive migration + new mobile NBModal/NBToast/NBText + Web installable PWA + mobile-web responsive layouts at 375/768/1280 px + full screen-level redesign sweep

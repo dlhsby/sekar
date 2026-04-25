@@ -3,7 +3,7 @@
 **Last Updated:** April 25, 2026 (Phase 3 M1-R Redesign Foundation milestone added — sub-phases 3-R1…3-R5; full migration sweep promoted from Phase 4 backlog; ADRs 036/037 finalized; 73 dev-days)
 **Current Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake — Not Started (specs complete)
 **Next Phase:** Phase 4 Production Readiness & Polishing (renumbered from prior Phase 3)
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 2E: 100% ✅ | Phase 3: 0% (planning complete) | Phase 4: 0% | Phase 5: 0%
+**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 2E: 100% ✅ **DEPLOYED (Apr 25, 2026)** | Phase 3: 0% (planning complete) | Phase 4: 0% | Phase 5: 0%
 
 ---
 
@@ -35,7 +35,7 @@
 | **Web** | ✅ Phase 2E Code-Complete | 100% | 505+ unit tests | 96%+ stmts ✅ | Login identifier, auth context tests updated |
 | **Database** | ✅ Phase 2E Code-Complete | 100% | 1,264 BE tests | - | 22 tables (+user_areas, audit_logs), 8 migrations (incl. drop-phone, fix-indexes). Phase 3 planned: +8 tables (plant_species, area_plants, notable_plants, activity_plant_items, pruning_requests, service_capacity, plant_seeds, seed_transactions); +5 extended (activities, tasks, users.role, location_logs, user_tracking_status) |
 | **Documentation** | ✅ Phase 2E Complete | 100% | 16+ spec files | - | Updated specs, ADR-012 to ADR-015. Phase 3 authored (Apr 24, 2026): 11 spec docs + 7 new ADRs (029–035) |
-| **DevOps** | ✅ Phase 2D Deployed | 100% | - | - | Backend + Web deployed to production; Phase 2E pending deploy; Phase 3 will add Redis 7 to stack |
+| **DevOps** | ✅ Phase 2E Deployed | 100% | - | - | Backend + Web deployed to production: Phase 2D (Mar 7, 2026) + Phase 2E (Apr 25, 2026). Phase 2E deploy was unblocked Apr 25 after stale `shifts.service.spec.ts` test was reconciled with the base64 selfie refactor (commit `ab67414`). Phase 3 will add Redis 7 to stack. |
 | **Phase 3 Planning** | 🟡 Specs Complete | 0% (not started) | — / — | — | Plants + Monitoring Rebuild + Public Intake + **M1-R Redesign Foundation**: 73 dev-days, 21 sub-phases (5 redesign + 16 feature), ~35 new endpoints + push subscription, 8 new tables, unified design token pipeline + responsive PWA + full migration sweep, k6 500-worker load test |
 
 ---

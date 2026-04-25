@@ -1,8 +1,10 @@
 # Phase 2 Production Deployment Guide
 
-**Last Updated:** March 14, 2026 (Phase 2E Review & Seed Fix)
-**Status:** ✅ Phase 2D Deployed (Mar 7) | 🔄 Phase 2E Pending Deployment
-**Deployment Time:** Backend 15-20 min (automated) | Web 10-15 min (manual)
+**Last Updated:** April 25, 2026 (Phase 2E deployed)
+**Status:** ✅ Phase 2D Deployed (Mar 7, 2026) | ✅ Phase 2E Deployed (Apr 25, 2026)
+**Deployment Time:** Backend 15-20 min (automated) | Web 10-15 min (automated via CI/CD on push to `main`)
+
+> **Phase 2E deployment note (Apr 25, 2026):** Mar 15 push intent was blocked by a stale `shifts.service.spec.ts` test that still asserted the old S3-upload code path after Phase 2E's base64 selfie refactor. Test was reconciled in commit `ab67414` (Apr 25) — backend CI/CD then went green and the production deploy stage ran automatically. Phase 2E backend + web are now on production. Backend remaining vulns (18 moderate-transitive uuid<14 via typeorm/firebase-admin/@google-cloud/storage) tracked in `specs/architecture/security.md` DEP-SEC; upstream-blocked.
 
 > **⚠️ IMPORTANT:** This guide references domain names that need to be set up manually.
 > For current deployment status and actual URLs, see: `specs/deployment/DEPLOYMENT_STATUS.md`
@@ -16,15 +18,16 @@
 - Web Dashboard: http://sekar.wahyutrip.com (sekar-web:3001)
 - Database: RDS PostgreSQL 14 (22 tables as of Phase 2E)
 
-**Phase 2E (Pending Deployment):**
+**Phase 2E (Deployed April 25, 2026):**
 - ✅ Phone number login (identifier-based auth, ADR-012)
-- ✅ Profile picture upload (S3), multi-area korlap assignment (ADR-013)
-- ✅ Overtime clock-in/clock-out redesign (ADR-014), optional selfie
+- ✅ Profile picture upload (base64 data URI — Mar 15 fix; S3 path removed for LocalStack/device compatibility), multi-area korlap assignment (ADR-013)
+- ✅ Overtime clock-in/clock-out redesign (ADR-014), optional selfie (base64-stored directly)
 - ✅ Admin_data + kepala_rayon clockable, audit trail module (ADR-015)
 - ✅ New tables: `user_areas`, `audit_logs`
 - ✅ Migration: `Phase2EClientFeedback`
-- ⚠️ Breaking: Login DTO `username` → `identifier`
-- ⚠️ Re-seed required for phone_number and user_areas data
+- ⚠️ Breaking (already coordinated): Login DTO `username` → `identifier`
+- ✅ Re-seed completed for `phone_number` and `user_areas` data (admin/superadmin run via `npm run db:seed:prod`)
+- 📌 Deploy was blocked from Mar 15 → Apr 25 by stale `shifts.service.spec.ts` test asserting the old S3 selfie upload path. Reconciled in commit `ab67414`; backend CI/CD then went green and the production deploy step ran automatically.
 
 **Phase 2D (Deployed March 7, 2026):**
 - ✅ Five-status tracking system (active/inactive/outside_area/missing/offline)

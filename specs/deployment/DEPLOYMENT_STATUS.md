@@ -1,11 +1,43 @@
 # Current Deployment Status
 
-**Last Updated:** March 2, 2026 (Phase 2C Web Alignment + Security Fixes)
-**Backend Status:** Phase 2C ✅ Deployed & Healthy (888 tests, 89.57% coverage)
-**Web Dashboard:** ✅ DEPLOYED (Phase 2C complete — activities, schedules, overtime, tasks, monitoring)
-**Database:** ✅ Phase 2C schema (18 tables) — migrations M0-M4 executed
-**Migration Strategy:** ✅ DATABASE_SYNCHRONIZE=true (temporary — disable after 48h stability)
-**CI/CD:** ✅ All 3 pipelines green (Backend + Web + Mobile)
+**Last Updated:** April 25, 2026 (Phase 2E deployed)
+**Backend Status:** ✅ **Phase 2E Deployed & Healthy** (1,264 tests, 94.51% stmts coverage; backend CI/CD `ab67414` green)
+**Web Dashboard:** ✅ **Phase 2E Deployed** — identifier login, optional selfie, Phase 2D real-time monitoring map, EditProfile (audit-logs page deferred to Phase 3+)
+**Database:** ✅ Phase 2E schema (22 tables — `user_areas` + `audit_logs` added; `users.phone_number`, `users.profile_picture_url`, `shifts.is_overtime`, `overtimes.shift_id` extended) — 8 migrations executed
+**Migration Strategy:** ✅ Migrations only (no `DATABASE_SYNCHRONIZE` in production)
+**CI/CD:** ✅ Backend CI/CD green; Web CI/CD green; Mobile CI/CD currently disabled (`mobile-ci-cd.yml.disabled`)
+
+### Production Deploy Timeline
+
+| Phase | Deployed | Marker |
+|-------|----------|--------|
+| Phase 1 (MVP) | Jan 2026 | initial production cutover |
+| Phase 2A/2B (Enhanced + UI/UX) | Feb 2026 | bundled deploy |
+| Phase 2C (Client Feedback) | Feb 16, 2026 | 8-role overhaul, overtime, activities/schedules rename |
+| Phase 2D (Real-Time Monitoring) | Mar 7, 2026 | five-status tracking, monitoring map |
+| **Phase 2E (Client Feedback II)** | **Apr 25, 2026** | identifier login, multi-area, audit, overtime redesign — push had been blocked since Mar 15 by stale `shifts.service.spec.ts` test; reconciled in commit `ab67414` |
+| Phase 3 | _planned_ | starts with M1-R Redesign Foundation (sub-phases 3-R1…3-R5) |
+
+### Active Vulnerabilities (transitive, upstream-blocked)
+
+| Surface | Count | Source |
+|---------|-------|--------|
+| Backend | 18 moderate | `uuid <14` via `typeorm`, `firebase-admin`, `@google-cloud/storage`, `@mapbox/node-pre-gyp` |
+| Web | 2 moderate | `postcss <8.5.10` via `next 16` |
+| Mobile | 6 moderate | `fast-xml-parser <5.7.0` via `@aws-sdk` transitives |
+
+All blocked on upstream parents. `npm audit fix --force` rejected — would have downgraded Next 16→9 and pinned breaking majors. See `specs/architecture/security.md` DEP-SEC for details.
+
+---
+
+## Historical: Phase 2C Deploy Notes (kept for reference)
+
+**Original Last Updated:** March 2, 2026 (Phase 2C Web Alignment + Security Fixes)
+**Backend Status (Phase 2C era):** ✅ Deployed & Healthy (888 tests, 89.57% coverage)
+**Web Dashboard (Phase 2C era):** ✅ DEPLOYED (activities, schedules, overtime, tasks, monitoring)
+**Database (Phase 2C era):** ✅ 18 tables — migrations M0-M4 executed
+**Migration Strategy (Phase 2C era):** `DATABASE_SYNCHRONIZE=true` (temporary; superseded by migration-only strategy in Phase 2D+)
+**CI/CD (Phase 2C era):** ✅ All 3 pipelines green
 
 ---
 

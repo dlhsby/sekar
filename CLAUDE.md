@@ -475,7 +475,7 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **UI/UX** | Neo Brutalism 2.0, five-status monitoring, optional selfie, overtime clock-in/out |
 | **Phase 3 (planning)** | 9 ADRs drafted (029–037), **21 sub-phases** (incl. M1-R 3-R1…3-R5 redesign foundation), **~73 dev-days**; Phase 4/5 renumbered. Mobile + web unified design tokens + responsive PWA + full migration sweep. No code written yet. |
 
-**Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com (Phase 2D; 2E pending deploy)
+**Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2D (Mar 7, 2026) + Phase 2E (Apr 25, 2026)** both on production.
 
 **Next:** Phase 3 — Plants Management + Monitoring Rebuild + Public Intake. Phase 4 (Production Readiness) follows.
 

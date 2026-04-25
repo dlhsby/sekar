@@ -1,9 +1,10 @@
 # Phase 2E: Client Feedback II - Implementation Status
 
-**Status:** ✅ COMPLETE (Post-Testing Fixes Applied + March 15 Bug Fixes)
-**Last Updated:** March 15, 2026
+**Status:** ✅ COMPLETE + DEPLOYED (Backend + Web on production, April 25, 2026)
+**Last Updated:** April 25, 2026 (deployment confirmed via CI/CD)
 **Overall Progress:** 100%
 **Branch:** main
+**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — Backend CI/CD `ab67414` (Apr 25, after stale `shifts.service.spec.ts` test fix unblocked the production pipeline) + Web CI/CD on the same commit chain. Earlier Mar 15 production push intent was blocked by the stale test until the Phase 2E base64 selfie refactor was reconciled with its tests.
 **Related ADRs:** [ADR-012](../../architecture/decisions/ADR-012-phone-number-login.md), [ADR-013](../../architecture/decisions/ADR-013-multi-area-assignment.md), [ADR-014](../../architecture/decisions/ADR-014-overtime-clock-in-flow.md), [ADR-015](../../architecture/decisions/ADR-015-audit-trail.md)
 
 ---
