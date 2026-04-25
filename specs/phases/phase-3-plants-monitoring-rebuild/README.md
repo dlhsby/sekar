@@ -95,9 +95,10 @@ Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign
 | Cluster/overlay toggles | - | - | Y | Y | Y | Y | Y | Y | - |
 | Plant overlay + overdue colors | - | - | Y (own area) | Y (own rayon) | Y (own rayon) | Y (all) | Y (all) | Y (all) | - |
 | Plant species catalog (read) | Y | Y | Y | Y | Y | Y | Y | Y | Y (own submissions) |
-| Plant species catalog (write) | - | - | - | - | - | - | Y | Y | - |
+| Plant species catalog (write) | - | - | - | **Y** (per Q5 answer Apr 25) | - | - | Y | Y | - |
 | Area plants inventory (view) | Y (own area) | Y (own area) | Y (own area) | Y (own rayon) | Y (own rayon) | Y (all) | Y (all) | Y (all) | - |
 | Area plants inventory (bulk upsert) | - | - | - | Y (own rayon) | Y (own rayon) | - | Y | Y | - |
+| Notable plants (view) | **Y (own area)** (per Q4) | **Y (own area)** (per Q4) | Y (own area) | Y (own rayon) | Y (own rayon) | Y (all) | Y (all) | Y (all) | - |
 | Notable plants CRUD | - | - | Y (own area) | Y (own rayon) | Y (own rayon) | Y (all) | Y | Y | - |
 | Create typed task (pruning/watering/planting) | - | - | Y (own area) | Y (own rayon) | Y (own rayon) | - | Y | Y | - |
 | Pruning task partial-complete / resume | Y (assigned) | - | Y (own area) | - | - | - | - | - | - |
@@ -109,7 +110,7 @@ Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign
 | See outcome (task + activities + photos) | - | - | Y (if assigned) | Y (own rayon) | Y (own rayon) | Y | Y | Y | Y (own submissions) |
 | Service capacity (view) | - | - | Y (own rayon) | Y (own rayon) | Y (own rayon) | Y (all) | Y | Y | - |
 | Service capacity (edit) | - | - | - | Y (own rayon) | - | Y (all) | Y | Y | - |
-| Plant seed inventory (view) | - | - | - | Y (Taman Aktif) | - | Y | Y | Y | - |
+| Plant seed inventory (view) | - | - | - | Y (Taman Aktif) | **Y (own rayon)** (per Q2) | Y | Y | Y | - |
 | Plant seed transactions (record) | - | - | - | Y (Taman Aktif) | - | Y | Y | Y | - |
 | Overdue alerts dashboard | - | - | - | Y (own rayon digest) | Y (own rayon digest) | Y (all) | Y | Y | - |
 
@@ -783,13 +784,63 @@ Update `specs/COMPLETION_STATUS.md`, all phase STATUS files, and every module-le
 
 ---
 
-## Open Questions (to confirm with client early in 3-2)
+## Open Questions — RESOLVED (client answered Apr 25, 2026)
 
-- Handling-status codes GT / PT / PS / PK / PD — human-readable meanings
-- Plant-seed inventory visibility: `kepala_rayon` too, or strictly `admin_data` @ Taman Aktif + `top_management`?
-- Capacity calendar granularity: weekly (planned) or daily?
-- Notable-plants visibility to field workers, or admin-only?
-- Plant species catalog editable by `admin_data`, or `admin_system` only?
+All 5 prior open questions have been answered by the client. Answers are now reflected in the Role Access Matrix above and in the **Pruning Vocabulary** section below; downstream specs (database.md / backend.md / mobile.md / web.md / ui-ux.md) reference these answers as the source of truth.
+
+| # | Question | Answer | Reflected in |
+|---|----------|--------|--------------|
+| Q1 | Handling-status codes GT / PT / PS / PK / PD — human-readable meanings? | Pruning **case type** (single-select on activity submission). GT = Giat Perantingan; PT = Pohon Tumbang; PS = Pohon Sempal; PD = Pohon Doyong/Miring; PK = Pohon Kropos/Mati. Client also confirmed two adjacent enums: pruning **action** (PM = Pangkas Meja, PB = Potong Bawah, PC = Pangkas Cantik) and request **source** (TIW = Taruna Walikota, TS = Taruna Senior, CC = Command Center, PW = Permintaan Warga / paper, Wk = Aplikasi Wargaku). | §Pruning Vocabulary below; database.md (`activities.case_type` enum + JSONB `custom_fields`); ADR-031 |
+| Q2 | Plant-seed inventory visibility: `kepala_rayon` too, or strictly `admin_data` @ Taman Aktif + `top_management`? | **Visible to `kepala_rayon` (own rayon scope) too**, in addition to `admin_data` and `top_management`. | Role Access Matrix above (Plant seed inventory view row); database.md (`plant_seeds` access policy); backend.md (PlantSeedsController guards) |
+| Q3 | Capacity calendar granularity: weekly (planned) or daily? | **Weekly for the kecamatan submission slot** (capacity_units allocated per ISO-week × rayon × service_type). Once a request is approved and converted to a task, **the assignment task itself can be scheduled on a specific day within that booked week**. | ADR-035; backend.md (CapacityService); web.md (capacity calendar); ui-ux.md (mobile ConvertToTaskSheet day-picker) |
+| Q4 | Notable-plants visibility to field workers, or admin-only? | **Workers (`satgas`, `linmas`) can view notable plants** in their own area (read-only). CRUD remains korlap+ scope. | Role Access Matrix above (Notable plants view vs CRUD split); mobile.md (read-only notable-plants overlay on satgas MapDashboard) |
+| Q5 | Plant species catalog editable by `admin_data`, or `admin_system` only? | **`admin_data` writes** (in addition to `admin_system` and `superadmin`). | Role Access Matrix above; backend.md (PlantSpeciesController guards); database.md |
+
+---
+
+## Pruning Vocabulary (Q1 — locked Apr 25, 2026)
+
+The mobile pruning task form (3-7), the web `/tasks/new` dynamic form (3-7), the kecamatan submission flow (3-10), and the CSV backfill seeder (3-13) all consume these enums. Codes are stored verbatim in the database; the human-readable label is rendered from a registry on the client.
+
+### Pruning case type (`activities.case_type` — single-select; required on every pruning activity)
+
+| Code | Indonesian label | English gloss | When it's used |
+|------|------------------|---------------|----------------|
+| `GT` | Giat Perantingan | Scheduled/preventive pruning activity | Planned pruning per the area's species × area_type forecast (ADR-034); the default for top-down task creation |
+| `PT` | Pohon Tumbang | Fallen tree | Reactive — tree has fallen, needs immediate clearing |
+| `PS` | Pohon Sempal | Broken-off branch | Reactive — large branch detached, may still be hanging |
+| `PD` | Pohon Doyong/Miring | Leaning tree | Reactive — risk of falling, preventive cut required |
+| `PK` | Pohon Kropos/Mati | Rotten/dead tree | Reactive — needs full removal |
+
+Storage: enum column on `activities`. Values: `'GT' \| 'PT' \| 'PS' \| 'PD' \| 'PK'`. Required when `task_type = 'pruning'`.
+
+### Pruning action (`activities.custom_fields.pruning_action` — single-select; required on pruning activities)
+
+| Code | Indonesian label | English gloss |
+|------|------------------|---------------|
+| `PM` | Pangkas Meja | Table-style top trim (canopy capped to a horizontal plane) |
+| `PB` | Potong Bawah | Bottom-up cut (lower branches removed first) |
+| `PC` | Pangkas Cantik | Decorative/ornamental pruning (shape preservation) |
+
+Storage: string in `activities.custom_fields` JSONB. Validated by `TaskTypeRegistry` Zod schema for `task_type = 'pruning'` (ADR-031).
+
+### Request / activity source (`activities.custom_fields.source` — single-select; required on every pruning activity)
+
+| Code | Indonesian label | Origin channel |
+|------|------------------|----------------|
+| `TIW` | Taruna Walikota | Mayor's program (city-wide directive) |
+| `TS` | Taruna Senior | Senior cadre program |
+| `CC` | Command Center | Internal CC dispatch |
+| `PW` | Permintaan Warga | Citizen request via paper letter (the legacy intake channel) |
+| `Wk` | Aplikasi Wargaku | Citizen request via the Wargaku app |
+
+Storage: string in `activities.custom_fields` JSONB. When the activity originated from a `pruning_requests` row (3-9 / 3-10 flow), `activities.pruning_request_id` is set AND `source` is auto-populated from the request's intake channel. For top-down `GT` activities, `source` defaults to `CC` unless the korlap selects otherwise.
+
+### Notes for implementation
+
+- Codes are stored exactly as listed (uppercase, no expansion). Indonesian labels are rendered from `fe/mobile/src/constants/pruningVocabulary.ts` (mobile) and `fe/web/src/lib/pruningVocabulary.ts` (web), which `import` a single shared object emitted by `scripts/build-tokens.ts` alongside the design tokens (ADR-036 generator extension — co-located so the vocabulary stays in sync between platforms).
+- The CSV backfill seeder (3-13) maps the historical CSV's free-text "Penanganan" column onto these codes; unmappable rows get `case_type = 'GT'` + `source = 'CC'` with a `notes` field preserving the original string for manual review.
+- All 5 case types and all 3 actions appear in the `TaskTypeRegistry` Zod schema for `task_type = 'pruning'`; invalid codes reject at the API boundary with `400 INVALID_CUSTOM_FIELD`.
 
 ---
 

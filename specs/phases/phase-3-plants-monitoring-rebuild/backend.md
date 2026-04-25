@@ -127,13 +127,14 @@ Replaces today's 3–4 round-trips on dashboard load. Cached in React Query unde
 | Method | Path | Auth / Roles | Description |
 |--------|------|--------------|-------------|
 | `GET` | `/api/v1/plant-species` | JWT / any | List catalog (paginated) |
-| `POST` | `/api/v1/plant-species` | `admin_system`, `superadmin` | Create species (confirm editability with client) |
-| `PATCH` | `/api/v1/plant-species/:id` | `admin_system`, `superadmin` | Update |
+| `POST` | `/api/v1/plant-species` | **`admin_data`** (Q5 Apr 25), `admin_system`, `superadmin` | Create species |
+| `PATCH` | `/api/v1/plant-species/:id` | **`admin_data`** (Q5), `admin_system`, `superadmin` | Update |
+| `DELETE` | `/api/v1/plant-species/:id` | `admin_system`, `superadmin` | Soft-delete only — `admin_data` cannot delete species (auditable trace) |
 | `GET` | `/api/v1/areas/:id/plants` | JWT / scoped | Area inventory rollup |
 | `PUT` | `/api/v1/areas/:id/plants` | `admin_data` (own rayon), `admin_system`, `superadmin` | Bulk upsert species × count rows |
-| `GET` | `/api/v1/notable-plants?area_id=` | JWT / scoped | List |
-| `POST` | `/api/v1/notable-plants` | `korlap` (own area), `admin_data` (rayon), `admin_system`, `superadmin` | Create |
-| `PATCH DELETE` | `/api/v1/notable-plants/:id` | same | Update/Delete |
+| `GET` | `/api/v1/notable-plants?area_id=` | **JWT — including `satgas` and `linmas`** for own-area read (Q4 Apr 25); `korlap` own area; `admin_data`/`kepala_rayon` own rayon; `top_management`/admin_system/superadmin all | List (read-only for satgas/linmas) |
+| `POST` | `/api/v1/notable-plants` | `korlap` (own area), `admin_data` (rayon), `admin_system`, `superadmin` | Create (CRUD remains korlap+) |
+| `PATCH DELETE` | `/api/v1/notable-plants/:id` | same | Update/Delete (CRUD remains korlap+) |
 | `GET` | `/api/v1/monitoring/area/:id/plant-status` | JWT / scoped | Green/yellow/red + due-date breakdown |
 
 ### B2. `PlantDueDateService`
@@ -157,15 +158,25 @@ Run daily by `PlantDueDateRecalculator` cron (`@Cron('0 2 * * *')` WIB). Also re
 
 See [database.md §tasks](./database.md#tasks-additive). Key backend work:
 
-- `TaskTypeRegistry` (injectable, singleton) — per-type Zod schema for `custom_fields`:
+- `TaskTypeRegistry` (injectable, singleton) — per-type Zod schema for `custom_fields`. Pruning vocabulary locked Apr 25, 2026 (client Q1 answer; full glossary in [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026)):
   ```ts
+  // be/src/modules/tasks/registry/task-type-registry.ts
+  export const PRUNING_CASE_TYPES = ['GT', 'PT', 'PS', 'PD', 'PK'] as const;     // case_type column on activities
+  export const PRUNING_ACTIONS    = ['PM', 'PB', 'PC'] as const;                  // custom_fields.pruning_action
+  export const PRUNING_SOURCES    = ['TIW', 'TS', 'CC', 'PW', 'Wk'] as const;     // custom_fields.source
+
   registry.register('pruning', z.object({
     area_type:       z.enum(['road', 'park', 'median']),
-    maintenance_type: z.enum(['PC', 'PM', 'PB']),
-    target_species:   z.array(z.object({ species_id: z.string().uuid(), count: z.int().positive() })),
+    pruning_action:  z.enum(PRUNING_ACTIONS),                                     // required: PM/PB/PC
+    source:          z.enum(PRUNING_SOURCES),                                     // required: TIW/TS/CC/PW/Wk
+    target_species:  z.array(z.object({ species_id: z.string().uuid(), count: z.int().positive() })),
+    damage_cause:    z.string().optional(),
+    notes:           z.string().optional(),
   }));
   ```
+- **`case_type` (the GT/PT/PS/PD/PK enum) is a column on `activities`, NOT on `tasks`** — a single task may produce multiple activities each with its own case_type when the field crew encounters different conditions per tree. The CHECK constraint in [database.md §activities](./database.md#activities-additive) enforces non-null `case_type` whenever `custom_fields.task_type = 'pruning'`.
 - `TasksService.createTyped(dto)` — validates `custom_fields` against registry.
+- `ActivitiesService.submit(dto)` — validates pruning case_type + custom_fields together; sets `source` from the parent `pruning_request.intake_channel` when `pruning_request_id` is provided; otherwise defaults `source = 'CC'` for korlap-initiated `GT` activities.
 
 ### C2. New endpoints
 
@@ -272,6 +283,8 @@ Transitions emit `request:status-changed` WS event and FCM notification to submi
 | `PUT` | `/api/v1/rayons/:id/capacity` | `admin_data` (own rayon), `top_management`, `admin_system`, `superadmin` | Bulk upsert capacity_units |
 | `POST` | `/api/v1/rayons/:id/capacity/book` | same | Manual booking `{ year, iso_week, service_type, units, task_id? }` |
 
+**Capacity granularity (Q3 Apr 25):** booking is **weekly** (`iso_week`-keyed in `service_capacity`). The day-picker for the actual assignment date lives downstream in the convert-to-task flow — `POST /api/v1/pruning-requests/:id/convert-to-task` accepts `scheduled_date` (a specific calendar day within the booked week) and records it on the resulting task. `service_capacity.booked_units` is incremented at the week granularity regardless of which day inside the week the task is scheduled for.
+
 Implicit booking happens on `/pruning-requests/:id/convert-to-task`: `CapacityService.book(rayon_id, iso_week_of(scheduled_for), 'pruning', 1, task_id)`.
 
 ---
@@ -280,8 +293,10 @@ Implicit booking happens on `/pruning-requests/:id/convert-to-task`: `CapacitySe
 
 | Method | Path | Auth / Roles | Description |
 |--------|------|--------------|-------------|
-| `GET POST PATCH` | `/api/v1/plant-seeds` | `admin_data` (Taman Aktif), `top_management`, `admin_system`, `superadmin` | Seed master CRUD |
-| `GET POST` | `/api/v1/seed-transactions?seed_id=&type=&from=&to=` | same | Ledger query + record |
+| `GET` | `/api/v1/plant-seeds` | `admin_data` (Taman Aktif), **`kepala_rayon`** (own rayon, Q2 Apr 25 — read-only), `top_management`, `admin_system`, `superadmin` | Seed master read |
+| `POST PATCH` | `/api/v1/plant-seeds` | `admin_data` (Taman Aktif), `top_management`, `admin_system`, `superadmin` | Seed master mutations (kepala_rayon NOT included — read-only) |
+| `GET` | `/api/v1/seed-transactions?seed_id=&type=&from=&to=` | `admin_data` (Taman Aktif), **`kepala_rayon`** (own rayon, Q2), `top_management`, `admin_system`, `superadmin` | Ledger query (read) |
+| `POST` | `/api/v1/seed-transactions` | `admin_data` (Taman Aktif), `top_management`, `admin_system`, `superadmin` | Record transaction (kepala_rayon NOT included — read-only) |
 
 `SeedTransactionService` updates `plant_seeds.stock_qty` atomically in the same transaction as the insert (sum-signed by `transaction_type`).
 

@@ -45,11 +45,19 @@ CREATE INDEX idx_tasks_parent ON tasks(parent_task_id);
 
 -- activities (additive)
 ALTER TABLE activities
+  ADD COLUMN case_type TEXT NULL,  -- pruning case enum: 'GT' | 'PT' | 'PS' | 'PD' | 'PK' (NOT NULL when task_type='pruning'; NULL otherwise)
   ADD COLUMN custom_fields JSONB NOT NULL DEFAULT '{}',
   ADD COLUMN photo_before_url TEXT NULL,
   ADD COLUMN photo_after_url TEXT NULL,
   ADD COLUMN reference_code TEXT NULL UNIQUE,
   ADD COLUMN pruning_request_id UUID NULL REFERENCES pruning_requests(id);
+
+-- CHECK constraint: pruning activities require a case_type
+ALTER TABLE activities ADD CONSTRAINT chk_pruning_case_type
+  CHECK (
+    (custom_fields->>'task_type' <> 'pruning')
+    OR (case_type IN ('GT', 'PT', 'PS', 'PD', 'PK'))
+  );
 
 -- activity_plant_items (new)
 CREATE TABLE activity_plant_items (
@@ -68,12 +76,39 @@ A service-layer registry keyed by `task_type` holds a Zod schema for `custom_fie
 
 ```ts
 // be/src/modules/tasks/registry/task-type-registry.ts
+//
+// Pruning vocabulary locked Apr 25, 2026 (client Q1 answer; see Phase 3
+// README §Pruning Vocabulary for full glossary).
+//
+// case_type   — what kind of pruning case (column on activities)
+// pruning_action — what cut technique (custom_fields.pruning_action)
+// source      — request origin channel (custom_fields.source)
+export const PRUNING_CASE_TYPES = ['GT', 'PT', 'PS', 'PD', 'PK'] as const;
+//   GT = Giat Perantingan (scheduled)
+//   PT = Pohon Tumbang (fallen)
+//   PS = Pohon Sempal (broken-off branch)
+//   PD = Pohon Doyong/Miring (leaning)
+//   PK = Pohon Kropos/Mati (rotten/dead)
+
+export const PRUNING_ACTIONS = ['PM', 'PB', 'PC'] as const;
+//   PM = Pangkas Meja (table-style top trim)
+//   PB = Potong Bawah (bottom-up cut)
+//   PC = Pangkas Cantik (decorative)
+
+export const PRUNING_SOURCES = ['TIW', 'TS', 'CC', 'PW', 'Wk'] as const;
+//   TIW = Taruna Walikota
+//   TS  = Taruna Senior
+//   CC  = Command Center
+//   PW  = Permintaan Warga (paper-letter intake)
+//   Wk  = Aplikasi Wargaku
+
 export const taskTypeRegistry = {
   pruning: z.object({
-    maintenance_type: z.enum(['PC', 'PM', 'PB']),
-    road_context: z.enum(['JT', 'JH', 'ST']).optional(),
-    handling_status: z.string().optional(),
+    pruning_action: z.enum(PRUNING_ACTIONS),                // required: PM/PB/PC
+    source: z.enum(PRUNING_SOURCES),                        // required: TIW/TS/CC/PW/Wk
+    road_context: z.enum(['JT', 'JH', 'ST']).optional(),    // existing
     damage_cause: z.string().optional(),
+    notes: z.string().optional(),                           // for CSV-backfill rows that didn't map cleanly
   }),
   watering: z.object({ /* ... */ }),
   generic: z.object({}).passthrough(),

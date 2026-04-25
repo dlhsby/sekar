@@ -147,6 +147,12 @@ Area center marker carries an overdue-count badge (e.g. `3 overdue`) when the pl
 
 Full-screen NB form. `bg.canvas` page, `bg.surface` card, `shadow.sm` cards, `shadow.md` sticky CTA.
 
+**Vocabulary locked Apr 25, 2026 (Q1 answer; full glossary in [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026)):**
+
+- **Kasus (`case_type`, single-select, required):** GT Giat Perantingan · PT Pohon Tumbang · PS Pohon Sempal · PD Pohon Doyong · PK Pohon Kropos
+- **Aksi pangkas (`pruning_action`, single-select, required):** PM Pangkas Meja · PB Potong Bawah · PC Pangkas Cantik
+- **Sumber (`source`, single-select, required):** TIW Taruna Walikota · TS Taruna Senior · CC Command Center · PW Permintaan Warga · Wk Aplikasi Wargaku
+
 ```
 ┌──────────────────────────────────┐
 │  ←  Tugas Perantingan            │
@@ -154,10 +160,20 @@ Full-screen NB form. `bg.canvas` page, `bg.surface` card, `shadow.sm` cards, `sh
 │  Area: Jalan Darmo Sec 1 R       │
 │  Rayon: Selatan                  │
 │                                  │
-│  Jenis pemeliharaan              │
-│  ( ) PC — Preventif              │
-│  (●) PM — Manajerial             │
-│  ( ) PB — Bedah                  │
+│  Kasus (jenis perantingan)       │
+│  (●) GT — Giat Perantingan       │
+│  ( ) PT — Pohon Tumbang          │
+│  ( ) PS — Pohon Sempal           │
+│  ( ) PD — Pohon Doyong/Miring    │
+│  ( ) PK — Pohon Kropos/Mati      │
+│                                  │
+│  Aksi pangkas                    │
+│  ( ) PM — Pangkas Meja           │
+│  (●) PB — Potong Bawah           │
+│  ( ) PC — Pangkas Cantik         │
+│                                  │
+│  Sumber                          │
+│  [ CC — Command Center      ▼ ]  │  (TIW / TS / CC / PW / Wk)
 │                                  │
 │  Target tanaman                  │
 │  ┌──────────────────────┐        │
@@ -174,7 +190,9 @@ Full-screen NB form. `bg.canvas` page, `bg.surface` card, `shadow.sm` cards, `sh
 ```
 
 Species autocomplete opens a full-screen sheet with fuzzy-match over `plant_species.name_id`.
-Accessibility: `accessibilityLabel="Jumlah {species} (bisa dikurangi atau ditambah)"` on every quantity control.
+Accessibility: `accessibilityLabel="Jumlah {species} (bisa dikurangi atau ditambah)"` on every quantity control. The three radio/select groups have `accessibilityLabel` set to the full Indonesian label (e.g. "Pohon Doyong atau Miring") so screen readers don't say bare codes.
+
+When the form is opened from a converted pruning request (`pruning_request_id` is non-null), the `Sumber` field is **pre-filled and locked** to match the request's intake channel (`PW` for paper, `Wk` for Wargaku app). The korlap can override only by clearing the link.
 
 ---
 

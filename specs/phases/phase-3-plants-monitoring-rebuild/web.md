@@ -71,9 +71,9 @@
 
 | Path | Role gate | Responsibility |
 |------|-----------|----------------|
-| `/(dashboard)/seeds` | `admin_data` (Taman Aktif), `top_management`, `admin_system`, `superadmin` | Master list + low-stock alerts |
-| `/(dashboard)/seeds/[id]` | same | Ledger view |
-| `/(dashboard)/seeds/[id]/transactions/new` | same | Record transaction |
+| `/(dashboard)/seeds` | `admin_data` (Taman Aktif), **`kepala_rayon`** (own rayon, read-only per Q2 Apr 25), `top_management`, `admin_system`, `superadmin` | Master list + low-stock alerts |
+| `/(dashboard)/seeds/[id]` | same | Ledger view (kepala_rayon read-only) |
+| `/(dashboard)/seeds/[id]/transactions/new` | `admin_data` (Taman Aktif), `top_management`, `admin_system`, `superadmin` — **`kepala_rayon` excluded** (read-only access only) | Record transaction |
 
 ---
 
@@ -304,9 +304,9 @@ components/monitoring/
 
 ```
 components/plants/
-├── SpeciesCatalogTable.tsx          # CRUD on /plant-species
+├── SpeciesCatalogTable.tsx          # CRUD on /plant-species — write enabled for admin_data (Q5 Apr 25), admin_system, superadmin
 ├── AreaInventoryGrid.tsx            # editable species × count for an area
-├── NotablePlantMapPicker.tsx        # click-to-place with reverse geocode
+├── NotablePlantMapPicker.tsx        # click-to-place with reverse geocode (CRUD: korlap+, read-only for satgas/linmas per Q4)
 └── PlantStatusBadge.tsx             # ok / due / overdue chip
 ```
 
@@ -316,10 +316,22 @@ components/plants/
 components/pruning-requests/
 ├── RequestQueueTable.tsx            # status-filtered queue
 ├── ReviewActionsPanel.tsx           # approve / reject / convert buttons
-├── ConvertToTaskDialog.tsx          # form with capacity chip
+├── ConvertToTaskDialog.tsx          # form: area + capacity chip (booked/total for the chosen ISO-week) +
+│                                    #   scheduled_date day-picker constrained to the booked week (Q3 Apr 25 —
+│                                    #   weekly capacity, daily assignment) + target_plant_count + assignee
 ├── RequestTimeline.tsx              # status history + converted task link
 └── PhotoGallery.tsx                 # before/after photos from outcome
 ```
+
+### Pruning vocabulary on `/tasks/new` and `/tasks/[id]`
+
+The dynamic pruning form on `/(dashboard)/tasks/new` (when `task_type='pruning'` is selected) uses the canonical vocab from [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026):
+
+- **Kasus** (`case_type` radio group, required): GT / PT / PS / PD / PK
+- **Aksi pangkas** (`pruning_action` radio group, required): PM / PB / PC
+- **Sumber** (`source` select, required): TIW / TS / CC / PW / Wk
+
+Labels rendered from `fe/web/src/lib/pruningVocabulary.ts` (shared with mobile — co-located with the design-token generator output per ADR-036). Form validation uses the same `TaskTypeRegistry` Zod schemas the backend uses (shared via `tsconfig` path alias) so the UI can never submit a value the API will reject.
 
 ### Capacity
 
@@ -390,7 +402,7 @@ const ROUTES_BY_ROLE = {
   linmas:           [/* none — mobile-only */],
   korlap:           ['/monitoring', '/tasks', '/reports'],
   admin_data:       ['/monitoring', '/tasks', '/reports', '/plants', '/pruning-requests', '/rayons', '/seeds'],
-  kepala_rayon:     ['/monitoring', '/tasks', '/reports', '/plants', '/rayons'],
+  kepala_rayon:     ['/monitoring', '/tasks', '/reports', '/plants', '/rayons', '/seeds'], // Q2 Apr 25: read-only seeds added
   top_management:   ['/monitoring', '/reports', '/plants', '/pruning-requests', '/rayons', '/seeds'],
   admin_system:     ['*'],
   superadmin:       ['*'],

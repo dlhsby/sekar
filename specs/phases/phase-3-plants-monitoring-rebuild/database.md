@@ -246,27 +246,44 @@ CREATE INDEX idx_seed_tx_type_occurred ON seed_transactions (transaction_type, o
 
 ```sql
 ALTER TABLE activities
+  ADD COLUMN case_type TEXT NULL,                  -- 'GT' | 'PT' | 'PS' | 'PD' | 'PK' (required when task_type='pruning')
   ADD COLUMN custom_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN photo_before_url TEXT NULL,
   ADD COLUMN photo_after_url TEXT NULL,
   ADD COLUMN reference_code TEXT NULL UNIQUE,
   ADD COLUMN pruning_request_id UUID NULL REFERENCES pruning_requests(id) ON DELETE SET NULL;
 
+ALTER TABLE activities ADD CONSTRAINT chk_pruning_case_type
+  CHECK (
+    (custom_fields->>'task_type' <> 'pruning')
+    OR (case_type IN ('GT', 'PT', 'PS', 'PD', 'PK'))
+  );
+
+CREATE INDEX idx_activities_case_type ON activities (case_type) WHERE case_type IS NOT NULL;
 CREATE INDEX idx_activities_reference ON activities (reference_code) WHERE reference_code IS NOT NULL;
 CREATE INDEX idx_activities_pruning_req ON activities (pruning_request_id) WHERE pruning_request_id IS NOT NULL;
 ```
 
-**`custom_fields` JSONB shape (per ADR-031):**
+**Pruning vocabulary (locked Apr 25, 2026 — client Q1 answer; full glossary in [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026)):**
+
+- `case_type` (column on `activities`): `GT` Giat Perantingan · `PT` Pohon Tumbang · `PS` Pohon Sempal · `PD` Pohon Doyong/Miring · `PK` Pohon Kropos/Mati. Required for pruning activities; `NULL` for other task types.
+- `pruning_action` (in `custom_fields`): `PM` Pangkas Meja · `PB` Potong Bawah · `PC` Pangkas Cantik. Required for pruning.
+- `source` (in `custom_fields`): `TIW` Taruna Walikota · `TS` Taruna Senior · `CC` Command Center · `PW` Permintaan Warga (paper) · `Wk` Aplikasi Wargaku. Required for pruning. Auto-populated when `pruning_request_id` is set.
+
+**`custom_fields` JSONB shape for `task_type = 'pruning'` (per ADR-031):**
 
 ```json
 {
-  "maintenance_type": "PC",          // PC | PM | PB (preventive/managerial/surgical)
-  "road_context": "JT",              // JT | JH | ST
-  "handling_status": "GT",           // GT | PT | PS | PK | PD (labels in lookup)
-  "worker_org": "TS",                // TS | PW | WK | CC | TIW | FORKOMPIMDA
-  "damage_cause": "natural_fall"
+  "task_type": "pruning",
+  "pruning_action": "PC",            // PM | PB | PC (required)
+  "source": "Wk",                    // TIW | TS | CC | PW | Wk (required)
+  "road_context": "JT",              // JT | JH | ST (optional)
+  "damage_cause": "natural_fall",    // free-text (optional)
+  "notes": "..."                     // free-text (optional, used by CSV backfill for unmapped rows)
 }
 ```
+
+> **Migration note for existing Phase 2 activities:** Phase 2 activities pre-date this enum. They are NOT pruning activities (`task_type` defaults to `'generic'` after the migration adds the column to `tasks`), so the CHECK constraint passes with `case_type = NULL`. No backfill required.
 
 **`reference_code` preserves CSV IDs** (`25PR0…`) and future external references (e.g., pruning_request linkage). Unique only when non-null so existing activities don't need backfill.
 

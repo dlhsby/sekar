@@ -16,7 +16,7 @@ The client's explicit roadmap beyond Phase 3 includes extending SEKAR into a "DL
 
 Design constraints:
 
-- **Granularity.** Daily capacity tracking at the rayon level is noise — daily volume varies with crew composition, weather, and unrelated events. Weekly granularity smooths this and matches how DLH actually plans (by the week).
+- **Granularity.** Daily capacity tracking at the rayon level is noise — daily volume varies with crew composition, weather, and unrelated events. Weekly granularity smooths this and matches how DLH actually plans (by the week). **Client confirmation (Apr 25, 2026, Q3 answer):** weekly is the **booking** granularity (kecamatan submits, capacity calendar shows weekly slots). Once a request is approved and converted into a task, the **assignment day** is selectable per-task — the convert-to-task flow exposes a day-picker scoped to the booked week, and the task carries a specific `scheduled_date`. Capacity tracking stays weekly; the daily picker is a UI affordance, not a separate capacity column.
 - **Capacity is soft, not hard.** A converted task that exceeds capacity should surface a warning with alternatives (next available week), but `admin_data` or `top_management` can override. Hard blocks would make the system brittle against real-world exceptions.
 - **Service breadth.** The same pattern must serve pruning today, watering and planting next quarter, street sweeping and garbage collection later. Separate tables per service compound migration and reporting cost linearly with service count.
 - **Booking model.** A task implicitly books capacity on creation from a converted pruning request. Cancellation releases booking. Manual adjustments (override, rebalance) need an explicit endpoint.

@@ -75,7 +75,7 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 | `src/components/monitoring/ClusteredUserMarkers.tsx` | Chooses `ClusterMarker` vs per-user `UserMarker` based on `zoomLevel >= cluster_zoom_threshold` | `monitoringV2` |
 | `src/components/monitoring/MonitoringToggleSheet.tsx` | NB bottom-sheet: workers / plants / overdue / rayons / areas toggles | `monitoringV2.visibleLayers` |
 | `src/components/monitoring/AreaStatusOverlay.tsx` | Area polygons filled by `area_plants.status` (green/yellow/red). `useFocusEffect` reload on tab return | `plants.areaStatusById` |
-| `src/components/monitoring/PlantOverlayLayer.tsx` | Notable-plants markers and overdue-count badges | `plants.notableByArea` |
+| `src/components/monitoring/PlantOverlayLayer.tsx` | Notable-plants markers (read-only for `satgas`/`linmas` per Q4 Apr 25 — pin tap shows species + heritage notes; no edit affordance) and overdue-count badges. Workers see notable plants in their own area only; korlap+ see CRUD on tap | `plants.notableByArea` |
 | `src/components/monitoring/UserMarker.tsx` | **Unchanged** — preserves Apr 24 fixes | — |
 | `src/components/monitoring/LocationTrail.tsx` | **Unchanged** — `requestAnimationFrame` guard | — |
 
@@ -83,7 +83,7 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 
 | File | Responsibility | Slice |
 |------|----------------|-------|
-| `src/components/tasks/PruningTaskForm.tsx` | Dynamic form: species autocomplete (131 entries), quantity input per species, maintenance type (PC/PM/PB), partial-complete CTA | `tasks` |
+| `src/components/tasks/PruningTaskForm.tsx` | Dynamic form (3 required enums per Q1 Apr 25 — full glossary in [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026)): **case_type** (GT/PT/PS/PD/PK radio) + **pruning_action** (PM/PB/PC radio) + **source** (TIW/TS/CC/PW/Wk select); plus species autocomplete (131 entries), quantity input per species, partial-complete CTA. When opened from a converted pruning_request, `source` is pre-filled and locked to the request's intake channel | `tasks` |
 | `src/components/tasks/SpeciesAutocomplete.tsx` | Autocomplete with fuzzy match over `plant_species.name_id`; caches catalog in Redux | `plants.speciesCatalog` |
 | `src/screens/tasks/TaskDetailScreen.tsx` | Adds "Lanjutkan Besok" CTA that calls `/tasks/:id/resume`; shows parent/child lineage | `tasks.lineageById` |
 | `src/screens/tasks/PartialCompleteSheet.tsx` | Bottom sheet for partial completion (completed_count, plant_items) | — |
@@ -96,7 +96,7 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 | `src/screens/pruningRequests/MyRequestsScreen.tsx` | List of own submissions with status chips | `staff_kecamatan` | `pruningRequests` |
 | `src/screens/pruningRequests/RequestDetailScreen.tsx` | Outcome view: converted task + activities + photos | submitter, reviewer, admin | `pruningRequests` |
 | `src/screens/pruningRequests/ReviewQueueScreen.tsx` | Approve / reject / convert-to-task; capacity indicator on convert | `admin_data` | `pruningRequests` |
-| `src/screens/pruningRequests/ConvertToTaskSheet.tsx` | Bottom sheet: pick area, date, target_plant_count, optional assignee | `admin_data` | — |
+| `src/screens/pruningRequests/ConvertToTaskSheet.tsx` | Bottom sheet: pick area, **scheduled_date** (specific calendar day inside the booked ISO-week — Q3 Apr 25 answer), target_plant_count, optional assignee. Shows the week's capacity chip (`8/10` style); the day-picker constrains selectable dates to days within the booked week (Mon–Sun) and disables past dates | `admin_data` | — |
 
 ### Seeds (sub-phase 3-12)
 
@@ -276,9 +276,9 @@ Auto-notify korlap when out-of-area exceeds threshold (WebSocket event `user:lef
 
 | Screen | Purpose | Key UI |
 |--------|---------|-------|
-| **PR-1 Step 1 (type)** | Pick maintenance type | Card AREA · RAYON read-only · radio PC / PM (selected) / PB · CTA "Lanjut → Spesies" |
+| **PR-1 Step 1 (case + action + source)** | Pick the 3 required pruning enums | Card AREA · RAYON read-only · radio **Kasus** GT (selected) / PT / PS / PD / PK · radio **Aksi** PM / PB (selected) / PC · select **Sumber** TIW / TS / CC (default) / PW / Wk · CTA "Lanjut → Spesies". When opened from a converted pruning_request, Sumber is pre-filled (PW or Wk) and locked. |
 | **PR-2 Species autocomplete** | 131-species fuzzy search | Search input "🔍 {query}" · autocomplete list with ✓ selected row · JUMLAH POHON spinner (− / n / +) · CTA "Tambahkan" |
-| **PR-3 Full form** | Photos + location + species list | Card JENIS read-only · Card species list "Trembesi ×4, Sono ×2" with ⋯ menu + "+ Tambah spesies" · Card foto grid (sebelum/sesudah + "+" up to 5) · Card Lokasi (GPS + ±Xm + ✓ dalam area) · CTAs "Lanjut Besok" / "SELESAI" primary lg |
+| **PR-3 Full form** | Photos + location + species list | Card KASUS · AKSI · SUMBER read-only summary chips · Card species list "Trembesi ×4, Sono ×2" with ⋯ menu + "+ Tambah spesies" · Card foto grid (sebelum/sesudah + "+" up to 5) · Card Lokasi (GPS + ±Xm + ✓ dalam area) · CTAs "Lanjut Besok" / "SELESAI" primary lg |
 | **PR-4 Partial complete sheet** | Resume tomorrow | Title "LANJUTKAN BESOK" · info "Pohon yang belum selesai akan jadi sub-task baru untuk besok" · Cards SELESAI HARI INI (m/n: species list) / BESOK LANJUT (n pohon) · input CATATAN BESOK · CTAs "Batal" / "Simpan & Jadwalkan" primary |
 
 Offline: dispatches `activity.submit` or `activity.partial` queue action.
