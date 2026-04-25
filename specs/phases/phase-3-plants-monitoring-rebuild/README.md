@@ -12,13 +12,22 @@
 
 ## Overview
 
-Phase 3 delivers three interlocking streams of work, all triggered by client feedback in April 2026 after a production walk-through with the mayor's office:
+Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign Foundation) is a hard prerequisite for the other three — every UI PR after sub-phase 3-R1 must consume tokens from `generated/` or CI blocks the merge. Streams 2–4 were triggered by client feedback in April 2026 after a production walk-through with the mayor's office; stream 1 was triggered by the claude.ai/design handoff (Apr 25, 2026) reconciling drifted mobile/web token values, locking the canonical NB 2.0 visual language, and promoting the prior Phase 4 design-system migration into Phase 3 so no screen lingers on old tokens.
 
-1. **Monitoring v2 (full rewrite).** The Phase 2D monitoring implementation is not production-scale: `StatusCalculatorService.onLocationPing` issues 6+ database queries per ping (saturates the 15-connection pool at 500 workers); only the last location in a batch triggers a status calc; `location_logs` is missing every composite index except the PK; and `AREA_STAFFING_CHANGED` emits on every GPS flap without debounce. This phase decouples ingest from projection via Redis Streams, adds a Socket.IO Redis adapter for horizontal scale, installs a staffing debouncer + stale-status sweep cron, and rebuilds map UX with supercluster everywhere — all while **preserving** the Apr 24 marker/trail bug fixes (`tracksViewChanges={false}`, `LabelMode` enum in marker `key`, `requestAnimationFrame` mount guard, `useFocusEffect`-driven boundary re-fetch).
+1. **Redesign Foundation (M1-R, the gate-keeper).** Mobile + web design tokens currently drift: mobile shadows use `shadowRadius: 1–4` with semi-transparent rgba (NB hard-edge stamp lost ~70%), `primary.hover` differs by 2 hex digits, mobile h1/h2/h3 are 30/24/20 vs web 28/22/18, no brand fonts are loaded on either platform, web has no PWA, and 11 mobile screens + 11 web pages aren't migrated to the canonical token system. M1-R ships a hand-rolled `scripts/build-tokens.ts` JSON→(CSS,TS) generator with CI drift detection, fixes every drifted color/shadow/type value, bundles Space Grotesk + Inter + JetBrains Mono on both platforms, migrates all NB primitives + adds new `NBModal` / `NBToast` / `NBText` mobile components, installs the web PWA shell (manifest + service worker + offline shell + push subscription + install banner) with a `ResponsiveShell` driving mobile-web (<768 px) / tablet (768–1279 px) / desktop (≥1280 px) layouts on every Phase-3 page, and sweeps every existing non-rewritten screen onto the new tokens. After M1-R, mobile native + mobile web + desktop web share **one visual spine** — same hex codes, same shadow geometry, same type scale. ADR-036 + ADR-037.
 
-2. **Plants management + task typing.** The mayor asked DLH to stop running pruning reactively. Phase 3 introduces `plant_species` (131 rows from the CSV historical log), `area_plants` aggregate inventory per area×species with `last_pruned_at` / `next_due_at` / `status` (ok / due / overdue), optional `notable_plants` for heritage records, a `task_type` enum + JSONB `custom_fields` schema registry, partial-complete and resume-tomorrow parent/child task lineage, and a deterministic species×area_type due-date forecaster ([ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md)). Top-management dashboards surface overdue areas; the 5,008-row CSV is backfilled into `activities` + `activity_plant_items`.
+2. **Monitoring v2 (full rewrite).** The Phase 2D monitoring implementation is not production-scale: `StatusCalculatorService.onLocationPing` issues 6+ database queries per ping (saturates the 15-connection pool at 500 workers); only the last location in a batch triggers a status calc; `location_logs` is missing every composite index except the PK; and `AREA_STAFFING_CHANGED` emits on every GPS flap without debounce. This phase decouples ingest from projection via Redis Streams, adds a Socket.IO Redis adapter for horizontal scale, installs a staffing debouncer + stale-status sweep cron, and rebuilds map UX with supercluster everywhere — all while **preserving** the Apr 24 marker/trail bug fixes (`tracksViewChanges={false}`, `LabelMode` enum in marker `key`, `requestAnimationFrame` mount guard, `useFocusEffect`-driven boundary re-fetch).
 
-3. **Public intake + capacity + seed ledger.** A new external role `staff_kecamatan` lets sub-district staff submit pruning requests that currently arrive as paper letters. `admin_data` (already rayon-scoped via [ADR-013](../../architecture/decisions/ADR-013-multi-area-korlap-assignments.md)) gains disposition authority over these requests ([ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md)) — a narrow capability extension, **not** a new role. Converted requests book `service_capacity` (rayon × ISO-week × service_type; reusable for future DLH services) and link back to the originating request so kecamatan can see completion photos. Plant-seed inventory gets a unified `plant_seeds` + `seed_transactions` ledger usable by `admin_data` at Rayon Taman Aktif and `top_management`.
+3. **Plants management + task typing.** The mayor asked DLH to stop running pruning reactively. Phase 3 introduces `plant_species` (131 rows from the CSV historical log), `area_plants` aggregate inventory per area×species with `last_pruned_at` / `next_due_at` / `status` (ok / due / overdue), optional `notable_plants` for heritage records, a `task_type` enum + JSONB `custom_fields` schema registry, partial-complete and resume-tomorrow parent/child task lineage, and a deterministic species×area_type due-date forecaster ([ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md)). Top-management dashboards surface overdue areas; the 5,008-row CSV is backfilled into `activities` + `activity_plant_items`.
+
+4. **Public intake + capacity + seed ledger.** A new external role `staff_kecamatan` lets sub-district staff submit pruning requests that currently arrive as paper letters. `admin_data` (already rayon-scoped via [ADR-013](../../architecture/decisions/ADR-013-multi-area-korlap-assignments.md)) gains disposition authority over these requests ([ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md)) — a narrow capability extension, **not** a new role. Converted requests book `service_capacity` (rayon × ISO-week × service_type; reusable for future DLH services) and link back to the originating request so kecamatan can see completion photos. Plant-seed inventory gets a unified `plant_seeds` + `seed_transactions` ledger usable by `admin_data` at Rayon Taman Aktif and `top_management`.
+
+### Why M1-R must come first (execution gate)
+
+- **Visual parity is one-way.** Once feature work in M2/M3/M4 lands on generated tokens, retrofitting earlier screens later forces a second sweep with disruptive PRs across the whole app. Doing the sweep first means every Phase-3 PR is born on the new tokens.
+- **CI gates depend on it.** ESLint rules (`no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN `shadowRadius > 0` ban) and the `tokens-verify` CI job land in 3-R1. After 3-R1, no UI PR can introduce drift; before 3-R1, drift creeps in unchecked.
+- **NBModal / NBToast / NBText are dependencies of feature work.** Pruning task form (3-7), species autocomplete (3-7), partial-complete sheet (3-7), convert-to-task (3-10), seed transaction form (3-12), and the monitoring overlay sheets (3-5) all need `NBModal` shipped in 3-R3.
+- **`ResponsiveShell` is a dependency of every Phase-3 web page.** Web monitoring (3-4), pruning request queue (3-10), capacity calendar (3-11), seeds (3-12) all consume the shell built in 3-R4 — without it, mobile-web layouts have to be retrofitted page-by-page.
 
 ### Requirements Summary
 
@@ -40,6 +49,11 @@ Phase 3 delivers three interlocking streams of work, all triggered by client fee
 | 14 | CSV backfill seeder (5,008 rows → `activities` + `activity_plant_items` + `area_plants`; rehost Drive photos on S3; idempotent on `reference_code`) | Client (historical data) | 3-13 |
 | 15 | k6 load test harness: 500-worker, 12-second-ping, 30-minute simulation; pass criteria p95 ingest < 200 ms, broadcast < 500 ms, pool < 70 %, Redis lag < 5 s, zero missed transitions | Client | 3-14 |
 | 16 | Documentation final sync: specs, COMPLETION_STATUS, root + module-level CLAUDE.md | Housekeeping | 3-15 |
+| 17 | Unified design-token pipeline: hand-rolled `scripts/build-tokens.ts` JSON→(CSS,TS) generator + `tokens-verify` CI gate + ESLint rules (`no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN `shadowRadius > 0` ban) | Design systems (ADR-036) | **3-R1** |
+| 18 | Token value migration (drift fixes locked: `primary.hover #6BA87A`, `secondary #8B7355`, `success #7FBC8C`, `info #69D2E7`, type h1/h2/h3 = 28/22/18, opaque hard-edge shadows, focus ring 3px solid + 2px offset) + brand-font bundling (Space Grotesk / Inter / JetBrains Mono `.ttf` on mobile via `react-native.config.js`; `next/font/google` on web) | Design systems (ADR-036) | **3-R2** |
+| 19 | NB primitive migration to generated tokens + new mobile `NBModal` (`@gorhom/bottom-sheet` + RN `<Modal>`) + `NBToast` (`react-native-toast-message` wrapper) + `NBText` (semantic typography variants) + Playwright `toHaveScreenshot` web visreg + Jest snapshot mobile visreg with 0.1% tolerance on baselines committed at 375/768/1280 px | Design systems (ADR-036) + Client (NB 2.0 polish) | **3-R3** |
+| 20 | Web installable PWA: manifest, service worker (shell precache + SWR snapshot), install banner, offline shell, push subscription scaffold (`POST /api/push/register`), `MobileInstallPush` banner directing satgas/linmas/korlap on phone browsers to native app, `ResponsiveShell` (sidebar / icon rail / ☰ drawer at 1280/768/375 px), `(kecamatan)` minimal layout for `staff_kecamatan` role | Client (field supervisors on phones) + ADR-037 | **3-R4** |
+| 21 | Full redesign sweep: every existing non-rewritten screen migrates onto generated tokens with mobile-web responsive layouts. Mobile (16 screens): auth + onboarding, worker stack (Home/ClockIn/Out/LocationTracking/Tasks/ActivityForm/Overtime/Profile/EditProfile/Settings/Notifications), supervisor stack (KorlapHome/UsersList/Reports/Schedules), error/empty/skeleton, role-aware tab shells. Web (11 pages): `(auth)/login`, dashboard home, Users, Areas, Rayons-index, Overtime, Schedules, Reports, Profile, Settings, Audit Logs — each at 3 breakpoints. Promoted from prior Phase 4 backlog. | Design systems + Client | **3-R5** |
 
 ---
 
@@ -60,6 +74,14 @@ Phase 3 delivers three interlocking streams of work, all triggered by client fee
 | Tasks | No `task_type`, no `parent_task_id`, no partial-completion columns, 8 statuses | +`task_type`, +`custom_fields` JSONB, +`parent_task_id`, +`target_plant_count`, +`completed_plant_count`. Status simplification (8→4) remains a **Phase 4 backlog item** |
 | Activities | No custom_fields, no plant line items, no reference_code | +`custom_fields` JSONB, +`activity_plant_items` relation, +`reference_code` (preserves CSV IDs), +`photo_before_url` / `photo_after_url`, +`pruning_request_id` |
 | Public intake | Nothing (paper letters) | Full submit → review → convert → outcome loop |
+| Design token source | Hand-maintained: `fe/web/src/app/globals.css` `:root` block + `fe/mobile/src/constants/nbTokens.ts` literals; drift between platforms (primary.hover, secondary, success, info, type scale) | Generated: `scripts/build-tokens.ts` reads `specs/ui-ux/tokens.json` → `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts`; CI `tokens-verify` blocks drift |
+| Shadow rendering | Mobile `shadowRadius: 1–4` + `shadowOpacity: 0.15–0.22` (soft blur); web `box-shadow: Xpx Ypx Bpx rgba(28,25,23,.15–.22)` (1–6 px blur) — NB stamp 70 % lost | Both platforms: opaque `#1C1917`, zero blur/radius (mobile `shadowRadius: 0, shadowOpacity: 1`; web `box-shadow: Xpx Ypx 0 #1C1917`); ESLint rule blocks regression |
+| Brand fonts | Not bundled / not loaded — system fallbacks render on both platforms | Mobile: `.ttf` files in `fe/mobile/assets/fonts/` (Space Grotesk 500/600/700/800, Inter 400/500/600/700, JetBrains Mono 400/500/600), linked via `react-native.config.js`. Web: `next/font/google` with `display: swap`, subsets `latin + latin-ext`, CSS vars `--font-display|body|mono` |
+| Mobile NB primitives | 13 components (NBButton/Card/Badge/TextInput/PasswordInput/CardTextInput/Select/DatePicker/Skeleton/Tab/Alert/EmptyState/BackgroundPattern); no Modal/Toast/Text wrappers | + `NBModal.tsx` (`@gorhom/bottom-sheet` + RN `<Modal>`), `NBToast.tsx` (NB-chromed `react-native-toast-message`), `NBText.tsx` (semantic variants) |
+| Web PWA | None — no manifest, no service worker, no icons, no install path | Installable: `public/manifest.webmanifest`, `public/sw.js` (compiled from `src/sw/sw.ts`), 192/512/512-maskable/180 apple-touch icons, `InstallBanner` / `OfflineBanner` / `UpdateToast` / `MobileInstallPush` / `usePushSubscription` / `/install-help` route, `(kecamatan)` minimal layout, `ResponsiveShell` driving 375/768/1280 px breakpoints |
+| Web responsive | Desktop-only (≥1280 px); mobile/tablet broken or unstyled on most pages | Three layouts on every Phase-3 page: mobile web (<768 px) full-width stacked + ☰ drawer + bottom-sheet filters; tablet (768–1279 px) icon rail + 1-col primary; desktop (≥1280 px) 220 px sidebar + multi-column |
+| ESLint design-system rules | None | `no-inline-hex-colors` (allow `generated/**`), `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`; RN custom rule banning `shadowRadius > 0` literal |
+| Visual regression | None | Playwright `toHaveScreenshot` baselines committed at 375 / 768 / 1280 px; Jest `react-test-renderer` snapshots for every NB primitive; CI gate `web-visreg` + `mobile-snapshots` required green for merge |
 
 ---
 
@@ -321,6 +343,46 @@ M2 / M3 / M4 run in parallel after M1-R + M1-S land. **Every UI PR in M2/M3/M4 m
 | JWT refresh tokens + per-endpoint rate limiting | Phase 4 (unchanged) |
 | Reporting / Analytics / Assets / iOS | Phase 5 (unchanged) |
 | Task-status simplification (8 → 4 per ADR-009) | Phase 4 backlog — surfaced in M1 docs sync |
+
+---
+
+## How to Start Phase 3 (execution kickoff)
+
+For a new session picking up Phase 3 from scratch, do this in order:
+
+1. **Read `STATUS.md` first** ([./STATUS.md](./STATUS.md)) — it has the live task tracker per sub-phase. The first ⏳ row is your work item.
+2. **Open the Day-0 sub-phase: 3-R1** (token pipeline + CI + ESLint plumbing). It's a 3-day plumbing-only checkpoint with **zero user-visible changes** — perfect for verifying the workflow without touching UI. Detail in [§3-R1 below](#3-r1-token-pipeline--ci--eslint-plumbing-3-days).
+3. **Run the Day-0 acceptance check** before moving on:
+   - `npm run tokens:build && git diff --exit-code` clean (idempotent)
+   - CI `tokens-verify` job green on a deliberately-drifted test PR
+   - ESLint blocks an inline-hex commit
+4. **In parallel**, start M1-S sub-phase 3-1 (spec + ADR sync + obsolete-info cleanup) — it's a 2-day docs pass that runs alongside M1-R without sharing files. See [§3-1 below](#3-1-spec-deferral--adrs--claudemd-sync-2-days).
+5. **Then proceed sequentially through M1-R**: 3-R1 → 3-R2 → 3-R3 → 3-R4 → 3-R5. Each is a self-contained PR with its own exit criteria; do not skip ahead.
+6. **Only after M1-R + M1-S land** start M2 / M3 / M4 in parallel. Every UI PR after 3-R1 must import tokens from `generated/`; CI blocks otherwise.
+
+**Critical resources before you write a single line of code:**
+
+| Need | File |
+|------|------|
+| Canonical token values (don't memorize, look them up) | [`specs/ui-ux/tokens.json`](../../ui-ux/tokens.json) + [`specs/ui-ux/design-tokens.md`](../../ui-ux/design-tokens.md) |
+| Component parity matrix (what differs intentionally vs. what must match) | [`specs/ui-ux/design-tokens.md` §Component Parity Matrix](../../ui-ux/design-tokens.md) |
+| Mobile NBModal sheet vs. fullscreen decision matrix | [`specs/mobile/neo-brutalism-modal-guidelines.md`](../../mobile/neo-brutalism-modal-guidelines.md) |
+| Apr 24 monitoring fixes that MUST be preserved | [`mobile.md` §Apr 24 Marker/Trail Fixes — MUST PRESERVE](./mobile.md) |
+| Cross-platform parity rules (mobile native ↔ mobile web ↔ desktop web) | [`ui-ux.md` §Cross-Platform Parity Matrix](./ui-ux.md) |
+| Per-screen wireframe references | [`mobile.md` §Per-Flow Wireframe Reference](./mobile.md) (35 mobile screens), [`web.md`](./web.md) (28 web pages) |
+| Visual regression harness setup | [`testing.md` §Visual Regression Harness](./testing.md) |
+| Database schema (8 new tables, 5 altered) | [`database.md`](./database.md) |
+| Backend module structure | [`backend.md`](./backend.md) |
+| Infrastructure (Redis 7, CI jobs, PWA build) | [`infrastructure.md`](./infrastructure.md) |
+
+**Hard "do NOT" list (these break Phase 3):**
+
+- ❌ Do NOT write inline hex literals in component code from 3-R1 onward — ESLint blocks; use generated tokens.
+- ❌ Do NOT set `shadowRadius > 0` anywhere on mobile — RN custom lint rule blocks; the NB stamp is hard-edge.
+- ❌ Do NOT re-enable `tracksViewChanges={true}` on `components/monitoring/*` — Apr 24 fix; ESLint blocks.
+- ❌ Do NOT hand-edit `fe/web/src/app/generated/tokens.css` or `fe/mobile/src/constants/generated/tokens.ts` — they regenerate; CI rejects drift.
+- ❌ Do NOT start UI feature work in M2/M3/M4 before M1-R lands — `NBModal`, `NBText`, `ResponsiveShell` are hard dependencies.
+- ❌ Do NOT bypass the visual regression CI gate (`web-visreg`, `mobile-snapshots`) — baseline updates require explicit `[visreg-update]` commit tag + reviewer approval.
 
 ---
 
