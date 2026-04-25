@@ -262,7 +262,6 @@ describe('ShiftsService', () => {
         relations: ['area', 'area.areaType', 'user'],
       });
       expect(mockAreasService.findOne).toHaveBeenCalledWith(mockArea.id);
-      expect(mockS3Service.uploadFile).toHaveBeenCalled();
     });
 
     it('should successfully clock in with auto-detected area when area_id not provided', async () => {
@@ -337,21 +336,11 @@ describe('ShiftsService', () => {
       }
     });
 
-    it('should throw ApiException with SHIFT_PHOTO_UPLOAD_FAILED if selfie upload fails', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-      mockAreasService.findOne.mockResolvedValue(mockArea);
-      mockShiftDefinitionRepo.find.mockResolvedValue([]);
-      mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
-      mockS3Service.uploadFile.mockRejectedValue(new Error('S3 upload failed'));
-
-      try {
-        await service.clockIn(mockUser.id, clockInDto);
-        fail('Should have thrown ApiException');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiException);
-        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_PHOTO_UPLOAD_FAILED);
-        expect(error.message).toContain('Failed to upload selfie photo');
-      }
+    // Removed: 'should throw ApiException with SHIFT_PHOTO_UPLOAD_FAILED if selfie
+    // upload fails' — Phase 2E refactor stores selfie as base64 directly (no S3
+    // upload at clock-in/clock-out), so this code path no longer exists.
+    it.skip('SHIFT_PHOTO_UPLOAD_FAILED — obsolete after Phase 2E base64 refactor', async () => {
+      // intentionally skipped
     });
 
     it('should call statusCalculator.onClockIn after successful clock-in', async () => {
