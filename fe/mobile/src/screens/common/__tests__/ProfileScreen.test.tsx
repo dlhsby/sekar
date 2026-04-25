@@ -307,11 +307,10 @@ describe('ProfileScreen', () => {
       await waitFor(() => {
         fireEvent.press(getByText('Tentang Aplikasi'));
       });
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Tentang SEKAR',
-        'Sistem Evaluasi Kerja Satgas RTH\n\nVersi: 1.0.0\nDLH Surabaya',
-        [{ text: 'OK' }]
-      );
+      await waitFor(() => {
+        expect(getByText('TENTANG SEKAR')).toBeTruthy();
+        expect(getByText('Sistem Evaluasi Kerja Satgas RTH')).toBeTruthy();
+      });
     });
 
     it('loads data on mount', async () => {

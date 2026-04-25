@@ -8,21 +8,16 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
-  Modal,
   StyleSheet,
-  ScrollView,
-  Pressable,
   TouchableOpacity,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { NBSelect, NBDatePicker } from '../nb';
+import { NBSelect, NBDatePicker, NBModal } from '../nb';
 import {
   nbColors,
   nbSpacing,
   nbTypography,
   nbBorders,
-  nbShadows,
 } from '../../constants/nbTokens';
 import type { OvertimeFilter } from '../../types/api.types';
 import type { Area, Rayon, User, UserRole } from '../../types/models.types';
@@ -210,216 +205,153 @@ export function OvertimeFilterModal({
   const dateToParsed = parseFilterDate(localDateTo);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View
-          style={styles.modalContent}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Filter Lembur</Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-              accessibilityRole="button"
-              accessibilityLabel="Tutup modal filter"
-            >
-              <MaterialCommunityIcons name="close" size={22} color={nbColors.black} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
+    <NBModal
+      visible={visible}
+      onClose={onClose}
+      title="Filter Lembur"
+      size="lg"
+      scrollable
+      footer={
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.resetButton]}
+            onPress={handleReset}
+            accessibilityRole="button"
           >
-            {/* 1. Status */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Status</Text>
-              <NBSelect
-                value={localStatus || 'all'}
-                onValueChange={(v) => setLocalStatus(v === 'all' ? '' : String(v))}
-                options={[
-                  { label: 'Semua Status', value: 'all' },
-                  { label: 'Menunggu', value: 'pending' },
-                  { label: 'Disetujui', value: 'approved' },
-                  { label: 'Ditolak', value: 'rejected' },
-                ]}
-                searchable
-              />
-            </View>
+            <Text style={styles.resetButtonText}>Reset</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.applyButton]}
+            onPress={handleApply}
+            accessibilityRole="button"
+          >
+            <Text style={styles.applyButtonText}>Terapkan</Text>
+          </TouchableOpacity>
+        </View>
+      }
+    >
+      {/* 1. Status */}
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Status</Text>
+        <NBSelect
+          value={localStatus || 'all'}
+          onValueChange={(v) => setLocalStatus(v === 'all' ? '' : String(v))}
+          options={[
+            { label: 'Semua Status', value: 'all' },
+            { label: 'Menunggu', value: 'pending' },
+            { label: 'Disetujui', value: 'approved' },
+            { label: 'Ditolak', value: 'rejected' },
+          ]}
+          searchable
+        />
+      </View>
 
-            {/* 2. Rentang Tanggal */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Rentang Tanggal</Text>
-              <View style={styles.dateRangeRow}>
-                <View style={styles.dateButtonHalf}>
-                  <NBDatePicker
-                    value={dateFromParsed}
-                    onChange={(date) => setLocalDateFrom(toFilterDateString(date))}
-                    label="Dari"
-                    maximumDate={dateToParsed ?? undefined}
-                  />
-                </View>
-                <Text style={styles.dateSeparator}>→</Text>
-                <View style={styles.dateButtonHalf}>
-                  <NBDatePicker
-                    value={dateToParsed}
-                    onChange={(date) => setLocalDateTo(toFilterDateString(date))}
-                    label="Sampai"
-                    minimumDate={dateFromParsed ?? undefined}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* 3. Rayon — role-gated */}
-            {showRayon && (
-              <View style={styles.filterSection}>
-                <Text style={styles.filterLabel}>Rayon</Text>
-                {isRayonFixed ? (
-                  <NBSelect
-                    value={userRayonId ?? 'all'}
-                    onValueChange={() => {}}
-                    options={[{ label: userRayonId ? 'Rayon Saya' : 'Semua Rayon', value: userRayonId ?? 'all' }]}
-                    disabled={true}
-                  />
-                ) : (
-                  <NBSelect
-                    value={localRayonId || 'all'}
-                    onValueChange={(v) => {
-                      setLocalRayonId(v === 'all' ? '' : String(v));
-                      setLocalAreaId('');
-                    }}
-                    options={[
-                      { label: 'Semua Rayon', value: 'all' },
-                      ...rayons.map((r) => ({ label: r.name, value: r.id })),
-                    ]}
-                    disabled={loadingRayons}
-                    searchable
-                  />
-                )}
-              </View>
-            )}
-
-            {/* 4. Area */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Area</Text>
-              {isAreaFixed ? (
-                <NBSelect
-                  value={userAreaId ?? 'all'}
-                  onValueChange={() => {}}
-                  options={[{ label: userAreaId ? 'Area Saya' : 'Semua Area', value: userAreaId ?? 'all' }]}
-                  disabled={true}
-                />
-              ) : (
-                <NBSelect
-                  value={localAreaId || 'all'}
-                  onValueChange={(v) => {
-                    setLocalAreaId(v === 'all' ? '' : String(v));
-                    setLocalUserId('');
-                  }}
-                  options={[
-                    { label: 'Semua Area', value: 'all' },
-                    ...areas.map((a) => ({ label: a.name, value: a.id })),
-                  ]}
-                  disabled={loadingAreas}
-                  searchable
-                />
-              )}
-            </View>
-
-            {/* 5. Dibuat Oleh — hidden for satgas/linmas */}
-            {!isFieldWorker && (
-              <View style={styles.filterSection}>
-                <Text style={styles.filterLabel}>Dibuat Oleh</Text>
-                <NBSelect
-                  value={localUserId || 'all'}
-                  onValueChange={(v) => setLocalUserId(v === 'all' ? '' : String(v))}
-                  options={[
-                    { label: 'Semua Petugas (Termasuk Saya)', value: 'all' },
-                    ...(hasSubordinates ? [{ label: 'Semua Bawahan', value: 'all_subordinates' }] : []),
-                    ...(userId ? [{ label: 'Dibuat oleh Saya', value: userId }] : []),
-                    ...users.map((u) => ({
-                      label: `${toTitleCase(u.role)} - ${u.full_name}`,
-                      value: u.id,
-                    })),
-                  ]}
-                  disabled={loadingUsers}
-                  searchable
-                />
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Fixed action buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.resetButton]}
-              onPress={handleReset}
-              accessibilityRole="button"
-            >
-              <Text style={styles.resetButtonText}>Reset</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.applyButton]}
-              onPress={handleApply}
-              accessibilityRole="button"
-            >
-              <Text style={styles.applyButtonText}>Terapkan</Text>
-            </TouchableOpacity>
+      {/* 2. Rentang Tanggal */}
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Rentang Tanggal</Text>
+        <View style={styles.dateRangeRow}>
+          <View style={styles.dateButtonHalf}>
+            <NBDatePicker
+              value={dateFromParsed}
+              onChange={(date) => setLocalDateFrom(toFilterDateString(date))}
+              label="Dari"
+              maximumDate={dateToParsed ?? undefined}
+            />
+          </View>
+          <Text style={styles.dateSeparator}>→</Text>
+          <View style={styles.dateButtonHalf}>
+            <NBDatePicker
+              value={dateToParsed}
+              onChange={(date) => setLocalDateTo(toFilterDateString(date))}
+              label="Sampai"
+              minimumDate={dateFromParsed ?? undefined}
+            />
           </View>
         </View>
-      </Pressable>
-    </Modal>
+      </View>
+
+      {/* 3. Rayon — role-gated */}
+      {showRayon && (
+        <View style={styles.filterSection}>
+          <Text style={styles.filterLabel}>Rayon</Text>
+          {isRayonFixed ? (
+            <NBSelect
+              value={userRayonId ?? 'all'}
+              onValueChange={() => {}}
+              options={[{ label: userRayonId ? 'Rayon Saya' : 'Semua Rayon', value: userRayonId ?? 'all' }]}
+              disabled={true}
+            />
+          ) : (
+            <NBSelect
+              value={localRayonId || 'all'}
+              onValueChange={(v) => {
+                setLocalRayonId(v === 'all' ? '' : String(v));
+                setLocalAreaId('');
+              }}
+              options={[
+                { label: 'Semua Rayon', value: 'all' },
+                ...rayons.map((r) => ({ label: r.name, value: r.id })),
+              ]}
+              disabled={loadingRayons}
+              searchable
+            />
+          )}
+        </View>
+      )}
+
+      {/* 4. Area */}
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Area</Text>
+        {isAreaFixed ? (
+          <NBSelect
+            value={userAreaId ?? 'all'}
+            onValueChange={() => {}}
+            options={[{ label: userAreaId ? 'Area Saya' : 'Semua Area', value: userAreaId ?? 'all' }]}
+            disabled={true}
+          />
+        ) : (
+          <NBSelect
+            value={localAreaId || 'all'}
+            onValueChange={(v) => {
+              setLocalAreaId(v === 'all' ? '' : String(v));
+              setLocalUserId('');
+            }}
+            options={[
+              { label: 'Semua Area', value: 'all' },
+              ...areas.map((a) => ({ label: a.name, value: a.id })),
+            ]}
+            disabled={loadingAreas}
+            searchable
+          />
+        )}
+      </View>
+
+      {/* 5. Dibuat Oleh — hidden for satgas/linmas */}
+      {!isFieldWorker && (
+        <View style={styles.filterSection}>
+          <Text style={styles.filterLabel}>Dibuat Oleh</Text>
+          <NBSelect
+            value={localUserId || 'all'}
+            onValueChange={(v) => setLocalUserId(v === 'all' ? '' : String(v))}
+            options={[
+              { label: 'Semua Petugas (Termasuk Saya)', value: 'all' },
+              ...(hasSubordinates ? [{ label: 'Semua Bawahan', value: 'all_subordinates' }] : []),
+              ...(userId ? [{ label: 'Dibuat oleh Saya', value: userId }] : []),
+              ...users.map((u) => ({
+                label: `${toTitleCase(u.role)} - ${u.full_name}`,
+                value: u.id,
+              })),
+            ]}
+            disabled={loadingUsers}
+            searchable
+          />
+        </View>
+      )}
+    </NBModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: nbColors.overlay,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: nbColors.surface,
-    borderTopWidth: nbBorders.base,
-    borderLeftWidth: nbBorders.base,
-    borderRightWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    maxHeight: '85%',
-    flexShrink: 1,
-    ...nbShadows.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm + 4,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
-  },
-  title: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    letterSpacing: 0.3,
-    flex: 1,
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {},
-  scrollContent: {
-    padding: nbSpacing.md,
-    paddingBottom: nbSpacing.sm,
-  },
   filterSection: {
     marginBottom: nbSpacing.md + 4,
   },
@@ -448,10 +380,6 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     gap: nbSpacing.sm,
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm + 2,
-    borderTopWidth: nbBorders.base,
-    borderTopColor: nbColors.black,
   },
   actionButton: {
     flex: 1,

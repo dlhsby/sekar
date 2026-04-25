@@ -5,8 +5,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert, ActivityIndicator } from 'react-native';
-import { NBButton, NBBackgroundPattern } from '../../components/nb';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { NBButton, NBBackgroundPattern, NBModal, NBText } from '../../components/nb';
 import { ProfileHeader } from '../../components/common/ProfileHeader';
 import { ProfileMenu } from '../../components/common/ProfileMenu';
 import { SyncStatusCard } from '../../components/common/SyncStatusCard';
@@ -45,6 +45,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
+  const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
 
   const { handleLogout } = useProfileLogout({
     onBeforeLogout: async () => {
@@ -68,11 +69,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
   }, [loadProfileData]);
 
   const handleAbout = useCallback(() => {
-    Alert.alert(
-      'Tentang SEKAR',
-      'Sistem Evaluasi Kerja Satgas RTH\n\nVersi: 1.0.0\nDLH Surabaya',
-      [{ text: 'OK' }]
-    );
+    setIsAboutModalVisible(true);
   }, []);
 
   useEffect(() => {
@@ -179,6 +176,19 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           onClose={() => setIsChangePasswordModalVisible(false)}
         />
       </ScrollView>
+
+      <NBModal
+        visible={isAboutModalVisible}
+        onClose={() => setIsAboutModalVisible(false)}
+        title="Tentang SEKAR"
+        size="sm"
+      >
+        <NBText variant="body" style={{ marginBottom: 8 }}>
+          Sistem Evaluasi Kerja Satgas RTH
+        </NBText>
+        <NBText variant="body-sm" color="gray500">Versi: 1.0.0</NBText>
+        <NBText variant="body-sm" color="gray500">DLH Kota Surabaya</NBText>
+      </NBModal>
     </NBBackgroundPattern>
   );
 }

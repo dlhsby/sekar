@@ -58,3 +58,15 @@ export type { NBDatePickerProps } from './NBDatePicker';
 // Card Text Input
 export { NBCardTextInput } from './NBCardTextInput';
 export type { NBCardTextInputProps } from './NBCardTextInput';
+
+// Text (Phase 3 M1-R 3-R3)
+export { NBText, NBHeading1, NBHeading2, NBHeading3 } from './NBText';
+export type { NBTextProps, NBTextVariant, NBTextColor, NBTextAlign } from './NBText';
+
+// Modal (Phase 3 M1-R 3-R3)
+export { NBModal } from './NBModal';
+export type { NBModalProps, NBModalType, NBModalSize } from './NBModal';
+
+// Toast (Phase 3 M1-R 3-R3)
+export { NBToast, NBToastProvider, nbToastConfig } from './NBToast';
+export type { NBToastOptions, NBToastLevel } from './NBToast';

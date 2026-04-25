@@ -54,7 +54,7 @@ describe('SortModal (shared)', () => {
       const { getByLabelText } = render(
         <SortModal {...BASE_PROPS} onClose={onClose} />
       );
-      fireEvent.press(getByLabelText('Tutup modal urutan'));
+      fireEvent.press(getByLabelText('Tutup'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 

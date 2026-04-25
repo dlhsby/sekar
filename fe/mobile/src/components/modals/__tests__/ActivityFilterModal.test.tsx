@@ -58,7 +58,7 @@ describe('ActivityFilterModal', () => {
     it('renders when visible', async () => {
       const { getByText } = render(<ActivityFilterModal {...defaultProps} />);
       await waitFor(() => {
-        expect(getByText('Filter Aktivitas')).toBeTruthy();
+        expect(getByText('FILTER AKTIVITAS')).toBeTruthy();
       });
     });
 
@@ -92,7 +92,7 @@ describe('ActivityFilterModal', () => {
       const { queryByText } = render(
         <ActivityFilterModal {...defaultProps} visible={false} />
       );
-      expect(queryByText('Filter Aktivitas')).toBeNull();
+      expect(queryByText('FILTER AKTIVITAS')).toBeNull();
     });
   });
 
@@ -100,9 +100,9 @@ describe('ActivityFilterModal', () => {
     it('calls onClose when close button is pressed', async () => {
       const { getByLabelText } = render(<ActivityFilterModal {...defaultProps} />);
       await waitFor(() => {
-        expect(getByLabelText('Tutup modal filter')).toBeTruthy();
+        expect(getByLabelText('Tutup')).toBeTruthy();
       });
-      fireEvent.press(getByLabelText('Tutup modal filter'));
+      fireEvent.press(getByLabelText('Tutup'));
       expect(mockOnClose).toHaveBeenCalled();
     });
 
@@ -145,7 +145,7 @@ describe('ActivityFilterModal', () => {
         />
       );
       await waitFor(() => {
-        expect(getByText('Filter Aktivitas')).toBeTruthy();
+        expect(getByText('FILTER AKTIVITAS')).toBeTruthy();
       });
     });
   });
