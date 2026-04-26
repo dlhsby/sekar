@@ -70,6 +70,20 @@ describe('NBToast', () => {
         }),
       );
     });
+
+    it('persistent: true uses Number.MAX_SAFE_INTEGER as visibilityTime', () => {
+      NBToast.show({ level: 'danger', title: 'Login gagal', persistent: true });
+      expect(Toast.show).toHaveBeenCalledWith(
+        expect.objectContaining({ visibilityTime: Number.MAX_SAFE_INTEGER }),
+      );
+    });
+
+    it('persistent: true ignores durationMs', () => {
+      NBToast.show({ level: 'info', title: 'Info', persistent: true, durationMs: 2000 });
+      expect(Toast.show).toHaveBeenCalledWith(
+        expect.objectContaining({ visibilityTime: Number.MAX_SAFE_INTEGER }),
+      );
+    });
   });
 
   describe('NBToast.hide()', () => {

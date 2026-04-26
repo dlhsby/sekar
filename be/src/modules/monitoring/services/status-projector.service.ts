@@ -35,6 +35,7 @@ const CONSUMER = 'projector-1';
 @Injectable()
 export class StatusProjectorService implements OnModuleInit {
   private readonly logger = new Logger(StatusProjectorService.name);
+  private projectorRunning = false;
 
   constructor(
     private readonly redis: RedisService,
@@ -57,6 +58,8 @@ export class StatusProjectorService implements OnModuleInit {
    */
   @Cron(CronExpression.EVERY_SECOND)
   async processPendingMessages(): Promise<void> {
+    if (this.projectorRunning) return;
+    this.projectorRunning = true;
     try {
       const messages = await this.redis.streamReadGroup(STREAM, GROUP, CONSUMER, 100);
       if (messages.length === 0) return;
@@ -85,6 +88,8 @@ export class StatusProjectorService implements OnModuleInit {
       await this.redis.streamAck(STREAM, GROUP, ...ids);
     } catch (e: any) {
       this.logger.warn(`StatusProjector tick failed: ${e.message}`);
+    } finally {
+      this.projectorRunning = false;
     }
   }
 

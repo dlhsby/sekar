@@ -89,7 +89,11 @@ export function HierarchyFilterPanel({
       aria-label="Filter monitoring"
     >
       {/* Scope selector */}
-      <div className="flex items-center border-2 border-nb-black rounded-nb-base overflow-hidden shadow-nb-xs">
+      <div
+        role="group"
+        aria-label="Cakupan filter"
+        className="flex items-center border-2 border-nb-black rounded-nb-base overflow-hidden shadow-nb-xs"
+      >
         {(['city', 'rayon', 'area'] as FilterScope[]).map((s) => (
           <button
             key={s}

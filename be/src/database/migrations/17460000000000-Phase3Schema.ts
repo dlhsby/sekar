@@ -17,7 +17,7 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_plant_species_name_id ON plant_species (name_id)`);
+    await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS uidx_plant_species_name_id ON plant_species (name_id)`);
 
     // 2. area_plants
     await queryRunner.query(`
@@ -251,7 +251,7 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX IF EXISTS idx_area_plants_next_due`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_area_plants_area_status`);
     await queryRunner.query(`DROP TABLE IF EXISTS area_plants`);
-    await queryRunner.query(`DROP INDEX IF EXISTS idx_plant_species_name_id`);
+    await queryRunner.query(`DROP INDEX IF EXISTS uidx_plant_species_name_id`);
     await queryRunner.query(`DROP TABLE IF EXISTS plant_species`);
   }
 }

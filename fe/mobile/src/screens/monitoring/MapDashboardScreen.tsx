@@ -94,6 +94,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   const visibleLayers = useSelector(
     (state: RootState) => state.monitoringV2.visibleLayers,
   );
+  const clusterZoomThreshold = useSelector(
+    (state: RootState) => state.monitoringV2.clusterZoomThreshold,
+  );
 
   // Local UI state
   const [toggleSheetVisible, setToggleSheetVisible] = useState(false);
@@ -479,7 +482,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                 <ClusteredUserMarkers
                   workers={visibleUsers}
                   zoom={currentRegion.latitudeDelta}
-                  clusterZoomThreshold={0.05}
+                  clusterZoomThreshold={clusterZoomThreshold}
                   labelMode={labelMode}
                   selectedUserId={selectedUser?.id ?? null}
                   onUserPress={userId => {
@@ -517,17 +520,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                       <UserMarker
                         key={cluster.id}
                         user={representative}
-                        onPress={() => {
-                          mapRef.current?.animateToRegion(
-                            {
-                              latitude: cluster.coordinate.latitude,
-                              longitude: cluster.coordinate.longitude,
-                              latitudeDelta: currentRegion.latitudeDelta / 3,
-                              longitudeDelta: currentRegion.longitudeDelta / 3,
-                            },
-                            300,
-                          );
-                        }}
+                        onPress={() => handleClusterPress(cluster.coordinate)}
                         clusterCount={cluster.pointCount}
                         labelMode={labelMode}
                       />

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   nbColors,
   nbSpacing,
@@ -133,6 +134,7 @@ function FullscreenModal({
   children,
   testID,
 }: NBModalProps) {
+  const insets = useSafeAreaInsets();
   const ContentWrapper = scrollable ? ScrollView : View;
   const contentStyle = scrollable ? styles.fullscreenScroll : styles.fullscreenBody;
 
@@ -145,7 +147,7 @@ function FullscreenModal({
       testID={testID}
     >
       <View style={styles.fullscreenContainer}>
-        <View style={styles.fullscreenHeader}>
+        <View style={[styles.fullscreenHeader, { paddingTop: insets.top + nbSpacing.md }]}>
           <TouchableOpacity
             onPress={onClose}
             style={styles.backButton}

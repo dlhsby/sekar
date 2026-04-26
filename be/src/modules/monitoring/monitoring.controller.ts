@@ -205,6 +205,10 @@ export class MonitoringController {
     @Query('scope') scope: 'city' | 'rayon' | 'area' = 'city',
     @Query('id') id?: string,
   ) {
+    const cityOnlyRoles: UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
+    if (scope === 'city' && !cityOnlyRoles.includes(user.role as UserRole)) {
+      throw new ForbiddenException('City-scope snapshot requires city-level role');
+    }
     if (scope === 'rayon' && id) this.enforceScopeRayon(user, id);
     if (scope === 'area' && id) await this.enforceScopeArea(user, id);
     return this.monitoringService.getSnapshot(scope, id);

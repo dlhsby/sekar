@@ -50,7 +50,6 @@ export class StaleStatusSweeperService {
 
   private async doSweep(): Promise<void> {
     const cutoff = new Date(Date.now() - this.missingStaleSecs * 1000);
-    let offset = 0;
     let total = 0;
 
     while (true) {
@@ -60,7 +59,6 @@ export class StaleStatusSweeperService {
           last_location_at: LessThan(cutoff),
         },
         take: BATCH_SIZE,
-        skip: offset,
       });
 
       if (stale.length === 0) break;
@@ -73,7 +71,6 @@ export class StaleStatusSweeperService {
 
       await this.trackingRepository.save(stale);
       total += stale.length;
-      offset += BATCH_SIZE;
 
       if (stale.length < BATCH_SIZE) break;
     }

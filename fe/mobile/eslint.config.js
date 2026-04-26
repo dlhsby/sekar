@@ -97,7 +97,7 @@ module.exports = [
         'error',
         {
           selector:
-            'JSXAttribute[name.name="tracksViewChanges"][value.expression.value=true]',
+            'JSXAttribute[name.name="tracksViewChanges"][value.expression.value=true], JSXAttribute[name.name="tracksViewChanges"]:not([value])',
           message:
             'tracksViewChanges={true} is forbidden in monitoring/ — it causes bitmap redraw thrash. Remove it (defaults to false).',
         },

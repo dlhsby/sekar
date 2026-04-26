@@ -14,7 +14,8 @@ export type NBTextVariant =
   | 'caption'
   | 'mono-sm';
 
-export type NBTextColor = keyof typeof nbColors;
+type StringValuedKeys<T> = { [K in keyof T]: T[K] extends string ? K : never }[keyof T];
+export type NBTextColor = StringValuedKeys<typeof nbColors>;
 export type NBTextAlign = 'left' | 'center' | 'right';
 
 export interface NBTextProps extends TextProps {
@@ -25,6 +26,16 @@ export interface NBTextProps extends TextProps {
   style?: TextStyle;
   children: React.ReactNode;
 }
+
+// Variants that map to the 'header' accessibility role. Includes the two
+// large display variants (56px/40px) in addition to h1/h2/h3.
+const HEADING_VARIANTS = new Set<NBTextVariant>([
+  'display-xl',
+  'display',
+  'h1',
+  'h2',
+  'h3',
+]);
 
 // Maps spec variant name → generated nbType key
 const variantKey: Record<NBTextVariant, keyof typeof nbType> = {
@@ -71,7 +82,7 @@ export function NBText({
   return (
     <Text
       style={[computedStyle, style]}
-      accessibilityRole={variant.startsWith('h') ? 'header' : 'text'}
+      accessibilityRole={HEADING_VARIANTS.has(variant) ? 'header' : 'text'}
       {...rest}
     >
       {children}

@@ -18,6 +18,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../modules/users/entities/user.entity';
 import { UserAreasService } from '../modules/user-areas/user-areas.service';
+import { StaffingDebouncerService } from '../modules/monitoring/services/staffing-debouncer.service';
 import {
   SubscribeAreaDto,
   UnsubscribeAreaDto,
@@ -77,6 +78,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     private readonly userRepository: Repository<User>,
     private readonly userAreasService: UserAreasService,
     @Optional() private readonly redisService: RedisService | undefined,
+    @Optional() private readonly staffingDebouncer: StaffingDebouncerService | undefined,
   ) {}
 
   /**
@@ -92,6 +94,12 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       this.logger.log('Socket.IO Redis adapter active');
     } else {
       this.logger.warn('Socket.IO running without Redis adapter (single-instance mode)');
+    }
+    if (this.staffingDebouncer) {
+      this.staffingDebouncer.setEmitter((areaId, state) => {
+        server.to('monitoring:city').emit('area:staffing-changed', state);
+      });
+      this.logger.log('StaffingDebouncer emitter wired');
     }
   }
 

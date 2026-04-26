@@ -47,6 +47,7 @@ function makeWorkers(count: number): WorkerListItem[] {
     full_name: `Petugas ${i}`,
     role: 'satgas',
     status: 'active' as const,
+    area_id: `area-${i % 3}`,
     area_name: `Area ${i % 3}`,
     last_update: new Date(Date.now() - i * 60_000).toISOString(),
   }));
@@ -76,8 +77,8 @@ describe('WorkerListVirtual', () => {
         onSelect={jest.fn()}
       />
     );
-    // The virtualizer renders overscan items; expect at least 1 row option
-    const rows = screen.getAllByRole('option');
+    // The virtualizer renders overscan items; expect at least 1 row button
+    const rows = screen.getAllByRole('button');
     expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -90,7 +91,7 @@ describe('WorkerListVirtual', () => {
         onSelect={jest.fn()}
       />
     );
-    const rows = screen.getAllByRole('option');
+    const rows = screen.getAllByRole('button');
     expect(rows.length).toBe(3);
   });
 
@@ -116,7 +117,7 @@ describe('WorkerListVirtual', () => {
         onSelect={onSelect}
       />
     );
-    const rows = screen.getAllByRole('option');
+    const rows = screen.getAllByRole('button');
     await user.click(rows[0]);
     expect(onSelect).toHaveBeenCalledWith('user-0');
   });
@@ -131,13 +132,13 @@ describe('WorkerListVirtual', () => {
         onSelect={onSelect}
       />
     );
-    const rows = screen.getAllByRole('option');
+    const rows = screen.getAllByRole('button');
     rows[1].focus();
     await user.keyboard('{Enter}');
     expect(onSelect).toHaveBeenCalledWith('user-1');
   });
 
-  it('marks the selected worker row with aria-selected=true', () => {
+  it('marks the selected worker row with aria-pressed=true', () => {
     const workers = makeWorkers(3);
     render(
       <WorkerListVirtual
@@ -146,13 +147,13 @@ describe('WorkerListVirtual', () => {
         selectedUserId="user-1"
       />
     );
-    const rows = screen.getAllByRole('option');
-    const selectedRow = rows.find((r) => r.getAttribute('aria-selected') === 'true');
+    const rows = screen.getAllByRole('button');
+    const selectedRow = rows.find((r) => r.getAttribute('aria-pressed') === 'true');
     expect(selectedRow).toBeDefined();
     expect(within(selectedRow!).getByText('Petugas 1')).toBeInTheDocument();
   });
 
-  it('shows the listbox with an accessible label', () => {
+  it('shows the list with an accessible label', () => {
     const workers = makeWorkers(1);
     render(
       <WorkerListVirtual
@@ -161,7 +162,7 @@ describe('WorkerListVirtual', () => {
         aria-label="Custom worker list"
       />
     );
-    expect(screen.getByRole('listbox', { name: 'Custom worker list' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Custom worker list' })).toBeInTheDocument();
   });
 
   it('displays status badge text for each visible row', () => {
@@ -171,6 +172,7 @@ describe('WorkerListVirtual', () => {
         full_name: 'Caca',
         role: 'satgas',
         status: 'missing',
+        area_id: 'area-1',
         area_name: 'Taman A',
         last_update: new Date().toISOString(),
       },

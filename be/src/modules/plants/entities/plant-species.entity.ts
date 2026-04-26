@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
 
 @Entity('plant_species')
+@Unique(['nameId'])
 export class PlantSpecies {
   @PrimaryGeneratedColumn('uuid')
   id: string;

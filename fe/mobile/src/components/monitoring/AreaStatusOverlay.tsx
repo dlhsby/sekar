@@ -6,7 +6,7 @@
  * Status color mapping (30% opacity fills, NB token colors):
  *   'ok'      → nbColors.success  (green)
  *   'due'     → nbColors.warning  (amber)
- *   'overdue' → nbColors.error    (red)
+ *   'overdue' → nbColors.danger   (red)
  *   (none)    → transparent
  *
  * Apr 24 stability fixes applied:
@@ -17,8 +17,7 @@
  * - No `tracksViewChanges` on Polygon (N/A — only on Marker).
  */
 
-import React, { useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import React from 'react';
 import { Polygon } from 'react-native-maps';
 import { useSelector } from 'react-redux';
 import {
@@ -92,16 +91,9 @@ export function AreaStatusOverlay({
 
   const areaStatusById = areaStatusByIdProp ?? storeStatus ?? {};
 
-  // Re-register on tab focus so that a scope change (rayon filter) triggers a
-  // fresh read — same pattern as BoundaryOverlay's useFocusEffect.
-  useFocusEffect(
-    useCallback(() => {
-      // No async fetch needed here — data comes from Redux. The parent
-      // (MapDashboardScreen) is responsible for dispatching fetchSnapshot on
-      // focus. This effect is a placeholder for when the plants slice ships its
-      // own fetch action in sub-phase 3-8.
-    }, []),
-  );
+  // Note: useFocusEffect will be added in sub-phase 3-8 when the plants slice
+  // ships its own fetch action. The parent (MapDashboardScreen) already
+  // dispatches fetchSnapshot on focus — no extra effect needed here yet.
 
   if (!rayons || rayons.length === 0) {
     return <></>;

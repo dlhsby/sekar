@@ -188,7 +188,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       const result = await queryRunner.query(
         `INSERT INTO plant_species (name_id, category)
          VALUES ($1, $2)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (name_id) DO NOTHING`,
         [species.nameId, species.category],
       );
       if (result && (result as any).rowCount > 0) inserted++;
@@ -241,13 +241,13 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
 
     let configsInserted = 0;
     for (const cfg of phase3MonitoringConfigs) {
-      await queryRunner.query(
+      const result = await queryRunner.query(
         `INSERT INTO monitoring_configs (key, value, description)
          VALUES ($1, $2::jsonb, $3)
          ON CONFLICT (key) DO NOTHING`,
         [cfg.key, cfg.value, cfg.description],
       );
-      configsInserted++;
+      if (result && (result as any).rowCount > 0) configsInserted++;
     }
     console.log(`  ✓ ${configsInserted} monitoring_configs processed (idempotent)`);
 
@@ -261,9 +261,8 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     if (rayons.length === 0) {
       console.log('  ⚠ No rayons found, skipping service_capacity seed');
     } else {
-      // Current date: 2026-04-26. ISO week 17 of 2026 is the current week.
-      // Seed 12 weeks starting from week 17 of 2026.
-      const currentDate = new Date('2026-04-26');
+      // Seed 12 weeks starting from the current ISO week.
+      const currentDate = new Date();
       const { year: startYear, week: startWeek } = getIsoWeek(currentDate);
 
       const weeksToSeed: Array<{ year: number; week: number }> = [];

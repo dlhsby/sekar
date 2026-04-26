@@ -136,6 +136,13 @@ export default function MonitoringPage() {
     return f;
   }, [rayonFilter, areaFilter]);
 
+  // Ref kept current so WS handlers always read the latest filter value
+  // without needing to re-subscribe to the socket.
+  const legacyFiltersRef = useRef(legacyFilters);
+  useEffect(() => {
+    legacyFiltersRef.current = legacyFilters;
+  });
+
   const {
     data: liveUsersData,
     isLoading: usersLoading,
@@ -175,7 +182,7 @@ export default function MonitoringPage() {
 
     socket.on('user:location', (payload: Partial<LiveUser> & { user_id: string }) => {
       queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFilters),
+        monitoringKeys.liveUsers(legacyFiltersRef.current),
         (old: typeof liveUsersData) => {
           if (!old) return old;
           return {
@@ -188,7 +195,7 @@ export default function MonitoringPage() {
 
     socket.on('user:status-changed', (event: UserStatusChangedEvent) => {
       queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFilters),
+        monitoringKeys.liveUsers(legacyFiltersRef.current),
         (old: typeof liveUsersData) => {
           if (!old) return old;
           return {
@@ -208,7 +215,7 @@ export default function MonitoringPage() {
 
     socket.on('user:left-area', (event: UserAreaEvent) => {
       queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFilters),
+        monitoringKeys.liveUsers(legacyFiltersRef.current),
         (old: typeof liveUsersData) => {
           if (!old) return old;
           return {
@@ -226,7 +233,7 @@ export default function MonitoringPage() {
 
     socket.on('user:entered-area', (event: UserAreaEvent) => {
       queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFilters),
+        monitoringKeys.liveUsers(legacyFiltersRef.current),
         (old: typeof liveUsersData) => {
           if (!old) return old;
           return {
@@ -310,16 +317,17 @@ export default function MonitoringPage() {
         full_name: w.full_name,
         role: w.role,
         status: w.status,
+        area_id: w.area_id,
         area_name: w.area_name,
         last_update: w.last_update,
       })),
     [snapshotWorkers]
   );
 
-  // Filter workers for the selected area drawer
+  // Filter workers for the selected area drawer by area_id (unique) not area_name (non-unique across rayons)
   const areaDrawerWorkers = useMemo<WorkerListItem[]>(() => {
     if (!selectedAreaSummary) return [];
-    return workerListItems.filter((w) => w.area_name === selectedAreaSummary.area_name);
+    return workerListItems.filter((w) => w.area_id === selectedAreaSummary.area_id);
   }, [workerListItems, selectedAreaSummary]);
 
   // Map filter props for auto-focus

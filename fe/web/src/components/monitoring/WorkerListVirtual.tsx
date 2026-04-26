@@ -28,6 +28,7 @@ export interface WorkerListItem {
   full_name: string;
   role: string;
   status: TrackingStatus;
+  area_id: string | null;
   area_name: string | null;
   last_update: string;
 }
@@ -95,7 +96,7 @@ export function WorkerListVirtual({
       ref={parentRef}
       className={cn('overflow-y-auto overflow-x-hidden overscroll-contain', className)}
       style={{ maxHeight, height: Math.min(workers.length * ROW_HEIGHT, maxHeight) }}
-      role="listbox"
+      role="list"
       aria-label={ariaLabel ?? 'Daftar petugas'}
     >
       {/* Spacer to give virtualizer its full scroll height */}
@@ -109,19 +110,28 @@ export function WorkerListVirtual({
           const isSelected = selectedUserId === worker.user_id;
 
           return (
-            <button
+            <div
               key={worker.user_id}
-              type="button"
-              role="option"
-              aria-selected={isSelected}
-              onClick={() => onSelect(worker.user_id)}
-              onKeyDown={(e) => handleKeyDown(e, worker.user_id)}
+              role="listitem"
               style={{
                 position: 'absolute',
                 top: virtualRow.start,
                 left: 0,
                 right: 0,
                 height: ROW_HEIGHT,
+              }}
+            >
+            <button
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => onSelect(worker.user_id)}
+              onKeyDown={(e) => handleKeyDown(e, worker.user_id)}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
               }}
               className={cn(
                 'w-full flex items-center gap-3 px-4 text-left transition-colors duration-100',
@@ -174,6 +184,7 @@ export function WorkerListVirtual({
                 </span>
               </div>
             </button>
+            </div>
           );
         })}
       </div>

@@ -26,6 +26,22 @@ const eslintConfig = defineConfig([
       "sekar-design/prefer-nb-shadow-utility": "error",
     },
   },
+  // ClusterLayer — conditional map-canvas shadows must be inline (no utility class equivalent for dynamic values);
+  // #fff cluster label text and #6B7280 unknown-status fallback have no NB token.
+  {
+    files: ["src/components/monitoring/ClusterLayer.tsx"],
+    rules: {
+      "sekar-design/prefer-nb-shadow-utility": "off",
+      "sekar-design/no-inline-hex-colors": "off",
+    },
+  },
+  // AreaDetailDrawer — directional drawer shadow cannot be expressed as a utility class.
+  {
+    files: ["src/components/monitoring/AreaDetailDrawer.tsx"],
+    rules: {
+      "sekar-design/prefer-nb-shadow-utility": "off",
+    },
+  },
   // Generated token artifacts — written by scripts/build-tokens.ts. Hand-edits are reverted by CI (ADR-036).
   {
     files: ["src/app/generated/**", "src/**/generated/**"],
