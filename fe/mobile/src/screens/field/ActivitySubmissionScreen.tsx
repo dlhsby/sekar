@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
   },
   errorSummary: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: withAlpha(nbColors.danger, 0.06),
     borderWidth: nbBorders.base,
     borderColor: nbColors.danger,
     borderRadius: nbBorderRadius.sm,

@@ -64,6 +64,7 @@ import {
   nbBorders,
   nbBorderRadius,
   nbShadows,
+  withAlpha,
 } from '../../constants/nbTokens';
 import { GPSLocationSection, ImagePreviewModal } from '../../components/common';
 import type { StartOvertimeRequest, EndOvertimeRequest } from '../../types/api.types';
@@ -943,7 +944,7 @@ const styles = StyleSheet.create({
     marginVertical: nbSpacing.xs,
   },
   errorSummary: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: withAlpha(nbColors.danger, 0.05),
     borderWidth: nbBorders.base,
     borderColor: nbColors.danger,
     borderRadius: nbBorderRadius.base,

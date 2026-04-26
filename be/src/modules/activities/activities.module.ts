@@ -6,6 +6,7 @@ import { Activity } from './entities/activity.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { User } from '../users/entities/user.entity';
+import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
 import { SharedModule } from '../../shared/shared.module';
 import { UsersModule } from '../users/users.module';
 import { AuditModule } from '../audit/audit.module';

@@ -70,3 +70,11 @@ export const VERIFY_MAP: Record<string, string[]> = {
   [UserRole.KEPALA_RAYON]: [UserRole.KORLAP],
   [UserRole.TOP_MANAGEMENT]: [UserRole.KEPALA_RAYON],
 };
+
+export const PRUNING_REQUEST_REVIEWERS = [
+  UserRole.ADMIN_DATA,
+  UserRole.KEPALA_RAYON,
+  UserRole.TOP_MANAGEMENT,
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+];

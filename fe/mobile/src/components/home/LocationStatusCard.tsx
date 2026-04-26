@@ -7,7 +7,6 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ActivityIndicator,
   Platform,
@@ -15,10 +14,10 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard } from '../nb';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   withAlpha,
@@ -61,11 +60,11 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
     <NBCard variant="elevated" style={styles.card} testID="location-status-card">
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.cardTitle} accessibilityRole="header">
+          <NBText variant="body" color="black" style={styles.cardTitle} accessibilityRole="header">
             Lokasi Anda
-          </Text>
+          </NBText>
           {updatedAtLabel && (
-            <Text style={styles.updatedAt}>{updatedAtLabel}</Text>
+            <NBText variant="caption" color="gray500">{updatedAtLabel}</NBText>
           )}
         </View>
         <TouchableOpacity
@@ -79,7 +78,7 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
           <MaterialCommunityIcons
             name="refresh"
             size={20}
-            color={location.loading ? nbColors.gray['400'] : nbColors.primary}
+            color={location.loading ? nbColors.gray400 : nbColors.primary}
           />
         </TouchableOpacity>
       </View>
@@ -87,44 +86,47 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
       {location.loading && !hasCoords ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={nbColors.primary} size="small" />
-          <Text style={styles.loadingText}>Mendapatkan lokasi...</Text>
+          <NBText variant="body-sm" color="gray600" style={styles.loadingText}>Mendapatkan lokasi...</NBText>
         </View>
       ) : location.error ? (
-        <Text style={styles.errorText}>{location.error}</Text>
+        <NBText variant="body-sm" color="danger">{location.error}</NBText>
       ) : hasCoords ? (
         <View>
-          <Text
+          <NBText
+            variant="mono-sm"
+            color="black"
             style={styles.coordsText}
             accessibilityLabel={`Koordinat: ${location.latitude!.toFixed(6)}, ${location.longitude!.toFixed(6)}`}
           >
             {location.latitude!.toFixed(6)}, {location.longitude!.toFixed(6)}
-          </Text>
+          </NBText>
 
           {location.accuracy !== null && (
-            <Text
+            <NBText
+              variant="body-sm"
               style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}
               accessibilityLabel={`Akurasi GPS: plus minus ${Math.round(location.accuracy)} meter`}
             >
               {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
-            </Text>
+            </NBText>
           )}
 
           {location.isWithinArea ? (
             <View style={styles.insideAreaBanner} accessibilityLabel="Di dalam area kerja">
-              <Text style={styles.insideAreaText}>Di dalam area kerja</Text>
+              <NBText variant="body-sm" style={styles.insideAreaText}>Di dalam area kerja</NBText>
             </View>
           ) : (
             <View style={styles.outsideAreaBanner} accessibilityLabel="Di luar area kerja">
-              <Text style={styles.outsideAreaText}>Di luar area kerja</Text>
+              <NBText variant="body-sm" style={styles.outsideAreaText}>Di luar area kerja</NBText>
             </View>
           )}
         </View>
       ) : (
-        <Text style={styles.unavailableText}>Lokasi tidak tersedia</Text>
+        <NBText variant="body-sm" color="gray500" align="center" style={styles.unavailablePad}>Lokasi tidak tersedia</NBText>
       )}
 
       {onPress && hasCoords && (
-        <Text style={styles.tapHint}>Ketuk untuk lihat di peta</Text>
+        <NBText variant="caption" color="gray500" align="center" style={styles.tapHintPad}>Ketuk untuk lihat di peta</NBText>
       )}
     </NBCard>
   );
@@ -161,15 +163,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
-  updatedAt: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
-    fontWeight: nbTypography.fontWeight.regular,
-    marginTop: 2,
+    fontWeight: '700',
   },
   refreshButton: {
     padding: 4,
@@ -182,69 +176,50 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: nbSpacing.sm,
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.sm,
   },
   coordsText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.bold,
+    // mono-sm variant; override font-family for platform monospace fallback
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     marginBottom: nbSpacing.xs,
   },
   accuracyText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray700,
     marginBottom: nbSpacing.sm,
   },
   accuracyWarning: {
     color: nbColors.warning,
   },
   insideAreaBanner: {
-    backgroundColor: withAlpha('#15803D', 0.15),
-    borderColor: '#15803D',
+    backgroundColor: withAlpha(nbColors.successDark, 0.15),
+    borderColor: nbColors.successDark,
     borderWidth: nbBorders.base,
     borderRadius: nbBorderRadius.base,
     paddingVertical: nbSpacing.xs,
     paddingHorizontal: nbSpacing.sm,
   },
   insideAreaText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: '#15803D',
+    fontWeight: '700',
+    color: nbColors.successDark,
     textAlign: 'center',
   },
   outsideAreaBanner: {
-    backgroundColor: withAlpha('#D97706', 0.15),
-    borderColor: '#D97706',
+    backgroundColor: withAlpha(nbColors.statusIdle, 0.15),
+    borderColor: nbColors.statusIdle,
     borderWidth: nbBorders.base,
     borderRadius: nbBorderRadius.base,
     paddingVertical: nbSpacing.xs,
     paddingHorizontal: nbSpacing.sm,
   },
   outsideAreaText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: '#D97706',
+    fontWeight: '700',
+    color: nbColors.statusIdle,
     textAlign: 'center',
   },
-  tapHint: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
-    fontWeight: nbTypography.fontWeight.regular,
-    textAlign: 'center',
+  unavailablePad: {
+    paddingVertical: nbSpacing.sm,
+  },
+  tapHintPad: {
     marginTop: nbSpacing.sm,
     fontStyle: 'italic',
-  },
-  errorText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.danger,
-  },
-  unavailableText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['500'],
-    textAlign: 'center',
-    paddingVertical: nbSpacing.sm,
   },
 });

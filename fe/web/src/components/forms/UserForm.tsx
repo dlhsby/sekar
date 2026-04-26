@@ -27,6 +27,7 @@ const userSchema = z
       'top_management',
       'admin_system',
       'superadmin',
+      'staff_kecamatan',
     ]),
     rayon_id: z.string().uuid().optional().or(z.literal('')),
     area_id: z.string().uuid().optional().or(z.literal('')),

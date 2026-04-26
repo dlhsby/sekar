@@ -1,7 +1,7 @@
 # Phase 3: Database Schema Changes
 
-**Last Updated:** 2026-04-24
-**Status:** ⏳ Not Started
+**Last Updated:** 2026-04-26
+**Status:** ✅ Complete (sub-phase 3-2 — migrations + entities + seeds done Apr 26, 2026)
 **Migration Prefix:** `17460000*-Phase3*.ts` (all additive; no reverse dependencies beyond drops)
 **Related ADRs:** [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md), [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md)
 **See also:** [Backend Requirements](./backend.md), [README](./README.md)

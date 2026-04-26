@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "@react-native/typescript-config/tsconfig.json",
+  "extends": "@react-native/typescript-config",
   "compilerOptions": {
     "target": "esnext",
     "lib": ["es2019", "es2020", "es2021", "es2022"],
@@ -9,14 +9,14 @@
     "noEmit": true,
     "isolatedModules": true,
     "strict": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": false,
     "module": "esnext",
-    "types": ["jest", "react-native", "react"],
+    "types": ["jest", "react-native", "react", "node"],
     "paths": {
       "@/*": ["./src/*"]
     }

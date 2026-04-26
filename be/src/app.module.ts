@@ -31,6 +31,7 @@ import { EventsModule } from './gateways/events.module';
 import { OvertimeModule } from './modules/overtime/overtime.module';
 import { UserAreasModule } from './modules/user-areas/user-areas.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { AuditModule } from './modules/audit/audit.module';
     }),
 
     // Feature modules (order matters due to dependencies)
+    CommonModule, // Global shared infrastructure (Redis, etc.) — Phase 3
     SharedModule, // Shared services (S3, etc.)
     AuthModule, // Must be first (provides guards)
     UsersModule,

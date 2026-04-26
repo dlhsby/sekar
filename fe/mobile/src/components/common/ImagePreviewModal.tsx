@@ -9,13 +9,13 @@ import {
   Modal,
   View,
   Image,
-  Text,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   Dimensions,
 } from 'react-native';
-import { nbTypography } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
+import { nbColors, nbSpacing } from '../../constants/nbTokens';
 
 const SCREEN = Dimensions.get('screen');
 
@@ -50,9 +50,9 @@ export function ImagePreviewModal({
           {/* Top bar */}
           <View style={styles.topBar}>
             {title ? (
-              <Text style={styles.title} numberOfLines={1}>
+              <NBText variant="body" color="white" style={styles.titleFlex} numberOfLines={1}>
                 {title}
-              </Text>
+              </NBText>
             ) : (
               <View style={styles.titlePlaceholder} />
             )}
@@ -63,7 +63,7 @@ export function ImagePreviewModal({
               accessibilityLabel="Tutup"
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.closeText}>✕</Text>
+              <NBText variant="h3" color="white">✕</NBText>
             </TouchableOpacity>
           </View>
 
@@ -90,7 +90,9 @@ export function ImagePreviewModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: '#000000CC',
+    // Semi-transparent dark overlay — rgba cannot be expressed as a plain token
+    // (nbColors.bgOverlay is rgba(0,0,0,0.5); this overlay uses 0.8 opacity)
+    backgroundColor: 'rgba(0,0,0,0.8)',
   },
   safeArea: {
     flex: 1,
@@ -98,14 +100,11 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: nbSpacing.md,
     paddingVertical: 12,
   },
-  title: {
+  titleFlex: {
     flex: 1,
-    color: '#FFFFFF',
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
     marginRight: 12,
   },
   titlePlaceholder: {
@@ -116,12 +115,6 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: nbTypography.fontWeight.bold,
-    lineHeight: 26,
   },
   imageWrapper: {
     flex: 1,

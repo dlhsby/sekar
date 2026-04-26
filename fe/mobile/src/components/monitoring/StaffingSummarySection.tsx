@@ -39,7 +39,7 @@ interface StaffingSummarySectionProps {
 function getDayTypeBadgeColor(label: string | null): string {
   if (!label) return nbColors.gray['500'];
   if (label.includes('Libur')) return nbColors.dangerDark;
-  if (label.includes('Pekan')) return '#D97706';
+  if (label.includes('Pekan')) return nbColors.warning;
   return nbColors.successDark;
 }
 
@@ -52,7 +52,7 @@ function getStaffingPercentage(item: StaffingSummaryItem): number {
 
 function getProgressColor(pct: number): string {
   if (pct >= 80) return nbColors.successDark;
-  if (pct >= 50) return '#D97706';
+  if (pct >= 50) return nbColors.warning;
   return nbColors.dangerDark;
 }
 

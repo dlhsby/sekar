@@ -14,6 +14,7 @@ import { UpdateActivityDto } from './dto/update-activity.dto';
 import { S3Service } from '../../shared/services/s3.service';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
+import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { ApiException } from '../../common/exceptions/api.exception';
@@ -21,6 +22,18 @@ import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { ACTIVITY_SUBMITTERS, MONITORING_CITY } from '../users/constants/role-groups';
 import { AuditLogService } from '../audit/audit.service';
+
+/** Generate a reference code in the format SEKAR-YYYYMM + 6 random alphanumeric chars. */
+function generateReferenceCode(): string {
+  const now = new Date();
+  const year = now.getFullYear().toString();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const random = Array.from({ length: 6 }, () =>
+    chars.charAt(Math.floor(Math.random() * chars.length)),
+  ).join('');
+  return `SEKAR-${year}${month}${random}`;
+}
 
 /**
  * Activities Service
@@ -39,6 +52,8 @@ export class ActivitiesService {
     private shiftsRepository: Repository<Shift>,
     @InjectRepository(ActivityType)
     private activityTypeRepository: Repository<ActivityType>,
+    @InjectRepository(ActivityPlantItem)
+    private plantItemRepository: Repository<ActivityPlantItem>,
     private s3Service: S3Service,
     private readonly usersService: UsersService,
     private readonly auditLogService: AuditLogService,
@@ -100,10 +115,33 @@ export class ActivitiesService {
       photo_urls: dto.photo_urls,
       gps_lat: dto.gps_lat,
       gps_lng: dto.gps_lng,
+      // Phase 3 fields
+      caseType: dto.case_type ?? null,
+      customFields: dto.custom_fields ?? {},
+      photoBeforeUrl: dto.photo_before_url ?? null,
+      photoAfterUrl: dto.photo_after_url ?? null,
+      referenceCode: dto.reference_code ?? generateReferenceCode(),
+      pruningRequestId: dto.pruning_request_id ?? null,
     });
 
     const savedActivity = await this.activitiesRepository.save(activity);
     this.logger.log(`Activity created successfully: ${savedActivity.id}`);
+
+    // Phase 3: persist plant item line-items when provided
+    if (dto.plant_items && dto.plant_items.length > 0) {
+      const plantItemEntities = dto.plant_items.map((item) =>
+        this.plantItemRepository.create({
+          activityId: savedActivity.id,
+          speciesId: item.species_id,
+          count: item.count,
+          notes: item.notes ?? null,
+        }),
+      );
+      await this.plantItemRepository.save(plantItemEntities);
+      this.logger.log(
+        `Saved ${plantItemEntities.length} plant items for activity ${savedActivity.id}`,
+      );
+    }
 
     this.auditLogService
       .log({
@@ -111,7 +149,12 @@ export class ActivitiesService {
         entity_id: savedActivity.id,
         action: 'create',
         actor_id: userId,
-        new_value: { activity_type_id: dto.activity_type_id, area_id: savedActivity.area_id },
+        new_value: {
+          activity_type_id: dto.activity_type_id,
+          area_id: savedActivity.area_id,
+          case_type: dto.case_type,
+          reference_code: savedActivity.referenceCode,
+        },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 

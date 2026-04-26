@@ -19,14 +19,16 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { Task } from './entities/task.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import { CreateTaskDto } from './dto/create-task.dto';
+import { CreateTaskTypedDto } from './dto/create-task-typed.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
+import { PartialCompleteTaskDto } from './dto/partial-complete-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { TagUsersDto } from './dto/tag-users.dto';
 import { DeclineTaskDto } from './dto/decline-task.dto';
@@ -36,7 +38,12 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
-import { TASK_CREATORS, TASK_RECEIVERS, TASK_VERIFIERS } from '../users/constants/role-groups';
+import {
+  TASK_CREATORS,
+  TASK_RECEIVERS,
+  TASK_VERIFIERS,
+  USER_MANAGERS,
+} from '../users/constants/role-groups';
 
 /**
  * Controller for task management
@@ -52,17 +59,18 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   /**
-   * Create a new task
+   * Create a new task (Phase 3: accepts task_type, custom_fields, target_plant_count)
    */
   @Post()
   @Roles(...TASK_CREATORS)
-  @ApiOperation({ summary: 'Create a new task' })
+  @ApiOperation({ summary: 'Create a new task (supports task_type + custom_fields from Phase 3)' })
+  @ApiBody({ type: CreateTaskTypedDto })
   @ApiResponse({ status: 201, description: 'Task created successfully', type: Task })
-  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 400, description: 'Invalid input or custom_fields schema mismatch' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
   @ApiResponse({ status: 404, description: 'Area or activity type not found' })
-  async create(@Body() createTaskDto: CreateTaskDto, @GetUser() user: User): Promise<Task> {
+  async create(@Body() createTaskDto: CreateTaskTypedDto, @GetUser() user: User): Promise<Task> {
     return this.tasksService.create(createTaskDto, user.id);
   }
 
@@ -336,5 +344,65 @@ export class TasksController {
     @GetUser() user: User,
   ): Promise<Task> {
     return this.tasksService.complete(id, user.id, completeTaskDto);
+  }
+
+  /**
+   * Partial-complete a plant-counting task.
+   * Updates completed_plant_count; optionally spawns a child task for tomorrow.
+   */
+  @Post(':id/partial-complete')
+  @Roles(UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Partial-complete a task — updates completed_plant_count, optionally spawns child',
+  })
+  @ApiParam({ name: 'id', description: 'Task UUID' })
+  @ApiBody({ type: PartialCompleteTaskDto })
+  @ApiResponse({ status: 200, description: 'Task partially completed' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async partialComplete(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PartialCompleteTaskDto,
+    @GetUser() user: User,
+  ): Promise<{ task: Task; child_task_id?: string }> {
+    return this.tasksService.partialComplete(id, dto, user);
+  }
+
+  /**
+   * Resume a task — spawns a child task with remaining target_plant_count.
+   */
+  @Post(':id/resume')
+  @Roles(UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Resume a task — spawns child task with remaining target_plant_count' })
+  @ApiParam({ name: 'id', description: 'Task UUID' })
+  @ApiResponse({ status: 201, description: 'Child task created', type: Task })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async resume(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ): Promise<Task> {
+    return this.tasksService.resume(id, user);
+  }
+
+  /**
+   * Get the full task lineage — parent chain plus child tasks.
+   */
+  @Get(':id/lineage')
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.SATGAS, UserRole.LINMAS, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT)
+  @ApiOperation({ summary: 'Get task lineage — parent chain + children' })
+  @ApiParam({ name: 'id', description: 'Task UUID' })
+  @ApiResponse({ status: 200, description: 'Task lineage returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async getLineage(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ parent?: Task; task: Task; children: Task[] }> {
+    return this.tasksService.getLineage(id);
   }
 }

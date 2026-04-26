@@ -4,11 +4,14 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Injectable } from '@nestjs/common';
+import { Logger, Injectable, Optional } from '@nestjs/common';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { RedisService } from '../common/services/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -60,7 +63,7 @@ import {
   namespace: '/events',
 })
 @Injectable()
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -73,7 +76,24 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly userAreasService: UserAreasService,
+    @Optional() private readonly redisService: RedisService | undefined,
   ) {}
+
+  /**
+   * Wire the Socket.IO Redis adapter when Redis is available.
+   * This enables horizontal scaling across multiple NestJS instances.
+   * Falls through gracefully when RedisService is unavailable.
+   */
+  afterInit(server: Server): void {
+    if (this.redisService) {
+      const pub = this.redisService.getClient();
+      const sub = this.redisService.getSubscriber();
+      server.adapter(createAdapter(pub, sub));
+      this.logger.log('Socket.IO Redis adapter active');
+    } else {
+      this.logger.warn('Socket.IO running without Redis adapter (single-instance mode)');
+    }
+  }
 
   /**
    * Handle new client connection

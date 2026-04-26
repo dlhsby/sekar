@@ -114,7 +114,15 @@
         "lineHeight": { "type": "number", "minimum": 1.0, "maximum": 2.0 }
       }
     },
-    "typeMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/typeEntry" } },
+    "typeMap": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "$ref": "#/$defs/typeEntry" },
+          { "type": "string", "description": "Inline documentation note (e.g. _note). Skipped by the generator." }
+        ]
+      }
+    },
     "motionEntry": {
       "type": "object",
       "required": ["duration", "easing"],

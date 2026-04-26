@@ -1,4 +1,4 @@
-import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
@@ -13,6 +13,7 @@ import {
   AreaStaffingChangedEvent,
 } from '../../../gateways/dto/events.dto';
 import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import { StaffingDebouncerService } from './staffing-debouncer.service';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -36,6 +37,8 @@ export class StatusCalculatorService {
     private readonly cacheService: MonitoringCacheService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
+    @Optional()
+    private readonly staffingDebouncer: StaffingDebouncerService | undefined,
   ) {}
 
   calculateStatus(
@@ -414,7 +417,13 @@ export class StatusCalculatorService {
       timestamp,
     };
 
-    this.eventsGateway.emitAreaStaffingChanged(event);
+    // Route through debouncer when available to coalesce rapid successive
+    // status changes (e.g. shift-start wave) into a single broadcast.
+    if (this.staffingDebouncer) {
+      this.staffingDebouncer.flag(areaId, event as unknown as Record<string, unknown>);
+    } else {
+      this.eventsGateway.emitAreaStaffingChanged(event);
+    }
   }
 
   private async resolveUserContext(

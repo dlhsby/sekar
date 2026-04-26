@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   type TextInput as TextInputType,
@@ -24,9 +23,9 @@ import {
   nbBorders,
   nbBorderRadius,
 } from '../../constants/nbTokens';
-import { NBButton, NBTextInput, NBPasswordInput, NBBackgroundPattern } from '../../components/nb';
+import { NBButton, NBTextInput, NBPasswordInput, NBBackgroundPattern, NBText, NBToast, NBToastProvider } from '../../components/nb';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setLoading, setUser, setError, clearError } from '../../store/slices/authSlice';
+import { setLoading, setUser } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
 import { setToken, setRefreshToken, setUser as setUserStorage } from '../../services/storage/secureStorage';
 import { loadAndSyncCurrentShift } from '../../services/shift';
@@ -44,13 +43,9 @@ function LoginScreen(): React.JSX.Element {
   const passwordInputRef = useRef<TextInputType>(null);
 
   const dispatch = useAppDispatch();
-  const { isLoading, error } = useAppSelector((state) => state.auth);
+  const { isLoading } = useAppSelector((state) => state.auth);
 
-  // Fix 2: Wrapped in useCallback with correct dependency array
-  // Fix 4: Dispatch clearError() at the very start to prevent stale Redux error
   const handleLogin = useCallback(async () => {
-    // Fix 4: Clear any stale Redux error before starting a new login attempt
-    dispatch(clearError());
 
     // Reset local field errors
     setIdentifierError('');
@@ -74,8 +69,8 @@ function LoginScreen(): React.JSX.Element {
       const response = await login(identifier, password);
 
       if (response.error || !response.data) {
-        dispatch(setError(response.error || 'Login gagal'));
-        Alert.alert('Error', response.error || 'Login gagal');
+        const errMsg = response.error || 'Login gagal';
+        NBToast.show({ level: 'danger', title: 'Login Gagal', body: errMsg, persistent: true });
         return;
       }
 
@@ -84,8 +79,7 @@ function LoginScreen(): React.JSX.Element {
 
       // Store access token and refresh token
       if (!loginData.access_token) {
-        dispatch(setError('Invalid response from server'));
-        Alert.alert('Error', 'Invalid response from server');
+        NBToast.show({ level: 'danger', title: 'Error', body: 'Invalid response from server', persistent: true });
         return;
       }
 
@@ -149,10 +143,8 @@ function LoginScreen(): React.JSX.Element {
         });
       }
     } catch (err: unknown) {
-      // Fix 3: catch (err: unknown) with proper narrowing
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan';
-      dispatch(setError(message));
-      Alert.alert('Error', message);
+      NBToast.show({ level: 'danger', title: 'Error', body: message, persistent: true });
     } finally {
       dispatch(setLoading(false));
     }
@@ -161,8 +153,8 @@ function LoginScreen(): React.JSX.Element {
   return (
     <NBBackgroundPattern
       pattern="grid"
-      backgroundColor={nbColors.background}  // #F0F9F6 very soft mint
-      patternColor={nbColors.primary}        // #7FBC8C medium green
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
       opacity={0.06}                          // Subtle pattern overlay
     >
       <SafeAreaView style={styles.safeArea}>
@@ -180,11 +172,13 @@ function LoginScreen(): React.JSX.Element {
                 color={nbColors.white}
               />
             </View>
-            <Text style={styles.title}>SEKAR</Text>
-            <Text style={styles.subtitle}>
+            <NBText variant="h1" color="primary" style={styles.title}>SEKAR</NBText>
+            <NBText variant="body-sm" color="gray500" align="center" style={styles.subtitle}>
               Sistem Evaluasi Kerja Satgas RTH
-            </Text>
-            <Text style={styles.organization}>DLH Kota Surabaya</Text>
+            </NBText>
+            <NBText variant="caption" color="gray500" align="center" style={styles.organization}>
+              DLH Kota Surabaya
+            </NBText>
           </View>
 
           {/* Login Form */}
@@ -228,17 +222,6 @@ function LoginScreen(): React.JSX.Element {
             />
 
             {/* Error Message */}
-            {error ? (
-              <View style={styles.errorContainer}>
-                <MaterialCommunityIcons
-                  name="alert-circle"
-                  size={20}
-                  color={nbColors.danger}
-                />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
-
             {/* Login Button */}
             <NBButton
               title="Masuk"
@@ -258,6 +241,7 @@ function LoginScreen(): React.JSX.Element {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    <NBToastProvider />
     </NBBackgroundPattern>
   );
 }
@@ -285,7 +269,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: nbBorderRadius.base, // 6px - NB 2.0 softened style
-    backgroundColor: nbColors.primary, // Medium green #7FBC8C
+    backgroundColor: nbColors.primary,
     borderWidth: nbBorders.base, // 3px
     borderColor: nbColors.black,
     justifyContent: 'center',
@@ -316,25 +300,6 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: nbSpacing.xl,
-  },
-  // Neo Brutalism error container: sharp corners, thick border
-  errorContainer: {
-    marginBottom: nbSpacing.md,
-    padding: nbSpacing.md,
-    backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base, // 3px
-    borderColor: nbColors.danger,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.sm,
-    ...nbShadows.sm,
-  },
-  errorText: {
-    color: nbColors.danger,
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    flex: 1,
   },
   footer: {
     alignItems: 'center',

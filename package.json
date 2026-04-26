@@ -1,0 +1,31 @@
+{
+  "name": "sekar-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "SEKAR — DLH Surabaya worker tracking & task management. Cross-workspace tooling root (Phase 3 onward).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24.13.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "tools/eslint-plugin-sekar-design"
+  ],
+  "scripts": {
+    "tokens:build": "tsx scripts/build-tokens.ts",
+    "tokens:verify": "tsx scripts/build-tokens.ts --verify",
+    "test:tokens": "jest --config scripts/jest.config.cjs"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.5",
+    "@typescript-eslint/rule-tester": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}

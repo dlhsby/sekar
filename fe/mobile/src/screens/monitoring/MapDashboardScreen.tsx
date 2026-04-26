@@ -14,6 +14,15 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { featureFlags } from '../../utils/featureFlags';
+import { ClusteredUserMarkers } from '../../components/monitoring/ClusteredUserMarkers';
+import { MonitoringToggleSheet } from '../../components/monitoring/MonitoringToggleSheet';
+import { AreaStatusOverlay } from '../../components/monitoring/AreaStatusOverlay';
+import { PlantOverlayLayer } from '../../components/monitoring/PlantOverlayLayer';
+import {
+  toggleLayer,
+} from '../../store/slices/monitoringV2Slice';
+import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSelector, useDispatch } from 'react-redux';
 import Geolocation from 'react-native-geolocation-service';
@@ -81,7 +90,13 @@ export function MapDashboardScreen(): React.JSX.Element {
 
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
+  // MonitoringV2 slice state (Phase 3 sub-phase 3-5)
+  const visibleLayers = useSelector(
+    (state: RootState) => state.monitoringV2.visibleLayers,
+  );
+
   // Local UI state
+  const [toggleSheetVisible, setToggleSheetVisible] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -344,6 +359,30 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
+  // MonitoringV2: layer toggle handler
+  const handleToggleLayer = useCallback(
+    (layer: keyof MonitoringV2VisibleLayers) => {
+      dispatch(toggleLayer(layer));
+    },
+    [dispatch],
+  );
+
+  // MonitoringV2: cluster press — zoom into cluster center without racing bottom-sheet
+  const handleClusterPress = useCallback(
+    (center: { latitude: number; longitude: number }) => {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: center.latitude,
+          longitude: center.longitude,
+          latitudeDelta: currentRegion.latitudeDelta / 3,
+          longitudeDelta: currentRegion.longitudeDelta / 3,
+        },
+        300,
+      );
+    },
+    [currentRegion],
+  );
+
   if (isLoading && (!liveUsers || liveUsers.length === 0)) {
     return (
       <NBBackgroundPattern
@@ -422,49 +461,80 @@ export function MapDashboardScreen(): React.JSX.Element {
                 />
               )}
 
-              {/* User markers (individual) */}
-              {!useClustering && visibleUsers.map(user => (
-                <UserMarker
-                  key={`user-${user.id}-${user.status}-${labelMode}`}
-                  user={user}
-                  onPress={handleMarkerPress}
-                  labelMode={labelMode}
-                  dimmed={trailHideOthers && trailUser?.id !== user.id}
+              {/* Phase 3: Area status overlay (plant health tints) */}
+              {mapReady && boundaries && visibleLayers.areas && (
+                <AreaStatusOverlay
+                  rayons={boundaries.rayons}
+                  boundaryKey={boundaryKey}
                 />
-              ))}
+              )}
 
-              {/* Cluster markers */}
-              {useClustering && clusters.map(cluster => {
-                const representative: LiveUser = cluster.workers.length > 0
-                  ? {
-                      ...cluster.workers[0],
-                      id: cluster.id,
-                      latitude: cluster.coordinate.latitude,
-                      longitude: cluster.coordinate.longitude,
-                      full_name: `${cluster.pointCount} petugas`,
-                    } as unknown as LiveUser
-                  : null as unknown as LiveUser;
-                if (!representative) return null;
-                return (
-                  <UserMarker
-                    key={cluster.id}
-                    user={representative}
-                    onPress={() => {
-                      mapRef.current?.animateToRegion(
-                        {
+              {/* Phase 3: Plant notable markers (stub until sub-phase 3-8) */}
+              {mapReady && (
+                <PlantOverlayLayer visible={visibleLayers.plants} />
+              )}
+
+              {/* User markers — Phase 3: ClusteredUserMarkers when flag enabled */}
+              {featureFlags.clusterMarkersV2 ? (
+                <ClusteredUserMarkers
+                  workers={visibleUsers}
+                  zoom={currentRegion.latitudeDelta}
+                  clusterZoomThreshold={0.05}
+                  labelMode={labelMode}
+                  selectedUserId={selectedUser?.id ?? null}
+                  onUserPress={userId => {
+                    const user = visibleUsers.find(u => u.id === userId);
+                    if (user) { handleMarkerPress(user); }
+                  }}
+                  onClusterPress={handleClusterPress}
+                />
+              ) : (
+                <>
+                  {/* User markers (individual) — legacy Phase 2D path */}
+                  {!useClustering && visibleUsers.map(user => (
+                    <UserMarker
+                      key={`user-${user.id}-${user.status}-${labelMode}`}
+                      user={user}
+                      onPress={handleMarkerPress}
+                      labelMode={labelMode}
+                      dimmed={trailHideOthers && trailUser?.id !== user.id}
+                    />
+                  ))}
+
+                  {/* Cluster markers — legacy Phase 2D path */}
+                  {useClustering && clusters.map(cluster => {
+                    const representative: LiveUser = cluster.workers.length > 0
+                      ? {
+                          ...cluster.workers[0],
+                          id: cluster.id,
                           latitude: cluster.coordinate.latitude,
                           longitude: cluster.coordinate.longitude,
-                          latitudeDelta: currentRegion.latitudeDelta / 3,
-                          longitudeDelta: currentRegion.longitudeDelta / 3,
-                        },
-                        300,
-                      );
-                    }}
-                    clusterCount={cluster.pointCount}
-                    labelMode={labelMode}
-                  />
-                );
-              })}
+                          full_name: `${cluster.pointCount} petugas`,
+                        } as unknown as LiveUser
+                      : null as unknown as LiveUser;
+                    if (!representative) { return null; }
+                    return (
+                      <UserMarker
+                        key={cluster.id}
+                        user={representative}
+                        onPress={() => {
+                          mapRef.current?.animateToRegion(
+                            {
+                              latitude: cluster.coordinate.latitude,
+                              longitude: cluster.coordinate.longitude,
+                              latitudeDelta: currentRegion.latitudeDelta / 3,
+                              longitudeDelta: currentRegion.longitudeDelta / 3,
+                            },
+                            300,
+                          );
+                        }}
+                        clusterCount={cluster.pointCount}
+                        labelMode={labelMode}
+                      />
+                    );
+                  })}
+                </>
+              )}
 
               {/* Location trail overlay */}
               {showTrail && trailUser && (
@@ -487,6 +557,12 @@ export function MapDashboardScreen(): React.JSX.Element {
               icon="filter-variant"
               onPress={() => setFilterModalVisible(true)}
               accessibilityLabel="Filter"
+            />
+            {/* Phase 3: Layer visibility toggle */}
+            <FabButton
+              icon="layers"
+              onPress={() => setToggleSheetVisible(true)}
+              accessibilityLabel="Tampilan peta"
             />
             <FabButton
               icon="crosshairs-gps"
@@ -540,6 +616,14 @@ export function MapDashboardScreen(): React.JSX.Element {
           data={boundaryDetailData}
           visible={boundaryDetailVisible}
           onClose={() => setBoundaryDetailVisible(false)}
+        />
+
+        {/* Phase 3: Layer visibility toggle sheet */}
+        <MonitoringToggleSheet
+          visible={toggleSheetVisible}
+          visibleLayers={visibleLayers}
+          onToggleLayer={handleToggleLayer}
+          onClose={() => setToggleSheetVisible(false)}
         />
       </View>
     </NBBackgroundPattern>

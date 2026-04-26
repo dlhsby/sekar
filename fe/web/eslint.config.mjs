@@ -2,12 +2,16 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import prettier from "eslint-config-prettier";
+import sekarDesign from "eslint-plugin-sekar-design";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   prettier,
   {
+    plugins: {
+      "sekar-design": sekarDesign,
+    },
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
@@ -16,6 +20,48 @@ const eslintConfig = defineConfig([
       "react-hooks/incompatible-library": "off",
       // Next.js Image component doesn't work well with dynamic external images
       "@next/next/no-img-element": "warn",
+      // Phase 3 M1-R 3-R1 — design-token discipline (ADR-036)
+      "sekar-design/no-inline-hex-colors": "error",
+      "sekar-design/no-tailwind-shadow-classes-with-blur": "error",
+      "sekar-design/prefer-nb-shadow-utility": "error",
+    },
+  },
+  // Generated token artifacts — written by scripts/build-tokens.ts. Hand-edits are reverted by CI (ADR-036).
+  {
+    files: ["src/app/generated/**", "src/**/generated/**"],
+    rules: {
+      "sekar-design/no-inline-hex-colors": "off",
+      "sekar-design/no-tailwind-shadow-classes-with-blur": "off",
+      "sekar-design/prefer-nb-shadow-utility": "off",
+    },
+  },
+  // Permanent allowlist — colors with no NB token equivalent or contexts where CSS vars cannot be used.
+  // Full rationale in scripts/hex-allowlist.txt (ADR-036).
+  {
+    files: [
+      // ImageResponse SVG generation — server-side rendering; CSS vars are not resolved in ImageResponse
+      "src/app/icon.tsx",
+      "src/app/apple-icon.tsx",
+      // Next.js metadata themeColor — browser meta tag; must be a literal string, not a CSS var
+      "src/app/layout.tsx",
+      // Monitoring status palette — #9333EA (outside_area/purple) + map-tuned status colors have no NB token
+      "src/lib/constants/monitoring.ts",
+      "src/components/monitoring/StaffingSummaryCard.tsx",
+      "src/components/monitoring/StatusCard.tsx",
+      "src/components/monitoring/UserDetailPanel.tsx",
+      "src/components/monitoring/LocationTimeline.tsx",
+      // Mapbox layer paint specs require literal hex (CSS vars are not supported in GL style expressions)
+      "src/components/maps/PolygonEditor.tsx",
+      "src/components/monitoring/MonitoringMap.tsx",
+      "src/components/monitoring/monitoringMapHelpers.ts",
+      "src/lib/maps/styles.ts",
+      "src/lib/utils/static-map.ts",
+      // Test files — assertions validate rendered hex values
+      "src/lib/api/__tests__/rayons.test.tsx",
+      "src/lib/maps/__tests__/styles.test.ts",
+    ],
+    rules: {
+      "sekar-design/no-inline-hex-colors": "off",
     },
   },
   // Override default ignores of eslint-config-next.

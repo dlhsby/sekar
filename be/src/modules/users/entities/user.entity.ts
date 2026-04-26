@@ -34,6 +34,7 @@ export enum UserRole {
   TOP_MANAGEMENT = 'top_management',
   ADMIN_SYSTEM = 'admin_system',
   SUPERADMIN = 'superadmin',
+  STAFF_KECAMATAN = 'staff_kecamatan',
 }
 
 @Entity('users')

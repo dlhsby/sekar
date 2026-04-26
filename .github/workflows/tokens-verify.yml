@@ -1,0 +1,53 @@
+# Phase 3 M1-R sub-phase 3-R1 — design-token drift gate.
+#
+# Validates specs/ui-ux/tokens.json against tokens.schema.json, re-runs the generator,
+# and fails the build if the committed generated/ files drift. Also runs the
+# generator + ESLint rule unit tests.
+#
+# See: ADR-036, specs/ui-ux/design-tokens.md, scripts/build-tokens.ts.
+name: tokens-verify
+
+on:
+  pull_request:
+    paths:
+      - 'specs/ui-ux/tokens.json'
+      - 'specs/ui-ux/tokens.schema.json'
+      - 'scripts/build-tokens.ts'
+      - 'scripts/build-tokens.test.ts'
+      - 'tools/eslint-plugin-sekar-design/**'
+      - 'fe/web/src/app/generated/**'
+      - 'fe/mobile/src/constants/generated/**'
+      - 'package.json'
+      - '.github/workflows/tokens-verify.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'specs/ui-ux/tokens.json'
+      - 'specs/ui-ux/tokens.schema.json'
+      - 'scripts/build-tokens.ts'
+      - 'tools/eslint-plugin-sekar-design/**'
+      - 'fe/web/src/app/generated/**'
+      - 'fe/mobile/src/constants/generated/**'
+
+jobs:
+  verify:
+    name: Verify generator output and run unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install root dev dependencies
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Run tokens:verify drift gate
+        run: npm run tokens:verify
+
+      - name: Run unit tests
+        run: npm run test:tokens

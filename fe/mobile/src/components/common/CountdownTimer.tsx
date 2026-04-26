@@ -21,9 +21,9 @@ interface CountdownTimerProps {
 }
 
 const colorMap: Record<TimerColor, string> = {
-  yellow: nbColors.warning, // #E3A018
-  green: nbColors.primary, // #7FBC8C
-  red: nbColors.danger, // #FF6B6B
+  yellow: nbColors.warning,
+  green: nbColors.primary,
+  red: nbColors.danger,
 };
 
 export function CountdownTimer({

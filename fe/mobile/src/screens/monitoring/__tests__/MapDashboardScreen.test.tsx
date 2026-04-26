@@ -96,6 +96,22 @@ jest.mock('../../../components/modals/MonitoringFilterModal', () => ({
 jest.mock('../../../components/modals/BoundaryDetailModal', () => ({
   BoundaryDetailModal: () => null,
 }));
+// Phase 3 sub-phase 3-5 component mocks
+jest.mock('../../../components/monitoring/ClusteredUserMarkers', () => ({
+  ClusteredUserMarkers: () => null,
+}));
+jest.mock('../../../components/monitoring/MonitoringToggleSheet', () => ({
+  MonitoringToggleSheet: () => null,
+}));
+jest.mock('../../../components/monitoring/AreaStatusOverlay', () => ({
+  AreaStatusOverlay: () => null,
+}));
+jest.mock('../../../components/monitoring/PlantOverlayLayer', () => ({
+  PlantOverlayLayer: () => null,
+}));
+jest.mock('../../../store/slices/monitoringV2Slice', () => ({
+  toggleLayer: jest.fn((l: any) => ({ type: 'monitoringV2/toggleLayer', payload: l })),
+}));
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -132,6 +148,22 @@ jest.mock('react-redux', () => ({
     selector({
       monitoring: mockMonitoringState,
       auth: { user: { id: 'u-1', role: 'korlap', area_id: 'area-1' } },
+      // Phase 3 sub-phase 3-5: monitoringV2 slice default state
+      monitoringV2: {
+        visibleLayers: {
+          workers: true,
+          plants: false,
+          overdue: false,
+          rayons: true,
+          areas: true,
+        },
+        selectedUserId: null,
+        selectedAreaId: null,
+        clusterZoomThreshold: 0.05,
+        loading: false,
+        error: null,
+        snapshot: { scope: 'city', scope_id: null, workers: [], generated_at: null },
+      },
     }),
 }));
 

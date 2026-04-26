@@ -15,7 +15,9 @@ export type UserRole =
   | 'kepala_rayon'
   | 'top_management'
   | 'admin_system'
-  | 'superadmin';
+  | 'superadmin'
+  /** Phase 3 ADR-033 — external sub-district staff; no dashboard access */
+  | 'staff_kecamatan';
 
 /**
  * User Interface

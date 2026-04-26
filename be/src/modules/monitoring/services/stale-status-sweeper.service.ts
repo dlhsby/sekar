@@ -1,0 +1,85 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, LessThan } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
+
+const BATCH_SIZE = 50;
+
+/**
+ * StaleStatusSweeperService
+ *
+ * Runs every 5 minutes and promotes ACTIVE workers whose last_location_at
+ * is older than MISSING_THRESHOLD_SECONDS (default 900 s / 15 min) to MISSING.
+ *
+ * This is a safety net for workers whose devices stop sending pings without
+ * going through a clean clock-out — e.g. device battery death, network loss,
+ * or app crash. The Redis Stream projector handles real-time updates; this
+ * sweep catches anything that slips through.
+ *
+ * Processes in batches of 50 to avoid long-running transactions.
+ */
+@Injectable()
+export class StaleStatusSweeperService {
+  private readonly logger = new Logger(StaleStatusSweeperService.name);
+  private readonly missingStaleSecs: number;
+  private sweepRunning = false;
+
+  constructor(
+    @InjectRepository(UserTrackingStatus)
+    private readonly trackingRepository: Repository<UserTrackingStatus>,
+    private readonly config: ConfigService,
+  ) {
+    this.missingStaleSecs = config.get<number>('MISSING_THRESHOLD_SECONDS', 900);
+  }
+
+  @Cron('*/5 * * * *')
+  async sweep(): Promise<void> {
+    if (this.sweepRunning) {
+      this.logger.warn('StaleStatusSweeper: previous sweep still running, skipping');
+      return;
+    }
+    this.sweepRunning = true;
+    try {
+      await this.doSweep();
+    } finally {
+      this.sweepRunning = false;
+    }
+  }
+
+  private async doSweep(): Promise<void> {
+    const cutoff = new Date(Date.now() - this.missingStaleSecs * 1000);
+    let offset = 0;
+    let total = 0;
+
+    while (true) {
+      const stale = await this.trackingRepository.find({
+        where: {
+          status: TrackingStatus.ACTIVE,
+          last_location_at: LessThan(cutoff),
+        },
+        take: BATCH_SIZE,
+        skip: offset,
+      });
+
+      if (stale.length === 0) break;
+
+      const now = new Date();
+      for (const record of stale) {
+        record.status = TrackingStatus.MISSING;
+        record.updated_at = now;
+      }
+
+      await this.trackingRepository.save(stale);
+      total += stale.length;
+      offset += BATCH_SIZE;
+
+      if (stale.length < BATCH_SIZE) break;
+    }
+
+    if (total > 0) {
+      this.logger.log(`StaleStatusSweeper: flipped ${total} ACTIVE → MISSING`);
+    }
+  }
+}

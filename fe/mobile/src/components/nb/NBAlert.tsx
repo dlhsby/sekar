@@ -209,7 +209,7 @@ export const NBAlert: React.FC<NBAlertProps> = ({
             style={[
               styles.message,
               { color: variantStyle.text },
-              title && styles.messageWithTitle,
+              title ? styles.messageWithTitle : undefined,
               messageStyle,
             ]}
             testID={`${testID}-message`}

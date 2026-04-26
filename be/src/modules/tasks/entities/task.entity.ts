@@ -126,6 +126,22 @@ export class Task {
   @Column({ type: 'text', nullable: true })
   revision_reason: string | null;
 
+  // Phase 3: task typing + plant tracking + hierarchy
+  @Column({ type: 'text', default: 'generic', name: 'task_type' })
+  taskType?: string;
+
+  @Column({ type: 'jsonb', default: {}, name: 'custom_fields' })
+  customFields?: Record<string, unknown>;
+
+  @Column({ type: 'uuid', nullable: true, name: 'parent_task_id' })
+  parentTaskId?: string | null;
+
+  @Column({ type: 'int', nullable: true, name: 'target_plant_count' })
+  targetPlantCount?: number | null;
+
+  @Column({ type: 'int', default: 0, name: 'completed_plant_count' })
+  completedPlantCount?: number;
+
   // Timestamps
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   created_at: Date;

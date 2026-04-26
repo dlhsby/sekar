@@ -5,16 +5,16 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Marker, Polygon, Circle } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
-  nbTypography,
   nbBorders,
   nbShadows,
+  withAlpha,
 } from '../../constants/nbTokens';
-import { withAlpha } from '../../constants/nbTokens';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -55,8 +55,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
           <Polygon
             key={`rayon-poly-${rayon.id}`}
             coordinates={rayonCoords}
-            strokeColor="#2563EB"
-            fillColor={withAlpha('#2563EB', 0.08)}
+            strokeColor={nbColors.requestUnderReview}
+            fillColor={withAlpha(nbColors.requestUnderReview, 0.08)}
             strokeWidth={2}
             lineDashPattern={[8, 4]}
           />
@@ -74,8 +74,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
               <Polygon
                 key={`area-poly-${area.id}`}
                 coordinates={areaCoords}
-                strokeColor="#1C1917"
-                fillColor={withAlpha('#FBBF24', 0.15)}
+                strokeColor={nbColors.black}
+                fillColor={withAlpha(nbColors.warningLight, 0.15)}
                 strokeWidth={2}
               />
             );
@@ -85,8 +85,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
               key={`area-circle-${area.id}`}
               center={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
               radius={Number(area.radius_meters)}
-              strokeColor="#1C1917"
-              fillColor={withAlpha('#FBBF24', 0.15)}
+              strokeColor={nbColors.black}
+              fillColor={withAlpha(nbColors.warningLight, 0.15)}
               strokeWidth={2}
             />
           );
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#D97706',
+    backgroundColor: nbColors.warning,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: nbBorders.base,

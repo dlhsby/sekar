@@ -208,7 +208,7 @@ export function LocationTimeline({
                     {/* Color indicator */}
                     <span
                       className={cn(
-                        'mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 border border-white shadow-sm',
+                        'mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 border border-white shadow-nb-xs',
                         point.is_within_area
                           ? 'bg-[var(--color-status-active)]'
                           : 'bg-[var(--color-status-outside)]'

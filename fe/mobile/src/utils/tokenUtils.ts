@@ -18,10 +18,12 @@ function decodeJWT(token: string): any {
     if (!base64Url) {return null;}
 
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    // atob is available in React Native runtime but not typed in non-DOM TS libs
+    const b64decode = (globalThis as unknown as { atob: (s: string) => string }).atob;
     const jsonPayload = decodeURIComponent(
-      atob(base64)
+      b64decode(base64)
         .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .map((c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
     return JSON.parse(jsonPayload);

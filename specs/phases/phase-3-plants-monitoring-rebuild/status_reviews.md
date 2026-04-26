@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Reviews
 
-**Last Updated:** 2026-04-25
-**Status:** ⏳ Not Started — skeleton only; review entries are added as sub-phases complete and go through code review
+**Last Updated:** 2026-04-26
+**Status:** 🟡 In Progress — M1-R review complete ✅; M2 compliance review complete ✅ (7 gaps logged)
 
 This document mirrors the Phase 2D `status_reviews.md` pattern: it collects post-implementation reviews, defect findings, and their remediations. Each sub-phase that completes work gets one entry here with its scope, findings, and fixes.
 
@@ -43,6 +43,96 @@ Phase 2D's `status_reviews.md` at `specs/phases/phase-2-d-monitoring/status_revi
 ---
 
 ## Entries
+
+---
+
+## M2 Monitoring v2 — Compliance Review (2026-04-26) 🟡
+
+**Status:** 11 gaps found — 4 previously known (deferred), 7 new; 0 fixed same session (fix work tracked in M3 window + 3-14)
+**Scope:** Sub-phases 3-3 (backend), 3-4 (web), 3-5 (mobile) — compliance against spec only (not code quality)
+**Method:** Automated compliance agent review against `backend.md`, `web.md`, `mobile.md`, `infrastructure.md`
+**Branch:** `main` (iterative delivery)
+
+### Review Summary
+
+| Category | Issues Found | Fixed | Deferred |
+|----------|-------------|-------|----------|
+| Backend (3-3) | 6 | 0 | 6 |
+| Web (3-4) | 3 | 0 | 3 |
+| Mobile (3-5) | 3 | 0 | 3 |
+| **Total** | **11** (7 gaps + 4 previously known) | **0** | **11** |
+
+> **Production safety:** All gaps have graceful degradation. `status:v2` events: page falls back to snapshot polling. Debouncer: `area:staffing-changed` still fires from `StatusCalculatorService` (Phase 2D path). Redis unavailable: app starts and processes synchronously. No gap blocks the M2 deploy.
+
+### Gap Registry
+
+| ID | Severity | Sub-phase | File | Gap | Planned Fix |
+|----|----------|-----------|------|-----|-------------|
+| Gap-1 | HIGH | 3-3 | `status-projector.service.ts` | `status:v2` WS event not emitted by projector; Phase 2D `StatusCalculatorService` still owns emission | Fix in 3-3 follow-up: projector calls `eventsGateway.server.to(...).emit('status:v2', ...)` after each status write |
+| Gap-2 | HIGH | 3-3 | `staffing-debouncer.service.ts` + `events.gateway.ts` | `StaffingDebouncerService.setEmitter()` never called; debouncer is standalone | Fix in 3-3 follow-up: call `debouncerService.setEmitter(server)` in `EventsGateway.afterInit()` |
+| Gap-3 | MEDIUM | 3-3/3-4 | — | `cluster:update` WS delta event not implemented | Fix in 3-4 follow-up once ClusterLayer integrates with MonitoringMap |
+| Gap-4 | MEDIUM | 3-3 | `status-projector.service.ts` | Projector delegates to unmodified `StatusCalculatorService`; 6+ query pool pressure moved async, not eliminated | Deferred to 3-14 (load test window) — measure first, then optimize |
+| Gap-5 | LOW | 3-3 | `be/src/modules/health/` | Health check not extended to report Redis connectivity or `stream_lag_s` | Fix before M5 rollout |
+| Gap-6 | LOW | 3-3 | `be/.env.example` | `PHASE3_FEATURES_ENABLED` master feature flag not added | Add before deploy |
+| Gap-7 | MEDIUM | 3-5 | `fe/mobile/src/store/slices/` | `plants` Redux slice (`speciesCatalog`, `areaPlantsByArea`, `notableByArea`, `areaStatusById`) not created | Deferred to 3-8 (plant data doesn't exist until 3-8 backend seeds/endpoints) |
+| Gap-8 | MEDIUM | 3-4 | `fe/web/src/components/monitoring/` | No unit/integration tests for `ClusterLayer`, `WorkerListVirtual`, `HierarchyFilterPanel`, `AreaDetailDrawer`, `monitoring-v2` hook | Fix in 3-4 follow-up; coverage target ≥80% |
+| Gap-9 | MEDIUM | 3-5 | `fe/mobile/src/components/monitoring/` | No tests for `ClusterMarker`, `ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`, `monitoringV2Slice` | Fix in 3-5 follow-up; coverage target ≥80% |
+| Gap-10 | LOW | 3-4 | `fe/web/src/app/(dashboard)/monitoring/config/` | `monitoring/config` page not updated with Phase 3 debounce/sweep fields | Minor UX; fix before M5 rollout |
+| Gap-11 | LOW | 3-5 | `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx` | Integration of v2 components (`ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`) into `MapDashboardScreen` not confirmed | Verify + wire in 3-5 follow-up |
+
+### Pre-Deploy Requirements
+
+The following gaps **must** be closed before deploying M2 to production:
+
+- [ ] **Gap-1** — Wire `status:v2` emission from `StatusProjectorService`
+- [ ] **Gap-2** — Wire `StaffingDebouncerService.setEmitter()` in `EventsGateway.afterInit()`
+- [ ] **Gap-6** — Add `PHASE3_FEATURES_ENABLED` to `be/.env.example` and GitHub Secrets
+
+The remaining gaps are safe to ship in a follow-up (Phase 3 M3 window or 3-14 load test).
+
+### Deployment Checklist (User Review)
+
+Work through this checklist before merging the Phase 3 M2 PR:
+
+**Backend**
+- [ ] `cd be && npm test` → 1,297 tests passing (no regression from Phase 2E baseline of 1,264)
+- [ ] `cd be && npx tsc --noEmit` → 0 errors
+- [ ] `npm run migration:run` on local DB → `Phase3Schema` + `Phase3BackfillIndexes` execute successfully
+- [ ] `npm run db:seed` → Phase 3 tables exist → seed runs (124 plant_species, 4 monitoring_configs, service_capacity rows)
+- [ ] `npm run db:seed` WITHOUT running migration first → prints "Phase 3 tables not found — skipping" (no crash)
+- [ ] Redis service starts: `docker-compose up redis` → `redis-cli ping` → PONG
+- [ ] Backend starts with Redis down (`REDIS_URL=redis://localhost:19999`) → logs warning, does NOT crash
+- [ ] `GET /api/v1/monitoring/snapshot` with admin JWT → `{"success":true}` (scope=city)
+- [ ] `GET /api/v1/monitoring/snapshot?scope=rayon&id=<OTHER_RAYON_UUID>` with kepala_rayon JWT → 403
+
+**Web**
+- [ ] `cd fe/web && npm run build` → 0 errors
+- [ ] Monitoring page loads at `/monitoring` without console errors
+- [ ] HierarchyFilterPanel renders (city / rayon / area scope selector)
+- [ ] WorkerListVirtual renders and scrolls (check DevTools → Elements — only ~10 rows in DOM at a time)
+- [ ] AreaDetailDrawer opens when an area is clicked
+- [ ] `staff_kecamatan` role login → redirected away from `/monitoring`
+
+**Mobile**
+- [ ] `cd fe/mobile && npm test -- --passWithNoTests` → passes
+- [ ] `cd fe/mobile && npx eslint src/components/monitoring/ --max-warnings=0` → 0 violations (no `tracksViewChanges={true}`)
+- [ ] APK builds without error: `cd fe/mobile/android && ./gradlew assembleRelease`
+- [ ] MapDashboard loads without crash on device/emulator
+- [ ] `featureFlags.clusterMarkersV2 = false` (default) → existing individual markers shown (no cluster UI)
+- [ ] BoundaryOverlay reloads on tab re-focus (Apr 24 fix preserved)
+
+**Infrastructure**
+- [ ] `infra/docker-compose.yml` includes Redis 7 service with healthcheck
+- [ ] `be/.env.example` has `REDIS_URL`, `REDIS_STREAM_MAX_LEN`, `STAFFING_DEBOUNCE_SECONDS`, `MONITORING_SWEEP_CRON`, `CLUSTER_ZOOM_THRESHOLD`, `MISSING_THRESHOLD_SECONDS`
+
+### Deferred
+
+| # | Reason | Tracked in |
+|---|--------|-----------|
+| Gap-4 (eager-load rewrite) | Measure under load first; async path is better than sync even without single-query optimization | 3-14 (load test) |
+| Gap-7 (plants Redux slice) | No plant data until 3-8 backend plants module | 3-8 |
+| Gap-8/9 (missing tests) | Time-boxed M2 delivery; tests to follow in next iteration | 3-3/3-4/3-5 follow-up |
+| Gap-3/5/10/11 | Minor; no production impact | Before M5 rollout |
 
 ---
 

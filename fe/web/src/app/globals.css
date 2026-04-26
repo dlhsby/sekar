@@ -1,175 +1,156 @@
 @import "tailwindcss";
 @import "mapbox-gl/dist/mapbox-gl.css";
 @import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
+@import "./generated/tokens.css";
 
 /* ============================================
-   SEKAR Web Dashboard - Neo Brutalism Design System
-   Tailwind CSS v4 - CSS-First Configuration
+   @theme inline — NB tokens from generated/tokens.css
+   Tailwind reads via var(); actual values live in generated/.
+   To change a token: edit specs/ui-ux/tokens.json → npm run tokens:build.
    ============================================ */
 
+@theme inline {
+  /* ===== NB brand colors ===== */
+  --color-nb-primary: var(--color-nb-primary);
+  --color-nb-primary-hover: var(--color-nb-primary-hover);
+  --color-nb-primary-active: var(--color-nb-primary-active);
+  --color-nb-secondary: var(--color-nb-secondary);
+  --color-nb-secondary-hover: var(--color-nb-secondary-hover);
+
+  /* ===== Status semantic colors ===== */
+  --color-nb-success: var(--color-nb-success);
+  --color-nb-success-light: var(--color-nb-success-light);
+  --color-nb-success-dark: var(--color-nb-success-dark);
+  --color-nb-warning: var(--color-nb-warning);
+  --color-nb-warning-light: var(--color-nb-warning-light);
+  --color-nb-danger: var(--color-nb-danger);
+  --color-nb-danger-light: var(--color-nb-danger-light);
+  --color-nb-danger-dark: var(--color-nb-danger-dark);
+  --color-nb-info: var(--color-nb-info);
+  --color-nb-info-light: var(--color-nb-info-light);
+
+  /* ===== Neutral palette ===== */
+  --color-nb-black: var(--color-nb-black);
+  --color-nb-white: var(--color-nb-white);
+  --color-nb-navy: var(--color-nb-navy);
+  --color-nb-background: var(--color-bg-canvas);
+
+  /* ===== Sidebar ===== */
+  --color-nb-sidebar: var(--color-nb-sidebar-bg);
+  --color-nb-sidebar-hover: var(--color-nb-sidebar-hover);
+  --color-nb-sidebar-active: var(--color-nb-sidebar-active);
+
+  /* ===== Gray scale ===== */
+  --color-nb-gray-50: var(--color-nb-gray-50);
+  --color-nb-gray-100: var(--color-nb-gray-100);
+  --color-nb-gray-200: var(--color-nb-gray-200);
+  --color-nb-gray-300: var(--color-nb-gray-300);
+  --color-nb-gray-400: var(--color-nb-gray-400);
+  --color-nb-gray-500: var(--color-nb-gray-500);
+  --color-nb-gray-600: var(--color-nb-gray-600);
+  --color-nb-gray-700: var(--color-nb-gray-700);
+  --color-nb-gray-800: var(--color-nb-gray-800);
+  --color-nb-gray-900: var(--color-nb-gray-900);
+
+  /* ===== Monitoring status ===== */
+  --color-status-active: var(--color-status-active);
+  --color-status-active-bg: var(--color-status-active-bg);
+  --color-status-idle: var(--color-status-idle);
+  --color-status-idle-bg: var(--color-status-idle-bg);
+  --color-status-outside: var(--color-status-outside);
+  --color-status-outside-bg: var(--color-status-outside-bg);
+  --color-status-missing: var(--color-status-missing);
+  --color-status-missing-bg: var(--color-status-missing-bg);
+  --color-status-offline: var(--color-status-offline);
+  --color-status-offline-bg: var(--color-status-offline-bg);
+
+  /* ===== shadcn-ui compat ===== */
+  --color-background: var(--color-bg-canvas);
+  --color-foreground: var(--color-nb-black);
+  --color-card: var(--color-bg-surface);
+  --color-card-foreground: var(--color-nb-black);
+  --color-popover: var(--color-bg-surface);
+  --color-popover-foreground: var(--color-nb-black);
+  --color-primary: var(--color-nb-primary);
+  --color-primary-foreground: var(--color-nb-white);
+  --color-secondary: var(--color-nb-gray-100);
+  --color-secondary-foreground: var(--color-nb-black);
+  --color-muted: var(--color-nb-gray-200);
+  --color-muted-foreground: var(--color-nb-gray-600);
+  --color-accent: var(--color-nb-gray-100);
+  --color-accent-foreground: var(--color-nb-black);
+  --color-destructive: var(--color-nb-danger);
+  --color-destructive-foreground: var(--color-nb-white);
+  --color-success: var(--color-nb-success);
+  --color-success-foreground: var(--color-nb-white);
+  --color-warning: var(--color-nb-warning);
+  --color-warning-foreground: var(--color-nb-black);
+  --color-border: var(--color-nb-black);
+  --color-input: var(--color-nb-black);
+  --color-ring: var(--color-nb-primary);
+
+  /* ===== shadcn sidebar compat ===== */
+  --color-sidebar: var(--color-nb-sidebar-bg);
+  --color-sidebar-foreground: var(--color-nb-sidebar-fg);
+  --color-sidebar-primary: var(--color-nb-white);
+  --color-sidebar-primary-foreground: var(--color-nb-sidebar-bg);
+  --color-sidebar-accent: var(--color-nb-sidebar-hover);
+  --color-sidebar-accent-foreground: var(--color-nb-white);
+  --color-sidebar-border: var(--color-nb-sidebar-border);
+
+  /* ===== Chart colors ===== */
+  --color-chart-1: var(--color-nb-primary);
+  --color-chart-2: var(--color-nb-warning);
+  --color-chart-3: var(--color-nb-danger);
+  --color-chart-4: var(--color-nb-info);
+  --color-chart-5: var(--color-nb-gray-500);
+
+  /* ===== Shadows (hard-edge NB: zero blur, opaque nb-black) ===== */
+  --shadow-nb-xs: var(--shadow-nb-xs);
+  --shadow-nb-sm: var(--shadow-nb-sm);
+  --shadow-nb-md: var(--shadow-nb-md);
+  --shadow-nb-lg: var(--shadow-nb-lg);
+  --shadow-nb-xl: var(--shadow-nb-xl);
+  --shadow-nb-hover: var(--shadow-nb-hover);
+  --shadow-nb-active: var(--shadow-nb-active);
+  --shadow-nb-none: var(--shadow-nb-none);
+
+  /* ===== Typography ===== */
+  --font-family-sans: var(--font-body);
+  --font-family-heading: var(--font-display);
+  --font-family-mono: var(--font-mono);
+
+  /* ===== Border radius ===== */
+  --radius-none: var(--radius-none);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-nb-sm: var(--radius-sm);
+  --radius-nb-base: var(--radius-base);
+  --radius-nb-md: var(--radius-md);
+  --radius-nb-lg: var(--radius-lg);
+}
+
 /* ============================================
-   TAILWIND CSS V4 THEME
-   All custom design tokens defined here
+   @theme — layout + animation tokens (not from generated file)
    ============================================ */
 
 @theme {
-  /* ===== COLOR SYSTEM - Neo Brutalism 2.0 Palette ===== */
+  --radius-nb-xl: 16px;
 
-  /* Primary Actions - Parks Green */
-  --color-nb-primary: #7FBC8C;
-  --color-nb-primary-hover: #5A9468;
-  --color-nb-primary-active: #4A7D56;
-
-  /* Secondary Colors - Warm Earth Tones */
-  --color-nb-secondary: #8B7355;
-  --color-nb-secondary-dark: #6B5943;
-
-  /* Status Colors - Enhanced Palette */
-  --color-nb-success: #7FBC8C;
-  --color-nb-success-light: #BAFCA2;
-  --color-nb-success-border: #7FBC8C;
-  --color-nb-success-dark: #15803D;
-
-  --color-nb-warning: #E3A018;
-  --color-nb-warning-light: #FFDB58;
-  --color-nb-warning-border: #E3A018;
-
-  --color-nb-danger: #FF6B6B;
-  --color-nb-danger-light: #FFA07A;
-  --color-nb-danger-dark: #991B1B;
-
-  --color-nb-info: #A7DBD8;
-  --color-nb-info-light: #A7DBD8;
-  --color-nb-info-border: #69D2E7;
-
-  /* Neutral Palette - Soft Black & Warm Grays */
-  --color-nb-black: #1C1917;
-  --color-nb-white: #FFFFFF;
-  --color-nb-background: #F5F0EB;
-
-  /* Sidebar Colors - Forest Green */
-  --color-nb-sidebar: #1A4D2E;
-  --color-nb-sidebar-hover: #2D5233;
-  --color-nb-sidebar-active: #0F3520;
-
-  /* Gray Scale - Warm Stone Grays */
-  --color-nb-gray-50: #FAFAF9;
-  --color-nb-gray-100: #F5F5F4;
-  --color-nb-gray-200: #E7E5E4;
-  --color-nb-gray-300: #D6D3D1;
-  --color-nb-gray-400: #A8A29E;
-  --color-nb-gray-500: #78716C;
-  --color-nb-gray-600: #57534E;
-  --color-nb-gray-700: #44403C;
-  --color-nb-gray-800: #292524;
-  --color-nb-gray-900: #1C1917;
-
-  /* shadcn-ui compatible colors */
-  --color-background: #F5F0EB;
-  --color-foreground: #1C1917;
-  --color-card: #FFFFFF;
-  --color-card-foreground: #1C1917;
-  --color-popover: #FFFFFF;
-  --color-popover-foreground: #1C1917;
-  --color-primary: #7FBC8C;
-  --color-primary-foreground: #FFFFFF;
-  --color-secondary: #F5F5F4;
-  --color-secondary-foreground: #1C1917;
-  --color-muted: #E7E5E4;
-  --color-muted-foreground: #57534E;
-  --color-accent: #F5F5F4;
-  --color-accent-foreground: #1C1917;
-  --color-destructive: #FF6B6B;
-  --color-destructive-foreground: #FFFFFF;
-  --color-success: #7FBC8C;
-  --color-success-foreground: #FFFFFF;
-  --color-warning: #E3A018;
-  --color-warning-foreground: #1C1917;
-  --color-border: #1C1917;
-  --color-input: #1C1917;
-  --color-ring: #7FBC8C;
-
-  /* Sidebar colors */
-  --color-sidebar: #1A4D2E;
-  --color-sidebar-foreground: #FFFFFF;
-  --color-sidebar-primary: #FFFFFF;
-  --color-sidebar-primary-foreground: #1A4D2E;
-  --color-sidebar-accent: #2D5233;
-  --color-sidebar-accent-foreground: #FFFFFF;
-  --color-sidebar-border: #2D5233;
-
-  /* Chart colors */
-  --color-chart-1: #7FBC8C;
-  --color-chart-2: #E3A018;
-  --color-chart-3: #FF6B6B;
-  --color-chart-4: #A7DBD8;
-  --color-chart-5: #78716C;
-
-  /* ===== BOX SHADOWS - Soft-edge Offset Shadows ===== */
-  --shadow-nb-xs: 2px 2px 1px rgba(28, 25, 23, 0.15);
-  --shadow-nb-sm: 4px 4px 2px rgba(28, 25, 23, 0.18);
-  --shadow-nb-md: 6px 6px 3px rgba(28, 25, 23, 0.20);
-  --shadow-nb-lg: 8px 8px 4px rgba(28, 25, 23, 0.22);
-  --shadow-nb-xl: 12px 12px 6px rgba(28, 25, 23, 0.25);
-  --shadow-nb-hover: 8px 8px 4px rgba(28, 25, 23, 0.22);
-  --shadow-nb-active: 2px 2px 1px rgba(28, 25, 23, 0.15);
-  --shadow-nb-none: 0px 0px 0px transparent;
-
-  /* Colored shadows for status states */
-  --shadow-nb-primary: 4px 4px 2px rgba(127, 188, 140, 0.3);
-  --shadow-nb-success: 4px 4px 2px rgba(127, 188, 140, 0.3);
-  --shadow-nb-warning: 4px 4px 2px rgba(227, 160, 24, 0.3);
-  --shadow-nb-danger: 4px 4px 2px rgba(255, 107, 107, 0.3);
-
-  /* ===== TYPOGRAPHY ===== */
-  --font-family-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-family-heading: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
-  --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-
-  /* ===== SPACING ===== */
   --spacing-touch: 48px;
-
-  /* ===== SIZING ===== */
   --width-sidebar: 256px;
   --width-sidebar-collapsed: 64px;
 
-  /* ===== ANIMATIONS ===== */
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
-  --animate-shimmer: shimmer 2s infinite;
-
-  /* ===== MONITORING STATUS COLORS - WCAG 2.1 AA Compliant ===== */
-  --color-status-active: #15803D;
-  --color-status-active-bg: #DCFCE7;
-  --color-status-idle: #D97706;
-  --color-status-idle-bg: #FEF3C7;
-  --color-status-outside: #9333EA;
-  --color-status-outside-bg: #F3E8FF;
-  --color-status-missing: #DC2626;
-  --color-status-missing-bg: #FEE2E2;
-  --color-status-offline: #6B7280;
-  --color-status-offline-bg: #F3F4F6;
-
-  /* ===== MONITORING LAYOUT ===== */
   --marker-size: 36px;
   --marker-touch-target: 44px;
   --panel-width-xl: 35%;
   --panel-min-width: 320px;
   --panel-max-width: 480px;
 
-  /* ===== BREAKPOINTS (reference) ===== */
-  /* sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px */
-
-  /* ===== RADIUS - Neo Brutalism 2.0 Friendly Corners ===== */
-  --radius-none: 0px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-nb-sm: 4px;
-  --radius-nb-base: 6px;
-  --radius-nb-md: 8px;
-  --radius-nb-lg: 12px;
-  --radius-nb-xl: 16px;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-shimmer: shimmer 2s infinite;
 }
 
 /* ============================================
@@ -239,7 +220,6 @@
     --input: 20 14% 11%;
     --ring: 137 30% 64%;
 
-    /* Neo Brutalism 2.0: Friendly corners */
     --radius: 0.375rem;
 
     /* Sidebar HSL - Forest Green */
@@ -322,7 +302,7 @@ html {
 body {
   @apply m-0 p-0 font-sans text-base leading-relaxed;
   color: var(--color-nb-black);
-  background-color: var(--color-nb-background);
+  background-color: var(--color-bg-canvas);
 }
 
 /* ============================================
@@ -343,11 +323,11 @@ body {
 
 /* ============================================
    FOCUS INDICATORS
-   Consistent focus ring for keyboard navigation
+   3px solid primary — Phase 3 M1-R 3-R2 lock
    ============================================ */
 
 :focus-visible {
-  outline: 4px solid rgba(127, 188, 140, 0.4);
+  outline: 3px solid var(--color-nb-primary);
   outline-offset: 2px;
 }
 
@@ -373,7 +353,7 @@ body {
 
   /* NB Focus Ring utility */
   .nb-focus-ring {
-    @apply focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2;
+    @apply focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-nb-primary focus-visible:outline-offset-2;
   }
 
   /* NB Shadow utilities with press animation */
@@ -509,12 +489,10 @@ body {
     @apply text-nb-primary hover:underline;
   }
 
-  /* Remove default button styling */
   button {
     @apply cursor-pointer;
   }
 
-  /* Form element resets for NB styling */
   input,
   textarea,
   select {

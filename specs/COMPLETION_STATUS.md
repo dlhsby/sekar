@@ -1,9 +1,9 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** April 25, 2026 (Phase 3 M1-R Redesign Foundation milestone added — sub-phases 3-R1…3-R5; full migration sweep promoted from Phase 4 backlog; ADRs 036/037 finalized; 73 dev-days)
-**Current Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake — Not Started (specs complete)
+**Last Updated:** April 26, 2026 (Phase 3: M2 milestone complete — 3-3/3-4/3-5 all done; next: M3 task typing)
+**Current Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake — 🟡 In Progress (10 / 21 sub-phases complete)
 **Next Phase:** Phase 4 Production Readiness & Polishing (renumbered from prior Phase 3)
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 2E: 100% ✅ **DEPLOYED (Apr 25, 2026)** | Phase 3: 0% (planning complete) | Phase 4: 0% | Phase 5: 0%
+**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 2E: 100% ✅ **DEPLOYED (Apr 25, 2026)** | Phase 3: ~48% (M1-R 5/5 ✅ + 3-1 ✅ + 3-2 ✅ + 3-3 ✅ + 3-4 ✅ + 3-5 ✅, 10/21) | Phase 4: 0% | Phase 5: 0%
 
 ---
 
@@ -36,7 +36,7 @@
 | **Database** | ✅ Phase 2E Code-Complete | 100% | 1,264 BE tests | - | 22 tables (+user_areas, audit_logs), 8 migrations (incl. drop-phone, fix-indexes). Phase 3 planned: +8 tables (plant_species, area_plants, notable_plants, activity_plant_items, pruning_requests, service_capacity, plant_seeds, seed_transactions); +5 extended (activities, tasks, users.role, location_logs, user_tracking_status) |
 | **Documentation** | ✅ Phase 2E Complete | 100% | 16+ spec files | - | Updated specs, ADR-012 to ADR-015. Phase 3 authored (Apr 24, 2026): 11 spec docs + 7 new ADRs (029–035) |
 | **DevOps** | ✅ Phase 2E Deployed | 100% | - | - | Backend + Web deployed to production: Phase 2D (Mar 7, 2026) + Phase 2E (Apr 25, 2026). Phase 2E deploy was unblocked Apr 25 after stale `shifts.service.spec.ts` test was reconciled with the base64 selfie refactor (commit `ab67414`). Phase 3 will add Redis 7 to stack. |
-| **Phase 3 Planning** | 🟡 Specs Complete | 0% (not started) | — / — | — | Plants + Monitoring Rebuild + Public Intake + **M1-R Redesign Foundation**: 73 dev-days, 21 sub-phases (5 redesign + 16 feature), ~35 new endpoints + push subscription, 8 new tables, unified design token pipeline + responsive PWA + full migration sweep, k6 500-worker load test |
+| **Phase 3 Implementation** | 🟡 In Progress | ~48% (10/21 sub-phases) | 1,356+ tests (all green) | — | Plants + Monitoring Rebuild + Public Intake. M1-R ✅ + 3-1 ✅ + 3-2 ✅ + 3-3 ✅ + **3-4 ✅ (Apr 26, web):** `useMonitoringSnapshot`, `ClusterLayer` (supercluster), `WorkerListVirtual` (@tanstack/react-virtual), `HierarchyFilterPanel`, `AreaDetailDrawer`, monitoring page rewrite, `status:v2` WS patch, `staff_kecamatan` role added to web types/nav; 29 new tests. + **3-5 ✅ (Apr 26, mobile):** `monitoringV2Slice`, `ClusterMarker` (tracksViewChanges=false, zoomBucket key), `ClusteredUserMarkers` (O(n²) distance-group, feature flag), `MonitoringToggleSheet`, `AreaStatusOverlay` (useFocusEffect), `PlantOverlayLayer` (stub), `featureFlags.clusterMarkersV2=false`, ESLint ban on tracksViewChanges=true; 59 new tests. **M2 milestone complete. Next: 3-6 task typing + partial-complete API.** 73 dev-days total; 21 sub-phases. |
 
 ---
 
@@ -50,7 +50,7 @@
 | **2C** | **Client Feedback** | **✅ Complete & Deployed (Feb 16, 2026)** | **4-6 weeks** |
 | **2D** | **Real-Time Monitoring** | **✅ Complete & Deployed (Mar 7, 2026)** | **1 week** |
 | **2E** | **Client Feedback II** | **✅ Complete (Mar 11, 2026)** | **1 day** |
-| **3** | **Plants Management + Monitoring Rebuild + Public Intake** | **Not Started (specs Apr 24; M1-R Redesign Foundation added Apr 25)** | **5-7 weeks (73 dev-days; 14 d M1-R + 6 d M1-S + 21 d M2 + 15 d M3 + 16 d M4 + 2 d M5)** |
+| **3** | **Plants Management + Monitoring Rebuild + Public Intake** | **🟡 In Progress (M1-R ✅ + M1-S ✅ + **M2 ✅**; 10/21 sub-phases; next: M3 task typing)** | **5-7 weeks (73 dev-days; 14 d M1-R + 6 d M1-S + 21 d M2 + 15 d M3 + 16 d M4 + 2 d M5)** |
 | 4 | Production Readiness & Polishing (renumbered from prior Phase 3) | Specs Complete | 6-8 weeks (44-57 dev-days) |
 | 5 | Finishing, Release & iOS (8 sub-phases, renumbered from prior Phase 4) | Specs Complete | 7-9 weeks (49-64 dev-days) |
 

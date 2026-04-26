@@ -13,6 +13,7 @@ import tasksReducer from './slices/tasksSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import overtimeReducer from './slices/overtimeSlice';
 import monitoringReducer from './slices/monitoringSlice';
+import monitoringV2Reducer from './slices/monitoringV2Slice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     notifications: notificationsReducer,
     overtime: overtimeReducer,
     monitoring: monitoringReducer,
+    monitoringV2: monitoringV2Reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Progress
 
-**Last Updated:** 2026-04-25
-**Status:** 🟡 In Progress — M1-R Redesign Foundation complete (3-R1…3-R5); 3-1 + 3-2 next
+**Last Updated:** 2026-04-26
+**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 ✅ (with known gaps); 10/21 sub-phases complete
 
 This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-sub-phase journal that's updated in-flight and finalized on phase completion. `STATUS.md` is the live task-level tracker; this file is the narrative log.
 
@@ -16,11 +16,11 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | **M1-R** | 3-R3 NB primitives + NBModal/NBToast/NBText + visreg | 100 % | ✅ Complete | mobile-developer | NBText/NBModal/NBToast + canary screens + nbBorders compat fix — landed 2026-04-25 |
 | **M1-R** | 3-R4 Web PWA shell + responsive scaffolding | 100 % | ✅ Complete | web-developer | Manifest/SW/icons + ResponsiveShell + (kecamatan) layout — landed 2026-04-25 |
 | **M1-R** | 3-R5 Full redesign sweep on non-rewritten screens | 100 % | ✅ Complete | mobile-developer | All non-monitoring screens swept; monitoring palette + Mapbox specs documented in hex-allowlist.txt — landed 2026-04-25 |
-| **M1-S** | 3-1 Spec sync + ADRs 029–037 + obsolete-info cleanup | ~80 % | 🟡 In Progress | docs pass | Most spec + ADR work done Apr 24–25; final sweep + M1-R reflection after redesign lands |
-| **M1-S** | 3-2 Schema + role extension | 0 % | ⏳ Not Started | database-engineer + backend-developer | Migration + `staff_kecamatan` + seed |
-| **M2** | 3-3 Monitoring v2 backend | 0 % | ⏳ Not Started | backend-developer | Redis + Streams + projector + debouncer + sweeper |
-| **M2** | 3-4 Monitoring v2 web | 0 % | ⏳ Not Started | web-developer | Supercluster + incremental WS + virtualization |
-| **M2** | 3-5 Monitoring v2 mobile | 0 % | ⏳ Not Started | mobile-developer | Parallel `ClusterMarker` behind flag |
+| **M1-S** | 3-1 Spec sync + ADRs 029–037 + obsolete-info cleanup | 100 % | ✅ Complete | docs pass | ADR-029…037 all Accepted; STATUS/CLAUDE.md synced; M1-R reflection done. Final sweep deferred to 3-15. |
+| **M1-S** | 3-2 Schema + role extension | 100 % | ✅ Complete | database-engineer + backend-developer | 2 migrations, 8 entities, `staff_kecamatan` role, seed-phase3 (124 species + 4 configs + capacity grid) |
+| **M2** | 3-3 Monitoring v2 backend | 85 % | 🟡 Partial | backend-developer | RedisService, projector, debouncer, sweeper, Socket.IO adapter done. Gaps: `status:v2` not emitted; debouncer not wired to gateway; eager-load rewrite deferred. See 3-3 review. |
+| **M2** | 3-4 Monitoring v2 web | 90 % | 🟡 Partial | web-developer | ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, snapshot hook done. Gap: no component tests. ClusterLayer not yet integrated with existing MonitoringMap (known limitation). |
+| **M2** | 3-5 Monitoring v2 mobile | 85 % | 🟡 Partial | mobile-developer | monitoringV2Slice, ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay done. Gaps: plants Redux slice deferred to 3-8; MapDashboardScreen v2 wiring not confirmed; no component tests. |
 | **M2** | 3-14 Load test + regression | 0 % | ⏳ Not Started | devops-engineer + backend-developer | k6 harness, 500-worker scenario |
 | **M3** | 3-6 Task typing + custom fields API | 0 % | ⏳ Not Started | backend-developer | `task_type` enum + Zod registry + lineage |
 | **M3** | 3-7 Pruning task UX | 0 % | ⏳ Not Started | mobile-developer + web-developer | Form + partial complete + resume |
@@ -33,7 +33,7 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | **M5** | 3-15 Documentation final sync | 0 % | ⏳ Not Started | docs pass | Specs + STATUS + CLAUDE.md sweep |
 | **M5** | Rollout | 0 % | ⏳ Not Started | devops-engineer | Pilot Selatan → all rayons |
 
-**Overall Phase 3 completion: ~24 %** — M1-R Redesign Foundation fully complete (5/5 sub-phases); ADR work under 3-1 (~80 %).
+**Overall Phase 3 completion: ~48 %** — M1-R (5 sub-phases) + M1-S (2 sub-phases) + M2 (3-3/3-4/3-5 done with known gaps, 3-14 deferred) = 10/21 sub-phases. M2 has 7 known compliance gaps logged in `status_reviews.md`; all production-safe (graceful degradation in place).
 
 ---
 
@@ -297,12 +297,10 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 ---
 
-## Sub-Phase 3-1: Spec deferral + ADRs + CLAUDE.md sync — 🟡 In Progress
+## Sub-Phase 3-1: Spec deferral + ADRs + CLAUDE.md sync — ✅ Complete (2026-04-26)
 
-**Planned duration:** 2 days
-**Progress:** ~80 %
-**Started:** 2026-04-24
-**Most work done in Apr 24–25 spec pass; final sweep pending post-code-landing.**
+**Planned duration:** 2 days · **Actual:** ~2 days
+**Started:** 2026-04-24 · **Completed:** 2026-04-26
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -320,66 +318,86 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 ---
 
-## Sub-Phase 3-2: Schema + role extension — ⏳
+## Sub-Phase 3-2: Schema + role extension — ✅ Complete (2026-04-26)
 
-**Planned duration:** 4 days
+**Planned duration:** 4 days · **Actual:** 1 day
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Migration `17460000000000-Phase3Schema.ts` | ⏳ | 8 new tables + 5 altered |
-| Seed `plant_species` (131 rows from CSV col 6, deduped) | ⏳ | |
-| Seed `monitoring_configs` additions (`staffing_debounce_seconds`, `stale_status_sweep_cron`, `cluster_zoom_threshold`, `redis_stream_max_len`) | ⏳ | |
-| Add `staff_kecamatan` to `UserRole` enum + `constants/role-groups.ts` (`PRUNING_REQUEST_REVIEWERS = [admin_data]`) | ⏳ | |
-| Sweep every `@Roles(...)` decorator to cover new role | ⏳ | Integration test `role-matrix.e2e-spec.ts` |
+| Migration `17460000000000-Phase3Schema.ts` | ✅ | 8 new tables (plant_species, area_plants, notable_plants, pruning_requests, activity_plant_items, service_capacity, plant_seeds, seed_transactions); 5 altered; `staff_kecamatan` enum value |
+| Migration `17460001000000-Phase3BackfillIndexes.ts` | ✅ | 3× `CREATE INDEX CONCURRENTLY` on `location_logs`; runs outside transaction |
+| 8 TypeORM entity files | ✅ | In `modules/plants/`, `modules/pruning-requests/`, `modules/service-capacity/`, `modules/plant-seeds/` |
+| Activity + Task entity extensions | ✅ | Activity +6 cols; Task +5 cols |
+| `staff_kecamatan` in `UserRole` enum + `PRUNING_REQUEST_REVIEWERS` role group | ✅ | `user.entity.ts` + `role-groups.ts` |
+| `seed-phase3.ts` (124 species + 4 monitoring configs + service_capacity grid) | ✅ | Idempotent; table-existence guard added — `npm run db:seed` safe before migration |
+| Sweep `@Roles(...)` decorators | ⏳ | Deferred — `staff_kecamatan` has no endpoints yet until 3-9/3-10 |
 
 ---
 
-## Sub-Phase 3-3: Monitoring v2 backend — ⏳
+## Sub-Phase 3-3: Monitoring v2 backend — 🟡 Partial (2026-04-26)
 
-**Planned duration:** 7 days
+**Planned duration:** 7 days · **Actual:** 1 day  
+**Known gaps: see M2 compliance review in `status_reviews.md`**
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `RedisService` (connection pool, `/health`, in-process fallback) | ⏳ | |
-| Socket.IO Redis adapter | ⏳ | |
-| Redis Streams location→status pipeline (producer + consumer group) | ⏳ | |
-| `StatusProjectorService` (eager-load once, write `user_tracking_status`, emit events) | ⏳ | |
-| `StaffingDebouncerService` (30-s window) | ⏳ | |
-| `StaleStatusSweeperService` (5-min cron) | ⏳ | |
-| Rewrite `onLocationPing` — single eager load + stream producer | ⏳ | `status-calculator.service.ts:186-263` |
-| Fix batch-ingest bug (iterate / sample, not latest-only) | ⏳ | `location.service.ts:92-103` |
-| Missing indexes on `location_logs` + `user_tracking_status` | ⏳ | |
-| `GET /monitoring/snapshot` unified payload | ⏳ | |
+| `RedisService` (lazyConnect, streamAdd/readGroup/ack/ping) | ✅ | `be/src/common/services/redis.service.ts`; `CommonModule` `@Global()` |
+| Socket.IO Redis adapter (`@socket.io/redis-adapter`) | ✅ | `events.gateway.ts` + `@Optional()` fallback to in-memory |
+| Redis Streams location→status pipeline (producer in `LocationService`) | ✅ | `XADD location:pings` on each ping |
+| `StatusProjectorService` EVERY_SECOND cron consumer | ✅ | Reads up to 100 msgs/tick; delegates to `StatusCalculatorService` |
+| `StaffingDebouncerService` (30-s quiet window, `flag()` API) | ✅ | Timer per area; configurable via `STAFFING_DEBOUNCE_SECONDS` |
+| `StaleStatusSweeperService` (`*/5 * * * *`, batch=50, `sweepRunning` guard) | ✅ | Concurrent sweep protection via try/finally guard |
+| `infra/docker-compose.yml` — Redis 7-alpine + volume + healthcheck | ✅ | |
+| Tests for RedisService, Projector, Debouncer, Sweeper | ✅ | All 4 spec files present |
+| Eager-load rewrite in projector (single SELECT replaces 6+ queries) | ❌ | Delegates to unmodified `StatusCalculatorService`; pool pressure moved async not eliminated. Track for 3-14 window. |
+| `status:v2` WS event emitted from projector on status transition | ❌ | Not emitted; Phase 2D `StatusCalculatorService` still owns event emission. **Gap-1** |
+| `StaffingDebouncerService.setEmitter()` wired to `EventsGateway` | ❌ | Debouncer standalone; `setEmitter()` never called from gateway. **Gap-2** |
+| `cluster:update` WS delta event | ❌ | Not implemented. **Gap-3** |
+| `GET /monitoring/snapshot` `includes` query param | ⚠️ | Endpoint exists; `includes` param absent; plant/overdue fields stubbed (3-8 scope) |
+| Health check extended for Redis + stream lag | ❌ | `be/src/modules/health/` has no Redis check. **Gap-5** |
+| `PHASE3_FEATURES_ENABLED` env flag in `be/.env.example` | ❌ | Not added. **Gap-6** |
 
 ---
 
-## Sub-Phase 3-4: Monitoring v2 web — ⏳
+## Sub-Phase 3-4: Monitoring v2 web — 🟡 Partial (2026-04-26)
 
-**Planned duration:** 6 days
+**Planned duration:** 6 days · **Actual:** 1 day  
+**Known gap: no component-level tests written**
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `ClusterLayer` supercluster | ⏳ | |
-| Incremental WS patch handler | ⏳ | React Query `setQueryData` |
-| `WorkerListVirtual` (react-virtual) | ⏳ | |
-| `HierarchyFilterPanel` (rayon/area/worker) | ⏳ | |
-| `PlantOverlayLayer` + `AreaStatusOverlay` | ⏳ | |
-| `AreaDetailDrawer` | ⏳ | |
+| `ClusterLayer` (supercluster, dominant-status, WCAG aria-labels) | ✅ | `fe/web/src/components/monitoring/ClusterLayer.tsx` |
+| Incremental WS `status:v2` patch handler | ✅ | Monitoring page uses socket + `applyPatch` on `status:v2` event |
+| `WorkerListVirtual` (`@tanstack/react-virtual`, 72px rows, ARIA listbox) | ✅ | `fe/web/src/components/monitoring/WorkerListVirtual.tsx` |
+| `HierarchyFilterPanel` (scope selector: city / rayon / area) | ✅ | `fe/web/src/components/monitoring/HierarchyFilterPanel.tsx` |
+| `AreaDetailDrawer` (slide-in area detail panel) | ✅ | `fe/web/src/components/monitoring/AreaDetailDrawer.tsx` |
+| `useMonitoringSnapshot` hook (refetchInterval 30s, staleTime 10s) | ✅ | `fe/web/src/lib/api/monitoring-v2.ts` |
+| `staff_kecamatan` in `types/models.ts`, `roles.ts`, `navigation.ts` | ✅ | Role gating in monitoring page confirmed |
+| `PlantOverlayLayer` | ⏳ | Deferred to sub-phase 3-8 |
+| `monitoring/config` page — new Phase 3 debounce/sweep fields | ⚠️ | Page exists but new fields not added |
+| Unit tests for ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, hook | ❌ | Missing. **Gap-8** |
+| ClusterLayer integrated with existing `MonitoringMap` Mapbox component | ❌ | Known limitation — `lngLatToPixel` not exposed; cluster pins not on map yet. Deferred. |
 
 ---
 
-## Sub-Phase 3-5: Monitoring v2 mobile — ⏳
+## Sub-Phase 3-5: Monitoring v2 mobile — 🟡 Partial (2026-04-26)
 
-**Planned duration:** 5 days
+**Planned duration:** 5 days · **Actual:** 1 day  
+**Known gap: no component-level tests; plants slice deferred**
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `ClusterMarker` parallel component (preserves Apr 24 fixes) | ⏳ | |
-| `ClusteredUserMarkers` switcher by zoom | ⏳ | |
-| Feature flag `clusterMarkersV2` | ⏳ | |
-| ESLint rule forbidding `tracksViewChanges={true}` in `components/monitoring/` | ⏳ | |
-| `MonitoringToggleSheet` | ⏳ | |
-| `AreaStatusOverlay` (plant status fill) | ⏳ | |
+| `monitoringV2Slice.ts` (all 5 state fields, `fetchSnapshot`, `applyPatch`, `toggleLayer`) | ✅ | `fe/mobile/src/store/slices/monitoringV2Slice.ts` |
+| `ClusterMarker.tsx` (`tracksViewChanges={false}`, `zoomBucket` key contract, Apr 24 fixes preserved) | ✅ | `fe/mobile/src/components/monitoring/ClusterMarker.tsx` |
+| `ClusteredUserMarkers.tsx` zoom-based switcher (cluster/individual) | ✅ | O(n²) distance grouping, no `supercluster` dep on mobile |
+| Feature flag `featureFlags.clusterMarkersV2 = false` | ✅ | `fe/mobile/src/utils/featureFlags.ts` |
+| ESLint rule banning `tracksViewChanges={true}` in `components/monitoring/` | ✅ | `fe/mobile/eslint.config.js` — `no-restricted-syntax` |
+| `MonitoringToggleSheet.tsx` (NB bottom-sheet, layer toggles) | ✅ | `fe/mobile/src/components/monitoring/MonitoringToggleSheet.tsx` |
+| `AreaStatusOverlay.tsx` (`useFocusEffect` reload on tab return) | ✅ | `fe/mobile/src/components/monitoring/AreaStatusOverlay.tsx` |
+| `PlantOverlayLayer.tsx` stub | ✅ | Explicit stub with TODO; full impl in 3-8 |
+| `MapDashboardScreen.tsx` updated to wire v2 components | ⚠️ | Integration not confirmed as modified; `ClusteredUserMarkers`/`MonitoringToggleSheet` wiring needs verification. **Gap-11** |
+| `plants` Redux slice (`speciesCatalog`, `areaPlantsByArea`, etc.) | ❌ | Deferred to sub-phase 3-8 where plant data exists. **Gap-7** |
+| Tests for ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay, monitoringV2Slice | ❌ | Missing. **Gap-9** |
 
 ---
 

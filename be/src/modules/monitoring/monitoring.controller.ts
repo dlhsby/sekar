@@ -10,7 +10,14 @@ import {
   ParseUUIDPipe,
   ForbiddenException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
@@ -185,6 +192,22 @@ export class MonitoringController {
     const filters: StaffingSummaryQueryDto & { area_ids?: string[] } = { ...query };
     await this.applyScopeFilters(user, filters);
     return this.monitoringService.getStaffingSummary(filters);
+  }
+
+  @Get('snapshot')
+  @Roles(...MONITORING_CITY, ...MONITORING_RAYON, ...MONITORING_AREA)
+  @ApiOperation({ summary: 'Unified monitoring snapshot — workers + scope metadata' })
+  @ApiQuery({ name: 'scope', enum: ['city', 'rayon', 'area'], required: false })
+  @ApiQuery({ name: 'id', required: false, description: 'Rayon or Area UUID (required for rayon/area scope)' })
+  @ApiResponse({ status: 200, description: 'Snapshot returned successfully' })
+  async getSnapshot(
+    @GetUser() user: User,
+    @Query('scope') scope: 'city' | 'rayon' | 'area' = 'city',
+    @Query('id') id?: string,
+  ) {
+    if (scope === 'rayon' && id) this.enforceScopeRayon(user, id);
+    if (scope === 'area' && id) await this.enforceScopeArea(user, id);
+    return this.monitoringService.getSnapshot(scope, id);
   }
 
   @Post('reassign')

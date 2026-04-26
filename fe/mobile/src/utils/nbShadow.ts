@@ -87,8 +87,8 @@ export const NBShadowWrapper: React.FC<NBShadowWrapperProps> = ({
   isPressed = false,
 }) => {
   const shadow = nbShadows[size];
-  const offsetX = isPressed ? 2 : shadow.shadowOffset.width;
-  const offsetY = isPressed ? 2 : shadow.shadowOffset.height;
+  const offsetX = isPressed ? 2 : (shadow.shadowOffset?.width ?? 4);
+  const offsetY = isPressed ? 2 : (shadow.shadowOffset?.height ?? 4);
 
   return React.createElement(
     View,

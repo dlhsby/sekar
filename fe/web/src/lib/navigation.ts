@@ -10,6 +10,8 @@ import {
   Cog6ToothIcon,
   FolderIcon,
   ClockIcon,
+  InboxArrowDownIcon,
+  ListBulletIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
@@ -108,6 +110,24 @@ export const navigationItems: NavItem[] = [
     href: '/settings',
     icon: Cog6ToothIcon,
     roles: [...ADMIN_ROLES],
+  },
+
+  // ── Phase 3: staff_kecamatan minimal navigation (ADR-033) ──────────────
+  // Monitoring is intentionally ABSENT for this role.
+  // Pages /pruning-requests and /pruning-requests/my are populated in sub-phase 3-10.
+  {
+    id: 'pruning-submit',
+    label: 'Kirim Permintaan',
+    href: '/pruning-requests',
+    icon: InboxArrowDownIcon,
+    roles: ['staff_kecamatan'],
+  },
+  {
+    id: 'pruning-my',
+    label: 'Permintaan Saya',
+    href: '/pruning-requests/my',
+    icon: ListBulletIcon,
+    roles: ['staff_kecamatan'],
   },
 ];
 

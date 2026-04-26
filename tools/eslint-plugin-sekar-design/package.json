@@ -1,0 +1,11 @@
+{
+  "name": "eslint-plugin-sekar-design",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Custom ESLint rules enforcing SEKAR design-token discipline (no inline hex, no blurred shadows, hard-edge NB invariant).",
+  "main": "index.js",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "eslint": ">=8"
+  }
+}

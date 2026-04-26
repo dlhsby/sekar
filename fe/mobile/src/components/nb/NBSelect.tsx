@@ -70,7 +70,7 @@ export function NBSelect({
   searchPlaceholder = 'Cari...',
   clearable = false,
   style,
-}: NBSelectProps): JSX.Element {
+}: NBSelectProps): React.ReactElement {
   const isMulti = selectedValues !== undefined && onValuesChange !== undefined;
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

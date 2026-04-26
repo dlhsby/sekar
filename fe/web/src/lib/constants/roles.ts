@@ -5,7 +5,7 @@
 
 import type { UserRole } from '@/types/models';
 
-/** Roles that can access the web dashboard */
+/** Roles that can access the web dashboard (excludes staff_kecamatan — uses (kecamatan) layout) */
 export const WEB_ROLES: UserRole[] = [
   'korlap',
   'admin_data',
@@ -14,6 +14,9 @@ export const WEB_ROLES: UserRole[] = [
   'admin_system',
   'superadmin',
 ];
+
+/** Phase 3 ADR-033 — staff_kecamatan minimal nav items */
+export const KECAMATAN_ROLES: UserRole[] = ['staff_kecamatan'];
 
 /** Admin roles with full system configuration access */
 export const ADMIN_ROLES: UserRole[] = ['admin_system', 'superadmin'];
@@ -59,6 +62,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   top_management: 'Top Management',
   admin_system: 'Admin Sistem',
   superadmin: 'Superadmin',
+  staff_kecamatan: 'Staff Kecamatan',
 };
 
 /** Badge variant for each role */
@@ -74,9 +78,10 @@ export const ROLE_BADGE_VARIANTS: Record<
   top_management: 'default',
   admin_system: 'destructive',
   superadmin: 'destructive',
+  staff_kecamatan: 'secondary',
 };
 
-/** All 8 roles in display order */
+/** All 9 roles in display order (Phase 3 adds staff_kecamatan) */
 export const ALL_ROLES: UserRole[] = [
   'satgas',
   'linmas',
@@ -86,6 +91,7 @@ export const ALL_ROLES: UserRole[] = [
   'top_management',
   'admin_system',
   'superadmin',
+  'staff_kecamatan',
 ];
 
 /** Valid assignment targets per role (who can assign to whom) */

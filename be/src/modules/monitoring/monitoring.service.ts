@@ -73,6 +73,41 @@ export class MonitoringService {
     return this.userService.getUserDaySummary(userId);
   }
 
+  // ---- Phase 3: Unified snapshot endpoint ----
+
+  /**
+   * Returns a combined monitoring snapshot for a given scope.
+   * Suitable for initial page load and periodic full-refresh polling.
+   */
+  async getSnapshot(
+    scope: 'city' | 'rayon' | 'area',
+    id?: string,
+  ): Promise<{
+    success: boolean;
+    data: {
+      scope: string;
+      scope_id: string | null;
+      generated_at: string;
+      workers: unknown[];
+    };
+  }> {
+    const filters: LiveUsersFilterDto = {};
+    if (scope === 'rayon' && id) filters.rayon_id = id;
+    if (scope === 'area' && id) filters.area_id = id;
+
+    const result = await this.userService.getLiveUsers(filters);
+
+    return {
+      success: true,
+      data: {
+        scope,
+        scope_id: id ?? null,
+        generated_at: new Date().toISOString(),
+        workers: result?.users ?? [],
+      },
+    };
+  }
+
   // ---- Staffing Summary (combines user & stats concerns, stays here) ----
 
   async getStaffingSummary(filters: {

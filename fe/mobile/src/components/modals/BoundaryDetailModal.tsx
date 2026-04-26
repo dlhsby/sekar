@@ -8,17 +8,16 @@
 import React from 'react';
 import {
   View,
-  Text,
   Modal,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -71,13 +70,13 @@ export function BoundaryDetailModal({
             <MaterialCommunityIcons
               name={isRayon ? 'office-building' : 'map-marker'}
               size={20}
-              color={isRayon ? '#2563EB' : '#D97706'}
+              color={isRayon ? nbColors.requestUnderReview : nbColors.statusIdle}
             />
-            <Text style={styles.headerTitle}>
+            <NBText variant="body-lg" color="black" style={styles.headerTitleFlex}>
               {isRayon ? rayonData!.name : areaData!.name}
-            </Text>
+            </NBText>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialCommunityIcons name="close" size={20} color={nbColors.gray['700']} />
+              <MaterialCommunityIcons name="close" size={20} color={nbColors.gray700} />
             </TouchableOpacity>
           </View>
 
@@ -85,12 +84,12 @@ export function BoundaryDetailModal({
             {/* Rayon mode: list areas */}
             {isRayon && rayonData && (
               <>
-                <Text style={styles.sectionLabel}>
+                <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>
                   {rayonData.areas.length} Area
                   {rayonData.understaffed_area_count > 0
                     ? ` (${rayonData.understaffed_area_count} kurang staf)`
                     : ''}
-                </Text>
+                </NBText>
                 {rayonData.areas.map(area => (
                   <View
                     key={area.id}
@@ -100,10 +99,10 @@ export function BoundaryDetailModal({
                     ]}
                   >
                     <View style={styles.areaRowLeft}>
-                      <Text style={styles.areaName}>{area.name}</Text>
-                      <Text style={styles.areaStats}>
+                      <NBText variant="body" color="black">{area.name}</NBText>
+                      <NBText variant="body-sm" color="gray600">
                         {area.total_active}/{area.total_required} aktif
-                      </Text>
+                      </NBText>
                     </View>
                     {area.is_understaffed ? (
                       <View style={styles.warningBadge}>
@@ -123,37 +122,38 @@ export function BoundaryDetailModal({
             {!isRayon && areaData && (
               <>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Total Aktif</Text>
-                  <Text style={styles.summaryValue}>
+                  <NBText variant="body" color="gray700" style={styles.semibold}>Total Aktif</NBText>
+                  <NBText variant="body-lg" color="black">
                     {areaData.total_active}/{areaData.total_required}
-                  </Text>
+                  </NBText>
                 </View>
 
-                <Text style={styles.sectionLabel}>Detail per Peran</Text>
+                <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>Detail per Peran</NBText>
                 <View style={styles.staffingTable}>
                   <View style={styles.tableHeader}>
-                    <Text style={[styles.tableHeaderCell, styles.tableRoleCol]}>Peran</Text>
-                    <Text style={styles.tableHeaderCell}>Dibutuhkan</Text>
-                    <Text style={styles.tableHeaderCell}>Aktif</Text>
-                    <Text style={styles.tableHeaderCell}>Delta</Text>
+                    <NBText variant="caption" color="gray700" style={[styles.tableHeaderCell, styles.tableRoleCol]}>Peran</NBText>
+                    <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Dibutuhkan</NBText>
+                    <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Aktif</NBText>
+                    <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Delta</NBText>
                   </View>
                   {(areaData.staffing ?? []).map(item => {
                     const delta = item.active - item.required;
                     return (
                       <View key={item.role} style={styles.tableRow}>
-                        <Text style={[styles.tableCell, styles.tableRoleCol]}>
+                        <NBText variant="body-sm" color="gray800" style={[styles.tableCell, styles.tableRoleCol]}>
                           {ROLE_LABELS[item.role as UserRole] ?? item.role}
-                        </Text>
-                        <Text style={styles.tableCell}>{item.required}</Text>
-                        <Text style={styles.tableCell}>{item.active}</Text>
-                        <Text
+                        </NBText>
+                        <NBText variant="body-sm" color="gray800" style={styles.tableCell}>{item.required}</NBText>
+                        <NBText variant="body-sm" color="gray800" style={styles.tableCell}>{item.active}</NBText>
+                        <NBText
+                          variant="body-sm"
                           style={[
                             styles.tableCell,
                             { color: delta >= 0 ? nbColors.successDark : nbColors.dangerDark },
                           ]}
                         >
                           {delta >= 0 ? `+${delta}` : delta}
-                        </Text>
+                        </NBText>
                       </View>
                     );
                   })}
@@ -167,7 +167,7 @@ export function BoundaryDetailModal({
                     activeOpacity={0.8}
                   >
                     <MaterialCommunityIcons name="account-switch" size={18} color={nbColors.black} />
-                    <Text style={styles.reassignBtnText}>Reassign Petugas</Text>
+                    <NBText variant="body" color="black">Reassign Petugas</NBText>
                   </TouchableOpacity>
                 )}
               </>
@@ -184,7 +184,7 @@ export function BoundaryDetailModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: nbColors.bgOverlay,
     justifyContent: 'flex-end',
   },
   container: {
@@ -201,14 +201,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: nbSpacing.md,
     borderBottomWidth: nbBorders.thin,
-    borderBottomColor: nbColors.gray['300'],
+    borderBottomColor: nbColors.gray300,
     gap: nbSpacing.sm,
   },
-  headerTitle: {
+  headerTitleFlex: {
     flex: 1,
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
   },
   closeBtn: {
     padding: nbSpacing.xs,
@@ -217,9 +214,6 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
   },
   sectionLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['700'],
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: nbSpacing.sm,
@@ -232,25 +226,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     borderRadius: nbBorderRadius.base,
     marginBottom: nbSpacing.xs,
-    backgroundColor: nbColors.gray['100'],
+    backgroundColor: nbColors.gray100,
   },
   areaRowUnderstaffed: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: nbColors.statusMissingBg,
     borderWidth: 1,
     borderColor: nbColors.dangerDark,
   },
   areaRowLeft: {
     flex: 1,
-  },
-  areaName: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
-  },
-  areaStats: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    marginTop: 2,
   },
   warningBadge: {
     width: 24,
@@ -275,37 +259,27 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.sm,
-    backgroundColor: nbColors.gray['100'],
+    backgroundColor: nbColors.gray100,
     borderRadius: nbBorderRadius.base,
   },
-  summaryLabel: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['700'],
-  },
-  summaryValue: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+  semibold: {
+    fontWeight: '600',
   },
   staffingTable: {
     borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
+    borderColor: nbColors.gray300,
     borderRadius: nbBorderRadius.base,
     overflow: 'hidden',
     marginBottom: nbSpacing.md,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     paddingVertical: nbSpacing.xs,
     paddingHorizontal: nbSpacing.sm,
   },
   tableHeaderCell: {
     flex: 1,
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['700'],
     textAlign: 'center',
   },
   tableRoleCol: {
@@ -317,12 +291,10 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.xs,
     paddingHorizontal: nbSpacing.sm,
     borderTopWidth: 1,
-    borderTopColor: nbColors.gray['200'],
+    borderTopColor: nbColors.gray200,
   },
   tableCell: {
     flex: 1,
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['800'],
     textAlign: 'center',
   },
   reassignBtn: {
@@ -337,10 +309,5 @@ const styles = StyleSheet.create({
     gap: nbSpacing.xs,
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
-  },
-  reassignBtnText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
   },
 });

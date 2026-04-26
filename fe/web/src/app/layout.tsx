@@ -1,17 +1,25 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import { OfflineBanner } from '@/components/pwa/OfflineBanner';
+import { UpdateToast } from '@/components/pwa/UpdateToast';
 
 const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-body',
   display: 'swap',
 });
 
 const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-heading',
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -21,12 +29,19 @@ export const metadata: Metadata = {
     'Worker tracking and task management system for DLH Surabaya - municipal department managing parks and green spaces',
   keywords: ['SEKAR', 'DLH Surabaya', 'Worker Tracking', 'RTH', 'Park Management'],
   authors: [{ name: 'DLH Surabaya' }],
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'SEKAR',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  themeColor: '#1A4D2E',
 };
 
 export default function RootLayout({
@@ -36,7 +51,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <head>
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
+      </head>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+        <OfflineBanner />
+        <UpdateToast />
         <Providers>{children}</Providers>
       </body>
     </html>

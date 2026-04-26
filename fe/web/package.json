@@ -18,7 +18,8 @@
     "test:e2e:auth": "playwright test --project=chromium e2e/01-authentication.spec.ts",
     "test:e2e:users": "playwright test --project=chromium e2e/02-user-management.spec.ts",
     "test:e2e:quick": "playwright test --project=chromium e2e/01-authentication.spec.ts e2e/02-user-management.spec.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "sw:build": "npx esbuild src/sw/sw.ts --bundle --outfile=public/sw.js --platform=browser --target=chrome90"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -31,6 +32,8 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.90.20",
+    "@tanstack/react-virtual": "^3.13.24",
+    "@types/supercluster": "^7.1.3",
     "axios": "^1.13.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -43,6 +46,7 @@
     "react-hook-form": "^7.71.1",
     "socket.io-client": "^4.8.3",
     "sonner": "^2.0.7",
+    "supercluster": "^8.0.1",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"

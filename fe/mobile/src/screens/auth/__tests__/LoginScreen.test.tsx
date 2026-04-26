@@ -26,6 +26,14 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// Mock NBToast — replaced Alert.alert for error reporting in Phase 3 3-R3
+const mockNBToastShow = jest.fn();
+jest.mock('../../../components/nb/NBToast', () => ({
+  NBToast: { show: (...args: any[]) => mockNBToastShow(...args), hide: jest.fn() },
+  NBToastProvider: () => null,
+  nbToastConfig: {},
+}));
+
 // Helper to create test store
 const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>) => {
   return configureStore({
@@ -400,9 +408,8 @@ describe('LoginScreen', () => {
       });
 
       // Should not show an alert (error is caught silently)
-      expect(Alert.alert).not.toHaveBeenCalledWith(
-        expect.anything(),
-        expect.stringContaining('Shift')
+      expect(mockNBToastShow).not.toHaveBeenCalledWith(
+        expect.objectContaining({ body: expect.stringContaining('Shift') }),
       );
     });
 
@@ -469,7 +476,9 @@ describe('LoginScreen', () => {
       fireEvent.press(getByText('Masuk'));
 
       await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith('Error', 'Invalid credentials');
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', body: 'Invalid credentials' }),
+        );
       });
     });
 
@@ -485,7 +494,9 @@ describe('LoginScreen', () => {
       fireEvent.press(getByText('Masuk'));
 
       await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith('Error', 'Login gagal');
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', body: 'Login gagal' }),
+        );
       });
     });
 
@@ -504,7 +515,9 @@ describe('LoginScreen', () => {
       fireEvent.press(getByText('Masuk'));
 
       await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith('Error', 'Invalid response from server');
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', body: 'Invalid response from server' }),
+        );
       });
     });
 
@@ -518,7 +531,9 @@ describe('LoginScreen', () => {
       fireEvent.press(getByText('Masuk'));
 
       await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith('Error', 'Network error');
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', body: 'Network error' }),
+        );
       });
     });
 
@@ -797,7 +812,9 @@ describe('LoginScreen — Fix 3: catch (err: unknown) with safe narrowing', () =
     fireEvent.press(getByText('Masuk'));
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Koneksi terputus');
+      expect(mockNBToastShow).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'danger', body: 'Koneksi terputus' }),
+      );
     });
   });
 
@@ -812,7 +829,9 @@ describe('LoginScreen — Fix 3: catch (err: unknown) with safe narrowing', () =
     fireEvent.press(getByText('Masuk'));
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Terjadi kesalahan');
+      expect(mockNBToastShow).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'danger', body: 'Terjadi kesalahan' }),
+      );
     });
   });
 });

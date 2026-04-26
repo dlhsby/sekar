@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
-import { theme } from '../../constants/theme';
+import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { NBText } from '../nb/NBText';
+import { nbColors, nbSpacing, nbRadius } from '../../constants/nbTokens';
 
 type BannerVariant = 'error' | 'warning' | 'info';
 
@@ -23,6 +24,12 @@ interface ErrorBannerProps {
   style?: ViewStyle;
 }
 
+const VARIANT_BG: Record<BannerVariant, string> = {
+  error: nbColors.danger,
+  warning: nbColors.warning,
+  info: nbColors.info,
+};
+
 /**
  * Error/warning/info message banner with optional dismiss or action button
  */
@@ -34,22 +41,9 @@ export function ErrorBanner({
   onAction,
   style,
 }: ErrorBannerProps): JSX.Element {
-  const containerStyle = [
-    styles.container,
-    variant === 'warning' && styles.containerWarning,
-    variant === 'info' && styles.containerInfo,
-    style,
-  ];
-
-  const textStyle = [
-    styles.message,
-    variant === 'warning' && styles.messageWarning,
-  ];
-
-  const buttonTextStyle = [
-    styles.actionButton,
-    variant === 'warning' && styles.actionButtonWarning,
-  ];
+  const isWarning = variant === 'warning';
+  const containerStyle = [styles.container, { backgroundColor: VARIANT_BG[variant] }, style];
+  const textColor = isWarning ? 'black' : 'white';
 
   return (
     <View
@@ -57,7 +51,7 @@ export function ErrorBanner({
       accessibilityLiveRegion="assertive"
       accessibilityRole="alert"
     >
-      <Text style={textStyle}>{message}</Text>
+      <NBText variant="body-sm" color={textColor} style={styles.message}>{message}</NBText>
       {actionText && onAction ? (
         <TouchableOpacity
           onPress={onAction}
@@ -65,7 +59,7 @@ export function ErrorBanner({
           accessibilityRole="button"
           accessibilityLabel={actionText}
         >
-          <Text style={buttonTextStyle}>{actionText}</Text>
+          <NBText variant="body-sm" color={textColor} style={styles.actionDecoration}>{actionText}</NBText>
         </TouchableOpacity>
       ) : onDismiss ? (
         <TouchableOpacity
@@ -75,7 +69,7 @@ export function ErrorBanner({
           accessibilityLabel="Tutup pesan kesalahan"
           accessibilityHint="Ketuk untuk menutup pesan kesalahan ini"
         >
-          <Text style={styles.dismissButton}>✕</Text>
+          <NBText variant="body-lg" color={textColor}>✕</NBText>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -87,39 +81,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.error,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
-  },
-  containerWarning: {
-    backgroundColor: theme.colors.warning,
-  },
-  containerInfo: {
-    backgroundColor: theme.colors.info || '#2196F3',
+    padding: nbSpacing.md,
+    borderRadius: nbRadius.md,
+    marginBottom: nbSpacing.md,
   },
   message: {
     flex: 1,
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.white,
-    marginRight: theme.spacing.sm,
+    marginRight: nbSpacing.sm,
   },
-  messageWarning: {
-    color: theme.colors.textPrimary, // Dark text for better contrast on warning background
-  },
-  dismissButton: {
-    fontSize: theme.typography.fontSize.lg,
-    color: theme.colors.white,
-    fontWeight: theme.typography.fontWeight.bold,
-  },
-  actionButton: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.white,
-    fontWeight: theme.typography.fontWeight.bold,
+  actionDecoration: {
     textDecorationLine: 'underline',
-  },
-  actionButtonWarning: {
-    color: theme.colors.textPrimary,
   },
 });
 

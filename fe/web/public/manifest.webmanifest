@@ -1,0 +1,41 @@
+{
+  "name": "SEKAR — Sistem Evaluasi Kerja Satgas RTH",
+  "short_name": "SEKAR",
+  "description": "Sistem manajemen kinerja satgas RTH DLH Surabaya",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F0EB",
+  "theme_color": "#1A4D2E",
+  "lang": "id",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Monitoring",
+      "short_name": "Monitor",
+      "url": "/monitoring",
+      "description": "Live worker monitoring map"
+    },
+    {
+      "name": "Tugas",
+      "short_name": "Tugas",
+      "url": "/tasks",
+      "description": "Task management"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["productivity", "utilities"]
+}

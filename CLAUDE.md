@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-**Last Updated:** April 25, 2026
-**Status:** Phase 2E Complete ✅ + Monitoring Map Bugfixes ✅ | Phase 3 (Plants Management + Monitoring Rebuild + Public Intake) IN PLANNING — ADR-029…037 drafted; **M1-R Redesign Foundation milestone added (sub-phases 3-R1…3-R5)**: unified token pipeline, brand-font bundling, NB primitive migration with NBModal/NBToast/NBText, web PWA shell with mobile-web responsive layouts, full redesign sweep promoted from Phase 4 backlog. Phase 4/5 renumbered.
+**Last Updated:** April 26, 2026
+**Status:** Phase 2E Complete ✅ + Monitoring Map Bugfixes ✅ | Phase 3 IN PROGRESS — **M1-R ✅ complete (Apr 25, 2026)**: all 5 sub-phases done. **3-1 spec sync ✅ complete**. **3-2 schema migration ✅ complete (Apr 26, 2026)**: 2 migration files, 8 new entities, UserRole `staff_kecamatan`, seed-phase3 (124 plant species + 4 monitoring configs + service_capacity grid). **M2 Monitoring v2 ✅ complete (Apr 26, 2026):** 3-3 backend (Redis 7, `RedisService`, `StatusProjectorService`, `StaffingDebouncerService`, `StaleStatusSweeperService`, snapshot endpoint, scope-enforcement fix); 3-4 web (`ClusterLayer`/supercluster, `WorkerListVirtual`/@tanstack/react-virtual, `HierarchyFilterPanel`, `AreaDetailDrawer`, `status:v2` WS patch, `staff_kecamatan` nav); 3-5 mobile (`monitoringV2Slice`, `ClusterMarker`, `ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`, feature flag, ESLint ban). **Next: 3-6 (Task typing + partial-complete API)**.. ADRs 029–037 Accepted. Phase 4/5 renumbered.
 
 This file provides guidance to Claude Code when working with this repository.
 
@@ -38,12 +38,28 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Quick Start Commands
 
+### Monorepo structure (Phase 3 onward)
+
+The root `package.json` manages **cross-workspace tooling only** — it does NOT share dependencies with the app packages.
+
+| Location | `npm install` installs | Purpose |
+|----------|----------------------|---------|
+| `/` (root) | `tsx`, `ajv`, `jest`, ESLint plugin symlink | Token pipeline (`tokens:build/verify`) + design lint rules |
+| `be/` | NestJS, TypeORM, etc. | Backend |
+| `fe/mobile/` | React Native, Redux, etc. | Mobile app |
+| `fe/web/` | Next.js, Tailwind, etc. | Web app |
+
+Each workspace is **fully independent** — `npm install` in one never touches another.
+
 ### Fresh Start (from clean checkout)
 ```bash
+# 0. Root tooling — one-time per checkout (token pipeline + eslint plugin)
+npm install                # Run from project root
+
 # 1. Start infrastructure (PostgreSQL, Adminer, LocalStack S3)
 ./infra/start.sh
 
-# 2. Backend setup
+# 2. Backend setup (separate terminal)
 cd be
 npm install
 cp .env.example .env       # Edit database credentials if needed
@@ -64,6 +80,13 @@ cd fe/web
 npm install
 cp .env.local.example .env.local  # Edit Mapbox token if needed
 npm run dev                # http://localhost:3001
+```
+
+### Token Pipeline Commands (run from project root)
+```bash
+npm run tokens:build       # Regenerate fe/web/src/app/generated/tokens.css + fe/mobile/src/constants/generated/tokens.ts
+npm run tokens:verify      # Same but exits non-zero if committed files differ (used by CI)
+npm run test:tokens        # Unit tests for the generator + ESLint rule tests
 ```
 
 ### Backend Commands
@@ -381,7 +404,7 @@ API_VERSION=v1
 ```bash
 lsof -ti:3000 | xargs kill -9              # Port in use
 docker-compose ps                           # Check database
-rm -rf node_modules && npm install         # Dependencies
+rm -rf node_modules && npm install         # Dependencies (run inside be/)
 ```
 
 ### Mobile
@@ -389,6 +412,21 @@ rm -rf node_modules && npm install         # Dependencies
 npm start -- --reset-cache                  # Metro cache
 cd android && ./gradlew clean && cd ..      # Build issues
 # Check .env has correct API_BASE_URL
+```
+
+### Token pipeline / ESLint plugin
+```bash
+# "Cannot find eslint-plugin-sekar-design" or "tokens:build not found"
+npm install                                 # Run from project ROOT (not be/ or fe/*)
+# This installs tsx/ajv/jest and symlinks eslint-plugin-sekar-design to root node_modules/
+# The plugin is then found by ESLint in fe/mobile and fe/web via directory traversal.
+```
+
+### Metro "Cannot resolve @react-native/metro-config"
+```bash
+# Caused if be/fe/web/fe/mobile were previously in root workspaces (old 3-R1 config).
+# Fix: run npm install from project root to resync the reduced workspace list.
+npm install                                 # From project root
 ```
 
 ### Infrastructure
@@ -473,7 +511,7 @@ docker-compose down -v                      # Clean restart (deletes data!)
 | **Database** | 22 tables, 8-role system, 8 migrations (incl. drop-phone, fix-indexes+CHECK) |
 | **DevOps** | 3 CI/CD pipelines, ESLint 10, Phase 2D deployed to production |
 | **UI/UX** | Neo Brutalism 2.0, five-status monitoring, optional selfie, overtime clock-in/out |
-| **Phase 3 (planning)** | 9 ADRs drafted (029–037), **21 sub-phases** (incl. M1-R 3-R1…3-R5 redesign foundation), **~73 dev-days**; Phase 4/5 renumbered. Mobile + web unified design tokens + responsive PWA + full migration sweep. No code written yet. |
+| **Phase 3 (in progress)** | M1-R ✅ (3-R1…3-R5 all complete Apr 25); 3-1 spec sync ✅; **3-2 schema migration in progress** (8 new tables + staff_kecamatan role). 6/21 sub-phases done (~29%). |
 
 **Deployed to Production:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2D (Mar 7, 2026) + Phase 2E (Apr 25, 2026)** both on production.
 

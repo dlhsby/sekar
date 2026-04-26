@@ -11,15 +11,29 @@ import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { CreateTaskTypedDto } from './dto/create-task-typed.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
+import { PartialCompleteTaskDto } from './dto/partial-complete-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
+import { TaskTypeRegistry } from './registry/task-type-registry';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { VALID_TASK_ASSIGNMENTS, VERIFY_MAP } from '../users/constants/role-groups';
 import { AuditLogService } from '../audit/audit.service';
+
+/** Pick a subset of keys from an object without mutating. */
+function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+  return keys.reduce(
+    (acc, k) => {
+      acc[k] = obj[k];
+      return acc;
+    },
+    {} as Pick<T, K>,
+  );
+}
 
 /**
  * Service for managing tasks
@@ -39,16 +53,20 @@ export class TasksService {
     private readonly usersService: UsersService,
     private readonly areasService: AreasService,
     private readonly auditLogService: AuditLogService,
+    private readonly taskTypeRegistry: TaskTypeRegistry,
   ) {}
 
   /**
    * Create a new task
    *
-   * @param createTaskDto - Task creation data
+   * Accepts both the base CreateTaskDto and the extended CreateTaskTypedDto.
+   * When task_type and custom_fields are provided they are validated via TaskTypeRegistry.
+   *
+   * @param createTaskDto - Task creation data (may include Phase 3 typed fields)
    * @param creatorId - ID of the user creating the task
    * @returns The created task
    */
-  async create(createTaskDto: CreateTaskDto, creatorId: string): Promise<Task> {
+  async create(createTaskDto: CreateTaskDto | CreateTaskTypedDto, creatorId: string): Promise<Task> {
     this.logger.log(`Creating task: ${createTaskDto.title}`);
 
     // Get creator to validate hierarchy
@@ -69,6 +87,19 @@ export class TasksService {
       initialStatus = TaskStatus.ASSIGNED;
     }
 
+    // Phase 3: validate task_type + custom_fields when provided
+    const typedDto = createTaskDto as CreateTaskTypedDto;
+    const taskType = typedDto.task_type ?? 'generic';
+    const customFields = typedDto.custom_fields ?? {};
+
+    try {
+      this.taskTypeRegistry.validate(taskType, customFields);
+    } catch {
+      throw new BadRequestException(
+        `custom_fields is invalid for task_type "${taskType}". Check required fields.`,
+      );
+    }
+
     const task = this.taskRepository.create({
       title: createTaskDto.title,
       description: createTaskDto.description,
@@ -80,6 +111,9 @@ export class TasksService {
       status: initialStatus,
       created_by: creatorId,
       assigned_at: createTaskDto.assigned_to ? new Date() : null,
+      taskType,
+      customFields,
+      targetPlantCount: typedDto.target_plant_count ?? null,
     });
 
     const savedTask = await this.taskRepository.save(task);
@@ -929,5 +963,129 @@ export class TasksService {
         throw new ForbiddenException('Korlap can only create tasks for their own area');
       }
     }
+  }
+
+  /**
+   * Record a partial completion for a plant-counting task.
+   *
+   * Increments completed_plant_count by dto.completed_count.
+   * When resume_tomorrow is true and the task is not yet fully done,
+   * a child task is spawned covering the remaining count.
+   *
+   * @param taskId  - UUID of the task
+   * @param dto     - Partial completion payload
+   * @param user    - The acting user (authorization check)
+   */
+  async partialComplete(
+    taskId: string,
+    dto: PartialCompleteTaskDto,
+    user: User,
+  ): Promise<{ task: Task; child_task_id?: string }> {
+    this.logger.log(`User ${user.id} partial-completing task ${taskId}`);
+
+    const task = await this.taskRepository.findOne({ where: { id: taskId } });
+    if (!task) throw new NotFoundException(`Task ${taskId} not found`);
+
+    const isFieldWorker = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP].includes(
+      user.role as UserRole,
+    );
+    const isManager = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN].includes(user.role as UserRole);
+    if (!isFieldWorker && !isManager) {
+      throw new ForbiddenException('Not authorized to partial-complete this task');
+    }
+
+    const newCompleted = (task.completedPlantCount ?? 0) + dto.completed_count;
+    const isFullyDone = task.targetPlantCount ? newCompleted >= task.targetPlantCount : !dto.resume_tomorrow;
+
+    task.completedPlantCount = newCompleted;
+    if (isFullyDone && task.status === TaskStatus.IN_PROGRESS) {
+      task.status = TaskStatus.COMPLETED;
+      task.completed_at = new Date();
+    }
+
+    await this.taskRepository.save(task);
+
+    let childTaskId: string | undefined;
+    if (dto.resume_tomorrow && !isFullyDone) {
+      const remaining = task.targetPlantCount ? task.targetPlantCount - newCompleted : undefined;
+      const child = this.taskRepository.create({
+        ...pick(task, ['title', 'description', 'area_id', 'rayon_id', 'taskType', 'assigned_to', 'deadline', 'priority', 'created_by']),
+        status: TaskStatus.ASSIGNED,
+        parentTaskId: task.id,
+        targetPlantCount: remaining ?? null,
+        completedPlantCount: 0,
+        customFields: { ...(task.customFields ?? {}), _resumed_from: taskId },
+      });
+      const saved = await this.taskRepository.save(child);
+      childTaskId = saved.id;
+    }
+
+    this.auditLogService
+      .log({
+        entity_type: 'task',
+        entity_id: taskId,
+        action: 'partial_complete',
+        actor_id: user.id,
+        new_value: {
+          completed_plant_count: newCompleted,
+          resume_tomorrow: dto.resume_tomorrow,
+          child_task_id: childTaskId,
+        },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
+    return { task, child_task_id: childTaskId };
+  }
+
+  /**
+   * Manually resume a task by spawning a child task with the remaining plant count.
+   * Use when the worker wants to continue work on a separate day without going
+   * through partial-complete first.
+   *
+   * @param taskId - UUID of the parent task
+   * @param user   - The acting user (used to preserve assigned_to if needed)
+   */
+  async resume(taskId: string, user: User): Promise<Task> {
+    this.logger.log(`User ${user.id} resuming task ${taskId}`);
+
+    const parent = await this.taskRepository.findOne({ where: { id: taskId } });
+    if (!parent) throw new NotFoundException(`Task ${taskId} not found`);
+
+    const remaining = parent.targetPlantCount
+      ? parent.targetPlantCount - (parent.completedPlantCount ?? 0)
+      : undefined;
+
+    const child = this.taskRepository.create({
+      ...pick(parent, ['description', 'area_id', 'rayon_id', 'taskType', 'assigned_to', 'deadline', 'priority', 'created_by']),
+      title: `[Lanjutan] ${parent.title}`,
+      status: TaskStatus.ASSIGNED,
+      parentTaskId: parent.id,
+      targetPlantCount: remaining ?? null,
+      completedPlantCount: 0,
+      customFields: { ...(parent.customFields ?? {}), _resumed_from: taskId },
+    });
+
+    const saved = await this.taskRepository.save(child);
+    this.logger.log(`Child task ${saved.id} created as resume of ${taskId}`);
+    return saved;
+  }
+
+  /**
+   * Return the full parent–task–children lineage for a task.
+   *
+   * @param taskId - UUID of the task
+   */
+  async getLineage(taskId: string): Promise<{ parent?: Task; task: Task; children: Task[] }> {
+    const task = await this.taskRepository.findOne({ where: { id: taskId } });
+    if (!task) throw new NotFoundException(`Task ${taskId} not found`);
+
+    const [parent, children] = await Promise.all([
+      task.parentTaskId
+        ? this.taskRepository.findOne({ where: { id: task.parentTaskId } })
+        : Promise.resolve(null),
+      this.taskRepository.find({ where: { parentTaskId: taskId } }),
+    ]);
+
+    return { parent: parent ?? undefined, task, children };
   }
 }

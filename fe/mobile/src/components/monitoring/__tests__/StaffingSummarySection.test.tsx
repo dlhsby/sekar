@@ -19,6 +19,7 @@ jest.mock('../../../constants/nbTokens', () => ({
     black: '#000000',
     successDark: '#15803D',
     dangerDark: '#991B1B',
+    warning: '#E3A018',
     gray: {
       '50': '#F9FAFB',
       '200': '#E5E7EB',
@@ -237,8 +238,8 @@ describe('StaffingSummarySection', () => {
         (v: any) =>
           v.props.style &&
           (Array.isArray(v.props.style)
-            ? v.props.style.some((s: any) => s?.backgroundColor === '#D97706')
-            : v.props.style?.backgroundColor === '#D97706'),
+            ? v.props.style.some((s: any) => s?.backgroundColor === '#E3A018')
+            : v.props.style?.backgroundColor === '#E3A018'),
       );
       expect(progressFill).toBeTruthy();
     });

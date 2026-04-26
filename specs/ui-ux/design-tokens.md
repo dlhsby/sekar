@@ -389,9 +389,9 @@ For every shared component family, which platform owns the reference, where they
 | Card | `components/nb/NBCard.tsx` | `components/ui/card.tsx` | **Visual parity.** Same border, shadow, corner radius. |
 | Badge | `components/nb/NBBadge.tsx` | `components/ui/badge.tsx` | **Visual parity.** Same uppercase text, fill, border. |
 | TextInput | `components/nb/NBTextInput.tsx` | `components/ui/input.tsx` | **Visual parity for the input itself.** Labels/helpers may differ in layout. |
-| Text | `components/nb/NBText.tsx` | Tailwind utility classes | Same semantic names (`h1`, `body`, …). Different API. |
-| Modal | `components/nb/NBModal.tsx` *(new in 3-0)* | `components/ui/dialog.tsx` | **Intentional divergence.** Mobile uses bottom sheet for short content, full-screen for complex; web uses centered dialog. Same border/shadow/type on the sheet chrome. |
-| Toast | `components/nb/NBToast.tsx` *(new)* | `components/ui/toast.tsx` | Visual parity. Position differs (mobile bottom / web top-right). |
+| Text | `components/nb/NBText.tsx` ✅ | Tailwind `text-nb-*` utilities ✅ | Same semantic names (`h1`, `body`, …). Different API. |
+| Modal | `components/nb/NBModal.tsx` ✅ | `components/ui/dialog.tsx` ✅ | **Intentional divergence.** Mobile uses bottom sheet for short content, full-screen for complex; web uses centered dialog. Same border/shadow/type on the sheet chrome. |
+| Toast | `components/nb/NBToast.tsx` ✅ | `components/ui/toast.tsx` | Visual parity. Position differs (mobile bottom / web top-right). |
 | DataTable | — | `components/ui/data-table.tsx` | **Web only.** Mobile uses vertical cards. |
 | BottomNav | `components/nav/BottomTabs.tsx` | — | **Mobile only.** |
 | Sidebar | — | `components/layout/Sidebar.tsx` | **Web only.** |
@@ -497,7 +497,7 @@ Full layout details: [responsive-design.md](./responsive-design.md).
 |-------|-------------|-------|
 | Token pipeline + ESLint gates | Phase 3 M1-R sub-phase **3-R1** | `scripts/build-tokens.ts` generator + `tokens-verify` CI + lint rules. |
 | Token value drift fixes + brand-font bundling | Phase 3 M1-R sub-phase **3-R2** | Hover/secondary/success/info corrected; type 28/22/18; opaque hard-edge shadows; Space Grotesk + Inter + JetBrains Mono loaded. |
-| NB primitives (Button, Card, Badge, TextInput, Text, Modal, Toast) + new `NBModal`/`NBToast`/`NBText` | Phase 3 M1-R sub-phase **3-R3** | Both platforms; visual regression baselines committed at 375 / 768 / 1280 px. |
+| NB primitives (Button, Card, Badge, TextInput, Text, Modal, Toast) + new `NBModal`/`NBToast`/`NBText` | Phase 3 M1-R sub-phase **3-R3** ✅ shipped 2026-04-25 | `NBText` (10 variants, Space Grotesk/Inter/JetBrains Mono), `NBModal` (sheet + fullscreen), `NBToast` (4 levels, NB chrome). Canary: LoginScreen (NBText + NBToast), ProfileScreen (NBModal). Visual regression deferred to Phase 4 (unit-only test scope). |
 | Web PWA shell + mobile-web responsive scaffolding | Phase 3 M1-R sub-phase **3-R4** | Manifest, SW, install banner, offline shell, push, `ResponsiveShell`, `(kecamatan)` layout. |
 | **Full sweep** of every non-rewritten screen (login, attendance, overtime, profile, settings, users, areas, rayons, schedules, reports, audit logs, dashboard home + their mobile-web layouts) | Phase 3 M1-R sub-phase **3-R5** | **Promoted from prior Phase 4 backlog.** End-state: no screen on old tokens. |
 | Monitoring screens | Phase 3 sub-phases 3-4 / 3-5 | Rewritten on new tokens as part of functional rewrite. |

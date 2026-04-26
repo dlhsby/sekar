@@ -146,6 +146,24 @@ export class Activity {
   @Column({ type: 'text', nullable: true })
   rejection_reason: string | null;
 
+  @Column({ type: 'text', nullable: true, name: 'case_type' })
+  caseType: string | null;
+
+  @Column({ type: 'jsonb', default: {}, name: 'custom_fields' })
+  customFields: Record<string, unknown>;
+
+  @Column({ type: 'text', nullable: true, name: 'photo_before_url' })
+  photoBeforeUrl: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'photo_after_url' })
+  photoAfterUrl: string | null;
+
+  @Column({ type: 'text', nullable: true, unique: true, name: 'reference_code' })
+  referenceCode: string | null;
+
+  @Column({ type: 'uuid', nullable: true, name: 'pruning_request_id' })
+  pruningRequestId: string | null;
+
   @ApiProperty({ description: 'Activity creation timestamp' })
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;

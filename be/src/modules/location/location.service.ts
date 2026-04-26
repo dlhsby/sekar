@@ -7,6 +7,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { RedisService } from '../../common/services/redis.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between } from 'typeorm';
 import { LocationLog } from './entities/location-log.entity';
@@ -34,6 +35,8 @@ export class LocationService {
     @Optional()
     @Inject(forwardRef(() => StatusCalculatorService))
     private readonly statusCalculator: StatusCalculatorService | undefined,
+    @Optional()
+    private readonly redisService: RedisService | undefined,
   ) {}
 
   /**
@@ -88,25 +91,42 @@ export class LocationService {
 
       this.logger.log(`Successfully inserted ${locationEntities.length} location logs`);
 
-      if (this.statusCalculator && savedLogs?.length > 0) {
-        const latestLog = savedLogs.reduce((latest, log) =>
-          log.logged_at > latest.logged_at ? log : latest,
-        );
-        await this.statusCalculator
-          .onLocationPing(
-            userId,
-            parseFloat(latestLog.gps_lat.toString()),
-            parseFloat(latestLog.gps_lng.toString()),
-            latestLog.accuracy_meters ? parseFloat(latestLog.accuracy_meters.toString()) : null,
-            latestLog.battery_level ?? null,
-            latestLog.logged_at,
-          )
-          .catch((err) =>
-            this.logger.error(
-              `StatusCalculator.onLocationPing failed for user ${userId}: ${err.message}`,
-              err.stack,
-            ),
-          );
+      if (savedLogs?.length > 0) {
+        if (this.redisService) {
+          // Phase 3: queue all pings to Redis Stream for async processing
+          for (const log of savedLogs) {
+            await this.redisService
+              .streamAdd('location:pings', {
+                userId,
+                lat: log.gps_lat.toString(),
+                lng: log.gps_lng.toString(),
+                accuracy: log.accuracy_meters?.toString() ?? 'null',
+                battery: log.battery_level?.toString() ?? 'null',
+                loggedAt: log.logged_at.toISOString(),
+              })
+              .catch((e) => this.logger.warn(`Stream add failed for user ${userId}: ${e.message}`));
+          }
+        } else if (this.statusCalculator) {
+          // Fallback: process only the latest ping synchronously (no Redis)
+          const latestLog = savedLogs.reduce((a, b) => (a.logged_at > b.logged_at ? a : b));
+          await this.statusCalculator
+            .onLocationPing(
+              userId,
+              parseFloat(latestLog.gps_lat.toString()),
+              parseFloat(latestLog.gps_lng.toString()),
+              latestLog.accuracy_meters
+                ? parseFloat(latestLog.accuracy_meters.toString())
+                : null,
+              latestLog.battery_level ?? null,
+              latestLog.logged_at,
+            )
+            .catch((err) =>
+              this.logger.error(
+                `StatusCalculator.onLocationPing failed for user ${userId}: ${err.message}`,
+                err.stack,
+              ),
+            );
+        }
       }
 
       return { count: locationEntities.length };

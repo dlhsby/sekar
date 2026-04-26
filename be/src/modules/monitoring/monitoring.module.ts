@@ -24,6 +24,9 @@ import { MonitoringSchedulerService } from './services/monitoring-scheduler.serv
 import { DayTypeService } from './services/day-type.service';
 import { RayonBoundaryService } from './services/rayon-boundary.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { StatusProjectorService } from './services/status-projector.service';
+import { StaffingDebouncerService } from './services/staffing-debouncer.service';
+import { StaleStatusSweeperService } from './services/stale-status-sweeper.service';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { EventsModule } from '../../gateways/events.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
@@ -61,6 +64,9 @@ import { UserAreasModule } from '../user-areas/user-areas.module';
     DayTypeService,
     RayonBoundaryService,
     MonitoringReassignService,
+    StatusProjectorService,
+    StaffingDebouncerService,
+    StaleStatusSweeperService,
   ],
   exports: [
     MonitoringService,
@@ -71,6 +77,7 @@ import { UserAreasModule } from '../user-areas/user-areas.module';
     StatusCalculatorService,
     DayTypeService,
     RayonBoundaryService,
+    StaffingDebouncerService,
   ],
 })
 export class MonitoringModule {}

@@ -7,7 +7,6 @@
 import React, { useMemo } from 'react';
 import {
   View,
-  Text,
   Modal,
   StyleSheet,
   Pressable,
@@ -16,10 +15,10 @@ import {
 } from 'react-native';
 import MapView, { Circle, Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbShadows,
   nbBorderRadius,
@@ -90,8 +89,9 @@ function fitRegion(points: { latitude: number; longitude: number }[]): Region {
   };
 }
 
-const AREA_FILL = withAlpha('#1D4ED8', 0.12);
-const AREA_STROKE = '#1D4ED8';
+// Map area boundary overlay — blue-700 tone; closest token is requestUnderReview (#2563EB)
+const AREA_FILL = withAlpha(nbColors.requestUnderReview, 0.12);
+const AREA_STROKE = nbColors.requestUnderReview;
 
 export function LocationMapModal({ visible, onClose, location, area }: LocationMapModalProps) {
   const hasCoords = location.latitude !== null && location.longitude !== null;
@@ -155,8 +155,12 @@ export function LocationMapModal({ visible, onClose, location, area }: LocationM
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>Lokasi Anda</Text>
-              {area?.name && <Text style={styles.subtitle}>{area.name}</Text>}
+              <NBText variant="h2" color="black">Lokasi Anda</NBText>
+              {area?.name && (
+                <NBText variant="body-sm" color="gray600" style={styles.subtitleTop}>
+                  {area.name}
+                </NBText>
+              )}
             </View>
             <TouchableOpacity
               onPress={onClose}
@@ -216,9 +220,9 @@ export function LocationMapModal({ visible, onClose, location, area }: LocationM
                 <MaterialCommunityIcons
                   name="map-marker-off"
                   size={48}
-                  color={nbColors.gray['400']}
+                  color={nbColors.gray400}
                 />
-                <Text style={styles.noLocationText}>Lokasi tidak tersedia</Text>
+                <NBText variant="body" color="gray500">Lokasi tidak tersedia</NBText>
               </View>
             )}
           </View>
@@ -227,18 +231,20 @@ export function LocationMapModal({ visible, onClose, location, area }: LocationM
           <View style={styles.infoStrip}>
             {hasCoords ? (
               <>
-                <Text
-                  style={styles.coordsText}
+                <NBText
+                  variant="mono-sm"
+                  color="black"
+                  style={styles.coordsFont}
                   accessibilityLabel={`Koordinat: ${location.latitude!.toFixed(6)}, ${location.longitude!.toFixed(6)}`}
                 >
                   {location.latitude!.toFixed(6)}, {location.longitude!.toFixed(6)}
-                </Text>
+                </NBText>
 
                 <View style={styles.infoRow}>
                   {location.accuracy !== null && (
-                    <Text style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}>
+                    <NBText variant="body-sm" style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}>
                       {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
-                    </Text>
+                    </NBText>
                   )}
                   <View
                     style={[
@@ -246,24 +252,25 @@ export function LocationMapModal({ visible, onClose, location, area }: LocationM
                       location.isWithinArea ? styles.areaBadgeInside : styles.areaBadgeOutside,
                     ]}
                   >
-                    <Text
+                    <NBText
+                      variant="caption"
                       style={[
-                        styles.areaBadgeText,
+                        styles.areaBadgeTextBold,
                         location.isWithinArea
                           ? styles.areaBadgeTextInside
                           : styles.areaBadgeTextOutside,
                       ]}
                     >
                       {location.isWithinArea ? 'Di dalam area kerja' : 'Di luar area kerja'}
-                    </Text>
+                    </NBText>
                   </View>
                 </View>
-                <Text style={styles.updatedAtText}>
+                <NBText variant="caption" color="gray500" style={styles.updatedTopMargin}>
                   {formatUpdatedAt(location.updatedAt)}
-                </Text>
+                </NBText>
               </>
             ) : (
-              <Text style={styles.noLocationText}>GPS tidak aktif atau belum tersedia</Text>
+              <NBText variant="body" color="gray500">GPS tidak aktif atau belum tersedia</NBText>
             )}
           </View>
         </View>
@@ -300,15 +307,7 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
   },
-  title: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
-  subtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    fontWeight: nbTypography.fontWeight.medium,
+  subtitleTop: {
     marginTop: 2,
   },
   closeButton: {
@@ -330,22 +329,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: nbColors.gray['100'],
+    backgroundColor: nbColors.gray100,
     gap: nbSpacing.sm,
-  },
-  noLocationText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['500'],
-    fontWeight: nbTypography.fontWeight.medium,
   },
   infoStrip: {
     padding: nbSpacing.md,
     gap: nbSpacing.xs,
   },
-  coordsText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+  coordsFont: {
+    // override mono-sm with platform monospace fallback
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   infoRow: {
@@ -355,9 +347,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.xs,
   },
   accuracyText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.gray700,
   },
   accuracyWarning: {
     color: nbColors.warning,
@@ -369,27 +359,23 @@ const styles = StyleSheet.create({
     borderRadius: nbBorderRadius.base,
   },
   areaBadgeInside: {
-    backgroundColor: withAlpha('#15803D', 0.12),
-    borderColor: '#15803D',
+    backgroundColor: withAlpha(nbColors.successDark, 0.12),
+    borderColor: nbColors.successDark,
   },
   areaBadgeOutside: {
-    backgroundColor: withAlpha('#D97706', 0.12),
-    borderColor: '#D97706',
+    backgroundColor: withAlpha(nbColors.statusIdle, 0.12),
+    borderColor: nbColors.statusIdle,
   },
-  areaBadgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
+  areaBadgeTextBold: {
+    fontWeight: '700',
   },
   areaBadgeTextInside: {
-    color: '#15803D',
+    color: nbColors.successDark,
   },
   areaBadgeTextOutside: {
-    color: '#D97706',
+    color: nbColors.statusIdle,
   },
-  updatedAtText: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
-    fontWeight: nbTypography.fontWeight.regular,
+  updatedTopMargin: {
     marginTop: nbSpacing.xs,
   },
 });

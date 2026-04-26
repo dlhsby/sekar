@@ -393,7 +393,7 @@ export function PermissionRequestModal({
               onPress={handleSkip}
               disabled={isRequesting}
               fullWidth
-              variant="outline"
+              variant="ghost"
               style={styles.skipButton}
             />
           )}
