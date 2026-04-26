@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, type TextStyle, type TextProps } from 'react-native';
+import { Platform, Text, type TextStyle, type TextProps } from 'react-native';
 import { nbType, nbColors } from '../../constants/nbTokens';
 
 export type NBTextVariant =
@@ -51,10 +51,48 @@ const variantKey: Record<NBTextVariant, keyof typeof nbType> = {
   'mono-sm': 'monoSm',
 };
 
-// Strip CSS font-family stack to RN-compatible name: "'Inter', sans-serif" → "Inter"
-function rnFontFamily(cssFontStack: string): string {
+// On Android, React Native selects fonts by file name (PostScript name), not by
+// the fontWeight property. We ship static per-weight TTF files so we must return
+// the exact file name (without .ttf) for the requested weight.
+// On iOS the system resolves weights from the font's internal metadata automatically.
+const ANDROID_FONT_FILES: Record<string, Record<string, string>> = {
+  'Space Grotesk': {
+    '300': 'SpaceGrotesk-Regular',
+    '400': 'SpaceGrotesk-Regular',
+    '500': 'SpaceGrotesk-Medium',
+    '600': 'SpaceGrotesk-Bold',   // no SemiBold in v2.0.0 — Bold is closest
+    '700': 'SpaceGrotesk-Bold',
+    '800': 'SpaceGrotesk-Bold',   // no ExtraBold in v2.0.0 — Bold is closest
+    '900': 'SpaceGrotesk-Bold',
+  },
+  'Inter': {
+    '300': 'Inter-Regular',
+    '400': 'Inter-Regular',
+    '500': 'Inter-Medium',
+    '600': 'Inter-SemiBold',
+    '700': 'Inter-Bold',
+    '800': 'Inter-Bold',
+    '900': 'Inter-Bold',
+  },
+  'JetBrains Mono': {
+    '400': 'JetBrainsMono-Regular',
+    '500': 'JetBrainsMono-Medium',
+    '600': 'JetBrainsMono-SemiBold',
+    '700': 'JetBrainsMono-SemiBold',
+    '800': 'JetBrainsMono-SemiBold',
+    '900': 'JetBrainsMono-SemiBold',
+  },
+};
+
+// Strip CSS font-family stack to first family name: "'Inter', sans-serif" → "Inter"
+// On Android, also resolves to the weight-specific PostScript name.
+function rnFontFamily(cssFontStack: string, fontWeight?: string): string {
   const match = cssFontStack.match(/['"]?([^'",]+)['"]?/);
-  return match?.[1]?.trim() ?? 'System';
+  const family = match?.[1]?.trim() ?? 'System';
+  if (Platform.OS === 'android' && fontWeight) {
+    return ANDROID_FONT_FILES[family]?.[fontWeight] ?? family;
+  }
+  return family;
 }
 
 export function NBText({
@@ -70,7 +108,7 @@ export function NBText({
   const colorValue = nbColors[color] as string;
 
   const computedStyle: TextStyle = {
-    fontFamily: rnFontFamily(typeToken.fontFamily),
+    fontFamily: rnFontFamily(typeToken.fontFamily, typeToken.fontWeight),
     fontSize: typeToken.fontSize,
     fontWeight: typeToken.fontWeight as TextStyle['fontWeight'],
     lineHeight: typeToken.lineHeight,
