@@ -460,6 +460,9 @@ describe('OvertimeSubmitScreen', () => {
       const { getByText } = await renderScreen();
 
       await act(async () => {
+        fireEvent.press(getByText('SELFIE MULAI (OPSIONAL)'));
+      });
+      await act(async () => {
         fireEvent.press(getByText('Ambil Selfie'));
       });
 
@@ -473,6 +476,9 @@ describe('OvertimeSubmitScreen', () => {
       permissionsMock.requestCameraPermission.mockResolvedValue({ granted: false });
 
       const { getByText } = await renderScreen();
+      await act(async () => {
+        fireEvent.press(getByText('SELFIE MULAI (OPSIONAL)'));
+      });
       await act(async () => {
         fireEvent.press(getByText('Ambil Selfie'));
       });

@@ -163,6 +163,8 @@ export const OvertimeSubmitScreen: React.FC<
 
   const [startSelfie, setStartSelfie] = useState<Photo | null>(null);
   const [endSelfie, setEndSelfie] = useState<Photo | null>(null);
+  const [isStartSelfieExpanded, setIsStartSelfieExpanded] = useState(false);
+  const [isEndSelfieExpanded, setIsEndSelfieExpanded] = useState(false);
 
   const makeCaptureHandler = useCallback(
     (setSelfie: (photo: Photo) => void) => async () => {
@@ -552,43 +554,55 @@ export const OvertimeSubmitScreen: React.FC<
                 style={styles.card}
               />
 
-              {/* Selfie (optional) */}
+              {/* Selfie (optional) - Collapsible, default closed */}
               <NBCard style={styles.card}>
-                <NBCardHeader>
-                  <Text style={styles.sectionTitle}>SELFIE MULAI (OPSIONAL)</Text>
-                </NBCardHeader>
-                <NBCardContent>
-                  {startSelfie ? (
-                    <View>
-                      <TouchableOpacity
-                        onPress={() => setPreviewUri(startSelfie.uri)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Lihat selfie penuh"
-                        accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
-                      >
-                        <Image source={{ uri: startSelfie.uri }} style={styles.selfieImage} />
-                      </TouchableOpacity>
-                      <NBButton
-                        title="Ambil Ulang"
-                        onPress={handleCaptureStartSelfie}
-                        variant="secondary"
-                        fullWidth
-                      />
+                <TouchableOpacity
+                  onPress={() => setIsStartSelfieExpanded(v => !v)}
+                  accessibilityRole="button"
+                  accessibilityLabel={isStartSelfieExpanded ? 'Sembunyikan selfie mulai' : 'Tampilkan selfie mulai'}
+                  accessibilityState={{ expanded: isStartSelfieExpanded }}
+                >
+                  <NBCardHeader>
+                    <View style={styles.collapsibleHeaderRow}>
+                      <Text style={styles.sectionTitle}>SELFIE MULAI (OPSIONAL)</Text>
+                      <Text style={styles.chevron}>{isStartSelfieExpanded ? '▼' : '▶'}</Text>
                     </View>
-                  ) : (
-                    <View>
-                      <Text style={styles.selfiePrompt}>
-                        Foto selfie untuk verifikasi mulai lembur (tidak wajib)
-                      </Text>
-                      <NBButton
-                        title="Ambil Selfie"
-                        onPress={handleCaptureStartSelfie}
-                        variant="secondary"
-                        fullWidth
-                      />
-                    </View>
-                  )}
-                </NBCardContent>
+                  </NBCardHeader>
+                </TouchableOpacity>
+                {isStartSelfieExpanded && (
+                  <NBCardContent>
+                    {startSelfie ? (
+                      <View>
+                        <TouchableOpacity
+                          onPress={() => setPreviewUri(startSelfie.uri)}
+                          accessibilityRole="button"
+                          accessibilityLabel="Lihat selfie penuh"
+                          accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                        >
+                          <Image source={{ uri: startSelfie.uri }} style={styles.selfieImage} />
+                        </TouchableOpacity>
+                        <NBButton
+                          title="Ambil Ulang"
+                          onPress={handleCaptureStartSelfie}
+                          variant="secondary"
+                          fullWidth
+                        />
+                      </View>
+                    ) : (
+                      <View>
+                        <Text style={styles.selfiePrompt}>
+                          Foto selfie untuk verifikasi mulai lembur (tidak wajib)
+                        </Text>
+                        <NBButton
+                          title="Ambil Selfie"
+                          onPress={handleCaptureStartSelfie}
+                          variant="secondary"
+                          fullWidth
+                        />
+                      </View>
+                    )}
+                  </NBCardContent>
+                )}
               </NBCard>
 
               {/* Lokasi GPS */}
@@ -714,43 +728,55 @@ export const OvertimeSubmitScreen: React.FC<
                 </NBCardContent>
               </NBCard>
 
-              {/* Selfie (optional for end) */}
+              {/* Selfie (optional for end) - Collapsible, default closed */}
               <NBCard style={styles.card}>
-                <NBCardHeader>
-                  <Text style={styles.sectionTitle}>SELFIE SELESAI (OPSIONAL)</Text>
-                </NBCardHeader>
-                <NBCardContent>
-                  {endSelfie ? (
-                    <View>
-                      <TouchableOpacity
-                        onPress={() => setPreviewUri(endSelfie.uri)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Lihat selfie penuh"
-                        accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
-                      >
-                        <Image source={{ uri: endSelfie.uri }} style={styles.selfieImage} />
-                      </TouchableOpacity>
-                      <NBButton
-                        title="Ambil Ulang"
-                        onPress={handleCaptureEndSelfie}
-                        variant="secondary"
-                        fullWidth
-                      />
+                <TouchableOpacity
+                  onPress={() => setIsEndSelfieExpanded(v => !v)}
+                  accessibilityRole="button"
+                  accessibilityLabel={isEndSelfieExpanded ? 'Sembunyikan selfie selesai' : 'Tampilkan selfie selesai'}
+                  accessibilityState={{ expanded: isEndSelfieExpanded }}
+                >
+                  <NBCardHeader>
+                    <View style={styles.collapsibleHeaderRow}>
+                      <Text style={styles.sectionTitle}>SELFIE SELESAI (OPSIONAL)</Text>
+                      <Text style={styles.chevron}>{isEndSelfieExpanded ? '▼' : '▶'}</Text>
                     </View>
-                  ) : (
-                    <View>
-                      <Text style={styles.selfiePrompt}>
-                        Foto selfie untuk verifikasi selesai (tidak wajib)
-                      </Text>
-                      <NBButton
-                        title="Ambil Selfie"
-                        onPress={handleCaptureEndSelfie}
-                        variant="secondary"
-                        fullWidth
-                      />
-                    </View>
-                  )}
-                </NBCardContent>
+                  </NBCardHeader>
+                </TouchableOpacity>
+                {isEndSelfieExpanded && (
+                  <NBCardContent>
+                    {endSelfie ? (
+                      <View>
+                        <TouchableOpacity
+                          onPress={() => setPreviewUri(endSelfie.uri)}
+                          accessibilityRole="button"
+                          accessibilityLabel="Lihat selfie penuh"
+                          accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                        >
+                          <Image source={{ uri: endSelfie.uri }} style={styles.selfieImage} />
+                        </TouchableOpacity>
+                        <NBButton
+                          title="Ambil Ulang"
+                          onPress={handleCaptureEndSelfie}
+                          variant="secondary"
+                          fullWidth
+                        />
+                      </View>
+                    ) : (
+                      <View>
+                        <Text style={styles.selfiePrompt}>
+                          Foto selfie untuk verifikasi selesai (tidak wajib)
+                        </Text>
+                        <NBButton
+                          title="Ambil Selfie"
+                          onPress={handleCaptureEndSelfie}
+                          variant="secondary"
+                          fullWidth
+                        />
+                      </View>
+                    )}
+                  </NBCardContent>
+                )}
               </NBCard>
 
               {/* Lokasi GPS */}
@@ -852,6 +878,17 @@ const styles = StyleSheet.create({
     color: nbColors.black,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  collapsibleHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flex: 1,
+  },
+  chevron: {
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.black,
+    marginLeft: nbSpacing.sm,
   },
   requiredAsterisk: {
     color: nbColors.danger,

@@ -27,14 +27,17 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'text-summary', 'lcov', 'html'],
 
-  // Coverage thresholds - MVP baseline, increase as coverage improves
-  // Current: ~45% statements, ~45% branches, ~43% functions, ~45% lines
+  // Coverage thresholds — lock in current floor (Apr 27, 2026) to prevent regression.
+  // Actual coverage as of last full run: 77.07 / 70.01 / 72.44 / 78.86.
+  // Thresholds set 1pp below floor to absorb noise from new untested files; lift them
+  // when adding tests for any of the still-uncovered Phase 3 surfaces (monitoring v2
+  // slice, ClusteredUserMarkers, AreaStatusOverlay, MonitoringToggleSheet).
   coverageThreshold: {
     global: {
-      statements: 30,
-      branches: 30,
-      functions: 30,
-      lines: 30,
+      statements: 75,
+      branches: 68,
+      functions: 70,
+      lines: 76,
     },
     // PermissionRequestModal has defensive code for edge cases that are unreachable in normal operation
     // Lines 149, 181, 227-239, 255-256 are defensive code for impossible edge cases:

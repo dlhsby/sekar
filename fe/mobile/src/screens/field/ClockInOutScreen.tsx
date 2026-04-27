@@ -34,6 +34,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const navigation = useNavigation<MainTabScreenProps<'ClockInOut'>['navigation']>();
   const [isAreaExpanded, setIsAreaExpanded] = useState(false);
   const [isLocationExpanded, setIsLocationExpanded] = useState(true);
+  const [isSelfieExpanded, setIsSelfieExpanded] = useState(false);
   const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
 
   const {
@@ -189,26 +190,42 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </NBCard>
           ) : null}
 
-          {/* Selfie Card (Clock In only) */}
+          {/* Selfie Card (Clock In only) - Collapsible, default closed */}
           {isClockIn && (
             <NBCard variant="elevated" style={styles.card}>
-              <Text style={styles.cardTitle}>Foto Selfie</Text>
-              {selfie ? (
-                <View>
-                  <TouchableOpacity
-                    onPress={() => setSelfiePreviewUri(selfie.uri)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Lihat selfie penuh"
-                    accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
-                  >
-                    <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
-                  </TouchableOpacity>
-                  <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+              <TouchableOpacity
+                style={styles.collapsibleHeader}
+                onPress={() => setIsSelfieExpanded(v => !v)}
+                accessibilityRole="button"
+                accessibilityLabel={isSelfieExpanded ? 'Sembunyikan foto selfie' : 'Tampilkan foto selfie'}
+                accessibilityState={{ expanded: isSelfieExpanded }}
+              >
+                <View style={styles.collapsibleHeaderLeft}>
+                  <Text style={styles.cardTitle}>Foto Selfie</Text>
+                  {selfie && <Text style={styles.areaAddress}>Selfie sudah diambil</Text>}
                 </View>
-              ) : (
-                <View>
-                  <Text style={styles.selfiePrompt}>Ambil selfie untuk verifikasi identitas</Text>
-                  <NBButton title="Ambil Selfie" onPress={handleCaptureSelfie} variant="primary" fullWidth />
+                <Text style={styles.chevron}>{isSelfieExpanded ? '▼' : '▶'}</Text>
+              </TouchableOpacity>
+              {isSelfieExpanded && (
+                <View style={styles.collapsibleBody}>
+                  {selfie ? (
+                    <View>
+                      <TouchableOpacity
+                        onPress={() => setSelfiePreviewUri(selfie.uri)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Lihat selfie penuh"
+                        accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                      >
+                        <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
+                      </TouchableOpacity>
+                      <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+                    </View>
+                  ) : (
+                    <View>
+                      <Text style={styles.selfiePrompt}>Ambil selfie untuk verifikasi identitas</Text>
+                      <NBButton title="Ambil Selfie" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+                    </View>
+                  )}
                 </View>
               )}
             </NBCard>

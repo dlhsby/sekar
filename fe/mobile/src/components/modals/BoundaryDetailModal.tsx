@@ -128,7 +128,7 @@ export function BoundaryDetailModal({
                   </NBText>
                 </View>
 
-                <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>Detail per Peran</NBText>
+                <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>Detail</NBText>
                 <View style={styles.staffingTable}>
                   <View style={styles.tableHeader}>
                     <NBText variant="caption" color="gray700" style={[styles.tableHeaderCell, styles.tableRoleCol]}>Peran</NBText>

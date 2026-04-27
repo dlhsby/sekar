@@ -489,9 +489,10 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Ambil Selfie')).toBeTruthy();
+        expect(getByText('Foto Selfie')).toBeTruthy();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
@@ -506,9 +507,10 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Ambil Selfie')).toBeTruthy();
+        expect(getByText('Foto Selfie')).toBeTruthy();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
@@ -523,9 +525,10 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Ambil Selfie')).toBeTruthy();
+        expect(getByText('Foto Selfie')).toBeTruthy();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
@@ -538,9 +541,10 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Ambil Selfie')).toBeTruthy();
+        expect(getByText('Foto Selfie')).toBeTruthy();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
@@ -567,6 +571,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       // Capture selfie
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
         expect(mediaService.capturePhoto).toHaveBeenCalled();
@@ -655,6 +660,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
         expect(mediaService.capturePhoto).toHaveBeenCalled();
@@ -859,9 +865,10 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Ambil Selfie')).toBeTruthy();
+        expect(getByText('Foto Selfie')).toBeTruthy();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
@@ -879,6 +886,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
         expect(mediaService.capturePhoto).toHaveBeenCalled();
@@ -912,6 +920,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
+      fireEvent.press(getByText('Foto Selfie'));
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
         expect(mediaService.capturePhoto).toHaveBeenCalled();
