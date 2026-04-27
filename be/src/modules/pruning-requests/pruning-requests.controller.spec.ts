@@ -59,6 +59,9 @@ describe('PruningRequestsController', () => {
     create: jest.fn(),
     findMine: jest.fn(),
     findById: jest.fn(),
+    review: jest.fn(),
+    convertToTask: jest.fn(),
+    findAll: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -143,7 +146,7 @@ describe('PruningRequestsController', () => {
       const requests: PruningRequest[] = [mockPruningRequest];
       service.findMine.mockResolvedValue(requests);
 
-      const result = await controller.findAll('true', '20', '0', mockStaffKecamatan);
+      const result = await controller.findAll('true', '20', '0', undefined, mockStaffKecamatan);
 
       expect(result).toEqual(requests);
       expect(service.findMine).toHaveBeenCalledWith(mockStaffKecamatan, 20, 0);
@@ -153,7 +156,7 @@ describe('PruningRequestsController', () => {
       const requests: PruningRequest[] = [mockPruningRequest];
       service.findMine.mockResolvedValue(requests);
 
-      const result = await controller.findAll('true', undefined, undefined, mockStaffKecamatan);
+      const result = await controller.findAll('true', undefined, undefined, undefined, mockStaffKecamatan);
 
       expect(result).toEqual(requests);
       expect(service.findMine).toHaveBeenCalledWith(mockStaffKecamatan, 20, 0);
@@ -163,7 +166,7 @@ describe('PruningRequestsController', () => {
       const requests: PruningRequest[] = [];
       service.findMine.mockResolvedValue(requests);
 
-      await controller.findAll('true', '50', '100', mockStaffKecamatan);
+      await controller.findAll('true', '50', '100', undefined, mockStaffKecamatan);
 
       expect(service.findMine).toHaveBeenCalledWith(
         mockStaffKecamatan,
@@ -174,71 +177,73 @@ describe('PruningRequestsController', () => {
 
     it('should reject invalid limit', async () => {
       await expect(
-        controller.findAll('true', 'invalid', '0', mockStaffKecamatan),
+        controller.findAll('true', 'invalid', '0', undefined, mockStaffKecamatan),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.findAll('true', 'invalid', '0', mockStaffKecamatan),
+        controller.findAll('true', 'invalid', '0', undefined, mockStaffKecamatan),
       ).rejects.toThrow('Invalid limit value');
     });
 
     it('should reject negative limit', async () => {
       await expect(
-        controller.findAll('true', '-1', '0', mockStaffKecamatan),
+        controller.findAll('true', '-1', '0', undefined, mockStaffKecamatan),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.findAll('true', '-1', '0', mockStaffKecamatan),
+        controller.findAll('true', '-1', '0', undefined, mockStaffKecamatan),
       ).rejects.toThrow('Invalid limit value');
     });
 
     it('should reject invalid offset', async () => {
       await expect(
-        controller.findAll('true', '20', 'invalid', mockStaffKecamatan),
+        controller.findAll('true', '20', 'invalid', undefined, mockStaffKecamatan),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.findAll('true', '20', 'invalid', mockStaffKecamatan),
+        controller.findAll('true', '20', 'invalid', undefined, mockStaffKecamatan),
       ).rejects.toThrow('Invalid offset value');
     });
 
     it('should reject negative offset', async () => {
       await expect(
-        controller.findAll('true', '20', '-1', mockStaffKecamatan),
+        controller.findAll('true', '20', '-1', undefined, mockStaffKecamatan),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.findAll('true', '20', '-1', mockStaffKecamatan),
+        controller.findAll('true', '20', '-1', undefined, mockStaffKecamatan),
       ).rejects.toThrow('Invalid offset value');
     });
 
-    it('should reject mine=false (not yet supported)', async () => {
-      await expect(
-        controller.findAll('false', undefined, undefined, mockStaffKecamatan),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        controller.findAll('false', undefined, undefined, mockStaffKecamatan),
-      ).rejects.toThrow(
-        'Filtering by rayon_id and status is not yet supported',
-      );
+    it('should call findAll when mine=false', async () => {
+      service.findAll.mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+      });
+
+      await controller.findAll('false', undefined, undefined, {}, mockStaffKecamatan);
+
+      expect(service.findAll).toHaveBeenCalled();
     });
 
-    it('should reject no filter specified', async () => {
-      await expect(
-        controller.findAll(undefined, undefined, undefined, mockStaffKecamatan),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        controller.findAll(undefined, undefined, undefined, mockStaffKecamatan),
-      ).rejects.toThrow(
-        'Please specify mine=true to get your submissions',
-      );
+    it('should call findAll when no filter specified', async () => {
+      service.findAll.mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+      });
+
+      await controller.findAll(undefined, undefined, undefined, {}, mockStaffKecamatan);
+
+      expect(service.findAll).toHaveBeenCalled();
     });
 
     it('should reject invalid mine value', async () => {
       await expect(
-        controller.findAll('maybe', undefined, undefined, mockStaffKecamatan),
+        controller.findAll('maybe', undefined, undefined, {}, mockStaffKecamatan),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.findAll('maybe', undefined, undefined, mockStaffKecamatan),
-      ).rejects.toThrow(
-        'Filtering by rayon_id and status is not yet supported',
-      );
+        controller.findAll('maybe', undefined, undefined, {}, mockStaffKecamatan),
+      ).rejects.toThrow('mine parameter must be true, false, or omitted');
     });
   });
 
@@ -260,6 +265,224 @@ describe('PruningRequestsController', () => {
       await expect(
         controller.findOne(mockRequestId, mockStaffKecamatan),
       ).rejects.toThrow();
+    });
+  });
+
+  describe('review', () => {
+    it('should approve a pruning request', async () => {
+      const dto = { decision: 'approve' as const, reviewNotes: 'Approved' };
+      const updated: PruningRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+        reviewedBy: mockUserId,
+        reviewedAt: new Date(),
+        reviewNotes: 'Approved',
+      };
+      service.review.mockResolvedValue(updated);
+
+      const result = await controller.review(mockRequestId, dto, mockStaffKecamatan);
+
+      expect(result.status).toBe('approved');
+      expect(service.review).toHaveBeenCalledWith(mockRequestId, dto, mockStaffKecamatan);
+    });
+
+    it('should reject a pruning request', async () => {
+      const dto = { decision: 'reject' as const, reviewNotes: 'Not eligible' };
+      const updated: PruningRequest = {
+        ...mockPruningRequest,
+        status: 'rejected',
+        reviewedBy: mockUserId,
+        reviewedAt: new Date(),
+        reviewNotes: 'Not eligible',
+      };
+      service.review.mockResolvedValue(updated);
+
+      const result = await controller.review(mockRequestId, dto, mockStaffKecamatan);
+
+      expect(result.status).toBe('rejected');
+      expect(service.review).toHaveBeenCalled();
+    });
+
+    it('should pass through service exceptions', async () => {
+      const dto = { decision: 'approve' as const };
+      service.review.mockRejectedValue(
+        new Error('Not reviewable'),
+      );
+
+      await expect(
+        controller.review(mockRequestId, dto, mockStaffKecamatan),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('convertToTask', () => {
+    it('should convert approved request to task', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+        units: 15,
+      };
+
+      const mockTask = {
+        id: 'task-id',
+        title: `Pruning Request ${mockPruningRequest.referenceCode}`,
+      };
+
+      const updated: PruningRequest = {
+        ...mockPruningRequest,
+        status: 'converted',
+        convertedTaskId: 'task-id',
+      };
+
+      service.convertToTask.mockResolvedValue({
+        request: updated,
+        task: mockTask as any,
+      });
+
+      const result = await controller.convertToTask(
+        mockRequestId,
+        dto,
+        mockStaffKecamatan,
+      );
+
+      expect(result.request.status).toBe('converted');
+      expect(result.task.id).toBe('task-id');
+      expect(service.convertToTask).toHaveBeenCalledWith(
+        mockRequestId,
+        dto,
+        mockStaffKecamatan,
+      );
+    });
+
+    it('should return existing task if already converted (idempotent)', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      const existingTask = { id: 'existing-task-id' };
+      const request: PruningRequest = {
+        ...mockPruningRequest,
+        status: 'converted',
+        convertedTaskId: 'existing-task-id',
+      };
+
+      service.convertToTask.mockResolvedValue({
+        request,
+        task: existingTask as any,
+      });
+
+      const result = await controller.convertToTask(
+        mockRequestId,
+        dto,
+        mockStaffKecamatan,
+      );
+
+      expect(result.task.id).toBe('existing-task-id');
+    });
+
+    it('should pass through service exceptions', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      service.convertToTask.mockRejectedValue(
+        new Error('Cannot convert'),
+      );
+
+      await expect(
+        controller.convertToTask(mockRequestId, dto, mockStaffKecamatan),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('findAll (admin list)', () => {
+    it('should return paginated list of all requests', async () => {
+      const requests = [mockPruningRequest];
+      service.findAll.mockResolvedValue({
+        items: requests,
+        total: 1,
+        page: 1,
+        limit: 20,
+      });
+
+      const result = await controller.findAll(
+        undefined,
+        undefined,
+        undefined,
+        {},
+        mockStaffKecamatan,
+      );
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(service.findAll).toHaveBeenCalled();
+    });
+
+    it('should filter by status', async () => {
+      const query = { status: 'approved', page: 1, limit: 20 };
+      service.findAll.mockResolvedValue({
+        items: [mockPruningRequest],
+        total: 1,
+        page: 1,
+        limit: 20,
+      });
+
+      await controller.findAll(
+        undefined,
+        undefined,
+        undefined,
+        query,
+        mockStaffKecamatan,
+      );
+
+      expect(service.findAll).toHaveBeenCalledWith(
+        mockStaffKecamatan,
+        expect.objectContaining({ status: 'approved' }),
+      );
+    });
+
+    it('should apply pagination', async () => {
+      const query = { page: 2, limit: 10 };
+      service.findAll.mockResolvedValue({
+        items: [],
+        total: 100,
+        page: 2,
+        limit: 10,
+      });
+
+      const result = await controller.findAll(
+        undefined,
+        undefined,
+        undefined,
+        query,
+        mockStaffKecamatan,
+      );
+
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(10);
+    });
+
+    it('should reject invalid mine parameter', async () => {
+      await expect(
+        controller.findAll(
+          'invalid',
+          undefined,
+          undefined,
+          {},
+          mockStaffKecamatan,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

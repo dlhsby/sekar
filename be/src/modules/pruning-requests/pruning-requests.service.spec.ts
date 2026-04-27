@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PruningRequestsService } from './pruning-requests.service';
 import { PruningRequest } from './entities/pruning-request.entity';
@@ -122,10 +123,26 @@ describe('PruningRequestsService', () => {
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockUserRepository = {
     findOne: jest.fn(),
+  };
+
+  const mockServiceCapacityService = {
+    bookAtomic: jest.fn(),
+    releaseAtomic: jest.fn(),
+  };
+
+  const mockTaskRepository = {
+    create: jest.fn(),
+    save: jest.fn(),
+    findOne: jest.fn(),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -139,6 +156,19 @@ describe('PruningRequestsService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,
+        },
+        {
+          provide: getRepositoryToken(require('../tasks/entities/task.entity').Task),
+          useValue: mockTaskRepository,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+        {
+          provide: require('../service-capacity/service-capacity.service')
+            .ServiceCapacityService,
+          useValue: mockServiceCapacityService,
         },
       ],
     }).compile();
@@ -370,6 +400,462 @@ describe('PruningRequestsService', () => {
       await expect(
         service.findById(id, mockStaffKecamatan),
       ).rejects.toThrow(`Pruning request with ID ${id} not found`);
+    });
+  });
+
+  describe('review', () => {
+    it('should approve a submitted request', async () => {
+      const dto = { decision: 'approve' as const, reviewNotes: 'Approved' };
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
+      mockPruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        status: 'approved',
+        reviewedBy: mockAdminId,
+        reviewedAt: expect.any(Date),
+        reviewNotes: 'Approved',
+      });
+
+      const result = await service.review(mockRequestId, dto, mockAdminData);
+
+      expect(result.status).toBe('approved');
+      expect(result.reviewedBy).toBe(mockAdminId);
+      expect(mockPruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('should reject a submitted request', async () => {
+      const dto = {
+        decision: 'reject' as const,
+        reviewNotes: 'Does not meet criteria',
+      };
+      const submittedRequest = {
+        ...mockPruningRequest,
+        status: 'submitted',
+      } as PruningRequest;
+      mockPruningRequestRepository.findOne.mockResolvedValue(submittedRequest);
+      mockPruningRequestRepository.save.mockResolvedValue({
+        ...submittedRequest,
+        status: 'rejected',
+        reviewedBy: mockAdminId,
+        reviewedAt: expect.any(Date),
+        reviewNotes: 'Does not meet criteria',
+      });
+
+      const result = await service.review(mockRequestId, dto, mockAdminData);
+
+      expect(result.status).toBe('rejected');
+      expect(mockPruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('should deny admin_data review access for mismatched rayon', async () => {
+      const dto = { decision: 'approve' as const };
+      const mismatchedRequest = {
+        ...mockPruningRequest,
+        rayonId: 'different-rayon-id',
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(mismatchedRequest);
+
+      await expect(
+        service.review(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should reject review of already-approved request (conflict)', async () => {
+      const dto = { decision: 'reject' as const };
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
+
+      await expect(
+        service.review(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should reject review of non-existent request', async () => {
+      const dto = { decision: 'approve' as const };
+      mockPruningRequestRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.review(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('convertToTask', () => {
+    it('should convert approved request to task (idempotent)', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+        units: 15,
+      };
+
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+        rayonId: mockRayonId,
+      };
+
+      const mockTask = {
+        id: 'task-id',
+        title: `Pruning Request ${approvedRequest.referenceCode}`,
+      };
+
+      mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
+      mockServiceCapacityService.bookAtomic.mockResolvedValue({
+        id: 'capacity-id',
+      });
+      mockDataSource.transaction.mockImplementation(async (cb) => {
+        const mockEntityManager = {
+          create: jest.fn().mockReturnValue(mockTask),
+          save: jest.fn().mockImplementation((entity) => {
+            // Return the entity with updated status if it's a request
+            if (entity.referenceCode) {
+              return Promise.resolve({
+                ...entity,
+                status: 'converted',
+                convertedTaskId: 'task-id',
+              });
+            }
+            return Promise.resolve(mockTask);
+          }),
+        };
+        return cb(mockEntityManager);
+      });
+
+      const result = await service.convertToTask(mockRequestId, dto, mockAdminData);
+
+      expect(result.request.status).toBe('converted');
+      expect(mockServiceCapacityService.bookAtomic).toHaveBeenCalledWith(
+        expect.objectContaining({
+          serviceType: 'pruning',
+        }),
+      );
+    });
+
+    it('should return existing task if already converted (idempotent)', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      const existingTask = { id: 'existing-task-id' };
+      const requestWithTask = {
+        ...mockPruningRequest,
+        status: 'approved',
+        convertedTaskId: 'existing-task-id',
+      };
+
+      mockPruningRequestRepository.findOne.mockResolvedValue(requestWithTask);
+      mockTaskRepository.findOne.mockResolvedValue(existingTask);
+
+      const result = await service.convertToTask(mockRequestId, dto, mockAdminData);
+
+      expect(result.task.id).toBe('existing-task-id');
+      expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
+    });
+
+    it('should deny admin_data convert access for mismatched rayon', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      const mismatchedRequest = {
+        ...mockPruningRequest,
+        rayonId: 'different-rayon-id',
+        status: 'approved',
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(mismatchedRequest);
+
+      await expect(
+        service.convertToTask(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should reject conversion of non-approved request', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      const submittedRequest = {
+        ...mockPruningRequest,
+        status: 'submitted',
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(submittedRequest);
+
+      await expect(
+        service.convertToTask(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should propagate capacity booking conflict', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+        rayonId: mockRayonId,
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
+      mockServiceCapacityService.bookAtomic.mockRejectedValue(
+        new ConflictException('Capacity exceeded'),
+      );
+      mockDataSource.transaction.mockImplementation(async (cb) => {
+        return cb({});
+      });
+
+      await expect(
+        service.convertToTask(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should reject conversion of non-existent request', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      mockPruningRequestRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.convertToTask(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return paginated list of all requests for top_management', async () => {
+      const requests = [mockPruningRequest];
+      const mockQueryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest
+          .fn()
+          .mockResolvedValue([requests, 1]),
+      };
+
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      const result = await service.findAll(mockSuperadmin, {
+        page: 1,
+        limit: 20,
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
+    });
+
+    it('should auto-filter admin_data by their rayon', async () => {
+      const mockQueryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest
+          .fn()
+          .mockResolvedValue([[mockPruningRequest], 1]),
+      };
+
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      await service.findAll(mockAdminData, {
+        page: 1,
+        limit: 20,
+      });
+
+      // Since no status filter is provided, should call where (not andWhere)
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'pr.rayonId = :rayonId',
+        { rayonId: mockRayonId },
+      );
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+        'pr.rayonId = :rayonId',
+        { rayonId: mockRayonId },
+      );
+    });
+
+    it('should filter by status', async () => {
+      const mockQueryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest
+          .fn()
+          .mockResolvedValue([[mockPruningRequest], 1]),
+      };
+
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      await service.findAll(mockSuperadmin, {
+        status: 'approved',
+        page: 1,
+        limit: 20,
+      });
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'pr.status = :status',
+        { status: 'approved' },
+      );
+    });
+
+    it('should apply pagination correctly', async () => {
+      const mockQueryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest
+          .fn()
+          .mockResolvedValue([[], 100]),
+      };
+
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      const result = await service.findAll(mockSuperadmin, {
+        page: 3,
+        limit: 25,
+      });
+
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(50);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(25);
+      expect(result.page).toBe(3);
+    });
+
+    it('should apply from/to date range filters', async () => {
+      const mockQueryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      await service.findAll(mockSuperadmin, {
+        from: '2026-04-01',
+        to: '2026-04-30',
+        page: 1,
+        limit: 20,
+      });
+
+      const fromCalls = mockQueryBuilder.andWhere.mock.calls.filter(
+        ([clause]: [string]) => clause.includes(':from'),
+      );
+      const toCalls = mockQueryBuilder.andWhere.mock.calls.filter(
+        ([clause]: [string]) => clause.includes(':to'),
+      );
+      expect(fromCalls.length).toBe(1);
+      expect(toCalls.length).toBe(1);
+    });
+
+    it('should use where (not andWhere) for rayon filter when no status filter', async () => {
+      const mockQueryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      await service.findAll(mockAdminData, { page: 1, limit: 20 });
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'pr.rayonId = :rayonId',
+        { rayonId: mockRayonId },
+      );
+    });
+  });
+
+  describe('convertToTask edge cases', () => {
+    it('should reject conversion when request has no rayonId', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+        rayonId: null,
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
+      mockDataSource.transaction.mockImplementation(async (cb) => cb({}));
+
+      await expect(
+        service.convertToTask(mockRequestId, dto, mockSuperadmin),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should rethrow non-ConflictException errors from bookAtomic', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        scheduledDate: '2026-04-28',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+        rayonId: mockRayonId,
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
+      mockServiceCapacityService.bookAtomic.mockRejectedValue(
+        new Error('Database connection lost'),
+      );
+      mockDataSource.transaction.mockImplementation(async (cb) => cb({}));
+
+      await expect(
+        service.convertToTask(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow('Database connection lost');
     });
   });
 });
