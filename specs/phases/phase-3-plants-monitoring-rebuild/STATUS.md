@@ -1,7 +1,7 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-04-26 (updated — 3-3/3-4/3-5 Monitoring v2 all complete; M2 milestone done; next: 3-6 task typing)
+**Date:** 2026-04-27 (M2 deploy executed — backend on prod with Phase 3 schema + reference data; Apr 27 polish pass landed: collapsible selfie cards, mobile coverage threshold lock, seeders unified for cold-start + UAT; next: 3-6 task typing)
 **Overall Progress:** ~48 % (10 / 21 sub-phases complete — M1-R 5/5 + 3-1 + 3-2 + 3-3 + 3-4 + 3-5)
 **Branch:** main (no feature branch yet)
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), [ADR-036](../../architecture/decisions/ADR-036-design-tokens-single-source.md), [ADR-037](../../architecture/decisions/ADR-037-web-pwa.md)

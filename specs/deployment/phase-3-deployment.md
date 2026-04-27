@@ -15,7 +15,7 @@
 | 1 | Push Phase 3 commits to `main` | ✅ done | up to commit `874b13e` |
 | 2 | Backend CI/CD (build + ECR + EC2) | ✅ done | run `24972458864` green; new image active on `16.79.183.240` |
 | 3 | Phase 3 migrations | ✅ done | both migrations recorded in `typeorm_migrations` (id 12, 13); see "Issues Resolved" below |
-| 4 | Phase 3 seed (`db:seed:phase3:prod`) | ✅ done (partial) | 128 plant_species, 4 monitoring_configs, 5 plant_seeds. Sections 3/4/6 skipped — prod DB has no users/areas/rayons |
+| 4 | Phase 3 seed (`db:seed:phase3:prod`) | ✅ done (partial, Apr 27) | 128 plant_species, 4 monitoring_configs, 5 plant_seeds. Sections 3/4/6 skipped on the day — prod DB has no users/areas/rayons. **Resolved going forward:** as of `3844974`, `db:seed:prod` and `db:seed:staging:prod` both run Phase 3 reference + sample data automatically; future cold-starts and UAT resets are one-step. |
 | 5 | Backend smoke test (`/api/v1/health`) | ✅ done | OK |
 | 6 | **Redis provisioning** | ⏸️ pending | choose Upstash OR ElastiCache (see below); add `REDIS_URL` to GitHub Secrets |
 | 7 | Add 5 new env vars to GitHub Secrets `BACKEND_ENV_PRODUCTION` | ⏸️ pending | depends on step 6 |
@@ -222,7 +222,7 @@ ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
 | **Backend** | `ioredis`, `@socket.io/redis-adapter` packages; `CommonModule`; 3 new services | Deploy backend image |
 | **Database** | 2 new migrations (Phase3Schema + Phase3BackfillIndexes) — 8 new tables, 5 altered | Run migrations |
 | **Redis** | Redis 7 added to infra (for local dev) | AWS: provision ElastiCache Redis 7 |
-| **Seeds** | 124 plant species + 4 monitoring configs + service_capacity grid (idempotent) | Run `db:seed:phase3:prod` |
+| **Seeds** | 128 plant species + 4 Phase 3 monitoring configs + service_capacity grid (idempotent) | Built into `db:seed:prod` (cold-start) and `db:seed:staging:prod` (UAT) — no separate Phase 3 seed step needed |
 | **Web** | supercluster, @tanstack/react-virtual packages; monitoring page rewrite; `staff_kecamatan` nav | Deploy web image |
 | **Mobile** | `monitoringV2Slice`, `ClusterMarker`, `MonitoringToggleSheet`, `AreaStatusOverlay` | Build + release APK |
 | **Env vars** | 5 new backend env vars for Redis | Update `.env.production` |
@@ -509,24 +509,46 @@ docker exec sekar-backend npm run migration:run:prod
 
 ## 🌱 Seeds
 
-**Phase 3 adds a new seed script.** The seed is **idempotent** (safe to re-run):
+As of commit `3844974` (Apr 27, 2026) the **reference and staging seeders both include Phase 3 data**, so cold-start prod and UAT no longer need a separate Phase 3 seed step.
+
+### Production cold-start (`db:seed:prod` → `seed-reference.ts`)
+
+```bash
+docker exec sekar-backend npm run db:seed:prod
+```
+
+Idempotent. Seeds, in order:
+1. **4** area types · **3** shift definitions · **7** rayons · **20** activity types · **4** special-day overrides
+2. **5** monitoring configs (Phase 2D)
+3. **4** monitoring configs (Phase 3) — `plants_forecast`, `service_capacity_defaults`, `pruning_request_workflow`, `seed_inventory`
+4. **128** `plant_species` (Indonesian tree/shrub/flower catalog)
+5. **service_capacity grid** — 7 rayons × 12 ISO weeks × `service_type='pruning'` with `capacity_units=0` (admins set per-rayon later)
+6. **1** default superadmin (`admin` / `password123` — change immediately)
+
+> **Phase 3 schema guard:** if `plant_species` table doesn't exist (migrations not yet run), Phase 3 reference inserts log a warning and skip. Safe to call against a Phase 2-only DB.
+
+### Staging UAT (`db:seed:staging:prod` → `seed-staging.ts`)
+
+```bash
+docker exec sekar-backend npm run db:seed:staging:prod
+```
+
+**Destructive — wipes all tables, then reseeds for Rayon Pusat UAT.** Adds, on top of `seed-reference`:
+- 13 areas (1 active park + 12 pedestrian) · 24 users (14 test + 10 real) · permanent `user_areas` assignments · 26 staff requirements
+- **Phase 3 sample data:**
+  - **`staff_kec_pusat`** user (role `staff_kecamatan`, phone `081200000023`) — for testing the public intake flow
+  - **30** `area_plants` (6 areas × 5 species inventory)
+  - **4** `pruning_requests` in mixed statuses (`submitted`/`submitted`/`approved`/`rejected`)
+  - **5** `plant_seeds` + **5** `seed_transactions` (initial purchase ledger)
+  - **84** `service_capacity` rows with `capacity_units=5` so testers can actually book pruning slots
+
+### Standalone Phase 3 seed (development convenience)
 
 ```bash
 docker exec sekar-backend npm run db:seed:phase3:prod
 ```
 
-This seeds:
-1. **124 plant species** (`plant_species` table) — Indonesian tree/shrub/flower catalog from CSV data. `ON CONFLICT (name_id) DO NOTHING`.
-2. **4 monitoring configs** — `staffing_debounce_seconds=30`, `stale_status_sweep_cron=*/5 * * * *`, `cluster_zoom_threshold=14`, `redis_stream_max_len=100000`. `ON CONFLICT (key) DO NOTHING`.
-3. **Service capacity grid** — 7 rayons × 12 ISO weeks (from current week forward) × `service_type='pruning'`, all with `capacity_units=0`. `ON CONFLICT DO NOTHING`.
-
-> **Guard:** `db:seed:phase3` checks for the `plant_species` table before running. If Phase 3 migrations haven't been applied, it logs a warning and exits gracefully — it does NOT crash the seed chain.
-
-Also add to `be/package.json` `scripts`:
-```json
-"db:seed:phase3:prod": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase3.ts"
-```
-(Verify this script exists — the `:prod` variant may just call the same script, which is already idempotent.)
+Runs only the Phase 3 sections via the original entry point. Same idempotency guarantees. Useful when you need to top up Phase 3 data without touching Phase 1/2.
 
 ---
 
@@ -566,12 +588,22 @@ docker exec sekar-backend npm run migration:run:prod
 
 ### Step 3: Seed Phase 3 reference data
 
+For a **cold-start prod** (no users/data yet), the reference seeder now bundles Phase 3:
+```bash
+docker exec sekar-backend npm run db:seed:prod
+# Expected log highlights:
+#   ✓ 5 monitoring configs (Phase 2D)
+#   🌳 Seeding Phase 3 reference data...
+#   ✓ 128 new plant_species inserted (0 already existed)
+#   ✓ 4 new Phase 3 monitoring_configs inserted (0 already existed)
+#   ✓ 84 new service_capacity rows (7 rayons × 12 weeks, capacity_units=0)
+#   ✓ Default superadmin (admin / password123) — change password after first login!
+```
+
+For an **existing prod that already has Phase 1/2 data and just needs Phase 3 added on top** (this is the path taken Apr 27):
 ```bash
 docker exec sekar-backend npm run db:seed:phase3:prod
-# Expected output:
-#   ✓ 124 new plant_species inserted
-#   ✓ 4 monitoring_configs inserted
-#   ✓ XX service_capacity rows inserted (7 rayons × 12 weeks)
+# Idempotent — only inserts rows that don't already exist.
 ```
 
 ### Step 4: Verify backend health
