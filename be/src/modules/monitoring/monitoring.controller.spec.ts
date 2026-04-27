@@ -4,6 +4,7 @@ import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { AreaPlantStatusService } from './services/area-plant-status.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
@@ -264,6 +265,12 @@ describe('MonitoringController', () => {
         {
           provide: UserAreasService,
           useValue: { getPermanentAreaIds: jest.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: AreaPlantStatusService,
+          useValue: {
+            getAreaPlantStatus: jest.fn(),
+          },
         },
       ],
     }).compile();

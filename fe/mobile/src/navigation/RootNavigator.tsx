@@ -11,6 +11,7 @@ import { useAppSelector } from '../store/hooks';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import MainNavigator from './MainNavigator';
+import KecamatanNavigator from './KecamatanNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -22,6 +23,8 @@ function RootNavigator(): React.JSX.Element {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated || !user ? (
           <Stack.Screen name="Login" component={LoginScreen} />
+        ) : user.role === 'staff_kecamatan' ? (
+          <Stack.Screen name="KecamatanTabs" component={KecamatanNavigator} />
         ) : (
           <Stack.Screen name="MainTabs" component={MainNavigator} />
         )}

@@ -132,6 +132,38 @@ export async function requestRevision(
   return patch<Task>(`/tasks/${id}/revision`, data);
 }
 
+/**
+ * Partial-complete a task — updates completed_plant_count, optionally spawns child task.
+ * Phase 3 3-6: Task typing support
+ */
+export async function partialCompleteTask(
+  id: string,
+  data: {
+    completed_count: number;
+    plant_items?: Array<{ species_id: string; count: number }>;
+    notes?: string;
+    resume_tomorrow?: boolean;
+  },
+): Promise<ApiResponse<{ task: Task; child_task_id?: string }>> {
+  return post<{ task: Task; child_task_id?: string }>(`/tasks/${id}/partial-complete`, data);
+}
+
+/**
+ * Resume a task — spawns child task with remaining target_plant_count.
+ * Phase 3 3-6: Task typing support
+ */
+export async function resumeTask(id: string): Promise<ApiResponse<Task>> {
+  return post<Task>(`/tasks/${id}/resume`);
+}
+
+/**
+ * Get task lineage — parent chain plus child tasks.
+ * Phase 3 3-6: Task typing support
+ */
+export async function getTaskLineage(id: string): Promise<ApiResponse<{ parent?: Task; task: Task; children: Task[] }>> {
+  return get<{ parent?: Task; task: Task; children: Task[] }>(`/tasks/${id}/lineage`);
+}
+
 export default {
   createTask,
   getTasks,
@@ -149,4 +181,7 @@ export default {
   declineTask,
   verifyTask,
   requestRevision,
+  partialCompleteTask,
+  resumeTask,
+  getTaskLineage,
 };

@@ -5,6 +5,7 @@ import { MonitoringController } from './monitoring.controller';
 import { MonitoringService } from './monitoring.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringUserService } from './services/monitoring-user.service';
+import { AreaPlantStatusService } from './services/area-plant-status.service';
 import { User } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -28,8 +29,10 @@ import { StatusProjectorService } from './services/status-projector.service';
 import { StaffingDebouncerService } from './services/staffing-debouncer.service';
 import { StaleStatusSweeperService } from './services/stale-status-sweeper.service';
 import { Schedule } from '../schedules/entities/schedule.entity';
+import { AreaPlant } from '../plants/entities/area-plant.entity';
 import { EventsModule } from '../../gateways/events.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
+import { PlantsModule } from '../plants/plants.module';
 
 @Module({
   imports: [
@@ -48,15 +51,18 @@ import { UserAreasModule } from '../user-areas/user-areas.module';
       MonitoringConfig,
       UserTrackingStatus,
       Schedule,
+      AreaPlant,
     ]),
     forwardRef(() => EventsModule),
     UserAreasModule,
+    PlantsModule,
   ],
   controllers: [MonitoringController],
   providers: [
     MonitoringService,
     MonitoringStatsService,
     MonitoringUserService,
+    AreaPlantStatusService,
     MonitoringCacheService,
     MonitoringConfigService,
     StatusCalculatorService,
@@ -72,6 +78,7 @@ import { UserAreasModule } from '../user-areas/user-areas.module';
     MonitoringService,
     MonitoringStatsService,
     MonitoringUserService,
+    AreaPlantStatusService,
     MonitoringCacheService,
     MonitoringConfigService,
     StatusCalculatorService,

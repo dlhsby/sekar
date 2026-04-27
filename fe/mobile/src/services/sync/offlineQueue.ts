@@ -12,8 +12,9 @@ const QUEUE_KEY = 'OFFLINE_QUEUE';
 
 /**
  * Queue item types
+ * Phase 3: pruning_request.submit added for staff_kecamatan offline submission
  */
-export type QueueItemType = 'clock-in' | 'clock-out' | 'activity' | 'location';
+export type QueueItemType = 'clock-in' | 'clock-out' | 'activity' | 'location' | 'pruning_request.submit';
 
 /**
  * Queue item status

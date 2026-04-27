@@ -26,6 +26,7 @@ import type {
   BoundariesResponse,
   ReassignWorkerPayload,
   ReassignWorkerResponse,
+  AreaPlantStatusResponse,
 } from '../../types/models.types';
 
 export async function getCityMonitoring(
@@ -135,6 +136,13 @@ export async function getMonitoringConfig(): Promise<
   return get<Record<string, unknown>[]>('/monitoring/config');
 }
 
+// Phase 3 3-8: Plant due-date forecast
+export async function getAreaPlantStatus(
+  areaId: string,
+): Promise<ApiResponse<AreaPlantStatusResponse>> {
+  return get<AreaPlantStatusResponse>(`/monitoring/area/${areaId}/plant-status`);
+}
+
 export default {
   getCityMonitoring,
   getRayonMonitoring,
@@ -150,4 +158,5 @@ export default {
   getBoundaries,
   reassignWorker,
   getMonitoringConfig,
+  getAreaPlantStatus,
 };

@@ -24,7 +24,7 @@ export class AreaPlant {
   nextDueAt: Date | null;
 
   @Column({ type: 'text', default: 'ok' })
-  status: 'ok' | 'due' | 'overdue';
+  status: 'ok' | 'due_soon' | 'overdue' | 'unknown';
 
   @Column({ type: 'int', nullable: true, name: 'override_cycle_days' })
   overrideCycleDays: number | null;

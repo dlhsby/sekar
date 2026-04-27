@@ -2,15 +2,25 @@
  * Tasks Slice
  * Task management state
  * Phase 2C: 4 statuses, tagged tasks, no accept/decline
+ * Phase 3 3-6: partial-complete, resume, lineage
  */
 
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { Task, TaskStatus } from '../../types/models.types';
+import * as tasksApi from '../../services/api/tasksApi';
+
+/** Task lineage: parent chain + this task + children */
+export interface TaskLineage {
+  parent?: Task;
+  task: Task;
+  children: Task[];
+}
 
 interface TasksState {
   tasks: Task[];
   taggedTasks: Task[];
   selectedTask: Task | null;
+  lineageById: Record<string, TaskLineage>;
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
@@ -24,6 +34,7 @@ const initialState: TasksState = {
   tasks: [],
   taggedTasks: [],
   selectedTask: null,
+  lineageById: {},
   isLoading: false,
   isSubmitting: false,
   error: null,
@@ -32,6 +43,77 @@ const initialState: TasksState = {
     type: 'all',
   },
 };
+
+/**
+ * Partial-complete a task: increment completed_plant_count, optionally spawn child task
+ * Phase 3 3-6
+ */
+export const partialCompleteTask = createAsyncThunk(
+  'tasks/partialComplete',
+  async (
+    {
+      taskId,
+      dto,
+    }: {
+      taskId: string;
+      dto: {
+        completed_count: number;
+        plant_items?: Array<{ species_id: string; count: number }>;
+        notes?: string;
+        resume_tomorrow?: boolean;
+      };
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await tasksApi.partialCompleteTask(taskId, dto);
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(String(err));
+    }
+  },
+);
+
+/**
+ * Resume a task: spawn child task with remaining target_plant_count
+ * Phase 3 3-6
+ */
+export const resumeTask = createAsyncThunk(
+  'tasks/resume',
+  async (taskId: string, { rejectWithValue }) => {
+    try {
+      const response = await tasksApi.resumeTask(taskId);
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(String(err));
+    }
+  },
+);
+
+/**
+ * Fetch task lineage: parent chain + this task + children
+ * Phase 3 3-6
+ */
+export const fetchTaskLineage = createAsyncThunk(
+  'tasks/fetchLineage',
+  async (taskId: string, { rejectWithValue }) => {
+    try {
+      const response = await tasksApi.getTaskLineage(taskId);
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return { taskId, lineage: response.data };
+    } catch (err) {
+      return rejectWithValue(String(err));
+    }
+  },
+);
 
 const tasksSlice = createSlice({
   name: 'tasks',
@@ -136,6 +218,62 @@ const tasksSlice = createSlice({
 
     resetState: () => initialState,
   },
+  extraReducers: (builder) => {
+    // partialCompleteTask
+    builder
+      .addCase(partialCompleteTask.pending, (state) => {
+        state.isSubmitting = true;
+        state.error = null;
+      })
+      .addCase(partialCompleteTask.fulfilled, (state, action) => {
+        const { task } = action.payload;
+        const index = state.tasks.findIndex((t) => t.id === task.id);
+        if (index !== -1) {
+          state.tasks[index] = task;
+        }
+        if (state.selectedTask?.id === task.id) {
+          state.selectedTask = task;
+        }
+        state.isSubmitting = false;
+        state.error = null;
+      })
+      .addCase(partialCompleteTask.rejected, (state, action) => {
+        state.isSubmitting = false;
+        state.error = action.payload as string;
+      });
+
+    // resumeTask
+    builder
+      .addCase(resumeTask.pending, (state) => {
+        state.isSubmitting = true;
+        state.error = null;
+      })
+      .addCase(resumeTask.fulfilled, (state) => {
+        state.isSubmitting = false;
+        state.error = null;
+      })
+      .addCase(resumeTask.rejected, (state, action) => {
+        state.isSubmitting = false;
+        state.error = action.payload as string;
+      });
+
+    // fetchTaskLineage
+    builder
+      .addCase(fetchTaskLineage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTaskLineage.fulfilled, (state, action) => {
+        const { taskId, lineage } = action.payload;
+        state.lineageById[taskId] = lineage;
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(fetchTaskLineage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+  },
 });
 
 export const {
@@ -188,5 +326,8 @@ export const selectPendingTasksCount = (state: { tasks: TasksState }) =>
 
 export const selectInProgressTasksCount = (state: { tasks: TasksState }) =>
   state.tasks.tasks.filter((t) => t.status === 'in_progress').length;
+
+export const selectTaskLineage = (taskId: string) => (state: { tasks: TasksState }) =>
+  state.tasks.lineageById[taskId];
 
 export default tasksSlice.reducer;

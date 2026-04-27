@@ -20,6 +20,10 @@ import tasksReducer, {
   selectFilteredTasks,
   selectPendingTasksCount,
   selectInProgressTasksCount,
+  partialCompleteTask,
+  resumeTask,
+  fetchTaskLineage,
+  selectTaskLineage,
 } from '../tasksSlice';
 import type { Task, TaskStatus } from '../../../types/models.types';
 
@@ -28,6 +32,7 @@ describe('tasksSlice', () => {
     tasks: [],
     taggedTasks: [],
     selectedTask: null,
+    lineageById: {},
     isLoading: false,
     isSubmitting: false,
     error: null,
@@ -387,6 +392,138 @@ describe('tasksSlice', () => {
 
       state = tasksReducer(state, clearError());
       expect(state.error).toBeNull();
+    });
+  });
+
+  describe('async thunks', () => {
+    describe('partialCompleteTask', () => {
+      it('should handle pending state', () => {
+        const action = { type: partialCompleteTask.pending.type };
+        const state = tasksReducer(initialState, action);
+        expect(state.isSubmitting).toBe(true);
+        expect(state.error).toBeNull();
+      });
+
+      it('should handle fulfilled state', () => {
+        const stateWithTasks = { ...initialState, tasks: mockTasks };
+        const updatedTask = { ...mockTask, completed_plant_count: 30 };
+        const action = {
+          type: partialCompleteTask.fulfilled.type,
+          payload: { task: updatedTask },
+        };
+        const state = tasksReducer(stateWithTasks, action);
+        expect(state.tasks[0]).toEqual(updatedTask);
+        expect(state.isSubmitting).toBe(false);
+        expect(state.error).toBeNull();
+      });
+
+      it('should update selectedTask on fulfilled', () => {
+        const stateWithSelected = {
+          ...initialState,
+          tasks: mockTasks,
+          selectedTask: mockTask,
+        };
+        const updatedTask = { ...mockTask, completed_plant_count: 30 };
+        const action = {
+          type: partialCompleteTask.fulfilled.type,
+          payload: { task: updatedTask },
+        };
+        const state = tasksReducer(stateWithSelected, action);
+        expect(state.selectedTask).toEqual(updatedTask);
+      });
+
+      it('should handle rejected state', () => {
+        const action = {
+          type: partialCompleteTask.rejected.type,
+          payload: 'Failed to update task',
+        };
+        const state = tasksReducer(initialState, action);
+        expect(state.isSubmitting).toBe(false);
+        expect(state.error).toBe('Failed to update task');
+      });
+    });
+
+    describe('resumeTask', () => {
+      it('should handle pending state', () => {
+        const action = { type: resumeTask.pending.type };
+        const state = tasksReducer(initialState, action);
+        expect(state.isSubmitting).toBe(true);
+        expect(state.error).toBeNull();
+      });
+
+      it('should handle fulfilled state', () => {
+        const action = { type: resumeTask.fulfilled.type };
+        const state = tasksReducer(initialState, action);
+        expect(state.isSubmitting).toBe(false);
+        expect(state.error).toBeNull();
+      });
+
+      it('should handle rejected state', () => {
+        const action = {
+          type: resumeTask.rejected.type,
+          payload: 'Failed to resume task',
+        };
+        const state = tasksReducer(initialState, action);
+        expect(state.isSubmitting).toBe(false);
+        expect(state.error).toBe('Failed to resume task');
+      });
+    });
+
+    describe('fetchTaskLineage', () => {
+      it('should handle pending state', () => {
+        const action = { type: fetchTaskLineage.pending.type };
+        const state = tasksReducer(initialState, action);
+        expect(state.isLoading).toBe(true);
+        expect(state.error).toBeNull();
+      });
+
+      it('should handle fulfilled state and cache lineage', () => {
+        const mockLineage = {
+          task: mockTask,
+          children: [{ ...mockTask, id: 'task-child-1' }],
+        };
+        const action = {
+          type: fetchTaskLineage.fulfilled.type,
+          payload: { taskId: 'task-001', lineage: mockLineage },
+        };
+        const state = tasksReducer(initialState, action);
+        expect(state.lineageById['task-001']).toEqual(mockLineage);
+        expect(state.isLoading).toBe(false);
+        expect(state.error).toBeNull();
+      });
+
+      it('should handle rejected state', () => {
+        const action = {
+          type: fetchTaskLineage.rejected.type,
+          payload: 'Failed to fetch lineage',
+        };
+        const state = tasksReducer(initialState, action);
+        expect(state.isLoading).toBe(false);
+        expect(state.error).toBe('Failed to fetch lineage');
+      });
+    });
+
+    describe('selectTaskLineage', () => {
+      it('should return lineage for task', () => {
+        const mockLineage = {
+          task: mockTask,
+          children: [{ ...mockTask, id: 'task-child-1' }],
+        };
+        const state = {
+          tasks: {
+            ...initialState,
+            lineageById: { 'task-001': mockLineage },
+          },
+        };
+        const result = selectTaskLineage('task-001')(state);
+        expect(result).toEqual(mockLineage);
+      });
+
+      it('should return undefined for missing lineage', () => {
+        const state = { tasks: initialState };
+        const result = selectTaskLineage('task-999')(state);
+        expect(result).toBeUndefined();
+      });
     });
   });
 });

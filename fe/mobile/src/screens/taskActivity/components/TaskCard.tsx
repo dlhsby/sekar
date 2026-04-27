@@ -9,6 +9,7 @@ import { NBCard, NBBadge } from '../../../components/nb';
 import { nbColors, nbSpacing, nbTypography } from '../../../constants/nbTokens';
 import type { Task, TaskStatus } from '../../../types/models.types';
 import { getTaskStatusLabel, getTaskStatusColor, TASK_PRIORITY_LABEL, formatDate, formatTime } from '../../../utils/statusHelpers';
+import { PlantStatusChip } from './PlantStatusChip';
 
 interface TaskCardProps {
   task: Task;
@@ -62,6 +63,10 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
           )}
           {task.tags && task.tags.length > 0 && (
             <Text style={styles.itemMetaChip}>🏷️ {task.tags.length} tag</Text>
+          )}
+          {/* Plant status for pruning tasks with area assigned */}
+          {task.area_id && (
+            <PlantStatusChip areaId={task.area_id} taskTitle={task.title} />
           )}
         </View>
         {/* Creator row */}

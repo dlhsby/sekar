@@ -3,6 +3,11 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { TaskCard } from '../components/TaskCard';
 import type { Task } from '../../../types/models.types';
 
+// Mock PlantStatusChip to avoid API calls in tests
+jest.mock('../components/PlantStatusChip', () => ({
+  PlantStatusChip: ({ areaId, taskTitle }: any) => null,
+}));
+
 const BASE_TASK: Task = {
   id: 'task-1',
   title: 'Bersihkan Taman Bungkul',

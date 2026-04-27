@@ -36,6 +36,8 @@ import {
 import { StaffingSummaryQueryDto, StaffingSummaryResponseDto } from './dto/staffing-summary.dto';
 import { BoundariesResponseDto } from './dto/boundaries.dto';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from './dto/reassign-worker.dto';
+import { AreaPlantStatusDto } from './dto/area-plant-status.dto';
+import { AreaPlantStatusService } from './services/area-plant-status.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -59,6 +61,7 @@ export class MonitoringController {
     private readonly statsService: MonitoringStatsService,
     private readonly reassignService: MonitoringReassignService,
     private readonly userAreasService: UserAreasService,
+    private readonly areaPlantStatusService: AreaPlantStatusService,
   ) {}
 
   @Get('city')
@@ -150,6 +153,25 @@ export class MonitoringController {
     if (rayonId) filters.rayon_id = rayonId;
     await this.applyScopeFilters(user, filters);
     return this.statsService.getBoundaries(filters);
+  }
+
+  @Get('area/:id/plant-status')
+  @Roles(...MONITORING_AREA)
+  @ApiOperation({
+    summary: 'Get plant maintenance status for an area (ADR-034)',
+    description:
+      'Returns plant status aggregates (ok/due_soon/overdue/unknown) and per-species breakdown for an area. ' +
+      'Status is computed using PlantDueDateService with deterministic species-default pruning cycles.',
+  })
+  @ApiParam({ name: 'id', description: 'Area ID (UUID)' })
+  @ApiResponse({ status: 200, type: AreaPlantStatusDto })
+  @ApiResponse({ status: 404, description: 'Area not found' })
+  async getAreaPlantStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ): Promise<AreaPlantStatusDto> {
+    await this.enforceScopeArea(user, id);
+    return this.areaPlantStatusService.getAreaPlantStatus(id);
   }
 
   @Get('config')

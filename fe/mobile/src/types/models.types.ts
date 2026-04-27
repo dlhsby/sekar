@@ -12,6 +12,7 @@ export interface GeoJsonPolygon {
 }
 
 // User roles - 8 roles matching backend UserRole enum (lowercase)
+// Phase 3: staff_kecamatan added (non-clockable, pruning request submitter)
 export type UserRole =
   | 'satgas'
   | 'linmas'
@@ -20,7 +21,8 @@ export type UserRole =
   | 'kepala_rayon'
   | 'top_management'
   | 'admin_system'
-  | 'superadmin';
+  | 'superadmin'
+  | 'staff_kecamatan';
 
 // Area types
 export type AreaTypeCode = 'park' | 'pedestrian' | 'mini_garden' | 'street';
@@ -399,6 +401,41 @@ export interface LiveUsersResponse {
   generated_at: string;
 }
 
+// =====================
+// Phase 3 Models
+// =====================
+
+// Pruning Request Status
+export type PruningRequestStatus = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'converted' | 'in_progress' | 'done' | 'cancelled';
+
+// Pruning Request — Phase 3 sub-phase 3-9/3-10
+// Staff kecamatan submits requests for pruning work; admin_data reviews/converts to tasks
+export interface PruningRequest {
+  id: string;
+  referenceCode: string;
+  submittedBy: string;
+  submitter?: User;
+  kecamatanName: string;
+  address: string;
+  gpsLat: number | null;
+  gpsLng: number | null;
+  expectedDate: string | null; // ISO date (YYYY-MM-DD)
+  estimatedPlantCount: number | null;
+  photoUrls: string[];
+  notes: string | null;
+  status: PruningRequestStatus;
+  rayonId: string | null;
+  rayon?: Rayon;
+  reviewedBy: string | null;
+  reviewer?: User;
+  reviewedAt: string | null;
+  reviewNotes: string | null;
+  convertedTaskId: string | null;
+  convertedTask?: Task;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // User Day Summary — Phase 2D
 export interface UserDaySummary {
   user_id: string;
@@ -631,4 +668,82 @@ export interface AuditLog {
   new_value?: any;
   metadata?: any;
   created_at: string;
+}
+
+// =====================
+// Phase 3: Plants
+// =====================
+
+// Plant Species (Phase 3 3-7, M1-R)
+export interface PlantSpecies {
+  id: string;
+  nameId: string;              // Indonesian name
+  nameLatin: string | null;    // Scientific name
+  category: 'tree' | 'shrub' | 'groundcover' | 'flower';
+  defaultPruningCycleDays: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Area Plant Inventory (Phase 3 3-7)
+export interface AreaPlant {
+  id: string;
+  areaId: string;
+  speciesId: string;
+  count: number;
+  lastPrunedAt: string | null;
+  nextDueAt: string | null;
+  status: 'ok' | 'due' | 'overdue';
+  overrideCycleDays: number | null;
+  species: PlantSpecies;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Notable Plant (heritage tree, Phase 3 3-7)
+export interface NotablePlant {
+  id: string;
+  areaId: string;
+  speciesId: string;
+  gpsLat: number;
+  gpsLng: number;
+  label: string | null;
+  heritage: boolean;
+  photoUrls: string[];
+  notes: string | null;
+  species: PlantSpecies;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Plant Status Classification (Phase 3 3-8: due-date forecast)
+export type PlantStatus = 'ok' | 'due_soon' | 'overdue' | 'unknown';
+
+// Area Plant Status Summary per species (Phase 3 3-8)
+export interface AreaPlantStatusSummary {
+  speciesId: string;
+  speciesName: string;
+  categoryCode: 'tree' | 'shrub' | 'groundcover' | 'flower';
+  count: number;
+  statusCounts: {
+    ok: number;
+    due_soon: number;
+    overdue: number;
+    unknown: number;
+  };
+}
+
+// Area Plant Status Response (Phase 3 3-8)
+export interface AreaPlantStatusResponse {
+  areaId: string;
+  areaName: string;
+  totals: {
+    ok: number;
+    due_soon: number;
+    overdue: number;
+    unknown: number;
+  };
+  bySpecies: AreaPlantStatusSummary[];
+  generatedAt: string;
 }

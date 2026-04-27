@@ -31,9 +31,10 @@ import {
   NBCardTextInput,
 } from '../../components/nb';
 import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
+import { PartialCompleteSheet } from '../../components/tasks/PartialCompleteSheet';
 
 const fontSizes = nbTypography.fontSize;
-import { formatDateTime, formatRelativeTime } from '../../utils/dateUtils';
+import { formatDateTime } from '../../utils/dateUtils';
 import * as tasksApi from '../../services/api/tasksApi';
 import { getUsers } from '../../services/api';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -228,6 +229,8 @@ export function TaskDetailScreen(): React.JSX.Element {
   const [loadingSubordinates, setLoadingSubordinates] = useState(false);
 
   const [showAuditTrail, setShowAuditTrail] = useState(false);
+
+  const [showPartialComplete, setShowPartialComplete] = useState(false);
 
   const fetchTask = useCallback(async () => {
     try {
@@ -424,6 +427,11 @@ export function TaskDetailScreen(): React.JSX.Element {
       ],
     );
   }, [task, revisionReason, fetchTask]);
+
+  const handlePartialCompleteSuccess = useCallback(() => {
+    setShowPartialComplete(false);
+    fetchTask();
+  }, [fetchTask]);
 
   if (isLoading) {
     return (
@@ -775,7 +783,14 @@ export function TaskDetailScreen(): React.JSX.Element {
 
           {/* Complete button */}
           {showComplete && (
-            <NBButton title="Selesaikan Tugas" variant="success" onPress={handleComplete} disabled={isSubmitting} />
+            <View style={styles.buttonRow}>
+              <View style={styles.buttonHalf}>
+                <NBButton title="Selesai Sebagian" variant="info" onPress={() => setShowPartialComplete(true)} disabled={isSubmitting} />
+              </View>
+              <View style={styles.buttonHalf}>
+                <NBButton title="Selesaikan Tugas" variant="success" onPress={handleComplete} disabled={isSubmitting} />
+              </View>
+            </View>
           )}
 
           {/* Verify + Revision */}
@@ -830,6 +845,14 @@ export function TaskDetailScreen(): React.JSX.Element {
           />
         </View>
       </ScrollView>
+
+      {/* ── Partial Complete Sheet ── */}
+      <PartialCompleteSheet
+        visible={showPartialComplete}
+        onClose={() => setShowPartialComplete(false)}
+        task={task}
+        onSuccess={handlePartialCompleteSuccess}
+      />
 
       {/* ── Audit Trail Modal ── */}
       <Modal
