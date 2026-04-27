@@ -29,6 +29,22 @@ SEKAR is a comprehensive worker tracking and task management system for DLH Sura
 - **PostgreSQL** 14+ (or Docker)
 - **npm** >=10.0.0
 
+### 0. Root Setup (Token Pipeline & ESLint Plugin)
+
+**Run once per checkout from the project root:**
+
+```bash
+npm install
+```
+
+This installs **cross-workspace tooling only** (not app dependencies):
+- `tsx` — TypeScript executor for build scripts
+- `ajv` — JSON schema validator
+- `jest` — Test runner for token pipeline
+- `eslint-plugin-sekar-design` — Symlinked ESLint plugin for design token enforcement
+
+The token pipeline (`npm run tokens:build|verify`) and design linting are then available to all workspaces (`be/`, `fe/mobile/`, `fe/web/`).
+
 ### 1. Start Infrastructure
 
 ```bash
@@ -40,10 +56,9 @@ cd infra && ./start.sh
 ```bash
 cd be
 npm install
-cp .env.example .env        # Edit with your database credentials (uncomment DATABASE_SYNCHRONIZE=true)
-npm run migration:run        # Run database migrations
-DATABASE_SYNCHRONIZE=true npm run start:dev  # Start once to sync tables, then Ctrl+C
-npm run db:seed              # Seed test data (30 users, tasks, activities, monitoring)
+cp .env.example .env        # Edit with your database credentials if needed
+npm run migration:run        # Run all migrations (creates all tables)
+npm run db:seed              # Seed all data (Phase 1 + 2 + 3)
 npm run start:dev            # http://localhost:3000
 ```
 
@@ -79,35 +94,56 @@ All passwords: `password123`
 | Username | Role | Notes |
 |----------|------|-------|
 | admin | superadmin | Full access |
-| korlap1 | korlap | Taman Bungkul |
-| satgas1 | satgas | Active status |
-| satgas2 | satgas | Inactive status |
-| linmas1 | linmas | Active status |
+| korlap_bungkul | korlap | Taman Bungkul + Jalan Raya Darmo |
+| satgas_pusat_1 | satgas | Active status |
+| satgas_pusat_2 | satgas | Outside area status |
+| linmas_bungkul_1 | linmas | Active status |
 
-See [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md) for all 30 test users.
+See [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md) for all test users.
+
+---
+
+## Design Tokens Pipeline (Phase 3 M1-R Sub-Phase 3-R2)
+
+The token system is **single-source-of-truth** across mobile native, mobile web, and desktop web.
+
+**Source of Truth:**
+- [`specs/ui-ux/tokens.json`](specs/ui-ux/tokens.json) — All design tokens (colors, shadows, typography, spacing, radius)
+
+**Generated Consumers:**
+- `fe/web/src/app/generated/tokens.css` — Tailwind v4 CSS variables
+- `fe/mobile/src/constants/generated/tokens.ts` — React Native exports
+
+**Build Pipeline:**
+```bash
+npm run tokens:build   # Regenerate from tokens.json
+npm run tokens:verify  # Verify committed files match source (CI validation)
+npm run test:tokens    # Unit tests for generator + ESLint rules
+```
+
+**Critical Rules:**
+- ✅ EDIT `specs/ui-ux/tokens.json` → run `npm run tokens:build` → commit regenerated files
+- ❌ NEVER hand-edit `generated/tokens.css` or `generated/tokens.ts`
+- ❌ NEVER use inline hex literals in code — ESLint rule `no-inline-hex-colors` blocks PRs
+
+This ensures both platforms always ship identical color, shadow, and typography values — no drift.
 
 ---
 
 ## Project Status
 
-**Phase 2E Complete + Monitoring Map Bugfixes** ✅ (April 2026)
+**Phase 3 IN PROGRESS** (M1-R ✅ + M2 complete, Apr 26, 2026)
 
 | Component | Status | Metrics |
 |-----------|--------|---------|
-| **Backend** | Complete | 18 modules, ~130 endpoints, 1,264 tests, 94.51% coverage |
-| **Mobile** | Complete | 22 screens, 3,669+ tests, 80.31%+ coverage, WCAG 2.1 AA, Neo Brutalism 2.0 |
-| **Web** | Complete | 21 pages, Mapbox GL, real-time monitoring dashboard, identifier login |
-| **Database** | Complete | 22 tables, 8-role system, 8 migrations, monitoring status tracking |
+| **Backend** | M2 complete | 18 modules, ~130 endpoints, 1,264+ tests, 94.51% coverage; Phase 3 Redis infrastructure live |
+| **Mobile** | M2 complete | 22 screens, 3,836 tests, 80.31%+ coverage, WCAG 2.1 AA, Neo Brutalism 2.0, M1-R token migration complete |
+| **Web** | M2 complete | 21 pages, supercluster monitoring, virtualized worker list, responsive 3-column layout, installable PWA (feature-flagged) |
+| **Database** | M2 complete | 30 tables, 9-role system (incl. `staff_kecamatan`), 11 migrations, 128 plant species seeded |
 
-**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2D (Mar 7) + Phase 2E (Apr 25)** both live in production.
+**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2E (Apr 25, 2026)** live in production.
 
-**Next:** Phase 3 — Plants Management + Monitoring Rebuild + Public Intake (5–7 weeks, 73 dev-days, in planning)
-- **M1-R Redesign Foundation (14 d):** unified design-token pipeline + brand-font bundling + NB primitive migration + new mobile NBModal/NBToast/NBText + Web installable PWA + mobile-web responsive layouts at 375/768/1280 px + full screen-level redesign sweep
-- **M1-S Schema + Spec Sync (6 d):** new role `staff_kecamatan`, plant-related tables, obsolete-doc cleanup
-- **M2 Monitoring v2 (21 d):** Redis Streams pipeline, supercluster, virtualized list, k6 500-worker load test
-- **M3 Plants & Typed Tasks (15 d):** pruning task form, due-date forecast, CSV backfill of 5,008 historical records
-- **M4 Public Intake + Capacity + Seeds (16 d):** kecamatan submit → admin_data review → convert-to-task workflow, capacity calendar, seed ledger
-- **M5 Documentation + Deploy (2 d + rollout):** pilot at Rayon Selatan → all rayons
+**Phase 3 progress: 10/21 sub-phases (~48%).** M1-R (5 sub-phases) + 3-1 + 3-2 + M2 (3-3/3-4/3-5) ✅ complete. **Next: 3-6 (Task typing + partial-complete API)**.
 
 ---
 
@@ -142,16 +178,13 @@ cd fe/web && npm run test:e2e   # Playwright E2E tests
 ### Fresh Deploy (Staging / Production)
 
 ```bash
-# 1. Run all database migrations
+# 1. Run all database migrations (creates all 22 tables)
 docker exec sekar-backend npm run migration:run:prod
 
-# 2. Sync tables not covered by migrations (one-time)
-# Temporarily set DATABASE_SYNCHRONIZE=true, start app, then disable
-
-# 3. Seed reference data + 1 superadmin (idempotent, safe to re-run)
+# 2. Seed reference data + 1 superadmin (idempotent, safe to re-run)
 docker exec sekar-backend npm run db:seed:prod
 
-# 4. Change default admin password immediately
+# 3. Change default admin password immediately
 ```
 
 ### Incremental Deploy (Subsequent Releases)
@@ -188,4 +221,4 @@ See [`specs/deployment/phase-2-deployment.md`](specs/deployment/phase-2-deployme
 
 UNLICENSED - Proprietary project for DLH Surabaya
 
-**Last Updated:** April 25, 2026
+**Last Updated:** April 27, 2026

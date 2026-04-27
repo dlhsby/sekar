@@ -10,19 +10,15 @@ npm install
 
 # Setup environment
 cp .env.example .env
-# Edit .env with your database credentials
-# Uncomment DATABASE_SYNCHRONIZE=true for dev
+# Edit .env with your database credentials if needed
 
 # Start infrastructure (first time)
 cd ../infra && ./start.sh && cd ../be
 
-# Run migrations
+# Run all migrations (creates all tables)
 npm run migration:run
 
-# Start app once to sync remaining tables (Ctrl+C after startup)
-DATABASE_SYNCHRONIZE=true npm run start:dev
-
-# Seed database
+# Seed database (Phase 1 + 2 + 3)
 npm run db:seed
 
 # Start server
@@ -133,12 +129,28 @@ docker exec sekar-backend npm run db:seed:prod
 - **Production template:** `be/.env.production.example`
 - `DATABASE_SYNCHRONIZE` must be `false` in staging/prod (`main.ts` blocks startup otherwise)
 
+## Environment Configuration
+
+### Phase 3 Infrastructure
+
+Add to `.env` for Phase 3 M2 Monitoring v2 features (Redis Streams, status projector):
+
+```env
+# Redis (Phase 3 M2+)
+REDIS_URL=redis://localhost:6379
+REDIS_STREAM_MAX_LEN=10000
+STAFFING_DEBOUNCE_SECONDS=30
+MONITORING_SWEEP_CRON=*/30 * * * *    # Every 30 minutes
+CLUSTER_ZOOM_THRESHOLD=14              # Zoom level for cluster visibility
+```
+
+For development, Redis is not required until Phase 3 M2 implementation starts. Existing Phase 2E deployments continue to work without these variables.
+
 ## Current Status
 
-- **Modules:** 16 feature modules
-- **Endpoints:** 120
-- **Tests:** 1,095 passing
-- **Coverage:** 92.15%
-- **Features:** JWT auth, 8-role RBAC, WebSocket, FCM notifications, S3 uploads, real-time monitoring
+- **Modules:** 18 feature modules (16 existing + plants + pruning-requests + service-capacity + plant-seeds)
+- **Endpoints:** ~130 (120 Phase 2 + ~10 Phase 3 stubs)
+- **Tests:** 1,264 passing, 94.51% coverage
+- **Features:** JWT auth, 9-role RBAC (incl. `staff_kecamatan`), WebSocket, FCM notifications, S3 uploads, Redis Streams, real-time monitoring v2
 
 **Production:** https://api.sekar.wahyutrip.com

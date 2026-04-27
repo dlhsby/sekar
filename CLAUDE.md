@@ -326,55 +326,9 @@ API_VERSION=v1
 
 ## Development Phases
 
-**Phase 1 MVP** ✅ Complete (Jan 23, 2026)
-- Backend: 9 modules, 40 endpoints, 401 tests (84.23%)
-- Mobile: 14 screens, 1,086 tests
+**Past Phases (Phase 1–2E + Monitoring Map Bugfixes):** See `specs/COMPLETION_STATUS.md` for full history.
 
-**Phase 2 Enhanced Features** ✅ Complete (Jan 27, 2026)
-- Backend: 15 modules, 83 endpoints, 845 tests (90.77%)
-- Mobile: 17 screens, ~3,298 tests (80.31%+), Neo Brutalism UI, WCAG 2.1 AA
-- Web: 18 pages, Next.js 16.1.4, Mapbox GL
-- Features: Rayons (7), Tasks, Notifications, Monitoring, KMZ Import, WebSocket
-
-**Phase 2 Code Review** ✅ Complete (Jan 31-Feb 1, 2026)
-- Fixed critical bugs (withAlpha(), ErrorBoundary)
-- Added 84 tests (2,057 → 2,141)
-- Improved coverage: API +6.22%, Sync +5.02%
-
-**Phase 2C Client Feedback** ✅ Complete + Deployed (Feb 10-28, 2026)
-- 8-role system (ADR-009), Overtime module, Task redesign, Activity rename
-- GPS soft geofencing, filter modal improvements, subordinate hierarchy filters
-- Backend: 16 modules, 113 endpoints, 888 tests; Mobile: 3,264 tests
-- Deployed: api.sekar.wahyutrip.com + sekar.wahyutrip.com (Feb 16, 2026)
-
-**Phase 2D Real-Time Monitoring** ✅ Complete + Deployed (Mar 3-7, 2026)
-- Five-status tracking (active/inactive/outside_area/missing/offline) backed by `user_tracking_status` table
-- `StatusCalculatorService` integrated into `LocationService` (onLocationPing) and `ShiftsService` (onClockIn/onClockOut)
-- Configurable thresholds via `monitoring_configs` table (5 configs); WebSocket `monitoring:` room prefix
-- 5 new WebSocket events: status-changed, left-area, entered-area, reassigned, area:staffing-changed
-- 3 new services: DayTypeService, RayonBoundaryService, MonitoringReassignService
-- Web: full Mapbox GL map with markers/polygons, filter sidebar, worker detail panel, staffing summary
-- Mobile: enhanced MapDashboard, UserDetailSheet, four-status marker colors, location history
-- Backend: 122 endpoints, 1,204 tests (94.55% line coverage); Mobile: 3,669 tests
-- 2 migrations: Phase2DMonitoringSchema + Phase2DGapFixes (rayon boundary columns)
-- Deployed: api.sekar.wahyutrip.com (Mar 7, 2026)
-
-**Phase 2E Client Feedback II** ✅ Complete (Mar 11, 2026)
-- Phone number login (identifier-based auth, ADR-012)
-- Profile picture upload (S3), multi-area korlap assignment (ADR-013)
-- Overtime clock-in/clock-out redesign (ADR-014), optional selfie
-- Admin_data + kepala_rayon clockable, audit trail module (ADR-015)
-- Backend: 18 modules, ~130 endpoints, 1,204 tests; 2 new tables (user_areas, audit_logs)
-- Mobile + Web: identifier login, types updated, optional selfie
-
-**Monitoring Map Bugfixes** ✅ Fixed (Apr 24, 2026)
-- Marker sizing: reduced 40→32px, LabelMode enum replaces raw `zoomLevel` float
-- `tracksViewChanges={false}` + key includes `labelMode` → bitmap only redraws on threshold crossing
-- LocationTrail: `requestAnimationFrame` mount guard prevents `addViewAt` bridge crash
-- `useFocusEffect` replaces one-shot `useEffect` for boundary fetch; `boundaryKey` forces Polygon remount on tab re-focus
-- Removed `animateToRegion` from `handleMarkerPress` to eliminate race with bottom-sheet `snapToIndex`
-
-**Phase 3 Plants Management + Monitoring Rebuild + Public Intake** - IN PLANNING (Apr 24–25, 2026)
+**Phase 3 Plants Management + Monitoring Rebuild + Public Intake** - IN PROGRESS (Apr 24–, 2026)
 - **M1-R Redesign Foundation (NEW, 14 d) — opens Phase 3 BEFORE feature work.** Sub-phases 3-R1…3-R5: token generator pipeline + CI + ESLint, token value migration with hard-edge shadows + brand-font bundling on both platforms, NB primitive migration + new `NBModal`/`NBToast`/`NBText`, web PWA shell with mobile-web responsive scaffolding, full redesign sweep on every non-rewritten screen. After M1-R, mobile native + mobile web (<768 px) + desktop web all share one visual spine; no screen left on old tokens. Promoted full migration sweep from prior Phase 4 backlog (ADR-036, ADR-037).
 - Full monitoring v2 rewrite: Redis Streams projector, Socket.IO Redis adapter, staffing debouncer, stale-status sweep, supercluster rendering (web + mobile), virtualized worker list, incremental WS patches (ADR-029 supersedes ADR-011 at pipeline level)
 - Preserves Apr 24 marker/trail fixes (tracksViewChanges={false}, LabelMode enum, requestAnimationFrame guard, useFocusEffect) via parallel `ClusterMarker` + feature flag + ESLint rule

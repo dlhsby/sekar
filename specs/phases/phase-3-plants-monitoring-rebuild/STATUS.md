@@ -27,6 +27,36 @@
 
 ---
 
+## ✅ M1-R → M2 Checkpoint Review (Apr 26, 2026)
+
+This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation + M2 monitoring rebuild). All items are code-complete, all tests green. This is the recommended point for a developer review before starting M3 (task typing, plants).
+
+### What to review
+
+| Area | Entry point | Key things to check |
+|------|-------------|---------------------|
+| **Token pipeline** | `scripts/build-tokens.ts`, `specs/ui-ux/tokens.json` | Generator produces identical output; `tokens:verify` CI job gates PRs |
+| **NB 2.0 shadows + colors** | `fe/mobile/src/constants/nbTokens.ts`, `fe/mobile/src/constants/generated/tokens.ts` | Opaque hard-edge shadows (`shadowOpacity:1, shadowRadius:0, elevation:0`); `nbColors.gray` backward-compat shim |
+| **NBModal / NBToast / NBText** | `fe/mobile/src/components/nb/` | Sheet vs. fullscreen modal variants; title uppercased; toast NB chrome; NBText 10 variants |
+| **Web PWA shell** | `fe/web/src/app/layout.tsx`, `fe/web/next.config.ts`, `fe/web/src/app/(kecamatan)/layout.tsx` | Manifest, service worker, `ResponsiveShell` at 375/768/1280 px; `staff_kecamatan` minimal layout |
+| **Redis + Socket.IO adapter** | `be/src/common/services/redis.service.ts`, `be/src/gateways/events.gateway.ts` | Graceful fallback (no Redis = in-process); `@Optional()` injection |
+| **Status pipeline** | `be/src/modules/monitoring/services/` (projector, debouncer, sweeper) | Redis Stream consumer group; debounce prevents broadcast thrash; cron sweep marks stale |
+| **Snapshot endpoint** | `be/src/modules/monitoring/monitoring.controller.ts:197` | Scope enforcement (rayon/city gate); response shape for web + mobile consumers |
+| **Web monitoring page** | `fe/web/src/app/(dashboard)/monitoring/page.tsx` | `status:v2` WS patch wiring; `ClusterLayer`; `WorkerListVirtual`; `HierarchyFilterPanel`; `AreaDetailDrawer` |
+| **Mobile cluster markers** | `fe/mobile/src/components/monitoring/ClusteredUserMarkers.tsx`, `ClusterMarker.tsx` | `featureFlags.clusterMarkersV2=false` (off by default); ESLint ban on `tracksViewChanges={true}` |
+| **Mobile monitoringV2Slice** | `fe/mobile/src/store/slices/monitoringV2Slice.ts` | `visibleLayers`, `clusterZoomThreshold`, `snapshot` shape |
+| **Mobile toggle sheet + area overlay** | `fe/mobile/src/components/monitoring/MonitoringToggleSheet.tsx`, `AreaStatusOverlay.tsx` | Layer toggle dispatches; `useFocusEffect` boundary fetch |
+| **Test suite health** | Run `cd fe/mobile && npm test` | 159 suites, 3,836 total, 3,829 passing, 7 skipped — should be zero failures |
+
+### Known deferred items (not blocking M2 review)
+
+- `PlantOverlayLayer` — stub only; full implementation in plant sub-phases (3-8 onwards)
+- Visual regression snapshots (Jest/Playwright) — deferred to Phase 4
+- k6 load test (`3-14`) — deferred until full M3 plant + task endpoints are in
+- `GET /monitoring/snapshot` scope caching — no Redis-level caching yet; each request hits DB
+
+---
+
 ## Overall Progress
 
 | Sub-Phase | Milestone | Name | Est. days | Status | Progress |
@@ -247,50 +277,58 @@
 
 ---
 
-## Sub-Phase 3-3: Monitoring v2 backend ⏳
+## Sub-Phase 3-3: Monitoring v2 backend ✅
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Install Redis 7 service in docker-compose | ⏳ | |
-| `RedisService` with connection pool + health check | ⏳ | fallback to in-process pub/sub |
-| Socket.IO Redis adapter wiring | ⏳ | |
-| `StatusProjectorService` reading Redis Streams | ⏳ | consumer group `monitoring-projector` |
-| `StaffingDebouncerService` | ⏳ | default `STAFFING_DEBOUNCE_SECONDS=30` |
-| `StaleStatusSweeperService` `@Cron('*/5 * * * *')` | ⏳ | |
-| Rewrite `onLocationPing` (eager-load once, queue to stream) | ⏳ | |
-| Fix batch-ingest iteration (location.service.ts:92-103) | ⏳ | |
-| `location_logs` composite indexes (3) | ⏳ | |
-| `user_tracking_status` indexes (2) | ⏳ | |
-| `GET /monitoring/snapshot` unified endpoint | ⏳ | |
-| Unit tests ≥ 85 % per new service | ⏳ | |
+| Install Redis 7 service in docker-compose | ✅ | `infra/docker-compose.yml` — redis:7-alpine, AOF, 256 MB allkeys-lru, health-check |
+| `RedisService` with connection pool + health check | ✅ | `be/src/common/services/redis.service.ts` — graceful fallback to in-process pub/sub; 13 tests |
+| Socket.IO Redis adapter wiring | ✅ | `be/src/gateways/events.gateway.ts` — `createAdapter(@socket.io/redis-adapter)`; `@Optional()` so dev works without Redis |
+| `StatusProjectorService` reading Redis Streams | ✅ | `be/src/modules/monitoring/services/status-projector.service.ts` — consumer group `monitoring-projector`; 6 tests |
+| `StaffingDebouncerService` | ✅ | `be/src/modules/monitoring/services/staffing-debouncer.service.ts` — `STAFFING_DEBOUNCE_SECONDS=30`; 9 tests |
+| `StaleStatusSweeperService` `@Cron('*/5 * * * *')` | ✅ | `be/src/modules/monitoring/services/stale-status-sweeper.service.ts` — 6 tests |
+| Rewrite `onLocationPing` (eager-load once, queue to stream) | ✅ | `be/src/modules/locations/location.service.ts` — scope-enforcement fix; single eager load |
+| Fix batch-ingest iteration (location.service.ts:92-103) | ✅ | Off-by-one corrected; iteration now consistent with stream queueing |
+| `location_logs` composite indexes (3) | ✅ | In `17460001000000-Phase3BackfillIndexes.ts` via `CREATE INDEX CONCURRENTLY` |
+| `user_tracking_status` indexes (2) | ✅ | In `17460000000000-Phase3Schema.ts` — `idx_user_tracking_area_updated`, `idx_user_tracking_within_area` |
+| `GET /monitoring/snapshot` unified endpoint | ✅ | `be/src/modules/monitoring/monitoring.controller.ts:197` — scope-gated; city scope requires city-level role |
+| Unit tests ≥ 85 % per new service | ✅ | All new services have dedicated spec files; backend overall 94.51 % stmts |
 
 ---
 
-## Sub-Phase 3-4: Monitoring v2 web ⏳
+## Sub-Phase 3-4: Monitoring v2 web ✅
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `ClusterLayer` (supercluster) | ⏳ | |
-| Incremental WS patch handling in React Query | ⏳ | |
-| `WorkerListVirtual` (TanStack virtual) | ⏳ | |
-| `HierarchyFilterPanel` | ⏳ | |
-| `PlantOverlayLayer` + `AreaStatusOverlay` | ⏳ | |
-| `AreaDetailDrawer` | ⏳ | |
-| Role-aware sidebar covers 9 roles | ⏳ | |
+| `ClusterLayer` (supercluster) | ✅ | `fe/web/src/components/monitoring/ClusterLayer.tsx` — supercluster integration, zoom-threshold switch |
+| Incremental WS patch handling in React Query | ✅ | `fe/web/src/app/(dashboard)/monitoring/page.tsx` — `status:v2` socket event patches `queryClient` cache directly; 1 dedicated test |
+| `WorkerListVirtual` (TanStack virtual) | ✅ | `fe/web/src/components/monitoring/WorkerListVirtual.tsx` — `@tanstack/react-virtual` row virtualizer |
+| `HierarchyFilterPanel` | ✅ | `fe/web/src/components/monitoring/HierarchyFilterPanel.tsx` — rayon/area/shift multi-select |
+| `PlantOverlayLayer` | ⏳ deferred | Stub only — full implementation deferred to 3-5 plant overlay phase |
+| `AreaStatusOverlay` | ⏳ deferred | Not in web component list; mobile-only in 3-5 |
+| `AreaDetailDrawer` | ✅ | `fe/web/src/components/monitoring/AreaDetailDrawer.tsx` — slide-in drawer with area stats |
+| Role-aware sidebar covers 9 roles | ✅ | `fe/web/src/lib/navigation.ts` — `staff_kecamatan` minimal nav added (ADR-033); `(kecamatan)` layout shell |
+
+**Tests:** 10 new tests in `MonitoringPage.test.tsx` covering snapshot load, virtualized list rendering, `status:v2` cache patch, `staff_kecamatan` redirect.
 
 ---
 
-## Sub-Phase 3-5: Monitoring v2 mobile ⏳
+## Sub-Phase 3-5: Monitoring v2 mobile ✅
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `ClusterMarker` parallel component | ⏳ | keep `UserMarker` intact |
-| `ClusteredUserMarkers` zoom-based switch | ⏳ | preserves `tracksViewChanges={false}`, `LabelMode` enum in key |
-| `featureFlags.clusterMarkersV2` A/B flag | ⏳ | |
-| ESLint rule forbidding `tracksViewChanges={true}` | ⏳ | `components/monitoring/` scope |
-| `MonitoringToggleSheet` overlay controls | ⏳ | |
-| `AreaStatusOverlay` area fills | ⏳ | |
-| Preserve `LocationTrail` mount guard | ⏳ | reference only; do not modify |
+| `ClusterMarker` parallel component | ✅ | `fe/mobile/src/components/monitoring/ClusterMarker.tsx` — `tracksViewChanges={false}`, `zoomBucket` key for bitmap reuse; 11 tests |
+| `ClusteredUserMarkers` zoom-based switch | ✅ | `fe/mobile/src/components/monitoring/ClusteredUserMarkers.tsx` — O(n²) distance-group; switches at `clusterZoomThreshold`; `LabelMode` enum key from Apr 24 bugfix preserved; 9 tests |
+| `featureFlags.clusterMarkersV2` A/B flag | ✅ | `fe/mobile/src/utils/featureFlags.ts:13` — `clusterMarkersV2: false` (off by default); `MapDashboardScreen` reads flag at line 481 |
+| ESLint rule forbidding `tracksViewChanges={true}` | ✅ | `fe/mobile/eslint.config.js:90-102` — custom inline rule; errors in `components/monitoring/` scope |
+| `MonitoringToggleSheet` overlay controls | ✅ | `fe/mobile/src/components/monitoring/MonitoringToggleSheet.tsx` — dispatches `monitoringV2Slice.toggleLayer`; 10 tests |
+| `AreaStatusOverlay` area fills | ✅ | `fe/mobile/src/components/monitoring/AreaStatusOverlay.tsx` — `useFocusEffect` boundary fetch; mocked in MapDashboard test |
+| `PlantOverlayLayer` | ✅ stub | `fe/mobile/src/components/monitoring/PlantOverlayLayer.tsx` — stub; full impl deferred to plant sub-phases |
+| `monitoringV2Slice` Redux slice | ✅ | `fe/mobile/src/store/slices/monitoringV2Slice.ts` — `visibleLayers`, `clusterZoomThreshold`, `snapshot`; 31 tests |
+| Preserve `LocationTrail` mount guard | ✅ | `requestAnimationFrame` guard from Apr 24 bugfix untouched; `LocationTrail.test.tsx` all green |
+| Mobile test suite green after M1-R + M2 | ✅ | All 159 suites / 3,836 tests pass (3,829 passing, 7 skipped) — Apr 26 test-fix session resolved 7 failing suites |
+
+**New 3-5 tests:** `monitoringV2Slice.test.ts` (31) + `ClusterMarker.test.tsx` (11) + `ClusteredUserMarkers.test.tsx` (9) + `MonitoringToggleSheet.test.tsx` (10) + `MapDashboardScreen.test.tsx` (9, updated) = **70 tests**.
 
 ---
 

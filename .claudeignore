@@ -1,0 +1,25 @@
+# Dependencies
+**/node_modules/
+
+# Build outputs
+be/dist/
+fe/web/.next/
+fe/mobile/android/build/
+fe/mobile/android/app/build/
+fe/mobile/ios/build/
+fe/mobile/ios/DerivedData/
+
+# Coverage / generated
+be/coverage/
+fe/web/coverage/
+fe/mobile/coverage/
+fe/mobile/ios/link-assets-manifest.json
+fe/mobile/android/link-assets-manifest.json
+
+# Locks & binaries
+*.lock
+*.log
+*.bin
+*.gz
+sekar-handoff.zip
+*.csv
