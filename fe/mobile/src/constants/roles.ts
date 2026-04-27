@@ -15,6 +15,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   top_management: 'Top Management',
   admin_system: 'Admin Sistem',
   superadmin: 'Superadmin',
+  // Phase 3 — public intake (ADR-033)
+  staff_kecamatan: 'Staff Kecamatan',
 };
 
 /** Roles that can clock in/out (must match backend CLOCKABLE_ROLES) */

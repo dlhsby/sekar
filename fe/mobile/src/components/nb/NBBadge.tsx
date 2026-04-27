@@ -140,7 +140,7 @@ export const NBBadge: React.FC<NBBadgeProps> = ({
           textStyle,
         ]}
       >
-        {text.toUpperCase()}
+        {(text ?? '').toString().toUpperCase()}
       </Text>
     </View>
   );
