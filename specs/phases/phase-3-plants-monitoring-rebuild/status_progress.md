@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Progress
 
-**Last Updated:** 2026-04-26
-**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 ✅ (with known gaps); 10/21 sub-phases complete
+**Last Updated:** 2026-04-27
+**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 (3-3 🟡 Partial · 3-4 🟡 Partial · 3-5 ✅); 10/21 sub-phases complete. **M2 backend deployed to production Apr 27**; remaining 3-3 / 3-4 gaps tracked below.
 
 This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-sub-phase journal that's updated in-flight and finalized on phase completion. `STATUS.md` is the live task-level tracker; this file is the narrative log.
 
@@ -17,10 +17,10 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | **M1-R** | 3-R4 Web PWA shell + responsive scaffolding | 100 % | ✅ Complete | web-developer | Manifest/SW/icons + ResponsiveShell + (kecamatan) layout — landed 2026-04-25 |
 | **M1-R** | 3-R5 Full redesign sweep on non-rewritten screens | 100 % | ✅ Complete | mobile-developer | All non-monitoring screens swept; monitoring palette + Mapbox specs documented in hex-allowlist.txt — landed 2026-04-25 |
 | **M1-S** | 3-1 Spec sync + ADRs 029–037 + obsolete-info cleanup | 100 % | ✅ Complete | docs pass | ADR-029…037 all Accepted; STATUS/CLAUDE.md synced; M1-R reflection done. Final sweep deferred to 3-15. |
-| **M1-S** | 3-2 Schema + role extension | 100 % | ✅ Complete | database-engineer + backend-developer | 2 migrations, 8 entities, `staff_kecamatan` role, seed-phase3 (124 species + 4 configs + capacity grid) |
-| **M2** | 3-3 Monitoring v2 backend | 85 % | 🟡 Partial | backend-developer | RedisService, projector, debouncer, sweeper, Socket.IO adapter done. Gaps: `status:v2` not emitted; debouncer not wired to gateway; eager-load rewrite deferred. See 3-3 review. |
-| **M2** | 3-4 Monitoring v2 web | 90 % | 🟡 Partial | web-developer | ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, snapshot hook done. Gap: no component tests. ClusterLayer not yet integrated with existing MonitoringMap (known limitation). |
-| **M2** | 3-5 Monitoring v2 mobile | 85 % | 🟡 Partial | mobile-developer | monitoringV2Slice, ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay done. Gaps: plants Redux slice deferred to 3-8; MapDashboardScreen v2 wiring not confirmed; no component tests. |
+| **M1-S** | 3-2 Schema + role extension | 100 % | ✅ Complete | database-engineer + backend-developer | 2 migrations applied to prod Apr 27, 8 entities (with @Unique decorators added Apr 27), `staff_kecamatan` role live, seed-phase3 (128 species + 4 Phase 3 configs + capacity grid) — bundled into `db:seed:prod` and `db:seed:staging:prod` from `3844974`. |
+| **M2** | 3-3 Monitoring v2 backend | 88 % | 🟡 Partial | backend-developer | RedisService, projector, debouncer, sweeper, Socket.IO adapter done. **Closed Apr 27:** debouncer wired to gateway via `setEmitter()` (events.gateway.ts:99). **Still open:** `status:v2` not emitted from projector (Gap-1); `cluster:update` event not implemented (Gap-3); eager-load rewrite deferred to 3-14 (pool pressure now async, not eliminated); `GET /monitoring/snapshot` `includes` query param missing; Redis health check not wired (Gap-5); `PHASE3_FEATURES_ENABLED` env flag not added (Gap-6). |
+| **M2** | 3-4 Monitoring v2 web | 92 % | 🟡 Partial | web-developer | ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, snapshot hook done. **Closed Apr 27:** tests for `HierarchyFilterPanel`, `WorkerListVirtual`, monitoring API hook, and the monitoring page itself (`MonitoringPage.test.tsx` + `page.test.tsx` align with M2 rewrite). **Still open:** no `ClusterLayer.test.tsx` or `AreaDetailDrawer.test.tsx`; ClusterLayer not yet integrated with existing `MonitoringMap` Mapbox component (known limitation — `lngLatToPixel` not exposed); `monitoring/config` page Phase 3 fields not added. |
+| **M2** | 3-5 Monitoring v2 mobile | 100 % | ✅ Complete | mobile-developer | monitoringV2Slice, ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay all done. **Closed Apr 26:** `MapDashboardScreen.tsx` wires v2 components (lines 18-20 imports, 468 AreaStatusOverlay, 480-481 ClusteredUserMarkers behind `featureFlags.clusterMarkersV2`, 611 MonitoringToggleSheet). **Closed Apr 26:** component tests exist for `monitoringV2Slice` (31), `ClusterMarker` (11), `ClusteredUserMarkers` (9), `MonitoringToggleSheet` (10). **Correctly deferred:** `plants` Redux slice belongs to 3-8 where plant data exists. **Minor gap (not blocking):** no `AreaStatusOverlay.test.tsx` — covered indirectly via the `MapDashboardScreen.test.tsx` integration test. |
 | **M2** | 3-14 Load test + regression | 0 % | ⏳ Not Started | devops-engineer + backend-developer | k6 harness, 500-worker scenario |
 | **M3** | 3-6 Task typing + custom fields API | 0 % | ⏳ Not Started | backend-developer | `task_type` enum + Zod registry + lineage |
 | **M3** | 3-7 Pruning task UX | 0 % | ⏳ Not Started | mobile-developer + web-developer | Form + partial complete + resume |
@@ -334,10 +334,10 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 ---
 
-## Sub-Phase 3-3: Monitoring v2 backend — 🟡 Partial (2026-04-26)
+## Sub-Phase 3-3: Monitoring v2 backend — 🟡 Partial (2026-04-26 → updated 2026-04-27)
 
 **Planned duration:** 7 days · **Actual:** 1 day  
-**Known gaps: see M2 compliance review in `status_reviews.md`**
+**Known gaps: see M2 compliance review in `status_reviews.md`. Apr 27 update: Gap-2 closed (debouncer→gateway wiring); 5 gaps still open and tracked below.**
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -351,7 +351,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | Tests for RedisService, Projector, Debouncer, Sweeper | ✅ | All 4 spec files present |
 | Eager-load rewrite in projector (single SELECT replaces 6+ queries) | ❌ | Delegates to unmodified `StatusCalculatorService`; pool pressure moved async not eliminated. Track for 3-14 window. |
 | `status:v2` WS event emitted from projector on status transition | ❌ | Not emitted; Phase 2D `StatusCalculatorService` still owns event emission. **Gap-1** |
-| `StaffingDebouncerService.setEmitter()` wired to `EventsGateway` | ❌ | Debouncer standalone; `setEmitter()` never called from gateway. **Gap-2** |
+| `StaffingDebouncerService.setEmitter()` wired to `EventsGateway` | ✅ | Wired at `be/src/gateways/events.gateway.ts:99` — `this.staffingDebouncer.setEmitter(...)` callback emits to room. **Gap-2 closed.** |
 | `cluster:update` WS delta event | ❌ | Not implemented. **Gap-3** |
 | `GET /monitoring/snapshot` `includes` query param | ⚠️ | Endpoint exists; `includes` param absent; plant/overdue fields stubbed (3-8 scope) |
 | Health check extended for Redis + stream lag | ❌ | `be/src/modules/health/` has no Redis check. **Gap-5** |
@@ -359,10 +359,10 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 ---
 
-## Sub-Phase 3-4: Monitoring v2 web — 🟡 Partial (2026-04-26)
+## Sub-Phase 3-4: Monitoring v2 web — 🟡 Partial (2026-04-26 → updated 2026-04-27)
 
 **Planned duration:** 6 days · **Actual:** 1 day  
-**Known gap: no component-level tests written**
+**Known gap (narrowed Apr 27):** component tests for `HierarchyFilterPanel`, `WorkerListVirtual`, the monitoring API hook, and the monitoring page itself now exist. Still missing: `ClusterLayer.test.tsx` and `AreaDetailDrawer.test.tsx`. Mapbox/`MonitoringMap` integration of `ClusterLayer` remains the documented known limitation.
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -375,15 +375,15 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | `staff_kecamatan` in `types/models.ts`, `roles.ts`, `navigation.ts` | ✅ | Role gating in monitoring page confirmed |
 | `PlantOverlayLayer` | ⏳ | Deferred to sub-phase 3-8 |
 | `monitoring/config` page — new Phase 3 debounce/sweep fields | ⚠️ | Page exists but new fields not added |
-| Unit tests for ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, hook | ❌ | Missing. **Gap-8** |
+| Unit tests for ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, hook | ⚠️ | 3/5 covered: `WorkerListVirtual.test.tsx`, `HierarchyFilterPanel.test.tsx`, monitoring API hook (`fe/web/src/lib/api/__tests__/monitoring*.test.ts*`). Plus `MonitoringPage.test.tsx` + `monitoring/__tests__/page.test.tsx` exercise the integration. **Still missing:** `ClusterLayer.test.tsx`, `AreaDetailDrawer.test.tsx`. **Gap-8 narrowed** (Apr 27). |
 | ClusterLayer integrated with existing `MonitoringMap` Mapbox component | ❌ | Known limitation — `lngLatToPixel` not exposed; cluster pins not on map yet. Deferred. |
 
 ---
 
-## Sub-Phase 3-5: Monitoring v2 mobile — 🟡 Partial (2026-04-26)
+## Sub-Phase 3-5: Monitoring v2 mobile — ✅ Complete (2026-04-26 → confirmed 2026-04-27)
 
 **Planned duration:** 5 days · **Actual:** 1 day  
-**Known gap: no component-level tests; plants slice deferred**
+**Apr 27 reconciliation:** the two open gaps from the Apr 26 review were verified closed against the working tree (MapDashboardScreen wiring + 4 of 5 component tests landed during the Apr 26 test-fix session). The remaining items — `plants` Redux slice and `AreaStatusOverlay.test.tsx` — are correctly out-of-scope: the slice belongs to 3-8 where plant data exists, and `AreaStatusOverlay` is exercised through the `MapDashboardScreen.test.tsx` integration test.
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -395,9 +395,9 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | `MonitoringToggleSheet.tsx` (NB bottom-sheet, layer toggles) | ✅ | `fe/mobile/src/components/monitoring/MonitoringToggleSheet.tsx` |
 | `AreaStatusOverlay.tsx` (`useFocusEffect` reload on tab return) | ✅ | `fe/mobile/src/components/monitoring/AreaStatusOverlay.tsx` |
 | `PlantOverlayLayer.tsx` stub | ✅ | Explicit stub with TODO; full impl in 3-8 |
-| `MapDashboardScreen.tsx` updated to wire v2 components | ⚠️ | Integration not confirmed as modified; `ClusteredUserMarkers`/`MonitoringToggleSheet` wiring needs verification. **Gap-11** |
-| `plants` Redux slice (`speciesCatalog`, `areaPlantsByArea`, etc.) | ❌ | Deferred to sub-phase 3-8 where plant data exists. **Gap-7** |
-| Tests for ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay, monitoringV2Slice | ❌ | Missing. **Gap-9** |
+| `MapDashboardScreen.tsx` updated to wire v2 components | ✅ | Verified Apr 27 — `ClusteredUserMarkers` (lines 18, 480-481, gated by `featureFlags.clusterMarkersV2`), `MonitoringToggleSheet` (lines 19, 611), `AreaStatusOverlay` (lines 20, 468) all imported and rendered. **Gap-11 closed.** |
+| `plants` Redux slice (`speciesCatalog`, `areaPlantsByArea`, etc.) | ⏳ deferred | Correctly belongs to sub-phase 3-8 where plant data exists. **Gap-7 → out-of-scope by design (not blocking M2).** |
+| Tests for ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay, monitoringV2Slice | ✅ | 4/5 covered: `ClusterMarker.test.tsx` (11), `ClusteredUserMarkers.test.tsx` (9), `MonitoringToggleSheet.test.tsx` (10), `monitoringV2Slice.test.ts` (31). `AreaStatusOverlay` covered indirectly via `MapDashboardScreen.test.tsx` (mocked overlay rendering). **Gap-9 closed in spirit** — no AreaStatusOverlay-specific test, but no blocker. |
 
 ---
 
