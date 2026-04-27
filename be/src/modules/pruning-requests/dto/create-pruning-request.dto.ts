@@ -160,6 +160,23 @@ export class CreatePruningRequestDto {
   @IsOptional()
   rayon_id?: string;
 
+  /**
+   * Optional kecamatan name. If not provided, server falls back to the
+   * submitter's profile `kecamatan_name`, then `full_name` as a last resort.
+   * Lets staff_kecamatan submit on behalf of a neighboring kecamatan.
+   *
+   * @example 'Tegalsari'
+   */
+  @ApiPropertyOptional({
+    description: 'Kecamatan name override (auto-derived from profile if absent)',
+    example: 'Tegalsari',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  kecamatan_name?: string;
+
   // ── Phase 3 Apr 27 — staff_kecamatan redesign fields ───────────────────────
   // Tree details (free text estimates from the field — exact ranges accepted)
 

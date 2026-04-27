@@ -13,6 +13,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import { AuthProvider, NetworkProvider } from './src/providers';
 import { syncManager } from './src/services/sync';
 import fcmService from './src/services/notifications/fcmService';
+import { NBToastProvider } from './src/components/nb';
 import { ErrorBoundary, PermissionRequestModal } from './src/components/common';
 import { permissionManager } from './src/services/permissions';
 import { locationTracker } from './src/services/location';
@@ -88,6 +89,8 @@ function AppContent(): React.JSX.Element {
         onComplete={handlePermissionsComplete}
         onSkip={handlePermissionsComplete}
       />
+      {/* Global toast renderer — replaces ad-hoc Alert/inline NBAlert usage. */}
+      <NBToastProvider />
     </AuthProvider>
   );
 }

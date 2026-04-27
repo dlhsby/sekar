@@ -23,6 +23,7 @@ export async function submitPruningRequest(
     photo_keys: string[]; // Array of S3 keys from photo upload (min 1, max 5)
     notes?: string;
     rayon_id?: string;
+    kecamatan_name?: string;
     // Phase 3 Apr 27 — staff_kecamatan redesign fields
     tree_count?: number;
     tree_height_estimate?: string;

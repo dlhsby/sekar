@@ -17,7 +17,7 @@
  * kecamatan_name + rayon_id from the submitter's profile.
  */
 
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -46,13 +46,15 @@ import {
   NBCardContent,
   NBCardHeader,
   NBTextInput,
+  NBSelect,
   NBButton,
-  NBAlert,
   NBBackgroundPattern,
+  NBToast,
 } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
 import { LocationPickerModal } from '../../components/modals/LocationPickerModal';
 import { mediaService, type Photo } from '../../services/media/mediaService';
+import { getRayons } from '../../services/api';
 import {
   requestLocationPermission,
   requestCameraPermission,
@@ -74,6 +76,8 @@ const DRAFT_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const AUTO_SAVE_INTERVAL = 30000; // 30 s
 
 interface DraftShape {
+  rayonId: string;
+  kecamatanName: string;
   address: string;
   treeCount: string;
   treeHeight: string;
@@ -101,11 +105,14 @@ export function SubmitScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
 
   const user = useAppSelector((state) => state.auth.user);
-  const { isSubmitting, submitStatus, error: pruningError } = useAppSelector(
-    (state) => state.pruningRequests,
-  );
+  const { isSubmitting } = useAppSelector((state) => state.pruningRequests);
 
   // ── Form state ──────────────────────────────────────────────────────────
+  const [rayonId, setRayonId] = useState<string>(user?.rayon_id ?? '');
+  const [kecamatanName, setKecamatanName] = useState<string>(
+    user?.kecamatan_name ?? '',
+  );
+  const [rayons, setRayons] = useState<Array<{ id: string; name: string }>>([]);
   const [address, setAddress] = useState('');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [treeCount, setTreeCount] = useState('');
@@ -124,26 +131,41 @@ export function SubmitScreen(): React.JSX.Element {
   const [gpsError, setGpsError] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const rayonName = user?.rayon?.name ?? null;
-  const kecamatanName = user?.kecamatan_name ?? null;
+  // Load all rayons so the user can override their default in the form
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getRayons();
+        if (!cancelled && res.data) {
+          setRayons(res.data.map((r: any) => ({ id: r.id, name: r.name })));
+        }
+      } catch {
+        /* non-critical — fall back to user.rayon only */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Draft persistence ───────────────────────────────────────────────────
   const formRef = useRef<DraftShape>({
+    rayonId: '', kecamatanName: '',
     address: '', treeCount: '', treeHeight: '', treeDiameter: '',
     requesterName: '', requesterPhone: '', rtLeaderName: '', rtLeaderPhone: '',
     notes: '', gpsLat: null, gpsLng: null, timestamp: 0,
   });
   useEffect(() => {
     formRef.current = {
+      rayonId, kecamatanName,
       address, treeCount, treeHeight, treeDiameter,
       requesterName, requesterPhone, rtLeaderName, rtLeaderPhone, notes,
       gpsLat, gpsLng, timestamp: Date.now(),
     };
-  }, [address, treeCount, treeHeight, treeDiameter, requesterName,
-      requesterPhone, rtLeaderName, rtLeaderPhone, notes, gpsLat, gpsLng]);
+  }, [rayonId, kecamatanName, address, treeCount, treeHeight, treeDiameter,
+      requesterName, requesterPhone, rtLeaderName, rtLeaderPhone, notes,
+      gpsLat, gpsLng]);
 
   const saveDraft = useCallback(async () => {
     try {
@@ -165,6 +187,9 @@ export function SubmitScreen(): React.JSX.Element {
       f.treeDiameter.trim() || f.requesterName.trim() || f.requesterPhone.trim() ||
       f.rtLeaderName.trim() || f.rtLeaderPhone.trim() || f.notes.trim() ||
       photos.length > 0);
+    // Note: rayonId/kecamatanName are pre-filled from the user profile and
+    // intentionally don't count as "content" — leaving the screen with only
+    // those defaults shouldn't trigger the draft prompt.
   }, [photos.length]);
 
   const restoreDraft = useCallback(async () => {
@@ -188,6 +213,8 @@ export function SubmitScreen(): React.JSX.Element {
           {
             text: 'Lanjutkan',
             onPress: () => {
+              if (draft.rayonId) { setRayonId(draft.rayonId); }
+              if (draft.kecamatanName) { setKecamatanName(draft.kecamatanName); }
               setAddress(draft.address ?? '');
               setTreeCount(draft.treeCount ?? '');
               setTreeHeight(draft.treeHeight ?? '');
@@ -274,49 +301,40 @@ export function SubmitScreen(): React.JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
-  // Back-button / header back: prompt to save or discard the draft.
-  const handleLeave = useCallback(() => {
-    if (!hasContent()) {
-      navigation.goBack();
-      return;
-    }
-    Alert.alert(
-      'Simpan Draft?',
-      'Anda memiliki perubahan yang belum dikirim.',
-      [
-        {
-          text: 'Tidak',
-          style: 'destructive',
-          onPress: async () => {
-            await clearDraft();
-            navigation.goBack();
+  // Intercept any back navigation (Android hardware back, FieldHomeHeader's
+  // onBack, or stack swipe-back) and surface the "Simpan Draft?" prompt when
+  // the form has unsaved content. We use `beforeRemove` rather than a custom
+  // `headerLeft` because MainNavigator already mounts FieldHomeHeader's back
+  // button — overriding `headerLeft` produced two visible back arrows.
+  useEffect(() => {
+    const sub = navigation.addListener('beforeRemove', (e: any) => {
+      if (!hasContent()) { return; }
+      e.preventDefault();
+      Alert.alert(
+        'Simpan Draft?',
+        'Anda memiliki perubahan yang belum dikirim.',
+        [
+          { text: 'Lanjut Edit', style: 'cancel' },
+          {
+            text: 'Hapus',
+            style: 'destructive',
+            onPress: async () => {
+              await clearDraft();
+              navigation.dispatch(e.data.action);
+            },
           },
-        },
-        {
-          text: 'Ya',
-          onPress: async () => {
-            await saveDraftRef.current();
-            navigation.goBack();
+          {
+            text: 'Simpan',
+            onPress: async () => {
+              await saveDraftRef.current();
+              navigation.dispatch(e.data.action);
+            },
           },
-        },
-      ],
-    );
-  }, [hasContent, navigation, clearDraft]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={handleLeave}
-          accessibilityRole="button"
-          accessibilityLabel="Kembali"
-          style={{ paddingHorizontal: nbSpacing[3], paddingVertical: nbSpacing[2] }}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
-        </TouchableOpacity>
-      ),
+        ],
+      );
     });
-  }, [navigation, handleLeave]);
+    return sub;
+  }, [navigation, hasContent, clearDraft]);
 
   // ── Photo capture ───────────────────────────────────────────────────────
   const handlePickFromCamera = useCallback(async () => {
@@ -397,12 +415,15 @@ export function SubmitScreen(): React.JSX.Element {
   }, [address, gpsLat, gpsLng, photos.length, treeCount, treeHeight, treeDiameter, requesterName, requesterPhone, rtLeaderName, rtLeaderPhone]);
 
   const handleSubmit = useCallback(async () => {
-    setValidationError(null);
     dispatch(clearError());
 
     const errMsg = validate();
     if (errMsg) {
-      setValidationError(errMsg);
+      NBToast.show({
+        level: 'warning',
+        title: 'Periksa kembali',
+        body: errMsg,
+      });
       return;
     }
 
@@ -421,6 +442,8 @@ export function SubmitScreen(): React.JSX.Element {
           lat: gpsLat as number,
           lng: gpsLng as number,
           photo_keys: photoKeys,
+          rayon_id: rayonId || undefined,
+          kecamatan_name: kecamatanName.trim() || undefined,
           tree_count: tc,
           target_count: tc,
           tree_height_estimate: treeHeight.trim(),
@@ -434,29 +457,32 @@ export function SubmitScreen(): React.JSX.Element {
       ).unwrap();
 
       await clearDraft();
-      Alert.alert(
-        'Permohonan terkirim',
-        'Permohonan pemangkasan berhasil dikirim. Anda akan diberitahu setelah ditinjau.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.navigate('Perantingan');
-            },
-          },
-        ],
-      );
+      NBToast.show({
+        level: 'success',
+        title: 'Permohonan terkirim',
+        body: 'Anda akan diberitahu setelah ditinjau.',
+      });
+      // Reset form to a clean baseline so beforeRemove doesn't fire the
+      // "Simpan Draft?" prompt on the navigation back.
+      setAddress(''); setTreeCount(''); setTreeHeight(''); setTreeDiameter('');
+      setRequesterName(''); setRequesterPhone('');
+      setRtLeaderName(''); setRtLeaderPhone(''); setNotes('');
+      setPhotos([]);
+      navigation.navigate('Perantingan');
     } catch (e) {
-      setValidationError(
-        e instanceof Error ? e.message : 'Gagal mengirim permohonan. Coba lagi.',
-      );
+      NBToast.show({
+        level: 'danger',
+        title: 'Gagal mengirim permohonan',
+        body: e instanceof Error ? e.message : 'Coba lagi.',
+        persistent: true,
+      });
     } finally {
       setSubmitting(false);
     }
   }, [
-    validate, photos, dispatch, address, gpsLat, gpsLng, treeCount, treeHeight,
-    treeDiameter, requesterName, requesterPhone, rtLeaderName, rtLeaderPhone,
-    notes, navigation, clearDraft,
+    validate, photos, dispatch, address, gpsLat, gpsLng, rayonId, kecamatanName,
+    treeCount, treeHeight, treeDiameter, requesterName, requesterPhone,
+    rtLeaderName, rtLeaderPhone, notes, navigation, clearDraft,
   ]);
 
   const isBusy = submitting || isSubmitting;
@@ -476,27 +502,38 @@ export function SubmitScreen(): React.JSX.Element {
               <NBText variant="h3">Lokasi</NBText>
             </NBCardHeader>
             <NBCardContent>
-              {/* Rayon + Kecamatan presets */}
-              <View style={styles.presetRow}>
-                <View style={styles.presetItem}>
-                  <NBText variant="caption" style={styles.presetLabel}>Rayon</NBText>
-                  <NBText variant="body">{rayonName ?? '—'}</NBText>
-                </View>
-                <View style={styles.presetItem}>
-                  <NBText variant="caption" style={styles.presetLabel}>Kecamatan</NBText>
-                  <NBText variant="body">{kecamatanName ?? '—'}</NBText>
-                </View>
+              {/* Rayon — selectable, defaults to user.rayon_id */}
+              <View style={styles.fieldGroup}>
+                <NBSelect
+                  label="Rayon"
+                  value={rayonId || (rayons[0]?.id ?? '')}
+                  onValueChange={(v) => setRayonId(String(v))}
+                  options={rayons.map((r) => ({ label: r.name, value: r.id }))}
+                  searchable
+                  disabled={rayons.length === 0}
+                />
               </View>
 
-              {/* Street free text */}
+              {/* Kecamatan — free text, defaults to user.kecamatan_name */}
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Jalan / Alamat Lengkap"
-                  placeholder="Contoh: Jl. Raya Darmo No. 123"
+                  label="Kecamatan"
+                  placeholder="Contoh: Tegalsari"
+                  value={kecamatanName}
+                  onChangeText={setKecamatanName}
+                />
+              </View>
+
+              {/* Alamat / Jalan — multiline text-area (matches deskripsi style) */}
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Alamat Lengkap"
+                  placeholder="Contoh: Jl. Raya Darmo No. 123, RT 02 / RW 05"
                   value={address}
                   onChangeText={setAddress}
                   multiline
-                  numberOfLines={2}
+                  numberOfLines={5}
+                  inputStyle={styles.addressTextArea}
                 />
               </View>
 
@@ -693,17 +730,7 @@ export function SubmitScreen(): React.JSX.Element {
             </NBCardContent>
           </NBCard>
 
-          {/* ── Validation / API errors ─────────────────────────────── */}
-          {validationError ? (
-            <View style={styles.errorWrap}>
-              <NBAlert variant="danger" title="Periksa kembali" message={validationError} />
-            </View>
-          ) : null}
-          {pruningError && !validationError ? (
-            <View style={styles.errorWrap}>
-              <NBAlert variant="danger" title="Gagal mengirim permohonan" message={pruningError} />
-            </View>
-          ) : null}
+          {/* Validation + API errors are surfaced via NBToast — no inline alert. */}
 
           {/* ── Submit ─────────────────────────────────────────────── */}
           <View style={styles.submitWrap}>
@@ -840,8 +867,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: nbSpacing[3],
   },
-  errorWrap: {
-    marginBottom: nbSpacing[4],
+  addressTextArea: {
+    minHeight: 110,
+    textAlignVertical: 'top',
+    paddingTop: nbSpacing[2],
   },
   submitWrap: {
     marginTop: nbSpacing[2],

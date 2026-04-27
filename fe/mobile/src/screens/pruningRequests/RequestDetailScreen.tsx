@@ -320,7 +320,11 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               </NBText>
             </View>
             <NBText variant="mono-sm" style={{ marginTop: nbSpacing[2] }}>
-              {request.gpsLat?.toFixed(6)}, {request.gpsLng?.toFixed(6)}
+              {/* TypeORM serializes numeric/decimal columns as strings, so coerce
+                  before formatting — direct .toFixed on a string crashes. */}
+              {request.gpsLat != null && request.gpsLng != null
+                ? `${Number(request.gpsLat).toFixed(6)}, ${Number(request.gpsLng).toFixed(6)}`
+                : '—'}
             </NBText>
           </View>
         </NBCard>

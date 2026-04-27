@@ -88,6 +88,7 @@ export const submitPruningRequest = createAsyncThunk(
       photo_keys: string[];
       notes?: string;
       rayon_id?: string;
+      kecamatan_name?: string;
       // Phase 3 Apr 27 — staff_kecamatan redesign fields
       tree_count?: number;
       tree_height_estimate?: string;

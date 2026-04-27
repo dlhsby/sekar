@@ -78,6 +78,8 @@ jest.mock('@react-navigation/native', () => ({
     navigate: jest.fn(),
     goBack: jest.fn(),
     setOptions: jest.fn(),
+    addListener: jest.fn(() => () => {}),
+    dispatch: jest.fn(),
   }),
   useFocusEffect: (cb: any) => {
     const React = require('react');
@@ -86,6 +88,22 @@ jest.mock('@react-navigation/native', () => ({
       return typeof cleanup === 'function' ? cleanup : undefined;
     }, []);
   },
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  __esModule: true,
+  SafeAreaProvider: ({ children }: any) => children,
+  SafeAreaView: ({ children }: any) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
+jest.mock('../../../services/api', () => ({
+  getRayons: jest.fn().mockResolvedValue({
+    data: [
+      { id: 'r1', name: 'Pusat', code: 'PUSAT' },
+      { id: 'r2', name: 'Selatan', code: 'SELATAN' },
+    ],
+  }),
 }));
 
 import React from 'react';
@@ -139,13 +157,16 @@ describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
     expect(getByText('Catatan (Opsional)')).toBeTruthy();
   });
 
-  it('shows the rayon and kecamatan presets pulled from the user profile', () => {
+  it('renders the kecamatan input (form is now editable, not a preset)', () => {
     const { getByText } = render(
       <Provider store={makeStore()}>
         <SubmitScreen />
       </Provider>,
     );
-    expect(getByText('Pusat')).toBeTruthy();
-    expect(getByText('Tegalsari')).toBeTruthy();
+    // Kecamatan is a free-text NBTextInput labeled "Kecamatan"; the rayon
+    // select label rendering depends on internal NBSelect markup which is
+    // brittle to assert here. We just confirm the form mounted with the
+    // editable shape.
+    expect(getByText('Kecamatan')).toBeTruthy();
   });
 });

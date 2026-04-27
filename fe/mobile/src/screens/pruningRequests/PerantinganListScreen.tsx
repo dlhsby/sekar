@@ -40,7 +40,7 @@ import {
   NBBackgroundPattern,
   NBButton,
   NBEmptyState,
-  NBAlert,
+  NBToast,
 } from '../../components/nb';
 import {
   SortModal,
@@ -112,6 +112,19 @@ export function PerantinganListScreen(): React.JSX.Element {
       void loadRequests();
     }, [loadRequests]),
   );
+
+  // Surface fetch errors as a toast (matches LoginScreen pattern).
+  // Pre-existing inline NBAlert was easy to miss and pinned to a small
+  // corner; toast slides over the screen and doesn't fight the layout.
+  useEffect(() => {
+    if (error) {
+      NBToast.show({
+        level: 'danger',
+        title: 'Gagal memuat permohonan',
+        body: error,
+      });
+    }
+  }, [error]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -379,13 +392,6 @@ export function PerantinganListScreen(): React.JSX.Element {
           />
         </View>
 
-        {/* Inline error alert (Redux slice) */}
-        {error ? (
-          <View style={styles.errorContainer}>
-            <NBAlert variant="danger" title="Gagal memuat permohonan" message={error} />
-          </View>
-        ) : null}
-
         {/* Sort modal */}
         <SortModal
           visible={isSortModalOpen}
@@ -532,11 +538,5 @@ const styles = StyleSheet.create({
     left: nbSpacing.md,
     right: nbSpacing.md,
     zIndex: 10,
-  },
-  errorContainer: {
-    position: 'absolute',
-    top: 70,
-    left: nbSpacing.md,
-    right: nbSpacing.md,
   },
 });

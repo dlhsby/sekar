@@ -77,7 +77,10 @@ export class PruningRequestsService {
     // profile. Each staff_kecamatan user has both attributes set at seed time,
     // so the mobile client doesn't need to send them. Fall back to
     // user.full_name if kecamatan_name is unset (preserves prior behavior).
-    const kecamatanName = user.kecamatan_name ?? user.full_name;
+    //
+    // Apr 27 round 3: client may now override either field — admin-style
+    // submissions on behalf of a different kecamatan / rayon are valid.
+    const kecamatanName = dto.kecamatan_name?.trim() || user.kecamatan_name || user.full_name;
     const rayonId = dto.rayon_id ?? user.rayon_id ?? null;
 
     const pruningRequest = this.pruningRequestRepository.create({
