@@ -293,6 +293,57 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     }
 
     // ==========================================
+    // SECTION 3.5: staff_kecamatan users (Phase 3 public intake — ADR-033)
+    // ==========================================
+    // One staff_kec per rayon so admin_data rayon-scoped review filters have
+    // realistic data and `staff_kec_pusat` (Rayon Pusat) is available for
+    // local-dev login. Mirrors what `seed-staging.ts` does in production
+    // demo data, but lifted into the dev `db:seed` flow because the
+    // pruning_requests section below depends on these users existing.
+    //
+    // All passwords: `password123` (bcrypt 10 salt rounds, same hash as
+    // seed-phase2). Idempotent via ON CONFLICT (username) DO NOTHING.
+    console.log('');
+    console.log('🧑‍💼 ======== SECTION 3.5: Staff Kecamatan Users ========');
+    const STAFF_KEC_PWD_HASH =
+      '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
+    const staffKecBlueprints: Array<{
+      username: string; fullName: string; phone: string;
+      rayonCode: string; kecamatan: string;
+    }> = [
+      { username: 'staff_kec_pusat',   fullName: 'Staff Kecamatan Pusat',   phone: '081200000023', rayonCode: 'PUSAT',   kecamatan: 'Tegalsari' },
+      { username: 'staff_kec_selatan', fullName: 'Staff Kecamatan Selatan', phone: '081200000024', rayonCode: 'SELATAN', kecamatan: 'Wonokromo' },
+      { username: 'staff_kec_utara',   fullName: 'Staff Kecamatan Utara',   phone: '081200000025', rayonCode: 'UTARA',   kecamatan: 'Kenjeran' },
+      { username: 'staff_kec_timur1',  fullName: 'Staff Kecamatan Timur 1', phone: '081200000026', rayonCode: 'TIMUR1',  kecamatan: 'Gubeng' },
+      { username: 'staff_kec_timur2',  fullName: 'Staff Kecamatan Timur 2', phone: '081200000027', rayonCode: 'TIMUR2',  kecamatan: 'Mulyorejo' },
+      { username: 'staff_kec_barat1',  fullName: 'Staff Kecamatan Barat 1', phone: '081200000028', rayonCode: 'BARAT1',  kecamatan: 'Tandes' },
+      { username: 'staff_kec_barat2',  fullName: 'Staff Kecamatan Barat 2', phone: '081200000029', rayonCode: 'BARAT2',  kecamatan: 'Wiyung' },
+    ];
+    let staffKecInserted = 0;
+    for (const u of staffKecBlueprints) {
+      const rayonRow = await queryRunner.query(
+        `SELECT id FROM rayons WHERE code = $1 LIMIT 1`,
+        [u.rayonCode],
+      );
+      if (rayonRow.length === 0) {
+        console.log(`  ⚠ Rayon code '${u.rayonCode}' not found, skipping ${u.username}`);
+        continue;
+      }
+      const rayonId = rayonRow[0].id;
+      const result = await queryRunner.query(
+        `INSERT INTO users
+           (username, password_hash, full_name, phone_number,
+            role, rayon_id, area_id, kecamatan_name, is_active)
+         VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, TRUE)
+         ON CONFLICT (username) DO NOTHING`,
+        [u.username, STAFF_KEC_PWD_HASH, u.fullName, u.phone,
+         rayonId, u.kecamatan],
+      );
+      if (result && (result as any).rowCount > 0) staffKecInserted++;
+    }
+    console.log(`  ✓ ${staffKecInserted} staff_kecamatan users seeded (1 per rayon, password: password123)`);
+
+    // ==========================================
     // SECTION 4: pruning_requests (sample workflow data)
     // ==========================================
     console.log('');
@@ -319,12 +370,23 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         height: '6-8 meter',  diameter: '30-45 cm', reqName: 'Eko Pranoto',   reqPhone: '081234567006', rtName: 'Pak Agus',  rtPhone: '081298765006' },
     ];
 
-    const staff = await queryRunner.query(
-      `SELECT id FROM users WHERE role = 'staff_kecamatan' LIMIT 1`,
-    );
-    const submitterId = staff.length > 0 ? staff[0].id : (
-      await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_data' LIMIT 1`)
-    )[0]?.id;
+    // Prefer all staff_kecamatan users so each user has some requests in their
+    // `mine=true` view; fall back to admin_data if none exist.
+    const staffKecUsers = await queryRunner.query(
+      `SELECT id, rayon_id, username FROM users
+       WHERE role = 'staff_kecamatan' AND is_active = true
+       ORDER BY username`,
+    ) as Array<{ id: string; rayon_id: string | null; username: string }>;
+    const fallbackAdmin = staffKecUsers.length === 0
+      ? await queryRunner.query(`SELECT id, rayon_id FROM users WHERE role = 'admin_data' LIMIT 1`)
+      : [];
+    const submitterId = staffKecUsers.length > 0
+      ? staffKecUsers[0].id
+      : fallbackAdmin[0]?.id;
+    // Pick the staff_kec_pusat user (if seeded) for the original 6 sample
+    // requests so the canonical demo login still sees varied statuses.
+    const pusatStaff = staffKecUsers.find((s) => s.username === 'staff_kec_pusat');
+    const sampleSubmitterId = pusatStaff?.id ?? submitterId;
     const reviewer = await queryRunner.query(
       `SELECT id FROM users WHERE role IN ('admin_data','kepala_rayon','superadmin') LIMIT 1`,
     );
@@ -356,7 +418,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
               reviewed_by, reviewed_at)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20)
            ON CONFLICT (reference_code) DO NOTHING`,
-          [refCode, submitterId, r.kec, r.addr,
+          [refCode, sampleSubmitterId, r.kec, r.addr,
            -7.2575 + (i * 0.001), 112.7521 + (i * 0.001),
            expectedDate, r.count, r.count,
            r.height, r.diameter,
@@ -397,6 +459,10 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         : rayonIdForReq;
 
       const BULK_COUNT = 25;
+      // All bulk rows submitted by `staff_kec_pusat` (the canonical demo
+      // login) so the Perantingan list has enough volume on `mine=true` to
+      // exercise scroll + filter + sort. Admin review queues filter by
+      // `rayon_id`, which round-robins across all rayons regardless.
       let bulkInserted = 0;
       for (let i = 0; i < BULK_COUNT; i++) {
         const status = STATUSES[i % STATUSES.length];
@@ -431,7 +497,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
               reviewed_by, reviewed_at, created_at)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20,$21)
            ON CONFLICT (reference_code) DO NOTHING`,
-          [refCode, submitterId, kec, `${street} No. ${100 + i}`,
+          [refCode, sampleSubmitterId, kec, `${street} No. ${100 + i}`,
            -7.2575 + (i * 0.0007), 112.7521 + (i * 0.0007),
            expectedDate, treeCount, treeCount,
            height, diameter,
