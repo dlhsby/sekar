@@ -4,6 +4,16 @@
  */
 
 // Must be before imports - Jest hoists these
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useFocusEffect: (cb: () => void) => {
+    const React = require('react');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    React.useEffect(cb, []);
+  },
+  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),
+  useRoute: () => ({ params: {} }),
+}));
 jest.mock('../../../services/api/monitoringApi');
 jest.mock('../../../services/websocket/websocketService', () => ({
   __esModule: true,
@@ -77,9 +87,6 @@ jest.mock('../../../components/monitoring/MapErrorBoundary', () => ({
 }));
 jest.mock('../../../components/monitoring/StatusSummaryBar', () => ({
   StatusSummaryBar: () => null,
-}));
-jest.mock('../../../components/monitoring/UserListStrip', () => ({
-  UserListStrip: () => null,
 }));
 jest.mock('../../../components/monitoring/UserDetailSheet', () => ({
   UserDetailSheet: () => null,

@@ -12,7 +12,6 @@ export { default as PhotoGallery } from './PhotoGallery';
 // Phase 2D components
 export { UserDetailSheet } from './UserDetailSheet';
 export { StatusSummaryBar } from './StatusSummaryBar';
-export { UserListStrip } from './UserListStrip';
 export { UserListCard } from './UserListCard';
 export { LocationTrail } from './LocationTrail';
 export { MapErrorBoundary } from './MapErrorBoundary';

@@ -1,7 +1,7 @@
 /**
  * MapDashboardScreen
  * Phase 2D: Four-status model, polygon boundaries, FAB controls,
- * StatusSummaryBar, UserListStrip, UserDetailSheet, LocationTrail.
+ * StatusSummaryBar, UserDetailSheet, LocationTrail.
  */
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
@@ -38,7 +38,6 @@ import { NBBackgroundPattern } from '../../components/nb';
 import { UserMarker, type LabelMode } from '../../components/monitoring/UserMarker';
 import { MapErrorBoundary } from '../../components/monitoring/MapErrorBoundary';
 import { StatusSummaryBar } from '../../components/monitoring/StatusSummaryBar';
-import { UserListStrip } from '../../components/monitoring/UserListStrip';
 import { UserDetailSheet } from '../../components/monitoring/UserDetailSheet';
 import { LocationTrail } from '../../components/monitoring/LocationTrail';
 import { MonitoringFilterModal } from '../../components/modals/MonitoringFilterModal';
@@ -579,9 +578,6 @@ export function MapDashboardScreen(): React.JSX.Element {
             />
           </View>
         </View>
-
-        {/* Bottom user strip */}
-        <UserListStrip users={visibleUsers} onUserPress={handleMarkerPress} />
 
         {/* User detail bottom sheet */}
         <UserDetailSheet
