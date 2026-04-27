@@ -4,7 +4,7 @@
  * Shows all submitted data, photos, review notes, status, and task conversion link
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   ScrollView,
@@ -17,18 +17,85 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchPruningRequestById } from '../../store/slices/pruningRequestsSlice';
+import {
+  fetchPruningRequestById,
+  reviewPruningRequest,
+} from '../../store/slices/pruningRequestsSlice';
 import { LoadingSpinner } from '../../components/common';
 import { NBCard, NBBadge, NBButton, NBAlert } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
+import { ConvertToTaskSheet } from '../../components/admin/ConvertToTaskSheet';
+import { NBToast } from '../../components/nb/NBToast';
 import { nbColors, nbSpacing, nbBorderRadius } from '../../constants/nbTokens';
 import type { PruningRequestStatus } from '../../types/models.types';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
+import { useUserRole } from '../../hooks/useUserRole';
 
 /**
  * Type-safe navigation prop
  */
 type DetailScreenProps = NativeStackScreenProps<any, 'PruningDetail'>;
+
+/**
+ * Admin review modal helper
+ */
+function ReviewModal({
+  visible,
+  isApproving,
+  onApprove,
+  onReject,
+  onClose,
+}: {
+  visible: boolean;
+  isApproving: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+  onClose: () => void;
+}): React.JSX.Element {
+  const [reviewNotes, setReviewNotes] = useState<string>('');
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalBg}>
+        <View style={styles.modalContent}>
+          <NBText variant="h3" style={{ marginBottom: nbSpacing[3] }}>
+            Pilih Keputusan
+          </NBText>
+
+          <NBButton
+            variant="success"
+            label="Setujui"
+            onPress={onApprove}
+            leftIcon="check"
+            disabled={isApproving}
+            style={{ marginBottom: nbSpacing[2] }}
+          />
+
+          <NBButton
+            variant="danger"
+            label="Tolak"
+            onPress={onReject}
+            leftIcon="close"
+            disabled={isApproving}
+            style={{ marginBottom: nbSpacing[3] }}
+          />
+
+          <NBButton
+            variant="secondary"
+            label="Batal"
+            onPress={onClose}
+            disabled={isApproving}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 /**
  * Map status to NB variant + label
@@ -99,13 +166,28 @@ function PhotoModal({
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
-  const { requestId } = props.route.params;
+  const { requestId, adminMode = false } = props.route.params;
+  const userRole = useUserRole();
 
-  const { byId, isLoading, error } = useAppSelector((state) => state.pruningRequests);
+  const { byId, isLoading, error, reviewingId } = useAppSelector(
+    (state) => state.pruningRequests,
+  );
   const request = byId[requestId] || null;
 
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [convertSheetVisible, setConvertSheetVisible] = useState(false);
+
+  // Check if user can admin
+  const canAdmin = useMemo(
+    () =>
+      adminMode &&
+      ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'].includes(
+        userRole,
+      ),
+    [adminMode, userRole],
+  );
 
   // Load request on mount if not in Redux
   useEffect(() => {
@@ -121,11 +203,49 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 
   const handleViewTask = useCallback(() => {
     if (request?.convertedTaskId) {
-      // Navigate to task detail (implementation depends on task navigation structure)
-      // This is a placeholder for the actual navigation
       navigation.navigate('TaskDetail', { taskId: request.convertedTaskId });
     }
   }, [request?.convertedTaskId, navigation]);
+
+  const handleApprove = useCallback(() => {
+    setReviewModalVisible(false);
+    dispatch(reviewPruningRequest({ id: requestId, decision: 'approve' }))
+      .unwrap()
+      .then(() => {
+        NBToast.show({
+          level: 'success',
+          title: 'Berhasil',
+          message: 'Permohonan telah disetujui',
+        });
+      })
+      .catch((err) => {
+        NBToast.show({
+          level: 'danger',
+          title: 'Gagal',
+          message: err?.message || 'Gagal menyetujui permohonan',
+        });
+      });
+  }, [requestId, dispatch]);
+
+  const handleReject = useCallback(() => {
+    setReviewModalVisible(false);
+    dispatch(reviewPruningRequest({ id: requestId, decision: 'reject' }))
+      .unwrap()
+      .then(() => {
+        NBToast.show({
+          level: 'success',
+          title: 'Berhasil',
+          message: 'Permohonan telah ditolak',
+        });
+      })
+      .catch((err) => {
+        NBToast.show({
+          level: 'danger',
+          title: 'Gagal',
+          message: err?.message || 'Gagal menolak permohonan',
+        });
+      });
+  }, [requestId, dispatch]);
 
   if (isLoading && !request) {
     return <LoadingSpinner />;
@@ -352,6 +472,47 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             />
           </NBCard>
         )}
+
+        {/* Admin Action Buttons */}
+        {canAdmin && ['submitted', 'under_review'].includes(request.status) && (
+          <NBCard style={styles.card}>
+            <NBText variant="h3" style={styles.sectionTitle}>
+              Aksi Admin
+            </NBText>
+            <View style={styles.adminButtonGroup}>
+              <NBButton
+                variant="success"
+                label="Setujui"
+                onPress={() => setReviewModalVisible(true)}
+                leftIcon="check"
+                disabled={reviewingId === requestId}
+                style={{ flex: 1 }}
+              />
+              <NBButton
+                variant="danger"
+                label="Tolak"
+                onPress={() => setReviewModalVisible(true)}
+                leftIcon="close"
+                disabled={reviewingId === requestId}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </NBCard>
+        )}
+
+        {canAdmin && request.status === 'approved' && (
+          <NBCard style={styles.card}>
+            <NBText variant="h3" style={styles.sectionTitle}>
+              Konversi ke Tugas
+            </NBText>
+            <NBButton
+              variant="primary"
+              label="Konversi ke Tugas"
+              onPress={() => setConvertSheetVisible(true)}
+              leftIcon="arrow-right"
+            />
+          </NBCard>
+        )}
       </ScrollView>
 
       {/* Photo Modal */}
@@ -360,6 +521,27 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
         photoUrl={selectedPhoto}
         onClose={() => setPhotoModalVisible(false)}
       />
+
+      {/* Review Modal */}
+      <ReviewModal
+        visible={reviewModalVisible}
+        isApproving={reviewingId === requestId}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onClose={() => setReviewModalVisible(false)}
+      />
+
+      {/* Convert to Task Sheet */}
+      {request && (
+        <ConvertToTaskSheet
+          visible={convertSheetVisible}
+          onClose={() => setConvertSheetVisible(false)}
+          request={request}
+          onSuccess={() => {
+            dispatch(fetchPruningRequestById(requestId));
+          }}
+        />
+      )}
 
       {error && (
         <View style={styles.errorContainer}>
@@ -452,5 +634,23 @@ const styles = StyleSheet.create({
     bottom: nbSpacing[4],
     left: nbSpacing[4],
     right: nbSpacing[4],
+  },
+  adminButtonGroup: {
+    flexDirection: 'row',
+    gap: nbSpacing[3],
+  },
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: nbColors.white,
+    borderWidth: 2,
+    borderColor: nbColors.black,
+    borderRadius: 0,
+    padding: nbSpacing[4],
+    minWidth: '70%',
   },
 });

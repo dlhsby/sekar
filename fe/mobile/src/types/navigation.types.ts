@@ -11,6 +11,7 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
+  KecamatanTabs: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
@@ -37,6 +38,9 @@ export type MainTabParamList = {
   Settings: undefined;
   Attendance: undefined;
   EditProfile: undefined;
+  // Pruning Requests (admin_data flow)
+  PruningReviewQueue: undefined;
+  PruningDetail: { requestId: string; adminMode?: boolean };
 };
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> =

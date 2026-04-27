@@ -23,3 +23,5 @@ export { useMapDashboard } from './useMapDashboard';
 export { useMapAutoFocus } from './useMapAutoFocus';
 export { useHomeLocation } from './useHomeLocation';
 export type { HomeLocationState } from './useHomeLocation';
+export { useUserRole } from './useUserRole';
+export { useNetworkStatus } from './useNetworkStatus';

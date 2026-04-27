@@ -42,6 +42,10 @@ import { TaskCreateScreen } from '../screens/taskActivity';
 import { SettingsScreen } from '../screens/common/SettingsScreen';
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 
+// Pruning Requests screens (Phase 3 sub-phase 3-10)
+import { ReviewQueueScreen } from '../screens/pruningRequests/ReviewQueueScreen';
+import { RequestDetailScreen } from '../screens/pruningRequests/RequestDetailScreen';
+
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 interface TabConfig {
@@ -310,6 +314,36 @@ function MainNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader title="Edit Profil" onBack={() => navigation.goBack()} />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+
+      {/* Pruning Requests: admin review queue (admin_data role) */}
+      <Tab.Screen
+        name="PruningReviewQueue"
+        component={ReviewQueueScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Antrian Review Pemangkasan"
+              onBack={() => navigation.goBack()}
+            />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+
+      {/* Pruning Request Detail: accessed from both submission and review flows */}
+      <Tab.Screen
+        name="PruningDetail"
+        component={RequestDetailScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Detail Permohonan"
+              onBack={() => navigation.goBack()}
+            />
           ),
           tabBarButton: () => null,
         })}

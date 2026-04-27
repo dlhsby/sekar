@@ -66,8 +66,95 @@ export async function getPruningRequestById(
   return get<PruningRequest>(`/pruning-requests/${id}`);
 }
 
+/**
+ * Get pruning requests for admin review (unscoped list)
+ * Accepts filters for status, rayon, date range, and pagination
+ */
+export async function getAdminPruningRequests(
+  filters?: {
+    status?: string;
+    rayonId?: string;
+    from?: string; // ISO date string
+    to?: string; // ISO date string
+    page?: number;
+    limit?: number;
+  },
+): Promise<ApiResponse<PruningRequest[]>> {
+  return get<PruningRequest[]>('/pruning-requests', filters);
+}
+
+/**
+ * Review a pruning request (approve or reject)
+ */
+export async function reviewPruningRequest(
+  id: string,
+  data: {
+    decision: 'approve' | 'reject';
+    reviewNotes?: string;
+  },
+): Promise<ApiResponse<PruningRequest>> {
+  const response = await post<PruningRequest>(
+    `/pruning-requests/${id}/review`,
+    data,
+  );
+
+  if (response.data && typeof response.data === 'object' && 'id' in response.data) {
+    return response;
+  }
+
+  if (response.error) {
+    return response;
+  }
+
+  return {
+    error: 'Invalid response shape from server',
+    success: false,
+  };
+}
+
+/**
+ * Convert a pruning request to a task
+ */
+export async function convertPruningRequestToTask(
+  id: string,
+  data: {
+    areaId: string;
+    assignedTo: string;
+    scheduledDate: string; // YYYY-MM-DD
+    caseType: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
+    pruningAction: 'PM' | 'PB' | 'PC';
+    units?: number;
+  },
+): Promise<ApiResponse<{ request: PruningRequest; task: any }>> {
+  const response = await post<{ request: PruningRequest; task: any }>(
+    `/pruning-requests/${id}/convert-to-task`,
+    data,
+  );
+
+  if (
+    response.data &&
+    typeof response.data === 'object' &&
+    'request' in response.data &&
+    'task' in response.data
+  ) {
+    return response;
+  }
+
+  if (response.error) {
+    return response;
+  }
+
+  return {
+    error: 'Invalid response shape from server',
+    success: false,
+  };
+}
+
 export default {
   submitPruningRequest,
   getMyPruningRequests,
   getPruningRequestById,
+  getAdminPruningRequests,
+  reviewPruningRequest,
+  convertPruningRequestToTask,
 };

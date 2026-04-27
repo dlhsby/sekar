@@ -14,6 +14,9 @@ import pruningRequestsReducer, {
   submitPruningRequest,
   fetchMyPruningRequests,
   fetchPruningRequestById,
+  fetchAdminPruningRequests,
+  reviewPruningRequest,
+  convertPruningRequestToTask,
 } from '../pruningRequestsSlice';
 import * as pruningRequestsApi from '../../../services/api/pruningRequestsApi';
 import type { PruningRequest } from '../../../types/models.types';
@@ -381,6 +384,424 @@ describe('pruningRequestsSlice', () => {
       expect(state.isLoading).toBe(false);
       expect(state.error).toBe('Not found');
       expect(state.byId['invalid-id']).toBeUndefined();
+    });
+  });
+
+  describe('fetchAdminPruningRequests thunk', () => {
+    it('should handle pending state', async () => {
+      const mockApi = pruningRequestsApi.getAdminPruningRequests as jest.Mock;
+      mockApi.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+      const fetchAction = fetchAdminPruningRequests({ limit: 50 });
+      store.dispatch(fetchAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.adminListLoading).toBe(true);
+      expect(state.adminListError).toBeNull();
+    });
+
+    it('should handle fulfilled state with list', async () => {
+      const mockRequests = [
+        mockPruningRequest,
+        { ...mockPruningRequest, id: 'pr-002', referenceCode: 'PR-2026-002' },
+      ];
+      const mockApi = pruningRequestsApi.getAdminPruningRequests as jest.Mock;
+      mockApi.mockResolvedValue({
+        success: true,
+        data: mockRequests,
+        meta: { total: 2, page: 1, limit: 50 },
+      });
+
+      const fetchAction = fetchAdminPruningRequests({ limit: 50 });
+      await store.dispatch(fetchAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.adminListLoading).toBe(false);
+      expect(state.adminList).toEqual(mockRequests);
+      expect(state.byId['pr-001']).toEqual(mockPruningRequest);
+      expect(state.adminListError).toBeNull();
+    });
+
+    it('should filter by status', async () => {
+      const mockApi = pruningRequestsApi.getAdminPruningRequests as jest.Mock;
+      mockApi.mockResolvedValue({
+        success: true,
+        data: [{ ...mockPruningRequest, status: 'submitted' as const }],
+      });
+
+      await store.dispatch(
+        fetchAdminPruningRequests({ status: 'submitted', limit: 50 }),
+      );
+
+      expect(mockApi).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'submitted' }),
+      );
+    });
+
+    it('should handle rejected state', async () => {
+      const mockApi = pruningRequestsApi.getAdminPruningRequests as jest.Mock;
+      mockApi.mockRejectedValue(new Error('Access denied'));
+
+      const fetchAction = fetchAdminPruningRequests({ limit: 50 });
+      await store.dispatch(fetchAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.adminListLoading).toBe(false);
+      expect(state.adminListError?.error).toBe('Access denied');
+      expect(state.adminList.length).toBe(0);
+    });
+
+    it('should handle empty admin list', async () => {
+      const mockApi = pruningRequestsApi.getAdminPruningRequests as jest.Mock;
+      mockApi.mockResolvedValue({
+        success: true,
+        data: [],
+        meta: { total: 0, page: 1, limit: 50 },
+      });
+
+      const fetchAction = fetchAdminPruningRequests({ limit: 50 });
+      await store.dispatch(fetchAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.adminList).toEqual([]);
+      expect(state.adminListLoading).toBe(false);
+    });
+  });
+
+  describe('reviewPruningRequest thunk', () => {
+    it('should set reviewingId on pending', async () => {
+      const mockApi = pruningRequestsApi.reviewPruningRequest as jest.Mock;
+      mockApi.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const reviewAction = reviewPruningRequest({
+        id: 'pr-001',
+        decision: 'approve',
+      });
+      store.dispatch(reviewAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.reviewingId).toBe('pr-001');
+    });
+
+    it('should approve pruning request', async () => {
+      const mockApi = pruningRequestsApi.reviewPruningRequest as jest.Mock;
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved' as const,
+      };
+      mockApi.mockResolvedValue({
+        success: true,
+        data: approvedRequest,
+      });
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const reviewAction = reviewPruningRequest({
+        id: 'pr-001',
+        decision: 'approve',
+      });
+      await store.dispatch(reviewAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.byId['pr-001'].status).toBe('approved');
+      expect(state.reviewingId).toBeNull();
+    });
+
+    it('should reject pruning request with notes', async () => {
+      const mockApi = pruningRequestsApi.reviewPruningRequest as jest.Mock;
+      const rejectedRequest = {
+        ...mockPruningRequest,
+        status: 'rejected' as const,
+        reviewNotes: 'Insufficient photos',
+      };
+      mockApi.mockResolvedValue({
+        success: true,
+        data: rejectedRequest,
+      });
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const reviewAction = reviewPruningRequest({
+        id: 'pr-001',
+        decision: 'reject',
+        reviewNotes: 'Insufficient photos',
+      });
+      await store.dispatch(reviewAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.byId['pr-001'].status).toBe('rejected');
+      expect(mockApi).toHaveBeenCalledWith('pr-001', {
+        decision: 'reject',
+        reviewNotes: 'Insufficient photos',
+      });
+    });
+
+    it('should handle review error', async () => {
+      const mockApi = pruningRequestsApi.reviewPruningRequest as jest.Mock;
+      mockApi.mockRejectedValue(new Error('Review failed'));
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const reviewAction = reviewPruningRequest({
+        id: 'pr-001',
+        decision: 'approve',
+      });
+      await store.dispatch(reviewAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.error).toBe('Review failed');
+      expect(state.reviewingId).toBeNull();
+      expect(state.byId['pr-001'].status).toBe('submitted');
+    });
+
+    it('should update adminList when reviewing', async () => {
+      const mockApi = pruningRequestsApi.reviewPruningRequest as jest.Mock;
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved' as const,
+      };
+      mockApi.mockResolvedValue({
+        success: true,
+        data: approvedRequest,
+      });
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const reviewAction = reviewPruningRequest({
+        id: 'pr-001',
+        decision: 'approve',
+      });
+      await store.dispatch(reviewAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.adminList[0].status).toBe('approved');
+    });
+  });
+
+  describe('convertPruningRequestToTask thunk', () => {
+    it('should set convertingId on pending', async () => {
+      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      mockApi.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const convertAction = convertPruningRequestToTask({
+        id: 'pr-001',
+        areaId: 'area1',
+        assignedTo: 'user1',
+        scheduledDate: '2026-05-01',
+        caseType: 'PT',
+        pruningAction: 'PM',
+        units: 1,
+      });
+      store.dispatch(convertAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.convertingId).toBe('pr-001');
+    });
+
+    it('should convert pruning request to task', async () => {
+      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      const convertedRequest = {
+        ...mockPruningRequest,
+        status: 'converted' as const,
+      };
+      mockApi.mockResolvedValue({
+        success: true,
+        data: convertedRequest,
+      });
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const convertAction = convertPruningRequestToTask({
+        id: 'pr-001',
+        areaId: 'area1',
+        assignedTo: 'user1',
+        scheduledDate: '2026-05-01',
+        caseType: 'PT',
+        pruningAction: 'PM',
+        units: 3,
+      });
+      await store.dispatch(convertAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.byId['pr-001'].status).toBe('converted');
+      expect(state.convertingId).toBeNull();
+    });
+
+    it('should pass all conversion parameters to API', async () => {
+      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      mockApi.mockResolvedValue({
+        success: true,
+        data: mockPruningRequest,
+      });
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const params = {
+        id: 'pr-001',
+        areaId: 'area2',
+        assignedTo: 'user2',
+        scheduledDate: '2026-06-15',
+        caseType: 'GT' as const,
+        pruningAction: 'PB' as const,
+        units: 5,
+      };
+
+      const convertAction = convertPruningRequestToTask(params);
+      await store.dispatch(convertAction);
+
+      expect(mockApi).toHaveBeenCalledWith('pr-001', {
+        areaId: 'area2',
+        assignedTo: 'user2',
+        scheduledDate: '2026-06-15',
+        caseType: 'GT',
+        pruningAction: 'PB',
+        units: 5,
+      });
+    });
+
+    it('should handle conversion error', async () => {
+      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      mockApi.mockRejectedValue(new Error('Capacity exceeded'));
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const convertAction = convertPruningRequestToTask({
+        id: 'pr-001',
+        areaId: 'area1',
+        assignedTo: 'user1',
+        scheduledDate: '2026-05-01',
+        caseType: 'PT',
+        pruningAction: 'PM',
+        units: 1,
+      });
+      await store.dispatch(convertAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.error).toBe('Capacity exceeded');
+      expect(state.convertingId).toBeNull();
+      expect(state.byId['pr-001'].status).toBe('submitted');
+    });
+
+    it('should update adminList when converting', async () => {
+      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      const convertedRequest = {
+        ...mockPruningRequest,
+        status: 'converted' as const,
+      };
+      mockApi.mockResolvedValue({
+        success: true,
+        data: convertedRequest,
+      });
+
+      store = configureStore({
+        reducer: { pruningRequests: pruningRequestsReducer },
+        preloadedState: {
+          pruningRequests: {
+            ...store.getState().pruningRequests,
+            byId: { 'pr-001': mockPruningRequest },
+            adminList: [mockPruningRequest],
+          },
+        },
+      });
+
+      const convertAction = convertPruningRequestToTask({
+        id: 'pr-001',
+        areaId: 'area1',
+        assignedTo: 'user1',
+        scheduledDate: '2026-05-01',
+        caseType: 'PT',
+        pruningAction: 'PM',
+        units: 1,
+      });
+      await store.dispatch(convertAction);
+      const state = store.getState().pruningRequests;
+
+      expect(state.adminList[0].status).toBe('converted');
     });
   });
 });

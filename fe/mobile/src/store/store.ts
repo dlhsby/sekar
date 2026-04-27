@@ -16,6 +16,7 @@ import monitoringReducer from './slices/monitoringSlice';
 import monitoringV2Reducer from './slices/monitoringV2Slice';
 import plantsReducer from './slices/plantsSlice';
 import pruningRequestsReducer from './slices/pruningRequestsSlice';
+import serviceCapacityReducer from './slices/serviceCapacitySlice';
 
 export const store = configureStore({
   reducer: {
@@ -30,6 +31,7 @@ export const store = configureStore({
     monitoringV2: monitoringV2Reducer,
     plants: plantsReducer,
     pruningRequests: pruningRequestsReducer,
+    serviceCapacity: serviceCapacityReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

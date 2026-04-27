@@ -252,3 +252,25 @@ export function formatRelativeTime(date: Date | string | undefined | null): stri
   return formatDateLong(d);
 }
 
+/**
+ * Get ISO week and year from a date
+ * @param date - Date object or string
+ * @returns Object with year and week (ISO week number, 1-53)
+ */
+export function getISOWeek(date: Date | string): { year: number; week: number } {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  // Copy date object so we don't mutate the original
+  const target = new Date(d);
+  // Standard ISO week date calculation
+  const dayNum = target.getUTCDay() || 7; // Monday = 1, Sunday = 7
+  target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil(
+    ((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return {
+    year: target.getUTCFullYear(),
+    week: weekNum,
+  };
+}
+

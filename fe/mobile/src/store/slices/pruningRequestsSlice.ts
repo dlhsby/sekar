@@ -33,6 +33,14 @@ interface PruningRequestsState {
   submitStatus: 'idle' | 'submitting' | 'success' | 'error';
   error: string | null;
   selectedRequestId: string | null;
+  // Admin list state
+  adminList: PruningRequest[];
+  adminListLoading: boolean;
+  adminListError: { error: string; code?: string } | null;
+  adminListPagination: { page: number; total: number; limit: number };
+  // Review/convert state
+  reviewingId: string | null;
+  convertingId: string | null;
 }
 
 const initialDraft: PruningRequestDraft = {
@@ -54,6 +62,12 @@ const initialState: PruningRequestsState = {
   submitStatus: 'idle',
   error: null,
   selectedRequestId: null,
+  adminList: [],
+  adminListLoading: false,
+  adminListError: null,
+  adminListPagination: { page: 1, total: 0, limit: 20 },
+  reviewingId: null,
+  convertingId: null,
 };
 
 /**
@@ -124,6 +138,119 @@ export const fetchPruningRequestById = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await pruningRequestsApi.getPruningRequestById(id);
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return response.data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
+    }
+  },
+);
+
+/**
+ * Fetch pruning requests for admin review
+ */
+export const fetchAdminPruningRequests = createAsyncThunk(
+  'pruningRequests/fetchAdmin',
+  async (
+    filters?: {
+      status?: string;
+      rayonId?: string;
+      from?: string;
+      to?: string;
+      page?: number;
+      limit?: number;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await pruningRequestsApi.getAdminPruningRequests(filters);
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return response.data || [];
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
+    }
+  },
+);
+
+/**
+ * Review a pruning request
+ */
+export const reviewPruningRequest = createAsyncThunk(
+  'pruningRequests/review',
+  async (
+    {
+      id,
+      decision,
+      reviewNotes,
+    }: {
+      id: string;
+      decision: 'approve' | 'reject';
+      reviewNotes?: string;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await pruningRequestsApi.reviewPruningRequest(id, {
+        decision,
+        reviewNotes,
+      });
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return response.data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
+    }
+  },
+);
+
+/**
+ * Convert pruning request to task
+ */
+export const convertPruningRequestToTask = createAsyncThunk(
+  'pruningRequests/convertToTask',
+  async (
+    {
+      id,
+      areaId,
+      assignedTo,
+      scheduledDate,
+      caseType,
+      pruningAction,
+      units,
+    }: {
+      id: string;
+      areaId: string;
+      assignedTo: string;
+      scheduledDate: string;
+      caseType: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
+      pruningAction: 'PM' | 'PB' | 'PC';
+      units?: number;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await pruningRequestsApi.convertPruningRequestToTask(
+        id,
+        {
+          areaId,
+          assignedTo,
+          scheduledDate,
+          caseType,
+          pruningAction,
+          units,
+        },
+      );
       if (response.error) {
         return rejectWithValue(response.error);
       }
@@ -263,6 +390,73 @@ const pruningRequestsSlice = createSlice({
       })
       .addCase(fetchPruningRequestById.rejected, (state, action) => {
         state.isLoading = false;
+        state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
+      });
+
+    // Fetch admin list
+    builder
+      .addCase(fetchAdminPruningRequests.pending, (state) => {
+        state.adminListLoading = true;
+        state.adminListError = null;
+      })
+      .addCase(fetchAdminPruningRequests.fulfilled, (state, action) => {
+        state.adminListLoading = false;
+        state.adminList = action.payload;
+        // Index into byId
+        action.payload.forEach((request) => {
+          state.byId[request.id] = request;
+        });
+        state.adminListError = null;
+      })
+      .addCase(fetchAdminPruningRequests.rejected, (state, action) => {
+        state.adminListLoading = false;
+        state.adminListError = {
+          error: (action.payload as ThunkError | undefined)?.error ?? 'Error',
+          code: (action.payload as ThunkError | undefined)?.code,
+        };
+      });
+
+    // Review request
+    builder
+      .addCase(reviewPruningRequest.pending, (state, action) => {
+        state.reviewingId = action.meta.arg.id;
+        state.error = null;
+      })
+      .addCase(reviewPruningRequest.fulfilled, (state, action) => {
+        state.reviewingId = null;
+        const request = action.payload;
+        state.byId[request.id] = request;
+        // Update in adminList
+        const adminIndex = state.adminList.findIndex((r) => r.id === request.id);
+        if (adminIndex !== -1) {
+          state.adminList[adminIndex] = request;
+        }
+        state.error = null;
+      })
+      .addCase(reviewPruningRequest.rejected, (state, action) => {
+        state.reviewingId = null;
+        state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
+      });
+
+    // Convert to task
+    builder
+      .addCase(convertPruningRequestToTask.pending, (state, action) => {
+        state.convertingId = action.meta.arg.id;
+        state.error = null;
+      })
+      .addCase(convertPruningRequestToTask.fulfilled, (state, action) => {
+        state.convertingId = null;
+        const request = action.payload;
+        state.byId[request.id] = request;
+        // Update in adminList
+        const adminIndex = state.adminList.findIndex((r) => r.id === request.id);
+        if (adminIndex !== -1) {
+          state.adminList[adminIndex] = request;
+        }
+        state.error = null;
+      })
+      .addCase(convertPruningRequestToTask.rejected, (state, action) => {
+        state.convertingId = null;
         state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
       });
   },

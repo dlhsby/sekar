@@ -84,9 +84,9 @@ export const nbAnimation = {
 // Migrate call sites to nbType in 3-R5.
 export const nbTypography = {
   fontFamily: {
-    sans: nbType.body.fontFamily,
-    display: nbType.h1.fontFamily,
-    mono: nbType.monoSm.fontFamily,
+    sans: 'Inter',
+    display: "'Space Grotesk'",
+    mono: "'JetBrains Mono'",
   },
   fontWeight: {
     regular: '400' as const,
