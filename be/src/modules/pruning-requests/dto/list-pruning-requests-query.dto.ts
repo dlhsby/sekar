@@ -4,12 +4,14 @@ import {
   IsUUID,
   IsDateString,
   IsNumber,
+  IsBoolean,
+  IsInt,
   Min,
   Max,
   IsIn,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 /**
  * Query DTO for listing pruning requests (admin view).
@@ -123,4 +125,36 @@ export class ListPruningRequestsQueryDto {
   @Min(1, { message: 'Limit must be at least 1' })
   @Max(100, { message: 'Limit must be at most 100' })
   limit?: number = 20;
+
+  /**
+   * If true, return only the caller's own submissions (used by staff_kecamatan
+   * and any submitter inspecting their own queue). Falsy = admin list view.
+   *
+   * @example true
+   */
+  @ApiPropertyOptional({
+    description:
+      "If true, return only the caller's own submissions (submitter view).",
+    example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  mine?: boolean;
+
+  /**
+   * Offset for non-page-based pagination (used together with `mine=true`).
+   *
+   * @example 0
+   */
+  @ApiPropertyOptional({
+    description: 'Offset for offset-based pagination (used with mine=true).',
+    example: 0,
+    minimum: 0,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0, { message: 'Offset must be 0 or greater' })
+  offset?: number;
 }

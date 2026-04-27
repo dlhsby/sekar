@@ -366,8 +366,87 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         );
         if (result && (result as any).rowCount > 0) pruningInserted++;
       }
+
+      // ── Bulk volume rows for list-screen UX testing (scroll + filter + sort).
+      // Generates ~25 additional requests across all statuses + kecamatan +
+      // calendar dates so PerantinganListScreen / ReviewQueueScreen exercise
+      // every chip and both sort orders without being seeded against a single
+      // status bucket. Stays idempotent via reference_code.
+      const STATUSES = ['submitted', 'under_review', 'approved', 'rejected',
+                         'converted', 'in_progress', 'done', 'cancelled'] as const;
+      const KECS = ['Tegalsari', 'Genteng', 'Wonokromo', 'Kenjeran',
+                    'Krembangan', 'Sukolilo', 'Mulyorejo', 'Gubeng', 'Bulak'];
+      const STREETS = ['Jl. Mawar', 'Jl. Anggrek', 'Jl. Melati', 'Jl. Cendana',
+                       'Jl. Cemara', 'Jl. Jati', 'Jl. Kenanga', 'Jl. Flamboyan',
+                       'Jl. Beringin', 'Jl. Kamboja', 'Jl. Kemuning', 'Jl. Mahoni'];
+      const REQ_NAMES = ['Bagas', 'Citra', 'Dimas', 'Endah', 'Fajar', 'Galuh',
+                         'Hanif', 'Indra', 'Jihan', 'Kemal', 'Laras', 'Maharani'];
+      const RT_NAMES = ['Pak Hamid', 'Pak Yusuf', 'Pak Rahmat', 'Pak Bambang',
+                        'Pak Subagyo', 'Pak Maulana', 'Pak Iwan', 'Pak Darto'];
+      const HEIGHTS = ['3-5 meter', '5-7 meter', '7-9 meter', '9-12 meter',
+                       '12-15 meter', '15-18 meter'];
+      const DIAMETERS = ['15-25 cm', '25-35 cm', '35-50 cm', '50-70 cm',
+                         '70-90 cm', '90-110 cm'];
+
+      // Distribute rayons across the bulk volume so admin_data filter testing
+      // also has variety — fall back to first rayon if none available.
+      const allRayons = await queryRunner.query(`SELECT id FROM rayons ORDER BY name`);
+      const rayonIds: string[] = (allRayons as Array<{ id: string }>).map((r) => r.id);
+      const pickRayon = (idx: number) => rayonIds.length > 0
+        ? rayonIds[idx % rayonIds.length]
+        : rayonIdForReq;
+
+      const BULK_COUNT = 25;
+      let bulkInserted = 0;
+      for (let i = 0; i < BULK_COUNT; i++) {
+        const status = STATUSES[i % STATUSES.length];
+        const kec = KECS[i % KECS.length];
+        const street = STREETS[i % STREETS.length];
+        const reqName = REQ_NAMES[i % REQ_NAMES.length];
+        const rtName = RT_NAMES[i % RT_NAMES.length];
+        const height = HEIGHTS[i % HEIGHTS.length];
+        const diameter = DIAMETERS[i % DIAMETERS.length];
+        const treeCount = ((i % 9) + 2);
+        const photoCount = ((i % 4) + 1);
+        const ageDays = i; // 0 → today, 1 → yesterday … 24 → ~3.5 weeks ago
+        const createdAt = new Date(Date.now() - ageDays * 86400000).toISOString();
+        const expectedDate = new Date(Date.now() + ((i % 14) + 1) * 86400000)
+          .toISOString().split('T')[0];
+        const reviewedAt = ['approved', 'rejected', 'converted', 'in_progress',
+                             'done', 'cancelled', 'under_review'].includes(status)
+          ? new Date(Date.now() - ageDays * 86400000 + 3600 * 1000).toISOString()
+          : null;
+        const refCode = `PR-BULK-${i.toString().padStart(3, '0')}`;
+        const photoUrls = Array.from({ length: photoCount }, (_, n) =>
+          `https://placehold.co/600x400?text=PR-BULK-${i}-${n + 1}`,
+        );
+
+        const result = await queryRunner.query(
+          `INSERT INTO pruning_requests
+             (reference_code, submitted_by, kecamatan_name, address, gps_lat, gps_lng,
+              expected_date, estimated_plant_count, tree_count,
+              tree_height_estimate, tree_diameter_estimate,
+              requester_name, requester_phone, rt_leader_name, rt_leader_phone,
+              photo_urls, status, rayon_id,
+              reviewed_by, reviewed_at, created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20,$21)
+           ON CONFLICT (reference_code) DO NOTHING`,
+          [refCode, submitterId, kec, `${street} No. ${100 + i}`,
+           -7.2575 + (i * 0.0007), 112.7521 + (i * 0.0007),
+           expectedDate, treeCount, treeCount,
+           height, diameter,
+           `${reqName} ${i + 1}`, `0812345${(80000 + i).toString().slice(-5)}`,
+           rtName, `0812987${(60000 + i).toString().slice(-5)}`,
+           photoUrls, status, pickRayon(i),
+           reviewedAt ? reviewerId : null, reviewedAt,
+           createdAt],
+        );
+        if (result && (result as any).rowCount > 0) bulkInserted++;
+      }
+      console.log(`  ✓ ${bulkInserted} additional bulk pruning_requests inserted (volume + status + date variety)`);
+      pruningInserted += bulkInserted;
     }
-    console.log(`  ✓ ${pruningInserted} pruning_requests inserted (6 status variants, with tree details + contacts)`);
+    console.log(`  ✓ ${pruningInserted} pruning_requests total (sample + bulk volume rows)`);
 
     // ==========================================
     // SECTION 5: plant_seeds + seed_transactions
