@@ -262,18 +262,19 @@ This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation
 
 ---
 
-## Sub-Phase 3-2: Schema + role extension 🟡 In Progress
+## Sub-Phase 3-2: Schema + role extension ✅
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Write `17460000000000-Phase3Schema.ts` migration | ⏳ | 8 new tables + 5 altered |
-| Add `staff_kecamatan` to `UserRole` enum | ⏳ | `be/src/modules/users/enums/role.enum.ts` |
-| Add `PRUNING_REQUEST_REVIEWERS = [admin_data]` group | ⏳ | `constants/role-groups.ts` |
-| Add new `monitoring_configs` rows seed | ⏳ | debounce, sweep cron, cluster zoom, stream max len |
-| Seed `plant_species` (131 rows) | ⏳ | dedupe CSV col 6 |
-| Role-matrix integration test covering every endpoint | ⏳ | |
-| Sweep every `@Roles(...)` decorator | ⏳ | compatibility with `staff_kecamatan` |
-| Confirm CSV acronym meanings with client | ⏳ | GT/PT/PS/PK/PD |
+| Write `17460000000000-Phase3Schema.ts` migration | ✅ | 8 new tables (plant_species, area_plants, notable_plants, pruning_requests, activity_plant_items, service_capacity, plant_seeds, seed_transactions) + 5 altered (activities +6 cols, tasks +5 cols, users.role enum +`staff_kecamatan`, user_tracking_status +2 indexes). Plus `17460001000000-Phase3BackfillIndexes.ts` for 3 `CREATE INDEX CONCURRENTLY` on `location_logs`. Both applied to prod Apr 27. |
+| Add `staff_kecamatan` to `UserRole` enum | ✅ | `be/src/modules/users/enums/role.enum.ts` — DB enum extended via migration; verified live in prod `enum_range(NULL::user_role)`. |
+| Add `PRUNING_REQUEST_REVIEWERS = [admin_data]` group | ✅ | `be/src/modules/users/constants/role-groups.ts` (per ADR-032). |
+| Add new `monitoring_configs` rows seed | ✅ | 4 Phase 3 keys: `plants_forecast`, `service_capacity_defaults`, `pruning_request_workflow`, `seed_inventory`. Idempotent (`ON CONFLICT (key) DO NOTHING`). |
+| Seed `plant_species` (128 rows) | ✅ | `be/src/database/seeds/seed-phase3.ts` — 128 species (final dedupe). Idempotent on `name_id`. Note: original spec called for 131; CSV dedupe yielded 128. |
+| Sweep every `@Roles(...)` decorator | ✅ | All controllers reviewed Apr 26 during 3-3/3-4 work; `staff_kecamatan` only granted access to its own pruning-submit + my-requests routes (post 3-9/3-10). |
+| Add `@Unique` decorators on Phase 3 entities | ✅ | Added Apr 27: `AreaPlant['areaId','speciesId']`, `PlantSeed['nameId']`, `ServiceCapacity['rayonId','year','isoWeek','serviceType']` — fixes auto-sync drift in dev. Migration patched (`874b13e`) to include `uq_plant_seeds_name_id`. |
+| Confirm CSV acronym meanings with client | ✅ | Resolved Apr 25 (commit `5a64fd6` — "client answers to all 5 open questions"). GT/PT/PS/PK/PD documented in spec. |
+| Role-matrix integration test covering every endpoint | ⏳ deferred | Belongs to 3-9/3-10 when pruning endpoints land — no `staff_kecamatan`-accessible routes exist yet to test. |
 
 ---
 
@@ -304,8 +305,8 @@ This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation
 | Incremental WS patch handling in React Query | ✅ | `fe/web/src/app/(dashboard)/monitoring/page.tsx` — `status:v2` socket event patches `queryClient` cache directly; 1 dedicated test |
 | `WorkerListVirtual` (TanStack virtual) | ✅ | `fe/web/src/components/monitoring/WorkerListVirtual.tsx` — `@tanstack/react-virtual` row virtualizer |
 | `HierarchyFilterPanel` | ✅ | `fe/web/src/components/monitoring/HierarchyFilterPanel.tsx` — rayon/area/shift multi-select |
-| `PlantOverlayLayer` | ⏳ deferred | Stub only — full implementation deferred to 3-5 plant overlay phase |
-| `AreaStatusOverlay` | ⏳ deferred | Not in web component list; mobile-only in 3-5 |
+| `PlantOverlayLayer` (web) | ⏳ deferred | Out of M2 scope. Per the deployment guide and ADR-030, full plant overlay (per-area inventory + notable trees) is delivered in **3-7/3-8** (plants management sub-phases). Web has no stub yet — mobile has the stub from 3-5. |
+| `AreaStatusOverlay` (web) | ⏳ deferred | Mobile-only by design; not in the web component list. Web shows area health via `AreaDetailDrawer` instead. |
 | `AreaDetailDrawer` | ✅ | `fe/web/src/components/monitoring/AreaDetailDrawer.tsx` — slide-in drawer with area stats |
 | Role-aware sidebar covers 9 roles | ✅ | `fe/web/src/lib/navigation.ts` — `staff_kecamatan` minimal nav added (ADR-033); `(kecamatan)` layout shell |
 
