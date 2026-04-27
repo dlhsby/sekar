@@ -10,6 +10,7 @@ import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
+import { TaskTypeRegistry } from './registry/task-type-registry';
 
 describe('TasksService', () => {
   let service: TasksService;
@@ -106,6 +107,14 @@ describe('TasksService', () => {
         {
           provide: AuditLogService,
           useValue: { log: jest.fn().mockResolvedValue({}) },
+        },
+        {
+          provide: TaskTypeRegistry,
+          useValue: {
+            validate: jest.fn(),
+            isKnownType: jest.fn().mockReturnValue(true),
+            getSupportedTypes: jest.fn().mockReturnValue([]),
+          },
         },
       ],
     }).compile();

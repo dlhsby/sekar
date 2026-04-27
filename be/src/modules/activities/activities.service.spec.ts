@@ -19,6 +19,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { AuditLogService } from '../audit/audit.service';
+import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
 
 describe('ActivitiesService', () => {
   let module: TestingModule;
@@ -102,6 +103,14 @@ describe('ActivitiesService', () => {
     findOne: jest.fn(),
   };
 
+  const mockPlantItemRepo = {
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    delete: jest.fn(),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -117,6 +126,10 @@ describe('ActivitiesService', () => {
         {
           provide: getRepositoryToken(ActivityType),
           useValue: mockActivityTypeRepo,
+        },
+        {
+          provide: getRepositoryToken(ActivityPlantItem),
+          useValue: mockPlantItemRepo,
         },
         {
           provide: S3Service,
@@ -178,16 +191,23 @@ describe('ActivitiesService', () => {
       expect(mockActivityTypeRepo.findOne).toHaveBeenCalledWith({
         where: { id: createDto.activity_type_id, is_active: true },
       });
-      expect(mockActivitiesRepo.create).toHaveBeenCalledWith({
-        user_id: mockUser.id,
-        shift_id: mockActiveShift.id,
-        area_id: mockActiveShift.area_id,
-        activity_type_id: createDto.activity_type_id,
-        description: createDto.description,
-        photo_urls: createDto.photo_urls,
-        gps_lat: createDto.gps_lat,
-        gps_lng: createDto.gps_lng,
-      });
+      expect(mockActivitiesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: mockUser.id,
+          shift_id: mockActiveShift.id,
+          area_id: mockActiveShift.area_id,
+          activity_type_id: createDto.activity_type_id,
+          description: createDto.description,
+          photo_urls: createDto.photo_urls,
+          gps_lat: createDto.gps_lat,
+          gps_lng: createDto.gps_lng,
+          caseType: null,
+          customFields: {},
+          photoBeforeUrl: null,
+          photoAfterUrl: null,
+          pruningRequestId: null,
+        }),
+      );
       expect(mockActivitiesRepo.save).toHaveBeenCalledWith(mockActivity);
     });
 
