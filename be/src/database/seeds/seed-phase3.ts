@@ -580,14 +580,19 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
           [notable.speciesName],
         );
         if (sp.length > 0) {
-          const rows = await queryRunner.query(
-            `INSERT INTO notable_plants (area_id, species_id, gps_lat, gps_lng, label, heritage, notes, photo_urls)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (area_id, species_id, gps_lat, gps_lng) DO NOTHING
-             RETURNING id`,
-            [areas[notable.areaIndex].id, sp[0].id, notable.lat, notable.lng, notable.label, notable.heritage, notable.notes, []],
+          // notable_plants has no natural unique constraint — idempotency via label match
+          const existing = await queryRunner.query(
+            `SELECT id FROM notable_plants WHERE area_id = $1 AND species_id = $2 AND label = $3 LIMIT 1`,
+            [areas[notable.areaIndex].id, sp[0].id, notable.label],
           );
-          if (rows.length > 0) notableInserted++;
+          if (existing.length === 0) {
+            await queryRunner.query(
+              `INSERT INTO notable_plants (area_id, species_id, gps_lat, gps_lng, label, heritage, notes, photo_urls)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              [areas[notable.areaIndex].id, sp[0].id, notable.lat, notable.lng, notable.label, notable.heritage, notable.notes, []],
+            );
+            notableInserted++;
+          }
         }
       }
     }
