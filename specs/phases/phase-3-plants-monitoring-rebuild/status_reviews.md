@@ -352,6 +352,23 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 
 ---
 
+### 🔥 Pre-flight smoke (run this first — should take <5 min)
+
+If any of these fail, stop and fix before walking the full checklist:
+
+| # | Step | Expected | Apr 27 status |
+|---|------|----------|---------------|
+| 1 | Login mobile as `staff_kec_pusat / password123` → land on `SubmitScreen` (5-step wizard) | Renders without crash; "Kembali" + "Lanjut" buttons visible | ✅ fixed Apr 27 |
+| 2 | Navigate `SubmitScreen` Step 1 → Step 2 → Step 5 (any direction) | Buttons render text correctly; no red error screen | ✅ fixed Apr 27 |
+| 3 | Login mobile as `admin_data_pusat / password123` → tap admin tab → `ReviewQueueScreen` | List of pending pruning requests (≥2 from seed) | ✅ |
+| 4 | In `ReviewQueueScreen`, tap a request → `RequestDetailScreen` → tap "Setujui" | Modal opens; reason textarea visible; submit fires `POST /pruning-requests/:id/review` | ✅ |
+| 5 | In `RequestDetailScreen` for an approved request → tap "Konversi ke Tugas" | `ConvertToTaskSheet` opens; date picker + units field visible; **note: areas/users dropdowns are empty until Phase 4 polish** | 🟡 partial |
+| 6 | Login web as `admin_pusat / password123` → click each sidebar link | All routes render (no 404). Phase 3 web pages show "Coming soon — use mobile" placeholders | ✅ Apr 27 placeholders added |
+| 7 | Login web as `staff_kec_pusat` → sidebar has only "Kirim Permintaan" + "Permintaan Saya" | Both links resolve to placeholder pages, no 404 | ✅ Apr 27 fixed |
+| 8 | Backend: `curl -H "Authorization: Bearer <admin token>" http://localhost:3000/api/v1/pruning-requests` | 200 OK; paginated list with at least 1 request | ✅ |
+
+---
+
 ### M1-R Redesign Foundation (Sub-phases 3-R1 through 3-R5)
 
 #### 3-R1 & 3-R2 — Token Pipeline + ESLint
@@ -479,12 +496,13 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
   - [ ] `GET /api/v1/plant-seeds/:id` → detail + full transaction ledger
   - [ ] `POST /api/v1/plant-seeds/:id/transaction` → record purchase/usage/waste; idempotent on `reference_code`
   - [ ] Balance calculation: `balance = initial_qty + Σ(purchases) - Σ(usages) - Σ(waste)` ✓ verified
-- [ ] **Mobile UI:**
-  - [ ] `PlantSeedsInventoryScreen`: list of seeds with balances; click → detail
-  - [ ] `SeedDetailScreen`: transaction ledger in reverse-chrono order; "Add Transaction" button opens form
-  - [ ] `AddTransactionScreen`: quantity + type (purchase/usage/waste) + reference_code + notes; submit updates ledger
-  - [ ] `seedsSlice` in Redux: state populated; selectors return current balances
-- [ ] Tests: 35+ for PlantSeedsController, ≥80% coverage; ledger invariant tests pass
+- [ ] **Mobile UI** — ⏳ **DEFERRED to Phase 4 polish (Apr 27 audit confirmed `screens/plantSeeds/` directory does not exist):**
+  - ⏳ `PlantSeedsInventoryScreen` — not implemented
+  - ⏳ `SeedDetailScreen` — not implemented
+  - ⏳ `AddTransactionScreen` — not implemented
+  - [x] `plantSeedsSlice` in Redux — implemented + tested; selectors return correct balances when state hydrated via API
+  - [x] `plantSeedsApi.ts` — implemented + tested
+- [ ] Tests: 29 for PlantSeedsController (100 % stmts / 94.23 % branches); ledger invariant tests pass
 
 #### 3-12 Seeders — CSV Backfill (Deferred to Phase 4, but seeder scaffold in place)
 - [ ] `src/database/seeds/seed-phase3.ts` exists; runs idempotently on `npm run db:seed:prod`

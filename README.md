@@ -132,7 +132,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 
 ## Project Status
 
-**Phase 3 IN PROGRESS** (M1-R ✅ + M2 ✅ + M3 ✅ + M4 ✅ admin half + 3-11 ✅ + 3-12 🟡 backend, Apr 27, 2026)
+**Phase 3 IN PROGRESS** (Apr 27 audit + bug-fix sweep — NBButton API extension + spec reconciliation)
 
 | Component | Status | Metrics |
 |-----------|--------|---------|
@@ -143,7 +143,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 
 **Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2E (Apr 25, 2026)** live in production.
 
-**Phase 3 progress: 17/21 sub-phases (~81%).** M1-R ✅ + 3-1 ✅ + 3-2 ✅ + M2 ✅ + M3 ✅ + M4 ✅ (3-9 review/convert ✅, 3-10 review queue + convert sheet ✅, 3-11 capacity backend ✅), 3-12 🟡 (backend + redux ready, mobile inventory screens deferred to Phase 4 polish). Web work + 3-13 backfill + 3-14 k6 + 3-8 cron/FCM/map overlay all deferred. **Next: 3-12 mobile screens + 3-13 backfill + 3-14 load test + web finish-out + Phase 4.** See `specs/phases/phase-3-plants-monitoring-rebuild/status_reviews.md` for the from-scratch verification checklist.
+**Phase 3 progress: ~70 % weighted (13 fully complete + 4 partial + 4 not-started/in-progress).** M1-R ✅ + 3-1 ✅ + 3-2 ✅ + M2 ✅ + 3-6 ✅ + 3-7 mobile ✅ + 3-8 🟡 60 % + 3-9 ✅ + 3-10 mobile ✅ web ⏳ + 3-11 backend+mobile-state ✅ web ⏳ + 3-12 backend+slice ✅ UI ⏳. Earlier "17/21 ~81 %" headline counted partials as wholes; corrected on Apr 27 audit. Web work + 3-13 backfill + 3-14 k6 + 3-8 cron/FCM/map overlay all deferred. **Next: 3-12 mobile screens + 3-13 backfill + 3-14 load test + web finish-out + Phase 4.** See `specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md` → "Open Items by Bucket" + `status_reviews.md` for the from-scratch verification checklist.
 
 ---
 

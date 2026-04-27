@@ -1,8 +1,11 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-04-27 (M3 + M4 admin finish-out landed — 3-9 ✅, 3-10 ✅, 3-11 ✅, 3-12 🟡; web work + cron/FCM/map overlay deferred to post-demo)
-**Overall Progress:** ~81 % (17 / 21 sub-phases complete or partial — M1-R 5/5 + 3-1 + 3-2 + 3-3 + 3-4 + 3-5 + 3-6 + 3-7 + partial 3-8 + 3-9 + 3-10 + 3-11 + partial 3-12)
+**Date:** 2026-04-27 (Apr 27 audit + bug-fix sweep — see "Open Items by Bucket" below)
+**Overall Progress:** **~70 % weighted** — **13 sub-phases fully complete + 4 partial + 4 not-started.** (Earlier "17/21 ~81 %" headline counted partials as wholes; corrected on Apr 27 audit. The detail-section tables further down match this revised count.)
+- **Fully complete (13):** M1-R 5/5 (3-R1…3-R5) + 3-1 + 3-2 + 3-3 + 3-4 + 3-5 + 3-6 + 3-7 mobile + 3-9
+- **Partial (4):** 3-8 (60 % — service + endpoint live; cron/WS/FCM/map overlay deferred), 3-10 (mobile complete; web deferred), 3-11 (backend + mobile state complete; web UI deferred), 3-12 (~50 % — backend + slice + API live; mobile inventory screens + web UI deferred)
+- **Not started (4):** 3-13 CSV backfill, 3-14 k6 load test, 3-15 doc final sweep (3-15 partly handled in Wave 6, treated as in-progress)
 **Branch:** main (no feature branch yet)
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), [ADR-036](../../architecture/decisions/ADR-036-design-tokens-single-source.md), [ADR-037](../../architecture/decisions/ADR-037-web-pwa.md)
 
@@ -57,6 +60,57 @@ This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation
 
 ---
 
+## 📋 Open Items by Bucket (Apr 27, 2026 audit)
+
+A scannable inventory of what's left, grouped by *who decides when it ships*. Use this to plan follow-up iterations without re-reading the per-sub-phase tables.
+
+### 🌐 Web bucket — deferred to post-demo iteration
+
+These were always carved out of the Phase 3 demo scope. The mobile + backend spine works without them. Each requires its own dev-day budget.
+
+- `(dashboard)/pruning-requests/` — admin queue page with rayon filter, status tabs, detail drawer (3-10 web half).
+- `(dashboard)/rayons/[id]/capacity/` — weekly capacity calendar grid editor (3-11 web half).
+- `(dashboard)/plant-seeds/` — inventory list + transaction ledger UI (3-12 web half).
+- `tasks/new` dynamic form by `task_type` — pruning task form parity with mobile `PruningTaskForm` (3-7 web half).
+- `(kecamatan)/pruning-requests/` — submit + my-requests on web. **Apr 27 update:** placeholder pages added to prevent 404s; full implementation deferred. Mobile is the canonical path for staff_kecamatan.
+
+### 🔧 Phase 4 polish bucket — small, contained follow-ups
+
+Each is <1 dev-day and has a clear owner. Schedule together as a "Phase 4 mobile polish" iteration.
+
+- **3-12 mobile inventory screens** — `screens/plantSeeds/` directory does not exist; `plantSeedsSlice` + `plantSeedsApi` are ready and tested. Screens (`InventoryScreen`, `SeedDetailScreen`, `AddTransactionScreen`) just need NB-primitive composition.
+- **3-8 cron daily recalc** — `PlantDueDateRecalculator` cron at `@Cron('0 2 * * *')`.
+- **3-8 WS event** `area:plant-status-changed` broadcast on status flip.
+- **3-8 FCM digest** `area_plant_overdue` to top_management (daily 8 AM).
+- **3-8 plant map overlay** — full impl beyond the current stub.
+- **Mobile coverage thresholds** — restore floor to 80/75/80/82 (currently 74/66/70/76 due to SubmitScreen wizard branch gaps).
+- **Areas + Users Redux slices** — `ConvertToTaskSheet` currently degrades to empty selectors (Apr 27 defensive patch). Real fix: add `areasSlice` + `usersSlice` so the convert form shows real options.
+
+### 🧱 Out-of-scope until separate iteration
+
+These are larger or specialty workstreams. Don't bundle with demo polish.
+
+- **3-13 CSV backfill seeder** — 5,008 rows + Drive→S3 photo rehost. Data engineering work.
+- **3-14 k6 load test** — 500-worker / 12-s ping / 30-min run + regression fixes. Performance work; needs `infra/loadtest/` directory built.
+- **3-15 doc deep-sweep** — full sync of `specs/api/contracts.md`, `specs/database/schema.md`, `specs/architecture/security.md`, etc. to reflect every Phase 3 endpoint + entity.
+- **M2 finish-out gaps** — `status:v2` final polish, `cluster:update` WS event, `includes` query param on snapshot, Redis health endpoint, `PHASE3_FEATURES_ENABLED` env flag, `ClusterLayer` + `AreaDetailDrawer` test backfill, monitoring config UI Phase 3 fields.
+
+---
+
+## 🐛 Apr 27 Bug-Fix + Audit Notes
+
+Two bugs surfaced when the user ran the staging seeder + logged in as `staff_kec_pusat`:
+
+1. **`SubmitScreen` crash** — `TypeError: Cannot read property 'bg' of undefined at NBButton`. Root cause: `SubmitScreen.tsx:357,430` passed `variant="outline"` and used children-as-text, neither supported by `NBButton`. Fixed by extending `NBButton` with: `outline` variant (white bg + black border), `label` prop alias, string children fallback, `leftIcon` prop, and graceful fallback-to-primary on unknown variants. `NBButton.test.tsx` extended with 5 regression-guard tests (26 total, all green).
+
+2. **`ConvertToTaskSheet` runtime drift** — read `state.areas` and `state.users` (slices that don't exist), used `request.rayon_id` (model uses `rayonId`), passed wrong props to `NBAlert`/`NBToast`/`NBDatePicker`. Defensively patched — sheet now renders without crashing; areas/users selectors return `[]` until real slices land in Phase 4 polish.
+
+3. **Mobile `nbSpacing` numeric-subscript shim** — Phase 3 admin screens written by Wave 3/4 used Tailwind-style `nbSpacing[2]`/`nbSpacing[4]` that returned `undefined`. Added numeric aliases (1=4, 2=8, 3=12, 4=16, 5=20, 6=24, 7=28, 8=32, 10=40, 12=48, 16=64) in `constants/nbTokens.ts`. Remove in Phase 4 polish once screens migrate to named tokens.
+
+4. **Web `staff_kecamatan` 404 prevention** — added two minimal placeholder pages at `(kecamatan)/pruning-requests/page.tsx` + `(kecamatan)/pruning-requests/my/page.tsx` directing the user to the mobile app. Resolves the dead sidebar links from `lib/navigation.ts`.
+
+---
+
 ## Overall Progress
 
 | Sub-Phase | Milestone | Name | Est. days | Status | Progress |
@@ -75,12 +129,12 @@ This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation
 | 3-7 | M3 | Pruning task UX (depends on M1-R) | 5 | ✅ Complete | 100 % |
 | 3-8 | M3 | Due-date forecast + overdue alerts | 3 | 🟡 Partial (light) | 60 % |
 | 3-9 | M4 | Pruning-requests backend (+ admin endpoints) | 4 | ✅ Complete | 100 % |
-| 3-10 | M4 | Pruning-requests frontends (+ admin screens) | 5 | ✅ Complete | 100 % |
-| 3-11 | M4 | Service capacity calendar | 4 | ✅ Complete | 100 % |
-| 3-12 | M4 | Plant-seed inventory | 3 | 🟡 Partial (full stack landed) | 85 % |
+| 3-10 | M4 | Pruning-requests frontends (+ admin screens) | 5 | 🟡 Mobile complete; web deferred | 70 % |
+| 3-11 | M4 | Service capacity calendar | 4 | 🟡 Backend + mobile state ✅; web UI deferred | 75 % |
+| 3-12 | M4 | Plant-seed inventory | 3 | 🟡 Backend + slice ✅; mobile UI + web UI deferred | 50 % |
 | 3-13 | M3 | CSV backfill seeder | 3 | ⏳ Not Started | 0 % |
 | 3-14 | M2 | Load test + regression fixes | 3 | ⏳ Not Started | 0 % |
-| 3-15 | M5 | Documentation final sync | 2 | ⏳ Not Started | 0 % |
+| 3-15 | M5 | Documentation final sync | 2 | 🟡 In Progress (Wave 6 + Apr 27 audit) | 40 % |
 
 **Total:** 73 dev-days single-threaded. M1-R = 14 d (3-R1+3-R2+3-R3+3-R4+3-R5), M1-S = 6 d, M2 = 21 d, M3 = 15 d, M4 = 16 d, M5 = 2 d + rollout.
 
@@ -405,63 +459,66 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 ---
 
-## Sub-Phase 3-9: Pruning-requests backend 🟡 Partial (submit half)
+## Sub-Phase 3-9: Pruning-requests backend ✅
 
 | Task | Status | Notes |
 |------|--------|-------|
 | `pruning_requests` entity + migration | ✅ | landed in 3-2 schema |
-| `PruningRequestsService.create` + `findMine` + `findById` | ✅ | `be/src/modules/pruning-requests/pruning-requests.service.ts` — 30 tests, 100 % coverage |
+| `PruningRequestsService.create` + `findMine` + `findById` | ✅ | `be/src/modules/pruning-requests/pruning-requests.service.ts` — 55 tests, 99.35 % stmts / 93.1 % branches |
 | `POST /pruning-requests` (staff_kecamatan) | ✅ | reference code `PR-{ts}-{uuid}` |
 | `GET /pruning-requests?mine=true` | ✅ | paginated, ordered DESC |
 | `GET /pruning-requests/:id` (owner + rayon-scoped admin_data + kepala_rayon + top_management) | ✅ | rayon scoping enforced per ADR-032 |
-| `POST /pruning-requests/:id/review` (admin_data) | ⏳ DEFERRED | admin half — next iteration |
-| `POST /pruning-requests/:id/convert-to-task` | ⏳ DEFERRED | admin half — next iteration |
-| `GET /pruning-requests?rayon_id=&status=` (admin filter) | ⏳ DEFERRED | currently returns 400 for non-mine |
-| Auto-rayon resolution from GPS | ⏳ DEFERRED | client must pass `rayon_id` explicitly for now |
-| FCM notifications on status change | ⏳ DEFERRED | needs review endpoint first |
+| `POST /pruning-requests/:id/review` (admin_data) | ✅ | landed Apr 27 — accepts `{ decision, reason? }`; sets `reviewed_by`/`reviewed_at` |
+| `POST /pruning-requests/:id/convert-to-task` | ✅ | landed Apr 27 — atomic transaction; calls `CapacityService.bookAtomic`; sets `converted_task_id` |
+| `GET /pruning-requests?rayon_id=&status=&from=&to=` (admin filter) | ✅ | landed Apr 27 — paginated; auto-scoped by `users.rayon_id` for admin_data |
+| Auto-rayon resolution from GPS | ⏳ DEFERRED → Phase 4 polish | client passes `rayon_id` explicitly for now |
+| FCM notifications on status change | ⏳ DEFERRED → Phase 4 polish (3-8 bucket) | review/convert endpoints log status transition; FCM digest pending |
 
 ---
 
-## Sub-Phase 3-10: Pruning-requests frontends 🟡 Partial (kecamatan slice)
+## Sub-Phase 3-10: Pruning-requests frontends 🟡 Mobile complete; web deferred
 
 | Task | Status | Notes |
 |------|--------|-------|
 | Mobile `KecamatanNavigator` (no bottom tabs, role-gated) | ✅ | `fe/mobile/src/navigation/KecamatanNavigator.tsx`; `RootNavigator.tsx` branches on `user.role === 'staff_kecamatan'` |
-| Mobile `SubmitScreen` (5-step wizard: address+GPS, photos, detail, preview, success) | ✅ | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx`; draft persisted in slice |
+| Mobile `SubmitScreen` (5-step wizard: address+GPS, photos, detail, preview, success) | ✅ | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx`; draft persisted in slice. Apr 27: NBButton variant + children compat fix |
 | Mobile `MyRequestsScreen` + `RequestDetailScreen` | ✅ | status chips (pending/approved/rejected/converted), pull-to-refresh, photo gallery |
-| Mobile `pruningRequestsSlice` + `pruningRequestsApi` | ✅ | submitRequest, fetchMine, fetchById; 21 slice tests, 57 screen tests |
+| Mobile `pruningRequestsSlice` + `pruningRequestsApi` | ✅ | submitRequest, fetchMine, fetchById, fetchAdminPruningRequests, reviewPruningRequest, convertPruningRequestToTask |
 | Offline queue: `pruning_request.submit` action | ✅ | `syncManager.ts` — FIFO; retry deferred to Phase 4 |
 | `useNetworkStatus` hook | ✅ | `fe/mobile/src/hooks/useNetworkStatus.ts` |
-| Mobile `ReviewQueueScreen` (admin_data) | ⏳ DEFERRED | admin half — next iteration |
-| Mobile `ConvertToTaskSheet` (capacity chip) | ⏳ DEFERRED | needs 3-11 capacity endpoints |
-| Web `/pruning-requests/` queue + `[id]/` detail | ⏳ DEFERRED | web work deferred until after demo |
-| Web `(kecamatan)/` layout for staff_kecamatan submit on web | ⏳ DEFERRED | web work deferred |
-| Top-management read-only filter | ⏳ DEFERRED | tied to admin half |
+| Mobile `ReviewQueueScreen` (admin_data) | ✅ | `fe/mobile/src/screens/pruningRequests/ReviewQueueScreen.tsx` — tabs (pending/approved), rayon-scoped list |
+| Mobile `ConvertToTaskSheet` (capacity chip) | 🟡 | `fe/mobile/src/components/admin/ConvertToTaskSheet.tsx` — renders, capacity chip works; areas/users selectors empty until Phase 4 (no `areasSlice`/`usersSlice` yet). Apr 27 defensive patch keeps it from crashing |
+| Top-management read-only filter | ✅ | role list on admin endpoints includes `top_management` |
+| Web `/pruning-requests/` queue + `[id]/` detail | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
+| Web `(kecamatan)/` layout for staff_kecamatan submit on web | 🟡 | layout shell ✅ from 3-R4; submit form deferred. Apr 27: placeholder pages added at `(kecamatan)/pruning-requests/{,my}/page.tsx` to avoid 404s |
 
-**Completed:** 2026-04-27 (mobile kecamatan slice only). Code review surfaced 4 critical follow-ups (Redux mutation form, error type plumbing, chip a11y, network re-check) tracked in `status_reviews.md`.
-
----
-
-## Sub-Phase 3-11: Service capacity calendar ⏳
-
-| Task | Status | Notes |
-|------|--------|-------|
-| `CapacityService` | ⏳ | |
-| `GET/PUT /rayons/:id/capacity` | ⏳ | |
-| `POST /rayons/:id/capacity/book` | ⏳ | |
-| Implicit booking on `/pruning-requests/:id/convert-to-task` | ⏳ | |
-| Web capacity calendar page | ⏳ | |
+**Completed:** 2026-04-27 (mobile complete; web deferred). Apr 27 audit surfaced + fixed: `NBButton` `outline`/`label`/`leftIcon` API gaps, `ConvertToTaskSheet` runtime drift, mobile `nbSpacing` numeric subscripts, web staff_kecamatan placeholder pages.
 
 ---
 
-## Sub-Phase 3-12: Plant-seed inventory ⏳
+## Sub-Phase 3-11: Service capacity calendar 🟡 Backend + mobile state ✅; web UI deferred
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `plant_seeds` + `seed_transactions` entities | ⏳ | |
-| CRUD endpoints (`/plant-seeds`, `/seed-transactions`) | ⏳ | |
-| Web seeds pages + ledger view | ⏳ | |
-| Mobile seeds screens | ⏳ | |
+| `CapacityService` (`bookAtomic`, `upsertCapacity`, `findCalendar`) | ✅ | `be/src/modules/service-capacity/service-capacity.service.ts` — `pessimistic_write` lock; throws `ConflictException` when over capacity. 24 tests, 98.9 % stmts |
+| `GET /rayons/:id/capacity?from=&to=&serviceType=` | ✅ | rayon × ISO-week × serviceType grain; admin-only |
+| `PUT /rayons/:id/capacity` (upsert) | ✅ | overrides default 5 units/day per rayon |
+| `POST /rayons/:id/capacity/book` (manual book) | ✅ | rare — convert-to-task uses service directly |
+| Implicit booking on `/pruning-requests/:id/convert-to-task` | ✅ | atomic — if capacity exceeded, conversion rolls back |
+| Mobile `serviceCapacitySlice` + `serviceCapacityApi` | ✅ | `fe/mobile/src/store/slices/serviceCapacitySlice.ts` — `fetchCapacity`, `calendarByRayon` cache |
+| Web capacity calendar page | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
+
+---
+
+## Sub-Phase 3-12: Plant-seed inventory 🟡 Backend + slice ✅; UI deferred
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `plant_seeds` + `seed_transactions` entities | ✅ | landed in 3-2 schema |
+| Backend CRUD (`GET /plant-seeds`, `POST`, `GET /:id`, `POST /:id/transactions`, `GET /:id/transactions`) | ✅ | `be/src/modules/plant-seeds/` — `pessimistic_write` lock on `recordTransaction`; throws on insufficient stock for distribution. 29 tests, 100 % stmts |
+| Mobile `plantSeedsSlice` + `plantSeedsApi` | ✅ | `fe/mobile/src/store/slices/plantSeedsSlice.ts` — full thunk surface |
+| Mobile inventory screens (`InventoryScreen`, `SeedDetailScreen`, `AddTransactionScreen`) | ⏳ DEFERRED → Phase 4 polish | `screens/plantSeeds/` directory does not exist; deleted in Wave 4 due to NB-primitive prop drift; deferred to Phase 4 polish where they can be rebuilt against the now-extended NBButton API |
+| Web seeds pages + ledger view | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
 
 ---
 

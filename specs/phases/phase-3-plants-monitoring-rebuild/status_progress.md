@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Progress
 
-**Last Updated:** 2026-04-27 (M3 + M4 admin finish-out landed)
-**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 ✅ + **M3 (3-6 ✅, 3-7 ✅, 3-8 🟡 light)** + **M4 (3-9 ✅, 3-10 ✅, 3-11 ✅, 3-12 🟡 full-stack)**; 17/21 sub-phases complete or partial (~81 %). Web work + cron/FCM/map overlay deferred. Code review (12 findings) fixed same-day (see `status_reviews.md`).
+**Last Updated:** 2026-04-27 (audit + bug-fix sweep — see end of file)
+**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 ✅ + **M3 (3-6 ✅, 3-7 mobile ✅, 3-8 🟡 light)** + **M4 (3-9 ✅, 3-10 mobile ✅ web ⏳, 3-11 backend+mobile-state ✅ web ⏳, 3-12 backend+slice ✅ UI ⏳)**. **Honest count: 13 fully complete + 4 partial + 4 not-started/in-progress ≈ ~70 % weighted.** Earlier "17/21 ~81 %" headline counted partials as wholes; corrected on Apr 27 audit. Web work + cron/FCM/map overlay deferred. See `STATUS.md` → "Open Items by Bucket" for deferred inventory.
 
 This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-sub-phase journal that's updated in-flight and finalized on phase completion. `STATUS.md` is the live task-level tracker; this file is the narrative log.
 
@@ -569,3 +569,25 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 ---
 
 **Finalization trigger:** When all sub-phases above reach ✅ Complete, rewrite the header status to `✅ COMPLETE — All Sub-Phases Done` and set `Overall Phase 3 completion: 100 %`, matching the Phase 2D convention.
+
+---
+
+## 2026-04-27 — Audit + bug-fix sweep
+
+User-driven audit revealed STATUS.md headline (`17/21 ~81 %`) contradicted detail-section tables that still showed 3-9 🟡, 3-10 🟡, 3-11 ⏳, 3-12 ⏳. The Wave 6 doc-sweep had updated only the summary, not the detail tables. Refreshed both today.
+
+**Honest count after audit:** 13 fully complete + 4 partial (3-8, 3-10, 3-11, 3-12) + 4 not-started/in-progress (3-13, 3-14, 3-15) ≈ **~70 % weighted**.
+
+**Bug fixes shipped today (Apr 27):**
+
+1. **`NBButton` API extension + crash fix** — `SubmitScreen` was crashing on `staff_kec_pusat` login because it passed `variant="outline"` (not in NBButton's variant list) and used children-as-text (NBButton expected `title` prop). Extended NBButton with: `outline` variant, `label` alias, `leftIcon`, string-children fallback, graceful unknown-variant fallback. Added 5 regression-guard tests.
+
+2. **`ConvertToTaskSheet` defensive patch** — was reading `state.areas` and `state.users` from Redux (slices that don't exist), used snake_case `request.rayon_id` (model is camelCase), passed wrong props to NBAlert/NBToast/NBDatePicker. Sheet now renders without crashing; areas/users selectors return `[]` until those slices land in Phase 4 polish.
+
+3. **Mobile `nbSpacing` numeric subscript shim** — added Tailwind-style numeric aliases (1=4, 2=8, 3=12, 4=16, 5=20, 6=24, 7=28, 8=32, 10=40, 12=48, 16=64) in `constants/nbTokens.ts` so the Phase 3 admin screens that use `nbSpacing[2]`/`nbSpacing[4]` lay out correctly.
+
+4. **Web placeholder pages** — added `(kecamatan)/pruning-requests/page.tsx` and `(kecamatan)/pruning-requests/my/page.tsx` so `staff_kecamatan` users on web don't 404 when the sidebar links resolve to those URLs (full implementation deferred to Phase 4 web).
+
+**Tests:** Backend 179 Phase 3 module tests pass. Mobile Phase 3 suites pass. Backend Phase 3 module coverage ≥ 90 % stmts, ≥ 90 % branches on every module.
+
+See `STATUS.md` → "Open Items by Bucket" for the deferred-work inventory.

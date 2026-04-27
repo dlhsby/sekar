@@ -1,10 +1,37 @@
 # Phase 3 Deployment Guide — Plants Management, Monitoring Rebuild & Public Intake
 
-**Last Updated:** April 27, 2026
+**Last Updated:** April 27, 2026 (Apr 27 audit + bug-fix sweep)
 **Status:** 🟡 Backend deployed; Redis pending; Web pending CI fix
 **Target:** Incremental deploy on top of Phase 2E production
 
 > **Reference:** See `specs/deployment/phase-2-deployment.md` for infrastructure setup, GitHub Secrets, Nginx config, and baseline procedures. This guide covers only Phase 3 incremental changes.
+
+---
+
+## 🆕 Apr 27 Audit + Bug-Fix Sweep — Pre-Deploy Smoke
+
+Before pushing the next mobile build, run this 5-minute smoke test against the dev environment. Each step has a known-fixed status — if any fail, that means a regression has been introduced and the deploy should pause.
+
+| # | Action | Expected | Apr 27 status |
+|---|--------|----------|---------------|
+| 1 | `cd be && npm run db:seed:staging` | Exits 0; output mentions `6 pruning_requests inserted (mixed statuses with review metadata)` and `5 plant_seeds + 5 seed_transactions` and `84 new service_capacity rows` | ✅ |
+| 2 | Login mobile as `staff_kec_pusat / password123` → tap "Kirim Permintaan" | `SubmitScreen` 5-step wizard renders without crash; "Kembali" + "Lanjut" buttons show text | ✅ fixed Apr 27 |
+| 3 | Login mobile as `admin_data_pusat_1 / password123` → tap admin tab | `ReviewQueueScreen` lists ≥2 pending pruning_requests | ✅ |
+| 4 | Tap a request → `RequestDetailScreen` → tap "Setujui" | Modal opens with reason textarea | ✅ |
+| 5 | For an approved request, tap "Konversi ke Tugas" | `ConvertToTaskSheet` opens (areas/users dropdowns are empty until Phase 4 — known) | 🟡 partial |
+| 6 | Login web as `admin_pusat / password123` → click each sidebar link | All resolve (no 404). Phase 3 routes show "Coming soon" placeholders | ✅ Apr 27 placeholders |
+| 7 | Login web as `staff_kec_pusat` | Sidebar shows "Kirim Permintaan" + "Permintaan Saya"; both routes resolve to placeholders | ✅ Apr 27 placeholders |
+| 8 | Backend `cd be && npm test -- --testPathPattern='modules/(pruning-requests\|service-capacity\|plant-seeds\|plants)'` | 179 tests, 0 failures | ✅ |
+| 9 | Mobile `cd fe/mobile && npx jest src/components/nb/__tests__/NBButton.test.tsx` | 26 tests pass (5 new regression-guard tests for `outline`, `label`, `leftIcon`, unknown-variant fallback, string children) | ✅ |
+
+If any row flips ❌ in this table after a future change, **don't deploy** until the regression is identified and either fixed or explicitly accepted by the user.
+
+### Apr 27 deployment changelog
+
+- **Mobile**: `NBButton` extended with `outline` variant + `label` alias + `leftIcon` + string-children fallback + graceful unknown-variant fallback. `nbSpacing` numeric subscript shim added (Tailwind-style `nbSpacing[2]`/`nbSpacing[4]`). `ConvertToTaskSheet` defensive patch (no longer crashes on missing `areas`/`users` slices). Bumps mobile bundle by ~3 KB.
+- **Web**: Two new placeholder pages at `(kecamatan)/pruning-requests/page.tsx` and `(kecamatan)/pruning-requests/my/page.tsx` to prevent staff_kecamatan 404s.
+- **Backend**: No code changes. (Pre-existing `/pruning-requests/:id/review`, `/convert-to-task`, `/rayons/:id/capacity*`, `/plant-seeds/*` endpoints all live and tested.)
+- **Spec**: STATUS.md headline reconciled with detail tables (was "17/21 ~81 %", now "13/21 fully + 4 partial + 4 not-started ≈ 70 %"). New "Open Items by Bucket" block added.
 
 ---
 
