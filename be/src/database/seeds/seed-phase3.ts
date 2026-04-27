@@ -299,39 +299,60 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('✂️  ======== SECTION 4: Pruning Requests ========');
     let pruningInserted = 0;
 
-    const kecamatanNames = ['Pusat', 'Selatan', 'Timur', 'Utara'];
-    const statuses = ['submitted', 'submitted', 'approved', 'rejected'];
-    const addresses = [
-      'Jl. Pemuda No. 1',
-      'Jl. Raya Kenjeran No. 50',
-      'Jl. Timuran No. 25',
-      'Jl. Tanjungsari No. 100',
+    // Cover every status chip so MyRequestsScreen + ReviewQueueScreen
+    // have visible data on first login. 6 rows × distinct statuses.
+    const sampleRequests = [
+      { kec: 'Pusat',   addr: 'Jl. Pemuda No. 1',          status: 'submitted',   photos: 3, count: 5 },
+      { kec: 'Pusat',   addr: 'Jl. Tunjungan No. 12',      status: 'submitted',   photos: 4, count: 8 },
+      { kec: 'Selatan', addr: 'Jl. Raya Darmo No. 99',     status: 'approved',    photos: 5, count: 12 },
+      { kec: 'Timur',   addr: 'Jl. Raya Kenjeran No. 50',  status: 'rejected',    photos: 3, count: 4 },
+      { kec: 'Utara',   addr: 'Jl. Tanjungsari No. 100',   status: 'converted',   photos: 4, count: 10 },
+      { kec: 'Pusat',   addr: 'Jl. Embong Malang No. 7',   status: 'in_progress', photos: 5, count: 6 },
     ];
 
-    for (let i = 0; i < 4; i++) {
-      const staff = await queryRunner.query(
-        `SELECT id FROM users WHERE role = 'staff_kecamatan' LIMIT 1`,
-      );
-      const submitterId = staff.length > 0 ? staff[0].id : (
-        await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_data' LIMIT 1`)
-      )[0]?.id;
+    const staff = await queryRunner.query(
+      `SELECT id FROM users WHERE role = 'staff_kecamatan' LIMIT 1`,
+    );
+    const submitterId = staff.length > 0 ? staff[0].id : (
+      await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_data' LIMIT 1`)
+    )[0]?.id;
+    const reviewer = await queryRunner.query(
+      `SELECT id FROM users WHERE role IN ('admin_data','kepala_rayon','superadmin') LIMIT 1`,
+    );
+    const reviewerId = reviewer.length > 0 ? reviewer[0].id : null;
+    const rayonForRequests = await queryRunner.query(`SELECT id FROM rayons ORDER BY name LIMIT 1`);
+    const rayonIdForReq = rayonForRequests[0]?.id ?? null;
 
-      if (!submitterId) {
-        console.log('  ⚠ No staff_kecamatan or admin_data users found, skipping pruning_requests');
-        break;
+    if (!submitterId) {
+      console.log('  ⚠ No staff_kecamatan or admin_data users found, skipping pruning_requests');
+    } else {
+      for (let i = 0; i < sampleRequests.length; i++) {
+        const r = sampleRequests[i];
+        const refCode = `PR-${Date.now()}-${i}`;
+        const photoUrls = Array.from({ length: r.photos }, (_, n) =>
+          `https://placehold.co/600x400?text=PR-${i}-${n + 1}`,
+        );
+        const expectedDate = new Date(Date.now() + (i + 1) * 86400000)
+          .toISOString().split('T')[0];
+        const reviewedAt = ['approved', 'rejected', 'converted', 'in_progress'].includes(r.status)
+          ? new Date().toISOString() : null;
+
+        const result = await queryRunner.query(
+          `INSERT INTO pruning_requests
+             (reference_code, submitted_by, kecamatan_name, address, gps_lat, gps_lng,
+              expected_date, estimated_plant_count, photo_urls, status, rayon_id,
+              reviewed_by, reviewed_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,$12,$13)
+           ON CONFLICT (reference_code) DO NOTHING`,
+          [refCode, submitterId, r.kec, r.addr,
+           -7.2575 + (i * 0.001), 112.7521 + (i * 0.001),
+           expectedDate, r.count, photoUrls, r.status, rayonIdForReq,
+           reviewedAt ? reviewerId : null, reviewedAt],
+        );
+        if (result && (result as any).rowCount > 0) pruningInserted++;
       }
-
-      const refCode = `PR-${Date.now()}-${i}`;
-      const status = statuses[i];
-      const result = await queryRunner.query(
-        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (reference_code) DO NOTHING`,
-        [refCode, submitterId, kecamatanNames[i], addresses[i], status],
-      );
-      if (result && (result as any).rowCount > 0) pruningInserted++;
     }
-    console.log(`  ✓ ${pruningInserted} pruning_requests inserted`);
+    console.log(`  ✓ ${pruningInserted} pruning_requests inserted (6 status variants)`);
 
     // ==========================================
     // SECTION 5: plant_seeds + seed_transactions
@@ -613,17 +634,26 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
     const adminId = admin.length > 0 ? admin[0].id : submitterId;
     const rayonId = rayon.length > 0 ? rayon[0].id : null;
 
+    // 6 samples covering every status chip used in MyRequestsScreen
+    // and ReviewQueueScreen so each visual variant is on screen on
+    // first login.
     const samples = [
       { kecamatan: 'Surabaya Pusat', address: 'Jl. Pemuda No. 1', status: 'submitted' as const, estimatedCount: 12, daysFromNow: 30 },
       { kecamatan: 'Surabaya Selatan', address: 'Jl. Raya Darmo No. 50', status: 'submitted' as const, estimatedCount: 8, daysFromNow: 45 },
       { kecamatan: 'Surabaya Timur', address: 'Jl. Kenjeran No. 100', status: 'approved' as const, estimatedCount: 15, daysFromNow: 14 },
       { kecamatan: 'Surabaya Utara', address: 'Jl. Tanjungsari No. 25', status: 'rejected' as const, estimatedCount: 6, daysFromNow: -5 },
+      { kecamatan: 'Surabaya Pusat', address: 'Jl. Tunjungan No. 12', status: 'converted' as const, estimatedCount: 10, daysFromNow: 7 },
+      { kecamatan: 'Surabaya Selatan', address: 'Jl. Embong Malang No. 7', status: 'in_progress' as const, estimatedCount: 6, daysFromNow: 3 },
     ];
     let inserted = 0;
     for (let i = 0; i < samples.length; i++) {
       const refCode = `PR-2026-STAGING-${String(i + 1).padStart(4, '0')}`;
       const expectedDate = new Date();
       expectedDate.setDate(expectedDate.getDate() + samples[i].daysFromNow);
+
+      const photoUrls = Array.from({ length: 3 + (i % 3) }, (_, n) =>
+        `https://placehold.co/600x400?text=PR-${i + 1}-${n + 1}`,
+      );
 
       const insertParams: any[] = [
         refCode,
@@ -634,18 +664,20 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
         expectedDate.toISOString().split('T')[0],
         samples[i].estimatedCount,
         rayonId,
+        photoUrls,
       ];
 
-      // Add review metadata only for approved/rejected
-      if (samples[i].status === 'approved' || samples[i].status === 'rejected') {
+      // Add review metadata for any reviewed/post-review status
+      const reviewed = ['approved', 'rejected', 'converted', 'in_progress'].includes(samples[i].status);
+      if (reviewed) {
         insertParams.push(adminId, new Date().toISOString(), `Reviewed by admin on ${new Date().toLocaleDateString()}`);
       } else {
         insertParams.push(null, null, null);
       }
 
       const rows = await queryRunner.query(
-        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status, expected_date, estimated_plant_count, rayon_id, reviewed_by, reviewed_at, review_notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status, expected_date, estimated_plant_count, rayon_id, photo_urls, reviewed_by, reviewed_at, review_notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], $10, $11, $12)
          ON CONFLICT (reference_code) DO NOTHING
          RETURNING id`,
         insertParams,

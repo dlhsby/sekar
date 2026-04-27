@@ -824,7 +824,7 @@ async function seedStaging() {
     console.log('  Phase 3 UAT Data');
     console.log('  ─────────────────────────────────────────────────────────────────────────────────');
     console.log('  area_plants       — up to 6 areas × 5 species inventory');
-    console.log('  pruning_requests  — 4 sample (submitted/submitted/approved/rejected)');
+    console.log('  pruning_requests  — 6 sample (submitted×2 / approved / rejected / converted / in_progress, with photo_urls)');
     console.log('  plant_seeds       — 5 species (AKASIA/MAHONI/BUNGUR/SENGON/JATI seeds)');
     console.log('  seed_transactions — initial purchases (qty matches stock_qty)');
     console.log('');
