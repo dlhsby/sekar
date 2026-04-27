@@ -1,10 +1,71 @@
 # Phase 3 Deployment Guide — Plants Management, Monitoring Rebuild & Public Intake
 
-**Last Updated:** April 26, 2026
-**Status:** 🟡 M1-R + M1-S + M2 Ready to Deploy (10/21 sub-phases complete)
+**Last Updated:** April 27, 2026
+**Status:** 🟡 Backend deployed; Redis pending; Web pending CI fix
 **Target:** Incremental deploy on top of Phase 2E production
 
 > **Reference:** See `specs/deployment/phase-2-deployment.md` for infrastructure setup, GitHub Secrets, Nginx config, and baseline procedures. This guide covers only Phase 3 incremental changes.
+
+---
+
+## 📍 Where We Are — Resume Checklist (Apr 27, 2026)
+
+| # | Step | State | Notes |
+|---|------|-------|-------|
+| 1 | Push Phase 3 commits to `main` | ✅ done | up to commit `874b13e` |
+| 2 | Backend CI/CD (build + ECR + EC2) | ✅ done | run `24972458864` green; new image active on `16.79.183.240` |
+| 3 | Phase 3 migrations | ✅ done | both migrations recorded in `typeorm_migrations` (id 12, 13); see "Issues Resolved" below |
+| 4 | Phase 3 seed (`db:seed:phase3:prod`) | ✅ done (partial) | 128 plant_species, 4 monitoring_configs, 5 plant_seeds. Sections 3/4/6 skipped — prod DB has no users/areas/rayons |
+| 5 | Backend smoke test (`/api/v1/health`) | ✅ done | OK |
+| 6 | **Redis provisioning** | ⏸️ pending | choose Upstash OR ElastiCache (see below); add `REDIS_URL` to GitHub Secrets |
+| 7 | Add 5 new env vars to GitHub Secrets `BACKEND_ENV_PRODUCTION` | ⏸️ pending | depends on step 6 |
+| 8 | Empty commit + push to redeploy backend with Redis vars | ⏸️ pending | `git commit --allow-empty -m "chore: enable Redis"` |
+| 9 | **Web CI/CD fix** (`eslint-plugin-sekar-design` not found in CI) | ⏸️ pending | runs failing since Apr 26; see "Web CI/CD Fix" below |
+| 10 | Web deploy (after CI fix) | ⏸️ pending | currently the older Phase 2E web image is still serving |
+| 11 | Mobile APK release build | ⏸️ pending | `cd fe/mobile/android && ./gradlew assembleRelease` |
+| 12 | **Rotate `sekar-key.pem`** | ⏸️ pending | private key was exposed in a chat transcript on Apr 27 — treat as compromised |
+
+**To resume:** start at step 6. The backend is fully Phase-3-capable but running with Redis in degraded fallback mode (sync ping processing, in-memory Socket.IO).
+
+---
+
+## 🛠️ Issues Resolved During Apr 27 Deploy
+
+### A. Phantom `typeorm_migrations` rows
+On the first migration attempt, `typeorm_migrations` already contained rows for `Phase3Schema17460000000000` and `Phase3BackfillIndexes17460001000000`, yet the actual tables didn't exist (`to_regclass('public.plant_species')` returned NULL). Cause unknown — likely a previous half-run that committed the bookkeeping rows but rolled the DDL back, OR a manual marker.
+
+**Recovery executed:**
+```sql
+DELETE FROM typeorm_migrations WHERE name IN ('Phase3Schema17460000000000', 'Phase3BackfillIndexes17460001000000');
+-- Re-ran migration → it failed at `uq_area_plants_area_species already exists` because some DDL HAD been applied.
+-- Verified all 8 Phase 3 tables + indexes + ALTER columns existed in DB.
+INSERT INTO typeorm_migrations(timestamp, name) VALUES
+  (7460000000000, 'Phase3Schema17460000000000'),
+  (7460001000000, 'Phase3BackfillIndexes17460001000000');
+```
+
+**Lesson:** the migration `EXCEPTION WHEN duplicate_object` clause does NOT catch `42P07 duplicate_table` (which fires when a UNIQUE constraint name conflicts because constraints create relations/indexes). If you ever need to retry a half-applied Phase3Schema, prefer to verify DDL state first (see "Verify schema" below) rather than re-running blind.
+
+### B. Missing UNIQUE constraint on `plant_seeds.name_id`
+The seed used `INSERT … ON CONFLICT (name_id) DO NOTHING`, but the migration didn't declare that constraint. Patched live with:
+```sql
+ALTER TABLE plant_seeds ADD CONSTRAINT uq_plant_seeds_name_id UNIQUE (name_id);
+```
+Then committed the migration fix in `874b13e`. Future fresh installs are unaffected.
+
+### Verify schema (anytime)
+```bash
+ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
+  'docker exec sekar-backend node -e "
+    const {DataSource}=require(\"typeorm\");
+    new DataSource({type:\"postgres\",host:process.env.DATABASE_HOST,port:5432,username:process.env.DATABASE_USERNAME||\"sekar_admin\",password:process.env.DATABASE_PASSWORD,database:process.env.DATABASE_NAME||\"sekar_db\",ssl:{rejectUnauthorized:false}}).initialize().then(async ds => {
+      for (const t of [\"plant_species\",\"area_plants\",\"notable_plants\",\"pruning_requests\",\"activity_plant_items\",\"service_capacity\",\"plant_seeds\",\"seed_transactions\"]) {
+        const r = await ds.query(\\\`SELECT to_regclass(\\\"public.\\\${t}\\\") AS x\\\`);
+        console.log(t, r[0].x ? \"OK\" : \"MISSING\");
+      }
+      await ds.destroy();
+    });"'
+```
 
 ---
 
@@ -47,48 +108,237 @@ REDIS_URL=redis://localhost:6379
 
 ---
 
-## 🏗️ Infrastructure Changes
+## 🏗️ Infrastructure Changes — Redis 7
 
-### AWS: Provision ElastiCache Redis 7
-
-Phase 3 requires a Redis 7 instance for:
+Phase 3 uses Redis 7 for:
 - Redis Streams (`location:pings`) — `StatusProjectorService` reads EVERY_SECOND
 - Socket.IO Redis adapter (future horizontal scale)
 - `StaleStatusSweeperService` cron (`*/5 * * * *`)
 
+> **Graceful fallback:** If Redis is unavailable, the app **still starts** — `StatusProjectorService.onModuleInit` is wrapped in try/catch, `LocationService` falls back to synchronous latest-ping processing, and Socket.IO falls back to in-memory single-instance mode. Redis failures log as warnings, not crashes. **You can defer Redis** and Phase 3 monitoring still works in degraded mode.
+
+### Choose your Redis provider
+
+| Option | Monthly Cost | RAM | TLS | Connection limit | Best for |
+|--------|-------------|-----|-----|------------------|----------|
+| **Upstash Redis (free tier)** | **$0** | 256 MB | ✅ required | 100 concurrent | Phase 3 production at current scale (~tens of workers, low ping volume) |
+| **AWS ElastiCache `cache.t3.micro`** | ~$13.14/mo (ap-southeast-3) | 0.5 GB | optional | thousands | Phase 4+ horizontal scaling, same-VPC latency |
+| **Self-hosted Redis 7 on the same EC2 box** | $0 | bounded by host | manual | manual | Bench/staging only — production t3.micro has only 327 Mi RAM free |
+
+**Recommendation for now:** **Upstash free tier** (Section 1). It clears today's deploy with zero AWS friction and zero cost. Move to ElastiCache (Section 2) when you start hitting Upstash limits or when you need same-VPC latency / multi-instance scale.
+
+---
+
+### Section 1 — Upstash Redis (free tier, recommended)
+
+#### Step 1.1 — Create the database (web console)
+
+1. Go to <https://console.upstash.com/redis> and sign in (GitHub login is fine).
+2. Click **Create Database**.
+3. Settings:
+   - **Name:** `sekar-redis-prod`
+   - **Type:** Regional (Global is more expensive and not needed)
+   - **Region:** `AWS / ap-southeast-1 (Singapore)` — closest free-tier region to Jakarta. (`ap-southeast-3` Jakarta is not in Upstash free regions; Singapore adds ~30 ms RTT, acceptable for our workload.)
+   - **Eviction:** `Disabled` (we want stream entries to persist until consumed)
+   - **TLS / SSL:** **Enabled** (required for free tier)
+4. Click **Create**.
+
+#### Step 1.2 — Copy the connection URL
+
+In the database detail page, find **REST API** / **Redis Connect**:
+- The `UPSTASH_REDIS_REST_URL` is the REST API — **don't use this for Phase 3.**
+- The `redis://` and `rediss://` URLs are the standard Redis-protocol endpoints.
+- Copy the **`rediss://`** URL (TLS variant). Format:
+  ```
+  rediss://default:<PASSWORD>@<host>.upstash.io:6379
+  ```
+
+#### Step 1.3 — Add to GitHub Secrets
+
 ```bash
-# Create ElastiCache Redis 7 (single-node for Phase 3; cluster-mode deferred to Phase 4)
+gh secret set REDIS_URL --env production --body 'rediss://default:<PASSWORD>@<host>.upstash.io:6379'
+gh secret set REDIS_STREAM_MAX_LEN --env production --body '100000'
+gh secret set STAFFING_DEBOUNCE_SECONDS --env production --body '30'
+gh secret set MONITORING_SWEEP_CRON --env production --body '*/5 * * * *'
+gh secret set CLUSTER_ZOOM_THRESHOLD --env production --body '14'
+gh secret set MISSING_THRESHOLD_SECONDS --env production --body '900'
+```
+
+Or via the web UI: <https://github.com/dlhsby/sekar/settings/environments/production> → Environment secrets → Add `REDIS_URL` etc.
+
+> **Important:** GitHub Secrets are pulled into `.env.production` by `backend-ci-cd.yml` at deploy time. The variables only become active **after a redeploy** (next push or empty commit).
+
+#### Step 1.4 — Trigger a redeploy
+
+```bash
+git commit --allow-empty -m "chore(deploy): activate Redis (Upstash) for Phase 3 monitoring v2"
+git push origin main
+gh run watch --exit-status   # waits for CI/CD to finish
+```
+
+#### Step 1.5 — Verify
+
+```bash
+ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
+  'docker logs sekar-backend --tail=200 2>&1 | grep -E "Redis|StatusProjector|Socket.IO"'
+# Expected lines:
+#   [Nest] StatusProjectorService dependencies initialized
+#   [Nest] Socket.IO Redis adapter active
+#   No "Redis connection failed" warnings.
+
+# Confirm stream is being written from a worker ping (after a clock-in event):
+ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
+  'docker exec sekar-backend node -e "
+    const Redis = require(\"ioredis\");
+    const r = new Redis(process.env.REDIS_URL);
+    r.xlen(\"location:pings\").then(n => { console.log(\"location:pings length:\", n); r.quit(); });"'
+```
+
+#### Free-tier limits (Upstash, current as of 2026-04)
+
+| Limit | Free tier |
+|-------|-----------|
+| Storage | 256 MB |
+| Bandwidth | 50 GB / month |
+| Commands | 500,000 / day (~5.8 / sec sustained) |
+| Concurrent connections | 100 |
+| Daily request quota | 10,000 / day for REST (we use Redis protocol — different bucket) |
+| Persistence | Snapshot every 5 min |
+
+Phase 3 sustained load estimate: ~30 active workers × 1 ping / 30 sec = 1 cmd/sec average. Comfortably inside the free tier. If you exceed, Upstash auto-scales to Pay-as-you-go ($0.20 per 100k commands) — set a billing alert.
+
+---
+
+### Section 2 — AWS ElastiCache Redis 7 (paid)
+
+> **Free-tier note:** ElastiCache offers 750 hours/month of `cache.t3.micro` for the first **12 months only after AWS account creation**. This account (`170848542527`, created 2023-03-29) is past the free-tier window. Expect ~$13.14/mo in `ap-southeast-3` (Jakarta), prorated.
+
+#### Prerequisites
+
+- IAM user with `elasticache:*`, `ec2:DescribeSubnets`, `ec2:DescribeSecurityGroups`, `ec2:AuthorizeSecurityGroupIngress`. (`wahyu-vision` does NOT have these as of Apr 27 — request from account admin or use the SEKAR-prod account.)
+- The VPC, subnet group, and security group used by the SEKAR backend EC2 (`16.79.183.240`).
+
+```bash
+# Find your existing infra (run from a workstation with the right AWS creds)
+SEKAR_INSTANCE_ID=$(aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=*sekar*" "Name=instance-state-name,Values=running" \
+  --query 'Reservations[0].Instances[0].InstanceId' --output text)
+SEKAR_VPC=$(aws ec2 describe-instances --instance-ids $SEKAR_INSTANCE_ID \
+  --query 'Reservations[0].Instances[0].VpcId' --output text)
+SEKAR_SG=$(aws ec2 describe-instances --instance-ids $SEKAR_INSTANCE_ID \
+  --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+SEKAR_SUBNETS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$SEKAR_VPC" \
+  --query 'Subnets[].SubnetId' --output text | tr '\t' ',')
+echo "INSTANCE=$SEKAR_INSTANCE_ID VPC=$SEKAR_VPC SG=$SEKAR_SG SUBNETS=$SEKAR_SUBNETS"
+```
+
+#### Path A — AWS CLI
+
+```bash
+# 2A.1 — Create a subnet group across the SEKAR VPC's subnets
+aws elasticache create-cache-subnet-group \
+  --cache-subnet-group-name sekar-subnet-group \
+  --cache-subnet-group-description "SEKAR backend subnet group" \
+  --subnet-ids $(echo $SEKAR_SUBNETS | tr ',' ' ')
+
+# 2A.2 — Create a dedicated security group for Redis (Redis port 6379 from backend SG only)
+SEKAR_REDIS_SG=$(aws ec2 create-security-group \
+  --group-name sekar-redis-sg \
+  --description "SEKAR Redis access from backend EC2" \
+  --vpc-id $SEKAR_VPC \
+  --query 'GroupId' --output text)
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $SEKAR_REDIS_SG \
+  --protocol tcp --port 6379 \
+  --source-group $SEKAR_SG
+
+# 2A.3 — Create the cache cluster
 aws elasticache create-cache-cluster \
   --cache-cluster-id sekar-redis-prod \
   --cache-node-type cache.t3.micro \
   --engine redis \
-  --engine-version 7.0 \
+  --engine-version 7.1 \
   --num-cache-nodes 1 \
   --cache-subnet-group-name sekar-subnet-group \
-  --security-group-ids <SEKAR_SG_ID> \
+  --security-group-ids $SEKAR_REDIS_SG \
   --tags Key=Project,Value=SEKAR Key=Environment,Value=production
 
-# Get endpoint
-aws elasticache describe-cache-clusters \
+# 2A.4 — Wait for it to come available (~5-10 min)
+aws elasticache wait cache-cluster-available --cache-cluster-id sekar-redis-prod
+
+# 2A.5 — Read the endpoint
+REDIS_HOST=$(aws elasticache describe-cache-clusters \
   --cache-cluster-id sekar-redis-prod \
   --show-cache-node-info \
-  --query 'CacheClusters[0].CacheNodes[0].Endpoint.Address'
+  --query 'CacheClusters[0].CacheNodes[0].Endpoint.Address' --output text)
+echo "REDIS_URL=redis://$REDIS_HOST:6379"
 ```
 
-Add the Redis endpoint to `REDIS_URL` in your production `.env`.
+#### Path B — AWS Console
 
-> **Phase 3 note:** Redis is used for Streams + Socket.IO adapter. If Redis is unavailable at startup, the app **still starts** — `StatusProjectorService.onModuleInit` is wrapped in try/catch, and `LocationService` falls back to synchronous latest-ping processing. Redis failures are logged as warnings, not crashes.
+1. **VPC > Security Groups > Create security group**
+   - Name: `sekar-redis-sg`
+   - VPC: same VPC as the backend EC2 (find via EC2 Console → instance `16.79.183.240` → Networking tab)
+   - Inbound rule: Type `Custom TCP`, Port `6379`, Source = backend EC2 security group ID
+   - Save. Copy the new SG ID.
 
-### Update Security Group
+2. **ElastiCache → Redis OSS caches → Create Redis cluster**
+   - Deployment option: **Design your own cache**
+   - Creation method: **Easy create** is fine; pick **Demo** preset, then customize
+   - Cluster info:
+     - Name: `sekar-redis-prod`
+     - Engine: Redis OSS
+     - Engine version: `7.1` (latest stable)
+     - Port: `6379`
+     - Node type: **`cache.t3.micro`** (cheapest — ~$13/mo)
+     - Number of replicas: `0` (single node; cluster mode is overkill for Phase 3)
+   - Subnet group: **Create new** → name `sekar-subnet-group` → VPC = backend VPC → select all private subnets
+   - Security: Security groups = `sekar-redis-sg` (the one you just created); leave Auth disabled for in-VPC private access (encryption-in-transit can be enabled but adds ~10 ms RTT and requires `rediss://`)
+   - Backup: enable, daily, retention 1 day
+   - Maintenance window: pick a low-traffic window (e.g., Sunday 04:00 WIB)
+   - Tags: `Project=SEKAR`, `Environment=production`
+   - Click **Create**
 
-Allow the backend EC2/ECS instance to reach ElastiCache on port 6379:
+3. After ~5-10 min, status flips to `available`. Click the cluster name → **Configuration** tab → copy **Primary endpoint** (looks like `sekar-redis-prod.xxxxxx.0001.aps3.cache.amazonaws.com:6379`).
+
+#### Step 2.5 — Add to GitHub Secrets (CLI or console)
+
+Same as Upstash Section 1.3, but with `REDIS_URL=redis://<endpoint>:6379` (no TLS — in-VPC plaintext is fine; switch to `rediss://` if you enabled encryption-in-transit).
+
 ```bash
-aws ec2 authorize-security-group-ingress \
-  --group-id <SEKAR_SG_ID> \
-  --protocol tcp \
-  --port 6379 \
-  --source-group <SEKAR_SG_ID>
+gh secret set REDIS_URL --env production --body "redis://$REDIS_HOST:6379"
+# Plus the other 5 vars from Section 1.3
 ```
+
+#### Step 2.6 — Verify (after redeploy)
+
+Same as Upstash 1.5. From the EC2 host you can also `redis-cli` directly:
+```bash
+ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
+  "docker run --rm redis:7.1 redis-cli -h $REDIS_HOST -p 6379 PING"
+# → PONG
+```
+
+#### Step 2.7 — Cost monitoring
+
+In CloudWatch, set a billing alarm:
+```bash
+aws budgets create-budget --account-id $(aws sts get-caller-identity --query Account --output text) \
+  --budget '{"BudgetName":"sekar-redis-monthly","BudgetLimit":{"Amount":"20","Unit":"USD"},"TimeUnit":"MONTHLY","BudgetType":"COST","CostFilters":{"Service":["Amazon ElastiCache"]}}' \
+  --notifications-with-subscribers '[{"Notification":{"NotificationType":"ACTUAL","ComparisonOperator":"GREATER_THAN","Threshold":80},"Subscribers":[{"SubscriptionType":"EMAIL","Address":"<your@email>"}]}]'
+```
+
+---
+
+### Section 3 — Migrating from Upstash to ElastiCache later
+
+When you outgrow Upstash:
+1. Provision ElastiCache per Section 2.
+2. Update `REDIS_URL` GitHub Secret to the new endpoint.
+3. Empty-commit + push — backend rebuilds with the new URL.
+4. Streams (`location:pings`) **don't need migration** — they're a rolling cap-trimmed log; the old Upstash data simply ages out. Tracking state is rebuilt on the next ping cycle.
+5. Cancel the Upstash database after 24 hours of stable ElastiCache operation.
 
 ---
 
@@ -145,9 +395,9 @@ Also add to `be/package.json` `scripts`:
 - [ ] Web build clean: `cd fe/web && npm run build`
 - [ ] Mobile: `cd fe/mobile && npm test -- --passWithNoTests` (passes)
 - [ ] Token pipeline: `npm run tokens:verify` (no drift)
-- [ ] Database backup taken
-- [ ] Redis ElastiCache instance provisioned and endpoint noted
-- [ ] New env vars added to GitHub Secrets `BACKEND_ENV_PRODUCTION`
+- [ ] Database backup taken (RDS automated snapshot or manual `pg_dump`)
+- [ ] Redis provisioned and endpoint noted — Upstash (free) or ElastiCache (paid). See "Infrastructure Changes — Redis 7" section. **Optional for first cut: backend degrades gracefully without Redis.**
+- [ ] New env vars added to GitHub Secrets `BACKEND_ENV_PRODUCTION` (only the ones you have values for)
 
 ### Step 1: Push to `main` → auto-deploy backend
 
@@ -291,6 +541,47 @@ Run after every Phase 3 deploy:
 - [ ] `MonitoringToggleSheet` opens via FAB layers button
 - [ ] `AreaStatusOverlay` renders (may be transparent if no plant data yet)
 - [ ] `featureFlags.clusterMarkersV2 = false` → individual markers shown as before
+
+---
+
+## 🩹 Web CI/CD Fix (required before web Phase 3 ships)
+
+The web pipeline has been failing since Apr 26 with:
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'eslint-plugin-sekar-design'
+imported from /home/runner/work/sekar/sekar/fe/web/eslint.config.mjs
+```
+
+**Cause:** the local design-token ESLint plugin is symlinked into `node_modules/eslint-plugin-sekar-design` only when you run `npm install` at the repo root (the root `package.json` has a `postinstall` that does the symlink). The web CI job runs `npm install` only inside `fe/web/`, so the symlink never gets created.
+
+**Fix options (any one):**
+
+1. **(Quickest) Add a root-level `npm install` to `web-ci-cd.yml`** before the `cd fe/web` step:
+   ```yaml
+   - name: Install root tooling (eslint-plugin-sekar-design symlink, token pipeline)
+     run: npm install
+     working-directory: .
+
+   - name: Install web deps
+     run: npm install
+     working-directory: fe/web
+   ```
+
+2. **(Cleanest) Publish `eslint-plugin-sekar-design` as a versioned local file dep** in `fe/web/package.json`:
+   ```json
+   "devDependencies": {
+     "eslint-plugin-sekar-design": "file:../../eslint-plugin-sekar-design"
+   }
+   ```
+   Then drop the root postinstall symlink. Same fix needed in `fe/mobile/package.json` if mobile lint also breaks in CI.
+
+3. **(Workaround) Make the rule `optional`** in `fe/web/eslint.config.mjs` by wrapping the import in a try/catch and skipping the plugin if missing. Not recommended — defeats the lint guard.
+
+After the fix lands, re-trigger the web pipeline:
+```bash
+gh workflow run web-ci-cd.yml --ref main
+gh run watch --exit-status
+```
 
 ---
 
