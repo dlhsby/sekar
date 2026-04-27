@@ -747,3 +747,37 @@ export interface AreaPlantStatusResponse {
   bySpecies: AreaPlantStatusSummary[];
   generatedAt: string;
 }
+
+
+// Plant Seed (Phase 3 3-12: seed inventory management)
+export interface PlantSeed {
+  id: string;
+  nameId: string;                          // Seed identifier/SKU
+  speciesId?: string | null;               // FK to plant_species
+  unit: 'gram' | 'piece' | 'packet';       // Unit of measurement
+  stockQty: number;                        // Current stock quantity
+  lastCountedAt: string | null;            // Last physical count
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Seed Transaction Type (Phase 3 3-12)
+export type SeedTransactionType = 'purchase' | 'distribution' | 'adjustment';
+
+// Seed Transaction (Phase 3 3-12: transaction ledger)
+export interface SeedTransaction {
+  id: string;
+  seedId: string;
+  transactionType: 'purchase' | 'distribution' | 'adjustment';
+  qty: number;
+  unitPrice?: number | null;               // For purchase/cost tracking
+  supplier?: string | null;                // For purchase
+  receiptUrl?: string | null;              // S3 URL to receipt
+  toRayonId?: string | null;               // For distribution
+  toAreaId?: string | null;                // For distribution
+  recipientName?: string | null;           // For distribution
+  occurredAt: string;                      // Date of transaction (YYYY-MM-DD)
+  recordedBy?: string | null;              // FK to user who recorded
+  notes?: string | null;
+  createdAt: string;
+}
