@@ -17,6 +17,7 @@ import {
 import { clockIn, clockOut } from '../api/shiftsApi';
 import { createActivity } from '../api/activitiesApi';
 import { uploadLocationBatch } from '../api/locationApi';
+import { submitPruningRequest } from '../api/pruningRequestsApi';
 import { locationTracker } from '../location/locationTracker';
 import config from '../../constants/config';
 import type { LocationPoint } from '../../types/api.types';
@@ -45,6 +46,17 @@ interface ActivityData {
   gps_lng?: number;
 }
 
+interface PruningRequestData {
+  address: string;
+  lat: number;
+  lng: number;
+  detail_date: string;
+  target_count: number;
+  photo_keys: string[];
+  notes?: string;
+  rayon_id?: string;
+}
+
 // New format for location batch (matches backend)
 interface NewLocationBatchData {
   shift_id: string;
@@ -59,11 +71,12 @@ interface LegacyLocationBatchData {
 type LocationBatchData = NewLocationBatchData | LegacyLocationBatchData;
 
 /**
- * Sync priority order: clock-in → activities → clock-out → location pings
+ * Sync priority order: clock-in → activities → pruning_request.submit → clock-out → location pings
  */
 const SYNC_PRIORITY: Record<string, number> = {
   'clock-in': 1,
   activity: 2,
+  'pruning_request.submit': 2.5,
   'clock-out': 3,
   location: 4,
 };
@@ -397,6 +410,10 @@ class SyncManager extends EventEmitter {
         await this.syncActivity(item.data);
         break;
 
+      case 'pruning_request.submit':
+        await this.syncPruningRequest(item.data);
+        break;
+
       case 'location':
         await this.syncLocationBatch(item.data);
         break;
@@ -446,6 +463,21 @@ class SyncManager extends EventEmitter {
     }
 
     console.debug('[SyncManager] Activity synced:', result.data);
+  }
+
+  /**
+   * Sync pruning request
+   * Submitted by staff_kecamatan users offline
+   * TODO: Advanced retry logic deferred to Phase 4 (currently uses default exponential backoff)
+   */
+  private async syncPruningRequest(data: PruningRequestData): Promise<void> {
+    const result = await submitPruningRequest(data);
+
+    if (!result || result.error) {
+      throw new Error(result?.error || 'Pruning request sync failed');
+    }
+
+    console.debug('[SyncManager] Pruning request synced:', result.data);
   }
 
   /**

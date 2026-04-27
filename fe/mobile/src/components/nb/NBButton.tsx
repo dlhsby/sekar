@@ -63,40 +63,39 @@ export interface NBButtonProps extends AccessibilityProps {
   testID?: string;
 }
 
-// Variant color mappings
-const variantStyles: Record<
-  NBButtonVariant,
-  { bg: string; text: string; border: string }
-> = {
-  primary: {
-    bg: nbColors.primary,
-    text: nbColors.white,
-    border: nbColors.black,
-  },
-  secondary: {
-    bg: nbColors.white,
-    text: nbColors.black,
-    border: nbColors.black,
-  },
-  info: {
-    bg: nbColors.accentSky, // Sky blue - for secondary actions
-    text: nbColors.white,
-    border: nbColors.black,
-  },
-  success: {
-    bg: nbColors.success,
-    text: nbColors.white,
-    border: nbColors.black,
-  },
-  danger: { bg: nbColors.danger, text: nbColors.white, border: nbColors.black },
-  ghost: {
-    bg: 'transparent',
-    text: nbColors.primary,
-    border: 'transparent',
-  },
+// Lazy-initialize variant styles to support testing with mocked tokens
+const getVariantStyles = () => {
+  return {
+    primary: {
+      bg: nbColors.primary,
+      text: nbColors.white,
+      border: nbColors.black,
+    },
+    secondary: {
+      bg: nbColors.white,
+      text: nbColors.black,
+      border: nbColors.black,
+    },
+    info: {
+      bg: nbColors.accentSky, // Sky blue - for secondary actions
+      text: nbColors.white,
+      border: nbColors.black,
+    },
+    success: {
+      bg: nbColors.success,
+      text: nbColors.white,
+      border: nbColors.black,
+    },
+    danger: { bg: nbColors.danger, text: nbColors.white, border: nbColors.black },
+    ghost: {
+      bg: 'transparent',
+      text: nbColors.primary,
+      border: 'transparent',
+    },
+  } as Record<NBButtonVariant, { bg: string; text: string; border: string }>;
 };
 
-// Size presets
+// Size presets - these don't depend on runtime token changes
 const sizeStyles: Record<
   NBButtonSize,
   { height: number; paddingHorizontal: number; fontSize: number }
@@ -158,7 +157,7 @@ export const NBButton: React.FC<NBButtonProps> = ({
     };
   }, []);
 
-  const variantStyle = variantStyles[variant];
+  const variantStyle = getVariantStyles()[variant];
   const sizeStyle = sizeStyles[size];
   const isGhost = variant === 'ghost';
   const isDisabled = disabled || loading;

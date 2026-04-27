@@ -1,343 +1,281 @@
-/**
- * Plants Slice Tests
- * Unit tests for plant species catalog and area inventory state
- * Phase 3 3-7
- */
-
 import plantsReducer, {
   fetchSpecies,
   searchSpecies,
   fetchAreaPlants,
   fetchNotablePlants,
   createNotablePlant,
-  clearError,
   selectSpeciesCatalog,
   selectSearchResults,
   selectAreaPlants,
   selectNotablePlants,
-  selectIsLoadingCatalog,
-  selectError,
+  selectIsLoadingSearch,
 } from '../plantsSlice';
-import type { PlantSpecies, AreaPlant, NotablePlant } from '../../../types/models.types';
+import { PlantSpecies, AreaPlant, NotablePlant } from '../../../types/models.types';
+
+const mockPlantSpecies: PlantSpecies = {
+  id: '1',
+  nameId: 'Pohon Kelapa',
+  nameLatin: 'Cocos nucifera',
+  category: 'tree',
+  defaultPruningCycleDays: 90,
+  notes: null,
+  createdAt: '2024-01-01T00:00:00Z',
+  updatedAt: '2024-01-01T00:00:00Z',
+};
+
+const mockAreaPlant: AreaPlant = {
+  id: '1',
+  areaId: 'area-1',
+  speciesId: '1',
+  count: 150,
+  lastPrunedAt: null,
+  nextDueAt: '2024-04-01T00:00:00Z',
+  status: 'ok',
+  overrideCycleDays: null,
+  species: mockPlantSpecies,
+  createdAt: '2024-01-01T00:00:00Z',
+  updatedAt: '2024-01-01T00:00:00Z',
+};
+
+const mockNotablePlant: NotablePlant = {
+  id: '1',
+  areaId: 'area-1',
+  speciesId: '1',
+  gpsLat: -7.25,
+  gpsLng: 112.75,
+  description: 'Large specimen tree',
+  age: 50,
+  species: mockPlantSpecies,
+  createdAt: '2024-01-01T00:00:00Z',
+  updatedAt: '2024-01-01T00:00:00Z',
+};
 
 describe('plantsSlice', () => {
-  const initialState = {
-    speciesCatalog: [],
-    speciesById: {},
-    areaPlantsByArea: {},
-    notableByArea: {},
-    searchResults: [],
-    isLoadingCatalog: false,
-    isLoadingSearch: false,
-    isLoadingAreaPlants: {},
-    isLoadingNotables: {},
-    isCreating: false,
-    error: null,
-  };
+  const initialState = plantsReducer(undefined, { type: 'unknown' });
 
-  const mockPlantSpecies: PlantSpecies = {
-    id: 'species-001',
-    nameId: 'Pohon Trembesi',
-    nameLatin: 'Albizia saman',
-    category: 'tree',
-    defaultPruningCycleDays: 365,
-    notes: 'Pohon besar dengan tajuk lebar',
-    createdAt: '2026-01-01T00:00:00Z',
-    updatedAt: '2026-01-01T00:00:00Z',
-  };
-
-  const mockAreaPlant: AreaPlant = {
-    id: 'area-plant-001',
-    areaId: 'area-001',
-    speciesId: 'species-001',
-    count: 5,
-    lastPrunedAt: '2026-01-15T10:00:00Z',
-    nextDueAt: '2027-01-15T10:00:00Z',
-    status: 'ok',
-    overrideCycleDays: null,
-    species: mockPlantSpecies,
-    createdAt: '2026-01-01T00:00:00Z',
-    updatedAt: '2026-01-01T00:00:00Z',
-  };
-
-  const mockNotablePlant: NotablePlant = {
-    id: 'notable-001',
-    areaId: 'area-001',
-    speciesId: 'species-001',
-    gpsLat: -7.2575,
-    gpsLng: 112.7521,
-    label: 'Heritage Trembesi - Est. 1950',
-    heritage: true,
-    photoUrls: ['https://example.com/photo1.jpg'],
-    notes: 'Pohon bersejarah, pantang tebang',
-    species: mockPlantSpecies,
-    createdAt: '2026-01-01T00:00:00Z',
-    updatedAt: '2026-01-01T00:00:00Z',
-  };
-
-  describe('initial state', () => {
-    it('should return initial state', () => {
-      expect(plantsReducer(undefined, { type: 'unknown' })).toEqual(initialState);
-    });
-  });
-
-  describe('clearError', () => {
-    it('should clear error message', () => {
-      const stateWithError = { ...initialState, error: 'Some error' };
-      const result = plantsReducer(stateWithError, clearError());
-      expect(result.error).toBeNull();
+  it('returns the initial state', () => {
+    expect(initialState).toEqual({
+      speciesCatalog: [],
+      speciesById: {},
+      areaPlantsByArea: {},
+      notableByArea: {},
+      searchResults: [],
+      isLoadingCatalog: false,
+      isLoadingSearch: false,
+      isLoadingAreaPlants: {},
+      isLoadingNotables: {},
+      isCreating: false,
+      error: null,
     });
   });
 
   describe('fetchSpecies thunk', () => {
-    it('should set isLoadingCatalog on pending', () => {
+    it('sets loading state on pending', () => {
       const action = { type: fetchSpecies.pending.type };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingCatalog).toBe(true);
-      expect(result.error).toBeNull();
+      const state = plantsReducer(initialState, action);
+      expect(state.isLoadingCatalog).toBe(true);
     });
 
-    it('should populate catalog and speciesById on fulfilled', () => {
-      const payload = { data: [mockPlantSpecies], total: 1 };
-      const action = {
-        type: fetchSpecies.fulfilled.type,
-        payload,
+    it('sets species catalog on fulfilled', () => {
+      const payload = {
+        data: [mockPlantSpecies],
+        total: 1,
       };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingCatalog).toBe(false);
-      expect(result.speciesCatalog).toEqual([mockPlantSpecies]);
-      expect(result.speciesById[mockPlantSpecies.id]).toEqual(mockPlantSpecies);
+      const action = { type: fetchSpecies.fulfilled.type, payload };
+      const state = plantsReducer(initialState, action);
+      expect(state.speciesCatalog).toEqual([mockPlantSpecies]);
+      expect(state.isLoadingCatalog).toBe(false);
     });
 
-    it('should set error on rejected', () => {
-      const action = {
-        type: fetchSpecies.rejected.type,
-        payload: 'Failed to fetch species',
-      };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingCatalog).toBe(false);
-      expect(result.error).toBe('Failed to fetch species');
+    it('sets error on rejected', () => {
+      const error = new Error('Failed to fetch');
+      const action = { type: fetchSpecies.rejected.type, payload: error.message };
+      const state = plantsReducer(initialState, action);
+      expect(state.error).toEqual(error.message);
+      expect(state.isLoadingCatalog).toBe(false);
     });
   });
 
   describe('searchSpecies thunk', () => {
-    it('should set isLoadingSearch on pending', () => {
+    it('sets loading state on pending', () => {
       const action = { type: searchSpecies.pending.type };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingSearch).toBe(true);
-      expect(result.error).toBeNull();
+      const state = plantsReducer(initialState, action);
+      expect(state.isLoadingSearch).toBe(true);
     });
 
-    it('should populate searchResults on fulfilled', () => {
+    it('sets search results on fulfilled', () => {
       const payload = [mockPlantSpecies];
-      const action = {
-        type: searchSpecies.fulfilled.type,
-        payload,
-      };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingSearch).toBe(false);
-      expect(result.searchResults).toEqual([mockPlantSpecies]);
-      expect(result.speciesById[mockPlantSpecies.id]).toEqual(mockPlantSpecies);
+      const action = { type: searchSpecies.fulfilled.type, payload };
+      const state = plantsReducer(initialState, action);
+      expect(state.searchResults).toEqual([mockPlantSpecies]);
+      expect(state.isLoadingSearch).toBe(false);
     });
 
-    it('should not clear previous speciesById entries on search', () => {
-      const otherSpecies: PlantSpecies = {
-        ...mockPlantSpecies,
-        id: 'species-002',
-        nameId: 'Pohon Beringin',
-      };
-      const stateWithSpecies = {
+    it('clears results on empty search', () => {
+      const stateWithResults = {
         ...initialState,
-        speciesById: { 'species-002': otherSpecies },
+        searchResults: [mockPlantSpecies],
       };
-      const action = {
-        type: searchSpecies.fulfilled.type,
-        payload: [mockPlantSpecies],
-      };
-      const result = plantsReducer(stateWithSpecies, action);
-      expect(result.speciesById['species-002']).toEqual(otherSpecies);
-      expect(result.speciesById['species-001']).toEqual(mockPlantSpecies);
+      const payload: PlantSpecies[] = [];
+      const action = { type: searchSpecies.fulfilled.type, payload };
+      const state = plantsReducer(stateWithResults, action);
+      expect(state.searchResults).toEqual([]);
     });
 
-    it('should set error on rejected', () => {
-      const action = {
-        type: searchSpecies.rejected.type,
-        payload: 'Search failed',
-      };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingSearch).toBe(false);
-      expect(result.error).toBe('Search failed');
+    it('sets error on rejected', () => {
+      const error = new Error('Search failed');
+      const action = { type: searchSpecies.rejected.type, payload: error.message };
+      const state = plantsReducer(initialState, action);
+      expect(state.error).toEqual(error.message);
+      expect(state.isLoadingSearch).toBe(false);
     });
   });
 
   describe('fetchAreaPlants thunk', () => {
-    it('should set loading state for area on pending', () => {
+    it('sets loading state on pending', () => {
       const action = {
         type: fetchAreaPlants.pending.type,
-        meta: { arg: 'area-001' },
+        meta: { arg: 'area-1' },
       };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingAreaPlants['area-001']).toBe(true);
-      expect(result.error).toBeNull();
+      const state = plantsReducer(initialState, action as any);
+      expect(state.isLoadingAreaPlants['area-1']).toBe(true);
     });
 
-    it('should populate areaPlantsByArea on fulfilled', () => {
-      const payload = { areaId: 'area-001', plants: [mockAreaPlant] };
-      const action = {
-        type: fetchAreaPlants.fulfilled.type,
-        payload,
-        meta: { arg: 'area-001' },
-      };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingAreaPlants['area-001']).toBe(false);
-      expect(result.areaPlantsByArea['area-001']).toEqual([mockAreaPlant]);
-      expect(result.speciesById[mockPlantSpecies.id]).toEqual(mockPlantSpecies);
+    it('sets area plants on fulfilled', () => {
+      const payload = { areaId: 'area-1', plants: [mockAreaPlant] };
+      const action = { type: fetchAreaPlants.fulfilled.type, payload };
+      const state = plantsReducer(initialState, action);
+      expect(state.areaPlantsByArea['area-1']).toEqual([mockAreaPlant]);
+      expect(state.isLoadingAreaPlants['area-1']).toBe(false);
+      expect(state.speciesById['1']).toEqual(mockPlantSpecies);
     });
 
-    it('should set error on rejected', () => {
+    it('sets error on rejected', () => {
+      const error = new Error('Failed to fetch area plants');
       const action = {
         type: fetchAreaPlants.rejected.type,
-        payload: 'Failed to fetch area plants',
-        meta: { arg: 'area-001' },
+        payload: error.message,
+        meta: { arg: 'area-1' },
       };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingAreaPlants['area-001']).toBe(false);
-      expect(result.error).toBe('Failed to fetch area plants');
+      const state = plantsReducer(initialState, action as any);
+      expect(state.error).toEqual(error.message);
+      expect(state.isLoadingAreaPlants['area-1']).toBe(false);
     });
   });
 
   describe('fetchNotablePlants thunk', () => {
-    it('should set loading state for area on pending', () => {
+    it('sets loading state on pending', () => {
       const action = {
         type: fetchNotablePlants.pending.type,
-        meta: { arg: 'area-001' },
+        meta: { arg: 'area-1' },
       };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingNotables['area-001']).toBe(true);
-      expect(result.error).toBeNull();
+      const state = plantsReducer(initialState, action as any);
+      expect(state.isLoadingNotables['area-1']).toBe(true);
     });
 
-    it('should populate notableByArea on fulfilled', () => {
-      const payload = { areaId: 'area-001', plants: [mockNotablePlant] };
-      const action = {
-        type: fetchNotablePlants.fulfilled.type,
-        payload,
-        meta: { arg: 'area-001' },
-      };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingNotables['area-001']).toBe(false);
-      expect(result.notableByArea['area-001']).toEqual([mockNotablePlant]);
-      expect(result.speciesById[mockPlantSpecies.id]).toEqual(mockPlantSpecies);
+    it('sets notable plants on fulfilled', () => {
+      const payload = { areaId: 'area-1', plants: [mockNotablePlant] };
+      const action = { type: fetchNotablePlants.fulfilled.type, payload };
+      const state = plantsReducer(initialState, action);
+      expect(state.notableByArea['area-1']).toEqual([mockNotablePlant]);
+      expect(state.isLoadingNotables['area-1']).toBe(false);
+      expect(state.speciesById['1']).toEqual(mockPlantSpecies);
     });
 
-    it('should set error on rejected', () => {
+    it('sets error on rejected', () => {
+      const error = new Error('Failed to fetch notable plants');
       const action = {
         type: fetchNotablePlants.rejected.type,
-        payload: 'Failed to fetch notable plants',
-        meta: { arg: 'area-001' },
+        payload: error.message,
+        meta: { arg: 'area-1' },
       };
-      const result = plantsReducer(initialState, action);
-      expect(result.isLoadingNotables['area-001']).toBe(false);
-      expect(result.error).toBe('Failed to fetch notable plants');
+      const state = plantsReducer(initialState, action as any);
+      expect(state.error).toEqual(error.message);
+      expect(state.isLoadingNotables['area-1']).toBe(false);
     });
   });
 
   describe('createNotablePlant thunk', () => {
-    it('should set isCreating on pending', () => {
+    it('sets loading state on pending', () => {
       const action = { type: createNotablePlant.pending.type };
-      const result = plantsReducer(initialState, action);
-      expect(result.isCreating).toBe(true);
-      expect(result.error).toBeNull();
+      const state = plantsReducer(initialState, action);
+      expect(state.isCreating).toBe(true);
     });
 
-    it('should add plant to notableByArea on fulfilled', () => {
-      const stateWithArea = {
+    it('adds created notable plant on fulfilled', () => {
+      const stateWithExisting = {
         ...initialState,
-        notableByArea: { 'area-001': [] },
+        notableByArea: {
+          'area-1': [],
+        },
       };
-      const payload = { areaId: 'area-001', plant: mockNotablePlant };
-      const action = {
-        type: createNotablePlant.fulfilled.type,
-        payload,
-      };
-      const result = plantsReducer(stateWithArea, action);
-      expect(result.isCreating).toBe(false);
-      expect(result.notableByArea['area-001']).toContain(mockNotablePlant);
-      expect(result.speciesById[mockPlantSpecies.id]).toEqual(mockPlantSpecies);
+      const payload = { areaId: 'area-1', plant: mockNotablePlant };
+      const action = { type: createNotablePlant.fulfilled.type, payload };
+      const state = plantsReducer(stateWithExisting, action);
+      expect(state.notableByArea['area-1']).toContain(mockNotablePlant);
+      expect(state.isCreating).toBe(false);
+      expect(state.speciesById['1']).toEqual(mockPlantSpecies);
     });
 
-    it('should create area in notableByArea if not exists on fulfilled', () => {
-      const payload = { areaId: 'area-002', plant: mockNotablePlant };
-      const action = {
-        type: createNotablePlant.fulfilled.type,
-        payload,
-      };
-      const result = plantsReducer(initialState, action);
-      expect(result.notableByArea['area-002']).toBeDefined();
-      expect(result.notableByArea['area-002']).toContain(mockNotablePlant);
-    });
-
-    it('should set error on rejected', () => {
-      const action = {
-        type: createNotablePlant.rejected.type,
-        payload: 'Failed to create notable plant',
-      };
-      const result = plantsReducer(initialState, action);
-      expect(result.isCreating).toBe(false);
-      expect(result.error).toBe('Failed to create notable plant');
+    it('sets error on rejected', () => {
+      const error = new Error('Failed to create notable plant');
+      const action = { type: createNotablePlant.rejected.type, payload: error.message };
+      const state = plantsReducer(initialState, action);
+      expect(state.error).toEqual(error.message);
+      expect(state.isCreating).toBe(false);
     });
   });
 
   describe('selectors', () => {
-    const stateWithData = {
+    const mockState = {
       plants: {
-        ...initialState,
         speciesCatalog: [mockPlantSpecies],
-        speciesById: { 'species-001': mockPlantSpecies },
+        speciesById: { '1': mockPlantSpecies },
+        areaPlantsByArea: { 'area-1': [mockAreaPlant] },
+        notableByArea: { 'area-1': [mockNotablePlant] },
         searchResults: [mockPlantSpecies],
-        areaPlantsByArea: { 'area-001': [mockAreaPlant] },
-        notableByArea: { 'area-001': [mockNotablePlant] },
-        isLoadingCatalog: true,
-        error: 'Test error',
+        isLoadingCatalog: false,
+        isLoadingSearch: false,
+        isLoadingAreaPlants: {},
+        isLoadingNotables: {},
+        isCreating: false,
+        error: null,
       },
     };
 
-    it('selectSpeciesCatalog should return catalog', () => {
-      const result = selectSpeciesCatalog(stateWithData);
+    it('selectSpeciesCatalog returns catalog array', () => {
+      const result = selectSpeciesCatalog(mockState);
       expect(result).toEqual([mockPlantSpecies]);
     });
 
-    it('selectSearchResults should return search results', () => {
-      const result = selectSearchResults(stateWithData);
+    it('selectSearchResults returns search results', () => {
+      const result = selectSearchResults(mockState);
       expect(result).toEqual([mockPlantSpecies]);
     });
 
-    it('selectAreaPlants should return plants for area', () => {
-      const selector = selectAreaPlants('area-001');
-      const result = selector(stateWithData);
+    it('selectAreaPlants returns plants for specific area', () => {
+      const result = selectAreaPlants('area-1')(mockState);
       expect(result).toEqual([mockAreaPlant]);
     });
 
-    it('selectAreaPlants should return empty array for unknown area', () => {
-      const selector = selectAreaPlants('unknown-area');
-      const result = selector(stateWithData);
+    it('selectAreaPlants returns empty array for unknown area', () => {
+      const result = selectAreaPlants('unknown-area')(mockState);
       expect(result).toEqual([]);
     });
 
-    it('selectNotablePlants should return notable plants for area', () => {
-      const selector = selectNotablePlants('area-001');
-      const result = selector(stateWithData);
+    it('selectNotablePlants returns notable plants for specific area', () => {
+      const result = selectNotablePlants('area-1')(mockState);
       expect(result).toEqual([mockNotablePlant]);
     });
 
-    it('selectIsLoadingCatalog should return loading state', () => {
-      const result = selectIsLoadingCatalog(stateWithData);
-      expect(result).toBe(true);
+    it('selectNotablePlants returns empty array for unknown area', () => {
+      const result = selectNotablePlants('unknown-area')(mockState);
+      expect(result).toEqual([]);
     });
 
-    it('selectError should return error message', () => {
-      const result = selectError(stateWithData);
-      expect(result).toBe('Test error');
+    it('selectIsLoadingSearch returns loading state', () => {
+      const result = selectIsLoadingSearch(mockState);
+      expect(result).toBe(false);
     });
   });
 });

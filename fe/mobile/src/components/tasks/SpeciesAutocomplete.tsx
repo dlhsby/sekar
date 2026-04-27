@@ -1,287 +1,374 @@
-/**
- * Species Autocomplete Component
- * Debounced search for plant species with multi-select support
- * Phase 3 3-7
- */
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View,
-  ScrollView,
+  TextInput,
   TouchableOpacity,
   FlatList,
+  Text,
   StyleSheet,
-  type StyleProp,
-  type ViewStyle,
+  ActivityIndicator,
+  Keyboard,
 } from 'react-native';
-import { useAppDispatch, useAppSelector } from '../../store/store';
-import { searchSpecies, selectSearchResults } from '../../store/slices/plantsSlice';
-import type { PlantSpecies } from '../../types/models.types';
-import { NBCardTextInput } from '../nb/NBCardTextInput';
-import { NBText } from '../nb/NBText';
-import { nbColors, nbSpacing, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { searchSpecies } from '../../store/slices/plantsSlice';
+import { PlantSpecies } from '../../types/models.types';
+import { nbColors, nbSpacing, nbBorders, nbShadows, nbType } from '../../constants/generated/tokens';
 
-export interface SpeciesAutocompleteProps {
-  /** Selected species for multi-select mode */
-  selectedSpecies?: PlantSpecies[];
-  /** Callback when selection changes (multi-select) */
-  onSelectionChange?: (species: PlantSpecies[]) => void;
-  /** Callback when single species selected (single-select) */
-  onSelect?: (species: PlantSpecies) => void;
-  /** Support multi-select (default: true) */
-  multiSelect?: boolean;
-  /** Placeholder text */
+interface SpeciesAutocompleteProps {
+  multi?: boolean;
+  value: PlantSpecies[];
+  onChange: (species: PlantSpecies[]) => void;
   placeholder?: string;
-  /** Container style */
-  style?: StyleProp<ViewStyle>;
+  style?: any;
+  testID?: string;
+  areaId?: string;
 }
 
-const DEBOUNCE_DELAY_MS = 300;
-const MAX_RESULTS = 10;
+/**
+ * Custom hook for debounced search input
+ */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-export function SpeciesAutocomplete({
-  selectedSpecies = [],
-  onSelectionChange,
-  onSelect,
-  multiSelect = true,
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+/**
+ * SpeciesAutocomplete component for selecting plant species
+ * Supports both single and multi-select modes with debounced search
+ */
+export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
+  multi = false,
+  value,
+  onChange,
   placeholder = 'Cari spesies tanaman...',
   style,
-}: SpeciesAutocompleteProps): React.JSX.Element {
+  testID,
+  areaId: _areaId,
+}) => {
   const dispatch = useAppDispatch();
-  const searchResults = useAppSelector(selectSearchResults);
-
   const [searchInput, setSearchInput] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
-  // Debounced search: trigger every 300ms
+  const debouncedSearch = useDebounce(searchInput, 300);
+  const searchResults = useAppSelector((state) => state.plants.searchResults);
+  const isLoading = useAppSelector((state) => state.plants.isLoadingSearch);
+
+  // Trigger search when debounced value changes
   useEffect(() => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
+    if (debouncedSearch.trim().length > 0) {
+      dispatch(searchSpecies({ q: debouncedSearch, limit: 20 }));
+      setShowDropdown(true);
+    } else {
+      setShowDropdown(false);
     }
+  }, [debouncedSearch, dispatch]);
 
-    if (searchInput.length < 1) {
-      return;
-    }
-
-    debounceTimer.current = setTimeout(() => {
-      dispatch(searchSpecies({ q: searchInput, limit: MAX_RESULTS }));
-    }, DEBOUNCE_DELAY_MS);
-
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-  }, [searchInput, dispatch]);
-
-  // Handle species selection
-  const handleSelectSpecies = useCallback(
+  const handleSpeciesSelect = useCallback(
     (species: PlantSpecies) => {
-      if (multiSelect && onSelectionChange) {
-        const isAlreadySelected = selectedSpecies.some(s => s.id === species.id);
-        const updated = isAlreadySelected
-          ? selectedSpecies.filter(s => s.id !== species.id)
-          : [...selectedSpecies, species];
-        onSelectionChange(updated);
-      } else if (!multiSelect && onSelect) {
-        onSelect(species);
+      if (multi) {
+        const alreadySelected = value.some((s) => s.id === species.id);
+        if (alreadySelected) {
+          onChange(value.filter((s) => s.id !== species.id));
+        } else {
+          onChange([...value, species]);
+        }
         setSearchInput('');
-        setIsOpen(false);
+      } else {
+        onChange([species]);
+        setSearchInput('');
+        setShowDropdown(false);
+        Keyboard.dismiss();
       }
     },
-    [selectedSpecies, multiSelect, onSelectionChange, onSelect],
+    [value, onChange, multi]
   );
 
-  // Handle species removal (multi-select)
-  const handleRemoveSpecies = useCallback(
+  const handleRemoveChip = useCallback(
     (speciesId: string) => {
-      if (onSelectionChange) {
-        const updated = selectedSpecies.filter(s => s.id !== speciesId);
-        onSelectionChange(updated);
-      }
+      onChange(value.filter((s) => s.id !== speciesId));
     },
-    [selectedSpecies, onSelectionChange],
+    [value, onChange]
   );
 
-  // Render dropdown results
-  const renderDropdown = useMemo(() => {
-    if (!isOpen || searchInput.length < 1) {
-      return null;
+  const handleClearSearch = useCallback(() => {
+    setSearchInput('');
+    setShowDropdown(false);
+    inputRef.current?.focus();
+  }, []);
+
+  const filteredResults = useMemo(() => {
+    if (!searchResults) return [];
+    // Filter out already selected species in multi mode
+    if (multi) {
+      const selectedIds = new Set(value.map((s) => s.id));
+      return searchResults.filter((s) => !selectedIds.has(s.id));
     }
-
-    if (searchResults.length === 0) {
-      return (
-        <View
-          style={[
-            styles.dropdown,
-            {
-              backgroundColor: nbColors.background,
-              borderColor: nbColors.borderMuted,
-            },
-          ]}
-        >
-          <NBText variant="body-sm" color="textMuted" align="center">
-            Tidak ada hasil
-          </NBText>
-        </View>
-      );
-    }
-
-    return (
-      <View
-        style={[
-          styles.dropdown,
-          {
-            backgroundColor: nbColors.background,
-            borderColor: nbColors.border,
-          },
-        ]}
-      >
-        <FlatList
-          data={searchResults}
-          keyExtractor={item => item.id}
-          scrollEnabled={false}
-          renderItem={({ item }) => {
-            const isSelected = multiSelect
-              ? selectedSpecies.some(s => s.id === item.id)
-              : false;
-            return (
-              <TouchableOpacity
-                onPress={() => handleSelectSpecies(item)}
-                accessibilityLabel={`Pilih ${item.nameId}${item.nameLatin ? ` (${item.nameLatin})` : ''}`}
-                accessibilityRole="button"
-                activeOpacity={0.7}
-                style={[
-                  styles.resultItem,
-                  isSelected && {
-                    backgroundColor: nbColors.backgroundHover,
-                  },
-                ]}
-              >
-                <View style={styles.resultContent}>
-                  <NBText
-                    variant="body-sm"
-                    color={isSelected ? 'accent' : 'text'}
-                    style={styles.resultName}
-                  >
-                    {item.nameId}
-                  </NBText>
-                  {item.nameLatin && (
-                    <NBText variant="caption" color="textMuted">
-                      {item.nameLatin}
-                    </NBText>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-        />
-      </View>
-    );
-  }, [isOpen, searchInput, searchResults, selectedSpecies, multiSelect, handleSelectSpecies]);
-
-  // Render selected species chips (multi-select)
-  const selectedChips = useMemo(() => {
-    if (!multiSelect || selectedSpecies.length === 0) {
-      return null;
-    }
-
-    return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipsContainer}
-        contentContainerStyle={styles.chipsContent}
-      >
-        {selectedSpecies.map(species => (
-          <View
-            key={species.id}
-            style={[
-              styles.chip,
-              {
-                backgroundColor: nbColors.backgroundAlt,
-                borderColor: nbColors.border,
-              },
-            ]}
-          >
-            <NBText variant="body-sm" color="text">
-              {species.nameId}
-            </NBText>
-            <TouchableOpacity
-              onPress={() => handleRemoveSpecies(species.id)}
-              accessibilityLabel={`Hapus ${species.nameId}`}
-              accessibilityRole="button"
-              style={styles.chipRemove}
-            >
-              <NBText variant="body-sm" color="accent">
-                ×
-              </NBText>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </ScrollView>
-    );
-  }, [multiSelect, selectedSpecies, handleRemoveSpecies]);
+    return searchResults;
+  }, [searchResults, value, multi]);
 
   return (
-    <View style={[styles.container, style]}>
-      {selectedChips}
-      <NBCardTextInput
-        placeholder={placeholder}
-        value={searchInput}
-        onChangeText={setSearchInput}
-        onFocus={() => setIsOpen(true)}
-        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-        editable={true}
-        accessibilityLabel="Pencarian spesies tanaman"
-      />
-      {renderDropdown}
+    <View style={[styles.container, style]} testID={testID}>
+      {/* Selected species chips (multi-mode only) */}
+      {multi && value.length > 0 && (
+        <View style={styles.chipsContainer}>
+          {value.map((species) => (
+            <View key={species.id} style={styles.chip}>
+              <Text
+                style={styles.chipText}
+                numberOfLines={1}
+                accessibilityLabel={`Spesies terpilih: ${species.nameId}`}
+              >
+                {species.nameId}
+              </Text>
+              <TouchableOpacity
+                onPress={() => handleRemoveChip(species.id)}
+                style={styles.chipRemoveButton}
+                accessibilityLabel={`Hapus ${species.nameId}`}
+                accessibilityRole="button"
+                testID={`chip-remove-${species.id}`}
+              >
+                <Text style={styles.chipRemoveIcon}>×</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Search input */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          ref={inputRef}
+          style={styles.input}
+          placeholder={placeholder}
+          placeholderTextColor={nbColors.gray5}
+          value={searchInput}
+          onChangeText={setSearchInput}
+          onFocus={() => searchInput.trim().length > 0 && setShowDropdown(true)}
+          editable={!isLoading}
+          accessibilityLabel="Pencarian spesies tanaman"
+          accessibilityHint="Ketik nama spesies untuk mencari"
+          accessibilityRole="search"
+          testID={`${testID}-input`}
+        />
+        {searchInput.length > 0 && (
+          <TouchableOpacity
+            onPress={handleClearSearch}
+            style={styles.clearButton}
+            accessibilityLabel="Hapus pencarian"
+            accessibilityRole="button"
+            testID={`${testID}-clear`}
+          >
+            <Text style={styles.clearIcon}>×</Text>
+          </TouchableOpacity>
+        )}
+        {isLoading && (
+          <ActivityIndicator
+            size="small"
+            color={nbColors.primary}
+            style={styles.loader}
+            testID={`${testID}-loader`}
+          />
+        )}
+      </View>
+
+      {/* Results dropdown */}
+      {showDropdown && !isLoading && filteredResults.length === 0 && searchInput.trim() && (
+        <View style={styles.emptyMessage}>
+          <Text style={styles.emptyMessageText}>Tidak ada hasil untuk "{searchInput}"</Text>
+        </View>
+      )}
+
+      {showDropdown && filteredResults.length > 0 && (
+        <View style={styles.dropdown}>
+          <FlatList
+            data={filteredResults}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={filteredResults.length > 5}
+            nestedScrollEnabled={false}
+            renderItem={({ item }) => {
+              const isSelected = value.some((s) => s.id === item.id);
+              return (
+                <TouchableOpacity
+                  onPress={() => handleSpeciesSelect(item)}
+                  style={[styles.resultItem, isSelected && styles.resultItemSelected]}
+                  accessibilityLabel={`Pilih ${item.nameId}`}
+                  accessibilityHint={item.nameLatin ? `Latin: ${item.nameLatin}` : undefined}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  testID={`result-${item.id}`}
+                >
+                  {multi && (
+                    <View
+                      style={[
+                        styles.checkbox,
+                        isSelected && styles.checkboxSelected,
+                      ]}
+                    >
+                      {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                    </View>
+                  )}
+                  <View style={styles.resultContent}>
+                    <Text style={styles.resultPrimary}>{item.nameId}</Text>
+                    {item.nameLatin && (
+                      <Text style={styles.resultSecondary}>{item.nameLatin}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+            scrollIndicatorInsets={{ right: 1 }}
+            testID={`${testID}-results`}
+          />
+        </View>
+      )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     width: '100%',
   },
   chipsContainer: {
-    marginBottom: nbSpacing.sm,
-  },
-  chipsContent: {
-    paddingHorizontal: nbSpacing.base,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: nbSpacing.xs,
+    marginBottom: nbSpacing.sm,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: nbColors.primary,
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
+    borderRadius: parseInt(nbBorders.radiusSm as string),
     borderWidth: 1,
-    borderRadius: nbBorders.sm,
-    gap: nbSpacing.xs,
+    borderColor: nbColors.primary,
   },
-  chipRemove: {
-    padding: 4,
+  chipText: {
+    color: nbColors.white,
+    fontSize: 13,
+    fontFamily: nbType.body.fontFamily,
+    fontWeight: '500',
+    marginRight: nbSpacing.xs,
+    maxWidth: 120,
+  },
+  chipRemoveButton: {
+    padding: nbSpacing.xs,
+    minWidth: 24,
+    minHeight: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chipRemoveIcon: {
+    color: nbColors.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  inputContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: nbColors.border,
+    borderRadius: parseInt(nbBorders.radiusSm as string),
+    backgroundColor: nbColors.white,
+    paddingHorizontal: nbSpacing.sm,
+    minHeight: 44,
+  },
+  input: {
+    flex: 1,
+    height: 44,
+    fontSize: 14,
+    fontFamily: nbType.body.fontFamily,
+    color: nbColors.text,
+  },
+  clearButton: {
+    padding: nbSpacing.xs,
+    minWidth: 32,
+    minHeight: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clearIcon: {
+    color: nbColors.gray5,
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  loader: {
+    marginLeft: nbSpacing.xs,
   },
   dropdown: {
     marginTop: nbSpacing.xs,
     borderWidth: 1,
-    borderRadius: nbBorders.sm,
-    maxHeight: 240,
-    overflow: 'hidden',
+    borderColor: nbColors.border,
+    borderRadius: parseInt(nbBorders.radiusSm as string),
+    backgroundColor: nbColors.white,
+    maxHeight: 250,
     ...nbShadows.sm,
   },
   resultItem: {
-    paddingHorizontal: nbSpacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: nbColors.borderMuted,
+    borderBottomColor: nbColors.border,
+  },
+  resultItemSelected: {
+    backgroundColor: nbColors.gray1,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: nbColors.gray5,
+    borderRadius: 2,
+    marginRight: nbSpacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: nbColors.primary,
+    borderColor: nbColors.primary,
+  },
+  checkmark: {
+    color: nbColors.white,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   resultContent: {
-    gap: nbSpacing.xs,
+    flex: 1,
   },
-  resultName: {
+  resultPrimary: {
+    fontSize: 14,
+    fontFamily: nbType.body.fontFamily,
     fontWeight: '500',
+    color: nbColors.text,
+  },
+  resultSecondary: {
+    fontSize: 12,
+    fontFamily: nbType.body.fontFamily,
+    fontStyle: 'italic',
+    color: nbColors.gray5,
+    marginTop: 2,
+  },
+  emptyMessage: {
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.md,
+    alignItems: 'center',
+  },
+  emptyMessageText: {
+    fontSize: 13,
+    fontFamily: nbType.body.fontFamily,
+    color: nbColors.gray5,
+    textAlign: 'center',
   },
 });

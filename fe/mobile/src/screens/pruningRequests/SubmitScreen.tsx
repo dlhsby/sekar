@@ -38,7 +38,7 @@ import {
   clearError,
 } from '../../store/slices/pruningRequestsSlice';
 import { addToQueue } from '../../services/sync/offlineQueue';
-import { mediaService } from '../../services/media/mediaService';
+import * as mediaService from '../../services/media/mediaService';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
@@ -694,7 +694,7 @@ function StepSuccessContent({
             <View
               style={[
                 styles.referenceBox,
-                { borderColor: nbColors.border.primary, backgroundColor: nbColors.bg.tertiary },
+                { borderColor: nbColors.gray['300'], backgroundColor: nbColors.gray['50'] },
               ]}
             >
               <Text style={[nbTypography['caption'], { color: nbColors.text.secondary }]}>
@@ -758,8 +758,8 @@ const styles = StyleSheet.create({
     gap: nbSpacing.md,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    borderTopWidth: nbBorders.width.thin,
-    borderTopColor: nbColors.border.primary,
+    borderTopWidth: nbBorders.thin,
+    borderTopColor: nbColors.gray['300'],
   },
   backButton: {
     flex: 1,
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
   referenceBox: {
     padding: nbSpacing.md,
     borderRadius: nbBorderRadius.md,
-    borderWidth: nbBorders.width.default,
+    borderWidth: nbBorders.base,
     minWidth: 200,
     alignItems: 'center',
   },
