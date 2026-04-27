@@ -23,9 +23,153 @@
 | 9 | **Web CI/CD fix** (`eslint-plugin-sekar-design` not found in CI) | ⏸️ pending | runs failing since Apr 26; see "Web CI/CD Fix" below |
 | 10 | Web deploy (after CI fix) | ⏸️ pending | currently the older Phase 2E web image is still serving |
 | 11 | Mobile APK release build | ⏸️ pending | `cd fe/mobile/android && ./gradlew assembleRelease` |
-| 12 | **Rotate `sekar-key.pem`** | ⏸️ pending | private key was exposed in a chat transcript on Apr 27 — treat as compromised |
+| 12 | **Rotate `sekar-key.pem`** | ⏸️ pending | private key was exposed in a chat transcript on Apr 27 — treat as compromised. See "Rotate `sekar-key.pem` Before Resuming SSH Ops" section below for the 7-step procedure. |
 
 **To resume:** start at step 6. The backend is fully Phase-3-capable but running with Redis in degraded fallback mode (sync ping processing, in-memory Socket.IO).
+
+---
+
+## 🔐 Rotate `sekar-key.pem` Before Resuming SSH Ops
+
+The contents of `sekar-key.pem` were exposed in a chat transcript on **Apr 27, 2026**. Treat the existing key as compromised. Rotate before any further `ssh ec2-user@16.79.183.240` operations.
+
+> **Heads-up:** EC2 does not let you replace the *original* key pair attached to a launched instance from the AWS console. The supported flow is "add a new key to `authorized_keys`, verify, remove the old one." That works without instance downtime and is the safest path. The CLI commands assume the rotating user (you) currently has SSH access with the old key.
+
+### Step 1 — Generate a new keypair locally
+
+```bash
+# Pick a path; the existing key lives at ~/.ssh/sekar-key.pem (or /home/wahyutrip/wahyutrip/dlhsby/taman/creds/sekar-key.pem)
+NEW_KEY=~/.ssh/sekar-key-2026.pem
+
+ssh-keygen -t ed25519 -f $NEW_KEY -C "sekar-prod-2026-04-27" -N ""
+chmod 600 $NEW_KEY
+chmod 644 $NEW_KEY.pub
+
+# Quick sanity check
+ssh-keygen -l -f $NEW_KEY.pub
+```
+
+> Use `ed25519` (smaller, faster, modern). RSA-2048 is fine if your tooling needs it.
+
+### Step 2 — Install the new public key on the server (using the OLD key one last time)
+
+```bash
+OLD_KEY=~/.ssh/sekar-key.pem      # whatever you currently use
+NEW_PUB=$(cat $NEW_KEY.pub)
+
+ssh -i $OLD_KEY ec2-user@16.79.183.240 \
+  "echo '$NEW_PUB' >> ~/.ssh/authorized_keys && \
+   chmod 600 ~/.ssh/authorized_keys && \
+   wc -l ~/.ssh/authorized_keys"
+# Expected: line count goes up by 1
+```
+
+### Step 3 — Verify the new key works (in a NEW shell — do NOT close the old session yet)
+
+```bash
+ssh -i $NEW_KEY -o IdentitiesOnly=yes ec2-user@16.79.183.240 "whoami && uname -a && date"
+# Expected: "ec2-user", linux kernel info, current time
+```
+
+If this fails, do not proceed — keep the old session alive while you debug. Common gotchas: wrong file mode on the key (`chmod 600`), wrong path, or copy/paste mangled the public key on the server.
+
+### Step 4 — Remove the OLD public key from `authorized_keys`
+
+First, find the comment/fingerprint of the old key so you can target the right line:
+
+```bash
+ssh-keygen -l -f $OLD_KEY.pub      # if you have the .pub
+# OR derive the public key from the private key:
+ssh-keygen -y -f $OLD_KEY | awk '{print $2}'   # prints the base64 blob
+```
+
+Then remove that exact line from the server's `authorized_keys` (using the NEW key now):
+
+```bash
+OLD_PUB_BLOB=$(ssh-keygen -y -f $OLD_KEY | awk '{print $2}')
+
+ssh -i $NEW_KEY ec2-user@16.79.183.240 \
+  "grep -v \"$OLD_PUB_BLOB\" ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.new && \
+   mv ~/.ssh/authorized_keys.new ~/.ssh/authorized_keys && \
+   chmod 600 ~/.ssh/authorized_keys && \
+   wc -l ~/.ssh/authorized_keys"
+# Expected: line count drops by 1
+```
+
+Re-verify the NEW key still works **and** the OLD key now fails:
+
+```bash
+ssh -i $NEW_KEY -o IdentitiesOnly=yes ec2-user@16.79.183.240 "echo NEW OK"
+ssh -i $OLD_KEY -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=5 ec2-user@16.79.183.240 "echo OLD STILL WORKS" 2>&1
+# Expected last line: "Permission denied (publickey)."
+```
+
+### Step 5 — Update GitHub Actions secret
+
+The backend CI/CD pipeline SSHs to `16.79.183.240` to deploy. Update the private key it uses:
+
+```bash
+# Find the secret name (it's likely EC2_SSH_KEY or SSH_PRIVATE_KEY)
+gh secret list --env production
+
+# Update it with the contents of the NEW private key
+gh secret set EC2_SSH_KEY --env production < $NEW_KEY
+# (Use the actual secret name found above — naming may vary.)
+```
+
+Trigger a tiny redeploy to confirm the pipeline still SSHs successfully:
+
+```bash
+git commit --allow-empty -m "chore(infra): rotate prod SSH key"
+git push origin main
+gh run watch --exit-status
+```
+
+### Step 6 — Securely destroy the OLD key
+
+```bash
+# Linux/macOS — overwrite the file before delete to defeat undelete tools
+shred -u $OLD_KEY  2>/dev/null || rm -P $OLD_KEY  # `shred` on Linux, `rm -P` on macOS
+# Also remove the cached fingerprint from any agent
+ssh-add -d $OLD_KEY 2>/dev/null
+```
+
+If the old key was committed anywhere (shouldn't be, but check):
+
+```bash
+# Search the SEKAR repo + any related repos
+git -C ~/wahyutrip/dlhsby grep -rn "BEGIN RSA PRIVATE KEY\|BEGIN OPENSSH PRIVATE KEY" 2>/dev/null
+git -C ~/wahyutrip/dlhsby log --all --diff-filter=A --name-only -- '**/*.pem' 2>/dev/null
+```
+
+If anything turns up, use BFG Repo-Cleaner (<https://rtyley.github.io/bfg-repo-cleaner/>) or `git filter-repo` to scrub it, force-push, and tell collaborators to re-clone.
+
+### Step 7 — Update local docs that reference the key path
+
+| File | What to update |
+|------|----------------|
+| `specs/deployment/DEPLOYMENT_STATUS.md` | All `~/.ssh/sekar-key.pem` references → new path |
+| `specs/deployment/phase-2-deployment.md`, `phase-3-deployment.md` | Same |
+| Personal `~/.ssh/config` | Add a `Host sekar-prod` block (see below) |
+
+Convenience entry for `~/.ssh/config`:
+```
+Host sekar-prod
+  HostName 16.79.183.240
+  User ec2-user
+  IdentityFile ~/.ssh/sekar-key-2026.pem
+  IdentitiesOnly yes
+```
+Then `ssh sekar-prod` just works.
+
+### Optional — record the old key as revoked
+
+Keep a note in `specs/deployment/DEPLOYMENT_STATUS.md`:
+```
+**SSH key rotations:**
+- 2026-04-27 — sekar-key.pem rotated (transcript exposure). Revoked fingerprint: <output of `ssh-keygen -l -f $OLD_KEY.pub`>
+```
+This is not strictly required, but helps if anyone ever finds a cached copy of the old key and wonders if it's still valid.
 
 ---
 
