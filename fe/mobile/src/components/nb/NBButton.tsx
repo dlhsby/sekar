@@ -11,6 +11,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   TouchableOpacity,
   Text,
+  View,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
@@ -19,6 +20,7 @@ import {
   Platform,
   AccessibilityInfo,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import {
   nbColors,
@@ -34,6 +36,7 @@ import {
 export type NBButtonVariant =
   | 'primary'
   | 'secondary'
+  | 'outline'
   | 'info'
   | 'success'
   | 'danger'
@@ -41,8 +44,14 @@ export type NBButtonVariant =
 export type NBButtonSize = 'sm' | 'md' | 'lg';
 
 export interface NBButtonProps extends AccessibilityProps {
-  /** Button text */
-  title: string;
+  /** Button text. Either `title` or `label` may be provided; both are accepted as equivalents. Children may also be passed as a fallback. */
+  title?: string;
+  /** Alias for `title`. */
+  label?: string;
+  /** Optional fallback when neither `title` nor `label` is set (e.g. nested elements). */
+  children?: React.ReactNode;
+  /** Optional MaterialCommunityIcons name rendered before the label. */
+  leftIcon?: string;
   /** Press handler */
   onPress: () => void;
   /** Visual variant */
@@ -72,6 +81,13 @@ const getVariantStyles = () => {
       border: nbColors.black,
     },
     secondary: {
+      bg: nbColors.white,
+      text: nbColors.black,
+      border: nbColors.black,
+    },
+    // `outline` is visually identical to `secondary` (white bg + black border) but
+    // expresses intent — used for cancel / back buttons next to a primary CTA.
+    outline: {
       bg: nbColors.white,
       text: nbColors.black,
       border: nbColors.black,
@@ -122,6 +138,9 @@ const sizeStyles: Record<
  */
 export const NBButton: React.FC<NBButtonProps> = ({
   title,
+  label,
+  children,
+  leftIcon,
   onPress,
   variant = 'primary',
   size = 'md',
@@ -133,6 +152,7 @@ export const NBButton: React.FC<NBButtonProps> = ({
   testID,
   ...accessibilityProps
 }) => {
+  const resolvedTitle = title ?? label;
   const [isPressed, setIsPressed] = useState(false);
   const [reduceMotionEnabled, setReduceMotionEnabled] = useState(false);
 
@@ -157,7 +177,13 @@ export const NBButton: React.FC<NBButtonProps> = ({
     };
   }, []);
 
-  const variantStyle = getVariantStyles()[variant];
+  const variantStylesMap = getVariantStyles();
+  const variantStyle = variantStylesMap[variant] ?? variantStylesMap.primary;
+  if (__DEV__ && !variantStylesMap[variant]) {
+    console.warn(
+      `[NBButton] Unknown variant "${variant}" — falling back to "primary". Allowed: ${Object.keys(variantStylesMap).join(', ')}`,
+    );
+  }
   const sizeStyle = sizeStyles[size];
   const isGhost = variant === 'ghost';
   const isDisabled = disabled || loading;
@@ -208,7 +234,7 @@ export const NBButton: React.FC<NBButtonProps> = ({
       testID={testID}
       accessible
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={resolvedTitle ?? (typeof children === 'string' ? children : undefined)}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       {...accessibilityProps}
       style={[
@@ -234,18 +260,45 @@ export const NBButton: React.FC<NBButtonProps> = ({
           testID={`${testID}-spinner`}
         />
       ) : (
-        <Text
-          style={[
-            styles.text,
-            {
-              color: variantStyle.text,
-              fontSize: sizeStyle.fontSize,
-            },
-            textStyle,
-          ]}
-        >
-          {title}
-        </Text>
+        <View style={styles.contentRow}>
+          {leftIcon ? (
+            <MaterialCommunityIcons
+              name={leftIcon}
+              size={sizeStyle.fontSize + 2}
+              color={variantStyle.text}
+              style={styles.leftIcon}
+            />
+          ) : null}
+          {resolvedTitle !== undefined ? (
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: variantStyle.text,
+                  fontSize: sizeStyle.fontSize,
+                },
+                textStyle,
+              ]}
+            >
+              {resolvedTitle}
+            </Text>
+          ) : typeof children === 'string' || typeof children === 'number' ? (
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: variantStyle.text,
+                  fontSize: sizeStyle.fontSize,
+                },
+                textStyle,
+              ]}
+            >
+              {children}
+            </Text>
+          ) : (
+            children
+          )}
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -262,6 +315,14 @@ const styles = StyleSheet.create({
   text: {
     fontWeight: nbTypography.fontWeight.semibold,
     textAlign: 'center',
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  leftIcon: {
+    marginRight: nbSpacing.xs,
   },
   fullWidth: {
     width: '100%',

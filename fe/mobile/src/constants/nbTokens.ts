@@ -18,13 +18,32 @@ export {
   nbRadius,
   nbShadow,
   nbShadows,
-  nbSpacing,
   nbTokens,
   nbType,
 } from './generated/tokens';
 
-import { nbColors as _gen, nbBorders as _genBorders } from './generated/tokens';
-import { nbMotion, nbRadius, nbShadows, nbSpacing, nbType } from './generated/tokens';
+import { nbColors as _gen, nbBorders as _genBorders, nbSpacing as _genSpacing } from './generated/tokens';
+import { nbMotion, nbRadius, nbShadows, nbType } from './generated/tokens';
+
+// ─── nbSpacing (augmented) ────────────────────────────────────────────────────
+// Generated nbSpacing has named keys (xs/sm/md/lg/xl/2xl/3xl/touch). Phase 3 admin
+// screens written in Apr 27 waves use Tailwind-style numeric subscripts (`nbSpacing[2]`,
+// `nbSpacing[4]`) on a 4-px rhythm. Add numeric aliases as a backward-compat shim so
+// those screens layout correctly without bulk-editing 30+ files. Remove in Phase 4 polish.
+export const nbSpacing = {
+  ..._genSpacing,
+  1: 4,   // xs
+  2: 8,   // sm
+  3: 12,  // (no exact token; closest pair to "3" on 4-px scale)
+  4: 16,  // md
+  5: 20,
+  6: 24,  // lg
+  7: 28,
+  8: 32,  // xl
+  10: 40,
+  12: 48, // 2xl
+  16: 64, // 3xl
+} as const;
 
 // ─── nbColors (augmented) ────────────────────────────────────────────────────
 // Generated nbColors is flat (gray100, gray200, bgCanvas, …). Phase 2 code

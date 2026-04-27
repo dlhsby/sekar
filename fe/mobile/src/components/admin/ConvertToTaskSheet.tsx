@@ -67,20 +67,23 @@ export function ConvertToTaskSheet({
 }: ConvertToTaskSheetProps): React.JSX.Element {
   const dispatch = useAppDispatch();
 
-  // Get areas and users from Redux
-  const areas = useAppSelector((state) => state.areas.items || []);
-  const users = useAppSelector((state) => state.users.items || []);
+  // NOTE: Phase 3 ships without dedicated `areas` / `users` Redux slices. The
+  // convert form keeps area + assignee fields free-text for now (admin can paste
+  // an area ID + assignee user ID until those slices land in Phase 4 polish).
+  // See specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md → "Open Items".
+  const areas: { id: string; name: string }[] = [];
+  const users: { id: string; full_name: string; role: string }[] = [];
   const { convertingId, error: pruningError } = useAppSelector(
     (state) => state.pruningRequests,
   );
-  const { calendarByRayon, loading: capacityLoading } = useAppSelector(
+  const { calendarByRayon, loading: _capacityLoading } = useAppSelector(
     (state) => state.serviceCapacity,
   );
 
   // Form state
   const [areaId, setAreaId] = useState<string>('');
   const [assignedTo, setAssignedTo] = useState<string>('');
-  const [scheduledDate, setScheduledDate] = useState<string>('');
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [caseType, setCaseType] = useState<CaseType>('PT');
   const [pruningAction, setPruningAction] = useState<PruningAction>('PM');
   const [units, setUnits] = useState<string>('1');
@@ -115,11 +118,11 @@ export function ConvertToTaskSheet({
 
   // Fetch capacity when date changes
   useEffect(() => {
-    if (scheduledDate && request.rayon_id) {
-      const { year, week } = getISOWeek(new Date(scheduledDate));
+    if (scheduledDate && request.rayonId) {
+      const { year, week } = getISOWeek(scheduledDate);
       dispatch(
         fetchCapacity({
-          rayonId: request.rayon_id,
+          rayonId: request.rayonId,
           year,
           fromWeek: week,
           toWeek: week,
@@ -127,28 +130,31 @@ export function ConvertToTaskSheet({
         }),
       );
     }
-  }, [scheduledDate, request.rayon_id, dispatch]);
+  }, [scheduledDate, request.rayonId, dispatch]);
 
   // Get capacity for selected week
   const weekCapacity = useMemo(() => {
-    if (!scheduledDate || !request.rayon_id) {
+    if (!scheduledDate || !request.rayonId) {
       return null;
     }
-    const { year, week } = getISOWeek(new Date(scheduledDate));
-    const calendar = calendarByRayon[request.rayon_id];
+    const { year, week } = getISOWeek(scheduledDate);
+    const calendar = calendarByRayon[request.rayonId];
     if (!calendar) {
       return null;
     }
     return calendar.find((c) => c.year === year && c.week === week) || null;
-  }, [scheduledDate, request.rayon_id, calendarByRayon]);
+  }, [scheduledDate, request.rayonId, calendarByRayon]);
 
   // Check if capacity exceeded
   const capacityExceeded = useMemo(() => {
     if (!weekCapacity) {
       return false;
     }
+    const wc = weekCapacity as any;
+    const booked = wc.booked_units ?? wc.bookedUnits ?? 0;
+    const cap = wc.capacity_units ?? wc.capacityUnits ?? 0;
     const unitsNum = parseInt(units, 10) || 0;
-    return weekCapacity.booked_units + unitsNum > weekCapacity.capacity_units;
+    return booked + unitsNum > cap;
   }, [weekCapacity, units]);
 
   // Handle submit
@@ -164,7 +170,7 @@ export function ConvertToTaskSheet({
         id: request.id,
         areaId,
         assignedTo,
-        scheduledDate,
+        scheduledDate: scheduledDate ? scheduledDate.toISOString() : '',
         caseType,
         pruningAction,
         units: unitsNum,
@@ -174,7 +180,7 @@ export function ConvertToTaskSheet({
     NBToast.show({
       level: 'success',
       title: 'Berhasil',
-      message: 'Tugas berhasil dibuat dari permohonan',
+      body: 'Tugas berhasil dibuat dari permohonan',
     });
 
     onClose();
@@ -223,12 +229,13 @@ export function ConvertToTaskSheet({
           showsVerticalScrollIndicator={false}
         >
           {pruningError && (
-            <NBAlert
-              type="error"
-              title="Terjadi Kesalahan"
-              message={pruningError}
-              style={{ marginBottom: nbSpacing[4] }}
-            />
+            <View style={{ marginBottom: nbSpacing[4] }}>
+              <NBAlert
+                variant="danger"
+                title="Terjadi Kesalahan"
+                message={pruningError}
+              />
+            </View>
           )}
 
           {/* Area Selection */}
@@ -292,9 +299,8 @@ export function ConvertToTaskSheet({
             </NBText>
             <NBDatePicker
               value={scheduledDate}
-              onDateChange={setScheduledDate}
+              onChange={setScheduledDate}
               minimumDate={minDate}
-              testID="convert-date-picker"
             />
           </View>
 
@@ -316,7 +322,7 @@ export function ConvertToTaskSheet({
                   color: capacityExceeded ? nbColors.danger : nbColors.black,
                 }}
               >
-                {weekCapacity.booked_units}/{weekCapacity.capacity_units} unit
+                {(weekCapacity as any).booked_units ?? (weekCapacity as any).bookedUnits ?? 0}/{(weekCapacity as any).capacity_units ?? (weekCapacity as any).capacityUnits ?? 0} unit
                 {capacityExceeded && ' (Melebihi kapasitas)'}
               </NBText>
             </View>
