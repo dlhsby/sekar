@@ -140,6 +140,12 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        ALTER TABLE plant_seeds ADD CONSTRAINT uq_plant_seeds_name_id UNIQUE (name_id);
+      EXCEPTION WHEN duplicate_table THEN NULL;
+      END $$
+    `);
 
     // 8. seed_transactions
     await queryRunner.query(`
