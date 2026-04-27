@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Reviews
 
 **Last Updated:** 2026-04-27
-**Status:** 🟡 In Progress — M1-R review ✅; M2 compliance review ✅ (7 gaps logged); **M3+M4 mobile-slice review ✅ (4 critical follow-ups, 6 medium, 2 low — all logged below)**
+**Status:** 🟡 In Progress — M1-R review ✅; M2 compliance review ✅ (7 gaps logged); **M3+M4 mobile-slice review ✅ (12 findings: 4 critical + 6 medium + 2 low) — ALL FIXED ✅ in `ff7d128`**
 
 This document mirrors the Phase 2D `status_reviews.md` pattern: it collects post-implementation reviews, defect findings, and their remediations. Each sub-phase that completes work gets one entry here with its scope, findings, and fixes.
 
@@ -264,9 +264,9 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 
 ---
 
-## M3+M4 Mobile Slice — Review (2026-04-27) 🟡 4 critical follow-ups
+## M3+M4 Mobile Slice — Review (2026-04-27) ✅ All 12 fixed
 
-**Status:** Complete — review surfaced 4 critical, 6 medium, 2 low. All deferred to a follow-up review-fixes commit (see "Deferred" below); none block tomorrow's demo.
+**Status:** Complete — review surfaced 4 critical, 6 medium, 2 low. **All 12 fixed in commit `ff7d128`** the same day.
 
 **Scope:** Phase 3 sub-phases 3-6 mobile glue, 3-7 mobile (plants slice + form), 3-8 mobile chip, 3-10 kecamatan slice (3 screens + slice + offline queue).
 
@@ -327,14 +327,16 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 
 | # | Reason | Tracked in |
 |---|--------|-----------|
-| C1–C4 + M1–M6 + L1–L2 | All 12 findings deferred to a "M3+M4 review-fixes" commit after tomorrow's demo. None block functional demo. | This entry; carry into next iteration plan. |
+| (none) | All 12 fixed same-day. | — |
 
 ### Related Commits / PRs
 
 - `2169867` feat(phase-3-3-8): mobile glue (committed prematurely by rogue agent — files include partial 3-6/3-7/3-10 mobile work in addition to the 3-8 chip)
 - `0201cbb` feat(phase-3): seeders (notable_plants + pruning_request samples)
 - `fc37bcd` docs: CLAUDE.md status line for Phase E
-- *(pending)* M3+M4 finalization commit covering test fixes + spec sync
+- `4717080` fix(mobile/phase-3): repair kecamatan + plants tests + add useNetworkStatus
+- `f130faa` docs(phase-3): sync STATUS + progress + reviews for M3+M4 mobile spine
+- **`ff7d128` fix(mobile/phase-3): address M3+M4 review findings (4 critical, 6 medium, 2 low)** ← landed all 12 fixes
 
 <!--
 Template (copy and fill when a sub-phase completes):
