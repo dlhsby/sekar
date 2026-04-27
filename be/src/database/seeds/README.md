@@ -1,24 +1,28 @@
 # Database Seeders
 
-Three consolidated seeders replace the old 5-file structure.
+Five seed scripts cover the full Phase 1–3 dataset.
 
 ## Files
 
 | File | Purpose | Safe for prod? |
 |------|---------|----------------|
-| `seed-phase1.ts` | Wipes DB + seeds base users/areas/shifts/location logs | No (destructive) |
-| `seed-phase2.ts` | Seeds Phase 2 data on top of Phase 1 (tasks, activities, monitoring) | No (destructive) |
+| `seed-phase1.ts` | Wipes core tables + seeds base admin/areas | No (destructive) |
+| `seed-phase2.ts` | Seeds Phase 2 data on top of Phase 1 | No (destructive) |
+| `seed-phase3.ts` | Seeds Phase 3 data (plant_species, monitoring_configs, service_capacity) | Yes (idempotent) |
 | `seed-reference.ts` | Reference/config data only — fully idempotent | Yes |
+| `seed-staging.ts` | Staging environment data | No |
 
 ## Scripts
 
 ```bash
-# Development — full reset and reseed
-npm run db:seed           # Phase 1 + Phase 2 (wipes all data first)
+# Development — full reset and reseed (Phase 1 + 2 + 3)
+npm run db:seed
+
+# Individual phases
 npm run db:seed:phase1    # Phase 1 only (wipes and seeds base data)
 npm run db:seed:phase2    # Phase 2 only (run after Phase 1)
-npm run db:seed:reference # Reference data only (idempotent, safe to re-run)
-npm run db:reset          # Alias for db:seed
+npm run db:seed:phase3    # Phase 3 only (idempotent — safe to re-run)
+npm run db:seed:reference # Reference data only (idempotent)
 
 # Production / Staging — first deploy
 npm run migration:run:prod
@@ -34,52 +38,88 @@ npm run migration:run:prod
 ### Full dev reset (clean slate)
 
 ```bash
-npm run db:seed
+npm run migration:run   # Ensure schema is up to date
+npm run db:seed         # Wipes + reseeds Phase 1 → 2 → 3
 ```
-
-This runs Phase 1 (wipes all data + seeds 6 base users) then Phase 2 (adds 30 users, tasks, activities, monitoring).
 
 ### Full schema reset (drop + recreate)
 
 ```bash
-# Via Docker (most common)
-docker exec -i sekar-postgres psql -U postgres -d sekar_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+# Drop entire schema via Docker
+docker exec -i sekar-postgres psql -U postgres -d sekar_db \
+  -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
 
-npm run migration:run
-# Then start app once with synchronize to create any remaining tables
-DATABASE_SYNCHRONIZE=true npm run start:dev  # Ctrl+C after startup
-npm run db:seed
+npm run migration:run   # Recreates all tables + records migrations
+npm run db:seed         # Seeds all data
 ```
 
-> **Note:** Some tables (notification_tokens, notifications) are created by TypeORM synchronize, not migrations. Either set `DATABASE_SYNCHRONIZE=true` in `.env` for dev, or run the app once to create them before seeding.
+> **Note:** All Phase 3 tables are covered by migrations. `DATABASE_SYNCHRONIZE=true` is no longer required for a fresh setup.
+
+### Recovery: typeorm_migrations table is empty
+
+If someone ran `db:seed` without running `migration:run` first (or the migrations table was wiped), TypeORM will try to re-run all migrations on the next `migration:run` — including non-idempotent Phase 1 migrations that fail because the tables already exist.
+
+Fix by manually re-inserting the already-applied migration records, then running only pending migrations:
+
+```bash
+node -e "
+const { DataSource } = require('typeorm');
+require('dotenv').config();
+const ds = new DataSource({
+  type: 'postgres',
+  host: process.env.DATABASE_HOST || 'localhost',
+  port: parseInt(process.env.DATABASE_PORT || '5432'),
+  username: process.env.DATABASE_USER || 'postgres',
+  password: process.env.DATABASE_PASSWORD || 'postgres',
+  database: process.env.DATABASE_NAME || 'sekar_db',
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  synchronize: false,
+  logging: false,
+});
+ds.initialize().then(async () => {
+  const migrations = [
+    [1737000000000,  'InitialSchema1737000000000'],
+    [1737720000000,  'Phase2DatabaseSchema1737720000000'],
+    [1739390400000,  'Phase2CSchema1739390400000'],
+    [1741000000000,  'Phase2DMonitoringSchema1741000000000'],
+    [1741100000000,  'Phase2DGapFixes1741100000000'],
+    [1741200000000,  'Phase2EClientFeedback1741200000000'],
+    [1741300000000,  'DropLegacyPhoneColumn1741300000000'],
+    [1741400000000,  'FixIndexesAndConstraints1741400000000'],
+    [1741500000000,  'AddOvertimeReason1741500000000'],
+    [17460000000000, 'Phase3Schema17460000000000'],
+    [17460001000000, 'Phase3BackfillIndexes17460001000000'],
+  ];
+  for (const [ts, name] of migrations) {
+    await ds.query('INSERT INTO typeorm_migrations (timestamp, name) VALUES (\$1, \$2) ON CONFLICT DO NOTHING', [ts, name]);
+  }
+  console.log('Done — all 11 migrations marked as applied');
+  await ds.destroy();
+}).catch(e => { console.error(e.message); process.exit(1); });
+"
+```
+
+After running the snippet above, `npm run migration:run` will report "No migrations are pending."
 
 ## What Each Seeder Creates
 
 ### seed-phase1.ts
 
-Clears all tables (in reverse FK order) then seeds:
-- 6 users: `admin`, `korlap1`, `korlap2`, `satgas1`, `satgas2`, `satgas3`
+Clears 21 core tables (via TRUNCATE with explicit list — `typeorm_migrations` is never touched) then seeds:
+- 1 user: `admin` (superadmin)
 - 4 area types: park, pedestrian, mini_garden, street
-- 3 areas: Taman Bungkul, Jalan Raya Darmo, Taman Harmoni (with boundary polygons)
-- 5 shifts: satgas1 (completed + active), satgas2 (completed + active 4h ago), satgas3 (completed)
-- 15 location logs for satgas1 → status: **active**
-- 15 location logs for satgas2 (last ping 35min ago) → status: **inactive**
-- 5 location logs for satgas3 (outside boundary) → status: **outside_area**
+- 3 areas: Taman Bungkul, Jalan Raya Darmo, Taman Harmoni
 
-All passwords: `password123`
-
-### seed-phase2.ts (Sections A → D)
+### seed-phase2.ts (Sections A → E)
 
 **Section A** — Core Phase 2 data:
 - 7 Rayons, 3 Shift Definitions, 20 Activity Types, 4 Special Day Overrides
-- 15 new users (all 7 rayons covered), 9 Phase 2C role users
-- 5 new areas (Taman Pusat, Timur 1/2, Barat 1/2)
-- 29 staff requirements, 3 notification tokens
-- Schedules, overtimes, Phase 2C shifts
+- ~40 users covering all 7 rayons and all 8 roles
+- 10 areas (incl. Pusat, Timur 1/2, Barat 1/2, Utara, Selatan)
+- Staff requirements, notification tokens, schedules, overtimes, shifts
 
 **Section B** — Tasks:
-- 8 satgas core tasks covering all 8 statuses
-- 4 linmas + 3 korlap + 4 rayon-scoped tasks
+- 8 satgas core tasks + 4 linmas + 3 korlap + 4 rayon-scoped tasks
 - 25 extended tasks for scroll/filter testing
 
 **Section C** — Activities:
@@ -88,45 +128,45 @@ All passwords: `password123`
 
 **Section D** — Monitoring (Phase 2D):
 - 5 monitoring configs
-- user_tracking_status backfilled for all clockable users
+- `user_tracking_status` backfilled for all clockable users
 - Status variants: active×2, inactive×1, outside_area×1, missing×1, offline×rest
+
+**Section E** — Phase 2E:
+- `phone_number` set for all users
+- `user_areas` multi-area assignments
+
+### seed-phase3.ts (idempotent, Phase 3)
+
+- **128 plant_species** rows (`ON CONFLICT DO NOTHING`)
+- **4 monitoring_configs** (staffing_debounce_seconds, stale_status_sweep_cron, cluster_zoom_threshold, redis_stream_max_len)
+- **service_capacity grid** — 7 rayons × next 12 ISO weeks × `service_type='pruning'` with `capacity_units=0`
 
 ### seed-reference.ts (Production-safe)
 
-Seeds only idempotent reference data using `ON CONFLICT DO NOTHING`:
+Seeds only idempotent reference data:
 - 4 area types, 3 shift definitions, 7 rayons, 20 activity types
 - 4 special day overrides, 5 monitoring configs
 - 1 default superadmin user
 
-## Monitoring Status Test Scenarios
-
-After `npm run db:seed`:
-
-| User | Status | Trigger |
-|------|--------|---------|
-| satgas1 | active | Active shift + location ping 2min ago |
-| linmas1 | active | Active shift + location ping 2min ago |
-| satgas2 | inactive | Active shift + last ping 35min ago |
-| satgas3 | outside_area | Active shift + location outside boundary |
-| satgas_timur1_1 | missing | Active shift + no ping for 3h+ |
-| All others | offline | No active shift |
-
 ## Test Users (all `password123`)
 
-| Username | Role | Notes |
-|----------|------|-------|
-| admin | superadmin | Full access |
-| korlap1 | korlap | Taman Bungkul |
-| korlap2 | korlap | Jalan Raya Darmo |
-| satgas1 | satgas | Taman Bungkul — active status |
-| satgas2 | satgas | Jalan Raya Darmo — inactive status |
-| satgas3 | satgas | Taman Harmoni — outside_area status |
-| linmas1 | linmas | Taman Bungkul — active status |
-| satgas_timur1_1 | satgas | Taman Timur 1 — missing status |
-| kepala_rayon_selatan | kepala_rayon | Rayon Selatan |
-| top_management1 | top_management | City-wide view |
-| admin_data1 | admin_data | Data entry |
-| admin_system1 | admin_system | System admin |
+Login with **username** or **phone number** as identifier.
+
+| Username | Role | Area / Rayon | Monitoring Status |
+|----------|------|-------------|-------------------|
+| admin | superadmin | — | — |
+| admin_system1 | admin_system | — | — |
+| top_management1 | top_management | — | — |
+| admin_data1 | admin_data | Rayon Pusat | — |
+| kepala_rayon_pusat | kepala_rayon | Rayon Pusat | — |
+| kepala_rayon_selatan | kepala_rayon | Rayon Selatan | — |
+| korlap_bungkul | korlap | Taman Bungkul + Jalan Raya Darmo | — |
+| korlap_darmo | korlap | Jalan Raya Darmo | — |
+| satgas_pusat_1 | satgas | Taman Pusat + Taman Bungkul | active |
+| satgas_pusat_2 | satgas | Taman Pusat | outside_area |
+| linmas_bungkul_1 | linmas | Taman Bungkul | active |
+| satgas_timur1_1 | satgas | Taman Timur 1 | missing (no ping 3h+) |
+| satgas_timur1_2 | satgas | Taman Timur 1 | inactive (35min ago) |
 
 ## Staging/Production Deployment
 
@@ -140,5 +180,5 @@ npm run migration:run:prod
 # Skip seeding unless new reference data was added
 
 # Optional: seed demo data in staging
-npm run db:seed:phase1:prod && npm run db:seed:phase2:prod
+npm run db:seed:phase1:prod && npm run db:seed:phase2:prod && npm run db:seed:phase3:prod
 ```

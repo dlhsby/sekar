@@ -2,42 +2,47 @@
 
 TypeORM migrations for SEKAR database schema changes.
 
+**Last Updated:** 2026-04-27 (Phase 3 complete)
+
 ---
 
-## Quick Reference
+## Current Migrations (11 total)
 
-### Current Migrations
+| # | File | Phase | Purpose |
+|---|------|-------|---------|
+| 1 | `1737000000000-InitialSchema.ts` | 1 | Base tables: users, areas, shifts, location_logs |
+| 2 | `1737720000000-Phase2DatabaseSchema.ts` | 2 | Rayons, shift_definitions, activity_types, worker_schedules |
+| 3 | `1739390400000-Phase2CSchema.ts` | 2C | 8-role system, terminology cleanup (activities, schedules), tasks |
+| 4 | `1741000000000-Phase2DMonitoringSchema.ts` | 2D | Monitoring tables: user_tracking_status, monitoring_configs |
+| 5 | `1741100000000-Phase2DGapFixes.ts` | 2D | Gap fixes and index corrections |
+| 6 | `1741200000000-Phase2EClientFeedback.ts` | 2E | Client feedback II schema changes |
+| 7 | `1741300000000-DropLegacyPhoneColumn.ts` | 2E | Drop legacy phone column |
+| 8 | `1741400000000-FixIndexesAndConstraints.ts` | 2E | Index and constraint fixes |
+| 9 | `1741500000000-AddOvertimeReason.ts` | 2E | Add reason column to overtimes |
+| 10 | `17460000000000-Phase3Schema.ts` | 3 | 8 new tables (plants, pruning, seeds), activity/task/user extensions |
+| 11 | `17460001000000-Phase3BackfillIndexes.ts` | 3 | CONCURRENTLY indexes on location_logs |
 
-1. **`1737000000000-InitialSchema.ts`**
-   - **Status:** Complete (Phase 1)
-   - **Purpose:** Initial database schema
-   - **Impact:** Creates base tables (users, areas, shifts, work_reports, location_logs)
+### Phase 3 Schema (migration #10) — new tables
 
-2. **`1737720000000-Phase2DatabaseSchema.ts`**
-   - **Status:** Complete (Phase 2)
-   - **Purpose:** Phase 2 enhanced features
-   - **Impact:** Creates 6 new tables (rayons, shift_definitions, activity_types, area_staff_requirements, worker_schedules, special_day_overrides), updates users/areas/work_reports
+| Table | Purpose |
+|-------|---------|
+| `plant_species` | Species catalogue (128 rows seeded) |
+| `area_plants` | Species × area aggregate inventory |
+| `notable_plants` | GPS-pinned landmark trees |
+| `activity_plant_items` | Per-activity species × count line items |
+| `pruning_requests` | Public intake workflow |
+| `service_capacity` | Rayon × week × service booking model |
+| `plant_seeds` | Seed/nursery stock ledger |
+| `seed_transactions` | Purchase / distribution / adjustment log |
 
-3. **`1739390400000-Phase2CSchema.ts`**
-   - **Status:** Ready for Phase 2C Implementation
-   - **Purpose:** Phase 2C role system overhaul + terminology cleanup + schema refinements
-   - **Impact:**
-     - Role system: 7 → 8 roles, adds users.area_id
-     - Activity types: PascalCase → lowercase, 10 → 20 types
-     - Terminology: 2 tables renamed (worker_schedules → schedules, work_reports → activities)
-     - Terminology: 2 tables dropped (worker_assignments, overtime_aktivitas)
-     - Terminology: 3 column renames (worker_id → user_id across tables)
-     - Tasks: +rayon_id, area_id nullable, 6 → 4 statuses, task_tags table
-     - Activities: multi-photo support, activity_type_id required
-   - **Duration:** 10-30s (dev), 2-5min (production with 100k+ records)
-   - **Rollback:** Partial (some dropped data cannot be restored)
-   - **See:** `specs/phases/phase-2-c-client-feedback/database.md` for full spec
+### Phase 3 Schema — altered tables
 
-4. **`1737006000000-AddProductionIndexesAndConstraints.ts.disabled`**
-   - **Status:** Disabled (optional production hardening)
-   - **Purpose:** Production database hardening
-   - **Impact:** Adds 11 indexes, 17 constraints, 6 columns to reports
-   - **Duration:** 5s (dev) to 5min (1M records)
+| Table | Changes |
+|-------|---------|
+| `activities` | +`case_type`, +`custom_fields` JSONB, +`photo_before_url`, +`photo_after_url`, +`reference_code` UNIQUE, +`pruning_request_id` FK |
+| `tasks` | +`task_type`, +`custom_fields` JSONB, +`parent_task_id` FK, +`target_plant_count`, +`completed_plant_count` |
+| `users.role` CHECK | Extended to include `staff_kecamatan` (9th role) |
+| `user_tracking_status` | +2 indexes (area_id/updated_at, is_within_area/area_id) |
 
 ---
 
@@ -62,126 +67,133 @@ npm run migration:create -- -n MigrationName
 
 ---
 
-## Before Running ANY Migration
+## Standard Dev Setup (fresh checkout)
 
-1. **Backup Database**
+```bash
+# 1. Start infrastructure
+cd infra && ./start.sh
+
+# 2. Install + configure backend
+cd be
+npm install
+cp .env.example .env   # Edit database credentials if needed
+
+# 3. Run all migrations (creates all 22 tables, records in typeorm_migrations)
+npm run migration:run
+
+# 4. Seed all data
+npm run db:seed        # Phase 1 → 2 → 3
+
+# 5. Start server
+npm run start:dev
+```
+
+> **Note:** `DATABASE_SYNCHRONIZE=true` is no longer required. All tables — including Phase 3 tables — are covered by migrations.
+
+---
+
+## Before Running ANY Migration in Production
+
+1. **Backup database first**
    ```bash
    docker exec sekar-postgres pg_dump -U postgres -d sekar_db > backup_$(date +%Y%m%d_%H%M%S).sql
    ```
 
-2. **Test on Staging First**
-   - Never run untested migrations in production
-   - Create test database with production data copy
+2. **Test on staging with production data copy first**
 
-3. **Check Migration Files**
-   - Review up() and down() methods
-   - Verify SQL is correct
-   - Check for data loss risks
-
----
-
-## Migration Best Practices
-
-### DO:
-✅ Test migrations on staging with production data
-✅ Create backups before running migrations
-✅ Write reversible down() methods
-✅ Use transactions (TypeORM default)
-✅ Add helpful console.log() messages
-✅ Document breaking changes
-
-### DON'T:
-❌ Run migrations directly in production without testing
-❌ Forget to implement down() method
-❌ Use DROP TABLE without backups
-❌ Change existing migration files (create new ones instead)
-❌ Mix schema and data changes in same migration
-
----
-
-## File Structure
-
-```
-migrations/
-├── README.md                              # This file
-├── MIGRATION_TESTING_GUIDE.md             # Detailed testing procedures
-├── MIGRATION_ANALYSIS.md                  # Risk assessment & concerns
-└── 1737006000000-AddProductionIndexesAndConstraints.ts  # Migration file
-```
-
----
-
-## Migration Naming Convention
-
-Format: `TIMESTAMP-DescriptiveName.ts`
-
-Examples:
-- `1737006000000-AddProductionIndexes.ts`
-- `1737010000000-AddSoftDeleteToShifts.ts`
-- `1737020000000-CreateNotificationsTable.ts`
-
-**Timestamp:** Unix milliseconds (13 digits)
-**Name:** PascalCase, descriptive, verb-first
-
----
-
-## TypeORM Configuration
-
-Migrations configured in:
-- `be/src/config/database.config.ts` - Database connection
-- `be/package.json` - Migration commands
-
-**Migration Path:** `src/database/migrations/**/*.ts`
+3. **Review `up()` and `down()` methods** for data-loss risk
 
 ---
 
 ## Troubleshooting
 
-### Migration Won't Run
+### "No pending migrations" but tables are missing
 
-**Error:** "No pending migrations"
-**Solution:** Check if migration already ran with `npm run migration:show`
+TypeORM thinks all migrations ran (they're recorded), but a table is absent. Usually means the migration file was added after the `typeorm_migrations` row was inserted.
 
-**Error:** "Query failed: syntax error"
-**Solution:** Check SQL syntax in migration file
+```bash
+npm run migration:show   # See which migrations are recorded vs pending
+```
 
-### Can't Revert Migration
+### "Error: relation X already exists" on migration:run
 
-**Error:** "No executed migrations"
-**Solution:** Migration was never run, nothing to revert
+The `typeorm_migrations` table is **empty** but the database schema already exists (common after a full `db:seed` on a previously seeded DB where the migrations table was cleared).
 
-**Error:** "Query failed during revert"
-**Solution:** down() method has errors, fix and retry or restore backup
+Repopulate `typeorm_migrations` with all already-applied migrations, then run only pending ones:
 
-### Application Won't Start After Migration
+```bash
+node -e "
+const { DataSource } = require('typeorm');
+require('dotenv').config();
+const ds = new DataSource({
+  type: 'postgres',
+  host: process.env.DATABASE_HOST || 'localhost',
+  port: parseInt(process.env.DATABASE_PORT || '5432'),
+  username: process.env.DATABASE_USER || 'postgres',
+  password: process.env.DATABASE_PASSWORD || 'postgres',
+  database: process.env.DATABASE_NAME || 'sekar_db',
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  synchronize: false,
+  logging: false,
+});
+ds.initialize().then(async () => {
+  const migrations = [
+    [1737000000000,  'InitialSchema1737000000000'],
+    [1737720000000,  'Phase2DatabaseSchema1737720000000'],
+    [1739390400000,  'Phase2CSchema1739390400000'],
+    [1741000000000,  'Phase2DMonitoringSchema1741000000000'],
+    [1741100000000,  'Phase2DGapFixes1741100000000'],
+    [1741200000000,  'Phase2EClientFeedback1741200000000'],
+    [1741300000000,  'DropLegacyPhoneColumn1741300000000'],
+    [1741400000000,  'FixIndexesAndConstraints1741400000000'],
+    [1741500000000,  'AddOvertimeReason1741500000000'],
+    [17460000000000, 'Phase3Schema17460000000000'],
+    [17460001000000, 'Phase3BackfillIndexes17460001000000'],
+  ];
+  for (const [ts, name] of migrations) {
+    await ds.query('INSERT INTO typeorm_migrations (timestamp, name) VALUES (\$1, \$2) ON CONFLICT DO NOTHING', [ts, name]);
+  }
+  console.log('Done');
+  await ds.destroy();
+}).catch(e => { console.error(e.message); process.exit(1); });
+"
+npm run migration:run   # Now only truly pending migrations will run
+```
 
-**Error:** "Column X does not exist"
-**Solution:** Entity file not updated to match schema, update entity or revert migration
+### "No migrations were found in the database. Nothing to revert!"
 
-**Error:** "Relation does not exist"
-**Solution:** Migration partially failed, check database state manually
+Same root cause as above — `typeorm_migrations` is empty. Use the snippet above to restore migration history before reverting.
+
+### Application won't start after migration
+
+**"Column X does not exist"** — Entity file not updated to match schema. Update the entity or revert the migration.
+
+**"Relation does not exist"** — Migration partially failed. Check database state manually, then restore from backup if needed.
+
+---
+
+## Migration Best Practices
+
+- All new migrations must use `CREATE TABLE IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS`, `CREATE INDEX IF NOT EXISTS`, and `DO $$ BEGIN ... EXCEPTION WHEN ... THEN NULL; END $$` blocks to be **idempotent**
+- Inline `UNIQUE (...)` in `CREATE TABLE IF NOT EXISTS` is a no-op when the table already exists — always add unique constraints as a separate idempotent `ALTER TABLE ... ADD CONSTRAINT` DO block immediately after the CREATE statement
+- `CONCURRENTLY` indexes cannot run inside a transaction — put them in a separate migration file (see `Phase3BackfillIndexes`)
+- Never modify existing migration files. Create a new one instead.
 
 ---
 
 ## Emergency Rollback
 
-If migration causes critical issues:
-
 ```bash
 # 1. Stop application
 docker-compose stop backend
 
-# 2. Revert migration
-cd be
-npm run migration:revert
+# 2. Revert last migration
+cd be && npm run migration:revert
 
-# 3. Verify revert
-npm run migration:show
-
-# 4. If revert fails, restore backup
+# 3. If revert fails, restore backup
 docker exec sekar-postgres psql -U postgres -d sekar_db < backup_TIMESTAMP.sql
 
-# 5. Restart application
+# 4. Restart application
 docker-compose start backend
 ```
 
@@ -189,31 +201,8 @@ docker-compose start backend
 
 ## Production Deployment Checklist
 
-Before deploying migration to production:
-
-- [ ] Migration tested successfully on staging
-- [ ] Performance benchmarks meet targets
-- [ ] Rollback tested and verified
+- [ ] Migration tested on staging with production data copy
+- [ ] `down()` rollback tested and verified
 - [ ] Database backup created and verified
-- [ ] Team notified of maintenance window (if needed)
-- [ ] Documentation updated (API docs, schema docs)
-- [ ] Monitoring alerts configured
-- [ ] Post-deployment tests prepared
-
----
-
-## Getting Help
-
-**For this migration specifically:**
-- Read `MIGRATION_TESTING_GUIDE.md` - Step-by-step testing
-- Read `MIGRATION_ANALYSIS.md` - Risk assessment
-
-**General migration questions:**
-- TypeORM Migrations: https://typeorm.io/migrations
-- Project lead: See `CLAUDE.md`
-- Database specs: `/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/specs/database/schema.md`
-
----
-
-**Last Updated:** 2026-02-11 (Added Phase 2C migration)
-**Maintainer:** Database Engineer
+- [ ] `npm run migration:show` confirms correct pending migrations
+- [ ] Post-deployment smoke tests prepared

@@ -35,6 +35,12 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         UNIQUE (area_id, species_id)
       )
     `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        ALTER TABLE area_plants ADD CONSTRAINT uq_area_plants_area_species UNIQUE (area_id, species_id);
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$
+    `);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_area_plants_area_status ON area_plants (area_id, status)`);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_area_plants_next_due ON area_plants (next_due_at)`);
 
@@ -112,6 +118,12 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         UNIQUE (rayon_id, year, iso_week, service_type),
         CHECK (booked_units >= 0 AND booked_units <= capacity_units + 10)
       )
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        ALTER TABLE service_capacity ADD CONSTRAINT uq_service_capacity UNIQUE (rayon_id, year, iso_week, service_type);
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$
     `);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_service_capacity_rayon_week ON service_capacity (rayon_id, year, iso_week)`);
 
@@ -195,8 +207,17 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_tasks_type_status ON tasks (task_type, status)`);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks (parent_task_id) WHERE parent_task_id IS NOT NULL`);
 
-    // 11. Extend user_role enum
-    await queryRunner.query(`ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'staff_kecamatan'`);
+    // 11. Extend users.role CHECK constraint to include staff_kecamatan
+    // (role column is varchar(30), not a native PG enum — Phase2C used CHECK constraint)
+    await queryRunner.query(`
+      DO $$ BEGIN
+        ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_users_role;
+        ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (
+          role IN ('satgas','linmas','korlap','admin_data','kepala_rayon',
+                   'top_management','admin_system','superadmin','staff_kecamatan')
+        );
+      END $$
+    `);
 
     // 12. user_tracking_status indexes
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_user_tracking_area_updated ON user_tracking_status (area_id, updated_at DESC)`);
@@ -206,7 +227,17 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
   async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IF EXISTS idx_user_tracking_within_area`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_user_tracking_area_updated`);
-    // Note: user_role enum value 'staff_kecamatan' cannot be removed in PostgreSQL without rewriting type
+
+    // Restore users.role CHECK constraint to 8-role set (without staff_kecamatan)
+    await queryRunner.query(`
+      DO $$ BEGIN
+        ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_users_role;
+        ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (
+          role IN ('satgas','linmas','korlap','admin_data','kepala_rayon',
+                   'top_management','admin_system','superadmin')
+        );
+      END $$
+    `);
 
     await queryRunner.query(`DROP INDEX IF EXISTS idx_tasks_parent`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_tasks_type_status`);

@@ -252,10 +252,136 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log(`  ✓ ${configsInserted} monitoring_configs processed (idempotent)`);
 
     // ==========================================
-    // SECTION 3: service_capacity
+    // SECTION 3: area_plants (link areas to plant species)
     // ==========================================
     console.log('');
-    console.log('📅 ======== SECTION 3: Service Capacity ========');
+    console.log('🌿 ======== SECTION 3: Area Plants ========');
+    const areas = await queryRunner.query(`SELECT id FROM areas WHERE is_active = true LIMIT 6`);
+    if (areas.length === 0) {
+      console.log('  ⚠ No active areas found, skipping area_plants seed');
+    } else {
+      let areaPlantInserted = 0;
+      const areaPlantMappings = [
+        { speciesName: 'AKASIA', quantityRange: [5, 15] },
+        { speciesName: 'MAHONI', quantityRange: [3, 8] },
+        { speciesName: 'BUNGUR', quantityRange: [2, 6] },
+        { speciesName: 'SENGON', quantityRange: [4, 12] },
+        { speciesName: 'JATI', quantityRange: [2, 5] },
+      ];
+
+      for (const area of areas.slice(0, 6)) {
+        for (const mapping of areaPlantMappings) {
+          const species = await queryRunner.query(
+            `SELECT id FROM plant_species WHERE name_id = $1 LIMIT 1`,
+            [mapping.speciesName],
+          );
+          if (species.length > 0) {
+            const quantity =
+              Math.floor(Math.random() * (mapping.quantityRange[1] - mapping.quantityRange[0])) +
+              mapping.quantityRange[0];
+            const result = await queryRunner.query(
+              `INSERT INTO area_plants (area_id, species_id, count)
+               VALUES ($1, $2, $3)
+               ON CONFLICT (area_id, species_id) DO NOTHING`,
+              [area.id, species[0].id, quantity],
+            );
+            if (result && (result as any).rowCount > 0) areaPlantInserted++;
+          }
+        }
+      }
+      console.log(`  ✓ ${areaPlantInserted} area_plants inserted`);
+    }
+
+    // ==========================================
+    // SECTION 4: pruning_requests (sample workflow data)
+    // ==========================================
+    console.log('');
+    console.log('✂️  ======== SECTION 4: Pruning Requests ========');
+    let pruningInserted = 0;
+
+    const kecamatanNames = ['Pusat', 'Selatan', 'Timur', 'Utara'];
+    const statuses = ['submitted', 'submitted', 'approved', 'rejected'];
+    const addresses = [
+      'Jl. Pemuda No. 1',
+      'Jl. Raya Kenjeran No. 50',
+      'Jl. Timuran No. 25',
+      'Jl. Tanjungsari No. 100',
+    ];
+
+    for (let i = 0; i < 4; i++) {
+      const staff = await queryRunner.query(
+        `SELECT id FROM users WHERE role = 'staff_kecamatan' LIMIT 1`,
+      );
+      const submitterId = staff.length > 0 ? staff[0].id : (
+        await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_data' LIMIT 1`)
+      )[0]?.id;
+
+      if (!submitterId) {
+        console.log('  ⚠ No staff_kecamatan or admin_data users found, skipping pruning_requests');
+        break;
+      }
+
+      const refCode = `PR-${Date.now()}-${i}`;
+      const status = statuses[i];
+      const result = await queryRunner.query(
+        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (reference_code) DO NOTHING`,
+        [refCode, submitterId, kecamatanNames[i], addresses[i], status],
+      );
+      if (result && (result as any).rowCount > 0) pruningInserted++;
+    }
+    console.log(`  ✓ ${pruningInserted} pruning_requests inserted`);
+
+    // ==========================================
+    // SECTION 5: plant_seeds + seed_transactions
+    // ==========================================
+    console.log('');
+    console.log('🌱 ======== SECTION 5: Plant Seeds & Transactions ========');
+    const seedSpecies = [
+      { nameId: 'AKASIA_SEEDS', unit: 'gram', qty: 1000 },
+      { nameId: 'MAHONI_SEEDS', unit: 'gram', qty: 800 },
+      { nameId: 'BUNGUR_SEEDS', unit: 'piece', qty: 500 },
+      { nameId: 'SENGON_SEEDS', unit: 'gram', qty: 600 },
+      { nameId: 'JATI_SEEDS', unit: 'piece', qty: 300 },
+    ];
+
+    let seedsInserted = 0;
+    let transactionsInserted = 0;
+
+    for (const seedSpec of seedSpecies) {
+      const seedResult = await queryRunner.query(
+        `INSERT INTO plant_seeds (name_id, unit, stock_qty)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (name_id) DO NOTHING
+         RETURNING id`,
+        [seedSpec.nameId, seedSpec.unit, seedSpec.qty],
+      );
+
+      if (seedResult.length > 0) {
+        seedsInserted++;
+        const seedId = seedResult[0].id;
+
+        // Add initial transaction (purchase/stock)
+        const recorder = await queryRunner.query(`SELECT id FROM users LIMIT 1`);
+        if (recorder.length > 0) {
+          const txResult = await queryRunner.query(
+            `INSERT INTO seed_transactions (seed_id, transaction_type, qty, supplier, occurred_at, recorded_by)
+             VALUES ($1, 'purchase', $2, 'Nursery A', $3, $4)`,
+            [seedId, seedSpec.qty, new Date().toISOString().split('T')[0], recorder[0].id],
+          );
+          if (txResult && (txResult as any).rowCount > 0) transactionsInserted++;
+        }
+      }
+    }
+    console.log(`  ✓ ${seedsInserted} plant_seeds inserted`);
+    console.log(`  ✓ ${transactionsInserted} seed_transactions inserted`);
+
+    // ==========================================
+    // SECTION 6: service_capacity
+    // ==========================================
+    console.log('');
+    console.log('📅 ======== SECTION 6: Service Capacity ========');
 
     const rayons = await queryRunner.query(`SELECT id, name FROM rayons ORDER BY name`);
     if (rayons.length === 0) {
