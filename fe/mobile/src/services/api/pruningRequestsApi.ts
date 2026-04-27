@@ -23,7 +23,22 @@ export async function submitPruningRequest(
     rayon_id?: string;
   },
 ): Promise<ApiResponse<PruningRequest>> {
-  return post<PruningRequest>('/pruning-requests', data);
+  const response = await post<PruningRequest>('/pruning-requests', data);
+
+  // Validate response shape
+  if (response.data && typeof response.data === 'object' && 'id' in response.data) {
+    return response;
+  }
+
+  if (response.error) {
+    return response;
+  }
+
+  // Invalid response shape
+  return {
+    error: 'Invalid response shape from server',
+    success: false,
+  };
 }
 
 /**

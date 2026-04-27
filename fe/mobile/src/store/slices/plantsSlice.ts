@@ -6,7 +6,10 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PlantSpecies, AreaPlant, NotablePlant } from '../../types/models.types';
+import type { RootState } from '../store';
 import * as plantsApi from '../../services/api/plantsApi';
+
+type ThunkError = { error: string; code?: string };
 
 interface PlantsState {
   // Catalog: all loaded species
@@ -59,7 +62,9 @@ export const fetchSpecies = createAsyncThunk(
       }
       return response.data;
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -77,7 +82,9 @@ export const searchSpecies = createAsyncThunk(
       }
       return response.data;
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -95,7 +102,9 @@ export const fetchAreaPlants = createAsyncThunk(
       }
       return { areaId, plants: response.data };
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -113,7 +122,9 @@ export const fetchNotablePlants = createAsyncThunk(
       }
       return { areaId, plants: response.data };
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -145,7 +156,9 @@ export const createNotablePlant = createAsyncThunk(
       }
       return { areaId, plant: response.data };
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -168,14 +181,11 @@ const plantsSlice = createSlice({
       state.isLoadingCatalog = false;
       state.speciesCatalog = action.payload.data;
       // Populate by-key map
-      state.speciesById = {};
-      action.payload.data.forEach(species => {
-        state.speciesById[species.id] = species;
-      });
+      state.speciesById = { ...state.speciesById, ...Object.fromEntries(action.payload.data.map(s => [s.id, s])) };
     });
     builder.addCase(fetchSpecies.rejected, (state, action) => {
       state.isLoadingCatalog = false;
-      state.error = action.payload as string;
+      state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
     });
 
     // Search species
@@ -187,15 +197,16 @@ const plantsSlice = createSlice({
       state.isLoadingSearch = false;
       state.searchResults = action.payload;
       // Also add to by-key map if not present
-      action.payload.forEach(species => {
-        if (!state.speciesById[species.id]) {
-          state.speciesById[species.id] = species;
-        }
-      });
+      const newEntries = Object.fromEntries(
+        action.payload
+          .filter(species => !state.speciesById[species.id])
+          .map(s => [s.id, s])
+      );
+      state.speciesById = { ...state.speciesById, ...newEntries };
     });
     builder.addCase(searchSpecies.rejected, (state, action) => {
       state.isLoadingSearch = false;
-      state.error = action.payload as string;
+      state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
     });
 
     // Fetch area plants
@@ -216,7 +227,7 @@ const plantsSlice = createSlice({
     builder.addCase(fetchAreaPlants.rejected, (state, action) => {
       const areaId = action.meta.arg;
       state.isLoadingAreaPlants[areaId] = false;
-      state.error = action.payload as string;
+      state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
     });
 
     // Fetch notable plants
@@ -237,7 +248,7 @@ const plantsSlice = createSlice({
     builder.addCase(fetchNotablePlants.rejected, (state, action) => {
       const areaId = action.meta.arg;
       state.isLoadingNotables[areaId] = false;
-      state.error = action.payload as string;
+      state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
     });
 
     // Create notable plant
@@ -258,7 +269,7 @@ const plantsSlice = createSlice({
     });
     builder.addCase(createNotablePlant.rejected, (state, action) => {
       state.isCreating = false;
-      state.error = action.payload as string;
+      state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
     });
   },
 });
@@ -267,18 +278,18 @@ export const { clearError } = plantsSlice.actions;
 export default plantsSlice.reducer;
 
 // Selectors
-export const selectSpeciesCatalog = (state: any) => state.plants.speciesCatalog;
-export const selectSpeciesById = (state: any) => state.plants.speciesById;
-export const selectSearchResults = (state: any) => state.plants.searchResults;
-export const selectAreaPlants = (areaId: string) => (state: any) =>
+export const selectSpeciesCatalog = (state: RootState) => state.plants.speciesCatalog;
+export const selectSpeciesById = (state: RootState) => state.plants.speciesById;
+export const selectSearchResults = (state: RootState) => state.plants.searchResults;
+export const selectAreaPlants = (areaId: string) => (state: RootState) =>
   state.plants.areaPlantsByArea[areaId] ?? [];
-export const selectNotablePlants = (areaId: string) => (state: any) =>
+export const selectNotablePlants = (areaId: string) => (state: RootState) =>
   state.plants.notableByArea[areaId] ?? [];
-export const selectIsLoadingCatalog = (state: any) => state.plants.isLoadingCatalog;
-export const selectIsLoadingSearch = (state: any) => state.plants.isLoadingSearch;
-export const selectIsLoadingAreaPlants = (areaId: string) => (state: any) =>
+export const selectIsLoadingCatalog = (state: RootState) => state.plants.isLoadingCatalog;
+export const selectIsLoadingSearch = (state: RootState) => state.plants.isLoadingSearch;
+export const selectIsLoadingAreaPlants = (areaId: string) => (state: RootState) =>
   state.plants.isLoadingAreaPlants[areaId] ?? false;
-export const selectIsLoadingNotables = (areaId: string) => (state: any) =>
+export const selectIsLoadingNotables = (areaId: string) => (state: RootState) =>
   state.plants.isLoadingNotables[areaId] ?? false;
-export const selectIsCreating = (state: any) => state.plants.isCreating;
-export const selectError = (state: any) => state.plants.error;
+export const selectIsCreating = (state: RootState) => state.plants.isCreating;
+export const selectError = (state: RootState) => state.plants.error;

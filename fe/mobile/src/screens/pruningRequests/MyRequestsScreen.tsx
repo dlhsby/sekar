@@ -226,6 +226,10 @@ export function MyRequestsScreen(
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         scrollIndicatorInsets={{ right: 1 }}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={15}
+        removeClippedSubviews={true}
       />
 
       {error && (

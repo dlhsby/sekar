@@ -8,6 +8,8 @@ import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/tool
 import type { PruningRequest } from '../../types/models.types';
 import * as pruningRequestsApi from '../../services/api/pruningRequestsApi';
 
+type ThunkError = { error: string; code?: string };
+
 /**
  * Pruning request submission form draft (persisted in offline queue if offline)
  */
@@ -81,7 +83,9 @@ export const submitPruningRequest = createAsyncThunk(
       }
       return response.data;
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -105,7 +109,9 @@ export const fetchMyPruningRequests = createAsyncThunk(
       }
       return response.data || [];
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -123,7 +129,9 @@ export const fetchPruningRequestById = createAsyncThunk(
       }
       return response.data;
     } catch (err) {
-      return rejectWithValue(String(err));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
     }
   },
 );
@@ -179,6 +187,13 @@ const pruningRequestsSlice = createSlice({
     },
 
     /**
+     * Set sync error (from syncManager when offline queue fails)
+     */
+    setSyncError: (state, action: PayloadAction<string>) => {
+      state.error = action.payload;
+    },
+
+    /**
      * Reset slice to initial state
      */
     resetState: () => initialState,
@@ -206,7 +221,7 @@ const pruningRequestsSlice = createSlice({
       .addCase(submitPruningRequest.rejected, (state, action) => {
         state.isSubmitting = false;
         state.submitStatus = 'error';
-        state.error = String(action.payload);
+        state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
       });
 
     // Fetch my requests
@@ -226,7 +241,7 @@ const pruningRequestsSlice = createSlice({
       })
       .addCase(fetchMyPruningRequests.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = String(action.payload);
+        state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
       });
 
     // Fetch by ID
@@ -248,7 +263,7 @@ const pruningRequestsSlice = createSlice({
       })
       .addCase(fetchPruningRequestById.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = String(action.payload);
+        state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
       });
   },
 });
@@ -259,6 +274,7 @@ export const {
   clearDraft,
   selectRequest,
   clearError,
+  setSyncError,
   resetState,
 } = pruningRequestsSlice.actions;
 

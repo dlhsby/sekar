@@ -228,10 +228,7 @@ describe('pruningRequestsSlice', () => {
 
     it('should handle rejected state', async () => {
       const mockApi = pruningRequestsApi.submitPruningRequest as jest.Mock;
-      mockApi.mockResolvedValue({
-        error: 'Address is required',
-        data: null,
-      });
+      mockApi.mockRejectedValue(new Error('Address is required'));
 
       const submitAction = submitPruningRequest({
         address: '',
@@ -305,10 +302,7 @@ describe('pruningRequestsSlice', () => {
 
     it('should handle rejected state', async () => {
       const mockApi = pruningRequestsApi.getMyPruningRequests as jest.Mock;
-      mockApi.mockResolvedValue({
-        error: 'Unauthorized',
-        data: null,
-      });
+      mockApi.mockRejectedValue(new Error('Unauthorized'));
 
       const fetchAction = fetchMyPruningRequests({ limit: 50, offset: 0 });
       await store.dispatch(fetchAction);
@@ -378,10 +372,7 @@ describe('pruningRequestsSlice', () => {
 
     it('should handle rejected state', async () => {
       const mockApi = pruningRequestsApi.getPruningRequestById as jest.Mock;
-      mockApi.mockResolvedValue({
-        error: 'Not found',
-        data: null,
-      });
+      mockApi.mockRejectedValue(new Error('Not found'));
 
       const fetchAction = fetchPruningRequestById('invalid-id');
       await store.dispatch(fetchAction);

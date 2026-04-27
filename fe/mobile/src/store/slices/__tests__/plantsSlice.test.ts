@@ -89,7 +89,7 @@ describe('plantsSlice', () => {
 
     it('sets error on rejected', () => {
       const error = new Error('Failed to fetch');
-      const action = { type: fetchSpecies.rejected.type, payload: error.message };
+      const action = { type: fetchSpecies.rejected.type, payload: { error: error.message } };
       const state = plantsReducer(initialState, action);
       expect(state.error).toEqual(error.message);
       expect(state.isLoadingCatalog).toBe(false);
@@ -124,7 +124,7 @@ describe('plantsSlice', () => {
 
     it('sets error on rejected', () => {
       const error = new Error('Search failed');
-      const action = { type: searchSpecies.rejected.type, payload: error.message };
+      const action = { type: searchSpecies.rejected.type, payload: { error: error.message } };
       const state = plantsReducer(initialState, action);
       expect(state.error).toEqual(error.message);
       expect(state.isLoadingSearch).toBe(false);
@@ -154,7 +154,7 @@ describe('plantsSlice', () => {
       const error = new Error('Failed to fetch area plants');
       const action = {
         type: fetchAreaPlants.rejected.type,
-        payload: error.message,
+        payload: { error: error.message },
         meta: { arg: 'area-1' },
       };
       const state = plantsReducer(initialState, action as any);
@@ -186,7 +186,7 @@ describe('plantsSlice', () => {
       const error = new Error('Failed to fetch notable plants');
       const action = {
         type: fetchNotablePlants.rejected.type,
-        payload: error.message,
+        payload: { error: error.message },
         meta: { arg: 'area-1' },
       };
       const state = plantsReducer(initialState, action as any);
@@ -219,7 +219,7 @@ describe('plantsSlice', () => {
 
     it('sets error on rejected', () => {
       const error = new Error('Failed to create notable plant');
-      const action = { type: createNotablePlant.rejected.type, payload: error.message };
+      const action = { type: createNotablePlant.rejected.type, payload: { error: error.message } };
       const state = plantsReducer(initialState, action);
       expect(state.error).toEqual(error.message);
       expect(state.isCreating).toBe(false);

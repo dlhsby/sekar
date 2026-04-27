@@ -26,6 +26,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Geolocation from 'react-native-geolocation-service';
+import NetInfo from '@react-native-community/netinfo';
 import { nbColors, nbSpacing, nbShadows, nbBorders, nbBorderRadius, nbTypography } from '../../constants/nbTokens';
 import { NBButton, NBCard, NBCardContent, NBCardHeader, NBCardTextInput, NBAlert } from '../../components/nb';
 import { PhotoUploader } from '../../components/common';
@@ -76,6 +77,7 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [referenceCode, setReferenceCode] = useState<string | null>(null);
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Initialize draft on mount if not present
@@ -200,8 +202,17 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
       return;
     }
 
+    if (isSubmittingRequest) {
+      return;
+    }
+
+    setIsSubmittingRequest(true);
     try {
-      if (isOnline) {
+      // Re-check network status before submit
+      const netInfo = await NetInfo.fetch();
+      const currentlyOnline = Boolean(netInfo.isConnected && netInfo.isInternetReachable);
+
+      if (currentlyOnline) {
         // Submit immediately
         const result = await dispatch(
           submitPruningRequest({
@@ -238,8 +249,10 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
       }
     } catch (err) {
       Alert.alert('Kesalahan', `Gagal mengirim permohonan: ${err instanceof Error ? err.message : 'Tidak diketahui'}`);
+    } finally {
+      setIsSubmittingRequest(false);
     }
-  }, [draft, isOnline, validateStep, dispatch]);
+  }, [draft, validateStep, dispatch]);
 
   // Handle back button
   const handleBack = useCallback(() => {
@@ -365,10 +378,10 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
         <NBButton
           variant="primary"
           onPress={handleNext}
-          disabled={isSubmitting || (step !== WizardStep.Success && !validateStep())}
+          disabled={isSubmitting || isSubmittingRequest || (step !== WizardStep.Success && !validateStep())}
           style={styles.nextButton}
         >
-          {isSubmitting ? (
+          {isSubmitting || isSubmittingRequest ? (
             <ActivityIndicator size="small" color={nbColors.text.inverse} />
           ) : step === WizardStep.Preview ? (
             'Kirim'

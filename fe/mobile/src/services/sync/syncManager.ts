@@ -471,13 +471,25 @@ class SyncManager extends EventEmitter {
    * TODO: Advanced retry logic deferred to Phase 4 (currently uses default exponential backoff)
    */
   private async syncPruningRequest(data: PruningRequestData): Promise<void> {
-    const result = await submitPruningRequest(data);
+    try {
+      const result = await submitPruningRequest(data);
 
-    if (!result || result.error) {
-      throw new Error(result?.error || 'Pruning request sync failed');
+      if (!result || result.error) {
+        throw new Error(result?.error || 'Pruning request sync failed');
+      }
+
+      console.debug('[SyncManager] Pruning request synced:', result.data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Pruning request sync failed';
+      try {
+        const { store } = await import('../../store');
+        const { setSyncError } = await import('../../store/slices/pruningRequestsSlice');
+        store.dispatch(setSyncError(message));
+      } catch (dispatchErr) {
+        console.warn('[SyncManager] failed to dispatch sync error', dispatchErr);
+      }
+      throw err;
     }
-
-    console.debug('[SyncManager] Pruning request synced:', result.data);
   }
 
   /**

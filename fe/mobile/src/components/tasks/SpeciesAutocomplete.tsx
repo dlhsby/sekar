@@ -117,20 +117,30 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
     <View style={[styles.container, style]} testID={testID}>
       {/* Selected species chips (multi-mode only) */}
       {multi && value.length > 0 && (
-        <View style={styles.chipsContainer}>
+        <View
+          style={styles.chipsContainer}
+          accessible={true}
+          accessibilityRole="list"
+          accessibilityLabel="Spesies terpilih"
+        >
           {value.map((species) => (
-            <View key={species.id} style={styles.chip}>
+            <View
+              key={species.id}
+              style={styles.chip}
+              accessible={true}
+              accessibilityRole="listitem"
+              accessibilityLabel={`${species.nameId}, ketuk untuk hapus`}
+            >
               <Text
                 style={styles.chipText}
                 numberOfLines={1}
-                accessibilityLabel={`Spesies terpilih: ${species.nameId}`}
               >
                 {species.nameId}
               </Text>
               <TouchableOpacity
                 onPress={() => handleRemoveChip(species.id)}
                 style={styles.chipRemoveButton}
-                accessibilityLabel={`Hapus ${species.nameId}`}
+                accessibilityLabel="Hapus"
                 accessibilityRole="button"
                 testID={`chip-remove-${species.id}`}
               >

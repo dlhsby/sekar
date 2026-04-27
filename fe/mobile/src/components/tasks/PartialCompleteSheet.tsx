@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { NBToast } from '../nb/NBToast';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { partialCompleteTask } from '../../store/slices/tasksSlice';
 import { NBModal } from '../nb/NBModal';
@@ -90,7 +91,11 @@ export function PartialCompleteSheet({
         }),
       ).unwrap();
 
-      Alert.alert('Berhasil', 'Tugas sebagian diselesaikan');
+      NBToast.show({
+        type: 'success',
+        text1: 'BERHASIL',
+        text2: 'Tugas sebagian diselesaikan',
+      });
       handleClose();
       onSuccess?.();
     } catch {
