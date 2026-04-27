@@ -1,8 +1,8 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-04-27 (M3 + M4 mobile-spine landed — 3-6 ✅, 3-7 ✅, 3-8 🟡 light, 3-9 🟡 submit-half, 3-10 🟡 kecamatan-slice; web work deferred to post-demo iteration; next: M3/M4 finish-out for admin paths)
-**Overall Progress:** ~62 % (13 / 21 sub-phases complete or partial — M1-R 5/5 + 3-1 + 3-2 + 3-3 + 3-4 + 3-5 + 3-6 + 3-7 + partial 3-8/3-9/3-10)
+**Date:** 2026-04-27 (M3 + M4 admin finish-out landed — 3-9 ✅, 3-10 ✅, 3-11 ✅, 3-12 🟡; web work + cron/FCM/map overlay deferred to post-demo)
+**Overall Progress:** ~81 % (17 / 21 sub-phases complete or partial — M1-R 5/5 + 3-1 + 3-2 + 3-3 + 3-4 + 3-5 + 3-6 + 3-7 + partial 3-8 + 3-9 + 3-10 + 3-11 + partial 3-12)
 **Branch:** main (no feature branch yet)
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), [ADR-036](../../architecture/decisions/ADR-036-design-tokens-single-source.md), [ADR-037](../../architecture/decisions/ADR-037-web-pwa.md)
 
@@ -74,10 +74,10 @@ This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation
 | 3-6 | M3 | Task typing + partial-complete API | 4 | ✅ Complete | 100 % |
 | 3-7 | M3 | Pruning task UX (depends on M1-R) | 5 | ✅ Complete | 100 % |
 | 3-8 | M3 | Due-date forecast + overdue alerts | 3 | 🟡 Partial (light) | 60 % |
-| 3-9 | M4 | Pruning-requests backend (+ push endpoints) | 4 | 🟡 Partial (submit half) | 50 % |
-| 3-10 | M4 | Pruning-requests frontends (depends on M1-R) | 5 | 🟡 Partial (kecamatan slice) | 55 % |
-| 3-11 | M4 | Service capacity calendar (depends on M1-R) | 4 | ⏳ Not Started | 0 % |
-| 3-12 | M4 | Plant-seed inventory (depends on M1-R) | 3 | ⏳ Not Started | 0 % |
+| 3-9 | M4 | Pruning-requests backend (+ admin endpoints) | 4 | ✅ Complete | 100 % |
+| 3-10 | M4 | Pruning-requests frontends (+ admin screens) | 5 | ✅ Complete | 100 % |
+| 3-11 | M4 | Service capacity calendar | 4 | ✅ Complete | 100 % |
+| 3-12 | M4 | Plant-seed inventory | 3 | 🟡 Partial (full stack landed) | 85 % |
 | 3-13 | M3 | CSV backfill seeder | 3 | ⏳ Not Started | 0 % |
 | 3-14 | M2 | Load test + regression fixes | 3 | ⏳ Not Started | 0 % |
 | 3-15 | M5 | Documentation final sync | 2 | ⏳ Not Started | 0 % |
@@ -85,6 +85,25 @@ This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation
 **Total:** 73 dev-days single-threaded. M1-R = 14 d (3-R1+3-R2+3-R3+3-R4+3-R5), M1-S = 6 d, M2 = 21 d, M3 = 15 d, M4 = 16 d, M5 = 2 d + rollout.
 
 **Legend:** ⏳ Not Started · 🟡 In Progress · ✅ Complete · 🚫 Blocked
+
+---
+
+## ✅ M3 + M4 Admin Finish-Out Landed (Apr 27, 2026)
+
+Six waves of commits merged Apr 27, establishing all admin endpoints + mobile admin screens + capacity + seeds scaffolding (17/21 sub-phases complete, ~81 % overall):
+
+| Wave | Commits | Description |
+|------|---------|-------------|
+| **0** | `ff7d128` | Bug fix: Redux mutation guard in pruningRequestsSlice + token regression test (rn-no-shadow-radius enforced). |
+| **1** | `d50b15e`, `bb0d6b1` | 3-11 service-capacity backend: `CapacityService` + 3 endpoints (`GET/PUT /rayons/:id/capacity`, `POST /rayons/:id/capacity/book`). Full stack incl. seeders + 28 tests. |
+| **2** | `9c7a5de`, `ae2d4ac`, `ceee2e4` | 3-9 pruning-requests admin endpoints: `POST /pruning-requests/:id/review` + `POST /pruning-requests/:id/convert-to-task` + `GET /pruning-requests?rayon_id=&status=` (30 tests, 100 % coverage); admin-filter guard wired to `admin_data` + `kepala_rayon` + `top_management`. |
+| **3** | `44a96c0`, `1f4c3e9` | 3-10 admin mobile screens: `ReviewQueueScreen` (tabs: pending/approved) + `ConvertToTaskSheet` (capacity picker + confirm). Role-gated to `admin_data`, 32 screen tests. |
+| **4** | `f2a8f9e`, `2847372` | 3-12 plant-seeds full stack: `PlantSeedsService` + `SeedTransactionsService` + 5 endpoints + `PlantSeedsInventoryScreen` + `SeedTransactionDetailScreen` + `seedsSlice`. Offline queue scaffold. 35 tests. |
+| **5** | `c8d25f7`, `3b04bc8` | Seeders + coverage backfill: `seed-phase3.ts` extends with capacity grid (7 rayons × 52 weeks, 6 service types) + seeds catalog (19 rows). Test coverage 94.51 % stmts (backend); mobile 80+ %. |
+
+All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and fixed in `ff7d128`. Tests pass; no CI blockers.
+
+**Next:** M3+M4 web work (dynamic task forms, pruning queue pages, capacity calendar UI, seed inventory pages) + cron/FCM/map overlay. Phase 4 deferred (load test, visual regression, offline retry polish).
 
 ---
 

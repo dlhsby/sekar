@@ -132,7 +132,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 
 ## Project Status
 
-**Phase 3 IN PROGRESS** (M1-R ✅ + M2 ✅ + M3 mobile spine ✅ + M4 mobile spine 🟡, Apr 27, 2026)
+**Phase 3 IN PROGRESS** (M1-R ✅ + M2 ✅ + M3 ✅ + M4 ✅ admin half + 3-11 ✅ + 3-12 🟡 backend, Apr 27, 2026)
 
 | Component | Status | Metrics |
 |-----------|--------|---------|
@@ -143,7 +143,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 
 **Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2E (Apr 25, 2026)** live in production.
 
-**Phase 3 progress: 13/21 sub-phases (~62%).** M1-R + 3-1 + 3-2 + M2 (3-3/3-4/3-5) ✅ + M3 (3-6 ✅, 3-7 ✅ mobile, 3-8 🟡 light) + M4 (3-9 🟡 submit-half, 3-10 🟡 kecamatan-slice). Web work for 3-7/3-10 + admin endpoints + capacity calendar + plant-seeds inventory deferred to next iteration. **Next: M3+M4 admin finish-out + review-fixes pass.**
+**Phase 3 progress: 17/21 sub-phases (~81%).** M1-R ✅ + 3-1 ✅ + 3-2 ✅ + M2 ✅ + M3 ✅ + M4 ✅ (3-9 review/convert ✅, 3-10 review queue + convert sheet ✅, 3-11 capacity backend ✅), 3-12 🟡 (backend + redux ready, mobile inventory screens deferred to Phase 4 polish). Web work + 3-13 backfill + 3-14 k6 + 3-8 cron/FCM/map overlay all deferred. **Next: 3-12 mobile screens + 3-13 backfill + 3-14 load test + web finish-out + Phase 4.** See `specs/phases/phase-3-plants-monitoring-rebuild/status_reviews.md` for the from-scratch verification checklist.
 
 ---
 

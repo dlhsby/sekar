@@ -779,6 +779,140 @@ Run after every Phase 3 deploy:
 
 ---
 
+## 📦 Phase 3 Endpoints Inventory
+
+### Pruning Requests Module (3-9, 3-10)
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/v1/pruning-requests` | GET | admin_data, admin_system | List all requests (paginated, filterable by status/rayon) |
+| `/api/v1/pruning-requests/:id` | GET | admin_data, admin_system, staff_kecamatan | Fetch single request detail |
+| `/api/v1/pruning-requests` | POST | staff_kecamatan | Submit new pruning request |
+| `/api/v1/pruning-requests/:id/review` | POST | admin_data, admin_system | Approve/reject request (disposition transition) |
+| `/api/v1/pruning-requests/:id/convert` | POST | admin_data, admin_system | Convert approved request to task |
+| `/api/v1/pruning-requests/:id/cancel` | POST | staff_kecamatan (own only) | Cancel own submitted request |
+
+### Service Capacity Module (3-11)
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/v1/service-capacity/grid` | GET | kepala_rayon, admin_system | Fetch weekly grid (7 rayons × 12 weeks) with capacity units per service_type |
+| `/api/v1/service-capacity` | PUT | kepala_rayon, admin_system | Update capacity units for a rayon + week + service_type |
+| `/api/v1/service-capacity/suggested-week` | GET | admin_data, admin_system | Suggest least-booked week for a rayon (for auto-scheduling) |
+
+### Plant Seeds Module (3-12)
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/v1/plant-seeds` | GET | kepala_rayon, admin_system | List all seed inventory rows (with balances) |
+| `/api/v1/plant-seeds/:id` | GET | kepala_rayon, admin_system | Fetch single seed entry + transaction ledger |
+| `/api/v1/plant-seeds` | POST | admin_system | Add new seed type to inventory |
+| `/api/v1/plant-seeds/:id/transaction` | POST | admin_system, kepala_rayon | Record purchase, usage, or waste transaction (idempotent on `reference_code`) |
+| `/api/v1/plant-seeds/:id` | PUT | admin_system | Update seed metadata (name, supplier, cost per unit, etc.) |
+
+**Total new endpoints:** 11 (plus 2 existing `POST /monitoring/subscribe` and `DELETE /monitoring/unsubscribe` for web push, deferred to Phase 4)
+
+---
+
+## 🎯 Phase 3 UAT & Demo Path (Multi-Role)
+
+### Pre-Demo Checklist
+
+```bash
+cd /path/to/sekar
+./infra/start.sh                   # Bring up Docker services
+cd be && npm run migration:run && npm run db:seed:prod
+cd be && npm run start:dev
+# In separate terminals:
+cd fe/web && npm run dev           # http://localhost:3001
+cd fe/mobile && npm run android    # Or: npm run ios
+```
+
+### UAT Flows by Role
+
+#### 1. Staff Kecamatan (staff_kecamatan) — Submit Pruning Request
+**User:** `staff_kec_pusat` / `password123` | **Phone:** 081200000023
+
+**Mobile (or web at `/mobile` responsive):**
+1. Log in with staff_kecamatan credentials
+2. Tap "Kecamatan" tab (role-gated nav)
+3. Tap "Ajukan Permintaan" button → `SubmitScreen` opens
+4. Form pre-fills with demo area (Taman Bungkul), species dropdown + multi-select
+5. Select 2–3 species (e.g., Mahoni, Pohon Asam)
+6. Tap "Kirim" → request queued (offline) or submitted (online) → toast feedback
+7. Tap "Permintaan Saya" → see submitted request in `MyRequestsScreen`
+8. Tap request → `RequestDetailScreen` shows detail + status (submitted, under_review, approved, rejected, done)
+
+**Expected:** Request appears in `/api/v1/pruning-requests` on backend within 2 seconds (WS sync).
+
+#### 2. Admin Data (admin_data) — Review & Disposition
+**User:** `admin_data1` / `password123` | **Rayon:** Pusat scope only (ADR-032)
+
+**Web Dashboard:**
+1. Log in with admin_data credentials
+2. Navigate to "Pruning Requests" or "Kecamatan / Permintaan"
+3. See a paginated list of submitted + under_review requests (scoped to own rayon)
+4. Click a request → `RequestDetailModal` / side drawer with form
+5. Fill disposition: **Approve** (→ approved status) or **Reject** (→ rejected, with rejection reason)
+6. Tap "Simpan" → status updates in real-time
+7. If approved, a new "Convert to Task" button appears (admin_system role required to execute; admin_data can see but not click)
+
+**Expected:** Disposition change visible on mobile `RequestDetailScreen` via WS patch within 1 s.
+
+#### 3. Admin System (admin_system) — Convert & Capacity View
+**User:** `admin_system1` / `password123` | **Scope:** City-wide
+
+**Web Dashboard:**
+1. Log in with admin_system
+2. Navigate to "Pruning Requests" → see ALL requests across all rayons
+3. Click an approved request → click "Convert to Task" button → `ConvertToTaskSheet` modal
+4. Modal shows:
+   - Original request (species, areas affected)
+   - "Create as Task?" checkbox (prepopulates task_type='pruning', due_date from forecast)
+   - Confirm button
+5. Tap "Buat Task" → request status → converted, new task created + visible in `/tasks` endpoint
+6. Navigate to "Service Capacity" or "Kapasitas Layanan"
+7. See 7 rayons × 12 weeks grid with capacity_units per week
+8. Click a cell → update capacity for that rayon + week (e.g., set to 10 units/week for Rayon Pusat week 15)
+9. See real-time updates in the grid
+
+**Expected:** Task appears instantly; capacity updates visible to kepala_rayon of that rayon within 1 s.
+
+#### 4. Kepala Rayon (kepala_rayon) — Capacity & Plant Seeds
+**User:** `kepala_pusat` / `password123` | **Rayon:** Pusat scope only
+
+**Web Dashboard:**
+1. Log in with kepala_rayon
+2. Navigate to "Service Capacity"
+3. See ONLY own rayon's 12 weeks (not other rayons)
+4. Click a cell → view capacity_units for that week (read-only OR limited edit if permission extended — see ADR-032)
+5. Navigate to "Plant Seeds" (sub-admin menu, if exposed in Phase 3)
+6. See seed inventory: name, current balance, transaction history
+7. Click a seed → open `SeedDetailScreen` / modal:
+   - Transaction ledger (date, quantity, type: purchase/usage/waste, balance_after)
+   - "Add Transaction" button
+8. Tap "Add Transaction" → form with: quantity, type, reference_code, notes
+9. Submit → ledger updates, balance recalculated
+10. Tap back → balance on list reflects change (within 1 s)
+
+**Expected:** All balance calculations match: `balance = initial_qty + Σ(purchase) - Σ(usage) - Σ(waste)`.
+
+#### 5. Satgas / Linmas — Monitoring + Plant Status Chip (3-8 light)
+**User:** `satgas_pusat_1` / `password123` | **Role:** satgas
+
+**Mobile:**
+1. Log in with satgas
+2. Tap "Monitoring" tab → MapDashboardScreen
+3. See worker cluster markers on map + "Area Status Overlay" with area-name + staffing (deprecated; Phase 3 M3+M4 cleans this up)
+4. Tap a pruning task in task list → `TaskDetailScreen`
+5. See new `PlantStatusChip` widget (for tasks with `task_type='pruning'` and plant items linked)
+6. Chip shows: species icon + name, status (pending/partial/done), due_date countdown
+7. Tap chip → readonly view of which species planted / in progress (3-8 light = read-only; 3-7 allows edit)
+
+**Expected:** Chip renders without crash; color coding matches Phase 3 token system.
+
+---
+
 ## 🩹 Web CI/CD Fix (required before web Phase 3 ships)
 
 The web pipeline has been failing since Apr 26 with:

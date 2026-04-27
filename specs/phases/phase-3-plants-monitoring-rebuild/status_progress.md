@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Progress
 
-**Last Updated:** 2026-04-27 (M3 + M4 mobile-spine landed)
-**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 (3-3 🟡 · 3-4 🟡 · 3-5 ✅) + **M3 (3-6 ✅, 3-7 ✅, 3-8 🟡 light)** + **M4 (3-9 🟡 submit-half, 3-10 🟡 kecamatan-slice)**; 13/21 sub-phases complete or partial. Web work for 3-7/3-10 deferred until after demo. Code review surfaced 4 critical follow-ups (see `status_reviews.md`).
+**Last Updated:** 2026-04-27 (M3 + M4 admin finish-out landed)
+**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 ✅ + **M3 (3-6 ✅, 3-7 ✅, 3-8 🟡 light)** + **M4 (3-9 ✅, 3-10 ✅, 3-11 ✅, 3-12 🟡 full-stack)**; 17/21 sub-phases complete or partial (~81 %). Web work + cron/FCM/map overlay deferred. Code review (12 findings) fixed same-day (see `status_reviews.md`).
 
 This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-sub-phase journal that's updated in-flight and finalized on phase completion. `STATUS.md` is the live task-level tracker; this file is the narrative log.
 
@@ -26,8 +26,10 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | **M3** | 3-7 Pruning task UX | 100 % (mobile) | ✅ Complete | backend-developer + mobile-developer | Plants controller + PlantsService (5 endpoints, 41 tests) + mobile PruningTaskForm + SpeciesAutocomplete + plantsSlice. Web dynamic form deferred. |
 | **M3** | 3-8 Due-date forecast + alerts | 60 % | 🟡 Partial (light) | backend-developer + mobile-developer | PlantDueDateService + AreaPlantStatusService + GET /monitoring/area/:id/plant-status + PlantStatusChip on TaskCard. Cron + WS event + FCM digest + map overlay deferred. |
 | **M3** | 3-13 CSV backfill seeder | 0 % | ⏳ Not Started | backend-developer | 5 008 rows, idempotent on `reference_code` |
-| **M4** | 3-9 Pruning-requests backend | 50 % | 🟡 Partial (submit half) | backend-developer | POST /pruning-requests + GET ?mine=true + GET /:id with rayon-scoped read; 30 tests at 100 %. Review/convert/admin-filter endpoints deferred. |
-| **M4** | 3-10 Pruning-requests frontends | 55 % | 🟡 Partial (kecamatan slice) | mobile-developer | KecamatanNavigator + 5-step SubmitScreen + MyRequests + RequestDetail + slice + offline queue. ReviewQueueScreen + ConvertToTaskSheet + web layouts deferred. |
+| **M4** | 3-9 Pruning-requests backend | 100 % | ✅ Complete | backend-developer | POST /pruning-requests + GET ?mine=true + GET /:id (owner/rayon-scoped read) + POST /:id/review + POST /:id/convert-to-task + GET ?rayon_id=&status= (admin filter); 30 tests at 100 %. Landed Apr 27. |
+| **M4** | 3-10 Pruning-requests frontends | 100 % | ✅ Complete | mobile-developer | KecamatanNavigator + 5-step SubmitScreen + MyRequests + RequestDetail + ReviewQueueScreen + ConvertToTaskSheet + slice + offline queue. 32 screen tests. Landed Apr 27. |
+| **M4** | 3-11 Service capacity calendar | 100 % | ✅ Complete | backend-developer | CapacityService + GET/PUT /rayons/:id/capacity + POST /rayons/:id/capacity/book + seeders (7 rayons × 52 weeks × 6 service types). 28 tests. Landed Apr 27. |
+| **M4** | 3-12 Plant-seed inventory | 85 % | 🟡 Partial (full-stack landed) | backend-developer + mobile-developer | PlantSeedsService + SeedTransactionsService + 5 endpoints + PlantSeedsInventoryScreen + SeedTransactionDetailScreen + seedsSlice + seeders (19 catalog rows). 35 tests. Landed Apr 27. Web screens deferred. |
 | **M4** | 3-11 Service capacity calendar | 0 % | ⏳ Not Started | backend-developer + web-developer | Week grid editor, implicit booking |
 | **M4** | 3-12 Plant-seed inventory | 0 % | ⏳ Not Started | backend-developer + mobile-developer | `plant_seeds` + `seed_transactions` |
 | **M5** | 3-15 Documentation final sync | 0 % | ⏳ Not Started | docs pass | Specs + STATUS + CLAUDE.md sweep |

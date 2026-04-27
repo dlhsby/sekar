@@ -1,7 +1,7 @@
 # Phase 3: Backend Requirements
 
-**Last Updated:** 2026-04-24
-**Status:** ⏳ Not Started
+**Last Updated:** 2026-04-27
+**Status:** 🟡 In Progress (3-1 through 3-12 landed; 3-13/3-14 deferred)
 **Framework:** NestJS 11.x, TypeScript 5.9, TypeORM, Redis 7, Socket.IO
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md)
 **Testing target:** ≥ 85 % stmts per new module

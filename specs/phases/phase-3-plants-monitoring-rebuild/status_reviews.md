@@ -338,6 +338,217 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 - `f130faa` docs(phase-3): sync STATUS + progress + reviews for M3+M4 mobile spine
 - **`ff7d128` fix(mobile/phase-3): address M3+M4 review findings (4 critical, 6 medium, 2 low)** ← landed all 12 fixes
 
+---
+
+## Phase 3 — From-Scratch Verification Checklist (Apr 27, 2026)
+
+**Purpose:** Comprehensive walkthrough of all Phase 3 sub-phases (M1-R through 3-12) to confirm integration, data seeding, and UAT readiness before next rollout.
+
+**Prerequisites:**
+- Fresh PostgreSQL + Redis 7 via `./infra/start.sh`
+- Backend migrations run: `npm run migration:run`
+- All data seeded: `npm run db:seed:prod` (includes Phase 3 reference + staging sample data)
+- Backend + Web + Mobile all started without errors
+
+---
+
+### M1-R Redesign Foundation (Sub-phases 3-R1 through 3-R5)
+
+#### 3-R1 & 3-R2 — Token Pipeline + ESLint
+- [ ] `npm run tokens:verify` exits 0 (no drift)
+- [ ] `fe/web/src/app/generated/tokens.css` exists, starts with `/* generated`, contains `:root { --color-nb-primary`
+- [ ] `fe/mobile/src/constants/generated/tokens.ts` exists, starts with `/* generated`, exports `generatedTokens`
+- [ ] `npx eslint fe/web/src --max-warnings=0` exits 0
+- [ ] `npx eslint fe/mobile/src --max-warnings=0` exits 0
+- [ ] All hex colors in non-allowlisted files trigger ESLint `no-inline-hex-colors` errors (verify with a test edit)
+
+#### 3-R3 Mobile — NB Primitives + Fonts
+- [ ] Mobile LoginScreen: "SEKAR" heading renders in Space Grotesk Bold (visibly different from system font)
+- [ ] Body text on HomeScreen renders in Inter
+- [ ] `NBToast`: error toast persists (no auto-dismiss); ✕ button closes it
+- [ ] `NBModal` (Tentang Aplikasi, filters, sort): content has consistent padding on all sides; buttons aligned
+- [ ] `NBText` variants (`h1`, `body-sm`, etc.) render with correct sizing + weight
+
+#### 3-R4 Web — PWA Shell + Responsive Scaffolding
+- [ ] `fe/web/public/manifest.webmanifest` is valid JSON with SEKAR name + icons
+- [ ] DevTools → Application → Manifest → renders correctly
+- [ ] `NEXT_PUBLIC_FEATURE_PWA=true` → Service Worker registered; offline shell loads
+- [ ] Responsive test (375 / 768 / 1280 px): no horizontal scroll, content readable at all widths
+- [ ] `/icon` and `/apple-icon` routes return images
+
+#### 3-R5 Web — Full Redesign Sweep Verification
+- [ ] LoginScreen: NB card styling (hard-edge shadows), Space Grotesk heading
+- [ ] Dashboard sidebar: colors match token definitions
+- [ ] All non-rewritten screens (Settings, Rayons, Tasks, etc.): no inline hex colors; all colors from tokens
+
+---
+
+### M2 Monitoring v2 (Sub-phases 3-3, 3-4, 3-5)
+
+#### 3-3 Backend — Redis Streams + Status Projector
+- [ ] `docker logs sekar-backend | grep -i redis` shows "Socket.IO Redis adapter active" (if Redis available)
+- [ ] `curl localhost:3000/api/v1/health` → `{"status":"ok"}`
+- [ ] `GET /api/v1/monitoring/snapshot` (requires JWT) → `{"success":true}` with worker cluster counts
+- [ ] `GET /api/v1/monitoring/snapshot?scope=rayon&id=<RAYON_UUID>` as kepala_rayon → 403 if OTHER rayon, 200 if own
+- [ ] `GET /api/v1/monitoring/config` → includes keys: `staffing_debounce_seconds`, `cluster_zoom_threshold`, `missing_threshold_seconds`
+- [ ] **Gap-1 Status**: `status:v2` WebSocket event emitted by StatusProjectorService (verify via browser DevTools WS tab or test script)
+- [ ] **Gap-2 Status**: StaffingDebouncerService wired to EventsGateway (verify via logs: "Staffing debounced for" messages appear)
+- [ ] Health endpoint extended (Gap-5): `GET /api/v1/health` returns `{"status":"ok","redis":{"connected":true,"stream_lag_ms":...}}` (if Redis available)
+
+#### 3-4 Web — Monitoring Page v2
+- [ ] `/monitoring` page loads without console errors
+- [ ] HierarchyFilterPanel (scope selector: Kota / Rayon / Area) renders and switches scopes
+- [ ] WorkerListVirtual scrolls smoothly; DevTools shows <15 DOM rows at a time (virtualized)
+- [ ] AreaDetailDrawer opens when area is clicked; shows area name + staffing summary
+- [ ] Worker status updates in real-time (clock in/out a worker via API → list updates within 1 s)
+- [ ] `staff_kecamatan` login → redirected away from `/monitoring` (role guard works)
+
+#### 3-5 Mobile — Monitoring MapDashboard
+- [ ] MapDashboard loads without crash
+- [ ] `featureFlags.clusterMarkersV2=false` (default) → existing individual markers shown (no new cluster UI yet)
+- [ ] BoundaryOverlay reloads on tab re-focus (Apr 24 fix preserved)
+- [ ] No `tracksViewChanges={true}` in monitoring components (ESLint enforces)
+- [ ] Apr 24 marker/trail fixes still in place: `requestAnimationFrame` guard, `LabelMode` enum, `tracksViewChanges={false}`
+
+---
+
+### M3 Plants + Task Typing (Sub-phases 3-6, 3-7, 3-8)
+
+#### 3-6 Backend — Plants Module
+- [ ] `GET /api/v1/plants/species` → 128+ plant species (JSON array with id, name_en, name_id, family, status)
+- [ ] `GET /api/v1/plants/notable` → 4 heritage plants (area_id, species_id, name, notes)
+- [ ] `GET /api/v1/monitoring/area/:id/plant-status` → plant inventory + status summary for area
+- [ ] `plants_species` table exists with 128 rows: `SELECT COUNT(*) FROM plant_species;` → 128
+- [ ] `area_plants` aggregate table seeded: `SELECT COUNT(*) FROM area_plants;` → ≥30
+- [ ] `notable_plants` table seeded: `SELECT COUNT(*) FROM notable_plants;` → ≥4
+
+#### 3-7 Mobile — Plants Form + Autocomplete
+- [ ] `SpeciesAutocomplete` component: typing "mah" → shows Mahoni, Mahagoni (autocomplete filtering works)
+- [ ] Multi-select: tap species → chip added; tap chip ✕ → removed
+- [ ] `PruningTaskForm`: pre-fills with area + deadline; species chips visible
+- [ ] `plantsSlice` in Redux: `state.speciesCatalog` populated; selectors return correct data
+- [ ] No immutability violations: `npm run test -- plantsSlice` passes (immer checks included)
+- [ ] API calls via `plantsApi.ts`: `searchSpecies()` returns ≥20 matches; `getAreaPlants()` returns inventory
+
+#### 3-8 Light — Plant Status Chip
+- [ ] `PlantStatusChip` renders on pruning tasks: shows icon + species name + status + due-date countdown
+- [ ] Read-only mode (3-8 light): no edit button; chip displays only
+- [ ] Status color coding: pending (gray), partial (amber), done (green) — matches token colors
+- [ ] Chip integrates into `TaskDetailScreen`: appears inline with other task metadata
+- [ ] Test coverage: `PlantStatusChip.test.tsx` exists, ≥80% statements covered
+
+---
+
+### M4 Admin Finish-Out (Sub-phases 3-9, 3-10, 3-11, 3-12)
+
+#### 3-9 & 3-10 Backend + Mobile — Pruning Requests Full Stack
+- [ ] **Backend (3-9)**:
+  - [ ] `POST /api/v1/pruning-requests` (staff_kecamatan) → 201 with id, status=submitted
+  - [ ] `GET /api/v1/pruning-requests` (admin_data, admin_system) → paginated list; filters by status/rayon work
+  - [ ] `POST /api/v1/pruning-requests/:id/review` (admin_data) → update status (approved/rejected); ADR-032 rayon scope enforced
+  - [ ] `POST /api/v1/pruning-requests/:id/convert` (admin_system) → status→converted, new task created
+  - [ ] `pruning_requests` table exists: `SELECT COUNT(*) FROM pruning_requests;` → ≥4 (seeded samples)
+  - [ ] `activity_plant_items` table exists: links activities to plant species (for task conversion)
+  - [ ] Tests: 30+ tests for PruningRequestsController, ≥80% coverage
+
+- [ ] **Mobile (3-10)**:
+  - [ ] `KecamatanNavigator` role-gated: visible only for staff_kecamatan; other roles don't see this tab
+  - [ ] `SubmitScreen` (5 steps): area selector → species multi-select → optional photos → review → submit
+  - [ ] Form submission: online → immediate API call; offline → queued, synced on reconnect
+  - [ ] `MyRequestsScreen`: list of staff_kecamatan's own requests; filters by status (submitted/approved/rejected)
+  - [ ] `RequestDetailScreen`: full request detail; status updates via WS in real-time
+  - [ ] `ReviewQueueScreen` (admin_data): paginated queue of submitted requests; approval/rejection form
+  - [ ] `ConvertToTaskSheet` (admin_system): approve→convert flow; modal opens with task pre-population
+  - [ ] `pruningRequestsSlice`: state shape correct, no mutations, tests ≥80%
+  - [ ] Offline queue: `syncManager.ts` includes `syncPruningRequest()` with retry logic
+
+#### 3-11 Backend + Web — Service Capacity Grid
+- [ ] `service_capacity` table exists: 84 rows (7 rayons × 12 weeks), capacity_units column
+- [ ] `GET /api/v1/service-capacity/grid` (kepala_rayon, admin_system) → 7×12 grid with current capacity_units
+- [ ] `PUT /api/v1/service-capacity` (kepala_rayon, admin_system) → update capacity_units for rayon+week
+- [ ] `GET /api/v1/service-capacity/suggested-week` (admin_system) → returns least-booked week for a rayon
+- [ ] **Web UI:** `/service-capacity` page (or `/kapasitas-layanan`) shows interactive grid; click cell → edit form; update saves
+- [ ] Kepala_rayon sees only own rayon's rows; admin_system sees all
+- [ ] Tests: 20+ for CapacityController, ≥80% coverage
+
+#### 3-12 Backend + Mobile — Plant Seeds Inventory
+- [ ] `plant_seeds` table exists: ≥5 rows seeded (e.g., Bibit Mahoni, Bibit Pohon Asam)
+- [ ] `seed_transactions` table exists: ≥5 sample transactions (purchase, usage, waste)
+- [ ] **Backend endpoints (3-12)**:
+  - [ ] `GET /api/v1/plant-seeds` → list with current balance (calculated from transactions)
+  - [ ] `GET /api/v1/plant-seeds/:id` → detail + full transaction ledger
+  - [ ] `POST /api/v1/plant-seeds/:id/transaction` → record purchase/usage/waste; idempotent on `reference_code`
+  - [ ] Balance calculation: `balance = initial_qty + Σ(purchases) - Σ(usages) - Σ(waste)` ✓ verified
+- [ ] **Mobile UI:**
+  - [ ] `PlantSeedsInventoryScreen`: list of seeds with balances; click → detail
+  - [ ] `SeedDetailScreen`: transaction ledger in reverse-chrono order; "Add Transaction" button opens form
+  - [ ] `AddTransactionScreen`: quantity + type (purchase/usage/waste) + reference_code + notes; submit updates ledger
+  - [ ] `seedsSlice` in Redux: state populated; selectors return current balances
+- [ ] Tests: 35+ for PlantSeedsController, ≥80% coverage; ledger invariant tests pass
+
+#### 3-12 Seeders — CSV Backfill (Deferred to Phase 4, but seeder scaffold in place)
+- [ ] `src/database/seeds/seed-phase3.ts` exists; runs idempotently on `npm run db:seed:prod`
+- [ ] Reference data seeded: 128 plant_species, 4 monitoring_configs, 84 service_capacity rows
+- [ ] Staging data seeded (on `npm run db:seed:staging:prod`): 30 area_plants, 4 pruning_requests samples, 5 plant_seeds + 5 transactions
+- [ ] Scaffold for CSV backfill ready; 5,008-row import deferred to 3-13
+
+---
+
+### Integration & End-to-End Flows
+
+#### Role-Based Flows
+- [ ] **Staff Kecamatan**: Log in → Kecamatan tab → Submit pruning request → see in MyRequests
+- [ ] **Admin Data**: Log in → Pruning Requests → review request → approve/reject (rayon-scoped)
+- [ ] **Admin System**: Log in → Pruning Requests → convert approved → new task appears in Tasks list
+- [ ] **Kepala Rayon**: Log in → Service Capacity → view own rayon's weeks (read/write depending on ADR-032); Plant Seeds → add transaction
+- [ ] **Satgas**: Log in → Monitoring → see cluster status; Tasks → pruning task shows PlantStatusChip
+
+#### WebSocket Real-Time
+- [ ] Clock in a worker (via API) → monitoring list updates within 1 s (all connected clients)
+- [ ] Change pruning request status (via admin form) → staff_kecamatan's MyRequests list updates via WS
+- [ ] Update service capacity (via grid) → refresh monitoring snapshot scope → staffing debounce fires within 30 s
+
+#### Offline + Sync
+- [ ] Mobile: submit pruning request while offline → queued in `syncManager`
+- [ ] Go online → sync fires automatically; request appears in backend within 2 s
+- [ ] Verify no duplicate submissions (idempotent on `request_id`)
+
+---
+
+### Database Consistency
+- [ ] All 30 tables exist (Phase 1 + 2 + 3): `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';` → 30
+- [ ] All 8 Phase 3 tables present: `plant_species`, `area_plants`, `notable_plants`, `pruning_requests`, `activity_plant_items`, `service_capacity`, `plant_seeds`, `seed_transactions`
+- [ ] User role enum includes `staff_kecamatan`: `SELECT enum_range(NULL::user_role);` → includes 'staff_kecamatan'
+- [ ] Foreign keys enforced: delete an area → cascade to area_plants (or explicit error)
+- [ ] Indexes optimized: migration 10 (`Phase3BackfillIndexes`) applied; location_logs queries sub-100ms (verify via `EXPLAIN ANALYZE`)
+
+---
+
+### Test Coverage & CI
+- [ ] Backend: `npm test` → 1,297 tests passing; `npm run test:cov` → ≥94% statements covered
+- [ ] Mobile: `npm test` → ≥3,900 tests passing; coverage ≥80% per module
+- [ ] Web: `npm run test:e2e` → Playwright runs without errors (or skipped if no E2E suite yet)
+- [ ] Token pipeline: `npm run tokens:verify` exits 0
+- [ ] ESLint: `npx eslint` on all workspaces exits 0 (max-warnings=0)
+
+---
+
+### Docs & Deployment Readiness
+- [ ] `specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md` reflects current state (17/21 sub-phases complete)
+- [ ] `specs/deployment/phase-3-deployment.md` matches actual endpoints + env vars
+- [ ] `CLAUDE.md` and `README.md` updated with Phase 3 progress
+- [ ] `status_reviews.md` documents all findings + fixes (this file)
+- [ ] GitHub Secrets has all Phase 3 env vars (REDIS_URL, etc.) — OR graceful degradation if missing
+- [ ] CI/CD pipelines (backend-ci-cd.yml, web-ci-cd.yml) passing on main
+
+---
+
+**Completion Criteria:** All checkboxes ☑ = Phase 3 ready for production rollout (or next milestone demo).
+
+**Owner:** QA + Implementation Leads
+
+---
+
 <!--
 Template (copy and fill when a sub-phase completes):
 

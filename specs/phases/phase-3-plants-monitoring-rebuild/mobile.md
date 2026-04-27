@@ -1,7 +1,7 @@
 # Phase 3: Mobile Requirements
 
-**Last Updated:** 2026-04-25
-**Status:** ⏳ Not Started
+**Last Updated:** 2026-04-27
+**Status:** 🟡 In Progress (3-1 through 3-12 landed; web work deferred)
 **Framework:** React Native 0.83.4, React 19.2.4, Redux Toolkit, @react-native-mapbox-gl/maps
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md)
 **See also:** [Backend](./backend.md), [UI/UX](./ui-ux.md), [README](./README.md)
