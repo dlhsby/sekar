@@ -301,7 +301,7 @@ describe('BoundaryDetailModal', () => {
         <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
       );
       const deltaMinus2 = getByText('-2');
-      expect(deltaMinus2.props.style).toEqual(
+      expect([deltaMinus2.props.style].flat(2)).toEqual(
         expect.arrayContaining([expect.objectContaining({ color: '#991B1B' })]),
       );
     });
@@ -311,7 +311,7 @@ describe('BoundaryDetailModal', () => {
         <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} />,
       );
       const deltaPlus1 = getByText('+1');
-      expect(deltaPlus1.props.style).toEqual(
+      expect([deltaPlus1.props.style].flat(2)).toEqual(
         expect.arrayContaining([expect.objectContaining({ color: '#15803D' })]),
       );
     });
@@ -321,7 +321,7 @@ describe('BoundaryDetailModal', () => {
         <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} />,
       );
       const deltaZero = getByText('+0');
-      expect(deltaZero.props.style).toEqual(
+      expect([deltaZero.props.style].flat(2)).toEqual(
         expect.arrayContaining([expect.objectContaining({ color: '#15803D' })]),
       );
     });

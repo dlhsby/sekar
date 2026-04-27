@@ -32,6 +32,11 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
 import { UserAreasModule } from './modules/user-areas/user-areas.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CommonModule } from './common/common.module';
+// Phase 3 entity modules (stub — full controllers/services added in sub-phases 3-6+)
+import { PlantsModule } from './modules/plants/plants.module';
+import { PruningRequestsModule } from './modules/pruning-requests/pruning-requests.module';
+import { ServiceCapacityModule } from './modules/service-capacity/service-capacity.module';
+import { PlantSeedsModule } from './modules/plant-seeds/plant-seeds.module';
 
 @Module({
   imports: [
@@ -121,6 +126,11 @@ import { CommonModule } from './common/common.module';
     OvertimeModule, // Overtime submission and approval
     UserAreasModule, // User-area assignment management (Phase 2E)
     AuditModule, // Audit logging (Phase 2E)
+    // Phase 3 entity registration modules
+    PlantsModule,
+    PruningRequestsModule,
+    ServiceCapacityModule,
+    PlantSeedsModule,
   ],
   controllers: [AppController],
   providers: [

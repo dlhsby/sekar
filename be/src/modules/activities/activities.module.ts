@@ -28,7 +28,7 @@ import { AuditModule } from '../audit/audit.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Activity, Shift, ActivityType, User]),
+    TypeOrmModule.forFeature([Activity, Shift, ActivityType, User, ActivityPlantItem]),
     SharedModule, // For S3Service
     UsersModule,
     AuditModule,

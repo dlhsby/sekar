@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Marker, Polygon, Circle } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
@@ -13,6 +13,7 @@ import {
   nbColors,
   nbBorders,
   nbShadows,
+  nbTypography,
   withAlpha,
 } from '../../constants/nbTokens';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';

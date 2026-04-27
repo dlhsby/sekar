@@ -20,6 +20,7 @@ import RNFS from 'react-native-fs';
 import * as shiftsApi from '../../../services/api/shiftsApi';
 import * as permissionsService from '../../../services/permissions';
 import { locationTracker } from '../../../services/location/locationTracker';
+import { mediaService } from '../../../services/media';
 
 // Mock dependencies
 jest.mock('react-native-geolocation-service');
@@ -32,6 +33,19 @@ jest.mock('../../../services/location/locationTracker', () => ({
     initialize: jest.fn().mockResolvedValue(undefined),
     stop: jest.fn().mockResolvedValue(undefined),
     forceUpload: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+jest.mock('../../../services/media', () => ({
+  mediaService: {
+    capturePhoto: jest.fn().mockResolvedValue({
+      id: 'photo-1',
+      uri: 'file://test-selfie.jpg',
+      fileName: 'selfie.jpg',
+      fileSize: 1024,
+      type: 'image/jpeg',
+    }),
+    convertToBase64: jest.fn().mockResolvedValue('data:image/jpeg;base64,base64data'),
+    cleanupTempFiles: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -131,6 +145,9 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     (shiftsApi.clockOut as jest.Mock).mockClear();
     (shiftsApi.getCurrentShift as jest.Mock).mockClear();
     (permissionsService.requestClockInPermissions as jest.Mock).mockClear();
+    (permissionsService.requestCameraPermission as jest.Mock).mockClear();
+    (mediaService.capturePhoto as jest.Mock).mockClear();
+    (mediaService.convertToBase64 as jest.Mock).mockClear();
     (locationTracker.initialize as jest.Mock).mockClear();
     (locationTracker.stop as jest.Mock).mockClear();
     (locationTracker.forceUpload as jest.Mock).mockClear();
@@ -139,6 +156,20 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     (permissionsService.requestClockInPermissions as jest.Mock).mockResolvedValue({
       success: true,
     });
+    (permissionsService.requestCameraPermission as jest.Mock).mockResolvedValue({
+      granted: true,
+      status: 'granted',
+    });
+    (mediaService.capturePhoto as jest.Mock).mockResolvedValue({
+      id: 'photo-1',
+      uri: 'file://test-selfie.jpg',
+      fileName: 'selfie.jpg',
+      fileSize: 1024,
+      type: 'image/jpeg',
+    });
+    (mediaService.convertToBase64 as jest.Mock).mockResolvedValue(
+      'data:image/jpeg;base64,base64data'
+    );
 
     (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
       success({
@@ -454,10 +485,6 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
   describe('Selfie Capture', () => {
     it('should open camera when capture button pressed', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({
-        assets: [{ uri: 'file://test-selfie.jpg' }],
-      });
-
       const store = createMockStore();
       const { getByText } = renderScreen(store);
 
@@ -468,21 +495,12 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalledWith({
-          mediaType: 'photo',
-          cameraType: 'front',
-          quality: 0.8,
-          maxWidth: 800,
-          maxHeight: 800,
-          includeBase64: false,
-          saveToPhotos: false,
-          presentationStyle: 'fullScreen',
-        });
+        expect(mediaService.capturePhoto).toHaveBeenCalledWith(true);
       });
     });
 
     it('should handle camera cancel', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({ didCancel: true });
+      (mediaService.capturePhoto as jest.Mock).mockResolvedValueOnce(null);
 
       const store = createMockStore();
       const { getByText } = renderScreen(store);
@@ -494,12 +512,12 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
     });
 
     it('should handle camera error', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({ errorCode: 'camera_unavailable' });
+      (mediaService.capturePhoto as jest.Mock).mockRejectedValueOnce(new Error('Camera unavailable'));
 
       const store = createMockStore();
       const { getByText } = renderScreen(store);
@@ -511,15 +529,11 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
     });
 
     it('should display selfie preview after capture', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({
-        assets: [{ uri: 'file://test-selfie.jpg' }],
-      });
-
       const store = createMockStore();
       const { getByText } = renderScreen(store);
 
@@ -530,17 +544,13 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
     });
   });
 
   describe('Clock-In Flow', () => {
     it('should successfully clock in with valid data (Phase 2C: no area_id)', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({
-        assets: [{ uri: 'file://test-selfie.jpg' }],
-      });
-      (RNFS.readFile as jest.Mock).mockResolvedValue('base64data');
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({
         data: { id: 'shift-123' },
       });
@@ -559,7 +569,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // Capture selfie
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
 
       // Press Clock In button
@@ -634,10 +644,6 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     });
 
     it('should handle clock in API error', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({
-        assets: [{ uri: 'file://test-selfie.jpg' }],
-      });
-      (RNFS.readFile as jest.Mock).mockResolvedValue('base64data');
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({
         error: 'Already clocked in',
       });
@@ -651,7 +657,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
 
       await act(async () => {
@@ -847,7 +853,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     });
 
     it('should handle camera exception', async () => {
-      (launchCamera as jest.Mock).mockRejectedValue(new Error('Camera error'));
+      (mediaService.capturePhoto as jest.Mock).mockRejectedValueOnce(new Error('Camera error'));
 
       const store = createMockStore();
       const { getByText } = renderScreen(store);
@@ -859,18 +865,15 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       fireEvent.press(getByText('Ambil Selfie'));
 
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
     });
 
-    it('should handle RNFS read error during clock in', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({
-        assets: [{ uri: 'file://test-selfie.jpg' }],
-      });
-      (RNFS.readFile as jest.Mock).mockRejectedValue(new Error('File read error'));
+    it('should handle media conversion error during clock in', async () => {
+      (mediaService.convertToBase64 as jest.Mock).mockRejectedValueOnce(new Error('File read error'));
 
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
@@ -878,7 +881,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
 
       await act(async () => {
@@ -887,15 +890,11 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await waitFor(() => {
-        expect(RNFS.readFile).toHaveBeenCalled();
+        expect(mediaService.convertToBase64).toHaveBeenCalled();
       });
     });
 
     it('should continue clock in even if location tracking fails to start', async () => {
-      (launchCamera as jest.Mock).mockResolvedValue({
-        assets: [{ uri: 'file://test-selfie.jpg' }],
-      });
-      (RNFS.readFile as jest.Mock).mockResolvedValue('base64data');
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({
         data: { id: 'shift-123' },
       });
@@ -915,7 +914,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       fireEvent.press(getByText('Ambil Selfie'));
       await waitFor(() => {
-        expect(launchCamera).toHaveBeenCalled();
+        expect(mediaService.capturePhoto).toHaveBeenCalled();
       });
 
       await act(async () => {

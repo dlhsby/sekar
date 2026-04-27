@@ -250,56 +250,7 @@ describe('SettingsScreen', () => {
     });
   });
 
-  describe('Change Password (lines 175)', () => {
-    it('should open change password modal when button pressed (line 175)', async () => {
-      const { getByText, getByTestId } = render(
-        <Provider store={store}>
-          <NavigationContainer>
-            <SettingsScreen />
-          </NavigationContainer>
-        </Provider>
-      );
-
-      const changePasswordButton = getByText('Ubah Password');
-      await act(async () => {
-        fireEvent.press(changePasswordButton);
-      });
-
-      await waitFor(() => {
-        expect(getByTestId('change-password-modal')).toBeTruthy();
-      });
-    });
-
-    it('should close change password modal', async () => {
-      const { getByText, getByTestId, queryByTestId } = render(
-        <Provider store={store}>
-          <NavigationContainer>
-            <SettingsScreen />
-          </NavigationContainer>
-        </Provider>
-      );
-
-      // Open modal
-      const changePasswordButton = getByText('Ubah Password');
-      await act(async () => {
-        fireEvent.press(changePasswordButton);
-      });
-
-      await waitFor(() => {
-        expect(getByTestId('change-password-modal')).toBeTruthy();
-      });
-
-      // Close modal
-      const closeButton = getByTestId('close-modal');
-      await act(async () => {
-        fireEvent.press(closeButton);
-      });
-
-      await waitFor(() => {
-        expect(queryByTestId('change-password-modal')).toBeNull();
-      });
-    });
-  });
+  // Change Password was removed from SettingsScreen in Phase 2E refactor — tests removed
 
   describe('Logout (lines 89, 96-101, 304-316)', () => {
     it('should show logout alert when logout button pressed (line 89)', async () => {
@@ -389,7 +340,6 @@ describe('SettingsScreen', () => {
       expect(getByLabelText('Mode Gelap')).toBeTruthy();
       expect(getByLabelText('Lokasi Latar Belakang')).toBeTruthy();
       expect(getByLabelText('Analitik')).toBeTruthy();
-      expect(getByLabelText('Ubah Password')).toBeTruthy();
       expect(getByLabelText('Keluar')).toBeTruthy();
     });
 
@@ -460,8 +410,6 @@ describe('SettingsScreen', () => {
         </Provider>
       );
 
-      expect(getByText('Ubah Password')).toBeTruthy();
-      expect(getByText('Perbarui password akun Anda')).toBeTruthy();
       expect(getByText('Keluar')).toBeTruthy();
       expect(getByText('Keluar dari akun Anda')).toBeTruthy();
     });

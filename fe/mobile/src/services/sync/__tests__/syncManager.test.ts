@@ -304,13 +304,11 @@ describe('syncManager', () => {
 
       (offlineQueue.getQueuedItems as jest.Mock).mockResolvedValue([item]);
       (offlineQueue.updateQueueItem as jest.Mock).mockResolvedValue(undefined);
+      (offlineQueue.removeFromQueue as jest.Mock).mockResolvedValue(undefined);
 
       await syncManager.processQueue();
 
-      expect(offlineQueue.updateQueueItem).toHaveBeenCalledWith('1', {
-        status: 'failed',
-        error: 'Max retries exceeded',
-      });
+      expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('1');
     });
 
     it('should remove item on conflict error (409)', async () => {
@@ -585,14 +583,13 @@ describe('syncManager', () => {
 
       (offlineQueue.getQueuedItems as jest.Mock).mockResolvedValue([item]);
       (offlineQueue.updateQueueItem as jest.Mock).mockResolvedValue(undefined);
+      (offlineQueue.removeFromQueue as jest.Mock).mockResolvedValue(undefined);
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({ error: 'Network error' });
 
       await syncManager.processQueue();
 
-      // Should mark as failed after exceeding max retries
-      expect(offlineQueue.updateQueueItem).toHaveBeenCalledWith('1', expect.objectContaining({
-        status: 'failed',
-      }));
+      // Should remove from queue after exceeding max retries
+      expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('1');
     });
 
     it('should use config.RETRY_DELAYS_MS for exponential backoff', async () => {
@@ -639,14 +636,13 @@ describe('syncManager', () => {
 
       (offlineQueue.getQueuedItems as jest.Mock).mockResolvedValue([itemAtMax]);
       (offlineQueue.updateQueueItem as jest.Mock).mockResolvedValue(undefined);
+      (offlineQueue.removeFromQueue as jest.Mock).mockResolvedValue(undefined);
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({ error: 'Network error' });
 
       await syncManager.processQueue();
 
-      // Should be marked as failed, not retry again
-      expect(offlineQueue.updateQueueItem).toHaveBeenCalledWith('1', expect.objectContaining({
-        status: 'failed',
-      }));
+      // Should be removed from queue, not retried again
+      expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('1');
     });
 
     it('should apply exponential backoff delays on retry', async () => {

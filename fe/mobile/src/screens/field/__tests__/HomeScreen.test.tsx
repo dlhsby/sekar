@@ -45,9 +45,12 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock LocationMapModal to avoid react-native-maps transpilation
+// Mock LocationMapModal and OvertimeTrailModal to avoid react-native-maps transpilation
 jest.mock('../../../components/modals/LocationMapModal', () => ({
   LocationMapModal: () => null,
+}));
+jest.mock('../../../components/modals/OvertimeTrailModal', () => ({
+  OvertimeTrailModal: () => null,
 }));
 
 // Mock useHomeLocation hook

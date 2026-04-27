@@ -9,6 +9,7 @@ import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
+import shiftReducer from '../../../store/slices/shiftSlice';
 import { OvertimeListScreen } from '../OvertimeListScreen';
 import * as overtimeApi from '../../../services/api/overtimeApi';
 import type { Overtime } from '../../../types/models.types';
@@ -158,7 +159,7 @@ const mockOvertimes: Overtime[] = [
 
 const createTestStore = () =>
   configureStore({
-    reducer: { auth: authReducer },
+    reducer: { auth: authReducer, shift: shiftReducer },
     preloadedState: {
       auth: {
         user: {

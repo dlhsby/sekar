@@ -26,6 +26,12 @@ jest.mock('../../../services/api', () => ({
   getAreas: jest.fn().mockResolvedValue({ data: [] }),
 }));
 
+// Mock react-native-haptic-feedback (used by NBTab.handleTabPress before onTabChange)
+jest.mock('react-native-haptic-feedback', () => ({
+  __esModule: true,
+  default: { trigger: jest.fn() },
+}));
+
 // Mock react-native-safe-area-context (used by NBSelect inside modals)
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ bottom: 0, top: 0, left: 0, right: 0 }),
@@ -37,9 +43,12 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: any) => children,
 }));
 
-// Mock LocationMapModal to avoid react-native-maps transpilation
+// Mock LocationMapModal and OvertimeTrailModal to avoid react-native-maps transpilation
 jest.mock('../../../components/modals/LocationMapModal', () => ({
   LocationMapModal: () => null,
+}));
+jest.mock('../../../components/modals/OvertimeTrailModal', () => ({
+  OvertimeTrailModal: () => null,
 }));
 
 // Mock navigation
@@ -190,7 +199,7 @@ describe('TasksActivityScreen', () => {
     // Initially filter modal is not open
     await waitFor(() => {
       expect(getByLabelText('Filter tugas')).toBeTruthy();
-      expect(queryByText('Filter Tugas')).toBeNull(); // Modal title not visible
+      expect(queryByText('FILTER TUGAS')).toBeNull(); // Modal title not visible
     });
 
     // Press filter button to open modal
@@ -199,7 +208,7 @@ describe('TasksActivityScreen', () => {
 
     await waitFor(() => {
       // TaskFilterModal should now be visible with its sections
-      expect(getByText('Filter Tugas')).toBeTruthy(); // Modal title
+      expect(getByText('FILTER TUGAS')).toBeTruthy(); // Modal title (NBModal uppercases)
       expect(getByText('Penugasan')).toBeTruthy();     // Penugasan filter section
       expect(getByText('Status')).toBeTruthy();       // Status filter section
     });
@@ -560,9 +569,10 @@ describe('TasksActivityScreen', () => {
     });
 
     it('hides both FABs when user lacks all permissions', async () => {
+      // top_management can create tasks but cannot submit activities
       const store = createTestStore({
         auth: {
-          user: { id: '1', role: 'kepala_rayon', full_name: 'Test Kepala Rayon' },
+          user: { id: '1', role: 'top_management', full_name: 'Test Top Management' },
         },
         shift: {
           currentShift: null,
@@ -580,13 +590,13 @@ describe('TasksActivityScreen', () => {
         </Provider>
       );
 
-      // Default tab (Tugas): should show "Buat Tugas" (kepala_rayon can create tasks)
+      // Default tab (Tugas): should show "Buat Tugas" (top_management can create tasks)
       await waitFor(() => {
         expect(getByText('+ Buat Tugas')).toBeTruthy();
         expect(queryByText('+ Tambah Aktivitas')).toBeNull(); // Cannot submit activities
       });
 
-      // On activities tab: should hide "Buat Tugas"
+      // On activities tab: should hide "Buat Tugas", "Tambah Aktivitas" still hidden
       const aktivitasTab = getByText('Aktivitas');
       fireEvent.press(aktivitasTab);
 

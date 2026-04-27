@@ -13,6 +13,11 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
 import * as overtimeApi from '../../../services/api/overtimeApi';
 
+// Mock OvertimeTrailModal to avoid react-native-maps transpilation
+jest.mock('../../../components/modals/OvertimeTrailModal', () => ({
+  OvertimeTrailModal: () => null,
+}));
+
 // Mock APIs
 jest.mock('../../../services/api/overtimeApi');
 
@@ -163,7 +168,7 @@ describe('OvertimeDetailScreen', () => {
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('Error', 'Data tidak ditemukan');
-        expect(mockGoBack).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('Overtime');
       });
     });
 
@@ -180,7 +185,7 @@ describe('OvertimeDetailScreen', () => {
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('Error', 'Gagal memuat detail lembur');
-        expect(mockGoBack).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('Overtime');
       });
     });
   });

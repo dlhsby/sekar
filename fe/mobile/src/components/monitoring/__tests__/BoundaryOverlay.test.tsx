@@ -54,7 +54,21 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
 jest.mock('../../../constants/nbTokens', () => ({
   nbColors: {
     white: '#FFFFFF',
+    black: '#1C1917',
     dangerDark: '#B91C1C',
+    requestUnderReview: '#2563EB',
+  },
+  nbType: {
+    'display-xl': { fontFamily: "'Space Grotesk'", fontSize: 56, fontWeight: '800', lineHeight: 56 },
+    display: { fontFamily: "'Space Grotesk'", fontSize: 40, fontWeight: '700', lineHeight: 42 },
+    h1: { fontFamily: "'Space Grotesk'", fontSize: 28, fontWeight: '700', lineHeight: 34 },
+    h2: { fontFamily: "'Space Grotesk'", fontSize: 22, fontWeight: '600', lineHeight: 29 },
+    h3: { fontFamily: "'Space Grotesk'", fontSize: 18, fontWeight: '600', lineHeight: 24 },
+    bodyLg: { fontFamily: "'Inter'", fontSize: 18, fontWeight: '500', lineHeight: 28 },
+    body: { fontFamily: "'Inter'", fontSize: 16, fontWeight: '400', lineHeight: 24 },
+    bodySm: { fontFamily: "'Inter'", fontSize: 14, fontWeight: '400', lineHeight: 20 },
+    caption: { fontFamily: "'Inter'", fontSize: 12, fontWeight: '500', lineHeight: 17 },
+    monoSm: { fontFamily: "'JetBrains Mono'", fontSize: 12, fontWeight: '500', lineHeight: 17 },
   },
   nbTypography: {
     fontWeight: { bold: '700' },

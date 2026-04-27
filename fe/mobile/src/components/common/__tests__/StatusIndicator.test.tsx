@@ -258,7 +258,7 @@ describe('StatusIndicator', () => {
       expect(circle.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            backgroundColor: '#90EE90', // nbColors.success
+            backgroundColor: '#7FBC8C', // nbColors.success (Phase 3 M1-R token)
           }),
         ])
       );
