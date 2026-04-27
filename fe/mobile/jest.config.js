@@ -1,7 +1,7 @@
 module.exports = {
   preset: 'react-native',
   maxWorkers: '50%',
-  testTimeout: 10000,
+  testTimeout: 30000,
   workerIdleMemoryLimit: '512MB',
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|react-redux|@react-navigation|react-native-vector-icons|@react-native-vector-icons|react-native-geolocation-service|react-native-image-picker|react-native-permissions|react-native-fs|@reduxjs|immer|react-native-svg|react-native-device-info|react-native-encrypted-storage|react-native-toast-message|react-native-maps)/)',

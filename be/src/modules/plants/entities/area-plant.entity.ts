@@ -1,8 +1,9 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
 import { Area } from '../../areas/entities/area.entity';
 import { PlantSpecies } from './plant-species.entity';
 
 @Entity('area_plants')
+@Unique('uq_area_plants_area_species', ['areaId', 'speciesId'])
 export class AreaPlant {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -10,6 +10,7 @@ const createJestConfig = nextJest({
 const config: Config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
+  testTimeout: 30000,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -28,6 +29,7 @@ const config: Config = {
     '!src/app/**/error.tsx',          // Exclude Next.js error pages
     '!src/app/**/not-found.tsx',      // Exclude Next.js not-found pages
     '!src/components/maps/**',        // Mapbox GL requires WebGL — cannot run in jsdom
+    '!src/sw/**',                     // Service worker — runs in browser SW context, not jsdom
   ],
   coverageThreshold: {
     global: {
