@@ -3,7 +3,6 @@ import { config } from 'dotenv';
 import {
   seedPhase3Reference,
   seedPhase3ServiceCapacity,
-  seedPhase3SampleData,
 } from './seed-phase3';
 
 config();
@@ -12,23 +11,35 @@ config();
  * Staging / UAT Seed Script
  *
  * DESTRUCTIVE — wipes all tables first, then seeds clean UAT data.
- * Scoped to Rayon Pusat only. Zero transaction data (no shifts, activities,
- * tasks, overtimes, location_logs, schedules) — testing starts from scratch.
+ * Scoped to Rayon Pusat only.
+ *
+ * Policy: ESSENTIALS-ONLY. Staging carries reference data + users + the
+ * minimum structural rows the app needs to boot (areas, user_areas,
+ * area_staff_requirements, service_capacity grid). It does NOT carry
+ * dummy transaction or sample workflow data — UAT testers create their
+ * own pruning_requests, area_plants, plant_seeds, etc., mirroring how
+ * production starts.
  *
  * Reference data seeded:
- *   - 4  area types       (park, pedestrian, mini_garden, street)
- *   - 3  shift definitions (SHIFT1/2/3)
- *   - 7  rayons            (all Surabaya sectors; only Pusat has areas)
- *   - 20 activity types
- *   - 4  special day overrides
- *   - 5  monitoring configs
+ *   - 4   area types       (park, pedestrian, mini_garden, street)
+ *   - 3   shift definitions (SHIFT1/2/3)
+ *   - 7   rayons            (all Surabaya sectors; only Pusat has areas)
+ *   - 20  activity types
+ *   - 4   special day overrides
+ *   - 5+4 monitoring configs (Phase 2D + Phase 3)
+ *   - 128 plant_species     (Phase 3 reference catalog)
+ *   - service_capacity grid (7 rayons × 12 ISO weeks × pruning, units=5)
  *
- * UAT data seeded:
+ * UAT structural data seeded (NOT transaction data):
  *   - 13 areas  (1 Taman Bungkul + 12 Kawasan Darmo pedestrian, from KMZ)
- *   - 23 users  (13 test + 10 real)
+ *   - 24 users  (14 test + 10 real, incl. staff_kec_pusat)
  *   - user_areas assignments (permanent)
  *   - user_tracking_status  (all offline — testing starts clean)
  *   - area_staff_requirements (1 satgas + 1 linmas per area, SHIFT1/WEEKDAY)
+ *
+ * Empty tables (UAT writes its own rows):
+ *   - shifts, activities, tasks, overtimes, location_logs, schedules
+ *   - area_plants, notable_plants, pruning_requests, plant_seeds, seed_transactions
  *
  * Run: npm run db:seed:staging
  *
@@ -794,10 +805,16 @@ async function seedStaging() {
     if (phase3Check[0]?.exists) {
       console.log('\n🌳 Seeding Phase 3 reference data...');
       await seedPhase3Reference(queryRunner);
-      // Staging gets capacity_units=5 so testers can actually book pruning slots
+      // Staging gets capacity_units=5 so testers can actually book pruning slots.
+      // The capacity grid is a reference baseline (rayon × ISO week × pruning),
+      // not transaction data — empty cells would break the booking UI on day one.
       await seedPhase3ServiceCapacity(queryRunner, 5);
-      console.log('\n🌿 Seeding Phase 3 sample / UAT data...');
-      await seedPhase3SampleData(queryRunner);
+      // NOTE: `seedPhase3SampleData` deliberately NOT called for staging.
+      // Per project policy, the staging seed should contain only essentials
+      // (reference data + users) — no dummy area_plants, notable_plants,
+      // pruning_requests, plant_seeds, or seed_transactions. UAT testers
+      // start from an empty state and create their own data, mirroring how
+      // production starts. Sample/dummy rows live in `db:seed:phase3` (dev only).
     } else {
       console.log('\n⚠️  Phase 3 tables not found — skipping Phase 3 seed.');
       console.log('   Run `npm run migration:run` first, then re-run the seeder.');
@@ -825,15 +842,15 @@ async function seedStaging() {
     console.log(`  ${clockable_count} users  — user_tracking_status: offline (clean start for UAT)`);
     console.log('  26 reqs      — area_staff_requirements: 13 areas × satgas + linmas (SHIFT1/WEEKDAY)');
     console.log('');
-    console.log('  Phase 3 UAT Data');
+    console.log('  Phase 3 Reference Data');
     console.log('  ─────────────────────────────────────────────────────────────────────────────────');
-    console.log('  area_plants       — up to 6 areas × 5 species inventory');
-    console.log('  pruning_requests  — 6 sample (submitted×2 / approved / rejected / converted / in_progress, with photo_urls)');
-    console.log('  plant_seeds       — 5 species (AKASIA/MAHONI/BUNGUR/SENGON/JATI seeds)');
-    console.log('  seed_transactions — initial purchases (qty matches stock_qty)');
+    console.log('  service_capacity  — 7 rayons × 12 ISO weeks × pruning (capacity_units=5)');
+    console.log('  ');
+    console.log('  Phase 3 transaction tables are EMPTY by design (essentials-only policy):');
+    console.log('  0 area_plants · 0 notable_plants · 0 pruning_requests · 0 plant_seeds · 0 seed_transactions');
     console.log('');
     console.log('  0 shifts · 0 activities · 0 tasks · 0 overtimes · 0 location_logs');
-    console.log('  → Transaction tables are empty — testing starts from scratch ✓');
+    console.log('  → All transaction tables are empty — UAT starts from scratch ✓');
     console.log('');
     console.log('  ── TEST USERS (all: password123) ─────────────────────────────────────────────────');
     console.log('  superadmin         superadmin           081200000010');
