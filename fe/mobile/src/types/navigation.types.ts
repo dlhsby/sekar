@@ -41,6 +41,9 @@ export type MainTabParamList = {
   // Pruning Requests (admin_data flow)
   PruningReviewQueue: undefined;
   PruningDetail: { requestId: string; adminMode?: boolean };
+  // Phase 3 Apr 27 — staff_kecamatan tab + redesigned submit form
+  Perantingan: undefined;            // visible tab — staff_kecamatan list
+  PerantinganSubmit: undefined;      // hidden stack — redesigned scrollable form
 };
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> =

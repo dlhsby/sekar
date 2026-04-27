@@ -355,13 +355,71 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                 color={nbColors.black}
               />
               <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                Estimasi Jumlah Pohon
+                Jumlah Pohon
               </NBText>
             </View>
             <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-              {request.estimatedPlantCount} pohon
+              {(request.treeCount ?? request.estimatedPlantCount ?? '—')}{' '}pohon
             </NBText>
           </View>
+
+          {request.treeHeightEstimate ? (
+            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
+              <View style={styles.fieldLabel}>
+                <MaterialCommunityIcons name="ruler" size={20} color={nbColors.black} />
+                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
+                  Tinggi (Perkiraan)
+                </NBText>
+              </View>
+              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
+                {request.treeHeightEstimate}
+              </NBText>
+            </View>
+          ) : null}
+
+          {request.treeDiameterEstimate ? (
+            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
+              <View style={styles.fieldLabel}>
+                <MaterialCommunityIcons name="circle-outline" size={20} color={nbColors.black} />
+                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
+                  Diameter (Perkiraan)
+                </NBText>
+              </View>
+              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
+                {request.treeDiameterEstimate}
+              </NBText>
+            </View>
+          ) : null}
+
+          {(request.requesterName || request.requesterPhone) ? (
+            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
+              <View style={styles.fieldLabel}>
+                <MaterialCommunityIcons name="account" size={20} color={nbColors.black} />
+                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
+                  Pemohon
+                </NBText>
+              </View>
+              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
+                {request.requesterName ?? '—'}
+                {request.requesterPhone ? ` · ${request.requesterPhone}` : ''}
+              </NBText>
+            </View>
+          ) : null}
+
+          {(request.rtLeaderName || request.rtLeaderPhone) ? (
+            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
+              <View style={styles.fieldLabel}>
+                <MaterialCommunityIcons name="account-tie" size={20} color={nbColors.black} />
+                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
+                  Ketua RT
+                </NBText>
+              </View>
+              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
+                {request.rtLeaderName ?? '—'}
+                {request.rtLeaderPhone ? ` · ${request.rtLeaderPhone}` : ''}
+              </NBText>
+            </View>
+          ) : null}
 
           {request.notes && (
             <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>

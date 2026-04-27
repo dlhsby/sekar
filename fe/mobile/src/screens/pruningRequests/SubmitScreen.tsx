@@ -1,773 +1,652 @@
 /**
- * Pruning Request Submit Screen
- * 5-step wizard for staff_kecamatan to submit pruning requests
- * Phase 3 sub-phase 3-10
+ * Submit Pruning Request Screen — staff_kecamatan redesigned form.
+ * Phase 3 Apr 27 redesign: replaces the previous 5-step wizard with a single
+ * scrollable card-based form, mirroring TaskCreateScreen's visual rhythm.
  *
- * Wizard flow:
- * 1. Address + GPS auto-capture
- * 2. Photos 3..5
- * 3. Detail (expected date + target count)
- * 4. Preview (read-only summary)
- * 5. Success (reference code)
+ * Cards rendered top-to-bottom:
+ *   1. Lokasi — auto-fetched GPS (with refresh button), preset rayon + kecamatan
+ *      from the logged-in user profile, free-text street address.
+ *   2. Foto — camera + gallery, min 1 max 5.
+ *   3. Detail Pohon — jumlah pohon (number), tinggi pohon (free text),
+ *      diameter pohon (free text).
+ *   4. Kontak — pemohon name + phone, ketua RT name + phone (all free text).
+ *   5. Catatan (optional) — free-text notes for the admin reviewer.
+ *
+ * On submit the mobile validates that GPS, ≥1 photo, address, and tree_count are
+ * present and dispatches `submitPruningRequest`. The backend auto-derives
+ * kecamatan_name + rayon_id from the submitter's profile.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
-  ActivityIndicator,
+  TouchableOpacity,
+  Image,
   Alert,
-  Keyboard,
+  ActivityIndicator,
+  Platform,
+  Linking,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Geolocation from 'react-native-geolocation-service';
-import NetInfo from '@react-native-community/netinfo';
-import { nbColors, nbSpacing, nbShadows, nbBorders, nbBorderRadius, nbTypography } from '../../constants/nbTokens';
-import { NBButton, NBCard, NBCardContent, NBCardHeader, NBCardTextInput, NBAlert, NBDatePicker } from '../../components/nb';
-import { PhotoUploader } from '../../components/common';
+
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   submitPruningRequest,
-  updateDraft,
-  setDraft,
-  clearDraft,
   clearError,
 } from '../../store/slices/pruningRequestsSlice';
-import { addToQueue } from '../../services/sync/offlineQueue';
-import * as mediaService from '../../services/media/mediaService';
-import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import type { MainTabScreenProps } from '../../types/navigation.types';
+import {
+  NBCard,
+  NBCardContent,
+  NBCardHeader,
+  NBTextInput,
+  NBButton,
+  NBAlert,
+  NBBackgroundPattern,
+} from '../../components/nb';
+import { NBText } from '../../components/nb/NBText';
+import { mediaService, type Photo } from '../../services/media/mediaService';
+import {
+  requestLocationPermission,
+  requestCameraPermission,
+} from '../../services/permissions/permissionService';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorders,
+  nbBorderRadius,
+} from '../../constants/nbTokens';
 
-type SubmitScreenProps = MainTabScreenProps<'PruningSubmit'>;
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const STEP_TITLES = [
-  'Alamat & Lokasi',
-  'Foto (3-5)',
-  'Detail Pekerjaan',
-  'Pratinjau',
-  'Berhasil',
-];
+const MIN_PHOTOS = 1;
+const MAX_PHOTOS = 5;
 
-const STEP_DESCRIPTIONS = [
-  'Masukkan alamat dan tangkap lokasi GPS Anda',
-  'Ambil atau pilih 3-5 foto area yang perlu pemangkasan',
-  'Atur tanggal kerja dan estimasi jumlah pohon',
-  'Periksa kembali data sebelum mengirim',
-  'Permohonan Anda telah dikirim',
-];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-enum WizardStep {
-  Address = 0,
-  Photos = 1,
-  Detail = 2,
-  Preview = 3,
-  Success = 4,
+function digitsOnly(s: string): string {
+  return s.replace(/\D/g, '');
 }
 
-export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Element {
-  const dispatch = useAppDispatch();
-  const { draft, isSubmitting, submitStatus, error } = useAppSelector((state) => state.pruningRequests);
-  const { isOnline } = useNetworkStatus();
-  const [step, setStep] = useState<WizardStep>(WizardStep.Address);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [referenceCode, setReferenceCode] = useState<string | null>(null);
-  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
-  // Initialize draft on mount if not present
-  useEffect(() => {
-    if (!draft) {
-      dispatch(
-        setDraft({
-          address: '',
-          lat: null,
-          lng: null,
-          detail_date: null,
-          target_count: 0,
-          photo_keys: [],
-          notes: '',
-        }),
+export function SubmitScreen(): React.JSX.Element {
+  const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+
+  const user = useAppSelector((state) => state.auth.user);
+  const { isSubmitting, submitStatus, error: pruningError } = useAppSelector(
+    (state) => state.pruningRequests,
+  );
+
+  // ── Form state ──────────────────────────────────────────────────────────
+  const [address, setAddress] = useState('');
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [treeCount, setTreeCount] = useState('');
+  const [treeHeight, setTreeHeight] = useState('');
+  const [treeDiameter, setTreeDiameter] = useState('');
+  const [requesterName, setRequesterName] = useState('');
+  const [requesterPhone, setRequesterPhone] = useState('');
+  const [rtLeaderName, setRtLeaderName] = useState('');
+  const [rtLeaderPhone, setRtLeaderPhone] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const [gpsLat, setGpsLat] = useState<number | null>(null);
+  const [gpsLng, setGpsLng] = useState<number | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const rayonName = user?.rayon?.name ?? null;
+  const kecamatanName = user?.kecamatan_name ?? null;
+
+  // ── GPS capture ─────────────────────────────────────────────────────────
+  const captureLocation = useCallback(async () => {
+    setGpsLoading(true);
+    setGpsError(null);
+    try {
+      const perm = await requestLocationPermission();
+      if (perm.status !== 'granted') {
+        setGpsError(
+          'Izin lokasi ditolak. Aktifkan izin lokasi di Pengaturan untuk menangkap koordinat GPS otomatis.',
+        );
+        setGpsLoading(false);
+        return;
+      }
+      Geolocation.getCurrentPosition(
+        (pos) => {
+          setGpsLat(pos.coords.latitude);
+          setGpsLng(pos.coords.longitude);
+          setGpsAccuracy(pos.coords.accuracy);
+          setGpsLoading(false);
+        },
+        (err) => {
+          setGpsError(`Gagal mendapatkan lokasi: ${err.message}`);
+          setGpsLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
       );
+    } catch (e) {
+      setGpsError(e instanceof Error ? e.message : 'Gagal menangkap lokasi GPS');
+      setGpsLoading(false);
     }
   }, []);
 
-  // Scroll to top when step changes
+  // Auto-capture on mount.
   useEffect(() => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  }, [step]);
+    void captureLocation();
+  }, [captureLocation]);
 
-  // Handle GPS capture
-  const captureLocation = useCallback(() => {
-    setIsLoadingLocation(true);
-    Geolocation.getCurrentPosition(
-      (position) => {
-        dispatch(
-          updateDraft({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          }),
-        );
-        setIsLoadingLocation(false);
-        Alert.alert('Lokasi Tertangkap', `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}`);
-      },
-      (error) => {
-        setIsLoadingLocation(false);
-        Alert.alert('Kesalahan', `Tidak dapat mengambil lokasi: ${error.message}`);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
-    );
-  }, [dispatch]);
-
-  // Handle photo selection
-  const addPhotos = useCallback(async () => {
+  // ── Photo capture ───────────────────────────────────────────────────────
+  const handlePickFromCamera = useCallback(async () => {
+    if (photos.length >= MAX_PHOTOS) {
+      Alert.alert('Batas foto', `Maksimal ${MAX_PHOTOS} foto.`);
+      return;
+    }
+    const perm = await requestCameraPermission();
+    if (perm.status !== 'granted') {
+      Alert.alert(
+        'Izin kamera ditolak',
+        'Aktifkan izin kamera di Pengaturan untuk mengambil foto.',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Pengaturan', onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
     try {
-      Keyboard.dismiss();
-      const newPhotos = await mediaService.pickFromGallery(5);
+      const photo = await mediaService.capturePhoto();
+      if (photo) {
+        setPhotos((prev) => [...prev, photo]);
+      }
+    } catch (e) {
+      Alert.alert('Gagal mengambil foto', e instanceof Error ? e.message : 'Unknown error');
+    }
+  }, [photos.length]);
+
+  const handlePickFromGallery = useCallback(async () => {
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) {
+      Alert.alert('Batas foto', `Maksimal ${MAX_PHOTOS} foto.`);
+      return;
+    }
+    try {
+      const newPhotos = await mediaService.pickFromGallery(remaining);
       if (newPhotos.length > 0) {
-        // In real implementation, upload to S3 and get keys
-        // For now, use photo URIs as temporary keys
-        const photoKeys = newPhotos.map((photo) => photo.uri);
-        dispatch(
-          updateDraft({
-            photo_keys: [...(draft?.photo_keys || []), ...photoKeys],
-          }),
-        );
+        setPhotos((prev) => [...prev, ...newPhotos].slice(0, MAX_PHOTOS));
       }
-    } catch (err) {
-      Alert.alert('Kesalahan', `Gagal memilih foto: ${err instanceof Error ? err.message : 'Tidak diketahui'}`);
+    } catch (e) {
+      Alert.alert('Gagal memilih foto', e instanceof Error ? e.message : 'Unknown error');
     }
-  }, [dispatch, draft]);
+  }, [photos.length]);
 
-  // Handle photo removal
-  const removePhoto = useCallback(
-    (index: number) => {
-      if (!draft) return;
-      const updated = draft.photo_keys.filter((_, i) => i !== index);
-      dispatch(updateDraft({ photo_keys: updated }));
-    },
-    [dispatch, draft],
-  );
+  const handleRemovePhoto = useCallback((idx: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
 
-  // Handle date change (called by NBDatePicker)
-  const handleDateChange = useCallback(
-    (date: Date) => {
-      const isoDate = date.toISOString().split('T')[0];
-      dispatch(updateDraft({ detail_date: isoDate }));
-    },
-    [dispatch],
-  );
-
-  // Validate step before proceeding
-  const validateStep = useCallback((): boolean => {
-    if (!draft) return false;
-
-    switch (step) {
-      case WizardStep.Address:
-        return draft.address.trim().length > 0 && draft.lat !== null && draft.lng !== null;
-      case WizardStep.Photos:
-        return draft.photo_keys.length >= 3 && draft.photo_keys.length <= 5;
-      case WizardStep.Detail:
-        return draft.detail_date !== null && draft.target_count > 0;
-      case WizardStep.Preview:
-        return true;
-      default:
-        return false;
+  // ── Submit ──────────────────────────────────────────────────────────────
+  const validate = useCallback((): string | null => {
+    if (!address.trim()) {
+      return 'Alamat (jalan) wajib diisi.';
     }
-  }, [draft, step]);
-
-  // Handle next button
-  const handleNext = useCallback(() => {
-    if (!validateStep()) {
-      Alert.alert('Validasi', 'Silakan isi semua field yang diperlukan');
-      return;
+    if (gpsLat == null || gpsLng == null) {
+      return 'Koordinat GPS belum terdeteksi. Tekan tombol perbarui pada kartu Lokasi.';
     }
-    if (step < WizardStep.Preview) {
-      setStep(step + 1);
-    } else if (step === WizardStep.Preview) {
-      // Submit request
-      handleSubmit();
+    if (photos.length < MIN_PHOTOS) {
+      return `Minimal ${MIN_PHOTOS} foto diperlukan.`;
     }
-  }, [step, validateStep]);
+    const tc = parseInt(treeCount, 10);
+    if (!treeCount || isNaN(tc) || tc < 1) {
+      return 'Jumlah pohon harus diisi dengan angka minimal 1.';
+    }
+    if (!treeHeight.trim()) {
+      return 'Tinggi pohon (perkiraan) wajib diisi.';
+    }
+    if (!treeDiameter.trim()) {
+      return 'Diameter pohon (perkiraan) wajib diisi.';
+    }
+    if (!requesterName.trim() || !requesterPhone.trim()) {
+      return 'Nama dan nomor HP pemohon wajib diisi.';
+    }
+    if (!rtLeaderName.trim() || !rtLeaderPhone.trim()) {
+      return 'Nama dan nomor HP ketua RT wajib diisi.';
+    }
+    return null;
+  }, [address, gpsLat, gpsLng, photos.length, treeCount, treeHeight, treeDiameter, requesterName, requesterPhone, rtLeaderName, rtLeaderPhone]);
 
-  // Handle submit
   const handleSubmit = useCallback(async () => {
-    if (!draft || !validateStep()) {
-      Alert.alert('Kesalahan', 'Data tidak valid');
+    setValidationError(null);
+    dispatch(clearError());
+
+    const errMsg = validate();
+    if (errMsg) {
+      setValidationError(errMsg);
       return;
     }
 
-    if (isSubmittingRequest) {
-      return;
-    }
-
-    setIsSubmittingRequest(true);
+    setSubmitting(true);
     try {
-      // Re-check network status before submit
-      const netInfo = await NetInfo.fetch();
-      const currentlyOnline = Boolean(netInfo.isConnected && netInfo.isInternetReachable);
+      // S3 upload pipeline lands in Phase 4 polish — for now we send the local
+      // device URIs as the photo_keys; the backend stores them as-is in the
+      // text[] photo_urls column. Existing seeded rows already use placehold.co
+      // URLs the same way, so MyRequestsScreen / RequestDetailScreen render them
+      // identically.
+      const photoKeys: string[] = photos.map((p) => p.uri);
+      const tc = parseInt(treeCount, 10);
+      await dispatch(
+        submitPruningRequest({
+          address: address.trim(),
+          lat: gpsLat as number,
+          lng: gpsLng as number,
+          photo_keys: photoKeys,
+          tree_count: tc,
+          target_count: tc,
+          tree_height_estimate: treeHeight.trim(),
+          tree_diameter_estimate: treeDiameter.trim(),
+          requester_name: requesterName.trim(),
+          requester_phone: digitsOnly(requesterPhone),
+          rt_leader_name: rtLeaderName.trim(),
+          rt_leader_phone: digitsOnly(rtLeaderPhone),
+          notes: notes.trim() || undefined,
+        }),
+      ).unwrap();
 
-      if (currentlyOnline) {
-        // Submit immediately
-        const result = await dispatch(
-          submitPruningRequest({
-            address: draft.address,
-            lat: draft.lat!,
-            lng: draft.lng!,
-            detail_date: draft.detail_date!,
-            target_count: draft.target_count,
-            photo_keys: draft.photo_keys,
-            notes: draft.notes || undefined,
-          }),
-        ).unwrap();
-
-        setReferenceCode(result.referenceCode);
-        setStep(WizardStep.Success);
-      } else {
-        // Queue for offline sync
-        const queueId = await addToQueue('pruning_request.submit', {
-          address: draft.address,
-          lat: draft.lat,
-          lng: draft.lng,
-          detail_date: draft.detail_date,
-          target_count: draft.target_count,
-          photo_keys: draft.photo_keys,
-          notes: draft.notes || undefined,
-        });
-
-        Alert.alert(
-          'Tersimpan Offline',
-          `Permohonan Anda disimpan. Akan dikirim saat terhubung internet.\n\nNo: ${queueId.substring(0, 8)}...`,
-        );
-        setReferenceCode(queueId);
-        setStep(WizardStep.Success);
-      }
-    } catch (err) {
-      Alert.alert('Kesalahan', `Gagal mengirim permohonan: ${err instanceof Error ? err.message : 'Tidak diketahui'}`);
+      Alert.alert(
+        'Permohonan terkirim',
+        'Permohonan pemangkasan berhasil dikirim. Anda akan diberitahu setelah ditinjau.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate('Perantingan');
+            },
+          },
+        ],
+      );
+    } catch (e) {
+      setValidationError(
+        e instanceof Error ? e.message : 'Gagal mengirim permohonan. Coba lagi.',
+      );
     } finally {
-      setIsSubmittingRequest(false);
+      setSubmitting(false);
     }
-  }, [draft, validateStep, dispatch]);
+  }, [
+    validate, photos, dispatch, address, gpsLat, gpsLng, treeCount, treeHeight,
+    treeDiameter, requesterName, requesterPhone, rtLeaderName, rtLeaderPhone,
+    notes, navigation,
+  ]);
 
-  // Handle back button
-  const handleBack = useCallback(() => {
-    if (step === WizardStep.Success) {
-      // Reset and go back to step 0
-      dispatch(clearDraft());
-      setStep(WizardStep.Address);
-      setReferenceCode(null);
-    } else if (step > WizardStep.Address) {
-      setStep(step - 1);
-    }
-  }, [step, dispatch]);
+  const isBusy = submitting || isSubmitting;
 
-  if (!draft) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: nbColors.bgCanvas }]}>
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={nbColors.black} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: nbColors.bgCanvas }]}>
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header with step indicator */}
-        <View style={styles.header}>
-          <Text style={[nbTypography.h3, { color: nbColors.black }]}>
-            {STEP_TITLES[step]}
-          </Text>
-          <Text style={[nbTypography['body-sm'], { color: nbColors.gray600, marginTop: nbSpacing.xs }]}>
-            Langkah {step + 1} dari {STEP_TITLES.length}
-          </Text>
-        </View>
+    <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <NBBackgroundPattern>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Lokasi ─────────────────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <NBText variant="h3">Lokasi</NBText>
+            </NBCardHeader>
+            <NBCardContent>
+              {/* Rayon + Kecamatan presets */}
+              <View style={styles.presetRow}>
+                <View style={styles.presetItem}>
+                  <NBText variant="caption" style={styles.presetLabel}>Rayon</NBText>
+                  <NBText variant="body">{rayonName ?? '—'}</NBText>
+                </View>
+                <View style={styles.presetItem}>
+                  <NBText variant="caption" style={styles.presetLabel}>Kecamatan</NBText>
+                  <NBText variant="body">{kecamatanName ?? '—'}</NBText>
+                </View>
+              </View>
 
-        {/* Progress indicator */}
-        <View style={styles.progressContainer}>
-          {STEP_TITLES.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.progressDot,
-                {
-                  backgroundColor: index <= step ? nbColors.primary : nbColors.gray300,
-                },
-              ]}
+              {/* Street free text */}
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Jalan / Alamat Lengkap"
+                  placeholder="Contoh: Jl. Raya Darmo No. 123"
+                  value={address}
+                  onChangeText={setAddress}
+                  multiline
+                  numberOfLines={2}
+                />
+              </View>
+
+              {/* GPS auto-capture display + refresh */}
+              <View style={styles.gpsRow}>
+                <View style={styles.gpsValues}>
+                  <NBText variant="caption" style={styles.presetLabel}>Koordinat GPS</NBText>
+                  {gpsLat != null && gpsLng != null ? (
+                    <NBText variant="body-sm">{gpsLat.toFixed(6)}, {gpsLng.toFixed(6)}
+                      {gpsAccuracy ? ` (±${Math.round(gpsAccuracy)} m)` : ''}</NBText>
+                  ) : (
+                    <NBText variant="body-sm" style={{ color: nbColors.gray600 }}>{gpsLoading ? 'Mendeteksi…' : 'Belum tersedia'}</NBText>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={captureLocation}
+                  disabled={gpsLoading}
+                  style={styles.gpsRefresh}
+                  accessibilityRole="button"
+                  accessibilityLabel="Perbarui lokasi GPS"
+                >
+                  {gpsLoading ? (
+                    <ActivityIndicator size="small" color={nbColors.black} />
+                  ) : (
+                    <MaterialCommunityIcons name="refresh" size={22} color={nbColors.black} />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {gpsError ? (
+                <NBText variant="body-sm" style={{ color: nbColors.danger, marginTop: nbSpacing[2] }}>
+                  {gpsError}
+                </NBText>
+              ) : null}
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Foto ───────────────────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <NBText variant="h3">Foto Pohon</NBText>
+              <NBText variant="body-sm" style={styles.helper}>Minimal {MIN_PHOTOS}, maksimal {MAX_PHOTOS} foto.</NBText>
+            </NBCardHeader>
+            <NBCardContent>
+              {photos.length > 0 ? (
+                <View style={styles.photoGrid}>
+                  {photos.map((p, idx) => (
+                    <View key={`${p.uri}-${idx}`} style={styles.photoWrap}>
+                      <Image source={{ uri: p.uri }} style={styles.photo} />
+                      <TouchableOpacity
+                        onPress={() => handleRemovePhoto(idx)}
+                        style={styles.photoRemove}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Hapus foto ${idx + 1}`}
+                      >
+                        <MaterialCommunityIcons name="close" size={16} color={nbColors.white} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <NBText variant="body-sm" style={{ color: nbColors.gray600, marginBottom: nbSpacing[3] }}>
+                  Belum ada foto. Ambil dari kamera atau pilih dari galeri.
+                </NBText>
+              )}
+
+              <View style={styles.photoActions}>
+                <NBButton
+                  label="Kamera"
+                  leftIcon="camera"
+                  variant="secondary"
+                  onPress={handlePickFromCamera}
+                  disabled={photos.length >= MAX_PHOTOS || isBusy}
+                  style={{ flex: 1 }}
+                />
+                <NBButton
+                  label="Galeri"
+                  leftIcon="image-multiple"
+                  variant="secondary"
+                  onPress={handlePickFromGallery}
+                  disabled={photos.length >= MAX_PHOTOS || isBusy}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Detail Pohon ───────────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <NBText variant="h3">Detail Pohon</NBText>
+            </NBCardHeader>
+            <NBCardContent>
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Jumlah Pohon"
+                  placeholder="Contoh: 3"
+                  value={treeCount}
+                  onChangeText={(v) => setTreeCount(digitsOnly(v))}
+                  keyboardType="number-pad"
+                />
+              </View>
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Tinggi Pohon (Perkiraan)"
+                  placeholder="Contoh: 5-7 meter"
+                  value={treeHeight}
+                  onChangeText={setTreeHeight}
+                />
+              </View>
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Diameter Pohon (Perkiraan)"
+                  placeholder="Contoh: 30-50 cm"
+                  value={treeDiameter}
+                  onChangeText={setTreeDiameter}
+                />
+              </View>
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Kontak ─────────────────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <NBText variant="h3">Kontak</NBText>
+              <NBText variant="body-sm" style={styles.helper}>Pemohon dan ketua RT setempat (untuk verifikasi lapangan).</NBText>
+            </NBCardHeader>
+            <NBCardContent>
+              <NBText variant="body-sm" style={styles.subHeading}>Pemohon</NBText>
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Nama Pemohon"
+                  placeholder="Nama lengkap"
+                  value={requesterName}
+                  onChangeText={setRequesterName}
+                />
+              </View>
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Nomor HP Pemohon"
+                  placeholder="08xxxxxxxxxx"
+                  value={requesterPhone}
+                  onChangeText={(v) => setRequesterPhone(digitsOnly(v))}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.divider} />
+
+              <NBText variant="body-sm" style={styles.subHeading}>Ketua RT</NBText>
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Nama Ketua RT"
+                  placeholder="Nama lengkap"
+                  value={rtLeaderName}
+                  onChangeText={setRtLeaderName}
+                />
+              </View>
+              <View style={styles.fieldGroup}>
+                <NBTextInput
+                  label="Nomor HP Ketua RT"
+                  placeholder="08xxxxxxxxxx"
+                  value={rtLeaderPhone}
+                  onChangeText={(v) => setRtLeaderPhone(digitsOnly(v))}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Catatan ────────────────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <NBText variant="h3">Catatan (Opsional)</NBText>
+            </NBCardHeader>
+            <NBCardContent>
+              <NBTextInput
+                placeholder="Catatan tambahan untuk admin reviewer"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={3}
+              />
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Validation / API errors ─────────────────────────────── */}
+          {validationError ? (
+            <View style={styles.errorWrap}>
+              <NBAlert variant="danger" title="Periksa kembali" message={validationError} />
+            </View>
+          ) : null}
+          {pruningError && !validationError ? (
+            <View style={styles.errorWrap}>
+              <NBAlert variant="danger" title="Gagal mengirim permohonan" message={pruningError} />
+            </View>
+          ) : null}
+
+          {/* ── Submit ─────────────────────────────────────────────── */}
+          <View style={styles.submitWrap}>
+            <NBButton
+              label={isBusy ? 'Mengirim…' : 'Kirim Permohonan'}
+              leftIcon="send"
+              variant="primary"
+              onPress={handleSubmit}
+              disabled={isBusy}
+              loading={isBusy}
+              testID="perantingan-submit-cta"
             />
-          ))}
-        </View>
-
-        {/* Error alert */}
-        {error && (
-          <NBAlert
-            type="error"
-            message={error}
-            onDismiss={() => dispatch(clearError())}
-          />
-        )}
-
-        {/* Step content */}
-        {step === WizardStep.Address && (
-          <StepAddressContent
-            draft={draft}
-            isLoadingLocation={isLoadingLocation}
-            onAddressChange={(address) => dispatch(updateDraft({ address }))}
-            onCaptureLocation={captureLocation}
-          />
-        )}
-
-        {step === WizardStep.Photos && (
-          <StepPhotosContent
-            photoCount={draft.photo_keys.length}
-            onAddPhotos={addPhotos}
-            onRemovePhoto={removePhoto}
-          />
-        )}
-
-        {step === WizardStep.Detail && (
-          <StepDetailContent
-            draft={draft}
-            onDateChange={handleDateChange}
-            onTargetCountChange={(count) => dispatch(updateDraft({ target_count: count }))}
-            onNotesChange={(notes) => dispatch(updateDraft({ notes }))}
-          />
-        )}
-
-        {step === WizardStep.Preview && (
-          <StepPreviewContent draft={draft} photoCount={draft.photo_keys.length} />
-        )}
-
-        {step === WizardStep.Success && (
-          <StepSuccessContent referenceCode={referenceCode || 'PENDING'} />
-        )}
-
-      </ScrollView>
-
-      {/* Action buttons */}
-      <View style={styles.actionContainer}>
-        <NBButton
-          variant="outline"
-          onPress={handleBack}
-          disabled={isSubmitting}
-          style={styles.backButton}
-        >
-          {step === WizardStep.Success ? 'Mulai Ulang' : 'Kembali'}
-        </NBButton>
-        <NBButton
-          variant="primary"
-          onPress={handleNext}
-          disabled={isSubmitting || isSubmittingRequest || (step !== WizardStep.Success && !validateStep())}
-          style={styles.nextButton}
-        >
-          {isSubmitting || isSubmittingRequest ? (
-            <ActivityIndicator size="small" color={nbColors.white} />
-          ) : step === WizardStep.Preview ? (
-            'Kirim'
-          ) : step === WizardStep.Success ? (
-            'Selesai'
-          ) : (
-            'Lanjut'
-          )}
-        </NBButton>
-      </View>
+          </View>
+        </ScrollView>
+      </NBBackgroundPattern>
     </SafeAreaView>
   );
 }
 
-/**
- * Step 1: Address & Location
- */
-function StepAddressContent({
-  draft,
-  isLoadingLocation,
-  onAddressChange,
-  onCaptureLocation,
-}: {
-  draft: any;
-  isLoadingLocation: boolean;
-  onAddressChange: (address: string) => void;
-  onCaptureLocation: () => void;
-}): React.JSX.Element {
-  return (
-    <View style={styles.stepContent}>
-      <NBCard>
-        <NBCardContent>
-          <NBCardTextInput
-            label="Alamat Lengkap"
-            placeholder="Jalan, kecamatan, kota"
-            value={draft.address}
-            onChangeText={onAddressChange}
-            multiline
-            numberOfLines={3}
-            accessibilityLabel="Masukkan alamat lengkap"
-            accessibilityHint="Masukkan jalan, kecamatan, dan kota"
-          />
-        </NBCardContent>
-      </NBCard>
-
-      <NBCard style={{ marginTop: nbSpacing.md }}>
-        <NBCardHeader>
-          <Text style={[nbTypography['body'], { color: nbColors.black }]}>Lokasi GPS</Text>
-        </NBCardHeader>
-        <NBCardContent>
-          {draft.lat && draft.lng ? (
-            <View>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
-                Lat: {draft.lat.toFixed(6)}
-              </Text>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
-                Lng: {draft.lng.toFixed(6)}
-              </Text>
-              <NBButton
-                variant="outline"
-                onPress={onCaptureLocation}
-                disabled={isLoadingLocation}
-                style={{ marginTop: nbSpacing.md }}
-              >
-                {isLoadingLocation ? (
-                  <ActivityIndicator size="small" color={nbColors.black} />
-                ) : (
-                  'Perbarui Lokasi'
-                )}
-              </NBButton>
-            </View>
-          ) : (
-            <View>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600, marginBottom: nbSpacing.md }]}>
-                Belum ada lokasi tertangkap
-              </Text>
-              <NBButton
-                variant="primary"
-                onPress={onCaptureLocation}
-                disabled={isLoadingLocation}
-              >
-                {isLoadingLocation ? (
-                  <ActivityIndicator size="small" color={nbColors.white} />
-                ) : (
-                  'Tangkap Lokasi GPS'
-                )}
-              </NBButton>
-            </View>
-          )}
-        </NBCardContent>
-      </NBCard>
-    </View>
-  );
-}
-
-/**
- * Step 2: Photos
- */
-function StepPhotosContent({
-  photoCount,
-  onAddPhotos,
-  onRemovePhoto,
-}: {
-  photoCount: number;
-  onAddPhotos: () => void;
-  onRemovePhoto: (index: number) => void;
-}): React.JSX.Element {
-  return (
-    <View style={styles.stepContent}>
-      <NBCard>
-        <NBCardContent>
-          <Text
-            style={[nbTypography['body-sm'], { color: nbColors.gray600, marginBottom: nbSpacing.md }]}
-          >
-            Pilih 3-5 foto ({photoCount}/5)
-          </Text>
-          <NBButton
-            variant="primary"
-            onPress={onAddPhotos}
-            disabled={photoCount >= 5}
-          >
-            Pilih Foto dari Galeri
-          </NBButton>
-          {photoCount === 0 && (
-            <Text
-              style={[
-                nbTypography['body-sm'],
-                { color: nbColors.danger, marginTop: nbSpacing.md },
-              ]}
-            >
-              Minimal 3 foto diperlukan
-            </Text>
-          )}
-        </NBCardContent>
-      </NBCard>
-
-      {photoCount > 0 && (
-        <Text
-          style={[
-            nbTypography['body-sm'],
-            { color: nbColors.gray600, marginTop: nbSpacing.md, marginBottom: nbSpacing.sm },
-          ]}
-        >
-          {photoCount} foto terpilih
-        </Text>
-      )}
-    </View>
-  );
-}
-
-/**
- * Step 3: Detail (Date & Count)
- */
-function StepDetailContent({
-  draft,
-  onDateChange,
-  onTargetCountChange,
-  onNotesChange,
-}: {
-  draft: any;
-  onDateChange: (date: Date) => void;
-  onTargetCountChange: (count: number) => void;
-  onNotesChange: (notes: string) => void;
-}): React.JSX.Element {
-  return (
-    <View style={styles.stepContent}>
-      <NBCard>
-        <NBCardContent>
-          <View style={{ marginBottom: nbSpacing.md }}>
-            <NBDatePicker
-              label="Tanggal Pekerjaan"
-              value={draft.detail_date ? new Date(draft.detail_date) : null}
-              onChange={onDateChange}
-              minimumDate={new Date()}
-              placeholder="Pilih Tanggal"
-            />
-          </View>
-
-          <NBCardTextInput
-            label="Estimasi Jumlah Pohon"
-            placeholder="0"
-            keyboardType="number-pad"
-            value={String(draft.target_count)}
-            onChangeText={(text) => onTargetCountChange(parseInt(text, 10) || 0)}
-            accessibilityLabel="Masukkan estimasi jumlah pohon"
-          />
-        </NBCardContent>
-      </NBCard>
-
-      <NBCard style={{ marginTop: nbSpacing.md }}>
-        <NBCardContent>
-          <NBCardTextInput
-            label="Catatan Tambahan (Opsional)"
-            placeholder="Informasi tambahan..."
-            value={draft.notes}
-            onChangeText={onNotesChange}
-            multiline
-            numberOfLines={3}
-          />
-        </NBCardContent>
-      </NBCard>
-    </View>
-  );
-}
-
-/**
- * Step 4: Preview
- */
-function StepPreviewContent({
-  draft,
-  photoCount,
-}: {
-  draft: any;
-  photoCount: number;
-}): React.JSX.Element {
-  return (
-    <View style={styles.stepContent}>
-      <NBCard>
-        <NBCardHeader>
-          <Text style={[nbTypography.h3, { color: nbColors.black }]}>Ringkasan</Text>
-        </NBCardHeader>
-        <NBCardContent>
-          <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>Alamat</Text>
-            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
-              {draft.address}
-            </Text>
-          </View>
-
-          <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
-              Lokasi GPS
-            </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
-              {draft.lat?.toFixed(6)}, {draft.lng?.toFixed(6)}
-            </Text>
-          </View>
-
-          <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
-              Tanggal Pekerjaan
-            </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
-              {new Date(draft.detail_date).toLocaleDateString('id-ID')}
-            </Text>
-          </View>
-
-          <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
-              Estimasi Pohon
-            </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
-              {draft.target_count} pohon
-            </Text>
-          </View>
-
-          <View>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
-              Foto
-            </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
-              {photoCount} foto
-            </Text>
-          </View>
-
-          {draft.notes && (
-            <View style={{ marginTop: nbSpacing.md }}>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
-                Catatan
-              </Text>
-              <Text style={[nbTypography['body'], { color: nbColors.black }]}>
-                {draft.notes}
-              </Text>
-            </View>
-          )}
-        </NBCardContent>
-      </NBCard>
-    </View>
-  );
-}
-
-/**
- * Step 5: Success
- */
-function StepSuccessContent({
-  referenceCode,
-}: {
-  referenceCode: string;
-}): React.JSX.Element {
-  return (
-    <View style={styles.stepContent}>
-      <NBCard>
-        <NBCardContent>
-          <View style={{ alignItems: 'center' }}>
-            <Text
-              style={[
-                nbTypography.display,
-                { color: nbColors.success, marginBottom: nbSpacing.md },
-              ]}
-            >
-              ✓
-            </Text>
-            <Text
-              style={[
-                nbTypography.h2,
-                { color: nbColors.black, marginBottom: nbSpacing.md },
-              ]}
-            >
-              Berhasil!
-            </Text>
-            <Text
-              style={[
-                nbTypography['body'],
-                { color: nbColors.gray600, textAlign: 'center', marginBottom: nbSpacing.lg },
-              ]}
-            >
-              Permohonan Anda telah dikirim dengan baik.
-            </Text>
-
-            <View
-              style={[
-                styles.referenceBox,
-                { borderColor: nbColors.gray['300'], backgroundColor: nbColors.gray['50'] },
-              ]}
-            >
-              <Text style={[nbTypography['caption'], { color: nbColors.gray600 }]}>
-                Kode Referensi
-              </Text>
-              <Text
-                style={[nbTypography['body-lg'], { color: nbColors.black, marginTop: nbSpacing.xs }]}
-              >
-                {referenceCode}
-              </Text>
-            </View>
-
-            <Text
-              style={[
-                nbTypography['body-sm'],
-                { color: nbColors.gray600, marginTop: nbSpacing.lg, textAlign: 'center' },
-              ]}
-            >
-              Tim kami akan meninjau permohonan Anda dalam 1-2 hari kerja.
-            </Text>
-          </View>
-        </NBCardContent>
-      </NBCard>
-    </View>
-  );
-}
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
+    backgroundColor: nbColors.bgCanvas,
   },
   scrollContent: {
-    paddingBottom: 120,
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.md,
+    padding: nbSpacing[4],
+    paddingBottom: nbSpacing[12],
   },
-  header: {
-    marginBottom: nbSpacing.lg,
+  card: {
+    marginBottom: nbSpacing[4],
   },
-  progressContainer: {
+  presetRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: nbSpacing.sm,
-    marginBottom: nbSpacing.lg,
+    gap: nbSpacing[3],
+    marginBottom: nbSpacing[3],
   },
-  progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  stepContent: {
-    marginBottom: nbSpacing.lg,
-  },
-  centerContent: {
+  presetItem: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  actionContainer: {
-    flexDirection: 'row',
-    gap: nbSpacing.md,
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
-    borderTopWidth: nbBorders.thin,
-    borderTopColor: nbColors.gray['300'],
-  },
-  backButton: {
-    flex: 1,
-  },
-  nextButton: {
-    flex: 1,
-  },
-  referenceBox: {
-    padding: nbSpacing.md,
-    borderRadius: nbBorderRadius.md,
+    padding: nbSpacing[3],
     borderWidth: nbBorders.base,
-    minWidth: 200,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.base,
+    backgroundColor: nbColors.bgSurface,
+  },
+  presetLabel: {
+    color: nbColors.gray600,
+    textTransform: 'uppercase',
+    marginBottom: nbSpacing[1],
+  },
+  fieldGroup: {
+    marginBottom: nbSpacing[3],
+  },
+  gpsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: nbSpacing[2],
+  },
+  gpsValues: {
+    flex: 1,
+  },
+  gpsRefresh: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.base,
+    backgroundColor: nbColors.white,
+    marginLeft: nbSpacing[2],
+  },
+  helper: {
+    color: nbColors.gray600,
+    marginTop: nbSpacing[1],
+  },
+  subHeading: {
+    color: nbColors.black,
+    fontWeight: nbTypography.fontWeight.semibold,
+    marginTop: nbSpacing[2],
+    marginBottom: nbSpacing[2],
+  },
+  divider: {
+    height: 1,
+    backgroundColor: nbColors.gray300,
+    marginVertical: nbSpacing[3],
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: nbSpacing[2],
+    marginBottom: nbSpacing[3],
+  },
+  photoWrap: {
+    width: 80,
+    height: 80,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.base,
+    backgroundColor: nbColors.gray200,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photo: {
+    width: '100%',
+    height: '100%',
+  },
+  photoRemove: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: nbColors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: nbSpacing[3],
+  },
+  errorWrap: {
+    marginBottom: nbSpacing[4],
+  },
+  submitWrap: {
+    marginTop: nbSpacing[2],
   },
 });

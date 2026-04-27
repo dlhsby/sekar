@@ -11,10 +11,12 @@ import { useAppSelector } from '../store/hooks';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import MainNavigator from './MainNavigator';
-import KecamatanNavigator from './KecamatanNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// Phase 3 Apr 27 — staff_kecamatan now flows through MainNavigator like every other
+// role. The dedicated KecamatanNavigator (no bottom tabs, stack-only) is removed
+// in favor of a 2-tab layout (Perantingan + Profile) matching the rest of the app.
 function RootNavigator(): React.JSX.Element {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
@@ -23,8 +25,6 @@ function RootNavigator(): React.JSX.Element {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated || !user ? (
           <Stack.Screen name="Login" component={LoginScreen} />
-        ) : user.role === 'staff_kecamatan' ? (
-          <Stack.Screen name="KecamatanTabs" component={KecamatanNavigator} />
         ) : (
           <Stack.Screen name="MainTabs" component={MainNavigator} />
         )}

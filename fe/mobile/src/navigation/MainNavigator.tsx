@@ -45,6 +45,9 @@ import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 // Pruning Requests screens (Phase 3 sub-phase 3-10)
 import { ReviewQueueScreen } from '../screens/pruningRequests/ReviewQueueScreen';
 import { RequestDetailScreen } from '../screens/pruningRequests/RequestDetailScreen';
+// Phase 3 Apr 27 — staff_kecamatan tab
+import { PerantinganListScreen } from '../screens/pruningRequests/PerantinganListScreen';
+import { SubmitScreen } from '../screens/pruningRequests/SubmitScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -104,6 +107,11 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
     { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
+  // Phase 3 Apr 27 — staff_kecamatan: 2-tab layout (request submission + profile)
+  staff_kecamatan: [
+    { name: 'Perantingan', label: 'Perantingan', icon: 'tree-outline' },
+    { name: 'Profile', label: 'Profil', icon: 'account' },
+  ],
 };
 
 function getTabsForRole(role: UserRole): TabConfig[] {
@@ -117,6 +125,8 @@ const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
   Overtime: OvertimeListScreen,
   Monitoring: MapDashboardScreen,
   Profile: ProfileScreen,
+  // Phase 3 Apr 27 — staff_kecamatan tab
+  Perantingan: PerantinganListScreen,
 };
 
 function MainNavigator(): React.JSX.Element {
@@ -342,6 +352,21 @@ function MainNavigator(): React.JSX.Element {
           headerTitle: () => (
             <FieldHomeHeader
               title="Detail Permohonan"
+              onBack={() => navigation.goBack()}
+            />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+
+      {/* Phase 3 Apr 27 — staff_kecamatan submission form (scrollable cards) */}
+      <Tab.Screen
+        name="PerantinganSubmit"
+        component={SubmitScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Buat Permohonan"
               onBack={() => navigation.goBack()}
             />
           ),

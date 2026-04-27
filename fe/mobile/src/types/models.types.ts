@@ -60,6 +60,7 @@ export interface User {
   area?: Area;
   phone_number?: string | null;         // Phase 2E: for phone login
   profile_picture_url?: string | null;  // Phase 2E: profile photo
+  kecamatan_name?: string | null;       // Phase 3 Apr 27: staff_kecamatan attribution
   created_at: string;
   updated_at: string;
 }
@@ -421,6 +422,14 @@ export interface PruningRequest {
   gpsLng: number | null;
   expectedDate: string | null; // ISO date (YYYY-MM-DD)
   estimatedPlantCount: number | null;
+  // Phase 3 Apr 27 — staff_kecamatan redesign
+  treeCount?: number | null;
+  treeHeightEstimate?: string | null;
+  treeDiameterEstimate?: string | null;
+  requesterName?: string | null;
+  requesterPhone?: string | null;
+  rtLeaderName?: string | null;
+  rtLeaderPhone?: string | null;
   photoUrls: string[];
   notes: string | null;
   status: PruningRequestStatus;

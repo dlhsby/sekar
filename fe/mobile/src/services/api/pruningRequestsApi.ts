@@ -16,11 +16,21 @@ export async function submitPruningRequest(
     address: string;
     lat: number;
     lng: number;
-    detail_date: string; // ISO date string (YYYY-MM-DD)
-    target_count: number;
-    photo_keys: string[]; // Array of S3 keys from photo upload
+    // Phase 3 Apr 27 — `detail_date` and `target_count` are optional in the
+    // redesigned form; admin sets the date during convert-to-task.
+    detail_date?: string;
+    target_count?: number;
+    photo_keys: string[]; // Array of S3 keys from photo upload (min 1, max 5)
     notes?: string;
     rayon_id?: string;
+    // Phase 3 Apr 27 — staff_kecamatan redesign fields
+    tree_count?: number;
+    tree_height_estimate?: string;
+    tree_diameter_estimate?: string;
+    requester_name?: string;
+    requester_phone?: string;
+    rt_leader_name?: string;
+    rt_leader_phone?: string;
   },
 ): Promise<ApiResponse<PruningRequest>> {
   const response = await post<PruningRequest>('/pruning-requests', data);

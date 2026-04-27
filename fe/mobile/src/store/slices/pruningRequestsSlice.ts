@@ -82,11 +82,20 @@ export const submitPruningRequest = createAsyncThunk(
       address: string;
       lat: number;
       lng: number;
-      detail_date: string;
-      target_count: number;
+      // Optional after Phase 3 Apr 27 redesign — admin sets the date during convert-to-task
+      detail_date?: string;
+      target_count?: number;
       photo_keys: string[];
       notes?: string;
       rayon_id?: string;
+      // Phase 3 Apr 27 — staff_kecamatan redesign fields
+      tree_count?: number;
+      tree_height_estimate?: string;
+      tree_diameter_estimate?: string;
+      requester_name?: string;
+      requester_phone?: string;
+      rt_leader_name?: string;
+      rt_leader_phone?: string;
     },
     { rejectWithValue },
   ) => {

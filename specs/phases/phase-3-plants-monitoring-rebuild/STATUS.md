@@ -97,6 +97,33 @@ These are larger or specialty workstreams. Don't bundle with demo polish.
 
 ---
 
+## 🎨 Apr 27 — staff_kecamatan UX redesign
+
+After the audit, the user piloted the staff_kecamatan flow and asked for a structural redesign — bottom-tab navigation parity with other roles + a single scrollable submission form (in place of the 5-step wizard) + new tree-detail and contact fields. Shipped the same day:
+
+**Mobile**
+
+- **Bottom-tab navigation parity** — `staff_kecamatan` now flows through `MainNavigator` (the 8-role unified navigator) instead of the standalone `KecamatanNavigator`. New 2-tab layout: `Perantingan` (request list) + `Profile`. The standalone `KecamatanNavigator.tsx` and the `KecamatanTabs` Stack route are removed.
+- **`PerantinganListScreen`** — replaces the bare `MyRequestsScreen` route. Status filter chips (Semua / Menunggu / Disetujui / Ditolak / Dikonversi / Diproses / Selesai), date sort toggle, FAB "Buat Permohonan", pull-to-refresh, NB-styled list cards.
+- **`SubmitScreen` redesigned** — single scrollable card-based form mirroring `TaskCreateScreen`'s rhythm. Cards: **Lokasi** (auto-fetched GPS + refresh button + rayon + kecamatan presets from user profile + free-text street), **Foto** (camera + gallery, min 1 max 5), **Detail Pohon** (jumlah/tinggi/diameter), **Kontak** (pemohon + ketua RT, name + phone), **Catatan** (optional). Permissions are requested on demand (location on mount, camera on tap), matching the `useClockInOut` pattern other roles already follow.
+- **`mediaService` import bug** fixed — `import * as mediaService` (namespace import) was the root cause of "mediaservice.pickfromgallery is not a function". Changed to `import { mediaService }` (singleton).
+
+**Backend**
+
+- Migration `17460002000000-StaffKecamatanRedesign` adds `users.kecamatan_name` (varchar 100, nullable) and 7 new `pruning_requests` columns: `tree_count`, `tree_height_estimate`, `tree_diameter_estimate`, `requester_name`, `requester_phone`, `rt_leader_name`, `rt_leader_phone` (all nullable so existing rows + other roles unaffected).
+- `CreatePruningRequestDto` accepts the 7 new fields as optional. `detail_date` and `target_count` are now optional too — admin sets the date during convert-to-task. Photo minimum lowered from 3 to **1**.
+- `PruningRequestsService.create` now auto-derives `kecamatan_name` and `rayon_id` from the submitter's profile so the mobile client doesn't send them.
+
+**Seeders**
+
+- `seed-staging.ts` and `seed-phase3.ts` populate `users.kecamatan_name` for `staff_kec_pusat` (= "Tegalsari") and write the 6 sample `pruning_requests` with realistic tree-detail + contact values.
+
+**Specs**
+
+- Updated `mobile.md`, `backend.md`, `database.md` with the new fields and screens.
+
+---
+
 ## 🐛 Apr 27 Bug-Fix + Audit Notes
 
 Two bugs surfaced when the user ran the staging seeder + logged in as `staff_kec_pusat`:

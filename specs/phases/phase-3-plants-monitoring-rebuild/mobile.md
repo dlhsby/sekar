@@ -92,8 +92,9 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 
 | File | Responsibility | Role gate | Slice |
 |------|----------------|-----------|-------|
-| `src/screens/pruningRequests/SubmitScreen.tsx` | Kecamatan staff submission: address, expected date, photos (3-5), GPS capture | `staff_kecamatan` | `pruningRequests` |
-| `src/screens/pruningRequests/MyRequestsScreen.tsx` | List of own submissions with status chips | `staff_kecamatan` | `pruningRequests` |
+| `src/screens/pruningRequests/SubmitScreen.tsx` | **Apr 27 redesign:** single scrollable card-based form (Lokasi · Foto · Detail Pohon · Kontak · Catatan). GPS auto-captured on mount with manual refresh. Rayon + kecamatan preset from user profile. Photos min 1 max 5 (camera or gallery). New fields: tree_count, tree_height_estimate, tree_diameter_estimate, requester_{name,phone}, rt_leader_{name,phone}. | `staff_kecamatan` | `pruningRequests` |
+| `src/screens/pruningRequests/PerantinganListScreen.tsx` | **Apr 27 new:** staff_kecamatan home tab. Status filter chips, date sort, FAB → SubmitScreen, pull-to-refresh, NB list cards. Replaces the standalone `MyRequestsScreen` route at the navigator level (the legacy file remains but is no longer wired into the tab nav). | `staff_kecamatan` | `pruningRequests` |
+| `src/screens/pruningRequests/MyRequestsScreen.tsx` | (Legacy) — kept for backward compat with prior tests; no longer in the active nav. | — | `pruningRequests` |
 | `src/screens/pruningRequests/RequestDetailScreen.tsx` | Outcome view: converted task + activities + photos | submitter, reviewer, admin | `pruningRequests` |
 | `src/screens/pruningRequests/ReviewQueueScreen.tsx` | Approve / reject / convert-to-task; capacity indicator on convert | `admin_data` | `pruningRequests` |
 | `src/screens/pruningRequests/ConvertToTaskSheet.tsx` | Bottom sheet: pick area, **scheduled_date** (specific calendar day inside the booked ISO-week — Q3 Apr 25 answer), target_plant_count, optional assignee. Shows the week's capacity chip (`8/10` style); the day-picker constrains selectable dates to days within the booked week (Mon–Sun) and disables past dates | `admin_data` | — |
@@ -145,9 +146,9 @@ Scaffolds live in `src/services/sync/offlineQueue.ts` but are wired with a simpl
 | `admin_data` | `HomeScreen` | Home · Tasks · Map · Requests (review) · Seeds (if Taman Aktif) · Profile |
 | `kepala_rayon` | `MapDashboardScreen` | Map · Tasks · Profile |
 | `top_management` | `MapDashboardScreen` | Map · Overview · Profile |
-| `staff_kecamatan` | `SubmitScreen` | Submit · My Requests · Profile |
+| `staff_kecamatan` | `PerantinganListScreen` | Perantingan · Profile |
 
-`staff_kecamatan` has a **dedicated minimal shell** — no bottom tab bar with monitoring. Navigation guard in `RootNavigator` redirects any attempt to reach `/monitoring/*` routes.
+**Apr 27 redesign:** `staff_kecamatan` now flows through `MainNavigator` like every other role (the standalone `KecamatanNavigator` is removed). The 2-tab layout is **Perantingan** (request list with status filter, sort, and FAB → submit) + **Profile**. The redesigned `SubmitScreen` is a single scrollable card-based form (no wizard) reachable via the FAB; cards: Lokasi (auto GPS + rayon/kecamatan presets) · Foto (min 1 max 5, camera + gallery) · Detail Pohon (jumlah/tinggi/diameter) · Kontak (pemohon + ketua RT, name + phone) · Catatan (optional). The role still has no Monitoring entry — `MainNavigator.TAB_CONFIGS.staff_kecamatan` only contains Perantingan + Profile.
 
 ---
 
