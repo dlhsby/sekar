@@ -44,6 +44,23 @@ jest.mock('react-native-geolocation-service', () => ({
   default: { getCurrentPosition: jest.fn() },
 }));
 
+jest.mock('react-native-maps', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ children, ...rest }: any) =>
+      React.createElement(View, { testID: 'map-view', ...rest }, children),
+    Marker: ({ children, coordinate, ...rest }: any) =>
+      React.createElement(View, { testID: 'marker', coordinate, ...rest }, children),
+    Circle: ({ ...rest }: any) =>
+      React.createElement(View, { testID: 'circle', ...rest }),
+    Polygon: ({ ...rest }: any) =>
+      React.createElement(View, { testID: 'polygon', ...rest }),
+    PROVIDER_GOOGLE: 'google',
+  };
+});
+
 jest.mock('../../../services/permissions/permissionService', () => ({
   requestLocationPermission: jest.fn().mockResolvedValue({ status: 'granted' }),
   requestCameraPermission: jest.fn().mockResolvedValue({ status: 'granted' }),
@@ -57,7 +74,18 @@ jest.mock('../../../services/media/mediaService', () => ({
 }));
 
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+    setOptions: jest.fn(),
+  }),
+  useFocusEffect: (cb: any) => {
+    const React = require('react');
+    React.useEffect(() => {
+      const cleanup = cb();
+      return typeof cleanup === 'function' ? cleanup : undefined;
+    }, []);
+  },
 }));
 
 import React from 'react';

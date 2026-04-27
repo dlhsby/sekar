@@ -1,7 +1,16 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-04-27 (Apr 27 audit + bug-fix sweep — see "Open Items by Bucket" below)
+**Date:** 2026-04-27 (Apr 27 audit + bug-fix sweep + staff_kecamatan UX round 2 — see "Open Items by Bucket" below)
+
+> **Apr 27 staff_kecamatan UX — Round 2** (mobile-heavy, one-line backend DTO patch):
+>
+> 1. **Backend** — `ListPruningRequestsQueryDto` now whitelists `mine` (boolean) and `offset` (int ≥0) so `GET /pruning-requests?mine=true&offset=0` no longer 400s for staff_kecamatan.
+> 2. **Profile** — staff_kecamatan no longer fetches monitoring stats (`useProfileData` early-returns), so 3× 403 calls to `/supervisor/active-users` + `/supervisor/area-status` + `/activities` are gone. The "Ringkasan" card is hidden for them.
+> 3. **Permissions** — first-install onboarding modal now also requests **gallery** (Android: `READ_MEDIA_IMAGES` 33+ / `READ_EXTERNAL_STORAGE` <33; iOS: `PHOTO_LIBRARY`). Modal step count now 5/5.
+> 4. **Perantingan list** — FAB matches `OvertimeListScreen` pattern (`+ Buat Permohonan`, full-width, `size="lg"`, list wrapper with 80 px clearance).
+> 5. **Submit screen** — (a) stale Redux error cleared on focus so "Gagal mengirim permohonan" no longer flashes before submit; (b) AsyncStorage draft persistence (`pruning_request_draft`, 24 h TTL, 30 s auto-save, "Simpan Draft?" on back, "Lanjutkan / Hapus" on focus); (c) `LocationPickerModal` — drag/tap to drop pin, defaults to current GPS / Surabaya centroid fallback.
+> 6. **Dev seeder** — `seed-phase3.ts` now also seeds 25 bulk `pruning_requests` across all 8 statuses + 9 kecamatan + 25 days of dates so the list UX (scroll, filter, sort) is exercisable on first login.
 **Overall Progress:** **~70 % weighted** — **13 sub-phases fully complete + 4 partial + 4 not-started.** (Earlier "17/21 ~81 %" headline counted partials as wholes; corrected on Apr 27 audit. The detail-section tables further down match this revised count.)
 - **Fully complete (13):** M1-R 5/5 (3-R1…3-R5) + 3-1 + 3-2 + 3-3 + 3-4 + 3-5 + 3-6 + 3-7 mobile + 3-9
 - **Partial (4):** 3-8 (60 % — service + endpoint live; cron/WS/FCM/map overlay deferred), 3-10 (mobile complete; web deferred), 3-11 (backend + mobile state complete; web UI deferred), 3-12 (~50 % — backend + slice + API live; mobile inventory screens + web UI deferred)

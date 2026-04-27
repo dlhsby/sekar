@@ -27,8 +27,8 @@ import {
 
 describe('Role Constants', () => {
   describe('ROLE_LABELS', () => {
-    it('should have labels for all 8 roles', () => {
-      expect(Object.keys(ROLE_LABELS)).toHaveLength(8);
+    it('should have labels for all 9 roles (8 internal + staff_kecamatan public-intake)', () => {
+      expect(Object.keys(ROLE_LABELS)).toHaveLength(9);
       expect(ROLE_LABELS.satgas).toBe('Satgas');
       expect(ROLE_LABELS.linmas).toBe('Linmas');
       expect(ROLE_LABELS.korlap).toBe('Korlap');
@@ -37,6 +37,7 @@ describe('Role Constants', () => {
       expect(ROLE_LABELS.top_management).toBe('Top Management');
       expect(ROLE_LABELS.admin_system).toBe('Admin Sistem');
       expect(ROLE_LABELS.superadmin).toBe('Superadmin');
+      expect(ROLE_LABELS.staff_kecamatan).toBe('Staff Kecamatan');
     });
   });
 

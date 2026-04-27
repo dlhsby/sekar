@@ -35,6 +35,7 @@ export enum PermissionType {
   LOCATION = 'location',
   BACKGROUND_LOCATION = 'background_location',
   CAMERA = 'camera',
+  GALLERY = 'gallery',
 }
 
 /**
@@ -55,6 +56,7 @@ export interface AllPermissionsStatus {
   location: PermissionResult;
   backgroundLocation: PermissionResult;
   camera: PermissionResult;
+  gallery: PermissionResult;
 }
 
 /**
@@ -65,8 +67,26 @@ const STORAGE_KEYS = {
   LOCATION_REQUESTED: '@permissions/location_requested',
   BACKGROUND_LOCATION_REQUESTED: '@permissions/background_location_requested',
   CAMERA_REQUESTED: '@permissions/camera_requested',
+  GALLERY_REQUESTED: '@permissions/gallery_requested',
   ONBOARDING_COMPLETED: '@permissions/onboarding_completed',
 } as const;
+
+/**
+ * Resolve the right gallery permission for the current platform / API level.
+ *
+ * - Android 13+ (API 33+): READ_MEDIA_IMAGES (scoped media access).
+ * - Android < 13: READ_EXTERNAL_STORAGE.
+ * - iOS: PHOTO_LIBRARY.
+ */
+function resolveGalleryPermission() {
+  if (Platform.OS === 'ios') {
+    return PERMISSIONS.IOS.PHOTO_LIBRARY;
+  }
+  if (typeof Platform.Version === 'number' && Platform.Version >= 33) {
+    return PERMISSIONS.ANDROID.READ_MEDIA_IMAGES;
+  }
+  return PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
+}
 
 /**
  * Permission Manager Class
@@ -486,14 +506,81 @@ class PermissionManager {
   }
 
   /**
+   * Check gallery (photo library) permission status
+   */
+  async checkGalleryPermission(): Promise<PermissionResult> {
+    try {
+      const status = await check(resolveGalleryPermission());
+      const granted = status === RESULTS.GRANTED || status === RESULTS.LIMITED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Galeri diizinkan'
+          : 'Galeri diperlukan untuk memilih foto laporan dari penyimpanan',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to check gallery permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal memeriksa izin galeri',
+      };
+    }
+  }
+
+  /**
+   * Request gallery (photo library) permission
+   */
+  async requestGalleryPermission(): Promise<PermissionResult> {
+    try {
+      console.debug('[PermissionManager] Requesting gallery permission');
+
+      const alreadyRequested = await AsyncStorage.getItem(STORAGE_KEYS.GALLERY_REQUESTED);
+      const status = await request(resolveGalleryPermission());
+
+      if (!alreadyRequested) {
+        await AsyncStorage.setItem(STORAGE_KEYS.GALLERY_REQUESTED, 'true');
+      }
+
+      const granted = status === RESULTS.GRANTED || status === RESULTS.LIMITED;
+      const canRequest = status === RESULTS.DENIED;
+
+      return {
+        granted,
+        status,
+        canRequest,
+        message: granted
+          ? 'Galeri berhasil diizinkan'
+          : status === RESULTS.BLOCKED
+          ? 'Galeri diblokir. Buka Pengaturan untuk mengizinkan'
+          : 'Galeri ditolak. Anda tidak dapat memilih foto dari penyimpanan',
+      };
+    } catch (error) {
+      console.error('[PermissionManager] Failed to request gallery permission:', error);
+      return {
+        granted: false,
+        status: RESULTS.UNAVAILABLE,
+        canRequest: false,
+        message: 'Gagal meminta izin galeri',
+      };
+    }
+  }
+
+  /**
    * Check all permissions status
    */
   async checkAllPermissions(): Promise<AllPermissionsStatus> {
-    const [notifications, location, backgroundLocation, camera] = await Promise.all([
+    const [notifications, location, backgroundLocation, camera, gallery] = await Promise.all([
       this.checkNotificationPermission(),
       this.checkLocationPermission(),
       this.checkBackgroundLocationPermission(),
       this.checkCameraPermission(),
+      this.checkGalleryPermission(),
     ]);
 
     return {
@@ -501,6 +588,7 @@ class PermissionManager {
       location,
       backgroundLocation,
       camera,
+      gallery,
     };
   }
 
@@ -563,12 +651,15 @@ class PermissionManager {
     }
 
     // Check if critical permissions are already granted
-    const { notifications, location, backgroundLocation } = await this.checkAllPermissions();
+    const { notifications, location, backgroundLocation, camera, gallery } =
+      await this.checkAllPermissions();
 
     return !(
       notifications.granted &&
       location.granted &&
-      backgroundLocation.granted
+      backgroundLocation.granted &&
+      camera.granted &&
+      gallery.granted
     );
   }
 }

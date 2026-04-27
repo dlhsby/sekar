@@ -271,28 +271,31 @@ export function PerantinganListScreen(): React.JSX.Element {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filteredSorted}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={nbColors.black} />
-        }
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
-        scrollIndicatorInsets={{ right: 1 }}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={15}
-        removeClippedSubviews
-      />
+      <View style={styles.listWrapperWithFab}>
+        <FlatList
+          data={filteredSorted}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={nbColors.black} />
+          }
+          ListEmptyComponent={renderEmpty}
+          contentContainerStyle={styles.listContent}
+          scrollIndicatorInsets={{ right: 1 }}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={15}
+          removeClippedSubviews
+        />
+      </View>
 
-      {/* FAB — Buat Permohonan */}
-      <View style={styles.fabContainer} pointerEvents="box-none">
+      {/* FAB — Buat Permohonan (mirrors OvertimeListScreen / TasksActivityScreen pattern) */}
+      <View style={styles.fab} pointerEvents="box-none">
         <NBButton
-          label="Buat Permohonan"
-          leftIcon="plus"
+          title="+ Buat Permohonan"
           variant="primary"
+          size="lg"
+          fullWidth
           onPress={handleSubmit}
           testID="perantingan-submit-fab"
         />
@@ -356,9 +359,14 @@ const styles = StyleSheet.create({
     borderRadius: nbBorderRadius.base,
     backgroundColor: nbColors.white,
   },
+  listWrapperWithFab: {
+    flex: 1,
+    paddingBottom: 80, // matches OvertimeListScreen
+  },
   listContent: {
     padding: nbSpacing[4],
-    paddingBottom: nbSpacing[12], // leave room for FAB
+    paddingBottom: nbSpacing[6],
+    flexGrow: 1,
   },
   listItem: {
     marginBottom: nbSpacing[3],
@@ -382,12 +390,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: nbSpacing[2],
   },
-  fabContainer: {
+  fab: {
     position: 'absolute',
-    bottom: nbSpacing[4],
-    left: nbSpacing[4],
-    right: nbSpacing[4],
-    ...nbShadows.md,
+    bottom: nbSpacing.md,
+    left: nbSpacing.md,
+    right: nbSpacing.md,
+    zIndex: 10,
   },
   errorContainer: {
     position: 'absolute',

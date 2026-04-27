@@ -102,6 +102,15 @@ const PERMISSION_STEPS: PermissionStep[] = [
     iconColor: nbColors.accentEarth,
     required: true,
   },
+  {
+    type: PermissionType.GALLERY,
+    title: 'Galeri Foto',
+    description:
+      'Diperlukan untuk memilih foto dari galeri saat melengkapi laporan atau permohonan perantingan.',
+    icon: 'image-multiple-outline',
+    iconColor: nbColors.accentSky,
+    required: true,
+  },
 ];
 
 /**
@@ -176,6 +185,10 @@ export function PermissionRequestModal({
 
         case PermissionType.CAMERA:
           result = await permissionManager.requestCameraPermission();
+          break;
+
+        case PermissionType.GALLERY:
+          result = await permissionManager.requestGalleryPermission();
           break;
 
         /* istanbul ignore next */

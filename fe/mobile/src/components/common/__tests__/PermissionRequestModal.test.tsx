@@ -16,6 +16,11 @@ jest.mock('../../../services/permissions/PermissionManager', () => ({
     requestLocationPermission: jest.fn(),
     requestBackgroundLocationPermission: jest.fn(),
     requestCameraPermission: jest.fn(),
+    requestGalleryPermission: jest.fn().mockResolvedValue({
+      granted: true,
+      status: 'granted',
+      canRequest: false,
+    }),
     setOnboardingCompleted: jest.fn(),
     openSettings: jest.fn(),
   },
@@ -24,6 +29,7 @@ jest.mock('../../../services/permissions/PermissionManager', () => ({
     LOCATION: 'location',
     BACKGROUND_LOCATION: 'background_location',
     CAMERA: 'camera',
+    GALLERY: 'gallery',
   },
 }));
 
@@ -49,7 +55,7 @@ describe('PermissionRequestModal', () => {
       );
 
       expect(getByText('Izin Aplikasi')).toBeTruthy();
-      expect(getByText('Langkah 1 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 1 dari 5')).toBeTruthy();
       expect(getByText('Notifikasi')).toBeTruthy();
     });
 
@@ -102,7 +108,7 @@ describe('PermissionRequestModal', () => {
       // Should move to second step: Location
       await waitFor(() => {
         expect(getByText('Lokasi')).toBeTruthy();
-        expect(getByText('Langkah 2 dari 4')).toBeTruthy();
+        expect(getByText('Langkah 2 dari 5')).toBeTruthy();
       });
     });
 
@@ -137,7 +143,7 @@ describe('PermissionRequestModal', () => {
       // Should move to third step: Background Location
       await waitFor(() => {
         expect(getByText('Lokasi Latar Belakang')).toBeTruthy();
-        expect(getByText('Langkah 3 dari 4')).toBeTruthy();
+        expect(getByText('Langkah 3 dari 5')).toBeTruthy();
       });
     });
 
@@ -161,6 +167,11 @@ describe('PermissionRequestModal', () => {
         canRequest: false,
       });
       (permissionManager.requestCameraPermission as jest.Mock).mockResolvedValue({
+        granted: true,
+        status: RESULTS.GRANTED,
+        canRequest: false,
+      });
+      (permissionManager.requestGalleryPermission as jest.Mock).mockResolvedValue({
         granted: true,
         status: RESULTS.GRANTED,
         canRequest: false,
@@ -195,10 +206,17 @@ describe('PermissionRequestModal', () => {
         expect(getByText('Kamera')).toBeTruthy();
       });
 
-      // Step 4: Camera - Final step
+      // Step 4: Camera
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => {
         expect(permissionManager.requestCameraPermission).toHaveBeenCalled();
+        expect(getByText('Galeri Foto')).toBeTruthy();
+      });
+
+      // Step 5: Gallery — Final step
+      fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => {
+        expect(permissionManager.requestGalleryPermission).toHaveBeenCalled();
         expect(permissionManager.setOnboardingCompleted).toHaveBeenCalled();
         expect(mockOnComplete).toHaveBeenCalled();
       });
@@ -316,12 +334,12 @@ describe('PermissionRequestModal', () => {
       );
 
       // Step 1
-      expect(getByText('Langkah 1 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 1 dari 5')).toBeTruthy();
 
       // Move to step 2
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => {
-        expect(getByText('Langkah 2 dari 4')).toBeTruthy();
+        expect(getByText('Langkah 2 dari 5')).toBeTruthy();
       });
     });
   });
@@ -408,12 +426,16 @@ describe('PermissionRequestModal', () => {
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy(), { timeout: 5000 });
 
-      // Step 4: Camera (last step)
-      expect(getByText('Langkah 4 dari 4')).toBeTruthy();
+      // Step 4: Camera
+      expect(getByText('Langkah 4 dari 5')).toBeTruthy();
       fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy(), { timeout: 5000 });
 
+      // Step 5: Gallery (last step)
+      fireEvent.press(getByText('Izinkan'));
       await waitFor(() => {
         expect(permissionManager.requestCameraPermission).toHaveBeenCalled();
+        expect(permissionManager.requestGalleryPermission).toHaveBeenCalled();
         expect(permissionManager.setOnboardingCompleted).toHaveBeenCalled();
         expect(mockOnComplete).toHaveBeenCalled();
       }, { timeout: 5000 });
@@ -561,9 +583,12 @@ describe('PermissionRequestModal', () => {
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
 
-      // Request camera (blocked)
+      // Request camera (blocked) — moves to gallery (last step)
       fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy());
 
+      // Request gallery (granted by default mock) — completes onboarding
+      fireEvent.press(getByText('Izinkan'));
       await waitFor(() => {
         expect(permissionManager.setOnboardingCompleted).toHaveBeenCalled();
         expect(mockOnComplete).toHaveBeenCalled();
@@ -627,7 +652,9 @@ describe('PermissionRequestModal', () => {
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
 
       fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy());
 
+      fireEvent.press(getByText('Izinkan'));
       await waitFor(() => {
         expect(mockOnComplete).toHaveBeenCalled();
       });
@@ -808,7 +835,11 @@ describe('PermissionRequestModal', () => {
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
 
-      // Complete last step
+      // Camera step → Gallery
+      fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy());
+
+      // Complete last step (Gallery)
       fireEvent.press(getByText('Izinkan'));
 
       await waitFor(() => {
@@ -899,6 +930,11 @@ describe('PermissionRequestModal', () => {
 
       // Complete flow
       fireEvent.press(getByText('Izinkan'));
+      // Advance through gallery (added Apr 27 round 2) — granted by default mock
+      try {
+        await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy(), { timeout: 1000 });
+        fireEvent.press(getByText('Izinkan'));
+      } catch { /* flow may have completed early when permission was unavailable */ }
 
       await waitFor(() => {
         expect(permissionManager.setOnboardingCompleted).toHaveBeenCalled();
@@ -998,6 +1034,9 @@ describe('PermissionRequestModal', () => {
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
 
       fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy());
+
+      fireEvent.press(getByText('Izinkan'));
 
       await waitFor(() => {
         expect(mockOnComplete).toHaveBeenCalled();
@@ -1010,7 +1049,7 @@ describe('PermissionRequestModal', () => {
       rerender(<PermissionRequestModal visible={true} onComplete={mockOnComplete} />);
 
       // Should start from step 1 again
-      expect(getByText('Langkah 1 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 1 dari 5')).toBeTruthy();
     });
 
     it('should handle useEffect for resetting when modal closes and reopens', async () => {
@@ -1089,9 +1128,14 @@ describe('PermissionRequestModal', () => {
 
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
       fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy());
+
+      // Test GALLERY (default mock returns granted)
+      fireEvent.press(getByText('Izinkan'));
 
       await waitFor(() => {
         expect(permissionManager.requestCameraPermission).toHaveBeenCalled();
+        expect(permissionManager.requestGalleryPermission).toHaveBeenCalled();
         expect(mockOnComplete).toHaveBeenCalled();
       });
     });
@@ -1102,7 +1146,7 @@ describe('PermissionRequestModal', () => {
       );
 
       // Component should handle bounds checking internally
-      expect(getByText('Langkah 1 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 1 dari 5')).toBeTruthy();
       expect(getByText('Notifikasi')).toBeTruthy();
     });
 
@@ -1196,6 +1240,9 @@ describe('PermissionRequestModal', () => {
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
 
       fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy());
+
+      fireEvent.press(getByText('Izinkan'));
 
       await waitFor(() => {
         expect(mockOnComplete).toHaveBeenCalled();
@@ -1234,25 +1281,25 @@ describe('PermissionRequestModal', () => {
 
       // Step 1: Notifications
       expect(getByText('Notifikasi')).toBeTruthy();
-      expect(getByText('Langkah 1 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 1 dari 5')).toBeTruthy();
 
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => expect(getByText('Lokasi')).toBeTruthy());
 
       // Step 2: Location
-      expect(getByText('Langkah 2 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 2 dari 5')).toBeTruthy();
 
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => expect(getByText('Lokasi Latar Belakang')).toBeTruthy());
 
       // Step 3: Background Location
-      expect(getByText('Langkah 3 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 3 dari 5')).toBeTruthy();
 
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
 
       // Step 4: Camera
-      expect(getByText('Langkah 4 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 4 dari 5')).toBeTruthy();
     });
 
     it('should display correct icon colors for each permission type', async () => {
@@ -1443,10 +1490,15 @@ describe('PermissionRequestModal', () => {
       await waitFor(() => expect(getByText('Kamera')).toBeTruthy());
       expect(permissionManager.requestBackgroundLocationPermission).toHaveBeenCalled();
 
-      // CAMERA
+      // CAMERA → Gallery
+      fireEvent.press(getByText('Izinkan'));
+      await waitFor(() => expect(getByText('Galeri Foto')).toBeTruthy());
+      expect(permissionManager.requestCameraPermission).toHaveBeenCalled();
+
+      // GALLERY (last step — completes flow)
       fireEvent.press(getByText('Izinkan'));
       await waitFor(() => {
-        expect(permissionManager.requestCameraPermission).toHaveBeenCalled();
+        expect(permissionManager.requestGalleryPermission).toHaveBeenCalled();
         expect(mockOnComplete).toHaveBeenCalled();
       });
 
@@ -1460,7 +1512,7 @@ describe('PermissionRequestModal', () => {
       );
 
       // Component should handle bounds correctly
-      expect(getByText('Langkah 1 dari 4')).toBeTruthy();
+      expect(getByText('Langkah 1 dari 5')).toBeTruthy();
       expect(getByText('Notifikasi')).toBeTruthy();
 
       // The safe index should clamp currentStepIndex to valid bounds

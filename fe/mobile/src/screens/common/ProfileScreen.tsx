@@ -27,6 +27,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
     assignedArea,
     profileData,
     isField,
+    isStaffKecamatan,
     isLoading,
     setIsLoading,
     fieldStats,
@@ -149,7 +150,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
 
         {isField ? (
           <FieldStatsCard stats={fieldStats} />
-        ) : (
+        ) : isStaffKecamatan ? null : (
           <MonitoringStatsCard stats={monitoringStats} />
         )}
 

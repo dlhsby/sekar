@@ -128,6 +128,7 @@ export function useProfileData() {
   const assignedArea = useAppSelector((state) => state.auth.assignedArea);
   const role = user?.role as UserRole | undefined;
   const isField = !!role && isClockableRole(role);
+  const isStaffKecamatan = role === 'staff_kecamatan';
 
   const [isLoading, setIsLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
@@ -144,22 +145,24 @@ export function useProfileData() {
       if (isField) {
         const stats = await loadFieldStats();
         setFieldStats(stats);
-      } else {
+      } else if (!isStaffKecamatan) {
         const stats = await loadMonitoringStats();
         setMonitoringStats(stats);
       }
+      // staff_kecamatan: no stats endpoint applies — skip to avoid 403s.
     } catch (error) {
       console.error('[useProfileData] Error loading profile:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [isField]);
+  }, [isField, isStaffKecamatan]);
 
   return {
     user,
     assignedArea,
     profileData,
     isField,
+    isStaffKecamatan,
     isLoading,
     setIsLoading,
     fieldStats,

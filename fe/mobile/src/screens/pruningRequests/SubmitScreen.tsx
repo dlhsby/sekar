@@ -17,7 +17,7 @@
  * kecamatan_name + rayon_id from the submitter's profile.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -31,9 +31,10 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Geolocation from 'react-native-geolocation-service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
@@ -50,6 +51,7 @@ import {
   NBBackgroundPattern,
 } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
+import { LocationPickerModal } from '../../components/modals/LocationPickerModal';
 import { mediaService, type Photo } from '../../services/media/mediaService';
 import {
   requestLocationPermission,
@@ -67,6 +69,24 @@ import {
 
 const MIN_PHOTOS = 1;
 const MAX_PHOTOS = 5;
+const DRAFT_KEY = 'pruning_request_draft';
+const DRAFT_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const AUTO_SAVE_INTERVAL = 30000; // 30 s
+
+interface DraftShape {
+  address: string;
+  treeCount: string;
+  treeHeight: string;
+  treeDiameter: string;
+  requesterName: string;
+  requesterPhone: string;
+  rtLeaderName: string;
+  rtLeaderPhone: string;
+  notes: string;
+  gpsLat: number | null;
+  gpsLng: number | null;
+  timestamp: number;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -105,9 +125,91 @@ export function SubmitScreen(): React.JSX.Element {
 
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const rayonName = user?.rayon?.name ?? null;
   const kecamatanName = user?.kecamatan_name ?? null;
+
+  // ── Draft persistence ───────────────────────────────────────────────────
+  const formRef = useRef<DraftShape>({
+    address: '', treeCount: '', treeHeight: '', treeDiameter: '',
+    requesterName: '', requesterPhone: '', rtLeaderName: '', rtLeaderPhone: '',
+    notes: '', gpsLat: null, gpsLng: null, timestamp: 0,
+  });
+  useEffect(() => {
+    formRef.current = {
+      address, treeCount, treeHeight, treeDiameter,
+      requesterName, requesterPhone, rtLeaderName, rtLeaderPhone, notes,
+      gpsLat, gpsLng, timestamp: Date.now(),
+    };
+  }, [address, treeCount, treeHeight, treeDiameter, requesterName,
+      requesterPhone, rtLeaderName, rtLeaderPhone, notes, gpsLat, gpsLng]);
+
+  const saveDraft = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(formRef.current));
+    } catch {
+      /* silent — draft is best-effort */
+    }
+  }, []);
+  const saveDraftRef = useRef(saveDraft);
+  useEffect(() => { saveDraftRef.current = saveDraft; }, [saveDraft]);
+
+  const clearDraft = useCallback(async () => {
+    try { await AsyncStorage.removeItem(DRAFT_KEY); } catch { /* silent */ }
+  }, []);
+
+  const hasContent = useCallback((): boolean => {
+    const f = formRef.current;
+    return !!(f.address.trim() || f.treeCount.trim() || f.treeHeight.trim() ||
+      f.treeDiameter.trim() || f.requesterName.trim() || f.requesterPhone.trim() ||
+      f.rtLeaderName.trim() || f.rtLeaderPhone.trim() || f.notes.trim() ||
+      photos.length > 0);
+  }, [photos.length]);
+
+  const restoreDraft = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as DraftShape;
+      if (!draft.timestamp || Date.now() - draft.timestamp >= DRAFT_TTL) {
+        await AsyncStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      Alert.alert(
+        'Draft Ditemukan',
+        'Anda memiliki draft permohonan yang belum terkirim. Lanjutkan?',
+        [
+          {
+            text: 'Hapus',
+            style: 'destructive',
+            onPress: () => { void AsyncStorage.removeItem(DRAFT_KEY); },
+          },
+          {
+            text: 'Lanjutkan',
+            onPress: () => {
+              setAddress(draft.address ?? '');
+              setTreeCount(draft.treeCount ?? '');
+              setTreeHeight(draft.treeHeight ?? '');
+              setTreeDiameter(draft.treeDiameter ?? '');
+              setRequesterName(draft.requesterName ?? '');
+              setRequesterPhone(draft.requesterPhone ?? '');
+              setRtLeaderName(draft.rtLeaderName ?? '');
+              setRtLeaderPhone(draft.rtLeaderPhone ?? '');
+              setNotes(draft.notes ?? '');
+              if (draft.gpsLat != null && draft.gpsLng != null) {
+                setGpsLat(draft.gpsLat);
+                setGpsLng(draft.gpsLng);
+              }
+              void AsyncStorage.removeItem(DRAFT_KEY);
+            },
+          },
+        ],
+      );
+    } catch {
+      /* silent */
+    }
+  }, []);
 
   // ── GPS capture ─────────────────────────────────────────────────────────
   const captureLocation = useCallback(async () => {
@@ -145,6 +247,76 @@ export function SubmitScreen(): React.JSX.Element {
   useEffect(() => {
     void captureLocation();
   }, [captureLocation]);
+
+  // Clear stale Redux error + restore draft whenever the screen gains focus.
+  // Prevents the prior session's "Gagal mengirim permohonan" alert from
+  // showing before the user has even tapped submit.
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(clearError());
+      void restoreDraft();
+      return () => {
+        // Best-effort save when the screen blurs (back/navigate away).
+        if (formRef.current.address.trim() || photos.length > 0) {
+          void saveDraftRef.current();
+        }
+      };
+    }, [dispatch, restoreDraft, photos.length]),
+  );
+
+  // Auto-save draft every 30s while there's content.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (formRef.current.address.trim() || formRef.current.treeCount.trim()) {
+        void saveDraftRef.current();
+      }
+    }, AUTO_SAVE_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Back-button / header back: prompt to save or discard the draft.
+  const handleLeave = useCallback(() => {
+    if (!hasContent()) {
+      navigation.goBack();
+      return;
+    }
+    Alert.alert(
+      'Simpan Draft?',
+      'Anda memiliki perubahan yang belum dikirim.',
+      [
+        {
+          text: 'Tidak',
+          style: 'destructive',
+          onPress: async () => {
+            await clearDraft();
+            navigation.goBack();
+          },
+        },
+        {
+          text: 'Ya',
+          onPress: async () => {
+            await saveDraftRef.current();
+            navigation.goBack();
+          },
+        },
+      ],
+    );
+  }, [hasContent, navigation, clearDraft]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={handleLeave}
+          accessibilityRole="button"
+          accessibilityLabel="Kembali"
+          style={{ paddingHorizontal: nbSpacing[3], paddingVertical: nbSpacing[2] }}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, handleLeave]);
 
   // ── Photo capture ───────────────────────────────────────────────────────
   const handlePickFromCamera = useCallback(async () => {
@@ -261,6 +433,7 @@ export function SubmitScreen(): React.JSX.Element {
         }),
       ).unwrap();
 
+      await clearDraft();
       Alert.alert(
         'Permohonan terkirim',
         'Permohonan pemangkasan berhasil dikirim. Anda akan diberitahu setelah ditinjau.',
@@ -283,7 +456,7 @@ export function SubmitScreen(): React.JSX.Element {
   }, [
     validate, photos, dispatch, address, gpsLat, gpsLng, treeCount, treeHeight,
     treeDiameter, requesterName, requesterPhone, rtLeaderName, rtLeaderPhone,
-    notes, navigation,
+    notes, navigation, clearDraft,
   ]);
 
   const isBusy = submitting || isSubmitting;
@@ -351,6 +524,17 @@ export function SubmitScreen(): React.JSX.Element {
                     <MaterialCommunityIcons name="refresh" size={22} color={nbColors.black} />
                   )}
                 </TouchableOpacity>
+              </View>
+
+              {/* Map-pick — drop or drag pin like WhatsApp share-location */}
+              <View style={{ marginTop: nbSpacing[2] }}>
+                <NBButton
+                  title="Pilih di Peta"
+                  leftIcon="map-marker-radius"
+                  variant="secondary"
+                  onPress={() => setPickerOpen(true)}
+                  testID="perantingan-pick-on-map"
+                />
               </View>
               {gpsError ? (
                 <NBText variant="body-sm" style={{ color: nbColors.danger, marginTop: nbSpacing[2] }}>
@@ -535,6 +719,19 @@ export function SubmitScreen(): React.JSX.Element {
           </View>
         </ScrollView>
       </NBBackgroundPattern>
+
+      <LocationPickerModal
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        initial={gpsLat != null && gpsLng != null ? { lat: gpsLat, lng: gpsLng } : null}
+        onConfirm={({ lat, lng }) => {
+          setGpsLat(lat);
+          setGpsLng(lng);
+          // Picked manually — clear any GPS error from earlier auto-capture.
+          setGpsError(null);
+          setGpsAccuracy(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
