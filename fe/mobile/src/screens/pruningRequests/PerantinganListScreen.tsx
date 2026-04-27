@@ -1,21 +1,22 @@
 /**
  * Perantingan List Screen — staff_kecamatan home tab.
- * Phase 3 Apr 27 redesign: replaces the standalone KecamatanNavigator MyRequests
- * route with a tabbed list-screen styled to match OvertimeListScreen and the
- * other field-side list screens.
  *
- * Capabilities:
- *   - Status filter chips (Menunggu, Disetujui, Ditolak, Dikonversi, Selesai, Dibatalkan)
- *   - Sort by date submitted (newest / oldest)
- *   - Floating action button → PerantinganSubmit (new submission form)
- *   - Pull-to-refresh
- *   - Empty state with primary CTA
+ * Visual + interaction parity with the canonical list screens (Lembur,
+ * Tugas, Aktivitas):
+ *   - Page title row
+ *   - Filter bar: active mini-chips (left) + sort + filter icon buttons (right),
+ *     filter badge with active count, "× reset" inline shortcut
+ *   - FlatList of `PerantinganRequestCard` (NBCard variant="elevated")
+ *   - Floating "+ Buat Permohonan" FAB
+ *   - Generic `SortModal` + dedicated `PruningRequestFilterModal`
  *
- * The RequestListItem mirrors the OvertimeCard / TaskCard layout so the look-and-feel
- * is consistent across roles.
+ * Filter / sort are local-only for now (the slice fetches with
+ * `mine=true&limit=50&offset=0` and we filter the in-memory list); when the
+ * backend grows server-side filtering for `mine=true` we can wire this
+ * through `fetchMyPruningRequests` params.
  */
 
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -26,122 +27,70 @@ import {
   ScrollView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchMyPruningRequests, selectRequest } from '../../store/slices/pruningRequestsSlice';
+import {
+  fetchMyPruningRequests,
+  selectRequest,
+} from '../../store/slices/pruningRequestsSlice';
 import { LoadingSpinner } from '../../components/common';
-import { NBEmptyState, NBCard, NBBadge, NBAlert, NBButton } from '../../components/nb';
-import { NBText } from '../../components/nb/NBText';
-import { nbColors, nbSpacing, nbTypography, nbShadows, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
-import type { PruningRequest, PruningRequestStatus } from '../../types/models.types';
-import { formatDate } from '../../utils/dateUtils';
+import {
+  NBBackgroundPattern,
+  NBButton,
+  NBEmptyState,
+  NBAlert,
+} from '../../components/nb';
+import {
+  SortModal,
+  PruningRequestFilterModal,
+  type PruningRequestFilterValue,
+} from '../../components/modals';
+import { PerantinganRequestCard } from './components/PerantinganRequestCard';
+import { getPruningRequestStatusLabel } from '../../utils/statusHelpers';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorders,
+  nbBorderRadius,
+  nbShadows,
+} from '../../constants/nbTokens';
+import type { PruningRequest } from '../../types/models.types';
 
-type StatusFilter = 'all' | PruningRequestStatus;
-type SortOrder = 'newest' | 'oldest';
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
-  { key: 'all',         label: 'Semua' },
-  { key: 'submitted',   label: 'Menunggu' },
-  { key: 'approved',    label: 'Disetujui' },
-  { key: 'rejected',    label: 'Ditolak' },
-  { key: 'converted',   label: 'Dikonversi' },
-  { key: 'in_progress', label: 'Diproses' },
-  { key: 'done',        label: 'Selesai' },
+const SORT_OPTIONS = [
+  { key: 'created_at_desc', label: 'Dibuat Terbaru' },
+  { key: 'created_at_asc',  label: 'Dibuat Terlama' },
+  { key: 'expected_desc',   label: 'Tanggal Diharapkan Terbaru' },
+  { key: 'expected_asc',    label: 'Tanggal Diharapkan Terlama' },
 ];
 
-const SORT_OPTIONS: { key: SortOrder; label: string }[] = [
-  { key: 'newest', label: 'Terbaru' },
-  { key: 'oldest', label: 'Terlama' },
-];
+type SortKey = 'created_at_desc' | 'created_at_asc' | 'expected_desc' | 'expected_asc';
 
-type BadgeColor = 'primary' | 'success' | 'warning' | 'danger' | 'gray' | 'navy';
-const STATUS_DISPLAY: Record<PruningRequestStatus, { color: BadgeColor; label: string }> = {
-  submitted:    { color: 'warning', label: 'Menunggu' },
-  under_review: { color: 'warning', label: 'Direview' },
-  approved:     { color: 'success', label: 'Disetujui' },
-  rejected:     { color: 'danger',  label: 'Ditolak' },
-  converted:    { color: 'primary', label: 'Dikonversi' },
-  in_progress:  { color: 'primary', label: 'Diproses' },
-  done:         { color: 'success', label: 'Selesai' },
-  cancelled:    { color: 'danger',  label: 'Dibatalkan' },
-};
+const DEFAULT_SORT: SortKey = 'created_at_desc';
 
-function RequestListItem({
-  request,
-  onPress,
-}: {
-  request: PruningRequest;
-  onPress: () => void;
-}): React.JSX.Element {
-  const display = STATUS_DISPLAY[request.status] ?? { color: 'gray' as BadgeColor, label: request.status };
-  const treeCount = request.treeCount ?? request.estimatedPlantCount;
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      accessible
-      accessibilityRole="button"
-      accessibilityLabel={`Permohonan ${request.referenceCode}`}
-      accessibilityHint={`Status ${display.label}`}
-    >
-      <NBCard style={styles.listItem}>
-        <View style={styles.itemHeader}>
-          <View style={styles.refAndBadge}>
-            <NBText variant="h3" numberOfLines={1}>{request.referenceCode}</NBText>
-            <NBBadge text={display.label} color={display.color} size="sm" />
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={nbColors.gray600} />
-        </View>
-
-        <View style={styles.itemDetails}>
-          <View style={styles.detailRow}>
-            <MaterialCommunityIcons name="map-marker" size={16} color={nbColors.gray500} />
-            <NBText variant="body-sm" style={{ color: nbColors.gray600, flex: 1 }} numberOfLines={1}>
-              {request.address}
-            </NBText>
-          </View>
-
-          {request.kecamatanName ? (
-            <View style={styles.detailRow}>
-              <MaterialCommunityIcons name="city-variant-outline" size={16} color={nbColors.gray500} />
-              <NBText variant="body-sm" style={{ color: nbColors.gray600 }}>
-                {request.kecamatanName}
-              </NBText>
-            </View>
-          ) : null}
-
-          {treeCount != null ? (
-            <View style={styles.detailRow}>
-              <MaterialCommunityIcons name="tree" size={16} color={nbColors.gray500} />
-              <NBText variant="body-sm" style={{ color: nbColors.gray600 }}>
-                {treeCount} pohon
-              </NBText>
-            </View>
-          ) : null}
-
-          <View style={styles.detailRow}>
-            <MaterialCommunityIcons name="calendar-clock" size={16} color={nbColors.gray500} />
-            <NBText variant="body-sm" style={{ color: nbColors.gray600 }}>
-              Diajukan {formatDate(request.createdAt)}
-            </NBText>
-          </View>
-        </View>
-      </NBCard>
-    </TouchableOpacity>
-  );
-}
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function PerantinganListScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
-  const { mine: requests, isLoading, error } = useAppSelector((state) => state.pruningRequests);
+  const user = useAppSelector((state) => state.auth.user);
+  const { mine: requests, isLoading, error } = useAppSelector(
+    (state) => state.pruningRequests,
+  );
 
   const [refreshing, setRefreshing] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [sort, setSort] = useState<SortOrder>('newest');
+  const [filters, setFilters] = useState<PruningRequestFilterValue>({});
+  const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
+  const [isSortModalOpen, setIsSortModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const hasMountedRef = useRef(false);
 
+  // ── Data fetching ─────────────────────────────────────────────────────
   const loadRequests = useCallback(async () => {
     try {
       await dispatch(fetchMyPruningRequests({ limit: 50, offset: 0 })).unwrap();
@@ -187,208 +136,395 @@ export function PerantinganListScreen(): React.JSX.Element {
     navigation.navigate('PerantinganSubmit');
   }, [navigation]);
 
-  // Filter + sort
+  // ── Filter / sort plumbing ────────────────────────────────────────────
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.status) { count++; }
+    if (filters.fromDate || filters.toDate) { count++; }
+    if (filters.rayonId) { count++; }
+    return count;
+  }, [filters]);
+
+  const filterChips = useMemo(() => {
+    const chips: { text: string; chipStyle: 'status' | 'date' | 'location' }[] = [];
+    if (filters.status) {
+      chips.push({
+        text: getPruningRequestStatusLabel(filters.status),
+        chipStyle: 'status',
+      });
+    }
+    if (filters.fromDate || filters.toDate) {
+      const f = filters.fromDate;
+      const t = filters.toDate;
+      chips.push({
+        text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal',
+        chipStyle: 'date',
+      });
+    }
+    if (filters.rayonId) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
+    return chips;
+  }, [filters]);
+
   const filteredSorted = useMemo(() => {
     let list = requests;
-    if (statusFilter !== 'all') {
-      list = list.filter((r) => r.status === statusFilter);
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters.fromDate) {
+      const from = new Date(filters.fromDate).getTime();
+      list = list.filter((r) => new Date(r.createdAt).getTime() >= from);
+    }
+    if (filters.toDate) {
+      // toDate is end-of-day inclusive
+      const to = new Date(filters.toDate + 'T23:59:59').getTime();
+      list = list.filter((r) => new Date(r.createdAt).getTime() <= to);
+    }
+    if (filters.rayonId) {
+      list = list.filter((r) => r.rayonId === filters.rayonId);
     }
     return [...list].sort((a, b) => {
-      const da = new Date(a.createdAt).getTime();
-      const db = new Date(b.createdAt).getTime();
-      return sort === 'newest' ? db - da : da - db;
+      switch (sort) {
+        case 'created_at_asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'expected_desc': {
+          const ax = a.expectedDate ? new Date(a.expectedDate).getTime() : 0;
+          const bx = b.expectedDate ? new Date(b.expectedDate).getTime() : 0;
+          return bx - ax;
+        }
+        case 'expected_asc': {
+          const ax = a.expectedDate ? new Date(a.expectedDate).getTime() : Infinity;
+          const bx = b.expectedDate ? new Date(b.expectedDate).getTime() : Infinity;
+          return ax - bx;
+        }
+        case 'created_at_desc':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
     });
-  }, [requests, statusFilter, sort]);
+  }, [requests, filters, sort]);
 
+  const activeSortLabel = useMemo(
+    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Dibuat Terbaru',
+    [sort],
+  );
+  const isSortActive = sort !== DEFAULT_SORT;
+
+  const handleApplyFilters = useCallback(
+    (newFilters: PruningRequestFilterValue) => setFilters(newFilters),
+    [],
+  );
+  const handleResetFilters = useCallback(() => setFilters({}), []);
+  const handleSortSelect = useCallback((key: string) => setSort(key as SortKey), []);
+
+  // ── Render ────────────────────────────────────────────────────────────
   const renderItem = useCallback(
     ({ item }: { item: PruningRequest }) => (
-      <RequestListItem request={item} onPress={() => handleRequestPress(item.id)} />
+      <PerantinganRequestCard
+        request={item}
+        onPress={() => handleRequestPress(item.id)}
+      />
     ),
     [handleRequestPress],
   );
 
+  const keyExtractor = useCallback((item: PruningRequest) => item.id, []);
+
   const renderEmpty = useCallback(() => {
-    if (isLoading) {
-      return null;
-    }
+    if (isLoading) { return null; }
     return (
       <NBEmptyState
         title="Belum ada permohonan"
         description={
-          statusFilter === 'all'
-            ? 'Permohonan pemangkasan Anda akan muncul di sini.'
-            : 'Tidak ada permohonan dengan status tersebut.'
+          activeFilterCount > 0
+            ? 'Tidak ada permohonan yang sesuai filter.'
+            : 'Permohonan pemangkasan Anda akan muncul di sini.'
         }
-        ctaLabel={statusFilter === 'all' ? 'Buat Permohonan' : undefined}
-        onCTA={statusFilter === 'all' ? handleSubmit : undefined}
+        ctaLabel={activeFilterCount === 0 ? 'Buat Permohonan' : undefined}
+        onCTA={activeFilterCount === 0 ? handleSubmit : undefined}
       />
     );
-  }, [isLoading, statusFilter, handleSubmit]);
+  }, [isLoading, activeFilterCount, handleSubmit]);
 
   if (isLoading && requests.length === 0) {
     return <LoadingSpinner />;
   }
 
   return (
-    <View style={styles.container}>
-      {/* Filter + sort bar */}
-      <View style={styles.filterBar}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-        >
-          {STATUS_FILTERS.map((f) => {
-            const active = statusFilter === f.key;
-            return (
-              <TouchableOpacity
-                key={f.key}
-                onPress={() => setStatusFilter(f.key)}
-                style={[styles.chip, active && styles.chipActive]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={`Filter ${f.label}`}
-              >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        <TouchableOpacity
-          onPress={() => setSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}
-          style={styles.sortButton}
-          accessibilityRole="button"
-          accessibilityLabel={`Urutkan ${SORT_OPTIONS.find((o) => o.key === sort)?.label}`}
-        >
-          <MaterialCommunityIcons
-            name={sort === 'newest' ? 'sort-clock-descending' : 'sort-clock-ascending'}
-            size={20}
-            color={nbColors.black}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.listWrapperWithFab}>
-        <FlatList
-          data={filteredSorted}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={nbColors.black} />
-          }
-          ListEmptyComponent={renderEmpty}
-          contentContainerStyle={styles.listContent}
-          scrollIndicatorInsets={{ right: 1 }}
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={50}
-          initialNumToRender={15}
-          removeClippedSubviews
-        />
-      </View>
-
-      {/* FAB — Buat Permohonan (mirrors OvertimeListScreen / TasksActivityScreen pattern) */}
-      <View style={styles.fab} pointerEvents="box-none">
-        <NBButton
-          title="+ Buat Permohonan"
-          variant="primary"
-          size="lg"
-          fullWidth
-          onPress={handleSubmit}
-          testID="perantingan-submit-fab"
-        />
-      </View>
-
-      {error ? (
-        <View style={styles.errorContainer}>
-          <NBAlert variant="danger" title="Gagal memuat permohonan" message={error} />
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        {/* Page Title — same style as Tugas / Aktivitas / Lembur */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.pageTitle}>Permohonan Perantingan</Text>
         </View>
-      ) : null}
-    </View>
+
+        {/* Filter bar — mini chips (left) + sort/filter icons (right) */}
+        <View
+          style={[
+            styles.filterBarCollapsed,
+            activeFilterCount > 0 && styles.filterBarActive,
+          ]}
+        >
+          <View style={styles.filterBarLeft}>
+            {filterChips.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.miniChipsContent}
+              >
+                {filterChips.map((chip, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.miniChip,
+                      chip.chipStyle === 'status' && styles.miniChipStatus,
+                      chip.chipStyle === 'date' && styles.miniChipDate,
+                      chip.chipStyle === 'location' && styles.miniChipLocation,
+                    ]}
+                  >
+                    <Text style={styles.miniChipText}>{chip.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={styles.filterBarPlaceholder}>Semua Permohonan</Text>
+            )}
+            {activeFilterCount > 0 && (
+              <TouchableOpacity
+                style={styles.filterClearButton}
+                onPress={handleResetFilters}
+                accessibilityRole="button"
+                accessibilityLabel="Reset filter permohonan"
+              >
+                <MaterialCommunityIcons
+                  name="close-circle"
+                  size={18}
+                  color={nbColors.danger}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.filterBarRight}>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsSortModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Urutan: ${activeSortLabel}`}
+            >
+              <MaterialCommunityIcons
+                name="sort"
+                size={22}
+                color={isSortActive ? nbColors.primary : nbColors.black}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsFilterModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter permohonan${
+                activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''
+              }`}
+            >
+              <MaterialCommunityIcons
+                name="filter-variant"
+                size={22}
+                color={activeFilterCount > 0 ? nbColors.primary : nbColors.black}
+              />
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* List wrapper — leaves room for FAB at bottom (matches OvertimeListScreen) */}
+        <View style={[styles.listWrapper, styles.listWrapperWithFab]}>
+          <FlatList
+            style={styles.list}
+            data={filteredSorted}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={nbColors.primary}
+              />
+            }
+            ListEmptyComponent={renderEmpty}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            removeClippedSubviews
+          />
+        </View>
+
+        {/* FAB — Buat Permohonan */}
+        <View style={styles.fab} pointerEvents="box-none">
+          <NBButton
+            title="+ Buat Permohonan"
+            variant="primary"
+            size="lg"
+            fullWidth
+            onPress={handleSubmit}
+            testID="perantingan-submit-fab"
+          />
+        </View>
+
+        {/* Inline error alert (Redux slice) */}
+        {error ? (
+          <View style={styles.errorContainer}>
+            <NBAlert variant="danger" title="Gagal memuat permohonan" message={error} />
+          </View>
+        ) : null}
+
+        {/* Sort modal */}
+        <SortModal
+          visible={isSortModalOpen}
+          onClose={() => setIsSortModalOpen(false)}
+          title="URUTKAN PERMOHONAN"
+          options={SORT_OPTIONS}
+          selectedOption={sort}
+          onSelect={handleSortSelect}
+        />
+
+        {/* Filter modal */}
+        <PruningRequestFilterModal
+          visible={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          filters={filters}
+          onApplyFilters={handleApplyFilters}
+          onResetFilters={handleResetFilters}
+          userRole={user?.role}
+          userRayonId={user?.rayon_id ?? undefined}
+        />
+      </SafeAreaView>
+    </NBBackgroundPattern>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
+// Mirrors OvertimeListScreen for visual parity.
+
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: nbColors.bgCanvas,
+    backgroundColor: 'transparent',
   },
-  filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: nbSpacing[3],
-    paddingVertical: nbSpacing[2],
-    backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
+  headerContainer: {
+    paddingHorizontal: nbSpacing.md,
+    paddingTop: nbSpacing.md,
+    paddingBottom: nbSpacing.xs,
   },
-  filterScroll: {
-    gap: nbSpacing[2],
-    paddingRight: nbSpacing[2],
-  },
-  chip: {
-    paddingHorizontal: nbSpacing[3],
-    paddingVertical: nbSpacing[1],
-    borderRadius: nbBorderRadius.full,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    backgroundColor: nbColors.white,
-    marginRight: nbSpacing[1],
-  },
-  chipActive: {
-    backgroundColor: nbColors.primary,
-  },
-  chipText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+  pageTitle: {
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
   },
-  chipTextActive: {
-    color: nbColors.white,
-  },
-  sortButton: {
-    marginLeft: nbSpacing[2],
-    width: 40,
-    height: 40,
+  filterBarCollapsed: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    backgroundColor: nbColors.white,
+    borderBottomWidth: nbBorders.extra,
+    borderBottomColor: nbColors.gray[300],
+    ...nbShadows.md,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
+    minHeight: 48,
+  },
+  filterBarActive: {
+    borderBottomColor: nbColors.primary,
+  },
+  filterBarLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  filterBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: nbSpacing.xs,
+  },
+  filterBarPlaceholder: {
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[400],
+    fontStyle: 'italic',
+  },
+  miniChipsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  miniChip: {
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
-    backgroundColor: nbColors.white,
+    borderRadius: nbBorderRadius.sm,
+    height: 32,
+    justifyContent: 'center',
+  },
+  miniChipStatus: { backgroundColor: nbColors.info },
+  miniChipDate: { backgroundColor: nbColors.warning },
+  miniChipLocation: { backgroundColor: nbColors.infoLight },
+  miniChipText: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.black,
+  },
+  filterClearButton: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  filterIconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: nbColors.danger,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
+  },
+  listWrapper: {
+    flex: 1,
   },
   listWrapperWithFab: {
+    paddingBottom: 80,
+  },
+  list: {
     flex: 1,
-    paddingBottom: 80, // matches OvertimeListScreen
   },
   listContent: {
-    padding: nbSpacing[4],
-    paddingBottom: nbSpacing[6],
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing['2xl'],
     flexGrow: 1,
-  },
-  listItem: {
-    marginBottom: nbSpacing[3],
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: nbSpacing[3],
-  },
-  refAndBadge: {
-    flex: 1,
-    marginRight: nbSpacing[3],
-    gap: nbSpacing[1],
-  },
-  itemDetails: {
-    gap: nbSpacing[2],
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing[2],
   },
   fab: {
     position: 'absolute',
@@ -400,7 +536,7 @@ const styles = StyleSheet.create({
   errorContainer: {
     position: 'absolute',
     top: 70,
-    left: nbSpacing[4],
-    right: nbSpacing[4],
+    left: nbSpacing.md,
+    right: nbSpacing.md,
   },
 });

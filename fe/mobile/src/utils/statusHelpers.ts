@@ -3,7 +3,7 @@
  * Shared status color/label utilities for overtime, activities, and tasks
  */
 
-import type { OvertimeStatus, ActivityStatus, TaskStatus } from '../types/models.types';
+import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus } from '../types/models.types';
 
 // Overtime status helpers
 export function getOvertimeStatusColor(status: OvertimeStatus): 'success' | 'warning' | 'danger' {
@@ -156,4 +156,39 @@ export function formatDurationHours(start: string, end: string): string {
     ? totalHours.toString()
     : totalHours.toFixed(1);
   return crossesMidnight ? `${h}j (lintas tengah malam)` : `${h}j`;
+}
+
+// ─── Pruning Request status (Phase 3) ───────────────────────────────────────
+//
+// Maps the 8 pruning_request statuses onto the 6-color NBBadge palette
+// so the visuals match the OvertimeBadge / TaskBadge styling.
+
+export function getPruningRequestStatusColor(
+  status: PruningRequestStatus,
+): 'primary' | 'success' | 'warning' | 'danger' | 'gray' | 'navy' {
+  switch (status) {
+    case 'submitted':    return 'warning';
+    case 'under_review': return 'navy';
+    case 'approved':     return 'success';
+    case 'rejected':     return 'danger';
+    case 'converted':    return 'primary';
+    case 'in_progress':  return 'primary';
+    case 'done':         return 'success';
+    case 'cancelled':    return 'gray';
+    default:             return 'gray';
+  }
+}
+
+export function getPruningRequestStatusLabel(status: PruningRequestStatus): string {
+  switch (status) {
+    case 'submitted':    return 'Menunggu';
+    case 'under_review': return 'Direview';
+    case 'approved':     return 'Disetujui';
+    case 'rejected':     return 'Ditolak';
+    case 'converted':    return 'Dikonversi';
+    case 'in_progress':  return 'Diproses';
+    case 'done':         return 'Selesai';
+    case 'cancelled':    return 'Dibatalkan';
+    default:             return status;
+  }
 }
