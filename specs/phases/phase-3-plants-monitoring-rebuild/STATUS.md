@@ -1,7 +1,15 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-04-27 (Apr 27 audit + bug-fix sweep + staff_kecamatan UX round 2 — see "Open Items by Bucket" below)
+**Date:** 2026-04-28 (Apr 27 audit + bug-fix sweep + staff_kecamatan UX rounds 2 & 3 — see "Open Items by Bucket" below)
+
+> **Apr 28 staff_kecamatan UX — Round 3** (mobile-only, no backend / migration changes):
+>
+> 1. **`RequestDetailScreen` redesign** — rewritten to mirror `ActivityDetailScreen`: section cards with `NBCardHeader`/`NBCardContent`, uppercase `sectionTitle` + emoji + `infoRow`/`label`/`value`, status `NBBadge` sourced from `getPruningRequestStatusColor/Label`, photo viewer + review decision sheet wrapped in `NBModal`, reviewer name reads `request.reviewer.full_name`.
+> 2. **Submit draft prompt actually fires** — Round 2 used `navigation.addListener('beforeRemove', …)` to show the "Simpan Draft?" prompt, but `SubmitScreen` is registered as a hidden `Tab.Screen` (with `tabBarButton: () => null`), and `beforeRemove` does **not** fire on tab navigators. Replaced with a manual `handleLeave` callback (TaskCreate pattern: 2-button "Tidak / Ya" alert when content present) wired to both the Batal button and `FieldHomeHeader.onBack` via `navigation.setOptions`. Footer is now a fixed Batal + Kirim row matching `TaskCreateScreen` / `ActivitySubmissionScreen`.
+> 3. **Draft restore on every focus** — Round 2's `hasRestoredRef` guard suppressed every restore prompt after the first focus because the tab screen stays mounted across visits. `useFocusEffect` now calls `restoreDraft` unconditionally (TaskCreate parity); the previous "draft re-prompt after camera intent" bug is prevented instead by the removal of save-on-blur (camera blur no longer auto-writes a draft, so refocus has nothing to detect unless the 30-second autosave fires during the camera modal).
+> 4. **`NBModal` fullscreen back arrow standardized** — replaced raw `<Text>←</Text>` glyph with `<MaterialCommunityIcons name="arrow-left" />` so the fullscreen modal matches the back-button look used everywhere else (`LocationPickerModal` is the visible consumer for staff_kecamatan).
+> 5. **`dateUtils.formatDate` / `formatDateLong` null-safe** — both now accept `Date | string | null | undefined` and return `'-'` for invalid input, matching the existing `formatDateTime` / `formatTime` shape. Fixes `TypeError: Cannot read property 'getFullYear' of null` on `RequestDetailScreen` when `expectedDate` / `reviewedAt` are not yet set.
 
 > **Apr 27 staff_kecamatan UX — Round 2** (mobile-heavy, one-line backend DTO patch):
 >
@@ -144,6 +152,28 @@ Two bugs surfaced when the user ran the staging seeder + logged in as `staff_kec
 3. **Mobile `nbSpacing` numeric-subscript shim** — Phase 3 admin screens written by Wave 3/4 used Tailwind-style `nbSpacing[2]`/`nbSpacing[4]` that returned `undefined`. Added numeric aliases (1=4, 2=8, 3=12, 4=16, 5=20, 6=24, 7=28, 8=32, 10=40, 12=48, 16=64) in `constants/nbTokens.ts`. Remove in Phase 4 polish once screens migrate to named tokens.
 
 4. **Web `staff_kecamatan` 404 prevention** — added two minimal placeholder pages at `(kecamatan)/pruning-requests/page.tsx` + `(kecamatan)/pruning-requests/my/page.tsx` directing the user to the mobile app. Resolves the dead sidebar links from `lib/navigation.ts`.
+
+---
+
+## 🎨 Apr 28 — staff_kecamatan UX Round 3
+
+After Round 2 the user piloted the flow as `staff_kec_pusat` and surfaced four follow-ups: detail-screen visuals, a null-date crash, a non-standard back arrow inside the location picker, and — most importantly — **the Round 2 draft prompt + Batal/back never actually fired on the Submit screen**. Root cause: `SubmitScreen` is registered as a hidden `Tab.Screen` (via `tabBarButton: () => null` so it doesn't appear in the tab bar), and `navigation.addListener('beforeRemove', …)` does not fire on tab navigators. The Round 2 fix was visually correct but functionally dead.
+
+**Mobile**
+
+- **`RequestDetailScreen` rewrite** — full visual parity with `ActivityDetailScreen`: `NBBackgroundPattern` wrap, section cards with `NBCardHeader` / `NBCardContent`, uppercase `sectionTitle` (📌 STATUS · 📍 LOKASI · 🌳 DETAIL POHON · 👤 KONTAK · 📝 CATATAN · 📸 FOTO LOKASI · ✅ HASIL REVIEW · 🔗 TUGAS TERKAIT · ⚖️ AKSI ADMIN), `infoRow` / `label` / `value` rows. Status badge sourced from new helpers `getPruningRequestStatusColor` / `getPruningRequestStatusLabel` in `utils/statusHelpers.ts`. Photos render in a horizontal scroll (160 × 160). Photo viewer + admin review decision sheet now use `NBModal` (`fullscreen` + `sheet` size `sm`) instead of raw `Modal`. Reviewer name reads `request.reviewer?.full_name` (Round 2 still referenced the legacy `reviewedBy.name` shape). `NBToast` calls now use the correct `body` field (was `message`).
+- **`SubmitScreen` draft / leave flow rebuilt** — replaced the dead `beforeRemove` listener with a manual `handleLeave` (TaskCreate pattern: 2-button alert "Tidak / Ya" when there's content, direct `navigation.goBack()` otherwise). `handleLeave` is wired to both the new fixed-bottom **Batal** button and the `FieldHomeHeader` back arrow via `navigation.setOptions({ headerTitle: () => <FieldHomeHeader … onBack={handleLeave} /> })` — exactly the same hook TaskCreate uses, so the two screens now have identical exit behaviour. Submit footer restructured: removed the inline "Kirim Permohonan" submit-card-as-final-card and moved to a fixed-bottom row with `Batal` (`variant="secondary"`, `size="lg"`) + `Kirim` (`variant="primary"`, `size="lg"`).
+- **Draft restore on every focus** — Round 2's `hasRestoredRef` one-shot guard meant the tab screen (which stays mounted across visits) never re-prompted "Lanjutkan / Hapus" after the first focus. Removed the guard; `useFocusEffect` now calls `restoreDraft()` on every focus. The original camera-intent regression that motivated the guard is prevented instead by removing save-on-blur — the camera modal blur no longer auto-writes a draft, so the refocus has nothing to surface unless the 30-second autosave happens to fire during the camera intent (matches TaskCreate behaviour exactly).
+- **`NBModal` fullscreen back arrow** — `<Text>←</Text>` replaced with `<MaterialCommunityIcons name="arrow-left" size={22} />` inside a 40 × 40 framed touch target. `getByText('←')` test assertions switched to `getByLabelText('Kembali')`. Visible consumer: `LocationPickerModal`.
+- **`dateUtils.formatDate` / `formatDateLong` null-safe** — both now accept `Date | string | null | undefined` and return `'-'` for null / invalid input, matching the existing `formatDateTime` / `formatTime` shape. Fixes the production `TypeError: Cannot read property 'getFullYear' of null` thrown when viewing a freshly-submitted request whose `expectedDate` / `reviewedAt` haven't been set.
+
+**Tests**
+
+`RequestDetailScreen.test.tsx`'s nb-component mock now exports `NBBackgroundPattern` (was missing from the legacy mock); one regex assertion (`/Tugas Terkait/`) is now case-insensitive to accommodate the uppercase section title. `SubmitScreen.test.tsx` adds a `withAlpha` shim to its `nbTokens` proxy mock and mocks `FieldHomeHeader` in isolation so the new header override doesn't pull in the full header tree. `NBModal.test.tsx`'s 3 back-button assertions migrated to `getByLabelText('Kembali')`. Mobile sweep: 4118 / 4125 tests green (7 pre-existing skips), pruning + NBModal subset 137 / 137.
+
+**Backend / specs**
+
+No schema, DTO, or migration change in Round 3. `mobile.md` § "staff_kecamatan" amended; `backend.md` / `database.md` left as-is.
 
 ---
 

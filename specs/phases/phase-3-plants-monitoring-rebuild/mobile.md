@@ -150,6 +150,13 @@ Scaffolds live in `src/services/sync/offlineQueue.ts` but are wired with a simpl
 
 **Apr 27 redesign:** `staff_kecamatan` now flows through `MainNavigator` like every other role (the standalone `KecamatanNavigator` is removed). The 2-tab layout is **Perantingan** (request list with status filter, sort, and FAB → submit) + **Profile**. The redesigned `SubmitScreen` is a single scrollable card-based form (no wizard) reachable via the FAB; cards: Lokasi (auto GPS + rayon/kecamatan presets) · Foto (min 1 max 5, camera + gallery) · Detail Pohon (jumlah/tinggi/diameter) · Kontak (pemohon + ketua RT, name + phone) · Catatan (optional). The role still has no Monitoring entry — `MainNavigator.TAB_CONFIGS.staff_kecamatan` only contains Perantingan + Profile.
 
+**Apr 28 Round 3 polish:**
+
+- `RequestDetailScreen` follows the `ActivityDetailScreen` visual template (NB section cards with `NBCardHeader`/`NBCardContent`, uppercase `sectionTitle` + emoji, `infoRow`/`label`/`value` rows, status `NBBadge` from `getPruningRequestStatusColor/Label`, photo viewer + review decision sheet wrapped in `NBModal`). `RequestDetailScreen.tsx` is the visual sibling of `ActivityDetailScreen` and `TaskDetailScreen` from Apr 28 onward.
+- Submit's exit flow now matches `TaskCreateScreen`: a manual `handleLeave` callback (2-button "Tidak / Ya" alert when there's unsent content) wired to both the **Batal** button and `FieldHomeHeader.onBack` via `navigation.setOptions`. `beforeRemove` is **not** used because `SubmitScreen` is a hidden `Tab.Screen` and that listener doesn't fire on tab navigators. The footer is a fixed Batal + Kirim row, identical in shape to TaskCreate / ActivitySubmission.
+- Draft is restored on **every** focus via `useFocusEffect(restoreDraft)` — no one-shot ref guard. Tab screens stay mounted across visits, so a guard would suppress legitimate restore prompts. Save-on-blur was deliberately removed so a brief camera/gallery intent doesn't auto-write a draft that the next focus would re-surface; the 30 s autosave still runs as the canonical persistence path.
+- `dateUtils.formatDate` / `formatDateLong` are null-safe (return `'-'` for null/undefined/invalid input) so the detail screen can render unset `expectedDate` / `reviewedAt` without crashing.
+
 ---
 
 ## WebSocket Integration
