@@ -23,12 +23,12 @@ export function KecamatanNavigator(): React.JSX.Element {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: nbColors.bgDefault,
-          borderBottomColor: nbColors.borderDefault,
+          backgroundColor: nbColors.bgCanvas,
+          borderBottomColor: nbColors.gray300,
           borderBottomWidth: 1,
         },
         headerTitleStyle: nbTypography.h3,
-        headerTintColor: nbColors.textDefault,
+        headerTintColor: nbColors.black,
         headerShadowVisible: false,
         gestureEnabled: true,
       }}

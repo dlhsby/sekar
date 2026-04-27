@@ -120,4 +120,59 @@ describe('nbTokens', () => {
       expect(withAlpha('#AbCdEf', 0.5)).toBe('rgba(171, 205, 239, 0.5)');
     });
   });
+
+  describe('flat-token shape regression guard (Phase 3)', () => {
+    // SubmitScreen + KecamatanNavigator crashed on Apr 27 because of nested
+    // paths like nbColors.bg.primary / nbColors.text.secondary that don't
+    // exist on the generated flat export. This guard fails fast if any
+    // future contributor reintroduces a nested object on the affected keys.
+    it('should not expose nested objects on bg/text/status (flat shape only)', () => {
+      const c = nbColors as unknown as Record<string, unknown>;
+      const nestedKeys = ['bg', 'text', 'status'];
+      nestedKeys.forEach((k) => {
+        // Either the key is absent, or it's a string color — never an object.
+        if (k in c) {
+          expect(typeof c[k]).toBe('string');
+        }
+      });
+    });
+
+    it('should expose canonical flat color names used across Phase 3 screens', () => {
+      const required = [
+        'bgCanvas',
+        'bgSurface',
+        'black',
+        'white',
+        'gray300',
+        'gray500',
+        'gray600',
+        'primary',
+        'danger',
+        'success',
+      ];
+      required.forEach((key) => {
+        expect(typeof (nbColors as unknown as Record<string, unknown>)[key]).toBe(
+          'string',
+        );
+      });
+    });
+
+    it('should not expose semantic aliases that previously crashed at runtime', () => {
+      const c = nbColors as unknown as Record<string, unknown>;
+      const forbidden = [
+        'bgDefault',
+        'bgSecondary',
+        'bgTertiary',
+        'textDefault',
+        'textSecondary',
+        'textTertiary',
+        'borderDefault',
+      ];
+      forbidden.forEach((key) => {
+        // If we ever decide to add these as proper aliases, update the
+        // mapping table in screens/pruningRequests at the same time.
+        expect(c[key]).toBeUndefined();
+      });
+    });
+  });
 });

@@ -265,16 +265,16 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
 
   if (!draft) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: nbColors.bg.primary }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: nbColors.bgCanvas }]}>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={nbColors.text.primary} />
+          <ActivityIndicator size="large" color={nbColors.black} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: nbColors.bg.primary }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: nbColors.bgCanvas }]}>
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollContent}
@@ -282,10 +282,10 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
       >
         {/* Header with step indicator */}
         <View style={styles.header}>
-          <Text style={[nbTypography.h3, { color: nbColors.text.primary }]}>
+          <Text style={[nbTypography.h3, { color: nbColors.black }]}>
             {STEP_TITLES[step]}
           </Text>
-          <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary, marginTop: nbSpacing.xs }]}>
+          <Text style={[nbTypography['body-sm'], { color: nbColors.gray600, marginTop: nbSpacing.xs }]}>
             Langkah {step + 1} dari {STEP_TITLES.length}
           </Text>
         </View>
@@ -298,7 +298,7 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
               style={[
                 styles.progressDot,
                 {
-                  backgroundColor: index <= step ? nbColors.status.primary : nbColors.bg.tertiary,
+                  backgroundColor: index <= step ? nbColors.primary : nbColors.gray300,
                 },
               ]}
             />
@@ -368,7 +368,7 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
           style={styles.nextButton}
         >
           {isSubmitting || isSubmittingRequest ? (
-            <ActivityIndicator size="small" color={nbColors.text.inverse} />
+            <ActivityIndicator size="small" color={nbColors.white} />
           ) : step === WizardStep.Preview ? (
             'Kirim'
           ) : step === WizardStep.Success ? (
@@ -415,15 +415,15 @@ function StepAddressContent({
 
       <NBCard style={{ marginTop: nbSpacing.md }}>
         <NBCardHeader>
-          <Text style={[nbTypography['body'], { color: nbColors.text.primary }]}>Lokasi GPS</Text>
+          <Text style={[nbTypography['body'], { color: nbColors.black }]}>Lokasi GPS</Text>
         </NBCardHeader>
         <NBCardContent>
           {draft.lat && draft.lng ? (
             <View>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>
+              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
                 Lat: {draft.lat.toFixed(6)}
               </Text>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>
+              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
                 Lng: {draft.lng.toFixed(6)}
               </Text>
               <NBButton
@@ -433,7 +433,7 @@ function StepAddressContent({
                 style={{ marginTop: nbSpacing.md }}
               >
                 {isLoadingLocation ? (
-                  <ActivityIndicator size="small" color={nbColors.text.primary} />
+                  <ActivityIndicator size="small" color={nbColors.black} />
                 ) : (
                   'Perbarui Lokasi'
                 )}
@@ -441,7 +441,7 @@ function StepAddressContent({
             </View>
           ) : (
             <View>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary, marginBottom: nbSpacing.md }]}>
+              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600, marginBottom: nbSpacing.md }]}>
                 Belum ada lokasi tertangkap
               </Text>
               <NBButton
@@ -450,7 +450,7 @@ function StepAddressContent({
                 disabled={isLoadingLocation}
               >
                 {isLoadingLocation ? (
-                  <ActivityIndicator size="small" color={nbColors.text.inverse} />
+                  <ActivityIndicator size="small" color={nbColors.white} />
                 ) : (
                   'Tangkap Lokasi GPS'
                 )}
@@ -480,7 +480,7 @@ function StepPhotosContent({
       <NBCard>
         <NBCardContent>
           <Text
-            style={[nbTypography['body-sm'], { color: nbColors.text.secondary, marginBottom: nbSpacing.md }]}
+            style={[nbTypography['body-sm'], { color: nbColors.gray600, marginBottom: nbSpacing.md }]}
           >
             Pilih 3-5 foto ({photoCount}/5)
           </Text>
@@ -495,7 +495,7 @@ function StepPhotosContent({
             <Text
               style={[
                 nbTypography['body-sm'],
-                { color: nbColors.status.danger, marginTop: nbSpacing.md },
+                { color: nbColors.danger, marginTop: nbSpacing.md },
               ]}
             >
               Minimal 3 foto diperlukan
@@ -508,7 +508,7 @@ function StepPhotosContent({
         <Text
           style={[
             nbTypography['body-sm'],
-            { color: nbColors.text.secondary, marginTop: nbSpacing.md, marginBottom: nbSpacing.sm },
+            { color: nbColors.gray600, marginTop: nbSpacing.md, marginBottom: nbSpacing.sm },
           ]}
         >
           {photoCount} foto terpilih
@@ -587,58 +587,58 @@ function StepPreviewContent({
     <View style={styles.stepContent}>
       <NBCard>
         <NBCardHeader>
-          <Text style={[nbTypography.h3, { color: nbColors.text.primary }]}>Ringkasan</Text>
+          <Text style={[nbTypography.h3, { color: nbColors.black }]}>Ringkasan</Text>
         </NBCardHeader>
         <NBCardContent>
           <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>Alamat</Text>
-            <Text style={[nbTypography['body'], { color: nbColors.text.primary }]}>
+            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>Alamat</Text>
+            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
               {draft.address}
             </Text>
           </View>
 
           <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>
+            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
               Lokasi GPS
             </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.text.primary }]}>
+            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
               {draft.lat?.toFixed(6)}, {draft.lng?.toFixed(6)}
             </Text>
           </View>
 
           <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>
+            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
               Tanggal Pekerjaan
             </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.text.primary }]}>
+            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
               {new Date(draft.detail_date).toLocaleDateString('id-ID')}
             </Text>
           </View>
 
           <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>
+            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
               Estimasi Pohon
             </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.text.primary }]}>
+            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
               {draft.target_count} pohon
             </Text>
           </View>
 
           <View>
-            <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>
+            <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
               Foto
             </Text>
-            <Text style={[nbTypography['body'], { color: nbColors.text.primary }]}>
+            <Text style={[nbTypography['body'], { color: nbColors.black }]}>
               {photoCount} foto
             </Text>
           </View>
 
           {draft.notes && (
             <View style={{ marginTop: nbSpacing.md }}>
-              <Text style={[nbTypography['body-sm'], { color: nbColors.text.secondary }]}>
+              <Text style={[nbTypography['body-sm'], { color: nbColors.gray600 }]}>
                 Catatan
               </Text>
-              <Text style={[nbTypography['body'], { color: nbColors.text.primary }]}>
+              <Text style={[nbTypography['body'], { color: nbColors.black }]}>
                 {draft.notes}
               </Text>
             </View>
@@ -665,7 +665,7 @@ function StepSuccessContent({
             <Text
               style={[
                 nbTypography.display,
-                { color: nbColors.status.success, marginBottom: nbSpacing.md },
+                { color: nbColors.success, marginBottom: nbSpacing.md },
               ]}
             >
               ✓
@@ -673,7 +673,7 @@ function StepSuccessContent({
             <Text
               style={[
                 nbTypography.h2,
-                { color: nbColors.text.primary, marginBottom: nbSpacing.md },
+                { color: nbColors.black, marginBottom: nbSpacing.md },
               ]}
             >
               Berhasil!
@@ -681,7 +681,7 @@ function StepSuccessContent({
             <Text
               style={[
                 nbTypography['body'],
-                { color: nbColors.text.secondary, textAlign: 'center', marginBottom: nbSpacing.lg },
+                { color: nbColors.gray600, textAlign: 'center', marginBottom: nbSpacing.lg },
               ]}
             >
               Permohonan Anda telah dikirim dengan baik.
@@ -693,11 +693,11 @@ function StepSuccessContent({
                 { borderColor: nbColors.gray['300'], backgroundColor: nbColors.gray['50'] },
               ]}
             >
-              <Text style={[nbTypography['caption'], { color: nbColors.text.secondary }]}>
+              <Text style={[nbTypography['caption'], { color: nbColors.gray600 }]}>
                 Kode Referensi
               </Text>
               <Text
-                style={[nbTypography['body-lg'], { color: nbColors.text.primary, marginTop: nbSpacing.xs }]}
+                style={[nbTypography['body-lg'], { color: nbColors.black, marginTop: nbSpacing.xs }]}
               >
                 {referenceCode}
               </Text>
@@ -706,7 +706,7 @@ function StepSuccessContent({
             <Text
               style={[
                 nbTypography['body-sm'],
-                { color: nbColors.text.secondary, marginTop: nbSpacing.lg, textAlign: 'center' },
+                { color: nbColors.gray600, marginTop: nbSpacing.lg, textAlign: 'center' },
               ]}
             >
               Tim kami akan meninjau permohonan Anda dalam 1-2 hari kerja.

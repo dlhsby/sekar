@@ -77,7 +77,7 @@ function PhotoModal({
           <MaterialCommunityIcons
             name="close"
             size={32}
-            color={nbColors.bgDefault}
+            color={nbColors.bgCanvas}
           />
         </TouchableOpacity>
 
@@ -158,7 +158,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               <NBText variant="h2">{request.referenceCode}</NBText>
               <NBText
                 variant="body-sm"
-                style={{ color: nbColors.textTertiary, marginTop: nbSpacing[1] }}
+                style={{ color: nbColors.gray500, marginTop: nbSpacing[1] }}
               >
                 {formatDateTime(request.createdAt)}
               </NBText>
@@ -177,9 +177,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               <MaterialCommunityIcons
                 name="map-marker"
                 size={20}
-                color={nbColors.textDefault}
+                color={nbColors.black}
               />
-              <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                 Alamat
               </NBText>
             </View>
@@ -193,9 +193,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               <MaterialCommunityIcons
                 name="crosshairs-gps"
                 size={20}
-                color={nbColors.textDefault}
+                color={nbColors.black}
               />
-              <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                 Koordinat GPS
               </NBText>
             </View>
@@ -216,9 +216,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               <MaterialCommunityIcons
                 name="calendar"
                 size={20}
-                color={nbColors.textDefault}
+                color={nbColors.black}
               />
-              <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                 Tanggal Pemangkasan Diharapkan
               </NBText>
             </View>
@@ -232,9 +232,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               <MaterialCommunityIcons
                 name="tree"
                 size={20}
-                color={nbColors.textDefault}
+                color={nbColors.black}
               />
-              <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                 Estimasi Jumlah Pohon
               </NBText>
             </View>
@@ -249,9 +249,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                 <MaterialCommunityIcons
                   name="note-text"
                   size={20}
-                  color={nbColors.textDefault}
+                  color={nbColors.black}
                 />
-                <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                   Catatan
                 </NBText>
               </View>
@@ -285,7 +285,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                     <MaterialCommunityIcons
                       name="magnify"
                       size={24}
-                      color={nbColors.bgDefault}
+                      color={nbColors.bgCanvas}
                     />
                   </View>
                 </TouchableOpacity>
@@ -302,7 +302,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             </NBText>
 
             <View style={styles.detailField}>
-              <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                 Direview oleh
               </NBText>
               <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
@@ -311,7 +311,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             </View>
 
             <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-              <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                 Tanggal Review
               </NBText>
               <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
@@ -321,7 +321,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 
             {request.reviewNotes && (
               <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-                <NBText variant="body-sm" style={{ color: nbColors.textTertiary }}>
+                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
                   Catatan Review
                 </NBText>
                 <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
@@ -340,7 +340,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             </NBText>
             <NBText
               variant="body"
-              style={{ marginBottom: nbSpacing[3], color: nbColors.textSecondary }}
+              style={{ marginBottom: nbSpacing[3], color: nbColors.gray600 }}
             >
               Permohonan ini telah dikonversi menjadi tugas kerja.
             </NBText>
@@ -377,7 +377,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.bgDefault,
+    backgroundColor: nbColors.bgCanvas,
   },
   scrollContent: {
     padding: nbSpacing[4],
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: nbSpacing[3],
-    color: nbColors.textDefault,
+    color: nbColors.black,
   },
   detailField: {
     marginBottom: nbSpacing[0],
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     width: '48%',
     height: 120,
     borderRadius: nbBorderRadius.md,
-    backgroundColor: nbColors.bgSecondary,
+    backgroundColor: nbColors.bgSurface,
   },
   photoOverlay: {
     position: 'absolute',

@@ -70,7 +70,7 @@ function RequestListItem({
       <NBCard style={styles.listItem}>
         <View style={styles.itemHeader}>
           <View style={styles.refAndBadge}>
-            <Text style={[nbTypography.h3, { color: nbColors.textDefault }]}>
+            <Text style={[nbTypography.h3, { color: nbColors.black }]}>
               {request.referenceCode}
             </Text>
             <NBBadge variant={statusDisplay.variant} label={statusDisplay.label} />
@@ -78,7 +78,7 @@ function RequestListItem({
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
-            color={nbColors.textSecondary}
+            color={nbColors.gray600}
           />
         </View>
 
@@ -87,10 +87,10 @@ function RequestListItem({
             <MaterialCommunityIcons
               name="map-marker"
               size={16}
-              color={nbColors.textTertiary}
+              color={nbColors.gray500}
             />
             <Text
-              style={[nbTypography.body, { color: nbColors.textSecondary, flex: 1 }]}
+              style={[nbTypography.body, { color: nbColors.gray600, flex: 1 }]}
               numberOfLines={1}
             >
               {request.address}
@@ -101,9 +101,9 @@ function RequestListItem({
             <MaterialCommunityIcons
               name="calendar"
               size={16}
-              color={nbColors.textTertiary}
+              color={nbColors.gray500}
             />
-            <Text style={[nbTypography.body, { color: nbColors.textSecondary }]}>
+            <Text style={[nbTypography.body, { color: nbColors.gray600 }]}>
               {formatDate(request.expectedDate)}
             </Text>
           </View>
@@ -112,9 +112,9 @@ function RequestListItem({
             <MaterialCommunityIcons
               name="tree"
               size={16}
-              color={nbColors.textTertiary}
+              color={nbColors.gray500}
             />
-            <Text style={[nbTypography.body, { color: nbColors.textSecondary }]}>
+            <Text style={[nbTypography.body, { color: nbColors.gray600 }]}>
               {request.estimatedPlantCount} pohon
             </Text>
           </View>
@@ -220,7 +220,7 @@ export function MyRequestsScreen(
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={nbColors.textDefault}
+            tintColor={nbColors.black}
           />
         }
         ListEmptyComponent={renderEmpty}
@@ -248,7 +248,7 @@ export function MyRequestsScreen(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.bgDefault,
+    backgroundColor: nbColors.bgCanvas,
   },
   listContent: {
     padding: nbSpacing[4],
