@@ -1,4 +1,4 @@
-import { DataSource, QueryRunner } from 'typeorm';
+import type { DataSource, QueryRunner } from 'typeorm';
 import { config } from 'dotenv';
 
 config();
@@ -14,7 +14,7 @@ config();
  * Usage: npm run db:seed:phase3
  */
 
-const PLANT_SPECIES: Array<{ nameId: string; category: string }> = [
+export const PLANT_SPECIES: Array<{ nameId: string; category: string }> = [
   { nameId: 'AKASIA', category: 'tree' },
   { nameId: 'ALIANDER', category: 'shrub' },
   { nameId: 'ALPUKAT', category: 'tree' },
@@ -149,7 +149,7 @@ const PLANT_SPECIES: Array<{ nameId: string; category: string }> = [
  * Compute ISO week number for a given date.
  * Uses the standard ISO 8601 definition (week containing the first Thursday).
  */
-function getIsoWeek(date: Date): { year: number; week: number } {
+export function getIsoWeek(date: Date): { year: number; week: number } {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayOfWeek = d.getUTCDay() || 7; // 1=Mon ... 7=Sun
   d.setUTCDate(d.getUTCDate() + 4 - dayOfWeek); // align to Thursday
@@ -437,10 +437,196 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
  * Returns the maximum ISO week number for a given year.
  * A year has 53 ISO weeks if Jan 1 is Thursday, or if it is a leap year and Jan 1 is Wednesday.
  */
-function getMaxIsoWeek(year: number): number {
+export function getMaxIsoWeek(year: number): number {
   const jan1 = new Date(Date.UTC(year, 0, 1)).getUTCDay() || 7;
   const dec31 = new Date(Date.UTC(year, 11, 31)).getUTCDay() || 7;
   return jan1 === 4 || dec31 === 4 ? 53 : 52;
+}
+
+// ==========================================
+// Reusable embeddable helpers (no transaction management — caller owns it)
+// ==========================================
+
+/**
+ * Phase 3 reference data — fully idempotent, no FK requirements beyond migrations.
+ * Seeds: plant_species (128), Phase 3 monitoring_configs (4 keys).
+ * Safe for production cold-start.
+ */
+export async function seedPhase3Reference(queryRunner: QueryRunner): Promise<void> {
+  let speciesInserted = 0;
+  for (const species of PLANT_SPECIES) {
+    const rows = await queryRunner.query(
+      `INSERT INTO plant_species (name_id, category)
+       VALUES ($1, $2)
+       ON CONFLICT (name_id) DO NOTHING
+       RETURNING id`,
+      [species.nameId, species.category],
+    );
+    if (rows.length > 0) speciesInserted++;
+  }
+  console.log(`  ✓ ${speciesInserted} new plant_species inserted (${PLANT_SPECIES.length - speciesInserted} already existed)`);
+
+  const phase3Configs = [
+    { key: 'plants_forecast', value: { default_pruning_cycle_days: 90, overdue_threshold_days: 30, due_soon_window_days: 14 }, description: 'Plant pruning forecast configuration (Phase 3)' },
+    { key: 'service_capacity_defaults', value: { default_capacity_per_week: 5, overbooking_tolerance: 10, booking_window_weeks: 12 }, description: 'Service capacity booking defaults (Phase 3)' },
+    { key: 'pruning_request_workflow', value: { auto_assign_to_rayon: false, review_deadline_days: 7, reference_code_prefix: 'PR' }, description: 'Pruning request workflow settings (Phase 3)' },
+    { key: 'seed_inventory', value: { low_stock_threshold_grams: 500, low_stock_threshold_pieces: 50, reorder_notification: true }, description: 'Seed inventory alert thresholds (Phase 3)' },
+  ];
+  let configsInserted = 0;
+  for (const cfg of phase3Configs) {
+    const rows = await queryRunner.query(
+      `INSERT INTO monitoring_configs (key, value, description)
+       VALUES ($1, $2::jsonb, $3)
+       ON CONFLICT (key) DO NOTHING
+       RETURNING key`,
+      [cfg.key, JSON.stringify(cfg.value), cfg.description],
+    );
+    if (rows.length > 0) configsInserted++;
+  }
+  console.log(`  ✓ ${configsInserted} new Phase 3 monitoring_configs inserted (${phase3Configs.length - configsInserted} already existed)`);
+}
+
+/**
+ * Service capacity grid — 12 ISO weeks ahead × N rayons × service_type='pruning'.
+ * Idempotent. Requires `rayons` to be seeded first.
+ *
+ * @param capacityUnits initial capacity per row (default 0; UAT may pass 5 to enable booking demos).
+ */
+export async function seedPhase3ServiceCapacity(
+  queryRunner: QueryRunner,
+  capacityUnits = 0,
+): Promise<void> {
+  const rayons = await queryRunner.query(`SELECT id FROM rayons ORDER BY name`);
+  if (rayons.length === 0) {
+    console.log('  ⚠ No rayons found, skipping service_capacity seed');
+    return;
+  }
+  const today = new Date();
+  const { year: startYear, week: startWeek } = getIsoWeek(today);
+  const weeks: Array<{ year: number; week: number }> = [];
+  let yr = startYear;
+  let wk = startWeek;
+  for (let i = 0; i < 12; i++) {
+    weeks.push({ year: yr, week: wk });
+    wk++;
+    if (wk > getMaxIsoWeek(yr)) { wk = 1; yr++; }
+  }
+  let inserted = 0;
+  for (const r of rayons) {
+    for (const { year, week } of weeks) {
+      const rows = await queryRunner.query(
+        `INSERT INTO service_capacity (rayon_id, year, iso_week, service_type, capacity_units, booked_units)
+         VALUES ($1, $2, $3, 'pruning', $4, 0)
+         ON CONFLICT (rayon_id, year, iso_week, service_type) DO NOTHING
+         RETURNING id`,
+        [r.id, year, week, capacityUnits],
+      );
+      if (rows.length > 0) inserted++;
+    }
+  }
+  console.log(`  ✓ ${inserted} new service_capacity rows (${rayons.length} rayons × ${weeks.length} weeks, capacity_units=${capacityUnits})`);
+}
+
+/**
+ * Phase 3 sample/UAT data — area_plants, pruning_requests, plant_seeds, seed_transactions.
+ * Requires existing users (admin_data or staff_kecamatan), areas, and rayons.
+ * Idempotent on natural keys; safe to re-run.
+ */
+export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<void> {
+  // Sample area_plants — link first up-to-6 active areas to common species
+  const areas = await queryRunner.query(`SELECT id FROM areas WHERE is_active = true LIMIT 6`);
+  if (areas.length > 0) {
+    const mappings = [
+      { speciesName: 'AKASIA', count: 10 },
+      { speciesName: 'MAHONI', count: 6 },
+      { speciesName: 'BUNGUR', count: 4 },
+      { speciesName: 'SENGON', count: 8 },
+      { speciesName: 'JATI', count: 3 },
+    ];
+    let inserted = 0;
+    for (const area of areas) {
+      for (const m of mappings) {
+        const sp = await queryRunner.query(`SELECT id FROM plant_species WHERE name_id = $1 LIMIT 1`, [m.speciesName]);
+        if (sp.length > 0) {
+          const rows = await queryRunner.query(
+            `INSERT INTO area_plants (area_id, species_id, count)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (area_id, species_id) DO NOTHING
+             RETURNING id`,
+            [area.id, sp[0].id, m.count],
+          );
+          if (rows.length > 0) inserted++;
+        }
+      }
+    }
+    console.log(`  ✓ ${inserted} area_plants inserted across ${areas.length} areas`);
+  } else {
+    console.log('  ⚠ No active areas found, skipping area_plants');
+  }
+
+  // Sample pruning_requests — 4 in different statuses, submitted by staff_kecamatan or admin_data
+  const submitter = await queryRunner.query(
+    `SELECT id FROM users WHERE role IN ('staff_kecamatan','admin_data') ORDER BY role LIMIT 1`,
+  );
+  if (submitter.length > 0) {
+    const submitterId = submitter[0].id;
+    const samples = [
+      { kecamatan: 'Surabaya Pusat', address: 'Jl. Pemuda No. 1', status: 'submitted' },
+      { kecamatan: 'Surabaya Selatan', address: 'Jl. Raya Darmo No. 50', status: 'submitted' },
+      { kecamatan: 'Surabaya Timur', address: 'Jl. Kenjeran No. 100', status: 'approved' },
+      { kecamatan: 'Surabaya Utara', address: 'Jl. Tanjungsari No. 25', status: 'rejected' },
+    ];
+    let inserted = 0;
+    for (let i = 0; i < samples.length; i++) {
+      const refCode = `PR-2026-STAGING-${String(i + 1).padStart(4, '0')}`;
+      const rows = await queryRunner.query(
+        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (reference_code) DO NOTHING
+         RETURNING id`,
+        [refCode, submitterId, samples[i].kecamatan, samples[i].address, samples[i].status],
+      );
+      if (rows.length > 0) inserted++;
+    }
+    console.log(`  ✓ ${inserted} pruning_requests inserted (mixed statuses)`);
+  } else {
+    console.log('  ⚠ No staff_kecamatan/admin_data user found, skipping pruning_requests');
+  }
+
+  // Sample plant_seeds + seed_transactions
+  const recorder = await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_data' LIMIT 1`);
+  const recorderId = recorder.length > 0 ? recorder[0].id : null;
+  const seeds = [
+    { nameId: 'AKASIA_SEEDS', unit: 'gram', qty: 1000 },
+    { nameId: 'MAHONI_SEEDS', unit: 'gram', qty: 800 },
+    { nameId: 'BUNGUR_SEEDS', unit: 'piece', qty: 500 },
+    { nameId: 'SENGON_SEEDS', unit: 'gram', qty: 600 },
+    { nameId: 'JATI_SEEDS', unit: 'piece', qty: 300 },
+  ];
+  let seedsInserted = 0;
+  let txInserted = 0;
+  for (const s of seeds) {
+    const seedResult = await queryRunner.query(
+      `INSERT INTO plant_seeds (name_id, unit, stock_qty)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (name_id) DO NOTHING
+       RETURNING id`,
+      [s.nameId, s.unit, s.qty],
+    );
+    if (seedResult.length > 0) {
+      seedsInserted++;
+      if (recorderId) {
+        const tx = await queryRunner.query(
+          `INSERT INTO seed_transactions (seed_id, transaction_type, qty, supplier, occurred_at, recorded_by)
+           VALUES ($1, 'purchase', $2, 'Dinas Lingkungan Hidup', $3, $4)
+           RETURNING id`,
+          [seedResult[0].id, s.qty, new Date().toISOString().split('T')[0], recorderId],
+        );
+        if (tx.length > 0) txInserted++;
+      }
+    }
+  }
+  console.log(`  ✓ ${seedsInserted} plant_seeds + ${txInserted} seed_transactions`);
 }
 
 // ==========================================
@@ -467,9 +653,14 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Only run main() when this file is the entry point (npm run db:seed:phase3).
+// Without this guard, importing the helpers from seed-reference.ts or
+// seed-staging.ts would trigger a second full Phase 3 seed.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
 
 export { seedPhase3 };

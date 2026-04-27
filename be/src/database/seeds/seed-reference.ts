@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
+import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
 
 config();
 
@@ -11,16 +12,20 @@ config();
  * Safe to re-run multiple times with no side effects.
  *
  * Seeded:
- *   - 4  area types         (park, pedestrian, mini_garden, street)
- *   - 3  shift definitions  (SHIFT1, SHIFT2, SHIFT3)
- *   - 7  rayons             (7 Surabaya geographic sectors)
- *   - 20 activity types     (8 satgas, 5 linmas, 4 korlap, 3 admin_data)
- *   - 4  special day overrides (Indonesian holidays)
- *   - 5  monitoring configs (status thresholds, geofencing, map, alerts, ping)
- *   - 1  default superadmin user (for initial prod login)
+ *   - 4   area types         (park, pedestrian, mini_garden, street)
+ *   - 3   shift definitions  (SHIFT1, SHIFT2, SHIFT3)
+ *   - 7   rayons             (7 Surabaya geographic sectors)
+ *   - 20  activity types     (8 satgas, 5 linmas, 4 korlap, 3 admin_data)
+ *   - 4   special day overrides (Indonesian holidays)
+ *   - 5   monitoring configs (Phase 2D)
+ *   - 4   monitoring configs (Phase 3 — plants/capacity/pruning/seeds)
+ *   - 128 plant_species      (Phase 3)
+ *   - service_capacity grid  (Phase 3 — 7 rayons × 12 ISO weeks ahead, capacity_units=0)
+ *   - 1   default superadmin user (for initial prod login)
  *
  * NOT seeded (dev/demo data):
- *   Users, areas, tasks, activities, location_logs, shifts, schedules
+ *   Users (other than superadmin), areas, tasks, activities, location_logs,
+ *   shifts, schedules, area_plants, pruning_requests, plant_seeds.
  *
  * Run (dev):  npm run db:seed:reference
  * Run (prod): npm run db:seed:prod
@@ -243,6 +248,21 @@ async function seedReference() {
     console.log('  ✓ 5 monitoring configs');
 
     // ============================================================
+    // 6b. PHASE 3 REFERENCE DATA (idempotent)
+    // ============================================================
+    const phase3SchemaCheck = await queryRunner.query(
+      `SELECT to_regclass('public.plant_species') AS exists`,
+    );
+    if (phase3SchemaCheck[0]?.exists) {
+      console.log('\n🌳 Seeding Phase 3 reference data...');
+      await seedPhase3Reference(queryRunner);
+      await seedPhase3ServiceCapacity(queryRunner, 0); // capacity_units=0 in prod; admins set per-rayon
+    } else {
+      console.log('\n⚠️  Phase 3 tables not found — skipping Phase 3 reference seed.');
+      console.log('   Run `npm run migration:run` first, then re-run the seeder.');
+    }
+
+    // ============================================================
     // 7. DEFAULT SUPERADMIN (1) — idempotent, for initial prod login
     // ============================================================
     console.log('\n👤 Seeding default superadmin...');
@@ -261,13 +281,16 @@ async function seedReference() {
       '\n⚠️  Production note: Change the default admin password immediately after first login.',
     );
     console.log('\nSummary:');
-    console.log('  - 4 area types');
-    console.log('  - 3 shift definitions');
-    console.log('  - 7 rayons');
-    console.log('  - 20 activity types');
-    console.log('  - 4 special day overrides');
-    console.log('  - 5 monitoring configs');
-    console.log('  - 1 default superadmin');
+    console.log('  - 4   area types');
+    console.log('  - 3   shift definitions');
+    console.log('  - 7   rayons');
+    console.log('  - 20  activity types');
+    console.log('  - 4   special day overrides');
+    console.log('  - 5   monitoring configs (Phase 2D)');
+    console.log('  - 4   monitoring configs (Phase 3)');
+    console.log('  - 128 plant_species (Phase 3)');
+    console.log('  - service_capacity grid (Phase 3, 7 × 12 weeks)');
+    console.log('  - 1   default superadmin');
   } catch (error) {
     console.error('❌ Reference data seeding failed:', error);
     throw error;

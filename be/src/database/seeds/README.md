@@ -8,9 +8,9 @@ Five seed scripts cover the full Phase 1–3 dataset.
 |------|---------|----------------|
 | `seed-phase1.ts` | Wipes core tables + seeds base admin/areas | No (destructive) |
 | `seed-phase2.ts` | Seeds Phase 2 data on top of Phase 1 | No (destructive) |
-| `seed-phase3.ts` | Seeds Phase 3 data (plant_species, monitoring_configs, service_capacity) | Yes (idempotent) |
-| `seed-reference.ts` | Reference/config data only — fully idempotent | Yes |
-| `seed-staging.ts` | Staging environment data | No |
+| `seed-phase3.ts` | Seeds Phase 3 data (plant_species, monitoring_configs, service_capacity, sample area_plants/pruning_requests/plant_seeds when users/areas exist). Also exports `seedPhase3Reference`, `seedPhase3ServiceCapacity`, `seedPhase3SampleData` helpers consumed by the reference + staging seeders. | Yes (idempotent) |
+| `seed-reference.ts` | Reference/config data only — fully idempotent. Includes Phase 3 reference data (128 plant_species, 4 Phase 3 monitoring_configs, service_capacity grid with capacity_units=0). | Yes |
+| `seed-staging.ts` | Staging environment data — wipes + reseeds all tables incl. Phase 3 (UAT sample data: staff_kec_pusat user, area_plants, pruning_requests, plant_seeds, seed_transactions, capacity grid with capacity_units=5). | No |
 
 ## Scripts
 
@@ -145,8 +145,13 @@ Clears 21 core tables (via TRUNCATE with explicit list — `typeorm_migrations` 
 
 Seeds only idempotent reference data:
 - 4 area types, 3 shift definitions, 7 rayons, 20 activity types
-- 4 special day overrides, 5 monitoring configs
+- 4 special day overrides, 5 monitoring configs (Phase 2D)
+- 4 monitoring configs (Phase 3 — plants/capacity/pruning/seeds)
+- 128 plant_species (Phase 3, from CSV catalog)
+- service_capacity grid (Phase 3, 7 rayons × 12 ISO weeks, capacity_units=0 — admins set per-rayon)
 - 1 default superadmin user
+
+> Phase 3 reference inserts run only if the `plant_species` table exists, so it's safe to call `db:seed:prod` against a database where Phase 3 migrations haven't been applied yet — those steps log a warning and skip.
 
 ## Test Users (all `password123`)
 
@@ -167,6 +172,7 @@ Login with **username** or **phone number** as identifier.
 | linmas_bungkul_1 | linmas | Taman Bungkul | active |
 | satgas_timur1_1 | satgas | Taman Timur 1 | missing (no ping 3h+) |
 | satgas_timur1_2 | satgas | Taman Timur 1 | inactive (35min ago) |
+| staff_kec_pusat | staff_kecamatan | Rayon Pusat | — (Phase 3, public intake; staging only) |
 
 ## Staging/Production Deployment
 

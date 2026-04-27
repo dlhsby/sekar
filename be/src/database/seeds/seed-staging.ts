@@ -1,5 +1,10 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
+import {
+  seedPhase3Reference,
+  seedPhase3ServiceCapacity,
+  seedPhase3SampleData,
+} from './seed-phase3';
 
 config();
 
@@ -140,6 +145,7 @@ const USER_SATGAS_PUSAT2_ID    = '54e3f4a5-b6c7-4f89-0123-456768798091'; // satg
 const USER_LINMAS_PUSAT1_ID    = '54f4a5b6-c7d8-4090-1234-567879809102'; // linmas_pusat_1
 const USER_LINMAS_PUSAT2_ID    = '55a5b6c7-d8e9-4101-2345-678980910213'; // linmas_pusat_2
 const USER_SATGAS_BUNGKUL_ID   = '55b6c7d8-e9f0-4212-3456-789091021324'; // satgas_bungkul_1
+const USER_STAFF_KEC_PUSAT_ID  = '55b6c7d8-e9f0-4212-3456-789091021325'; // staff_kec_pusat (Phase 3 — public intake)
 // Real users
 const USER_PRAMUDITA_ID        = '55c7d8e9-f0a1-4323-4567-890102132435'; // pramudita_yustiani
 const USER_WAHYU_ID            = '55d8e9f0-a1b2-4434-5678-901213243546'; // wahyu_tri_p
@@ -328,6 +334,16 @@ async function seedStaging() {
 
     const tablesToClear = [
       'audit_logs',
+      // Phase 3 tables (truncated first to avoid FK conflicts)
+      'seed_transactions',
+      'plant_seeds',
+      'service_capacity',
+      'activity_plant_items',
+      'pruning_requests',
+      'notable_plants',
+      'area_plants',
+      'plant_species',
+      // Phase 1/2 tables
       'user_areas',
       'user_tracking_status',
       'monitoring_configs',
@@ -632,6 +648,10 @@ async function seedStaging() {
     // satgas_bungkul_1: Taman Bungkul only
     await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_bungkul_1', 'Satgas Bungkul 1', 'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
+    // ── Phase 3 — public intake (staff_kecamatan) ──────────────
+    // staff_kec_pusat: scoped to Rayon Pusat for testing pruning_requests workflow
+    await insertUser(USER_STAFF_KEC_PUSAT_ID, 'staff_kec_pusat', 'Staff Kecamatan Pusat', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID);
+
     // ── Real users ─────────────────────────────────────────────
     await insertUser(USER_PRAMUDITA_ID, 'pramudita_yustiani',   'Pramudita Yustiani',   'top_management', '08563302643');
     await insertUser(USER_WAHYU_ID,     'wahyu_tri_p',          'Wahyu Tri P',          'superadmin',     '081232939377');
@@ -644,7 +664,7 @@ async function seedStaging() {
     await insertUser(USER_DENI_ID,      'deni_purwanto',        'DENI PURWANTO',        'linmas',         '081554017822', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
     await insertUser(USER_AGUS_ID,      'agus_ramadhan',        'AGUS RAMADHAN',        'linmas',         '083831353889', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
-    console.log('  ✓ 13 test users + 10 real users = 23 total');
+    console.log('  ✓ 14 test users + 10 real users = 24 total (incl. staff_kec_pusat for Phase 3)');
 
     // ============================================================
     // STEP 10: DERIVE rayon_id FOR FIELD WORKERS (from area.rayon_id)
@@ -762,6 +782,24 @@ async function seedStaging() {
     console.log(`  ✓ ${AREA_DEFS.length * 2} requirements (13 areas × 2 roles: satgas + linmas, SHIFT1/WEEKDAY)`);
 
     // ============================================================
+    // STEP 14: PHASE 3 DATA (plants, capacity, pruning, seeds)
+    // ============================================================
+    const phase3Check = await queryRunner.query(
+      `SELECT to_regclass('public.plant_species') AS exists`,
+    );
+    if (phase3Check[0]?.exists) {
+      console.log('\n🌳 Seeding Phase 3 reference data...');
+      await seedPhase3Reference(queryRunner);
+      // Staging gets capacity_units=5 so testers can actually book pruning slots
+      await seedPhase3ServiceCapacity(queryRunner, 5);
+      console.log('\n🌿 Seeding Phase 3 sample / UAT data...');
+      await seedPhase3SampleData(queryRunner);
+    } else {
+      console.log('\n⚠️  Phase 3 tables not found — skipping Phase 3 seed.');
+      console.log('   Run `npm run migration:run` first, then re-run the seeder.');
+    }
+
+    // ============================================================
     // SUMMARY
     // ============================================================
     console.log('');
@@ -771,22 +809,30 @@ async function seedStaging() {
     console.log('');
     console.log('  Reference Data');
     console.log('  ─────────────────────────────────────────────────────────────────────────────────');
-    console.log('  4  area types · 3 shift definitions · 7 rayons · 20 activity types');
-    console.log('  4  special day overrides · 5 monitoring configs');
+    console.log('  4   area types · 3 shift definitions · 7 rayons · 20 activity types');
+    console.log('  4   special day overrides · 5 + 4 monitoring configs (Phase 2D + Phase 3)');
+    console.log('  128 plant_species · service_capacity grid (7 × 12 weeks, capacity_units=5)');
     console.log('');
     console.log('  Rayon Pusat UAT Data');
     console.log('  ─────────────────────────────────────────────────────────────────────────────────');
     console.log('  13 areas     — 1 Taman Bungkul (aktif) + 12 Kawasan Darmo pedestrian (pasif)');
-    console.log('  23 users     — 13 test + 10 real (all password: password123)');
+    console.log('  24 users     — 14 test + 10 real (all password: password123)');
     console.log('  user_areas   — permanent assignments per spec');
     console.log(`  ${clockable_count} users  — user_tracking_status: offline (clean start for UAT)`);
     console.log('  26 reqs      — area_staff_requirements: 13 areas × satgas + linmas (SHIFT1/WEEKDAY)');
+    console.log('');
+    console.log('  Phase 3 UAT Data');
+    console.log('  ─────────────────────────────────────────────────────────────────────────────────');
+    console.log('  area_plants       — up to 6 areas × 5 species inventory');
+    console.log('  pruning_requests  — 4 sample (submitted/submitted/approved/rejected)');
+    console.log('  plant_seeds       — 5 species (AKASIA/MAHONI/BUNGUR/SENGON/JATI seeds)');
+    console.log('  seed_transactions — initial purchases (qty matches stock_qty)');
     console.log('');
     console.log('  0 shifts · 0 activities · 0 tasks · 0 overtimes · 0 location_logs');
     console.log('  → Transaction tables are empty — testing starts from scratch ✓');
     console.log('');
     console.log('  ── TEST USERS (all: password123) ─────────────────────────────────────────────────');
-    console.log('  superadmin         superadmin          081200000010');
+    console.log('  superadmin         superadmin           081200000010');
     console.log('  admin_system       admin_system1        081200000011');
     console.log('  top_management     top_management1      081200000012');
     console.log('  kepala_rayon       kepala_rayon_pusat   081200000013   Rayon Pusat');
@@ -799,6 +845,7 @@ async function seedStaging() {
     console.log('  linmas             linmas_pusat_1       081200000020   All 13 areas');
     console.log('  linmas             linmas_pusat_2       081200000021   Taman Bungkul');
     console.log('  satgas             satgas_bungkul_1     081200000022   Taman Bungkul');
+    console.log('  staff_kecamatan    staff_kec_pusat      081200000023   Rayon Pusat (Phase 3)');
     console.log('');
     console.log('  ── REAL USERS (all: password123) ─────────────────────────────────────────────────');
     console.log('  top_management     pramudita_yustiani   08563302643    —');
