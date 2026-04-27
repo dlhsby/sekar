@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Reviews
 
-**Last Updated:** 2026-04-26
-**Status:** 🟡 In Progress — M1-R review complete ✅; M2 compliance review complete ✅ (7 gaps logged)
+**Last Updated:** 2026-04-27
+**Status:** 🟡 In Progress — M1-R review ✅; M2 compliance review ✅ (7 gaps logged); **M3+M4 mobile-slice review ✅ (4 critical follow-ups, 6 medium, 2 low — all logged below)**
 
 This document mirrors the Phase 2D `status_reviews.md` pattern: it collects post-implementation reviews, defect findings, and their remediations. Each sub-phase that completes work gets one entry here with its scope, findings, and fixes.
 
@@ -261,6 +261,80 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 - [ ] Edit hex in non-allowlisted file → `npm run tokens:verify` exits non-zero
 - [ ] Add `className="shadow-md"` to web component → `cd fe/web && npx eslint src/<file>` reports error
 - [ ] Both gates pass on clean branch
+
+---
+
+## M3+M4 Mobile Slice — Review (2026-04-27) 🟡 4 critical follow-ups
+
+**Status:** Complete — review surfaced 4 critical, 6 medium, 2 low. All deferred to a follow-up review-fixes commit (see "Deferred" below); none block tomorrow's demo.
+
+**Scope:** Phase 3 sub-phases 3-6 mobile glue, 3-7 mobile (plants slice + form), 3-8 mobile chip, 3-10 kecamatan slice (3 screens + slice + offline queue).
+
+**Method:** mobile-code-reviewer agent against committed + uncommitted code on `main`.
+
+**Files reviewed (committed in 2169867 + later):**
+- `src/components/tasks/{PartialCompleteSheet,SpeciesAutocomplete,PruningTaskForm}.tsx`
+- `src/screens/taskActivity/components/PlantStatusChip.tsx`
+- `src/store/slices/{plantsSlice,pruningRequestsSlice}.ts`
+- `src/services/api/{plantsApi,pruningRequestsApi}.ts`
+- `src/screens/pruningRequests/{SubmitScreen,MyRequestsScreen,RequestDetailScreen}.tsx`
+- `src/navigation/KecamatanNavigator.tsx`
+- `src/hooks/useNetworkStatus.ts`
+- `src/services/sync/syncManager.ts` (extension)
+- `src/store/slices/tasksSlice.ts` (extension)
+
+### Review Summary
+
+| Category | Critical | Medium | Low | Total |
+|----------|----------|--------|-----|-------|
+| Redux state shape | 1 | 0 | 1 | 2 |
+| API error handling | 1 | 1 | 0 | 2 |
+| Accessibility (WCAG 2.1 AA) | 1 | 1 | 0 | 2 |
+| Concurrency / network state | 1 | 0 | 0 | 1 |
+| Component performance | 0 | 2 | 1 | 3 |
+| Offline sync UX | 0 | 1 | 0 | 1 |
+| Misc | 0 | 1 | 0 | 1 |
+| **Total** | **4** | **6** | **2** | **12** |
+
+### Critical Issues (must fix before next iteration)
+
+| # | File:line | Issue | Suggested Fix |
+|---|-----------|-------|---------------|
+| C1 | `plantsSlice.ts:130` | `searchSpecies.fulfilled` mutates `state.speciesById` outside the immer-tracked path (assigns object props inline rather than via spread). With Redux Toolkit's Immer this *happens* to work but is a footgun for future maintainers. | Replace with `state.speciesById = { ...state.speciesById, ...Object.fromEntries(action.payload.map(s => [s.id, s])) }`. |
+| C2 | `plantsSlice.ts:78`, `pruningRequestsSlice.ts:68` (and other thunks) | `rejectWithValue(String(err))` collapses error objects to strings. UI loses access to `code` / `details` for retry decisions. | Pass `{ error, code }` shape; type reducers' `action.payload` accordingly. |
+| C3 | `SpeciesAutocomplete.tsx:160-175` | Selected-species chip list lacks `accessibilityRole="list"` + per-chip `accessibilityRole="listitem"`. Screen readers can't announce the selection group. | Wrap chips container with `accessibilityRole="list"` + `accessibilityLabel="Spesies terpilih"`; chips use `listitem` + `accessibilityLabel` describing remove action. |
+| C4 | `SubmitScreen.tsx:177-184` | `handleSubmit` reads `isOnline` once via hook closure. If connection drops between validation and dispatch, request can be enqueued **and** submitted; rapid taps amplify. | Re-fetch `await NetInfo.fetch()` inside `handleSubmit` immediately before branching; debounce submit button. |
+
+### Medium Issues
+
+| # | File:line | Issue | Suggested Fix |
+|---|-----------|-------|---------------|
+| M1 | `pruningRequestsApi.ts:10-19` | `getMyPruningRequests` unconditionally returns `response.data`; if envelope is `{ error, code }` the slice stores `undefined`. | Validate `response.data && !response.error` before resolving. |
+| M2 | `SpeciesAutocomplete.tsx:83-104` | `handleSpeciesSelect` / `handleRemoveChip` deps array missing `multi`. If parent toggles `multi`, stale closure double-selects. | Add `multi` to deps. |
+| M3 | `syncManager.ts:285-300` | When `syncPruningRequest` fails, error is logged but **not** propagated back into `pruningRequestsSlice.byId[id]`. UI shows stale "submitted" status. | Dispatch a `pruningRequests/setSyncError({id, error})` action on failure. |
+| M4 | `PartialCompleteSheet.tsx:60-64` | Uses `Alert.alert` for success feedback — blocks UI thread for 2 s on slow devices. | Replace with toast (`NBToast.show(…)`). |
+| M5 | `MyRequestsScreen.tsx:83-90` | FlatList missing `maxToRenderPerBatch`, `initialNumToRender`, `updateCellsBatchingPeriod`. 60 FPS jank likely with 50+ rows. | Add the three optimization props. |
+| M6 | `PartialCompleteSheet.tsx:111-123` | "Lanjutkan Besok" toggle uses checkmark prefix in `title` rather than `accessibilityRole="switch"` + `accessibilityState={{checked}}`. | Use proper switch role + state; remove cosmetic checkmark. |
+
+### Low Issues
+
+| # | File:line | Issue | Suggested Fix |
+|---|-----------|-------|---------------|
+| L1 | `plantsSlice.ts:168-177` | Selectors typed as `(state: any) =>`, blocking IDE inference. | Type via `RootState`; move to `createSelector` for memoization. |
+| L2 | `PruningTaskForm.tsx:55-65` | `isFormValid` recomputed every render — fine now, but with 100+ species selected could matter. | Wrap in `useMemo`. |
+
+### Deferred
+
+| # | Reason | Tracked in |
+|---|--------|-----------|
+| C1–C4 + M1–M6 + L1–L2 | All 12 findings deferred to a "M3+M4 review-fixes" commit after tomorrow's demo. None block functional demo. | This entry; carry into next iteration plan. |
+
+### Related Commits / PRs
+
+- `2169867` feat(phase-3-3-8): mobile glue (committed prematurely by rogue agent — files include partial 3-6/3-7/3-10 mobile work in addition to the 3-8 chip)
+- `0201cbb` feat(phase-3): seeders (notable_plants + pruning_request samples)
+- `fc37bcd` docs: CLAUDE.md status line for Phase E
+- *(pending)* M3+M4 finalization commit covering test fixes + spec sync
 
 <!--
 Template (copy and fill when a sub-phase completes):

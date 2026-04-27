@@ -1,7 +1,7 @@
 # Phase 3 — Implementation Progress
 
-**Last Updated:** 2026-04-27
-**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 (3-3 🟡 Partial · 3-4 🟡 Partial · 3-5 ✅); 10/21 sub-phases complete. **M2 backend deployed to production Apr 27**; remaining 3-3 / 3-4 gaps tracked below.
+**Last Updated:** 2026-04-27 (M3 + M4 mobile-spine landed)
+**Status:** 🟡 In Progress — M1-R ✅ + M1-S ✅ + M2 (3-3 🟡 · 3-4 🟡 · 3-5 ✅) + **M3 (3-6 ✅, 3-7 ✅, 3-8 🟡 light)** + **M4 (3-9 🟡 submit-half, 3-10 🟡 kecamatan-slice)**; 13/21 sub-phases complete or partial. Web work for 3-7/3-10 deferred until after demo. Code review surfaced 4 critical follow-ups (see `status_reviews.md`).
 
 This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-sub-phase journal that's updated in-flight and finalized on phase completion. `STATUS.md` is the live task-level tracker; this file is the narrative log.
 
@@ -22,18 +22,18 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | **M2** | 3-4 Monitoring v2 web | 92 % | 🟡 Partial | web-developer | ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, snapshot hook done. **Closed Apr 27:** tests for `HierarchyFilterPanel`, `WorkerListVirtual`, monitoring API hook, and the monitoring page itself (`MonitoringPage.test.tsx` + `page.test.tsx` align with M2 rewrite). **Still open:** no `ClusterLayer.test.tsx` or `AreaDetailDrawer.test.tsx`; ClusterLayer not yet integrated with existing `MonitoringMap` Mapbox component (known limitation — `lngLatToPixel` not exposed); `monitoring/config` page Phase 3 fields not added. |
 | **M2** | 3-5 Monitoring v2 mobile | 100 % | ✅ Complete | mobile-developer | monitoringV2Slice, ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay all done. **Closed Apr 26:** `MapDashboardScreen.tsx` wires v2 components (lines 18-20 imports, 468 AreaStatusOverlay, 480-481 ClusteredUserMarkers behind `featureFlags.clusterMarkersV2`, 611 MonitoringToggleSheet). **Closed Apr 26:** component tests exist for `monitoringV2Slice` (31), `ClusterMarker` (11), `ClusteredUserMarkers` (9), `MonitoringToggleSheet` (10). **Correctly deferred:** `plants` Redux slice belongs to 3-8 where plant data exists. **Minor gap (not blocking):** no `AreaStatusOverlay.test.tsx` — covered indirectly via the `MapDashboardScreen.test.tsx` integration test. |
 | **M2** | 3-14 Load test + regression | 0 % | ⏳ Not Started | devops-engineer + backend-developer | k6 harness, 500-worker scenario |
-| **M3** | 3-6 Task typing + custom fields API | 0 % | ⏳ Not Started | backend-developer | `task_type` enum + Zod registry + lineage |
-| **M3** | 3-7 Pruning task UX | 0 % | ⏳ Not Started | mobile-developer + web-developer | Form + partial complete + resume |
-| **M3** | 3-8 Due-date forecast + alerts | 0 % | ⏳ Not Started | backend-developer | Daily cron + FCM `area_plant_overdue` |
+| **M3** | 3-6 Task typing + custom fields API | 100 % | ✅ Complete | backend-developer + mobile-developer | Backend already in main from 3-2; mobile glue (PartialCompleteSheet + tasksSlice thunks) landed Apr 27 |
+| **M3** | 3-7 Pruning task UX | 100 % (mobile) | ✅ Complete | backend-developer + mobile-developer | Plants controller + PlantsService (5 endpoints, 41 tests) + mobile PruningTaskForm + SpeciesAutocomplete + plantsSlice. Web dynamic form deferred. |
+| **M3** | 3-8 Due-date forecast + alerts | 60 % | 🟡 Partial (light) | backend-developer + mobile-developer | PlantDueDateService + AreaPlantStatusService + GET /monitoring/area/:id/plant-status + PlantStatusChip on TaskCard. Cron + WS event + FCM digest + map overlay deferred. |
 | **M3** | 3-13 CSV backfill seeder | 0 % | ⏳ Not Started | backend-developer | 5 008 rows, idempotent on `reference_code` |
-| **M4** | 3-9 Pruning-requests backend | 0 % | ⏳ Not Started | backend-developer | State machine + ADR-032 guards |
-| **M4** | 3-10 Pruning-requests frontends | 0 % | ⏳ Not Started | mobile-developer + web-developer | Kecamatan submit; admin review |
+| **M4** | 3-9 Pruning-requests backend | 50 % | 🟡 Partial (submit half) | backend-developer | POST /pruning-requests + GET ?mine=true + GET /:id with rayon-scoped read; 30 tests at 100 %. Review/convert/admin-filter endpoints deferred. |
+| **M4** | 3-10 Pruning-requests frontends | 55 % | 🟡 Partial (kecamatan slice) | mobile-developer | KecamatanNavigator + 5-step SubmitScreen + MyRequests + RequestDetail + slice + offline queue. ReviewQueueScreen + ConvertToTaskSheet + web layouts deferred. |
 | **M4** | 3-11 Service capacity calendar | 0 % | ⏳ Not Started | backend-developer + web-developer | Week grid editor, implicit booking |
 | **M4** | 3-12 Plant-seed inventory | 0 % | ⏳ Not Started | backend-developer + mobile-developer | `plant_seeds` + `seed_transactions` |
 | **M5** | 3-15 Documentation final sync | 0 % | ⏳ Not Started | docs pass | Specs + STATUS + CLAUDE.md sweep |
 | **M5** | Rollout | 0 % | ⏳ Not Started | devops-engineer | Pilot Selatan → all rayons |
 
-**Overall Phase 3 completion: ~48 %** — M1-R (5 sub-phases) + M1-S (2 sub-phases) + M2 (3-3/3-4/3-5 done with known gaps, 3-14 deferred) = 10/21 sub-phases. M2 has 7 known compliance gaps logged in `status_reviews.md`; all production-safe (graceful degradation in place).
+**Overall Phase 3 completion: ~62 %** — M1-R (5/5) + M1-S (2/2) + M2 (3-3 88 % · 3-4 92 % · 3-5 100 %) + **M3 (3-6 100 % · 3-7 100 % mobile · 3-8 60 % light)** + **M4 (3-9 50 % submit-half · 3-10 55 % kecamatan-slice)** = 13/21 sub-phases. M2 has 7 known compliance gaps; M3/M4 has explicit deferrals (web frontends, admin endpoints, cron/FCM digest, capacity calendar UI, plant-seeds inventory) tracked above. Code review surfaced 4 critical follow-ups (see `status_reviews.md` "M3+M4 Mobile Slice Review").
 
 ---
 
@@ -401,69 +401,93 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 ---
 
-## Sub-Phase 3-6: Task typing + custom fields API — ⏳
+## Sub-Phase 3-6: Task typing + custom fields API — ✅ Complete (2026-04-27)
 
-**Planned duration:** 4 days
+**Actual duration:** glue (backend already in main from earlier 3-2 work).
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `Task` entity: `task_type`, `custom_fields`, `parent_task_id`, `target_plant_count`, `completed_plant_count` | ⏳ | |
-| `TaskTypeRegistry` service + Zod schemas | ⏳ | |
-| `POST /tasks/:id/partial-complete` | ⏳ | Spawns child if not fully complete |
-| `POST /tasks/:id/resume` | ⏳ | Explicit resume |
-| `GET /tasks/:id/lineage` | ⏳ | |
-| `Activity` entity extensions + `activity_plant_items` relation | ⏳ | |
+| `Task` entity: `task_type`, `custom_fields`, `parent_task_id`, `target_plant_count`, `completed_plant_count` | ✅ | landed in 3-2 schema |
+| `TaskTypeRegistry` service + Zod schemas | ✅ | `be/src/modules/tasks/registry/` |
+| `POST /tasks/:id/partial-complete` | ✅ | spawns child via `parent_task_id` when remaining > 0 |
+| `POST /tasks/:id/resume` | ✅ | explicit resume of child |
+| `GET /tasks/:id/lineage` | ✅ | parent chain + children |
+| `Activity` entity extensions + `activity_plant_items` relation | ✅ | landed earlier; service in plants module |
+| Mobile glue: `tasksSlice` thunks + `PartialCompleteSheet` modal + `TaskDetailScreen` "Selesai Sebagian" CTA + lineage breadcrumb | ✅ | 16 sheet tests + extended slice tests |
 
 ---
 
-## Sub-Phase 3-7: Pruning task UX — ⏳
+## Sub-Phase 3-7: Pruning task UX — ✅ Complete (mobile, 2026-04-27)
 
-**Planned duration:** 5 days
+**Actual duration:** ~6 hours real (backend + mobile parallel).
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `PruningTaskForm` mobile (species autocomplete, quantity, maintenance type) | ⏳ | |
-| "Lanjutkan Besok" CTA | ⏳ | |
-| Web dynamic form per `task_type` at `/tasks/new` | ⏳ | |
-| Offline queue scaffolds `activity.submit`, `activity.partial` | ⏳ | Full polish is Phase 4 |
+| Backend `PlantsController` + `PlantsService` | ✅ | 5 endpoints (list/search species, area-plants, list/create notable-plants); 41 tests; controller 100 % / service 97.87 % |
+| Mobile `PruningTaskForm` component | ✅ | 3 required pickers per ADR-031: caseType (GT/PT/PS/PD/PK), pruningAction (PM/PB/PC), source (TIW/TS/CC/PW/Wk) |
+| Mobile `SpeciesAutocomplete` (debounced 300 ms multi/single over 128 species) | ✅ | `fe/mobile/src/components/tasks/SpeciesAutocomplete.tsx` |
+| Mobile `plantsSlice` + `plantsApi` | ✅ | 5 thunks; 21 slice tests |
+| "Lanjutkan Besok" CTA | ✅ | landed via 3-6 PartialCompleteSheet toggle |
+| Web dynamic form per `task_type` at `/tasks/new` | ⏳ DEFERRED | web work deferred until after demo iteration |
+| Offline queue scaffolds `activity.submit`, `activity.partial` | 🟡 | partial via syncManager; full polish Phase 4 |
 
 ---
 
-## Sub-Phase 3-8: Due-date forecast + overdue alerts — ⏳
+## Sub-Phase 3-8: Due-date forecast + overdue alerts — 🟡 Partial (light, 2026-04-27)
 
-**Planned duration:** 3 days
+**Actual duration:** ~3 hours (backend + mobile chip).
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `PlantDueDateService` (species × area_type lookup + override) | ⏳ | |
-| Daily cron `PlantDueDateRecalculator` | ⏳ | |
-| Top-management digest alerts (`area_plant_overdue` FCM) | ⏳ | |
+| `PlantDueDateService` (species × area_type lookup + override) | ✅ | pure functions, 100 % branch coverage; cycle precedence override > species default |
+| `AreaPlantStatusService` aggregation | ✅ | per-area `{ overdue, due_soon, ok, unknown }` + species breakdown |
+| `GET /monitoring/area/:id/plant-status` endpoint | ✅ | role-gated via existing scope enforcement |
+| Mobile `PlantStatusChip` on TaskCard for pruning tasks | ✅ | inline chip; non-blocking on API errors |
+| Daily cron `PlantDueDateRecalculator` | ⏳ DEFERRED | no scheduler infra yet — Phase 4 |
+| WS event `area:plant-status-changed` | ⏳ DEFERRED | client polls on focus instead |
+| FCM digest `area_plant_overdue` to top_management | ⏳ DEFERRED | needs digest scheduler |
+| `PlantOverlayLayer` map render | ⏳ DEFERRED | cluster z-fight work needed |
 
 ---
 
-## Sub-Phase 3-9: Pruning-requests backend — ⏳
+## Sub-Phase 3-9: Pruning-requests backend — 🟡 Partial (submit half, 2026-04-27)
 
-**Planned duration:** 4 days
+**Actual duration:** ~4 hours (submit half only).
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `PruningRequestService` | ⏳ | State machine |
-| `PRUNING_REQUEST_REVIEWERS` role group | ⏳ | |
-| Rayon scoping via `users.rayon_id` | ⏳ | |
-| FCM notification on status change | ⏳ | |
+| `PruningRequestsService.create` + `findMine` + `findById` | ✅ | 30 tests at 100 % coverage |
+| `POST /pruning-requests` (staff_kecamatan) | ✅ | reference code `PR-{ts}-{uuid}` |
+| `GET /pruning-requests?mine=true` (paginated) | ✅ | DESC ordered |
+| `GET /pruning-requests/:id` | ✅ | owner + rayon-scoped admin_data + kepala_rayon + top_management; ADR-032 enforced |
+| `POST /pruning-requests/:id/review` | ⏳ DEFERRED | admin half — next iteration |
+| `POST /pruning-requests/:id/convert-to-task` | ⏳ DEFERRED | admin half — next iteration |
+| `GET /pruning-requests?rayon_id=&status=` (admin filter) | ⏳ DEFERRED | currently returns 400 for non-mine |
+| Auto-rayon from GPS | ⏳ DEFERRED | client passes `rayon_id` explicitly for now |
+| `PRUNING_REQUEST_REVIEWERS` role group | 🟡 | inline checks only (admin_data + kepala_rayon + top_management); promoted to constant when admin half lands |
+| FCM notifications on status change | ⏳ DEFERRED | needs review endpoint first |
 
 ---
 
-## Sub-Phase 3-10: Pruning-requests frontends — ⏳
+## Sub-Phase 3-10: Pruning-requests frontends — 🟡 Partial (kecamatan slice, 2026-04-27)
 
-**Planned duration:** 5 days
+**Actual duration:** ~6 hours (mobile kecamatan slice; admin screens + web all deferred).
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Mobile `SubmitScreen` (kecamatan 5-step) | ⏳ | |
-| Mobile `MyRequestsScreen` + `RequestDetailScreen` | ⏳ | |
-| Mobile `ReviewQueueScreen` (admin_data) | ⏳ | |
-| Web `/pruning-requests/` queue + `[id]/` detail | ⏳ | |
+| Mobile `KecamatanNavigator` (no bottom tabs, role-gated) | ✅ | `RootNavigator` branches on `user.role === 'staff_kecamatan'` |
+| Mobile `SubmitScreen` (5-step wizard: address+GPS, photos, detail, preview, success) | ✅ | draft persisted in slice; 16 tests |
+| Mobile `MyRequestsScreen` (status chips, pull-to-refresh, empty state) | ✅ | 21 tests |
+| Mobile `RequestDetailScreen` (read-only, photo gallery, converted task hint) | ✅ | 20 tests |
+| Mobile `pruningRequestsSlice` + `pruningRequestsApi` | ✅ | 21 slice tests |
+| Offline queue: `pruning_request.submit` (FIFO; retry deferred) | ✅ | `syncManager.ts` priority 2.5 |
+| `useNetworkStatus` hook | ✅ | wraps NetInfo |
+| Mobile `ReviewQueueScreen` (admin_data) | ⏳ DEFERRED | admin half |
+| Mobile `ConvertToTaskSheet` (capacity chip) | ⏳ DEFERRED | needs 3-11 capacity endpoints |
+| Web `/pruning-requests/` queue + `[id]/` detail | ⏳ DEFERRED | web work deferred |
+| Web `(kecamatan)/` layout for staff_kecamatan submit on web | ⏳ DEFERRED | web work deferred |
+
+**Code review (2026-04-27):** 4 critical follow-ups surfaced — see `status_reviews.md` "M3+M4 Mobile Slice Review".
 
 ---
 

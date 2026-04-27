@@ -132,7 +132,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 
 ## Project Status
 
-**Phase 3 IN PROGRESS** (M1-R ✅ + M2 complete, Apr 26, 2026)
+**Phase 3 IN PROGRESS** (M1-R ✅ + M2 ✅ + M3 mobile spine ✅ + M4 mobile spine 🟡, Apr 27, 2026)
 
 | Component | Status | Metrics |
 |-----------|--------|---------|
@@ -143,7 +143,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 
 **Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2E (Apr 25, 2026)** live in production.
 
-**Phase 3 progress: 10/21 sub-phases (~48%).** M1-R (5 sub-phases) + 3-1 + 3-2 + M2 (3-3/3-4/3-5) ✅ complete. **Next: 3-6 (Task typing + partial-complete API)**.
+**Phase 3 progress: 13/21 sub-phases (~62%).** M1-R + 3-1 + 3-2 + M2 (3-3/3-4/3-5) ✅ + M3 (3-6 ✅, 3-7 ✅ mobile, 3-8 🟡 light) + M4 (3-9 🟡 submit-half, 3-10 🟡 kecamatan-slice). Web work for 3-7/3-10 + admin endpoints + capacity calendar + plant-seeds inventory deferred to next iteration. **Next: M3+M4 admin finish-out + review-fixes pass.**
 
 ---
 
