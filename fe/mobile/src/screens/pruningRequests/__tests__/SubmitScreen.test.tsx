@@ -36,8 +36,17 @@ jest.mock('../../../constants/nbTokens', () => {
     nbAnimation: { fast: 150, normal: 250, slow: 400 },
     nbMotion: new Proxy({}, { get: () => 250 }),
     nbTokens: {},
+    withAlpha: (color: string, _opacity: number) => color,
   };
 });
+
+jest.mock('../../../components/navigation/FieldHomeHeader', () => ({
+  FieldHomeHeader: ({ title }: any) => {
+    const ReactLib = require('react');
+    const { Text } = require('react-native');
+    return ReactLib.createElement(Text, { testID: 'field-home-header' }, title);
+  },
+}));
 
 jest.mock('react-native-geolocation-service', () => ({
   __esModule: true,

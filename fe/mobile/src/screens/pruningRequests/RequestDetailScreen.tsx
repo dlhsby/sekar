@@ -1,168 +1,93 @@
 /**
  * Pruning Request Detail Screen
- * Phase 3 sub-phase 3-10: Read-only view of submitted request
- * Shows all submitted data, photos, review notes, status, and task conversion link
+ * Phase 3 — read-only view of a submitted permohonan, redesigned in Round 6
+ * to mirror ActivityDetailScreen's NBCardHeader / sectionTitle / infoRow
+ * pattern so the staff_kecamatan flow visually matches aktivitas/tugas.
+ *
+ * Cards:
+ *   1. Status (with NBBadge + reference code + submitted-on)
+ *   2. Lokasi (alamat + GPS coordinate, kecamatan/rayon when present)
+ *   3. Detail Pohon (jumlah, tinggi, diameter, tanggal harapan)
+ *   4. Kontak (pemohon + ketua RT)
+ *   5. Catatan
+ *   6. Foto (horizontal scroll, tap to enlarge)
+ *   7. Hasil Review (only after reviewedAt)
+ *   8. Tugas Terkait (only after converted)
+ *   9. Aksi Admin (admin reviewers only)
  */
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
+  Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Modal,
+  SafeAreaView,
+  Platform,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   fetchPruningRequestById,
   reviewPruningRequest,
 } from '../../store/slices/pruningRequestsSlice';
 import { LoadingSpinner } from '../../components/common';
-import { NBCard, NBBadge, NBButton, NBAlert } from '../../components/nb';
-import { NBText } from '../../components/nb/NBText';
+import {
+  NBCard,
+  NBCardHeader,
+  NBCardContent,
+  NBBackgroundPattern,
+  NBBadge,
+  NBButton,
+  NBAlert,
+  NBModal,
+} from '../../components/nb';
 import { ConvertToTaskSheet } from '../../components/admin/ConvertToTaskSheet';
 import { NBToast } from '../../components/nb/NBToast';
-import { nbColors, nbSpacing, nbBorderRadius } from '../../constants/nbTokens';
-import type { PruningRequestStatus } from '../../types/models.types';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorders,
+  nbBorderRadius,
+  nbShadows,
+} from '../../constants/nbTokens';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
+import {
+  getPruningRequestStatusColor,
+  getPruningRequestStatusLabel,
+} from '../../utils/statusHelpers';
 import { useUserRole } from '../../hooks/useUserRole';
 
-/**
- * Type-safe navigation prop
- */
 type DetailScreenProps = NativeStackScreenProps<any, 'PruningDetail'>;
 
-/**
- * Admin review modal helper
- */
-function ReviewModal({
-  visible,
-  isApproving,
-  onApprove,
-  onReject,
-  onClose,
-}: {
-  visible: boolean;
-  isApproving: boolean;
-  onApprove: () => void;
-  onReject: () => void;
-  onClose: () => void;
-}): React.JSX.Element {
-  const [reviewNotes, setReviewNotes] = useState<string>('');
+const ADMIN_ROLES = [
+  'admin_data',
+  'kepala_rayon',
+  'top_management',
+  'admin_system',
+  'superadmin',
+];
 
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalBg}>
-        <View style={styles.modalContent}>
-          <NBText variant="h3" style={{ marginBottom: nbSpacing[3] }}>
-            Pilih Keputusan
-          </NBText>
+const ACTIONABLE_STATUSES = ['submitted', 'under_review'];
 
-          <NBButton
-            variant="success"
-            label="Setujui"
-            onPress={onApprove}
-            leftIcon="check"
-            disabled={isApproving}
-            style={{ marginBottom: nbSpacing[2] }}
-          />
-
-          <NBButton
-            variant="danger"
-            label="Tolak"
-            onPress={onReject}
-            leftIcon="close"
-            disabled={isApproving}
-            style={{ marginBottom: nbSpacing[3] }}
-          />
-
-          <NBButton
-            variant="secondary"
-            label="Batal"
-            onPress={onClose}
-            disabled={isApproving}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
+function formatGps(lat: unknown, lng: unknown): string {
+  if (lat == null || lng == null) {
+    return '—';
+  }
+  const nLat = Number(lat);
+  const nLng = Number(lng);
+  if (Number.isNaN(nLat) || Number.isNaN(nLng)) {
+    return '—';
+  }
+  return `${nLat.toFixed(6)}, ${nLng.toFixed(6)}`;
 }
 
-/**
- * Map status to NB variant + label
- */
-const getStatusDisplay = (status: PruningRequestStatus) => {
-  const statusMap: Record<PruningRequestStatus, { variant: 'default' | 'primary' | 'success' | 'warning' | 'error'; label: string }> = {
-    'submitted': { variant: 'warning', label: 'Menunggu' },
-    'under_review': { variant: 'warning', label: 'Direview' },
-    'approved': { variant: 'success', label: 'Disetujui' },
-    'rejected': { variant: 'error', label: 'Ditolak' },
-    'converted': { variant: 'primary', label: 'Dikonversi' },
-    'in_progress': { variant: 'primary', label: 'Diproses' },
-    'done': { variant: 'success', label: 'Selesai' },
-    'cancelled': { variant: 'error', label: 'Dibatalkan' },
-  };
-  return statusMap[status] || { variant: 'default', label: status };
-};
-
-/**
- * Photo viewer modal
- */
-function PhotoModal({
-  visible,
-  photoUrl,
-  onClose,
-}: {
-  visible: boolean;
-  photoUrl: string | null;
-  onClose: () => void;
-}): React.JSX.Element {
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.photoModalBg}>
-        <TouchableOpacity
-          style={styles.photoModalClose}
-          onPress={onClose}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Tutup foto"
-        >
-          <MaterialCommunityIcons
-            name="close"
-            size={32}
-            color={nbColors.bgCanvas}
-          />
-        </TouchableOpacity>
-
-        {photoUrl && (
-          <Image
-            source={{ uri: photoUrl }}
-            style={styles.photoLarge}
-            resizeMode="contain"
-          />
-        )}
-      </View>
-    </Modal>
-  );
-}
-
-/**
- * Pruning Request Detail Screen
- */
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
@@ -179,17 +104,11 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [convertSheetVisible, setConvertSheetVisible] = useState(false);
 
-  // Check if user can admin
   const canAdmin = useMemo(
-    () =>
-      adminMode &&
-      ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'].includes(
-        userRole,
-      ),
+    () => adminMode && userRole != null && ADMIN_ROLES.includes(userRole),
     [adminMode, userRole],
   );
 
-  // Load request on mount if not in Redux
   useEffect(() => {
     if (!request && requestId) {
       dispatch(fetchPruningRequestById(requestId));
@@ -207,45 +126,31 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
     }
   }, [request?.convertedTaskId, navigation]);
 
-  const handleApprove = useCallback(() => {
-    setReviewModalVisible(false);
-    dispatch(reviewPruningRequest({ id: requestId, decision: 'approve' }))
-      .unwrap()
-      .then(() => {
-        NBToast.show({
-          level: 'success',
-          title: 'Berhasil',
-          message: 'Permohonan telah disetujui',
+  const handleReview = useCallback(
+    (decision: 'approve' | 'reject') => {
+      setReviewModalVisible(false);
+      dispatch(reviewPruningRequest({ id: requestId, decision }))
+        .unwrap()
+        .then(() => {
+          NBToast.show({
+            level: 'success',
+            title: 'Berhasil',
+            body:
+              decision === 'approve'
+                ? 'Permohonan telah disetujui.'
+                : 'Permohonan telah ditolak.',
+          });
+        })
+        .catch((err: any) => {
+          NBToast.show({
+            level: 'danger',
+            title: 'Gagal',
+            body: err?.message || 'Tidak dapat memproses keputusan.',
+          });
         });
-      })
-      .catch((err) => {
-        NBToast.show({
-          level: 'danger',
-          title: 'Gagal',
-          message: err?.message || 'Gagal menyetujui permohonan',
-        });
-      });
-  }, [requestId, dispatch]);
-
-  const handleReject = useCallback(() => {
-    setReviewModalVisible(false);
-    dispatch(reviewPruningRequest({ id: requestId, decision: 'reject' }))
-      .unwrap()
-      .then(() => {
-        NBToast.show({
-          level: 'success',
-          title: 'Berhasil',
-          message: 'Permohonan telah ditolak',
-        });
-      })
-      .catch((err) => {
-        NBToast.show({
-          level: 'danger',
-          title: 'Gagal',
-          message: err?.message || 'Gagal menolak permohonan',
-        });
-      });
-  }, [requestId, dispatch]);
+    },
+    [requestId, dispatch],
+  );
 
   if (isLoading && !request) {
     return <LoadingSpinner />;
@@ -253,466 +158,459 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 
   if (!request) {
     return (
-      <View style={styles.container}>
-        <NBAlert
-          type="error"
-          title="Permohonan tidak ditemukan"
-          message="Permohonan yang Anda cari tidak tersedia"
-        />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorWrap}>
+          <NBAlert
+            variant="danger"
+            title="Permohonan tidak ditemukan"
+            message="Permohonan yang Anda cari tidak tersedia."
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
-  const statusDisplay = getStatusDisplay(request.status);
+  const statusColor = getPruningRequestStatusColor(request.status);
+  const statusLabel = getPruningRequestStatusLabel(request.status);
+  const treeCount = request.treeCount ?? request.estimatedPlantCount;
+  const hasContact =
+    request.requesterName ||
+    request.requesterPhone ||
+    request.rtLeaderName ||
+    request.rtLeaderPhone;
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        scrollIndicatorInsets={{ right: 1 }}
-      >
-        {/* Header Section */}
-        <NBCard style={styles.headerCard}>
-          <View style={styles.headerTop}>
-            <View>
-              <NBText variant="h2">{request.referenceCode}</NBText>
-              <NBText
-                variant="body-sm"
-                style={{ color: nbColors.gray500, marginTop: nbSpacing[1] }}
-              >
-                {formatDateTime(request.createdAt)}
-              </NBText>
-            </View>
-            <NBBadge variant={statusDisplay.variant} label={statusDisplay.label} />
-          </View>
-        </NBCard>
-
-        {/* Location Section */}
-        <NBCard style={styles.card}>
-          <NBText variant="h3" style={styles.sectionTitle}>
-            Lokasi
-          </NBText>
-          <View style={styles.detailField}>
-            <View style={styles.fieldLabel}>
-              <MaterialCommunityIcons
-                name="map-marker"
-                size={20}
-                color={nbColors.black}
-              />
-              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                Alamat
-              </NBText>
-            </View>
-            <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-              {request.address}
-            </NBText>
-          </View>
-
-          <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-            <View style={styles.fieldLabel}>
-              <MaterialCommunityIcons
-                name="crosshairs-gps"
-                size={20}
-                color={nbColors.black}
-              />
-              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                Koordinat GPS
-              </NBText>
-            </View>
-            <NBText variant="mono-sm" style={{ marginTop: nbSpacing[2] }}>
-              {/* TypeORM serializes numeric/decimal columns as strings, so coerce
-                  before formatting — direct .toFixed on a string crashes. */}
-              {request.gpsLat != null && request.gpsLng != null
-                ? `${Number(request.gpsLat).toFixed(6)}, ${Number(request.gpsLng).toFixed(6)}`
-                : '—'}
-            </NBText>
-          </View>
-        </NBCard>
-
-        {/* Detail Section */}
-        <NBCard style={styles.card}>
-          <NBText variant="h3" style={styles.sectionTitle}>
-            Detail
-          </NBText>
-
-          <View style={styles.detailField}>
-            <View style={styles.fieldLabel}>
-              <MaterialCommunityIcons
-                name="calendar"
-                size={20}
-                color={nbColors.black}
-              />
-              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                Tanggal Pemangkasan Diharapkan
-              </NBText>
-            </View>
-            <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-              {formatDate(request.expectedDate)}
-            </NBText>
-          </View>
-
-          <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-            <View style={styles.fieldLabel}>
-              <MaterialCommunityIcons
-                name="tree"
-                size={20}
-                color={nbColors.black}
-              />
-              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                Jumlah Pohon
-              </NBText>
-            </View>
-            <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-              {(request.treeCount ?? request.estimatedPlantCount ?? '—')}{' '}pohon
-            </NBText>
-          </View>
-
-          {request.treeHeightEstimate ? (
-            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-              <View style={styles.fieldLabel}>
-                <MaterialCommunityIcons name="ruler" size={20} color={nbColors.black} />
-                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                  Tinggi (Perkiraan)
-                </NBText>
-              </View>
-              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                {request.treeHeightEstimate}
-              </NBText>
-            </View>
-          ) : null}
-
-          {request.treeDiameterEstimate ? (
-            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-              <View style={styles.fieldLabel}>
-                <MaterialCommunityIcons name="circle-outline" size={20} color={nbColors.black} />
-                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                  Diameter (Perkiraan)
-                </NBText>
-              </View>
-              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                {request.treeDiameterEstimate}
-              </NBText>
-            </View>
-          ) : null}
-
-          {(request.requesterName || request.requesterPhone) ? (
-            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-              <View style={styles.fieldLabel}>
-                <MaterialCommunityIcons name="account" size={20} color={nbColors.black} />
-                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                  Pemohon
-                </NBText>
-              </View>
-              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                {request.requesterName ?? '—'}
-                {request.requesterPhone ? ` · ${request.requesterPhone}` : ''}
-              </NBText>
-            </View>
-          ) : null}
-
-          {(request.rtLeaderName || request.rtLeaderPhone) ? (
-            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-              <View style={styles.fieldLabel}>
-                <MaterialCommunityIcons name="account-tie" size={20} color={nbColors.black} />
-                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                  Ketua RT
-                </NBText>
-              </View>
-              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                {request.rtLeaderName ?? '—'}
-                {request.rtLeaderPhone ? ` · ${request.rtLeaderPhone}` : ''}
-              </NBText>
-            </View>
-          ) : null}
-
-          {request.notes && (
-            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-              <View style={styles.fieldLabel}>
-                <MaterialCommunityIcons
-                  name="note-text"
-                  size={20}
-                  color={nbColors.black}
-                />
-                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                  Catatan
-                </NBText>
-              </View>
-              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                {request.notes}
-              </NBText>
-            </View>
-          )}
-        </NBCard>
-
-        {/* Photos Section */}
-        {request.photoUrls && request.photoUrls.length > 0 && (
+    <NBBackgroundPattern>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Status ────────────────────────────────────────────────── */}
           <NBCard style={styles.card}>
-            <NBText variant="h3" style={styles.sectionTitle}>
-              Foto Lokasi ({request.photoUrls.length})
-            </NBText>
-            <View style={styles.photoGrid}>
-              {request.photoUrls.map((photoUrl, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => handlePhotoPress(photoUrl)}
-                  accessible={true}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Foto lokasi ${index + 1} dari ${request.photoUrls.length}`}
+            <NBCardHeader>
+              <View style={styles.statusRow}>
+                <Text style={styles.sectionTitle}>📌 STATUS</Text>
+                <NBBadge text={statusLabel} color={statusColor} />
+              </View>
+            </NBCardHeader>
+            <NBCardContent>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Kode Permohonan</Text>
+                <Text style={styles.valueMono}>{request.referenceCode || '—'}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Diajukan</Text>
+                <Text style={styles.value}>{formatDateTime(request.createdAt)}</Text>
+              </View>
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Lokasi ────────────────────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>📍 LOKASI</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              {request.kecamatanName ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Kecamatan</Text>
+                  <Text style={styles.value}>{request.kecamatanName}</Text>
+                </View>
+              ) : null}
+              {request.rayon?.name ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Rayon</Text>
+                  <Text style={styles.value}>{request.rayon.name}</Text>
+                </View>
+              ) : null}
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Alamat</Text>
+                <Text style={styles.value}>{request.address || '—'}</Text>
+              </View>
+              <View style={[styles.infoRow, { marginBottom: 0 }]}>
+                <Text style={styles.label}>Koordinat GPS</Text>
+                <Text style={styles.valueMono}>
+                  {formatGps(request.gpsLat, request.gpsLng)}
+                </Text>
+              </View>
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Detail Pohon ──────────────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>🌳 DETAIL POHON</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Jumlah Pohon</Text>
+                <Text style={styles.value}>
+                  {treeCount != null ? `${treeCount} pohon` : '—'}
+                </Text>
+              </View>
+              {request.treeHeightEstimate ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Tinggi (Perkiraan)</Text>
+                  <Text style={styles.value}>{request.treeHeightEstimate}</Text>
+                </View>
+              ) : null}
+              {request.treeDiameterEstimate ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Diameter (Perkiraan)</Text>
+                  <Text style={styles.value}>{request.treeDiameterEstimate}</Text>
+                </View>
+              ) : null}
+              {request.expectedDate ? (
+                <View style={[styles.infoRow, { marginBottom: 0 }]}>
+                  <Text style={styles.label}>Tanggal Diharapkan</Text>
+                  <Text style={styles.value}>{formatDate(request.expectedDate)}</Text>
+                </View>
+              ) : null}
+            </NBCardContent>
+          </NBCard>
+
+          {/* ── Kontak ────────────────────────────────────────────────── */}
+          {hasContact ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>👤 KONTAK</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                {(request.requesterName || request.requesterPhone) ? (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Pemohon</Text>
+                    <Text style={styles.value}>
+                      {request.requesterName || '—'}
+                      {request.requesterPhone ? ` · ${request.requesterPhone}` : ''}
+                    </Text>
+                  </View>
+                ) : null}
+                {(request.rtLeaderName || request.rtLeaderPhone) ? (
+                  <View style={[styles.infoRow, { marginBottom: 0 }]}>
+                    <Text style={styles.label}>Ketua RT</Text>
+                    <Text style={styles.value}>
+                      {request.rtLeaderName || '—'}
+                      {request.rtLeaderPhone ? ` · ${request.rtLeaderPhone}` : ''}
+                    </Text>
+                  </View>
+                ) : null}
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {/* ── Catatan ───────────────────────────────────────────────── */}
+          {request.notes ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>📝 CATATAN</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <Text style={styles.descriptionText}>{request.notes}</Text>
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {/* ── Foto ──────────────────────────────────────────────────── */}
+          {request.photoUrls && request.photoUrls.length > 0 ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>
+                  📸 FOTO LOKASI ({request.photoUrls.length})
+                </Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.photosContainer}
                 >
-                  <Image
-                    source={{ uri: photoUrl }}
-                    style={styles.photoThumbnail}
-                  />
-                  <View style={styles.photoOverlay}>
-                    <MaterialCommunityIcons
-                      name="magnify"
-                      size={24}
-                      color={nbColors.bgCanvas}
+                  {request.photoUrls.map((photoUrl, index) => (
+                    <TouchableOpacity
+                      key={`${photoUrl}-${index}`}
+                      onPress={() => handlePhotoPress(photoUrl)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Foto ${index + 1} dari ${request.photoUrls.length}`}
+                    >
+                      <Image source={{ uri: photoUrl }} style={styles.photo} />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {/* ── Hasil Review ──────────────────────────────────────────── */}
+          {request.reviewedAt ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>✅ HASIL REVIEW</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Direview Oleh</Text>
+                  <Text style={styles.value}>
+                    {request.reviewer?.full_name || 'Admin'}
+                  </Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Tanggal Review</Text>
+                  <Text style={styles.value}>
+                    {formatDateTime(request.reviewedAt)}
+                  </Text>
+                </View>
+                {request.reviewNotes ? (
+                  <View style={[styles.infoRow, { marginBottom: 0 }]}>
+                    <Text style={styles.label}>Catatan Review</Text>
+                    <Text style={styles.descriptionText}>{request.reviewNotes}</Text>
+                  </View>
+                ) : null}
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {/* ── Tugas Terkait ─────────────────────────────────────────── */}
+          {request.status === 'converted' && request.convertedTaskId ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>🔗 TUGAS TERKAIT</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <Text style={[styles.descriptionText, { marginBottom: nbSpacing.md }]}>
+                  Permohonan ini telah dikonversi menjadi tugas kerja.
+                </Text>
+                <NBButton
+                  variant="primary"
+                  label="Lihat Tugas"
+                  onPress={handleViewTask}
+                  leftIcon="link-variant"
+                  fullWidth
+                />
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {/* ── Aksi Admin ────────────────────────────────────────────── */}
+          {canAdmin && ACTIONABLE_STATUSES.includes(request.status) ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>⚖️ AKSI ADMIN</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <View style={styles.adminButtonRow}>
+                  <View style={styles.adminButtonHalf}>
+                    <NBButton
+                      variant="success"
+                      label="Setujui"
+                      onPress={() => setReviewModalVisible(true)}
+                      leftIcon="check"
+                      disabled={reviewingId === requestId}
+                      fullWidth
                     />
                   </View>
-                </TouchableOpacity>
-              ))}
+                  <View style={styles.adminButtonHalf}>
+                    <NBButton
+                      variant="danger"
+                      label="Tolak"
+                      onPress={() => setReviewModalVisible(true)}
+                      leftIcon="close"
+                      disabled={reviewingId === requestId}
+                      fullWidth
+                    />
+                  </View>
+                </View>
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {canAdmin && request.status === 'approved' ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>➡️ KONVERSI KE TUGAS</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <NBButton
+                  variant="primary"
+                  label="Konversi ke Tugas"
+                  onPress={() => setConvertSheetVisible(true)}
+                  leftIcon="arrow-right"
+                  fullWidth
+                />
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {error ? (
+            <View style={styles.errorBanner}>
+              <NBAlert variant="danger" title="Terjadi kesalahan" message={error} />
             </View>
-          </NBCard>
-        )}
+          ) : null}
+        </ScrollView>
 
-        {/* Review Section (if reviewed) */}
-        {request.reviewedAt && (
-          <NBCard style={styles.card}>
-            <NBText variant="h3" style={styles.sectionTitle}>
-              Review
-            </NBText>
-
-            <View style={styles.detailField}>
-              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                Direview oleh
-              </NBText>
-              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                {request.reviewedBy?.name || 'Admin'}
-              </NBText>
-            </View>
-
-            <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-              <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                Tanggal Review
-              </NBText>
-              <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                {formatDateTime(request.reviewedAt)}
-              </NBText>
-            </View>
-
-            {request.reviewNotes && (
-              <View style={[styles.detailField, { marginTop: nbSpacing[4] }]}>
-                <NBText variant="body-sm" style={{ color: nbColors.gray500 }}>
-                  Catatan Review
-                </NBText>
-                <NBText variant="body" style={{ marginTop: nbSpacing[2] }}>
-                  {request.reviewNotes}
-                </NBText>
-              </View>
-            )}
-          </NBCard>
-        )}
-
-        {/* Task Conversion Section */}
-        {request.status === 'converted' && request.convertedTaskId && (
-          <NBCard style={styles.card}>
-            <NBText variant="h3" style={styles.sectionTitle}>
-              Tugas Terkait
-            </NBText>
-            <NBText
-              variant="body"
-              style={{ marginBottom: nbSpacing[3], color: nbColors.gray600 }}
-            >
-              Permohonan ini telah dikonversi menjadi tugas kerja.
-            </NBText>
-            <NBButton
-              variant="primary"
-              label="Lihat Tugas"
-              onPress={handleViewTask}
-              leftIcon="link-variant"
-            />
-          </NBCard>
-        )}
-
-        {/* Admin Action Buttons */}
-        {canAdmin && ['submitted', 'under_review'].includes(request.status) && (
-          <NBCard style={styles.card}>
-            <NBText variant="h3" style={styles.sectionTitle}>
-              Aksi Admin
-            </NBText>
-            <View style={styles.adminButtonGroup}>
-              <NBButton
-                variant="success"
-                label="Setujui"
-                onPress={() => setReviewModalVisible(true)}
-                leftIcon="check"
-                disabled={reviewingId === requestId}
-                style={{ flex: 1 }}
+        {/* Photo viewer */}
+        <NBModal
+          visible={photoModalVisible}
+          onClose={() => setPhotoModalVisible(false)}
+          type="fullscreen"
+          title="Foto Lokasi"
+        >
+          <View style={styles.photoViewerWrap}>
+            {selectedPhoto ? (
+              <Image
+                source={{ uri: selectedPhoto }}
+                style={styles.photoLarge}
+                resizeMode="contain"
               />
-              <NBButton
-                variant="danger"
-                label="Tolak"
-                onPress={() => setReviewModalVisible(true)}
-                leftIcon="close"
-                disabled={reviewingId === requestId}
-                style={{ flex: 1 }}
-              />
-            </View>
-          </NBCard>
-        )}
+            ) : null}
+          </View>
+        </NBModal>
 
-        {canAdmin && request.status === 'approved' && (
-          <NBCard style={styles.card}>
-            <NBText variant="h3" style={styles.sectionTitle}>
-              Konversi ke Tugas
-            </NBText>
+        {/* Review decision sheet */}
+        <NBModal
+          visible={reviewModalVisible}
+          onClose={() => setReviewModalVisible(false)}
+          type="sheet"
+          size="sm"
+          title="Pilih Keputusan"
+        >
+          <View style={styles.reviewSheetBody}>
             <NBButton
-              variant="primary"
-              label="Konversi ke Tugas"
-              onPress={() => setConvertSheetVisible(true)}
-              leftIcon="arrow-right"
+              variant="success"
+              label="Setujui"
+              leftIcon="check"
+              onPress={() => handleReview('approve')}
+              disabled={reviewingId === requestId}
+              fullWidth
+              style={{ marginBottom: nbSpacing.sm }}
             />
-          </NBCard>
-        )}
-      </ScrollView>
+            <NBButton
+              variant="danger"
+              label="Tolak"
+              leftIcon="close"
+              onPress={() => handleReview('reject')}
+              disabled={reviewingId === requestId}
+              fullWidth
+              style={{ marginBottom: nbSpacing.sm }}
+            />
+            <NBButton
+              variant="secondary"
+              label="Batal"
+              onPress={() => setReviewModalVisible(false)}
+              disabled={reviewingId === requestId}
+              fullWidth
+            />
+          </View>
+        </NBModal>
 
-      {/* Photo Modal */}
-      <PhotoModal
-        visible={photoModalVisible}
-        photoUrl={selectedPhoto}
-        onClose={() => setPhotoModalVisible(false)}
-      />
-
-      {/* Review Modal */}
-      <ReviewModal
-        visible={reviewModalVisible}
-        isApproving={reviewingId === requestId}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        onClose={() => setReviewModalVisible(false)}
-      />
-
-      {/* Convert to Task Sheet */}
-      {request && (
-        <ConvertToTaskSheet
-          visible={convertSheetVisible}
-          onClose={() => setConvertSheetVisible(false)}
-          request={request}
-          onSuccess={() => {
-            dispatch(fetchPruningRequestById(requestId));
-          }}
-        />
-      )}
-
-      {error && (
-        <View style={styles.errorContainer}>
-          <NBAlert
-            type="error"
-            title="Terjadi kesalahan"
-            message={error}
+        {/* Convert to task */}
+        {request ? (
+          <ConvertToTaskSheet
+            visible={convertSheetVisible}
+            onClose={() => setConvertSheetVisible(false)}
+            request={request}
+            onSuccess={() => {
+              dispatch(fetchPruningRequestById(requestId));
+            }}
           />
-        </View>
-      )}
-    </View>
+        ) : null}
+      </SafeAreaView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: nbColors.bgCanvas,
+    backgroundColor: 'transparent',
   },
-  scrollContent: {
-    padding: nbSpacing[4],
-    paddingBottom: nbSpacing[6],
-  },
-  headerCard: {
-    marginBottom: nbSpacing[4],
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  contentContainer: {
+    paddingVertical: nbSpacing.md,
+    paddingBottom: nbSpacing['2xl'],
   },
   card: {
-    marginBottom: nbSpacing[4],
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    ...nbShadows.sm,
   },
   sectionTitle: {
-    marginBottom: nbSpacing[3],
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  infoRow: {
+    marginBottom: nbSpacing.md,
+  },
+  label: {
+    fontSize: nbTypography.fontSize.sm,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.gray700,
+    marginBottom: nbSpacing.xs,
+  },
+  value: {
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.medium,
     color: nbColors.black,
   },
-  detailField: {
-    marginBottom: nbSpacing[0],
+  valueMono: {
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    letterSpacing: 0.5,
   },
-  fieldLabel: {
+  descriptionText: {
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.regular,
+    color: nbColors.black,
+    lineHeight: nbTypography.fontSize.base * 1.5,
+  },
+  photosContainer: {
+    gap: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+  },
+  photo: {
+    width: 160,
+    height: 160,
+    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
+  },
+  adminButtonRow: {
     flexDirection: 'row',
+    gap: nbSpacing.sm,
+  },
+  adminButtonHalf: {
+    flex: 1,
+  },
+  photoViewerWrap: {
+    flex: 1,
     alignItems: 'center',
-    gap: nbSpacing[2],
-  },
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nbSpacing[2],
-    marginTop: nbSpacing[3],
-  },
-  photoThumbnail: {
-    width: '48%',
-    height: 120,
-    borderRadius: nbBorderRadius.md,
-    backgroundColor: nbColors.bgSurface,
-  },
-  photoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: nbBorderRadius.md,
-    opacity: 0,
+    backgroundColor: nbColors.black,
+    margin: -nbSpacing.lg,
   },
   photoLarge: {
     width: '100%',
-    height: '80%',
+    height: '100%',
   },
-  photoModalBg: {
+  reviewSheetBody: {
+    paddingTop: nbSpacing.xs,
+  },
+  errorWrap: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
     justifyContent: 'center',
-    alignItems: 'center',
+    padding: nbSpacing.md,
   },
-  photoModalClose: {
-    position: 'absolute',
-    top: nbSpacing[4],
-    right: nbSpacing[4],
-    zIndex: 10,
-    padding: nbSpacing[2],
-  },
-  errorContainer: {
-    position: 'absolute',
-    bottom: nbSpacing[4],
-    left: nbSpacing[4],
-    right: nbSpacing[4],
-  },
-  adminButtonGroup: {
-    flexDirection: 'row',
-    gap: nbSpacing[3],
-  },
-  modalBg: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: nbColors.white,
-    borderWidth: 2,
-    borderColor: nbColors.black,
-    borderRadius: 0,
-    padding: nbSpacing[4],
-    minWidth: '70%',
+  errorBanner: {
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
   },
 });

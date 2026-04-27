@@ -17,7 +17,7 @@
  * kecamatan_name + rayon_id from the submitter's profile.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -275,20 +276,72 @@ export function SubmitScreen(): React.JSX.Element {
     void captureLocation();
   }, [captureLocation]);
 
-  // Clear stale Redux error + restore draft whenever the screen gains focus.
-  // Prevents the prior session's "Gagal mengirim permohonan" alert from
-  // showing before the user has even tapped submit.
+  // Reset form to a clean baseline (used after submit + after Batal/discard).
+  const resetForm = useCallback(() => {
+    setAddress('');
+    setTreeCount('');
+    setTreeHeight('');
+    setTreeDiameter('');
+    setRequesterName('');
+    setRequesterPhone('');
+    setRtLeaderName('');
+    setRtLeaderPhone('');
+    setNotes('');
+    setPhotos([]);
+  }, []);
+
+  // SubmitScreen is registered as a Tab.Screen (hidden tab) — `beforeRemove`
+  // does NOT fire on tab navigators, so we mirror TaskCreate's manual
+  // `handleLeave` pattern. Wired to both the FieldHomeHeader back arrow
+  // (via navigation.setOptions) and the Batal button.
+  const handleLeave = useCallback(() => {
+    if (!hasContent()) {
+      navigation.goBack();
+      return;
+    }
+    Alert.alert(
+      'Simpan Draft?',
+      'Anda memiliki perubahan yang belum dikirim.',
+      [
+        {
+          text: 'Tidak',
+          style: 'destructive',
+          onPress: async () => {
+            await clearDraft();
+            resetForm();
+            navigation.goBack();
+          },
+        },
+        {
+          text: 'Ya',
+          onPress: async () => {
+            await saveDraftRef.current();
+            resetForm();
+            navigation.goBack();
+          },
+        },
+      ],
+    );
+  }, [hasContent, clearDraft, resetForm, navigation]);
+
+  // Override the header back arrow to route through handleLeave.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <FieldHomeHeader title="Buat Permohonan" onBack={handleLeave} />
+      ),
+    });
+  }, [navigation, handleLeave]);
+
+  // Clear stale Redux error + restore draft on every focus. Mirrors
+  // TaskCreate so the prompt fires whenever the user returns to a saved draft
+  // (which is also why we no longer save-on-blur — that re-trigged the prompt
+  // after every camera intent).
   useFocusEffect(
     useCallback(() => {
       dispatch(clearError());
       void restoreDraft();
-      return () => {
-        // Best-effort save when the screen blurs (back/navigate away).
-        if (formRef.current.address.trim() || photos.length > 0) {
-          void saveDraftRef.current();
-        }
-      };
-    }, [dispatch, restoreDraft, photos.length]),
+    }, [dispatch, restoreDraft]),
   );
 
   // Auto-save draft every 30s while there's content.
@@ -300,41 +353,6 @@ export function SubmitScreen(): React.JSX.Element {
     }, AUTO_SAVE_INTERVAL);
     return () => clearInterval(interval);
   }, []);
-
-  // Intercept any back navigation (Android hardware back, FieldHomeHeader's
-  // onBack, or stack swipe-back) and surface the "Simpan Draft?" prompt when
-  // the form has unsaved content. We use `beforeRemove` rather than a custom
-  // `headerLeft` because MainNavigator already mounts FieldHomeHeader's back
-  // button — overriding `headerLeft` produced two visible back arrows.
-  useEffect(() => {
-    const sub = navigation.addListener('beforeRemove', (e: any) => {
-      if (!hasContent()) { return; }
-      e.preventDefault();
-      Alert.alert(
-        'Simpan Draft?',
-        'Anda memiliki perubahan yang belum dikirim.',
-        [
-          { text: 'Lanjut Edit', style: 'cancel' },
-          {
-            text: 'Hapus',
-            style: 'destructive',
-            onPress: async () => {
-              await clearDraft();
-              navigation.dispatch(e.data.action);
-            },
-          },
-          {
-            text: 'Simpan',
-            onPress: async () => {
-              await saveDraftRef.current();
-              navigation.dispatch(e.data.action);
-            },
-          },
-        ],
-      );
-    });
-    return sub;
-  }, [navigation, hasContent, clearDraft]);
 
   // ── Photo capture ───────────────────────────────────────────────────────
   const handlePickFromCamera = useCallback(async () => {
@@ -462,12 +480,8 @@ export function SubmitScreen(): React.JSX.Element {
         title: 'Permohonan terkirim',
         body: 'Anda akan diberitahu setelah ditinjau.',
       });
-      // Reset form to a clean baseline so beforeRemove doesn't fire the
-      // "Simpan Draft?" prompt on the navigation back.
-      setAddress(''); setTreeCount(''); setTreeHeight(''); setTreeDiameter('');
-      setRequesterName(''); setRequesterPhone('');
-      setRtLeaderName(''); setRtLeaderPhone(''); setNotes('');
-      setPhotos([]);
+      // Reset form so re-entering the screen starts clean (no draft prompt).
+      resetForm();
       navigation.navigate('Perantingan');
     } catch (e) {
       NBToast.show({
@@ -482,7 +496,7 @@ export function SubmitScreen(): React.JSX.Element {
   }, [
     validate, photos, dispatch, address, gpsLat, gpsLng, rayonId, kecamatanName,
     treeCount, treeHeight, treeDiameter, requesterName, requesterPhone,
-    rtLeaderName, rtLeaderPhone, notes, navigation, clearDraft,
+    rtLeaderName, rtLeaderPhone, notes, navigation, clearDraft, resetForm,
   ]);
 
   const isBusy = submitting || isSubmitting;
@@ -731,20 +745,34 @@ export function SubmitScreen(): React.JSX.Element {
           </NBCard>
 
           {/* Validation + API errors are surfaced via NBToast — no inline alert. */}
-
-          {/* ── Submit ─────────────────────────────────────────────── */}
-          <View style={styles.submitWrap}>
-            <NBButton
-              label={isBusy ? 'Mengirim…' : 'Kirim Permohonan'}
-              leftIcon="send"
-              variant="primary"
-              onPress={handleSubmit}
-              disabled={isBusy}
-              loading={isBusy}
-              testID="perantingan-submit-cta"
-            />
-          </View>
         </ScrollView>
+
+        {/* Fixed footer — mirrors TaskCreate / ActivitySubmission pattern */}
+        <View style={styles.fab}>
+          <View style={styles.fabButtonRow}>
+            <View style={styles.fabButtonHalf}>
+              <NBButton
+                title="Batal"
+                variant="secondary"
+                onPress={handleLeave}
+                disabled={isBusy}
+                fullWidth
+                size="lg"
+              />
+            </View>
+            <View style={styles.fabButtonHalf}>
+              <NBButton
+                title={isBusy ? 'Mengirim…' : 'Kirim'}
+                onPress={handleSubmit}
+                loading={isBusy}
+                disabled={isBusy}
+                fullWidth
+                size="lg"
+                testID="perantingan-submit-cta"
+              />
+            </View>
+          </View>
+        </View>
       </NBBackgroundPattern>
 
       <LocationPickerModal
@@ -772,7 +800,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: nbSpacing[4],
-    paddingBottom: nbSpacing[12],
+    paddingBottom: nbSpacing[6],
+  },
+  fab: {
+    paddingHorizontal: nbSpacing[4],
+    paddingVertical: nbSpacing[3],
+  },
+  fabButtonRow: {
+    flexDirection: 'row',
+    gap: nbSpacing[2],
+  },
+  fabButtonHalf: {
+    flex: 1,
   },
   card: {
     marginBottom: nbSpacing[4],
@@ -871,8 +910,5 @@ const styles = StyleSheet.create({
     minHeight: 110,
     textAlignVertical: 'top',
     paddingTop: nbSpacing[2],
-  },
-  submitWrap: {
-    marginTop: nbSpacing[2],
   },
 });

@@ -260,6 +260,9 @@ jest.mock('../../../components/nb', () => {
   const NBDatePicker = ({ ...props }: any) =>
     React.createElement(Text, props, 'Date Picker');
 
+  const NBBackgroundPattern = ({ children, ...props }: any) =>
+    React.createElement(View, props, children);
+
   return {
     NBButton,
     NBCard,
@@ -275,6 +278,7 @@ jest.mock('../../../components/nb', () => {
     NBSelect,
     NBTextInput,
     NBDatePicker,
+    NBBackgroundPattern,
   };
 }
 );
@@ -653,7 +657,7 @@ describe('RequestDetailScreen', () => {
       // Component maps 'converted' status to 'Dikonversi' label
       expect(screen.getByText('Dikonversi')).toBeTruthy();
       // Task name is only shown in the button action, verify task section exists
-      expect(screen.getByText(/Tugas Terkait/)).toBeTruthy();
+      expect(screen.getByText(/Tugas Terkait/i)).toBeTruthy();
     });
 
     it('should display converted task link', async () => {

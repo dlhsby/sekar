@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   nbColors,
@@ -154,7 +155,11 @@ function FullscreenModal({
             accessibilityLabel="Kembali"
             accessibilityRole="button"
           >
-            <Text style={styles.backButtonText}>←</Text>
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={22}
+              color={nbColors.black}
+            />
           </TouchableOpacity>
           {title ? (
             <Text style={styles.fullscreenTitle} accessibilityRole="header">

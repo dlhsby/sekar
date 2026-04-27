@@ -104,31 +104,31 @@ describe('NBModal', () => {
     });
 
     it('renders back button', () => {
-      const { getByText } = render(
+      const { getByLabelText } = render(
         <NBModal type="fullscreen" visible onClose={onClose} title="Form">
           <></>
         </NBModal>,
       );
-      expect(getByText('←')).toBeTruthy();
+      expect(getByLabelText('Kembali')).toBeTruthy();
     });
 
     it('calls onClose when back button pressed', () => {
-      const { getByText } = render(
+      const { getByLabelText } = render(
         <NBModal type="fullscreen" visible onClose={onClose} title="Form">
           <></>
         </NBModal>,
       );
-      fireEvent.press(getByText('←'));
+      fireEvent.press(getByLabelText('Kembali'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
     it('does not render title text when title is omitted', () => {
-      const { queryByText } = render(
+      const { queryByLabelText } = render(
         <NBModal type="fullscreen" visible onClose={onClose}>
           <></>
         </NBModal>,
       );
-      expect(queryByText('←')).toBeTruthy(); // back button still shows
+      expect(queryByLabelText('Kembali')).toBeTruthy(); // back button still shows
     });
   });
 });
