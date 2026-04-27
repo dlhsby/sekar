@@ -20,15 +20,13 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
-  Platform,
   Keyboard,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Geolocation from 'react-native-geolocation-service';
 import NetInfo from '@react-native-community/netinfo';
 import { nbColors, nbSpacing, nbShadows, nbBorders, nbBorderRadius, nbTypography } from '../../constants/nbTokens';
-import { NBButton, NBCard, NBCardContent, NBCardHeader, NBCardTextInput, NBAlert } from '../../components/nb';
+import { NBButton, NBCard, NBCardContent, NBCardHeader, NBCardTextInput, NBAlert, NBDatePicker } from '../../components/nb';
 import { PhotoUploader } from '../../components/common';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
@@ -75,7 +73,6 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
   const { isOnline } = useNetworkStatus();
   const [step, setStep] = useState<WizardStep>(WizardStep.Address);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [referenceCode, setReferenceCode] = useState<string | null>(null);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -154,14 +151,14 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
     [dispatch, draft],
   );
 
-  // Handle date change
-  const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(false);
-    if (date) {
+  // Handle date change (called by NBDatePicker)
+  const handleDateChange = useCallback(
+    (date: Date) => {
       const isoDate = date.toISOString().split('T')[0];
       dispatch(updateDraft({ detail_date: isoDate }));
-    }
-  };
+    },
+    [dispatch],
+  );
 
   // Validate step before proceeding
   const validateStep = useCallback((): boolean => {
@@ -338,8 +335,7 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
         {step === WizardStep.Detail && (
           <StepDetailContent
             draft={draft}
-            showDatePicker={showDatePicker}
-            onDetailDateChange={() => setShowDatePicker(true)}
+            onDateChange={handleDateChange}
             onTargetCountChange={(count) => dispatch(updateDraft({ target_count: count }))}
             onNotesChange={(notes) => dispatch(updateDraft({ notes }))}
           />
@@ -353,16 +349,6 @@ export function SubmitScreen({ navigation }: SubmitScreenProps): React.JSX.Eleme
           <StepSuccessContent referenceCode={referenceCode || 'PENDING'} />
         )}
 
-        {/* Date picker modal */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={new Date(draft.detail_date || new Date().toISOString().split('T')[0])}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-            minimumDate={new Date()}
-          />
-        )}
       </ScrollView>
 
       {/* Action buttons */}
@@ -537,14 +523,12 @@ function StepPhotosContent({
  */
 function StepDetailContent({
   draft,
-  showDatePicker,
-  onDetailDateChange,
+  onDateChange,
   onTargetCountChange,
   onNotesChange,
 }: {
   draft: any;
-  showDatePicker: boolean;
-  onDetailDateChange: () => void;
+  onDateChange: (date: Date) => void;
   onTargetCountChange: (count: number) => void;
   onNotesChange: (notes: string) => void;
 }): React.JSX.Element {
@@ -553,14 +537,13 @@ function StepDetailContent({
       <NBCard>
         <NBCardContent>
           <View style={{ marginBottom: nbSpacing.md }}>
-            <Text style={[nbTypography['body'], { color: nbColors.text.primary, marginBottom: nbSpacing.sm }]}>
-              Tanggal Pekerjaan
-            </Text>
-            <NBButton variant="outline" onPress={onDetailDateChange}>
-              {draft.detail_date
-                ? new Date(draft.detail_date).toLocaleDateString('id-ID')
-                : 'Pilih Tanggal'}
-            </NBButton>
+            <NBDatePicker
+              label="Tanggal Pekerjaan"
+              value={draft.detail_date ? new Date(draft.detail_date) : null}
+              onChange={onDateChange}
+              minimumDate={new Date()}
+              placeholder="Pilih Tanggal"
+            />
           </View>
 
           <NBCardTextInput
