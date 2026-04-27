@@ -528,7 +528,8 @@ export async function seedPhase3ServiceCapacity(
 }
 
 /**
- * Phase 3 sample/UAT data — area_plants, pruning_requests, plant_seeds, seed_transactions.
+ * Phase 3 sample/UAT data — area_plants, notable_plants, pruning_requests (with task lineage),
+ * plant_seeds, and seed_transactions.
  * Requires existing users (admin_data or staff_kecamatan), areas, and rayons.
  * Idempotent on natural keys; safe to re-run.
  */
@@ -564,31 +565,89 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
     console.log('  ⚠ No active areas found, skipping area_plants');
   }
 
-  // Sample pruning_requests — 4 in different statuses, submitted by staff_kecamatan or admin_data
+  // Sample notable_plants — heritage specimens (heritage=true) linked to areas
+  if (areas.length > 0) {
+    const notablePlantSamples = [
+      { areaIndex: 0, speciesName: 'BERINGIN', lat: -7.2506, lng: 112.7508, heritage: true, label: 'Pohon Beringin Tua Keramat', notes: 'Pohon bersejarah usia 150 tahun' },
+      { areaIndex: 1, speciesName: 'MAHONI', lat: -7.2575, lng: 112.7665, heritage: true, label: 'Mahoni Koleksi 1990', notes: 'Specimen dari Jepang, perlu perawatan khusus' },
+      { areaIndex: 2, speciesName: 'JATI', lat: -7.2450, lng: 112.7450, heritage: false, label: 'Jati Benih Unggul', notes: 'Jati dari proyek hutan tanaman 2020' },
+    ];
+    let notableInserted = 0;
+    for (const notable of notablePlantSamples) {
+      if (notable.areaIndex < areas.length) {
+        const sp = await queryRunner.query(
+          `SELECT id FROM plant_species WHERE name_id = $1 LIMIT 1`,
+          [notable.speciesName],
+        );
+        if (sp.length > 0) {
+          const rows = await queryRunner.query(
+            `INSERT INTO notable_plants (area_id, species_id, gps_lat, gps_lng, label, heritage, notes, photo_urls)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (area_id, species_id, gps_lat, gps_lng) DO NOTHING
+             RETURNING id`,
+            [areas[notable.areaIndex].id, sp[0].id, notable.lat, notable.lng, notable.label, notable.heritage, notable.notes, []],
+          );
+          if (rows.length > 0) notableInserted++;
+        }
+      }
+    }
+    console.log(`  ✓ ${notableInserted} notable_plants (heritage) inserted`);
+  }
+
+  // Sample pruning_requests — various statuses with optional task lineage
   const submitter = await queryRunner.query(
     `SELECT id FROM users WHERE role IN ('staff_kecamatan','admin_data') ORDER BY role LIMIT 1`,
   );
+  const admin = await queryRunner.query(
+    `SELECT id FROM users WHERE role IN ('admin_system', 'superadmin') ORDER BY role LIMIT 1`,
+  );
+  const rayon = await queryRunner.query(`SELECT id FROM rayons LIMIT 1`);
+
   if (submitter.length > 0) {
     const submitterId = submitter[0].id;
+    const adminId = admin.length > 0 ? admin[0].id : submitterId;
+    const rayonId = rayon.length > 0 ? rayon[0].id : null;
+
     const samples = [
-      { kecamatan: 'Surabaya Pusat', address: 'Jl. Pemuda No. 1', status: 'submitted' },
-      { kecamatan: 'Surabaya Selatan', address: 'Jl. Raya Darmo No. 50', status: 'submitted' },
-      { kecamatan: 'Surabaya Timur', address: 'Jl. Kenjeran No. 100', status: 'approved' },
-      { kecamatan: 'Surabaya Utara', address: 'Jl. Tanjungsari No. 25', status: 'rejected' },
+      { kecamatan: 'Surabaya Pusat', address: 'Jl. Pemuda No. 1', status: 'submitted' as const, estimatedCount: 12, daysFromNow: 30 },
+      { kecamatan: 'Surabaya Selatan', address: 'Jl. Raya Darmo No. 50', status: 'submitted' as const, estimatedCount: 8, daysFromNow: 45 },
+      { kecamatan: 'Surabaya Timur', address: 'Jl. Kenjeran No. 100', status: 'approved' as const, estimatedCount: 15, daysFromNow: 14 },
+      { kecamatan: 'Surabaya Utara', address: 'Jl. Tanjungsari No. 25', status: 'rejected' as const, estimatedCount: 6, daysFromNow: -5 },
     ];
     let inserted = 0;
     for (let i = 0; i < samples.length; i++) {
       const refCode = `PR-2026-STAGING-${String(i + 1).padStart(4, '0')}`;
+      const expectedDate = new Date();
+      expectedDate.setDate(expectedDate.getDate() + samples[i].daysFromNow);
+
+      const insertParams: any[] = [
+        refCode,
+        submitterId,
+        samples[i].kecamatan,
+        samples[i].address,
+        samples[i].status,
+        expectedDate.toISOString().split('T')[0],
+        samples[i].estimatedCount,
+        rayonId,
+      ];
+
+      // Add review metadata only for approved/rejected
+      if (samples[i].status === 'approved' || samples[i].status === 'rejected') {
+        insertParams.push(adminId, new Date().toISOString(), `Reviewed by admin on ${new Date().toLocaleDateString()}`);
+      } else {
+        insertParams.push(null, null, null);
+      }
+
       const rows = await queryRunner.query(
-        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status, expected_date, estimated_plant_count, rayon_id, reviewed_by, reviewed_at, review_notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          ON CONFLICT (reference_code) DO NOTHING
          RETURNING id`,
-        [refCode, submitterId, samples[i].kecamatan, samples[i].address, samples[i].status],
+        insertParams,
       );
       if (rows.length > 0) inserted++;
     }
-    console.log(`  ✓ ${inserted} pruning_requests inserted (mixed statuses)`);
+    console.log(`  ✓ ${inserted} pruning_requests inserted (mixed statuses with review metadata)`);
   } else {
     console.log('  ⚠ No staff_kecamatan/admin_data user found, skipping pruning_requests');
   }

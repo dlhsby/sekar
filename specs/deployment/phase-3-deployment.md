@@ -231,6 +231,65 @@ ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
 
 ---
 
+## 🎯 Demo Path — Test Phase 3 Locally (Quick Start)
+
+**Goal:** Spin up backend + mobile with Phase 3 sample data to validate Plants, Monitoring v2, and Pruning Requests features.
+
+**Time:** ~10 minutes (Docker + npm setup) + 2 minutes (seed)
+
+### Demo Path Steps
+
+#### 1. Start backend with Phase 3 seed
+
+```bash
+cd /path/to/sekar
+./infra/start.sh                   # Bring up PostgreSQL, Adminer, LocalStack (docker-compose)
+cd be
+npm install                         # If not already done
+cp .env.example .env               # Use default localhost credentials
+npm run migration:run              # Run all migrations (Phase 3 tables created)
+npm run db:seed:prod               # Seeds reference data + Phase 3 sample (127 users, 5 areas, 7 rayons, 128 plant species, 4 notable_plants, 4 pruning_requests, 5 plant_seeds)
+npm run start:dev                  # http://localhost:3000
+```
+
+#### 2. Verify Phase 3 data via Swagger UI
+
+Open http://localhost:3000/api/docs and test:
+
+- **GET** `/api/v1/plants/species` → 128 plant species
+- **GET** `/api/v1/plants/notable` → 4 heritage plants (area 1–3)
+- **GET** `/api/v1/monitoring/snapshot` → live worker cluster counts + staffing by rayon
+- **GET** `/api/v1/pruning-requests` (with `admin_system` token) → 4 sample requests in mixed statuses (submitted, approved, rejected)
+
+**Test user credentials:**
+- `satgas1 / password123` — field worker (can clock-in, see monitoring)
+- `admin_system / password123` — system admin (can review pruning requests, see all data)
+
+#### 3. Start mobile with Phase 3 UI
+
+```bash
+cd fe/mobile
+npm install                        # If not already done
+cp .env.example .env               # Set API_BASE_URL=http://10.0.2.2:3000 (emulator) or YOUR_IP:3000 (device)
+npm run android                    # Or: npm run ios (macOS only)
+```
+
+#### 4. Validate Phase 3 features on mobile
+
+- **As satgas1:** Log in → Home → "Monitoring" tab → see live worker cluster markers + staffing by rayon
+- **As staff_kecamatan:** Log in → "Kecamatan" tab → "Ajukan Permintaan" → submit a pruning request (form auto-filled with demo data)
+- **As admin_system (on web):** Go to "Pruning Requests" → review the 4 sample requests → approve/reject one
+
+#### 5. Clean up
+
+```bash
+./infra/stop.sh                    # Tear down Docker services (PostgreSQL, etc.)
+```
+
+**Demo data will persist on next `npm run db:seed:prod` — it's idempotent. Use `docker-compose down -v` if you want a fresh start.**
+
+---
+
 ## 🔑 New Environment Variables
 
 Add to `be/.env.production` (and GitHub Secrets `BACKEND_ENV_PRODUCTION`):
