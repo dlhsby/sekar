@@ -605,6 +605,7 @@ async function seedStaging() {
     console.log('\n👥 Seeding users...');
 
     // Helper: insert a user row
+    // Phase 3 Apr 27 — accepts optional `kecamatanName` for staff_kecamatan users.
     const insertUser = async (
       id: string,
       username: string,
@@ -613,12 +614,13 @@ async function seedStaging() {
       phone: string,
       rayonId: string | null = null,
       areaId: string | null = null,
+      kecamatanName: string | null = null,
     ) => {
       await queryRunner.query(
-        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, kecamatan_name, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
          ON CONFLICT (username) DO NOTHING`,
-        [id, username, PASSWORD_HASH, fullName, phone, role, rayonId, areaId],
+        [id, username, PASSWORD_HASH, fullName, phone, role, rayonId, areaId, kecamatanName],
       );
     };
 
@@ -649,8 +651,10 @@ async function seedStaging() {
     await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_bungkul_1', 'Satgas Bungkul 1', 'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
     // ── Phase 3 — public intake (staff_kecamatan) ──────────────
-    // staff_kec_pusat: scoped to Rayon Pusat for testing pruning_requests workflow
-    await insertUser(USER_STAFF_KEC_PUSAT_ID, 'staff_kec_pusat', 'Staff Kecamatan Pusat', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID);
+    // staff_kec_pusat: scoped to Rayon Pusat for testing pruning_requests workflow.
+    // Apr 27 redesign: kecamatan_name attribution added so the redesigned mobile
+    // submit form can preset rayon + kecamatan from the user profile.
+    await insertUser(USER_STAFF_KEC_PUSAT_ID, 'staff_kec_pusat', 'Staff Kecamatan Pusat', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID, null, 'Tegalsari');
 
     // ── Real users ─────────────────────────────────────────────
     await insertUser(USER_PRAMUDITA_ID, 'pramudita_yustiani',   'Pramudita Yustiani',   'top_management', '08563302643');

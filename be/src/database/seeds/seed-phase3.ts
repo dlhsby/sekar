@@ -301,13 +301,22 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
 
     // Cover every status chip so MyRequestsScreen + ReviewQueueScreen
     // have visible data on first login. 6 rows × distinct statuses.
+    // Phase 3 Apr 27 redesign — sample rows now include the new tree-detail
+    // and contact fields so MyRequestsScreen / RequestDetailScreen show realistic
+    // data on first login.
     const sampleRequests = [
-      { kec: 'Pusat',   addr: 'Jl. Pemuda No. 1',          status: 'submitted',   photos: 3, count: 5 },
-      { kec: 'Pusat',   addr: 'Jl. Tunjungan No. 12',      status: 'submitted',   photos: 4, count: 8 },
-      { kec: 'Selatan', addr: 'Jl. Raya Darmo No. 99',     status: 'approved',    photos: 5, count: 12 },
-      { kec: 'Timur',   addr: 'Jl. Raya Kenjeran No. 50',  status: 'rejected',    photos: 3, count: 4 },
-      { kec: 'Utara',   addr: 'Jl. Tanjungsari No. 100',   status: 'converted',   photos: 4, count: 10 },
-      { kec: 'Pusat',   addr: 'Jl. Embong Malang No. 7',   status: 'in_progress', photos: 5, count: 6 },
+      { kec: 'Tegalsari', addr: 'Jl. Pemuda No. 1',         status: 'submitted',   photos: 3, count: 5,
+        height: '5-7 meter',  diameter: '30-40 cm', reqName: 'Budi Santoso',  reqPhone: '081234567001', rtName: 'Pak Joko',  rtPhone: '081298765001' },
+      { kec: 'Genteng',   addr: 'Jl. Tunjungan No. 12',     status: 'submitted',   photos: 4, count: 8,
+        height: '8-10 meter', diameter: '40-60 cm', reqName: 'Siti Aminah',   reqPhone: '081234567002', rtName: 'Pak Hendra',rtPhone: '081298765002' },
+      { kec: 'Wonokromo', addr: 'Jl. Raya Darmo No. 99',    status: 'approved',    photos: 5, count: 12,
+        height: '10-12 meter',diameter: '50-70 cm', reqName: 'Andi Wijaya',   reqPhone: '081234567003', rtName: 'Pak Slamet',rtPhone: '081298765003' },
+      { kec: 'Kenjeran',  addr: 'Jl. Raya Kenjeran No. 50', status: 'rejected',    photos: 3, count: 4,
+        height: '4-5 meter',  diameter: '20-30 cm', reqName: 'Dewi Lestari',  reqPhone: '081234567004', rtName: 'Pak Budi',  rtPhone: '081298765004' },
+      { kec: 'Krembangan',addr: 'Jl. Tanjungsari No. 100',  status: 'converted',   photos: 4, count: 10,
+        height: '7-9 meter',  diameter: '35-50 cm', reqName: 'Rina Susanti',  reqPhone: '081234567005', rtName: 'Pak Wahyu', rtPhone: '081298765005' },
+      { kec: 'Tegalsari', addr: 'Jl. Embong Malang No. 7',  status: 'in_progress', photos: 5, count: 6,
+        height: '6-8 meter',  diameter: '30-45 cm', reqName: 'Eko Pranoto',   reqPhone: '081234567006', rtName: 'Pak Agus',  rtPhone: '081298765006' },
     ];
 
     const staff = await queryRunner.query(
@@ -340,19 +349,25 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         const result = await queryRunner.query(
           `INSERT INTO pruning_requests
              (reference_code, submitted_by, kecamatan_name, address, gps_lat, gps_lng,
-              expected_date, estimated_plant_count, photo_urls, status, rayon_id,
+              expected_date, estimated_plant_count, tree_count,
+              tree_height_estimate, tree_diameter_estimate,
+              requester_name, requester_phone, rt_leader_name, rt_leader_phone,
+              photo_urls, status, rayon_id,
               reviewed_by, reviewed_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,$12,$13)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20)
            ON CONFLICT (reference_code) DO NOTHING`,
           [refCode, submitterId, r.kec, r.addr,
            -7.2575 + (i * 0.001), 112.7521 + (i * 0.001),
-           expectedDate, r.count, photoUrls, r.status, rayonIdForReq,
+           expectedDate, r.count, r.count,
+           r.height, r.diameter,
+           r.reqName, r.reqPhone, r.rtName, r.rtPhone,
+           photoUrls, r.status, rayonIdForReq,
            reviewedAt ? reviewerId : null, reviewedAt],
         );
         if (result && (result as any).rowCount > 0) pruningInserted++;
       }
     }
-    console.log(`  ✓ ${pruningInserted} pruning_requests inserted (6 status variants)`);
+    console.log(`  ✓ ${pruningInserted} pruning_requests inserted (6 status variants, with tree details + contacts)`);
 
     // ==========================================
     // SECTION 5: plant_seeds + seed_transactions
@@ -637,13 +652,21 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
     // 6 samples covering every status chip used in MyRequestsScreen
     // and ReviewQueueScreen so each visual variant is on screen on
     // first login.
+    // Phase 3 Apr 27 redesign — sample rows now include the new tree-detail
+    // and contact fields populated by the redesigned mobile submit form.
     const samples = [
-      { kecamatan: 'Surabaya Pusat', address: 'Jl. Pemuda No. 1', status: 'submitted' as const, estimatedCount: 12, daysFromNow: 30 },
-      { kecamatan: 'Surabaya Selatan', address: 'Jl. Raya Darmo No. 50', status: 'submitted' as const, estimatedCount: 8, daysFromNow: 45 },
-      { kecamatan: 'Surabaya Timur', address: 'Jl. Kenjeran No. 100', status: 'approved' as const, estimatedCount: 15, daysFromNow: 14 },
-      { kecamatan: 'Surabaya Utara', address: 'Jl. Tanjungsari No. 25', status: 'rejected' as const, estimatedCount: 6, daysFromNow: -5 },
-      { kecamatan: 'Surabaya Pusat', address: 'Jl. Tunjungan No. 12', status: 'converted' as const, estimatedCount: 10, daysFromNow: 7 },
-      { kecamatan: 'Surabaya Selatan', address: 'Jl. Embong Malang No. 7', status: 'in_progress' as const, estimatedCount: 6, daysFromNow: 3 },
+      { kecamatan: 'Tegalsari',  address: 'Jl. Pemuda No. 1',         status: 'submitted'   as const, estimatedCount: 12, daysFromNow: 30,
+        height: '8-10 meter', diameter: '40-60 cm',  reqName: 'Budi Santoso',   reqPhone: '081234567001', rtName: 'Pak Joko',  rtPhone: '081298765001' },
+      { kecamatan: 'Wonokromo',  address: 'Jl. Raya Darmo No. 50',    status: 'submitted'   as const, estimatedCount: 8,  daysFromNow: 45,
+        height: '6-8 meter',  diameter: '30-45 cm',  reqName: 'Siti Aminah',    reqPhone: '081234567002', rtName: 'Pak Hendra',rtPhone: '081298765002' },
+      { kecamatan: 'Kenjeran',   address: 'Jl. Kenjeran No. 100',     status: 'approved'    as const, estimatedCount: 15, daysFromNow: 14,
+        height: '10-12 meter',diameter: '50-70 cm',  reqName: 'Andi Wijaya',    reqPhone: '081234567003', rtName: 'Pak Slamet',rtPhone: '081298765003' },
+      { kecamatan: 'Krembangan', address: 'Jl. Tanjungsari No. 25',   status: 'rejected'    as const, estimatedCount: 6,  daysFromNow: -5,
+        height: '4-5 meter',  diameter: '20-30 cm',  reqName: 'Dewi Lestari',   reqPhone: '081234567004', rtName: 'Pak Budi',  rtPhone: '081298765004' },
+      { kecamatan: 'Genteng',    address: 'Jl. Tunjungan No. 12',     status: 'converted'   as const, estimatedCount: 10, daysFromNow: 7,
+        height: '7-9 meter',  diameter: '35-50 cm',  reqName: 'Rina Susanti',   reqPhone: '081234567005', rtName: 'Pak Wahyu', rtPhone: '081298765005' },
+      { kecamatan: 'Tegalsari',  address: 'Jl. Embong Malang No. 7',  status: 'in_progress' as const, estimatedCount: 6,  daysFromNow: 3,
+        height: '5-7 meter',  diameter: '30-40 cm',  reqName: 'Eko Pranoto',    reqPhone: '081234567006', rtName: 'Pak Agus',  rtPhone: '081298765006' },
     ];
     let inserted = 0;
     for (let i = 0; i < samples.length; i++) {
@@ -655,20 +678,28 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
         `https://placehold.co/600x400?text=PR-${i + 1}-${n + 1}`,
       );
 
+      const s = samples[i];
       const insertParams: any[] = [
         refCode,
         submitterId,
-        samples[i].kecamatan,
-        samples[i].address,
-        samples[i].status,
+        s.kecamatan,
+        s.address,
+        s.status,
         expectedDate.toISOString().split('T')[0],
-        samples[i].estimatedCount,
+        s.estimatedCount,
+        s.estimatedCount,            // tree_count mirrors estimated_plant_count
+        s.height,
+        s.diameter,
+        s.reqName,
+        s.reqPhone,
+        s.rtName,
+        s.rtPhone,
         rayonId,
         photoUrls,
       ];
 
       // Add review metadata for any reviewed/post-review status
-      const reviewed = ['approved', 'rejected', 'converted', 'in_progress'].includes(samples[i].status);
+      const reviewed = ['approved', 'rejected', 'converted', 'in_progress'].includes(s.status);
       if (reviewed) {
         insertParams.push(adminId, new Date().toISOString(), `Reviewed by admin on ${new Date().toLocaleDateString()}`);
       } else {
@@ -676,15 +707,20 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
       }
 
       const rows = await queryRunner.query(
-        `INSERT INTO pruning_requests (reference_code, submitted_by, kecamatan_name, address, status, expected_date, estimated_plant_count, rayon_id, photo_urls, reviewed_by, reviewed_at, review_notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], $10, $11, $12)
+        `INSERT INTO pruning_requests
+           (reference_code, submitted_by, kecamatan_name, address, status, expected_date,
+            estimated_plant_count, tree_count, tree_height_estimate, tree_diameter_estimate,
+            requester_name, requester_phone, rt_leader_name, rt_leader_phone,
+            rayon_id, photo_urls,
+            reviewed_by, reviewed_at, review_notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::text[], $17, $18, $19)
          ON CONFLICT (reference_code) DO NOTHING
          RETURNING id`,
         insertParams,
       );
       if (rows.length > 0) inserted++;
     }
-    console.log(`  ✓ ${inserted} pruning_requests inserted (mixed statuses with review metadata)`);
+    console.log(`  ✓ ${inserted} pruning_requests inserted (mixed statuses + tree details + contacts)`);
   } else {
     console.log('  ⚠ No staff_kecamatan/admin_data user found, skipping pruning_requests');
   }

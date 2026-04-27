@@ -56,32 +56,50 @@ export class PruningRequestsService {
   ): Promise<PruningRequest> {
     this.logger.log(`Creating pruning request from user ${user.id}`);
 
-    // Validate detail_date is today or future
-    const detailDate = new Date(dto.detail_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (detailDate < today) {
-      throw new BadRequestException(
-        'Detail date must be today or in the future',
-      );
+    // Validate detail_date is today or future (only when supplied — Phase 3
+    // redesign made the field optional since the new mobile form omits it).
+    let detailDate: Date | null = null;
+    if (dto.detail_date) {
+      detailDate = new Date(dto.detail_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (detailDate < today) {
+        throw new BadRequestException(
+          'Detail date must be today or in the future',
+        );
+      }
     }
 
     // Generate unique reference code (timestamp-based for readability)
     const referenceCode = `PR-${Date.now()}-${uuidv4().slice(0, 8)}`;
 
+    // Phase 3 Apr 27 — auto-derive kecamatan_name + rayon_id from the user's
+    // profile. Each staff_kecamatan user has both attributes set at seed time,
+    // so the mobile client doesn't need to send them. Fall back to
+    // user.full_name if kecamatan_name is unset (preserves prior behavior).
+    const kecamatanName = user.kecamatan_name ?? user.full_name;
+    const rayonId = dto.rayon_id ?? user.rayon_id ?? null;
+
     const pruningRequest = this.pruningRequestRepository.create({
       referenceCode,
       submittedBy: user.id,
-      kecamatanName: user.full_name, // Use submitter's name as kecamatan identifier
+      kecamatanName,
       address: dto.address,
       gpsLat: dto.lat,
       gpsLng: dto.lng,
       photoUrls: dto.photo_keys,
       expectedDate: detailDate,
-      estimatedPlantCount: dto.target_count,
+      estimatedPlantCount: dto.target_count ?? dto.tree_count ?? null,
+      treeCount: dto.tree_count ?? dto.target_count ?? null,
+      treeHeightEstimate: dto.tree_height_estimate ?? null,
+      treeDiameterEstimate: dto.tree_diameter_estimate ?? null,
+      requesterName: dto.requester_name ?? null,
+      requesterPhone: dto.requester_phone ?? null,
+      rtLeaderName: dto.rt_leader_name ?? null,
+      rtLeaderPhone: dto.rt_leader_phone ?? null,
       notes: dto.notes || null,
       status: 'submitted',
-      rayonId: dto.rayon_id || null,
+      rayonId,
     });
 
     const saved = await this.pruningRequestRepository.save(pruningRequest);

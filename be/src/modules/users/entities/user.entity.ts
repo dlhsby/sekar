@@ -81,6 +81,17 @@ export class User {
   @Column({ type: 'uuid', nullable: true })
   area_id?: string;
 
+  // Phase 3 Apr 27 — staff_kecamatan kecamatan attribution.
+  // Each staff_kecamatan user is mapped to one kecamatan; their pruning_requests
+  // inherit `kecamatan_name` and `rayon_id` from this profile at submit time.
+  // Other roles leave this null.
+  @ApiProperty({
+    description: 'Kecamatan name for staff_kecamatan role (free text — no separate Kecamatan table)',
+    required: false,
+  })
+  @Column({ name: 'kecamatan_name', type: 'varchar', length: 100, nullable: true })
+  kecamatan_name?: string;
+
   @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'area_id' })
   area?: Area;

@@ -95,38 +95,41 @@ export class CreatePruningRequestDto {
   })
   @IsArray()
   @IsNotEmpty({ message: 'Photo keys are required' })
-  @ArrayMinSize(3, { message: 'At least 3 photos are required' })
+  @ArrayMinSize(1, { message: 'At least 1 photo is required' })
   @ArrayMaxSize(5, { message: 'Maximum 5 photos allowed' })
   @IsString({ each: true })
   photo_keys: string[];
 
   /**
    * Expected date for the pruning work (ISO date string, today or future).
+   * Optional in the redesigned form — admin sets the date during convert-to-task.
    *
    * @example '2026-04-28'
    */
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Expected date for pruning work (today or future)',
     example: '2026-04-28',
   })
   @IsDateString()
-  @IsNotEmpty({ message: 'Detail date is required' })
-  detail_date: string;
+  @IsOptional()
+  detail_date?: string;
 
   /**
-   * Estimated number of plants to be pruned (≥ 1).
+   * Estimated number of plants to be pruned. Optional — replaced by `tree_count`
+   * in the Phase 3 redesigned mobile form, but kept here for backwards
+   * compatibility with existing API clients.
    *
    * @example 15
    */
-  @ApiProperty({
-    description: 'Estimated number of plants to prune',
+  @ApiPropertyOptional({
+    description: 'Estimated number of plants to prune (legacy alias of tree_count)',
     example: 15,
     minimum: 1,
   })
   @IsNumber()
-  @IsNotEmpty({ message: 'Target plant count is required' })
+  @IsOptional()
   @Min(1)
-  target_count: number;
+  target_count?: number;
 
   /**
    * Optional notes or additional details.
@@ -150,10 +153,87 @@ export class CreatePruningRequestDto {
    * @example '11111111-1111-1111-1111-111111111101'
    */
   @ApiPropertyOptional({
-    description: 'Rayon ID (optional; auto-resolved by GPS if not provided)',
+    description: 'Rayon ID (optional; auto-resolved from submitter profile if not provided)',
     example: '11111111-1111-1111-1111-111111111101',
   })
   @IsUUID()
   @IsOptional()
   rayon_id?: string;
+
+  // ── Phase 3 Apr 27 — staff_kecamatan redesign fields ───────────────────────
+  // Tree details (free text estimates from the field — exact ranges accepted)
+
+  @ApiPropertyOptional({
+    description: 'Number of trees to prune at this location',
+    example: 3,
+    minimum: 1,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  tree_count?: number;
+
+  @ApiPropertyOptional({
+    description: 'Free-text estimate of tree height (e.g., "5-7 meter")',
+    example: '5-7 meter',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  tree_height_estimate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Free-text estimate of trunk diameter (e.g., "30-50 cm")',
+    example: '30-50 cm',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  tree_diameter_estimate?: string;
+
+  // Contact person — pemohon (the requester themselves, may differ from logged-in user)
+
+  @ApiPropertyOptional({
+    description: 'Requester contact name',
+    example: 'Budi Santoso',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  requester_name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Requester contact phone',
+    example: '081234567890',
+    maxLength: 30,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(30)
+  requester_phone?: string;
+
+  // Contact person — ketua RT (the local RT/RW leader)
+
+  @ApiPropertyOptional({
+    description: 'RT (neighborhood) leader contact name',
+    example: 'Pak Joko',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  rt_leader_name?: string;
+
+  @ApiPropertyOptional({
+    description: 'RT (neighborhood) leader contact phone',
+    example: '081298765432',
+    maxLength: 30,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(30)
+  rt_leader_phone?: string;
 }

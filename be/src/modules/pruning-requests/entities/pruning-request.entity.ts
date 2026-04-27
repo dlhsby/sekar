@@ -39,6 +39,28 @@ export class PruningRequest {
   @Column({ type: 'int', nullable: true, name: 'estimated_plant_count' })
   estimatedPlantCount: number | null;
 
+  // Phase 3 Apr 27 — staff_kecamatan redesign added per-tree details + contacts.
+  @Column({ type: 'int', nullable: true, name: 'tree_count' })
+  treeCount: number | null;
+
+  @Column({ type: 'text', nullable: true, name: 'tree_height_estimate' })
+  treeHeightEstimate: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'tree_diameter_estimate' })
+  treeDiameterEstimate: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'requester_name' })
+  requesterName: string | null;
+
+  @Column({ type: 'varchar', length: 30, nullable: true, name: 'requester_phone' })
+  requesterPhone: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'rt_leader_name' })
+  rtLeaderName: string | null;
+
+  @Column({ type: 'varchar', length: 30, nullable: true, name: 'rt_leader_phone' })
+  rtLeaderPhone: string | null;
+
   @Column({ type: 'text', array: true, default: '{}', name: 'photo_urls' })
   photoUrls: string[];
 

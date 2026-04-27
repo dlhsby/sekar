@@ -102,6 +102,13 @@ describe('PruningRequestsService', () => {
     gpsLng: 112.748899,
     expectedDate: new Date('2026-04-28'),
     estimatedPlantCount: 15,
+    treeCount: 15,
+    treeHeightEstimate: '5-7 meter',
+    treeDiameterEstimate: '30-40 cm',
+    requesterName: 'Budi Santoso',
+    requesterPhone: '081234567890',
+    rtLeaderName: 'Pak Joko',
+    rtLeaderPhone: '081298765432',
     photoUrls: [
       'pruning-requests/20260427-abc123-1.jpg',
       'pruning-requests/20260427-abc123-2.jpg',
