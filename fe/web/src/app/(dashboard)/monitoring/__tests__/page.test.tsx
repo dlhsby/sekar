@@ -50,6 +50,31 @@ jest.mock('socket.io-client', () => {
   return { __esModule: true, default: io };
 });
 
+// Mock monitoring-v2 API (Phase 3 M2)
+jest.mock('@/lib/api/monitoring-v2', () => ({
+  useMonitoringSnapshot: jest.fn(() => ({
+    data: {
+      success: true,
+      data: {
+        workers: [],
+        area_summaries: [],
+        total_active: 1,
+        total_inactive: 0,
+        total_outside_area: 0,
+        total_missing: 0,
+        total_offline: 1,
+        generated_at: '2024-01-01T12:00:00Z',
+      },
+    },
+    isLoading: false,
+    refetch: jest.fn(),
+  })),
+  snapshotKeys: {
+    all: ['monitoring', 'snapshot'],
+    byScope: (scope: string, id?: string) => ['monitoring', 'snapshot', scope, id],
+  },
+}));
+
 // Mock sonner toast
 jest.mock('sonner', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn(), warning: jest.fn() },
@@ -356,8 +381,9 @@ describe('MonitoringPage Component', () => {
     it('should display city-wide online/total count in header', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
-      // Header shows "150 / 200 online"
-      expect(screen.getByText(/150 \/ 200 online/)).toBeInTheDocument();
+      // Header shows "{totalActive} / {totalWorkers} aktif" from useMonitoringSnapshot
+      // mock: total_active=1, others sum to 2 total workers
+      expect(screen.getByText(/1 \/ 2 aktif/)).toBeInTheDocument();
     });
 
     it('should render the Monitoring Real-Time heading', () => {
@@ -369,7 +395,7 @@ describe('MonitoringPage Component', () => {
     it('should render the Refresh button', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('button', { name: /refresh data/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /segarkan data monitoring/i })).toBeInTheDocument();
     });
   });
 
@@ -382,12 +408,11 @@ describe('MonitoringPage Component', () => {
       mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
     });
 
-    it('should render rayon and area filter dropdowns', () => {
+    it('should render HierarchyFilterPanel scope buttons', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
-      // FormSelect renders combobox role buttons
-      const combos = screen.getAllByRole('combobox');
-      expect(combos.length).toBeGreaterThanOrEqual(2);
+      // HierarchyFilterPanel replaces old FormSelect dropdowns with scope toggle buttons
+      expect(screen.getByRole('button', { name: /^Kota$/i })).toBeInTheDocument();
     });
 
     it('should not show Reset button when filters are at default', () => {

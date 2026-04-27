@@ -134,8 +134,8 @@ describe('Role Constants', () => {
   });
 
   describe('ROLE_LABELS', () => {
-    it('should have Indonesian labels for all 8 roles', () => {
-      expect(Object.keys(ROLE_LABELS)).toHaveLength(8);
+    it('should have Indonesian labels for all 9 roles', () => {
+      expect(Object.keys(ROLE_LABELS)).toHaveLength(9);
     });
 
     it('should have correct Indonesian labels', () => {
@@ -151,8 +151,8 @@ describe('Role Constants', () => {
   });
 
   describe('ROLE_BADGE_VARIANTS', () => {
-    it('should have badge variants for all 8 roles', () => {
-      expect(Object.keys(ROLE_BADGE_VARIANTS)).toHaveLength(8);
+    it('should have badge variants for all 9 roles', () => {
+      expect(Object.keys(ROLE_BADGE_VARIANTS)).toHaveLength(9);
     });
 
     it('should use appropriate variants for field roles', () => {
@@ -171,8 +171,8 @@ describe('Role Constants', () => {
   });
 
   describe('ALL_ROLES', () => {
-    it('should contain all 8 Phase 2C roles', () => {
-      expect(ALL_ROLES).toHaveLength(8);
+    it('should contain all 9 roles (Phase 2C + Phase 3 staff_kecamatan)', () => {
+      expect(ALL_ROLES).toHaveLength(9);
     });
 
     it('should be in display order', () => {
@@ -183,7 +183,7 @@ describe('Role Constants', () => {
 
     it('should include all unique roles', () => {
       const uniqueRoles = new Set(ALL_ROLES);
-      expect(uniqueRoles.size).toBe(8);
+      expect(uniqueRoles.size).toBe(9);
     });
   });
 

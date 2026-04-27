@@ -302,7 +302,7 @@ describe('MonitoringPage', () => {
   it('renders virtualized rows matching worker count from snapshot', async () => {
     await renderPage();
     // 2 workers in the mocked snapshot
-    const rows = await screen.findAllByRole('option');
+    const rows = await screen.findAllByRole('listitem');
     expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 

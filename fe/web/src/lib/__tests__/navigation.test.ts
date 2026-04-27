@@ -13,7 +13,7 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      expect(navigationItems).toHaveLength(7);
+      expect(navigationItems).toHaveLength(9);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
@@ -74,7 +74,8 @@ describe('Navigation Utilities', () => {
     it('should return all items for superadmin role', () => {
       const filtered = filterNavigationByRole(navigationItems, 'superadmin');
 
-      expect(filtered).toHaveLength(navigationItems.length);
+      // superadmin sees 7 items — all except the 2 staff_kecamatan-only pruning items
+      expect(filtered).toHaveLength(7);
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'settings')).toBeDefined();
 
