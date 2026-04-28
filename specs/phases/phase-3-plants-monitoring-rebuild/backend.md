@@ -246,6 +246,7 @@ When an activity with `pruning_request_id` is created, the originating request t
 | `GET` | `/api/v1/pruning-requests?rayon_id=&status=` | `admin_data` (own rayon), `top_management` (read-all), `admin_system`, `superadmin` | Queue |
 | `POST` | `/api/v1/pruning-requests/:id/review` | `admin_data` (own rayon), `admin_system`, `superadmin` | `{ decision: 'approved'|'rejected', notes }` |
 | `POST` | `/api/v1/pruning-requests/:id/convert-to-task` | same | `{ area_id, scheduled_for, assign_to_user_id?, target_plant_count?, custom_fields? }` → returns created `task` |
+| `PATCH` | `/api/v1/pruning-requests/:id/expected-date` | `admin_data` (own rayon), `kepala_rayon`, `top_management`, `admin_system`, `superadmin` | **Round 4 (Apr 28).** `{ expectedDate: 'YYYY-MM-DD' }` — adjust `expected_date` independent of conversion. Status must be `submitted` / `under_review` / `approved`; date today-or-future. |
 | `GET` | `/api/v1/pruning-requests/:id/result` | submitter, reviewer, top_management, admins | Task + activities + photos |
 
 ### E2. Guard wiring
@@ -279,11 +280,13 @@ Transitions emit `request:status-changed` WS event and FCM notification to submi
 
 | Method | Path | Auth / Roles | Description |
 |--------|------|--------------|-------------|
-| `GET` | `/api/v1/rayons/:id/capacity?service_type=&year=&from_week=&to_week=` | scoped | Weekly grid |
+| `GET` | `/api/v1/rayons/:id/capacity?service_type=&year=&from_week=&to_week=` | `admin_data` (own), `kepala_rayon`, `top_management`, `admin_system`, `superadmin`, **`staff_kecamatan` (own rayon — Round 4)** | Weekly grid |
 | `PUT` | `/api/v1/rayons/:id/capacity` | `admin_data` (own rayon), `top_management`, `admin_system`, `superadmin` | Bulk upsert capacity_units |
 | `POST` | `/api/v1/rayons/:id/capacity/book` | same | Manual booking `{ year, iso_week, service_type, units, task_id? }` |
 
 **Capacity granularity (Q3 Apr 25):** booking is **weekly** (`iso_week`-keyed in `service_capacity`). The day-picker for the actual assignment date lives downstream in the convert-to-task flow — `POST /api/v1/pruning-requests/:id/convert-to-task` accepts `scheduled_date` (a specific calendar day within the booked week) and records it on the resulting task. `service_capacity.booked_units` is incremented at the week granularity regardless of which day inside the week the task is scheduled for.
+
+**Round 4 amendment (Apr 28):** the storage model stays weekly per ADR-035, but the **mobile staff_kecamatan submit screen** projects the weekly grid into a per-day status (`available` / `partial` / `full` / `unknown`) for the preferred-date picker. The projection is UX-only — no schema change, no daily booking column. Projection rule: `capacity_units == 0` → unknown; `booked_units >= capacity_units` → full; `booked_units >= capacity_units * 0.8` → partial; otherwise available. See the 2026-04-28 amendment to ADR-035 and `fe/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts`.
 
 Implicit booking happens on `/pruning-requests/:id/convert-to-task`: `CapacityService.book(rayon_id, iso_week_of(scheduled_for), 'pruning', 1, task_id)`.
 

@@ -1,7 +1,7 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-04-28 (Apr 27 audit + bug-fix sweep + staff_kecamatan UX rounds 2 & 3 — see "Open Items by Bucket" below)
+**Date:** 2026-04-28 (Apr 27 audit + bug-fix sweep + staff_kecamatan UX rounds 2 / 3 / 4 — Round 4 lands the preferred-date booking calendar + admin reschedule endpoint, mobile-first, no schema change)
 
 > **Apr 28 staff_kecamatan UX — Round 3** (mobile-only, no backend / migration changes):
 >
@@ -174,6 +174,43 @@ After Round 2 the user piloted the flow as `staff_kec_pusat` and surfaced four f
 **Backend / specs**
 
 No schema, DTO, or migration change in Round 3. `mobile.md` § "staff_kecamatan" amended; `backend.md` / `database.md` left as-is.
+
+---
+
+## 🗓 Apr 28 — staff_kecamatan UX Round 4 (preferred-date booking)
+
+The user identified that the booking-style scheduling feature called out in the Round 1 spec was never wired up: `staff_kecamatan` could not pick a preferred date when submitting, and admins could only adjust the date via the full convert-to-task flow. Round 4 closes that gap **without changing the storage model** — `service_capacity` stays weekly per ADR-035, and the day-by-day picker is delivered as a UX projection. **Mobile-first scope**: web admin / submit pages remain deferred per "Open Items by Bucket".
+
+**Backend**
+
+- `PruningRequestsService.create` already accepted the optional `detail_date` field; the mobile now sends it when the user picks a date.
+- New endpoint `PATCH /api/v1/pruning-requests/:id/expected-date` (`ReschedulePruningRequestDto { expectedDate }`) lets `admin_data` (rayon-scoped), `kepala_rayon`, `top_management`, `admin_system`, `superadmin` adjust `expected_date` independent of conversion. Validates: status ∈ {`submitted`, `under_review`, `approved`}; new date today-or-future; admin_data scoped by `rayon_id`.
+- `GET /api/v1/rayons/:id/capacity` now also accepts `staff_kecamatan` (own rayon only) so the submit calendar can read availability. Same scope-check pattern as `admin_data`.
+- Tests: `pruning-requests.{controller,service}.spec.ts` add reschedule happy/forbidden/conflict/past-date cases; `service-capacity.controller.spec.ts` adds staff_kecamatan happy + cross-rayon 403.
+
+**Mobile**
+
+- New helper `screens/pruningRequests/utils/capacityCalendar.ts` projects weekly `service_capacity` rows into per-day status (`available` / `partial` / `full` / `unknown`) using a single threshold rule (capacity 0 → unknown; booked ≥ capacity → full; ≥ 80 % → partial; else available). 10 unit tests covering threshold edges, snake/camelCase row shapes, and the 8-week range builder.
+- New shared `components/AvailabilityCalendar.tsx` — 8-week roll-forward grid keyed by ISO-week. Past dates greyed out, full / unknown cells show an `Alert` instead of selecting. Used by both the submit and reschedule flows so the visual layer is identical.
+- New `components/AvailabilityModal.tsx` (fullscreen `NBModal` host) used by `SubmitScreen`, and `components/RescheduleSheet.tsx` (sheet `NBModal` host with Batal / Simpan footer) used by `RequestDetailScreen`.
+- `SubmitScreen` adds a 📅 **Tanggal Diharapkan** card between Detail Pohon and Kontak: tappable date row → `AvailabilityModal`. Selected date persists in the draft (`expectedDate` added to `DraftShape`) and is passed to the backend as `detail_date`. The screen dispatches `fetchCapacity({ rayonId, fromWeek, toWeek: fromWeek + 7, serviceType: 'pruning' })` once `rayonId` is known.
+- `RequestDetailScreen` always renders a `Tanggal Diharapkan` row in DETAIL POHON (now reads "Belum dipilih" when null, instead of hiding the row). New ⚖️ **AKSI ADMIN** sibling card 📅 **ATUR JADWAL** with an "Atur Jadwal" button visible only to admin reviewers and only for status ∈ {`submitted`, `under_review`, `approved`}. Opens `RescheduleSheet`, which on confirm dispatches the new `reschedulePruningRequest` thunk and PATCHes the new endpoint.
+- New `pruningRequestsSlice` thunk `reschedulePruningRequest` + `reschedulingId` state; updates `byId`, `adminList`, and `mine` on fulfillment so all list/detail consumers refresh without a refetch.
+
+**Tests**
+
+Mobile: pruning + AvailabilityCalendar + capacityCalendar subset 139 / 139 (was 137 in Round 3, +1 SubmitScreen render assertion for the date card, +3 AvailabilityCalendar status tests, +10 capacityCalendar projection tests, -2 net since the SubmitScreen mock store was extended with the new slice).
+Backend: pruning-requests + service-capacity subset 92 / 92 (+5 reschedule cases on the service spec, +2 controller cases, +2 capacity controller cases).
+
+**ADR-035 amendment**
+
+ADR-035 (service-capacity model) appended a 2026-04-28 paragraph: storage stays weekly. The mobile staff_kecamatan submit calendar projects weekly capacity to per-day status as a UX-only derivation. Daily granularity remains explicitly out of scope for the storage model (per Alternative #2 in the original ADR). Admin reschedule endpoint added; `staff_kecamatan` granted read on `GET /rayons/:id/capacity` (own rayon).
+
+**Out of scope**
+
+- Web staff_kecamatan submit page + admin reschedule UI — still deferred per "Open Items by Bucket" (3-12 web half).
+- Switching `service_capacity` to daily granularity — explicitly off-limits per ADR-035.
+- Push to origin — branch is now ahead of `origin/main` by the Round 4 commits; deploying is a separate user decision.
 
 ---
 

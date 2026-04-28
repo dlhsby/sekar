@@ -61,6 +61,8 @@
 | `/(dashboard)/pruning-requests` | `admin_data` (own rayon), `top_management` (read-all), `admin_system`, `superadmin` | Queue with status chips + rayon filter |
 | `/(dashboard)/pruning-requests/[id]` | submitter / reviewer / admins | Detail, review actions, convert-to-task form, capacity chip |
 
+> **Round 4 forward note (Apr 28):** when 3-12 web half lands, the staff_kecamatan submit page and admin reschedule entry should mirror the same 8-week availability-calendar UX delivered on mobile in Round 4 — projecting weekly `service_capacity` to per-day status (`available` / `partial` / `full` / `unknown`) and exposing a `PATCH /pruning-requests/:id/expected-date` reschedule control on the detail page.
+
 ### Service capacity (3-11)
 
 | Path | Role gate | Responsibility |

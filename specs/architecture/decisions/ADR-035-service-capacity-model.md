@@ -105,3 +105,23 @@ Units are domain-specific per service_type but the table doesn't care — capaci
 - Phase 3 plan: `../../phases/phase-3-plants-monitoring-rebuild/README.md`
 - API contracts: `../../api/contracts.md`
 - Database schema: `../../database/schema.md`
+
+
+## 2026-04-28 amendment — UX projection + reschedule endpoint
+
+**Storage stays weekly.** The `service_capacity` table keeps the `(rayon_id, year, iso_week, service_type)` shape; `capacity_units` and `booked_units` remain weekly integers. Daily granularity is still rejected as the storage model (Alternative #2 above).
+
+**UX-only daily projection.** Phase 3 staff_kecamatan UX Round 4 (mobile) introduces a per-day visualization in the submit + reschedule calendars. Each day inside the rendered window is mapped to one of four statuses derived from the day's containing ISO-week row:
+
+| Condition | Status |
+|-----------|--------|
+| `capacity_units == 0` (admin hasn't filled the slot) | `unknown` |
+| `booked_units >= capacity_units` | `full` |
+| `booked_units >= capacity_units * 0.8` | `partial` |
+| otherwise | `available` |
+
+Past dates are filtered at the picker layer. The projection lives in `fe/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts` and is consumed by `AvailabilityCalendar`. **No backend or database change.**
+
+**Read access widened.** `GET /api/v1/rayons/:id/capacity` now allows `staff_kecamatan` (scoped to their own `rayon_id` exactly like `admin_data`) so the submit calendar can display availability without leaking other rayons' booking data.
+
+**New write endpoint.** `PATCH /api/v1/pruning-requests/:id/expected-date` lets `admin_data` (rayon-scoped), `kepala_rayon`, `top_management`, `admin_system`, and `superadmin` adjust a request's `expected_date` independent of the convert-to-task flow. Allowed when status ∈ {`submitted`, `under_review`, `approved`} and the new date is today-or-future. This endpoint does **not** mutate `service_capacity`; capacity bookings still occur only at convert-to-task time.

@@ -157,6 +157,13 @@ Scaffolds live in `src/services/sync/offlineQueue.ts` but are wired with a simpl
 - Draft is restored on **every** focus via `useFocusEffect(restoreDraft)` — no one-shot ref guard. Tab screens stay mounted across visits, so a guard would suppress legitimate restore prompts. Save-on-blur was deliberately removed so a brief camera/gallery intent doesn't auto-write a draft that the next focus would re-surface; the 30 s autosave still runs as the canonical persistence path.
 - `dateUtils.formatDate` / `formatDateLong` are null-safe (return `'-'` for null/undefined/invalid input) so the detail screen can render unset `expectedDate` / `reviewedAt` without crashing.
 
+**Apr 28 Round 4 — preferred-date booking calendar:**
+
+- `SubmitScreen` adds a 📅 **Tanggal Diharapkan** card between Detail Pohon and Kontak. Tapping the date row opens an `AvailabilityModal` (fullscreen `NBModal`) hosting a shared `AvailabilityCalendar` — an 8-week roll-forward grid driven by `GET /api/v1/rayons/:id/capacity` (now also accessible to `staff_kecamatan` for their own rayon). Days are colored from a UX-only projection of weekly capacity: 🟢 available · 🟡 ≥ 80 % booked · 🔴 booked ≥ capacity · ⚪ unknown (admin hasn't filled the slot). Past days are greyed; tapping a full / unknown cell raises an `Alert` instead of selecting. Selected date persists in the AsyncStorage draft (`expectedDate` field) and is sent to the backend as `detail_date`.
+- `RequestDetailScreen` always renders the `Tanggal Diharapkan` row (reads "Belum dipilih" when null). Admin reviewers see a new ⚖️ **ATUR JADWAL** card with an "Atur Jadwal" button visible for status ∈ {`submitted`, `under_review`, `approved`}. The button opens `RescheduleSheet` — a sheet `NBModal` embedding the same `AvailabilityCalendar`. On confirm it dispatches `reschedulePruningRequest` which `PATCH`es `/api/v1/pruning-requests/:id/expected-date`.
+- Storage stays weekly per ADR-035; the per-day visualization is a UX projection only (helper `screens/pruningRequests/utils/capacityCalendar.ts`). See the 2026-04-28 amendment in ADR-035.
+- New mobile thunk + slice state: `pruningRequestsSlice.reschedulePruningRequest` + `reschedulingId`. Updates `byId` / `adminList` / `mine` so list and detail consumers refresh without an explicit refetch.
+
 ---
 
 ## WebSocket Integration
