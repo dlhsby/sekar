@@ -14,6 +14,7 @@ import { PruningRequest } from './entities/pruning-request.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
 import { ReviewPruningRequestDto } from './dto/review-pruning-request.dto';
 import { ConvertPruningRequestDto } from './dto/convert-pruning-request.dto';
+import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { ServiceCapacityService } from '../service-capacity/service-capacity.service';
@@ -377,6 +378,52 @@ export class PruningRequestsService {
 
       return { request: updatedRequest, task: savedTask };
     });
+  }
+
+  /**
+   * Reschedule the expected date of a pruning request without converting it.
+   *
+   * Round 4 (Apr 28): allows admins to adjust `expected_date` after submission.
+   *
+   * - admin_data is scoped to its own rayon.
+   * - Only requests in 'submitted', 'under_review', or 'approved' status can be rescheduled.
+   * - The new date must be today or in the future.
+   */
+  async reschedule(
+    id: string,
+    dto: ReschedulePruningRequestDto,
+    user: User,
+  ): Promise<PruningRequest> {
+    this.logger.log(
+      `Rescheduling pruning request ${id} to ${dto.expectedDate} by user ${user.id}`,
+    );
+
+    const request = await this.pruningRequestRepository.findOne({ where: { id } });
+    if (!request) {
+      throw new NotFoundException(`Pruning request with ID ${id} not found`);
+    }
+
+    if (user.role === UserRole.ADMIN_DATA && request.rayonId !== user.rayon_id) {
+      throw new ForbiddenException(
+        'You do not have permission to reschedule this pruning request',
+      );
+    }
+
+    if (!['submitted', 'under_review', 'approved'].includes(request.status)) {
+      throw new ConflictException(
+        `Pruning request status is ${request.status}, cannot reschedule once ${request.status}`,
+      );
+    }
+
+    const newDate = new Date(dto.expectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (newDate < today) {
+      throw new BadRequestException('expectedDate must be today or in the future');
+    }
+
+    request.expectedDate = newDate;
+    return this.pruningRequestRepository.save(request);
   }
 
   /**

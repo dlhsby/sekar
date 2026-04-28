@@ -865,4 +865,88 @@ describe('PruningRequestsService', () => {
       ).rejects.toThrow('Database connection lost');
     });
   });
+
+  describe('reschedule', () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 14);
+    const futureIso = futureDate.toISOString().slice(0, 10);
+
+    beforeEach(() => {
+      pruningRequestRepository.save.mockImplementation(async (r) => r as any);
+    });
+
+    it('updates expectedDate for kepala_rayon', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue({
+        ...mockPruningRequest,
+        status: 'submitted',
+      });
+
+      const result = await service.reschedule(
+        mockRequestId,
+        { expectedDate: futureIso },
+        mockKepalaRayon,
+      );
+
+      expect(result.expectedDate).toEqual(new Date(futureIso));
+      expect(pruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException for admin_data on different rayon', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue({
+        ...mockPruningRequest,
+        rayonId: 'other-rayon-id',
+        status: 'submitted',
+      });
+
+      await expect(
+        service.reschedule(
+          mockRequestId,
+          { expectedDate: futureIso },
+          mockAdminData,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws ConflictException when status is converted', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue({
+        ...mockPruningRequest,
+        status: 'converted',
+      });
+
+      await expect(
+        service.reschedule(
+          mockRequestId,
+          { expectedDate: futureIso },
+          mockKepalaRayon,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws BadRequestException for past date', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue({
+        ...mockPruningRequest,
+        status: 'submitted',
+      });
+
+      await expect(
+        service.reschedule(
+          mockRequestId,
+          { expectedDate: '2020-01-01' },
+          mockKepalaRayon,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFoundException when request missing', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.reschedule(
+          mockRequestId,
+          { expectedDate: futureIso },
+          mockKepalaRayon,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });

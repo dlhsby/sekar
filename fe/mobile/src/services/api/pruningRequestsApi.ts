@@ -3,7 +3,7 @@
  * Phase 3 sub-phase 3-10: kecamatan pruning request submission and listing
  */
 
-import { get, post } from './apiClient';
+import { get, post, patch } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type { PruningRequest } from '../../types/models.types';
 
@@ -161,6 +161,16 @@ export async function convertPruningRequestToTask(
   };
 }
 
+/**
+ * Reschedule a pruning request's expected date (Round 4).
+ */
+export async function reschedulePruningRequest(
+  id: string,
+  data: { expectedDate: string },
+): Promise<ApiResponse<PruningRequest>> {
+  return patch<PruningRequest>(`/pruning-requests/${id}/expected-date`, data);
+}
+
 export default {
   submitPruningRequest,
   getMyPruningRequests,
@@ -168,4 +178,5 @@ export default {
   getAdminPruningRequests,
   reviewPruningRequest,
   convertPruningRequestToTask,
+  reschedulePruningRequest,
 };

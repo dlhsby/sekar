@@ -40,11 +40,13 @@ export class ServiceCapacityController {
     UserRole.KEPALA_RAYON,
     UserRole.TOP_MANAGEMENT,
     UserRole.SUPERADMIN,
+    UserRole.ADMIN_SYSTEM,
+    UserRole.STAFF_KECAMATAN,
   )
   @ApiOperation({
     summary: 'Get service capacity calendar',
     description:
-      'Retrieve capacity and booking info for a rayon. admin_data is scoped to own rayon.',
+      'Retrieve capacity and booking info for a rayon. admin_data and staff_kecamatan are scoped to own rayon.',
   })
   @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
   @ApiResponse({
@@ -59,10 +61,8 @@ export class ServiceCapacityController {
     @Query() query: QueryCapacityDto,
     @GetUser() user: User,
   ): Promise<ServiceCapacity[]> {
-    if (
-      user.role === UserRole.ADMIN_DATA &&
-      user.rayon_id !== rayonId
-    ) {
+    const scopedRoles = [UserRole.ADMIN_DATA, UserRole.STAFF_KECAMATAN];
+    if (scopedRoles.includes(user.role as UserRole) && user.rayon_id !== rayonId) {
       throw new ForbiddenException('Cannot access other rayon');
     }
 

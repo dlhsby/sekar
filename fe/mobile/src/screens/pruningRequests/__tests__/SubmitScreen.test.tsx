@@ -120,6 +120,7 @@ import { render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import pruningRequestsReducer from '../../../store/slices/pruningRequestsSlice';
+import serviceCapacityReducer from '../../../store/slices/serviceCapacitySlice';
 import authReducer from '../../../store/slices/authSlice';
 
 import { SubmitScreen } from '../SubmitScreen';
@@ -129,6 +130,7 @@ function makeStore() {
     reducer: {
       auth: authReducer,
       pruningRequests: pruningRequestsReducer,
+      serviceCapacity: serviceCapacityReducer,
     },
     preloadedState: {
       auth: {
@@ -177,5 +179,16 @@ describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
     // brittle to assert here. We just confirm the form mounted with the
     // editable shape.
     expect(getByText('Kecamatan')).toBeTruthy();
+  });
+
+  it('renders the Tanggal Diharapkan card with a date picker (Round 4)', () => {
+    const { getByText, getByTestId } = render(
+      <Provider store={makeStore()}>
+        <SubmitScreen />
+      </Provider>,
+    );
+    expect(getByText('Tanggal Diharapkan')).toBeTruthy();
+    expect(getByTestId('perantingan-pick-date')).toBeTruthy();
+    expect(getByText('Pilih tanggal…')).toBeTruthy();
   });
 });

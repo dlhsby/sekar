@@ -48,6 +48,7 @@ import {
   NBModal,
 } from '../../components/nb';
 import { ConvertToTaskSheet } from '../../components/admin/ConvertToTaskSheet';
+import { RescheduleSheet } from './components/RescheduleSheet';
 import { NBToast } from '../../components/nb/NBToast';
 import {
   nbColors,
@@ -75,6 +76,7 @@ const ADMIN_ROLES = [
 ];
 
 const ACTIONABLE_STATUSES = ['submitted', 'under_review'];
+const RESCHEDULABLE_STATUSES = ['submitted', 'under_review', 'approved'];
 
 function formatGps(lat: unknown, lng: unknown): string {
   if (lat == null || lng == null) {
@@ -103,6 +105,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [convertSheetVisible, setConvertSheetVisible] = useState(false);
+  const [rescheduleVisible, setRescheduleVisible] = useState(false);
 
   const canAdmin = useMemo(
     () => adminMode && userRole != null && ADMIN_ROLES.includes(userRole),
@@ -261,12 +264,12 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                   <Text style={styles.value}>{request.treeDiameterEstimate}</Text>
                 </View>
               ) : null}
-              {request.expectedDate ? (
-                <View style={[styles.infoRow, { marginBottom: 0 }]}>
-                  <Text style={styles.label}>Tanggal Diharapkan</Text>
-                  <Text style={styles.value}>{formatDate(request.expectedDate)}</Text>
-                </View>
-              ) : null}
+              <View style={[styles.infoRow, { marginBottom: 0 }]}>
+                <Text style={styles.label}>Tanggal Diharapkan</Text>
+                <Text style={styles.value}>
+                  {request.expectedDate ? formatDate(request.expectedDate) : 'Belum dipilih'}
+                </Text>
+              </View>
             </NBCardContent>
           </NBCard>
 
@@ -423,6 +426,25 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             </NBCard>
           ) : null}
 
+          {/* Round 4 — admin reschedule entry, independent of convert flow */}
+          {canAdmin && RESCHEDULABLE_STATUSES.includes(request.status) ? (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <Text style={styles.sectionTitle}>📅 ATUR JADWAL</Text>
+              </NBCardHeader>
+              <NBCardContent>
+                <NBButton
+                  variant="secondary"
+                  label="Atur Jadwal"
+                  onPress={() => setRescheduleVisible(true)}
+                  leftIcon="calendar-edit"
+                  testID="perantingan-reschedule-open"
+                  fullWidth
+                />
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
           {canAdmin && request.status === 'approved' ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
@@ -507,6 +529,18 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           <ConvertToTaskSheet
             visible={convertSheetVisible}
             onClose={() => setConvertSheetVisible(false)}
+            request={request}
+            onSuccess={() => {
+              dispatch(fetchPruningRequestById(requestId));
+            }}
+          />
+        ) : null}
+
+        {/* Reschedule (Round 4) */}
+        {request ? (
+          <RescheduleSheet
+            visible={rescheduleVisible}
+            onClose={() => setRescheduleVisible(false)}
             request={request}
             onSuccess={() => {
               dispatch(fetchPruningRequestById(requestId));

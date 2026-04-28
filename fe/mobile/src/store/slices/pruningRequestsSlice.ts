@@ -41,6 +41,7 @@ interface PruningRequestsState {
   // Review/convert state
   reviewingId: string | null;
   convertingId: string | null;
+  reschedulingId: string | null;
 }
 
 const initialDraft: PruningRequestDraft = {
@@ -68,6 +69,7 @@ const initialState: PruningRequestsState = {
   adminListPagination: { page: 1, total: 0, limit: 20 },
   reviewingId: null,
   convertingId: null,
+  reschedulingId: null,
 };
 
 /**
@@ -261,6 +263,31 @@ export const convertPruningRequestToTask = createAsyncThunk(
           units,
         },
       );
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return response.data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
+    }
+  },
+);
+
+/**
+ * Reschedule a pruning request's expected date (Round 4).
+ */
+export const reschedulePruningRequest = createAsyncThunk(
+  'pruningRequests/reschedule',
+  async (
+    { id, expectedDate }: { id: string; expectedDate: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await pruningRequestsApi.reschedulePruningRequest(id, {
+        expectedDate,
+      });
       if (response.error) {
         return rejectWithValue(response.error);
       }
@@ -467,6 +494,33 @@ const pruningRequestsSlice = createSlice({
       })
       .addCase(convertPruningRequestToTask.rejected, (state, action) => {
         state.convertingId = null;
+        state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
+      });
+
+    // Reschedule (Round 4)
+    builder
+      .addCase(reschedulePruningRequest.pending, (state, action) => {
+        state.reschedulingId = action.meta.arg.id;
+        state.error = null;
+      })
+      .addCase(reschedulePruningRequest.fulfilled, (state, action) => {
+        state.reschedulingId = null;
+        const request = action.payload;
+        if (request) {
+          state.byId[request.id] = request;
+          const adminIndex = state.adminList.findIndex((r) => r.id === request.id);
+          if (adminIndex !== -1) {
+            state.adminList[adminIndex] = request;
+          }
+          const myIndex = state.mine.findIndex((r) => r.id === request.id);
+          if (myIndex !== -1) {
+            state.mine[myIndex] = request;
+          }
+        }
+        state.error = null;
+      })
+      .addCase(reschedulePruningRequest.rejected, (state, action) => {
+        state.reschedulingId = null;
         state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
       });
   },

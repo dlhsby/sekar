@@ -42,6 +42,9 @@ import {
   submitPruningRequest,
   clearError,
 } from '../../store/slices/pruningRequestsSlice';
+import { fetchCapacity } from '../../store/slices/serviceCapacitySlice';
+import { AvailabilityModal } from './components/AvailabilityModal';
+import { getISOWeek, formatDateLong } from '../../utils/dateUtils';
 import {
   NBCard,
   NBCardContent,
@@ -90,6 +93,7 @@ interface DraftShape {
   notes: string;
   gpsLat: number | null;
   gpsLng: number | null;
+  expectedDate: string | null;
   timestamp: number;
 }
 
@@ -131,8 +135,24 @@ export function SubmitScreen(): React.JSX.Element {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
+  const [expectedDate, setExpectedDate] = useState<string | null>(null);
+  const [availabilityOpen, setAvailabilityOpen] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Capacity calendar state — populated by fetchCapacity for the user's rayon.
+  // Defensive against test stores that don't register the serviceCapacity slice.
+  const capacityRows = useAppSelector((state) => {
+    const slice = (state as any).serviceCapacity;
+    if (!slice || !rayonId) {
+      return [];
+    }
+    return slice.calendarByRayon?.[rayonId] ?? [];
+  });
+  const capacityLoading = useAppSelector(
+    (state) => Boolean((state as any).serviceCapacity?.loading),
+  );
 
   // Load all rayons so the user can override their default in the form
   useEffect(() => {
@@ -155,18 +175,18 @@ export function SubmitScreen(): React.JSX.Element {
     rayonId: '', kecamatanName: '',
     address: '', treeCount: '', treeHeight: '', treeDiameter: '',
     requesterName: '', requesterPhone: '', rtLeaderName: '', rtLeaderPhone: '',
-    notes: '', gpsLat: null, gpsLng: null, timestamp: 0,
+    notes: '', gpsLat: null, gpsLng: null, expectedDate: null, timestamp: 0,
   });
   useEffect(() => {
     formRef.current = {
       rayonId, kecamatanName,
       address, treeCount, treeHeight, treeDiameter,
       requesterName, requesterPhone, rtLeaderName, rtLeaderPhone, notes,
-      gpsLat, gpsLng, timestamp: Date.now(),
+      gpsLat, gpsLng, expectedDate, timestamp: Date.now(),
     };
   }, [rayonId, kecamatanName, address, treeCount, treeHeight, treeDiameter,
       requesterName, requesterPhone, rtLeaderName, rtLeaderPhone, notes,
-      gpsLat, gpsLng]);
+      gpsLat, gpsLng, expectedDate]);
 
   const saveDraft = useCallback(async () => {
     try {
@@ -187,7 +207,7 @@ export function SubmitScreen(): React.JSX.Element {
     return !!(f.address.trim() || f.treeCount.trim() || f.treeHeight.trim() ||
       f.treeDiameter.trim() || f.requesterName.trim() || f.requesterPhone.trim() ||
       f.rtLeaderName.trim() || f.rtLeaderPhone.trim() || f.notes.trim() ||
-      photos.length > 0);
+      f.expectedDate || photos.length > 0);
     // Note: rayonId/kecamatanName are pre-filled from the user profile and
     // intentionally don't count as "content" — leaving the screen with only
     // those defaults shouldn't trigger the draft prompt.
@@ -228,6 +248,9 @@ export function SubmitScreen(): React.JSX.Element {
               if (draft.gpsLat != null && draft.gpsLng != null) {
                 setGpsLat(draft.gpsLat);
                 setGpsLng(draft.gpsLng);
+              }
+              if (draft.expectedDate) {
+                setExpectedDate(draft.expectedDate);
               }
               void AsyncStorage.removeItem(DRAFT_KEY);
             },
@@ -288,7 +311,28 @@ export function SubmitScreen(): React.JSX.Element {
     setRtLeaderPhone('');
     setNotes('');
     setPhotos([]);
+    setExpectedDate(null);
   }, []);
+
+  // Fetch the rayon's 8-week capacity calendar once rayonId is known. The slice
+  // is keyed by rayonId so revisits hit cached data; the AvailabilityModal
+  // reads `calendarByRayon[rayonId]`.
+  useEffect(() => {
+    if (!rayonId) {
+      return;
+    }
+    const today = new Date();
+    const { year, week } = getISOWeek(today);
+    void dispatch(
+      fetchCapacity({
+        rayonId,
+        year,
+        fromWeek: week,
+        toWeek: Math.min(week + 7, 53),
+        serviceType: 'pruning',
+      }),
+    );
+  }, [dispatch, rayonId]);
 
   // SubmitScreen is registered as a Tab.Screen (hidden tab) — `beforeRemove`
   // does NOT fire on tab navigators, so we mirror TaskCreate's manual
@@ -471,6 +515,7 @@ export function SubmitScreen(): React.JSX.Element {
           rt_leader_name: rtLeaderName.trim(),
           rt_leader_phone: digitsOnly(rtLeaderPhone),
           notes: notes.trim() || undefined,
+          detail_date: expectedDate || undefined,
         }),
       ).unwrap();
 
@@ -496,7 +541,7 @@ export function SubmitScreen(): React.JSX.Element {
   }, [
     validate, photos, dispatch, address, gpsLat, gpsLng, rayonId, kecamatanName,
     treeCount, treeHeight, treeDiameter, requesterName, requesterPhone,
-    rtLeaderName, rtLeaderPhone, notes, navigation, clearDraft, resetForm,
+    rtLeaderName, rtLeaderPhone, notes, expectedDate, navigation, clearDraft, resetForm,
   ]);
 
   const isBusy = submitting || isSubmitting;
@@ -679,6 +724,36 @@ export function SubmitScreen(): React.JSX.Element {
             </NBCardContent>
           </NBCard>
 
+          {/* ── Tanggal Diharapkan ─────────────────────────────────── */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <NBText variant="h3">Tanggal Diharapkan</NBText>
+              <NBText variant="body-sm" style={styles.helper}>
+                Pilih hari yang Anda inginkan. Tampilan kalender menandai hari yang sudah penuh berdasarkan kapasitas mingguan rayon.
+              </NBText>
+            </NBCardHeader>
+            <NBCardContent>
+              <TouchableOpacity
+                onPress={() => setAvailabilityOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Pilih tanggal diharapkan"
+                style={styles.dateRow}
+                testID="perantingan-pick-date"
+              >
+                <View style={{ flex: 1 }}>
+                  <NBText variant="caption" style={styles.presetLabel}>Tanggal</NBText>
+                  <NBText variant="body">
+                    {expectedDate ? formatDateLong(expectedDate) : 'Pilih tanggal…'}
+                  </NBText>
+                </View>
+                <MaterialCommunityIcons name="calendar-month" size={22} color={nbColors.black} />
+              </TouchableOpacity>
+              <NBText variant="body-sm" style={[styles.helper, { marginTop: nbSpacing[2] }]}>
+                🟢 tersedia · 🟡 hampir penuh · 🔴 penuh
+              </NBText>
+            </NBCardContent>
+          </NBCard>
+
           {/* ── Kontak ─────────────────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
@@ -787,6 +862,15 @@ export function SubmitScreen(): React.JSX.Element {
           setGpsAccuracy(null);
         }}
       />
+
+      <AvailabilityModal
+        visible={availabilityOpen}
+        onClose={() => setAvailabilityOpen(false)}
+        rows={capacityRows}
+        selectedDate={expectedDate}
+        onSelect={(d) => setExpectedDate(d)}
+        loading={capacityLoading}
+      />
     </SafeAreaView>
   );
 }
@@ -844,6 +928,17 @@ const styles = StyleSheet.create({
   },
   gpsValues: {
     flex: 1,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: nbSpacing[3],
+    paddingHorizontal: nbSpacing[3],
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.base,
+    backgroundColor: nbColors.white,
+    gap: nbSpacing[2],
   },
   gpsRefresh: {
     width: 44,

@@ -80,6 +80,20 @@ describe('ServiceCapacityController', () => {
     updated_at: new Date(),
   };
 
+  const mockStaffKecamatan: User = {
+    id: 'user-55555555-5555-5555-5555-555555555555',
+    username: 'staff_kec1',
+    password_hash: 'hash',
+    full_name: 'Staff Kecamatan',
+    phone_number: '081200000005',
+    profile_picture_url: null,
+    role: UserRole.STAFF_KECAMATAN,
+    rayon_id: mockRayonId,
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
   const mockService = {
     findCalendar: jest.fn(),
     upsertCapacity: jest.fn(),
@@ -161,6 +175,26 @@ describe('ServiceCapacityController', () => {
       }, mockSuperadmin);
 
       expect(result).toEqual([mockCapacity]);
+    });
+
+    it('should allow staff_kecamatan to read own rayon', async () => {
+      mockService.findCalendar.mockResolvedValue([mockCapacity]);
+
+      const result = await controller.findCalendar(
+        mockRayonId,
+        { year: mockYear },
+        mockStaffKecamatan,
+      );
+
+      expect(result).toEqual([mockCapacity]);
+    });
+
+    it('should throw ForbiddenException for staff_kecamatan cross-rayon access', async () => {
+      const otherRayonId = 'rayon-99999999-9999-9999-9999-999999999999';
+
+      await expect(
+        controller.findCalendar(otherRayonId, { year: mockYear }, mockStaffKecamatan),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should pass through query filters', async () => {

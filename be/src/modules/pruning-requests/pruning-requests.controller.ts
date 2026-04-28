@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Param,
   Body,
   Query,
@@ -22,6 +23,7 @@ import { PruningRequest } from './entities/pruning-request.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
 import { ReviewPruningRequestDto } from './dto/review-pruning-request.dto';
 import { ConvertPruningRequestDto } from './dto/convert-pruning-request.dto';
+import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dto';
 import { ListPruningRequestsQueryDto } from './dto/list-pruning-requests-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -387,5 +389,40 @@ export class PruningRequestsController {
     @GetUser() user: User,
   ): Promise<{ request: PruningRequest; task: any }> {
     return this.pruningRequestsService.convertToTask(id, dto, user);
+  }
+
+  /**
+   * Reschedule the expected date of a pruning request.
+   *
+   * Round 4 (Apr 28): admin_data (rayon-scoped), kepala_rayon, top_management,
+   * admin_system, and superadmin can adjust `expected_date` independent of the
+   * convert-to-task flow. Only requests in 'submitted', 'under_review', or
+   * 'approved' status can be rescheduled.
+   */
+  @Patch(':id/expected-date')
+  @Roles(
+    UserRole.ADMIN_DATA,
+    UserRole.KEPALA_RAYON,
+    UserRole.TOP_MANAGEMENT,
+    UserRole.ADMIN_SYSTEM,
+    UserRole.SUPERADMIN,
+  )
+  @ApiOperation({
+    summary: 'Reschedule a pruning request',
+    description:
+      'Update expected_date for a pruning request without converting it to a task.',
+  })
+  @ApiParam({ name: 'id', description: 'Pruning request UUID', type: 'string' })
+  @ApiResponse({ status: 200, type: PruningRequest })
+  @ApiResponse({ status: 401 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
+  async reschedule(
+    @Param('id') id: string,
+    @Body() dto: ReschedulePruningRequestDto,
+    @GetUser() user: User,
+  ): Promise<PruningRequest> {
+    return this.pruningRequestsService.reschedule(id, dto, user);
   }
 }

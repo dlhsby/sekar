@@ -68,6 +68,7 @@ describe('PruningRequestsController', () => {
     findById: jest.fn(),
     review: jest.fn(),
     convertToTask: jest.fn(),
+    reschedule: jest.fn(),
     findAll: jest.fn(),
   };
 
@@ -409,6 +410,37 @@ describe('PruningRequestsController', () => {
 
       await expect(
         controller.convertToTask(mockRequestId, dto, mockStaffKecamatan),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('reschedule', () => {
+    it('should delegate to service.reschedule', async () => {
+      const dto = { expectedDate: '2026-05-12' };
+      const updated: PruningRequest = {
+        ...mockPruningRequest,
+        expectedDate: new Date('2026-05-12'),
+      };
+      service.reschedule.mockResolvedValue(updated);
+
+      const result = await controller.reschedule(
+        mockRequestId,
+        dto,
+        mockStaffKecamatan,
+      );
+
+      expect(result.expectedDate).toEqual(new Date('2026-05-12'));
+      expect(service.reschedule).toHaveBeenCalledWith(
+        mockRequestId,
+        dto,
+        mockStaffKecamatan,
+      );
+    });
+
+    it('should pass through service exceptions', async () => {
+      service.reschedule.mockRejectedValue(new Error('Cannot reschedule'));
+      await expect(
+        controller.reschedule(mockRequestId, { expectedDate: '2026-05-12' }, mockStaffKecamatan),
       ).rejects.toThrow();
     });
   });
