@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, act } from '@testing-library/react-native';
 import { UserMarker } from '../UserMarker';
 import type { LiveUser } from '../../../types/models.types';
 
@@ -199,13 +199,23 @@ describe('UserMarker', () => {
       expect(mockOnPress).toHaveBeenCalledTimes(1);
     });
 
-    it('should have tracksViewChanges set to false for stable bitmap', () => {
+    it('should settle tracksViewChanges to false after the initial render burst', async () => {
       const user = createMockUser();
-      const { getByTestId } = render(
-        <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
-      );
-      const marker = getByTestId('marker');
-      expect(marker.props.tracksViewChanges).toBe(false);
+      jest.useFakeTimers();
+      try {
+        const { getByTestId } = render(
+          <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
+        );
+        // Implementation flips tracksViewChanges true → false after ~250ms so
+        // the first paint captures the bitmap, then stays static for perf.
+        await act(async () => {
+          jest.advanceTimersByTime(300);
+        });
+        const marker = getByTestId('marker');
+        expect(marker.props.tracksViewChanges).toBe(false);
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 

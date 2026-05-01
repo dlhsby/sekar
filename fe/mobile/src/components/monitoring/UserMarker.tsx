@@ -4,7 +4,7 @@
  * Supports dimmed mode for trail hide-others feature.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -91,11 +91,34 @@ export const UserMarker = React.memo(function UserMarker({
   const label = isCluster ? null : getMarkerLabel(user, labelMode);
   const isCloseZoom = labelMode === 'full';
 
+  // Phase 3 marker-rendering fix:
+  // Android needs `tracksViewChanges={true}` for one frame after mount so the
+  // native bitmap is captured at the *measured* size of the label container.
+  // Without this, the cached bitmap is captured before layout settles which
+  // crops the right edge of long labels and makes the marker disappear when
+  // a key change (zoom threshold cross / status flip) forces remount.
+  // We flip back to `false` after 250 ms to restore the perf benefit on pan.
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const t = setTimeout(() => setTracksViewChanges(false), 250);
+    return () => clearTimeout(t);
+  }, [labelMode, user.status, user.full_name, isCluster, clusterCount]);
+
   return (
     <Marker
       coordinate={{ latitude: user.latitude, longitude: user.longitude }}
-      onPress={() => onPress(user)}
-      tracksViewChanges={false}
+      onPress={(e) => {
+        // Prevent Google Maps default behavior of panning the camera to the
+        // tapped marker on Android — that auto-pan was masking the bottom-sheet
+        // open as if "tap only focuses the map." stopPropagation also keeps
+        // the press from bubbling to MapView.onPress / nested polygons.
+        // Guarded with optional chaining on `e` so unit-test invocations
+        // (which call onPress() with no args) don't crash here.
+        e?.stopPropagation?.();
+        onPress(user);
+      }}
+      tracksViewChanges={tracksViewChanges}
       anchor={{ x: 0.5, y: 1 }}
       zIndex={isCluster ? 100 : 200}
       style={dimmed ? styles.dimmed : undefined}
@@ -139,8 +162,12 @@ export const UserMarker = React.memo(function UserMarker({
 const styles = StyleSheet.create({
   markerContainer: {
     alignItems: 'center',
-    // Explicit minWidth prevents Android bitmap clipping when label renders
-    minWidth: 48,
+    // Reserve enough horizontal space for the widest label (full name mode caps
+    // at 120 px). With `tracksViewChanges={false}` Android caches the bitmap at
+    // the measured width, so an undersized container clips the right edge. A
+    // fixed width keeps the bitmap dimensions stable across re-renders.
+    width: 132,
+    paddingHorizontal: 6,
   },
   dimmed: {
     opacity: 0.2,

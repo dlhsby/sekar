@@ -92,7 +92,17 @@ jest.mock('../../../components/monitoring/UserDetailSheet', () => ({
   UserDetailSheet: () => null,
 }));
 jest.mock('../../../components/monitoring/LocationTrail', () => ({
-  LocationTrail: () => null,
+  LocationTrailMapLayers: () => null,
+  LocationTrailOverlay: () => null,
+  useLocationHistory: () => ({ history: null, isLoading: false, error: null, refresh: () => {} }),
+  TRAIL_INSIDE_COLOR: '#15803D',
+  TRAIL_OUTSIDE_COLOR: '#991B1B',
+}));
+jest.mock('../../../components/monitoring/LocationTrailModal', () => ({
+  LocationTrailModal: () => null,
+}));
+jest.mock('../../../components/monitoring/MapFab', () => ({
+  MapFab: () => null,
 }));
 jest.mock('../../../components/monitoring/BoundaryOverlay', () => ({
   BoundaryOverlay: () => null,
@@ -115,6 +125,12 @@ jest.mock('../../../components/monitoring/AreaStatusOverlay', () => ({
 }));
 jest.mock('../../../components/monitoring/PlantOverlayLayer', () => ({
   PlantOverlayLayer: () => null,
+}));
+jest.mock('../../../components/monitoring/MonitoringStatusSheet', () => ({
+  MonitoringStatusSheet: () => null,
+}));
+jest.mock('../../../components/monitoring/MonitoringSearchBar', () => ({
+  MonitoringSearchBar: () => null,
 }));
 jest.mock('../../../store/slices/monitoringV2Slice', () => ({
   toggleLayer: jest.fn((l: any) => ({ type: 'monitoringV2/toggleLayer', payload: l })),

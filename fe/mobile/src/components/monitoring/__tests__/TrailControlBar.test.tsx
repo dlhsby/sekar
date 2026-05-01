@@ -39,9 +39,6 @@ const makeProps = (
 ) => ({
   date: '2026-03-06',
   onDateChange: jest.fn(),
-  onShiftChange: jest.fn(),
-  hideOthers: false,
-  onHideOthersToggle: jest.fn(),
   onClose: jest.fn(),
   ...overrides,
 });
@@ -165,53 +162,25 @@ describe('TrailControlBar', () => {
     });
   });
 
-  // ── 5. Hide/show others toggle ───────────────────────────────────────────────
+  // The "Sembunyikan lainnya" toggle was dropped — the trail now lives in its
+  // own modal MapView with no other workers to dim. The four tests for it
+  // were removed in this revision.
 
-  describe('hide/show others toggle', () => {
-    it('shows "Sembunyikan lainnya" when hideOthers is false', () => {
-      const { getByText } = render(<TrailControlBar {...makeProps({ hideOthers: false })} />);
-      expect(getByText('Sembunyikan lainnya')).toBeTruthy();
-    });
+  // ── 5. Close button ──────────────────────────────────────────────────────────
 
-    it('shows "Tampilkan lainnya" when hideOthers is true', () => {
-      const { getByText } = render(<TrailControlBar {...makeProps({ hideOthers: true })} />);
-      expect(getByText('Tampilkan lainnya')).toBeTruthy();
-    });
-
-    it('calls onHideOthersToggle when pressed (hideOthers false)', () => {
-      const onHideOthersToggle = jest.fn();
-      const { getByText } = render(<TrailControlBar {...makeProps({ hideOthers: false, onHideOthersToggle })} />);
-
-      fireEvent.press(getByText('Sembunyikan lainnya'));
-
-      expect(onHideOthersToggle).toHaveBeenCalledTimes(1);
-    });
-
-    it('calls onHideOthersToggle when pressed (hideOthers true)', () => {
-      const onHideOthersToggle = jest.fn();
-      const { getByText } = render(<TrailControlBar {...makeProps({ hideOthers: true, onHideOthersToggle })} />);
-
-      fireEvent.press(getByText('Tampilkan lainnya'));
-
-      expect(onHideOthersToggle).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  // ── 6. Close button ──────────────────────────────────────────────────────────
-
-  describe('close button', () => {
+  describe('back button', () => {
     it('calls onClose when pressed', () => {
       const onClose = jest.fn();
       const { getByLabelText } = render(<TrailControlBar {...makeProps({ onClose })} />);
 
-      fireEvent.press(getByLabelText('Tutup trail'));
+      fireEvent.press(getByLabelText('Kembali'));
 
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
     it('has accessibilityRole "button"', () => {
       const { getByLabelText } = render(<TrailControlBar {...makeProps()} />);
-      expect(getByLabelText('Tutup trail').props.accessibilityRole).toBe('button');
+      expect(getByLabelText('Kembali').props.accessibilityRole).toBe('button');
     });
   });
 

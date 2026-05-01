@@ -2,9 +2,11 @@
  * MapDashboardScreen
  * Phase 2D: Four-status model, polygon boundaries, FAB controls,
  * StatusSummaryBar, UserDetailSheet, LocationTrail.
+ * Phase 2E: Trail crash fix, FAB repositioning, status peek sheet, search bar,
+ * marker zIndex precision.
  */
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -14,6 +16,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import BottomSheet from '@gorhom/bottom-sheet';
 import { featureFlags } from '../../utils/featureFlags';
 import { ClusteredUserMarkers } from '../../components/monitoring/ClusteredUserMarkers';
 import { MonitoringToggleSheet } from '../../components/monitoring/MonitoringToggleSheet';
@@ -35,11 +38,14 @@ import {
   nbBorderRadius,
 } from '../../constants/nbTokens';
 import { NBBackgroundPattern } from '../../components/nb';
+import { NBText } from '../../components/nb/NBText';
 import { UserMarker, type LabelMode } from '../../components/monitoring/UserMarker';
 import { MapErrorBoundary } from '../../components/monitoring/MapErrorBoundary';
-import { StatusSummaryBar } from '../../components/monitoring/StatusSummaryBar';
+import { MonitoringStatusSheet } from '../../components/monitoring/MonitoringStatusSheet';
+import { MonitoringSearchBar } from '../../components/monitoring/MonitoringSearchBar';
 import { UserDetailSheet } from '../../components/monitoring/UserDetailSheet';
-import { LocationTrail } from '../../components/monitoring/LocationTrail';
+import { LocationTrailModal } from '../../components/monitoring/LocationTrailModal';
+import { MapFab } from '../../components/monitoring/MapFab';
 import { MonitoringFilterModal } from '../../components/modals/MonitoringFilterModal';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -68,10 +74,15 @@ import { BoundaryDetailModal } from '../../components/modals/BoundaryDetailModal
 import { useMapAutoFocus } from '../../hooks/useMapAutoFocus';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const PEEK_HEIGHT = 88;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MapDashboardScreen(): React.JSX.Element {
   const mapRef = useRef<MapView>(null);
+  const statusSheetRef = useRef<BottomSheet>(null);
   const dispatch = useDispatch<AppDispatch>();
 
   // Monitoring slice state
@@ -101,10 +112,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   const [toggleSheetVisible, setToggleSheetVisible] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [showTrail, setShowTrail] = useState(false);
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
-  const [trailHideOthers, setTrailHideOthers] = useState(false);
   const [currentRegion, setCurrentRegion] = useState(SURABAYA_CITY_REGION);
   const [boundaryDetailVisible, setBoundaryDetailVisible] = useState(false);
   const [boundaryDetailType, setBoundaryDetailType] = useState<'rayon' | 'area'>('area');
@@ -198,14 +208,14 @@ export function MapDashboardScreen(): React.JSX.Element {
     };
   }, [dispatch]);
 
+  // Status filtering stays purely client-side (see `visibleUsers` below) so the
+  // statusCounts shown on the peek bar always reflect the GLOBAL roster, not
+  // just the currently-filtered subset. Sending `status` to the API would make
+  // every other count drop to zero whenever a single chip is active.
   const fetchLiveUsersWithFilters = useCallback(
     async (currentFilters: MonitoringFilters) => {
-      const filterPayload = { ...currentFilters };
-      if (statusFilter) {
-        filterPayload.status = [statusFilter];
-      }
       try {
-        const res = await getLiveUsers(filterPayload);
+        const res = await getLiveUsers(currentFilters);
         if (res.data?.users) {
           dispatch(setLiveUsers(res.data.users));
         }
@@ -213,7 +223,7 @@ export function MapDashboardScreen(): React.JSX.Element {
         // handled via slice error state
       }
     },
-    [dispatch, statusFilter],
+    [dispatch],
   );
 
   // Refresh boundaries + users whenever this tab gains focus.
@@ -233,15 +243,49 @@ export function MapDashboardScreen(): React.JSX.Element {
     setBoundaryKey(k => k + 1);
   }, [dispatch, fetchLiveUsersWithFilters, filters]);
 
-  // Filtered users for display
+  // Filtered users for display.
+  // Phase 3 fix: respect `visibleLayers.workers` so toggling Petugas off in
+  // MonitoringToggleSheet hides every marker (otherwise the toggle was a
+  // no-op against the map render path).
   const visibleUsers = React.useMemo(() => {
+    if (!visibleLayers.workers) { return []; }
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
     if (statusFilter) {
       users = users.filter(u => u.status === statusFilter);
     }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      users = users.filter(u =>
+        u.full_name?.toLowerCase().includes(q) ||
+        u.username?.toLowerCase().includes(q),
+      );
+    }
     return users;
-  }, [liveUsers, statusFilter]);
+  }, [liveUsers, statusFilter, visibleLayers.workers, searchQuery]);
+
+  const staffedAreas = useMemo(() => {
+    if (!Array.isArray(liveUsers)) { return 0; }
+    const ids = new Set(
+      liveUsers.filter(u => u.status === 'active' && u.area_id).map(u => u.area_id),
+    );
+    return ids.size;
+  }, [liveUsers]);
+
+  const totalAreas = useMemo(() => {
+    if (!boundaries?.rayons) { return 0; }
+    return boundaries.rayons.reduce((sum, r) => sum + (r.areas?.length ?? 0), 0);
+  }, [boundaries]);
+
+  const lastUpdated = useMemo(() => {
+    if (!Array.isArray(liveUsers) || liveUsers.length === 0) { return null; }
+    const timestamps = liveUsers
+      .map(u => u.last_update)
+      .filter(Boolean)
+      .map(t => new Date(t!).getTime());
+    if (timestamps.length === 0) { return null; }
+    return new Date(Math.max(...timestamps)).toISOString();
+  }, [liveUsers]);
 
   const useClustering = React.useMemo(
     () => shouldCluster(currentRegion, visibleUsers.length),
@@ -293,13 +337,10 @@ export function MapDashboardScreen(): React.JSX.Element {
 
   const handleTrailPress = useCallback((user: LiveUser) => {
     setTrailUser(user);
-    setShowTrail(true);
   }, []);
 
   const handleCloseTrail = useCallback(() => {
-    setShowTrail(false);
     setTrailUser(null);
-    setTrailHideOthers(false);
   }, []);
 
   const handleRayonPress = useCallback((rayon: RayonBoundary) => {
@@ -331,28 +372,6 @@ export function MapDashboardScreen(): React.JSX.Element {
       { enableHighAccuracy: true, timeout: 5000 },
     );
   }, []);
-
-  const handleZoomIn = useCallback(() => {
-    mapRef.current?.animateToRegion(
-      {
-        ...currentRegion,
-        latitudeDelta: currentRegion.latitudeDelta / 2,
-        longitudeDelta: currentRegion.longitudeDelta / 2,
-      },
-      200,
-    );
-  }, [currentRegion]);
-
-  const handleZoomOut = useCallback(() => {
-    mapRef.current?.animateToRegion(
-      {
-        ...currentRegion,
-        latitudeDelta: currentRegion.latitudeDelta * 2,
-        longitudeDelta: currentRegion.longitudeDelta * 2,
-      },
-      200,
-    );
-  }, [currentRegion]);
 
   const handleApplyFilters = useCallback(
     (newFilters: MonitoringFilters) => {
@@ -427,13 +446,6 @@ export function MapDashboardScreen(): React.JSX.Element {
       opacity={0.06}
     >
       <View style={styles.container}>
-        {/* Status Summary Bar */}
-        <StatusSummaryBar
-          statusCounts={statusCounts}
-          activeFilter={statusFilter}
-          onFilterChange={setStatusFilter}
-        />
-
         {/* Map */}
         <View style={styles.mapContainer}>
           <MapErrorBoundary onReset={handleRefresh}>
@@ -446,7 +458,7 @@ export function MapDashboardScreen(): React.JSX.Element {
               showsUserLocation={false}
               showsMyLocationButton={false}
               toolbarEnabled={false}
-              mapPadding={{ top: 0, right: 64, bottom: 0, left: 0 }}
+              mapPadding={{ top: 60, right: 64, bottom: PEEK_HEIGHT, left: 0 }}
               onMapReady={() => {
                 setMapReady(true);
                 mapRef.current?.animateToRegion(SURABAYA_CITY_REGION, 0);
@@ -454,12 +466,14 @@ export function MapDashboardScreen(): React.JSX.Element {
               onRegionChangeComplete={setCurrentRegion}
             >
               {/* Boundary overlays */}
-              {mapReady && boundaries && (
+              {mapReady && boundaries && (visibleLayers.rayons || visibleLayers.areas) && (
                 <BoundaryOverlay
                   key={boundaryKey}
                   rayons={boundaries.rayons}
                   onRayonPress={handleRayonPress}
                   onAreaPress={handleAreaPress}
+                  showRayons={visibleLayers.rayons}
+                  showAreas={visibleLayers.areas}
                 />
               )}
 
@@ -499,7 +513,6 @@ export function MapDashboardScreen(): React.JSX.Element {
                       user={user}
                       onPress={handleMarkerPress}
                       labelMode={labelMode}
-                      dimmed={trailHideOthers && trailUser?.id !== user.id}
                     />
                   ))}
 
@@ -527,57 +540,64 @@ export function MapDashboardScreen(): React.JSX.Element {
                   })}
                 </>
               )}
-
-              {/* Location trail overlay */}
-              {showTrail && trailUser && (
-                <LocationTrail
-                  key={trailUser.id}
-                  userId={trailUser.id}
-                  date={new Date().toISOString().split('T')[0]}
-                  shiftId={trailUser.shift_id}
-                  mapRef={mapRef}
-                  onClose={handleCloseTrail}
-                  onHideOthersChange={setTrailHideOthers}
-                />
-              )}
             </MapView>
           </MapErrorBoundary>
 
+          {/* Floating search bar */}
+          <View style={styles.searchBarOverlay} pointerEvents="box-none">
+            <MonitoringSearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onClear={() => setSearchQuery('')}
+            />
+          </View>
+
+          {/* Empty-boundaries warning */}
+          {!isLoading && !boundaries && (
+            <View style={styles.emptyAreaCallout}>
+              <MaterialCommunityIcons name="map-marker-alert" size={16} color={nbColors.warning} />
+              <NBText variant="caption" color="gray700">Gagal memuat batas wilayah</NBText>
+            </View>
+          )}
+
           {/* FAB column — right side */}
           <View style={styles.fabColumn}>
-            <FabButton
+            <MapFab
               icon="filter-variant"
               onPress={() => setFilterModalVisible(true)}
               accessibilityLabel="Filter"
             />
             {/* Phase 3: Layer visibility toggle */}
-            <FabButton
+            <MapFab
               icon="layers"
               onPress={() => setToggleSheetVisible(true)}
               accessibilityLabel="Tampilan peta"
             />
-            <FabButton
+            <MapFab
               icon="crosshairs-gps"
               onPress={handleMyLocation}
               accessibilityLabel="Lokasi saya"
             />
-            <FabButton
-              icon="plus"
-              onPress={handleZoomIn}
-              accessibilityLabel="Perbesar"
-            />
-            <FabButton
-              icon="minus"
-              onPress={handleZoomOut}
-              accessibilityLabel="Perkecil"
-            />
-            <FabButton
+            <MapFab
               icon="refresh"
               onPress={handleRefresh}
               accessibilityLabel="Perbarui"
             />
           </View>
         </View>
+
+        {/* Monitoring status peek sheet */}
+        <MonitoringStatusSheet
+          sheetRef={statusSheetRef}
+          statusCounts={statusCounts}
+          activeFilter={statusFilter}
+          onFilterChange={setStatusFilter}
+          liveUsers={liveUsers ?? []}
+          lastUpdated={lastUpdated}
+          totalAreas={totalAreas}
+          staffedAreas={staffedAreas}
+          onUserPress={handleMarkerPress}
+        />
 
         {/* User detail bottom sheet */}
         <UserDetailSheet
@@ -614,30 +634,16 @@ export function MapDashboardScreen(): React.JSX.Element {
           onToggleLayer={handleToggleLayer}
           onClose={() => setToggleSheetVisible(false)}
         />
+
+        {/* Trail viewer — separate fullscreen modal with its own MapView so the
+            main monitoring map is never disturbed by trail-specific overlays. */}
+        <LocationTrailModal
+          visible={trailUser !== null}
+          user={trailUser}
+          onClose={handleCloseTrail}
+        />
       </View>
     </NBBackgroundPattern>
-  );
-}
-
-// ─── FabButton sub-component ──────────────────────────────────────────────────
-
-interface FabButtonProps {
-  icon: string;
-  onPress: () => void;
-  accessibilityLabel: string;
-}
-
-function FabButton({ icon, onPress, accessibilityLabel }: FabButtonProps): React.JSX.Element {
-  return (
-    <TouchableOpacity
-      style={styles.fab}
-      onPress={onPress}
-      activeOpacity={0.8}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-    >
-      <MaterialCommunityIcons name={icon} size={20} color={nbColors.black} />
-    </TouchableOpacity>
   );
 }
 
@@ -657,6 +663,28 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
+  },
+  searchBarOverlay: {
+    position: 'absolute',
+    top: nbSpacing.sm,
+    left: nbSpacing.sm,
+    right: nbSpacing.sm,
+  },
+  emptyAreaCallout: {
+    position: 'absolute',
+    top: 64, // below search bar (48px height + spacing)
+    left: nbSpacing.md,
+    right: nbSpacing.md + 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.sm,
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    backgroundColor: nbColors.warningLight,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.base,
+    ...nbShadows.xs,
   },
   map: {
     flex: 1,
@@ -688,21 +716,8 @@ const styles = StyleSheet.create({
   fabColumn: {
     position: 'absolute',
     right: nbSpacing.md,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
+    bottom: PEEK_HEIGHT + nbSpacing.md,
     gap: nbSpacing.sm,
     pointerEvents: 'box-none',
-  },
-  fab: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: nbColors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    ...nbShadows.md,
   },
 });

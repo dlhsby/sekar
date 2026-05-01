@@ -1,15 +1,20 @@
 /**
- * LocationTrail Component
- * Phase 2D: Polyline overlay showing GPS history trail.
- * Enhanced with date picker, hide-others toggle, flag markers, clickable points.
+ * LocationTrail
+ *
+ * Split into three exports because react-native-maps' MapView crashes on Fabric
+ * (Android, New Arch) when given non-feature children — TrailControlBar /
+ * TrailInfoBar / loading-and-error <View>s fall through MapView.addFeature() to
+ * a generic ViewGroup.addView and trip "specified child already has a parent".
+ *
+ *   - useLocationHistory(userId, date, shiftId): owns the API fetch + refresh
+ *   - LocationTrailMapLayers: ONLY Polyline + Marker; render inside <MapView>
+ *   - LocationTrailOverlay:   ONLY <View>/<Text> overlays; render outside <MapView>
+ *
+ * Canonical colors (Neo Brutalism 2.0): inside-area uses nbColors.successDark,
+ * outside-area uses nbColors.dangerDark — both are tokens, not literals.
  */
 
-import React, {
-  useEffect,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Marker, Polyline, Callout } from 'react-native-maps';
 import type MapView from 'react-native-maps';
@@ -27,46 +32,36 @@ import { TrailControlBar } from './TrailControlBar';
 import { TrailInfoBar } from './TrailInfoBar';
 import type { LocationHistoryPoint, LocationHistory } from '../../types/models.types';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-interface LocationTrailProps {
-  userId: string;
-  date: string;
-  shiftId?: string;
-  mapRef?: React.RefObject<MapView | null>;
-  onClose: () => void;
-  onHideOthersChange?: (hide: boolean) => void;
-}
+// Color tokens live in trailColors.ts so non-map consumers (TrailInfoBar,
+// tests) don't pull in react-native-maps via this module.
+export { TRAIL_INSIDE_COLOR, TRAIL_OUTSIDE_COLOR, TRAIL_LINE_COLOR } from './trailColors';
+import {
+  TRAIL_INSIDE_COLOR,
+  TRAIL_OUTSIDE_COLOR,
+  TRAIL_LINE_COLOR,
+} from './trailColors';
+
+/** Cap for intermediate Markers — downsampled past this. Preserves Fabric perf. */
+const MAX_INTERMEDIATE_MARKERS = 50;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const INSIDE_COLOR = '#15803D';
-const OUTSIDE_COLOR = '#9333EA';
+/** Inside / outside accent for individual point markers. */
+function pointColor(pt: LocationHistoryPoint): string {
+  return pt.is_within_area ? TRAIL_INSIDE_COLOR : TRAIL_OUTSIDE_COLOR;
+}
 
-function buildPolylineSegments(
+/**
+ * Build the polyline coordinates. The line itself is rendered in a single
+ * uniform blue color (`TRAIL_LINE_COLOR`) — inside/outside distinction is
+ * conveyed by the dot markers along the line, not by segment color.
+ */
+function buildTrailCoordinates(
   points: LocationHistoryPoint[],
-): { coordinates: { latitude: number; longitude: number }[]; color: string }[] {
-  if (points.length < 2) { return []; }
-
-  const segments: { coordinates: { latitude: number; longitude: number }[]; color: string }[] = [];
-  let currentColor = points[0].is_within_area ? INSIDE_COLOR : OUTSIDE_COLOR;
-  let currentCoords: { latitude: number; longitude: number }[] = [
-    { latitude: points[0].latitude, longitude: points[0].longitude },
-  ];
-
-  for (let i = 1; i < points.length; i++) {
-    const pt = points[i];
-    const ptColor = pt.is_within_area ? INSIDE_COLOR : OUTSIDE_COLOR;
-    currentCoords.push({ latitude: pt.latitude, longitude: pt.longitude });
-
-    if (ptColor !== currentColor || i === points.length - 1) {
-      segments.push({ coordinates: currentCoords, color: currentColor });
-      currentColor = ptColor;
-      currentCoords = [{ latitude: pt.latitude, longitude: pt.longitude }];
-    }
-  }
-
-  return segments;
+): { latitude: number; longitude: number }[] {
+  return points.map(p => ({ latitude: p.latitude, longitude: p.longitude }));
 }
 
 function fitTrailBounds(
@@ -96,9 +91,7 @@ function formatTimeFull(isoString: string): string {
   });
 }
 
-const MAX_INTERMEDIATE_MARKERS = 50;
-
-/** Returns every Nth intermediate point so we never exceed the marker limit. */
+/** Return every Nth intermediate point so we never exceed MAX_INTERMEDIATE_MARKERS. */
 function sampleIntermediatePoints(
   points: LocationHistoryPoint[],
 ): { point: LocationHistoryPoint; originalIndex: number }[] {
@@ -109,47 +102,45 @@ function sampleIntermediatePoints(
     .filter((_, i) => i % step === 0);
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function LocationTrail({
-  userId,
-  date: initialDate,
-  shiftId: initialShiftId,
-  mapRef,
-  onClose,
-  onHideOthersChange,
-}: LocationTrailProps): React.JSX.Element {
-  const [mounted, setMounted] = useState(false);
+export interface UseLocationHistoryResult {
+  history: LocationHistory | null;
+  isLoading: boolean;
+  error: string | null;
+  /** Refetches the same userId/date/shiftId. Useful for manual refresh FABs. */
+  refresh: () => void;
+}
+
+export function useLocationHistory(
+  userId: string | undefined,
+  date: string,
+  shiftId?: string,
+): UseLocationHistoryResult {
   const [history, setHistory] = useState<LocationHistory | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentDate, setCurrentDate] = useState(initialDate);
-  const [currentShiftId, setCurrentShiftId] = useState(initialShiftId);
-  const [hideOthers, setHideOthers] = useState(false);
+  // Bumped by refresh() — keys the fetch effect so we re-run with the same args.
+  const [refreshTick, setRefreshTick] = useState(0);
 
-  // Defer map-child rendering by one animation frame so the Android bridge
-  // has time to stabilize before we add Polyline/Marker children to the MapView.
   useEffect(() => {
-    const rafId = requestAnimationFrame(() => { setMounted(true); });
-    return () => { cancelAnimationFrame(rafId); };
-  }, []);
-
-  // Fetch history when date/shift changes
-  useEffect(() => {
+    if (!userId) {
+      setHistory(null);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
     let cancelled = false;
     setIsLoading(true);
     setError(null);
 
-    getUserLocationHistory(userId, currentDate, currentShiftId)
+    getUserLocationHistory(userId, date, shiftId)
       .then(response => {
         if (cancelled) { return; }
         if (response.error) {
           setError(response.error);
         } else if (response.data) {
           setHistory(response.data);
-          if (mapRef) {
-            fitTrailBounds(mapRef, response.data.points);
-          }
         }
       })
       .catch(() => {
@@ -160,28 +151,100 @@ export function LocationTrail({
       });
 
     return () => { cancelled = true; };
-  }, [userId, currentDate, currentShiftId, mapRef]);
+  }, [userId, date, shiftId, refreshTick]);
 
-  const handleDateChange = useCallback((date: string) => {
-    setCurrentDate(date);
-    setCurrentShiftId(undefined);
+  const refresh = useCallback(() => {
+    setRefreshTick(t => t + 1);
   }, []);
 
-  const handleHideOthersToggle = useCallback(() => {
-    setHideOthers(prev => {
-      const next = !prev;
-      onHideOthersChange?.(next);
-      return next;
+  return { history, isLoading, error, refresh };
+}
+
+// ─── TrailPointCallout (reusable) ─────────────────────────────────────────────
+
+interface TrailPointCalloutProps {
+  title: string;
+  point: LocationHistoryPoint;
+}
+
+/**
+ * Shared Callout content for every trail Marker (start / end / intermediate).
+ * Eliminates the ~30 lines of duplicated JSX previously inlined in each Marker.
+ */
+function TrailPointCallout({ title, point }: TrailPointCalloutProps): React.JSX.Element {
+  return (
+    <Callout tooltip>
+      <View style={styles.callout}>
+        <Text style={styles.calloutTitle}>{title}</Text>
+        <Text style={styles.calloutTime}>{formatTimeFull(point.logged_at)}</Text>
+        <Text style={styles.calloutDetail}>
+          {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}
+        </Text>
+        {point.accuracy != null && (
+          <Text style={styles.calloutDetail}>
+            ±{Number(point.accuracy).toFixed(0)} m
+          </Text>
+        )}
+        {point.battery_level != null && (
+          <Text style={styles.calloutDetail}>Baterai: {point.battery_level}%</Text>
+        )}
+        <Text style={styles.calloutDetail}>
+          {point.is_within_area ? 'Di dalam area' : 'Di luar area'}
+        </Text>
+      </View>
+    </Callout>
+  );
+}
+
+// ─── MapView children only (Polyline + Marker) ────────────────────────────────
+
+interface LocationTrailMapLayersProps {
+  history: LocationHistory | null;
+  isLoading: boolean;
+  mapRef?: React.RefObject<MapView | null>;
+}
+
+export function LocationTrailMapLayers({
+  history,
+  isLoading,
+  mapRef,
+}: LocationTrailMapLayersProps): React.JSX.Element | null {
+  // Stage-1: defer first attach by one animation frame so MapView is fully
+  // settled before we add Polyline/Marker children.
+  const [mounted, setMounted] = useState(false);
+  // Stage-2: hold off intermediate Markers until segments + flags have settled,
+  // to avoid attaching ~50 children in a single Choreographer frame.
+  const [intermediatesMounted, setIntermediatesMounted] = useState(false);
+
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => { setMounted(true); });
+    return () => { cancelAnimationFrame(rafId); };
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || isLoading || !history) {
+      setIntermediatesMounted(false);
+      return;
+    }
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => { setIntermediatesMounted(true); });
     });
-  }, [onHideOthersChange]);
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) { cancelAnimationFrame(raf2); }
+    };
+  }, [mounted, isLoading, history]);
 
-  const handleClose = useCallback(() => {
-    onHideOthersChange?.(false);
-    onClose();
-  }, [onClose, onHideOthersChange]);
+  // Auto-fit map bounds whenever history loads
+  useEffect(() => {
+    if (history && mapRef && history.points.length > 0) {
+      fitTrailBounds(mapRef, history.points);
+    }
+  }, [history, mapRef]);
 
-  const segments = useMemo(
-    () => (history ? buildPolylineSegments(history.points) : []),
+  const trailCoordinates = useMemo(
+    () => (history ? buildTrailCoordinates(history.points) : []),
     [history],
   );
 
@@ -189,134 +252,109 @@ export function LocationTrail({
   const endPoint = history && history.points.length > 1
     ? history.points[history.points.length - 1]
     : null;
-  const intermediatePoints = history?.points.slice(1, -1) ?? [];
+  const intermediatePoints = useMemo(
+    () => history?.points.slice(1, -1) ?? [],
+    [history],
+  );
+  const sampledIntermediates = useMemo(
+    () => sampleIntermediatePoints(intermediatePoints),
+    [intermediatePoints],
+  );
+
+  if (isLoading || !history) { return null; }
 
   return (
     <>
-      {/* Polyline segments — only rendered after mount to avoid Android bridge race */}
-      {mounted && !isLoading && segments.map((seg, idx) => (
+      {mounted && trailCoordinates.length >= 2 && (
         <Polyline
-          key={`seg-${idx}-${seg.color}`}
-          coordinates={seg.coordinates}
-          strokeColor={seg.color}
-          strokeWidth={3}
+          coordinates={trailCoordinates}
+          strokeColor={TRAIL_LINE_COLOR}
+          strokeWidth={4}
         />
-      ))}
+      )}
 
-      {/* Start marker - green flag */}
-      {mounted && !isLoading && startPoint && (
+      {mounted && startPoint && (
         <Marker
           coordinate={{ latitude: startPoint.latitude, longitude: startPoint.longitude }}
           tracksViewChanges={false}
         >
-          <View style={[styles.flagMarker, { backgroundColor: INSIDE_COLOR }]}>
-            <MaterialCommunityIcons name="flag" size={14} color={nbColors.white} />
-            <Text style={styles.flagText}>Mulai {formatTime(startPoint.logged_at)}</Text>
+          <View style={[styles.flagMarker, styles.flagMarkerLight]}>
+            <MaterialCommunityIcons name="flag" size={14} color={nbColors.black} />
+            <Text style={styles.flagTextDark}>Mulai {formatTime(startPoint.logged_at)}</Text>
           </View>
-          <Callout tooltip>
-            <View style={styles.callout}>
-              <Text style={styles.calloutTitle}>Titik Mulai</Text>
-              <Text style={styles.calloutTime}>{formatTimeFull(startPoint.logged_at)}</Text>
-              <Text style={styles.calloutDetail}>
-                {startPoint.latitude.toFixed(5)}, {startPoint.longitude.toFixed(5)}
-              </Text>
-              {startPoint.accuracy != null && (
-                <Text style={styles.calloutDetail}>±{startPoint.accuracy.toFixed(0)} m</Text>
-              )}
-              {startPoint.battery_level != null && (
-                <Text style={styles.calloutDetail}>Baterai: {startPoint.battery_level}%</Text>
-              )}
-              <Text style={styles.calloutDetail}>
-                {startPoint.is_within_area ? 'Di dalam area' : 'Di luar area'}
-              </Text>
-            </View>
-          </Callout>
+          <TrailPointCallout title="Titik Mulai" point={startPoint} />
         </Marker>
       )}
 
-      {/* End marker - red flag */}
-      {mounted && !isLoading && endPoint && (
+      {mounted && endPoint && (
         <Marker
           coordinate={{ latitude: endPoint.latitude, longitude: endPoint.longitude }}
           tracksViewChanges={false}
         >
-          <View style={[styles.flagMarker, { backgroundColor: nbColors.dangerDark }]}>
+          <View style={[styles.flagMarker, styles.flagMarkerDark]}>
             <MaterialCommunityIcons name="flag-checkered" size={14} color={nbColors.white} />
             <Text style={styles.flagText}>Akhir {formatTime(endPoint.logged_at)}</Text>
           </View>
-          <Callout tooltip>
-            <View style={styles.callout}>
-              <Text style={styles.calloutTitle}>Titik Akhir</Text>
-              <Text style={styles.calloutTime}>{formatTimeFull(endPoint.logged_at)}</Text>
-              <Text style={styles.calloutDetail}>
-                {endPoint.latitude.toFixed(5)}, {endPoint.longitude.toFixed(5)}
-              </Text>
-              {endPoint.accuracy != null && (
-                <Text style={styles.calloutDetail}>±{endPoint.accuracy.toFixed(0)} m</Text>
-              )}
-              {endPoint.battery_level != null && (
-                <Text style={styles.calloutDetail}>Baterai: {endPoint.battery_level}%</Text>
-              )}
-              <Text style={styles.calloutDetail}>
-                {endPoint.is_within_area ? 'Di dalam area' : 'Di luar area'}
-              </Text>
-            </View>
-          </Callout>
+          <TrailPointCallout title="Titik Akhir" point={endPoint} />
         </Marker>
       )}
 
-      {/* Intermediate numbered circle markers — sampled to max 50 for performance */}
-      {mounted && !isLoading && sampleIntermediatePoints(intermediatePoints).map(({ point: pt, originalIndex }) => {
-        // Display number counts from 1 (start is 0, first intermediate is 1)
+      {intermediatesMounted && sampledIntermediates.map(({ point: pt, originalIndex }) => {
         const displayNum = originalIndex + 1;
+        const accent = pointColor(pt);
         return (
           <Marker
             key={`pt-${originalIndex}`}
             coordinate={{ latitude: pt.latitude, longitude: pt.longitude }}
             tracksViewChanges={false}
           >
-            <View style={styles.numberedMarker}>
-              <Text style={styles.numberedMarkerText}>{displayNum}</Text>
+            <View style={[styles.numberedMarker, { borderColor: accent }]}>
+              <Text style={[styles.numberedMarkerText, { color: accent }]}>
+                {displayNum}
+              </Text>
             </View>
-            <Callout tooltip>
-              <View style={styles.callout}>
-                <Text style={styles.calloutTitle}>Titik #{displayNum}</Text>
-                <Text style={styles.calloutTime}>{formatTimeFull(pt.logged_at)}</Text>
-                <Text style={styles.calloutDetail}>
-                  {pt.latitude.toFixed(5)}, {pt.longitude.toFixed(5)}
-                </Text>
-                {pt.accuracy != null && (
-                  <Text style={styles.calloutDetail}>±{pt.accuracy.toFixed(0)} m</Text>
-                )}
-                {pt.battery_level != null && (
-                  <Text style={styles.calloutDetail}>Baterai: {pt.battery_level}%</Text>
-                )}
-                <Text style={styles.calloutDetail}>
-                  {pt.is_within_area ? 'Di dalam area' : 'Di luar area'}
-                </Text>
-              </View>
-            </Callout>
+            <TrailPointCallout title={`Titik #${displayNum}`} point={pt} />
           </Marker>
         );
       })}
+    </>
+  );
+}
 
-      {/* Control bar overlay */}
+// ─── Overlay views only (TrailControlBar + TrailInfoBar + loading/error) ──────
+
+interface LocationTrailOverlayProps {
+  history: LocationHistory | null;
+  isLoading: boolean;
+  error: string | null;
+  date: string;
+  onDateChange: (date: string) => void;
+  userName?: string;
+  onClose: () => void;
+}
+
+export function LocationTrailOverlay({
+  history,
+  isLoading,
+  error,
+  date,
+  onDateChange,
+  userName,
+  onClose,
+}: LocationTrailOverlayProps): React.JSX.Element {
+  return (
+    <>
       <TrailControlBar
-        date={currentDate}
-        onDateChange={handleDateChange}
-        shiftId={currentShiftId}
-        onShiftChange={setCurrentShiftId}
-        hideOthers={hideOthers}
-        onHideOthersToggle={handleHideOthersToggle}
-        onClose={handleClose}
+        userName={userName}
+        date={date}
+        onDateChange={onDateChange}
+        onClose={onClose}
       />
 
-      {/* Info bar overlay */}
       {!isLoading && !error && history && (
-        <TrailInfoBar history={history} date={currentDate} />
+        <TrailInfoBar history={history} date={date} />
       )}
 
-      {/* Loading/error state overlays */}
       {isLoading && (
         <View style={styles.loadingOverlay}>
           <Text style={styles.loadingText}>Memuat riwayat lokasi...</Text>
@@ -341,37 +379,40 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: nbBorderRadius.sm,
     borderWidth: nbBorders.thin,
-    borderColor: nbColors.white,
+    borderColor: nbColors.black,
     gap: 3,
     ...nbShadows.sm,
+  },
+  flagMarkerLight: {
+    backgroundColor: nbColors.white,
+  },
+  flagMarkerDark: {
+    backgroundColor: nbColors.black,
+    borderColor: nbColors.black,
   },
   flagText: {
     color: nbColors.white,
     fontSize: 9,
     fontWeight: nbTypography.fontWeight.bold,
   },
-  dotMarker: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: nbColors.white,
+  flagTextDark: {
+    color: nbColors.black,
+    fontSize: 9,
+    fontWeight: nbTypography.fontWeight.bold,
   },
   numberedMarker: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: nbColors.white,
     borderWidth: 2,
-    borderColor: nbColors.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
   numberedMarkerText: {
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: nbTypography.fontWeight.bold,
-    color: '#4338CA', // indigo-700
-    lineHeight: 10,
+    lineHeight: 11,
     textAlign: 'center',
   },
   callout: {

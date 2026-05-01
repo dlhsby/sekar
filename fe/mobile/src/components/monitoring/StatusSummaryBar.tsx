@@ -5,7 +5,12 @@
  */
 
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+// BottomSheetScrollView wraps a gesture-handler ScrollView that cooperates with
+// @gorhom/bottom-sheet's pan gestures. Plain RN ScrollView gets its horizontal
+// drag swallowed by the bottom-sheet's vertical pan handler, which is why the
+// chips were unscrollable when the bar moved into the sheet.
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
   nbColors,
   nbSpacing,
@@ -58,7 +63,7 @@ export function StatusSummaryBar({
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <BottomSheetScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -72,7 +77,7 @@ export function StatusSummaryBar({
             onPress={handleChipPress}
           />
         ))}
-      </ScrollView>
+      </BottomSheetScrollView>
     </View>
   );
 }

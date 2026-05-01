@@ -16,11 +16,13 @@ jest.mock('@gorhom/bottom-sheet', () => {
   const React = require('react');
   const { View, ScrollView } = require('react-native');
 
-  const BottomSheet = React.forwardRef(({ children, onClose }: any, ref: any) => {
+  const BottomSheet = React.forwardRef(({ children, index }: any, ref: any) => {
     React.useImperativeHandle(ref, () => ({
       snapToIndex: jest.fn(),
       close: jest.fn(),
     }));
+    // Mirror real-sheet behavior: index === -1 means closed → render nothing.
+    if (index === -1 || index === undefined) { return null; }
     return React.createElement(View, { testID: 'bottom-sheet' }, children);
   });
   BottomSheet.displayName = 'BottomSheet';

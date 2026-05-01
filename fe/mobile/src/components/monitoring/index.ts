@@ -13,7 +13,15 @@ export { default as PhotoGallery } from './PhotoGallery';
 export { UserDetailSheet } from './UserDetailSheet';
 export { StatusSummaryBar } from './StatusSummaryBar';
 export { UserListCard } from './UserListCard';
-export { LocationTrail } from './LocationTrail';
+export {
+  LocationTrailMapLayers,
+  LocationTrailOverlay,
+  useLocationHistory,
+  TRAIL_INSIDE_COLOR,
+  TRAIL_OUTSIDE_COLOR,
+} from './LocationTrail';
+export { LocationTrailModal } from './LocationTrailModal';
+export { MapFab } from './MapFab';
 export { MapErrorBoundary } from './MapErrorBoundary';
 
 /** @deprecated Use UserDetailSheet instead */

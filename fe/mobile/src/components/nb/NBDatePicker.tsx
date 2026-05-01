@@ -31,6 +31,17 @@ export interface NBDatePickerProps {
   minimumDate?: Date;
   maximumDate?: Date;
   disabled?: boolean;
+  /**
+   * Controlled-modal mode. When true, the inline trigger button is NOT rendered
+   * and the parent owns visibility via `visible` + `onRequestClose`.
+   * Use this when you want a custom trigger (e.g. a date label inside another
+   * UI) but still want to reuse this picker's modal.
+   */
+  triggerless?: boolean;
+  /** Required when triggerless. Controls whether the picker modal is shown. */
+  visible?: boolean;
+  /** Called when the user dismisses (Batal, OK, hardware back, scrim tap). */
+  onRequestClose?: () => void;
 }
 
 const ITEM_HEIGHT = 44;
@@ -170,8 +181,22 @@ export function NBDatePicker({
   minimumDate,
   maximumDate,
   disabled = false,
+  triggerless = false,
+  visible: controlledVisible,
+  onRequestClose,
 }: NBDatePickerProps): React.JSX.Element {
-  const [modalVisible, setModalVisible] = useState(false);
+  const [internalVisible, setInternalVisible] = useState(false);
+  const modalVisible = triggerless ? !!controlledVisible : internalVisible;
+  const setModalVisible = useCallback(
+    (next: boolean) => {
+      if (triggerless) {
+        if (!next) { onRequestClose?.(); }
+      } else {
+        setInternalVisible(next);
+      }
+    },
+    [triggerless, onRequestClose],
+  );
 
   const now = new Date();
   const current = value ?? now;
@@ -200,7 +225,20 @@ export function NBDatePicker({
     setTempHour(d.getHours());
     setTempMinute(d.getMinutes());
     setModalVisible(true);
-  }, [disabled, value]);
+  }, [disabled, value, setModalVisible]);
+
+  // In triggerless mode the parent flips `visible` directly — sync temp state
+  // from the latest `value` whenever the modal opens, mirroring handleOpen.
+  useEffect(() => {
+    if (triggerless && controlledVisible) {
+      const d = value ?? new Date();
+      setTempYear(d.getFullYear());
+      setTempMonth(d.getMonth());
+      setTempDay(d.getDate());
+      setTempHour(d.getHours());
+      setTempMinute(d.getMinutes());
+    }
+  }, [triggerless, controlledVisible, value]);
 
   const handleConfirm = useCallback(() => {
     if (mode === 'date') {
@@ -274,6 +312,7 @@ export function NBDatePicker({
 
   return (
     <View>
+      {!triggerless && (
       <TouchableOpacity
         style={[styles.trigger, disabled && styles.triggerDisabled]}
         onPress={handleOpen}
@@ -301,6 +340,7 @@ export function NBDatePicker({
           </Text>
         </View>
       </TouchableOpacity>
+      )}
 
       <Modal
         visible={modalVisible}

@@ -332,4 +332,69 @@ npm run test:e2e                  # All Playwright tests
 
 ---
 
-**Last Updated:** 2026-03-14
+---
+
+## Phase 2E Monitoring UX Hardening (May 2026 retroactive)
+
+Applied as part of Phase 3 M3 monitoring work. All changes in `fe/mobile/`:
+
+| Change | File | Detail |
+|--------|------|--------|
+| Trail crash fix (Fabric `addViewAt`) | `MapDashboardScreen.tsx` | `BoundaryOverlay` + `AreaStatusOverlay` gated with `!showTrail` to prevent 150+ concurrent MapView children |
+| FAB repositioned to bottom-right | `MapDashboardScreen.tsx` | `fabColumn` style: removed `top:0/bottom:0/justifyContent:'center'`; replaced with `bottom: PEEK_HEIGHT + spacing.md` |
+| `StatusSummaryBar` relocated | `MapDashboardScreen.tsx` | Moved from top overlay into `MonitoringStatusSheet` (still rendered, not removed) |
+| Floating search bar | `MonitoringSearchBar.tsx` *(new)* | Pill-shaped controlled search bar overlaying map top-left; filters worker markers + sheet list |
+| Status peek bottom sheet | `MonitoringStatusSheet.tsx` *(new)* | 3-state (`@gorhom/bottom-sheet`): peek 88dp shows chips; half shows 2×2 stat grid + summary rows; full shows `BottomSheetFlatList` worker list |
+| Reusable stat card | `MonitoringStatCard.tsx` *(new)* | Accent left-border card with icon, h3 value, caption label |
+| Marker tap precision | `BoundaryOverlay.tsx` | Added `zIndex={20}` + `anchor={{x:0.5,y:0.5}}` to area markers; `zIndex={10}` + `anchor` to rayon markers. Worker markers already at `zIndex={200}` |
+
+## Phase 2E Round 2 — Trail Modal Rebuild (May 2026)
+
+The first crash fix (gating BoundaryOverlay/AreaStatusOverlay with `!showTrail`)
+was insufficient — the real bug was that `LocationTrail` returned `<TrailControlBar>`,
+`<TrailInfoBar>` and loading/error `<View>`s as children of `<MapView>`. On
+react-native-maps Fabric (Android, New Arch), `MapView.addFeature()` falls
+through to `ViewGroup.addView()` for unknown View types and trips
+`IllegalStateException: specified child already has a parent`. RAF / mapKey
+remount workarounds couldn't fix it because the offending children were
+structural, not timing-dependent.
+
+| Change | File | Detail |
+|--------|------|--------|
+| LocationTrail split | `LocationTrail.tsx` | Three exports: `useLocationHistory()` hook, `LocationTrailMapLayers` (only Polyline/Marker), `LocationTrailOverlay` (TrailControlBar + TrailInfoBar + loading/error). MapView never sees non-feature children. |
+| Trail isolation modal | `LocationTrailModal.tsx` *(new)* | Full-screen `<Modal>` with its OWN `<MapView>` — main monitoring map keeps its boundaries + worker markers untouched while the trail is open. `presentationStyle="fullScreen"`, hardware-back via `onRequestClose`. |
+| Reusable map FAB | `MapFab.tsx` *(new)* | Single source of truth for the 44×44 NB circular FAB style; consumed by `MapDashboardScreen` and `LocationTrailModal` (refresh icon at bottom-right). |
+| Refresh in trail | `LocationTrailModal.tsx` | `useLocationHistory().refresh` bumps an internal `refreshTick` keyed in the fetch effect — refetches the same userId+date with no prop drilling. FAB at bottom-right, disabled while loading. |
+| Reusable trail palette | `trailColors.ts` *(new)* | `TRAIL_INSIDE_COLOR = nbColors.successDark`, `TRAIL_OUTSIDE_COLOR = nbColors.dangerDark` — replaces hardcoded `#15803D`/`#9333EA`. Lives outside LocationTrail so non-map consumers (TrailInfoBar, tests) don't pull in `react-native-maps`. |
+| Numbered intermediate markers colorized | `LocationTrail.tsx` | Border + number color of each intermediate Marker tracks `is_within_area` (green inside / red outside) instead of a static indigo. Reuses `pointColor()` helper that already drives polyline segment color. |
+| Reusable Callout | `LocationTrail.tsx` | Extracted `<TrailPointCallout>` — eliminates ~30 lines of duplicated JSX previously inlined in start / end / intermediate markers. |
+| Header redesign | `TrailControlBar.tsx` | NB white card with `borderBottomWidth: nbBorders.base`, hard-edge shadow. Back button matches `FieldHomeHeader` (44×44, no border, `arrow-left` size 24). Date stepper has `[<] calendar [>]` chevrons + tappable label. |
+| Date jump via picker | `TrailControlBar.tsx` + `NBDatePicker.tsx` | Tapping the date label opens `NBDatePicker` in new **triggerless mode** — parent owns `visible`/`onRequestClose`, no inline trigger button. Lets users jump to any past date without stepping day-by-day. `maximumDate=today` prevents future selection. |
+| `NBDatePicker` controlled mode | `NBDatePicker.tsx` | Three new optional props: `triggerless`, `visible`, `onRequestClose`. Backward-compatible (defaults preserve old behavior). |
+| Stats bar redesign | `TrailInfoBar.tsx` | NB white card on bottom with `borderTopWidth: nbBorders.base`. Three columns separated by 1px hairlines: **Total Jarak** (black), **Di Area** (`TRAIL_INSIDE_COLOR`), **Di Luar** (`TRAIL_OUTSIDE_COLOR`). Worker name removed (lives in header). |
+| Dropped controls | `TrailControlBar.tsx` | Removed `Sembunyikan lainnya` toggle (modal MapView has no other workers to dim) and the in-bar close X (back arrow handles it). `shiftId`/`onShiftChange` plumbing removed from the modal pending a re-introduction request. |
+
+**Test impact:** `TrailControlBar.test.tsx` updated for the new `Kembali`
+accessibility label + dropped `hideOthers` props. `TrailInfoBar.test.tsx`
+rewritten for the split-column layout (no combined `"Di area: 1j 30m"`
+strings). `LocationTrail.test.tsx` integration suite skipped pending rewrite
+against the split components. `MapDashboardScreen.test.tsx` mocks updated to
+cover `LocationTrailModal`, `MapFab`, `MonitoringStatusSheet`, `MonitoringSearchBar`.
+
+## Phase 2E Round 3 — Trail Palette + Sheet Scroll + Filter Counts (May 2026)
+
+Follow-up polish after the trail modal landed:
+
+| Change | File | Detail |
+|--------|------|--------|
+| Polyline → uniform blue | `LocationTrail.tsx`, `trailColors.ts` | Trail line is now a single Polyline drawn in `nbColors.info`. Inside/outside distinction is conveyed by dot markers, not segment color. New token `TRAIL_LINE_COLOR`; `buildPolylineSegments` collapsed into `buildTrailCoordinates`. |
+| Outside accent → orange | `trailColors.ts` | `TRAIL_OUTSIDE_COLOR = nbColors.warning` (was `dangerDark`). Affects intermediate dot markers and the "Di Luar" stat in `TrailInfoBar`. |
+| Start marker → white card | `LocationTrail.tsx` | `flagMarkerLight` style (white bg, black icon/text/border) for "Mulai"; `flagMarkerDark` (black bg, white icon/text) for "Akhir". Symmetric pair, NB-coherent. |
+| Status chips horizontally scrollable in sheet | `StatusSummaryBar.tsx` | Swapped plain `ScrollView` for `BottomSheetScrollView` from `@gorhom/bottom-sheet`. Plain RN ScrollView's horizontal pan was being captured by the bottom-sheet's vertical pan handler; the gorhom-aware variant cooperates with the sheet's gesture system. |
+| Status chip filter no longer zeros other counts | `MapDashboardScreen.tsx` | Removed `filterPayload.status = statusFilter` from `fetchLiveUsersWithFilters`. Status is now filtered purely client-side via the `visibleUsers` memo, so `liveUsers` stays the global roster and `statusCounts` reflects all users regardless of which chip is active. |
+| Test event guard | `UserMarker.tsx` | `e.stopPropagation?.()` → `e?.stopPropagation?.()` so unit tests calling `marker.props.onPress()` with no args don't crash. |
+| Test fixes | `UserMarker.test.tsx`, `UserDetailSheet.test.tsx` | `tracksViewChanges` test now waits the 250 ms settle window via fake timers; `BottomSheet` mock respects `index === -1` (closed state) so the null-guard test's expectation matches real-sheet behavior. |
+
+All 906 monitoring + NB suite tests green.
+
+**Last Updated:** 2026-05-01
