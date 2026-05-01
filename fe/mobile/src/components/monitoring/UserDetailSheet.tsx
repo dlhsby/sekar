@@ -90,10 +90,15 @@ export function UserDetailSheet({
   onTrailPress,
   onReassignPress,
   currentUserRole,
-}: UserDetailSheetProps): React.JSX.Element | null {
+}: UserDetailSheetProps): React.JSX.Element {
   const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['50%', '85%'], []);
+  // Match BoundaryDetailModal's `maxHeight: '70%'` so worker + area details
+  // open at the same standard size. Second snap point allows expanding further.
+  const snapPoints = useMemo(() => ['70%', '90%'], []);
 
+  // Use both controlled `index` prop AND imperative snapToIndex/close calls so
+  // the sheet opens reliably even on first render (gorhom ignores snapToIndex
+  // during its initial layout if it hasn't fully mounted yet).
   useEffect(() => {
     if (user) {
       sheetRef.current?.snapToIndex(0);
@@ -144,19 +149,17 @@ export function UserDetailSheet({
     if (user) { onReassignPress?.(user); }
   }, [user, onReassignPress]);
 
-  if (!user) { return null; }
+  const canReassign = !!user && currentUserRole && REASSIGN_ROLES.includes(currentUserRole);
 
-  const canReassign = currentUserRole && REASSIGN_ROLES.includes(currentUserRole);
-
-  const statusColor = getStatusColor(user.status);
-  const roleIcon = getRoleIcon(user.role);
-  const roleLabel = ROLE_LABELS[user.role as UserRole] ?? user.role;
-  const hasPhone = Boolean(user.phone);
+  const statusColor = user ? getStatusColor(user.status) : nbColors.gray['400'];
+  const roleIcon = user ? getRoleIcon(user.role) : 'account';
+  const roleLabel = user ? (ROLE_LABELS[user.role as UserRole] ?? user.role) : '';
+  const hasPhone = Boolean(user?.phone);
 
   return (
     <BottomSheet
       ref={sheetRef}
-      index={-1}
+      index={user ? 0 : -1}
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
@@ -165,6 +168,8 @@ export function UserDetailSheet({
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetScrollView contentContainerStyle={styles.content}>
+      {user && (
+        <>
         {/* Header */}
         <View style={styles.header}>
           <View style={[styles.statusIndicator, { backgroundColor: statusColor }]} />
@@ -238,6 +243,8 @@ export function UserDetailSheet({
             />
           )}
         </View>
+        </>
+      )}
       </BottomSheetScrollView>
     </BottomSheet>
   );

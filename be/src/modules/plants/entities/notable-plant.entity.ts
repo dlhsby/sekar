@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { Area } from '../../areas/entities/area.entity';
 import { PlantSpecies } from './plant-species.entity';
 
@@ -32,9 +32,11 @@ export class NotablePlant {
   notes: string | null;
 
   @ManyToOne(() => Area, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'area_id' })
   area: Area;
 
   @ManyToOne(() => PlantSpecies, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'species_id' })
   species: PlantSpecies;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })

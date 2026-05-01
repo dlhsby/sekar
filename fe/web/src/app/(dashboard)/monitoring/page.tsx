@@ -43,6 +43,11 @@ import {
 } from '@/components/monitoring/HierarchyFilterPanel';
 import { WorkerListVirtual, type WorkerListItem } from '@/components/monitoring/WorkerListVirtual';
 import { AreaDetailDrawer } from '@/components/monitoring/AreaDetailDrawer';
+import {
+  MonitoringTogglePanel,
+  DEFAULT_LAYER_VISIBILITY,
+  type MonitoringLayerVisibility,
+} from '@/components/monitoring/MonitoringTogglePanel';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -87,6 +92,36 @@ export default function MonitoringPage() {
 
   // Area detail drawer state (Phase 3)
   const [selectedAreaSummary, setSelectedAreaSummary] = useState<SnapshotAreaSummary | null>(null);
+
+  // Map layer visibility (Phase 3 sub-phase 3-4 — Tampilan Peta toggles)
+  const LAYER_STORAGE_KEY = 'monitoring.layers.v1';
+  const [layerVisibility, setLayerVisibility] = useState<MonitoringLayerVisibility>(
+    () => DEFAULT_LAYER_VISIBILITY
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(LAYER_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<MonitoringLayerVisibility>;
+      setLayerVisibility((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      /* ignore corrupt persisted value */
+    }
+  }, []);
+  const handleLayerVisibilityChange = useCallback(
+    (next: MonitoringLayerVisibility) => {
+      setLayerVisibility(next);
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(LAYER_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          /* localStorage unavailable */
+        }
+      }
+    },
+    []
+  );
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -513,7 +548,16 @@ export default function MonitoringPage() {
             trailSelectedIndex={panelView === 'timeline' ? trailSelectedIndex : undefined}
             onTrailPointClick={setTrailSelectedIndex}
             showOnlyTrailUser={showOnlyTrailUser}
+            layerVisibility={{
+              workers: layerVisibility.workers,
+              rayons: layerVisibility.rayons,
+              areas: layerVisibility.areas,
+            }}
             className="h-full"
+          />
+          <MonitoringTogglePanel
+            value={layerVisibility}
+            onChange={handleLayerVisibilityChange}
           />
         </div>
 

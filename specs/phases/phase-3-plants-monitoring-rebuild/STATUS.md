@@ -1,7 +1,7 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-04-28 (Apr 27 audit + bug-fix sweep + staff_kecamatan UX rounds 2 / 3 / 4 — Round 4 lands the preferred-date booking calendar + admin reschedule endpoint, mobile-first, no schema change)
+**Date:** 2026-05-01 (May 1 plant-monitoring + perantingan review pass — seeder hardening so monitoring no longer crashes on stale clock-in state, token compliance sweep on the new `MonitoringStatusSheet` / `MonitoringStatCard` / `MonitoringSearchBar` mobile primitives + matching web `MonitoringTogglePanel`, AreaDetailDrawer plant-status + pruning-requests panels wired to live `useAreaPlants` / `useNotablePlants` / `usePruningByRayon`, manual review checklist below)
 
 > **Apr 28 staff_kecamatan UX — Round 3** (mobile-only, no backend / migration changes):
 >
@@ -25,6 +25,87 @@
 - **Not started (4):** 3-13 CSV backfill, 3-14 k6 load test, 3-15 doc final sweep (3-15 partly handled in Wave 6, treated as in-progress)
 **Branch:** main (no feature branch yet)
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), [ADR-036](../../architecture/decisions/ADR-036-design-tokens-single-source.md), [ADR-037](../../architecture/decisions/ADR-037-web-pwa.md)
+
+---
+
+## 🧪 Manual Review Checklist (May 1, 2026 review pass)
+
+Use this when you sit down to manually QA plant monitoring + the perantingan workflow. Items marked **✅ verified** are covered by the automated test suite; **🔍 manual** require a real device or browser. Login passwords are all `password123`.
+
+### Preconditions
+
+```bash
+./infra/start.sh
+cd be && npm run migration:run && npm run db:seed
+```
+
+After seed, expect:
+
+| Query | Expected | Why |
+|-------|----------|-----|
+| `SELECT COUNT(*) FROM shifts WHERE clock_out_time IS NULL` | **0** | Worker monitoring won't crash on orphaned active shifts; live clock-in via mobile owns `user_tracking_status` updates. |
+| `SELECT DISTINCT status FROM user_tracking_status` | **only `offline`** | Every clockable user starts clean. |
+| `SELECT COUNT(*) FROM notable_plants` | **3** | Heritage trees on the map (Bungkul / Pusat / Darmo). |
+| `SELECT COUNT(*) FROM area_plants` | **33** | Showcase mix across 10 areas with intentional ok / due_soon / overdue spread. |
+| `SELECT COUNT(*) FROM pruning_requests` | **74** spanning all 8 statuses | Stage-2 disposition + reschedule UX has data for every status filter chip. |
+| `SELECT COUNT(*) FROM users WHERE role = 'staff_kecamatan'` | **7** (one per rayon + 1 generic) | Login via `staff_kec_pusat` etc. |
+| `SELECT COUNT(*) FROM plant_species` | **128** | CSV catalog seeded; species autocomplete in `PruningTaskForm` returns hits. |
+
+### Backend (Swagger — http://localhost:3000/api/docs)
+
+| Action | Expected | Status |
+|--------|----------|--------|
+| `GET /api/v1/areas/:id/plants` for any seeded area | Array of `AreaPlantRow` with `status`, `nextDueAt`, `species.nameId` | ✅ verified (188 backend tests green) |
+| `GET /api/v1/areas/:id/notable-plants` | Up to 3 entries on the demo areas | ✅ verified |
+| `GET /api/v1/pruning-requests?admin=true&status=submitted` | 21 rows (per seed) | ✅ verified |
+| `POST /api/v1/pruning-requests` as staff_kecamatan | New row with `submitted` status, auto-derived `kecamatan_name` + `rayon_id` | ✅ verified |
+| `POST /api/v1/pruning-requests/:id/review` then `:id/convert-to-task` | Status walks `submitted → approved → converted`; new task created | ✅ verified |
+| `PATCH /api/v1/pruning-requests/:id/expected-date` (admin reschedule) | Capacity rebooked atomically; date changes | ✅ verified |
+| `GET /api/v1/plant-species?q=akasia` | Returns AKASIA + AKASIA_MANGIUM | ✅ verified |
+| `GET /api/v1/monitoring/snapshot` | Worker + plant + area aggregates; no 500 | 🔍 manual smoke after seed |
+
+### Mobile — perantingan 5-stage walkthrough (`cd fe/mobile && npm run android`)
+
+1. **Stage 1 — Submit (`staff_kec_pusat`)**
+   - Open Perantingan tab → tap "+ Buat Permohonan" → SubmitScreen.
+   - Fill location (drag pin in `LocationPickerModal`), upload ≥1 photo, fill tree details, **tap the date row → `AvailabilityModal` shows 8-week calendar with capacity color-coding**.
+   - Submit → toast → `MyRequestsScreen` lists the new row with `submitted` badge. 🔍 manual
+   - Background: `pruning_request_draft` AsyncStorage entry persists if you bail out. ✅ verified by `SubmitScreen.test.tsx`
+2. **Stage 2 — Disposition (`admin` or `admin_data`)**
+   - Login → Perantingan tab → ReviewQueueScreen → tap a `submitted` request → RequestDetailScreen.
+   - Approve via `NBModal` review sheet → status → `approved` → tap "Buat Tugas" → `ConvertToTaskSheet` (note: empty area/user selectors are an Apr 27 known issue, manual area_id/assignee entry works as workaround). 🔍 manual
+   - Capacity calendar in convert sheet should disable any week beyond 12-week horizon and show booked/free counts. ✅ verified by capacityCalendar tests
+   - Reschedule: from RequestDetailScreen open `RescheduleSheet` → pick a different available date → status stays, `expectedDate` changes. ✅ verified
+3. **Stage 3 — Work (`satgas1` or `satgas_pusat_1`)**
+   - Login → Tasks list → open a `perantingan` task → `PruningTaskForm` (3 enums: case_type, pruning_action, source) + species autocomplete + per-species count + photos. ✅ verified by `PruningTaskForm.test.tsx`
+   - Submit "Sebagian" (partial) or "Selesai" (complete) → `activity_plant_items` rows created on backend. ✅ verified
+4. **Stage 4 — Reporting**
+   - Activity record visible in worker's daily history; carries `pruning_request_id` reference + before/after photos. ✅ verified
+   - Pruning request auto-transitions `converted → in_progress → done`. ✅ verified by `pruning-requests.service.spec.ts`
+5. **Stage 5 — Monitoring (any role with map access)**
+   - Open Monitoring tab → tap an area boundary marker → `BoundaryDetailModal` opens with: staffing table, **Status Tanaman** (3-pill summary OK/Hampir/Lewat + species list), and **Pohon Heritage** if any. 🔍 manual on real device — confirm no crash on the `daySummary === null` path (offline-seeded users)
+   - Verify `MonitoringStatusSheet` peek/middle/full snap points work and the new `MonitoringSearchBar` filters the worker list. 🔍 manual
+   - Verify the 4 status stat cards render via the new `MonitoringStatCard` and pull colors from `nbColors.statusActive/Idle/Outside/Missing`. ✅ verified
+
+### Web — monitoring page (`cd fe/web && npm run dev` → http://localhost:3001/monitoring)
+
+| Step | Expected | Status |
+|------|----------|--------|
+| Open `/monitoring` | Map renders without console errors; offline-seeded users do not appear (OK — seeder leaves them offline) | 🔍 manual |
+| Top-left `MonitoringTogglePanel` ("Tampilan Peta") | 5 toggles (Petugas / Tanaman / Jatuh Tempo / Batas Rayon / Batas Area); state persists in localStorage `monitoring.layers.v1` | 🔍 manual |
+| Click any area centroid | `AreaDetailDrawer` slides in with: Staffing → **Status Tanaman** (live `useAreaPlants` + `useNotablePlants`) → **Permohonan Pangkas** (rayon-scoped `usePruningByRayon`, top-5 with status pill) → Worker list | 🔍 manual |
+| Plant section | 3-tone summary (`bg-nb-success-light` / `warning-light` / `danger-light`) + species list ordered overdue-first; heritage subsection shows on areas with notable_plants | 🔍 manual |
+| Pruning section | Each row uses `PRUNING_STATUS_TONE` map for the status pill; expected_date displayed when set | 🔍 manual |
+| Layer toggles actually hide layers | Toggling Tanaman / Petugas / Rayon / Area changes Mapbox + overlay rendering | 🔍 manual |
+
+### Web — staff_kecamatan submit (`/(kecamatan)/pruning-requests`)
+
+This route exists as a placeholder shell only. Full web submit form is **deferred to Phase 4** (mobile is the primary submit channel). Manual UAT from web is not required this pass.
+
+### Phase 4 backlog uncovered by this review
+
+- Web admin (dashboard) pruning-requests pages — `fe/web/src/app/(dashboard)/pruning-requests/{page,[id]/page,[id]/disposition/page}` are **not implemented**; admin disposition is mobile-only. Spec call-out exists in `web.md` but page files were never created.
+- `ConvertToTaskSheet` on mobile reads empty Redux state for areas + users (Apr 27 defensive patch returns `[]`). Real `areasSlice` + `usersSlice` ship in Phase 4 polish; admin currently must enter area_id + assignee manually.
 
 ---
 
@@ -506,6 +587,19 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Mobile test suite green after M1-R + M2 | ✅ | All 159 suites / 3,836 tests pass (3,829 passing, 7 skipped) — Apr 26 test-fix session resolved 7 failing suites |
 
 **New 3-5 tests:** `monitoringV2Slice.test.ts` (31) + `ClusterMarker.test.tsx` (11) + `ClusteredUserMarkers.test.tsx` (9) + `MonitoringToggleSheet.test.tsx` (10) + `MapDashboardScreen.test.tsx` (9, updated) = **70 tests**.
+
+### Monitoring UX Hardening (May 2026, retroactive to Phase 2E)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Trail crash fix — Fabric `addViewAt` | ✅ | `BoundaryOverlay` + `AreaStatusOverlay` gated with `!showTrail`; prevents 150+ concurrent MapView children |
+| FAB repositioned to bottom-right | ✅ | `fabColumn` style: `bottom: PEEK_HEIGHT + spacing.md`; removed `top:0/bottom:0/justifyContent:'center'` |
+| `StatusSummaryBar` relocated to peek sheet | ✅ | Removed from top bar; now rendered inside `MonitoringStatusSheet` peek state |
+| `MonitoringStatCard` reusable stat card | ✅ new | `fe/mobile/src/components/monitoring/MonitoringStatCard.tsx` — accent left-border, icon, h3 value, caption label |
+| `MonitoringStatusSheet` peek bottom sheet | ✅ new | `fe/mobile/src/components/monitoring/MonitoringStatusSheet.tsx` — 3 snap points (88dp / 50% / 90%); `BottomSheetFlatList` worker list; stale GPS detection (10 min); area coverage + last-updated summary |
+| `MonitoringSearchBar` floating search | ✅ new | `fe/mobile/src/components/monitoring/MonitoringSearchBar.tsx` — pill bar overlaying map top-left; filters `visibleUsers` + sheet list in real-time |
+| `BoundaryOverlay` marker tap precision | ✅ | Added `zIndex={20}` + `anchor={{x:0.5,y:0.5}}` to area markers; `zIndex={10}` + `anchor` to rayon markers; worker markers already at `zIndex={200}` |
+| `mapPadding` updated | ✅ | `{{ top: 60, right: 64, bottom: PEEK_HEIGHT, left: 0 }}` to prevent map controls obscured by sheet |
 
 ---
 

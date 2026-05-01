@@ -33,6 +33,12 @@ if (typeof window !== 'undefined') {
   }
 }
 
+export interface MonitoringMapLayerFlags {
+  workers: boolean;
+  rayons: boolean;
+  areas: boolean;
+}
+
 export interface MonitoringMapProps {
   users: LiveUser[];
   selectedUserId: string | null;
@@ -45,6 +51,7 @@ export interface MonitoringMapProps {
   onTrailPointClick?: (index: number) => void;
   showOnlyTrailUser?: boolean;
   onBoundaryClick?: (type: 'rayon' | 'area', id: string) => void;
+  layerVisibility?: MonitoringMapLayerFlags;
 }
 
 type MarkerEntry = { marker: mapboxgl.Marker; popup: mapboxgl.Popup; user: LiveUser };
@@ -63,7 +70,11 @@ export function MonitoringMap({
   onTrailPointClick,
   showOnlyTrailUser,
   onBoundaryClick,
+  layerVisibility,
 }: MonitoringMapProps) {
+  const showWorkers = layerVisibility?.workers ?? true;
+  const showRayons = layerVisibility?.rayons ?? true;
+  const showAreas = layerVisibility?.areas ?? true;
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
@@ -133,6 +144,17 @@ export function MonitoringMap({
     if (!map || !isLoadedRef.current) return;
 
     const trailUserId = trailPoints?.length && trailPoints.length > 0 ? selectedUserId : null;
+
+    // When workers layer is hidden, drop every marker and short-circuit.
+    if (!showWorkers) {
+      markersRef.current.forEach(({ marker, popup }) => {
+        popup.remove();
+        marker.remove();
+      });
+      markersRef.current.clear();
+      return;
+    }
+
     const currentIds = new Set(users.map((u) => u.id));
 
     markersRef.current.forEach(({ marker, popup }, id) => {
@@ -193,7 +215,7 @@ export function MonitoringMap({
 
       markersRef.current.set(user.id, { marker, popup, user });
     });
-  }, [users, onUserSelect, trailPoints, selectedUserId, showOnlyTrailUser]);
+  }, [users, onUserSelect, trailPoints, selectedUserId, showOnlyTrailUser, showWorkers]);
 
   // ── Fly to selected user ────────────────────────────────────────────────────
 
@@ -224,7 +246,7 @@ export function MonitoringMap({
     const rayonFeatures = buildRayonFeatures(boundaries);
     const areaFeatures = buildAreaFeatures(boundaries);
 
-    if (rayonFeatures.length > 0) {
+    if (showRayons && rayonFeatures.length > 0) {
       map.addSource('rayons', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: rayonFeatures },
@@ -250,7 +272,7 @@ export function MonitoringMap({
       });
     }
 
-    if (areaFeatures.length > 0) {
+    if (showAreas && areaFeatures.length > 0) {
       map.addSource('areas', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: areaFeatures },
@@ -285,7 +307,7 @@ export function MonitoringMap({
 
     boundaries.rayons.forEach((rayon) => {
       const center = polygonCentroid(rayon.boundary_polygon, rayon.center_lat, rayon.center_lng);
-      if (center) {
+      if (showRayons && center) {
         const tooltip = `Rayon ${rayon.name} — ${rayon.area_count} area${rayon.is_understaffed ? ' (kekurangan staf)' : ''}`;
         const el = createCenterMarkerEl(
           rayon.code?.slice(0, 2) ?? 'R',
@@ -309,6 +331,7 @@ export function MonitoringMap({
       }
 
       rayon.areas.forEach((area) => {
+        if (!showAreas) return;
         const aCenter = polygonCentroid(area.boundary_polygon, area.center_lat, area.center_lng);
         if (!aCenter) return;
         const aTooltip = `${area.name} — ${area.assigned_count} petugas${area.is_understaffed ? ' (kekurangan)' : ''}`;
@@ -333,7 +356,7 @@ export function MonitoringMap({
         );
       });
     });
-  }, [boundaries, onBoundaryClick]);
+  }, [boundaries, onBoundaryClick, showRayons, showAreas]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -7,6 +7,7 @@
 import type { ActiveUserData } from '../types/api.types';
 import type { TrackingStatus, LiveUser } from '../types/models.types';
 import type { Region } from 'react-native-maps';
+import { nbColors } from '../constants/nbTokens';
 
 // ─── Phase 2D: Four-Status Model ──────────────────────────────────────────────
 
@@ -23,13 +24,13 @@ export function getStatusFromUser(user: LiveUser): TrackingStatus {
  */
 export function getStatusColor(status: TrackingStatus): string {
   const colors: Record<TrackingStatus, string> = {
-    active: '#15803D',
-    inactive: '#D97706',
-    outside_area: '#9333EA',
-    missing: '#DC2626',
-    offline: '#6B7280',
+    active: nbColors.statusActive,
+    inactive: nbColors.statusIdle,
+    outside_area: nbColors.statusOutside,
+    missing: nbColors.statusMissing,
+    offline: nbColors.statusOffline,
   };
-  return colors[status] ?? '#6B7280';
+  return colors[status] ?? nbColors.statusOffline;
 }
 
 /**

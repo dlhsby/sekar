@@ -24,6 +24,13 @@ interface BoundaryOverlayProps {
   rayons: RayonBoundary[];
   onRayonPress: (rayon: RayonBoundary) => void;
   onAreaPress: (area: AreaBoundary) => void;
+  /**
+   * Phase 3 sub-phase 3-5: layer-toggle gating. When `false`, the matching
+   * layer is skipped entirely so the MonitoringToggleSheet ("Tampilan Peta")
+   * actually changes what the user sees.
+   */
+  showRayons?: boolean;
+  showAreas?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -44,11 +51,13 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   rayons,
   onRayonPress,
   onAreaPress,
+  showRayons = true,
+  showAreas = true,
 }: BoundaryOverlayProps): React.JSX.Element {
   return (
     <>
       {/* Layer 1: Rayon polygons */}
-      {rayons.map(rayon => {
+      {showRayons && rayons.map(rayon => {
         if (!rayon.boundary_polygon) return null;
         const rayonCoords = polygonToCoords(rayon.boundary_polygon);
         if (rayonCoords.length < 3) return null;
@@ -65,7 +74,7 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
       })}
 
       {/* Layer 2: Area polygons / circles */}
-      {rayons.flatMap(rayon =>
+      {showAreas && rayons.flatMap(rayon =>
         rayon.areas.map(area => {
           const areaCoords = area.boundary_polygon
             ? polygonToCoords(area.boundary_polygon)
@@ -95,13 +104,15 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
       )}
 
       {/* Layer 3: Area center markers */}
-      {rayons.flatMap(rayon =>
+      {showAreas && rayons.flatMap(rayon =>
         rayon.areas.map(area => (
           <Marker
             key={`area-center-${area.id}`}
             coordinate={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
             onPress={() => onAreaPress(area)}
             tracksViewChanges={false}
+            zIndex={20}
+            anchor={{ x: 0.5, y: 0.5 }}
           >
             <View style={[
               styles.areaCenterMarker,
@@ -118,12 +129,14 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
       )}
 
       {/* Layer 4: Rayon center markers */}
-      {rayons.map(rayon => (
+      {showRayons && rayons.map(rayon => (
         <Marker
           key={`rayon-center-${rayon.id}`}
           coordinate={{ latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) }}
           onPress={() => onRayonPress(rayon)}
           tracksViewChanges={false}
+          zIndex={10}
+          anchor={{ x: 0.5, y: 0.5 }}
         >
           <View style={styles.rayonCenterMarker}>
             <MaterialCommunityIcons
