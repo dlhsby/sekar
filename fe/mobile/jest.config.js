@@ -10,6 +10,7 @@ module.exports = {
   moduleNameMapper: {
     '^@env$': '<rootDir>/__mocks__/@env.js',
     '^@gorhom/bottom-sheet$': '<rootDir>/__mocks__/@gorhom/bottom-sheet.js',
+    '^react-native-gesture-handler$': '<rootDir>/__mocks__/react-native-gesture-handler.js',
   },
 
   // Coverage configuration

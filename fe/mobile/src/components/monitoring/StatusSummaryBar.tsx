@@ -6,11 +6,17 @@
 
 import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-// BottomSheetScrollView wraps a gesture-handler ScrollView that cooperates with
-// @gorhom/bottom-sheet's pan gestures. Plain RN ScrollView gets its horizontal
-// drag swallowed by the bottom-sheet's vertical pan handler, which is why the
-// chips were unscrollable when the bar moved into the sheet.
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+// react-native-gesture-handler's ScrollView is the correct nested scroller
+// inside @gorhom/bottom-sheet. Its native gesture handler coordinates with
+// the sheet's pan handler so horizontal drags don't get swallowed by either
+// the sheet's vertical pan or the parent BottomSheetFlatList that hosts this
+// bar in its ListHeaderComponent.
+//
+// `BottomSheetScrollView` from gorhom is wrong for this case — that one is
+// meant to be the PRIMARY content scroll inside the sheet, not a nested
+// horizontal carousel; using it here resulted in completely unscrollable
+// chips on Android (the sheet's vertical handler captured every pan).
+import { ScrollView } from 'react-native-gesture-handler';
 import {
   nbColors,
   nbSpacing,
@@ -63,10 +69,14 @@ export function StatusSummaryBar({
 
   return (
     <View style={styles.container}>
-      <BottomSheetScrollView
+      <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        // Android's underlying ScrollView host needs nestedScrollEnabled to opt
+        // into NestedScrollingChild so the parent FlatList lets us consume the
+        // horizontal pan; iOS ignores the prop without harm.
+        nestedScrollEnabled
       >
         {DISPLAYED_STATUSES.map(status => (
           <StatusChip
@@ -77,7 +87,7 @@ export function StatusSummaryBar({
             onPress={handleChipPress}
           />
         ))}
-      </BottomSheetScrollView>
+      </ScrollView>
     </View>
   );
 }
