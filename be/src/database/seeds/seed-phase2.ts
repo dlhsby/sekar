@@ -1010,6 +1010,13 @@ async function seedPhase2() {
       const areaId = shiftArea[0].id;
       let shiftCount = 0;
 
+      // Phase 3 fix: only seed COMPLETED shifts for korlap/linmas Phase 2C
+      // demo accounts. The previously-seeded active shift was orphaned —
+      // user_tracking_status was never advanced from `offline`, so the user
+      // never appeared on the monitoring map and re-clocking via the app
+      // failed with SHIFT_ALREADY_ACTIVE. Leaving them clocked-out lets a
+      // real clock-in via the app run `StatusCalculator.onClockIn` and
+      // populate the tracking row correctly.
       if (shiftLinmas.length > 0) {
         const linmasId = shiftLinmas[0].id;
         const linmasAreaId = shiftLinmas[0].area_id || areaId;
@@ -1019,13 +1026,10 @@ async function seedPhase2() {
           VALUES
             ('${linmasId}', '${linmasAreaId}', NOW() - INTERVAL '1 day 8 hours', -7.2905, 112.7398,
               'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/linmas1-001.jpg',
-              NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day'),
-            ('${linmasId}', '${linmasAreaId}', NOW() - INTERVAL '2 hours', -7.2905, 112.7398,
-              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/linmas1-002.jpg',
-              NULL, NULL, NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours')
+              NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day')
         `);
-        shiftCount += 2;
-        console.log('  ✓ Created 2 shifts for linmas_bungkul_1 (1 completed, 1 active)');
+        shiftCount += 1;
+        console.log('  ✓ Created 1 completed shift for linmas_bungkul_1 (clocked-out, ready for live clock-in)');
       }
 
       if (shiftKorlap1.length > 0) {
@@ -1037,13 +1041,10 @@ async function seedPhase2() {
           VALUES
             ('${korlap1Id}', '${korlap1AreaId}', NOW() - INTERVAL '1 day 8 hours', -7.2905, 112.7398,
               'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/korlap1-001.jpg',
-              NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day'),
-            ('${korlap1Id}', '${korlap1AreaId}', NOW() - INTERVAL '2 hours', -7.2905, 112.7398,
-              'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/korlap1-002.jpg',
-              NULL, NULL, NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours')
+              NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day')
         `);
-        shiftCount += 2;
-        console.log('  ✓ Created 2 shifts for korlap_bungkul (1 completed, 1 active)');
+        shiftCount += 1;
+        console.log('  ✓ Created 1 completed shift for korlap_bungkul (clocked-out, ready for live clock-in)');
       }
 
       if (shiftAdminData.length > 0) {
@@ -1504,123 +1505,42 @@ async function seedPhase2() {
     }
     console.log(`    ✓ ${clockableUsers.length} users backfilled as offline`);
 
-    // D.3: Set varied status scenarios for monitoring dashboard testing
-    console.log('  [D.3] Setting monitoring status variants...');
-
-    // active: satgas_pusat_1 + linmas_bungkul_1 (active shift + recent location ping)
-    // First ensure they have an active shift
+    // D.3: Monitoring status variants — DISABLED for Phase 3 plant-monitoring review.
+    //
+    // Previously this block forced 5 demo users (satgas_pusat_1, linmas_bungkul_1,
+    // satgas_timur1_2, satgas_pusat_2, satgas_timur1_1) into open shifts (clock_out_time
+    // NULL) and varied user_tracking_status to active/inactive/outside_area/missing
+    // so the worker monitoring map had ready-made markers.
+    //
+    // After the Phase 3 monitoring component refactor (token compliance + plant-status
+    // overlays), seeded open shifts produce stale state that crashes BoundaryDetailModal
+    // / UserDetailSheet on mobile (see CLAUDE.md Apr 27 sweep) and leaves users
+    // unable to live-clock-in via the app (SHIFT_ALREADY_ACTIVE conflict).
+    //
+    // Per Phase 3 review directive: do NOT seed active shifts. All clockable users
+    // remain `offline` (set by D.2 above). Worker-monitoring scenarios are exercised
+    // via real mobile clock-in during UAT; plant-monitoring data is fully populated
+    // by seed-phase3.ts (areas, area_plants, notable_plants, pruning_requests).
+    //
+    // Defensive guard: re-assert offline + clear any latent open shift left from a
+    // prior seed run (should already be a no-op when DB was wiped).
+    console.log('  [D.3] Monitoring tracking — leaving all clockable users offline (Phase 3 directive)');
     await queryRunner.query(`
-      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
-      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
-        NOW() - INTERVAL '3 hours', -7.2580, 112.7340,
-        'https://sekar-media-dev.s3.amazonaws.com/clock-in/satgas-pusat1-monitoring.jpg',
-        NULL, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '3 hours'
-      FROM users u WHERE u.username = 'satgas_pusat_1' LIMIT 1
-      ON CONFLICT DO NOTHING;
-    `);
-    await queryRunner.query(`
-      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
-      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
-        NOW() - INTERVAL '4 hours', -7.2905, 112.7398,
-        'https://sekar-media-dev.s3.amazonaws.com/clock-in/linmas-bungkul1-monitoring.jpg',
-        NULL, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '4 hours'
-      FROM users u WHERE u.username = 'linmas_bungkul_1' LIMIT 1
-      ON CONFLICT DO NOTHING;
-    `);
-    await queryRunner.query(`
-      UPDATE user_tracking_status uts SET
-        status = 'active',
-        shift_id = s.id,
-        is_within_area = TRUE,
-        last_location_at = NOW() - INTERVAL '2 minutes',
-        updated_at = NOW()
-      FROM shifts s
-      JOIN users u ON s.user_id = u.id
-      WHERE u.username IN ('satgas_pusat_1', 'linmas_bungkul_1')
-        AND s.user_id = uts.user_id
-        AND s.clock_out_time IS NULL
-    `);
-
-    // inactive: satgas_timur1_2 (active shift but last ping 35min ago)
-    await queryRunner.query(`
-      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
-      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
-        NOW() - INTERVAL '6 hours', -7.2450, 112.7600,
-        'https://sekar-media-dev.s3.amazonaws.com/clock-in/satgas-timur12-monitoring.jpg',
-        NULL, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '6 hours'
-      FROM users u WHERE u.username = 'satgas_timur1_2' LIMIT 1
-      ON CONFLICT DO NOTHING;
-    `);
-    await queryRunner.query(`
-      UPDATE user_tracking_status uts SET
-        status = 'inactive',
-        shift_id = s.id,
-        is_within_area = TRUE,
-        last_location_at = NOW() - INTERVAL '35 minutes',
-        updated_at = NOW()
-      FROM shifts s
-      JOIN users u ON s.user_id = u.id
-      WHERE u.username = 'satgas_timur1_2'
-        AND s.user_id = uts.user_id
-        AND s.clock_out_time IS NULL
-    `);
-
-    // outside_area: satgas_pusat_2 (shift active, GPS location outside boundary polygon)
-    await queryRunner.query(`
-      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
-      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
-        NOW() - INTERVAL '2 hours', -7.2580, 112.7340,
-        'https://sekar-media-dev.s3.amazonaws.com/clock-in/satgas-pusat2-monitoring.jpg',
-        NULL, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours'
-      FROM users u WHERE u.username = 'satgas_pusat_2' LIMIT 1
-      ON CONFLICT DO NOTHING;
-    `);
-    await queryRunner.query(`
-      UPDATE user_tracking_status uts SET
-        status = 'outside_area',
-        shift_id = s.id,
+      UPDATE user_tracking_status SET
+        status = 'offline',
+        shift_id = NULL,
         is_within_area = FALSE,
-        last_location_at = NOW() - INTERVAL '5 minutes',
+        last_location_at = NULL,
         updated_at = NOW()
-      FROM shifts s
-      JOIN users u ON s.user_id = u.id
-      WHERE u.username = 'satgas_pusat_2'
-        AND s.user_id = uts.user_id
-        AND s.clock_out_time IS NULL
+      WHERE status <> 'offline'
     `);
-
-    // missing: satgas_timur1_1 — give active shift with no recent location (>60min gap)
-    // First create the shift for satgas_timur1_1
     await queryRunner.query(`
-      INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url, clock_out_time, created_at, updated_at)
-      SELECT u.id, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)),
-        NOW() - INTERVAL '5 hours', -7.2450, 112.7600,
-        'https://sekar-media-dev.s3.amazonaws.com/clock-in/satgas-timur1-001.jpg',
-        NULL, NOW() - INTERVAL '5 hours', NOW() - INTERVAL '5 hours'
-      FROM users u WHERE u.username = 'satgas_timur1_1' LIMIT 1
-      ON CONFLICT DO NOTHING;
-    `);
-    // Then set missing status (shift exists, but no location ping for 3+ hours)
-    await queryRunner.query(`
-      UPDATE user_tracking_status uts SET
-        status = 'missing',
-        shift_id = s.id,
-        is_within_area = FALSE,
-        last_location_at = NOW() - INTERVAL '3 hours 15 minutes',
+      UPDATE shifts SET
+        clock_out_time = clock_in_time + INTERVAL '8 hours',
         updated_at = NOW()
-      FROM shifts s
-      JOIN users u ON s.user_id = u.id
-      WHERE u.username = 'satgas_timur1_1'
-        AND s.user_id = uts.user_id
-        AND s.clock_out_time IS NULL
+      WHERE clock_out_time IS NULL
     `);
-
-    console.log('    ✓ Status variants set:');
-    console.log('      active:       satgas_pusat_1, linmas_bungkul_1 (recent location within boundary)');
-    console.log('      inactive:     satgas_timur1_2 (last ping 35 min ago)');
-    console.log('      outside_area: satgas_pusat_2 (GPS outside boundary polygon)');
-    console.log('      missing:      satgas_timur1_1 (no ping for 3h+)');
-    console.log('      offline:      all others');
+    console.log('    ✓ All user_tracking_status reset to offline (live clock-in via mobile to test worker monitoring)');
 
     // ==========================================
     // SECTION E: Phase 2E Data (Client Feedback II)

@@ -252,45 +252,227 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log(`  ✓ ${configsInserted} monitoring_configs processed (idempotent)`);
 
     // ==========================================
-    // SECTION 3: area_plants (link areas to plant species)
+    // SECTION 3: area_plants (Phase 3 plant monitoring showcase)
     // ==========================================
+    // Deterministic per-area mix using real CSV species names and a varied
+    // last_pruned_at / cycle so every area lands at a known status (ok /
+    // due_soon / overdue). This replaces the previous random Section 3 + 3.6.
+    // Re-running the seeder reasserts the showcase values via ON CONFLICT
+    // DO UPDATE.
     console.log('');
-    console.log('🌿 ======== SECTION 3: Area Plants ========');
-    const areas = await queryRunner.query(`SELECT id FROM areas WHERE is_active = true LIMIT 6`);
-    if (areas.length === 0) {
-      console.log('  ⚠ No active areas found, skipping area_plants seed');
-    } else {
-      let areaPlantInserted = 0;
-      const areaPlantMappings = [
-        { speciesName: 'AKASIA', quantityRange: [5, 15] },
-        { speciesName: 'MAHONI', quantityRange: [3, 8] },
-        { speciesName: 'BUNGUR', quantityRange: [2, 6] },
-        { speciesName: 'SENGON', quantityRange: [4, 12] },
-        { speciesName: 'JATI', quantityRange: [2, 5] },
-      ];
+    console.log('🌿 ======== SECTION 3: Area Plants (showcase) ========');
 
-      for (const area of areas.slice(0, 6)) {
-        for (const mapping of areaPlantMappings) {
-          const species = await queryRunner.query(
-            `SELECT id FROM plant_species WHERE name_id = $1 LIMIT 1`,
-            [mapping.speciesName],
-          );
-          if (species.length > 0) {
-            const quantity =
-              Math.floor(Math.random() * (mapping.quantityRange[1] - mapping.quantityRange[0])) +
-              mapping.quantityRange[0];
-            const result = await queryRunner.query(
-              `INSERT INTO area_plants (area_id, species_id, count)
-               VALUES ($1, $2, $3)
-               ON CONFLICT (area_id, species_id) DO NOTHING`,
-              [area.id, species[0].id, quantity],
-            );
-            if (result && (result as any).rowCount > 0) areaPlantInserted++;
-          }
-        }
+    type AreaPlantSeed = {
+      species: string;
+      count: number;
+      lastPrunedDaysAgo: number;
+      cycleDays: number;
+      status: 'ok' | 'due_soon' | 'overdue';
+    };
+    /**
+     * Phase 3 showcase plan (per area). The mix is intentional:
+     *   - Bungkul/Pusat/Darmo (Rayon Pusat) carry the demo for korlap_bungkul.
+     *   - Other areas have at least one off-status row so admin views never
+     *     look uniformly green.
+     */
+    const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
+      'Taman Bungkul': [
+        { species: 'TREMBESI',         count: 8,  lastPrunedDaysAgo: 200, cycleDays: 90,  status: 'overdue'  },
+        { species: 'MAHONI',           count: 12, lastPrunedDaysAgo: 80,  cycleDays: 90,  status: 'due_soon' },
+        { species: 'KETEPENG KENCANA', count: 6,  lastPrunedDaysAgo: 30,  cycleDays: 180, status: 'ok'       },
+        { species: 'TABEBUYA',         count: 5,  lastPrunedDaysAgo: 25,  cycleDays: 240, status: 'ok'       },
+        { species: 'GLODOKAN TIYANG',  count: 9,  lastPrunedDaysAgo: 15,  cycleDays: 180, status: 'ok'       },
+      ],
+      'Taman Pusat': [
+        { species: 'TABEBUYA KUNING',  count: 14, lastPrunedDaysAgo: 240, cycleDays: 180, status: 'overdue'  },
+        { species: 'GLODOKAN',         count: 10, lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
+        { species: 'MAHONI',           count: 11, lastPrunedDaysAgo: 30,  cycleDays: 180, status: 'ok'       },
+        { species: 'TANJUNG',          count: 6,  lastPrunedDaysAgo: 50,  cycleDays: 365, status: 'ok'       },
+      ],
+      'Jalan Raya Darmo': [
+        { species: 'TABEBUYA PINK',    count: 18, lastPrunedDaysAgo: 220, cycleDays: 180, status: 'overdue'  },
+        { species: 'TABEBUYA MERAH',   count: 16, lastPrunedDaysAgo: 110, cycleDays: 120, status: 'due_soon' },
+        { species: 'PALEM RAJA',       count: 22, lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
+        { species: 'BERINGIN',         count: 4,  lastPrunedDaysAgo: 25,  cycleDays: 365, status: 'ok'       },
+      ],
+      'Taman Harmoni': [
+        { species: 'TREMBESI',         count: 6,  lastPrunedDaysAgo: 35,  cycleDays: 180, status: 'ok'       },
+        { species: 'KAMBOJA',          count: 9,  lastPrunedDaysAgo: 22,  cycleDays: 240, status: 'ok'       },
+        { species: 'PALEM PUTRI',      count: 12, lastPrunedDaysAgo: 18,  cycleDays: 180, status: 'ok'       },
+      ],
+      'Taman Pelangi': [
+        { species: 'FLAMBOYANT',       count: 5,  lastPrunedDaysAgo: 210, cycleDays: 180, status: 'overdue'  },
+        { species: 'KAYU PUTIH',       count: 7,  lastPrunedDaysAgo: 30,  cycleDays: 180, status: 'ok'       },
+        { species: 'TANJUNG',          count: 4,  lastPrunedDaysAgo: 20,  cycleDays: 240, status: 'ok'       },
+      ],
+      'Taman Utara': [
+        { species: 'CEMARA UDANG',     count: 10, lastPrunedDaysAgo: 100, cycleDays: 110, status: 'due_soon' },
+        { species: 'PALEM EKOR TUPAI', count: 14, lastPrunedDaysAgo: 92,  cycleDays: 100, status: 'due_soon' },
+        { species: 'WARU',             count: 6,  lastPrunedDaysAgo: 40,  cycleDays: 200, status: 'ok'       },
+        { species: 'NYAMPLUNG',        count: 5,  lastPrunedDaysAgo: 28,  cycleDays: 240, status: 'ok'       },
+      ],
+      'Taman Timur 1': [
+        { species: 'JATI',             count: 7,  lastPrunedDaysAgo: 250, cycleDays: 200, status: 'overdue'  },
+        { species: 'KENANGGA',         count: 5,  lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
+        { species: 'KAMBOJA',          count: 8,  lastPrunedDaysAgo: 30,  cycleDays: 240, status: 'ok'       },
+      ],
+      'Taman Timur 2': [
+        { species: 'PALEM KIPAS',      count: 10, lastPrunedDaysAgo: 90,  cycleDays: 100, status: 'due_soon' },
+        { species: 'SAWO KECIK',       count: 6,  lastPrunedDaysAgo: 25,  cycleDays: 240, status: 'ok'       },
+        { species: 'GLODOKAN',         count: 9,  lastPrunedDaysAgo: 18,  cycleDays: 180, status: 'ok'       },
+      ],
+      'Taman Barat 1': [
+        { species: 'AKASIA',           count: 12, lastPrunedDaysAgo: 230, cycleDays: 180, status: 'overdue'  },
+        { species: 'SAPU TANGAN',      count: 4,  lastPrunedDaysAgo: 22,  cycleDays: 240, status: 'ok'       },
+      ],
+      'Taman Barat 2': [
+        { species: 'BUNGUR',           count: 8,  lastPrunedDaysAgo: 35,  cycleDays: 180, status: 'ok'       },
+        { species: 'KENANGGA',         count: 5,  lastPrunedDaysAgo: 28,  cycleDays: 240, status: 'ok'       },
+      ],
+    };
+
+    const daysAgoIso = (n: number): string =>
+      new Date(Date.now() - n * 86400000).toISOString();
+
+    let areaPlantInserted = 0;
+    let areaPlantUpdated = 0;
+    let areaPlantSkippedSpecies = 0;
+
+    // Cache species lookups so we hit plant_species at most once per name.
+    const speciesIdCache = new Map<string, string | null>();
+    const lookupSpeciesId = async (name: string): Promise<string | null> => {
+      if (speciesIdCache.has(name)) return speciesIdCache.get(name) ?? null;
+      const rows = await queryRunner.query(
+        `SELECT id FROM plant_species WHERE name_id = $1 LIMIT 1`,
+        [name],
+      );
+      const id = rows[0]?.id ?? null;
+      speciesIdCache.set(name, id);
+      return id;
+    };
+
+    for (const [areaName, plan] of Object.entries(AREA_PLANT_PLAN)) {
+      const areaRow = await queryRunner.query(
+        `SELECT id FROM areas WHERE name = $1 AND is_active = true LIMIT 1`,
+        [areaName],
+      );
+      if (areaRow.length === 0) {
+        console.log(`  ⚠ Area '${areaName}' not found, skipping`);
+        continue;
       }
-      console.log(`  ✓ ${areaPlantInserted} area_plants inserted`);
+      const areaId = areaRow[0].id;
+
+      for (const r of plan) {
+        const speciesId = await lookupSpeciesId(r.species);
+        if (!speciesId) {
+          areaPlantSkippedSpecies += 1;
+          console.log(`  ⚠ Species '${r.species}' missing from catalog, skipping`);
+          continue;
+        }
+        const lastPruned = daysAgoIso(r.lastPrunedDaysAgo);
+        const nextDue = new Date(
+          new Date(lastPruned).getTime() + r.cycleDays * 86400000,
+        ).toISOString();
+        const result = await queryRunner.query(
+          `INSERT INTO area_plants
+             (area_id, species_id, count, last_pruned_at, override_cycle_days,
+              next_due_at, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (area_id, species_id) DO UPDATE SET
+             count = EXCLUDED.count,
+             last_pruned_at = EXCLUDED.last_pruned_at,
+             override_cycle_days = EXCLUDED.override_cycle_days,
+             next_due_at = EXCLUDED.next_due_at,
+             status = EXCLUDED.status
+           RETURNING (xmax = 0) AS inserted`,
+          [areaId, speciesId, r.count, lastPruned, r.cycleDays, nextDue, r.status],
+        );
+        if (result[0]?.inserted) areaPlantInserted += 1;
+        else areaPlantUpdated += 1;
+      }
     }
+
+    // Wipe stray rows from prior random seeds so each area's species list
+    // matches the deterministic plan above (so the screen never shows a
+    // legacy "AKASIA" left over from a prior random insert).
+    const allowedAreaNames = Object.keys(AREA_PLANT_PLAN);
+    const allowedSpeciesByArea = Object.entries(AREA_PLANT_PLAN).map(
+      ([name, plan]) => ({ name, species: plan.map((r) => r.species) }),
+    );
+    let areaPlantPurged = 0;
+    for (const { name, species } of allowedSpeciesByArea) {
+      const areaRow = await queryRunner.query(
+        `SELECT id FROM areas WHERE name = $1 LIMIT 1`,
+        [name],
+      );
+      if (areaRow.length === 0) continue;
+      const purge = await queryRunner.query(
+        `DELETE FROM area_plants
+         WHERE area_id = $1
+           AND species_id NOT IN (
+             SELECT id FROM plant_species WHERE name_id = ANY($2::text[])
+           )`,
+        [areaRow[0].id, species],
+      );
+      areaPlantPurged += (purge as any)[1] ?? 0;
+    }
+    console.log(
+      `  ✓ ${areaPlantInserted} inserted, ${areaPlantUpdated} updated, ` +
+      `${areaPlantPurged} stale rows purged across ${allowedAreaNames.length} areas` +
+      (areaPlantSkippedSpecies > 0
+        ? ` (skipped ${areaPlantSkippedSpecies} species missing from catalog)`
+        : ''),
+    );
+
+    // notable_plants — Phase 3 heritage trees pinned on the map.
+    // Idempotent via SELECT-then-INSERT on (area_id, species_id, label).
+    type NotableSeed = {
+      areaName: string;
+      species: string;
+      lat: number;
+      lng: number;
+      heritage: boolean;
+      label: string;
+      notes: string;
+    };
+    const notables: NotableSeed[] = [
+      { areaName: 'Taman Bungkul', species: 'TREMBESI',
+        lat: -7.2906, lng: 112.7378, heritage: true,
+        label: 'Trembesi Heritage 1924',
+        notes: 'Pohon trembesi peninggalan kolonial, lingkar batang ±4.2 m' },
+      { areaName: 'Taman Bungkul', species: 'BERINGIN',
+        lat: -7.2911, lng: 112.7382, heritage: true,
+        label: 'Beringin Tua Selatan Bungkul',
+        notes: 'Beringin tua dengan akar gantung, masuk daftar pohon dilindungi' },
+      { areaName: 'Jalan Raya Darmo', species: 'TABEBUYA PINK',
+        lat: -7.2901, lng: 112.7405, heritage: false,
+        label: 'Tabebuya Pink Jalur Darmo',
+        notes: 'Penanda musim semi Surabaya — mekar serentak sekitar Mei' },
+    ];
+    let notableInserted = 0;
+    for (const n of notables) {
+      const areaRow = await queryRunner.query(
+        `SELECT id FROM areas WHERE name = $1 LIMIT 1`,
+        [n.areaName],
+      );
+      if (areaRow.length === 0) continue;
+      const speciesId = await lookupSpeciesId(n.species);
+      if (!speciesId) continue;
+      const existing = await queryRunner.query(
+        `SELECT id FROM notable_plants
+         WHERE area_id = $1 AND species_id = $2 AND label = $3 LIMIT 1`,
+        [areaRow[0].id, speciesId, n.label],
+      );
+      if (existing.length > 0) continue;
+      await queryRunner.query(
+        `INSERT INTO notable_plants
+           (area_id, species_id, gps_lat, gps_lng, label, heritage, notes, photo_urls)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [areaRow[0].id, speciesId, n.lat, n.lng, n.label, n.heritage, n.notes, []],
+      );
+      notableInserted += 1;
+    }
+    console.log(`  ✓ ${notableInserted} notable_plants inserted`);
 
     // ==========================================
     // SECTION 3.5: staff_kecamatan users (Phase 3 public intake — ADR-033)

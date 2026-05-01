@@ -12,6 +12,13 @@ import { PruningRequest } from './entities/pruning-request.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
 
+// Use offsets relative to the test run so fixtures don't rot when the calendar advances.
+function futureDateString(daysFromNow: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
 describe('PruningRequestsService', () => {
   let module: TestingModule;
   let service: PruningRequestsService;
@@ -100,7 +107,7 @@ describe('PruningRequestsService', () => {
     address: 'Jalan Darmo No. 123, Surabaya',
     gpsLat: -7.254883,
     gpsLng: 112.748899,
-    expectedDate: new Date('2026-04-28'),
+    expectedDate: new Date(futureDateString(7)),
     estimatedPlantCount: 15,
     treeCount: 15,
     treeHeightEstimate: '5-7 meter',
@@ -209,7 +216,7 @@ describe('PruningRequestsService', () => {
           'pruning-requests/20260427-abc123-2.jpg',
           'pruning-requests/20260427-abc123-3.jpg',
         ],
-        detail_date: '2026-04-28',
+        detail_date: futureDateString(7),
         target_count: 15,
         notes: 'Urgent: trees blocking the street',
         rayon_id: mockRayonId,
@@ -235,7 +242,7 @@ describe('PruningRequestsService', () => {
           'pruning-requests/20260427-abc123-2.jpg',
           'pruning-requests/20260427-abc123-3.jpg',
         ],
-        detail_date: '2026-04-26', // Past date
+        detail_date: futureDateString(-1), // Past date (yesterday)
         target_count: 15,
       };
 
@@ -257,7 +264,7 @@ describe('PruningRequestsService', () => {
           'pruning-requests/20260427-abc123-2.jpg',
           'pruning-requests/20260427-abc123-3.jpg',
         ],
-        detail_date: '2026-04-28',
+        detail_date: futureDateString(7),
         target_count: 15,
       };
 
