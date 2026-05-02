@@ -102,17 +102,61 @@ export class CreatePruningRequestDto {
 
   /**
    * Expected date for the pruning work (ISO date string, today or future).
-   * Optional in the redesigned form — admin sets the date during convert-to-task.
+   *
+   * **Deprecated as of 2026-05-01 (ADR-035 amendment + ADR-038).** New mobile
+   * builds send `expected_year` + `expected_iso_week` and let `admin_data`
+   * pick the concrete day at convert-to-task. Kept accepted for one release
+   * so older builds continue to work; when present, the service derives
+   * `(expected_year, expected_iso_week)` from this date.
    *
    * @example '2026-04-28'
    */
   @ApiPropertyOptional({
-    description: 'Expected date for pruning work (today or future)',
+    description:
+      '[DEPRECATED] Single-day preference (legacy). New clients should send expected_year + expected_iso_week.',
     example: '2026-04-28',
+    deprecated: true,
   })
   @IsDateString()
   @IsOptional()
   detail_date?: string;
+
+  /**
+   * Calendar year of the ISO week the submitter prefers.
+   *
+   * Pairs with `expected_iso_week`. ADR-035 amendment 2026-05-01: kecamatan
+   * picks a week, server (or admin_data) picks the concrete day inside it.
+   *
+   * @example 2026
+   */
+  @ApiPropertyOptional({
+    description: 'ISO calendar year of the preferred week (paired with expected_iso_week)',
+    example: 2026,
+    minimum: 2024,
+    maximum: 2100,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Min(2024)
+  @Max(2100)
+  expected_year?: number;
+
+  /**
+   * ISO 8601 week number (1..53) the submitter prefers.
+   *
+   * @example 19
+   */
+  @ApiPropertyOptional({
+    description: 'ISO 8601 week number 1..53 (paired with expected_year)',
+    example: 19,
+    minimum: 1,
+    maximum: 53,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(53)
+  expected_iso_week?: number;
 
   /**
    * Estimated number of plants to be pruned. Optional — replaced by `tree_count`

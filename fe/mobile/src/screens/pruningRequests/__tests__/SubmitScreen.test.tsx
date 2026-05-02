@@ -181,14 +181,14 @@ describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
     expect(getByText('Kecamatan')).toBeTruthy();
   });
 
-  it('renders the Tanggal Diharapkan card with a date picker (Round 4)', () => {
+  it('renders the Minggu Preferensi card with a week picker (ADR-035 amendment 2026-05-01)', () => {
     const { getByText, getByTestId } = render(
       <Provider store={makeStore()}>
         <SubmitScreen />
       </Provider>,
     );
-    expect(getByText('Tanggal Diharapkan')).toBeTruthy();
-    expect(getByTestId('perantingan-pick-date')).toBeTruthy();
-    expect(getByText('Pilih tanggal…')).toBeTruthy();
+    expect(getByText('Minggu Preferensi')).toBeTruthy();
+    expect(getByTestId('perantingan-pick-week')).toBeTruthy();
+    expect(getByText('Pilih minggu…')).toBeTruthy();
   });
 });

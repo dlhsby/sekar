@@ -36,6 +36,15 @@ export class PruningRequest {
   @Column({ type: 'date', nullable: true, name: 'expected_date' })
   expectedDate: Date | null;
 
+  // ADR-035 amendment 2026-05-01: kecamatan submitter picks an ISO week; the
+  // concrete `expectedDate` is set later by admin_data at convert-to-task or
+  // by the convert auto-pick.
+  @Column({ type: 'int', nullable: true, name: 'expected_year' })
+  expectedYear: number | null;
+
+  @Column({ type: 'int', nullable: true, name: 'expected_iso_week' })
+  expectedIsoWeek: number | null;
+
   @Column({ type: 'int', nullable: true, name: 'estimated_plant_count' })
   estimatedPlantCount: number | null;
 

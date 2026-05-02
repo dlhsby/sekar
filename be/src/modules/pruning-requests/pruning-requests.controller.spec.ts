@@ -38,6 +38,8 @@ describe('PruningRequestsController', () => {
     gpsLat: -7.254883,
     gpsLng: 112.748899,
     expectedDate: new Date('2026-04-28'),
+    expectedYear: 2026,
+    expectedIsoWeek: 18,
     estimatedPlantCount: 15,
     treeCount: 15,
     treeHeightEstimate: '5-7 meter',

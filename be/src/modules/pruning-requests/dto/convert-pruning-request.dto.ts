@@ -47,15 +47,22 @@ export class ConvertPruningRequestDto {
   /**
    * Scheduled date for the pruning work (ISO date, today or future).
    *
+   * **May 2026 (ADR-035 amendment):** optional. When omitted, the service
+   * scans Mon→Sun of the request's preferred ISO week and books the first
+   * day where capacity allows; the picked day is written back as the task
+   * deadline and `expected_date`. If supplied, the date must fall inside
+   * `(request.expectedYear, request.expectedIsoWeek)` when those are set.
+   *
    * @example '2026-04-28'
    */
-  @ApiProperty({
-    description: 'Scheduled date for pruning work (ISO 8601)',
+  @ApiPropertyOptional({
+    description:
+      'Scheduled date for pruning work (ISO 8601). Optional — when omitted, server picks the first available day of the requested ISO week.',
     example: '2026-04-28',
   })
   @IsDateString()
-  @IsNotEmpty({ message: 'Scheduled date is required' })
-  scheduledDate: string;
+  @IsOptional()
+  scheduledDate?: string;
 
   /**
    * Case type (GT, PT, PS, PD, PK).

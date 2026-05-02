@@ -108,6 +108,8 @@ describe('PruningRequestsService', () => {
     gpsLat: -7.254883,
     gpsLng: 112.748899,
     expectedDate: new Date(futureDateString(7)),
+    expectedYear: null,
+    expectedIsoWeek: null,
     estimatedPlantCount: 15,
     treeCount: 15,
     treeHeightEstimate: '5-7 meter',
@@ -282,6 +284,68 @@ describe('PruningRequestsService', () => {
       const result2 = await service.create(dto, mockStaffKecamatan);
 
       expect(result1.id).not.toBe(result2.id);
+    });
+
+    // ── ADR-035 amendment 2026-05-01 (week-based booking) ────────────────
+    it('stores expected_year + expected_iso_week when submitter picked a week', async () => {
+      const dto: CreatePruningRequestDto = {
+        address: 'Jalan Darmo No. 123, Surabaya',
+        lat: -7.254883,
+        lng: 112.748899,
+        photo_keys: ['k1.jpg', 'k2.jpg', 'k3.jpg'],
+        expected_year: 2030,
+        expected_iso_week: 20,
+        target_count: 5,
+      };
+
+      mockPruningRequestRepository.create.mockImplementation((entity) => entity as any);
+      mockPruningRequestRepository.save.mockImplementation((entity) =>
+        Promise.resolve({ ...entity, id: 'new-id' } as any),
+      );
+
+      const result = await service.create(dto, mockStaffKecamatan);
+
+      expect(result.expectedYear).toBe(2030);
+      expect(result.expectedIsoWeek).toBe(20);
+      expect(result.expectedDate).toBeNull();
+    });
+
+    it('rejects a preferred week that has fully passed', async () => {
+      const dto: CreatePruningRequestDto = {
+        address: 'Jalan Darmo No. 123, Surabaya',
+        lat: -7.254883,
+        lng: 112.748899,
+        photo_keys: ['k1.jpg', 'k2.jpg', 'k3.jpg'],
+        expected_year: 2020,
+        expected_iso_week: 1,
+      };
+
+      await expect(service.create(dto, mockStaffKecamatan)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('derives the ISO week from a legacy detail_date submission', async () => {
+      // 2026-05-04 (Monday) is week 19 of 2026.
+      const dto: CreatePruningRequestDto = {
+        address: 'Jalan Darmo No. 123, Surabaya',
+        lat: -7.254883,
+        lng: 112.748899,
+        photo_keys: ['k1.jpg', 'k2.jpg', 'k3.jpg'],
+        detail_date: futureDateString(365), // any future date — exercises the derivation path
+      };
+
+      mockPruningRequestRepository.create.mockImplementation((entity) => entity as any);
+      mockPruningRequestRepository.save.mockImplementation((entity) =>
+        Promise.resolve({ ...entity, id: 'legacy-id' } as any),
+      );
+
+      const result = await service.create(dto, mockStaffKecamatan);
+
+      expect(result.expectedDate).not.toBeNull();
+      expect(result.expectedYear).not.toBeNull();
+      expect(result.expectedIsoWeek).toBeGreaterThanOrEqual(1);
+      expect(result.expectedIsoWeek).toBeLessThanOrEqual(53);
     });
   });
 
@@ -641,6 +705,86 @@ describe('PruningRequestsService', () => {
       await expect(
         service.convertToTask(mockRequestId, dto, mockAdminData),
       ).rejects.toThrow(ConflictException);
+    });
+
+    // ── ADR-035 amendment 2026-05-01 (auto-pick day inside requested week) ──
+    it('auto-picks the first day of the requested week when scheduledDate is omitted', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        // scheduledDate intentionally omitted
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      // Pick a far-future ISO week so candidate days are all in the future.
+      const futureYear = new Date().getFullYear() + 2;
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+        rayonId: mockRayonId,
+        expectedYear: futureYear,
+        expectedIsoWeek: 25,
+        expectedDate: null,
+      };
+
+      const mockTask = {
+        id: 'auto-task-id',
+        title: `Pruning Request ${approvedRequest.referenceCode}`,
+      };
+
+      mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
+      mockServiceCapacityService.bookAtomic.mockResolvedValue({ id: 'cap-id' });
+      mockDataSource.transaction.mockImplementation(async (cb) => {
+        const mockEntityManager = {
+          create: jest.fn().mockReturnValue(mockTask),
+          save: jest.fn().mockImplementation((entity) => {
+            if (entity.referenceCode) {
+              return Promise.resolve({
+                ...entity,
+                status: 'converted',
+                convertedTaskId: 'auto-task-id',
+              });
+            }
+            return Promise.resolve(mockTask);
+          }),
+        };
+        return cb(mockEntityManager);
+      });
+
+      const result = await service.convertToTask(mockRequestId, dto, mockAdminData);
+
+      expect(mockServiceCapacityService.bookAtomic).toHaveBeenCalledWith(
+        expect.objectContaining({
+          serviceType: 'pruning',
+          year: futureYear,
+          isoWeek: 25,
+        }),
+      );
+      expect(result.request.expectedDate).toBeInstanceOf(Date);
+    });
+
+    it('rejects auto-pick when request has no week and admin omits scheduledDate', async () => {
+      const dto = {
+        areaId: '11111111-1111-1111-1111-111111111101',
+        assignedTo: '33333333-3333-3333-3333-333333333301',
+        caseType: 'GT' as const,
+        pruningAction: 'PM' as const,
+      };
+
+      const approvedRequest = {
+        ...mockPruningRequest,
+        status: 'approved',
+        rayonId: mockRayonId,
+        expectedYear: null,
+        expectedIsoWeek: null,
+        expectedDate: null,
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
+
+      await expect(
+        service.convertToTask(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should reject conversion of non-existent request', async () => {

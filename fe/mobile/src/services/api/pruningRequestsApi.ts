@@ -18,6 +18,9 @@ export async function submitPruningRequest(
     lng: number;
     // Phase 3 Apr 27 — `detail_date` and `target_count` are optional in the
     // redesigned form; admin sets the date during convert-to-task.
+    // Deprecated 2026-05-01 (ADR-035 amendment): `detail_date` is replaced by
+    // `expected_year` + `expected_iso_week`; kept here for one release as a
+    // fallback for older builds.
     detail_date?: string;
     target_count?: number;
     photo_keys: string[]; // Array of S3 keys from photo upload (min 1, max 5)
@@ -32,6 +35,9 @@ export async function submitPruningRequest(
     requester_phone?: string;
     rt_leader_name?: string;
     rt_leader_phone?: string;
+    // ADR-035 amendment 2026-05-01: kecamatan picks an ISO week.
+    expected_year?: number;
+    expected_iso_week?: number;
   },
 ): Promise<ApiResponse<PruningRequest>> {
   const response = await post<PruningRequest>('/pruning-requests', data);

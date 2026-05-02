@@ -43,7 +43,8 @@ import {
   clearError,
 } from '../../store/slices/pruningRequestsSlice';
 import { fetchCapacity } from '../../store/slices/serviceCapacitySlice';
-import { AvailabilityModal } from './components/AvailabilityModal';
+import { WeekPickerModal } from './components/WeekPickerModal';
+import type { PickedWeek } from './components/WeekPicker';
 import { getISOWeek, formatDateLong } from '../../utils/dateUtils';
 import {
   NBCard,
@@ -93,7 +94,7 @@ interface DraftShape {
   notes: string;
   gpsLat: number | null;
   gpsLng: number | null;
-  expectedDate: string | null;
+  expectedWeek: PickedWeek | null;
   timestamp: number;
 }
 
@@ -135,8 +136,10 @@ export function SubmitScreen(): React.JSX.Element {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
-  const [expectedDate, setExpectedDate] = useState<string | null>(null);
-  const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  // ADR-035 amendment 2026-05-01: kecamatan picks an ISO week, not a day.
+  // The concrete day is decided later by admin_data at convert-to-task.
+  const [expectedWeek, setExpectedWeek] = useState<PickedWeek | null>(null);
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -175,18 +178,18 @@ export function SubmitScreen(): React.JSX.Element {
     rayonId: '', kecamatanName: '',
     address: '', treeCount: '', treeHeight: '', treeDiameter: '',
     requesterName: '', requesterPhone: '', rtLeaderName: '', rtLeaderPhone: '',
-    notes: '', gpsLat: null, gpsLng: null, expectedDate: null, timestamp: 0,
+    notes: '', gpsLat: null, gpsLng: null, expectedWeek: null, timestamp: 0,
   });
   useEffect(() => {
     formRef.current = {
       rayonId, kecamatanName,
       address, treeCount, treeHeight, treeDiameter,
       requesterName, requesterPhone, rtLeaderName, rtLeaderPhone, notes,
-      gpsLat, gpsLng, expectedDate, timestamp: Date.now(),
+      gpsLat, gpsLng, expectedWeek, timestamp: Date.now(),
     };
   }, [rayonId, kecamatanName, address, treeCount, treeHeight, treeDiameter,
       requesterName, requesterPhone, rtLeaderName, rtLeaderPhone, notes,
-      gpsLat, gpsLng, expectedDate]);
+      gpsLat, gpsLng, expectedWeek]);
 
   const saveDraft = useCallback(async () => {
     try {
@@ -207,7 +210,7 @@ export function SubmitScreen(): React.JSX.Element {
     return !!(f.address.trim() || f.treeCount.trim() || f.treeHeight.trim() ||
       f.treeDiameter.trim() || f.requesterName.trim() || f.requesterPhone.trim() ||
       f.rtLeaderName.trim() || f.rtLeaderPhone.trim() || f.notes.trim() ||
-      f.expectedDate || photos.length > 0);
+      !!f.expectedWeek || photos.length > 0);
     // Note: rayonId/kecamatanName are pre-filled from the user profile and
     // intentionally don't count as "content" — leaving the screen with only
     // those defaults shouldn't trigger the draft prompt.
@@ -249,8 +252,8 @@ export function SubmitScreen(): React.JSX.Element {
                 setGpsLat(draft.gpsLat);
                 setGpsLng(draft.gpsLng);
               }
-              if (draft.expectedDate) {
-                setExpectedDate(draft.expectedDate);
+              if (draft.expectedWeek) {
+                setExpectedWeek(draft.expectedWeek);
               }
               void AsyncStorage.removeItem(DRAFT_KEY);
             },
@@ -311,7 +314,7 @@ export function SubmitScreen(): React.JSX.Element {
     setRtLeaderPhone('');
     setNotes('');
     setPhotos([]);
-    setExpectedDate(null);
+    setExpectedWeek(null);
   }, []);
 
   // Fetch the rayon's 8-week capacity calendar once rayonId is known. The slice
@@ -515,7 +518,11 @@ export function SubmitScreen(): React.JSX.Element {
           rt_leader_name: rtLeaderName.trim(),
           rt_leader_phone: digitsOnly(rtLeaderPhone),
           notes: notes.trim() || undefined,
-          detail_date: expectedDate || undefined,
+          // ADR-035 amendment 2026-05-01 + ADR-038: send the week pair, not a
+          // specific date. Backend stores the week and admin_data picks the
+          // concrete day at convert-to-task.
+          expected_year: expectedWeek?.year,
+          expected_iso_week: expectedWeek?.isoWeek,
         }),
       ).unwrap();
 
@@ -541,7 +548,7 @@ export function SubmitScreen(): React.JSX.Element {
   }, [
     validate, photos, dispatch, address, gpsLat, gpsLng, rayonId, kecamatanName,
     treeCount, treeHeight, treeDiameter, requesterName, requesterPhone,
-    rtLeaderName, rtLeaderPhone, notes, expectedDate, navigation, clearDraft, resetForm,
+    rtLeaderName, rtLeaderPhone, notes, expectedWeek, navigation, clearDraft, resetForm,
   ]);
 
   const isBusy = submitting || isSubmitting;
@@ -724,32 +731,34 @@ export function SubmitScreen(): React.JSX.Element {
             </NBCardContent>
           </NBCard>
 
-          {/* ── Tanggal Diharapkan ─────────────────────────────────── */}
+          {/* ── Minggu Preferensi ─────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3">Tanggal Diharapkan</NBText>
+              <NBText variant="h3">Minggu Preferensi</NBText>
               <NBText variant="body-sm" style={styles.helper}>
-                Pilih hari yang Anda inginkan. Tampilan kalender menandai hari yang sudah penuh berdasarkan kapasitas mingguan rayon.
+                Pilih minggu yang Anda inginkan. Admin Rayon akan menentukan tanggal pasti sesuai kapasitas tim. Indikator hari pada setiap kartu hanya gambaran ketersediaan minggu tersebut.
               </NBText>
             </NBCardHeader>
             <NBCardContent>
               <TouchableOpacity
-                onPress={() => setAvailabilityOpen(true)}
+                onPress={() => setWeekPickerOpen(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Pilih tanggal diharapkan"
+                accessibilityLabel="Pilih minggu preferensi"
                 style={styles.dateRow}
-                testID="perantingan-pick-date"
+                testID="perantingan-pick-week"
               >
                 <View style={{ flex: 1 }}>
-                  <NBText variant="caption" style={styles.presetLabel}>Tanggal</NBText>
+                  <NBText variant="caption" style={styles.presetLabel}>Minggu</NBText>
                   <NBText variant="body">
-                    {expectedDate ? formatDateLong(expectedDate) : 'Pilih tanggal…'}
+                    {expectedWeek
+                      ? `Minggu ke-${expectedWeek.isoWeek}, ${expectedWeek.year}`
+                      : 'Pilih minggu…'}
                   </NBText>
                 </View>
-                <MaterialCommunityIcons name="calendar-month" size={22} color={nbColors.black} />
+                <MaterialCommunityIcons name="calendar-week" size={22} color={nbColors.black} />
               </TouchableOpacity>
               <NBText variant="body-sm" style={[styles.helper, { marginTop: nbSpacing[2] }]}>
-                🟢 tersedia · 🟡 hampir penuh · 🔴 penuh
+                🟢 tersedia · 🟡 hampir penuh · 🔴 penuh · ⚪ belum diatur
               </NBText>
             </NBCardContent>
           </NBCard>
@@ -863,12 +872,12 @@ export function SubmitScreen(): React.JSX.Element {
         }}
       />
 
-      <AvailabilityModal
-        visible={availabilityOpen}
-        onClose={() => setAvailabilityOpen(false)}
+      <WeekPickerModal
+        visible={weekPickerOpen}
+        onClose={() => setWeekPickerOpen(false)}
         rows={capacityRows}
-        selectedDate={expectedDate}
-        onSelect={(d) => setExpectedDate(d)}
+        selected={expectedWeek}
+        onSelect={(w) => setExpectedWeek(w)}
         loading={capacityLoading}
       />
     </SafeAreaView>

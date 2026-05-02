@@ -30,3 +30,46 @@ export function getIsoWeek(date: string | Date): { year: number; isoWeek: number
 
   return { year, isoWeek };
 }
+
+/**
+ * Return the Monday (00:00 local) that opens the given ISO week.
+ *
+ * Uses the same Thursday-anchored algorithm as `getIsoWeek` so round-trips
+ * (date → week → start) are stable across years and DST boundaries.
+ */
+export function isoWeekStart(year: number, isoWeek: number): Date {
+  // ISO week 1 contains the year's first Thursday, so Jan 4 is always in week 1.
+  const jan4 = new Date(year, 0, 4);
+  const jan4Day = jan4.getDay() || 7; // Sun=7
+  const week1Monday = new Date(jan4);
+  week1Monday.setDate(jan4.getDate() - jan4Day + 1);
+
+  const monday = new Date(week1Monday);
+  monday.setDate(week1Monday.getDate() + (isoWeek - 1) * 7);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+/**
+ * Return the Sunday (23:59:59.999 local) that closes the given ISO week.
+ */
+export function isoWeekEnd(year: number, isoWeek: number): Date {
+  const monday = isoWeekStart(year, isoWeek);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return sunday;
+}
+
+/**
+ * Yield each calendar day (Mon → Sun) of the given ISO week, with hours zeroed.
+ */
+export function isoWeekDays(year: number, isoWeek: number): Date[] {
+  const monday = isoWeekStart(year, isoWeek);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+}

@@ -18,7 +18,7 @@ import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dt
 import { User, UserRole } from '../users/entities/user.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { ServiceCapacityService } from '../service-capacity/service-capacity.service';
-import { getIsoWeek } from './utils/iso-week.util';
+import { getIsoWeek, isoWeekDays, isoWeekEnd } from './utils/iso-week.util';
 
 /**
  * Service for managing pruning requests.
@@ -57,10 +57,32 @@ export class PruningRequestsService {
   ): Promise<PruningRequest> {
     this.logger.log(`Creating pruning request from user ${user.id}`);
 
-    // Validate detail_date is today or future (only when supplied — Phase 3
-    // redesign made the field optional since the new mobile form omits it).
+    // ADR-035 amendment 2026-05-01: kecamatan picks an ISO week, not a day.
+    // Three valid input shapes (in priority order):
+    //   1. (expected_year, expected_iso_week)  — new mobile builds
+    //   2. detail_date alone                   — legacy mobile builds (one-release deprecation)
+    //   3. neither                             — admin will set the week later
+    //
+    // We always normalize to (expectedYear, expectedIsoWeek) when possible.
+    // `expectedDate` (concrete day) stays NULL on submit; it's set at
+    // convert-to-task time (admin override or auto-pick first available day).
+    let expectedYear: number | null = null;
+    let expectedIsoWeek: number | null = null;
     let detailDate: Date | null = null;
-    if (dto.detail_date) {
+
+    if (dto.expected_year != null && dto.expected_iso_week != null) {
+      expectedYear = dto.expected_year;
+      expectedIsoWeek = dto.expected_iso_week;
+      // Reject weeks that have already fully ended (Sun is past).
+      const weekEnd = isoWeekEnd(expectedYear, expectedIsoWeek);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (weekEnd < today) {
+        throw new BadRequestException(
+          'Preferred week has already passed',
+        );
+      }
+    } else if (dto.detail_date) {
       detailDate = new Date(dto.detail_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -69,6 +91,12 @@ export class PruningRequestsService {
           'Detail date must be today or in the future',
         );
       }
+      // Derive the ISO week from the legacy single-day input so the new
+      // (expectedYear, expectedIsoWeek) columns are always populated when the
+      // submitter expressed any timing preference.
+      const iso = getIsoWeek(detailDate);
+      expectedYear = iso.year;
+      expectedIsoWeek = iso.isoWeek;
     }
 
     // Generate unique reference code (timestamp-based for readability)
@@ -93,6 +121,8 @@ export class PruningRequestsService {
       gpsLng: dto.lng,
       photoUrls: dto.photo_keys,
       expectedDate: detailDate,
+      expectedYear,
+      expectedIsoWeek,
       estimatedPlantCount: dto.target_count ?? dto.tree_count ?? null,
       treeCount: dto.tree_count ?? dto.target_count ?? null,
       treeHeightEstimate: dto.tree_height_estimate ?? null,
@@ -327,31 +357,112 @@ export class PruningRequestsService {
     }
 
     const units = dto.units ?? 1;
-    const scheduledDateObj = new Date(dto.scheduledDate);
-    const { year, isoWeek } = getIsoWeek(scheduledDateObj);
+
+    // Resolve the concrete day + (year, isoWeek) for the booking.
+    //
+    // ADR-035 amendment 2026-05-01:
+    //   - Admin can pass `scheduledDate` and we honour it (with a sanity check
+    //     that the date lies inside the requested ISO week if the submitter
+    //     expressed a preference).
+    //   - Otherwise, if the request has (expectedYear, expectedIsoWeek), we
+    //     iterate Mon→Sun of that week and book the first day with capacity.
+    //   - If neither path can produce a date, we throw a clear 400 so the
+    //     admin UI can prompt the user.
+    let scheduledDateObj: Date | null = null;
+    let year: number;
+    let isoWeek: number;
+
+    if (dto.scheduledDate) {
+      scheduledDateObj = new Date(dto.scheduledDate);
+      const iso = getIsoWeek(scheduledDateObj);
+      year = iso.year;
+      isoWeek = iso.isoWeek;
+      if (
+        request.expectedYear != null &&
+        request.expectedIsoWeek != null &&
+        (year !== request.expectedYear || isoWeek !== request.expectedIsoWeek)
+      ) {
+        this.logger.warn(
+          `Convert override: admin chose date in week ${year}-W${isoWeek}, request preferred ${request.expectedYear}-W${request.expectedIsoWeek}`,
+        );
+        // Allow the override (admin discretion) but log it for audit.
+      }
+    } else if (request.expectedYear != null && request.expectedIsoWeek != null) {
+      year = request.expectedYear;
+      isoWeek = request.expectedIsoWeek;
+      // Day pick happens inside the booking transaction below so the
+      // bookAtomic loop is the same one that decides the day. We mark
+      // scheduledDateObj as null here and let the transaction fill it.
+    } else {
+      throw new BadRequestException(
+        'Either scheduledDate or a preferred week (expected_year + expected_iso_week) must be present',
+      );
+    }
+
+    if (!request.rayonId) {
+      throw new ConflictException('Pruning request has no rayon assigned');
+    }
 
     // Atomic transaction: book capacity + create task + update request
     return this.dataSource.transaction(async (tm) => {
-      // Book capacity for pruning service (guard against null rayon_id)
-      if (!request.rayonId) {
-        throw new ConflictException('Pruning request has no rayon assigned');
-      }
-
-      try {
-        await this.serviceCapacityService.bookAtomic({
-          rayonId: request.rayonId,
-          year,
-          isoWeek,
-          serviceType: 'pruning',
-          units,
-        });
-      } catch (error) {
-        if (error instanceof ConflictException) {
+      // Path A — admin specified a concrete date: single bookAtomic call.
+      if (scheduledDateObj) {
+        try {
+          await this.serviceCapacityService.bookAtomic({
+            rayonId: request.rayonId!,
+            year,
+            isoWeek,
+            serviceType: 'pruning',
+            units,
+          });
+        } catch (error) {
+          if (error instanceof ConflictException) {
+            throw new ConflictException(
+              'Capacity booking failed: ' + error.message,
+            );
+          }
+          throw error;
+        }
+      } else {
+        // Path B — auto-pick the first day in the preferred week with capacity.
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const candidates = isoWeekDays(year, isoWeek).filter((d) => d >= today);
+        if (candidates.length === 0) {
           throw new ConflictException(
-            'Capacity booking failed: ' + error.message,
+            'Preferred week has no future days remaining; ask the submitter to reschedule',
           );
         }
-        throw error;
+        let bookedAny = false;
+        for (const candidate of candidates) {
+          try {
+            await this.serviceCapacityService.bookAtomic({
+              rayonId: request.rayonId!,
+              year,
+              isoWeek,
+              serviceType: 'pruning',
+              units,
+            });
+            scheduledDateObj = candidate;
+            bookedAny = true;
+            break;
+          } catch (error) {
+            // Capacity is week-aggregated, so a 409 on one day means the
+            // entire week is full — no point trying the rest.
+            if (error instanceof ConflictException) {
+              throw new ConflictException(
+                'Capacity booking failed for the preferred week: ' + error.message,
+              );
+            }
+            throw error;
+          }
+        }
+        // Defensive: bookedAny should always be true once we reach here.
+        if (!bookedAny || !scheduledDateObj) {
+          throw new ConflictException(
+            'No day in the preferred week could be booked',
+          );
+        }
       }
 
       // Create task
@@ -366,14 +477,18 @@ export class PruningRequestsService {
 
       const savedTask = await tm.save(task);
 
-      // Update request
+      // Update request: walk to `converted`, fix concrete date, link task.
       request.status = 'converted';
       request.convertedTaskId = savedTask.id;
+      request.expectedDate = scheduledDateObj;
+      // Backfill the week pair if it was missing (legacy admin-direct path).
+      if (request.expectedYear == null) request.expectedYear = year;
+      if (request.expectedIsoWeek == null) request.expectedIsoWeek = isoWeek;
 
       const updatedRequest = await tm.save(request);
 
       this.logger.log(
-        `Pruning request ${id} converted to task ${savedTask.id}`,
+        `Pruning request ${id} converted to task ${savedTask.id} on ${scheduledDateObj.toISOString().slice(0, 10)} (W${isoWeek}/${year})`,
       );
 
       return { request: updatedRequest, task: savedTask };

@@ -85,6 +85,7 @@ export const submitPruningRequest = createAsyncThunk(
       lat: number;
       lng: number;
       // Optional after Phase 3 Apr 27 redesign — admin sets the date during convert-to-task
+      // Deprecated 2026-05-01 (ADR-035 amendment); use expected_year + expected_iso_week instead.
       detail_date?: string;
       target_count?: number;
       photo_keys: string[];
@@ -99,6 +100,9 @@ export const submitPruningRequest = createAsyncThunk(
       requester_phone?: string;
       rt_leader_name?: string;
       rt_leader_phone?: string;
+      // ADR-035 amendment 2026-05-01: kecamatan picks an ISO week.
+      expected_year?: number;
+      expected_iso_week?: number;
     },
     { rejectWithValue },
   ) => {
