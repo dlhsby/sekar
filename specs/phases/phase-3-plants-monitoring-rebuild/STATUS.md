@@ -1,7 +1,7 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
 **Status:** 🟡 In Progress
-**Date:** 2026-05-01 (May 1 plant-monitoring + perantingan review pass — seeder hardening so monitoring no longer crashes on stale clock-in state, token compliance sweep on the new `MonitoringStatusSheet` / `MonitoringStatCard` / `MonitoringSearchBar` mobile primitives + matching web `MonitoringTogglePanel`, AreaDetailDrawer plant-status + pruning-requests panels wired to live `useAreaPlants` / `useNotablePlants` / `usePruningByRayon`, manual review checklist below)
+**Date:** 2026-05-01 (May 1 — two passes today: (i) plant-monitoring + perantingan review pass — seeder hardening so monitoring no longer crashes on stale clock-in state, token compliance sweep on the new `MonitoringStatusSheet` / `MonitoringStatCard` / `MonitoringSearchBar` mobile primitives + matching web `MonitoringTogglePanel`, AreaDetailDrawer plant-status + pruning-requests panels wired to live `useAreaPlants` / `useNotablePlants` / `usePruningByRayon`, manual review checklist below; (ii) **pruning workflow redesign** — ADR-038 documents the 5 entry points (kecamatan request, top-down task, mid-level task, self-assign-and-tag, direct activity), introduces `activity_tags` and `task_delegations` audit tables, and ADR-035 amendment switches kecamatan submit from a single date to a week picker. See [PLAN-pruning-redesign.md](./PLAN-pruning-redesign.md) for the phase split.)
 
 > **Apr 28 staff_kecamatan UX — Round 3** (mobile-only, no backend / migration changes):
 >

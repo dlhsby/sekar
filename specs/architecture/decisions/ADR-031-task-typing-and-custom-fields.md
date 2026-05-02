@@ -161,6 +161,11 @@ export const taskTypeRegistry = {
 - [ADR-010](./ADR-010-phase2c-terminology-cleanup.md) — `activities` is the canonical completion record
 - [ADR-030](./ADR-030-area-aggregate-plant-inventory.md) — `activity_plant_items` feeds `area_plants.last_pruned_at`
 - [ADR-034](./ADR-034-pruning-cycle-prediction.md) — uses `plant_items` data for cycle recalculation
+- [ADR-038](./ADR-038-pruning-workflow-entry-points.md) — pruning is reachable through 5 entry points; activities can be filed without a task; tagging covers multi-worker pruning
 - Phase 3 plan: `../../phases/phase-3-plants-monitoring-rebuild/README.md`
 - API contracts: `../../api/contracts.md`
 - Database schema: `../../database/schema.md`
+
+## 2026-05-01 amendment — activities are independent (ADR-038)
+
+`task_type='perantingan'` continues to drive `custom_fields` validation **when** an activity reports against a task, but `activities.task_id` remains nullable and entry path **e** in ADR-038 (direct activity, no task — by `korlap` / `kepala_rayon` / `admin_data`) is now first-class. Direct activities still validate against the same `case_type` / `pruning_action` / `source` enums; the task-typing layer is reused, not bypassed. Multi-worker activities are recorded via the new `activity_tags` table — the activity owner is the reporter, tagged users gain read access on their own feed.

@@ -148,7 +148,9 @@ CREATE TABLE pruning_requests (
     address TEXT NOT NULL,
     gps_lat NUMERIC(10, 8) NULL,
     gps_lng NUMERIC(11, 8) NULL,
-    expected_date DATE NULL,
+    expected_date DATE NULL,                -- concrete day (set by admin or convert auto-pick)
+    expected_year INT NULL,                 -- ADR-035 amendment 2026-05-01 (week the submitter picked)
+    expected_iso_week INT NULL,             -- ADR-035 amendment 2026-05-01 (1..53 ISO 8601)
     estimated_plant_count INT NULL,
     photo_urls TEXT[] NOT NULL DEFAULT '{}',
     notes TEXT NULL,
@@ -237,6 +239,49 @@ CREATE TABLE seed_transactions (
 CREATE INDEX idx_seed_tx_seed_occurred ON seed_transactions (seed_id, occurred_at DESC);
 CREATE INDEX idx_seed_tx_type_occurred ON seed_transactions (transaction_type, occurred_at DESC);
 ```
+
+---
+
+### 9. `activity_tags` <a id="activity-tags-may-1"></a>
+
+**Purpose** (ADR-038, May 2026): Tag involved workers on an activity. Owner remains sole writer; tagged users gain read-only feed visibility ("Diikutsertakan" badge on `ActivityListScreen`). Parallels `task_tags`.
+
+```sql
+CREATE TABLE activity_tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tagged_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (activity_id, user_id)
+);
+CREATE INDEX idx_activity_tags_activity ON activity_tags (activity_id);
+CREATE INDEX idx_activity_tags_user ON activity_tags (user_id);
+```
+
+---
+
+### 10. `task_delegations` <a id="task-delegations-may-1"></a>
+
+**Purpose** (ADR-038, May 2026): Append-only audit trail of every task assignment + reassignment. Lets the system reconstruct chains like `top_management → kepala_rayon → admin_data → korlap → satgas`.
+
+```sql
+CREATE TABLE task_delegations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    from_user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+      -- NULL on `initial_assign` (task creation)
+    to_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    action TEXT NOT NULL CHECK (action IN ('initial_assign','reassign','delegate','self_handle')),
+    reason TEXT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_task_delegations_task ON task_delegations (task_id, created_at);
+CREATE INDEX idx_task_delegations_from ON task_delegations (from_user_id, created_at DESC);
+CREATE INDEX idx_task_delegations_to ON task_delegations (to_user_id, created_at DESC);
+```
+
+The append-only constraint is enforced by the absence of `UPDATE`/`DELETE` endpoints; only cascading delete from the parent task is allowed. `tasks.assigned_to` is the projected current state of the chain — both writes happen in the same transaction.
 
 ---
 

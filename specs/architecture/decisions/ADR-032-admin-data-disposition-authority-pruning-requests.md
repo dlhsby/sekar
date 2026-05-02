@@ -96,6 +96,11 @@ When a kecamatan staff member submits a request, `rayon_id` is **nullable until 
 - [ADR-013](./ADR-013-multi-area-assignment.md) — `users.rayon_id` scoping reused here
 - [ADR-033](./ADR-033-staff-kecamatan-role.md) — the counterparty role that submits requests for `admin_data` to review
 - [ADR-031](./ADR-031-task-typing-and-custom-fields.md) — the converted task carries `task_type='pruning'`
+- [ADR-038](./ADR-038-pruning-workflow-entry-points.md) — `admin_data`'s disposition endpoint is one of five pruning entry points; converted tasks emit a `task_delegations` audit row on every assignment
 - Phase 3 plan: `../../phases/phase-3-plants-monitoring-rebuild/README.md`
 - API contracts: `../../api/contracts.md`
 - Security: `../security.md`
+
+## 2026-05-01 amendment — delegation chain after disposition (ADR-038)
+
+`admin_data` disposition (`POST /pruning-requests/:id/review` + `POST /pruning-requests/:id/convert-to-task`) remains rayon-scoped per the rules above. Once the request converts into a task, the onward path **may pass through several roles before execution** — typical chain is `top_management → kepala_rayon → admin_data → korlap → satgas`, but any role in the hierarchy can be skipped. Every assignment write — initial conversion *and* every subsequent reroute — emits a `task_delegations` audit row (see ADR-038). The disposition endpoint itself is unchanged; the audit trail becomes visible via `GET /tasks/:id/delegation-history`.

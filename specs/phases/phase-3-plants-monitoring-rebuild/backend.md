@@ -228,10 +228,14 @@ See [database.md §activities](./database.md#activities-additive).
 
 | Method | Path | Change |
 |--------|------|--------|
-| `POST` | `/api/v1/activities` | Accepts `custom_fields`, `plant_items[]`, `photo_before_url`, `photo_after_url`, `pruning_request_id`, `reference_code` (optional; server generates if omitted) |
-| `GET` | `/api/v1/activities?task_type=pruning&rayon_id=&area_id=&from=&to=` | New filters; filters on `custom_fields.maintenance_type` via JSONB operators |
+| `POST` | `/api/v1/activities` | Accepts `custom_fields`, `plant_items[]`, `photo_before_url`, `photo_after_url`, `pruning_request_id`, `reference_code` (optional; server generates if omitted), **`tagged_user_ids?: string[]` (May 1, ADR-038 — multi-worker pruning)** |
+| `GET` | `/api/v1/activities?task_type=pruning&rayon_id=&area_id=&from=&to=` | Filters on `custom_fields.maintenance_type` via JSONB operators |
+| `GET` | `/api/v1/activities?involving_me=true` | **May 1, ADR-038.** Returns activities where current user is the owner OR appears in `activity_tags`; each row includes `involvement: 'owner'\|'tagged'` discriminator |
+| `DELETE` | `/api/v1/activities/:id/tags/:userId` | **May 1, ADR-038.** Untag a user; owner-only, before approval |
 
 When an activity with `pruning_request_id` is created, the originating request transitions `converted → in_progress → done` and emits `request:status-changed`.
+
+Tagged users (`tagged_user_ids`) are written to the `activity_tags` table — see [database.md §activity_tags](./database.md#activity-tags-may-1) and ADR-038. Owner remains the sole writer; tagged users gain read-only feed visibility.
 
 ---
 
@@ -241,11 +245,11 @@ When an activity with `pruning_request_id` is created, the originating request t
 
 | Method | Path | Auth / Roles | Description |
 |--------|------|--------------|-------------|
-| `POST` | `/api/v1/pruning-requests` | `staff_kecamatan` | Submit |
+| `POST` | `/api/v1/pruning-requests` | `staff_kecamatan` | Submit. **May 1, ADR-035 amendment:** body sends `expected_year` + `expected_iso_week` (week the submitter prefers); legacy `detail_date` still accepted for one release as a fallback |
 | `GET` | `/api/v1/pruning-requests?mine=true` | `staff_kecamatan` | Own submissions |
 | `GET` | `/api/v1/pruning-requests?rayon_id=&status=` | `admin_data` (own rayon), `top_management` (read-all), `admin_system`, `superadmin` | Queue |
 | `POST` | `/api/v1/pruning-requests/:id/review` | `admin_data` (own rayon), `admin_system`, `superadmin` | `{ decision: 'approved'|'rejected', notes }` |
-| `POST` | `/api/v1/pruning-requests/:id/convert-to-task` | same | `{ area_id, scheduled_for, assign_to_user_id?, target_plant_count?, custom_fields? }` → returns created `task` |
+| `POST` | `/api/v1/pruning-requests/:id/convert-to-task` | same | `{ area_id, scheduled_for?, assign_to_user_id?, target_plant_count?, custom_fields? }` → returns created `task`. **May 1, ADR-035 amendment:** `scheduled_for` is now optional. When omitted, the service iterates Mon→Sun of `request.expected_iso_week` and books the first day where capacity allows; `expected_date` is set to that day. If admin passes `scheduled_for`, it overrides and must fall inside the chosen week (server validates). |
 | `PATCH` | `/api/v1/pruning-requests/:id/expected-date` | `admin_data` (own rayon), `kepala_rayon`, `top_management`, `admin_system`, `superadmin` | **Round 4 (Apr 28).** `{ expectedDate: 'YYYY-MM-DD' }` — adjust `expected_date` independent of conversion. Status must be `submitted` / `under_review` / `approved`; date today-or-future. |
 | `GET` | `/api/v1/pruning-requests/:id/result` | submitter, reviewer, top_management, admins | Task + activities + photos |
 

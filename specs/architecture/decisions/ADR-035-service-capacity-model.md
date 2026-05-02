@@ -125,3 +125,25 @@ Past dates are filtered at the picker layer. The projection lives in `fe/mobile/
 **Read access widened.** `GET /api/v1/rayons/:id/capacity` now allows `staff_kecamatan` (scoped to their own `rayon_id` exactly like `admin_data`) so the submit calendar can display availability without leaking other rayons' booking data.
 
 **New write endpoint.** `PATCH /api/v1/pruning-requests/:id/expected-date` lets `admin_data` (rayon-scoped), `kepala_rayon`, `top_management`, `admin_system`, and `superadmin` adjust a request's `expected_date` independent of the convert-to-task flow. Allowed when status ∈ {`submitted`, `under_review`, `approved`} and the new date is today-or-future. This endpoint does **not** mutate `service_capacity`; capacity bookings still occur only at convert-to-task time.
+
+## 2026-05-01 amendment — kecamatan picks a week, not a day
+
+**Storage stays weekly** (no further change to the `service_capacity` shape). What changes is what `staff_kecamatan` is asked to choose at submit time.
+
+**Why the shift.** The day-grid `AvailabilityCalendar` led submitters to assume the chosen day was a commitment, even though capacity is booked weekly and the actual execution day is set by `admin_data` at convert-to-task. The day-grid also offered no useful affordance — every day in the same ISO week shared the same status colour. Switching to a week-picker matches the storage model, removes the false specificity, and frees the admin to schedule the concrete day inside that week without renegotiating with the submitter.
+
+**Submission DTO.** `CreatePruningRequestDto` accepts `expected_year: number` and `expected_iso_week: number` (both 1-indexed, ISO 8601 week numbering). Legacy `detail_date` remains accepted for one release as a fallback so older mobile builds continue to work; when present it is normalised to `(year, iso_week)` server-side. New mobile builds send only the week pair.
+
+**Persistence.** `pruning_requests` gains two nullable columns `expected_year INT` and `expected_iso_week INT`. The pre-existing `expected_date` column is **kept**: it is populated by `admin_data` (or by the convert-to-task auto-pick described below) once the concrete day is decided. Three states are now valid:
+
+| State | `expected_year`/`expected_iso_week` | `expected_date` | Meaning |
+|-------|-------------------------------------|-----------------|---------|
+| Submitted with week | set | NULL | Submitter picked a week; concrete day TBD |
+| Date assigned | set | set | Admin or auto-pick chose the day |
+| Legacy / admin-direct | NULL | set | Old build or admin-edited reschedule |
+
+**Convert-to-task auto-pick.** If a request has `expected_year`/`expected_iso_week` and the converting admin does **not** pass an explicit `scheduledDate`, the service iterates Mon→Sun of that ISO week and books `service_capacity` atomically on the first day where capacity allows. The picked day is written to `expected_date` and to the new task's deadline. If every day of the chosen week is full, the convert returns the existing 409 with the suggested-week payload (next 4 weeks with capacity), unchanged from the original ADR.
+
+**Reschedule unchanged.** `PATCH /pruning-requests/:id/expected-date` continues to accept a single ISO date — admin override is always concrete, never weekly. The reschedule does not clear `expected_year`/`expected_iso_week`; the week of record stays for audit, the date is the source of truth.
+
+**Mobile UX.** `AvailabilityCalendar` (day-grid grouped by week) is replaced by `WeekPicker` (vertically stacked week cards). Each card shows the week range, an overall capacity badge, and seven small per-day chips coloured by the same `available|partial|full|unknown` projection as before — the chips are informational only and not tappable. Tapping a card returns `(year, isoWeek)`. The `RescheduleSheet` (admin) keeps the day-grid because admins need date precision.
