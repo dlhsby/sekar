@@ -13,9 +13,16 @@ import { formatDate, formatTime, getActivityStatusLabel, getActivityStatusColor 
 interface ActivityCardProps {
   activity: Activity;
   onPress: () => void;
+  /** Current user id — used to flag activities the viewer is tagged on (ADR-038). */
+  currentUserId?: string;
 }
 
-export function ActivityCard({ activity, onPress }: ActivityCardProps): React.JSX.Element {
+export function ActivityCard({ activity, onPress, currentUserId }: ActivityCardProps): React.JSX.Element {
+  // ADR-038: when the activity is owned by someone else, the viewer is here via tag.
+  const isTaggedIn = Boolean(
+    currentUserId && activity.user_id && activity.user_id !== currentUserId,
+  );
+
   return (
     <TouchableOpacity style={styles.itemCard} onPress={onPress} testID="activity-card">
       <NBCard variant="elevated" style={styles.cardInner}>
@@ -30,6 +37,9 @@ export function ActivityCard({ activity, onPress }: ActivityCardProps): React.JS
             </Text>
           </View>
           <View style={styles.itemHeaderRight}>
+            {isTaggedIn && (
+              <NBBadge text="Diikutsertakan" color="navy" />
+            )}
             {activity.status && (
               <NBBadge
                 text={getActivityStatusLabel(activity.status)}
@@ -83,6 +93,7 @@ const styles = StyleSheet.create({
   },
   itemHeaderRight: {
     alignItems: 'flex-end',
+    gap: nbSpacing.xs,
   },
   itemPrimary: {
     fontSize: nbTypography.fontSize.base,

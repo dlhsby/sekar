@@ -40,6 +40,8 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
     isSubmitting,
     isOnline,
     activityError,
+    taggableUsers,
+    isLoadingTaggableUsers,
     getCurrentLocation,
     loadActivityTypes,
     addPhoto,
@@ -47,6 +49,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
     handleSubmit,
     setDescription,
     setActivityTypeId,
+    setTaggedUserIds,
     clearError,
     resetForm,
     clearDraft,
@@ -75,6 +78,11 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
   const activityTypeOptions = useMemo<NBSelectOption[]>(
     () => sortedActivityTypes.map((t) => ({ label: t.name, value: t.id })),
     [sortedActivityTypes],
+  );
+
+  const taggableOptions = useMemo<NBSelectOption[]>(
+    () => taggableUsers.map((u) => ({ label: u.full_name, value: u.id })),
+    [taggableUsers],
   );
 
   const navigateBack = useCallback(() => {
@@ -216,6 +224,37 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
                 />
               )}
               {errors.activityType && <Text style={styles.errorText}>{errors.activityType}</Text>}
+            </NBCardContent>
+          </NBCard>
+
+          {/* Tagged Users (optional, ADR-038) */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>🏷️ TAG REKAN KERJA</Text>
+              <Text style={styles.sectionSubtitle}>
+                Opsional — tag rekan satu area yang ikut bekerja pada aktivitas ini
+              </Text>
+            </NBCardHeader>
+            <NBCardContent>
+              {isLoadingTaggableUsers ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={nbColors.primary} />
+                  <Text style={styles.loadingText}>Memuat daftar rekan...</Text>
+                </View>
+              ) : taggableOptions.length > 0 ? (
+                <NBSelect
+                  selectedValues={form.taggedUserIds}
+                  onValuesChange={setTaggedUserIds}
+                  options={taggableOptions}
+                  placeholder="Pilih rekan untuk di-tag..."
+                  searchable
+                  searchPlaceholder="Cari nama rekan..."
+                />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Tidak ada rekan satu area untuk di-tag</Text>
+                </View>
+              )}
             </NBCardContent>
           </NBCard>
 

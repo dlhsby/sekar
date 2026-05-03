@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsIn, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
+import { IsBoolean, IsEnum, IsIn, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { ActivityStatus } from '../entities/activity.entity';
 
@@ -100,4 +101,20 @@ export class ActivitiesFilterDto extends PaginationDto {
   @IsOptional()
   @IsIn(['asc', 'desc'])
   sort_dir?: string;
+
+  /**
+   * ADR-038 (May 2026) — when true, return activities where the current user
+   * is the owner OR appears in `activity_tags`. Overrides the default
+   * role-based scope so tagged satgas/linmas see activities filed for them
+   * by korlap/admin_data/kepala_rayon even outside their own area.
+   */
+  @ApiPropertyOptional({
+    description:
+      'Return activities where the current user is the owner OR appears in activity_tags (ADR-038).',
+    example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  involving_me?: boolean;
 }

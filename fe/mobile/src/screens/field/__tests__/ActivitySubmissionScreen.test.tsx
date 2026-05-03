@@ -26,6 +26,9 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 // Mock APIs
 jest.mock('../../../services/api/activitiesApi');
 jest.mock('../../../services/api/activityTypesApi');
+jest.mock('../../../services/api/usersApi', () => ({
+  getUsers: jest.fn().mockResolvedValue({ data: [], error: null }),
+}));
 jest.mock('../../../services/media');
 jest.mock('../../../services/permissions');
 jest.mock('../../../services/sync/offlineQueue');

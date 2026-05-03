@@ -14,6 +14,7 @@ import { useActivityForm } from '../useActivityForm';
 import activitiesReducer, { addActivity } from '../../store/slices/activitiesSlice';
 import shiftReducer from '../../store/slices/shiftSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
+import authReducer from '../../store/slices/authSlice';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,10 @@ jest.mock('react-native-device-info', () => ({
 
 jest.mock('../../services/api/activitiesApi', () => ({
   createActivity: jest.fn(),
+}));
+
+jest.mock('../../services/api/usersApi', () => ({
+  getUsers: jest.fn().mockResolvedValue({ data: [], error: null }),
 }));
 
 jest.mock('../../services/api/activityTypesApi', () => ({
@@ -89,8 +94,17 @@ const createStore = (options: { withShift?: boolean; isOnline?: boolean } = {}) 
       activities: activitiesReducer,
       shift: shiftReducer,
       offline: offlineReducer,
+      auth: authReducer,
     },
     preloadedState: {
+      auth: {
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      } as any,
       activities: {
         activitiesList: [],
         isLoading: false,

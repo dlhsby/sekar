@@ -11,16 +11,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { createActivity } from '../services/api/activitiesApi';
 import { getMyActivityTypes } from '../services/api/activityTypesApi';
+import { getUsers } from '../services/api/usersApi';
 import { setSubmitting, setError, addActivity } from '../store/slices/activitiesSlice';
 import { addToQueue as addToOfflineQueue } from '../services/sync/offlineQueue';
 import { mediaService, type Photo } from '../services/media';
 import { sanitizeMultilineText } from '../utils/sanitize';
-import type { ActivityType } from '../types/models.types';
+import type { ActivityType, User } from '../types/models.types';
 
 export interface FormState {
   photos: Photo[];
   description: string;
   activityTypeId: string | null;
+  taggedUserIds: string[]; // ADR-038: tag co-workers involved in this activity
   location: {
     latitude: number;
     longitude: number;
@@ -41,11 +43,13 @@ export function useActivityForm() {
   const { currentShift } = useAppSelector((state) => state.shift);
   const { isOnline } = useAppSelector((state) => state.offline);
   const { isSubmitting, error: activityError } = useAppSelector((state) => state.activities);
+  const authUser = useAppSelector((state) => state.auth.user);
 
   const [form, setForm] = useState<FormState>({
     photos: [],
     description: '',
     activityTypeId: null,
+    taggedUserIds: [],
     location: null,
   });
 
@@ -54,6 +58,8 @@ export function useActivityForm() {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [sortedActivityTypes, setSortedActivityTypes] = useState<ActivityType[]>([]);
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
+  const [taggableUsers, setTaggableUsers] = useState<User[]>([]);
+  const [isLoadingTaggableUsers, setIsLoadingTaggableUsers] = useState(false);
 
   const formRef = useRef<FormState>(form);
   const saveDraftRef = useRef<(() => Promise<void>) | undefined>(undefined);
@@ -94,6 +100,30 @@ export function useActivityForm() {
       setIsLoadingTypes(false);
     }
   }, []);
+
+  // ADR-038: load co-workers in the same area as the active shift, excluding self.
+  // Tagging is a feed-visibility hint, so we keep the scope narrow (same-area peers).
+  const loadTaggableUsers = useCallback(async () => {
+    const areaId = currentShift?.area_id;
+    if (!areaId || !authUser) {
+      setTaggableUsers([]);
+      return;
+    }
+    setIsLoadingTaggableUsers(true);
+    try {
+      const response = await getUsers();
+      if (response.data) {
+        const peers = response.data.filter(
+          (u) => u.id !== authUser.id && u.area_id === areaId,
+        );
+        setTaggableUsers(peers);
+      }
+    } catch (error) {
+      if (__DEV__) { console.error('Failed to load taggable users:', error); }
+    } finally {
+      setIsLoadingTaggableUsers(false);
+    }
+  }, [currentShift?.area_id, authUser]);
 
   // Get current GPS location
   const getCurrentLocation = useCallback(() => {
@@ -166,6 +196,7 @@ export function useActivityForm() {
         photos: form.photos,
         description: form.description,
         activityTypeId: form.activityTypeId,
+        taggedUserIds: form.taggedUserIds,
         timestamp: Date.now(),
       };
       await AsyncStorage.setItem('activity_draft', JSON.stringify(draft));
@@ -196,6 +227,7 @@ export function useActivityForm() {
                   photos: draft.photos || [],
                   description: draft.description || '',
                   activityTypeId: draft.activityTypeId || null,
+                  taggedUserIds: draft.taggedUserIds || [],
                 }));
                 getCurrentLocation(); // Re-acquire fresh GPS after draft restore
               },
@@ -214,6 +246,7 @@ export function useActivityForm() {
   useEffect(() => {
     getCurrentLocation();
     loadActivityTypes();
+    loadTaggableUsers();
     restoreDraft();
 
     const draftInterval = setInterval(() => {
@@ -228,7 +261,7 @@ export function useActivityForm() {
 
   // Reset form (does NOT clear draft from storage — use clearDraft for that)
   const resetForm = useCallback(() => {
-    setForm({ photos: [], description: '', activityTypeId: null, location: null });
+    setForm({ photos: [], description: '', activityTypeId: null, taggedUserIds: [], location: null });
     getCurrentLocation();
   }, [getCurrentLocation]);
 
@@ -275,6 +308,8 @@ export function useActivityForm() {
         photo_urls: photoBase64Array,
         gps_lat: form.location!.latitude,
         gps_lng: form.location!.longitude,
+        // ADR-038: include tagged users (omitted when empty so old payload shape is preserved)
+        ...(form.taggedUserIds.length > 0 ? { tagged_user_ids: form.taggedUserIds } : {}),
       };
 
       if (isOnline) {
@@ -325,6 +360,10 @@ export function useActivityForm() {
     setErrors((prev) => ({ ...prev, activityType: undefined }));
   }, []);
 
+  const setTaggedUserIds = useCallback((ids: string[]) => {
+    setForm((prev) => ({ ...prev, taggedUserIds: ids }));
+  }, []);
+
   const clearError = useCallback(() => { dispatch(setError('')); }, [dispatch]);
 
   return {
@@ -337,13 +376,17 @@ export function useActivityForm() {
     isSubmitting,
     isOnline,
     activityError,
+    taggableUsers,
+    isLoadingTaggableUsers,
     getCurrentLocation,
     loadActivityTypes,
+    loadTaggableUsers,
     addPhoto,
     handleRemovePhoto,
     handleSubmit,
     setDescription,
     setActivityTypeId,
+    setTaggedUserIds,
     saveDraft,
     clearError,
     resetForm,

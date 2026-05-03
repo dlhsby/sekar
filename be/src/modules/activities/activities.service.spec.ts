@@ -20,6 +20,7 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { AuditLogService } from '../audit/audit.service';
 import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
+import { ActivityTag } from './entities/activity-tag.entity';
 
 describe('ActivitiesService', () => {
   let module: TestingModule;
@@ -111,6 +112,14 @@ describe('ActivitiesService', () => {
     delete: jest.fn(),
   };
 
+  const mockActivityTagRepo = {
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    delete: jest.fn(),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -130,6 +139,10 @@ describe('ActivitiesService', () => {
         {
           provide: getRepositoryToken(ActivityPlantItem),
           useValue: mockPlantItemRepo,
+        },
+        {
+          provide: getRepositoryToken(ActivityTag),
+          useValue: mockActivityTagRepo,
         },
         {
           provide: S3Service,
@@ -1050,6 +1063,120 @@ describe('ActivitiesService', () => {
       await expect(
         service.rejectActivity(activity.id, invalidReviewer.id, 'reason'),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ── ADR-038 (May 2026) — activity tagging ──────────────────────────────
+  describe('activity tagging (ADR-038)', () => {
+    const baseCreateDto: CreateActivityDto = {
+      activity_type_id: mockActivityType.id,
+      description: 'Pruning at Taman Bungkul, 4 trees',
+      photo_urls: ['https://s3.amazonaws.com/activities/photo1.jpg'],
+    };
+
+    beforeEach(() => {
+      mockShiftsRepo.findOne.mockResolvedValue(mockActiveShift);
+      mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType as any);
+      mockActivitiesRepo.create.mockImplementation((entity) => entity as any);
+      mockActivitiesRepo.save.mockImplementation((entity) =>
+        Promise.resolve({ ...entity, id: 'new-act' } as any),
+      );
+      mockActivityTagRepo.create.mockImplementation((row) => row as any);
+      mockActivityTagRepo.save.mockImplementation((rows) => Promise.resolve(rows as any));
+    });
+
+    it('persists tag rows when tagged_user_ids is supplied', async () => {
+      await service.createActivity(mockUser.id, mockUser.role, {
+        ...baseCreateDto,
+        tagged_user_ids: ['u-1', 'u-2'],
+      });
+
+      expect(mockActivityTagRepo.save).toHaveBeenCalledTimes(1);
+      const savedRows = mockActivityTagRepo.save.mock.calls[0][0];
+      expect(savedRows).toHaveLength(2);
+      expect(savedRows[0]).toEqual(
+        expect.objectContaining({
+          activity_id: 'new-act',
+          user_id: 'u-1',
+          tagged_by: mockUser.id,
+        }),
+      );
+      expect(savedRows[1].user_id).toBe('u-2');
+    });
+
+    it('dedupes tag inputs and silently drops the owner', async () => {
+      await service.createActivity(mockUser.id, mockUser.role, {
+        ...baseCreateDto,
+        tagged_user_ids: ['u-1', 'u-1', mockUser.id, 'u-2'],
+      });
+
+      const savedRows = mockActivityTagRepo.save.mock.calls[0][0];
+      expect(savedRows).toHaveLength(2);
+      expect(savedRows.map((r: any) => r.user_id).sort()).toEqual(['u-1', 'u-2']);
+    });
+
+    it('skips the tag insert when tagged_user_ids is empty / absent', async () => {
+      await service.createActivity(mockUser.id, mockUser.role, baseCreateDto);
+      expect(mockActivityTagRepo.save).not.toHaveBeenCalled();
+
+      await service.createActivity(mockUser.id, mockUser.role, {
+        ...baseCreateDto,
+        tagged_user_ids: [],
+      });
+      expect(mockActivityTagRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('untagUser deletes the row for the owner before approval', async () => {
+      mockActivitiesRepo.findOne.mockResolvedValue({
+        ...mockActivity,
+        user_id: mockUser.id,
+        status: ActivityStatus.PENDING,
+      } as any);
+      mockActivityTagRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await service.untagUser(mockActivity.id, 'u-1', mockUser.id);
+
+      expect(mockActivityTagRepo.delete).toHaveBeenCalledWith({
+        activity_id: mockActivity.id,
+        user_id: 'u-1',
+      });
+    });
+
+    it('untagUser refuses when caller is not the owner', async () => {
+      mockActivitiesRepo.findOne.mockResolvedValue({
+        ...mockActivity,
+        user_id: 'someone-else',
+        status: ActivityStatus.PENDING,
+      } as any);
+
+      await expect(service.untagUser(mockActivity.id, 'u-1', mockUser.id)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('untagUser refuses once the activity is approved', async () => {
+      mockActivitiesRepo.findOne.mockResolvedValue({
+        ...mockActivity,
+        user_id: mockUser.id,
+        status: ActivityStatus.APPROVED,
+      } as any);
+
+      await expect(service.untagUser(mockActivity.id, 'u-1', mockUser.id)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('untagUser 404s when no matching tag exists', async () => {
+      mockActivitiesRepo.findOne.mockResolvedValue({
+        ...mockActivity,
+        user_id: mockUser.id,
+        status: ActivityStatus.PENDING,
+      } as any);
+      mockActivityTagRepo.delete.mockResolvedValue({ affected: 0 } as any);
+
+      await expect(
+        service.untagUser(mockActivity.id, 'never-tagged', mockUser.id),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

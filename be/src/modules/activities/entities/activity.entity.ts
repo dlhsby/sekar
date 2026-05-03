@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
@@ -220,4 +221,14 @@ export class Activity {
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'reviewed_by' })
   reviewer: User | null;
+
+  /**
+   * ADR-038 (May 2026) — users tagged on this activity. Owner remains
+   * `Activity.user_id`; tagged users gain read-only feed visibility via
+   * `GET /api/v1/activities?involving_me=true`. Lazy by design: most
+   * activity reads do not need the tag list, and `findAll` joins
+   * selectively when the involving_me filter is active.
+   */
+  @OneToMany('ActivityTag', 'activity', { cascade: false })
+  tags: any[];
 }

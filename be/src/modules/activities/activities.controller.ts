@@ -133,9 +133,15 @@ export class ActivitiesController {
       {
         user_id: filterDto.user_id,
         shift_id: filterDto.shift_id,
+        area_id: filterDto.area_id,
+        rayon_id: filterDto.rayon_id,
+        activity_type_id: filterDto.activity_type_id,
         from_date: filterDto.from_date,
         to_date: filterDto.to_date,
         status: filterDto.status,
+        sort_by: filterDto.sort_by,
+        sort_dir: filterDto.sort_dir,
+        involving_me: filterDto.involving_me,
       },
       user,
       filterDto.page,
@@ -264,5 +270,45 @@ export class ActivitiesController {
   @ApiResponse({ status: 404, description: 'Activity not found' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.activitiesService.remove(id);
+  }
+
+  /**
+   * List the users tagged on an activity (ADR-038, May 2026).
+   *
+   * Read scope follows the standard activity-read rules: caller must be the
+   * owner, in the activity's area/rayon, or have a city-wide role.
+   */
+  @Get(':id/tags')
+  @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)
+  @ApiOperation({ summary: 'List tagged users on an activity (ADR-038)' })
+  @ApiResponse({ status: 200, description: 'Array of activity_tags rows with user joined' })
+  @ApiResponse({ status: 403, description: 'Access denied (outside your scope)' })
+  @ApiResponse({ status: 404, description: 'Activity not found' })
+  async listTags(@Param('id') id: string, @GetUser() user: User) {
+    // Reuses the standard scope check before the join-fetch.
+    await this.activitiesService.findOne(id, user);
+    return this.activitiesService.findActivityTags(id);
+  }
+
+  /**
+   * Untag a user from an activity (ADR-038, May 2026).
+   *
+   * Owner-only. Allowed while the activity is still pending — once approved,
+   * the activity becomes a sealed record and tags can no longer be removed.
+   */
+  @Delete(':id/tags/:userId')
+  @Roles(...ACTIVITY_SUBMITTERS)
+  @ApiOperation({ summary: 'Untag a user from an activity (owner-only, before approval)' })
+  @ApiResponse({ status: 200, description: 'User untagged' })
+  @ApiResponse({ status: 400, description: 'Activity already approved — tags are now sealed' })
+  @ApiResponse({ status: 403, description: 'Only the activity owner can untag' })
+  @ApiResponse({ status: 404, description: 'Activity or tag not found' })
+  async untag(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @GetUser() user: User,
+  ): Promise<{ ok: true }> {
+    await this.activitiesService.untagUser(id, targetUserId, user.id);
+    return { ok: true };
   }
 }

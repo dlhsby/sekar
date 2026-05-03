@@ -259,7 +259,8 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
 
       const response = isSupervisor
         ? await getActivities(filters)
-        : await getMyActivities(filters);
+        // ADR-038: workers see activities they own OR are tagged on.
+        : await getMyActivities({ ...filters, involving_me: true });
 
       const paged = response.data;
       const fetchedActivities = paged?.data ?? [];
@@ -594,6 +595,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
                 onRetry={() => fetchActivities(1, true)}
                 onLoadMore={loadMoreActivities}
                 onNavigateToActivity={(activityId) => navigation.navigate('ActivityDetail', { activityId })}
+                currentUserId={user?.id}
               />
             )}
           </View>

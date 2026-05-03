@@ -9,6 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, IsNull } from 'typeorm';
 import { Activity, ActivityStatus } from './entities/activity.entity';
+import { ActivityTag } from './entities/activity-tag.entity';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { S3Service } from '../../shared/services/s3.service';
@@ -54,6 +55,8 @@ export class ActivitiesService {
     private activityTypeRepository: Repository<ActivityType>,
     @InjectRepository(ActivityPlantItem)
     private plantItemRepository: Repository<ActivityPlantItem>,
+    @InjectRepository(ActivityTag)
+    private activityTagRepository: Repository<ActivityTag>,
     private s3Service: S3Service,
     private readonly usersService: UsersService,
     private readonly auditLogService: AuditLogService,
@@ -143,6 +146,29 @@ export class ActivitiesService {
       );
     }
 
+    // ADR-038 (May 2026): persist tag rows for involved users.
+    // Dedup the input list and silently drop the owner's own id — tagging
+    // yourself is a no-op, not an error. FCM push is intentionally not
+    // emitted here yet; a follow-up commit wires it via NotificationsService.
+    if (dto.tagged_user_ids && dto.tagged_user_ids.length > 0) {
+      const uniqueIds = Array.from(new Set(dto.tagged_user_ids)).filter(
+        (id) => id !== userId,
+      );
+      if (uniqueIds.length > 0) {
+        const tagEntities = uniqueIds.map((taggedUserId) =>
+          this.activityTagRepository.create({
+            activity_id: savedActivity.id,
+            user_id: taggedUserId,
+            tagged_by: userId,
+          }),
+        );
+        await this.activityTagRepository.save(tagEntities);
+        this.logger.log(
+          `Tagged ${tagEntities.length} users on activity ${savedActivity.id}`,
+        );
+      }
+    }
+
     this.auditLogService
       .log({
         entity_type: 'activity',
@@ -182,6 +208,11 @@ export class ActivitiesService {
       status?: ActivityStatus;
       sort_by?: string;
       sort_dir?: string;
+      // ADR-038 (May 2026) — return activities where the current user is the
+      // owner OR appears in `activity_tags`. When set, this overrides the
+      // default role-based scope below so tagged satgas/linmas see activities
+      // filed for them by korlap/admin_data even outside their own area.
+      involving_me?: boolean;
     },
     user: User,
     page: number = 1,
@@ -196,8 +227,17 @@ export class ActivitiesService {
       .leftJoinAndSelect('activity.activityType', 'activityType')
       .leftJoinAndSelect('activity.reviewer', 'reviewer');
 
-    // Scope-based filtering (specific roles first, then generic groups)
-    if (user.role === UserRole.KORLAP) {
+    if (filters.involving_me) {
+      // Owner OR tagged. Sub-select keeps the join out of the main row set so
+      // pagination counts stay correct (one activity row even if N tags hit).
+      queryBuilder.andWhere(
+        `(activity.user_id = :involvingUserId OR EXISTS (
+          SELECT 1 FROM activity_tags at
+          WHERE at.activity_id = activity.id AND at.user_id = :involvingUserId
+        ))`,
+        { involvingUserId: user.id },
+      );
+    } else if (user.role === UserRole.KORLAP) {
       queryBuilder.andWhere('activity.area_id = :areaId', { areaId: user.area_id });
     } else if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
       queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: user.rayon_id });
@@ -606,5 +646,67 @@ export class ActivitiesService {
     }
 
     return activity;
+  }
+
+  // ── ADR-038 (May 2026) — activity tagging ────────────────────────────────
+
+  /**
+   * Untag a user from an activity.
+   *
+   * Owner-only, before approval. Mirrors the 1-hour edit window posture in
+   * `update`: tagging is part of authoring, and the activity becomes a
+   * sealed record once it's approved.
+   *
+   * @param activityId Activity UUID
+   * @param targetUserId User to remove from the tag list
+   * @param requestingUserId Authenticated owner
+   * @throws NotFoundException if activity or tag doesn't exist
+   * @throws ForbiddenException if the requester isn't the owner
+   * @throws BadRequestException if the activity is already approved
+   */
+  async untagUser(
+    activityId: string,
+    targetUserId: string,
+    requestingUserId: string,
+  ): Promise<void> {
+    const activity = await this.activitiesRepository.findOne({
+      where: { id: activityId },
+    });
+    if (!activity) {
+      throw new NotFoundException(`Activity ${activityId} not found`);
+    }
+    if (activity.user_id !== requestingUserId) {
+      throw new ForbiddenException('Only the activity owner can untag users');
+    }
+    if (activity.status === ActivityStatus.APPROVED) {
+      throw new BadRequestException(
+        'Cannot untag users on an approved activity',
+      );
+    }
+    const result = await this.activityTagRepository.delete({
+      activity_id: activityId,
+      user_id: targetUserId,
+    });
+    if (!result.affected) {
+      throw new NotFoundException(
+        `User ${targetUserId} is not tagged on activity ${activityId}`,
+      );
+    }
+    this.logger.log(
+      `Untagged user ${targetUserId} from activity ${activityId} by owner ${requestingUserId}`,
+    );
+  }
+
+  /**
+   * List the tag rows for an activity (with the user joined for display).
+   * Caller is responsible for authorization — typically only invoked from
+   * the controller after the standard activity-read scope check passes.
+   */
+  async findActivityTags(activityId: string): Promise<ActivityTag[]> {
+    return this.activityTagRepository.find({
+      where: { activity_id: activityId },
+      relations: ['user'],
+      order: { created_at: 'ASC' },
+    });
   }
 }

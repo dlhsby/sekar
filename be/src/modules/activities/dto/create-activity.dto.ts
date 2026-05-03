@@ -165,4 +165,24 @@ export class CreateActivityDto {
   @ValidateNested({ each: true })
   @Type(() => ActivityPlantItemInputDto)
   plant_items?: ActivityPlantItemInputDto[];
+
+  /**
+   * ADR-038 (May 2026) — user IDs to tag as involved on this activity.
+   *
+   * Owner remains the sole writer (`Activity.user_id`); tagged users gain
+   * read-only feed visibility via `GET /activities?involving_me=true` and
+   * receive an FCM push (notification stub lands in a follow-up commit).
+   *
+   * Server deduplicates the list and silently skips an entry equal to the
+   * owner — tagging yourself is a no-op, not an error.
+   */
+  @ApiPropertyOptional({
+    description: 'User IDs to tag as involved on this activity (ADR-038, May 2026)',
+    type: [String],
+    example: ['33333333-3333-3333-3333-333333333301'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagged_user_ids?: string[];
 }

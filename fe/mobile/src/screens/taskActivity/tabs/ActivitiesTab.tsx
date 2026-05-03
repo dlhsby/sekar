@@ -31,6 +31,8 @@ export interface ActivitiesTabProps {
   onRetry: () => void;
   onLoadMore: () => void;
   onNavigateToActivity: (activityId: string) => void;
+  /** Current user id — passed to ActivityCard so it can flag tagged-in items (ADR-038). */
+  currentUserId?: string;
 }
 
 export function ActivitiesTab({
@@ -44,6 +46,7 @@ export function ActivitiesTab({
   onRetry,
   onLoadMore,
   onNavigateToActivity,
+  currentUserId,
 }: ActivitiesTabProps): React.JSX.Element {
   if (loadingActivities) {
     return (
@@ -93,6 +96,7 @@ export function ActivitiesTab({
         <ActivityCard
           activity={item}
           onPress={() => onNavigateToActivity(item.id)}
+          currentUserId={currentUserId}
         />
       )}
       keyExtractor={(item) => item.id}

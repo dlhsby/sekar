@@ -100,4 +100,30 @@ describe('ActivityCard', () => {
       expect(queryByLabelText(/Disetujui/i)).toBeNull();
     });
   });
+
+  describe('Diikutsertakan badge (ADR-038)', () => {
+    it('shows badge when current user is not the activity owner (tagged in)', () => {
+      const activity = { ...BASE_ACTIVITY, user_id: 'owner-1' } as any;
+      const { getByLabelText } = render(
+        <ActivityCard activity={activity} onPress={() => {}} currentUserId="viewer-1" />
+      );
+      expect(getByLabelText(/Diikutsertakan/i)).toBeTruthy();
+    });
+
+    it('does not show badge when current user is the owner', () => {
+      const activity = { ...BASE_ACTIVITY, user_id: 'owner-1' } as any;
+      const { queryByLabelText } = render(
+        <ActivityCard activity={activity} onPress={() => {}} currentUserId="owner-1" />
+      );
+      expect(queryByLabelText(/Diikutsertakan/i)).toBeNull();
+    });
+
+    it('does not show badge when currentUserId is omitted', () => {
+      const activity = { ...BASE_ACTIVITY, user_id: 'owner-1' } as any;
+      const { queryByLabelText } = render(
+        <ActivityCard activity={activity} onPress={() => {}} />
+      );
+      expect(queryByLabelText(/Diikutsertakan/i)).toBeNull();
+    });
+  });
 });

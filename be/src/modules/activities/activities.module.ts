@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
 import { Activity } from './entities/activity.entity';
+import { ActivityTag } from './entities/activity-tag.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { User } from '../users/entities/user.entity';
@@ -28,7 +29,7 @@ import { AuditModule } from '../audit/audit.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Activity, Shift, ActivityType, User, ActivityPlantItem]),
+    TypeOrmModule.forFeature([Activity, ActivityTag, Shift, ActivityType, User, ActivityPlantItem]),
     SharedModule, // For S3Service
     UsersModule,
     AuditModule,

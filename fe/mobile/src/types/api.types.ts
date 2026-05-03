@@ -86,6 +86,9 @@ export interface CreateActivityRequest {
   photo_urls: string[]; // 1-3 S3 URLs
   gps_lat?: number;
   gps_lng?: number;
+  // ADR-038 (May 2026) — tag involved users on this activity. Owner remains
+  // the sole writer; tagged users gain feed visibility on `?involving_me=true`.
+  tagged_user_ids?: string[];
 }
 
 export interface CreateActivityResponse {
@@ -105,6 +108,8 @@ export interface ActivitiesFilter {
   sort_dir?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  // ADR-038 (May 2026) — return activities where current user is owner OR tagged.
+  involving_me?: boolean;
 }
 
 // Location API
