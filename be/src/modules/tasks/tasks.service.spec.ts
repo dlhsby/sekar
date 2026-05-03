@@ -11,6 +11,7 @@ import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { TaskTypeRegistry } from './registry/task-type-registry';
 
 describe('TasksService', () => {
@@ -18,6 +19,7 @@ describe('TasksService', () => {
   let taskRepository: jest.Mocked<Repository<Task>>;
   let taskTagRepository: jest.Mocked<Repository<TaskTag>>;
   let taskDelegationRepository: jest.Mocked<Repository<TaskDelegation>>;
+  let notificationsService: jest.Mocked<NotificationsService>;
   let usersService: jest.Mocked<UsersService>;
   let areasService: jest.Mocked<AreasService>;
 
@@ -120,6 +122,12 @@ describe('TasksService', () => {
           useValue: { log: jest.fn().mockResolvedValue({}) },
         },
         {
+          provide: NotificationsService,
+          useValue: {
+            sendToUser: jest.fn().mockResolvedValue({}),
+          },
+        },
+        {
           provide: TaskTypeRegistry,
           useValue: {
             validate: jest.fn(),
@@ -134,6 +142,7 @@ describe('TasksService', () => {
     taskRepository = module.get(getRepositoryToken(Task));
     taskTagRepository = module.get(getRepositoryToken(TaskTag));
     taskDelegationRepository = module.get(getRepositoryToken(TaskDelegation));
+    notificationsService = module.get(NotificationsService);
     usersService = module.get(UsersService);
     areasService = module.get(AreasService);
   });
@@ -431,6 +440,48 @@ describe('TasksService', () => {
         to_user_id: 'worker-uuid',
         to_role: UserRole.SATGAS,
       });
+    });
+
+    it('sends a TASK_ASSIGNED push to the new assignee', async () => {
+      const pendingTask = { ...mockTask, status: TaskStatus.PENDING, assigned_to: null, title: 'Pangkas pohon' };
+      const worker = { ...mockUser, id: 'worker-uuid', role: UserRole.SATGAS };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(pendingTask as Task)
+        .mockResolvedValueOnce({ ...pendingTask, assigned_to: 'worker-uuid' } as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(worker as User)
+        .mockResolvedValueOnce(mockCreator as User);
+      taskRepository.save.mockResolvedValue(pendingTask as Task);
+
+      await service.assign('task-uuid', assignDto, 'creator-uuid');
+
+      expect(notificationsService.sendToUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'worker-uuid',
+          type: 'task_assigned',
+          title: expect.stringContaining('Pangkas pohon'),
+          data: { task_id: 'task-uuid' },
+        }),
+      );
+    });
+
+    it('does not abort assignment when notification send fails', async () => {
+      const pendingTask = { ...mockTask, status: TaskStatus.PENDING, assigned_to: null };
+      const worker = { ...mockUser, id: 'worker-uuid', role: UserRole.SATGAS };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(pendingTask as Task)
+        .mockResolvedValueOnce({ ...pendingTask, assigned_to: 'worker-uuid' } as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(worker as User)
+        .mockResolvedValueOnce(mockCreator as User);
+      taskRepository.save.mockResolvedValue(pendingTask as Task);
+      (notificationsService.sendToUser as jest.Mock).mockRejectedValueOnce(new Error('fcm down'));
+
+      await expect(
+        service.assign('task-uuid', assignDto, 'creator-uuid'),
+      ).resolves.toBeDefined();
     });
 
     it('does not abort assignment when delegation insert fails', async () => {

@@ -9,6 +9,7 @@ import { TaskTypeRegistry } from './registry/task-type-registry';
 import { UsersModule } from '../users/users.module';
 import { AreasModule } from '../areas/areas.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * Module for task management
@@ -22,6 +23,7 @@ import { AuditModule } from '../audit/audit.module';
     UsersModule,
     AreasModule,
     AuditModule,
+    NotificationsModule,
   ],
   controllers: [TasksController],
   providers: [TasksService, TaskTypeRegistry],

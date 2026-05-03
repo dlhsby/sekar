@@ -24,6 +24,8 @@ import { AreasService } from '../areas/areas.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { VALID_TASK_ASSIGNMENTS, VERIFY_MAP } from '../users/constants/role-groups';
 import { AuditLogService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 /** Pick a subset of keys from an object without mutating. */
 function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
@@ -57,6 +59,7 @@ export class TasksService {
     private readonly areasService: AreasService,
     private readonly auditLogService: AuditLogService,
     private readonly taskTypeRegistry: TaskTypeRegistry,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -133,6 +136,7 @@ export class TasksService {
         to_user_id: savedTask.assigned_to,
         to_role: initialAssignee.role,
         reason: null,
+        task_title: savedTask.title,
       });
     }
 
@@ -468,6 +472,7 @@ export class TasksService {
       to_user_id: assignTaskDto.assigned_to,
       to_role: assignee.role,
       reason: null,
+      task_title: task.title,
     });
 
     this.auditLogService
@@ -494,13 +499,40 @@ export class TasksService {
     to_user_id: string;
     to_role: UserRole;
     reason: string | null;
+    task_title?: string;
   }): Promise<void> {
     try {
-      const row = this.taskDelegationRepository.create(input);
+      const row = this.taskDelegationRepository.create({
+        task_id: input.task_id,
+        from_user_id: input.from_user_id,
+        from_role: input.from_role,
+        to_user_id: input.to_user_id,
+        to_role: input.to_role,
+        reason: input.reason,
+      });
       await this.taskDelegationRepository.save(row);
     } catch (err) {
       this.logger.error(
         `Failed to record task delegation for task ${input.task_id}: ${(err as Error).message}`,
+      );
+    }
+
+    // ADR-038: notify the new assignee. Best-effort — the assignment is
+    // already persisted, so a notification failure must not throw.
+    try {
+      const title = input.task_title
+        ? `Tugas baru: ${input.task_title}`
+        : 'Tugas baru';
+      await this.notificationsService.sendToUser({
+        user_id: input.to_user_id,
+        title,
+        body: 'Anda mendapat penugasan baru. Buka aplikasi untuk melihat detail.',
+        type: NotificationType.TASK_ASSIGNED,
+        data: { task_id: input.task_id },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to send task-assignment notification for task ${input.task_id}: ${(err as Error).message}`,
       );
     }
   }
