@@ -115,9 +115,11 @@ export class ServiceCapacityService {
     const { rayonId, year, isoWeek, serviceType, units } = params;
 
     return this.dataSource.transaction(async (tm) => {
-      let capacity = await tm
-        .createQueryBuilder()
-        .from(ServiceCapacity, 'sc')
+      // Use the entity-aware QB so column-name mapping (rayonId → rayon_id, etc.)
+      // is loaded from metadata. The previous from()/getOne() form returned raw
+      // rows TypeORM couldn't hydrate, so the lookup always missed.
+      const capacity = await tm
+        .createQueryBuilder(ServiceCapacity, 'sc')
         .where('sc.rayonId = :rayonId', { rayonId })
         .andWhere('sc.year = :year', { year })
         .andWhere('sc.isoWeek = :isoWeek', { isoWeek })
@@ -153,8 +155,7 @@ export class ServiceCapacityService {
 
     return this.dataSource.transaction(async (tm) => {
       const capacity = await tm
-        .createQueryBuilder()
-        .from(ServiceCapacity, 'sc')
+        .createQueryBuilder(ServiceCapacity, 'sc')
         .where('sc.rayonId = :rayonId', { rayonId })
         .andWhere('sc.year = :year', { year })
         .andWhere('sc.isoWeek = :isoWeek', { isoWeek })

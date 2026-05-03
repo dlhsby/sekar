@@ -1,3 +1,7 @@
+// Load .env BEFORE any other imports so values consumed at decorator-evaluation
+// time (e.g. @Throttle on auth.controller) see the env vars. ConfigModule alone
+// runs after class-decorator literals are already locked in.
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';

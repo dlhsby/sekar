@@ -43,7 +43,13 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
+  // Env-driven so dev/e2e can raise or disable the limit (default 5/min for prod safety).
+  @Throttle({
+    default: {
+      limit: parseInt(process.env.AUTH_LOGIN_THROTTLE_LIMIT || '5', 10),
+      ttl: parseInt(process.env.AUTH_LOGIN_THROTTLE_TTL || '60000', 10),
+    },
+  })
   @ApiOperation({
     summary: 'User login',
     description:
