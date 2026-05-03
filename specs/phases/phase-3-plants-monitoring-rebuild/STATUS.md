@@ -28,6 +28,70 @@
 
 ---
 
+## 🧪 Manual Review Checklist (May 3, 2026 — pruning workflow redesign + audit trail)
+
+Use this as the **post-redesign acceptance gate** before tagging the slice "shippable". Items marked **✅ verified** are covered by tests + a live-stack e2e run; **🔍 manual** require a real device or browser.
+
+### What landed in the May 3 redesign (covered by ADR-038)
+
+| Concern | Where | Status |
+|---|---|---|
+| Activity tagging — korlap can submit an activity and tag the satgas/linmas involved | `activity_tags` table + `POST /activities { tagged_user_ids }` + `GET /activities?involving_me=true` + `GET /:id/tags` + `DELETE /:id/tags/:userId` (owner-only, sealed once approved); mobile `useActivityForm` multi-select + `ActivityCard` "Diikutsertakan" badge | ✅ verified — 1561 backend + 4114 mobile tests |
+| Task delegation audit trail — every assign hop is recorded with role snapshots | `task_delegations` table + service hook in `TasksService.create()` and `assign()` + `GET /tasks/:id/delegations` (safe column projection, no `password_hash` leak) + mobile `TaskDetailScreen` "Riwayat Penugasan" card | ✅ verified |
+| Push notification on every delegation hop | `recordDelegation()` in `TasksService` and the `/convert-to-task` path both call `NotificationsService.sendToUser({ type: TASK_ASSIGNED, data: { task_id } })` | ✅ verified |
+| Backfill — legacy assigned tasks get a synthesized creator → assignee hop | Migration `17460006000000-BackfillTaskDelegations.ts`, idempotent via `NOT EXISTS` | ✅ verified — 37 legacy tasks now have history |
+| Kecamatan booking by week, not date | `pruning_requests.expected_year` + `expected_iso_week` columns; mobile `WeekPicker` + `WeekPickerModal`; admin `convert-to-task` auto-picks first day of preferred week when `scheduledDate` omitted | ✅ verified |
+| `/convert-to-task` → task lands in `assigned` (not `pending`) so the satgas can accept | `pruning-requests.service.ts` sets `status: TaskStatus.ASSIGNED` + `assigned_at` and inserts a `task_delegations` row + sends a `task_assigned` notification | ✅ verified — full e2e green (submit → review → convert → accept → start → complete) |
+| `password_hash` sweep — global `ClassSerializerInterceptor` honours `@Exclude` | `be/src/main.ts` registers the interceptor with the global `Reflector`; verified on `auth/me`, `tasks/:id`, `users`, and the new `tasks/:id/delegations` | ✅ verified |
+| Hardening from the e2e — capacity QB hydration + dotenv preload + env-driven login throttle | `service-capacity.service.ts` switched to entity-aware `createQueryBuilder(Entity, alias)`; `main.ts` imports `'dotenv/config'` first; `auth.controller.ts` reads `AUTH_LOGIN_THROTTLE_LIMIT/TTL`; `.env.example` family synced (1000/min dev, 5/min staging+prod) | ✅ verified |
+
+### What you should manually QA
+
+**Preconditions**
+
+```bash
+./infra/start.sh
+cd be && npm run migration:run && npm run db:seed && npm run start:dev
+# new env knob — local dev sets 1000/min so smoke tests don't 429
+grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
+```
+
+**1. Activity tagging (mobile)** 🔍
+
+- Login `korlap_bungkul/password123` → ActivitySubmissionScreen.
+- "🏷️ TAG REKAN KERJA" card lists same-area peers (excluding self). Multi-select is searchable.
+- Submit. Then login `satgas_bungkul_1/password123` → Aktivitas list shows the activity with a navy "Diikutsertakan" badge in the header (owner is korlap, not the viewer).
+- Backend assertion: `SELECT COUNT(*) FROM activity_tags WHERE activity_id = '<id>'` matches the count of tagged peers.
+
+**2. Task delegation chain (mobile)** 🔍
+
+- Login `korlap_bungkul/password123` → create a task assigned to a satgas in your area.
+- Open the task on the satgas's phone (`satgas_bungkul_2/password123`) → TaskDetailScreen → **"Riwayat Penugasan"** card shows `Korlap Taman Bungkul (korlap) → Satgas Bungkul Dua (satgas) · <timestamp>`.
+- Reassign the task and confirm the chain grows by one row each time.
+- Backend assertion: `SELECT from_role, to_role FROM task_delegations WHERE task_id = '<id>' ORDER BY created_at`.
+
+**3. Push notification on delegation hop** 🔍
+
+- After step 2, on the assignee's device the Notifications screen lists "Tugas baru: <title>" with `type=task_assigned` and `data.task_id` set.
+- DB: `SELECT title, body, data FROM notifications WHERE user_id = '<assignee>' ORDER BY created_at DESC LIMIT 1`.
+
+**4. Kecamatan week-booking — full workflow** ✅ verified end-to-end on the live stack May 3, but worth one human walkthrough before UAT
+
+- `staff_kec_pusat` → SubmitScreen → `WeekPicker` lists 8 ISO weeks with per-day capacity chips → submit. Confirm `expected_year` + `expected_iso_week` populated in DB; `expected_date` is NULL.
+- `admin/password123` → Review queue → approve → "Buat Tugas" → leave the date picker empty (auto-pick path) → confirm response: `request.status='converted'`, `expected_date` lands on a day in the requested ISO week, `task.status='assigned'`, `task.assigned_at` set.
+- Login as the assigned satgas → accept → start → complete. Each transition succeeds. After complete, pruning_request walks to `done` (existing behavior, unchanged).
+
+**5. Password leak sweep** 🔍
+
+- Hit `GET /api/v1/auth/me`, `GET /api/v1/tasks/:id`, `GET /api/v1/tasks/:id/delegations`, `GET /api/v1/users` — none should contain a `password_hash` field anywhere.
+
+### Known still-open items (not in this slice)
+
+- Web admin dashboard `(dashboard)/pruning-requests/*` pages still not implemented (admin disposition is mobile-only). Tracked in the original Phase 4 backlog.
+- `ConvertToTaskSheet` Redux state for areas + users — Apr 27 defensive patch still in place; full slices ship in Phase 4 polish.
+
+---
+
 ## 🧪 Manual Review Checklist (May 1, 2026 review pass)
 
 Use this when you sit down to manually QA plant monitoring + the perantingan workflow. Items marked **✅ verified** are covered by the automated test suite; **🔍 manual** require a real device or browser. Login passwords are all `password123`.

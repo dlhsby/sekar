@@ -2,8 +2,8 @@
 // time (e.g. @Throttle on auth.controller) see the env vars. ConfigModule alone
 // runs after class-decorator literals are already locked in.
 import 'dotenv/config';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ApiVersionInterceptor } from './common/interceptors/api-version.interceptor';
@@ -93,8 +93,13 @@ async function bootstrap() {
     }),
   );
 
-  // Global interceptor for API version tracking
-  app.useGlobalInterceptors(new ApiVersionInterceptor());
+  // Global interceptor for API version tracking + class-transformer
+  // serialization so @Exclude decorators (e.g. User.password_hash) are
+  // honored on every response that returns an entity instance.
+  app.useGlobalInterceptors(
+    new ApiVersionInterceptor(),
+    new ClassSerializerInterceptor(app.get(Reflector)),
+  );
 
   // Global prefix with versioning
   app.setGlobalPrefix('api/v1');

@@ -16,7 +16,11 @@ import { ReviewPruningRequestDto } from './dto/review-pruning-request.dto';
 import { ConvertPruningRequestDto } from './dto/convert-pruning-request.dto';
 import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dto';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Task } from '../tasks/entities/task.entity';
+import { Task, TaskStatus } from '../tasks/entities/task.entity';
+import { TaskDelegation } from '../tasks/entities/task-delegation.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import { UsersService } from '../users/users.service';
 import { ServiceCapacityService } from '../service-capacity/service-capacity.service';
 import { getIsoWeek, isoWeekDays, isoWeekEnd } from './utils/iso-week.util';
 
@@ -39,6 +43,8 @@ export class PruningRequestsService {
     private readonly taskRepository: Repository<Task>,
     private readonly dataSource: DataSource,
     private readonly serviceCapacityService: ServiceCapacityService,
+    private readonly notificationsService: NotificationsService,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -465,7 +471,8 @@ export class PruningRequestsService {
         }
       }
 
-      // Create task
+      // Create task — pre-assigned, so it must land in `assigned` status
+      // with `assigned_at` set so the satgas can accept/start/complete.
       const task = tm.create(Task, {
         title: `Pruning Request ${request.referenceCode}`,
         description: `Convert from pruning request: ${request.address}`,
@@ -473,9 +480,24 @@ export class PruningRequestsService {
         assigned_to: dto.assignedTo,
         deadline: scheduledDateObj,
         created_by: user.id,
+        status: TaskStatus.ASSIGNED,
+        assigned_at: new Date(),
       });
 
       const savedTask = await tm.save(task);
+
+      // ADR-038: record this hop in the delegation chain so the audit
+      // trail and mobile "Riwayat Penugasan" card cover requests-driven
+      // tasks too. Snapshot roles at the time of the hop.
+      const assigneeUser = await this.usersService.findOne(dto.assignedTo);
+      await tm.save(TaskDelegation, {
+        task_id: savedTask.id,
+        from_user_id: user.id,
+        from_role: user.role,
+        to_user_id: dto.assignedTo,
+        to_role: assigneeUser.role,
+        reason: null,
+      });
 
       // Update request: walk to `converted`, fix concrete date, link task.
       request.status = 'converted';
@@ -490,6 +512,22 @@ export class PruningRequestsService {
       this.logger.log(
         `Pruning request ${id} converted to task ${savedTask.id} on ${scheduledDateObj.toISOString().slice(0, 10)} (W${isoWeek}/${year})`,
       );
+
+      // Best-effort push to the new assignee. Failure must not roll back
+      // the (now-committed) transaction.
+      this.notificationsService
+        .sendToUser({
+          user_id: dto.assignedTo,
+          title: `Tugas baru: ${savedTask.title}`,
+          body: 'Anda mendapat penugasan pemangkasan dari kecamatan. Buka aplikasi untuk melihat detail.',
+          type: NotificationType.TASK_ASSIGNED,
+          data: { task_id: savedTask.id, source: 'pruning_request' },
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to send convert-to-task notification: ${(err as Error).message}`,
+          ),
+        );
 
       return { request: updatedRequest, task: savedTask };
     });

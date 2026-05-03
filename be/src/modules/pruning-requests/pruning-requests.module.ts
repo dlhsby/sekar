@@ -3,14 +3,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PruningRequest } from './entities/pruning-request.entity';
 import { User } from '../users/entities/user.entity';
 import { Task } from '../tasks/entities/task.entity';
+import { TaskDelegation } from '../tasks/entities/task-delegation.entity';
 import { PruningRequestsService } from './pruning-requests.service';
 import { PruningRequestsController } from './pruning-requests.controller';
 import { ServiceCapacityModule } from '../service-capacity/service-capacity.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PruningRequest, User, Task]),
+    TypeOrmModule.forFeature([PruningRequest, User, Task, TaskDelegation]),
     ServiceCapacityModule,
+    NotificationsModule,
+    UsersModule,
   ],
   controllers: [PruningRequestsController],
   providers: [PruningRequestsService],

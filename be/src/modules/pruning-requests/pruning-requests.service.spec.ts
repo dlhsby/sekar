@@ -186,6 +186,16 @@ describe('PruningRequestsService', () => {
             .ServiceCapacityService,
           useValue: mockServiceCapacityService,
         },
+        {
+          provide: require('../notifications/notifications.service').NotificationsService,
+          useValue: { sendToUser: jest.fn().mockResolvedValue({}) },
+        },
+        {
+          provide: require('../users/users.service').UsersService,
+          useValue: {
+            findOne: jest.fn().mockResolvedValue({ id: 'sat-id', role: 'satgas' }),
+          },
+        },
       ],
     }).compile();
 
