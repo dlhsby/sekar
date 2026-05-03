@@ -217,6 +217,8 @@ export function TaskDetailScreen(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // ADR-038: chronological assignment chain for this task.
+  const [delegations, setDelegations] = useState<tasksApi.TaskDelegation[]>([]);
 
   const [showDeclineInput, setShowDeclineInput] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
@@ -248,10 +250,24 @@ export function TaskDetailScreen(): React.JSX.Element {
     }
   }, [taskId]);
 
+  // ADR-038: load the assignment chain. Failures are silent — the chain
+  // is informational and should never block the screen from rendering.
+  const fetchDelegations = useCallback(async () => {
+    try {
+      const response = await tasksApi.getTaskDelegations(taskId);
+      if (response.data) {
+        setDelegations(response.data);
+      }
+    } catch {
+      // best-effort
+    }
+  }, [taskId]);
+
   // Initial load
   useEffect(() => {
     fetchTask();
-  }, [fetchTask]);
+    fetchDelegations();
+  }, [fetchTask, fetchDelegations]);
 
   // Refresh on every screen focus (e.g. after completing a task and coming back)
   const isMounted = React.useRef(false);
@@ -680,6 +696,35 @@ export function TaskDetailScreen(): React.JSX.Element {
                   <Text style={styles.detailRowText}>{formatDateTime(task.verified_at)}</Text>
                 </View>
               )}
+            </NBCardContent>
+          </NBCard>
+        )}
+
+        {/* ── Delegation Chain (ADR-038) ── */}
+        {delegations.length > 0 && (
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <Text style={styles.sectionTitle}>Riwayat Penugasan</Text>
+            </NBCardHeader>
+            <NBCardContent>
+              {delegations.map((d, idx) => (
+                <View key={d.id} style={styles.detailRow}>
+                  <Icon
+                    name={idx === delegations.length - 1 ? 'arrow-right-circle' : 'arrow-right'}
+                    size={14}
+                    color={nbColors.gray['500']}
+                  />
+                  <Text style={styles.detailRowText}>
+                    {d.from_user
+                      ? `${d.from_user.full_name} (${d.from_user.role})`
+                      : 'Sistem'}
+                    {' → '}
+                    {d.to_user.full_name} ({d.to_user.role})
+                    {'  ·  '}
+                    {formatDateTime(d.created_at)}
+                  </Text>
+                </View>
+              ))}
             </NBCardContent>
           </NBCard>
         )}

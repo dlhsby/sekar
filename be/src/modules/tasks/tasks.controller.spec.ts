@@ -55,6 +55,7 @@ describe('TasksController', () => {
             findTaggedTasks: jest.fn(),
             addTags: jest.fn(),
             removeTag: jest.fn(),
+            findDelegations: jest.fn(),
           },
         },
       ],

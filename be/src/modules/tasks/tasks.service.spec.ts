@@ -5,6 +5,7 @@ import { NotFoundException, BadRequestException, ForbiddenException } from '@nes
 import { TasksService } from './tasks.service';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
+import { TaskDelegation } from './entities/task-delegation.entity';
 import { CompleteTaskDto } from './dto/complete-task.dto';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
@@ -16,6 +17,7 @@ describe('TasksService', () => {
   let service: TasksService;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let taskTagRepository: jest.Mocked<Repository<TaskTag>>;
+  let taskDelegationRepository: jest.Mocked<Repository<TaskDelegation>>;
   let usersService: jest.Mocked<UsersService>;
   let areasService: jest.Mocked<AreasService>;
 
@@ -93,6 +95,15 @@ describe('TasksService', () => {
           },
         },
         {
+          provide: getRepositoryToken(TaskDelegation),
+          useValue: {
+            create: jest.fn((row) => row),
+            save: jest.fn().mockResolvedValue({}),
+            find: jest.fn().mockResolvedValue([]),
+            findOne: jest.fn(),
+          },
+        },
+        {
           provide: UsersService,
           useValue: {
             findOne: jest.fn(),
@@ -122,6 +133,7 @@ describe('TasksService', () => {
     service = module.get<TasksService>(TasksService);
     taskRepository = module.get(getRepositoryToken(Task));
     taskTagRepository = module.get(getRepositoryToken(TaskTag));
+    taskDelegationRepository = module.get(getRepositoryToken(TaskDelegation));
     usersService = module.get(UsersService);
     areasService = module.get(AreasService);
   });
@@ -364,6 +376,108 @@ describe('TasksService', () => {
       usersService.findOne.mockResolvedValueOnce(inactiveUser as User);
 
       await expect(service.assign('task-uuid', assignDto)).rejects.toThrow(BadRequestException);
+    });
+
+    // ADR-038: delegation chain audit
+    it('records a delegation hop on first assignment (caller → assignee)', async () => {
+      const pendingTask = { ...mockTask, status: TaskStatus.PENDING, assigned_to: null };
+      const worker = { ...mockUser, id: 'worker-uuid', role: UserRole.SATGAS };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(pendingTask as Task)
+        .mockResolvedValueOnce({ ...pendingTask, assigned_to: 'worker-uuid' } as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(worker as User) // assignee validation
+        .mockResolvedValueOnce(mockCreator as User); // authority lookup
+      taskRepository.save.mockResolvedValue(pendingTask as Task);
+
+      await service.assign('task-uuid', assignDto, 'creator-uuid');
+
+      expect(taskDelegationRepository.save).toHaveBeenCalledTimes(1);
+      const saved = (taskDelegationRepository.save as jest.Mock).mock.calls[0][0];
+      expect(saved).toMatchObject({
+        task_id: 'task-uuid',
+        from_user_id: 'creator-uuid',
+        from_role: UserRole.KORLAP,
+        to_user_id: 'worker-uuid',
+        to_role: UserRole.SATGAS,
+      });
+    });
+
+    it('records a delegation hop on reassignment (prev assignee → new assignee)', async () => {
+      const declinedTask = {
+        ...mockTask,
+        status: TaskStatus.DECLINED,
+        assigned_to: 'old-worker-uuid',
+      };
+      const newWorker = { ...mockUser, id: 'worker-uuid', role: UserRole.SATGAS };
+      const oldWorker = { ...mockUser, id: 'old-worker-uuid', role: UserRole.LINMAS };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(declinedTask as Task)
+        .mockResolvedValueOnce({ ...declinedTask, assigned_to: 'worker-uuid' } as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(newWorker as User) // new assignee validation
+        .mockResolvedValueOnce(mockCreator as User) // authority lookup
+        .mockResolvedValueOnce(oldWorker as User); // previous-assignee role lookup
+      taskRepository.save.mockResolvedValue(declinedTask as Task);
+
+      await service.assign('task-uuid', assignDto, 'creator-uuid');
+
+      const saved = (taskDelegationRepository.save as jest.Mock).mock.calls[0][0];
+      expect(saved).toMatchObject({
+        from_user_id: 'old-worker-uuid',
+        from_role: UserRole.LINMAS,
+        to_user_id: 'worker-uuid',
+        to_role: UserRole.SATGAS,
+      });
+    });
+
+    it('does not abort assignment when delegation insert fails', async () => {
+      const pendingTask = { ...mockTask, status: TaskStatus.PENDING, assigned_to: null };
+      const worker = { ...mockUser, id: 'worker-uuid', role: UserRole.SATGAS };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(pendingTask as Task)
+        .mockResolvedValueOnce({ ...pendingTask, assigned_to: 'worker-uuid' } as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(worker as User)
+        .mockResolvedValueOnce(mockCreator as User);
+      taskRepository.save.mockResolvedValue(pendingTask as Task);
+      (taskDelegationRepository.save as jest.Mock).mockRejectedValueOnce(new Error('db blip'));
+
+      await expect(
+        service.assign('task-uuid', assignDto, 'creator-uuid'),
+      ).resolves.toBeDefined();
+    });
+  });
+
+  describe('findDelegations (ADR-038)', () => {
+    it('returns chronological hops via QB with projected user columns', async () => {
+      taskRepository.findOne.mockResolvedValue(mockTask as Task);
+      const hops = [{ id: 'h1', task_id: 'task-uuid', created_at: new Date() }];
+      const qb: any = {
+        leftJoin: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(hops),
+      };
+      (taskDelegationRepository.createQueryBuilder as unknown) = jest.fn(() => qb);
+
+      const result = await service.findDelegations('task-uuid');
+
+      expect(result).toEqual(hops);
+      expect(qb.where).toHaveBeenCalledWith('d.task_id = :taskId', { taskId: 'task-uuid' });
+      expect(qb.orderBy).toHaveBeenCalledWith('d.created_at', 'ASC');
+      // Confirm we never project sensitive columns (password_hash etc.)
+      const selectArgs = (qb.addSelect as jest.Mock).mock.calls.flat(2).join(',');
+      expect(selectArgs).not.toContain('password');
+    });
+
+    it('throws 404 when the task does not exist', async () => {
+      taskRepository.findOne.mockResolvedValue(null);
+      await expect(service.findDelegations('missing')).rejects.toThrow(NotFoundException);
     });
   });
 

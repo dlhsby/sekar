@@ -391,6 +391,32 @@ export class TasksController {
   }
 
   /**
+   * List the delegation chain (assignment hops) for a task (ADR-038).
+   *
+   * Read scope mirrors the standard task-read scope: anyone allowed to see
+   * the task can see who handed it where.
+   */
+  @Get(':id/delegations')
+  @Roles(
+    ...USER_MANAGERS,
+    UserRole.KORLAP,
+    UserRole.SATGAS,
+    UserRole.LINMAS,
+    UserRole.KEPALA_RAYON,
+    UserRole.TOP_MANAGEMENT,
+  )
+  @ApiOperation({ summary: 'List task delegation chain (ADR-038)' })
+  @ApiParam({ name: 'id', description: 'Task UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chronological array of delegation hops with from/to user joined',
+  })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async listDelegations(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tasksService.findDelegations(id);
+  }
+
+  /**
    * Get the full task lineage — parent chain plus child tasks.
    */
   @Get(':id/lineage')

@@ -10,6 +10,7 @@ import { Repository, FindOptionsWhere } from 'typeorm';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
+import { TaskDelegation } from './entities/task-delegation.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { CreateTaskTypedDto } from './dto/create-task-typed.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -50,6 +51,8 @@ export class TasksService {
     private readonly taskRepository: Repository<Task>,
     @InjectRepository(TaskTag)
     private readonly taskTagRepository: Repository<TaskTag>,
+    @InjectRepository(TaskDelegation)
+    private readonly taskDelegationRepository: Repository<TaskDelegation>,
     private readonly usersService: UsersService,
     private readonly areasService: AreasService,
     private readonly auditLogService: AuditLogService,
@@ -80,10 +83,11 @@ export class TasksService {
 
     // If assigning to a user, validate the user and hierarchy
     let initialStatus = TaskStatus.PENDING;
+    let initialAssignee: User | null = null;
     if (createTaskDto.assigned_to) {
-      const assignee = await this.usersService.findOne(createTaskDto.assigned_to);
-      this.validateAssignee(assignee);
-      this.validateHierarchy(creator.role, assignee.role);
+      initialAssignee = await this.usersService.findOne(createTaskDto.assigned_to);
+      this.validateAssignee(initialAssignee);
+      this.validateHierarchy(creator.role, initialAssignee.role);
       initialStatus = TaskStatus.ASSIGNED;
     }
 
@@ -117,6 +121,20 @@ export class TasksService {
     });
 
     const savedTask = await this.taskRepository.save(task);
+
+    // ADR-038: record the first hop in the delegation chain when the task
+    // is created already-assigned (creator → assignee). Reuses the assignee
+    // loaded above for hierarchy validation — no extra DB roundtrip.
+    if (savedTask.assigned_to && initialAssignee) {
+      await this.recordDelegation({
+        task_id: savedTask.id,
+        from_user_id: creatorId,
+        from_role: creator.role,
+        to_user_id: savedTask.assigned_to,
+        to_role: initialAssignee.role,
+        reason: null,
+      });
+    }
 
     // Handle tagged users
     if (createTaskDto.tagged_user_ids && createTaskDto.tagged_user_ids.length > 0) {
@@ -423,12 +441,34 @@ export class TasksService {
       : await this.usersService.findOne(task.created_by);
     this.validateHierarchy(authorityUser.role, assignee.role);
 
+    const previousAssigneeId = task.assigned_to;
+    let previousAssigneeRole: UserRole | null = null;
+    if (previousAssigneeId) {
+      try {
+        const prev = await this.usersService.findOne(previousAssigneeId);
+        previousAssigneeRole = prev.role;
+      } catch {
+        // Previous assignee may have been deleted; leave role null.
+      }
+    }
+
     task.assigned_to = assignTaskDto.assigned_to;
     task.status = TaskStatus.ASSIGNED;
     task.assigned_at = new Date();
 
     await this.taskRepository.save(task);
     this.logger.log(`Task ${id} assigned to user ${assignTaskDto.assigned_to}`);
+
+    // ADR-038: record this hop in the delegation chain. The "from" side is
+    // either the prior assignee (reassignment) or the caller (first assign).
+    await this.recordDelegation({
+      task_id: id,
+      from_user_id: previousAssigneeId ?? authorityUser.id,
+      from_role: previousAssigneeRole ?? authorityUser.role,
+      to_user_id: assignTaskDto.assigned_to,
+      to_role: assignee.role,
+      reason: null,
+    });
 
     this.auditLogService
       .log({
@@ -441,6 +481,48 @@ export class TasksService {
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return this.findOne(id);
+  }
+
+  /**
+   * Insert one task_delegations row. Failures are logged but do not abort
+   * the assignment — the audit trail is best-effort, never load-bearing.
+   */
+  private async recordDelegation(input: {
+    task_id: string;
+    from_user_id: string | null;
+    from_role: UserRole | null;
+    to_user_id: string;
+    to_role: UserRole;
+    reason: string | null;
+  }): Promise<void> {
+    try {
+      const row = this.taskDelegationRepository.create(input);
+      await this.taskDelegationRepository.save(row);
+    } catch (err) {
+      this.logger.error(
+        `Failed to record task delegation for task ${input.task_id}: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * List all delegation hops for a task in chronological order (ADR-038).
+   * Used by the mobile TaskDetail screen to render the assignment chain.
+   */
+  async findDelegations(taskId: string): Promise<TaskDelegation[]> {
+    // Ensure the task exists so callers get a clean 404 instead of [].
+    await this.findOne(taskId);
+    // Project only safe user columns on the joins — the User entity carries
+    // password_hash, which the default `relations` loader would include.
+    return this.taskDelegationRepository
+      .createQueryBuilder('d')
+      .leftJoin('d.from_user', 'fu')
+      .leftJoin('d.to_user', 'tu')
+      .addSelect(['fu.id', 'fu.full_name', 'fu.role'])
+      .addSelect(['tu.id', 'tu.full_name', 'tu.role'])
+      .where('d.task_id = :taskId', { taskId })
+      .orderBy('d.created_at', 'ASC')
+      .getMany();
   }
 
   /**

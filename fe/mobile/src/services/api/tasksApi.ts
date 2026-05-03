@@ -62,6 +62,29 @@ export async function getTaggedTasks(
   return get<TasksListResponse>('/tasks/tagged', filters);
 }
 
+/**
+ * ADR-038: append-only audit row for one assignment hop on a task.
+ * Returned by GET /tasks/:id/delegations in chronological order.
+ */
+export interface TaskDelegation {
+  id: string;
+  task_id: string;
+  from_user_id: string | null;
+  to_user_id: string;
+  from_role: string | null;
+  to_role: string;
+  reason: string | null;
+  created_at: string;
+  from_user: { id: string; full_name: string; role: string } | null;
+  to_user: { id: string; full_name: string; role: string };
+}
+
+export async function getTaskDelegations(
+  id: string,
+): Promise<ApiResponse<TaskDelegation[]>> {
+  return get<TaskDelegation[]>(`/tasks/${id}/delegations`);
+}
+
 export async function getTaskById(id: string): Promise<ApiResponse<Task>> {
   return get<Task>(`/tasks/${id}`);
 }
