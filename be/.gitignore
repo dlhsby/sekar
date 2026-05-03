@@ -42,9 +42,11 @@ lerna-debug.log*
 .env.staging
 .env.local
 
-# Keep template for documentation
+# Keep templates for documentation (committed; safe defaults only)
 !.env.template
 !.env.example
+!.env.staging.example
+!.env.production.example
 
 # Firebase
 config/firebase-service-account.json
