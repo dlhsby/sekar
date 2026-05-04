@@ -428,10 +428,22 @@ export class TasksService {
 
     const task = await this.findOne(id);
 
-    // Can assign from pending (first assignment) or declined (reassignment)
-    if (task.status !== TaskStatus.PENDING && task.status !== TaskStatus.DECLINED) {
+    // ADR-038 — three legal states for /assign:
+    //   1. PENDING   — initial assignment by creator or a higher role.
+    //   2. DECLINED  — reassignment after the previous assignee refused.
+    //   3. ASSIGNED  — delegation by the current assignee before accepting
+    //      ("kepala_rayon got the task, hands it to admin_data"). Only the
+    //      current assignee may delegate; once they accept, the task is
+    //      committed and a decline is required to reroute.
+    const isCurrentAssigneeDelegation =
+      task.status === TaskStatus.ASSIGNED && callerId === task.assigned_to;
+    const allowed =
+      task.status === TaskStatus.PENDING ||
+      task.status === TaskStatus.DECLINED ||
+      isCurrentAssigneeDelegation;
+    if (!allowed) {
       throw new BadRequestException(
-        `Cannot assign task with status "${task.status}". Task must be pending or declined.`,
+        `Cannot assign task with status "${task.status}". Task must be pending, declined, or assigned (delegation by the current assignee).`,
       );
     }
 

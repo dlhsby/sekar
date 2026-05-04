@@ -12,14 +12,27 @@ import {
   useVerifyTask,
   useRequestRevision,
   useTaskDelegations,
+  useAssignTask,
 } from '@/lib/api/tasks';
-import { Card, CardHeader, CardContent, Badge, Button, FormInput } from '@/components/ui';
+import { useUsers } from '@/lib/api/users';
+import { Card, CardHeader, CardContent, Badge, Button, FormInput, FormSelect } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, RotateCcw, X } from 'lucide-react';
+import { ArrowLeft, Check, RotateCcw, Send, X } from 'lucide-react';
 import { TASK_MANAGER_ROLES, TASK_VERIFIER_ROLES, hasRole } from '@/lib/constants/roles';
 import { TASK_STATUS_LABELS, TASK_STATUS_BADGES } from '@/lib/constants/tasks';
+import type { UserRole } from '@/types/models';
+
+// ADR-038: which roles a delegator may hand a task to. Mirrors the backend
+// VALID_TASK_ASSIGNMENTS map in be/src/modules/users/constants/role-groups.ts.
+const DELEGATION_TARGETS: Record<string, UserRole[]> = {
+  top_management: ['kepala_rayon', 'korlap'],
+  kepala_rayon: ['korlap'],
+  korlap: ['satgas', 'linmas'],
+  admin_system: ['kepala_rayon', 'korlap'],
+  superadmin: ['kepala_rayon', 'korlap'],
+};
 
 const PRIORITY_LABELS: Record<string, string> = {
   low: 'Rendah',
@@ -50,6 +63,9 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   const verifyMutation = useVerifyTask();
   const revisionMutation = useRequestRevision();
   const untagMutation = useUntagTask();
+  const assignMutation = useAssignTask();
+  const [delegateUserId, setDelegateUserId] = useState('');
+  const [showDelegateForm, setShowDelegateForm] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, TASK_MANAGER_ROLES)) {
@@ -60,6 +76,21 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   const { data: task, isLoading } = useTask(taskId);
   // ADR-038: assignment chain. Best-effort — failure leaves the card hidden.
   const { data: delegations = [] } = useTaskDelegations(taskId);
+  // Pull a wide user pool when the delegate form is open; filter client-side
+  // by role + rayon to surface only valid hand-off targets.
+  const { data: usersResp } = useUsers({ limit: 200 });
+  const delegateCandidates = useMemo(() => {
+    if (!user || !task || !task.assigned_to) return [];
+    const allowedRoles = DELEGATION_TARGETS[user.role] ?? [];
+    if (allowedRoles.length === 0) return [];
+    const all = usersResp?.data ?? [];
+    return all.filter(
+      (u) =>
+        allowedRoles.includes(u.role) &&
+        u.id !== user.id &&
+        (!task.rayon?.id || !u.rayon_id || u.rayon_id === task.rayon.id),
+    );
+  }, [user, task, usersResp]);
 
   if (authLoading || !user || isLoading) {
     return (
@@ -86,6 +117,15 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
 
   const canVerify = hasRole(user.role, TASK_VERIFIER_ROLES) && task.status === 'completed';
 
+  // ADR-038: only the current assignee may delegate, and only while the task
+  // is still in "assigned" (not yet accepted). After acceptance a decline is
+  // required to reroute.
+  const canDelegate =
+    task.status === 'assigned' &&
+    !!task.assigned_to &&
+    task.assigned_to.id === user.id &&
+    !!DELEGATION_TARGETS[user.role];
+
   const handleVerify = async () => {
     await verifyMutation.mutateAsync(taskId);
   };
@@ -99,6 +139,13 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
 
   const handleUntag = async (userId: string) => {
     await untagMutation.mutateAsync({ taskId, userId });
+  };
+
+  const handleDelegate = async () => {
+    if (!delegateUserId) return;
+    await assignMutation.mutateAsync({ taskId, assignedTo: delegateUserId });
+    setShowDelegateForm(false);
+    setDelegateUserId('');
   };
 
   return (
@@ -448,6 +495,71 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 </li>
               ))}
             </ol>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Disposisi (delegation) — ADR-038 */}
+      {canDelegate && (
+        <Card variant="elevated">
+          <CardHeader>
+            <h2 className="text-xl font-bold text-nb-black">Disposisi Tugas</h2>
+            <p className="text-sm text-nb-gray-600 mt-1">
+              Limpahkan tugas ini ke bawahan Anda sebelum diterima. Setelah disposisi,
+              penerima berikutnya akan menerima notifikasi dan rangkaian dicatat di Riwayat Penugasan.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {!showDelegateForm ? (
+              <Button
+                variant="default"
+                onClick={() => setShowDelegateForm(true)}
+                leftIcon={<Send className="w-4 h-4" />}
+              >
+                Disposisi ke Bawahan
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <FormSelect
+                  label="Penerima Disposisi"
+                  value={delegateUserId}
+                  onChange={setDelegateUserId}
+                  options={[
+                    { value: '', label: 'Pilih penerima…' },
+                    ...delegateCandidates.map((u) => ({
+                      value: u.id,
+                      label: `${u.full_name} (${u.role})`,
+                    })),
+                  ]}
+                />
+                {delegateCandidates.length === 0 && (
+                  <p className="text-sm text-nb-danger">
+                    Tidak ada bawahan yang valid untuk dipilih.
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleDelegate}
+                    disabled={!delegateUserId || assignMutation.isPending}
+                    loading={assignMutation.isPending}
+                  >
+                    Kirim Disposisi
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setShowDelegateForm(false);
+                      setDelegateUserId('');
+                    }}
+                  >
+                    Batal
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

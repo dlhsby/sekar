@@ -377,6 +377,49 @@ describe('TasksService', () => {
       await expect(service.assign('task-uuid', assignDto)).rejects.toThrow(BadRequestException);
     });
 
+    // ADR-038: current assignee can delegate from ASSIGNED status
+    it('allows the current assignee to delegate from ASSIGNED status', async () => {
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'caller-uuid',
+      };
+      const newAssignee = { ...mockUser, id: 'worker-uuid', role: UserRole.SATGAS };
+      const caller = { ...mockUser, id: 'caller-uuid', role: UserRole.KORLAP };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(assignedTask as Task)
+        .mockResolvedValueOnce({ ...assignedTask, assigned_to: 'worker-uuid' } as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(newAssignee as User) // assignee validation
+        .mockResolvedValueOnce(caller as User) // authority lookup
+        .mockResolvedValueOnce(caller as User); // previous-assignee role lookup
+      taskRepository.save.mockResolvedValue(assignedTask as Task);
+
+      await service.assign('task-uuid', assignDto, 'caller-uuid');
+
+      expect(taskRepository.save).toHaveBeenCalled();
+      expect(taskDelegationRepository.save).toHaveBeenCalledTimes(1);
+      const saved = (taskDelegationRepository.save as jest.Mock).mock.calls[0][0];
+      expect(saved).toMatchObject({
+        from_user_id: 'caller-uuid',
+        to_user_id: 'worker-uuid',
+      });
+    });
+
+    it('rejects delegation from ASSIGNED status when caller is not the current assignee', async () => {
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'someone-else-uuid',
+      };
+      taskRepository.findOne.mockResolvedValue(assignedTask as Task);
+
+      await expect(
+        service.assign('task-uuid', assignDto, 'caller-uuid'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should throw BadRequestException if assigning to inactive user', async () => {
       const pendingTask = { ...mockTask, status: TaskStatus.PENDING };
       const inactiveUser = { ...mockUser, is_active: false };
