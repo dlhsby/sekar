@@ -18,6 +18,8 @@ import plantsReducer from './slices/plantsSlice';
 import pruningRequestsReducer from './slices/pruningRequestsSlice';
 import serviceCapacityReducer from './slices/serviceCapacitySlice';
 import plantSeedsReducer from './slices/plantSeedsSlice';
+import areasReducer from './slices/areasSlice';
+import usersReducer from './slices/usersSlice';
 
 export const store = configureStore({
   reducer: {
@@ -34,6 +36,8 @@ export const store = configureStore({
     pruningRequests: pruningRequestsReducer,
     serviceCapacity: serviceCapacityReducer,
     plantSeeds: plantSeedsReducer,
+    areas: areasReducer,
+    users: usersReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

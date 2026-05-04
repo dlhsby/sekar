@@ -18,6 +18,8 @@ import {
   clearError,
 } from '../../store/slices/pruningRequestsSlice';
 import { fetchCapacity } from '../../store/slices/serviceCapacitySlice';
+import { fetchAreas } from '../../store/slices/areasSlice';
+import { fetchUsers } from '../../store/slices/usersSlice';
 import {
   NBModal,
   NBButton,
@@ -67,18 +69,36 @@ export function ConvertToTaskSheet({
 }: ConvertToTaskSheetProps): React.JSX.Element {
   const dispatch = useAppDispatch();
 
-  // NOTE: Phase 3 ships without dedicated `areas` / `users` Redux slices. The
-  // convert form keeps area + assignee fields free-text for now (admin can paste
-  // an area ID + assignee user ID until those slices land in Phase 4 polish).
-  // See specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md → "Open Items".
-  const areas: { id: string; name: string }[] = [];
-  const users: { id: string; full_name: string; role: string }[] = [];
+  const allAreas = useAppSelector((state) => state.areas.list);
+  const allUsers = useAppSelector((state) => state.users.list);
   const { convertingId, error: pruningError } = useAppSelector(
     (state) => state.pruningRequests,
   );
   const { calendarByRayon, loading: _capacityLoading } = useAppSelector(
     (state) => state.serviceCapacity,
   );
+
+  // Scope the pickers to the request's rayon — areas live under a rayon, and
+  // assignees should be in-rayon korlap/satgas/linmas. Falls back to the full
+  // list if the request has no rayon for some reason.
+  const areas = useMemo(
+    () => (request.rayonId ? allAreas.filter((a) => a.rayon_id === request.rayonId) : allAreas),
+    [allAreas, request.rayonId],
+  );
+  const users = useMemo(
+    () =>
+      request.rayonId
+        ? allUsers.filter((u) => u.rayon_id === request.rayonId)
+        : allUsers,
+    [allUsers, request.rayonId],
+  );
+
+  // Lazy-load master data the first time the sheet opens.
+  useEffect(() => {
+    if (!visible) return;
+    if (allAreas.length === 0) dispatch(fetchAreas());
+    if (allUsers.length === 0) dispatch(fetchUsers());
+  }, [visible, allAreas.length, allUsers.length, dispatch]);
 
   // Form state
   const [areaId, setAreaId] = useState<string>('');
@@ -104,13 +124,17 @@ export function ConvertToTaskSheet({
     [areas],
   );
 
-  // Get korlap/supervisor users for assignment
+  // Pruning-eligible assignees per ADR-038: korlap routinely runs the work,
+  // satgas/linmas can be the direct hand, kepala_rayon/admin_data may take
+  // a task themselves and tag others.
   const assigneeOptions = useMemo(
     () =>
       users
-        .filter((u) => ['korlap', 'kepala_rayon'].includes(u.role))
+        .filter((u) =>
+          ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_data'].includes(u.role),
+        )
         .map((u) => ({
-          label: u.full_name,
+          label: `${u.full_name} (${u.role})`,
           value: u.id,
         })),
     [users],

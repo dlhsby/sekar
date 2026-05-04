@@ -78,13 +78,13 @@ const mockRequest = {
 };
 
 const mockAreas = [
-  { id: 'area1', name: 'Area 1', rayonId: 'r1' },
-  { id: 'area2', name: 'Area 2', rayonId: 'r1' },
+  { id: 'area1', name: 'Area 1', rayon_id: 'r1' },
+  { id: 'area2', name: 'Area 2', rayon_id: 'r1' },
 ];
 
 const mockUsers = [
-  { id: 'user1', full_name: 'Korlap 1', role: 'korlap' },
-  { id: 'user2', full_name: 'Kepala Rayon 1', role: 'kepala_rayon' },
+  { id: 'user1', full_name: 'Korlap 1', role: 'korlap', rayon_id: 'r1' },
+  { id: 'user2', full_name: 'Kepala Rayon 1', role: 'kepala_rayon', rayon_id: 'r1' },
 ];
 
 const mockCapacityRow = {
@@ -98,8 +98,9 @@ describe('ConvertToTaskSheet', () => {
   let store: any;
 
   // Mock reducers for areas and users
-  const areasReducer = (state = { items: mockAreas }) => state;
-  const usersReducer = (state = { items: mockUsers }) => state;
+  // Stubs match the real slice shape ({ list, isLoading, error, lastFetchedAt })
+  const areasReducer = (state = { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null }) => state;
+  const usersReducer = (state = { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null }) => state;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -133,12 +134,8 @@ describe('ConvertToTaskSheet', () => {
           loading: false,
           error: null,
         },
-        areas: {
-          items: mockAreas,
-        },
-        users: {
-          items: mockUsers,
-        },
+        areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
+        users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
       },
     });
 
@@ -292,8 +289,8 @@ describe('ConvertToTaskSheet', () => {
             loading: false,
             error: null,
           },
-          areas: { items: mockAreas },
-          users: { items: mockUsers },
+          areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
+          users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
       });
 
@@ -343,8 +340,8 @@ describe('ConvertToTaskSheet', () => {
             loading: false,
             error: null,
           },
-          areas: { items: mockAreas },
-          users: { items: mockUsers },
+          areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
+          users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
       });
 
@@ -394,8 +391,8 @@ describe('ConvertToTaskSheet', () => {
             loading: false,
             error: null,
           },
-          areas: { items: mockAreas },
-          users: { items: mockUsers },
+          areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
+          users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
       });
 
@@ -464,8 +461,8 @@ describe('ConvertToTaskSheet', () => {
             loading: false,
             error: null,
           },
-          areas: { items: mockAreas },
-          users: { items: mockUsers },
+          areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
+          users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
       });
 
