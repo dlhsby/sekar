@@ -794,14 +794,14 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 ---
 
-## Sub-Phase 3-14: Load test + regression fixes ⏳
+## Sub-Phase 3-14: Load test + regression fixes 🟡
 
 | Task | Status | Notes |
 |------|--------|-------|
-| k6 harness at `infra/loadtest/monitoring-500w.js` | ⏳ | |
-| 500-worker / 12-s ping / 30-min run | ⏳ | |
-| Pass criteria report (p95 ingest, broadcast, pool, Redis lag, missed transitions) | ⏳ | |
-| Regression fixes backlog | ⏳ | |
+| k6 harness at `infra/loadtest/monitoring-500w.js` | ✅ | May 4 — harness + README committed; thresholds enforce p95 ingest <200 ms, ws latency <500 ms, check rate >0.999. |
+| 500-worker / 12-s ping / 30-min run | ⏳ | Requires staging stack + a `seed-loadtest.ts` to generate 500 satgas users. Run via `k6 run -e WORKER_COUNT=500 -e DURATION=30m …` per `infra/loadtest/README.md`. |
+| Pass criteria report (p95 ingest, broadcast, pool, Redis lag, missed transitions) | ⏳ | Capture k6 summary + Datadog/`pg_stat_activity` spot checks after the staging run. |
+| Regression fixes backlog | ⏳ | Open after the first run reveals hotspots. |
 
 ---
 
@@ -820,4 +820,73 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 ---
 
-**Last Updated:** 2026-04-24
+## Manual UAT Walkthrough — May 4, 2026
+
+End-to-end review checklist for the pruning workflow redesign + monitoring v2 + delegation chain. Tick each row as you confirm it on the live stack (`http://localhost:3000` + `http://localhost:3001` + Android emulator). Items marked ✅ below have automated coverage; the rest need eyes-on confirmation.
+
+### A. Pruning intake (kecamatan)
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| A1 | Login `staff_kec_pusat` / `password123` on **mobile** → `SubmitScreen` | Form opens, photo picker works, can pick GPS | ✅ |
+| A2 | Submit a request with `expected_year=2026, expected_iso_week=21` (no `detail_date`) | DB row carries the week pair, `expected_date` NULL, status `submitted` | ✅ |
+| A3 | Same user → `MyRequestsScreen` | New row visible, status badge `submitted` | ✅ |
+| A4 | Login `staff_kec_pusat` on **web** at `/pruning-submit` | Mirror of mobile form, can submit | 🔍 |
+
+### B. Disposition (admin)
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| B1 | Login `admin` / `password123` on **mobile** → `ReviewQueueScreen` | A2's row appears | ✅ |
+| B2 | Tap row → `RequestDetailScreen` → Approve | Status → `approved`, `reviewed_by` populated | ✅ |
+| B3 | Same flow on **web** at `/pruning-requests` (admin list) → click row → Approve | Mirror of mobile | ✅ |
+| B4 | `ConvertToTaskSheet` (mobile) → pick area + assignee + caseType=GT + pruningAction=PM (no scheduled date) | Auto-pick path executes; `pruning_requests.expected_date` lands inside ISO 2026-W21 (May 18–24); `converted_task_id` populated | ✅ |
+| B5 | Same conversion on **web** detail page | Mirror of mobile B4 | ✅ |
+
+### C. Delegation chain (ADR-038)
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| C1 | Open the converted task on **web** as the assigned `korlap` → "Disposisi Tugas" card visible | Card appears only when status=`assigned` AND viewer=`assigned_to` | ✅ |
+| C2 | Pick a satgas from the dropdown → "Kirim Disposisi" | Task `assigned_to` updates, push notification fires to new assignee, "Riwayat Penugasan" gains a row | ✅ |
+| C3 | Same on **mobile** `TaskDetailScreen` ("Disposisi ke Bawahan" button) | Same as C2 | ✅ |
+| C4 | Try to delegate from `accepted` status | Backend rejects with 400 (must decline first) | ✅ |
+| C5 | `GET /tasks/:id/delegations` (Swagger or curl) | Chronological list of all hops | ✅ |
+
+### D. Satgas execution
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| D1 | Login `satgas1` / `password123` mobile → open task → Accept | Status → `accepted` | ✅ |
+| D2 | Tap "Mulai Kerjakan" | Status → `in_progress` | ✅ |
+| D3 | `PruningTaskForm` → enter plant items + photos → Selesai Sebagian | Activity created with line items; task remains `in_progress` | ✅ |
+| D4 | Final completion → photos + notes | Status → `completed`, photos in S3 | ✅ |
+
+### E. Verification
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| E1 | Login `korlap1` mobile/web → open completed task → Verifikasi | Status → `verified`, `verifier` populated | ✅ |
+| E2 | Or → Minta Revisi with reason | Status → `revision_needed`, satgas can resume | ✅ |
+
+### F. Monitoring map
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| F1 | Web `/monitoring` after seed | No console crash; `user_tracking_status` rows all `offline`; no orphan active shifts | ✅ |
+| F2 | Toggle plant overlay via `MonitoringTogglePanel` | Plants render with status colors (ok / due_soon / overdue) | 🔍 |
+| F3 | Click area → `AreaDetailDrawer` | Pruning-status panel + notable plants list | 🔍 |
+| F4 | Mobile monitoring map → tap area boundary → `BoundaryDetailModal` | Same panels as web | 🔍 |
+
+### G. Security / hardening
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| G1 | Any authenticated endpoint touching User joins (e.g. `GET /tasks/:id`, `/users/me`, `/tasks/:id/delegations`) | `password_hash` NEVER in JSON payload | ✅ |
+| G2 | Login spam (>10 req in 10 s) | 429 throttle kicks in (env-driven via `AUTH_LOGIN_THROTTLE_LIMIT`) | ✅ |
+| G3 | Backend boots with no `dotenv` warnings | `@Throttle` decorator literals see env values | ✅ |
+
+### H. Load test (sub-phase 3-14)
+| # | Step | Expected | Auto |
+|---|------|----------|------|
+| H1 | `k6 run -e WORKER_COUNT=5 -e DURATION=30s infra/loadtest/monitoring-500w.js` (smoke) | Exits 0; thresholds met | 🔍 |
+| H2 | Full 500-VU / 30-min run on staging | p95 ingest <200 ms, ws p95 <500 ms, checks >99.9 % | 🔍 |
+
+**Legend:** ✅ = automated test coverage in this pass · 🔍 = manual UAT required
+
+---
+
+**Last Updated:** 2026-05-04

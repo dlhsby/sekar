@@ -489,6 +489,13 @@ export function TaskDetailScreen(): React.JSX.Element {
   const showComplete = task.status === 'in_progress' && isAssignee;
   const showAssign = task.status === 'pending' && isCreator;
   const showReassign = task.status === 'declined' && isCreator;
+  // ADR-038: current assignee can delegate before accepting (e.g. kepala_rayon
+  // forwards the task to a korlap they manage). Reuses /tasks/:id/assign on
+  // the backend, which now permits ASSIGNED + caller===assigned_to.
+  const hasSubordinates =
+    user?.role &&
+    (FILTER_SUBORDINATE_ROLES[user.role as keyof typeof FILTER_SUBORDINATE_ROLES] ?? []).length > 0;
+  const showDelegate = task.status === 'assigned' && isAssignee && !!hasSubordinates;
   const showVerify = task.status === 'completed' && canVerify;
   const showRevision = task.status === 'completed' && canVerify;
 
@@ -745,7 +752,11 @@ export function TaskDetailScreen(): React.JSX.Element {
           {showAssignInput && (
             <View style={styles.inlineInputContainer}>
               <Text style={styles.inlineInputLabel}>
-                {showReassign ? 'Pilih Petugas Pengganti' : 'Pilih Petugas'}
+                {showDelegate
+                  ? 'Disposisi ke Bawahan'
+                  : showReassign
+                    ? 'Pilih Petugas Pengganti'
+                    : 'Pilih Petugas'}
               </Text>
               <NBSelect
                 value={assigneeId}
@@ -783,7 +794,7 @@ export function TaskDetailScreen(): React.JSX.Element {
           )}
 
           {/* Accept + Decline (when assigned) */}
-          {(showAccept || showDecline) && !showDeclineInput && (
+          {(showAccept || showDecline) && !showDeclineInput && !showAssignInput && (
             <View style={styles.buttonRow}>
               {showAccept && (
                 <View style={styles.buttonHalf}>
@@ -796,6 +807,16 @@ export function TaskDetailScreen(): React.JSX.Element {
                 </View>
               )}
             </View>
+          )}
+
+          {/* Disposisi (delegate) — current assignee only, ADR-038 */}
+          {showDelegate && !showAssignInput && !showDeclineInput && (
+            <NBButton
+              title="Disposisi ke Bawahan"
+              variant="info"
+              onPress={handleShowAssign}
+              disabled={isSubmitting}
+            />
           )}
 
           {/* Inline Decline Reason Input */}
