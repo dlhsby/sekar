@@ -13,7 +13,8 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      expect(navigationItems).toHaveLength(9);
+      // 7 dashboard items + 1 admin pruning-requests + 2 staff_kecamatan items
+      expect(navigationItems).toHaveLength(10);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
@@ -23,6 +24,7 @@ describe('Navigation Utilities', () => {
       expect(navIds).toContain('overtime');
       expect(navIds).toContain('data');
       expect(navIds).toContain('settings');
+      expect(navIds).toContain('pruning-requests');
 
       // Check nested items under 'data'
       const dataItem = navigationItems.find((item) => item.id === 'data');
@@ -74,8 +76,10 @@ describe('Navigation Utilities', () => {
     it('should return all items for superadmin role', () => {
       const filtered = filterNavigationByRole(navigationItems, 'superadmin');
 
-      // superadmin sees 7 items — all except the 2 staff_kecamatan-only pruning items
-      expect(filtered).toHaveLength(7);
+      // superadmin sees 8 items — 7 base dashboard items plus the new admin
+      // pruning-requests entry; 2 staff_kecamatan-only items remain hidden.
+      expect(filtered).toHaveLength(8);
+      expect(filtered.find((item) => item.id === 'pruning-requests')).toBeDefined();
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'settings')).toBeDefined();
 

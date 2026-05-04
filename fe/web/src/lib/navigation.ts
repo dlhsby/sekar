@@ -112,20 +112,31 @@ export const navigationItems: NavItem[] = [
     roles: [...ADMIN_ROLES],
   },
 
+  // ── Phase 3: pruning-requests admin disposition (ADR-038) ───────────────
+  // Admin / kepala_rayon / admin_data review and convert kecamatan submissions.
+  {
+    id: 'pruning-requests',
+    label: 'Permohonan Pemangkasan',
+    href: '/pruning-requests',
+    icon: InboxArrowDownIcon,
+    roles: ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'],
+  },
+
   // ── Phase 3: staff_kecamatan minimal navigation (ADR-033) ──────────────
-  // Monitoring is intentionally ABSENT for this role.
-  // Pages /pruning-requests and /pruning-requests/my are populated in sub-phase 3-10.
+  // Monitoring is intentionally ABSENT for this role. Submit pages live at
+  // /pruning-submit so they don't collide with the admin /pruning-requests
+  // dashboard (Next.js refuses parallel routes resolving to the same path).
   {
     id: 'pruning-submit',
     label: 'Kirim Permintaan',
-    href: '/pruning-requests',
+    href: '/pruning-submit',
     icon: InboxArrowDownIcon,
     roles: ['staff_kecamatan'],
   },
   {
     id: 'pruning-my',
     label: 'Permintaan Saya',
-    href: '/pruning-requests/my',
+    href: '/pruning-submit/my',
     icon: ListBulletIcon,
     roles: ['staff_kecamatan'],
   },
