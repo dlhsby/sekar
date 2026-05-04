@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted — **Amends [ADR-009](./ADR-009-phase2c-role-system-overhaul.md)**
+Accepted — **Amends [ADR-009](./ADR-009-phase2c-role-system-overhaul.md)** · **Amended May 2026 by [ADR-038](./ADR-038-pruning-workflow-entry-points.md)**
+
+> **Amendment (May 2026):** ADR-038 formalizes the disposition chain `top_management → kepala_rayon → admin_data → korlap → satgas` as a fully-audited delegation flow. Every hop on `POST /tasks/:id/assign` (and on `/convert-to-task`) writes a row to `task_delegations`; the assignee mid-flight may delegate further while the task is still in `assigned` status, without forcing a fake decline. `admin_data`'s authority described below is one slice of that broader chain — the role gate has not changed, but the audit trail and mid-flight hand-off were not contemplated when this ADR was written.
 
 ## Date
 

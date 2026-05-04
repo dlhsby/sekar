@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted — **Amended May 2026 by [ADR-038](./ADR-038-pruning-workflow-entry-points.md)**
+
+> **Amendment (May 2026):** ADR-038 reframes kecamatan booking as **week-only** at submit time. The original "convert-to-task exposes a day-picker scoped to the booked week" UI is retained for admin overrides, but the default path is now **server-side auto-pick** — `convertToTask()` walks Mon–Sun of the requested ISO week (`expected_year` + `expected_iso_week` columns added to `pruning_requests`) and books the first day where `bookAtomic` succeeds, falling back to admin override only if the whole week is full. The mobile `WeekPicker` replaces the day-grid `AvailabilityCalendar` on the kecamatan submit form. Capacity is still tracked weekly per this ADR; only the booking UX changed.
 
 ## Date
 

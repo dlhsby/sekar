@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — **Amends [ADR-031](./ADR-031-task-typing-and-custom-fields.md), [ADR-032](./ADR-032-admin-data-disposition-authority-pruning-requests.md), [ADR-035](./ADR-035-service-capacity-model.md)**
 
 ## Date
 

@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted — **Amended May 2026 by [ADR-038](./ADR-038-pruning-workflow-entry-points.md)**
+
+> **Amendment (May 2026):** ADR-038 formalizes the **5 legal entry points** by which a pruning workflow can begin (kecamatan request, top-down task assignment, mid-chain delegation, korlap self-assigned task with tagging, bare activity without a task). Activities are now first-class — `activities.task_id` is nullable and an activity may stand alone with `activity_tags`. Task assignment hops are audited in `task_delegations`. The single-task-per-pruning-job model implied by sections below should be read through the ADR-038 lens.
 
 ## Date
 
