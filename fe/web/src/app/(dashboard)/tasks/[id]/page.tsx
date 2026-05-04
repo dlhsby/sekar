@@ -6,7 +6,13 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useTask, useUntagTask, useVerifyTask, useRequestRevision } from '@/lib/api/tasks';
+import {
+  useTask,
+  useUntagTask,
+  useVerifyTask,
+  useRequestRevision,
+  useTaskDelegations,
+} from '@/lib/api/tasks';
 import { Card, CardHeader, CardContent, Badge, Button, FormInput } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -52,6 +58,8 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   }, [user, authLoading, router]);
 
   const { data: task, isLoading } = useTask(taskId);
+  // ADR-038: assignment chain. Best-effort — failure leaves the card hidden.
+  const { data: delegations = [] } = useTaskDelegations(taskId);
 
   if (authLoading || !user || isLoading) {
     return (
@@ -407,6 +415,39 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delegation chain (ADR-038) */}
+      {delegations.length > 0 && (
+        <Card variant="elevated">
+          <CardHeader>
+            <h2 className="text-xl font-bold text-nb-black">Riwayat Penugasan</h2>
+            <p className="text-sm text-nb-gray-600 mt-1">
+              Rangkaian disposisi dari pembuat tugas ke pelaksana akhir.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ol className="space-y-2">
+              {delegations.map((d) => (
+                <li
+                  key={d.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-l-4 border-nb-primary pl-3 py-1"
+                >
+                  <div className="text-sm">
+                    {d.from_user
+                      ? `${d.from_user.full_name} (${d.from_user.role})`
+                      : 'Sistem'}
+                    <span className="mx-2 text-nb-gray-400">→</span>
+                    {d.to_user.full_name} ({d.to_user.role})
+                  </div>
+                  <div className="text-xs text-nb-gray-600">
+                    {new Date(d.created_at).toLocaleString('id-ID')}
+                  </div>
+                </li>
+              ))}
+            </ol>
           </CardContent>
         </Card>
       )}

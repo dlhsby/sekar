@@ -169,6 +169,10 @@ describe('TaskDetailPage', () => {
       mutateAsync: mockMutateAsync,
       isPending: false,
     });
+    (tasksApi.useTaskDelegations as jest.Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
   });
 
   describe('Authentication', () => {

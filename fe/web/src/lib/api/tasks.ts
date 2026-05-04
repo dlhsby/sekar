@@ -122,6 +122,23 @@ export interface UpdateTaskDto {
 /**
  * Query Key Factory
  */
+/**
+ * ADR-038: append-only audit row for one assignment hop on a task.
+ * Returned by GET /tasks/:id/delegations in chronological order.
+ */
+export interface TaskDelegation {
+  id: string;
+  task_id: string;
+  from_user_id: string | null;
+  to_user_id: string;
+  from_role: string | null;
+  to_role: string;
+  reason: string | null;
+  created_at: string;
+  from_user: { id: string; full_name: string; role: string } | null;
+  to_user: { id: string; full_name: string; role: string };
+}
+
 export const tasksKeys = {
   all: ['tasks'] as const,
   lists: () => [...tasksKeys.all, 'list'] as const,
@@ -130,7 +147,23 @@ export const tasksKeys = {
   detail: (id: string) => [...tasksKeys.details(), id] as const,
   tagged: (filters?: TaskFilters) => [...tasksKeys.all, 'tagged', filters] as const,
   myTasks: (filters?: TaskFilters) => [...tasksKeys.all, 'my-tasks', filters] as const,
+  delegations: (id: string) => [...tasksKeys.all, 'delegations', id] as const,
 };
+
+/**
+ * Fetch the assignment chain for a task (ADR-038).
+ */
+export function useTaskDelegations(id: string) {
+  return useQuery({
+    queryKey: tasksKeys.delegations(id),
+    queryFn: async () => {
+      const response = await apiClient.get<TaskDelegation[]>(`/tasks/${id}/delegations`);
+      return response.data;
+    },
+    staleTime: 30 * 1000,
+    enabled: !!id,
+  });
+}
 
 /**
  * Fetch All Tasks
