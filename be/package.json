@@ -22,6 +22,7 @@
     "db:seed:phase3": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase3.ts",
     "db:seed:reference": "ts-node -r tsconfig-paths/register src/database/seeds/seed-reference.ts",
     "db:seed:staging": "ts-node -r tsconfig-paths/register src/database/seeds/seed-staging.ts",
+    "db:seed:loadtest": "ts-node -r tsconfig-paths/register src/database/seeds/seed-loadtest.ts",
     "db:reset": "npm run db:seed",
     "db:seed:prod": "node dist/database/seeds/seed-reference.js",
     "db:seed:phase1:prod": "node dist/database/seeds/seed-phase1.js",

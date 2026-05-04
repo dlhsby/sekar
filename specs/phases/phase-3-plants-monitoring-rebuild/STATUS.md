@@ -799,7 +799,7 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Task | Status | Notes |
 |------|--------|-------|
 | k6 harness at `infra/loadtest/monitoring-500w.js` | ✅ | May 4 — harness + README committed; thresholds enforce p95 ingest <200 ms, ws latency <500 ms, check rate >0.999. |
-| 500-worker / 12-s ping / 30-min run | ⏳ | Requires staging stack + a `seed-loadtest.ts` to generate 500 satgas users. Run via `k6 run -e WORKER_COUNT=500 -e DURATION=30m …` per `infra/loadtest/README.md`. |
+| 500-worker / 12-s ping / 30-min run | ⏳ | `seed-loadtest.ts` (`npm run db:seed:loadtest`, env `LOADTEST_USERS=500`) ships May 4 — generates `loadtest_satgas{N}` users idempotently. Full run still pending staging stack. |
 | Pass criteria report (p95 ingest, broadcast, pool, Redis lag, missed transitions) | ⏳ | Capture k6 summary + Datadog/`pg_stat_activity` spot checks after the staging run. |
 | Regression fixes backlog | ⏳ | Open after the first run reveals hotspots. |
 
