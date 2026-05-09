@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FieldHomeHeader } from '../../../components/navigation/FieldHomeHeader';
 import { NBBackgroundPattern } from '../../../components/nb';
 import { WeekPicker, type PickedWeek } from './WeekPicker';
-import { nbColors, nbSpacing } from '../../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbShadows } from '../../../constants/nbTokens';
 import type { RawCapacityRow } from '../utils/capacityCalendar';
 
 interface WeekPickerModalProps {
@@ -76,13 +76,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: nbColors.bgCanvas,
   },
+  // Mirrors the React Navigation `headerStyle` block used everywhere else
+  // (see MainNavigator screenOptions): same 76 dp height, white background,
+  // thick black bottom border, NB shadow.
   headerSlot: {
-    height: 56,
+    height: 76,
     flexDirection: 'row',
-    alignItems: 'stretch',
-    borderBottomWidth: 2,
+    alignItems: 'center',
+    backgroundColor: nbColors.white,
+    borderBottomWidth: nbBorders.thick,
     borderBottomColor: nbColors.black,
-    backgroundColor: nbColors.bgSurface,
+    ...nbShadows.md,
   },
   body: {
     flex: 1,
