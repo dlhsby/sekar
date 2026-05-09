@@ -300,28 +300,42 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                 <Text style={styles.label}>Alamat</Text>
                 <Text style={styles.value}>{request.address || '—'}</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  if (request.gpsLat != null && request.gpsLng != null) {
-                    setLocationModalVisible(true);
-                  }
-                }}
-                disabled={request.gpsLat == null || request.gpsLng == null}
-                accessibilityRole="button"
-                accessibilityLabel="Lihat lokasi di peta"
-                style={[styles.infoRow, { marginBottom: 0 }]}
-                testID="perantingan-gps-row"
-              >
+              {/* Coordinate row — read-only display of lat/lng. */}
+              <View style={[styles.infoRow, { marginBottom: nbSpacing.sm }]}>
                 <Text style={styles.label}>Koordinat GPS</Text>
-                <View style={styles.gpsValueRow}>
-                  <Text style={styles.valueMono}>
-                    {formatGps(request.gpsLat, request.gpsLng)}
-                  </Text>
-                  {request.gpsLat != null && request.gpsLng != null ? (
-                    <MaterialCommunityIcons name="map-marker-radius" size={18} color={nbColors.black} />
-                  ) : null}
-                </View>
-              </TouchableOpacity>
+                <Text style={styles.valueMono}>
+                  {formatGps(request.gpsLat, request.gpsLng)}
+                </Text>
+              </View>
+              {/* Separate "open in map" CTA below — clearly clickable, with
+                  its own icon, label, and accent color so the affordance
+                  reads as a button, not as decorative text. */}
+              {request.gpsLat != null && request.gpsLng != null ? (
+                <TouchableOpacity
+                  onPress={() => setLocationModalVisible(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Lihat lokasi di peta"
+                  style={styles.viewMapCta}
+                  testID="perantingan-gps-row"
+                >
+                  <MaterialCommunityIcons
+                    name="map-search"
+                    size={20}
+                    color={nbColors.primary}
+                  />
+                  <Text style={styles.viewMapCtaText}>Lihat di Peta</Text>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={20}
+                    color={nbColors.primary}
+                    style={{ marginLeft: 'auto' }}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.gpsHint}>
+                  Lokasi belum tersedia untuk dilihat di peta.
+                </Text>
+              )}
             </NBCardContent>
           </NBCard>
 
@@ -734,6 +748,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: nbSpacing[2],
+  },
+  viewMapCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing[2],
+    paddingVertical: nbSpacing[3],
+    paddingHorizontal: nbSpacing[3],
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.primary,
+    borderRadius: nbBorderRadius.base,
+    backgroundColor: nbColors.gray100,
+  },
+  viewMapCtaText: {
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.primary,
+  },
+  gpsHint: {
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray500,
+    fontStyle: 'italic',
+    paddingVertical: nbSpacing[2],
   },
   refCodeText: {
     flexShrink: 1,

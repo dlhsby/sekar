@@ -7,10 +7,12 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { NBModal } from '../../../components/nb';
+import { Modal, View, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { FieldHomeHeader } from '../../../components/navigation/FieldHomeHeader';
+import { NBBackgroundPattern } from '../../../components/nb';
 import { WeekPicker, type PickedWeek } from './WeekPicker';
-import { nbSpacing } from '../../../constants/nbTokens';
+import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import type { RawCapacityRow } from '../utils/capacityCalendar';
 
 interface WeekPickerModalProps {
@@ -22,6 +24,11 @@ interface WeekPickerModalProps {
   loading?: boolean;
 }
 
+/**
+ * Hosts `WeekPicker` in a fullscreen overlay using the same FieldHomeHeader
+ * back-button chrome as `SubmitScreen` so the kecamatan submit flow feels
+ * like one continuous form rather than a nested modal.
+ */
 export function WeekPickerModal({
   visible,
   onClose,
@@ -36,25 +43,34 @@ export function WeekPickerModal({
   };
 
   return (
-    <NBModal
+    <Modal
       visible={visible}
-      onClose={onClose}
-      title="Pilih Minggu Preferensi"
-      type="fullscreen"
+      animationType="slide"
+      onRequestClose={onClose}
+      presentationStyle="fullScreen"
     >
-      <View style={styles.body}>
-        <WeekPicker
-          rows={rows}
-          selected={selected}
-          onSelect={handleSelect}
-          loading={loading}
-        />
-      </View>
-    </NBModal>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <FieldHomeHeader title="Pilih Minggu Preferensi" onBack={onClose} />
+        <NBBackgroundPattern>
+          <View style={styles.body}>
+            <WeekPicker
+              rows={rows}
+              selected={selected}
+              onSelect={handleSelect}
+              loading={loading}
+            />
+          </View>
+        </NBBackgroundPattern>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: nbColors.bgCanvas,
+  },
   body: {
     flex: 1,
     padding: nbSpacing.md,

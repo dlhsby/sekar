@@ -191,7 +191,11 @@ export function WeekPicker({
         )}
         {weeks.map((week) => (
           <WeekCard
-            key={`${week.isoYear}-${week.isoWeek}`}
+            // Sunday-start chunks can occasionally map to the same ISO week
+            // when the calendar week and the ISO week disagree (week
+            // straddling the year boundary). Use startDate — guaranteed
+            // unique since each chunk starts on a distinct Sunday.
+            key={week.startDate}
             week={week}
             isSelected={
               !!selected &&
