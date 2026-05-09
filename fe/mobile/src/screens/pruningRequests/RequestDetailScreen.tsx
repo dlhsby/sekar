@@ -26,6 +26,7 @@ import {
   Image,
   SafeAreaView,
   Platform,
+  Linking,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -49,6 +50,7 @@ import {
 } from '../../components/nb';
 import { ConvertToTaskSheet } from '../../components/admin/ConvertToTaskSheet';
 import { RescheduleSheet } from './components/RescheduleSheet';
+import { LocationMapModal } from '../../components/modals/LocationMapModal';
 import { NBToast } from '../../components/nb/NBToast';
 import {
   nbColors,
@@ -106,6 +108,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [convertSheetVisible, setConvertSheetVisible] = useState(false);
   const [rescheduleVisible, setRescheduleVisible] = useState(false);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
 
   const canAdmin = useMemo(
     () => adminMode && userRole != null && ADMIN_ROLES.includes(userRole),
@@ -255,12 +258,28 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                 <Text style={styles.label}>Alamat</Text>
                 <Text style={styles.value}>{request.address || '—'}</Text>
               </View>
-              <View style={[styles.infoRow, { marginBottom: 0 }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (request.gpsLat != null && request.gpsLng != null) {
+                    setLocationModalVisible(true);
+                  }
+                }}
+                disabled={request.gpsLat == null || request.gpsLng == null}
+                accessibilityRole="button"
+                accessibilityLabel="Lihat lokasi di peta"
+                style={[styles.infoRow, { marginBottom: 0 }]}
+                testID="perantingan-gps-row"
+              >
                 <Text style={styles.label}>Koordinat GPS</Text>
-                <Text style={styles.valueMono}>
-                  {formatGps(request.gpsLat, request.gpsLng)}
-                </Text>
-              </View>
+                <View style={styles.gpsValueRow}>
+                  <Text style={styles.valueMono}>
+                    {formatGps(request.gpsLat, request.gpsLng)}
+                  </Text>
+                  {request.gpsLat != null && request.gpsLng != null ? (
+                    <MaterialCommunityIcons name="map-marker-radius" size={18} color={nbColors.black} />
+                  ) : null}
+                </View>
+              </TouchableOpacity>
             </NBCardContent>
           </NBCard>
 
@@ -571,6 +590,28 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             }}
           />
         ) : null}
+
+        {/* GPS map modal (May 2026) */}
+        {request ? (
+          <LocationMapModal
+            visible={locationModalVisible}
+            onClose={() => setLocationModalVisible(false)}
+            location={{
+              latitude: request.gpsLat ?? null,
+              longitude: request.gpsLng ?? null,
+              accuracy: null,
+              isWithinArea: false,
+              updatedAt: request.createdAt ? new Date(request.createdAt) : null,
+            }}
+            footerActionLabel="Buka di Google Maps"
+            onFooterAction={() => {
+              if (request.gpsLat != null && request.gpsLng != null) {
+                const url = `https://www.google.com/maps/search/?api=1&query=${request.gpsLat},${request.gpsLng}`;
+                void Linking.openURL(url);
+              }
+            }}
+          />
+        ) : null}
       </SafeAreaView>
     </NBBackgroundPattern>
   );
@@ -624,6 +665,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   refCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing[2],
+  },
+  gpsValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: nbSpacing[2],

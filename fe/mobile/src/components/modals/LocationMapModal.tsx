@@ -45,6 +45,12 @@ interface LocationMapModalProps {
     updatedAt: Date | null;
   };
   area?: AreaBoundary;
+  /**
+   * Optional footer action — when provided, renders a primary button below
+   * the map. Used by RequestDetailScreen to launch Google Maps navigation.
+   */
+  footerActionLabel?: string;
+  onFooterAction?: () => void;
 }
 
 function formatUpdatedAt(date: Date | null): string {
@@ -93,7 +99,14 @@ function fitRegion(points: { latitude: number; longitude: number }[]): Region {
 const AREA_FILL = withAlpha(nbColors.requestUnderReview, 0.12);
 const AREA_STROKE = nbColors.requestUnderReview;
 
-export function LocationMapModal({ visible, onClose, location, area }: LocationMapModalProps) {
+export function LocationMapModal({
+  visible,
+  onClose,
+  location,
+  area,
+  footerActionLabel,
+  onFooterAction,
+}: LocationMapModalProps) {
   const hasCoords = location.latitude !== null && location.longitude !== null;
   const accuracyWarning = location.accuracy !== null && location.accuracy > 50;
 
@@ -273,6 +286,21 @@ export function LocationMapModal({ visible, onClose, location, area }: LocationM
               <NBText variant="body" color="gray500">GPS tidak aktif atau belum tersedia</NBText>
             )}
           </View>
+
+          {footerActionLabel && onFooterAction && hasCoords ? (
+            <TouchableOpacity
+              onPress={onFooterAction}
+              accessibilityRole="button"
+              accessibilityLabel={footerActionLabel}
+              style={styles.footerAction}
+              testID="location-modal-footer-action"
+            >
+              <MaterialCommunityIcons name="google-maps" size={20} color={nbColors.white} />
+              <NBText variant="body" color="white" style={styles.footerActionText}>
+                {footerActionLabel}
+              </NBText>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </Pressable>
     </Modal>
@@ -280,6 +308,19 @@ export function LocationMapModal({ visible, onClose, location, area }: LocationM
 }
 
 const styles = StyleSheet.create({
+  footerAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.black,
+    paddingVertical: nbSpacing[3],
+    gap: nbSpacing[2],
+    borderTopWidth: nbBorders.base,
+    borderColor: nbColors.black,
+  },
+  footerActionText: {
+    fontWeight: '700',
+  },
   overlay: {
     flex: 1,
     backgroundColor: nbColors.overlay,

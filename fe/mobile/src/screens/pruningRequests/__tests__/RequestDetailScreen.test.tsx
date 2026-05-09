@@ -327,6 +327,13 @@ jest.mock('../../../hooks/useUserRole', () => ({
 // Mock API
 jest.mock('../../../services/api/pruningRequestsApi');
 
+// LocationMapModal pulls in react-native-maps which doesn't load in Jest;
+// stub it to a no-op so RequestDetailScreen can mount.
+jest.mock('../../../components/modals/LocationMapModal', () => ({
+  __esModule: true,
+  LocationMapModal: () => null,
+}));
+
 // NOW import components after mocks are set up
 import { RequestDetailScreen } from '../RequestDetailScreen';
 import pruningRequestsReducer, {
