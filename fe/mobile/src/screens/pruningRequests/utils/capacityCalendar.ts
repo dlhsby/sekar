@@ -139,3 +139,22 @@ export function buildEightWeekRange(today: Date = new Date()): {
   end.setDate(end.getDate() + 7 * 8 - 1);
   return { start, end };
 }
+
+/**
+ * Build a ~3-month-ahead range (May 2026). The range starts at the most-recent
+ * Sunday on/before today (so the first week card always renders all 7 day
+ * positions even if today is mid-week) and ends roughly 3 months later.
+ */
+export function buildThreeMonthRange(today: Date = new Date()): {
+  start: Date;
+  end: Date;
+} {
+  const start = new Date(today);
+  start.setHours(0, 0, 0, 0);
+  // Roll back to the Sunday of this calendar week (Sunday-start convention).
+  start.setDate(start.getDate() - start.getDay());
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + 3);
+  end.setDate(end.getDate() - 1);
+  return { start, end };
+}

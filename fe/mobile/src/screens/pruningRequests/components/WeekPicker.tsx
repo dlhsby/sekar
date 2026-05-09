@@ -29,7 +29,7 @@ import {
   nbBorderRadius,
 } from '../../../constants/nbTokens';
 import {
-  buildEightWeekRange,
+  buildThreeMonthRange,
   projectWeeklyToDaily,
   type DayAvailability,
   type DayStatus,
@@ -45,7 +45,9 @@ const DAY_DOT_COLOR: Record<DayStatus, string> = {
   unknown: nbColors.gray300,
 };
 
-const DAY_LABELS = ['S', 'S', 'R', 'K', 'J', 'S', 'M']; // Senin..Minggu
+// Sunday-start day labels — Min/Sen/Sel/Rab/Kam/Jum/Sab. We derive the position
+// of each day from `Date.getDay()` (0=Sunday) to handle partial weeks correctly.
+const DAY_LABELS = ['M', 'S', 'S', 'R', 'K', 'J', 'S']; // Min..Sab
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -115,17 +117,23 @@ function formatDayMonth(iso: string): string {
   return `${d.getDate()} ${ID_MONTHS[d.getMonth()]}`;
 }
 
+/**
+ * Chunk projected days into Sunday-start calendar weeks. Each chunk also
+ * carries the ISO year/week of any non-Sunday day inside it (used as the
+ * payload sent to the backend, since `service_capacity` is keyed by ISO
+ * week — see ADR-035). When a Sunday-start week straddles two ISO weeks
+ * (rare end-of-year edge case) we use the ISO week of Wednesday as the
+ * canonical one, matching the convention `getISOWeek` already uses.
+ */
 function chunkByWeek(days: DayAvailability[]): WeekSummary[] {
   const weeks: WeekSummary[] = [];
   let bucket: DayAvailability[] = [];
-  let key = '';
   for (const day of days) {
-    const k = `${day.isoYear}:${day.isoWeek}`;
-    if (k !== key && bucket.length > 0) {
+    const dow = new Date(day.date).getDay(); // 0 = Sunday
+    if (dow === 0 && bucket.length > 0) {
       weeks.push(toSummary(bucket));
       bucket = [];
     }
-    key = k;
     bucket.push(day);
   }
   if (bucket.length > 0) weeks.push(toSummary(bucket));
@@ -135,9 +143,12 @@ function chunkByWeek(days: DayAvailability[]): WeekSummary[] {
 function toSummary(days: DayAvailability[]): WeekSummary {
   const startDate = days[0].date;
   const endDate = days[days.length - 1].date;
+  // Use the middle-of-week (Wednesday-ish) day's ISO key when the chunk
+  // straddles two ISO weeks; otherwise the first day's key is fine.
+  const anchor = days[Math.min(days.length - 1, 3)] ?? days[0];
   return {
-    isoYear: days[0].isoYear,
-    isoWeek: days[0].isoWeek,
+    isoYear: anchor.isoYear,
+    isoWeek: anchor.isoWeek,
     days,
     status: aggregateWeekStatus(days),
     allPast: days.every((d) => isPast(d.date)),
@@ -155,7 +166,7 @@ export function WeekPicker({
   loading = false,
 }: WeekPickerProps): React.JSX.Element {
   const weeks = useMemo(() => {
-    const { start, end } = buildEightWeekRange();
+    const { start, end } = buildThreeMonthRange();
     return chunkByWeek(projectWeeklyToDaily(rows, start, end));
   }, [rows]);
 
@@ -252,12 +263,13 @@ function WeekCard({ week, isSelected, onPress }: WeekCardProps): React.JSX.Eleme
         </View>
 
         <View style={styles.dayDotRow}>
-          {week.days.map((day, idx) => {
+          {week.days.map((day) => {
             const past = isPast(day.date);
+            const dow = new Date(day.date).getDay(); // 0 = Sunday
             return (
               <View key={day.date} style={styles.dayDotCell}>
                 <NBText variant="caption" color="gray500" style={styles.dayLabel}>
-                  {DAY_LABELS[idx]}
+                  {DAY_LABELS[dow]}
                 </NBText>
                 <View
                   style={[
