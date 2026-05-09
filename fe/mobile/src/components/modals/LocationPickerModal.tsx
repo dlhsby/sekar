@@ -15,23 +15,29 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, {
-  MapPressEvent,
-  Marker,
-  MarkerDragStartEndEvent,
   PROVIDER_GOOGLE,
   Region,
 } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { NBModal, NBButton } from '../nb';
+import { NBButton } from '../nb';
 import { NBText } from '../nb/NBText';
 import { requestLocationPermission } from '../../services/permissions/permissionService';
 import {
   nbColors,
   nbSpacing,
+  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -90,14 +96,12 @@ export function LocationPickerModal({
     }
   }, [visible, initial]);
 
-  const handleMapPress = useCallback((e: MapPressEvent) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setCoords({ lat: latitude, lng: longitude });
-  }, []);
-
-  const handleDragEnd = useCallback((e: MarkerDragStartEndEvent) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setCoords({ lat: latitude, lng: longitude });
+  // May 2026 — switched to "drag the map, pin stays in the center" UX
+  // (FakeGPS-style). The pin is a static overlay; the picked coordinate is
+  // the center of the visible map region, recomputed on every pan-end.
+  const handleRegionChangeComplete = useCallback((r: Region) => {
+    setRegion(r);
+    setCoords({ lat: r.latitude, lng: r.longitude });
   }, []);
 
   const animateTo = useCallback(
@@ -152,12 +156,98 @@ export function LocationPickerModal({
   }, [coords, onClose, onConfirm]);
 
   return (
-    <NBModal
+    <Modal
       visible={visible}
-      onClose={onClose}
-      type="fullscreen"
-      title="Pilih Titik Lokasi"
-      footer={
+      animationType="slide"
+      onRequestClose={onClose}
+      presentationStyle="fullScreen"
+    >
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Header — matches React Navigation's standard 76 dp chrome */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.backBtn}
+            accessibilityLabel="Kembali"
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
+          </TouchableOpacity>
+          <Text style={styles.title} numberOfLines={1}>Pilih Titik Lokasi</Text>
+        </View>
+
+        <View style={styles.mapWrap}>
+          <MapView
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            provider={PROVIDER_GOOGLE}
+            region={region}
+            onRegionChangeComplete={handleRegionChangeComplete}
+            scrollEnabled
+            zoomEnabled
+            pitchEnabled={false}
+            rotateEnabled={false}
+          />
+
+          {/* Fixed center pin overlay — FakeGPS-style picker. The marker
+              sits at the geometric center of the map view; whatever
+              coordinate the map is centered on becomes the picked one. */}
+          <View pointerEvents="none" style={styles.centerPinWrap}>
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={48}
+              color={nbColors.danger}
+              style={styles.centerPin}
+            />
+            <View style={styles.pinShadow} />
+          </View>
+
+          {/* Hint banner — top */}
+          <View style={styles.hintBanner} pointerEvents="none">
+            <NBText variant="caption" color="black" style={styles.hintText}>
+              Geser peta agar penanda jatuh di titik yang Anda inginkan.
+            </NBText>
+          </View>
+
+          {/* Zoom controls — top-right floating column */}
+          <View style={styles.zoomCol} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={handleZoomIn}
+              accessibilityRole="button"
+              accessibilityLabel="Perbesar"
+            >
+              <MaterialCommunityIcons name="plus" size={22} color={nbColors.black} />
+            </TouchableOpacity>
+            <View style={styles.iconBtnDivider} />
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={handleZoomOut}
+              accessibilityRole="button"
+              accessibilityLabel="Perkecil"
+            >
+              <MaterialCommunityIcons name="minus" size={22} color={nbColors.black} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Use-my-location button — bottom-right floating */}
+          <TouchableOpacity
+            style={styles.gpsBtn}
+            onPress={handleUseMyLocation}
+            disabled={gpsLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Gunakan lokasi saya"
+          >
+            {gpsLoading ? (
+              <ActivityIndicator size="small" color={nbColors.black} />
+            ) : (
+              <MaterialCommunityIcons name="crosshairs-gps" size={24} color={nbColors.black} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer — coordinate readout + actions */}
         <View style={styles.footer}>
           <NBText variant="caption" color="gray500" style={styles.coordsText}>
             Titik: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
@@ -178,75 +268,83 @@ export function LocationPickerModal({
             />
           </View>
         </View>
-      }
-    >
-      <View style={styles.mapWrap}>
-        <MapView
-          ref={mapRef}
-          style={StyleSheet.absoluteFill}
-          provider={PROVIDER_GOOGLE}
-          region={region}
-          onRegionChangeComplete={(r) => setRegion(r)}
-          onPress={handleMapPress}
-          scrollEnabled
-          zoomEnabled
-          pitchEnabled={false}
-          rotateEnabled={false}
-        >
-          <Marker
-            coordinate={{ latitude: coords.lat, longitude: coords.lng }}
-            draggable
-            onDragEnd={handleDragEnd}
-            title="Titik permohonan"
-            description="Tarik untuk menyesuaikan posisi"
-          />
-        </MapView>
-
-        {/* Zoom controls — top-right floating column */}
-        <View style={styles.zoomCol} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={handleZoomIn}
-            accessibilityRole="button"
-            accessibilityLabel="Perbesar"
-          >
-            <MaterialCommunityIcons name="plus" size={22} color={nbColors.black} />
-          </TouchableOpacity>
-          <View style={styles.iconBtnDivider} />
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={handleZoomOut}
-            accessibilityRole="button"
-            accessibilityLabel="Perkecil"
-          >
-            <MaterialCommunityIcons name="minus" size={22} color={nbColors.black} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Use-my-location button — bottom-right floating */}
-        <TouchableOpacity
-          style={styles.gpsBtn}
-          onPress={handleUseMyLocation}
-          disabled={gpsLoading}
-          accessibilityRole="button"
-          accessibilityLabel="Gunakan lokasi saya"
-        >
-          {gpsLoading ? (
-            <ActivityIndicator size="small" color={nbColors.black} />
-          ) : (
-            <MaterialCommunityIcons name="crosshairs-gps" size={24} color={nbColors.black} />
-          )}
-        </TouchableOpacity>
-      </View>
-    </NBModal>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: nbColors.bgCanvas,
+  },
+  // Standard 76 dp NB sub-screen header (matches MainNavigator.screenOptions).
+  header: {
+    height: 76,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: nbSpacing.md,
+    backgroundColor: nbColors.white,
+    borderBottomWidth: nbBorders.thick,
+    borderBottomColor: nbColors.black,
+    ...nbShadows.md,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginRight: nbSpacing.xs,
+  },
+  title: {
+    flex: 1,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
+  },
   mapWrap: {
     flex: 1,
-    margin: -nbSpacing.lg, // cancel out NBModal fullscreenBody padding
     position: 'relative',
+  },
+  // Fixed center-pin overlay (FakeGPS-style picker)
+  centerPinWrap: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    // Pin point sits at the visual center; offset so the marker tip lines up
+    // with the screen center (icon is 48 px, tip is at the bottom).
+    marginLeft: -24,
+    marginTop: -48,
+    alignItems: 'center',
+    pointerEvents: 'none',
+  },
+  centerPin: {
+    // Drop shadow on the pin itself for visibility against light/dark map tiles.
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  pinShadow: {
+    width: 12,
+    height: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    marginTop: -6,
+  },
+  hintBanner: {
+    position: 'absolute',
+    top: nbSpacing.md,
+    alignSelf: 'center',
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.xs,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.base,
+    ...nbShadows.sm,
+  },
+  hintText: {
+    textAlign: 'center',
   },
   // Floating zoom column (top-right)
   zoomCol: {
@@ -288,6 +386,10 @@ const styles = StyleSheet.create({
   },
   footer: {
     gap: nbSpacing.sm,
+    padding: nbSpacing.md,
+    backgroundColor: nbColors.bgCanvas,
+    borderTopWidth: nbBorders.base,
+    borderTopColor: nbColors.black,
   },
   coordsText: {
     textAlign: 'center',

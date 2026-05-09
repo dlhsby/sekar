@@ -7,12 +7,18 @@
  */
 
 import React from 'react';
-import { Modal, View, StyleSheet } from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FieldHomeHeader } from '../../../components/navigation/FieldHomeHeader';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBBackgroundPattern } from '../../../components/nb';
 import { WeekPicker, type PickedWeek } from './WeekPicker';
-import { nbColors, nbSpacing, nbBorders, nbShadows } from '../../../constants/nbTokens';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorders,
+  nbShadows,
+} from '../../../constants/nbTokens';
 import type { RawCapacityRow } from '../utils/capacityCalendar';
 
 interface WeekPickerModalProps {
@@ -50,11 +56,17 @@ export function WeekPickerModal({
       presentationStyle="fullScreen"
     >
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        {/* FieldHomeHeader uses flex:1 internally so it stretches to fill its
-            parent — wrap it in a fixed-height View matching the canonical
-            56 px header so it doesn't eat half the modal. */}
-        <View style={styles.headerSlot}>
-          <FieldHomeHeader title="Pilih Minggu Preferensi" onBack={onClose} />
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.backBtn}
+            accessibilityLabel="Kembali"
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
+          </TouchableOpacity>
+          <Text style={styles.title} numberOfLines={1}>Pilih Minggu Preferensi</Text>
         </View>
         <NBBackgroundPattern>
           <View style={styles.body}>
@@ -76,21 +88,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: nbColors.bgCanvas,
   },
-  // Mirrors the React Navigation `headerStyle` block used everywhere else
-  // (see MainNavigator screenOptions): 76 dp height, white background,
-  // thick black bottom border, NB shadow. FieldHomeHeader has its own
-  // height: 56 internally, so we vertically center it inside the 76 px
-  // slot via `justifyContent: 'center'` — same effect React Navigation
-  // applies to the headerTitle container in stack screens.
-  headerSlot: {
+  // Mirrors React Navigation's screenOptions header chrome (see
+  // MainNavigator): 76 dp height, white background, thick black bottom
+  // border, NB shadow. Children (back arrow + title) are vertically
+  // centered via `alignItems: 'center'`.
+  header: {
     height: 76,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: nbSpacing.md,
     backgroundColor: nbColors.white,
     borderBottomWidth: nbBorders.thick,
     borderBottomColor: nbColors.black,
     ...nbShadows.md,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginRight: nbSpacing.xs,
+  },
+  title: {
+    flex: 1,
+    fontSize: nbTypography.fontSize['2xl'],
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.black,
   },
   body: {
     flex: 1,
