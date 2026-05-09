@@ -656,8 +656,10 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             visible={locationModalVisible}
             onClose={() => setLocationModalVisible(false)}
             location={{
-              latitude: request.gpsLat ?? null,
-              longitude: request.gpsLng ?? null,
+              // TypeORM emits decimal columns as strings; coerce to Number so
+              // LocationMapModal's `.toFixed()` calls don't blow up.
+              latitude: request.gpsLat == null ? null : Number(request.gpsLat),
+              longitude: request.gpsLng == null ? null : Number(request.gpsLng),
               accuracy: null,
               isWithinArea: false,
               updatedAt: request.createdAt ? new Date(request.createdAt) : null,

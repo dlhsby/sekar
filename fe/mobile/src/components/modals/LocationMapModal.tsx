@@ -107,7 +107,22 @@ export function LocationMapModal({
   footerActionLabel,
   onFooterAction,
 }: LocationMapModalProps) {
-  const hasCoords = location.latitude !== null && location.longitude !== null;
+  // Coerce — backend may emit decimal columns as strings via TypeORM, and
+  // some callers pass numeric strings unintentionally. Treat NaN/null/undefined
+  // uniformly as "no coords" so the renderer never calls .toFixed on a string.
+  const lat =
+    typeof location.latitude === 'number'
+      ? location.latitude
+      : location.latitude != null
+      ? Number(location.latitude)
+      : null;
+  const lng =
+    typeof location.longitude === 'number'
+      ? location.longitude
+      : location.longitude != null
+      ? Number(location.longitude)
+      : null;
+  const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
   const accuracyWarning = location.accuracy !== null && location.accuracy > 50;
 
   const polygonCoords = useMemo(() => {
@@ -119,7 +134,7 @@ export function LocationMapModal({
     const points: { latitude: number; longitude: number }[] = [];
 
     if (hasCoords) {
-      points.push({ latitude: location.latitude!, longitude: location.longitude! });
+      points.push({ latitude: lat!, longitude: lng! });
     }
 
     if (polygonCoords) {
@@ -150,7 +165,7 @@ export function LocationMapModal({
       };
     }
     return fitRegion(points);
-  }, [hasCoords, location.latitude, location.longitude, polygonCoords, area]);
+  }, [hasCoords, lat, lng, polygonCoords, area]);
 
   return (
     <Modal
@@ -218,7 +233,7 @@ export function LocationMapModal({
                 {/* User location marker */}
                 {hasCoords && (
                   <Marker
-                    coordinate={{ latitude: location.latitude!, longitude: location.longitude! }}
+                    coordinate={{ latitude: lat!, longitude: lng! }}
                     title="Lokasi Anda"
                     description={
                       location.accuracy !== null
@@ -248,9 +263,9 @@ export function LocationMapModal({
                   variant="mono-sm"
                   color="black"
                   style={styles.coordsFont}
-                  accessibilityLabel={`Koordinat: ${location.latitude!.toFixed(6)}, ${location.longitude!.toFixed(6)}`}
+                  accessibilityLabel={`Koordinat: ${lat!.toFixed(6)}, ${lng!.toFixed(6)}`}
                 >
-                  {location.latitude!.toFixed(6)}, {location.longitude!.toFixed(6)}
+                  {lat!.toFixed(6)}, {lng!.toFixed(6)}
                 </NBText>
 
                 <View style={styles.infoRow}>

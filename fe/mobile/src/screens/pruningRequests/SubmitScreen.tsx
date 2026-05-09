@@ -381,7 +381,7 @@ export function SubmitScreen(): React.JSX.Element {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <FieldHomeHeader title="Buat Permohonan" onBack={handleLeave} />
+        <FieldHomeHeader title="Buat Permohonan Perantingan" onBack={handleLeave} />
       ),
     });
   }, [navigation, handleLeave]);
@@ -580,24 +580,38 @@ export function SubmitScreen(): React.JSX.Element {
               <NBText variant="h3">Lokasi *</NBText>
             </NBCardHeader>
             <NBCardContent>
-              {/* Rayon + Kecamatan — pre-filled from logged-in user, read-only.
-                  staff_kecamatan users are pinned to a single kecamatan; non-staff
-                  callers (admin) keep the selectable behavior as a fallback. */}
+              {/* Rayon + Kecamatan — pre-filled from logged-in user, rendered
+                  as disabled NBSelects (matches the "Area Saya" pattern in the
+                  tugas filter). Stacked vertically per UX review May 9, 2026.
+                  staff_kecamatan users are pinned to a single kecamatan; admin
+                  callers keep the selectable behavior. */}
               {user?.role === 'staff_kecamatan' ? (
-                <View style={styles.presetRow}>
-                  <View style={styles.presetItem}>
-                    <NBText variant="caption" style={styles.presetLabel}>Rayon</NBText>
-                    <NBText variant="body" testID="perantingan-rayon-readonly">
-                      {rayons.find((r) => r.id === rayonId)?.name ?? '—'}
-                    </NBText>
+                <>
+                  <View style={styles.fieldGroup} testID="perantingan-rayon-readonly">
+                    <NBSelect
+                      label="Rayon"
+                      value={rayonId || 'unset'}
+                      onValueChange={() => {}}
+                      options={[{
+                        label: rayons.find((r) => r.id === rayonId)?.name ?? 'Belum diatur',
+                        value: rayonId || 'unset',
+                      }]}
+                      disabled
+                    />
                   </View>
-                  <View style={styles.presetItem}>
-                    <NBText variant="caption" style={styles.presetLabel}>Kecamatan</NBText>
-                    <NBText variant="body" testID="perantingan-kecamatan-readonly">
-                      {kecamatanName || '—'}
-                    </NBText>
+                  <View style={styles.fieldGroup} testID="perantingan-kecamatan-readonly">
+                    <NBSelect
+                      label="Kecamatan"
+                      value={kecamatanName || 'unset'}
+                      onValueChange={() => {}}
+                      options={[{
+                        label: kecamatanName || 'Belum diatur',
+                        value: kecamatanName || 'unset',
+                      }]}
+                      disabled
+                    />
                   </View>
-                </View>
+                </>
               ) : (
                 <>
                   <View style={styles.fieldGroup}>
