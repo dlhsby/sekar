@@ -486,6 +486,63 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     // All passwords: `password123` (bcrypt 10 salt rounds, same hash as
     // seed-phase2). Idempotent via ON CONFLICT (username) DO NOTHING.
     console.log('');
+    console.log('🏘️  ======== SECTION 3.4: Kecamatans (31 Surabaya) ========');
+    // Idempotent — seeded here (rather than seed-reference) because db:seed
+    // pipeline runs phase1 → phase2 → phase3, and rayons exist after phase2.
+    const rayonIdByCode = await queryRunner.query(
+      `SELECT id, code FROM rayons`,
+    ) as Array<{ id: string; code: string }>;
+    const rIdx: Record<string, string> = {};
+    for (const r of rayonIdByCode) rIdx[r.code] = r.id;
+    const kecBlueprint: Array<[string, string, string, string]> = [
+      // [name, code, rayon_code, region]
+      ['Bubutan', 'bubutan', 'PUSAT', 'pusat'],
+      ['Genteng', 'genteng', 'PUSAT', 'pusat'],
+      ['Simokerto', 'simokerto', 'PUSAT', 'pusat'],
+      ['Tegalsari', 'tegalsari', 'PUSAT', 'pusat'],
+      ['Tambaksari', 'tambaksari', 'TIMUR1', 'timur'],
+      ['Gubeng', 'gubeng', 'TIMUR1', 'timur'],
+      ['Sukolilo', 'sukolilo', 'TIMUR1', 'timur'],
+      ['Mulyorejo', 'mulyorejo', 'TIMUR2', 'timur'],
+      ['Rungkut', 'rungkut', 'TIMUR2', 'timur'],
+      ['Tenggilis Mejoyo', 'tenggilis_mejoyo', 'TIMUR2', 'timur'],
+      ['Gunung Anyar', 'gunung_anyar', 'TIMUR2', 'timur'],
+      ['Sukomanunggal', 'sukomanunggal', 'BARAT1', 'barat'],
+      ['Tandes', 'tandes', 'BARAT1', 'barat'],
+      ['Asemrowo', 'asemrowo', 'BARAT1', 'barat'],
+      ['Benowo', 'benowo', 'BARAT1', 'barat'],
+      ['Pakal', 'pakal', 'BARAT1', 'barat'],
+      ['Sambikerep', 'sambikerep', 'BARAT2', 'barat'],
+      ['Lakarsantri', 'lakarsantri', 'BARAT2', 'barat'],
+      ['Sawahan', 'sawahan', 'BARAT2', 'selatan'],
+      ['Dukuh Pakis', 'dukuh_pakis', 'BARAT2', 'selatan'],
+      ['Wiyung', 'wiyung', 'BARAT2', 'selatan'],
+      ['Karang Pilang', 'karang_pilang', 'BARAT2', 'selatan'],
+      ['Krembangan', 'krembangan', 'UTARA', 'utara'],
+      ['Pabean Cantian', 'pabean_cantian', 'UTARA', 'utara'],
+      ['Semampir', 'semampir', 'UTARA', 'utara'],
+      ['Kenjeran', 'kenjeran', 'UTARA', 'utara'],
+      ['Bulak', 'bulak', 'UTARA', 'utara'],
+      ['Wonokromo', 'wonokromo', 'SELATAN', 'selatan'],
+      ['Wonocolo', 'wonocolo', 'SELATAN', 'selatan'],
+      ['Gayungan', 'gayungan', 'SELATAN', 'selatan'],
+      ['Jambangan', 'jambangan', 'SELATAN', 'selatan'],
+    ];
+    let kecInserted = 0;
+    for (const [name, code, rcode, region] of kecBlueprint) {
+      const rid = rIdx[rcode];
+      if (!rid) continue;
+      const r = await queryRunner.query(
+        `INSERT INTO kecamatans (name, code, rayon_id, region)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (code) DO NOTHING`,
+        [name, code, rid, region],
+      );
+      if (r && (r as any).rowCount > 0) kecInserted++;
+    }
+    console.log(`  ✓ ${kecInserted} new kecamatans inserted (31 total when fresh)`);
+
+    console.log('');
     console.log('🧑‍💼 ======== SECTION 3.5: Staff Kecamatan Users ========');
     const STAFF_KEC_PWD_HASH =
       '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
