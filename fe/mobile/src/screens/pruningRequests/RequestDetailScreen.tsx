@@ -200,7 +200,31 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             <NBCardContent>
               <View style={styles.infoRow}>
                 <Text style={styles.label}>Kode Permohonan</Text>
-                <Text style={styles.valueMono}>{request.referenceCode || '—'}</Text>
+                <View style={styles.refCodeRow}>
+                  <Text style={[styles.valueMono, styles.refCodeText]} selectable>
+                    {request.referenceCode || '—'}
+                  </Text>
+                  {request.referenceCode ? (
+                    <TouchableOpacity
+                      onPress={async () => {
+                        try {
+                          const Clipboard = (await import('@react-native-clipboard/clipboard')).default;
+                          Clipboard.setString(request.referenceCode);
+                          NBToast.show({ level: 'success', title: 'Disalin', body: request.referenceCode });
+                        } catch {
+                          /* native module unavailable in tests */
+                        }
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Salin kode permohonan"
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={styles.copyBtn}
+                      testID="perantingan-copy-ref"
+                    >
+                      <MaterialCommunityIcons name="content-copy" size={18} color={nbColors.black} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.label}>Diajukan</Text>
@@ -598,6 +622,20 @@ const styles = StyleSheet.create({
     color: nbColors.black,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     letterSpacing: 0.5,
+  },
+  refCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing[2],
+  },
+  refCodeText: {
+    flexShrink: 1,
+  },
+  copyBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   descriptionText: {
     fontSize: nbTypography.fontSize.base,

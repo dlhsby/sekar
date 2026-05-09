@@ -75,10 +75,13 @@ export function PerantinganRequestCard({
           </Text>
         ) : null}
 
-        {/* Meta row: kecamatan, tree count, photo count */}
+        {/* Meta row: kecamatan, pemohon, tree count, photo count */}
         <View style={styles.itemMeta}>
           {request.kecamatanName ? (
             <Text style={styles.itemMetaChip}>🏘️ {request.kecamatanName}</Text>
+          ) : null}
+          {request.requesterName ? (
+            <Text style={styles.itemMetaChip}>🧑 {request.requesterName}</Text>
           ) : null}
           {treeCount != null ? (
             <Text style={styles.itemMetaChip}>🌳 {treeCount} pohon</Text>

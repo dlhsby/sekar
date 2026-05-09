@@ -64,8 +64,9 @@ import type { PruningRequest } from '../../types/models.types';
 const SORT_OPTIONS = [
   { key: 'created_at_desc', label: 'Dibuat Terbaru' },
   { key: 'created_at_asc',  label: 'Dibuat Terlama' },
-  { key: 'expected_desc',   label: 'Tanggal Diharapkan Terbaru' },
-  { key: 'expected_asc',    label: 'Tanggal Diharapkan Terlama' },
+  // ADR-035 amendment 2026-05-01: kecamatan now picks ISO week, not a date.
+  { key: 'expected_asc',    label: 'Minggu Preferensi Terdekat' },
+  { key: 'expected_desc',   label: 'Minggu Preferensi Terjauh' },
 ];
 
 type SortKey = 'created_at_desc' | 'created_at_asc' | 'expected_desc' | 'expected_asc';
