@@ -249,6 +249,8 @@ export class AuthController {
       role: user.role,
       area_id: user.area_id || null,
       rayon_id: user.rayon_id || null,
+      kecamatan_id: user.kecamatan_id || null,
+      kecamatan_name: user.kecamatan_name || null,
       created_at: user.created_at,
     };
 

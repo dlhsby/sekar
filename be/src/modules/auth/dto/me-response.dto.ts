@@ -59,6 +59,12 @@ export class MeResponseDto {
   @ApiPropertyOptional({ example: 'rayon-uuid', nullable: true })
   rayon_id: string | null;
 
+  @ApiPropertyOptional({ example: 'Tegalsari', nullable: true })
+  kecamatan_name?: string | null;
+
+  @ApiPropertyOptional({ example: 'kecamatan-uuid', nullable: true })
+  kecamatan_id?: string | null;
+
   @ApiProperty({ example: '2026-01-01T00:00:00.000Z' })
   created_at: Date;
 

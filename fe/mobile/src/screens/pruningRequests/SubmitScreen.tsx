@@ -568,27 +568,46 @@ export function SubmitScreen(): React.JSX.Element {
               <NBText variant="h3">Lokasi</NBText>
             </NBCardHeader>
             <NBCardContent>
-              {/* Rayon — selectable, defaults to user.rayon_id */}
-              <View style={styles.fieldGroup}>
-                <NBSelect
-                  label="Rayon"
-                  value={rayonId || (rayons[0]?.id ?? '')}
-                  onValueChange={(v) => setRayonId(String(v))}
-                  options={rayons.map((r) => ({ label: r.name, value: r.id }))}
-                  searchable
-                  disabled={rayons.length === 0}
-                />
-              </View>
-
-              {/* Kecamatan — free text, defaults to user.kecamatan_name */}
-              <View style={styles.fieldGroup}>
-                <NBTextInput
-                  label="Kecamatan"
-                  placeholder="Contoh: Tegalsari"
-                  value={kecamatanName}
-                  onChangeText={setKecamatanName}
-                />
-              </View>
+              {/* Rayon + Kecamatan — pre-filled from logged-in user, read-only.
+                  staff_kecamatan users are pinned to a single kecamatan; non-staff
+                  callers (admin) keep the selectable behavior as a fallback. */}
+              {user?.role === 'staff_kecamatan' ? (
+                <View style={styles.presetRow}>
+                  <View style={styles.presetItem}>
+                    <NBText variant="caption" style={styles.presetLabel}>Rayon</NBText>
+                    <NBText variant="body" testID="perantingan-rayon-readonly">
+                      {rayons.find((r) => r.id === rayonId)?.name ?? '—'}
+                    </NBText>
+                  </View>
+                  <View style={styles.presetItem}>
+                    <NBText variant="caption" style={styles.presetLabel}>Kecamatan</NBText>
+                    <NBText variant="body" testID="perantingan-kecamatan-readonly">
+                      {kecamatanName || '—'}
+                    </NBText>
+                  </View>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.fieldGroup}>
+                    <NBSelect
+                      label="Rayon"
+                      value={rayonId || (rayons[0]?.id ?? '')}
+                      onValueChange={(v) => setRayonId(String(v))}
+                      options={rayons.map((r) => ({ label: r.name, value: r.id }))}
+                      searchable
+                      disabled={rayons.length === 0}
+                    />
+                  </View>
+                  <View style={styles.fieldGroup}>
+                    <NBTextInput
+                      label="Kecamatan"
+                      placeholder="Contoh: Tegalsari"
+                      value={kecamatanName}
+                      onChangeText={setKecamatanName}
+                    />
+                  </View>
+                </>
+              )}
 
               {/* Alamat / Jalan — multiline text-area (matches deskripsi style) */}
               <View style={styles.fieldGroup}>

@@ -61,6 +61,7 @@ export interface User {
   phone_number?: string | null;         // Phase 2E: for phone login
   profile_picture_url?: string | null;  // Phase 2E: profile photo
   kecamatan_name?: string | null;       // Phase 3 Apr 27: staff_kecamatan attribution
+  kecamatan_id?: string | null;         // May 2026: kecamatan promoted to FK
   created_at: string;
   updated_at: string;
 }
