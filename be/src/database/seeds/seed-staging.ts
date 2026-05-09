@@ -894,62 +894,113 @@ async function seedStaging() {
     // ============================================================
     // SUMMARY
     // ============================================================
+    // ====================================================================
+    // SUMMARY (May 9 2026 refresh — kecamatan + Phase 3 visibility)
+    // ====================================================================
+    const stagingCounts = await queryRunner.query(`
+      SELECT
+        (SELECT count(*)::int FROM kecamatans)                              AS kecamatans,
+        (SELECT count(*)::int FROM users WHERE role = 'staff_kecamatan')    AS staff_kec_users,
+        (SELECT count(*)::int FROM service_capacity)                        AS service_capacity
+    `);
+    const sc = stagingCounts[0] ?? {};
+    const kecSamples = (await queryRunner.query(`
+      SELECT u.username, u.phone_number, k.name AS kecamatan, r.name AS rayon
+      FROM users u
+      LEFT JOIN kecamatans k ON k.id = u.kecamatan_id
+      LEFT JOIN rayons r     ON r.id = u.rayon_id
+      WHERE u.role = 'staff_kecamatan'
+      ORDER BY r.name, k.name
+      LIMIT 5
+    `)) as Array<{ username: string; phone_number: string; kecamatan: string; rayon: string }>;
+
     console.log('');
     console.log('╔══════════════════════════════════════════════════════════════════════════════════╗');
-    console.log('║  ✅ Staging Seeding Completed Successfully                                      ║');
+    console.log('║  ✅  Staging Seeding Completed Successfully                                     ║');
     console.log('╚══════════════════════════════════════════════════════════════════════════════════╝');
     console.log('');
-    console.log('  Reference Data');
-    console.log('  ─────────────────────────────────────────────────────────────────────────────────');
-    console.log('  4   area types · 3 shift definitions · 7 rayons · 20 activity types');
-    console.log('  4   special day overrides · 5 + 4 monitoring configs (Phase 2D + Phase 3)');
-    console.log('  128 plant_species · service_capacity grid (7 × 12 weeks, capacity_units=5)');
+    console.log('  📦 Reference Data');
+    console.log('     ──────────────────────────────────────────────────────────────────────────');
+    console.log('       4 area_types ·  3 shift_definitions ·  7 rayons ·  20 activity_types');
+    console.log('       4 special_day_overrides ·  5 + 4 monitoring_configs (Phase 2D + Phase 3)');
+    console.log('     128 plant_species');
+    console.log(`     ${String(sc.kecamatans).padStart(3)} kecamatans (FK to rayons) — NEW May 2026`);
+    console.log(`     ${String(sc.service_capacity).padStart(3)} service_capacity rows (7 rayons × 12 ISO weeks × pruning, capacity_units=5)`);
     console.log('');
-    console.log('  Rayon Pusat UAT Data');
-    console.log('  ─────────────────────────────────────────────────────────────────────────────────');
-    console.log('  13 areas     — 1 Taman Bungkul (aktif) + 12 Kawasan Darmo pedestrian (pasif)');
-    console.log('  24 users     — 14 test + 10 real (all password: password123)');
-    console.log('  user_areas   — permanent assignments per spec');
-    console.log(`  ${clockable_count} users  — user_tracking_status: offline (clean start for UAT)`);
-    console.log('  26 reqs      — area_staff_requirements: 13 areas × satgas + linmas (SHIFT1/WEEKDAY)');
+    console.log('  🏞️  Rayon Pusat UAT Footprint');
+    console.log('     ──────────────────────────────────────────────────────────────────────────');
+    console.log('      13 areas — 1 Taman Bungkul (aktif) + 12 Kawasan Darmo pedestrian (pasif)');
+    console.log(`      ${24 + (sc.staff_kec_users ?? 0)} users — 14 test + 10 real + ${sc.staff_kec_users ?? 0} staff_kecamatan`);
+    console.log(`      ${clockable_count} clockable users — user_tracking_status set to offline`);
+    console.log('      26 area_staff_requirements (13 areas × satgas + linmas, SHIFT1/WEEKDAY)');
+    console.log('      user_areas — permanent multi-area assignments per spec');
     console.log('');
-    console.log('  Phase 3 Reference Data');
-    console.log('  ─────────────────────────────────────────────────────────────────────────────────');
-    console.log('  service_capacity  — 7 rayons × 12 ISO weeks × pruning (capacity_units=5)');
-    console.log('  ');
-    console.log('  Phase 3 transaction tables are EMPTY by design (essentials-only policy):');
-    console.log('  0 area_plants · 0 notable_plants · 0 pruning_requests · 0 plant_seeds · 0 seed_transactions');
+    console.log('  📭 Empty by Design (essentials-only — UAT starts from scratch)');
+    console.log('     ──────────────────────────────────────────────────────────────────────────');
+    console.log('      0 shifts · 0 activities · 0 tasks · 0 overtimes · 0 location_logs');
+    console.log('      0 area_plants · 0 notable_plants · 0 pruning_requests');
+    console.log('      0 plant_seeds · 0 seed_transactions');
     console.log('');
-    console.log('  0 shifts · 0 activities · 0 tasks · 0 overtimes · 0 location_logs');
-    console.log('  → All transaction tables are empty — UAT starts from scratch ✓');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log('🧪  TEST USERS  (all passwords: password123 · login with username OR phone)');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
     console.log('');
-    console.log('  ── TEST USERS (all: password123) ─────────────────────────────────────────────────');
-    console.log('  superadmin         superadmin           081200000010');
-    console.log('  admin_system       admin_system1        081200000011');
-    console.log('  top_management     top_management1      081200000012');
-    console.log('  kepala_rayon       kepala_rayon_pusat   081200000013   Rayon Pusat');
-    console.log('  admin_data         admin_data_pusat_1   081200000014   Rayon Pusat');
-    console.log('  korlap             korlap_pusat_1       081200000015   All 13 areas');
-    console.log('  korlap             korlap_pusat_2       081200000016   All 13 areas');
-    console.log('  korlap             korlap_bungkul_1     081200000017   Taman Bungkul');
-    console.log('  satgas             satgas_pusat_1       081200000018   All 13 areas');
-    console.log('  satgas             satgas_pusat_2       081200000019   12 pedestrian only');
-    console.log('  linmas             linmas_pusat_1       081200000020   All 13 areas');
-    console.log('  linmas             linmas_pusat_2       081200000021   Taman Bungkul');
-    console.log('  satgas             satgas_bungkul_1     081200000022   Taman Bungkul');
-    console.log('  staff_kecamatan    staff_kec_pusat      081200000023   Rayon Pusat (Phase 3)');
+    console.log('  ── System-wide ─────────────────────────────────────────────────────────────────');
+    console.log('  Role            Username             Phone           Notes');
+    console.log('  superadmin      superadmin           081200000010    Full access');
+    console.log('  admin_system    admin_system1        081200000011    System administration');
+    console.log('  top_management  top_management1      081200000012    City-wide read-only');
     console.log('');
-    console.log('  ── REAL USERS (all: password123) ─────────────────────────────────────────────────');
-    console.log('  top_management     pramudita_yustiani   08563302643    —');
-    console.log('  superadmin         wahyu_tri_p          081232939377   —');
-    console.log('  kepala_rayon       budi_setyo_utomo     081200000001   Rayon Pusat');
-    console.log('  admin_data         ponco_adi_prabowo    081200000002   Rayon Pusat');
-    console.log('  satgas             rakhmat_novianto     087825841818   Darmo Pulau 1');
-    console.log('  satgas             roy_junaidi          083854355341   Darmo Pulau 2');
-    console.log('  satgas             edi_santoso          085855434561   Taman Bungkul');
-    console.log('  satgas             jihan_nabila_safitri 08970900786    Taman Bungkul');
-    console.log('  linmas             deni_purwanto        081554017822   Taman Bungkul');
-    console.log('  linmas             agus_ramadhan        083831353889   Taman Bungkul');
+    console.log('  ── Rayon Pusat ─────────────────────────────────────────────────────────────────');
+    console.log('  Role            Username             Phone           Area / Notes');
+    console.log('  kepala_rayon    kepala_rayon_pusat   081200000013    Rayon Pusat head');
+    console.log('  admin_data      admin_data_pusat_1   081200000014    Rayon Pusat — review/convert');
+    console.log('  korlap          korlap_pusat_1       081200000015    All 13 areas');
+    console.log('  korlap          korlap_pusat_2       081200000016    All 13 areas');
+    console.log('  korlap          korlap_bungkul_1     081200000017    Taman Bungkul');
+    console.log('  satgas          satgas_pusat_1       081200000018    All 13 areas');
+    console.log('  satgas          satgas_pusat_2       081200000019    12 pedestrian only');
+    console.log('  linmas          linmas_pusat_1       081200000020    All 13 areas');
+    console.log('  linmas          linmas_pusat_2       081200000021    Taman Bungkul');
+    console.log('  satgas          satgas_bungkul_1     081200000022    Taman Bungkul');
+    console.log('');
+    console.log('  ── Staff Kecamatan (NEW — Phase 3 public intake) ───────────────────────────────');
+    console.log('  Username pattern: staff_kecamatan_<code>  (e.g. staff_kecamatan_wiyung)');
+    console.log('  Each user is auto-linked to their kecamatan_id + rayon_id; the mobile submit');
+    console.log('  form pre-fills + locks both fields on login.');
+    console.log('');
+    console.log('  Username                       Phone          Kecamatan         Rayon');
+    console.log('  ──────────────────────────────────────────────────────────────────────────────────');
+    for (const u of kecSamples) {
+      console.log(
+        `  ${u.username.padEnd(30)} ${(u.phone_number ?? '').padEnd(14)} ${(u.kecamatan ?? '—').padEnd(17)} ${u.rayon ?? '—'}`,
+      );
+    }
+    console.log(`  … plus ${Math.max(0, (sc.staff_kec_users ?? 0) - kecSamples.length)} more — one user per kecamatan, all 31 covered.`);
+    console.log('');
+    console.log('  Legacy single-rayon staff_kec_pusat is also retained (081200000023) for back-compat.');
+    console.log('');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log('👤  REAL USERS  (production-bound, all passwords: password123)');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log('');
+    console.log('  Role            Username             Phone          Area');
+    console.log('  top_management  pramudita_yustiani   08563302643    —');
+    console.log('  superadmin      wahyu_tri_p          081232939377   —');
+    console.log('  kepala_rayon    budi_setyo_utomo     081200000001   Rayon Pusat');
+    console.log('  admin_data      ponco_adi_prabowo    081200000002   Rayon Pusat');
+    console.log('  satgas          rakhmat_novianto     087825841818   Darmo Pulau 1');
+    console.log('  satgas          roy_junaidi          083854355341   Darmo Pulau 2');
+    console.log('  satgas          edi_santoso          085855434561   Taman Bungkul');
+    console.log('  satgas          jihan_nabila_safitri 08970900786    Taman Bungkul');
+    console.log('  linmas          deni_purwanto        081554017822   Taman Bungkul');
+    console.log('  linmas          agus_ramadhan        083831353889   Taman Bungkul');
+    console.log('');
+    console.log('  💡 UAT walkthrough tip:');
+    console.log('     1. Log in as `staff_kecamatan_wiyung` → submit a pruning request (rayon +');
+    console.log('        kecamatan are pre-filled and locked).');
+    console.log('     2. Switch to `admin_data_pusat_1` → review + convert it to a task.');
+    console.log('     3. Switch to `satgas_pusat_1` → accept and execute the task.');
     console.log('══════════════════════════════════════════════════════════════════════════════════════');
   } catch (error) {
     console.error('\n❌ Staging seeding failed:', error);

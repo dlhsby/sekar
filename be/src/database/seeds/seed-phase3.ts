@@ -846,8 +846,82 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     }
 
     await queryRunner.commitTransaction();
+
+    // ====================================================================
+    // SUMMARY — Phase 3 (May 9 2026 refresh)
+    // ====================================================================
+    const counts = await queryRunner.query(`
+      SELECT
+        (SELECT count(*)::int FROM kecamatans)                                       AS kecamatans,
+        (SELECT count(*)::int FROM users WHERE role = 'staff_kecamatan')             AS staff_kec_users,
+        (SELECT count(*)::int FROM plant_species)                                    AS plant_species,
+        (SELECT count(*)::int FROM area_plants)                                      AS area_plants,
+        (SELECT count(*)::int FROM notable_plants)                                   AS notable_plants,
+        (SELECT count(*)::int FROM pruning_requests)                                 AS pruning_requests,
+        (SELECT count(*)::int FROM plant_seeds)                                      AS plant_seeds,
+        (SELECT count(*)::int FROM seed_transactions)                                AS seed_transactions,
+        (SELECT count(*)::int FROM service_capacity)                                 AS service_capacity
+    `);
+    const c = counts[0] ?? {};
+    const sampleStaff = (await queryRunner.query(`
+      SELECT u.username, u.full_name, u.phone_number, k.name AS kecamatan, r.name AS rayon
+      FROM users u
+      LEFT JOIN kecamatans k ON k.id = u.kecamatan_id
+      LEFT JOIN rayons r     ON r.id = u.rayon_id
+      WHERE u.role = 'staff_kecamatan'
+      ORDER BY r.name, k.name
+      LIMIT 8
+    `)) as Array<{ username: string; full_name: string; phone_number: string; kecamatan: string; rayon: string }>;
+
     console.log('');
-    console.log('✅ Phase 3 seed completed successfully');
+    console.log('╔══════════════════════════════════════════════════════════════════════════════════╗');
+    console.log('║  ✅  Phase 3 Seeding Completed Successfully                                     ║');
+    console.log('╚══════════════════════════════════════════════════════════════════════════════════╝');
+    console.log('');
+    console.log('  [1] Reference Data');
+    console.log('      ─────────────────────────────────────────────────────────────────────────────');
+    console.log(`      ${String(c.plant_species).padStart(3)} plant_species  · ${String(c.kecamatans).padStart(3)} kecamatans (FK to rayons)`);
+    console.log(`      ${String(c.service_capacity).padStart(3)} service_capacity rows (rayons × ISO weeks × pruning)`);
+    console.log('');
+    console.log('  [2] Sample Showcase Data (dev only)');
+    console.log('      ─────────────────────────────────────────────────────────────────────────────');
+    console.log(`      ${String(c.area_plants).padStart(3)} area_plants    · ${String(c.notable_plants).padStart(3)} notable_plants`);
+    console.log(`      ${String(c.pruning_requests).padStart(3)} pruning_requests across all 8 statuses`);
+    console.log(`      ${String(c.plant_seeds).padStart(3)} plant_seeds    · ${String(c.seed_transactions).padStart(3)} seed_transactions`);
+    console.log('');
+    console.log('  [3] Staff Kecamatan Users (NEW — May 9, 2026)');
+    console.log('      ─────────────────────────────────────────────────────────────────────────────');
+    console.log(`      ${String(c.staff_kec_users).padStart(3)} staff_kecamatan users — one per kecamatan, all password: password123`);
+    console.log('      Username pattern: staff_kecamatan_<code>  (e.g. staff_kecamatan_wiyung)');
+    console.log('      Each user is auto-linked to their kecamatan_id + rayon_id so the mobile');
+    console.log('      submit form pre-fills + locks both fields on login.');
+    console.log('');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log('🧪  STAFF KECAMATAN — sample logins (all passwords: password123)');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log('');
+    console.log('  Username                       Phone          Kecamatan         Rayon');
+    console.log('  ──────────────────────────────────────────────────────────────────────────────────');
+    for (const u of sampleStaff) {
+      console.log(
+        `  ${u.username.padEnd(30)} ${(u.phone_number ?? '').padEnd(14)} ${(u.kecamatan ?? '—').padEnd(17)} ${u.rayon ?? '—'}`,
+      );
+    }
+    console.log(`  … and ${Math.max(0, c.staff_kec_users - sampleStaff.length)} more (one for every kecamatan).`);
+    console.log('');
+    console.log('  All 31 Surabaya Kecamatans seeded:');
+    console.log('  ──────────────────────────────────────────────────────────────────────────────────');
+    console.log('  Pusat    (4): Bubutan, Genteng, Simokerto, Tegalsari');
+    console.log('  Timur 1  (3): Tambaksari, Gubeng, Sukolilo');
+    console.log('  Timur 2  (4): Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar');
+    console.log('  Barat 1  (5): Sukomanunggal, Tandes, Asemrowo, Benowo, Pakal');
+    console.log('  Barat 2  (6): Sambikerep, Lakarsantri, Sawahan, Dukuh Pakis, Wiyung, Karang Pilang');
+    console.log('  Utara    (5): Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak');
+    console.log('  Selatan  (4): Wonokromo, Wonocolo, Gayungan, Jambangan');
+    console.log('');
+    console.log('  Tip: log in as `staff_kecamatan_wiyung` to walk the kecamatan submit flow,');
+    console.log('       or as `admin_data1` (Rayon Pusat) to review + convert pruning requests.');
+    console.log('══════════════════════════════════════════════════════════════════════════════════════');
   } catch (error) {
     await queryRunner.rollbackTransaction();
     console.error('❌ Phase 3 seed failed, rolling back:', error);
