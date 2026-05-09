@@ -185,7 +185,7 @@ export function getPruningRequestStatusLabel(status: PruningRequestStatus): stri
     case 'under_review': return 'Direview';
     case 'approved':     return 'Disetujui';
     case 'rejected':     return 'Ditolak';
-    case 'converted':    return 'Dikonversi';
+    case 'converted':    return 'Dijadwalkan';
     case 'in_progress':  return 'Diproses';
     case 'done':         return 'Selesai';
     case 'cancelled':    return 'Dibatalkan';

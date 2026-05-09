@@ -654,8 +654,8 @@ describe('RequestDetailScreen', () => {
 
       renderScreen();
 
-      // Component maps 'converted' status to 'Dikonversi' label
-      expect(screen.getByText('Dikonversi')).toBeTruthy();
+      // Component maps 'converted' status to 'Dijadwalkan' label
+      expect(screen.getByText('Dijadwalkan')).toBeTruthy();
       // Task name is only shown in the button action, verify task section exists
       expect(screen.getByText(/Tugas Terkait/i)).toBeTruthy();
     });

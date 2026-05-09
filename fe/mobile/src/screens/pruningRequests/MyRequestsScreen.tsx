@@ -39,7 +39,7 @@ const getStatusDisplay = (status: PruningRequestStatus) => {
     'under_review': { variant: 'warning', label: 'Direview' },
     'approved': { variant: 'success', label: 'Disetujui' },
     'rejected': { variant: 'error', label: 'Ditolak' },
-    'converted': { variant: 'primary', label: 'Dikonversi' },
+    'converted': { variant: 'primary', label: 'Dijadwalkan' },
     'in_progress': { variant: 'primary', label: 'Diproses' },
     'done': { variant: 'success', label: 'Selesai' },
     'cancelled': { variant: 'error', label: 'Dibatalkan' },

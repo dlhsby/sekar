@@ -380,7 +380,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               </NBCardHeader>
               <NBCardContent>
                 <Text style={[styles.descriptionText, { marginBottom: nbSpacing.md }]}>
-                  Permohonan ini telah dikonversi menjadi tugas kerja.
+                  Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat.
                 </Text>
                 <NBButton
                   variant="primary"

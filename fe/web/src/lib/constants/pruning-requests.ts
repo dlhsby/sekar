@@ -11,7 +11,7 @@ export const PRUNING_REQUEST_STATUS_LABELS: Record<PruningRequestStatus, string>
   under_review: 'Sedang Ditinjau',
   approved: 'Disetujui',
   rejected: 'Ditolak',
-  converted: 'Dikonversi ke Tugas',
+  converted: 'Dijadwalkan',
   in_progress: 'Sedang Dikerjakan',
   done: 'Selesai',
   cancelled: 'Dibatalkan',
