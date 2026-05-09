@@ -51,18 +51,18 @@ config();
  * | Role            | Username                | Phone          | Area/Rayon                             |
  * |-----------------|-------------------------|----------------|----------------------------------------|
  * | superadmin      | superadmin              | 081200000010   | —                                      |
- * | admin_system    | admin_system1           | 081200000011   | —                                      |
- * | top_management  | top_management1         | 081200000012   | —                                      |
- * | kepala_rayon    | kepala_rayon_pusat      | 081200000013   | Rayon Pusat                            |
+ * | admin_system    | admin_system_1           | 081200000011   | —                                      |
+ * | top_management  | top_management_1         | 081200000012   | —                                      |
+ * | kepala_rayon    | kepala_rayon_pusat_1      | 081200000013   | Rayon Pusat                            |
  * | admin_data      | admin_data_pusat_1      | 081200000014   | Rayon Pusat                            |
  * | korlap          | korlap_pusat_1          | 081200000015   | All 13 areas (Bungkul + 12 pedestrian) |
  * | korlap          | korlap_pusat_2          | 081200000016   | All 13 areas (Bungkul + 12 pedestrian) |
- * | korlap          | korlap_bungkul_1        | 081200000017   | Taman Bungkul only                     |
+ * | korlap          | korlap_pusat_3        | 081200000017   | Taman Bungkul only                     |
  * | satgas          | satgas_pusat_1          | 081200000018   | All 13 areas                           |
  * | satgas          | satgas_pusat_2          | 081200000019   | 12 pedestrian only (no Taman Bungkul)  |
  * | linmas          | linmas_pusat_1          | 081200000020   | All 13 areas                           |
  * | linmas          | linmas_pusat_2          | 081200000021   | Taman Bungkul only                     |
- * | satgas          | satgas_bungkul_1        | 081200000022   | Taman Bungkul only                     |
+ * | satgas          | satgas_pusat_3        | 081200000022   | Taman Bungkul only                     |
  *
  * REAL USERS (all passwords: password123)
  *
@@ -144,18 +144,18 @@ const AREA_DARMO_KALI_ID  = '53a3b4c5-d6e7-4589-0123-456768798091'; // Jl. Darmo
 // ============================================================
 // Test users
 const USER_SUPERADMIN_ID       = '53b4c5d6-e7f8-4690-1234-567879809102'; // superadmin
-const USER_ADMIN_SYS_ID        = '53c5d6e7-f8a9-4701-2345-678980910213'; // admin_system1
-const USER_TOP_MGMT_ID         = '53d6e7f8-a9b0-4812-3456-789091021324'; // top_management1
-const USER_KEPALA_RAYON_ID     = '53e7f8a9-b0c1-4923-4567-890102132435'; // kepala_rayon_pusat
+const USER_ADMIN_SYS_ID        = '53c5d6e7-f8a9-4701-2345-678980910213'; // admin_system_1
+const USER_TOP_MGMT_ID         = '53d6e7f8-a9b0-4812-3456-789091021324'; // top_management_1
+const USER_KEPALA_RAYON_ID     = '53e7f8a9-b0c1-4923-4567-890102132435'; // kepala_rayon_pusat_1
 const USER_ADMIN_DATA_ID       = '53f8a9b0-c1d2-4a34-5678-901213243546'; // admin_data_pusat_1
 const USER_KORLAP_PUSAT1_ID    = '54a9b0c1-d2e3-4b45-6789-012324354657'; // korlap_pusat_1
 const USER_KORLAP_PUSAT2_ID    = '54b0c1d2-e3f4-4c56-7890-123435465768'; // korlap_pusat_2
-const USER_KORLAP_BUNGKUL_ID   = '54c1d2e3-f4a5-4d67-8901-234546576879'; // korlap_bungkul_1
+const USER_KORLAP_BUNGKUL_ID   = '54c1d2e3-f4a5-4d67-8901-234546576879'; // korlap_pusat_3
 const USER_SATGAS_PUSAT1_ID    = '54d2e3f4-a5b6-4e78-9012-345657687980'; // satgas_pusat_1
 const USER_SATGAS_PUSAT2_ID    = '54e3f4a5-b6c7-4f89-0123-456768798091'; // satgas_pusat_2
 const USER_LINMAS_PUSAT1_ID    = '54f4a5b6-c7d8-4090-1234-567879809102'; // linmas_pusat_1
 const USER_LINMAS_PUSAT2_ID    = '55a5b6c7-d8e9-4101-2345-678980910213'; // linmas_pusat_2
-const USER_SATGAS_BUNGKUL_ID   = '55b6c7d8-e9f0-4212-3456-789091021324'; // satgas_bungkul_1
+const USER_SATGAS_BUNGKUL_ID   = '55b6c7d8-e9f0-4212-3456-789091021324'; // satgas_pusat_3
 const USER_STAFF_KEC_PUSAT_ID  = '55b6c7d8-e9f0-4212-3456-789091021325'; // staff_kec_pusat (Phase 3 — public intake)
 // Real users
 const USER_PRAMUDITA_ID        = '55c7d8e9-f0a1-4323-4567-890102132435'; // pramudita_yustiani
@@ -686,17 +686,17 @@ async function seedStaging() {
 
     // ── System-wide (no area/rayon scope) ──────────────────────
     await insertUser(USER_SUPERADMIN_ID, 'superadmin',       'Super Admin',       'superadmin',    '081200000010');
-    await insertUser(USER_ADMIN_SYS_ID,  'admin_system1',    'Admin System',      'admin_system',  '081200000011');
-    await insertUser(USER_TOP_MGMT_ID,   'top_management1',  'Top Management',    'top_management','081200000012');
+    await insertUser(USER_ADMIN_SYS_ID,  'admin_system_1',    'Admin System',      'admin_system',  '081200000011');
+    await insertUser(USER_TOP_MGMT_ID,   'top_management_1',  'Top Management',    'top_management','081200000012');
 
     // ── Rayon Pusat — management ───────────────────────────────
-    await insertUser(USER_KEPALA_RAYON_ID, 'kepala_rayon_pusat',  'Kepala Rayon Pusat',   'kepala_rayon', '081200000013', RAYON_PUSAT_ID);
+    await insertUser(USER_KEPALA_RAYON_ID, 'kepala_rayon_pusat_1',  'Kepala Rayon Pusat',   'kepala_rayon', '081200000013', RAYON_PUSAT_ID);
     await insertUser(USER_ADMIN_DATA_ID,   'admin_data_pusat_1',  'Admin Data Pusat 1',   'admin_data',   '081200000014', RAYON_PUSAT_ID);
 
     // ── Rayon Pusat — korlap (primary area = Taman Bungkul; extras via user_areas) ──
     await insertUser(USER_KORLAP_PUSAT1_ID,  'korlap_pusat_1',  'Korlap Pusat 1',  'korlap', '081200000015', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
     await insertUser(USER_KORLAP_PUSAT2_ID,  'korlap_pusat_2',  'Korlap Pusat 2',  'korlap', '081200000016', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_KORLAP_BUNGKUL_ID, 'korlap_bungkul_1','Korlap Bungkul 1','korlap', '081200000017', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_KORLAP_BUNGKUL_ID, 'korlap_pusat_3','Korlap Bungkul 1','korlap', '081200000017', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
     // ── Rayon Pusat — satgas / linmas ──────────────────────────
     // satgas_pusat_1: all 13 areas → primary = Taman Bungkul
@@ -707,8 +707,8 @@ async function seedStaging() {
     await insertUser(USER_LINMAS_PUSAT1_ID,  'linmas_pusat_1',   'Linmas Pusat 1',   'linmas', '081200000020', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
     // linmas_pusat_2: Taman Bungkul only
     await insertUser(USER_LINMAS_PUSAT2_ID,  'linmas_pusat_2',   'Linmas Pusat 2',   'linmas', '081200000021', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    // satgas_bungkul_1: Taman Bungkul only
-    await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_bungkul_1', 'Satgas Bungkul 1', 'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    // satgas_pusat_3: Taman Bungkul only
+    await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_pusat_3', 'Satgas Bungkul 1', 'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
     // ── Phase 3 — public intake (staff_kecamatan) ──────────────
     // staff_kec_pusat: scoped to Rayon Pusat for testing pruning_requests workflow.
@@ -809,9 +809,9 @@ async function seedStaging() {
     for (const areaId of ALL_AREA_IDS) await assignArea(USER_KORLAP_PUSAT2_ID, areaId);
     console.log('  ✓ korlap_pusat_2 → all 13 areas');
 
-    // korlap_bungkul_1 → Taman Bungkul only
+    // korlap_pusat_3 → Taman Bungkul only
     await assignArea(USER_KORLAP_BUNGKUL_ID, AREA_BUNGKUL_ID);
-    console.log('  ✓ korlap_bungkul_1 → Taman Bungkul');
+    console.log('  ✓ korlap_pusat_3 → Taman Bungkul');
 
     // satgas_pusat_1 → all 13 areas
     for (const areaId of ALL_AREA_IDS) await assignArea(USER_SATGAS_PUSAT1_ID, areaId);
@@ -829,9 +829,9 @@ async function seedStaging() {
     await assignArea(USER_LINMAS_PUSAT2_ID, AREA_BUNGKUL_ID);
     console.log('  ✓ linmas_pusat_2 → Taman Bungkul');
 
-    // satgas_bungkul_1 → Taman Bungkul only
+    // satgas_pusat_3 → Taman Bungkul only
     await assignArea(USER_SATGAS_BUNGKUL_ID, AREA_BUNGKUL_ID);
-    console.log('  ✓ satgas_bungkul_1 → Taman Bungkul');
+    console.log('  ✓ satgas_pusat_3 → Taman Bungkul');
 
     // Real users
     await assignArea(USER_RAKHMAT_ID, AREA_DARMO_P1_ID);
@@ -966,21 +966,21 @@ async function seedStaging() {
     console.log('  ── System-wide ─────────────────────────────────────────────────────────────────');
     console.log('  Role            Username             Phone           Notes');
     console.log('  superadmin      superadmin           081200000010    Full access');
-    console.log('  admin_system    admin_system1        081200000011    System administration');
-    console.log('  top_management  top_management1      081200000012    City-wide read-only');
+    console.log('  admin_system    admin_system_1        081200000011    System administration');
+    console.log('  top_management  top_management_1      081200000012    City-wide read-only');
     console.log('');
     console.log('  ── Rayon Pusat ─────────────────────────────────────────────────────────────────');
     console.log('  Role            Username             Phone           Area / Notes');
-    console.log('  kepala_rayon    kepala_rayon_pusat   081200000013    Rayon Pusat head');
+    console.log('  kepala_rayon    kepala_rayon_pusat_1   081200000013    Rayon Pusat head');
     console.log('  admin_data      admin_data_pusat_1   081200000014    Rayon Pusat — review/convert');
     console.log('  korlap          korlap_pusat_1       081200000015    All 13 areas');
     console.log('  korlap          korlap_pusat_2       081200000016    All 13 areas');
-    console.log('  korlap          korlap_bungkul_1     081200000017    Taman Bungkul');
+    console.log('  korlap          korlap_pusat_3     081200000017    Taman Bungkul');
     console.log('  satgas          satgas_pusat_1       081200000018    All 13 areas');
     console.log('  satgas          satgas_pusat_2       081200000019    12 pedestrian only');
     console.log('  linmas          linmas_pusat_1       081200000020    All 13 areas');
     console.log('  linmas          linmas_pusat_2       081200000021    Taman Bungkul');
-    console.log('  satgas          satgas_bungkul_1     081200000022    Taman Bungkul');
+    console.log('  satgas          satgas_pusat_3     081200000022    Taman Bungkul');
     console.log('');
     console.log('  ── Staff Kecamatan (NEW — Phase 3 public intake) ───────────────────────────────');
     console.log('  Username pattern: staff_kecamatan_<code>  (e.g. staff_kecamatan_wiyung)');

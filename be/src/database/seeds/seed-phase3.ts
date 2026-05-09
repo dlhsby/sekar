@@ -271,7 +271,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     };
     /**
      * Phase 3 showcase plan (per area). The mix is intentional:
-     *   - Bungkul/Pusat/Darmo (Rayon Pusat) carry the demo for korlap_bungkul.
+     *   - Bungkul/Pusat/Darmo (Rayon Pusat) carry the demo for korlap_pusat_1.
      *   - Other areas have at least one off-status row so admin views never
      *     look uniformly green.
      */
@@ -722,13 +722,18 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       const DIAMETERS = ['15-25 cm', '25-35 cm', '35-50 cm', '50-70 cm',
                          '70-90 cm', '90-110 cm'];
 
-      // Distribute rayons across the bulk volume so admin_data filter testing
-      // also has variety — fall back to first rayon if none available.
-      const allRayons = await queryRunner.query(`SELECT id FROM rayons ORDER BY name`);
-      const rayonIds: string[] = (allRayons as Array<{ id: string }>).map((r) => r.id);
-      const pickRayon = (idx: number) => rayonIds.length > 0
-        ? rayonIds[idx % rayonIds.length]
-        : rayonIdForReq;
+      // Resolve rayon_id from the kecamatan name so each bulk row's
+      // (kecamatan_name, rayon_id) pair is consistent with the kecamatans
+      // table. Previously these were picked independently and produced
+      // mismatches like "Tegalsari → Rayon Barat 1", which broke
+      // admin_data review queues that filter by rayon_id.
+      const kecRayonRows = await queryRunner.query(
+        `SELECT name, rayon_id FROM kecamatans`,
+      ) as Array<{ name: string; rayon_id: string }>;
+      const rayonByKec = new Map<string, string>();
+      for (const k of kecRayonRows) rayonByKec.set(k.name, k.rayon_id);
+      const rayonForKec = (kec: string): string =>
+        rayonByKec.get(kec) ?? rayonIdForReq;
 
       const BULK_COUNT = 25;
       // All bulk rows submitted by `staff_kec_pusat` (the canonical demo
@@ -775,7 +780,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
            height, diameter,
            `${reqName} ${i + 1}`, `0812345${(80000 + i).toString().slice(-5)}`,
            rtName, `0812987${(60000 + i).toString().slice(-5)}`,
-           photoUrls, status, pickRayon(i),
+           photoUrls, status, rayonForKec(kec),
            reviewedAt ? reviewerId : null, reviewedAt,
            createdAt],
         );
@@ -783,6 +788,22 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       }
       console.log(`  ✓ ${bulkInserted} additional bulk pruning_requests inserted (volume + status + date variety)`);
       pruningInserted += bulkInserted;
+
+      // Heal existing rows whose kecamatan_name disagrees with rayon_id
+      // (e.g. earlier seed runs assigned Tegalsari → Rayon Barat 1). Fixes
+      // are scoped to known kecamatan names so manual test rows with
+      // arbitrary strings stay untouched.
+      const healed = await queryRunner.query(`
+        UPDATE pruning_requests pr
+        SET rayon_id = k.rayon_id
+        FROM kecamatans k
+        WHERE pr.kecamatan_name = k.name
+          AND (pr.rayon_id IS DISTINCT FROM k.rayon_id)
+      `);
+      const healedCount = (healed as any)?.[1] ?? 0;
+      if (healedCount) {
+        console.log(`  ✓ ${healedCount} existing pruning_requests realigned to their kecamatan's rayon`);
+      }
     }
     console.log(`  ✓ ${pruningInserted} pruning_requests total (sample + bulk volume rows)`);
 
