@@ -50,7 +50,12 @@ export function WeekPickerModal({
       presentationStyle="fullScreen"
     >
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <FieldHomeHeader title="Pilih Minggu Preferensi" onBack={onClose} />
+        {/* FieldHomeHeader uses flex:1 internally so it stretches to fill its
+            parent — wrap it in a fixed-height View matching the canonical
+            56 px header so it doesn't eat half the modal. */}
+        <View style={styles.headerSlot}>
+          <FieldHomeHeader title="Pilih Minggu Preferensi" onBack={onClose} />
+        </View>
         <NBBackgroundPattern>
           <View style={styles.body}>
             <WeekPicker
@@ -70,6 +75,14 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: nbColors.bgCanvas,
+  },
+  headerSlot: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    borderBottomWidth: 2,
+    borderBottomColor: nbColors.black,
+    backgroundColor: nbColors.bgSurface,
   },
   body: {
     flex: 1,
