@@ -494,12 +494,20 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     ) as Array<{ id: string; code: string }>;
     const rIdx: Record<string, string> = {};
     for (const r of rayonIdByCode) rIdx[r.code] = r.id;
+    // Kecamatan → Rayon mapping (May 9, 2026 fix). The 4 administratively
+    // "Surabaya Selatan" kecamatans (Sawahan, Dukuh Pakis, Wiyung, Karang
+    // Pilang) now correctly live under Rayon Selatan so `rayon_id` and
+    // `region` agree. Earlier they sat in Rayon Barat 2 to match the legacy
+    // rayon description, which created the staff_kecamatan_wiyung "rayon
+    // says Barat / region says Selatan" contradiction.
     const kecBlueprint: Array<[string, string, string, string]> = [
       // [name, code, rayon_code, region]
+      // ── Surabaya Pusat (4) ──
       ['Bubutan', 'bubutan', 'PUSAT', 'pusat'],
       ['Genteng', 'genteng', 'PUSAT', 'pusat'],
       ['Simokerto', 'simokerto', 'PUSAT', 'pusat'],
       ['Tegalsari', 'tegalsari', 'PUSAT', 'pusat'],
+      // ── Surabaya Timur (7 — split across Rayon Timur 1 + Timur 2) ──
       ['Tambaksari', 'tambaksari', 'TIMUR1', 'timur'],
       ['Gubeng', 'gubeng', 'TIMUR1', 'timur'],
       ['Sukolilo', 'sukolilo', 'TIMUR1', 'timur'],
@@ -507,6 +515,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       ['Rungkut', 'rungkut', 'TIMUR2', 'timur'],
       ['Tenggilis Mejoyo', 'tenggilis_mejoyo', 'TIMUR2', 'timur'],
       ['Gunung Anyar', 'gunung_anyar', 'TIMUR2', 'timur'],
+      // ── Surabaya Barat (7 — split across Rayon Barat 1 + Barat 2) ──
       ['Sukomanunggal', 'sukomanunggal', 'BARAT1', 'barat'],
       ['Tandes', 'tandes', 'BARAT1', 'barat'],
       ['Asemrowo', 'asemrowo', 'BARAT1', 'barat'],
@@ -514,33 +523,53 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       ['Pakal', 'pakal', 'BARAT1', 'barat'],
       ['Sambikerep', 'sambikerep', 'BARAT2', 'barat'],
       ['Lakarsantri', 'lakarsantri', 'BARAT2', 'barat'],
-      ['Sawahan', 'sawahan', 'BARAT2', 'selatan'],
-      ['Dukuh Pakis', 'dukuh_pakis', 'BARAT2', 'selatan'],
-      ['Wiyung', 'wiyung', 'BARAT2', 'selatan'],
-      ['Karang Pilang', 'karang_pilang', 'BARAT2', 'selatan'],
+      // ── Surabaya Utara (5) ──
       ['Krembangan', 'krembangan', 'UTARA', 'utara'],
       ['Pabean Cantian', 'pabean_cantian', 'UTARA', 'utara'],
       ['Semampir', 'semampir', 'UTARA', 'utara'],
       ['Kenjeran', 'kenjeran', 'UTARA', 'utara'],
       ['Bulak', 'bulak', 'UTARA', 'utara'],
+      // ── Surabaya Selatan (8 — all in Rayon Selatan) ──
       ['Wonokromo', 'wonokromo', 'SELATAN', 'selatan'],
       ['Wonocolo', 'wonocolo', 'SELATAN', 'selatan'],
       ['Gayungan', 'gayungan', 'SELATAN', 'selatan'],
       ['Jambangan', 'jambangan', 'SELATAN', 'selatan'],
+      ['Sawahan', 'sawahan', 'SELATAN', 'selatan'],
+      ['Dukuh Pakis', 'dukuh_pakis', 'SELATAN', 'selatan'],
+      ['Wiyung', 'wiyung', 'SELATAN', 'selatan'],
+      ['Karang Pilang', 'karang_pilang', 'SELATAN', 'selatan'],
     ];
-    let kecInserted = 0;
+    let kecUpserted = 0;
     for (const [name, code, rcode, region] of kecBlueprint) {
       const rid = rIdx[rcode];
       if (!rid) continue;
+      // ON CONFLICT DO UPDATE so the May 9 rayon-region realignment heals
+      // existing rows that were written under the previous (mismatched)
+      // mapping without requiring a destructive re-seed.
       const r = await queryRunner.query(
         `INSERT INTO kecamatans (name, code, rayon_id, region)
          VALUES ($1, $2, $3, $4)
-         ON CONFLICT (code) DO NOTHING`,
+         ON CONFLICT (code) DO UPDATE
+           SET rayon_id = EXCLUDED.rayon_id,
+               region   = EXCLUDED.region,
+               name     = EXCLUDED.name`,
         [name, code, rid, region],
       );
-      if (r && (r as any).rowCount > 0) kecInserted++;
+      if (r && (r as any).rowCount > 0) kecUpserted++;
     }
-    console.log(`  ✓ ${kecInserted} new kecamatans inserted (31 total when fresh)`);
+    console.log(`  ✓ ${kecUpserted} kecamatans upserted (31 total when fresh)`);
+
+    // Heal any staff_kecamatan users whose `rayon_id` no longer matches their
+    // kecamatan after the realignment above (e.g. staff_kecamatan_wiyung was
+    // pinned to BARAT2 but should now reflect SELATAN).
+    await queryRunner.query(`
+      UPDATE users u
+      SET rayon_id = k.rayon_id
+      FROM kecamatans k
+      WHERE u.role = 'staff_kecamatan'
+        AND u.kecamatan_id = k.id
+        AND (u.rayon_id IS DISTINCT FROM k.rayon_id)
+    `);
 
     console.log('');
     console.log('🧑‍💼 ======== SECTION 3.5: Staff Kecamatan Users ========');
@@ -909,15 +938,16 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     }
     console.log(`  … and ${Math.max(0, c.staff_kec_users - sampleStaff.length)} more (one for every kecamatan).`);
     console.log('');
-    console.log('  All 31 Surabaya Kecamatans seeded:');
+    console.log('  All 31 Surabaya Kecamatans seeded (per-rayon assignment):');
     console.log('  ──────────────────────────────────────────────────────────────────────────────────');
-    console.log('  Pusat    (4): Bubutan, Genteng, Simokerto, Tegalsari');
-    console.log('  Timur 1  (3): Tambaksari, Gubeng, Sukolilo');
-    console.log('  Timur 2  (4): Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar');
-    console.log('  Barat 1  (5): Sukomanunggal, Tandes, Asemrowo, Benowo, Pakal');
-    console.log('  Barat 2  (6): Sambikerep, Lakarsantri, Sawahan, Dukuh Pakis, Wiyung, Karang Pilang');
-    console.log('  Utara    (5): Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak');
-    console.log('  Selatan  (4): Wonokromo, Wonocolo, Gayungan, Jambangan');
+    console.log('  Rayon Pusat    (4): Bubutan, Genteng, Simokerto, Tegalsari');
+    console.log('  Rayon Timur 1  (3): Tambaksari, Gubeng, Sukolilo');
+    console.log('  Rayon Timur 2  (4): Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar');
+    console.log('  Rayon Barat 1  (5): Sukomanunggal, Tandes, Asemrowo, Benowo, Pakal');
+    console.log('  Rayon Barat 2  (2): Sambikerep, Lakarsantri');
+    console.log('  Rayon Utara    (5): Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak');
+    console.log('  Rayon Selatan  (8): Wonokromo, Wonocolo, Gayungan, Jambangan, Sawahan,');
+    console.log('                      Dukuh Pakis, Wiyung, Karang Pilang');
     console.log('');
     console.log('  Tip: log in as `staff_kecamatan_wiyung` to walk the kecamatan submit flow,');
     console.log('       or as `admin_data1` (Rayon Pusat) to review + convert pruning requests.');

@@ -474,40 +474,48 @@ async function seedStaging() {
     console.log('\n🏘️  Seeding kecamatans...');
     await queryRunner.query(`
       INSERT INTO kecamatans (name, code, rayon_id, region) VALUES
-        ('Bubutan',          'bubutan',          '${RAYON_PUSAT_ID}',  'pusat'),
-        ('Genteng',          'genteng',          '${RAYON_PUSAT_ID}',  'pusat'),
-        ('Simokerto',        'simokerto',        '${RAYON_PUSAT_ID}',  'pusat'),
-        ('Tegalsari',        'tegalsari',        '${RAYON_PUSAT_ID}',  'pusat'),
-        ('Tambaksari',       'tambaksari',       '${RAYON_TIMUR1_ID}', 'timur'),
-        ('Gubeng',           'gubeng',           '${RAYON_TIMUR1_ID}', 'timur'),
-        ('Sukolilo',         'sukolilo',         '${RAYON_TIMUR1_ID}', 'timur'),
-        ('Mulyorejo',        'mulyorejo',        '${RAYON_TIMUR2_ID}', 'timur'),
-        ('Rungkut',          'rungkut',          '${RAYON_TIMUR2_ID}', 'timur'),
-        ('Tenggilis Mejoyo', 'tenggilis_mejoyo', '${RAYON_TIMUR2_ID}', 'timur'),
-        ('Gunung Anyar',     'gunung_anyar',     '${RAYON_TIMUR2_ID}', 'timur'),
-        ('Sukomanunggal',    'sukomanunggal',    '${RAYON_BARAT1_ID}', 'barat'),
-        ('Tandes',           'tandes',           '${RAYON_BARAT1_ID}', 'barat'),
-        ('Asemrowo',         'asemrowo',         '${RAYON_BARAT1_ID}', 'barat'),
-        ('Benowo',           'benowo',           '${RAYON_BARAT1_ID}', 'barat'),
-        ('Pakal',            'pakal',            '${RAYON_BARAT1_ID}', 'barat'),
-        ('Sambikerep',       'sambikerep',       '${RAYON_BARAT2_ID}', 'barat'),
-        ('Lakarsantri',      'lakarsantri',      '${RAYON_BARAT2_ID}', 'barat'),
-        ('Sawahan',          'sawahan',          '${RAYON_BARAT2_ID}', 'selatan'),
-        ('Dukuh Pakis',      'dukuh_pakis',      '${RAYON_BARAT2_ID}', 'selatan'),
-        ('Wiyung',           'wiyung',           '${RAYON_BARAT2_ID}', 'selatan'),
-        ('Karang Pilang',    'karang_pilang',    '${RAYON_BARAT2_ID}', 'selatan'),
-        ('Krembangan',       'krembangan',       '${RAYON_UTARA_ID}',  'utara'),
-        ('Pabean Cantian',   'pabean_cantian',   '${RAYON_UTARA_ID}',  'utara'),
-        ('Semampir',         'semampir',         '${RAYON_UTARA_ID}',  'utara'),
-        ('Kenjeran',         'kenjeran',         '${RAYON_UTARA_ID}',  'utara'),
-        ('Bulak',            'bulak',            '${RAYON_UTARA_ID}',  'utara'),
-        ('Wonokromo',        'wonokromo',        '${RAYON_SELATAN_ID}','selatan'),
-        ('Wonocolo',         'wonocolo',         '${RAYON_SELATAN_ID}','selatan'),
-        ('Gayungan',         'gayungan',         '${RAYON_SELATAN_ID}','selatan'),
-        ('Jambangan',        'jambangan',        '${RAYON_SELATAN_ID}','selatan')
-      ON CONFLICT (code) DO NOTHING
+        -- Surabaya Pusat (4)
+        ('Bubutan',          'bubutan',          '${RAYON_PUSAT_ID}',   'pusat'),
+        ('Genteng',          'genteng',          '${RAYON_PUSAT_ID}',   'pusat'),
+        ('Simokerto',        'simokerto',        '${RAYON_PUSAT_ID}',   'pusat'),
+        ('Tegalsari',        'tegalsari',        '${RAYON_PUSAT_ID}',   'pusat'),
+        -- Surabaya Timur (7)
+        ('Tambaksari',       'tambaksari',       '${RAYON_TIMUR1_ID}',  'timur'),
+        ('Gubeng',           'gubeng',           '${RAYON_TIMUR1_ID}',  'timur'),
+        ('Sukolilo',         'sukolilo',         '${RAYON_TIMUR1_ID}',  'timur'),
+        ('Mulyorejo',        'mulyorejo',        '${RAYON_TIMUR2_ID}',  'timur'),
+        ('Rungkut',          'rungkut',          '${RAYON_TIMUR2_ID}',  'timur'),
+        ('Tenggilis Mejoyo', 'tenggilis_mejoyo', '${RAYON_TIMUR2_ID}',  'timur'),
+        ('Gunung Anyar',     'gunung_anyar',     '${RAYON_TIMUR2_ID}',  'timur'),
+        -- Surabaya Barat (7)
+        ('Sukomanunggal',    'sukomanunggal',    '${RAYON_BARAT1_ID}',  'barat'),
+        ('Tandes',           'tandes',           '${RAYON_BARAT1_ID}',  'barat'),
+        ('Asemrowo',         'asemrowo',         '${RAYON_BARAT1_ID}',  'barat'),
+        ('Benowo',           'benowo',           '${RAYON_BARAT1_ID}',  'barat'),
+        ('Pakal',            'pakal',            '${RAYON_BARAT1_ID}',  'barat'),
+        ('Sambikerep',       'sambikerep',       '${RAYON_BARAT2_ID}',  'barat'),
+        ('Lakarsantri',      'lakarsantri',      '${RAYON_BARAT2_ID}',  'barat'),
+        -- Surabaya Utara (5)
+        ('Krembangan',       'krembangan',       '${RAYON_UTARA_ID}',   'utara'),
+        ('Pabean Cantian',   'pabean_cantian',   '${RAYON_UTARA_ID}',   'utara'),
+        ('Semampir',         'semampir',         '${RAYON_UTARA_ID}',   'utara'),
+        ('Kenjeran',         'kenjeran',         '${RAYON_UTARA_ID}',   'utara'),
+        ('Bulak',            'bulak',            '${RAYON_UTARA_ID}',   'utara'),
+        -- Surabaya Selatan (8) — all in Rayon Selatan
+        ('Wonokromo',        'wonokromo',        '${RAYON_SELATAN_ID}', 'selatan'),
+        ('Wonocolo',         'wonocolo',         '${RAYON_SELATAN_ID}', 'selatan'),
+        ('Gayungan',         'gayungan',         '${RAYON_SELATAN_ID}', 'selatan'),
+        ('Jambangan',        'jambangan',        '${RAYON_SELATAN_ID}', 'selatan'),
+        ('Sawahan',          'sawahan',          '${RAYON_SELATAN_ID}', 'selatan'),
+        ('Dukuh Pakis',      'dukuh_pakis',      '${RAYON_SELATAN_ID}', 'selatan'),
+        ('Wiyung',           'wiyung',           '${RAYON_SELATAN_ID}', 'selatan'),
+        ('Karang Pilang',    'karang_pilang',    '${RAYON_SELATAN_ID}', 'selatan')
+      ON CONFLICT (code) DO UPDATE
+        SET rayon_id = EXCLUDED.rayon_id,
+            region   = EXCLUDED.region,
+            name     = EXCLUDED.name
     `);
-    console.log('  ✓ 31 kecamatans seeded');
+    console.log('  ✓ 31 kecamatans (4 Pusat + 7 Timur + 7 Barat + 5 Utara + 8 Selatan)');
 
     // ============================================================
     // STEP 5: ACTIVITY TYPES
@@ -750,7 +758,17 @@ async function seedStaging() {
         AND u.kecamatan_name IS NOT NULL
         AND lower(k.name) = lower(u.kecamatan_name)
     `);
-    console.log(`  ✓ 31 per-kecamatan staff users seeded; legacy backfilled`);
+    // Heal staff_kecamatan rayon_id whenever the kecamatan's rayon assignment
+    // changes (e.g. May 9 realignment moving Wiyung from BARAT2 to SELATAN).
+    await queryRunner.query(`
+      UPDATE users u
+      SET rayon_id = k.rayon_id
+      FROM kecamatans k
+      WHERE u.role = 'staff_kecamatan'
+        AND u.kecamatan_id = k.id
+        AND (u.rayon_id IS DISTINCT FROM k.rayon_id)
+    `);
+    console.log(`  ✓ 31 per-kecamatan staff users seeded; rayon_id realigned to current kecamatan mapping`);
 
     // ============================================================
     // STEP 10: DERIVE rayon_id FOR FIELD WORKERS (from area.rayon_id)
