@@ -109,10 +109,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginRight: nbSpacing.xs,
   },
+  // Matches FieldHomeHeader.pageTitle so this modal's title is visually
+  // identical to the title shown above 'Buat Tugas' / 'Buat Permohonan
+  // Perantingan' / etc.
   title: {
     flex: 1,
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
   },
   body: {

@@ -296,10 +296,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginRight: nbSpacing.xs,
   },
+  // Matches FieldHomeHeader.pageTitle so 'Pilih Titik Lokasi' is visually
+  // identical to other sub-screen titles ('Buat Tugas', etc.).
   title: {
     flex: 1,
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
   },
   mapWrap: {
@@ -346,10 +348,11 @@ const styles = StyleSheet.create({
   hintText: {
     textAlign: 'center',
   },
-  // Floating zoom column (top-right)
+  // Floating zoom column (top-right) — pushed down so it doesn't overlap
+  // the centered hint banner at top: nbSpacing.md.
   zoomCol: {
     position: 'absolute',
-    top: nbSpacing.md,
+    top: nbSpacing.md + 52,
     right: nbSpacing.md,
     backgroundColor: nbColors.white,
     borderWidth: nbBorders.base,
