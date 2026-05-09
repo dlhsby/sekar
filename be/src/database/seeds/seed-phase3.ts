@@ -950,7 +950,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('                      Dukuh Pakis, Wiyung, Karang Pilang');
     console.log('');
     console.log('  Tip: log in as `staff_kecamatan_wiyung` to walk the kecamatan submit flow,');
-    console.log('       or as `admin_data1` (Rayon Pusat) to review + convert pruning requests.');
+    console.log('       or as `admin_data_pusat_1` (Rayon Pusat) to review + convert pruning requests.');
     console.log('══════════════════════════════════════════════════════════════════════════════════════');
   } catch (error) {
     await queryRunner.rollbackTransaction();

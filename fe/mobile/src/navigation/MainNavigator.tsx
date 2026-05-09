@@ -80,6 +80,10 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   admin_data: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
+    // Phase 3 May 9, 2026 — admin_data review queue surface so the role can
+    // approve / reject / convert pruning_requests on mobile (previously the
+    // screen was registered but had no menu entry, leaving it web-only).
+    { name: 'PruningReviewQueue', label: 'Perantingan', icon: 'tree-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
@@ -127,6 +131,8 @@ const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
   Profile: ProfileScreen,
   // Phase 3 Apr 27 — staff_kecamatan tab
   Perantingan: PerantinganListScreen,
+  // Phase 3 May 9 — admin_data review queue tab
+  PruningReviewQueue: ReviewQueueScreen,
 };
 
 function MainNavigator(): React.JSX.Element {
@@ -329,20 +335,10 @@ function MainNavigator(): React.JSX.Element {
         })}
       />
 
-      {/* Pruning Requests: admin review queue (admin_data role) */}
-      <Tab.Screen
-        name="PruningReviewQueue"
-        component={ReviewQueueScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => (
-            <FieldHomeHeader
-              title="Antrian Review Pemangkasan"
-              onBack={() => navigation.goBack()}
-            />
-          ),
-          tabBarButton: () => null,
-        })}
-      />
+      {/* PruningReviewQueue is registered via TAB_CONFIGS.admin_data + SCREEN_MAP
+          (Phase 3 May 9). The visible-tab loop renders it with the standard
+          FieldHomeHeader greeting; we override the title here is NOT needed
+          since it lives in its own tab now. */}
 
       {/* Pruning Request Detail: accessed from both submission and review flows */}
       <Tab.Screen

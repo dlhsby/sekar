@@ -28,7 +28,7 @@ describe('ServiceCapacityController', () => {
 
   const mockAdminData: User = {
     id: 'user-11111111-1111-1111-1111-111111111111',
-    username: 'admin_data1',
+    username: 'admin_data_pusat_1',
     password_hash: 'hash',
     full_name: 'Admin Data',
     phone_number: '081200000001',

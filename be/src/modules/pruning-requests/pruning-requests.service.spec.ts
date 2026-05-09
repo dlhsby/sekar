@@ -46,7 +46,7 @@ describe('PruningRequestsService', () => {
 
   const mockAdminData: User = {
     id: mockAdminId,
-    username: 'admin_data1',
+    username: 'admin_data_pusat_1',
     password_hash: 'hashed',
     full_name: 'Admin Data',
     phone_number: '081200000002',

@@ -162,7 +162,7 @@ Login with **username** or **phone number** as identifier.
 | admin | superadmin | — | — |
 | admin_system1 | admin_system | — | — |
 | top_management1 | top_management | — | — |
-| admin_data1 | admin_data | Rayon Pusat | — |
+| admin_data_pusat_1 | admin_data | Rayon Pusat | — |
 | kepala_rayon_pusat | kepala_rayon | Rayon Pusat | — |
 | kepala_rayon_selatan | kepala_rayon | Rayon Selatan | — |
 | korlap_bungkul | korlap | Taman Bungkul + Jalan Raya Darmo | — |
@@ -170,8 +170,8 @@ Login with **username** or **phone number** as identifier.
 | satgas_pusat_1 | satgas | Taman Pusat + Taman Bungkul | active |
 | satgas_pusat_2 | satgas | Taman Pusat | outside_area |
 | linmas_bungkul_1 | linmas | Taman Bungkul | active |
-| satgas_timur1_1 | satgas | Taman Timur 1 | missing (no ping 3h+) |
-| satgas_timur1_2 | satgas | Taman Timur 1 | inactive (35min ago) |
+| satgas_timur_1_1 | satgas | Taman Timur 1 | missing (no ping 3h+) |
+| satgas_timur_1_2 | satgas | Taman Timur 1 | inactive (35min ago) |
 | staff_kec_pusat | staff_kecamatan | Rayon Pusat | — (Phase 3, public intake; staging only) |
 
 ## Staging/Production Deployment

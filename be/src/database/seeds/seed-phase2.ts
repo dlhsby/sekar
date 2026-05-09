@@ -36,7 +36,7 @@ config();
  * | superadmin      | admin                 | 081200000000   | —            | Full system access (Phase 1 admin)  |
  * | admin_system    | admin_system1         | 081234567898   | —            | System administration               |
  * | top_management  | top_management1       | 081234567890   | —            | City-wide read-only view            |
- * | admin_data      | admin_data1           | 081234567897   | Rayon Pusat  | Data entry & reporting              |
+ * | admin_data      | admin_data_pusat_1           | 081234567897   | Rayon Pusat  | Data entry & reporting              |
  * | kepala_rayon    | kepala_rayon_pusat    | 081300000001   | Rayon Pusat  | Manages Pusat sector                |
  * | korlap (multi)  | korlap_bungkul        | 081234567893   | Rayon Pusat  | Taman Bungkul + Jalan Raya Darmo    |
  * | korlap (single) | korlap_darmo          | 081234567896   | Rayon Pusat  | Jalan Raya Darmo                    |
@@ -44,8 +44,8 @@ config();
  * | satgas          | satgas_pusat_2        | 081300000003   | Rayon Pusat  | Taman Pusat (outside_area status)   |
  * | linmas          | linmas_bungkul_1      | 081234567894   | Rayon Pusat  | Taman Bungkul (active status)       |
  * | linmas          | linmas_darmo_1        | 081234567895   | Rayon Pusat  | Jalan Raya Darmo                    |
- * | satgas          | satgas_timur1_2       | 081300000006   | Rayon Timur 1| Taman Timur 1 [INACTIVE status]     |
- * | satgas (miss.)  | satgas_timur1_1       | 081300000005   | Rayon Timur 1| Taman Timur 1 (missing status)      |
+ * | satgas          | satgas_timur_1_2       | 081300000006   | Rayon Timur 1| Taman Timur 1 [INACTIVE status]     |
+ * | satgas (miss.)  | satgas_timur_1_1       | 081300000005   | Rayon Timur 1| Taman Timur 1 (missing status)      |
  * | satgas          | satgas_bungkul_1      | 081300000016   | Rayon Pusat  | Taman Bungkul (single area)         |
  * | satgas (multi)  | satgas_bungkul_2      | 081300000017   | Rayon Pusat  | Taman Bungkul + Jalan Raya Darmo    |
  *
@@ -63,16 +63,16 @@ config();
  *
  * MONITORING STATUS SCENARIOS (Phase 2D):
  *   active       → satgas_pusat_1, linmas_bungkul_1  (recent GPS ping within boundary)
- *   inactive     → satgas_timur1_2                   (last ping 35 min ago)
+ *   inactive     → satgas_timur_1_2                   (last ping 35 min ago)
  *   outside_area → satgas_pusat_2                    (GPS outside boundary polygon)
- *   missing      → satgas_timur1_1                   (no ping for 3+ hours)
+ *   missing      → satgas_timur_1_1                   (no ping for 3+ hours)
  *   offline      → all others
  *
  * MULTI-AREA ASSIGNMENT (Phase 2E - user_areas table):
  *   korlap_bungkul  → Taman Bungkul (permanent) + Jalan Raya Darmo (permanent)  [both Rayon Pusat]
  *   korlap_darmo    → Jalan Raya Darmo (permanent)
  *   satgas_pusat_1  → Taman Pusat (permanent default) + Taman Bungkul (permanent extra)
- *   satgas_timur1_2 → Taman Timur 1 only (Rayon Timur 1)  [Timur 2 is a different rayon]
+ *   satgas_timur_1_2 → Taman Timur 1 only (Rayon Timur 1)  [Timur 2 is a different rayon]
  *   satgas_bungkul_1 → Taman Bungkul (permanent, single area)
  *   satgas_bungkul_2 → Taman Bungkul (permanent default) + Jalan Raya Darmo (permanent extra)
  * =============================================================================
@@ -135,18 +135,18 @@ const USER_PHASE2_9_ID = 'b8c6c6a4-7270-4790-8b2f-ba5e8aec5a7a';
 const USER_NEW_1_ID = '3f7b4a2e-8c91-4d56-b3e7-9a1f2c4d6e8f'; // kepala_rayon_pusat
 const USER_NEW_2_ID = '7a2e9d4f-1b3c-4e8a-9f7b-2c6d0e5f8a1b'; // satgas_pusat_1
 const USER_NEW_3_ID = '5c8f3a1d-4e7b-4f2c-8a9d-1b6e0f4c7d2e'; // satgas_pusat_2
-const USER_NEW_4_ID = '2d9b7e6f-3c4a-4d8e-b1f7-9e0c2a8b4d6f'; // kepala_rayon_timur1
-const USER_NEW_5_ID = '8f1c4a7d-6e2b-4f9c-a3d8-7b0e5f1c3a9d'; // satgas_timur1_1 (missing scenario)
-const USER_NEW_6_ID = '4a7d9e2f-8b1c-4a6d-b5e9-3f7c0a4d2b8e'; // satgas_timur1_2
-const USER_NEW_7_ID = '6e3f1b9a-7c4d-4e2f-a8b5-1d9c7e3f0a6b'; // kepala_rayon_timur2
-const USER_NEW_8_ID = '9b4e7c2f-1a8d-4b3e-a6f9-4d0b8e2c7f1a'; // satgas_timur2_1
-const USER_NEW_9_ID = '1f8b5e3c-4d7a-4c9e-b2f8-6a1b5e9c4d7f'; // satgas_timur2_2
-const USER_NEW_10_ID = '7c2a8f4d-9e1b-4d7c-a5a2-8e4c1f7b3d9a'; // kepala_rayon_barat1
-const USER_NEW_11_ID = '3e9f6b1c-5d8a-4e4f-b7c1-9f3d6a0e8b5c'; // satgas_barat1_1
-const USER_NEW_12_ID = 'a5d2e9f7-6b3c-4f1a-b8e5-2f7d4b9e0a6c'; // satgas_barat1_2
-const USER_NEW_13_ID = 'd8c5f3a9-2e7b-4c8d-a1f6-5b3e9d2c7f4a'; // kepala_rayon_barat2
-const USER_NEW_14_ID = '2f7a4d8e-9c1b-4d6f-b3a7-8c5e2f0d4b9e'; // satgas_barat2_1
-const USER_NEW_15_ID = 'b4e8a3f1-7c2d-4b5e-a9f4-1d6a8e3b5f7c'; // satgas_barat2_2
+const USER_NEW_4_ID = '2d9b7e6f-3c4a-4d8e-b1f7-9e0c2a8b4d6f'; // kepala_rayon_timur_1
+const USER_NEW_5_ID = '8f1c4a7d-6e2b-4f9c-a3d8-7b0e5f1c3a9d'; // satgas_timur_1_1 (missing scenario)
+const USER_NEW_6_ID = '4a7d9e2f-8b1c-4a6d-b5e9-3f7c0a4d2b8e'; // satgas_timur_1_2
+const USER_NEW_7_ID = '6e3f1b9a-7c4d-4e2f-a8b5-1d9c7e3f0a6b'; // kepala_rayon_timur_2
+const USER_NEW_8_ID = '9b4e7c2f-1a8d-4b3e-a6f9-4d0b8e2c7f1a'; // satgas_timur_2_1
+const USER_NEW_9_ID = '1f8b5e3c-4d7a-4c9e-b2f8-6a1b5e9c4d7f'; // satgas_timur_2_2
+const USER_NEW_10_ID = '7c2a8f4d-9e1b-4d7c-a5a2-8e4c1f7b3d9a'; // kepala_rayon_barat_1
+const USER_NEW_11_ID = '3e9f6b1c-5d8a-4e4f-b7c1-9f3d6a0e8b5c'; // satgas_barat_1_1
+const USER_NEW_12_ID = 'a5d2e9f7-6b3c-4f1a-b8e5-2f7d4b9e0a6c'; // satgas_barat_1_2
+const USER_NEW_13_ID = 'd8c5f3a9-2e7b-4c8d-a1f6-5b3e9d2c7f4a'; // kepala_rayon_barat_2
+const USER_NEW_14_ID = '2f7a4d8e-9c1b-4d6f-b3a7-8c5e2f0d4b9e'; // satgas_barat_2_1
+const USER_NEW_15_ID = 'b4e8a3f1-7c2d-4b5e-a9f4-1d6a8e3b5f7c'; // satgas_barat_2_2
 
 // New users replacing legacy linmas1 / linmas2 / satgas4
 const USER_LINMAS_BUNGKUL_1_ID = 'c6d1f4b8-3a7e-4c9d-a5f2-7b4a1e6d9c3f'; // linmas_bungkul_1
@@ -160,7 +160,7 @@ const USER_SATGAS_BUNGKUL_2_ID = 'd7b4f1e9-3c6a-4d2f-a8e5-2b9f4d7c1e6a'; // satg
 // Taman Utara area (Rayon Utara has no area yet)
 const AREA_UTARA_ID = '8b3e6f1d-4a9c-4b7e-92f8-5d1c9e3b6f4a';
 
-// Admin data per rayon — 6 new users (excluding Pusat which already has admin_data1)
+// Admin data per rayon — 6 new users (excluding Pusat which already has admin_data_pusat_1)
 const USER_ADMIN_DATA_SELATAN_ID = '1a4c7e9b-2d5f-4a8c-93e6-7f9a1c4e7b2d';
 const USER_ADMIN_DATA_UTARA_ID   = '2b5d8f0c-3e6a-4b9d-a4f7-8a0b2d5f8c3e';
 const USER_ADMIN_DATA_TIMUR1_ID  = '3c6e9a1d-4f7b-4c0e-b5a8-9b1c3e6a9d4f';
@@ -186,7 +186,7 @@ const AREA_PELANGI_ID = '6a5b4c3d-2e1f-4a9b-8c7d-6e5f4a3b2c1d'; // Taman Pelangi
 
 // Notification token IDs
 const NOTIF_TOKEN_1_ID = '9f4e2d8b-1c7a-4f9e-b3d6-7a2c5e1f4b8d'; // → satgas_pusat_1
-const NOTIF_TOKEN_2_ID = '3b8f6e2d-5a9c-4b3f-87d1-4c8a3f6b2e9d'; // → satgas_timur1_2
+const NOTIF_TOKEN_2_ID = '3b8f6e2d-5a9c-4b3f-87d1-4c8a3f6b2e9d'; // → satgas_timur_1_2
 const NOTIF_TOKEN_3_ID = '7e3c1f9b-4d8a-4e7c-92f6-9b5e3c0f1d7a'; // → linmas_bungkul_1
 
 // Activity IDs for Section C
@@ -510,7 +510,7 @@ async function seedPhase2() {
         ('${USER_LINMAS_BUNGKUL_1_ID}', 'linmas_bungkul_1', '${passwordHash}', 'Linmas Bungkul Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
         ('${USER_LINMAS_DARMO_1_ID}',   'linmas_darmo_1',   '${passwordHash}', 'Linmas Darmo Satu',   '081234567895', 'linmas', NULL, NULL, TRUE),
         ('${USER_KORLAP_DARMO_ID}',     'korlap_darmo',     '${passwordHash}', 'Korlap Jalan Darmo',  '081234567896', 'korlap', NULL, NULL, TRUE),
-        ('${USER_PHASE2_8_ID}', 'admin_data1', '${passwordHash}', 'Admin Data Satu', '081234567897', 'admin_data', '${RAYON_3_ID}', NULL, TRUE),
+        ('${USER_PHASE2_8_ID}', 'admin_data_pusat_1', '${passwordHash}', 'Admin Data Satu', '081234567897', 'admin_data', '${RAYON_3_ID}', NULL, TRUE),
         ('${USER_PHASE2_9_ID}', 'admin_system1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE),
         ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_bungkul_1', '${passwordHash}', 'Satgas Bungkul Satu', '081300000016', 'satgas', '${RAYON_3_ID}', '${tamanBungkulId}', TRUE),
         ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_bungkul_2', '${passwordHash}', 'Satgas Bungkul Dua',  '081300000017', 'satgas', '${RAYON_3_ID}', '${tamanBungkulId}', TRUE)
@@ -524,18 +524,18 @@ async function seedPhase2() {
         ('${USER_NEW_1_ID}',  'kepala_rayon_pusat',  '${passwordHash}', 'Kepala Rayon Pusat',   '081300000001', 'kepala_rayon', '${RAYON_3_ID}', NULL, TRUE),
         ('${USER_NEW_2_ID}',  'satgas_pusat_1',      '${passwordHash}', 'Satgas Pusat Satu',    '081300000002', 'satgas',       '${RAYON_3_ID}', NULL, TRUE),
         ('${USER_NEW_3_ID}',  'satgas_pusat_2',      '${passwordHash}', 'Satgas Pusat Dua',     '081300000003', 'satgas',       '${RAYON_3_ID}', NULL, TRUE),
-        ('${USER_NEW_4_ID}',  'kepala_rayon_timur1', '${passwordHash}', 'Kepala Rayon Timur 1', '081300000004', 'kepala_rayon', '${RAYON_4_ID}', NULL, TRUE),
-        ('${USER_NEW_5_ID}',  'satgas_timur1_1',     '${passwordHash}', 'Satgas Timur1 Satu',   '081300000005', 'satgas',       '${RAYON_4_ID}', NULL, TRUE),
-        ('${USER_NEW_6_ID}',  'satgas_timur1_2',     '${passwordHash}', 'Satgas Timur1 Dua',    '081300000006', 'satgas',       '${RAYON_4_ID}', NULL, TRUE),
-        ('${USER_NEW_7_ID}',  'kepala_rayon_timur2', '${passwordHash}', 'Kepala Rayon Timur 2', '081300000007', 'kepala_rayon', '${RAYON_5_ID}', NULL, TRUE),
-        ('${USER_NEW_8_ID}',  'satgas_timur2_1',     '${passwordHash}', 'Satgas Timur2 Satu',   '081300000008', 'satgas',       '${RAYON_5_ID}', NULL, TRUE),
-        ('${USER_NEW_9_ID}',  'satgas_timur2_2',     '${passwordHash}', 'Satgas Timur2 Dua',    '081300000009', 'satgas',       '${RAYON_5_ID}', NULL, TRUE),
-        ('${USER_NEW_10_ID}', 'kepala_rayon_barat1', '${passwordHash}', 'Kepala Rayon Barat 1', '081300000010', 'kepala_rayon', '${RAYON_6_ID}', NULL, TRUE),
-        ('${USER_NEW_11_ID}', 'satgas_barat1_1',     '${passwordHash}', 'Satgas Barat1 Satu',   '081300000011', 'satgas',       '${RAYON_6_ID}', NULL, TRUE),
-        ('${USER_NEW_12_ID}', 'satgas_barat1_2',     '${passwordHash}', 'Satgas Barat1 Dua',    '081300000012', 'satgas',       '${RAYON_6_ID}', NULL, TRUE),
-        ('${USER_NEW_13_ID}', 'kepala_rayon_barat2', '${passwordHash}', 'Kepala Rayon Barat 2', '081300000013', 'kepala_rayon', '${RAYON_7_ID}', NULL, TRUE),
-        ('${USER_NEW_14_ID}', 'satgas_barat2_1',     '${passwordHash}', 'Satgas Barat2 Satu',   '081300000014', 'satgas',       '${RAYON_7_ID}', NULL, TRUE),
-        ('${USER_NEW_15_ID}', 'satgas_barat2_2',     '${passwordHash}', 'Satgas Barat2 Dua',    '081300000015', 'satgas',       '${RAYON_7_ID}', NULL, TRUE)
+        ('${USER_NEW_4_ID}',  'kepala_rayon_timur_1', '${passwordHash}', 'Kepala Rayon Timur 1', '081300000004', 'kepala_rayon', '${RAYON_4_ID}', NULL, TRUE),
+        ('${USER_NEW_5_ID}',  'satgas_timur_1_1',     '${passwordHash}', 'Satgas Timur1 Satu',   '081300000005', 'satgas',       '${RAYON_4_ID}', NULL, TRUE),
+        ('${USER_NEW_6_ID}',  'satgas_timur_1_2',     '${passwordHash}', 'Satgas Timur1 Dua',    '081300000006', 'satgas',       '${RAYON_4_ID}', NULL, TRUE),
+        ('${USER_NEW_7_ID}',  'kepala_rayon_timur_2', '${passwordHash}', 'Kepala Rayon Timur 2', '081300000007', 'kepala_rayon', '${RAYON_5_ID}', NULL, TRUE),
+        ('${USER_NEW_8_ID}',  'satgas_timur_2_1',     '${passwordHash}', 'Satgas Timur2 Satu',   '081300000008', 'satgas',       '${RAYON_5_ID}', NULL, TRUE),
+        ('${USER_NEW_9_ID}',  'satgas_timur_2_2',     '${passwordHash}', 'Satgas Timur2 Dua',    '081300000009', 'satgas',       '${RAYON_5_ID}', NULL, TRUE),
+        ('${USER_NEW_10_ID}', 'kepala_rayon_barat_1', '${passwordHash}', 'Kepala Rayon Barat 1', '081300000010', 'kepala_rayon', '${RAYON_6_ID}', NULL, TRUE),
+        ('${USER_NEW_11_ID}', 'satgas_barat_1_1',     '${passwordHash}', 'Satgas Barat1 Satu',   '081300000011', 'satgas',       '${RAYON_6_ID}', NULL, TRUE),
+        ('${USER_NEW_12_ID}', 'satgas_barat_1_2',     '${passwordHash}', 'Satgas Barat1 Dua',    '081300000012', 'satgas',       '${RAYON_6_ID}', NULL, TRUE),
+        ('${USER_NEW_13_ID}', 'kepala_rayon_barat_2', '${passwordHash}', 'Kepala Rayon Barat 2', '081300000013', 'kepala_rayon', '${RAYON_7_ID}', NULL, TRUE),
+        ('${USER_NEW_14_ID}', 'satgas_barat_2_1',     '${passwordHash}', 'Satgas Barat2 Satu',   '081300000014', 'satgas',       '${RAYON_7_ID}', NULL, TRUE),
+        ('${USER_NEW_15_ID}', 'satgas_barat_2_2',     '${passwordHash}', 'Satgas Barat2 Dua',    '081300000015', 'satgas',       '${RAYON_7_ID}', NULL, TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
     console.log(
@@ -548,16 +548,16 @@ async function seedPhase2() {
       INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
         ('${USER_ADMIN_DATA_SELATAN_ID}', 'admin_data_selatan', '${passwordHash}', 'Admin Data Selatan', '081300000018', 'admin_data', '${RAYON_1_ID}', NULL, TRUE),
         ('${USER_ADMIN_DATA_UTARA_ID}',   'admin_data_utara',   '${passwordHash}', 'Admin Data Utara',   '081300000019', 'admin_data', '${RAYON_2_ID}', NULL, TRUE),
-        ('${USER_ADMIN_DATA_TIMUR1_ID}',  'admin_data_timur1',  '${passwordHash}', 'Admin Data Timur 1', '081300000020', 'admin_data', '${RAYON_4_ID}', NULL, TRUE),
-        ('${USER_ADMIN_DATA_TIMUR2_ID}',  'admin_data_timur2',  '${passwordHash}', 'Admin Data Timur 2', '081300000021', 'admin_data', '${RAYON_5_ID}', NULL, TRUE),
-        ('${USER_ADMIN_DATA_BARAT1_ID}',  'admin_data_barat1',  '${passwordHash}', 'Admin Data Barat 1', '081300000022', 'admin_data', '${RAYON_6_ID}', NULL, TRUE),
-        ('${USER_ADMIN_DATA_BARAT2_ID}',  'admin_data_barat2',  '${passwordHash}', 'Admin Data Barat 2', '081300000023', 'admin_data', '${RAYON_7_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_TIMUR1_ID}',  'admin_data_timur_1',  '${passwordHash}', 'Admin Data Timur 1', '081300000020', 'admin_data', '${RAYON_4_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_TIMUR2_ID}',  'admin_data_timur_2',  '${passwordHash}', 'Admin Data Timur 2', '081300000021', 'admin_data', '${RAYON_5_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_BARAT1_ID}',  'admin_data_barat_1',  '${passwordHash}', 'Admin Data Barat 1', '081300000022', 'admin_data', '${RAYON_6_ID}', NULL, TRUE),
+        ('${USER_ADMIN_DATA_BARAT2_ID}',  'admin_data_barat_2',  '${passwordHash}', 'Admin Data Barat 2', '081300000023', 'admin_data', '${RAYON_7_ID}', NULL, TRUE),
         ('${USER_KORLAP_HARMONI_ID}', 'korlap_harmoni', '${passwordHash}', 'Korlap Taman Harmoni', '081300000024', 'korlap', '${RAYON_1_ID}', NULL, TRUE),
         ('${USER_KORLAP_UTARA_ID}',   'korlap_utara',   '${passwordHash}', 'Korlap Taman Utara',   '081300000025', 'korlap', '${RAYON_2_ID}', NULL, TRUE),
-        ('${USER_KORLAP_TIMUR1_ID}',  'korlap_timur1',  '${passwordHash}', 'Korlap Taman Timur 1', '081300000026', 'korlap', '${RAYON_4_ID}', NULL, TRUE),
-        ('${USER_KORLAP_TIMUR2_ID}',  'korlap_timur2',  '${passwordHash}', 'Korlap Taman Timur 2', '081300000027', 'korlap', '${RAYON_5_ID}', NULL, TRUE),
-        ('${USER_KORLAP_BARAT1_ID}',  'korlap_barat1',  '${passwordHash}', 'Korlap Taman Barat 1', '081300000028', 'korlap', '${RAYON_6_ID}', NULL, TRUE),
-        ('${USER_KORLAP_BARAT2_ID}',  'korlap_barat2',  '${passwordHash}', 'Korlap Taman Barat 2', '081300000029', 'korlap', '${RAYON_7_ID}', NULL, TRUE)
+        ('${USER_KORLAP_TIMUR1_ID}',  'korlap_timur_1',  '${passwordHash}', 'Korlap Taman Timur 1', '081300000026', 'korlap', '${RAYON_4_ID}', NULL, TRUE),
+        ('${USER_KORLAP_TIMUR2_ID}',  'korlap_timur_2',  '${passwordHash}', 'Korlap Taman Timur 2', '081300000027', 'korlap', '${RAYON_5_ID}', NULL, TRUE),
+        ('${USER_KORLAP_BARAT1_ID}',  'korlap_barat_1',  '${passwordHash}', 'Korlap Taman Barat 1', '081300000028', 'korlap', '${RAYON_6_ID}', NULL, TRUE),
+        ('${USER_KORLAP_BARAT2_ID}',  'korlap_barat_2',  '${passwordHash}', 'Korlap Taman Barat 2', '081300000029', 'korlap', '${RAYON_7_ID}', NULL, TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
     console.log('  ✓ Created 12 users: admin_data + korlap for Selatan, Utara, Timur1, Timur2, Barat1, Barat2');
@@ -607,19 +607,19 @@ async function seedPhase2() {
       `);
       await queryRunner.query(`
         UPDATE users SET area_id = '${AREA_TIMUR1_ID}'
-        WHERE username IN ('satgas_timur1_1', 'satgas_timur1_2') AND area_id IS NULL;
+        WHERE username IN ('satgas_timur_1_1', 'satgas_timur_1_2') AND area_id IS NULL;
       `);
       await queryRunner.query(`
         UPDATE users SET area_id = '${AREA_TIMUR2_ID}'
-        WHERE username IN ('satgas_timur2_1', 'satgas_timur2_2') AND area_id IS NULL;
+        WHERE username IN ('satgas_timur_2_1', 'satgas_timur_2_2') AND area_id IS NULL;
       `);
       await queryRunner.query(`
         UPDATE users SET area_id = '${AREA_BARAT1_ID}'
-        WHERE username IN ('satgas_barat1_1', 'satgas_barat1_2') AND area_id IS NULL;
+        WHERE username IN ('satgas_barat_1_1', 'satgas_barat_1_2') AND area_id IS NULL;
       `);
       await queryRunner.query(`
         UPDATE users SET area_id = '${AREA_BARAT2_ID}'
-        WHERE username IN ('satgas_barat2_1', 'satgas_barat2_2') AND area_id IS NULL;
+        WHERE username IN ('satgas_barat_2_1', 'satgas_barat_2_2') AND area_id IS NULL;
       `);
       console.log('  ✓ Assigned area_id to 10 new satgas users');
 
@@ -685,8 +685,8 @@ async function seedPhase2() {
     await queryRunner.query(`
       INSERT INTO notification_tokens (id, user_id, fcm_token, device_id, platform, is_active, created_at)
       SELECT '${NOTIF_TOKEN_2_ID}', u.id,
-        'ExponentPushToken[satgas_timur1_2_GHIJKL67890_test]', 'device_satgas_timur12_xyz789', 'android', TRUE, NOW() - INTERVAL '5 days'
-      FROM users u WHERE u.username = 'satgas_timur1_2' LIMIT 1
+        'ExponentPushToken[satgas_timur_1_2_GHIJKL67890_test]', 'device_satgas_timur_1_2_xyz789', 'android', TRUE, NOW() - INTERVAL '5 days'
+      FROM users u WHERE u.username = 'satgas_timur_1_2' LIMIT 1
       ON CONFLICT (id) DO NOTHING;
     `);
     await queryRunner.query(`
@@ -696,7 +696,7 @@ async function seedPhase2() {
       FROM users u WHERE u.username = 'linmas_bungkul_1' LIMIT 1
       ON CONFLICT (id) DO NOTHING;
     `);
-    console.log('  ✓ Created 3 notification tokens (satgas_pusat_1, satgas_timur1_2, linmas_bungkul_1)');
+    console.log('  ✓ Created 3 notification tokens (satgas_pusat_1, satgas_timur_1_2, linmas_bungkul_1)');
 
     // ==========================================
     // STEP 8.5: Assign area_id + rayon_id to field workers
@@ -741,19 +741,19 @@ async function seedPhase2() {
     `);
     await queryRunner.query(`
       UPDATE users SET area_id = '${AREA_TIMUR1_ID}'
-      WHERE username = 'korlap_timur1' AND area_id IS NULL;
+      WHERE username = 'korlap_timur_1' AND area_id IS NULL;
     `);
     await queryRunner.query(`
       UPDATE users SET area_id = '${AREA_TIMUR2_ID}'
-      WHERE username = 'korlap_timur2' AND area_id IS NULL;
+      WHERE username = 'korlap_timur_2' AND area_id IS NULL;
     `);
     await queryRunner.query(`
       UPDATE users SET area_id = '${AREA_BARAT1_ID}'
-      WHERE username = 'korlap_barat1' AND area_id IS NULL;
+      WHERE username = 'korlap_barat_1' AND area_id IS NULL;
     `);
     await queryRunner.query(`
       UPDATE users SET area_id = '${AREA_BARAT2_ID}'
-      WHERE username = 'korlap_barat2' AND area_id IS NULL;
+      WHERE username = 'korlap_barat_2' AND area_id IS NULL;
     `);
     console.log('  ✓ Assigned area_id to 6 new per-rayon korlap users');
 
@@ -941,7 +941,7 @@ async function seedPhase2() {
         }
         // Admin Data overtimes (2: pending, approved)
         const adminDataOtResult = await queryRunner.query(`
-          SELECT id, area_id FROM users WHERE username = 'admin_data1' LIMIT 1
+          SELECT id, area_id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1
         `);
         if (adminDataOtResult.length > 0) {
           const OVERTIME_9_ID = 'a8b9c0d1-e2f3-4a4b-8b6d-6e7f8a9b0c1d';
@@ -999,7 +999,7 @@ async function seedPhase2() {
       `SELECT id, area_id FROM users WHERE username = 'korlap_bungkul' LIMIT 1`,
     );
     const shiftAdminData = await queryRunner.query(
-      `SELECT id FROM users WHERE username = 'admin_data1' LIMIT 1`,
+      `SELECT id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1`,
     );
     const shiftKepalaRayon = await queryRunner.query(
       `SELECT id FROM users WHERE username = 'kepala_rayon_selatan' LIMIT 1`,
@@ -1058,7 +1058,7 @@ async function seedPhase2() {
               NOW() - INTERVAL '3 days', -7.2906, 112.7399, NOW() - INTERVAL '3 days 8 hours', NOW() - INTERVAL '3 days')
         `);
         shiftCount += 1;
-        console.log('  ✓ Created 1 shift for admin_data1 (completed)');
+        console.log('  ✓ Created 1 shift for admin_data_pusat_1 (completed)');
       }
 
       if (shiftKepalaRayon.length > 0) {
@@ -1304,7 +1304,7 @@ async function seedPhase2() {
       `SELECT id FROM users WHERE username = 'satgas_pusat_1' LIMIT 1`,
     );
     const actSatgas2 = await queryRunner.query(
-      `SELECT id FROM users WHERE username = 'satgas_timur1_2' LIMIT 1`,
+      `SELECT id FROM users WHERE username = 'satgas_timur_1_2' LIMIT 1`,
     );
     const actLinmas1 = await queryRunner.query(
       `SELECT id FROM users WHERE username = 'linmas_bungkul_1' LIMIT 1`,
@@ -1508,7 +1508,7 @@ async function seedPhase2() {
     // D.3: Monitoring status variants — DISABLED for Phase 3 plant-monitoring review.
     //
     // Previously this block forced 5 demo users (satgas_pusat_1, linmas_bungkul_1,
-    // satgas_timur1_2, satgas_pusat_2, satgas_timur1_1) into open shifts (clock_out_time
+    // satgas_timur_1_2, satgas_pusat_2, satgas_timur_1_1) into open shifts (clock_out_time
     // NULL) and varied user_tracking_status to active/inactive/outside_area/missing
     // so the worker monitoring map had ready-made markers.
     //
@@ -1558,37 +1558,37 @@ async function seedPhase2() {
       UPDATE users SET phone_number = '081234567894' WHERE username = 'linmas_bungkul_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081234567895' WHERE username = 'linmas_darmo_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081234567896' WHERE username = 'korlap_darmo' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081234567897' WHERE username = 'admin_data1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081234567897' WHERE username = 'admin_data_pusat_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081234567898' WHERE username = 'admin_system1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000001' WHERE username = 'kepala_rayon_pusat' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000002' WHERE username = 'satgas_pusat_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000003' WHERE username = 'satgas_pusat_2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000004' WHERE username = 'kepala_rayon_timur1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000005' WHERE username = 'satgas_timur1_1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000006' WHERE username = 'satgas_timur1_2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000007' WHERE username = 'kepala_rayon_timur2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000008' WHERE username = 'satgas_timur2_1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000009' WHERE username = 'satgas_timur2_2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000010' WHERE username = 'kepala_rayon_barat1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000011' WHERE username = 'satgas_barat1_1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000012' WHERE username = 'satgas_barat1_2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000013' WHERE username = 'kepala_rayon_barat2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000014' WHERE username = 'satgas_barat2_1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000015' WHERE username = 'satgas_barat2_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000004' WHERE username = 'kepala_rayon_timur_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000005' WHERE username = 'satgas_timur_1_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000006' WHERE username = 'satgas_timur_1_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000007' WHERE username = 'kepala_rayon_timur_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000008' WHERE username = 'satgas_timur_2_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000009' WHERE username = 'satgas_timur_2_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000010' WHERE username = 'kepala_rayon_barat_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000011' WHERE username = 'satgas_barat_1_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000012' WHERE username = 'satgas_barat_1_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000013' WHERE username = 'kepala_rayon_barat_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000014' WHERE username = 'satgas_barat_2_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000015' WHERE username = 'satgas_barat_2_2' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000016' WHERE username = 'satgas_bungkul_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000017' WHERE username = 'satgas_bungkul_2' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000018' WHERE username = 'admin_data_selatan' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000019' WHERE username = 'admin_data_utara' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000020' WHERE username = 'admin_data_timur1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000021' WHERE username = 'admin_data_timur2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000022' WHERE username = 'admin_data_barat1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000023' WHERE username = 'admin_data_barat2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000020' WHERE username = 'admin_data_timur_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000021' WHERE username = 'admin_data_timur_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000022' WHERE username = 'admin_data_barat_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000023' WHERE username = 'admin_data_barat_2' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000024' WHERE username = 'korlap_harmoni' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000025' WHERE username = 'korlap_utara' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000026' WHERE username = 'korlap_timur1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000027' WHERE username = 'korlap_timur2' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000028' WHERE username = 'korlap_barat1' AND phone_number IS NULL;
-      UPDATE users SET phone_number = '081300000029' WHERE username = 'korlap_barat2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000026' WHERE username = 'korlap_timur_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000027' WHERE username = 'korlap_timur_2' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000028' WHERE username = 'korlap_barat_1' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081300000029' WHERE username = 'korlap_barat_2' AND phone_number IS NULL;
     `);
     console.log('    ✓ phone_number ensured for all 39 users (1 admin + 11 phase2c + 12 per-rayon admin_data/korlap + 15 rayon-based)');
 
@@ -1663,28 +1663,28 @@ async function seedPhase2() {
       ON CONFLICT DO NOTHING;
     `);
 
-    // satgas_timur1_2 → Taman Timur 1 only (single rayon — Rayon Timur 1)
+    // satgas_timur_1_2 → Taman Timur 1 only (single rayon — Rayon Timur 1)
     // Taman Timur 2 is in Rayon Timur 2 (different rayon), so cross-rayon task_based removed
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
       SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
       FROM users u, areas a
-      WHERE u.username = 'satgas_timur1_2' AND a.name = 'Taman Timur 1'
+      WHERE u.username = 'satgas_timur_1_2' AND a.name = 'Taman Timur 1'
       ON CONFLICT DO NOTHING;
     `);
 
     console.log('    ✓ user_areas: korlap_bungkul→Bungkul+Darmo (same rayon), korlap_darmo→Darmo');
-    console.log('    ✓ user_areas: satgas_pusat_1→Pusat+Bungkul (permanent), satgas_timur1_2→Timur1 (single, same rayon)');
+    console.log('    ✓ user_areas: satgas_pusat_1→Pusat+Bungkul (permanent), satgas_timur_1_2→Timur1 (single, same rayon)');
     console.log('    ✓ user_areas: satgas_bungkul_1→Bungkul, satgas_bungkul_2→Bungkul+Darmo (permanent multi-area)');
 
     // Per-rayon korlap single-area assignments
     for (const [username, areaName] of [
       ['korlap_harmoni', 'Taman Harmoni'],
       ['korlap_utara',   'Taman Utara'],
-      ['korlap_timur1',  'Taman Timur 1'],
-      ['korlap_timur2',  'Taman Timur 2'],
-      ['korlap_barat1',  'Taman Barat 1'],
-      ['korlap_barat2',  'Taman Barat 2'],
+      ['korlap_timur_1',  'Taman Timur 1'],
+      ['korlap_timur_2',  'Taman Timur 2'],
+      ['korlap_barat_1',  'Taman Barat 1'],
+      ['korlap_barat_2',  'Taman Barat 2'],
     ] as const) {
       await queryRunner.query(`
         INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
@@ -1731,7 +1731,7 @@ async function seedPhase2() {
     console.log('     ──────────────────────────────────────────────────────────────────────────');
     console.log('      korlap_bungkul   → Bungkul + Darmo  (permanent, same rayon)');
     console.log('      satgas_pusat_1   → Pusat + Bungkul  (permanent multi-area)');
-    console.log('      satgas_timur1_2  → Timur 1 default + Timur 2 (task_based)');
+    console.log('      satgas_timur_1_2  → Timur 1 default + Timur 2 (task_based)');
     console.log('      satgas_bungkul_2 → Bungkul + Darmo  (permanent multi-area)');
     console.log('      korlap_harmoni / utara / timur1 / timur2 / barat1 / barat2 → primary area each');
     console.log('');
@@ -1753,7 +1753,7 @@ async function seedPhase2() {
     console.log('  Areas: Taman Bungkul (aktif) · Jalan Raya Darmo (pasif) · Taman Pusat (aktif)');
     console.log('');
     console.log('  Role            Username           Phone          Area');
-    console.log('  admin_data      admin_data1        081234567897   Rayon Pusat — data entry & reports');
+    console.log('  admin_data      admin_data_pusat_1        081234567897   Rayon Pusat — data entry & reports');
     console.log('  kepala_rayon    kepala_rayon_pusat 081300000001   Rayon Pusat head');
     console.log('  korlap          korlap_bungkul     081234567893   Taman Bungkul + Jalan Raya Darmo (multi, same rayon)');
     console.log('  korlap          korlap_darmo       081234567896   Jalan Raya Darmo');
@@ -1784,53 +1784,53 @@ async function seedPhase2() {
     console.log('  Area: Taman Timur 1');
     console.log('');
     console.log('  Role            Username              Phone          Area / Monitoring Status');
-    console.log('  kepala_rayon    kepala_rayon_timur1   081300000004   Rayon Timur 1 head');
-    console.log('  admin_data      admin_data_timur1     081300000020   Rayon Timur 1 — data entry & reports');
-    console.log('  korlap          korlap_timur1         081300000026   Taman Timur 1');
-    console.log('  satgas          satgas_timur1_1       081300000005   Taman Timur 1 [MISSING — no ping 3h+]');
-    console.log('  satgas          satgas_timur1_2       081300000006   Taman Timur 1 [INACTIVE 35min]');
+    console.log('  kepala_rayon    kepala_rayon_timur_1   081300000004   Rayon Timur 1 head');
+    console.log('  admin_data      admin_data_timur_1     081300000020   Rayon Timur 1 — data entry & reports');
+    console.log('  korlap          korlap_timur_1         081300000026   Taman Timur 1');
+    console.log('  satgas          satgas_timur_1_1       081300000005   Taman Timur 1 [MISSING — no ping 3h+]');
+    console.log('  satgas          satgas_timur_1_2       081300000006   Taman Timur 1 [INACTIVE 35min]');
     console.log('');
     console.log('  ── RAYON TIMUR 2 ───────────────────────────────────────────────────────────────────');
     console.log('  Area: Taman Timur 2');
     console.log('');
     console.log('  Role            Username              Phone          Area');
-    console.log('  kepala_rayon    kepala_rayon_timur2   081300000007   Rayon Timur 2 head');
-    console.log('  admin_data      admin_data_timur2     081300000021   Rayon Timur 2 — data entry & reports');
-    console.log('  korlap          korlap_timur2         081300000027   Taman Timur 2');
-    console.log('  satgas          satgas_timur2_1       081300000008   Taman Timur 2');
-    console.log('  satgas          satgas_timur2_2       081300000009   Taman Timur 2');
+    console.log('  kepala_rayon    kepala_rayon_timur_2   081300000007   Rayon Timur 2 head');
+    console.log('  admin_data      admin_data_timur_2     081300000021   Rayon Timur 2 — data entry & reports');
+    console.log('  korlap          korlap_timur_2         081300000027   Taman Timur 2');
+    console.log('  satgas          satgas_timur_2_1       081300000008   Taman Timur 2');
+    console.log('  satgas          satgas_timur_2_2       081300000009   Taman Timur 2');
     console.log('');
     console.log('  ── RAYON BARAT 1 ───────────────────────────────────────────────────────────────────');
     console.log('  Area: Taman Barat 1');
     console.log('');
     console.log('  Role            Username              Phone          Area');
-    console.log('  kepala_rayon    kepala_rayon_barat1   081300000010   Rayon Barat 1 head');
-    console.log('  admin_data      admin_data_barat1     081300000022   Rayon Barat 1 — data entry & reports');
-    console.log('  korlap          korlap_barat1         081300000028   Taman Barat 1');
-    console.log('  satgas          satgas_barat1_1       081300000011   Taman Barat 1');
-    console.log('  satgas          satgas_barat1_2       081300000012   Taman Barat 1');
+    console.log('  kepala_rayon    kepala_rayon_barat_1   081300000010   Rayon Barat 1 head');
+    console.log('  admin_data      admin_data_barat_1     081300000022   Rayon Barat 1 — data entry & reports');
+    console.log('  korlap          korlap_barat_1         081300000028   Taman Barat 1');
+    console.log('  satgas          satgas_barat_1_1       081300000011   Taman Barat 1');
+    console.log('  satgas          satgas_barat_1_2       081300000012   Taman Barat 1');
     console.log('');
     console.log('  ── RAYON BARAT 2 ───────────────────────────────────────────────────────────────────');
     console.log('  Area: Taman Barat 2');
     console.log('');
     console.log('  Role            Username              Phone          Area');
-    console.log('  kepala_rayon    kepala_rayon_barat2   081300000013   Rayon Barat 2 head');
-    console.log('  admin_data      admin_data_barat2     081300000023   Rayon Barat 2 — data entry & reports');
-    console.log('  korlap          korlap_barat2         081300000029   Taman Barat 2');
-    console.log('  satgas          satgas_barat2_1       081300000014   Taman Barat 2');
-    console.log('  satgas          satgas_barat2_2       081300000015   Taman Barat 2');
+    console.log('  kepala_rayon    kepala_rayon_barat_2   081300000013   Rayon Barat 2 head');
+    console.log('  admin_data      admin_data_barat_2     081300000023   Rayon Barat 2 — data entry & reports');
+    console.log('  korlap          korlap_barat_2         081300000029   Taman Barat 2');
+    console.log('  satgas          satgas_barat_2_1       081300000014   Taman Barat 2');
+    console.log('  satgas          satgas_barat_2_2       081300000015   Taman Barat 2');
     console.log('');
     console.log('  ── MONITORING STATUS SCENARIOS (Phase 2D) ──────────────────────────────────────────');
     console.log('  ACTIVE       satgas_pusat_1, linmas_bungkul_1   recent GPS ping within boundary');
-    console.log('  INACTIVE     satgas_timur1_2                    last ping 35 min ago');
+    console.log('  INACTIVE     satgas_timur_1_2                    last ping 35 min ago');
     console.log('  OUTSIDE_AREA satgas_pusat_2                     GPS outside boundary polygon');
-    console.log('  MISSING      satgas_timur1_1                    no ping for 3+ hours');
+    console.log('  MISSING      satgas_timur_1_1                    no ping for 3+ hours');
     console.log('  OFFLINE      all remaining users');
     console.log('');
     console.log('  ── MULTI-AREA ASSIGNMENTS (Phase 2E — user_areas table) ────────────────────────────');
     console.log('  korlap_bungkul  Taman Bungkul (permanent) + Taman Harmoni (permanent)');
     console.log('  satgas_pusat_1  Taman Pusat (permanent default) + Taman Bungkul (permanent extra)');
-    console.log('  satgas_timur1_2 Taman Timur 1 (permanent default) + Taman Timur 2 (task_based)');
+    console.log('  satgas_timur_1_2 Taman Timur 1 (permanent default) + Taman Timur 2 (task_based)');
     console.log('══════════════════════════════════════════════════════════════════════════════════════');
   } catch (error) {
     console.error('❌ Error during Phase 2 seeding:', error);

@@ -180,10 +180,11 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('admin_data has 5 tabs with Home (clockable)', () => {
-      expect(TAB_CONFIGS.admin_data).toHaveLength(5);
+    it('admin_data has 6 tabs incl. Perantingan review (clockable)', () => {
+      expect(TAB_CONFIGS.admin_data).toHaveLength(6);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'TasksActivities')).toBe(true);
+      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'PruningReviewQueue')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Overtime')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(true);
