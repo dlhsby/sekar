@@ -92,6 +92,14 @@ export class User {
   @Column({ name: 'kecamatan_name', type: 'varchar', length: 100, nullable: true })
   kecamatan_name?: string;
 
+  // May 2026 — promoted to FK; `kecamatan_name` retained for legacy reads.
+  @ApiProperty({
+    description: 'Kecamatan FK (preferred over free-text `kecamatan_name`)',
+    required: false,
+  })
+  @Column({ name: 'kecamatan_id', type: 'uuid', nullable: true })
+  kecamatan_id?: string;
+
   @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'area_id' })
   area?: Area;

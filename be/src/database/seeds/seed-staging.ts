@@ -469,6 +469,47 @@ async function seedStaging() {
     console.log('  ✓ Rayon Pusat: center (-7.2745614, 112.7579174), dummy boundary set');
 
     // ============================================================
+    // STEP 4b: KECAMATANS (31) — May 2026
+    // ============================================================
+    console.log('\n🏘️  Seeding kecamatans...');
+    await queryRunner.query(`
+      INSERT INTO kecamatans (name, code, rayon_id, region) VALUES
+        ('Bubutan',          'bubutan',          '${RAYON_PUSAT_ID}',  'pusat'),
+        ('Genteng',          'genteng',          '${RAYON_PUSAT_ID}',  'pusat'),
+        ('Simokerto',        'simokerto',        '${RAYON_PUSAT_ID}',  'pusat'),
+        ('Tegalsari',        'tegalsari',        '${RAYON_PUSAT_ID}',  'pusat'),
+        ('Tambaksari',       'tambaksari',       '${RAYON_TIMUR1_ID}', 'timur'),
+        ('Gubeng',           'gubeng',           '${RAYON_TIMUR1_ID}', 'timur'),
+        ('Sukolilo',         'sukolilo',         '${RAYON_TIMUR1_ID}', 'timur'),
+        ('Mulyorejo',        'mulyorejo',        '${RAYON_TIMUR2_ID}', 'timur'),
+        ('Rungkut',          'rungkut',          '${RAYON_TIMUR2_ID}', 'timur'),
+        ('Tenggilis Mejoyo', 'tenggilis_mejoyo', '${RAYON_TIMUR2_ID}', 'timur'),
+        ('Gunung Anyar',     'gunung_anyar',     '${RAYON_TIMUR2_ID}', 'timur'),
+        ('Sukomanunggal',    'sukomanunggal',    '${RAYON_BARAT1_ID}', 'barat'),
+        ('Tandes',           'tandes',           '${RAYON_BARAT1_ID}', 'barat'),
+        ('Asemrowo',         'asemrowo',         '${RAYON_BARAT1_ID}', 'barat'),
+        ('Benowo',           'benowo',           '${RAYON_BARAT1_ID}', 'barat'),
+        ('Pakal',            'pakal',            '${RAYON_BARAT1_ID}', 'barat'),
+        ('Sambikerep',       'sambikerep',       '${RAYON_BARAT2_ID}', 'barat'),
+        ('Lakarsantri',      'lakarsantri',      '${RAYON_BARAT2_ID}', 'barat'),
+        ('Sawahan',          'sawahan',          '${RAYON_BARAT2_ID}', 'selatan'),
+        ('Dukuh Pakis',      'dukuh_pakis',      '${RAYON_BARAT2_ID}', 'selatan'),
+        ('Wiyung',           'wiyung',           '${RAYON_BARAT2_ID}', 'selatan'),
+        ('Karang Pilang',    'karang_pilang',    '${RAYON_BARAT2_ID}', 'selatan'),
+        ('Krembangan',       'krembangan',       '${RAYON_UTARA_ID}',  'utara'),
+        ('Pabean Cantian',   'pabean_cantian',   '${RAYON_UTARA_ID}',  'utara'),
+        ('Semampir',         'semampir',         '${RAYON_UTARA_ID}',  'utara'),
+        ('Kenjeran',         'kenjeran',         '${RAYON_UTARA_ID}',  'utara'),
+        ('Bulak',            'bulak',            '${RAYON_UTARA_ID}',  'utara'),
+        ('Wonokromo',        'wonokromo',        '${RAYON_SELATAN_ID}','selatan'),
+        ('Wonocolo',         'wonocolo',         '${RAYON_SELATAN_ID}','selatan'),
+        ('Gayungan',         'gayungan',         '${RAYON_SELATAN_ID}','selatan'),
+        ('Jambangan',        'jambangan',        '${RAYON_SELATAN_ID}','selatan')
+      ON CONFLICT (code) DO NOTHING
+    `);
+    console.log('  ✓ 31 kecamatans seeded');
+
+    // ============================================================
     // STEP 5: ACTIVITY TYPES
     // ============================================================
     console.log('\n🔧 Seeding activity types...');
@@ -680,6 +721,36 @@ async function seedStaging() {
     await insertUser(USER_AGUS_ID,      'agus_ramadhan',        'AGUS RAMADHAN',        'linmas',         '083831353889', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
     console.log('  ✓ 14 test users + 10 real users = 24 total (incl. staff_kec_pusat for Phase 3)');
+
+    // ── May 2026 — staff_kecamatan_<code> per kecamatan (31) ────────
+    // The redesigned mobile submit form pre-fills rayon + kecamatan from the
+    // logged-in user, so each kecamatan must have its own login. Idempotent.
+    console.log('\n🧑‍💼 Seeding 31 per-kecamatan staff_kecamatan users...');
+    const kecRows = (await queryRunner.query(
+      `SELECT id, name, code, rayon_id FROM kecamatans ORDER BY name`,
+    )) as Array<{ id: string; name: string; code: string; rayon_id: string }>;
+    let kecPhoneSeq = 100;
+    for (const k of kecRows) {
+      const username = `staff_kecamatan_${k.code}`;
+      const phone = `0812000${String(kecPhoneSeq).padStart(5, '0')}`;
+      kecPhoneSeq += 1;
+      await queryRunner.query(
+        `INSERT INTO users (username, password_hash, full_name, phone_number,
+                            role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active)
+         VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE)
+         ON CONFLICT (username) DO NOTHING`,
+        [username, PASSWORD_HASH, `Staff Kecamatan ${k.name}`, phone, k.rayon_id, k.name, k.id],
+      );
+    }
+    await queryRunner.query(`
+      UPDATE users u SET kecamatan_id = k.id
+      FROM kecamatans k
+      WHERE u.role = 'staff_kecamatan'
+        AND u.kecamatan_id IS NULL
+        AND u.kecamatan_name IS NOT NULL
+        AND lower(k.name) = lower(u.kecamatan_name)
+    `);
+    console.log(`  ✓ 31 per-kecamatan staff users seeded; legacy backfilled`);
 
     // ============================================================
     // STEP 10: DERIVE rayon_id FOR FIELD WORKERS (from area.rayon_id)

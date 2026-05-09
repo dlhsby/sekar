@@ -18,6 +18,7 @@ import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { SharedModule } from './shared/shared.module';
 // Phase 2 modules
 import { RayonsModule } from './modules/rayons/rayons.module';
+import { KecamatansModule } from './modules/kecamatans/kecamatans.module';
 import { ShiftDefinitionsModule } from './modules/shift-definitions/shift-definitions.module';
 import { ActivityTypesModule } from './modules/activity-types/activity-types.module';
 import { AreaStaffRequirementsModule } from './modules/area-staff-requirements/area-staff-requirements.module';
@@ -113,6 +114,7 @@ import { PlantSeedsModule } from './modules/plant-seeds/plant-seeds.module';
     SupervisorModule, // Depends on all above modules
     // Phase 2 modules
     RayonsModule, // Geographic sectors
+    KecamatansModule, // Surabaya kecamatans (FK to rayon)
     ShiftDefinitionsModule, // Fixed shift definitions
     ActivityTypesModule, // Activity types with role filtering
     AreaStaffRequirementsModule, // Staff requirements per area/shift

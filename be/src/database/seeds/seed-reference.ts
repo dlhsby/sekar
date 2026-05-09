@@ -140,6 +140,54 @@ async function seedReference() {
     console.log('  ✓ 7 rayons');
 
     // ============================================================
+    // 3b. KECAMATANS (31) — idempotent — May 2026
+    // ============================================================
+    console.log('\n🏘️  Seeding kecamatans...');
+    await queryRunner.query(`
+      INSERT INTO kecamatans (name, code, rayon_id, region) VALUES
+        -- Pusat (4)
+        ('Bubutan',          'bubutan',          '${RAYON_3_ID}', 'pusat'),
+        ('Genteng',          'genteng',          '${RAYON_3_ID}', 'pusat'),
+        ('Simokerto',        'simokerto',        '${RAYON_3_ID}', 'pusat'),
+        ('Tegalsari',        'tegalsari',        '${RAYON_3_ID}', 'pusat'),
+        -- Timur 1 (3)
+        ('Tambaksari',       'tambaksari',       '${RAYON_4_ID}', 'timur'),
+        ('Gubeng',           'gubeng',           '${RAYON_4_ID}', 'timur'),
+        ('Sukolilo',         'sukolilo',         '${RAYON_4_ID}', 'timur'),
+        -- Timur 2 (4)
+        ('Mulyorejo',        'mulyorejo',        '${RAYON_5_ID}', 'timur'),
+        ('Rungkut',          'rungkut',          '${RAYON_5_ID}', 'timur'),
+        ('Tenggilis Mejoyo', 'tenggilis_mejoyo', '${RAYON_5_ID}', 'timur'),
+        ('Gunung Anyar',     'gunung_anyar',     '${RAYON_5_ID}', 'timur'),
+        -- Barat 1 (5)
+        ('Sukomanunggal',    'sukomanunggal',    '${RAYON_6_ID}', 'barat'),
+        ('Tandes',           'tandes',           '${RAYON_6_ID}', 'barat'),
+        ('Asemrowo',         'asemrowo',         '${RAYON_6_ID}', 'barat'),
+        ('Benowo',           'benowo',           '${RAYON_6_ID}', 'barat'),
+        ('Pakal',            'pakal',            '${RAYON_6_ID}', 'barat'),
+        -- Barat 2 (6)
+        ('Sambikerep',       'sambikerep',       '${RAYON_7_ID}', 'barat'),
+        ('Lakarsantri',      'lakarsantri',      '${RAYON_7_ID}', 'barat'),
+        ('Sawahan',          'sawahan',          '${RAYON_7_ID}', 'selatan'),
+        ('Dukuh Pakis',      'dukuh_pakis',      '${RAYON_7_ID}', 'selatan'),
+        ('Wiyung',           'wiyung',           '${RAYON_7_ID}', 'selatan'),
+        ('Karang Pilang',    'karang_pilang',    '${RAYON_7_ID}', 'selatan'),
+        -- Utara (5)
+        ('Krembangan',       'krembangan',       '${RAYON_2_ID}', 'utara'),
+        ('Pabean Cantian',   'pabean_cantian',   '${RAYON_2_ID}', 'utara'),
+        ('Semampir',         'semampir',         '${RAYON_2_ID}', 'utara'),
+        ('Kenjeran',         'kenjeran',         '${RAYON_2_ID}', 'utara'),
+        ('Bulak',            'bulak',            '${RAYON_2_ID}', 'utara'),
+        -- Selatan (4)
+        ('Wonokromo',        'wonokromo',        '${RAYON_1_ID}', 'selatan'),
+        ('Wonocolo',         'wonocolo',         '${RAYON_1_ID}', 'selatan'),
+        ('Gayungan',         'gayungan',         '${RAYON_1_ID}', 'selatan'),
+        ('Jambangan',        'jambangan',        '${RAYON_1_ID}', 'selatan')
+      ON CONFLICT (code) DO NOTHING
+    `);
+    console.log('  ✓ 31 kecamatans (4 Pusat + 7 Timur + 11 Barat + 5 Utara + 4 Selatan)');
+
+    // ============================================================
     // 4. ACTIVITY TYPES (20) — idempotent
     // ============================================================
     console.log('\n🔧 Seeding activity types...');

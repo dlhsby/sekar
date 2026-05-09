@@ -489,41 +489,45 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('🧑‍💼 ======== SECTION 3.5: Staff Kecamatan Users ========');
     const STAFF_KEC_PWD_HASH =
       '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
-    const staffKecBlueprints: Array<{
-      username: string; fullName: string; phone: string;
-      rayonCode: string; kecamatan: string;
-    }> = [
-      { username: 'staff_kec_pusat',   fullName: 'Staff Kecamatan Pusat',   phone: '081200000023', rayonCode: 'PUSAT',   kecamatan: 'Tegalsari' },
-      { username: 'staff_kec_selatan', fullName: 'Staff Kecamatan Selatan', phone: '081200000024', rayonCode: 'SELATAN', kecamatan: 'Wonokromo' },
-      { username: 'staff_kec_utara',   fullName: 'Staff Kecamatan Utara',   phone: '081200000025', rayonCode: 'UTARA',   kecamatan: 'Kenjeran' },
-      { username: 'staff_kec_timur1',  fullName: 'Staff Kecamatan Timur 1', phone: '081200000026', rayonCode: 'TIMUR1',  kecamatan: 'Gubeng' },
-      { username: 'staff_kec_timur2',  fullName: 'Staff Kecamatan Timur 2', phone: '081200000027', rayonCode: 'TIMUR2',  kecamatan: 'Mulyorejo' },
-      { username: 'staff_kec_barat1',  fullName: 'Staff Kecamatan Barat 1', phone: '081200000028', rayonCode: 'BARAT1',  kecamatan: 'Tandes' },
-      { username: 'staff_kec_barat2',  fullName: 'Staff Kecamatan Barat 2', phone: '081200000029', rayonCode: 'BARAT2',  kecamatan: 'Wiyung' },
-    ];
+
+    // May 2026 — one staff_kecamatan user per kecamatan (31 total) so the
+    // submit form can pre-fill rayon + kecamatan from the logged-in user.
+    // Username pattern: `staff_kecamatan_<code>` (e.g. `staff_kecamatan_wiyung`).
+    const allKec = (await queryRunner.query(
+      `SELECT id, name, code, rayon_id FROM kecamatans ORDER BY name`,
+    )) as Array<{ id: string; name: string; code: string; rayon_id: string }>;
+
     let staffKecInserted = 0;
-    for (const u of staffKecBlueprints) {
-      const rayonRow = await queryRunner.query(
-        `SELECT id FROM rayons WHERE code = $1 LIMIT 1`,
-        [u.rayonCode],
-      );
-      if (rayonRow.length === 0) {
-        console.log(`  ⚠ Rayon code '${u.rayonCode}' not found, skipping ${u.username}`);
-        continue;
-      }
-      const rayonId = rayonRow[0].id;
+    let phoneSeq = 100; // base for unique phone numbers (08120000_____)
+    for (const k of allKec) {
+      const username = `staff_kecamatan_${k.code}`;
+      const fullName = `Staff Kecamatan ${k.name}`;
+      const phone = `0812000${String(phoneSeq).padStart(5, '0')}`;
+      phoneSeq += 1;
       const result = await queryRunner.query(
         `INSERT INTO users
            (username, password_hash, full_name, phone_number,
-            role, rayon_id, area_id, kecamatan_name, is_active)
-         VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, TRUE)
+            role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active)
+         VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE)
          ON CONFLICT (username) DO NOTHING`,
-        [u.username, STAFF_KEC_PWD_HASH, u.fullName, u.phone,
-         rayonId, u.kecamatan],
+        [username, STAFF_KEC_PWD_HASH, fullName, phone, k.rayon_id, k.name, k.id],
       );
       if (result && (result as any).rowCount > 0) staffKecInserted++;
     }
-    console.log(`  ✓ ${staffKecInserted} staff_kecamatan users seeded (1 per rayon, password: password123)`);
+
+    // Backfill kecamatan_id for any existing legacy staff_kec_* users
+    // (idempotent — matches by kecamatan_name).
+    await queryRunner.query(`
+      UPDATE users u SET kecamatan_id = k.id
+      FROM kecamatans k
+      WHERE u.role = 'staff_kecamatan'
+        AND u.kecamatan_id IS NULL
+        AND u.kecamatan_name IS NOT NULL
+        AND lower(k.name) = lower(u.kecamatan_name)
+    `);
+
+    console.log(`  ✓ ${staffKecInserted} new staff_kecamatan users seeded (one per kecamatan, password: password123)`);
+    console.log(`     legacy staff_kec_* users backfilled with kecamatan_id`);
 
     // ==========================================
     // SECTION 4: pruning_requests (sample workflow data)

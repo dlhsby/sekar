@@ -24,6 +24,11 @@ export class PruningRequest {
   @Column({ type: 'text', name: 'kecamatan_name' })
   kecamatanName: string;
 
+  // May 2026 — kecamatan promoted to FK; `kecamatanName` denormalized copy
+  // remains for read-side compatibility with older clients.
+  @Column({ type: 'uuid', nullable: true, name: 'kecamatan_id' })
+  kecamatanId?: string | null;
+
   @Column({ type: 'text' })
   address: string;
 
