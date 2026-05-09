@@ -598,6 +598,9 @@ export class PruningRequestsService {
       to?: string;
       page?: number;
       limit?: number;
+      // May 2026 — admin filter UX additions
+      referenceCode?: string;
+      requesterName?: string;
     },
   ): Promise<{
     items: PruningRequest[];
@@ -644,6 +647,21 @@ export class PruningRequestsService {
       const toDate = new Date(query.to);
       toDate.setHours(23, 59, 59, 999);
       qb = qb.andWhere('pr.createdAt <= :to', { to: toDate });
+    }
+
+    // Reference code (case-insensitive substring; users typically paste full
+    // codes but may type only the suffix).
+    if (query.referenceCode && query.referenceCode.trim()) {
+      qb = qb.andWhere('pr.referenceCode ILIKE :ref', {
+        ref: `%${query.referenceCode.trim()}%`,
+      });
+    }
+
+    // Requester name (case-insensitive substring on the kontak pemohon).
+    if (query.requesterName && query.requesterName.trim()) {
+      qb = qb.andWhere('pr.requesterName ILIKE :reqName', {
+        reqName: `%${query.requesterName.trim()}%`,
+      });
     }
 
     const [items, total] = await qb

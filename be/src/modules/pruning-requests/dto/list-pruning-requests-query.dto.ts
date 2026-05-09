@@ -157,4 +157,31 @@ export class ListPruningRequestsQueryDto {
   @IsInt()
   @Min(0, { message: 'Offset must be 0 or greater' })
   offset?: number;
+
+  /**
+   * Substring search on the request reference code (case-insensitive).
+   * Useful when staff kecamatan calls with a code-only reference. Added May 2026.
+   *
+   * @example 'PR-2026'
+   */
+  @ApiPropertyOptional({
+    description: 'Substring search on reference_code (case-insensitive)',
+    example: 'PR-2026',
+  })
+  @IsOptional()
+  @IsString()
+  referenceCode?: string;
+
+  /**
+   * Substring search on the requester (pemohon) name (case-insensitive). Added May 2026.
+   *
+   * @example 'Budi'
+   */
+  @ApiPropertyOptional({
+    description: 'Substring search on requester_name (case-insensitive)',
+    example: 'Budi',
+  })
+  @IsOptional()
+  @IsString()
+  requesterName?: string;
 }

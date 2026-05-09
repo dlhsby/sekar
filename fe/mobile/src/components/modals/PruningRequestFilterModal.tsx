@@ -12,7 +12,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { NBSelect, NBDatePicker, NBModal } from '../nb';
+import { NBSelect, NBDatePicker, NBModal, NBTextInput } from '../nb';
 import {
   nbColors,
   nbSpacing,
@@ -28,6 +28,9 @@ export interface PruningRequestFilterValue {
   fromDate?: string; // ISO YYYY-MM-DD
   toDate?: string;
   rayonId?: string;
+  // May 2026 — admin filter UX
+  referenceCode?: string;
+  requesterName?: string;
 }
 
 interface PruningRequestFilterModalProps {
@@ -84,6 +87,8 @@ export function PruningRequestFilterModal({
   const [localFromDate, setLocalFromDate] = useState<string>(filters.fromDate ?? '');
   const [localToDate, setLocalToDate] = useState<string>(filters.toDate ?? '');
   const [localRayonId, setLocalRayonId] = useState<string>(filters.rayonId ?? '');
+  const [localReferenceCode, setLocalReferenceCode] = useState<string>(filters.referenceCode ?? '');
+  const [localRequesterName, setLocalRequesterName] = useState<string>(filters.requesterName ?? '');
 
   const [rayons, setRayons] = useState<Rayon[]>([]);
   const [loadingRayons, setLoadingRayons] = useState(false);
@@ -95,6 +100,8 @@ export function PruningRequestFilterModal({
       setLocalFromDate(filters.fromDate ?? '');
       setLocalToDate(filters.toDate ?? '');
       setLocalRayonId(filters.rayonId ?? '');
+      setLocalReferenceCode(filters.referenceCode ?? '');
+      setLocalRequesterName(filters.requesterName ?? '');
     }
   }, [visible, filters]);
 
@@ -116,15 +123,19 @@ export function PruningRequestFilterModal({
     if (localFromDate) { applied.fromDate = localFromDate; }
     if (localToDate) { applied.toDate = localToDate; }
     if (localRayonId) { applied.rayonId = localRayonId; }
+    if (localReferenceCode.trim()) { applied.referenceCode = localReferenceCode.trim(); }
+    if (localRequesterName.trim()) { applied.requesterName = localRequesterName.trim(); }
     onApplyFilters(applied);
     onClose();
-  }, [localStatus, localFromDate, localToDate, localRayonId, onApplyFilters, onClose]);
+  }, [localStatus, localFromDate, localToDate, localRayonId, localReferenceCode, localRequesterName, onApplyFilters, onClose]);
 
   const handleReset = useCallback(() => {
     setLocalStatus('');
     setLocalFromDate('');
     setLocalToDate('');
     setLocalRayonId('');
+    setLocalReferenceCode('');
+    setLocalRequesterName('');
     onResetFilters();
     onClose();
   }, [onResetFilters, onClose]);
@@ -158,6 +169,25 @@ export function PruningRequestFilterModal({
         </View>
       }
     >
+      {/* 0. Pencarian */}
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Nomor Permohonan</Text>
+        <NBTextInput
+          placeholder="Contoh: PR-2026-..."
+          value={localReferenceCode}
+          onChangeText={setLocalReferenceCode}
+          autoCapitalize="characters"
+        />
+      </View>
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Nama Pemohon</Text>
+        <NBTextInput
+          placeholder="Contoh: Budi"
+          value={localRequesterName}
+          onChangeText={setLocalRequesterName}
+        />
+      </View>
+
       {/* 1. Status */}
       <View style={styles.filterSection}>
         <Text style={styles.filterLabel}>Status</Text>

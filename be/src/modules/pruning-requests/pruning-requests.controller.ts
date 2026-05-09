@@ -203,6 +203,8 @@ export class PruningRequestsController {
         to: query?.to,
         page: query?.page ?? 1,
         limit: query?.limit ?? 20,
+        referenceCode: query?.referenceCode,
+        requesterName: query?.requesterName,
       });
     }
 

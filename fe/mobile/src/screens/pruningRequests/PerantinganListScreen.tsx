@@ -156,6 +156,8 @@ export function PerantinganListScreen(): React.JSX.Element {
     if (filters.status) { count++; }
     if (filters.fromDate || filters.toDate) { count++; }
     if (filters.rayonId) { count++; }
+    if (filters.referenceCode) { count++; }
+    if (filters.requesterName) { count++; }
     return count;
   }, [filters]);
 
@@ -176,6 +178,8 @@ export function PerantinganListScreen(): React.JSX.Element {
       });
     }
     if (filters.rayonId) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
+    if (filters.referenceCode) { chips.push({ text: `# ${filters.referenceCode}`, chipStyle: 'status' }); }
+    if (filters.requesterName) { chips.push({ text: `🧑 ${filters.requesterName}`, chipStyle: 'status' }); }
     return chips;
   }, [filters]);
 
@@ -195,6 +199,14 @@ export function PerantinganListScreen(): React.JSX.Element {
     }
     if (filters.rayonId) {
       list = list.filter((r) => r.rayonId === filters.rayonId);
+    }
+    if (filters.referenceCode) {
+      const needle = filters.referenceCode.toLowerCase();
+      list = list.filter((r) => (r.referenceCode ?? '').toLowerCase().includes(needle));
+    }
+    if (filters.requesterName) {
+      const needle = filters.requesterName.toLowerCase();
+      list = list.filter((r) => (r.requesterName ?? '').toLowerCase().includes(needle));
     }
     return [...list].sort((a, b) => {
       switch (sort) {
