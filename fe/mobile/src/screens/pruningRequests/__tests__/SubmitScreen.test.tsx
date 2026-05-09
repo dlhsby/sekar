@@ -161,24 +161,21 @@ describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
         <SubmitScreen />
       </Provider>,
     );
-    expect(getByText('Lokasi')).toBeTruthy();
-    expect(getByText('Foto Pohon')).toBeTruthy();
+    expect(getByText('Lokasi *')).toBeTruthy();
+    expect(getByText('Foto Pohon *')).toBeTruthy();
     expect(getByText('Detail Pohon')).toBeTruthy();
     expect(getByText('Kontak')).toBeTruthy();
     expect(getByText('Catatan (Opsional)')).toBeTruthy();
   });
 
-  it('renders the kecamatan input (form is now editable, not a preset)', () => {
-    const { getByText } = render(
+  it('renders rayon + kecamatan as read-only presets for staff_kecamatan (May 2026)', () => {
+    const { getByTestId } = render(
       <Provider store={makeStore()}>
         <SubmitScreen />
       </Provider>,
     );
-    // Kecamatan is a free-text NBTextInput labeled "Kecamatan"; the rayon
-    // select label rendering depends on internal NBSelect markup which is
-    // brittle to assert here. We just confirm the form mounted with the
-    // editable shape.
-    expect(getByText('Kecamatan')).toBeTruthy();
+    expect(getByTestId('perantingan-rayon-readonly')).toBeTruthy();
+    expect(getByTestId('perantingan-kecamatan-readonly')).toBeTruthy();
   });
 
   it('renders the Minggu Preferensi card with a week picker (ADR-035 amendment 2026-05-01)', () => {
@@ -187,7 +184,7 @@ describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
         <SubmitScreen />
       </Provider>,
     );
-    expect(getByText('Minggu Preferensi')).toBeTruthy();
+    expect(getByText('Minggu Preferensi (Opsional)')).toBeTruthy();
     expect(getByTestId('perantingan-pick-week')).toBeTruthy();
     expect(getByText('Pilih minggu…')).toBeTruthy();
   });

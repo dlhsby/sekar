@@ -104,6 +104,12 @@ function digitsOnly(s: string): string {
   return s.replace(/\D/g, '');
 }
 
+// Indonesian mobile format: starts with 08, total 10–14 digits.
+function isValidIndoPhone(s: string): boolean {
+  const d = digitsOnly(s);
+  return /^08\d{8,12}$/.test(d);
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function SubmitScreen(): React.JSX.Element {
@@ -473,8 +479,14 @@ export function SubmitScreen(): React.JSX.Element {
     if (!requesterName.trim() || !requesterPhone.trim()) {
       return 'Nama dan nomor HP pemohon wajib diisi.';
     }
+    if (!isValidIndoPhone(requesterPhone)) {
+      return 'Nomor HP pemohon harus diawali 08 dan 10–14 digit.';
+    }
     if (!rtLeaderName.trim() || !rtLeaderPhone.trim()) {
-      return 'Nama dan nomor HP ketua RT wajib diisi.';
+      return 'Nama dan nomor HP ketua RT/RW wajib diisi.';
+    }
+    if (!isValidIndoPhone(rtLeaderPhone)) {
+      return 'Nomor HP ketua RT/RW harus diawali 08 dan 10–14 digit.';
     }
     return null;
   }, [address, gpsLat, gpsLng, photos.length, treeCount, treeHeight, treeDiameter, requesterName, requesterPhone, rtLeaderName, rtLeaderPhone]);
@@ -565,7 +577,7 @@ export function SubmitScreen(): React.JSX.Element {
           {/* ── Lokasi ─────────────────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3">Lokasi</NBText>
+              <NBText variant="h3">Lokasi *</NBText>
             </NBCardHeader>
             <NBCardContent>
               {/* Rayon + Kecamatan — pre-filled from logged-in user, read-only.
@@ -612,7 +624,7 @@ export function SubmitScreen(): React.JSX.Element {
               {/* Alamat / Jalan — multiline text-area (matches deskripsi style) */}
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Alamat Lengkap"
+                  label="Alamat Lengkap *"
                   placeholder="Contoh: Jl. Raya Darmo No. 123, RT 02 / RW 05"
                   value={address}
                   onChangeText={setAddress}
@@ -669,7 +681,7 @@ export function SubmitScreen(): React.JSX.Element {
           {/* ── Foto ───────────────────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3">Foto Pohon</NBText>
+              <NBText variant="h3">Foto Pohon *</NBText>
               <NBText variant="body-sm" style={styles.helper}>Minimal {MIN_PHOTOS}, maksimal {MAX_PHOTOS} foto.</NBText>
             </NBCardHeader>
             <NBCardContent>
@@ -724,7 +736,7 @@ export function SubmitScreen(): React.JSX.Element {
             <NBCardContent>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Jumlah Pohon"
+                  label="Jumlah Pohon *"
                   placeholder="Contoh: 3"
                   value={treeCount}
                   onChangeText={(v) => setTreeCount(digitsOnly(v))}
@@ -733,18 +745,20 @@ export function SubmitScreen(): React.JSX.Element {
               </View>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Tinggi Pohon (Perkiraan)"
-                  placeholder="Contoh: 5-7 meter"
+                  label="Tinggi Pohon (tertinggi atau rata-rata, meter) *"
+                  placeholder="Contoh: 5"
                   value={treeHeight}
-                  onChangeText={setTreeHeight}
+                  onChangeText={(v) => setTreeHeight(digitsOnly(v))}
+                  keyboardType="number-pad"
                 />
               </View>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Diameter Pohon (Perkiraan)"
-                  placeholder="Contoh: 30-50 cm"
+                  label="Diameter Pohon (tertinggi atau rata-rata, cm) *"
+                  placeholder="Contoh: 30"
                   value={treeDiameter}
-                  onChangeText={setTreeDiameter}
+                  onChangeText={(v) => setTreeDiameter(digitsOnly(v))}
+                  keyboardType="number-pad"
                 />
               </View>
             </NBCardContent>
@@ -753,7 +767,7 @@ export function SubmitScreen(): React.JSX.Element {
           {/* ── Minggu Preferensi ─────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3">Minggu Preferensi</NBText>
+              <NBText variant="h3">Minggu Preferensi (Opsional)</NBText>
               <NBText variant="body-sm" style={styles.helper}>
                 Pilih minggu yang Anda inginkan. Admin Rayon akan menentukan tanggal pasti sesuai kapasitas tim. Indikator hari pada setiap kartu hanya gambaran ketersediaan minggu tersebut.
               </NBText>
@@ -792,7 +806,7 @@ export function SubmitScreen(): React.JSX.Element {
               <NBText variant="body-sm" style={styles.subHeading}>Pemohon</NBText>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Nama Pemohon"
+                  label="Nama Pemohon *"
                   placeholder="Nama lengkap"
                   value={requesterName}
                   onChangeText={setRequesterName}
@@ -800,7 +814,7 @@ export function SubmitScreen(): React.JSX.Element {
               </View>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Nomor HP Pemohon"
+                  label="Nomor HP Pemohon *"
                   placeholder="08xxxxxxxxxx"
                   value={requesterPhone}
                   onChangeText={(v) => setRequesterPhone(digitsOnly(v))}
@@ -810,10 +824,10 @@ export function SubmitScreen(): React.JSX.Element {
 
               <View style={styles.divider} />
 
-              <NBText variant="body-sm" style={styles.subHeading}>Ketua RT</NBText>
+              <NBText variant="body-sm" style={styles.subHeading}>Ketua RT/RW</NBText>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Nama Ketua RT"
+                  label="Nama Ketua RT/RW *"
                   placeholder="Nama lengkap"
                   value={rtLeaderName}
                   onChangeText={setRtLeaderName}
@@ -821,7 +835,7 @@ export function SubmitScreen(): React.JSX.Element {
               </View>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Nomor HP Ketua RT"
+                  label="Nomor HP Ketua RT/RW *"
                   placeholder="08xxxxxxxxxx"
                   value={rtLeaderPhone}
                   onChangeText={(v) => setRtLeaderPhone(digitsOnly(v))}
@@ -842,7 +856,8 @@ export function SubmitScreen(): React.JSX.Element {
                 value={notes}
                 onChangeText={setNotes}
                 multiline
-                numberOfLines={3}
+                numberOfLines={5}
+                inputStyle={styles.addressTextArea}
               />
             </NBCardContent>
           </NBCard>
