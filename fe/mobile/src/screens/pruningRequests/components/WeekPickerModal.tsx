@@ -77,11 +77,15 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.bgCanvas,
   },
   // Mirrors the React Navigation `headerStyle` block used everywhere else
-  // (see MainNavigator screenOptions): same 76 dp height, white background,
-  // thick black bottom border, NB shadow.
+  // (see MainNavigator screenOptions): 76 dp height, white background,
+  // thick black bottom border, NB shadow. FieldHomeHeader has its own
+  // height: 56 internally, so we vertically center it inside the 76 px
+  // slot via `justifyContent: 'center'` — same effect React Navigation
+  // applies to the headerTitle container in stack screens.
   headerSlot: {
     height: 76,
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: nbColors.white,
     borderBottomWidth: nbBorders.thick,
