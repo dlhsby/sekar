@@ -672,4 +672,51 @@ export class PruningRequestsService {
 
     return { items, total, page, limit };
   }
+
+  /**
+   * Cancel a pruning request (May 2026).
+   *
+   * Allowed actors:
+   *   - the original submitter (typically staff_kecamatan)
+   *   - admin_data scoped to the request's rayon
+   *   - kepala_rayon, top_management, admin_system, superadmin
+   *
+   * Allowed source statuses: any status except `cancelled` and `done`.
+   */
+  async cancel(id: string, user: User, reason?: string): Promise<PruningRequest> {
+    const request = await this.pruningRequestRepository.findOne({ where: { id } });
+    if (!request) {
+      throw new NotFoundException(`Pruning request with ID ${id} not found`);
+    }
+
+    const isSubmitter = request.submittedBy === user.id;
+    const isAdminScoped =
+      user.role === UserRole.ADMIN_DATA && request.rayonId === user.rayon_id;
+    const isAdminBroad = [
+      UserRole.KEPALA_RAYON,
+      UserRole.TOP_MANAGEMENT,
+      UserRole.ADMIN_SYSTEM,
+      UserRole.SUPERADMIN,
+    ].includes(user.role);
+
+    if (!isSubmitter && !isAdminScoped && !isAdminBroad) {
+      throw new ForbiddenException(
+        'You do not have permission to cancel this pruning request',
+      );
+    }
+
+    if (request.status === 'cancelled' || request.status === 'done') {
+      throw new ConflictException(
+        `Cannot cancel a permohonan that is already ${request.status}`,
+      );
+    }
+
+    request.status = 'cancelled';
+    if (reason && reason.trim()) {
+      request.notes = request.notes
+        ? `${request.notes}\n[Dibatalkan] ${reason.trim()}`
+        : `[Dibatalkan] ${reason.trim()}`;
+    }
+    return this.pruningRequestRepository.save(request);
+  }
 }

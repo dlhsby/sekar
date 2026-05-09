@@ -177,6 +177,16 @@ export async function reschedulePruningRequest(
   return patch<PruningRequest>(`/pruning-requests/${id}/expected-date`, data);
 }
 
+/**
+ * Cancel a pruning request (May 2026).
+ */
+export async function cancelPruningRequest(
+  id: string,
+  reason?: string,
+): Promise<ApiResponse<PruningRequest>> {
+  return post<PruningRequest>(`/pruning-requests/${id}/cancel`, { reason });
+}
+
 export default {
   submitPruningRequest,
   getMyPruningRequests,
@@ -185,4 +195,5 @@ export default {
   reviewPruningRequest,
   convertPruningRequestToTask,
   reschedulePruningRequest,
+  cancelPruningRequest,
 };

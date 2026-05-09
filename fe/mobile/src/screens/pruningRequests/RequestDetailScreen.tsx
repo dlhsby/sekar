@@ -27,6 +27,7 @@ import {
   SafeAreaView,
   Platform,
   Linking,
+  Alert,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -36,6 +37,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   fetchPruningRequestById,
   reviewPruningRequest,
+  cancelPruningRequest,
 } from '../../store/slices/pruningRequestsSlice';
 import { LoadingSpinner } from '../../components/common';
 import {
@@ -131,6 +133,46 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
       navigation.navigate('TaskDetail', { taskId: request.convertedTaskId });
     }
   }, [request?.convertedTaskId, navigation]);
+
+  const handleCancel = useCallback(() => {
+    if (!request) return;
+    Alert.alert(
+      'Batalkan Permohonan',
+      'Apakah Anda yakin ingin membatalkan permohonan ini? Tindakan ini tidak dapat dibatalkan.',
+      [
+        { text: 'Tidak', style: 'cancel' },
+        {
+          text: 'Ya, Batalkan',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await dispatch(cancelPruningRequest({ id: request.id })).unwrap();
+              NBToast.show({
+                level: 'success',
+                title: 'Permohonan dibatalkan',
+                body: request.referenceCode || '',
+              });
+              dispatch(fetchPruningRequestById(request.id));
+            } catch (e) {
+              NBToast.show({
+                level: 'danger',
+                title: 'Gagal membatalkan',
+                body: e instanceof Error ? e.message : 'Coba lagi.',
+              });
+            }
+          },
+        },
+      ],
+    );
+  }, [dispatch, request]);
+
+  const authUserId = useAppSelector((s) => s.auth.user?.id);
+  const canCancel = useMemo(() => {
+    if (!request) return false;
+    if (request.status === 'cancelled' || request.status === 'done') return false;
+    const isSubmitter = !!authUserId && request.submittedBy === authUserId;
+    return isSubmitter || canAdmin;
+  }, [request, authUserId, canAdmin]);
 
   const handleReview = useCallback(
     (decision: 'approve' | 'reject') => {
@@ -499,6 +541,23 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                   label="Konversi ke Tugas"
                   onPress={() => setConvertSheetVisible(true)}
                   leftIcon="arrow-right"
+                  fullWidth
+                />
+              </NBCardContent>
+            </NBCard>
+          ) : null}
+
+          {/* Batalkan permohonan — visible to submitter + admin on any status
+              except cancelled/done. */}
+          {canCancel ? (
+            <NBCard style={styles.card}>
+              <NBCardContent>
+                <NBButton
+                  variant="danger"
+                  label="Batalkan Permohonan"
+                  leftIcon="cancel"
+                  onPress={handleCancel}
+                  testID="perantingan-cancel-cta"
                   fullWidth
                 />
               </NBCardContent>

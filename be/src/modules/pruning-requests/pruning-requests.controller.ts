@@ -9,6 +9,7 @@ import {
   UseGuards,
   BadRequestException,
   HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -426,5 +427,31 @@ export class PruningRequestsController {
     @GetUser() user: User,
   ): Promise<PruningRequest> {
     return this.pruningRequestsService.reschedule(id, dto, user);
+  }
+
+  /**
+   * Cancel a pruning request (May 2026).
+   *
+   * The submitter (staff_kecamatan) — and admin reviewers — can cancel any
+   * request that is not already `cancelled` or `done`. This includes
+   * `converted` and `in_progress` (with the side-effect that the linked task,
+   * if any, is left untouched but the permohonan reflects the user-driven
+   * cancellation).
+   */
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancel a pruning request' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiResponse({ status: 200, type: PruningRequest })
+  @ApiResponse({ status: 401 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
+  async cancel(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body('reason') reason?: string,
+  ): Promise<PruningRequest> {
+    return this.pruningRequestsService.cancel(id, user, reason);
   }
 }

@@ -304,6 +304,29 @@ export const reschedulePruningRequest = createAsyncThunk(
   },
 );
 
+/**
+ * Cancel a pruning request (May 2026).
+ */
+export const cancelPruningRequest = createAsyncThunk(
+  'pruningRequests/cancel',
+  async (
+    { id, reason }: { id: string; reason?: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await pruningRequestsApi.cancelPruningRequest(id, reason);
+      if (response.error) {
+        return rejectWithValue(response.error);
+      }
+      return response.data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const code = (err as { code?: string })?.code;
+      return rejectWithValue({ error: message, code });
+    }
+  },
+);
+
 const pruningRequestsSlice = createSlice({
   name: 'pruningRequests',
   initialState,
@@ -525,6 +548,20 @@ const pruningRequestsSlice = createSlice({
       })
       .addCase(reschedulePruningRequest.rejected, (state, action) => {
         state.reschedulingId = null;
+        state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
+      })
+      .addCase(cancelPruningRequest.fulfilled, (state, action) => {
+        const request = action.payload;
+        if (request) {
+          state.byId[request.id] = request;
+          const adminIndex = state.adminList.findIndex((r) => r.id === request.id);
+          if (adminIndex !== -1) state.adminList[adminIndex] = request;
+          const myIndex = state.mine.findIndex((r) => r.id === request.id);
+          if (myIndex !== -1) state.mine[myIndex] = request;
+        }
+        state.error = null;
+      })
+      .addCase(cancelPruningRequest.rejected, (state, action) => {
         state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
       });
   },
