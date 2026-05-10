@@ -81,10 +81,17 @@ const ADMIN_ROLES = [
 ];
 
 const ACTIONABLE_STATUSES = ['submitted', 'under_review'];
-// May 10, 2026 — `assigned` joined the whitelist so admins can move the
-// schedule after a task has been created. Backend cascades the change to
-// `task.deadline`, capacity ledger, and a push to the assignee.
-const RESCHEDULABLE_STATUSES = ['submitted', 'under_review', 'approved', 'assigned'];
+// May 10, 2026 — `assigned` (then `in_progress` late+1) joined the
+// whitelist so admins can move the schedule even after work has begun.
+// Backend cascades the change to `task.deadline`, capacity ledger, and a
+// push to the assignee. Done / rejected / cancelled stay terminal.
+const RESCHEDULABLE_STATUSES = [
+  'submitted',
+  'under_review',
+  'approved',
+  'assigned',
+  'in_progress',
+];
 // May 10, 2026 — whitelist of statuses where a cancel is meaningful.
 // `rejected` / `converted` / `in_progress` / `done` / `cancelled` are NOT
 // here: rejected is already an admin terminal, converted+in_progress mean

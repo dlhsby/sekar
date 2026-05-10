@@ -591,11 +591,20 @@ export class PruningRequestsService {
       );
     }
 
+    // May 10, 2026 (late+1) — `in_progress` joined the whitelist on user
+    // request. Bumping `task.deadline` while `task.started_at` is already
+    // set is safe: petugas keeps the same shift/activity records and just
+    // gets a new finish-by target. Capacity is week-aggregated for
+    // planning, not tied to actual clock-in hours, so a rebook is a clean
+    // booking move. The cascade body below is unchanged — `isAssigned`
+    // already keys on `assignedTaskId`, which is set the moment a task is
+    // created, so it covers in_progress too.
     const RESCHEDULABLE_STATUSES: PruningRequestStatus[] = [
       'submitted',
       'under_review',
       'approved',
       'assigned',
+      'in_progress',
     ];
     if (!RESCHEDULABLE_STATUSES.includes(request.status)) {
       throw new ConflictException(
@@ -615,12 +624,16 @@ export class PruningRequestsService {
     // request row may not have eager `task` relation loaded, so look it up
     // explicitly when needed.
     const oldScheduledDate = request.scheduledDate;
-    const isAssigned =
-      request.status === 'assigned' && request.assignedTaskId != null;
+    // Cascade fires whenever a task exists (assigned or in_progress). The
+    // `assignedTaskId` FK is set the moment assign-to-task creates the
+    // task, so it's a more reliable predicate than the request status.
+    const hasLinkedTask =
+      ['assigned', 'in_progress'].includes(request.status) &&
+      request.assignedTaskId != null;
 
-    // The non-assigned path is unchanged — just update the date. No task,
+    // The non-cascade path is unchanged — just update the date. No task,
     // no capacity booking yet (capacity is consumed at assign-to-task time).
-    if (!isAssigned) {
+    if (!hasLinkedTask) {
       request.scheduledDate = newDate;
       return this.pruningRequestRepository.save(request);
     }

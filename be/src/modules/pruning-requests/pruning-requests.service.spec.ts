@@ -1125,13 +1125,28 @@ describe('PruningRequestsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws ConflictException when status is in_progress', async () => {
-      // May 10, 2026 — `assigned` joined the reschedule whitelist; the
-      // remaining blocked statuses are `in_progress`, `done`, `rejected`,
-      // `cancelled`. In-progress work is the task lifecycle's responsibility.
+    it('throws ConflictException when status is done', async () => {
+      // May 10, 2026 (late+1) — `in_progress` was added to the whitelist;
+      // the remaining blocked statuses are `done`, `rejected`, `cancelled`.
+      // Done work is terminal and reschedule there is conceptually wrong.
       pruningRequestRepository.findOne.mockResolvedValue({
         ...mockPruningRequest,
-        status: 'in_progress',
+        status: 'done',
+      });
+
+      await expect(
+        service.reschedule(
+          mockRequestId,
+          { expectedDate: futureIso },
+          mockKepalaRayon,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ConflictException when status is rejected', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue({
+        ...mockPruningRequest,
+        status: 'rejected',
       });
 
       await expect(
@@ -1251,6 +1266,32 @@ describe('PruningRequestsService', () => {
         // Old booking must stay intact — release should NEVER fire when
         // the new booking failed.
         expect(mockServiceCapacityService.releaseAtomic).not.toHaveBeenCalled();
+      });
+
+      it('runs the same cascade when status is in_progress', async () => {
+        // May 10 (late+1) — in_progress joined the whitelist. The cascade
+        // path keys on `assignedTaskId` (the FK is set as soon as the
+        // task is created) rather than the status, so in_progress runs
+        // through the same rebook + deadline + audit + push code.
+        const newDate = new Date(futureDateString(14));
+        const inProgressRequest = {
+          ...baseAssigned(),
+          status: 'in_progress' as const,
+        };
+        pruningRequestRepository.findOne.mockResolvedValue(inProgressRequest as any);
+        mockServiceCapacityService.bookAtomic.mockResolvedValue({});
+        mockServiceCapacityService.releaseAtomic.mockResolvedValue({});
+
+        const result = await service.reschedule(
+          mockRequestId,
+          { expectedDate: newDate.toISOString().slice(0, 10) },
+          mockKepalaRayon,
+        );
+
+        expect(result.scheduledDate).toEqual(
+          new Date(newDate.toISOString().slice(0, 10)),
+        );
+        expect(mockServiceCapacityService.bookAtomic).toHaveBeenCalled();
       });
 
       it('falls back to non-cascading update when linked task is missing', async () => {
