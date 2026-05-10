@@ -123,7 +123,7 @@
 | `/api/v1/location/batch` p95 | < 200 ms | > 500 ms for 5 min |
 | `status:v2` emit-to-receive p95 | < 500 ms | > 1 s for 5 min |
 | Pruning requests submitted | > 0 | — |
-| Pruning requests converted | > 0 within 24 h | — |
+| Pruning requests assigned | > 0 within 24 h | — |
 | FCM deliveries to submitters | > 90 % success | < 80 % for 1 h |
 | Mobile app crashes tagged `monitoring/cluster` | 0 | any |
 

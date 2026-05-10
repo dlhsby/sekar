@@ -38,6 +38,7 @@ describe('PruningRequestsController', () => {
     gpsLat: -7.254883,
     gpsLng: 112.748899,
     expectedDate: new Date('2026-04-28'),
+    scheduledDate: null,
     expectedYear: 2026,
     expectedIsoWeek: 18,
     estimatedPlantCount: 15,
@@ -59,7 +60,7 @@ describe('PruningRequestsController', () => {
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
-    convertedTaskId: null,
+    assignedTaskId: null,
     createdAt: new Date('2026-04-27'),
     updatedAt: new Date('2026-04-27'),
   };
@@ -69,7 +70,7 @@ describe('PruningRequestsController', () => {
     findMine: jest.fn(),
     findById: jest.fn(),
     review: jest.fn(),
-    convertToTask: jest.fn(),
+    assignToTask: jest.fn(),
     reschedule: jest.fn(),
     findAll: jest.fn(),
   };
@@ -325,7 +326,7 @@ describe('PruningRequestsController', () => {
     });
   });
 
-  describe('convertToTask', () => {
+  describe('assignToTask', () => {
     it('should convert approved request to task', async () => {
       const dto = {
         areaId: '11111111-1111-1111-1111-111111111101',
@@ -343,24 +344,24 @@ describe('PruningRequestsController', () => {
 
       const updated: PruningRequest = {
         ...mockPruningRequest,
-        status: 'converted',
-        convertedTaskId: 'task-id',
+        status: 'assigned',
+        assignedTaskId: 'task-id',
       };
 
-      service.convertToTask.mockResolvedValue({
+      service.assignToTask.mockResolvedValue({
         request: updated,
         task: mockTask as any,
       });
 
-      const result = await controller.convertToTask(
+      const result = await controller.assignToTask(
         mockRequestId,
         dto,
         mockStaffKecamatan,
       );
 
-      expect(result.request.status).toBe('converted');
+      expect(result.request.status).toBe('assigned');
       expect(result.task.id).toBe('task-id');
-      expect(service.convertToTask).toHaveBeenCalledWith(
+      expect(service.assignToTask).toHaveBeenCalledWith(
         mockRequestId,
         dto,
         mockStaffKecamatan,
@@ -379,16 +380,16 @@ describe('PruningRequestsController', () => {
       const existingTask = { id: 'existing-task-id' };
       const request: PruningRequest = {
         ...mockPruningRequest,
-        status: 'converted',
-        convertedTaskId: 'existing-task-id',
+        status: 'assigned',
+        assignedTaskId: 'existing-task-id',
       };
 
-      service.convertToTask.mockResolvedValue({
+      service.assignToTask.mockResolvedValue({
         request,
         task: existingTask as any,
       });
 
-      const result = await controller.convertToTask(
+      const result = await controller.assignToTask(
         mockRequestId,
         dto,
         mockStaffKecamatan,
@@ -406,12 +407,12 @@ describe('PruningRequestsController', () => {
         pruningAction: 'PM' as const,
       };
 
-      service.convertToTask.mockRejectedValue(
+      service.assignToTask.mockRejectedValue(
         new Error('Cannot convert'),
       );
 
       await expect(
-        controller.convertToTask(mockRequestId, dto, mockStaffKecamatan),
+        controller.assignToTask(mockRequestId, dto, mockStaffKecamatan),
       ).rejects.toThrow();
     });
   });
@@ -422,6 +423,7 @@ describe('PruningRequestsController', () => {
       const updated: PruningRequest = {
         ...mockPruningRequest,
         expectedDate: new Date('2026-05-12'),
+    scheduledDate: null,
       };
       service.reschedule.mockResolvedValue(updated);
 

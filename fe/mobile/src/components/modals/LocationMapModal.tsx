@@ -51,6 +51,28 @@ interface LocationMapModalProps {
    */
   footerActionLabel?: string;
   onFooterAction?: () => void;
+  /**
+   * Override the modal title. Defaults to "Lokasi Anda" (worker GPS context).
+   * Pruning request callers pass "Lokasi Perantingan".
+   */
+  title?: string;
+  /**
+   * Hide the "di dalam / di luar area kerja" badge. The badge is meaningful
+   * only for the worker clock-in flow; it makes no sense for a kecamatan
+   * pruning request whose GPS is just a warga-supplied marker, not a worker
+   * boundary check.
+   */
+  hideAreaStatus?: boolean;
+  /**
+   * Hide the "Diperbarui …" freshness line. Same rationale as above — a
+   * pruning request's GPS is captured once at submit; it's not a moving
+   * tracker that needs a freshness label.
+   */
+  hideUpdatedAt?: boolean;
+  /**
+   * Marker title shown when the user taps the pin. Defaults to "Lokasi Anda".
+   */
+  markerTitle?: string;
 }
 
 function formatUpdatedAt(date: Date | null): string {
@@ -106,6 +128,10 @@ export function LocationMapModal({
   area,
   footerActionLabel,
   onFooterAction,
+  title = 'Lokasi Anda',
+  hideAreaStatus = false,
+  hideUpdatedAt = false,
+  markerTitle = 'Lokasi Anda',
 }: LocationMapModalProps) {
   // Coerce — backend may emit decimal columns as strings via TypeORM, and
   // some callers pass numeric strings unintentionally. Treat NaN/null/undefined
@@ -183,7 +209,7 @@ export function LocationMapModal({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <NBText variant="h2" color="black">Lokasi Anda</NBText>
+              <NBText variant="h2" color="black">{title}</NBText>
               {area?.name && (
                 <NBText variant="body-sm" color="gray600" style={styles.subtitleTop}>
                   {area.name}
@@ -234,7 +260,7 @@ export function LocationMapModal({
                 {hasCoords && (
                   <Marker
                     coordinate={{ latitude: lat!, longitude: lng! }}
-                    title="Lokasi Anda"
+                    title={markerTitle}
                     description={
                       location.accuracy !== null
                         ? `Akurasi: ±${Math.round(location.accuracy)}m`
@@ -268,34 +294,40 @@ export function LocationMapModal({
                   {lat!.toFixed(6)}, {lng!.toFixed(6)}
                 </NBText>
 
-                <View style={styles.infoRow}>
-                  {location.accuracy !== null && (
-                    <NBText variant="body-sm" style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}>
-                      {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
-                    </NBText>
-                  )}
-                  <View
-                    style={[
-                      styles.areaBadge,
-                      location.isWithinArea ? styles.areaBadgeInside : styles.areaBadgeOutside,
-                    ]}
-                  >
-                    <NBText
-                      variant="caption"
-                      style={[
-                        styles.areaBadgeTextBold,
-                        location.isWithinArea
-                          ? styles.areaBadgeTextInside
-                          : styles.areaBadgeTextOutside,
-                      ]}
-                    >
-                      {location.isWithinArea ? 'Di dalam area kerja' : 'Di luar area kerja'}
-                    </NBText>
+                {(location.accuracy !== null || !hideAreaStatus) ? (
+                  <View style={styles.infoRow}>
+                    {location.accuracy !== null && (
+                      <NBText variant="body-sm" style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}>
+                        {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
+                      </NBText>
+                    )}
+                    {!hideAreaStatus && (
+                      <View
+                        style={[
+                          styles.areaBadge,
+                          location.isWithinArea ? styles.areaBadgeInside : styles.areaBadgeOutside,
+                        ]}
+                      >
+                        <NBText
+                          variant="caption"
+                          style={[
+                            styles.areaBadgeTextBold,
+                            location.isWithinArea
+                              ? styles.areaBadgeTextInside
+                              : styles.areaBadgeTextOutside,
+                          ]}
+                        >
+                          {location.isWithinArea ? 'Di dalam area kerja' : 'Di luar area kerja'}
+                        </NBText>
+                      </View>
+                    )}
                   </View>
-                </View>
-                <NBText variant="caption" color="gray500" style={styles.updatedTopMargin}>
-                  {formatUpdatedAt(location.updatedAt)}
-                </NBText>
+                ) : null}
+                {!hideUpdatedAt && (
+                  <NBText variant="caption" color="gray500" style={styles.updatedTopMargin}>
+                    {formatUpdatedAt(location.updatedAt)}
+                  </NBText>
+                )}
               </>
             ) : (
               <NBText variant="body" color="gray500">GPS tidak aktif atau belum tersedia</NBText>

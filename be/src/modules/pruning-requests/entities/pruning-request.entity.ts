@@ -1,11 +1,21 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
 
 export type PruningRequestStatus =
   | 'submitted'
   | 'under_review'
   | 'approved'
   | 'rejected'
-  | 'converted'
+  | 'assigned'
   | 'in_progress'
   | 'done'
   | 'cancelled';
@@ -20,6 +30,17 @@ export class PruningRequest {
 
   @Column({ type: 'uuid', name: 'submitted_by' })
   submittedBy: string;
+
+  // May 9, 2026 — explicit relation so the API can return submitter context
+  // (full_name / username / role) for the list card + detail screen header.
+  // Column already exists (`submitted_by`); we only add the join, no schema
+  // change. `onDelete: 'CASCADE'` matches the NOT NULL business rule — a
+  // pruning request without a submitter is invalid, so removing the user
+  // removes their requests too. Dev FK violations on stale rows are handled
+  // by `npm run db:fix-orphans`, which DELETEs the offending rows.
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'submitted_by' })
+  submitter?: User;
 
   @Column({ type: 'text', name: 'kecamatan_name' })
   kecamatanName: string;
@@ -42,13 +63,21 @@ export class PruningRequest {
   expectedDate: Date | null;
 
   // ADR-035 amendment 2026-05-01: kecamatan submitter picks an ISO week; the
-  // concrete `expectedDate` is set later by admin_data at convert-to-task or
+  // concrete `expectedDate` is set later by admin_data at assign-to-task or
   // by the convert auto-pick.
   @Column({ type: 'int', nullable: true, name: 'expected_year' })
   expectedYear: number | null;
 
   @Column({ type: 'int', nullable: true, name: 'expected_iso_week' })
   expectedIsoWeek: number | null;
+
+  // May 9, 2026 — admin-confirmed work day. Set by admin_data via
+  // `/assign-to-task` (auto-picked from the booked week) or via the
+  // "Atur Jadwal" reschedule endpoint. This replaces the previous overload
+  // of `expected_date`, which stays NULL going forward (kept on the
+  // schema as a legacy column for potential future re-use).
+  @Column({ type: 'date', nullable: true, name: 'scheduled_date' })
+  scheduledDate: Date | null;
 
   @Column({ type: 'int', nullable: true, name: 'estimated_plant_count' })
   estimatedPlantCount: number | null;
@@ -87,8 +116,18 @@ export class PruningRequest {
   @Column({ type: 'uuid', nullable: true, name: 'rayon_id' })
   rayonId: string | null;
 
+  // May 9, 2026 — relation for `request.rayon?.name` on detail screen.
+  @ManyToOne(() => Rayon, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'rayon_id' })
+  rayon?: Rayon;
+
   @Column({ type: 'uuid', nullable: true, name: 'reviewed_by' })
   reviewedBy: string | null;
+
+  // May 9, 2026 — reviewer relation for the "Direview Oleh" detail row.
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'reviewed_by' })
+  reviewer?: User;
 
   @Column({ type: 'timestamptz', nullable: true, name: 'reviewed_at' })
   reviewedAt: Date | null;
@@ -96,8 +135,8 @@ export class PruningRequest {
   @Column({ type: 'text', nullable: true, name: 'review_notes' })
   reviewNotes: string | null;
 
-  @Column({ type: 'uuid', nullable: true, name: 'converted_task_id' })
-  convertedTaskId: string | null;
+  @Column({ type: 'uuid', nullable: true, name: 'assigned_task_id' })
+  assignedTaskId: string | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

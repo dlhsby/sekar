@@ -274,16 +274,16 @@ const styles = StyleSheet.create({
     borderBottomColor: nbColors.black,
     ...nbShadows.sm,
   },
+  // Minimal back button — matches the unframed `arrow-left` icon used by
+  // FieldHomeHeader (the chevron seen on detail permohonan / detail tugas /
+  // detail aktivitas). The boxed-icon variant felt too heavy for a stack
+  // back action; keep the WCAG 44×44 hit area but drop the visible chrome.
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
-    marginRight: nbSpacing.md,
-    ...nbShadows.xs,
+    marginRight: nbSpacing.sm,
   },
   backButtonText: {
     fontSize: nbTypography.fontSize.lg,

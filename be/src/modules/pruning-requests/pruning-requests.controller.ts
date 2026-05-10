@@ -23,7 +23,7 @@ import { PruningRequestsService } from './pruning-requests.service';
 import { PruningRequest } from './entities/pruning-request.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
 import { ReviewPruningRequestDto } from './dto/review-pruning-request.dto';
-import { ConvertPruningRequestDto } from './dto/convert-pruning-request.dto';
+import { AssignPruningRequestDto } from './dto/assign-pruning-request.dto';
 import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dto';
 import { ListPruningRequestsQueryDto } from './dto/list-pruning-requests-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -336,7 +336,7 @@ export class PruningRequestsController {
    * @param user - Authenticated admin user (injected from JWT)
    * @returns Object with updated request and created task
    */
-  @Post(':id/convert-to-task')
+  @Post(':id/assign-to-task')
   @Roles(
     UserRole.ADMIN_DATA,
     UserRole.KEPALA_RAYON,
@@ -386,12 +386,12 @@ export class PruningRequestsController {
     status: 409,
     description: 'Conflict - Request is not approved, or capacity booking failed',
   })
-  async convertToTask(
+  async assignToTask(
     @Param('id') id: string,
-    @Body() dto: ConvertPruningRequestDto,
+    @Body() dto: AssignPruningRequestDto,
     @GetUser() user: User,
   ): Promise<{ request: PruningRequest; task: any }> {
-    return this.pruningRequestsService.convertToTask(id, dto, user);
+    return this.pruningRequestsService.assignToTask(id, dto, user);
   }
 
   /**
@@ -399,7 +399,7 @@ export class PruningRequestsController {
    *
    * Round 4 (Apr 28): admin_data (rayon-scoped), kepala_rayon, top_management,
    * admin_system, and superadmin can adjust `expected_date` independent of the
-   * convert-to-task flow. Only requests in 'submitted', 'under_review', or
+   * assign-to-task flow. Only requests in 'submitted', 'under_review', or
    * 'approved' status can be rescheduled.
    */
   @Patch(':id/expected-date')

@@ -84,7 +84,7 @@ export const submitPruningRequest = createAsyncThunk(
       address: string;
       lat: number;
       lng: number;
-      // Optional after Phase 3 Apr 27 redesign — admin sets the date during convert-to-task
+      // Optional after Phase 3 Apr 27 redesign — admin sets the date during assign-to-task
       // Deprecated 2026-05-01 (ADR-035 amendment); use expected_year + expected_iso_week instead.
       detail_date?: string;
       target_count?: number;
@@ -187,7 +187,16 @@ export const fetchAdminPruningRequests = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(response.error);
       }
-      return response.data || [];
+      // Backend returns a paginated envelope `{ items, total, page, limit }` for
+      // the admin list, but a plain array for legacy callers. Normalize so the
+      // reducer always sees an array (otherwise `.forEach` throws inside Immer
+      // and the loading flag never clears -> infinite spinner on Perantingan tab).
+      const data = response.data as unknown;
+      if (Array.isArray(data)) return data;
+      if (data && typeof data === 'object' && Array.isArray((data as { items?: unknown }).items)) {
+        return (data as { items: PruningRequest[] }).items;
+      }
+      return [];
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       const code = (err as { code?: string })?.code;
@@ -233,8 +242,8 @@ export const reviewPruningRequest = createAsyncThunk(
 /**
  * Convert pruning request to task
  */
-export const convertPruningRequestToTask = createAsyncThunk(
-  'pruningRequests/convertToTask',
+export const assignPruningRequestToTask = createAsyncThunk(
+  'pruningRequests/assignToTask',
   async (
     {
       id,
@@ -256,7 +265,7 @@ export const convertPruningRequestToTask = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await pruningRequestsApi.convertPruningRequestToTask(
+      const response = await pruningRequestsApi.assignPruningRequestToTask(
         id,
         {
           areaId,
@@ -504,11 +513,11 @@ const pruningRequestsSlice = createSlice({
 
     // Convert to task
     builder
-      .addCase(convertPruningRequestToTask.pending, (state, action) => {
+      .addCase(assignPruningRequestToTask.pending, (state, action) => {
         state.convertingId = action.meta.arg.id;
         state.error = null;
       })
-      .addCase(convertPruningRequestToTask.fulfilled, (state, action) => {
+      .addCase(assignPruningRequestToTask.fulfilled, (state, action) => {
         state.convertingId = null;
         const request = action.payload;
         state.byId[request.id] = request;
@@ -519,7 +528,7 @@ const pruningRequestsSlice = createSlice({
         }
         state.error = null;
       })
-      .addCase(convertPruningRequestToTask.rejected, (state, action) => {
+      .addCase(assignPruningRequestToTask.rejected, (state, action) => {
         state.convertingId = null;
         state.error = (action.payload as ThunkError | undefined)?.error ?? 'Error';
       });

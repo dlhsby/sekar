@@ -32,7 +32,7 @@ config();
  *
  * UAT structural data seeded (NOT transaction data):
  *   - 13 areas  (1 Taman Bungkul + 12 Kawasan Darmo pedestrian, from KMZ)
- *   - 24 users  (14 test + 10 real, incl. staff_kec_pusat)
+ *   - 24 users  (14 test + 10 real, incl. staff_kecamatan_pusat_1)
  *   - user_areas assignments (permanent)
  *   - user_tracking_status  (all offline — testing starts clean)
  *   - area_staff_requirements (1 satgas + 1 linmas per area, SHIFT1/WEEKDAY)
@@ -156,7 +156,7 @@ const USER_SATGAS_PUSAT2_ID    = '54e3f4a5-b6c7-4f89-0123-456768798091'; // satg
 const USER_LINMAS_PUSAT1_ID    = '54f4a5b6-c7d8-4090-1234-567879809102'; // linmas_pusat_1
 const USER_LINMAS_PUSAT2_ID    = '55a5b6c7-d8e9-4101-2345-678980910213'; // linmas_pusat_2
 const USER_SATGAS_BUNGKUL_ID   = '55b6c7d8-e9f0-4212-3456-789091021324'; // satgas_pusat_3
-const USER_STAFF_KEC_PUSAT_ID  = '55b6c7d8-e9f0-4212-3456-789091021325'; // staff_kec_pusat (Phase 3 — public intake)
+const USER_STAFF_KECAMATAN_PUSAT_ID  = '55b6c7d8-e9f0-4212-3456-789091021325'; // staff_kecamatan_pusat_1 (Phase 3 — public intake)
 // Real users
 const USER_PRAMUDITA_ID        = '55c7d8e9-f0a1-4323-4567-890102132435'; // pramudita_yustiani
 const USER_WAHYU_ID            = '55d8e9f0-a1b2-4434-5678-901213243546'; // wahyu_tri_p
@@ -662,10 +662,32 @@ async function seedStaging() {
     // ============================================================
     // STEP 9: USERS (13 test + 10 real = 23 total)
     // ============================================================
-    console.log('\n👥 Seeding users...');
+    console.log('\n👥 Seeding users (verbose — every row is announced)...');
+    console.log(
+      '  ─────────────────────────────────────────────────────────────────────────────',
+    );
+    console.log(
+      `  ${'Marker'.padEnd(7)} ${'Username'.padEnd(34)} ${'Role'.padEnd(15)} ${'Phone'.padEnd(13)} Rayon`,
+    );
+    console.log(
+      '  ─────────────────────────────────────────────────────────────────────────────',
+    );
+
+    // Cache rayon names for verbose log lines so we don't N×SELECT inside the
+    // user-insert loop. Falls back to '—' when rayonId is null (system-wide).
+    const insertUserRayonRows = (await queryRunner.query(
+      `SELECT id, name FROM rayons`,
+    )) as Array<{ id: string; name: string }>;
+    const insertUserRayonName = new Map(
+      insertUserRayonRows.map((r) => [r.id, r.name]),
+    );
+
+    let usersInserted = 0;
+    let usersExisting = 0;
 
     // Helper: insert a user row
     // Phase 3 Apr 27 — accepts optional `kecamatanName` for staff_kecamatan users.
+    // May 9, 2026 — verbose log line per row (✚ inserted / · already existed).
     const insertUser = async (
       id: string,
       username: string,
@@ -676,11 +698,19 @@ async function seedStaging() {
       areaId: string | null = null,
       kecamatanName: string | null = null,
     ) => {
-      await queryRunner.query(
+      const result = await queryRunner.query(
         `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, kecamatan_name, is_active)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
          ON CONFLICT (username) DO NOTHING`,
         [id, username, PASSWORD_HASH, fullName, phone, role, rayonId, areaId, kecamatanName],
+      );
+      const inserted = result && (result as any).rowCount > 0;
+      if (inserted) usersInserted += 1;
+      else usersExisting += 1;
+      const marker = inserted ? '  ✚    ' : '  ·    ';
+      const rayonName = rayonId ? insertUserRayonName.get(rayonId) ?? '—' : '—';
+      console.log(
+        `${marker} ${username.padEnd(34)} ${role.padEnd(15)} ${phone.padEnd(13)} ${rayonName}`,
       );
     };
 
@@ -711,10 +741,10 @@ async function seedStaging() {
     await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_pusat_3', 'Satgas Bungkul 1', 'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
     // ── Phase 3 — public intake (staff_kecamatan) ──────────────
-    // staff_kec_pusat: scoped to Rayon Pusat for testing pruning_requests workflow.
+    // staff_kecamatan_pusat_1: scoped to Rayon Pusat for testing pruning_requests workflow.
     // Apr 27 redesign: kecamatan_name attribution added so the redesigned mobile
     // submit form can preset rayon + kecamatan from the user profile.
-    await insertUser(USER_STAFF_KEC_PUSAT_ID, 'staff_kec_pusat', 'Staff Kecamatan Pusat', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID, null, 'Tegalsari');
+    await insertUser(USER_STAFF_KECAMATAN_PUSAT_ID, 'staff_kecamatan_pusat_1', 'Staff Kecamatan Pusat', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID, null, 'Tegalsari');
 
     // ── Real users ─────────────────────────────────────────────
     await insertUser(USER_PRAMUDITA_ID, 'pramudita_yustiani',   'Pramudita Yustiani',   'top_management', '08563302643');
@@ -728,28 +758,78 @@ async function seedStaging() {
     await insertUser(USER_DENI_ID,      'deni_purwanto',        'DENI PURWANTO',        'linmas',         '081554017822', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
     await insertUser(USER_AGUS_ID,      'agus_ramadhan',        'AGUS RAMADHAN',        'linmas',         '083831353889', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
-    console.log('  ✓ 14 test users + 10 real users = 24 total (incl. staff_kec_pusat for Phase 3)');
+    console.log(
+      `  ─────────────────────────────────────────────────────────────────────────────`,
+    );
+    console.log(
+      `  ✓ ${usersInserted} users inserted, ${usersExisting} already existed (idempotent)`,
+    );
+    console.log(
+      `    24 expected = 14 test (system + Pusat trio + staff_kecamatan_pusat_1) + 10 real-name pilots.`,
+    );
 
-    // ── May 2026 — staff_kecamatan_<code> per kecamatan (31) ────────
+    // ── May 2026 — staff_kecamatan_<code>_1 per kecamatan (31) ──────
     // The redesigned mobile submit form pre-fills rayon + kecamatan from the
     // logged-in user, so each kecamatan must have its own login. Idempotent.
-    console.log('\n🧑‍💼 Seeding 31 per-kecamatan staff_kecamatan users...');
+    console.log('\n🧑‍💼 Seeding per-kecamatan staff_kecamatan users…');
     const kecRows = (await queryRunner.query(
       `SELECT id, name, code, rayon_id FROM kecamatans ORDER BY name`,
     )) as Array<{ id: string; name: string; code: string; rayon_id: string }>;
+
+    // Map rayon_id → human-readable rayon name so the verbose log shows the
+    // pairing each kecamatan user lands in. Saves UAT testers from having to
+    // cross-reference a separate rayons table.
+    const stagingRayonRows = (await queryRunner.query(
+      `SELECT id, name FROM rayons`,
+    )) as Array<{ id: string; name: string }>;
+    const stagingRayonNameById = new Map(
+      stagingRayonRows.map((r) => [r.id, r.name]),
+    );
+
     let kecPhoneSeq = 100;
+    let kecInserted = 0;
+    let kecExisting = 0;
+
+    console.log(
+      `  Pattern: staff_kecamatan_<code>_1   (e.g. staff_kecamatan_tegalsari_1)`,
+    );
+    console.log(
+      '  ─────────────────────────────────────────────────────────────────────────────',
+    );
+    console.log(
+      `  ${'#'.padStart(2)}  ${'Username'.padEnd(34)} ${'Phone'.padEnd(13)} ${'Kecamatan'.padEnd(20)} Rayon`,
+    );
+    console.log(
+      '  ─────────────────────────────────────────────────────────────────────────────',
+    );
+    let kIdx = 0;
     for (const k of kecRows) {
-      const username = `staff_kecamatan_${k.code}`;
+      kIdx += 1;
+      // May 9 standardization — `staff_kecamatan_<code>_1` to match the
+      // numeric-suffix convention used by every other multi-instance role.
+      const username = `staff_kecamatan_${k.code}_1`;
       const phone = `0812000${String(kecPhoneSeq).padStart(5, '0')}`;
       kecPhoneSeq += 1;
-      await queryRunner.query(
+      const result = await queryRunner.query(
         `INSERT INTO users (username, password_hash, full_name, phone_number,
                             role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active)
          VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE)
          ON CONFLICT (username) DO NOTHING`,
         [username, PASSWORD_HASH, `Staff Kecamatan ${k.name}`, phone, k.rayon_id, k.name, k.id],
       );
+      const inserted = result && (result as any).rowCount > 0;
+      if (inserted) kecInserted += 1;
+      else kecExisting += 1;
+
+      const marker = inserted ? '✚' : '·';
+      const rayonName = stagingRayonNameById.get(k.rayon_id) ?? '—';
+      console.log(
+        `  ${String(kIdx).padStart(2)} ${marker} ${username.padEnd(34)} ${phone.padEnd(13)} ${k.name.padEnd(20)} ${rayonName}`,
+      );
     }
+    console.log(
+      `  ✓ ${kecInserted} inserted, ${kecExisting} already existed (idempotent)`,
+    );
     await queryRunner.query(`
       UPDATE users u SET kecamatan_id = k.id
       FROM kecamatans k
@@ -983,7 +1063,7 @@ async function seedStaging() {
     console.log('  satgas          satgas_pusat_3     081200000022    Taman Bungkul');
     console.log('');
     console.log('  ── Staff Kecamatan (NEW — Phase 3 public intake) ───────────────────────────────');
-    console.log('  Username pattern: staff_kecamatan_<code>  (e.g. staff_kecamatan_wiyung)');
+    console.log('  Username pattern: staff_kecamatan_<code>_<n>  (e.g. staff_kecamatan_wiyung_1)');
     console.log('  Each user is auto-linked to their kecamatan_id + rayon_id; the mobile submit');
     console.log('  form pre-fills + locks both fields on login.');
     console.log('');
@@ -996,7 +1076,7 @@ async function seedStaging() {
     }
     console.log(`  … plus ${Math.max(0, (sc.staff_kec_users ?? 0) - kecSamples.length)} more — one user per kecamatan, all 31 covered.`);
     console.log('');
-    console.log('  Legacy single-rayon staff_kec_pusat is also retained (081200000023) for back-compat.');
+    console.log('  Legacy single-rayon staff_kecamatan_pusat_1 is also retained (081200000023) for back-compat.');
     console.log('');
     console.log('══════════════════════════════════════════════════════════════════════════════════════');
     console.log('👤  REAL USERS  (production-bound, all passwords: password123)');
@@ -1014,11 +1094,15 @@ async function seedStaging() {
     console.log('  linmas          deni_purwanto        081554017822   Taman Bungkul');
     console.log('  linmas          agus_ramadhan        083831353889   Taman Bungkul');
     console.log('');
-    console.log('  💡 UAT walkthrough tip:');
-    console.log('     1. Log in as `staff_kecamatan_wiyung` → submit a pruning request (rayon +');
-    console.log('        kecamatan are pre-filled and locked).');
-    console.log('     2. Switch to `admin_data_pusat_1` → review + convert it to a task.');
-    console.log('     3. Switch to `satgas_pusat_1` → accept and execute the task.');
+    console.log('  💡 UAT walkthrough tip — keep all three actors in the SAME rayon so the');
+    console.log('     permohonan actually lands in the admin\'s queue:');
+    console.log('     1. Log in as `staff_kecamatan_tegalsari_1` (Rayon Pusat) → submit a pruning');
+    console.log('        request (rayon + kecamatan are pre-filled and locked).');
+    console.log('     2. Switch to `admin_data_pusat_1`   (Rayon Pusat) → review + convert.');
+    console.log('     3. Switch to `satgas_pusat_1`       (Rayon Pusat) → accept and execute.');
+    console.log('     For other rayons pair the matching trio, e.g.');
+    console.log('       staff_kecamatan_wiyung_1 → admin_data_selatan_1 → satgas_selatan_1');
+    console.log('       staff_kecamatan_tambaksari_1 → admin_data_timur_1_1 → satgas_timur_1_1');
     console.log('══════════════════════════════════════════════════════════════════════════════════════');
   } catch (error) {
     console.error('\n❌ Staging seeding failed:', error);

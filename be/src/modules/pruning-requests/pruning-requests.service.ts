@@ -10,10 +10,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { PruningRequest } from './entities/pruning-request.entity';
+import { PruningRequest, PruningRequestStatus } from './entities/pruning-request.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
 import { ReviewPruningRequestDto } from './dto/review-pruning-request.dto';
-import { ConvertPruningRequestDto } from './dto/convert-pruning-request.dto';
+import { AssignPruningRequestDto } from './dto/assign-pruning-request.dto';
 import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Task, TaskStatus } from '../tasks/entities/task.entity';
@@ -71,7 +71,7 @@ export class PruningRequestsService {
     //
     // We always normalize to (expectedYear, expectedIsoWeek) when possible.
     // `expectedDate` (concrete day) stays NULL on submit; it's set at
-    // convert-to-task time (admin override or auto-pick first available day).
+    // assign-to-task time (admin override or auto-pick first available day).
     let expectedYear: number | null = null;
     let expectedIsoWeek: number | null = null;
     let detailDate: Date | null = null;
@@ -126,7 +126,13 @@ export class PruningRequestsService {
       gpsLat: dto.lat,
       gpsLng: dto.lng,
       photoUrls: dto.photo_keys,
-      expectedDate: detailDate,
+      // May 9, 2026 — `expected_date` is no longer written from submit.
+      // Kecamatan submissions express preference at week granularity
+      // (expectedYear + expectedIsoWeek). The concrete day is set by
+      // admin_data via `scheduled_date` at assign-to-task or Atur Jadwal.
+      // We retain `detailDate` only to derive the ISO week above for legacy
+      // clients that still send `detail_date`.
+      expectedDate: null,
       expectedYear,
       expectedIsoWeek,
       estimatedPlantCount: dto.target_count ?? dto.tree_count ?? null,
@@ -172,6 +178,9 @@ export class PruningRequestsService {
       order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,
+      // Submitter is always self here, but we still hydrate so the list card
+      // renders the same chip on both kecamatan and admin views.
+      relations: ['submitter', 'reviewer', 'rayon'],
     });
   }
 
@@ -199,6 +208,7 @@ export class PruningRequestsService {
 
     const request = await this.pruningRequestRepository.findOne({
       where: { id },
+      relations: ['submitter', 'reviewer', 'rayon'],
     });
 
     if (!request) {
@@ -289,6 +299,18 @@ export class PruningRequestsService {
       );
     }
 
+    // May 10, 2026 — approval requires a confirmed scheduledDate. The mobile
+    // RequestDetailScreen already gates Setujui on this field; mirror the
+    // rule on the backend so direct API callers (web admin, Postman, future
+    // clients) cannot bypass and create the "approved-without-date" limbo
+    // state that leaves the warga without a real expectation. Use
+    // `under_review` for tentative dispositions instead.
+    if (dto.decision === 'approve' && !request.scheduledDate) {
+      throw new ConflictException(
+        'Atur jadwal terlebih dahulu sebelum menyetujui permohonan',
+      );
+    }
+
     request.status = dto.decision === 'approve' ? 'approved' : 'rejected';
     request.reviewedBy = user.id;
     request.reviewedAt = new Date();
@@ -316,9 +338,9 @@ export class PruningRequestsService {
    * @throws ForbiddenException if user lacks authorization
    * @throws ConflictException if request is not approved, or if capacity booking fails
    */
-  async convertToTask(
+  async assignToTask(
     id: string,
-    dto: ConvertPruningRequestDto,
+    dto: AssignPruningRequestDto,
     user: User,
   ): Promise<{ request: PruningRequest; task: Task }> {
     this.logger.log(
@@ -343,13 +365,13 @@ export class PruningRequestsService {
     }
 
     // Idempotent: if already converted, return existing task
-    if (request.convertedTaskId) {
+    if (request.assignedTaskId) {
       const task = await this.taskRepository.findOne({
-        where: { id: request.convertedTaskId },
+        where: { id: request.assignedTaskId },
       });
       if (task) {
         this.logger.log(
-          `Pruning request ${id} already converted to task ${request.convertedTaskId}`,
+          `Pruning request ${id} already converted to task ${request.assignedTaskId}`,
         );
         return { request, task };
       }
@@ -499,10 +521,13 @@ export class PruningRequestsService {
         reason: null,
       });
 
-      // Update request: walk to `converted`, fix concrete date, link task.
-      request.status = 'converted';
-      request.convertedTaskId = savedTask.id;
-      request.expectedDate = scheduledDateObj;
+      // Update request: walk to `converted`, set the admin-confirmed date,
+      // link task. May 9, 2026 — writes to `scheduled_date` (NEW) instead of
+      // `expected_date`. The latter stays NULL going forward; see the
+      // 17460008000000 migration for the schema split rationale.
+      request.status = 'assigned';
+      request.assignedTaskId = savedTask.id;
+      request.scheduledDate = scheduledDateObj;
       // Backfill the week pair if it was missing (legacy admin-direct path).
       if (request.expectedYear == null) request.expectedYear = year;
       if (request.expectedIsoWeek == null) request.expectedIsoWeek = isoWeek;
@@ -525,7 +550,7 @@ export class PruningRequestsService {
         })
         .catch((err) =>
           this.logger.error(
-            `Failed to send convert-to-task notification: ${(err as Error).message}`,
+            `Failed to send assign-to-task notification: ${(err as Error).message}`,
           ),
         );
 
@@ -534,12 +559,16 @@ export class PruningRequestsService {
   }
 
   /**
-   * Reschedule the expected date of a pruning request without converting it.
+   * Reschedule the scheduled date of a pruning request.
    *
-   * Round 4 (Apr 28): allows admins to adjust `expected_date` after submission.
+   * Round 4 (Apr 28): admins can adjust the date pre-conversion.
+   * May 10, 2026: extended to `assigned` status with full cascade — task
+   * deadline updates, capacity rebooks if the ISO week changed, and the
+   * assignee gets a push + audit row. Statuses `in_progress`, `done`,
+   * `rejected`, `cancelled` remain blocked: in-flight or terminal work is
+   * the task's lifecycle to manage, not the parent permohonan's.
    *
    * - admin_data is scoped to its own rayon.
-   * - Only requests in 'submitted', 'under_review', or 'approved' status can be rescheduled.
    * - The new date must be today or in the future.
    */
   async reschedule(
@@ -562,7 +591,13 @@ export class PruningRequestsService {
       );
     }
 
-    if (!['submitted', 'under_review', 'approved'].includes(request.status)) {
+    const RESCHEDULABLE_STATUSES: PruningRequestStatus[] = [
+      'submitted',
+      'under_review',
+      'approved',
+      'assigned',
+    ];
+    if (!RESCHEDULABLE_STATUSES.includes(request.status)) {
       throw new ConflictException(
         `Pruning request status is ${request.status}, cannot reschedule once ${request.status}`,
       );
@@ -575,8 +610,141 @@ export class PruningRequestsService {
       throw new BadRequestException('expectedDate must be today or in the future');
     }
 
-    request.expectedDate = newDate;
-    return this.pruningRequestRepository.save(request);
+    // Pre-cascade: capture the old date + linked task before we mutate, so
+    // we know whether to rebook capacity and whose deadline to bump. The
+    // request row may not have eager `task` relation loaded, so look it up
+    // explicitly when needed.
+    const oldScheduledDate = request.scheduledDate;
+    const isAssigned =
+      request.status === 'assigned' && request.assignedTaskId != null;
+
+    // The non-assigned path is unchanged — just update the date. No task,
+    // no capacity booking yet (capacity is consumed at assign-to-task time).
+    if (!isAssigned) {
+      request.scheduledDate = newDate;
+      return this.pruningRequestRepository.save(request);
+    }
+
+    // Assigned path — wrap the cascade in a transaction so we either
+    // commit all of {capacity rebook, task.deadline, request.scheduledDate,
+    // delegation audit row} or none. Capacity is week-aggregated; we only
+    // touch it when the ISO week changes (intra-week moves are free).
+    const oldIso =
+      oldScheduledDate != null ? getIsoWeek(oldScheduledDate) : null;
+    const newIso = getIsoWeek(newDate);
+    const weekChanged =
+      oldIso == null ||
+      oldIso.year !== newIso.year ||
+      oldIso.isoWeek !== newIso.isoWeek;
+
+    const task = await this.taskRepository.findOne({
+      where: { id: request.assignedTaskId! },
+    });
+    if (!task) {
+      // Defensive: the FK should always resolve; if it doesn't, the request
+      // is in a bad state — fall back to non-cascading update so the admin
+      // isn't blocked, but log loudly for the audit.
+      this.logger.error(
+        `Reschedule cascade: linked task ${request.assignedTaskId} not found for request ${id}`,
+      );
+      request.scheduledDate = newDate;
+      return this.pruningRequestRepository.save(request);
+    }
+
+    return this.dataSource.transaction(async (tm) => {
+      // 1. Rebook capacity if the ISO week changed. Order matters — book
+      // the new week first; if it's full we abort BEFORE touching the old
+      // week's ledger, so the original booking stays intact.
+      if (weekChanged && request.rayonId) {
+        const units = 1;
+        try {
+          await this.serviceCapacityService.bookAtomic({
+            rayonId: request.rayonId,
+            year: newIso.year,
+            isoWeek: newIso.isoWeek,
+            serviceType: 'pruning',
+            units,
+          });
+        } catch (error) {
+          if (error instanceof ConflictException) {
+            throw new ConflictException(
+              'Capacity penuh untuk minggu yang dipilih: ' + error.message,
+            );
+          }
+          throw error;
+        }
+        if (oldIso) {
+          // Best effort — if release fails (e.g. capacity row was deleted),
+          // log but don't reverse the new booking; the old row is stale by
+          // definition once we've moved on.
+          try {
+            await this.serviceCapacityService.releaseAtomic({
+              rayonId: request.rayonId,
+              year: oldIso.year,
+              isoWeek: oldIso.isoWeek,
+              serviceType: 'pruning',
+              units,
+            });
+          } catch (err) {
+            this.logger.warn(
+              `Reschedule cascade: failed to release old capacity ${oldIso.year}-W${oldIso.isoWeek}: ${(err as Error).message}`,
+            );
+          }
+        }
+      }
+
+      // 2. Bump the task deadline so the satgas's app reflects the new date.
+      task.deadline = newDate;
+      await tm.save(task);
+
+      // 3. Update the request row. Keep `expectedYear`/`expectedIsoWeek`
+      // (the warga's preference) untouched — only the admin-confirmed
+      // schedule moves.
+      request.scheduledDate = newDate;
+      const savedRequest = await tm.save(request);
+
+      // 4. Audit hop — record the reschedule in the delegation chain so
+      // the mobile "Riwayat Penugasan" card surfaces it. Same actor on
+      // both sides; the `reason` field carries the schedule note.
+      if (task.assigned_to) {
+        await tm.save(TaskDelegation, {
+          task_id: task.id,
+          from_user_id: user.id,
+          from_role: user.role,
+          to_user_id: task.assigned_to,
+          to_role: (await this.usersService.findOne(task.assigned_to)).role,
+          reason: `Jadwal diubah ke ${newDate.toISOString().slice(0, 10)}`,
+        });
+      }
+
+      this.logger.log(
+        `Pruning request ${id} rescheduled to ${newDate.toISOString().slice(0, 10)} (W${newIso.isoWeek}/${newIso.year}); task ${task.id} deadline updated`,
+      );
+
+      // 5. Best-effort push to the assignee. Failure must not roll back
+      // the (now-committed) transaction.
+      if (task.assigned_to) {
+        const assigneeId = task.assigned_to;
+        this.notificationsService
+          .sendToUser({
+            user_id: assigneeId,
+            title: `Jadwal tugas diubah`,
+            body: `Tugas "${task.title}" dijadwalkan ulang ke ${newDate.toISOString().slice(0, 10)}.`,
+            type: NotificationType.TASK_ASSIGNED,
+            data: {
+              task_id: task.id,
+              source: 'pruning_request_reschedule',
+            },
+          })
+          .catch((err) =>
+            this.logger.error(
+              `Failed to send reschedule notification: ${(err as Error).message}`,
+            ),
+          );
+      }
+
+      return savedRequest;
+    });
   }
 
   /**
@@ -617,7 +785,11 @@ export class PruningRequestsService {
     const limit = Math.min(query.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
-    let qb = this.pruningRequestRepository.createQueryBuilder('pr');
+    let qb = this.pruningRequestRepository
+      .createQueryBuilder('pr')
+      .leftJoinAndSelect('pr.submitter', 'submitter')
+      .leftJoinAndSelect('pr.reviewer', 'reviewer')
+      .leftJoinAndSelect('pr.rayon', 'rayon');
 
     // Status filter
     if (query.status) {
@@ -681,7 +853,15 @@ export class PruningRequestsService {
    *   - admin_data scoped to the request's rayon
    *   - kepala_rayon, top_management, admin_system, superadmin
    *
-   * Allowed source statuses: any status except `cancelled` and `done`.
+   * Allowed source statuses (whitelist — May 10, 2026): only requests still
+   * in the kecamatan-submission / admin-review window can be cancelled.
+   *   - `submitted`     — new, awaiting admin
+   *   - `under_review`  — admin has opened but not decided
+   *   - `approved`      — admin signed off but no task created yet
+   *
+   * Disallowed: `rejected` (admin already terminated), `converted` /
+   * `in_progress` (a task exists and the work is committed), `done` /
+   * `cancelled` (already terminal).
    */
   async cancel(id: string, user: User, reason?: string): Promise<PruningRequest> {
     const request = await this.pruningRequestRepository.findOne({ where: { id } });
@@ -705,7 +885,12 @@ export class PruningRequestsService {
       );
     }
 
-    if (request.status === 'cancelled' || request.status === 'done') {
+    const CANCELLABLE_STATUSES: PruningRequestStatus[] = [
+      'submitted',
+      'under_review',
+      'approved',
+    ];
+    if (!CANCELLABLE_STATUSES.includes(request.status)) {
       throw new ConflictException(
         `Cannot cancel a permohonan that is already ${request.status}`,
       );

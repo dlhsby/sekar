@@ -34,7 +34,7 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: PruningRequestStatus 
   { label: 'Sedang Ditinjau', value: 'under_review' },
   { label: 'Disetujui', value: 'approved' },
   { label: 'Ditolak', value: 'rejected' },
-  { label: 'Dijadwalkan', value: 'converted' },
+  { label: 'Ditugaskan', value: 'assigned' },
   { label: 'Sedang Dikerjakan', value: 'in_progress' },
   { label: 'Selesai', value: 'done' },
   { label: 'Dibatalkan', value: 'cancelled' },

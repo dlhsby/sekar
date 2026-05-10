@@ -221,7 +221,7 @@ describe('NBButton', () => {
   });
 
   describe('Phase 3 prop compat (Apr 27)', () => {
-    // Regression: SubmitScreen + ReviewQueueScreen + ConvertToTaskSheet were
+    // Regression: SubmitScreen + ReviewQueueScreen + AssignToTaskSheet were
     // crashing on render because they used `label`, `leftIcon`, `outline` variant,
     // and string children — none of which the original API supported.
     it('accepts `label` as alias for `title`', () => {

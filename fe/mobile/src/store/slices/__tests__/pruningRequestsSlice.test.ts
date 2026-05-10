@@ -16,7 +16,7 @@ import pruningRequestsReducer, {
   fetchPruningRequestById,
   fetchAdminPruningRequests,
   reviewPruningRequest,
-  convertPruningRequestToTask,
+  assignPruningRequestToTask,
 } from '../pruningRequestsSlice';
 import * as pruningRequestsApi from '../../../services/api/pruningRequestsApi';
 import type { PruningRequest } from '../../../types/models.types';
@@ -52,7 +52,7 @@ describe('pruningRequestsSlice', () => {
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
-    convertedTaskId: null,
+    assignedTaskId: null,
     convertedTask: null,
     createdAt: '2026-04-27T10:00:00Z',
     updatedAt: '2026-04-27T10:00:00Z',
@@ -625,9 +625,9 @@ describe('pruningRequestsSlice', () => {
     });
   });
 
-  describe('convertPruningRequestToTask thunk', () => {
+  describe('assignPruningRequestToTask thunk', () => {
     it('should set convertingId on pending', async () => {
-      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      const mockApi = pruningRequestsApi.assignPruningRequestToTask as jest.Mock;
       mockApi.mockImplementation(() => new Promise(() => {})); // Never resolves
 
       store = configureStore({
@@ -641,7 +641,7 @@ describe('pruningRequestsSlice', () => {
         },
       });
 
-      const convertAction = convertPruningRequestToTask({
+      const convertAction = assignPruningRequestToTask({
         id: 'pr-001',
         areaId: 'area1',
         assignedTo: 'user1',
@@ -657,10 +657,10 @@ describe('pruningRequestsSlice', () => {
     });
 
     it('should convert pruning request to task', async () => {
-      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      const mockApi = pruningRequestsApi.assignPruningRequestToTask as jest.Mock;
       const convertedRequest = {
         ...mockPruningRequest,
-        status: 'converted' as const,
+        status: 'assigned' as const,
       };
       mockApi.mockResolvedValue({
         success: true,
@@ -678,7 +678,7 @@ describe('pruningRequestsSlice', () => {
         },
       });
 
-      const convertAction = convertPruningRequestToTask({
+      const convertAction = assignPruningRequestToTask({
         id: 'pr-001',
         areaId: 'area1',
         assignedTo: 'user1',
@@ -690,12 +690,12 @@ describe('pruningRequestsSlice', () => {
       await store.dispatch(convertAction);
       const state = store.getState().pruningRequests;
 
-      expect(state.byId['pr-001'].status).toBe('converted');
+      expect(state.byId['pr-001'].status).toBe('assigned');
       expect(state.convertingId).toBeNull();
     });
 
     it('should pass all conversion parameters to API', async () => {
-      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      const mockApi = pruningRequestsApi.assignPruningRequestToTask as jest.Mock;
       mockApi.mockResolvedValue({
         success: true,
         data: mockPruningRequest,
@@ -722,7 +722,7 @@ describe('pruningRequestsSlice', () => {
         units: 5,
       };
 
-      const convertAction = convertPruningRequestToTask(params);
+      const convertAction = assignPruningRequestToTask(params);
       await store.dispatch(convertAction);
 
       expect(mockApi).toHaveBeenCalledWith('pr-001', {
@@ -736,7 +736,7 @@ describe('pruningRequestsSlice', () => {
     });
 
     it('should handle conversion error', async () => {
-      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      const mockApi = pruningRequestsApi.assignPruningRequestToTask as jest.Mock;
       mockApi.mockRejectedValue(new Error('Capacity exceeded'));
 
       store = configureStore({
@@ -750,7 +750,7 @@ describe('pruningRequestsSlice', () => {
         },
       });
 
-      const convertAction = convertPruningRequestToTask({
+      const convertAction = assignPruningRequestToTask({
         id: 'pr-001',
         areaId: 'area1',
         assignedTo: 'user1',
@@ -768,10 +768,10 @@ describe('pruningRequestsSlice', () => {
     });
 
     it('should update adminList when converting', async () => {
-      const mockApi = pruningRequestsApi.convertPruningRequestToTask as jest.Mock;
+      const mockApi = pruningRequestsApi.assignPruningRequestToTask as jest.Mock;
       const convertedRequest = {
         ...mockPruningRequest,
-        status: 'converted' as const,
+        status: 'assigned' as const,
       };
       mockApi.mockResolvedValue({
         success: true,
@@ -789,7 +789,7 @@ describe('pruningRequestsSlice', () => {
         },
       });
 
-      const convertAction = convertPruningRequestToTask({
+      const convertAction = assignPruningRequestToTask({
         id: 'pr-001',
         areaId: 'area1',
         assignedTo: 'user1',
@@ -801,7 +801,7 @@ describe('pruningRequestsSlice', () => {
       await store.dispatch(convertAction);
       const state = store.getState().pruningRequests;
 
-      expect(state.adminList[0].status).toBe('converted');
+      expect(state.adminList[0].status).toBe('assigned');
     });
   });
 });

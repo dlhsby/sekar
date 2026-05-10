@@ -17,7 +17,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * Used by admin_data, kepala_rayon, top_management, admin_system, or superadmin
  * to convert an approved pruning request into a task for workers to execute.
  */
-export class ConvertPruningRequestDto {
+export class AssignPruningRequestDto {
   /**
    * Area ID where the pruning task will be assigned.
    *

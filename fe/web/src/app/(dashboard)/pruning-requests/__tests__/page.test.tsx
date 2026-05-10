@@ -69,7 +69,7 @@ const mockRequest: pruningApi.PruningRequest = {
   reviewer: null,
   reviewedAt: null,
   reviewNotes: null,
-  convertedTaskId: null,
+  assignedTaskId: null,
   createdAt: '2026-05-03T10:00:00Z',
   updatedAt: '2026-05-03T10:00:00Z',
 };

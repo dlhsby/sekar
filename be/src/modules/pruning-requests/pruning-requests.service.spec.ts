@@ -108,6 +108,7 @@ describe('PruningRequestsService', () => {
     gpsLat: -7.254883,
     gpsLng: 112.748899,
     expectedDate: new Date(futureDateString(7)),
+    scheduledDate: null,
     expectedYear: null,
     expectedIsoWeek: null,
     estimatedPlantCount: 15,
@@ -129,7 +130,7 @@ describe('PruningRequestsService', () => {
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
-    convertedTaskId: null,
+    assignedTaskId: null,
     createdAt: new Date('2026-04-27'),
     updatedAt: new Date('2026-04-27'),
   };
@@ -352,7 +353,10 @@ describe('PruningRequestsService', () => {
 
       const result = await service.create(dto, mockStaffKecamatan);
 
-      expect(result.expectedDate).not.toBeNull();
+      // May 9, 2026 — submit no longer writes `expected_date`; legacy
+      // `detail_date` clients still get the ISO week derived for them so
+      // the new (expectedYear, expectedIsoWeek) columns are populated.
+      expect(result.expectedDate).toBeNull();
       expect(result.expectedYear).not.toBeNull();
       expect(result.expectedIsoWeek).toBeGreaterThanOrEqual(1);
       expect(result.expectedIsoWeek).toBeLessThanOrEqual(53);
@@ -372,6 +376,7 @@ describe('PruningRequestsService', () => {
         order: { createdAt: 'DESC' },
         take: 20,
         skip: 0,
+        relations: ['submitter', 'reviewer', 'rayon'],
       });
     });
 
@@ -386,6 +391,7 @@ describe('PruningRequestsService', () => {
         order: { createdAt: 'DESC' },
         take: 50,
         skip: 100,
+        relations: ['submitter', 'reviewer', 'rayon'],
       });
     });
 
@@ -410,6 +416,7 @@ describe('PruningRequestsService', () => {
       expect(result).toEqual(mockPruningRequest);
       expect(mockPruningRequestRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockRequestId },
+        relations: ['submitter', 'reviewer', 'rayon'],
       });
     });
 
@@ -492,11 +499,18 @@ describe('PruningRequestsService', () => {
   });
 
   describe('review', () => {
-    it('should approve a submitted request', async () => {
+    it('should approve a submitted request when schedule is set', async () => {
       const dto = { decision: 'approve' as const, reviewNotes: 'Approved' };
-      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
-      mockPruningRequestRepository.save.mockResolvedValue({
+      // May 10, 2026 — `scheduledDate` is now required for approve. The
+      // mobile UI already enforces this; the service-level guard mirrors
+      // it. Tests that exercise the happy path must seed a scheduledDate.
+      const scheduledRequest = {
         ...mockPruningRequest,
+        scheduledDate: new Date(futureDateString(7)),
+      };
+      mockPruningRequestRepository.findOne.mockResolvedValue(scheduledRequest);
+      mockPruningRequestRepository.save.mockResolvedValue({
+        ...scheduledRequest,
         status: 'approved',
         reviewedBy: mockAdminId,
         reviewedAt: expect.any(Date),
@@ -508,6 +522,37 @@ describe('PruningRequestsService', () => {
       expect(result.status).toBe('approved');
       expect(result.reviewedBy).toBe(mockAdminId);
       expect(mockPruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('should block approve when scheduledDate is null', async () => {
+      const dto = { decision: 'approve' as const, reviewNotes: 'Approved' };
+      // mockPruningRequest.scheduledDate is null — exercises the May 10
+      // backend guard that prevents approved-without-date limbo.
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
+
+      await expect(
+        service.review(mockRequestId, dto, mockAdminData),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPruningRequestRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should allow reject without scheduledDate', async () => {
+      // Reject path is unaffected by the schedule guard — admins must be
+      // able to reject incomplete or invalid requests regardless of
+      // whether they bothered to atur jadwal first.
+      const dto = { decision: 'reject' as const, reviewNotes: 'Tidak valid' };
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
+      mockPruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        status: 'rejected',
+        reviewedBy: mockAdminId,
+        reviewedAt: expect.any(Date),
+        reviewNotes: 'Tidak valid',
+      });
+
+      const result = await service.review(mockRequestId, dto, mockAdminData);
+
+      expect(result.status).toBe('rejected');
     });
 
     it('should reject a submitted request', async () => {
@@ -570,7 +615,7 @@ describe('PruningRequestsService', () => {
     });
   });
 
-  describe('convertToTask', () => {
+  describe('assignToTask', () => {
     it('should convert approved request to task (idempotent)', async () => {
       const dto = {
         areaId: '11111111-1111-1111-1111-111111111101',
@@ -604,8 +649,8 @@ describe('PruningRequestsService', () => {
             if (entity.referenceCode) {
               return Promise.resolve({
                 ...entity,
-                status: 'converted',
-                convertedTaskId: 'task-id',
+                status: 'assigned',
+                assignedTaskId: 'task-id',
               });
             }
             return Promise.resolve(mockTask);
@@ -614,9 +659,9 @@ describe('PruningRequestsService', () => {
         return cb(mockEntityManager);
       });
 
-      const result = await service.convertToTask(mockRequestId, dto, mockAdminData);
+      const result = await service.assignToTask(mockRequestId, dto, mockAdminData);
 
-      expect(result.request.status).toBe('converted');
+      expect(result.request.status).toBe('assigned');
       expect(mockServiceCapacityService.bookAtomic).toHaveBeenCalledWith(
         expect.objectContaining({
           serviceType: 'pruning',
@@ -637,13 +682,13 @@ describe('PruningRequestsService', () => {
       const requestWithTask = {
         ...mockPruningRequest,
         status: 'approved',
-        convertedTaskId: 'existing-task-id',
+        assignedTaskId: 'existing-task-id',
       };
 
       mockPruningRequestRepository.findOne.mockResolvedValue(requestWithTask);
       mockTaskRepository.findOne.mockResolvedValue(existingTask);
 
-      const result = await service.convertToTask(mockRequestId, dto, mockAdminData);
+      const result = await service.assignToTask(mockRequestId, dto, mockAdminData);
 
       expect(result.task.id).toBe('existing-task-id');
       expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
@@ -666,7 +711,7 @@ describe('PruningRequestsService', () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(mismatchedRequest);
 
       await expect(
-        service.convertToTask(mockRequestId, dto, mockAdminData),
+        service.assignToTask(mockRequestId, dto, mockAdminData),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -686,7 +731,7 @@ describe('PruningRequestsService', () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(submittedRequest);
 
       await expect(
-        service.convertToTask(mockRequestId, dto, mockAdminData),
+        service.assignToTask(mockRequestId, dto, mockAdminData),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -713,7 +758,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.convertToTask(mockRequestId, dto, mockAdminData),
+        service.assignToTask(mockRequestId, dto, mockAdminData),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -736,6 +781,7 @@ describe('PruningRequestsService', () => {
         expectedYear: futureYear,
         expectedIsoWeek: 25,
         expectedDate: null,
+    scheduledDate: null,
       };
 
       const mockTask = {
@@ -752,8 +798,8 @@ describe('PruningRequestsService', () => {
             if (entity.referenceCode) {
               return Promise.resolve({
                 ...entity,
-                status: 'converted',
-                convertedTaskId: 'auto-task-id',
+                status: 'assigned',
+                assignedTaskId: 'auto-task-id',
               });
             }
             return Promise.resolve(mockTask);
@@ -762,7 +808,7 @@ describe('PruningRequestsService', () => {
         return cb(mockEntityManager);
       });
 
-      const result = await service.convertToTask(mockRequestId, dto, mockAdminData);
+      const result = await service.assignToTask(mockRequestId, dto, mockAdminData);
 
       expect(mockServiceCapacityService.bookAtomic).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -771,7 +817,9 @@ describe('PruningRequestsService', () => {
           isoWeek: 25,
         }),
       );
-      expect(result.request.expectedDate).toBeInstanceOf(Date);
+      // May 9, 2026 — assignToTask now writes the admin-confirmed day to
+      // `scheduled_date`, not the legacy `expected_date` column.
+      expect(result.request.scheduledDate).toBeInstanceOf(Date);
     });
 
     it('rejects auto-pick when request has no week and admin omits scheduledDate', async () => {
@@ -789,11 +837,12 @@ describe('PruningRequestsService', () => {
         expectedYear: null,
         expectedIsoWeek: null,
         expectedDate: null,
+    scheduledDate: null,
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
 
       await expect(
-        service.convertToTask(mockRequestId, dto, mockAdminData),
+        service.assignToTask(mockRequestId, dto, mockAdminData),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -809,7 +858,7 @@ describe('PruningRequestsService', () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.convertToTask(mockRequestId, dto, mockAdminData),
+        service.assignToTask(mockRequestId, dto, mockAdminData),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -819,6 +868,7 @@ describe('PruningRequestsService', () => {
       const requests = [mockPruningRequest];
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -845,6 +895,7 @@ describe('PruningRequestsService', () => {
     it('should auto-filter admin_data by their rayon', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -877,6 +928,7 @@ describe('PruningRequestsService', () => {
     it('should filter by status', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -905,6 +957,7 @@ describe('PruningRequestsService', () => {
     it('should apply pagination correctly', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -931,6 +984,7 @@ describe('PruningRequestsService', () => {
     it('should apply from/to date range filters', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -961,6 +1015,7 @@ describe('PruningRequestsService', () => {
     it('should use where (not andWhere) for rayon filter when no status filter', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -980,7 +1035,7 @@ describe('PruningRequestsService', () => {
     });
   });
 
-  describe('convertToTask edge cases', () => {
+  describe('assignToTask edge cases', () => {
     it('should reject conversion when request has no rayonId', async () => {
       const dto = {
         areaId: '11111111-1111-1111-1111-111111111101',
@@ -998,7 +1053,7 @@ describe('PruningRequestsService', () => {
       mockDataSource.transaction.mockImplementation(async (cb) => cb({}));
 
       await expect(
-        service.convertToTask(mockRequestId, dto, mockSuperadmin),
+        service.assignToTask(mockRequestId, dto, mockSuperadmin),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -1022,7 +1077,7 @@ describe('PruningRequestsService', () => {
       mockDataSource.transaction.mockImplementation(async (cb) => cb({}));
 
       await expect(
-        service.convertToTask(mockRequestId, dto, mockAdminData),
+        service.assignToTask(mockRequestId, dto, mockAdminData),
       ).rejects.toThrow('Database connection lost');
     });
   });
@@ -1048,7 +1103,9 @@ describe('PruningRequestsService', () => {
         mockKepalaRayon,
       );
 
-      expect(result.expectedDate).toEqual(new Date(futureIso));
+      // May 9, 2026 — Atur Jadwal reschedule now writes `scheduled_date`.
+      // The DTO field name (`expectedDate`) is API-stable for back-compat.
+      expect(result.scheduledDate).toEqual(new Date(futureIso));
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
@@ -1068,10 +1125,13 @@ describe('PruningRequestsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws ConflictException when status is converted', async () => {
+    it('throws ConflictException when status is in_progress', async () => {
+      // May 10, 2026 — `assigned` joined the reschedule whitelist; the
+      // remaining blocked statuses are `in_progress`, `done`, `rejected`,
+      // `cancelled`. In-progress work is the task lifecycle's responsibility.
       pruningRequestRepository.findOne.mockResolvedValue({
         ...mockPruningRequest,
-        status: 'converted',
+        status: 'in_progress',
       });
 
       await expect(
@@ -1098,16 +1158,192 @@ describe('PruningRequestsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    // ─── Assigned-status cascade (May 10, 2026) ─────────────────────────
+    describe('assigned cascade', () => {
+      const taskId = 'task-uuid-1';
+      const baseAssigned = () => ({
+        ...mockPruningRequest,
+        status: 'assigned' as const,
+        assignedTaskId: taskId,
+        scheduledDate: new Date(futureDateString(7)),
+      });
+      const linkedTask = () => ({
+        id: taskId,
+        title: 'Pruning Request PR-XYZ',
+        assigned_to: 'sat-id',
+        deadline: new Date(futureDateString(7)),
+      });
+
+      beforeEach(() => {
+        // Transaction manager stub: `tm.save` and `tm.save(Entity, data)`
+        // both delegate to a single mock so we can spy on calls.
+        const tmSave = jest.fn().mockImplementation((arg1, arg2) => {
+          if (arg2 !== undefined) return Promise.resolve(arg2);
+          return Promise.resolve(arg1);
+        });
+        mockDataSource.transaction.mockImplementation(async (cb: any) =>
+          cb({ save: tmSave }),
+        );
+        mockTaskRepository.findOne.mockResolvedValue(linkedTask());
+      });
+
+      it('rebooks capacity + bumps task deadline when ISO week changes', async () => {
+        // Old date is 7 days ahead; pick 14 days ahead to force a different
+        // ISO week. fixed-offset arithmetic only — never use `new Date()`.
+        const newDate = new Date(futureDateString(14));
+        const newIso = newDate.toISOString().slice(0, 10);
+
+        pruningRequestRepository.findOne.mockResolvedValue(baseAssigned() as any);
+        mockServiceCapacityService.bookAtomic.mockResolvedValue({});
+        mockServiceCapacityService.releaseAtomic.mockResolvedValue({});
+
+        const result = await service.reschedule(
+          mockRequestId,
+          { expectedDate: newIso },
+          mockKepalaRayon,
+        );
+
+        expect(result.scheduledDate).toEqual(new Date(newIso));
+        expect(mockServiceCapacityService.bookAtomic).toHaveBeenCalledWith(
+          expect.objectContaining({ serviceType: 'pruning', units: 1 }),
+        );
+        expect(mockServiceCapacityService.releaseAtomic).toHaveBeenCalledWith(
+          expect.objectContaining({ serviceType: 'pruning', units: 1 }),
+        );
+      });
+
+      it('skips capacity rebook when staying within the same ISO week', async () => {
+        // Old date and new date one day apart inside the same ISO week.
+        const oldDate = new Date('2026-08-12'); // Wed, ISO 2026-W33
+        const newDate = new Date('2026-08-14'); // Fri, same week
+        pruningRequestRepository.findOne.mockResolvedValue({
+          ...baseAssigned(),
+          scheduledDate: oldDate,
+        } as any);
+        mockServiceCapacityService.bookAtomic.mockResolvedValue({});
+        mockServiceCapacityService.releaseAtomic.mockResolvedValue({});
+
+        await service.reschedule(
+          mockRequestId,
+          { expectedDate: newDate.toISOString().slice(0, 10) },
+          mockKepalaRayon,
+        );
+
+        expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
+        expect(mockServiceCapacityService.releaseAtomic).not.toHaveBeenCalled();
+      });
+
+      it('aborts before releasing old capacity when new week is full', async () => {
+        const newDate = new Date(futureDateString(14));
+        pruningRequestRepository.findOne.mockResolvedValue(baseAssigned() as any);
+        mockServiceCapacityService.bookAtomic.mockRejectedValue(
+          new ConflictException('Capacity exceeded'),
+        );
+
+        await expect(
+          service.reschedule(
+            mockRequestId,
+            { expectedDate: newDate.toISOString().slice(0, 10) },
+            mockKepalaRayon,
+          ),
+        ).rejects.toThrow(ConflictException);
+
+        // Old booking must stay intact — release should NEVER fire when
+        // the new booking failed.
+        expect(mockServiceCapacityService.releaseAtomic).not.toHaveBeenCalled();
+      });
+
+      it('falls back to non-cascading update when linked task is missing', async () => {
+        // Defensive path — request says assigned but the FK no longer
+        // resolves. Reschedule should still succeed (don't strand the
+        // admin) but capacity rebook is skipped.
+        const newDate = new Date(futureDateString(14));
+        pruningRequestRepository.findOne.mockResolvedValue(baseAssigned() as any);
+        mockTaskRepository.findOne.mockResolvedValue(null);
+
+        const result = await service.reschedule(
+          mockRequestId,
+          { expectedDate: newDate.toISOString().slice(0, 10) },
+          mockKepalaRayon,
+        );
+
+        expect(result.scheduledDate).toEqual(
+          new Date(newDate.toISOString().slice(0, 10)),
+        );
+        expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  // May 10, 2026 — cancel rules. Whitelist of cancellable statuses closes
+  // the previous blacklist holes (rejected / converted / in_progress).
+  describe('cancel', () => {
+    const submitter = { ...mockStaffKecamatan } as User;
+    const baseSave = (status: string) => ({
+      ...mockPruningRequest,
+      status,
+      submittedBy: submitter.id,
+    });
+
+    it('lets the submitter cancel a `submitted` request', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('submitted') as any);
+      pruningRequestRepository.save.mockImplementation((req) => Promise.resolve(req as any));
+
+      const result = await service.cancel(mockRequestId, submitter, 'changed mind');
+
+      expect(result.status).toBe('cancelled');
+      expect(result.notes).toContain('[Dibatalkan] changed mind');
+    });
+
+    it('lets the submitter cancel a `under_review` request', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('under_review') as any);
+      pruningRequestRepository.save.mockImplementation((req) => Promise.resolve(req as any));
+
+      const result = await service.cancel(mockRequestId, submitter);
+      expect(result.status).toBe('cancelled');
+    });
+
+    it('lets the submitter cancel an `approved` request', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('approved') as any);
+      pruningRequestRepository.save.mockImplementation((req) => Promise.resolve(req as any));
+
+      const result = await service.cancel(mockRequestId, submitter);
+      expect(result.status).toBe('cancelled');
+    });
+
+    it('blocks cancel when status is `rejected`', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('rejected') as any);
+      await expect(service.cancel(mockRequestId, submitter)).rejects.toThrow(ConflictException);
+    });
+
+    it('blocks cancel when status is `converted` (task already exists)', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('assigned') as any);
+      await expect(service.cancel(mockRequestId, submitter)).rejects.toThrow(ConflictException);
+    });
+
+    it('blocks cancel when status is `in_progress`', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('in_progress') as any);
+      await expect(service.cancel(mockRequestId, submitter)).rejects.toThrow(ConflictException);
+    });
+
+    it('blocks cancel when status is `done`', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('done') as any);
+      await expect(service.cancel(mockRequestId, submitter)).rejects.toThrow(ConflictException);
+    });
+
+    it('blocks cancel when status is already `cancelled`', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('cancelled') as any);
+      await expect(service.cancel(mockRequestId, submitter)).rejects.toThrow(ConflictException);
+    });
+
+    it('forbids non-submitter, non-admin from cancelling', async () => {
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave('submitted') as any);
+      await expect(service.cancel(mockRequestId, mockRandomUser)).rejects.toThrow(ForbiddenException);
+    });
+
     it('throws NotFoundException when request missing', async () => {
       pruningRequestRepository.findOne.mockResolvedValue(null);
-
-      await expect(
-        service.reschedule(
-          mockRequestId,
-          { expectedDate: futureIso },
-          mockKepalaRayon,
-        ),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.cancel(mockRequestId, submitter)).rejects.toThrow(NotFoundException);
     });
   });
 });

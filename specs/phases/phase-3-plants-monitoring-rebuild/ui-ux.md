@@ -87,7 +87,7 @@ Tokens used in Phase 3:
 | Backgrounds | `bg.canvas`, `bg.accent.yellow`, `bg.accent.mint`, `bg.accent.green` |
 | Monitoring status | `status.active` / `.idle` / `.outside` / `.missing` / `.offline` |
 | Plant status | `plant.ok` / `.due` / `.overdue` |
-| Request status | `request.submitted` / `.under_review` / `.approved` / `.rejected` / `.converted` / `.in_progress` / `.done` / `.cancelled` |
+| Request status | `request.submitted` / `.under_review` / `.approved` / `.rejected` / `.assigned` / `.in_progress` / `.done` / `.cancelled` |
 | Shadows | `shadow.sm` (cards), `shadow.md` (buttons), `shadow.lg` (sheets), `shadow.xl` (modals) |
 | Type | `type.h1` / `.h2` / `.h3` / `.body` / `.body-sm` / `.caption` |
 

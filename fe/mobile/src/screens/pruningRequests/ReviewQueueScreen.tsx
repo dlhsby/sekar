@@ -1,10 +1,31 @@
 /**
- * Pruning Request Review Queue Screen
- * Phase 3 sub-phase 3-10: Admin (admin_data) queue for reviewing pruning requests
- * Shows pending and under_review requests with approve/reject/convert actions
+ * Pruning Request Review Queue Screen — admin (admin_data, kepala_rayon,
+ * top_management, admin_system, superadmin) inbox for incoming permohonan
+ * perantingan.
+ *
+ * Visual + interaction parity with the canonical list screens (Tugas,
+ * Aktivitas, Lembur, Permohonan staff_kecamatan):
+ *   - `NBBackgroundPattern` + `SafeAreaView` page chrome
+ *   - Page title row ("Review Permohonan Perantingan")
+ *   - Filter bar: active mini-chips (left) + sort + filter icon buttons
+ *     (right), filter badge with active count, "× reset" inline shortcut
+ *   - `FlatList` of `PerantinganRequestCard` (NBCard variant="elevated") —
+ *     same card the staff_kecamatan list uses
+ *   - Generic `SortModal` + dedicated `PruningRequestFilterModal` (admin
+ *     surface; rayon picker hidden for admin_data because the backend forces
+ *     scoping)
+ *
+ * Approve / reject / assign-to-task happen on `RequestDetailScreen` (passed
+ * `adminMode: true`) — same pattern as `OvertimeDetailScreen` / Aktivitas.
+ *
+ * The slice fetches with `fetchAdminPruningRequests({ status?, page, limit })`;
+ * filtering by reference code, requester name, and date range happens
+ * server-side (backend `findAll` supports them), but we also apply the
+ * predicate locally so a stale list still narrows immediately when filters
+ * change before the next fetch lands.
  */
 
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,328 +33,151 @@ import {
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   fetchAdminPruningRequests,
   selectRequest,
-  reviewPruningRequest,
 } from '../../store/slices/pruningRequestsSlice';
 import { LoadingSpinner } from '../../components/common';
-import { NBEmptyState, NBCard, NBBadge, NBButton, NBAlert } from '../../components/nb';
-import { NBText } from '../../components/nb/NBText';
-import { NBToast } from '../../components/nb/NBToast';
-import { nbColors, nbSpacing, nbTypography, nbBorderRadius } from '../../constants/nbTokens';
-import type { PruningRequest, PruningRequestStatus } from '../../types/models.types';
-import { formatDate, formatDateTime } from '../../utils/dateUtils';
+import {
+  NBAlert,
+  NBBackgroundPattern,
+  NBEmptyState,
+  NBToast,
+} from '../../components/nb';
+import {
+  SortModal,
+  PruningRequestFilterModal,
+  type PruningRequestFilterValue,
+} from '../../components/modals';
+import { PerantinganRequestCard } from './components/PerantinganRequestCard';
+import { getPruningRequestStatusLabel } from '../../utils/statusHelpers';
+import {
+  nbColors,
+  nbSpacing,
+  nbTypography,
+  nbBorders,
+  nbBorderRadius,
+  nbShadows,
+} from '../../constants/nbTokens';
 import { useUserRole } from '../../hooks/useUserRole';
+import type { PruningRequest } from '../../types/models.types';
 
-/**
- * Type-safe navigation prop
- */
-type ReviewQueueScreenProps = NativeStackScreenProps<any, 'PruningReviewQueue'>;
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-/**
- * Filter options for review queue
- */
-type FilterStatus = 'all' | 'submitted' | 'under_review' | 'approved';
-
-const FILTER_OPTIONS: Array<{ value: FilterStatus; label: string }> = [
-  { value: 'all', label: 'Semua' },
-  { value: 'submitted', label: 'Menunggu' },
-  { value: 'under_review', label: 'Direview' },
-  { value: 'approved', label: 'Disetujui' },
+const ADMIN_ROLES = [
+  'admin_data',
+  'kepala_rayon',
+  'top_management',
+  'admin_system',
+  'superadmin',
 ];
 
-/**
- * Map status to NB variant + label
- */
-const getStatusDisplay = (status: PruningRequestStatus) => {
-  const statusMap: Record<
-    PruningRequestStatus,
-    { variant: 'default' | 'primary' | 'success' | 'warning' | 'error'; label: string }
-  > = {
-    submitted: { variant: 'warning', label: 'Menunggu' },
-    under_review: { variant: 'warning', label: 'Direview' },
-    approved: { variant: 'success', label: 'Disetujui' },
-    rejected: { variant: 'error', label: 'Ditolak' },
-    converted: { variant: 'primary', label: 'Dijadwalkan' },
-    in_progress: { variant: 'primary', label: 'Diproses' },
-    done: { variant: 'success', label: 'Selesai' },
-    cancelled: { variant: 'error', label: 'Dibatalkan' },
-  };
-  return statusMap[status] || { variant: 'default', label: status };
-};
+const SORT_OPTIONS = [
+  { key: 'created_at_desc', label: 'Dibuat Terbaru' },
+  { key: 'created_at_asc',  label: 'Dibuat Terlama' },
+  { key: 'expected_asc',    label: 'Minggu Preferensi Terdekat' },
+  { key: 'expected_desc',   label: 'Minggu Preferensi Terjauh' },
+];
 
-/**
- * Request list item component with quick actions
- */
-function RequestListItem({
-  request,
-  isReviewing,
-  onPress,
-  onQuickApprove,
-  onQuickReject,
-}: {
-  request: PruningRequest;
-  isReviewing: boolean;
-  onPress: () => void;
-  onQuickApprove: () => void;
-  onQuickReject: () => void;
-}): React.JSX.Element {
-  const statusDisplay = getStatusDisplay(request.status);
-  const [showActions, setShowActions] = useState(false);
+type SortKey = 'created_at_desc' | 'created_at_asc' | 'expected_asc' | 'expected_desc';
 
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      accessible={true}
-      accessibilityRole="button"
-      accessibilityLabel={`Permohonan ${request.referenceCode} untuk direview`}
-      accessibilityHint={`Status: ${statusDisplay.label}, Kecamatan: ${request.kecamatanName}, Pohon: ${request.estimatedPlantCount}`}
-    >
-      <NBCard style={styles.listItem}>
-        <View style={styles.itemHeader}>
-          <View style={styles.refAndBadge}>
-            <Text style={[nbTypography.h3, { color: nbColors.black }]}>
-              {request.referenceCode}
-            </Text>
-            <Text
-              style={[
-                nbTypography['body-sm'],
-                { color: nbColors.gray500, marginTop: nbSpacing[1] },
-              ]}
-            >
-              {request.kecamatanName}
-            </Text>
-            <View style={{ marginTop: nbSpacing[2] }}>
-              <NBBadge variant={statusDisplay.variant} label={statusDisplay.label} />
-            </View>
-          </View>
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={24}
-            color={nbColors.gray600}
-          />
-        </View>
+const DEFAULT_SORT: SortKey = 'created_at_desc';
 
-        <View style={styles.itemDetails}>
-          <View style={styles.detailRow}>
-            <MaterialCommunityIcons
-              name="map-marker"
-              size={16}
-              color={nbColors.gray500}
-            />
-            <Text
-              style={[nbTypography.body, { color: nbColors.gray600, flex: 1 }]}
-              numberOfLines={1}
-            >
-              {request.address}
-            </Text>
-          </View>
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
-          <View style={styles.detailRow}>
-            <MaterialCommunityIcons
-              name="calendar"
-              size={16}
-              color={nbColors.gray500}
-            />
-            <Text style={[nbTypography.body, { color: nbColors.gray600 }]}>
-              {formatDate(request.expectedDate)}
-            </Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <MaterialCommunityIcons name="tree" size={16} color={nbColors.gray500} />
-            <Text style={[nbTypography.body, { color: nbColors.gray600 }]}>
-              {request.estimatedPlantCount} pohon
-            </Text>
-          </View>
-        </View>
-
-        {/* Quick action buttons for pending/under_review */}
-        {['submitted', 'under_review'].includes(request.status) && (
-          <View style={[styles.quickActions, showActions && styles.quickActionsExpanded]}>
-            {!showActions && (
-              <NBButton
-                variant="secondary"
-                label="Aksi Cepat"
-                size="sm"
-                onPress={() => setShowActions(true)}
-                leftIcon="lightning-bolt"
-                disabled={isReviewing}
-              />
-            )}
-            {showActions && (
-              <View style={styles.actionButtons}>
-                <NBButton
-                  variant="success"
-                  label="Setujui"
-                  size="sm"
-                  onPress={onQuickApprove}
-                  leftIcon="check"
-                  disabled={isReviewing}
-                  style={{ flex: 1 }}
-                />
-                <NBButton
-                  variant="danger"
-                  label="Tolak"
-                  size="sm"
-                  onPress={onQuickReject}
-                  leftIcon="close"
-                  disabled={isReviewing}
-                  style={{ flex: 1 }}
-                />
-                <NBButton
-                  variant="secondary"
-                  label="Batal"
-                  size="sm"
-                  onPress={() => setShowActions(false)}
-                  disabled={isReviewing}
-                  style={{ flex: 1 }}
-                />
-              </View>
-            )}
-          </View>
-        )}
-      </NBCard>
-    </TouchableOpacity>
-  );
-}
-
-/**
- * Filter tabs component
- */
-function FilterTabs({
-  activeFilter,
-  onFilterChange,
-}: {
-  activeFilter: FilterStatus;
-  onFilterChange: (filter: FilterStatus) => void;
-}): React.JSX.Element {
-  return (
-    <View style={styles.filterContainer}>
-      {FILTER_OPTIONS.map((option) => (
-        <TouchableOpacity
-          key={option.value}
-          onPress={() => onFilterChange(option.value)}
-          accessible={true}
-          accessibilityRole="tab"
-          accessibilityLabel={option.label}
-          accessibilityState={{ selected: activeFilter === option.value }}
-        >
-          <View
-            style={[
-              styles.filterTab,
-              activeFilter === option.value && styles.filterTabActive,
-            ]}
-          >
-            <Text
-              style={[
-                nbTypography['body-sm'],
-                activeFilter === option.value
-                  ? { color: nbColors.black, fontWeight: '600' }
-                  : { color: nbColors.gray600 },
-              ]}
-            >
-              {option.label}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
-/**
- * Pruning Request Review Queue Screen
- */
-export function ReviewQueueScreen(
-  _props: ReviewQueueScreenProps,
-): React.JSX.Element {
+export function ReviewQueueScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const userRole = useUserRole();
 
-  const { adminList: requests, adminListLoading: isLoading, adminListError: error, reviewingId } =
-    useAppSelector((state) => state.pruningRequests);
+  const user = useAppSelector((state) => state.auth.user);
+  const {
+    adminList: requests,
+    adminListLoading: isLoading,
+    adminListError: error,
+  } = useAppSelector((state) => state.pruningRequests);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [filters, setFilters] = useState<PruningRequestFilterValue>({});
+  const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
+  const [isSortModalOpen, setIsSortModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const hasMountedRef = useRef(false);
 
-  // Check authorization
   const isAuthorized = useMemo(
-    () =>
-      [
-        'admin_data',
-        'kepala_rayon',
-        'top_management',
-        'admin_system',
-        'superadmin',
-      ].includes(userRole),
+    () => userRole != null && ADMIN_ROLES.includes(userRole),
     [userRole],
   );
 
-  // Load requests on initial mount
-  useEffect(() => {
-    loadRequests();
-  }, []);
+  // ── Data fetching ────────────────────────────────────────────────────────
+  // We refetch whenever the *server-side* status filter changes; the rest
+  // (referenceCode / requesterName / dates / rayon) we apply locally so the
+  // list responds without a network round-trip.
+  const loadRequests = useCallback(async () => {
+    try {
+      const params: { status?: string; page?: number; limit?: number } = {
+        page: 1,
+        limit: 50,
+      };
+      if (filters.status) {
+        params.status = filters.status;
+      }
+      await dispatch(fetchAdminPruningRequests(params)).unwrap();
+    } catch {
+      /* error stored in slice; rendered below */
+    }
+  }, [dispatch, filters.status]);
 
-  // Reload on re-focus
+  useEffect(() => {
+    if (!isAuthorized) { return; }
+    void loadRequests();
+  }, [loadRequests, isAuthorized]);
+
   useFocusEffect(
     useCallback(() => {
       if (!hasMountedRef.current) {
         hasMountedRef.current = true;
         return;
       }
-      loadRequests();
-    }, []),
+      if (!isAuthorized) { return; }
+      void loadRequests();
+    }, [loadRequests, isAuthorized]),
   );
 
-  const loadRequests = useCallback(async () => {
-    try {
-      const filters: Record<string, string | number> = {
-        page: 1,
-        limit: 50,
-      };
-      if (filterStatus !== 'all') {
-        filters.status = filterStatus;
-      }
-      await dispatch(fetchAdminPruningRequests(filters)).unwrap();
-    } catch {
-      // Error is stored in Redux state
+  useEffect(() => {
+    if (error?.error) {
+      NBToast.show({
+        level: 'danger',
+        title: 'Gagal memuat permohonan',
+        body: error.error,
+      });
     }
-  }, [dispatch, filterStatus]);
+  }, [error]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const filters: Record<string, string | number> = {
+      const params: { status?: string; page?: number; limit?: number } = {
         page: 1,
         limit: 50,
       };
-      if (filterStatus !== 'all') {
-        filters.status = filterStatus;
+      if (filters.status) {
+        params.status = filters.status;
       }
-      await dispatch(fetchAdminPruningRequests(filters)).unwrap();
+      await dispatch(fetchAdminPruningRequests(params)).unwrap();
     } catch {
-      // Error is stored in Redux state
+      /* error stored in slice */
     } finally {
       setRefreshing(false);
     }
-  }, [dispatch, filterStatus]);
-
-  const handleFilterChange = useCallback((newFilter: FilterStatus) => {
-    setFilterStatus(newFilter);
-  }, []);
-
-  useEffect(() => {
-    loadRequests();
-  }, [filterStatus]);
+  }, [dispatch, filters.status]);
 
   const handleRequestPress = useCallback(
     (requestId: string) => {
@@ -343,81 +187,134 @@ export function ReviewQueueScreen(
     [dispatch, navigation],
   );
 
-  const handleQuickApprove = useCallback(
-    (requestId: string) => {
-      dispatch(reviewPruningRequest({ id: requestId, decision: 'approve' }))
-        .unwrap()
-        .then(() => {
-          NBToast.show({
-            level: 'success',
-            title: 'Berhasil',
-            message: 'Permohonan telah disetujui',
-          });
-        })
-        .catch((err) => {
-          NBToast.show({
-            level: 'danger',
-            title: 'Gagal',
-            message: err?.message || 'Gagal menyetujui permohonan',
-          });
-        });
-    },
-    [dispatch],
-  );
+  // ── Filter / sort plumbing ───────────────────────────────────────────────
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.status) { count++; }
+    if (filters.fromDate || filters.toDate) { count++; }
+    if (filters.rayonId) { count++; }
+    if (filters.referenceCode) { count++; }
+    if (filters.requesterName) { count++; }
+    return count;
+  }, [filters]);
 
-  const handleQuickReject = useCallback(
-    (requestId: string) => {
-      dispatch(reviewPruningRequest({ id: requestId, decision: 'reject' }))
-        .unwrap()
-        .then(() => {
-          NBToast.show({
-            level: 'success',
-            title: 'Berhasil',
-            message: 'Permohonan telah ditolak',
-          });
-        })
-        .catch((err) => {
-          NBToast.show({
-            level: 'danger',
-            title: 'Gagal',
-            message: err?.message || 'Gagal menolak permohonan',
-          });
-        });
-    },
-    [dispatch],
-  );
+  const filterChips = useMemo(() => {
+    const chips: { text: string; chipStyle: 'status' | 'date' | 'location' }[] = [];
+    if (filters.status) {
+      chips.push({
+        text: getPruningRequestStatusLabel(filters.status),
+        chipStyle: 'status',
+      });
+    }
+    if (filters.fromDate || filters.toDate) {
+      const f = filters.fromDate;
+      const t = filters.toDate;
+      chips.push({
+        text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal',
+        chipStyle: 'date',
+      });
+    }
+    if (filters.rayonId) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
+    if (filters.referenceCode) { chips.push({ text: `# ${filters.referenceCode}`, chipStyle: 'status' }); }
+    if (filters.requesterName) { chips.push({ text: `🧑 ${filters.requesterName}`, chipStyle: 'status' }); }
+    return chips;
+  }, [filters]);
 
+  const filteredSorted = useMemo(() => {
+    let list = requests;
+    // Status is also applied server-side, but we re-apply for the brief window
+    // before the next fetch lands.
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters.fromDate) {
+      const from = new Date(filters.fromDate).getTime();
+      list = list.filter((r) => new Date(r.createdAt).getTime() >= from);
+    }
+    if (filters.toDate) {
+      const to = new Date(filters.toDate + 'T23:59:59').getTime();
+      list = list.filter((r) => new Date(r.createdAt).getTime() <= to);
+    }
+    if (filters.rayonId) {
+      list = list.filter((r) => r.rayonId === filters.rayonId);
+    }
+    if (filters.referenceCode) {
+      const needle = filters.referenceCode.toLowerCase();
+      list = list.filter((r) => (r.referenceCode ?? '').toLowerCase().includes(needle));
+    }
+    if (filters.requesterName) {
+      const needle = filters.requesterName.toLowerCase();
+      list = list.filter((r) => (r.requesterName ?? '').toLowerCase().includes(needle));
+    }
+    return [...list].sort((a, b) => {
+      switch (sort) {
+        case 'created_at_asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'expected_desc': {
+          const ax = a.expectedDate ? new Date(a.expectedDate).getTime() : 0;
+          const bx = b.expectedDate ? new Date(b.expectedDate).getTime() : 0;
+          return bx - ax;
+        }
+        case 'expected_asc': {
+          const ax = a.expectedDate ? new Date(a.expectedDate).getTime() : Infinity;
+          const bx = b.expectedDate ? new Date(b.expectedDate).getTime() : Infinity;
+          return ax - bx;
+        }
+        case 'created_at_desc':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+  }, [requests, filters, sort]);
+
+  const activeSortLabel = useMemo(
+    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Dibuat Terbaru',
+    [sort],
+  );
+  const isSortActive = sort !== DEFAULT_SORT;
+
+  const handleApplyFilters = useCallback(
+    (newFilters: PruningRequestFilterValue) => setFilters(newFilters),
+    [],
+  );
+  const handleResetFilters = useCallback(() => setFilters({}), []);
+  const handleSortSelect = useCallback((key: string) => setSort(key as SortKey), []);
+
+  // ── Render helpers ───────────────────────────────────────────────────────
   const renderItem = useCallback(
     ({ item }: { item: PruningRequest }) => (
-      <RequestListItem
+      <PerantinganRequestCard
         request={item}
-        isReviewing={reviewingId === item.id}
         onPress={() => handleRequestPress(item.id)}
-        onQuickApprove={() => handleQuickApprove(item.id)}
-        onQuickReject={() => handleQuickReject(item.id)}
       />
     ),
-    [handleRequestPress, handleQuickApprove, handleQuickReject, reviewingId],
+    [handleRequestPress],
   );
 
+  const keyExtractor = useCallback((item: PruningRequest) => item.id, []);
+
   const renderEmpty = useCallback(() => {
-    if (isLoading) return null;
+    if (isLoading) { return null; }
     return (
       <NBEmptyState
-        icon="inbox"
         title="Tidak ada permohonan"
-        description={`Tidak ada permohonan dengan status '${filterStatus}' untuk direview`}
+        description={
+          activeFilterCount > 0
+            ? 'Tidak ada permohonan yang sesuai filter.'
+            : 'Permohonan perantingan dari kecamatan akan muncul di sini.'
+        }
       />
     );
-  }, [isLoading, filterStatus]);
+  }, [isLoading, activeFilterCount]);
 
+  // ── Authorization gate ──────────────────────────────────────────────────
   if (!isAuthorized) {
     return (
-      <View style={styles.container}>
+      <View style={styles.unauthorizedContainer}>
         <NBAlert
           type="error"
           title="Akses Ditolak"
-          message="Anda tidak memiliki izin untuk mengakses halaman ini"
+          message="Anda tidak memiliki izin untuk mengakses halaman ini."
         />
       </View>
     );
@@ -428,107 +325,264 @@ export function ReviewQueueScreen(
   }
 
   return (
-    <View style={styles.container}>
-      <FilterTabs activeFilter={filterStatus} onFilterChange={handleFilterChange} />
+    <NBBackgroundPattern
+      pattern="dots"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.06}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        {/* Page Title — same style as Tugas / Aktivitas / Lembur */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.pageTitle}>Review Permohonan Perantingan</Text>
+        </View>
 
-      <FlatList
-        data={requests}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={nbColors.black}
-          />
-        }
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
-        scrollIndicatorInsets={{ right: 1 }}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={15}
-        removeClippedSubviews={true}
-      />
+        {/* Filter bar — mini chips (left) + sort/filter icons (right) */}
+        <View
+          style={[
+            styles.filterBarCollapsed,
+            activeFilterCount > 0 && styles.filterBarActive,
+          ]}
+        >
+          <View style={styles.filterBarLeft}>
+            {filterChips.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.miniChipsContent}
+              >
+                {filterChips.map((chip, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.miniChip,
+                      chip.chipStyle === 'status' && styles.miniChipStatus,
+                      chip.chipStyle === 'date' && styles.miniChipDate,
+                      chip.chipStyle === 'location' && styles.miniChipLocation,
+                    ]}
+                  >
+                    <Text style={styles.miniChipText}>{chip.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={styles.filterBarPlaceholder}>Semua Permohonan</Text>
+            )}
+            {activeFilterCount > 0 && (
+              <TouchableOpacity
+                style={styles.filterClearButton}
+                onPress={handleResetFilters}
+                accessibilityRole="button"
+                accessibilityLabel="Reset filter permohonan"
+              >
+                <MaterialCommunityIcons
+                  name="close-circle"
+                  size={18}
+                  color={nbColors.danger}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
 
-      {error && (
-        <View style={styles.errorContainer}>
-          <NBAlert
-            type="error"
-            title="Gagal memuat permohonan"
-            message={error.error}
+          <View style={styles.filterBarRight}>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsSortModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Urutan: ${activeSortLabel}`}
+            >
+              <MaterialCommunityIcons
+                name="sort"
+                size={22}
+                color={isSortActive ? nbColors.primary : nbColors.black}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsFilterModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter permohonan${
+                activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''
+              }`}
+            >
+              <MaterialCommunityIcons
+                name="filter-variant"
+                size={22}
+                color={activeFilterCount > 0 ? nbColors.primary : nbColors.black}
+              />
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* List */}
+        <View style={styles.listWrapper}>
+          <FlatList
+            style={styles.list}
+            data={filteredSorted}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={nbColors.primary}
+              />
+            }
+            ListEmptyComponent={renderEmpty}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            removeClippedSubviews
           />
         </View>
-      )}
-    </View>
+
+        {/* Sort modal */}
+        <SortModal
+          visible={isSortModalOpen}
+          onClose={() => setIsSortModalOpen(false)}
+          title="URUTKAN PERMOHONAN"
+          options={SORT_OPTIONS}
+          selectedOption={sort}
+          onSelect={handleSortSelect}
+        />
+
+        {/* Filter modal */}
+        <PruningRequestFilterModal
+          visible={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          filters={filters}
+          onApplyFilters={handleApplyFilters}
+          onResetFilters={handleResetFilters}
+          userRole={user?.role}
+          userRayonId={user?.rayon_id ?? undefined}
+        />
+      </SafeAreaView>
+    </NBBackgroundPattern>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
+// Mirrors PerantinganListScreen / OvertimeListScreen for visual parity.
+
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: nbColors.bgCanvas,
+    backgroundColor: 'transparent',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: nbSpacing[4],
-    paddingVertical: nbSpacing[3],
-    borderBottomWidth: 2,
-    borderBottomColor: nbColors.bgBorder,
-    backgroundColor: nbColors.white,
-  },
-  filterTab: {
-    paddingHorizontal: nbSpacing[3],
-    paddingVertical: nbSpacing[2],
-    borderBottomWidth: 0,
-  },
-  filterTabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: nbColors.primary,
-  },
-  listContent: {
-    padding: nbSpacing[4],
-    paddingBottom: nbSpacing[6],
-  },
-  listItem: {
-    marginBottom: nbSpacing[3],
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: nbSpacing[3],
-  },
-  refAndBadge: {
+  unauthorizedContainer: {
     flex: 1,
-    marginRight: nbSpacing[3],
+    backgroundColor: nbColors.background,
+    padding: nbSpacing.md,
+    justifyContent: 'center',
   },
-  itemDetails: {
-    gap: nbSpacing[2],
-    marginBottom: nbSpacing[3],
+  headerContainer: {
+    paddingHorizontal: nbSpacing.md,
+    paddingTop: nbSpacing.md,
+    paddingBottom: nbSpacing.xs,
   },
-  detailRow: {
+  pageTitle: {
+    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.black,
+  },
+  filterBarCollapsed: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nbSpacing[2],
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    backgroundColor: nbColors.white,
+    borderBottomWidth: nbBorders.extra,
+    borderBottomColor: nbColors.gray[300],
+    ...nbShadows.md,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
+    minHeight: 48,
   },
-  quickActions: {
-    borderTopWidth: 2,
-    borderTopColor: nbColors.bgBorder,
-    paddingTop: nbSpacing[3],
-    marginTop: nbSpacing[3],
+  filterBarActive: {
+    borderBottomColor: nbColors.primary,
   },
-  quickActionsExpanded: {
-    paddingTop: nbSpacing[2],
-  },
-  actionButtons: {
+  filterBarLeft: {
+    flex: 1,
     flexDirection: 'row',
-    gap: nbSpacing[2],
+    alignItems: 'center',
+    overflow: 'hidden',
   },
-  errorContainer: {
+  filterBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: nbSpacing.xs,
+  },
+  filterBarPlaceholder: {
+    fontSize: nbTypography.fontSize.sm,
+    color: nbColors.gray[400],
+    fontStyle: 'italic',
+  },
+  miniChipsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  miniChip: {
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.sm,
+    height: 32,
+    justifyContent: 'center',
+  },
+  miniChipStatus: { backgroundColor: nbColors.info },
+  miniChipDate: { backgroundColor: nbColors.warning },
+  miniChipLocation: { backgroundColor: nbColors.infoLight },
+  miniChipText: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.medium,
+    color: nbColors.black,
+  },
+  filterClearButton: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  filterIconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  filterBadge: {
     position: 'absolute',
-    bottom: nbSpacing[4],
-    left: nbSpacing[4],
-    right: nbSpacing[4],
+    top: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: nbColors.danger,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    fontSize: nbTypography.fontSize.xs,
+    fontWeight: nbTypography.fontWeight.bold,
+    color: nbColors.white,
+  },
+  listWrapper: {
+    flex: 1,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing['2xl'],
+    flexGrow: 1,
   },
 });

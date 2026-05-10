@@ -32,7 +32,7 @@
 
 - Monitoring map changes (you flagged "stay as is, will review later") — point #9.
 - Web `(dashboard)/pruning-requests` admin pages — already deferred to Phase 4.
-- ConvertToTaskSheet area/user selectors — already deferred (`areasSlice`/`usersSlice` work).
+- AssignToTaskSheet area/user selectors — already deferred (`areasSlice`/`usersSlice` work).
 
 ---
 
@@ -51,7 +51,7 @@ Capture every decision from this conversation in spec files first so subsequent 
 1. **Migration** (single TypeORM migration): adds `pruning_requests.expected_year`, `pruning_requests.expected_iso_week`, creates `activity_tags`, creates `task_delegations`. Keeps `pruning_requests.expected_date` for post-convert concrete date.
 2. **CreatePruningRequestDto** — add `expected_year`, `expected_iso_week`; keep `detail_date` for one release as deprecated.
 3. **PruningRequestsService.create()** — store week fields if provided; skip the past-date validation when only week is given.
-4. **PruningRequestsService.convertToTask()** — if request has `expected_year`+`expected_iso_week` and admin didn't override `scheduledDate`, scan Mon-Sun of that ISO week, pick first day where `bookAtomic` succeeds, set as task deadline + `request.expectedDate`.
+4. **PruningRequestsService.assignToTask()** — if request has `expected_year`+`expected_iso_week` and admin didn't override `scheduledDate`, scan Mon-Sun of that ISO week, pick first day where `bookAtomic` succeeds, set as task deadline + `request.expectedDate`.
 5. **ActivityTag entity + service hook** — `POST /activities` accepts `tagged_user_ids?: string[]`; service inserts `activity_tags` rows + emits notification (FCM stub).
 6. **GET /activities query change** — `?involving_me=true` returns assignee OR tagged. `?tagged_user_id=:id` for filtering by other tagged user.
 7. **TaskDelegation entity + service hook** — every `POST /tasks/:id/assign` (and creation with assignee) writes a `task_delegations` row. New `GET /tasks/:id/delegation-history`.
@@ -101,7 +101,7 @@ Capture any 4xx/5xx + UI bugs as a checklist; fix the breaking ones inline; defe
 | `specs/phases/phase-3-plants-monitoring-rebuild/{backend,mobile,database}.md` | A | New entity tables + endpoints + screens documented |
 | `be/src/database/migrations/{timestamp}-week-booking-and-tagging.ts` | B | Adds `expected_year`, `expected_iso_week`, `activity_tags`, `task_delegations` |
 | `be/src/modules/pruning-requests/dto/create-pruning-request.dto.ts` | B | Add week fields |
-| `be/src/modules/pruning-requests/pruning-requests.service.ts` | B | `create()` + `convertToTask()` logic |
+| `be/src/modules/pruning-requests/pruning-requests.service.ts` | B | `create()` + `assignToTask()` logic |
 | `be/src/modules/activities/entities/activity-tag.entity.ts` | B | NEW |
 | `be/src/modules/activities/dto/create-activity.dto.ts` | B | `tagged_user_ids?` |
 | `be/src/modules/activities/activities.service.ts` | B | Tag insert + `?involving_me=true` query |

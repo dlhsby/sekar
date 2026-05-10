@@ -306,7 +306,7 @@ describe('pruningRequestsApi', () => {
     });
   });
 
-  describe('convertPruningRequestToTask', () => {
+  describe('assignPruningRequestToTask', () => {
     const conversionData = {
       areaId: 'area1',
       assignedTo: 'user1',
@@ -320,20 +320,20 @@ describe('pruningRequestsApi', () => {
       const mockResponse = {
         success: true,
         data: {
-          request: { ...mockPruningRequest, status: 'converted' as const },
+          request: { ...mockPruningRequest, status: 'assigned' as const },
           task: { id: 'task1', name: 'Task 1' },
         },
       };
 
       mockPost.mockResolvedValue(mockResponse);
 
-      const result = await pruningRequestsApi.convertPruningRequestToTask(
+      const result = await pruningRequestsApi.assignPruningRequestToTask(
         'req-1',
         conversionData,
       );
 
       expect(result).toEqual(mockResponse);
-      expect(result.data?.request?.status).toBe('converted');
+      expect(result.data?.request?.status).toBe('assigned');
     });
 
     it('includes all conversion fields', async () => {
@@ -342,13 +342,13 @@ describe('pruningRequestsApi', () => {
         data: mockPruningRequest,
       });
 
-      await pruningRequestsApi.convertPruningRequestToTask(
+      await pruningRequestsApi.assignPruningRequestToTask(
         'req-1',
         conversionData,
       );
 
       expect(mockPost).toHaveBeenCalledWith(
-        '/pruning-requests/req-1/convert-to-task',
+        '/pruning-requests/req-1/assign-to-task',
         expect.objectContaining(conversionData),
       );
     });
@@ -359,10 +359,10 @@ describe('pruningRequestsApi', () => {
         data: mockPruningRequest,
       });
 
-      await pruningRequestsApi.convertPruningRequestToTask('req-456', conversionData);
+      await pruningRequestsApi.assignPruningRequestToTask('req-456', conversionData);
 
       expect(mockPost).toHaveBeenCalledWith(
-        '/pruning-requests/req-456/convert-to-task',
+        '/pruning-requests/req-456/assign-to-task',
         expect.any(Object),
       );
     });
@@ -376,7 +376,7 @@ describe('pruningRequestsApi', () => {
       const caseTypes = ['GT', 'PT', 'PS', 'PD', 'PK'] as const;
 
       for (const caseType of caseTypes) {
-        await pruningRequestsApi.convertPruningRequestToTask('req-1', {
+        await pruningRequestsApi.assignPruningRequestToTask('req-1', {
           ...conversionData,
           caseType,
         });
@@ -397,7 +397,7 @@ describe('pruningRequestsApi', () => {
       const actions = ['PM', 'PB', 'PC'] as const;
 
       for (const action of actions) {
-        await pruningRequestsApi.convertPruningRequestToTask('req-1', {
+        await pruningRequestsApi.assignPruningRequestToTask('req-1', {
           ...conversionData,
           pruningAction: action,
         });
@@ -415,7 +415,7 @@ describe('pruningRequestsApi', () => {
         data: mockPruningRequest,
       });
 
-      await pruningRequestsApi.convertPruningRequestToTask('req-1', {
+      await pruningRequestsApi.assignPruningRequestToTask('req-1', {
         ...conversionData,
         units: 10,
       });
@@ -437,7 +437,7 @@ describe('pruningRequestsApi', () => {
 
       mockPost.mockResolvedValue(mockError);
 
-      const result = await pruningRequestsApi.convertPruningRequestToTask(
+      const result = await pruningRequestsApi.assignPruningRequestToTask(
         'req-1',
         conversionData,
       );
@@ -454,7 +454,7 @@ describe('pruningRequestsApi', () => {
         code: 'NETWORK_ERROR',
       });
 
-      const result = await pruningRequestsApi.convertPruningRequestToTask(
+      const result = await pruningRequestsApi.assignPruningRequestToTask(
         'req-1',
         conversionData,
       );
@@ -468,10 +468,10 @@ describe('pruningRequestsApi', () => {
         data: mockPruningRequest,
       });
 
-      await pruningRequestsApi.convertPruningRequestToTask('req-789', conversionData);
+      await pruningRequestsApi.assignPruningRequestToTask('req-789', conversionData);
 
       expect(mockPost).toHaveBeenCalledWith(
-        '/pruning-requests/req-789/convert-to-task',
+        '/pruning-requests/req-789/assign-to-task',
         expect.any(Object),
       );
     });
@@ -491,7 +491,7 @@ describe('pruningRequestsApi', () => {
         units: 7,
       };
 
-      await pruningRequestsApi.convertPruningRequestToTask('req-1', testData);
+      await pruningRequestsApi.assignPruningRequestToTask('req-1', testData);
 
       const callArgs = mockPost.mock.calls[0][1];
       expect(callArgs).toEqual(expect.objectContaining(testData));
@@ -563,7 +563,7 @@ describe('pruningRequestsApi', () => {
       'under_review',
       'approved',
       'rejected',
-      'converted',
+      'assigned',
     ] as const;
 
     it.each(statusValues)('filters by status %s', async (status) => {

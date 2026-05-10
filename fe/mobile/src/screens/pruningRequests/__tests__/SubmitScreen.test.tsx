@@ -138,7 +138,7 @@ function makeStore() {
         token: 'test',
         user: {
           id: 'u1',
-          username: 'staff_kec_pusat',
+          username: 'staff_kecamatan_pusat_1',
           full_name: 'Staff Kecamatan Pusat',
           role: 'staff_kecamatan',
           rayon_id: 'r1',

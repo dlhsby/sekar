@@ -3,7 +3,7 @@
  *
  * Replaces `AvailabilityCalendar` (day-grid) for the kecamatan submit flow per
  * ADR-035 amendment 2026-05-01 + ADR-038. Storage stays weekly; submitter
- * picks an ISO week and `admin_data` (or the convert-to-task auto-pick)
+ * picks an ISO week and `admin_data` (or the assign-to-task auto-pick)
  * decides the concrete day later.
  *
  * UX:

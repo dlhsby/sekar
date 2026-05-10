@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
-  convertPruningRequestToTask,
+  assignPruningRequestToTask,
   clearError,
 } from '../../store/slices/pruningRequestsSlice';
 import { fetchCapacity } from '../../store/slices/serviceCapacitySlice';
@@ -34,7 +34,7 @@ import { NBToast } from '../../components/nb/NBToast';
 import type { PruningRequest } from '../../types/models.types';
 import { getISOWeek } from '../../utils/dateUtils';
 
-interface ConvertToTaskSheetProps {
+interface AssignToTaskSheetProps {
   visible: boolean;
   onClose: () => void;
   request: PruningRequest;
@@ -61,12 +61,12 @@ const PRUNING_ACTIONS: { label: string; value: PruningAction }[] = [
 /**
  * Convert to Task Sheet Component
  */
-export function ConvertToTaskSheet({
+export function AssignToTaskSheet({
   visible,
   onClose,
   request,
   onSuccess,
-}: ConvertToTaskSheetProps): React.JSX.Element {
+}: AssignToTaskSheetProps): React.JSX.Element {
   const dispatch = useAppDispatch();
 
   const allAreas = useAppSelector((state) => state.areas.list);
@@ -190,7 +190,7 @@ export function ConvertToTaskSheet({
     const unitsNum = parseInt(units, 10) || 1;
 
     await dispatch(
-      convertPruningRequestToTask({
+      assignPruningRequestToTask({
         id: request.id,
         areaId,
         assignedTo,
@@ -237,7 +237,7 @@ export function ConvertToTaskSheet({
     <NBModal
       visible={visible}
       onClose={handleClose}
-      title="Konversi ke Tugas"
+      title="Tugaskan ke Petugas"
       type="sheet"
       size="lg"
       scrollable={true}
@@ -370,7 +370,7 @@ export function ConvertToTaskSheet({
           <View style={styles.buttonGroup}>
             <NBButton
               variant="primary"
-              label="Konversi"
+              label="Tugaskan"
               onPress={handleSubmit}
               disabled={!isFormValid || capacityExceeded || convertingId === request.id}
               loading={convertingId === request.id}

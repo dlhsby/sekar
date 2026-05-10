@@ -143,7 +143,7 @@ export function SubmitScreen(): React.JSX.Element {
   const [gpsError, setGpsError] = useState<string | null>(null);
 
   // ADR-035 amendment 2026-05-01: kecamatan picks an ISO week, not a day.
-  // The concrete day is decided later by admin_data at convert-to-task.
+  // The concrete day is decided later by admin_data at assign-to-task.
   const [expectedWeek, setExpectedWeek] = useState<PickedWeek | null>(null);
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
 
@@ -506,12 +506,17 @@ export function SubmitScreen(): React.JSX.Element {
 
     setSubmitting(true);
     try {
-      // S3 upload pipeline lands in Phase 4 polish — for now we send the local
-      // device URIs as the photo_keys; the backend stores them as-is in the
-      // text[] photo_urls column. Existing seeded rows already use placehold.co
-      // URLs the same way, so MyRequestsScreen / RequestDetailScreen render them
-      // identically.
-      const photoKeys: string[] = photos.map((p) => p.uri);
+      // May 9, 2026 — switch to base64 data-URI strings (mirrors
+      // TaskCompleteScreen / OvertimeSubmitScreen / ClockInOutScreen).
+      // Local `file://` URIs from the previous implementation were unreadable
+      // on any other device, so admin_data reviewers couldn't see the photos.
+      // The S3 pipeline still lands in Phase 4 polish; until then base64
+      // payloads round-trip safely through the `photo_urls` text[] column and
+      // RN's <Image source={{uri: dataUri}}> renders them transparently.
+      const photoKeys: string[] = [];
+      for (const photo of photos) {
+        photoKeys.push(await mediaService.convertToBase64(photo));
+      }
       const tc = parseInt(treeCount, 10);
       await dispatch(
         submitPruningRequest({
@@ -532,7 +537,7 @@ export function SubmitScreen(): React.JSX.Element {
           notes: notes.trim() || undefined,
           // ADR-035 amendment 2026-05-01 + ADR-038: send the week pair, not a
           // specific date. Backend stores the week and admin_data picks the
-          // concrete day at convert-to-task.
+          // concrete day at assign-to-task.
           expected_year: expectedWeek?.year,
           expected_iso_week: expectedWeek?.isoWeek,
         }),

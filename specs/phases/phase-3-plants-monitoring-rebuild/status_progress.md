@@ -26,8 +26,8 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | **M3** | 3-7 Pruning task UX | 100 % (mobile) | ✅ Complete | backend-developer + mobile-developer | Plants controller + PlantsService (5 endpoints, 41 tests) + mobile PruningTaskForm + SpeciesAutocomplete + plantsSlice. Web dynamic form deferred. |
 | **M3** | 3-8 Due-date forecast + alerts | 60 % | 🟡 Partial (light) | backend-developer + mobile-developer | PlantDueDateService + AreaPlantStatusService + GET /monitoring/area/:id/plant-status + PlantStatusChip on TaskCard. Cron + WS event + FCM digest + map overlay deferred. |
 | **M3** | 3-13 CSV backfill seeder | 0 % | ⏳ Not Started | backend-developer | 5 008 rows, idempotent on `reference_code` |
-| **M4** | 3-9 Pruning-requests backend | 100 % | ✅ Complete | backend-developer | POST /pruning-requests + GET ?mine=true + GET /:id (owner/rayon-scoped read) + POST /:id/review + POST /:id/convert-to-task + GET ?rayon_id=&status= (admin filter); 30 tests at 100 %. Landed Apr 27. |
-| **M4** | 3-10 Pruning-requests frontends | 100 % | ✅ Complete | mobile-developer | KecamatanNavigator + 5-step SubmitScreen + MyRequests + RequestDetail + ReviewQueueScreen + ConvertToTaskSheet + slice + offline queue. 32 screen tests. Landed Apr 27. |
+| **M4** | 3-9 Pruning-requests backend | 100 % | ✅ Complete | backend-developer | POST /pruning-requests + GET ?mine=true + GET /:id (owner/rayon-scoped read) + POST /:id/review + POST /:id/assign-to-task + GET ?rayon_id=&status= (admin filter); 30 tests at 100 %. Landed Apr 27. |
+| **M4** | 3-10 Pruning-requests frontends | 100 % | ✅ Complete | mobile-developer | KecamatanNavigator + 5-step SubmitScreen + MyRequests + RequestDetail + ReviewQueueScreen + AssignToTaskSheet + slice + offline queue. 32 screen tests. Landed Apr 27. |
 | **M4** | 3-11 Service capacity calendar | 100 % | ✅ Complete | backend-developer | CapacityService + GET/PUT /rayons/:id/capacity + POST /rayons/:id/capacity/book + seeders (7 rayons × 52 weeks × 6 service types). 28 tests. Landed Apr 27. |
 | **M4** | 3-12 Plant-seed inventory | 85 % | 🟡 Partial (full-stack landed) | backend-developer + mobile-developer | PlantSeedsService + SeedTransactionsService + 5 endpoints + PlantSeedsInventoryScreen + SeedTransactionDetailScreen + seedsSlice + seeders (19 catalog rows). 35 tests. Landed Apr 27. Web screens deferred. |
 | **M4** | 3-11 Service capacity calendar | 0 % | ⏳ Not Started | backend-developer + web-developer | Week grid editor, implicit booking |
@@ -463,7 +463,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | `GET /pruning-requests?mine=true` (paginated) | ✅ | DESC ordered |
 | `GET /pruning-requests/:id` | ✅ | owner + rayon-scoped admin_data + kepala_rayon + top_management; ADR-032 enforced |
 | `POST /pruning-requests/:id/review` | ⏳ DEFERRED | admin half — next iteration |
-| `POST /pruning-requests/:id/convert-to-task` | ⏳ DEFERRED | admin half — next iteration |
+| `POST /pruning-requests/:id/assign-to-task` | ⏳ DEFERRED | admin half — next iteration |
 | `GET /pruning-requests?rayon_id=&status=` (admin filter) | ⏳ DEFERRED | currently returns 400 for non-mine |
 | Auto-rayon from GPS | ⏳ DEFERRED | client passes `rayon_id` explicitly for now |
 | `PRUNING_REQUEST_REVIEWERS` role group | 🟡 | inline checks only (admin_data + kepala_rayon + top_management); promoted to constant when admin half lands |
@@ -480,12 +480,12 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | Mobile `KecamatanNavigator` (no bottom tabs, role-gated) | ✅ | `RootNavigator` branches on `user.role === 'staff_kecamatan'` |
 | Mobile `SubmitScreen` (5-step wizard: address+GPS, photos, detail, preview, success) | ✅ | draft persisted in slice; 16 tests |
 | Mobile `MyRequestsScreen` (status chips, pull-to-refresh, empty state) | ✅ | 21 tests |
-| Mobile `RequestDetailScreen` (read-only, photo gallery, converted task hint) | ✅ | 20 tests |
+| Mobile `RequestDetailScreen` (read-only, photo gallery, assigned task hint) | ✅ | 20 tests |
 | Mobile `pruningRequestsSlice` + `pruningRequestsApi` | ✅ | 21 slice tests |
 | Offline queue: `pruning_request.submit` (FIFO; retry deferred) | ✅ | `syncManager.ts` priority 2.5 |
 | `useNetworkStatus` hook | ✅ | wraps NetInfo |
 | Mobile `ReviewQueueScreen` (admin_data) | ⏳ DEFERRED | admin half |
-| Mobile `ConvertToTaskSheet` (capacity chip) | ⏳ DEFERRED | needs 3-11 capacity endpoints |
+| Mobile `AssignToTaskSheet` (capacity chip) | ⏳ DEFERRED | needs 3-11 capacity endpoints |
 | Web `/pruning-requests/` queue + `[id]/` detail | ⏳ DEFERRED | web work deferred |
 | Web `(kecamatan)/` layout for staff_kecamatan submit on web | ⏳ DEFERRED | web work deferred |
 
@@ -582,7 +582,7 @@ User-driven audit revealed STATUS.md headline (`17/21 ~81 %`) contradicted detai
 
 1. **`NBButton` API extension + crash fix** — `SubmitScreen` was crashing on `staff_kec_pusat` login because it passed `variant="outline"` (not in NBButton's variant list) and used children-as-text (NBButton expected `title` prop). Extended NBButton with: `outline` variant, `label` alias, `leftIcon`, string-children fallback, graceful unknown-variant fallback. Added 5 regression-guard tests.
 
-2. **`ConvertToTaskSheet` defensive patch** — was reading `state.areas` and `state.users` from Redux (slices that don't exist), used snake_case `request.rayon_id` (model is camelCase), passed wrong props to NBAlert/NBToast/NBDatePicker. Sheet now renders without crashing; areas/users selectors return `[]` until those slices land in Phase 4 polish.
+2. **`AssignToTaskSheet` defensive patch** — was reading `state.areas` and `state.users` from Redux (slices that don't exist), used snake_case `request.rayon_id` (model is camelCase), passed wrong props to NBAlert/NBToast/NBDatePicker. Sheet now renders without crashing; areas/users selectors return `[]` until those slices land in Phase 4 polish.
 
 3. **Mobile `nbSpacing` numeric subscript shim** — added Tailwind-style numeric aliases (1=4, 2=8, 3=12, 4=16, 5=20, 6=24, 7=28, 8=32, 10=40, 12=48, 16=64) in `constants/nbTokens.ts` so the Phase 3 admin screens that use `nbSpacing[2]`/`nbSpacing[4]` lay out correctly.
 

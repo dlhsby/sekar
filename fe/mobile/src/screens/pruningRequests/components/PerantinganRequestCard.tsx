@@ -91,10 +91,12 @@ export function PerantinganRequestCard({
           ) : null}
         </View>
 
-        {/* Creator row — admin views show submitter; staff_kecamatan sees their own */}
-        {request.submitter ? (
+        {/* Creator row — admin views show submitter; staff_kecamatan sees their own.
+            Role label intentionally omitted: every submitter is staff_kecamatan,
+            so printing it adds noise without adding information. */}
+        {request.submitter?.full_name ? (
           <Text style={styles.itemCreator}>
-            👤 {request.submitter.role} - {request.submitter.full_name}
+            👤 {request.submitter.full_name}
           </Text>
         ) : null}
       </NBCard>

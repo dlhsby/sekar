@@ -301,9 +301,9 @@ jest.mock('../../../components/common', () => ({
   },
 }));
 
-// Mock ConvertToTaskSheet
-jest.mock('../../../components/admin/ConvertToTaskSheet', () => ({
-  ConvertToTaskSheet: ({ visible }: any) => {
+// Mock AssignToTaskSheet
+jest.mock('../../../components/admin/AssignToTaskSheet', () => ({
+  AssignToTaskSheet: ({ visible }: any) => {
     const React = require('react');
     const { Modal, View, Text } = require('react-native');
     return visible ? React.createElement(View, {}, React.createElement(Text, {}, 'Convert Sheet')) : null;
@@ -357,7 +357,11 @@ describe('RequestDetailScreen', () => {
     address: 'Jln Pemuda No. 123',
     gpsLat: -7.2575,
     gpsLng: 112.7521,
-    expectedDate: '2026-05-01',
+    // May 9, 2026 — `expectedDate` is the legacy single-day column (left
+    // NULL going forward). Use `scheduledDate` for the admin-confirmed day
+    // that the detail screen renders.
+    expectedDate: null,
+    scheduledDate: '2026-05-01',
     estimatedPlantCount: 15,
     photoUrls: ['https://example.com/photo1.jpg', 'https://example.com/photo2.jpg'],
     notes: 'Pohon sudah tua',
@@ -370,7 +374,7 @@ describe('RequestDetailScreen', () => {
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
-    convertedTaskId: null,
+    assignedTaskId: null,
     convertedTask: null,
     createdAt: '2026-04-27T10:00:00Z',
     updatedAt: '2026-04-27T10:00:00Z',
@@ -386,8 +390,8 @@ describe('RequestDetailScreen', () => {
 
   const mockConvertedRequest: PruningRequest = {
     ...mockPruningRequest,
-    status: 'converted' as const,
-    convertedTaskId: 'task-123',
+    status: 'assigned' as const,
+    assignedTaskId: 'task-123',
     convertedTask: { id: 'task-123', name: 'Pemangkasan Pohon' },
   };
 
@@ -661,8 +665,8 @@ describe('RequestDetailScreen', () => {
 
       renderScreen();
 
-      // Component maps 'converted' status to 'Dijadwalkan' label
-      expect(screen.getByText('Dijadwalkan')).toBeTruthy();
+      // Component maps 'assigned' status to 'Ditugaskan' label.
+      expect(screen.getByText('Ditugaskan')).toBeTruthy();
       // Task name is only shown in the button action, verify task section exists
       expect(screen.getByText(/Tugas Terkait/i)).toBeTruthy();
     });

@@ -28,7 +28,7 @@ Phase 3 adds ~35 endpoints, 8 new tables, 4 new backend modules, 10+ new mobile 
 | `StaleStatusSweeperService` | ≥ 90 % | batch 50; flips ACTIVE without recent ping → MISSING; does not flip users in OFFLINE/INACTIVE |
 | `TaskTypeRegistry` | 100 % | per-type Zod schema registration and validation; reject unknown `task_type` |
 | `PlantDueDateService` | 100 % | cycle-days lookup precedence (override > species > area_type default); status color thresholds |
-| `PruningRequestService` | ≥ 88 % | state machine: submitted → under_review → approved/rejected → converted; rayon scoping |
+| `PruningRequestService` | ≥ 88 % | state machine: submitted → under_review → approved/rejected → assigned; rayon scoping; **approve guard requires `scheduled_date`** (May 10); **reschedule cascade for `assigned` status** rebooks capacity + bumps `task.deadline` + writes delegation audit + pushes assignee (May 10) |
 | `CapacityService` | ≥ 85 % | booking increments; cancel rebalances; week-grid fetch; UNIQUE constraint handled gracefully |
 | `SeedTransactionService` | ≥ 90 % | balance arithmetic (purchase +, distribution -, adjustment +/-); atomic update with insert |
 | `RedisService` | ≥ 80 % | connection pool; graceful shutdown; stream helpers; fallback on unreachable |
@@ -42,7 +42,7 @@ Phase 3 adds ~35 endpoints, 8 new tables, 4 new backend modules, 10+ new mobile 
 | `test/integration/monitoring-v2.e2e-spec.ts` | 10k location pings → stream → projector applies → all `user_tracking_status` rows updated; no missed status transitions |
 | `test/integration/monitoring-v2-stale.e2e-spec.ts` | 5-min tick of `StaleStatusSweeperService` flips seeded ACTIVE rows → MISSING |
 | `test/integration/task-partial-complete.e2e-spec.ts` | partial-complete → activity created → child task spawned → resume → final complete; lineage endpoint returns full tree |
-| `test/integration/pruning-request-flow.e2e-spec.ts` | submit → review (as `admin_data`) → convert-to-task → activity completion propagates status back to request; capacity decremented on convert, rebalanced on task cancel |
+| `test/integration/pruning-request-flow.e2e-spec.ts` | submit → review (as `admin_data`) → assign-to-task → activity completion propagates status back to request; capacity decremented on convert, rebalanced on task cancel |
 | `test/integration/plants-forecast.e2e-spec.ts` | activity with plant_items updates `area_plants.last_pruned_at` and `next_due_at`; cron flips status appropriately |
 | `test/integration/role-matrix.e2e-spec.ts` | Every controller × every role returns expected 200/201/403; `staff_kecamatan` denied outside own endpoints |
 | `test/integration/csv-backfill.e2e-spec.ts` | Seeder runs twice on 10-row fixture without duplication (idempotent on `reference_code`) |
@@ -72,7 +72,7 @@ Phase 3 adds ~35 endpoints, 8 new tables, 4 new backend modules, 10+ new mobile 
 | File | Framework | Scope |
 |------|-----------|-------|
 | `e2e/monitoring-realtime.spec.ts` | Playwright | Virtualized list updates < 200 ms after a mocked WS emit; cluster count updates on filter toggle; hierarchy filter reduces marker count |
-| `e2e/pruning-request-flow.spec.ts` | Playwright | staff_kecamatan submit → admin_data review (role switch via token) → convert-to-task → task visible on `/tasks` |
+| `e2e/pruning-request-flow.spec.ts` | Playwright | staff_kecamatan submit → admin_data review (role switch via token) → assign-to-task → task visible on `/tasks` |
 | `e2e/pruning-task-assignment.spec.ts` | Playwright | Dynamic custom-fields form on `/tasks/new?task_type=pruning`; species search narrows 131 → ~5 |
 | `e2e/capacity-calendar.spec.ts` | Playwright | Edit capacity_units; booked_bar updates after pruning-request convert |
 | `e2e/seeds-ledger.spec.ts` | Playwright | Record purchase + distribution; balance equals (purchase sum − distribution sum) |
@@ -168,7 +168,7 @@ Phase 2D kept manual testing inside this file as a section rather than a separat
 
 - [ ] 131 plant species in `plant_species`
 - [ ] `area_plants` seeded for Darmo Sec 1 R: 8 trembesi (`last_pruned_at = 90 days ago → overdue`), 2 sono (`ok`)
-- [ ] 10 pruning requests across statuses (submitted, under_review, approved, converted, done)
+- [ ] 10 pruning requests across statuses (submitted, under_review, approved, assigned, done)
 - [ ] 7 rayons × 12 weeks × `service_type='pruning'` capacity rows (`capacity_units=10`, `booked_units=0..4`)
 - [ ] 50 plant_seeds + 200 seed_transactions at Rayon Taman Aktif
 - [ ] `PHASE3_FEATURES_ENABLED=true` in test env
@@ -231,7 +231,7 @@ As `admin_data_selatan`:
 - [ ] See the new request in queue
 - [ ] Open detail → view photos
 - [ ] Approve
-- [ ] Open ConvertToTaskDialog
+- [ ] Open AssignToTaskDialog
 - [ ] Select target area (auto-suggested by GPS proximity)
 - [ ] Select date within a week with available capacity (capacity chip shows "6/10 booked")
 - [ ] Assign to `korlap1`
@@ -239,10 +239,10 @@ As `admin_data_selatan`:
 
 Back as `kec_wonokromo`:
 - [ ] Receive FCM: "Permohonan disetujui"
-- [ ] Open My Requests → status `converted`
+- [ ] Open My Requests → status `assigned`
 - [ ] Wait until korlap/satgas completes the task
 - [ ] Receive FCM: "Pekerjaan selesai"
-- [ ] Open request detail → see converted task + activity photos (before/after)
+- [ ] Open request detail → see assigned task + activity photos (before/after)
 
 Edge cases:
 - [ ] Reject flow: reject with notes → kecamatan sees `rejected` with reason
@@ -257,7 +257,7 @@ Edge cases:
 - [ ] Click badge → drawer lists overdue areas with species breakdown
 - [ ] Navigate to `/rayons/{selatan-id}/capacity`
 - [ ] See week grid: weeks 18–21 show booked/capacity bars
-- [ ] Expected state (after Flow 4): booked increments reflect the converted request
+- [ ] Expected state (after Flow 4): booked increments reflect the assigned request
 
 ### Flow 6 — Plant-seed ledger (`admin_data_taman_aktif` then `top1`)
 

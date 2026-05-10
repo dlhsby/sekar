@@ -17,7 +17,7 @@ export async function submitPruningRequest(
     lat: number;
     lng: number;
     // Phase 3 Apr 27 — `detail_date` and `target_count` are optional in the
-    // redesigned form; admin sets the date during convert-to-task.
+    // redesigned form; admin sets the date during assign-to-task.
     // Deprecated 2026-05-01 (ADR-035 amendment): `detail_date` is replaced by
     // `expected_year` + `expected_iso_week`; kept here for one release as a
     // fallback for older builds.
@@ -132,7 +132,7 @@ export async function reviewPruningRequest(
 /**
  * Convert a pruning request to a task
  */
-export async function convertPruningRequestToTask(
+export async function assignPruningRequestToTask(
   id: string,
   data: {
     areaId: string;
@@ -144,7 +144,7 @@ export async function convertPruningRequestToTask(
   },
 ): Promise<ApiResponse<{ request: PruningRequest; task: any }>> {
   const response = await post<{ request: PruningRequest; task: any }>(
-    `/pruning-requests/${id}/convert-to-task`,
+    `/pruning-requests/${id}/assign-to-task`,
     data,
   );
 
@@ -193,7 +193,7 @@ export default {
   getPruningRequestById,
   getAdminPruningRequests,
   reviewPruningRequest,
-  convertPruningRequestToTask,
+  assignPruningRequestToTask,
   reschedulePruningRequest,
   cancelPruningRequest,
 };

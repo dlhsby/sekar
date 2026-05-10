@@ -114,7 +114,7 @@ Replaces today's 3–4 round-trips on dashboard load. Cached in React Query unde
 | `status:v2` | `StatusProjectorService` detects status transition | `{ user_id, prev, next, area_id, rayon_id, ts }` |
 | `cluster:update` | Delta of workers in a bbox since last emit | `{ scope, scope_id, added[], removed[], changed[] }` |
 | `inventory:updated` | `area_plants` row change (after activity completion / forecast cron) | `{ area_id, species_id, status, next_due_at }` |
-| `request:status-changed` | `pruning_requests.status` transition | `{ request_id, prev, next, rayon_id, submitted_by, converted_task_id? }` |
+| `request:status-changed` | `pruning_requests.status` transition | `{ request_id, prev, next, rayon_id, submitted_by, assigned_task_id? }` |
 | `area:plant-status-changed` | `area_plants.status` aggregate flips for an area | `{ area_id, prev, next, counts: { ok, due, overdue } }` |
 | `area:staffing-changed` | Debounced aggregate of staffing flips | same as Phase 2D, now debounced by `StaffingDebouncerService` |
 
@@ -233,7 +233,7 @@ See [database.md §activities](./database.md#activities-additive).
 | `GET` | `/api/v1/activities?involving_me=true` | **May 1, ADR-038.** Returns activities where current user is the owner OR appears in `activity_tags`; each row includes `involvement: 'owner'\|'tagged'` discriminator |
 | `DELETE` | `/api/v1/activities/:id/tags/:userId` | **May 1, ADR-038.** Untag a user; owner-only, before approval |
 
-When an activity with `pruning_request_id` is created, the originating request transitions `converted → in_progress → done` and emits `request:status-changed`.
+When an activity with `pruning_request_id` is created, the originating request transitions `assigned → in_progress → done` and emits `request:status-changed`.
 
 Tagged users (`tagged_user_ids`) are written to the `activity_tags` table — see [database.md §activity_tags](./database.md#activity-tags-may-1) and ADR-038. Owner remains the sole writer; tagged users gain read-only feed visibility.
 
@@ -248,9 +248,9 @@ Tagged users (`tagged_user_ids`) are written to the `activity_tags` table — se
 | `POST` | `/api/v1/pruning-requests` | `staff_kecamatan` | Submit. **May 1, ADR-035 amendment:** body sends `expected_year` + `expected_iso_week` (week the submitter prefers); legacy `detail_date` still accepted for one release as a fallback |
 | `GET` | `/api/v1/pruning-requests?mine=true` | `staff_kecamatan` | Own submissions |
 | `GET` | `/api/v1/pruning-requests?rayon_id=&status=` | `admin_data` (own rayon), `top_management` (read-all), `admin_system`, `superadmin` | Queue |
-| `POST` | `/api/v1/pruning-requests/:id/review` | `admin_data` (own rayon), `admin_system`, `superadmin` | `{ decision: 'approved'|'rejected', notes }` |
-| `POST` | `/api/v1/pruning-requests/:id/convert-to-task` | same | `{ area_id, scheduled_for?, assign_to_user_id?, target_plant_count?, custom_fields? }` → returns created `task`. **May 1, ADR-035 amendment:** `scheduled_for` is now optional. When omitted, the service iterates Mon→Sun of `request.expected_iso_week` and books the first day where capacity allows; `expected_date` is set to that day. If admin passes `scheduled_for`, it overrides and must fall inside the chosen week (server validates). |
-| `PATCH` | `/api/v1/pruning-requests/:id/expected-date` | `admin_data` (own rayon), `kepala_rayon`, `top_management`, `admin_system`, `superadmin` | **Round 4 (Apr 28).** `{ expectedDate: 'YYYY-MM-DD' }` — adjust `expected_date` independent of conversion. Status must be `submitted` / `under_review` / `approved`; date today-or-future. |
+| `POST` | `/api/v1/pruning-requests/:id/review` | `admin_data` (own rayon), `admin_system`, `superadmin` | `{ decision: 'approved'|'rejected', notes }`. **May 10, 2026:** approve now requires `request.scheduled_date != null` (use Atur Jadwal first); 409 `"Atur jadwal terlebih dahulu sebelum menyetujui permohonan"` otherwise. Reject path is unchanged. Use `under_review` for tentative dispositions. |
+| `POST` | `/api/v1/pruning-requests/:id/assign-to-task` | same | `{ area_id, scheduled_for?, assign_to_user_id?, target_plant_count?, custom_fields? }` → returns created `task`. **May 1, ADR-035 amendment:** `scheduled_for` is now optional. When omitted, the service iterates Mon→Sun of `request.expected_iso_week` and books the first day where capacity allows; `scheduled_date` is set to that day. If admin passes `scheduled_for`, it overrides and must fall inside the chosen week (server validates). Status transitions to `assigned`. |
+| `PATCH` | `/api/v1/pruning-requests/:id/expected-date` | `admin_data` (own rayon), `kepala_rayon`, `top_management`, `admin_system`, `superadmin` | **Round 4 (Apr 28).** `{ expectedDate: 'YYYY-MM-DD' }` — adjust `scheduled_date` independent of conversion. Status whitelist now `submitted` / `under_review` / `approved` / `assigned` (**May 10, 2026** extension). For `assigned` requests the cascade runs in one transaction: rebook `service_capacity` if the ISO week changed (book new before release old; abort on capacity-full BEFORE touching old slot), bump linked `task.deadline`, write a `task_delegations` audit row (`reason: "Jadwal diubah ke YYYY-MM-DD"`), then push to assignee. `in_progress` / `done` / `rejected` / `cancelled` remain blocked — those are the task lifecycle's responsibility. |
 | `GET` | `/api/v1/pruning-requests/:id/result` | submitter, reviewer, top_management, admins | Task + activities + photos |
 
 ### E2. Guard wiring
@@ -271,7 +271,7 @@ export const PRUNING_REQUEST_REVIEWERS = [
 ### E3. State machine
 
 ```
-submitted → under_review → approved → converted → in_progress → done
+submitted → under_review → approved → assigned → in_progress → done
                          ↘ rejected
                          ↘ cancelled (submitter)
 ```
@@ -288,11 +288,11 @@ Transitions emit `request:status-changed` WS event and FCM notification to submi
 | `PUT` | `/api/v1/rayons/:id/capacity` | `admin_data` (own rayon), `top_management`, `admin_system`, `superadmin` | Bulk upsert capacity_units |
 | `POST` | `/api/v1/rayons/:id/capacity/book` | same | Manual booking `{ year, iso_week, service_type, units, task_id? }` |
 
-**Capacity granularity (Q3 Apr 25):** booking is **weekly** (`iso_week`-keyed in `service_capacity`). The day-picker for the actual assignment date lives downstream in the convert-to-task flow — `POST /api/v1/pruning-requests/:id/convert-to-task` accepts `scheduled_date` (a specific calendar day within the booked week) and records it on the resulting task. `service_capacity.booked_units` is incremented at the week granularity regardless of which day inside the week the task is scheduled for.
+**Capacity granularity (Q3 Apr 25):** booking is **weekly** (`iso_week`-keyed in `service_capacity`). The day-picker for the actual assignment date lives downstream in the assign-to-task flow — `POST /api/v1/pruning-requests/:id/assign-to-task` accepts `scheduled_date` (a specific calendar day within the booked week) and records it on the resulting task. `service_capacity.booked_units` is incremented at the week granularity regardless of which day inside the week the task is scheduled for.
 
 **Round 4 amendment (Apr 28):** the storage model stays weekly per ADR-035, but the **mobile staff_kecamatan submit screen** projects the weekly grid into a per-day status (`available` / `partial` / `full` / `unknown`) for the preferred-date picker. The projection is UX-only — no schema change, no daily booking column. Projection rule: `capacity_units == 0` → unknown; `booked_units >= capacity_units` → full; `booked_units >= capacity_units * 0.8` → partial; otherwise available. See the 2026-04-28 amendment to ADR-035 and `fe/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts`.
 
-Implicit booking happens on `/pruning-requests/:id/convert-to-task`: `CapacityService.book(rayon_id, iso_week_of(scheduled_for), 'pruning', 1, task_id)`.
+Implicit booking happens on `/pruning-requests/:id/assign-to-task`: `CapacityService.book(rayon_id, iso_week_of(scheduled_for), 'pruning', 1, task_id)`.
 
 ---
 
@@ -337,7 +337,7 @@ A role-matrix integration test (new, `test/integration/role-matrix.e2e-spec.ts`)
 
 | Trigger | Channel | Recipients |
 |---------|---------|-----------|
-| `pruning_request.status → approved/rejected/converted` | FCM + WS toast | submitter |
+| `pruning_request.status → approved/rejected/assigned` | FCM + WS toast | submitter |
 | `pruning_request.status → done` | FCM | submitter |
 | `area_plants.status → overdue` (daily digest) | FCM + email | `top_management`, `admin_data` (rayon) |
 | `task.created from pruning_request` | FCM + WS | assignee |
@@ -363,7 +363,7 @@ Integration tests (per sub-phase):
 
 - **3-3:** Redis Streams round-trip; projector applies 10k events without loss; sweeper flips stale ACTIVE → MISSING
 - **3-6:** task partial-complete → resume → complete propagates lineage
-- **3-9:** pruning_request submit → review → convert-to-task → activity completion propagates status back to request
+- **3-9:** pruning_request submit → review → assign-to-task → activity completion propagates status back to request
 - **3-11:** capacity booking decrements on convert, rebalances on task cancel
 
 ---

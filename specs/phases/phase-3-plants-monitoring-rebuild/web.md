@@ -59,7 +59,7 @@
 | Path | Role gate | Responsibility |
 |------|-----------|----------------|
 | `/(dashboard)/pruning-requests` | `admin_data` (own rayon), `top_management` (read-all), `admin_system`, `superadmin` | Queue with status chips + rayon filter |
-| `/(dashboard)/pruning-requests/[id]` | submitter / reviewer / admins | Detail, review actions, convert-to-task form, capacity chip |
+| `/(dashboard)/pruning-requests/[id]` | submitter / reviewer / admins | Detail, review actions, assign-to-task form, capacity chip |
 
 > **Round 4 forward note (Apr 28):** when 3-12 web half lands, the staff_kecamatan submit page and admin reschedule entry should mirror the same 8-week availability-calendar UX delivered on mobile in Round 4 — projecting weekly `service_capacity` to per-day status (`available` / `partial` / `full` / `unknown`) and exposing a `PATCH /pruning-requests/:id/expected-date` reschedule control on the detail page.
 
@@ -318,10 +318,10 @@ components/plants/
 components/pruning-requests/
 ├── RequestQueueTable.tsx            # status-filtered queue
 ├── ReviewActionsPanel.tsx           # approve / reject / convert buttons
-├── ConvertToTaskDialog.tsx          # form: area + capacity chip (booked/total for the chosen ISO-week) +
+├── AssignToTaskDialog.tsx          # form: area + capacity chip (booked/total for the chosen ISO-week) +
 │                                    #   scheduled_date day-picker constrained to the booked week (Q3 Apr 25 —
 │                                    #   weekly capacity, daily assignment) + target_plant_count + assignee
-├── RequestTimeline.tsx              # status history + converted task link
+├── RequestTimeline.tsx              # status history + assigned task link
 └── PhotoGallery.tsx                 # before/after photos from outcome
 ```
 
@@ -428,7 +428,7 @@ const ROUTES_BY_ROLE = {
 |-----------|-----------|-------|
 | `e2e/monitoring-realtime.spec.ts` | Playwright | Virtualized list updates < 200 ms after mocked WS emit; cluster count updates on filter toggle |
 | `e2e/monitoring-responsive.spec.ts` | Playwright | Monitoring renders correctly at 375 / 768 / 1280 px widths; bottom sheet opens at mobile width; sidebar collapses to rail at tablet |
-| `e2e/pruning-request-flow.spec.ts` | Playwright | staff_kecamatan submit → admin_data review → convert-to-task → task assignment visible |
+| `e2e/pruning-request-flow.spec.ts` | Playwright | staff_kecamatan submit → admin_data review → assign-to-task → task assignment visible |
 | `e2e/pruning-task-assignment.spec.ts` | Playwright | Dynamic custom-fields form on `/tasks/new`; species search narrows 131 → N |
 | `e2e/pwa-install.spec.ts` | Playwright | Install banner appears, dismiss persists 14 days; offline banner shows when offline; SW registers on production build |
 | `e2e/visual-regression.spec.ts` | Playwright | Screenshots of NB primitives + monitoring + pruning-request pages at 3 breakpoints; fails on pixel diff > 0.1 % |

@@ -26,7 +26,7 @@ Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign
 
 - **Visual parity is one-way.** Once feature work in M2/M3/M4 lands on generated tokens, retrofitting earlier screens later forces a second sweep with disruptive PRs across the whole app. Doing the sweep first means every Phase-3 PR is born on the new tokens.
 - **CI gates depend on it.** ESLint rules (`no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN `shadowRadius > 0` ban) and the `tokens-verify` CI job land in 3-R1. After 3-R1, no UI PR can introduce drift; before 3-R1, drift creeps in unchecked.
-- **NBModal / NBToast / NBText are dependencies of feature work.** Pruning task form (3-7), species autocomplete (3-7), partial-complete sheet (3-7), convert-to-task (3-10), seed transaction form (3-12), and the monitoring overlay sheets (3-5) all need `NBModal` shipped in 3-R3.
+- **NBModal / NBToast / NBText are dependencies of feature work.** Pruning task form (3-7), species autocomplete (3-7), partial-complete sheet (3-7), assign-to-task (3-10), seed transaction form (3-12), and the monitoring overlay sheets (3-5) all need `NBModal` shipped in 3-R3.
 - **`ResponsiveShell` is a dependency of every Phase-3 web page.** Web monitoring (3-4), pruning request queue (3-10), capacity calendar (3-11), seeds (3-12) all consume the shell built in 3-R4 — without it, mobile-web layouts have to be retrofitted page-by-page.
 
 ### Requirements Summary
@@ -41,10 +41,10 @@ Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign
 | 6 | Task typing (`task_type` enum + JSONB `custom_fields` schema registry) + parent/child lineage + partial-complete (`target_plant_count` / `completed_plant_count`) + species line items (`activity_plant_items`) | Client | 3-6 |
 | 7 | Pruning task mobile form with 131-species autocomplete, resume-tomorrow CTA | Client | 3-7 |
 | 8 | Deterministic species × area_type due-date forecast with manual override; overdue alerts to `top_management` | Client | 3-8 |
-| 9 | `staff_kecamatan` role + `pruning_requests` entity + submission/review/convert-to-task workflow | Client | 3-9 |
+| 9 | `staff_kecamatan` role + `pruning_requests` entity + submission/review/assign-to-task workflow | Client | 3-9 |
 | 10 | Extend `admin_data` with pruning_requests disposition (rayon-scoped) — amends [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) | Client | 3-2, 3-9 |
 | 11 | Pruning request frontends: mobile submit/review; web queue/detail; kecamatan outcome visibility | Client | 3-10 |
-| 12 | `service_capacity` weekly grid per rayon × `service_type` (reusable) with implicit booking on convert-to-task | Client | 3-11 |
+| 12 | `service_capacity` weekly grid per rayon × `service_type` (reusable) with implicit booking on assign-to-task | Client | 3-11 |
 | 13 | `plant_seeds` + `seed_transactions` unified ledger (purchase / distribution / adjustment) | Client | 3-12 |
 | 14 | CSV backfill seeder (5,008 rows → `activities` + `activity_plant_items` + `area_plants`; rehost Drive photos on S3; idempotent on `reference_code`) | Client (historical data) | 3-13 |
 | 15 | k6 load test harness: 500-worker, 12-second-ping, 30-minute simulation; pass criteria p95 ingest < 200 ms, broadcast < 500 ms, pool < 70 %, Redis lag < 5 s, zero missed transitions | Client | 3-14 |
@@ -106,7 +106,7 @@ Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign
 | Submit pruning request | - | - | - | - | - | - | - | - | Y |
 | List own pruning requests | - | - | - | - | - | - | - | - | Y (own submissions) |
 | Pruning request review queue | - | - | - | Y (own rayon, Ext per ADR-032) | - | Y (read-only all) | Y | Y | - |
-| Approve / reject / convert-to-task | - | - | - | Y (own rayon, Ext) | - | - | Y | Y | - |
+| Approve / reject / assign-to-task | - | - | - | Y (own rayon, Ext) | - | - | Y | Y | - |
 | See outcome (task + activities + photos) | - | - | Y (if assigned) | Y (own rayon) | Y (own rayon) | Y | Y | Y | Y (own submissions) |
 | Service capacity (view) | - | - | Y (own rayon) | Y (own rayon) | Y (own rayon) | Y (all) | Y | Y | - |
 | Service capacity (edit) | - | - | - | Y (own rayon) | - | Y (all) | Y | Y | - |
@@ -141,7 +141,7 @@ korlap
 
 staff_kecamatan  (out of hierarchy)
     |-- Own pruning_requests only
-            |-- Outcome visibility (converted task + activities)
+            |-- Outcome visibility (assigned task + activities)
 ```
 
 ---
@@ -158,7 +158,7 @@ Phase 3 is broken into **6 demo-able milestones** (M1-R, M1-S, M2, M3, M4, M5) s
 | **M1-S** | Schema + Spec Sync | 3-1, 3-2 | 6 d | DB migrations + new roles applied; obsolete docs reconciled; ADR-029…037 all "Accepted" | `staff_kecamatan` login works; `plant_species` returns 131 rows; root + module CLAUDE.md accurate |
 | **M2** | Monitoring v2 | 3-3, 3-4, 3-5, 3-14 | 21 d | Supercluster + plant overlays + incremental WS patches on web + mobile; k6 load test passes at 500 workers | p95 ingest <200 ms, p95 broadcast <500 ms, no marker redraw storms |
 | **M3** | Plants & Typed Tasks | 3-6, 3-7, 3-8, 3-13 | 15 d | Pruning task form (mobile + web); resume-tomorrow lineage; CSV backfill visible on map; overdue alerts fire | Korlap → satgas complete a pruning task end-to-end; overdue area flips red → green |
-| **M4** | Public Intake + Capacity + Seeds | 3-9, 3-10, 3-11, 3-12 | 16 d | Kecamatan submits → admin_data reviews → convert-to-task → outcome visible; capacity calendar; seed ledger | Full loop happy-path with photos; capacity chip blocks overbook; seed balance = Σ transactions |
+| **M4** | Public Intake + Capacity + Seeds | 3-9, 3-10, 3-11, 3-12 | 16 d | Kecamatan submits → admin_data reviews → assign-to-task → outcome visible; capacity calendar; seed ledger | Full loop happy-path with photos; capacity chip blocks overbook; seed balance = Σ transactions |
 | **M5** | Documentation + Deploy | 3-15 + rollout | 2 d + rollout | Specs, COMPLETION_STATUS, CLAUDE.md files synced; pilot in Selatan behind flag → graduated to all rayons | `PHASE3_FEATURES_ENABLED` on in all rayons; 48-h pilot had no P1 bugs |
 
 **Total:** 73 dev-days single-threaded. With 3 parallel engineers (backend, web, mobile), wall-clock ≈ 5–7 weeks.
@@ -308,7 +308,7 @@ M2 / M3 / M4 run in parallel after M1-R + M1-S land. **Every UI PR in M2/M3/M4 m
 **Demo (25 min):**
 
 1. Mobile as `staff_kecamatan`: submit a request with 3 photos + GPS capture.
-2. Mobile as `admin_data` (Rayon Selatan): review queue → open request → convert-to-task (capacity chip shows Week 19 has 2 slots left) → select area + assign to korlap.
+2. Mobile as `admin_data` (Rayon Selatan): review queue → open request → assign-to-task (capacity chip shows Week 19 has 2 slots left) → select area + assign to korlap.
 3. Mobile as korlap: task appears in list → submits pruning with partial-complete.
 4. Mobile as original kecamatan user: request status shows "Done" with before/after photos.
 5. Web as `top_management`: capacity calendar for Rayon Selatan — Week 19 shows 6 booked / 10 capacity.
@@ -525,7 +525,7 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 |------|-------|-----------|
 | Migrate web NB primitives to `shadow-nb-*` utilities + `.nb-focus-ring`; audit for inline hex | parity with mobile per `design-tokens.md §Component Parity Matrix` | `fe/web/src/components/ui/*` |
 | Migrate mobile NB primitives to generated shadow helper + `useNBPress()` | hard-edge press animation; 100ms timing | `fe/mobile/src/components/nb/*` |
-| Build `NBModal.tsx` | wraps `@gorhom/bottom-sheet` for ≤50% viewport content; wraps RN `<Modal>` for full-screen forms (species autocomplete, partial-complete, convert-to-task, seed transaction, photo picker) | `fe/mobile/src/components/nb/NBModal.tsx` |
+| Build `NBModal.tsx` | wraps `@gorhom/bottom-sheet` for ≤50% viewport content; wraps RN `<Modal>` for full-screen forms (species autocomplete, partial-complete, assign-to-task, seed transaction, photo picker) | `fe/mobile/src/components/nb/NBModal.tsx` |
 | Build `NBToast.tsx` | wraps `react-native-toast-message` with NB chrome (border, hard-edge shadow, uppercase title, Lucide icon pair, bottom position, 4s default) | `fe/mobile/src/components/nb/NBToast.tsx` |
 | Build `NBText.tsx` | typography component; `variant="h1|h2|h3|body-lg|body|body-sm|caption|mono-sm"`; reads from generated `type.*` | `fe/mobile/src/components/nb/NBText.tsx` |
 | Visual regression harness (web): Playwright `toHaveScreenshot` over NB primitives + login + dashboard at 375/768/1280 px; tolerance 0.1% | gates subsequent PRs | `fe/web/e2e/visual-regression.spec.ts`, `fe/web/e2e/__snapshots__/` |
@@ -733,14 +733,14 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 |------|-------|
 | Mobile `SubmitScreen` (kecamatan) | GPS capture, photo upload, expected_date |
 | Mobile `MyRequestsScreen` + `RequestDetailScreen` | outcome visibility with task + activity photos |
-| Mobile `ReviewQueueScreen` (admin_data) | approve/reject/convert-to-task |
+| Mobile `ReviewQueueScreen` (admin_data) | approve/reject/assign-to-task |
 | Web `/pruning-requests/` queue + `[id]/` detail | filter by status, rayon (for top_management read-only) |
 
 #### 3-11: Service capacity calendar (4 days)
 
 | Task | Scope |
 |------|-------|
-| `CapacityService` | weekly grid per rayon × ISO-week × service_type; implicit booking on convert-to-task |
+| `CapacityService` | weekly grid per rayon × ISO-week × service_type; implicit booking on assign-to-task |
 | `GET/PUT /rayons/:id/capacity?service_type=&year=&from_week=&to_week=` | admin_data (own rayon) / top_management |
 | `POST /rayons/:id/capacity/book` | manual adjustment |
 | Web capacity calendar page | week grid with editable capacity + booked bar |
@@ -792,7 +792,7 @@ All 5 prior open questions have been answered by the client. Answers are now ref
 |---|----------|--------|--------------|
 | Q1 | Handling-status codes GT / PT / PS / PK / PD — human-readable meanings? | Pruning **case type** (single-select on activity submission). GT = Giat Perantingan; PT = Pohon Tumbang; PS = Pohon Sempal; PD = Pohon Doyong/Miring; PK = Pohon Kropos/Mati. Client also confirmed two adjacent enums: pruning **action** (PM = Pangkas Meja, PB = Potong Bawah, PC = Pangkas Cantik) and request **source** (TIW = Taruna Walikota, TS = Taruna Senior, CC = Command Center, PW = Permintaan Warga / paper, Wk = Aplikasi Wargaku). | §Pruning Vocabulary below; database.md (`activities.case_type` enum + JSONB `custom_fields`); ADR-031 |
 | Q2 | Plant-seed inventory visibility: `kepala_rayon` too, or strictly `admin_data` @ Taman Aktif + `top_management`? | **Visible to `kepala_rayon` (own rayon scope) too**, in addition to `admin_data` and `top_management`. | Role Access Matrix above (Plant seed inventory view row); database.md (`plant_seeds` access policy); backend.md (PlantSeedsController guards) |
-| Q3 | Capacity calendar granularity: weekly (planned) or daily? | **Weekly for the kecamatan submission slot** (capacity_units allocated per ISO-week × rayon × service_type). Once a request is approved and converted to a task, **the assignment task itself can be scheduled on a specific day within that booked week**. | ADR-035; backend.md (CapacityService); web.md (capacity calendar); ui-ux.md (mobile ConvertToTaskSheet day-picker) |
+| Q3 | Capacity calendar granularity: weekly (planned) or daily? | **Weekly for the kecamatan submission slot** (capacity_units allocated per ISO-week × rayon × service_type). Once a request is approved and converted to a task, **the assignment task itself can be scheduled on a specific day within that booked week**. | ADR-035; backend.md (CapacityService); web.md (capacity calendar); ui-ux.md (mobile AssignToTaskSheet day-picker) |
 | Q4 | Notable-plants visibility to field workers, or admin-only? | **Workers (`satgas`, `linmas`) can view notable plants** in their own area (read-only). CRUD remains korlap+ scope. | Role Access Matrix above (Notable plants view vs CRUD split); mobile.md (read-only notable-plants overlay on satgas MapDashboard) |
 | Q5 | Plant species catalog editable by `admin_data`, or `admin_system` only? | **`admin_data` writes** (in addition to `admin_system` and `superadmin`). | Role Access Matrix above; backend.md (PlantSpeciesController guards); database.md |
 

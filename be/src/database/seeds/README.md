@@ -10,7 +10,7 @@ Five seed scripts cover the full Phase 1–3 dataset.
 | `seed-phase2.ts` | Seeds Phase 2 data on top of Phase 1 | No (destructive) |
 | `seed-phase3.ts` | Seeds Phase 3 data (plant_species, monitoring_configs, service_capacity, sample area_plants/pruning_requests/plant_seeds when users/areas exist). Also exports `seedPhase3Reference`, `seedPhase3ServiceCapacity`, `seedPhase3SampleData` helpers consumed by the reference + staging seeders. | Yes (idempotent) |
 | `seed-reference.ts` | Reference/config data only — fully idempotent. Includes Phase 3 reference data (128 plant_species, 4 Phase 3 monitoring_configs, service_capacity grid with capacity_units=0). | Yes |
-| `seed-staging.ts` | Staging environment data — wipes + reseeds all tables incl. Phase 3 (UAT sample data: staff_kec_pusat user, area_plants, pruning_requests, plant_seeds, seed_transactions, capacity grid with capacity_units=5). | No |
+| `seed-staging.ts` | Staging environment data — wipes + reseeds all tables incl. Phase 3 (UAT sample data: staff_kecamatan_pusat_1 user, area_plants, pruning_requests, plant_seeds, seed_transactions, capacity grid with capacity_units=5). | No |
 
 ## Scripts
 
@@ -172,7 +172,7 @@ Login with **username** or **phone number** as identifier.
 | linmas_pusat_1 | linmas | Taman Bungkul | active |
 | satgas_timur_1_1 | satgas | Taman Timur 1 | missing (no ping 3h+) |
 | satgas_timur_1_2 | satgas | Taman Timur 1 | inactive (35min ago) |
-| staff_kec_pusat | staff_kecamatan | Rayon Pusat | — (Phase 3, public intake; staging only) |
+| staff_kecamatan_pusat_1 | staff_kecamatan | Rayon Pusat | — (Phase 3, public intake; staging only) |
 
 ## Staging/Production Deployment
 

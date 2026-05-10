@@ -4,6 +4,34 @@ import { config } from 'dotenv';
 config();
 
 /**
+ * Inline ISO week helper so the seeder doesn't depend on the pruning module.
+ * Returns the ISO calendar year + week (1..53) for a given date.
+ */
+function isoWeekOf(date: Date): { year: number; week: number } {
+  const target = new Date(date);
+  target.setUTCHours(0, 0, 0, 0);
+  const dayNum = target.getUTCDay() || 7; // Monday=1..Sunday=7
+  target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(
+    ((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return { year: target.getUTCFullYear(), week };
+}
+
+/**
+ * Set of statuses where admin has confirmed a concrete work day. These rows
+ * get `scheduled_date` populated; everything else leaves it NULL (the
+ * kecamatan only expressed a week preference).
+ */
+const ADMIN_DATED_STATUSES = new Set([
+  'approved',
+  'assigned',
+  'in_progress',
+  'done',
+]);
+
+/**
  * Phase 3 Seed Script
  *
  * Seeds Phase 3 foundation data (additive — does NOT wipe existing data):
@@ -478,8 +506,8 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     // SECTION 3.5: staff_kecamatan users (Phase 3 public intake — ADR-033)
     // ==========================================
     // One staff_kec per rayon so admin_data rayon-scoped review filters have
-    // realistic data and `staff_kec_pusat` (Rayon Pusat) is available for
-    // local-dev login. Mirrors what `seed-staging.ts` does in production
+    // realistic data and `staff_kecamatan_tegalsari_1` (Rayon Pusat) is
+    // available for local-dev login. Mirrors what `seed-staging.ts` does in production
     // demo data, but lifted into the dev `db:seed` flow because the
     // pruning_requests section below depends on these users existing.
     //
@@ -498,7 +526,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     // "Surabaya Selatan" kecamatans (Sawahan, Dukuh Pakis, Wiyung, Karang
     // Pilang) now correctly live under Rayon Selatan so `rayon_id` and
     // `region` agree. Earlier they sat in Rayon Barat 2 to match the legacy
-    // rayon description, which created the staff_kecamatan_wiyung "rayon
+    // rayon description, which created the staff_kecamatan_wiyung_1 "rayon
     // says Barat / region says Selatan" contradiction.
     const kecBlueprint: Array<[string, string, string, string]> = [
       // [name, code, rayon_code, region]
@@ -560,7 +588,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log(`  ✓ ${kecUpserted} kecamatans upserted (31 total when fresh)`);
 
     // Heal any staff_kecamatan users whose `rayon_id` no longer matches their
-    // kecamatan after the realignment above (e.g. staff_kecamatan_wiyung was
+    // kecamatan after the realignment above (e.g. staff_kecamatan_wiyung_1 was
     // pinned to BARAT2 but should now reflect SELATAN).
     await queryRunner.query(`
       UPDATE users u
@@ -578,15 +606,43 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
 
     // May 2026 — one staff_kecamatan user per kecamatan (31 total) so the
     // submit form can pre-fill rayon + kecamatan from the logged-in user.
-    // Username pattern: `staff_kecamatan_<code>` (e.g. `staff_kecamatan_wiyung`).
+    // Username pattern: `staff_kecamatan_<code>_<n>` (e.g.
+    // `staff_kecamatan_wiyung_1`) — May 9 standardization for parity with
+    // the other roles (`korlap_pusat_1`, `satgas_pusat_1`, …). The `_1`
+    // suffix lets us scale a kecamatan to multiple staff later without
+    // breaking the convention.
     const allKec = (await queryRunner.query(
       `SELECT id, name, code, rayon_id FROM kecamatans ORDER BY name`,
     )) as Array<{ id: string; name: string; code: string; rayon_id: string }>;
 
+    // Map rayon_id → human-readable rayon name so the verbose log shows the
+    // pairing each staff_kecamatan user lands in. Saves the reader from having
+    // to cross-reference a separate rayons table during UAT.
+    const rayonNameRows = (await queryRunner.query(
+      `SELECT id, name FROM rayons`,
+    )) as Array<{ id: string; name: string }>;
+    const rayonNameById = new Map(rayonNameRows.map((r) => [r.id, r.name]));
+
     let staffKecInserted = 0;
+    let staffKecExisting = 0;
     let phoneSeq = 100; // base for unique phone numbers (08120000_____)
+
+    console.log(
+      `\n  Seeding ${allKec.length} per-kecamatan staff_kecamatan users — pattern: staff_kecamatan_<code>_1`,
+    );
+    console.log(
+      '  ─────────────────────────────────────────────────────────────────────────────',
+    );
+    console.log(
+      `  ${'#'.padStart(2)}  ${'Username'.padEnd(34)} ${'Phone'.padEnd(13)} ${'Kecamatan'.padEnd(20)} Rayon`,
+    );
+    console.log(
+      '  ─────────────────────────────────────────────────────────────────────────────',
+    );
+    let i = 0;
     for (const k of allKec) {
-      const username = `staff_kecamatan_${k.code}`;
+      i += 1;
+      const username = `staff_kecamatan_${k.code}_1`;
       const fullName = `Staff Kecamatan ${k.name}`;
       const phone = `0812000${String(phoneSeq).padStart(5, '0')}`;
       phoneSeq += 1;
@@ -598,8 +654,19 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
          ON CONFLICT (username) DO NOTHING`,
         [username, STAFF_KEC_PWD_HASH, fullName, phone, k.rayon_id, k.name, k.id],
       );
-      if (result && (result as any).rowCount > 0) staffKecInserted++;
+      const inserted = result && (result as any).rowCount > 0;
+      if (inserted) staffKecInserted += 1;
+      else staffKecExisting += 1;
+
+      const marker = inserted ? '✚' : '·';
+      const rayonName = rayonNameById.get(k.rayon_id) ?? '—';
+      console.log(
+        `  ${String(i).padStart(2)} ${marker} ${username.padEnd(34)} ${phone.padEnd(13)} ${k.name.padEnd(20)} ${rayonName}`,
+      );
     }
+    console.log(
+      `  ✓ ${staffKecInserted} staff_kecamatan users inserted, ${staffKecExisting} already existed (idempotent)`,
+    );
 
     // Backfill kecamatan_id for any existing legacy staff_kec_* users
     // (idempotent — matches by kecamatan_name).
@@ -636,7 +703,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         height: '10-12 meter',diameter: '50-70 cm', reqName: 'Andi Wijaya',   reqPhone: '081234567003', rtName: 'Pak Slamet',rtPhone: '081298765003' },
       { kec: 'Kenjeran',  addr: 'Jl. Raya Kenjeran No. 50', status: 'rejected',    photos: 3, count: 4,
         height: '4-5 meter',  diameter: '20-30 cm', reqName: 'Dewi Lestari',  reqPhone: '081234567004', rtName: 'Pak Budi',  rtPhone: '081298765004' },
-      { kec: 'Krembangan',addr: 'Jl. Tanjungsari No. 100',  status: 'converted',   photos: 4, count: 10,
+      { kec: 'Krembangan',addr: 'Jl. Tanjungsari No. 100',  status: 'assigned',   photos: 4, count: 10,
         height: '7-9 meter',  diameter: '35-50 cm', reqName: 'Rina Susanti',  reqPhone: '081234567005', rtName: 'Pak Wahyu', rtPhone: '081298765005' },
       { kec: 'Tegalsari', addr: 'Jl. Embong Malang No. 7',  status: 'in_progress', photos: 5, count: 6,
         height: '6-8 meter',  diameter: '30-45 cm', reqName: 'Eko Pranoto',   reqPhone: '081234567006', rtName: 'Pak Agus',  rtPhone: '081298765006' },
@@ -655,9 +722,14 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     const submitterId = staffKecUsers.length > 0
       ? staffKecUsers[0].id
       : fallbackAdmin[0]?.id;
-    // Pick the staff_kec_pusat user (if seeded) for the original 6 sample
-    // requests so the canonical demo login still sees varied statuses.
-    const pusatStaff = staffKecUsers.find((s) => s.username === 'staff_kec_pusat');
+    // Pick the canonical Pusat staff_kecamatan user for the original 6 sample
+    // requests so the demo login still sees varied statuses. After the May 9
+    // username standardization the Pusat-Tegalsari user is
+    // `staff_kecamatan_tegalsari_1`; the legacy staging-only `staff_kecamatan_pusat_1`
+    // is the secondary fallback.
+    const pusatStaff =
+      staffKecUsers.find((s) => s.username === 'staff_kecamatan_tegalsari_1') ??
+      staffKecUsers.find((s) => s.username === 'staff_kecamatan_pusat_1');
     const sampleSubmitterId = pusatStaff?.id ?? submitterId;
     const reviewer = await queryRunner.query(
       `SELECT id FROM users WHERE role IN ('admin_data','kepala_rayon','superadmin') LIMIT 1`,
@@ -677,7 +749,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         );
         const expectedDate = new Date(Date.now() + (i + 1) * 86400000)
           .toISOString().split('T')[0];
-        const reviewedAt = ['approved', 'rejected', 'converted', 'in_progress'].includes(r.status)
+        const reviewedAt = ['approved', 'rejected', 'assigned', 'in_progress'].includes(r.status)
           ? new Date().toISOString() : null;
 
         const result = await queryRunner.query(
@@ -707,7 +779,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       // every chip and both sort orders without being seeded against a single
       // status bucket. Stays idempotent via reference_code.
       const STATUSES = ['submitted', 'under_review', 'approved', 'rejected',
-                         'converted', 'in_progress', 'done', 'cancelled'] as const;
+                         'assigned', 'in_progress', 'done', 'cancelled'] as const;
       const KECS = ['Tegalsari', 'Genteng', 'Wonokromo', 'Kenjeran',
                     'Krembangan', 'Sukolilo', 'Mulyorejo', 'Gubeng', 'Bulak'];
       const STREETS = ['Jl. Mawar', 'Jl. Anggrek', 'Jl. Melati', 'Jl. Cendana',
@@ -736,7 +808,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         rayonByKec.get(kec) ?? rayonIdForReq;
 
       const BULK_COUNT = 25;
-      // All bulk rows submitted by `staff_kec_pusat` (the canonical demo
+      // All bulk rows submitted by the canonical Pusat staff_kecamatan demo
       // login) so the Perantingan list has enough volume on `mine=true` to
       // exercise scroll + filter + sort. Admin review queues filter by
       // `rayon_id`, which round-robins across all rayons regardless.
@@ -753,9 +825,15 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         const photoCount = ((i % 4) + 1);
         const ageDays = i; // 0 → today, 1 → yesterday … 24 → ~3.5 weeks ago
         const createdAt = new Date(Date.now() - ageDays * 86400000).toISOString();
-        const expectedDate = new Date(Date.now() + ((i % 14) + 1) * 86400000)
-          .toISOString().split('T')[0];
-        const reviewedAt = ['approved', 'rejected', 'converted', 'in_progress',
+        const targetDate = new Date(Date.now() + ((i % 14) + 1) * 86400000);
+        const targetIsoDate = targetDate.toISOString().split('T')[0];
+        // May 9, 2026 schema split: kecamatan picks a WEEK on submit; admin
+        // confirms the DAY at assign-to-task. Populate the kecamatan's week
+        // for every row, and only fill `scheduled_date` once the admin has
+        // acted (whitelist via ADMIN_DATED_STATUSES).
+        const isoWk = isoWeekOf(targetDate);
+        const scheduledDate = ADMIN_DATED_STATUSES.has(status) ? targetIsoDate : null;
+        const reviewedAt = ['approved', 'rejected', 'assigned', 'in_progress',
                              'done', 'cancelled', 'under_review'].includes(status)
           ? new Date(Date.now() - ageDays * 86400000 + 3600 * 1000).toISOString()
           : null;
@@ -767,16 +845,18 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         const result = await queryRunner.query(
           `INSERT INTO pruning_requests
              (reference_code, submitted_by, kecamatan_name, address, gps_lat, gps_lng,
-              expected_date, estimated_plant_count, tree_count,
+              expected_year, expected_iso_week, scheduled_date,
+              estimated_plant_count, tree_count,
               tree_height_estimate, tree_diameter_estimate,
               requester_name, requester_phone, rt_leader_name, rt_leader_phone,
               photo_urls, status, rayon_id,
               reviewed_by, reviewed_at, created_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20,$21)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::text[],$19,$20,$21,$22,$23)
            ON CONFLICT (reference_code) DO NOTHING`,
           [refCode, sampleSubmitterId, kec, `${street} No. ${100 + i}`,
            -7.2575 + (i * 0.0007), 112.7521 + (i * 0.0007),
-           expectedDate, treeCount, treeCount,
+           isoWk.year, isoWk.week, scheduledDate,
+           treeCount, treeCount,
            height, diameter,
            `${reqName} ${i + 1}`, `0812345${(80000 + i).toString().slice(-5)}`,
            rtName, `0812987${(60000 + i).toString().slice(-5)}`,
@@ -879,20 +959,49 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         }
       }
 
+      // Dev capacity grid — capacity_units = 5 (matches the
+      // `service_capacity_defaults.default_capacity_per_week` config) and a
+      // varied `booked_units` pattern so the WeekPicker exercises all four
+      // chip variants out of the box:
+      //   wk %4 == 0 → 0 / 5 booked  → "Tersedia" (green)
+      //   wk %4 == 1 → 2 / 5 booked  → "Tersedia" (green)
+      //   wk %4 == 2 → 4 / 5 booked  → "Hampir Penuh" (yellow)
+      //   wk %4 == 3 → 5 / 5 booked  → "Penuh" (red)
+      // The pattern is rotated by rayon index so different rayons show
+      // different load profiles — useful when admins switch rayons during
+      // UAT and want to see the booking calendar respond.
+      const DEV_CAPACITY = 5;
+      const BOOK_PATTERN = [0, 2, 4, 5];
       let capacityInserted = 0;
-      for (const rayon of rayons) {
-        for (const { year, week } of weeksToSeed) {
+      let capacityUpdated = 0;
+      for (let r = 0; r < rayons.length; r++) {
+        const rayon = rayons[r];
+        for (let i = 0; i < weeksToSeed.length; i++) {
+          const { year, week } = weeksToSeed[i];
+          const booked = BOOK_PATTERN[(i + r) % BOOK_PATTERN.length];
+          // ON CONFLICT DO UPDATE so re-seed swaps stale capacity_units=0 rows
+          // (from prior runs / from prod-style reference seed) into the dev
+          // values without needing a wipe.
           const result = await queryRunner.query(
-            `INSERT INTO service_capacity (rayon_id, year, iso_week, service_type, capacity_units, booked_units)
-             VALUES ($1, $2, $3, 'pruning', 0, 0)
-             ON CONFLICT (rayon_id, year, iso_week, service_type) DO NOTHING`,
-            [rayon.id, year, week],
+            `INSERT INTO service_capacity
+                (rayon_id, year, iso_week, service_type, capacity_units, booked_units)
+             VALUES ($1, $2, $3, 'pruning', $4, $5)
+             ON CONFLICT (rayon_id, year, iso_week, service_type) DO UPDATE SET
+                capacity_units = EXCLUDED.capacity_units,
+                booked_units   = EXCLUDED.booked_units
+             RETURNING (xmax = 0) AS inserted`,
+            [rayon.id, year, week, DEV_CAPACITY, booked],
           );
-          if (result && (result as any).rowCount > 0) capacityInserted++;
+          if (result[0]?.inserted) capacityInserted++;
+          else capacityUpdated++;
         }
       }
-      console.log(`  ✓ ${capacityInserted} service_capacity rows inserted`);
-      console.log(`    Rayons: ${rayons.length}, Weeks: ${weeksToSeed.length} (${startYear}-W${startWeek} to ${weeksToSeed[weeksToSeed.length - 1].year}-W${weeksToSeed[weeksToSeed.length - 1].week})`);
+      console.log(
+        `  ✓ ${capacityInserted} new + ${capacityUpdated} refreshed service_capacity rows ` +
+        `(${rayons.length} rayons × ${weeksToSeed.length} weeks, capacity_units=${DEV_CAPACITY}, ` +
+        `booked rotated through [${BOOK_PATTERN.join(',')}])`,
+      );
+      console.log(`    Range: ${startYear}-W${startWeek} → ${weeksToSeed[weeksToSeed.length - 1].year}-W${weeksToSeed[weeksToSeed.length - 1].week}`);
     }
 
     await queryRunner.commitTransaction();
@@ -942,7 +1051,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('  [3] Staff Kecamatan Users (NEW — May 9, 2026)');
     console.log('      ─────────────────────────────────────────────────────────────────────────────');
     console.log(`      ${String(c.staff_kec_users).padStart(3)} staff_kecamatan users — one per kecamatan, all password: password123`);
-    console.log('      Username pattern: staff_kecamatan_<code>  (e.g. staff_kecamatan_wiyung)');
+    console.log('      Username pattern: staff_kecamatan_<code>_<n>  (e.g. staff_kecamatan_wiyung_1)');
     console.log('      Each user is auto-linked to their kecamatan_id + rayon_id so the mobile');
     console.log('      submit form pre-fills + locks both fields on login.');
     console.log('');
@@ -970,8 +1079,10 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('  Rayon Selatan  (8): Wonokromo, Wonocolo, Gayungan, Jambangan, Sawahan,');
     console.log('                      Dukuh Pakis, Wiyung, Karang Pilang');
     console.log('');
-    console.log('  Tip: log in as `staff_kecamatan_wiyung` to walk the kecamatan submit flow,');
-    console.log('       or as `admin_data_pusat_1` (Rayon Pusat) to review + convert pruning requests.');
+    console.log('  Tip: pair `staff_kecamatan_tegalsari_1` (Rayon Pusat) for the submit flow with');
+    console.log('       `admin_data_pusat_1` (Rayon Pusat) to review + convert — both share Rayon');
+    console.log('       Pusat so the request lands in the admin\'s queue. For other rayons use the');
+    console.log('       matching admin (e.g. staff_kecamatan_wiyung_1 → admin_data_selatan_1).');
     console.log('══════════════════════════════════════════════════════════════════════════════════════');
   } catch (error) {
     await queryRunner.rollbackTransaction();
@@ -1176,7 +1287,7 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
         height: '10-12 meter',diameter: '50-70 cm',  reqName: 'Andi Wijaya',    reqPhone: '081234567003', rtName: 'Pak Slamet',rtPhone: '081298765003' },
       { kecamatan: 'Krembangan', address: 'Jl. Tanjungsari No. 25',   status: 'rejected'    as const, estimatedCount: 6,  daysFromNow: -5,
         height: '4-5 meter',  diameter: '20-30 cm',  reqName: 'Dewi Lestari',   reqPhone: '081234567004', rtName: 'Pak Budi',  rtPhone: '081298765004' },
-      { kecamatan: 'Genteng',    address: 'Jl. Tunjungan No. 12',     status: 'converted'   as const, estimatedCount: 10, daysFromNow: 7,
+      { kecamatan: 'Genteng',    address: 'Jl. Tunjungan No. 12',     status: 'assigned'   as const, estimatedCount: 10, daysFromNow: 7,
         height: '7-9 meter',  diameter: '35-50 cm',  reqName: 'Rina Susanti',   reqPhone: '081234567005', rtName: 'Pak Wahyu', rtPhone: '081298765005' },
       { kecamatan: 'Tegalsari',  address: 'Jl. Embong Malang No. 7',  status: 'in_progress' as const, estimatedCount: 6,  daysFromNow: 3,
         height: '5-7 meter',  diameter: '30-40 cm',  reqName: 'Eko Pranoto',    reqPhone: '081234567006', rtName: 'Pak Agus',  rtPhone: '081298765006' },
@@ -1184,21 +1295,31 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
     let inserted = 0;
     for (let i = 0; i < samples.length; i++) {
       const refCode = `PR-2026-STAGING-${String(i + 1).padStart(4, '0')}`;
-      const expectedDate = new Date();
-      expectedDate.setDate(expectedDate.getDate() + samples[i].daysFromNow);
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + samples[i].daysFromNow);
+      const targetIsoDate = targetDate.toISOString().split('T')[0];
 
       const photoUrls = Array.from({ length: 3 + (i % 3) }, (_, n) =>
         `https://placehold.co/600x400?text=PR-${i + 1}-${n + 1}`,
       );
 
       const s = samples[i];
+      // May 9, 2026 schema split — kecamatan picks a week on submit, admin
+      // confirms the day. Sample seeds populate `expected_year` /
+      // `expected_iso_week` for every row, and `scheduled_date` only for
+      // statuses where admin has acted.
+      const isoWk = isoWeekOf(targetDate);
+      const scheduledDate = ADMIN_DATED_STATUSES.has(s.status) ? targetIsoDate : null;
+
       const insertParams: any[] = [
         refCode,
         submitterId,
         s.kecamatan,
         s.address,
         s.status,
-        expectedDate.toISOString().split('T')[0],
+        isoWk.year,
+        isoWk.week,
+        scheduledDate,
         s.estimatedCount,
         s.estimatedCount,            // tree_count mirrors estimated_plant_count
         s.height,
@@ -1212,7 +1333,7 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
       ];
 
       // Add review metadata for any reviewed/post-review status
-      const reviewed = ['approved', 'rejected', 'converted', 'in_progress'].includes(s.status);
+      const reviewed = ['approved', 'rejected', 'assigned', 'in_progress'].includes(s.status);
       if (reviewed) {
         insertParams.push(adminId, new Date().toISOString(), `Reviewed by admin on ${new Date().toLocaleDateString()}`);
       } else {
@@ -1221,12 +1342,13 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
 
       const rows = await queryRunner.query(
         `INSERT INTO pruning_requests
-           (reference_code, submitted_by, kecamatan_name, address, status, expected_date,
+           (reference_code, submitted_by, kecamatan_name, address, status,
+            expected_year, expected_iso_week, scheduled_date,
             estimated_plant_count, tree_count, tree_height_estimate, tree_diameter_estimate,
             requester_name, requester_phone, rt_leader_name, rt_leader_phone,
             rayon_id, photo_urls,
             reviewed_by, reviewed_at, review_notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::text[], $17, $18, $19)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18::text[], $19, $20, $21)
          ON CONFLICT (reference_code) DO NOTHING
          RETURNING id`,
         insertParams,

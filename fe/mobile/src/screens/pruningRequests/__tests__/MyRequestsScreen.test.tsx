@@ -299,7 +299,7 @@ describe('MyRequestsScreen', () => {
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
-    convertedTaskId: null,
+    assignedTaskId: null,
     convertedTask: null,
     createdAt: '2026-04-27T10:00:00Z',
     updatedAt: '2026-04-27T10:00:00Z',

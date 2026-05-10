@@ -362,7 +362,7 @@ If any of these fail, stop and fix before walking the full checklist:
 | 2 | Navigate `SubmitScreen` Step 1 → Step 2 → Step 5 (any direction) | Buttons render text correctly; no red error screen | ✅ fixed Apr 27 |
 | 3 | Login mobile as `admin_data_pusat / password123` → tap admin tab → `ReviewQueueScreen` | List of pending pruning requests (≥2 from seed) | ✅ |
 | 4 | In `ReviewQueueScreen`, tap a request → `RequestDetailScreen` → tap "Setujui" | Modal opens; reason textarea visible; submit fires `POST /pruning-requests/:id/review` | ✅ |
-| 5 | In `RequestDetailScreen` for an approved request → tap "Konversi ke Tugas" | `ConvertToTaskSheet` opens; date picker + units field visible; **note: areas/users dropdowns are empty until Phase 4 polish** | 🟡 partial |
+| 5 | In `RequestDetailScreen` for an approved request → tap "Tugaskan ke Petugas" | `AssignToTaskSheet` opens; date picker + units field visible; **note: areas/users dropdowns are empty until Phase 4 polish** | 🟡 partial |
 | 6 | Login web as `admin_pusat / password123` → click each sidebar link | All routes render (no 404). Phase 3 web pages show "Coming soon — use mobile" placeholders | ✅ Apr 27 placeholders added |
 | 7 | Login web as `staff_kec_pusat` → sidebar has only "Kirim Permintaan" + "Permintaan Saya" | Both links resolve to placeholder pages, no 404 | ✅ Apr 27 fixed |
 | 8 | Backend: `curl -H "Authorization: Bearer <admin token>" http://localhost:3000/api/v1/pruning-requests` | 200 OK; paginated list with at least 1 request | ✅ |
@@ -463,7 +463,7 @@ If any of these fail, stop and fix before walking the full checklist:
   - [ ] `POST /api/v1/pruning-requests` (staff_kecamatan) → 201 with id, status=submitted
   - [ ] `GET /api/v1/pruning-requests` (admin_data, admin_system) → paginated list; filters by status/rayon work
   - [ ] `POST /api/v1/pruning-requests/:id/review` (admin_data) → update status (approved/rejected); ADR-032 rayon scope enforced
-  - [ ] `POST /api/v1/pruning-requests/:id/convert` (admin_system) → status→converted, new task created
+  - [ ] `POST /api/v1/pruning-requests/:id/assign-to-task` (admin_system) → status→assigned, new task created
   - [ ] `pruning_requests` table exists: `SELECT COUNT(*) FROM pruning_requests;` → ≥4 (seeded samples)
   - [ ] `activity_plant_items` table exists: links activities to plant species (for task conversion)
   - [ ] Tests: 30+ tests for PruningRequestsController, ≥80% coverage
@@ -475,7 +475,7 @@ If any of these fail, stop and fix before walking the full checklist:
   - [ ] `MyRequestsScreen`: list of staff_kecamatan's own requests; filters by status (submitted/approved/rejected)
   - [ ] `RequestDetailScreen`: full request detail; status updates via WS in real-time
   - [ ] `ReviewQueueScreen` (admin_data): paginated queue of submitted requests; approval/rejection form
-  - [ ] `ConvertToTaskSheet` (admin_system): approve→convert flow; modal opens with task pre-population
+  - [ ] `AssignToTaskSheet` (admin_system): approve→convert flow; modal opens with task pre-population
   - [ ] `pruningRequestsSlice`: state shape correct, no mutations, tests ≥80%
   - [ ] Offline queue: `syncManager.ts` includes `syncPruningRequest()` with retry logic
 

@@ -2,8 +2,8 @@
  * Pruning Request detail page (Phase 3 — admin disposition)
  *
  * Shows the full kecamatan submission and exposes the two terminal admin
- * actions: review (approve/reject) and convert-to-task. Mirrors the mobile
- * RequestDetailScreen + ConvertToTaskSheet, in two stacked cards instead of
+ * actions: review (approve/reject) and assign-to-task. Mirrors the mobile
+ * RequestDetailScreen + AssignToTaskSheet, in two stacked cards instead of
  * a sheet to suit the desktop viewport.
  */
 
@@ -229,10 +229,10 @@ export default function PruningRequestDetailPage() {
               </div>
             )}
 
-            {request.convertedTaskId && (
+            {request.assignedTaskId && (
               <div className="pt-3">
                 <Link
-                  href={`/tasks/${request.convertedTaskId}`}
+                  href={`/tasks/${request.assignedTaskId}`}
                   className="text-nb-primary font-semibold hover:underline"
                 >
                   Lihat Tugas Terkait →
@@ -284,7 +284,7 @@ export default function PruningRequestDetailPage() {
           {canConvert && (
             <Card>
               <CardHeader>
-                <h2 className="text-nb-h3 font-bold uppercase">Konversi ke Tugas</h2>
+                <h2 className="text-nb-h3 font-bold uppercase">Tugaskan ke Petugas</h2>
                 <p className="text-sm text-nb-gray-600 mt-1">
                   Tanggal kosong akan dipilih otomatis dalam minggu yang diminta kecamatan.
                 </p>

@@ -8,7 +8,7 @@ import React from 'react';
 import { render, fireEvent, waitFor, screen } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { ConvertToTaskSheet } from '../ConvertToTaskSheet';
+import { AssignToTaskSheet } from '../AssignToTaskSheet';
 import pruningRequestsReducer from '../../../store/slices/pruningRequestsSlice';
 import serviceCapacityReducer from '../../../store/slices/serviceCapacitySlice';
 import * as serviceCapacityApi from '../../../services/api/serviceCapacityApi';
@@ -94,7 +94,7 @@ const mockCapacityRow = {
   booked_units: 5,
 };
 
-describe('ConvertToTaskSheet', () => {
+describe('AssignToTaskSheet', () => {
   let store: any;
 
   // Mock reducers for areas and users
@@ -149,7 +149,7 @@ describe('ConvertToTaskSheet', () => {
     it('renders form fields when visible', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -168,7 +168,7 @@ describe('ConvertToTaskSheet', () => {
     it('does not render when visible is false', () => {
       const { queryByText } = render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={false}
             onClose={jest.fn()}
             request={mockRequest}
@@ -182,7 +182,7 @@ describe('ConvertToTaskSheet', () => {
     it('renders action buttons', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -199,7 +199,7 @@ describe('ConvertToTaskSheet', () => {
     it('renders submit button in initial state', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -214,7 +214,7 @@ describe('ConvertToTaskSheet', () => {
     it('renders all required form fields for conversion', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -242,7 +242,7 @@ describe('ConvertToTaskSheet', () => {
     it('fetches capacity when date is selected', async () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -296,7 +296,7 @@ describe('ConvertToTaskSheet', () => {
 
       const { getByTestId } = render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -347,7 +347,7 @@ describe('ConvertToTaskSheet', () => {
 
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -398,7 +398,7 @@ describe('ConvertToTaskSheet', () => {
 
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -417,7 +417,7 @@ describe('ConvertToTaskSheet', () => {
 
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={mockOnClose}
             request={mockRequest}
@@ -468,7 +468,7 @@ describe('ConvertToTaskSheet', () => {
 
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -492,7 +492,7 @@ describe('ConvertToTaskSheet', () => {
 
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -510,7 +510,7 @@ describe('ConvertToTaskSheet', () => {
     it('renders units input field', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -527,7 +527,7 @@ describe('ConvertToTaskSheet', () => {
     it('populates area select with area names', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -541,7 +541,7 @@ describe('ConvertToTaskSheet', () => {
     it('filters assignees to korlap and kepala_rayon roles', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -555,7 +555,7 @@ describe('ConvertToTaskSheet', () => {
     it('includes all case type options', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}
@@ -569,7 +569,7 @@ describe('ConvertToTaskSheet', () => {
     it('includes all pruning action options', () => {
       render(
         <Provider store={store}>
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={true}
             onClose={jest.fn()}
             request={mockRequest}

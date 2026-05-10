@@ -171,7 +171,7 @@ export function getPruningRequestStatusColor(
     case 'under_review': return 'navy';
     case 'approved':     return 'success';
     case 'rejected':     return 'danger';
-    case 'converted':    return 'primary';
+    case 'assigned':    return 'primary';
     case 'in_progress':  return 'primary';
     case 'done':         return 'success';
     case 'cancelled':    return 'gray';
@@ -185,7 +185,7 @@ export function getPruningRequestStatusLabel(status: PruningRequestStatus): stri
     case 'under_review': return 'Direview';
     case 'approved':     return 'Disetujui';
     case 'rejected':     return 'Ditolak';
-    case 'converted':    return 'Dijadwalkan';
+    case 'assigned':     return 'Ditugaskan';
     case 'in_progress':  return 'Diproses';
     case 'done':         return 'Selesai';
     case 'cancelled':    return 'Dibatalkan';

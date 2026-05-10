@@ -14,7 +14,7 @@ export type PruningRequestStatus =
   | 'under_review'
   | 'approved'
   | 'rejected'
-  | 'converted'
+  | 'assigned'
   | 'in_progress'
   | 'done'
   | 'cancelled';
@@ -48,7 +48,7 @@ export interface PruningRequest extends Record<string, unknown> {
   reviewer?: { id: string; full_name: string; role: string } | null;
   reviewedAt: string | null;
   reviewNotes: string | null;
-  convertedTaskId: string | null;
+  assignedTaskId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -143,7 +143,7 @@ export function useConvertPruningRequestToTask(id: string) {
       const response = await apiClient.post<{
         request: PruningRequest;
         task: { id: string };
-      }>(`/pruning-requests/${id}/convert-to-task`, dto);
+      }>(`/pruning-requests/${id}/assign-to-task`, dto);
       return response.data;
     },
     onSuccess: () => {

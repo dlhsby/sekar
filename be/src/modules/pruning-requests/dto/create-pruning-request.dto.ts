@@ -105,7 +105,7 @@ export class CreatePruningRequestDto {
    *
    * **Deprecated as of 2026-05-01 (ADR-035 amendment + ADR-038).** New mobile
    * builds send `expected_year` + `expected_iso_week` and let `admin_data`
-   * pick the concrete day at convert-to-task. Kept accepted for one release
+   * pick the concrete day at assign-to-task. Kept accepted for one release
    * so older builds continue to work; when present, the service derives
    * `(expected_year, expected_iso_week)` from this date.
    *

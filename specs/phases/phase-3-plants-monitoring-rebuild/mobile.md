@@ -51,7 +51,7 @@ Before any new feature work begins, every existing mobile screen migrates onto t
 These ship green-field on tokens in their own sub-phase and must NOT be touched in 3-R5:
 - `MapDashboardScreen`, `ClusterMarker`, `ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`, `PlantOverlayLayer` — sub-phase 3-5
 - `PruningTaskForm`, `SpeciesAutocomplete`, `PartialCompleteSheet` — sub-phase 3-7
-- `SubmitScreen`, `MyRequestsScreen`, `RequestDetailScreen`, `ReviewQueueScreen`, `ConvertToTaskSheet` — sub-phase 3-10
+- `SubmitScreen`, `MyRequestsScreen`, `RequestDetailScreen`, `ReviewQueueScreen`, `AssignToTaskSheet` — sub-phase 3-10
 - `SeedsListScreen`, `SeedDetailScreen`, `AddTransactionScreen` — sub-phase 3-12
 
 ### Acceptance criteria
@@ -83,7 +83,7 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 
 | File | Responsibility | Slice |
 |------|----------------|-------|
-| `src/components/tasks/PruningTaskForm.tsx` | Dynamic form (3 required enums per Q1 Apr 25 — full glossary in [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026)): **case_type** (GT/PT/PS/PD/PK radio) + **pruning_action** (PM/PB/PC radio) + **source** (TIW/TS/CC/PW/Wk select); plus species autocomplete (131 entries), quantity input per species, partial-complete CTA. When opened from a converted pruning_request, `source` is pre-filled and locked to the request's intake channel | `tasks` |
+| `src/components/tasks/PruningTaskForm.tsx` | Dynamic form (3 required enums per Q1 Apr 25 — full glossary in [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026)): **case_type** (GT/PT/PS/PD/PK radio) + **pruning_action** (PM/PB/PC radio) + **source** (TIW/TS/CC/PW/Wk select); plus species autocomplete (131 entries), quantity input per species, partial-complete CTA. When opened from a assigned pruning_request, `source` is pre-filled and locked to the request's intake channel | `tasks` |
 | `src/components/tasks/SpeciesAutocomplete.tsx` | Autocomplete with fuzzy match over `plant_species.name_id`; caches catalog in Redux | `plants.speciesCatalog` |
 | `src/screens/tasks/TaskDetailScreen.tsx` | Adds "Lanjutkan Besok" CTA that calls `/tasks/:id/resume`; shows parent/child lineage | `tasks.lineageById` |
 | `src/screens/tasks/PartialCompleteSheet.tsx` | Bottom sheet for partial completion (completed_count, plant_items) | — |
@@ -94,11 +94,11 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 |------|----------------|-----------|-------|
 | `src/screens/pruningRequests/SubmitScreen.tsx` | **Apr 27 redesign + May 1 week-picker:** single scrollable card-based form (Lokasi · Foto · Detail Pohon · Kontak · Minggu Preferensi · Catatan). GPS auto-captured on mount with manual refresh. Rayon + kecamatan preset from user profile. Photos min 1 max 5 (camera or gallery). Date row replaced by `WeekPicker` (vertical week cards with 7 informational per-day chips); submit DTO sends `expected_year` + `expected_iso_week` (ADR-038, ADR-035 amendment 2026-05-01). | `staff_kecamatan` | `pruningRequests` |
 | `src/screens/pruningRequests/components/WeekPicker.tsx` | **May 1 new:** kecamatan replacement for `AvailabilityCalendar`. Renders 8 week cards stacked vertically. Each card shows ISO-week range ("5 – 11 Mei"), an overall capacity badge (`Available` / `Hampir Penuh` / `Penuh` / `Belum diatur`), and 7 small per-day chips (informational, not tappable) so the submitter sees within-week distribution at a glance. Tap returns `(year, isoWeek)`. Token-only (consumes `nbColors`/`nbSpacing`/`NBCard`/`NBBadge`/`NBText`). | `staff_kecamatan` | — |
-| `src/screens/pruningRequests/PerantinganListScreen.tsx` | **Apr 27 new:** staff_kecamatan home tab. Status filter chips, date sort, FAB → SubmitScreen, pull-to-refresh, NB list cards. Replaces the standalone `MyRequestsScreen` route at the navigator level (the legacy file remains but is no longer wired into the tab nav). | `staff_kecamatan` | `pruningRequests` |
+| `src/screens/pruningRequests/PerantinganListScreen.tsx` | **Apr 27 new (May 9 confirmed canonical):** staff_kecamatan home tab. Page-title row + filter bar (mini-chips left, sort + filter icon buttons right with active-count badge) + `PerantinganRequestCard` rows + floating "+ Buat Permohonan" FAB. Uses `SortModal` and `PruningRequestFilterModal`. Token-only styling via `nbTokens`. Replaces the standalone `MyRequestsScreen` route at the navigator level (the legacy file remains but is no longer wired into the tab nav). | `staff_kecamatan` | `pruningRequests` |
 | `src/screens/pruningRequests/MyRequestsScreen.tsx` | (Legacy) — kept for backward compat with prior tests; no longer in the active nav. | — | `pruningRequests` |
-| `src/screens/pruningRequests/RequestDetailScreen.tsx` | Outcome view: converted task + activities + photos | submitter, reviewer, admin | `pruningRequests` |
-| `src/screens/pruningRequests/ReviewQueueScreen.tsx` | Approve / reject / convert-to-task; capacity indicator on convert | `admin_data` | `pruningRequests` |
-| `src/screens/pruningRequests/ConvertToTaskSheet.tsx` | Bottom sheet: pick area, **scheduled_date** (specific calendar day inside the booked ISO-week — Q3 Apr 25 answer), target_plant_count, optional assignee. Shows the week's capacity chip (`8/10` style); the day-picker constrains selectable dates to days within the booked week (Mon–Sun) and disables past dates | `admin_data` | — |
+| `src/screens/pruningRequests/RequestDetailScreen.tsx` | Outcome view: assigned task + activities + photos | submitter, reviewer, admin | `pruningRequests` |
+| `src/screens/pruningRequests/ReviewQueueScreen.tsx` | **May 9 redesign — full parity with `PerantinganListScreen`:** page-title row "Review Permohonan Perantingan" + filter bar (mini-chips + sort + filter icon buttons with active-count badge) + `PerantinganRequestCard` rows. **No FAB, no inline quick-action buttons** — admins tap a card to open `RequestDetailScreen` with `adminMode: true`, where approve / reject / assign-to-task live (matches `OvertimeDetailScreen` / Aktivitas pattern). Status filter is server-side (refetch on change); reference-code, requester-name, date range and rayon are local-only. Token-only styling via `nbTokens`. | `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin` | `pruningRequests` |
+| `src/screens/pruningRequests/AssignToTaskSheet.tsx` | Bottom sheet: pick area, **scheduled_date** (specific calendar day inside the booked ISO-week — Q3 Apr 25 answer), target_plant_count, optional assignee. Shows the week's capacity chip (`8/10` style); the day-picker constrains selectable dates to days within the booked week (Mon–Sun) and disables past dates | `admin_data` | — |
 
 ### Seeds (sub-phase 3-12)
 
@@ -116,7 +116,7 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 |-------|-------|--------|
 | `monitoringV2` | `{ snapshot, visibleLayers, selectedUserId, selectedAreaId, clusterZoomThreshold }` | `fetchSnapshot`, `applyPatch` (WS), `toggleLayer` |
 | `plants` | `{ speciesCatalog[], areaPlantsByArea, notableByArea, areaStatusById }` | `fetchSpeciesCatalog`, `fetchAreaPlants`, `upsertAreaPlants` |
-| `pruningRequests` | `{ mine[], queue, byId, filters }` | `submit`, `fetchMine`, `fetchQueue`, `review`, `convertToTask` |
+| `pruningRequests` | `{ mine[], queue, byId, filters }` | `submit`, `fetchMine`, `fetchQueue`, `review`, `assignToTask` |
 | `seeds` | `{ seeds[], transactionsBySeed }` | `fetchSeeds`, `fetchTransactions`, `recordTransaction` |
 
 Existing `tasks` slice extended with `lineageById`, `partialComplete`, `resume`.
@@ -292,7 +292,7 @@ Auto-notify korlap when out-of-area exceeds threshold (WebSocket event `user:lef
 
 | Screen | Purpose | Key UI |
 |--------|---------|-------|
-| **PR-1 Step 1 (case + action + source)** | Pick the 3 required pruning enums | Card AREA · RAYON read-only · radio **Kasus** GT (selected) / PT / PS / PD / PK · radio **Aksi** PM / PB (selected) / PC · select **Sumber** TIW / TS / CC (default) / PW / Wk · CTA "Lanjut → Spesies". When opened from a converted pruning_request, Sumber is pre-filled (PW or Wk) and locked. |
+| **PR-1 Step 1 (case + action + source)** | Pick the 3 required pruning enums | Card AREA · RAYON read-only · radio **Kasus** GT (selected) / PT / PS / PD / PK · radio **Aksi** PM / PB (selected) / PC · select **Sumber** TIW / TS / CC (default) / PW / Wk · CTA "Lanjut → Spesies". When opened from a assigned pruning_request, Sumber is pre-filled (PW or Wk) and locked. |
 | **PR-2 Species autocomplete** | 131-species fuzzy search | Search input "🔍 {query}" · autocomplete list with ✓ selected row · JUMLAH POHON spinner (− / n / +) · CTA "Tambahkan" |
 | **PR-3 Full form** | Photos + location + species list | Card KASUS · AKSI · SUMBER read-only summary chips · Card species list "Trembesi ×4, Sono ×2" with ⋯ menu + "+ Tambah spesies" · Card foto grid (sebelum/sesudah + "+" up to 5) · Card Lokasi (GPS + ±Xm + ✓ dalam area) · CTAs "Lanjut Besok" / "SELESAI" primary lg |
 | **PR-4 Partial complete sheet** | Resume tomorrow | Title "LANJUTKAN BESOK" · info "Pohon yang belum selesai akan jadi sub-task baru untuk besok" · Cards SELESAI HARI INI (m/n: species list) / BESOK LANJUT (n pohon) · input CATATAN BESOK · CTAs "Batal" / "Simpan & Jadwalkan" primary |
@@ -312,8 +312,9 @@ Syncs via WebSocket `area:plant-status-changed` → `plants.applyAreaStatusPatch
 
 | Screen | Purpose | Key UI |
 |--------|---------|-------|
-| **PQ-1 Review queue** | Tabbed queue | Tabs "Review (n)" `--accent` / "Disetujui" / "Ditolak" · request cards with badge `UNDER REVIEW` (warn) / `SUBMITTED` + ID + title + location · kecamatan |
-| **PQ-2 Request detail** | Reviewer view | Card (bg `--accent`) title + PENGAJU + HARAPAN (date + count) · Card foto 2×2 grid · Card Kapasitas minggu N (progress bar "N/M slot") · Card Catatan warga · CTAs "✕ Tolak" danger / "? Info" / "✓ Approve" primary |
+| **PQ-1 Review queue** | Inbox list (May 9 redesign — parity with PerantinganListScreen / Tugas / Aktivitas / Lembur) | Page title "Review Permohonan Perantingan" · filter bar with active mini-chips (status / date / rayon / refcode / requester) and sort + filter icon buttons (active-count badge) · `PerantinganRequestCard` rows showing reference code, address, kecamatan, **submitter chip (full_name + role)**, tree count, status badge · tap row → opens `PQ-2` with `adminMode: true`. **No inline quick-action buttons** — approve / reject / convert happen on `PQ-2`. |
+| **PQ-2 Request detail** | Reviewer view (May 9 redesign) | Status card now includes a **"Pemohon (Petugas)" row above "Diajukan"** showing `submitter.full_name · submitter.role` (visible to both kecamatan and admin). Action cards collapsed into a **sticky bottom action bar**: when `expectedDate` is empty the bar shows a single primary "📅 Atur Jadwal Dahulu" button + a hint that approval is gated on the schedule; once a date is set the button reverts to a small secondary "Atur Ulang Jadwal" and the action row enables (Tolak / Setujui for `submitted` / `under_review`, "Tugaskan ke Petugas" for `approved`). **Admin no longer sees a "Batalkan Permohonan" button** — cancel is submitter-only; admin disposition is approve / reject / convert via the formal review trail. RescheduleSheet ("Atur Jadwal") switched from `type="sheet"` to `type="fullscreen"` to fix layout collapse — sheet's `flexShrink: 1` height left the inner calendar ScrollView unbounded. Photos now arrive as base64 data-URIs (mirrors TaskCompleteScreen / OvertimeSubmitScreen) so admin reviewers actually see the staff_kecamatan submission instead of an unreachable `file://` URI. |
+| **PQ-2 (legacy wireframe)** | Original Reviewer wireframe (superseded by the May 9 redesign row above; left here for spec history) | Card (bg `--accent`) title + PENGAJU + HARAPAN (date + count) · Card foto 2×2 grid · Card Kapasitas minggu N (progress bar "N/M slot") · Card Catatan warga · CTAs "✕ Tolak" danger / "? Info" / "✓ Approve" primary |
 | **PQ-3 Convert-to-task sheet** | Disposition flow | Title "KONVERSI PR-{id}" · inputs AREA (dropdown) · TANGGAL (dropdown + week) · TARGET POHON · ASSIGN optional · Card KAPASITAS (before → after, OK) · CTAs "Batal" / "Buat Tugas" primary |
 
 ### Flow 10 — Kecamatan Submission (`staff_kecamatan` 5-step, M4 sub-phase 3-10)

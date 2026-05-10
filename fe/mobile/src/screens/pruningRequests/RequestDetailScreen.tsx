@@ -16,7 +16,7 @@
  *   9. Aksi Admin (admin reviewers only)
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -49,8 +49,9 @@ import {
   NBButton,
   NBAlert,
   NBModal,
+  NBCardTextInput,
 } from '../../components/nb';
-import { ConvertToTaskSheet } from '../../components/admin/ConvertToTaskSheet';
+import { AssignToTaskSheet } from '../../components/admin/AssignToTaskSheet';
 import { RescheduleSheet } from './components/RescheduleSheet';
 import { LocationMapModal } from '../../components/modals/LocationMapModal';
 import { NBToast } from '../../components/nb/NBToast';
@@ -62,7 +63,7 @@ import {
   nbBorderRadius,
   nbShadows,
 } from '../../constants/nbTokens';
-import { formatDate, formatDateTime } from '../../utils/dateUtils';
+import { formatDate, formatDateTime, formatIsoWeekLabel } from '../../utils/dateUtils';
 import {
   getPruningRequestStatusColor,
   getPruningRequestStatusLabel,
@@ -80,7 +81,16 @@ const ADMIN_ROLES = [
 ];
 
 const ACTIONABLE_STATUSES = ['submitted', 'under_review'];
-const RESCHEDULABLE_STATUSES = ['submitted', 'under_review', 'approved'];
+// May 10, 2026 — `assigned` joined the whitelist so admins can move the
+// schedule after a task has been created. Backend cascades the change to
+// `task.deadline`, capacity ledger, and a push to the assignee.
+const RESCHEDULABLE_STATUSES = ['submitted', 'under_review', 'approved', 'assigned'];
+// May 10, 2026 — whitelist of statuses where a cancel is meaningful.
+// `rejected` / `converted` / `in_progress` / `done` / `cancelled` are NOT
+// here: rejected is already an admin terminal, converted+in_progress mean
+// a task exists and lifecycle moved to the task, done/cancelled are
+// terminal. Mirrors the backend `cancel()` whitelist.
+const CANCELLABLE_STATUSES = ['submitted', 'under_review', 'approved'];
 
 function formatGps(lat: unknown, lng: unknown): string {
   if (lat == null || lng == null) {
@@ -92,6 +102,98 @@ function formatGps(lat: unknown, lng: unknown): string {
     return '—';
   }
   return `${nLat.toFixed(6)}, ${nLng.toFixed(6)}`;
+}
+
+/**
+ * Normalize an Indonesian phone number into the international `wa.me` /
+ * `tel:` form. Strips spaces/dashes, swaps a leading `0` for `62`, and
+ * keeps the rest verbatim. Returns null on empty/garbage input so the
+ * caller can decide to hide the action icons.
+ */
+function normalizePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = String(raw).replace(/[^\d+]/g, '');
+  if (!digits) return null;
+  if (digits.startsWith('+')) return digits.slice(1);
+  if (digits.startsWith('62')) return digits;
+  if (digits.startsWith('0')) return `62${digits.slice(1)}`;
+  return digits;
+}
+
+interface ContactRowProps {
+  label: string;
+  name?: string | null;
+  phone?: string | null;
+  isLast?: boolean;
+}
+
+function ContactRow({ label, name, phone, isLast }: ContactRowProps): React.JSX.Element {
+  const normalized = normalizePhone(phone);
+  const handleCopy = async () => {
+    if (!phone) return;
+    try {
+      const Clipboard = (await import('@react-native-clipboard/clipboard')).default;
+      Clipboard.setString(phone);
+      NBToast.show({ level: 'success', title: 'Disalin', body: phone });
+    } catch {
+      /* native module unavailable in tests */
+    }
+  };
+  const handleWhatsApp = () => {
+    if (!normalized) return;
+    void Linking.openURL(`https://wa.me/${normalized}`);
+  };
+  const handleCall = () => {
+    if (!phone) return;
+    void Linking.openURL(`tel:${phone}`);
+  };
+  return (
+    <View style={[styles.infoRow, isLast && { marginBottom: 0 }]}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.value}>{name || '—'}</Text>
+      {phone ? (
+        <View style={styles.contactPhoneRow}>
+          <Text style={styles.contactPhoneText} selectable>
+            {phone}
+          </Text>
+          <View style={styles.contactActions}>
+            <TouchableOpacity
+              onPress={handleCopy}
+              accessibilityRole="button"
+              accessibilityLabel={`Salin nomor ${label}`}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.contactIconBtn}
+              testID={`perantingan-contact-copy-${label}`}
+            >
+              <MaterialCommunityIcons name="content-copy" size={18} color={nbColors.black} />
+            </TouchableOpacity>
+            {normalized ? (
+              <TouchableOpacity
+                onPress={handleWhatsApp}
+                accessibilityRole="button"
+                accessibilityLabel={`Chat WhatsApp ${label}`}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.contactIconBtn}
+                testID={`perantingan-contact-wa-${label}`}
+              >
+                <MaterialCommunityIcons name="whatsapp" size={20} color="#25D366" />
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              onPress={handleCall}
+              accessibilityRole="button"
+              accessibilityLabel={`Telepon ${label}`}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.contactIconBtn}
+              testID={`perantingan-contact-call-${label}`}
+            >
+              <MaterialCommunityIcons name="phone" size={18} color={nbColors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
@@ -107,10 +209,16 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [convertSheetVisible, setConvertSheetVisible] = useState(false);
   const [rescheduleVisible, setRescheduleVisible] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  // Inline reject reason input — matches OvertimeDetailScreen / TaskDetail
+  // / ActivityDetail. Tolak opens the input; Setujui is a confirm dialog.
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  // ScrollView ref so we can scroll the alasan input into view when Tolak
+  // is tapped — same UX as OvertimeDetailScreen's `scrollToEnd` animation.
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const canAdmin = useMemo(
     () => adminMode && userRole != null && ADMIN_ROLES.includes(userRole),
@@ -129,10 +237,10 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
   }, []);
 
   const handleViewTask = useCallback(() => {
-    if (request?.convertedTaskId) {
-      navigation.navigate('TaskDetail', { taskId: request.convertedTaskId });
+    if (request?.assignedTaskId) {
+      navigation.navigate('TaskDetail', { taskId: request.assignedTaskId });
     }
-  }, [request?.convertedTaskId, navigation]);
+  }, [request?.assignedTaskId, navigation]);
 
   const handleCancel = useCallback(() => {
     if (!request) return;
@@ -167,38 +275,100 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
   }, [dispatch, request]);
 
   const authUserId = useAppSelector((s) => s.auth.user?.id);
+  // Cancel is submitter-only — admin disposition lives in approve/reject/
+  // convert; an extra "batalkan" button on the admin view conflicts with the
+  // formal review trail. The `CANCELLABLE_STATUSES` whitelist also closes
+  // the rejected/converted/in_progress holes the previous blacklist left
+  // open (cancelling a `rejected` permohonan is nonsense — admin already
+  // terminated it).
   const canCancel = useMemo(() => {
     if (!request) return false;
-    if (request.status === 'cancelled' || request.status === 'done') return false;
-    const isSubmitter = !!authUserId && request.submittedBy === authUserId;
-    return isSubmitter || canAdmin;
+    if (canAdmin) return false;
+    if (!CANCELLABLE_STATUSES.includes(request.status)) return false;
+    return !!authUserId && request.submittedBy === authUserId;
   }, [request, authUserId, canAdmin]);
 
-  const handleReview = useCallback(
-    (decision: 'approve' | 'reject') => {
-      setReviewModalVisible(false);
-      dispatch(reviewPruningRequest({ id: requestId, decision }))
-        .unwrap()
-        .then(() => {
-          NBToast.show({
-            level: 'success',
-            title: 'Berhasil',
-            body:
-              decision === 'approve'
-                ? 'Permohonan telah disetujui.'
-                : 'Permohonan telah ditolak.',
-          });
-        })
-        .catch((err: any) => {
-          NBToast.show({
-            level: 'danger',
-            title: 'Gagal',
-            body: err?.message || 'Tidak dapat memproses keputusan.',
-          });
-        });
-    },
-    [requestId, dispatch],
-  );
+  // Setujui — single "Are you sure?" confirm, mirrors OvertimeDetailScreen
+  // and ActivityDetailScreen. No second screen, no modal that re-prompts
+  // approve/reject.
+  const handleApprove = useCallback(() => {
+    Alert.alert(
+      'Konfirmasi',
+      'Setujui permohonan perantingan ini?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Setuju',
+          onPress: async () => {
+            try {
+              await dispatch(
+                reviewPruningRequest({ id: requestId, decision: 'approve' }),
+              ).unwrap();
+              NBToast.show({
+                level: 'success',
+                title: 'Berhasil',
+                body: 'Permohonan telah disetujui.',
+              });
+            } catch (err: any) {
+              NBToast.show({
+                level: 'danger',
+                title: 'Gagal',
+                body: err?.message || 'Tidak dapat menyetujui permohonan.',
+              });
+            }
+          },
+        },
+      ],
+    );
+  }, [dispatch, requestId]);
+
+  // Tolak — show inline reason input and scroll it into view.
+  // Mirrors OvertimeDetailScreen.handleTolakPress: 150ms delay gives the
+  // input time to render before we ask the ScrollView to scroll past it.
+  const handleRejectPress = useCallback(() => {
+    setShowRejectInput(true);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+  }, []);
+
+  const handleRejectSubmit = useCallback(async () => {
+    if (!rejectReason.trim()) {
+      NBToast.show({
+        level: 'warning',
+        title: 'Alasan diperlukan',
+        body: 'Mohon isi alasan penolakan permohonan ini.',
+      });
+      return;
+    }
+    try {
+      await dispatch(
+        reviewPruningRequest({
+          id: requestId,
+          decision: 'reject',
+          reviewNotes: rejectReason.trim(),
+        }),
+      ).unwrap();
+      NBToast.show({
+        level: 'success',
+        title: 'Berhasil',
+        body: 'Permohonan telah ditolak.',
+      });
+      setShowRejectInput(false);
+      setRejectReason('');
+    } catch (err: any) {
+      NBToast.show({
+        level: 'danger',
+        title: 'Gagal',
+        body: err?.message || 'Tidak dapat menolak permohonan.',
+      });
+    }
+  }, [dispatch, requestId, rejectReason]);
+
+  const handleRejectCancel = useCallback(() => {
+    setShowRejectInput(false);
+    setRejectReason('');
+  }, []);
 
   if (isLoading && !request) {
     return <LoadingSpinner />;
@@ -231,6 +401,8 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
     <NBBackgroundPattern>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
+          ref={scrollViewRef}
+          style={styles.scroll}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
@@ -271,8 +443,23 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                   ) : null}
                 </View>
               </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.label}>Diajukan</Text>
+              {/* Submitter row — kecamatan + admin both see who filed the
+                  request. Falls back to the requester contact name when the
+                  submitter relation is missing on legacy seeded rows. The
+                  role label is intentionally NOT shown — every submitter is
+                  staff_kecamatan in this flow, so printing it adds noise. */}
+              {(request.submitter?.full_name || request.submitter?.username || request.requesterName) ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Diajukan Oleh</Text>
+                  <Text style={styles.value}>
+                    {request.submitter?.full_name ||
+                      request.submitter?.username ||
+                      request.requesterName}
+                  </Text>
+                </View>
+              ) : null}
+              <View style={[styles.infoRow, { marginBottom: 0 }]}>
+                <Text style={styles.label}>Diajukan Pada</Text>
                 <Text style={styles.value}>{formatDateTime(request.createdAt)}</Text>
               </View>
             </NBCardContent>
@@ -339,10 +526,10 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             </NBCardContent>
           </NBCard>
 
-          {/* ── Detail Pohon ──────────────────────────────────────────── */}
+          {/* ── Detail Perantingan ────────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>🌳 DETAIL POHON</Text>
+              <Text style={styles.sectionTitle}>🌳 DETAIL PERANTINGAN</Text>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
@@ -363,10 +550,26 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                   <Text style={styles.value}>{request.treeDiameterEstimate}</Text>
                 </View>
               ) : null}
-              <View style={[styles.infoRow, { marginBottom: 0 }]}>
-                <Text style={styles.label}>Tanggal Diharapkan</Text>
+              {/* Submitter's preferred week (ADR-035 amendment 2026-05-01).
+                  Always shown when set so kecamatan + admin both know what
+                  the warga asked for, separately from what the admin
+                  confirmed. */}
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Minggu Preferensi</Text>
                 <Text style={styles.value}>
-                  {request.expectedDate ? formatDate(request.expectedDate) : 'Belum dipilih'}
+                  {request.expectedYear != null && request.expectedIsoWeek != null
+                    ? formatIsoWeekLabel(request.expectedYear, request.expectedIsoWeek)
+                    : 'Tidak ditentukan'}
+                </Text>
+              </View>
+              {/* Admin-confirmed work day (May 9, 2026). Set at assign-to-task
+                  or via "Atur Jadwal". Stays "Belum dijadwalkan" until then. */}
+              <View style={[styles.infoRow, { marginBottom: 0 }]}>
+                <Text style={styles.label}>Tanggal Dijadwalkan</Text>
+                <Text style={styles.value}>
+                  {request.scheduledDate
+                    ? formatDate(request.scheduledDate)
+                    : 'Belum dijadwalkan'}
                 </Text>
               </View>
             </NBCardContent>
@@ -380,22 +583,19 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
               </NBCardHeader>
               <NBCardContent>
                 {(request.requesterName || request.requesterPhone) ? (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.label}>Pemohon</Text>
-                    <Text style={styles.value}>
-                      {request.requesterName || '—'}
-                      {request.requesterPhone ? ` · ${request.requesterPhone}` : ''}
-                    </Text>
-                  </View>
+                  <ContactRow
+                    label="Pemohon"
+                    name={request.requesterName}
+                    phone={request.requesterPhone}
+                  />
                 ) : null}
                 {(request.rtLeaderName || request.rtLeaderPhone) ? (
-                  <View style={[styles.infoRow, { marginBottom: 0 }]}>
-                    <Text style={styles.label}>Ketua RT</Text>
-                    <Text style={styles.value}>
-                      {request.rtLeaderName || '—'}
-                      {request.rtLeaderPhone ? ` · ${request.rtLeaderPhone}` : ''}
-                    </Text>
-                  </View>
+                  <ContactRow
+                    label="Ketua RT/RW"
+                    name={request.rtLeaderName}
+                    phone={request.rtLeaderPhone}
+                    isLast
+                  />
                 ) : null}
               </NBCardContent>
             </NBCard>
@@ -472,7 +672,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           ) : null}
 
           {/* ── Tugas Terkait ─────────────────────────────────────────── */}
-          {request.status === 'converted' && request.convertedTaskId ? (
+          {request.status === 'assigned' && request.assignedTaskId ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
                 <Text style={styles.sectionTitle}>🔗 TUGAS TERKAIT</Text>
@@ -492,90 +692,21 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             </NBCard>
           ) : null}
 
-          {/* ── Aksi Admin ────────────────────────────────────────────── */}
-          {canAdmin && ACTIONABLE_STATUSES.includes(request.status) ? (
-            <NBCard style={styles.card}>
-              <NBCardHeader>
-                <Text style={styles.sectionTitle}>⚖️ AKSI ADMIN</Text>
-              </NBCardHeader>
-              <NBCardContent>
-                <View style={styles.adminButtonRow}>
-                  <View style={styles.adminButtonHalf}>
-                    <NBButton
-                      variant="success"
-                      label="Setujui"
-                      onPress={() => setReviewModalVisible(true)}
-                      leftIcon="check"
-                      disabled={reviewingId === requestId}
-                      fullWidth
-                    />
-                  </View>
-                  <View style={styles.adminButtonHalf}>
-                    <NBButton
-                      variant="danger"
-                      label="Tolak"
-                      onPress={() => setReviewModalVisible(true)}
-                      leftIcon="close"
-                      disabled={reviewingId === requestId}
-                      fullWidth
-                    />
-                  </View>
-                </View>
-              </NBCardContent>
-            </NBCard>
-          ) : null}
-
-          {/* Round 4 — admin reschedule entry, independent of convert flow */}
-          {canAdmin && RESCHEDULABLE_STATUSES.includes(request.status) ? (
-            <NBCard style={styles.card}>
-              <NBCardHeader>
-                <Text style={styles.sectionTitle}>📅 ATUR JADWAL</Text>
-              </NBCardHeader>
-              <NBCardContent>
-                <NBButton
-                  variant="secondary"
-                  label="Atur Jadwal"
-                  onPress={() => setRescheduleVisible(true)}
-                  leftIcon="calendar-edit"
-                  testID="perantingan-reschedule-open"
-                  fullWidth
-                />
-              </NBCardContent>
-            </NBCard>
-          ) : null}
-
-          {canAdmin && request.status === 'approved' ? (
-            <NBCard style={styles.card}>
-              <NBCardHeader>
-                <Text style={styles.sectionTitle}>➡️ KONVERSI KE TUGAS</Text>
-              </NBCardHeader>
-              <NBCardContent>
-                <NBButton
-                  variant="primary"
-                  label="Konversi ke Tugas"
-                  onPress={() => setConvertSheetVisible(true)}
-                  leftIcon="arrow-right"
-                  fullWidth
-                />
-              </NBCardContent>
-            </NBCard>
-          ) : null}
-
-          {/* Batalkan permohonan — visible to submitter + admin on any status
-              except cancelled/done. */}
-          {canCancel ? (
-            <NBCard style={styles.card}>
-              <NBCardContent>
-                <NBButton
-                  variant="danger"
-                  label="Batalkan Permohonan"
-                  leftIcon="cancel"
-                  onPress={handleCancel}
-                  testID="perantingan-cancel-cta"
-                  fullWidth
-                />
-              </NBCardContent>
-            </NBCard>
+          {/* Inline reject reason input — same pattern as OvertimeDetailScreen.
+              `NBCardTextInput` provides its own card chrome, so wrapping it
+              in another NBCard would be redundant. The page auto-scrolls
+              here when Tolak is pressed (see handleRejectPress). */}
+          {canAdmin && showRejectInput ? (
+            <NBCardTextInput
+              title="📝 Alasan Penolakan"
+              required
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Jelaskan alasan penolakan permohonan ini…"
+              maxLength={1000}
+              numberOfLines={4}
+              style={styles.rejectInputSection}
+            />
           ) : null}
 
           {error ? (
@@ -584,6 +715,148 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             </View>
           ) : null}
         </ScrollView>
+
+        {/* Floating action bar (May 9, 2026 redesign).
+            Admin flow gates Setujui / Tugaskan behind a confirmed
+            `scheduledDate` — Atur Jadwal is the primary CTA until then.
+            Tolak is NOT gated; admin can reject incomplete requests with
+            a required reason via the inline input above. Submitters see
+            only "Batalkan". */}
+        {(() => {
+          const isReschedulable = canAdmin && RESCHEDULABLE_STATUSES.includes(request.status);
+          // After the May 9 schema split, kecamatan-set preference lives on
+          // (expectedYear, expectedIsoWeek) and admin-confirmed day lives on
+          // `scheduledDate`. Setujui + Tugaskan are gated on a confirmed
+          // day; Tolak is NOT gated — admins can reject incomplete requests
+          // without first running Atur Jadwal.
+          const hasSchedule = !!request.scheduledDate;
+          const needsSchedule = isReschedulable && !hasSchedule;
+          const canActApprove =
+            canAdmin && ACTIONABLE_STATUSES.includes(request.status) && hasSchedule;
+          const canReject =
+            canAdmin && ACTIONABLE_STATUSES.includes(request.status);
+          const canConvert =
+            canAdmin && request.status === 'approved' && hasSchedule;
+          const showAdminBar = canAdmin && (isReschedulable || canConvert);
+
+          if (!showAdminBar && !canCancel) {
+            return null;
+          }
+
+          return (
+            <View style={styles.actionBar} pointerEvents="box-none">
+              {showAdminBar ? (
+                <View style={styles.actionBarStack}>
+                  {/* Top row: schedule controller. When the date is missing this
+                      is the *only* enabled CTA; once set it becomes a small
+                      secondary "Atur Ulang Jadwal" link. */}
+                  {isReschedulable ? (
+                    <NBButton
+                      variant={needsSchedule ? 'primary' : 'secondary'}
+                      label={needsSchedule ? 'Atur Jadwal' : 'Atur Ulang Jadwal'}
+                      leftIcon="calendar-edit"
+                      onPress={() => setRescheduleVisible(true)}
+                      testID="perantingan-reschedule-open"
+                      size="lg"
+                      fullWidth
+                    />
+                  ) : null}
+
+                  {/* Approve / reject row.
+                      - Tolak: enabled whenever the request is in an
+                        actionable status; admin can reject without first
+                        running Atur Jadwal.
+                      - Setujui: disabled until a schedule is set.
+                      Reject submit happens via the inline reason input
+                      that toggles in below this row. */}
+                  {canReject && !showRejectInput ? (
+                    <View style={styles.adminButtonRow}>
+                      <View style={styles.adminButtonHalf}>
+                        <NBButton
+                          variant="danger"
+                          label="Tolak"
+                          leftIcon="close"
+                          onPress={handleRejectPress}
+                          disabled={reviewingId === requestId}
+                          size="lg"
+                          fullWidth
+                        />
+                      </View>
+                      <View style={styles.adminButtonHalf}>
+                        <NBButton
+                          variant="success"
+                          label="Setujui"
+                          leftIcon="check"
+                          onPress={handleApprove}
+                          disabled={!canActApprove || reviewingId === requestId}
+                          size="lg"
+                          fullWidth
+                        />
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {/* Inline reject-reason flow — Batal / Kirim Penolakan. */}
+                  {canReject && showRejectInput ? (
+                    <View style={styles.adminButtonRow}>
+                      <View style={styles.adminButtonHalf}>
+                        <NBButton
+                          variant="secondary"
+                          label="Batal"
+                          onPress={handleRejectCancel}
+                          disabled={reviewingId === requestId}
+                          size="lg"
+                          fullWidth
+                        />
+                      </View>
+                      <View style={styles.adminButtonHalf}>
+                        <NBButton
+                          variant="danger"
+                          label="Kirim Penolakan"
+                          leftIcon="close"
+                          onPress={handleRejectSubmit}
+                          disabled={
+                            !rejectReason.trim() || reviewingId === requestId
+                          }
+                          size="lg"
+                          fullWidth
+                        />
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {/* Convert flow when already approved. */}
+                  {canAdmin && request.status === 'approved' ? (
+                    <NBButton
+                      variant="primary"
+                      label="Tugaskan ke Petugas"
+                      leftIcon="arrow-right"
+                      onPress={() => setConvertSheetVisible(true)}
+                      disabled={!canConvert}
+                      size="lg"
+                      fullWidth
+                    />
+                  ) : null}
+
+                </View>
+              ) : null}
+
+              {canCancel ? (
+                <View style={styles.actionBarStack}>
+                  <NBButton
+                    variant="danger"
+                    label="Batalkan Permohonan"
+                    leftIcon="cancel"
+                    onPress={handleCancel}
+                    testID="perantingan-cancel-cta"
+                    size="lg"
+                    fullWidth
+                  />
+                </View>
+              ) : null}
+            </View>
+          );
+        })()}
 
         {/* Photo viewer */}
         <NBModal
@@ -603,46 +876,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           </View>
         </NBModal>
 
-        {/* Review decision sheet */}
-        <NBModal
-          visible={reviewModalVisible}
-          onClose={() => setReviewModalVisible(false)}
-          type="sheet"
-          size="sm"
-          title="Pilih Keputusan"
-        >
-          <View style={styles.reviewSheetBody}>
-            <NBButton
-              variant="success"
-              label="Setujui"
-              leftIcon="check"
-              onPress={() => handleReview('approve')}
-              disabled={reviewingId === requestId}
-              fullWidth
-              style={{ marginBottom: nbSpacing.sm }}
-            />
-            <NBButton
-              variant="danger"
-              label="Tolak"
-              leftIcon="close"
-              onPress={() => handleReview('reject')}
-              disabled={reviewingId === requestId}
-              fullWidth
-              style={{ marginBottom: nbSpacing.sm }}
-            />
-            <NBButton
-              variant="secondary"
-              label="Batal"
-              onPress={() => setReviewModalVisible(false)}
-              disabled={reviewingId === requestId}
-              fullWidth
-            />
-          </View>
-        </NBModal>
-
         {/* Convert to task */}
         {request ? (
-          <ConvertToTaskSheet
+          <AssignToTaskSheet
             visible={convertSheetVisible}
             onClose={() => setConvertSheetVisible(false)}
             request={request}
@@ -669,6 +905,10 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           <LocationMapModal
             visible={locationModalVisible}
             onClose={() => setLocationModalVisible(false)}
+            title="Lokasi Perantingan"
+            markerTitle="Lokasi Perantingan"
+            hideAreaStatus
+            hideUpdatedAt
             location={{
               // TypeORM emits decimal columns as strings; coerce to Number so
               // LocationMapModal's `.toFixed()` calls don't blow up.
@@ -697,9 +937,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  scroll: {
+    flex: 1,
+  },
+  // Matches OvertimeDetailScreen.rejectInputSection — the inline reject
+  // card pads itself to the same horizontal rhythm as the surrounding
+  // detail cards.
+  rejectInputSection: {
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+  },
   contentContainer: {
-    paddingVertical: nbSpacing.md,
-    paddingBottom: nbSpacing['2xl'],
+    paddingTop: nbSpacing.md,
+    paddingBottom: nbSpacing.md,
   },
   card: {
     marginHorizontal: nbSpacing.md,
@@ -774,6 +1024,36 @@ const styles = StyleSheet.create({
   refCodeText: {
     flexShrink: 1,
   },
+  contactPhoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: nbSpacing.sm,
+    marginTop: nbSpacing.xs,
+  },
+  contactPhoneText: {
+    flexShrink: 1,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.black,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    letterSpacing: 0.3,
+  },
+  contactActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  contactIconBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.sm,
+    backgroundColor: nbColors.white,
+  },
   copyBtn: {
     width: 32,
     height: 32,
@@ -805,6 +1085,21 @@ const styles = StyleSheet.create({
   adminButtonHalf: {
     flex: 1,
   },
+  // Mirrors OvertimeDetailScreen — the action bar is a flex sibling of the
+  // ScrollView, NOT absolute-positioned. The ScrollView's `flex: 1` takes
+  // remaining height and the bar sits naturally at the bottom of the column,
+  // so content can never overflow behind the buttons. No chrome (no
+  // background, no border, no shadow); the buttons carry their own NB
+  // hard-edge styling.
+  actionBar: {
+    paddingHorizontal: nbSpacing.md,
+    paddingTop: nbSpacing.md,
+    paddingBottom: nbSpacing.md,
+    gap: nbSpacing.sm,
+  },
+  actionBarStack: {
+    gap: nbSpacing.sm,
+  },
   photoViewerWrap: {
     flex: 1,
     alignItems: 'center',
@@ -815,9 +1110,6 @@ const styles = StyleSheet.create({
   photoLarge: {
     width: '100%',
     height: '100%',
-  },
-  reviewSheetBody: {
-    paddingTop: nbSpacing.xs,
   },
   errorWrap: {
     flex: 1,

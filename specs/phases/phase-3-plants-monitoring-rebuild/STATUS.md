@@ -6,7 +6,7 @@
 - Mobile `SubmitScreen`: rayon + kecamatan render as **read-only preset cards** for `staff_kecamatan` (admin keeps the selectable fallback); mandatory fields show `*`, optional sections show "(Opsional)". Tinggi/diameter/jumlah pohon are integer-only with placeholder `5/30/3` and labels clarify "tertinggi atau rata-rata". Indonesian phone format validation (`08xxxxxxxxxx`); `Ketua RT` → `Ketua RT/RW`; catatan field expanded to 5-line textarea.
 - `WeekPicker` rewritten to start Sunday, derive day labels from each date (fixes the May 9 "Sabtu shown as Senin" bug), and run ~3 months ahead instead of 8 weeks.
 - `RequestDetailScreen` adds: copy-to-clipboard icon next to Kode Permohonan, GPS row opens `LocationMapModal` with "Buka di Google Maps" deep-link, "Batalkan Permohonan" CTA gated on submitter || admin and any non-terminal status.
-- Status `Dikonversi` renamed to `Dijadwalkan` across mobile + web user-facing labels (backend enum `converted` unchanged).
+- Status `converted` (label `Dikonversi`/`Dijadwalkan`) renamed end-to-end to `assigned` (label `Ditugaskan`) — DB column `converted_task_id` also renamed to `assigned_task_id`, action verb "Konversi ke Tugas" → "Tugaskan ke Petugas". Migrations 17460009 + 17460010 cover the schema rename.
 - Filter modal exposes `Nomor Permohonan` + `Nama Pemohon` substring search; backend `ListPruningRequestsQueryDto` accepts `referenceCode` + `requesterName` (case-insensitive ILIKE). Sort labels for expected-date renamed to `Minggu Preferensi Terdekat/Terjauh`.
 - `PerantinganRequestCard` adds 🧑 chip with `requester_name`. New `POST /api/v1/pruning-requests/:id/cancel` (submitter or admin, blocked on cancelled/done).
 
@@ -47,10 +47,10 @@ Use this as the **post-redesign acceptance gate** before tagging the slice "ship
 |---|---|---|
 | Activity tagging — korlap can submit an activity and tag the satgas/linmas involved | `activity_tags` table + `POST /activities { tagged_user_ids }` + `GET /activities?involving_me=true` + `GET /:id/tags` + `DELETE /:id/tags/:userId` (owner-only, sealed once approved); mobile `useActivityForm` multi-select + `ActivityCard` "Diikutsertakan" badge | ✅ verified — 1561 backend + 4114 mobile tests |
 | Task delegation audit trail — every assign hop is recorded with role snapshots | `task_delegations` table + service hook in `TasksService.create()` and `assign()` + `GET /tasks/:id/delegations` (safe column projection, no `password_hash` leak) + mobile `TaskDetailScreen` "Riwayat Penugasan" card | ✅ verified |
-| Push notification on every delegation hop | `recordDelegation()` in `TasksService` and the `/convert-to-task` path both call `NotificationsService.sendToUser({ type: TASK_ASSIGNED, data: { task_id } })` | ✅ verified |
+| Push notification on every delegation hop | `recordDelegation()` in `TasksService` and the `/assign-to-task` path both call `NotificationsService.sendToUser({ type: TASK_ASSIGNED, data: { task_id } })` | ✅ verified |
 | Backfill — legacy assigned tasks get a synthesized creator → assignee hop | Migration `17460006000000-BackfillTaskDelegations.ts`, idempotent via `NOT EXISTS` | ✅ verified — 37 legacy tasks now have history |
-| Kecamatan booking by week, not date | `pruning_requests.expected_year` + `expected_iso_week` columns; mobile `WeekPicker` + `WeekPickerModal`; admin `convert-to-task` auto-picks first day of preferred week when `scheduledDate` omitted | ✅ verified |
-| `/convert-to-task` → task lands in `assigned` (not `pending`) so the satgas can accept | `pruning-requests.service.ts` sets `status: TaskStatus.ASSIGNED` + `assigned_at` and inserts a `task_delegations` row + sends a `task_assigned` notification | ✅ verified — full e2e green (submit → review → convert → accept → start → complete) |
+| Kecamatan booking by week, not date | `pruning_requests.expected_year` + `expected_iso_week` columns; mobile `WeekPicker` + `WeekPickerModal`; admin `assign-to-task` auto-picks first day of preferred week when `scheduledDate` omitted | ✅ verified |
+| `/assign-to-task` → task lands in `assigned` (not `pending`) so the satgas can accept | `pruning-requests.service.ts` sets `status: TaskStatus.ASSIGNED` + `assigned_at` and inserts a `task_delegations` row + sends a `task_assigned` notification | ✅ verified — full e2e green (submit → review → convert → accept → start → complete) |
 | `password_hash` sweep — global `ClassSerializerInterceptor` honours `@Exclude` | `be/src/main.ts` registers the interceptor with the global `Reflector`; verified on `auth/me`, `tasks/:id`, `users`, and the new `tasks/:id/delegations` | ✅ verified |
 | Hardening from the e2e — capacity QB hydration + dotenv preload + env-driven login throttle | `service-capacity.service.ts` switched to entity-aware `createQueryBuilder(Entity, alias)`; `main.ts` imports `'dotenv/config'` first; `auth.controller.ts` reads `AUTH_LOGIN_THROTTLE_LIMIT/TTL`; `.env.example` family synced (1000/min dev, 5/min staging+prod) | ✅ verified |
 
@@ -87,7 +87,7 @@ grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
 **4. Kecamatan week-booking — full workflow** ✅ verified end-to-end on the live stack May 3, but worth one human walkthrough before UAT
 
 - `staff_kec_pusat` → SubmitScreen → `WeekPicker` lists 8 ISO weeks with per-day capacity chips → submit. Confirm `expected_year` + `expected_iso_week` populated in DB; `expected_date` is NULL.
-- `admin/password123` → Review queue → approve → "Buat Tugas" → leave the date picker empty (auto-pick path) → confirm response: `request.status='converted'`, `expected_date` lands on a day in the requested ISO week, `task.status='assigned'`, `task.assigned_at` set.
+- `admin/password123` → Review queue → approve → "Buat Tugas" → leave the date picker empty (auto-pick path) → confirm response: `request.status='assigned'`, `expected_date` lands on a day in the requested ISO week, `task.status='assigned'`, `task.assigned_at` set.
 - Login as the assigned satgas → accept → start → complete. Each transition succeeds. After complete, pruning_request walks to `done` (existing behavior, unchanged).
 
 **5. Password leak sweep** 🔍
@@ -97,7 +97,7 @@ grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
 ### Known still-open items (not in this slice)
 
 - Web admin dashboard `(dashboard)/pruning-requests/*` pages still not implemented (admin disposition is mobile-only). Tracked in the original Phase 4 backlog.
-- `ConvertToTaskSheet` Redux state for areas + users — Apr 27 defensive patch still in place; full slices ship in Phase 4 polish.
+- `AssignToTaskSheet` Redux state for areas + users — Apr 27 defensive patch still in place; full slices ship in Phase 4 polish.
 
 ---
 
@@ -132,7 +132,7 @@ After seed, expect:
 | `GET /api/v1/areas/:id/notable-plants` | Up to 3 entries on the demo areas | ✅ verified |
 | `GET /api/v1/pruning-requests?admin=true&status=submitted` | 21 rows (per seed) | ✅ verified |
 | `POST /api/v1/pruning-requests` as staff_kecamatan | New row with `submitted` status, auto-derived `kecamatan_name` + `rayon_id` | ✅ verified |
-| `POST /api/v1/pruning-requests/:id/review` then `:id/convert-to-task` | Status walks `submitted → approved → converted`; new task created | ✅ verified |
+| `POST /api/v1/pruning-requests/:id/review` then `:id/assign-to-task` | Status walks `submitted → approved → assigned`; new task created | ✅ verified |
 | `PATCH /api/v1/pruning-requests/:id/expected-date` (admin reschedule) | Capacity rebooked atomically; date changes | ✅ verified |
 | `GET /api/v1/plant-species?q=akasia` | Returns AKASIA + AKASIA_MANGIUM | ✅ verified |
 | `GET /api/v1/monitoring/snapshot` | Worker + plant + area aggregates; no 500 | 🔍 manual smoke after seed |
@@ -146,7 +146,7 @@ After seed, expect:
    - Background: `pruning_request_draft` AsyncStorage entry persists if you bail out. ✅ verified by `SubmitScreen.test.tsx`
 2. **Stage 2 — Disposition (`admin` or `admin_data`)**
    - Login → Perantingan tab → ReviewQueueScreen → tap a `submitted` request → RequestDetailScreen.
-   - Approve via `NBModal` review sheet → status → `approved` → tap "Buat Tugas" → `ConvertToTaskSheet` (note: empty area/user selectors are an Apr 27 known issue, manual area_id/assignee entry works as workaround). 🔍 manual
+   - Approve via `NBModal` review sheet → status → `approved` → tap "Buat Tugas" → `AssignToTaskSheet` (note: empty area/user selectors are an Apr 27 known issue, manual area_id/assignee entry works as workaround). 🔍 manual
    - Capacity calendar in convert sheet should disable any week beyond 12-week horizon and show booked/free counts. ✅ verified by capacityCalendar tests
    - Reschedule: from RequestDetailScreen open `RescheduleSheet` → pick a different available date → status stays, `expectedDate` changes. ✅ verified
 3. **Stage 3 — Work (`satgas1` or `satgas_pusat_1`)**
@@ -154,7 +154,7 @@ After seed, expect:
    - Submit "Sebagian" (partial) or "Selesai" (complete) → `activity_plant_items` rows created on backend. ✅ verified
 4. **Stage 4 — Reporting**
    - Activity record visible in worker's daily history; carries `pruning_request_id` reference + before/after photos. ✅ verified
-   - Pruning request auto-transitions `converted → in_progress → done`. ✅ verified by `pruning-requests.service.spec.ts`
+   - Pruning request auto-transitions `assigned → in_progress → done`. ✅ verified by `pruning-requests.service.spec.ts`
 5. **Stage 5 — Monitoring (any role with map access)**
    - Open Monitoring tab → tap an area boundary marker → `BoundaryDetailModal` opens with: staffing table, **Status Tanaman** (3-pill summary OK/Hampir/Lewat + species list), and **Pohon Heritage** if any. 🔍 manual on real device — confirm no crash on the `daySummary === null` path (offline-seeded users)
    - Verify `MonitoringStatusSheet` peek/middle/full snap points work and the new `MonitoringSearchBar` filters the worker list. 🔍 manual
@@ -178,7 +178,7 @@ This route exists as a placeholder shell only. Full web submit form is **deferre
 ### Phase 4 backlog uncovered by this review
 
 - Web admin (dashboard) pruning-requests pages — `fe/web/src/app/(dashboard)/pruning-requests/{page,[id]/page,[id]/disposition/page}` are **not implemented**; admin disposition is mobile-only. Spec call-out exists in `web.md` but page files were never created.
-- `ConvertToTaskSheet` on mobile reads empty Redux state for areas + users (Apr 27 defensive patch returns `[]`). Real `areasSlice` + `usersSlice` ship in Phase 4 polish; admin currently must enter area_id + assignee manually.
+- `AssignToTaskSheet` on mobile reads empty Redux state for areas + users (Apr 27 defensive patch returns `[]`). Real `areasSlice` + `usersSlice` ship in Phase 4 polish; admin currently must enter area_id + assignee manually.
 
 ---
 
@@ -255,7 +255,7 @@ Each is <1 dev-day and has a clear owner. Schedule together as a "Phase 4 mobile
 - **3-8 FCM digest** `area_plant_overdue` to top_management (daily 8 AM).
 - **3-8 plant map overlay** — full impl beyond the current stub.
 - **Mobile coverage thresholds** — restore floor to 80/75/80/82 (currently 74/66/70/76 due to SubmitScreen wizard branch gaps).
-- **Areas + Users Redux slices** — `ConvertToTaskSheet` currently degrades to empty selectors (Apr 27 defensive patch). Real fix: add `areasSlice` + `usersSlice` so the convert form shows real options.
+- **Areas + Users Redux slices** — `AssignToTaskSheet` currently degrades to empty selectors (Apr 27 defensive patch). Real fix: add `areasSlice` + `usersSlice` so the convert form shows real options.
 
 ### 🧱 Out-of-scope until separate iteration
 
@@ -282,7 +282,7 @@ After the audit, the user piloted the staff_kecamatan flow and asked for a struc
 **Backend**
 
 - Migration `17460002000000-StaffKecamatanRedesign` adds `users.kecamatan_name` (varchar 100, nullable) and 7 new `pruning_requests` columns: `tree_count`, `tree_height_estimate`, `tree_diameter_estimate`, `requester_name`, `requester_phone`, `rt_leader_name`, `rt_leader_phone` (all nullable so existing rows + other roles unaffected).
-- `CreatePruningRequestDto` accepts the 7 new fields as optional. `detail_date` and `target_count` are now optional too — admin sets the date during convert-to-task. Photo minimum lowered from 3 to **1**.
+- `CreatePruningRequestDto` accepts the 7 new fields as optional. `detail_date` and `target_count` are now optional too — admin sets the date during assign-to-task. Photo minimum lowered from 3 to **1**.
 - `PruningRequestsService.create` now auto-derives `kecamatan_name` and `rayon_id` from the submitter's profile so the mobile client doesn't send them.
 
 **Seeders**
@@ -301,7 +301,7 @@ Two bugs surfaced when the user ran the staging seeder + logged in as `staff_kec
 
 1. **`SubmitScreen` crash** — `TypeError: Cannot read property 'bg' of undefined at NBButton`. Root cause: `SubmitScreen.tsx:357,430` passed `variant="outline"` and used children-as-text, neither supported by `NBButton`. Fixed by extending `NBButton` with: `outline` variant (white bg + black border), `label` prop alias, string children fallback, `leftIcon` prop, and graceful fallback-to-primary on unknown variants. `NBButton.test.tsx` extended with 5 regression-guard tests (26 total, all green).
 
-2. **`ConvertToTaskSheet` runtime drift** — read `state.areas` and `state.users` (slices that don't exist), used `request.rayon_id` (model uses `rayonId`), passed wrong props to `NBAlert`/`NBToast`/`NBDatePicker`. Defensively patched — sheet now renders without crashing; areas/users selectors return `[]` until real slices land in Phase 4 polish.
+2. **`AssignToTaskSheet` runtime drift** — read `state.areas` and `state.users` (slices that don't exist), used `request.rayon_id` (model uses `rayonId`), passed wrong props to `NBAlert`/`NBToast`/`NBDatePicker`. Defensively patched — sheet now renders without crashing; areas/users selectors return `[]` until real slices land in Phase 4 polish.
 
 3. **Mobile `nbSpacing` numeric-subscript shim** — Phase 3 admin screens written by Wave 3/4 used Tailwind-style `nbSpacing[2]`/`nbSpacing[4]` that returned `undefined`. Added numeric aliases (1=4, 2=8, 3=12, 4=16, 5=20, 6=24, 7=28, 8=32, 10=40, 12=48, 16=64) in `constants/nbTokens.ts`. Remove in Phase 4 polish once screens migrate to named tokens.
 
@@ -333,7 +333,7 @@ No schema, DTO, or migration change in Round 3. `mobile.md` § "staff_kecamatan"
 
 ## 🗓 Apr 28 — staff_kecamatan UX Round 4 (preferred-date booking)
 
-The user identified that the booking-style scheduling feature called out in the Round 1 spec was never wired up: `staff_kecamatan` could not pick a preferred date when submitting, and admins could only adjust the date via the full convert-to-task flow. Round 4 closes that gap **without changing the storage model** — `service_capacity` stays weekly per ADR-035, and the day-by-day picker is delivered as a UX projection. **Mobile-first scope**: web admin / submit pages remain deferred per "Open Items by Bucket".
+The user identified that the booking-style scheduling feature called out in the Round 1 spec was never wired up: `staff_kecamatan` could not pick a preferred date when submitting, and admins could only adjust the date via the full assign-to-task flow. Round 4 closes that gap **without changing the storage model** — `service_capacity` stays weekly per ADR-035, and the day-by-day picker is delivered as a UX projection. **Mobile-first scope**: web admin / submit pages remain deferred per "Open Items by Bucket".
 
 **Backend**
 
@@ -407,8 +407,8 @@ Six waves of commits merged Apr 27, establishing all admin endpoints + mobile ad
 |------|---------|-------------|
 | **0** | `ff7d128` | Bug fix: Redux mutation guard in pruningRequestsSlice + token regression test (rn-no-shadow-radius enforced). |
 | **1** | `d50b15e`, `bb0d6b1` | 3-11 service-capacity backend: `CapacityService` + 3 endpoints (`GET/PUT /rayons/:id/capacity`, `POST /rayons/:id/capacity/book`). Full stack incl. seeders + 28 tests. |
-| **2** | `9c7a5de`, `ae2d4ac`, `ceee2e4` | 3-9 pruning-requests admin endpoints: `POST /pruning-requests/:id/review` + `POST /pruning-requests/:id/convert-to-task` + `GET /pruning-requests?rayon_id=&status=` (30 tests, 100 % coverage); admin-filter guard wired to `admin_data` + `kepala_rayon` + `top_management`. |
-| **3** | `44a96c0`, `1f4c3e9` | 3-10 admin mobile screens: `ReviewQueueScreen` (tabs: pending/approved) + `ConvertToTaskSheet` (capacity picker + confirm). Role-gated to `admin_data`, 32 screen tests. |
+| **2** | `9c7a5de`, `ae2d4ac`, `ceee2e4` | 3-9 pruning-requests admin endpoints: `POST /pruning-requests/:id/review` + `POST /pruning-requests/:id/assign-to-task` + `GET /pruning-requests?rayon_id=&status=` (30 tests, 100 % coverage); admin-filter guard wired to `admin_data` + `kepala_rayon` + `top_management`. |
+| **3** | `44a96c0`, `1f4c3e9` | 3-10 admin mobile screens: `ReviewQueueScreen` (tabs: pending/approved) + `AssignToTaskSheet` (capacity picker + confirm). Role-gated to `admin_data`, 32 screen tests. |
 | **4** | `f2a8f9e`, `2847372` | 3-12 plant-seeds full stack: `PlantSeedsService` + `SeedTransactionsService` + 5 endpoints + `PlantSeedsInventoryScreen` + `SeedTransactionDetailScreen` + `seedsSlice`. Offline queue scaffold. 35 tests. |
 | **5** | `c8d25f7`, `3b04bc8` | Seeders + coverage backfill: `seed-phase3.ts` extends with capacity grid (7 rayons × 52 weeks, 6 service types) + seeds catalog (19 rows). Test coverage 94.51 % stmts (backend); mobile 80+ %. |
 
@@ -739,7 +739,7 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | `GET /pruning-requests?mine=true` | ✅ | paginated, ordered DESC |
 | `GET /pruning-requests/:id` (owner + rayon-scoped admin_data + kepala_rayon + top_management) | ✅ | rayon scoping enforced per ADR-032 |
 | `POST /pruning-requests/:id/review` (admin_data) | ✅ | landed Apr 27 — accepts `{ decision, reason? }`; sets `reviewed_by`/`reviewed_at` |
-| `POST /pruning-requests/:id/convert-to-task` | ✅ | landed Apr 27 — atomic transaction; calls `CapacityService.bookAtomic`; sets `converted_task_id` |
+| `POST /pruning-requests/:id/assign-to-task` | ✅ | landed Apr 27 — atomic transaction; calls `CapacityService.bookAtomic`; sets `assigned_task_id` |
 | `GET /pruning-requests?rayon_id=&status=&from=&to=` (admin filter) | ✅ | landed Apr 27 — paginated; auto-scoped by `users.rayon_id` for admin_data |
 | Auto-rayon resolution from GPS | ⏳ DEFERRED → Phase 4 polish | client passes `rayon_id` explicitly for now |
 | FCM notifications on status change | ⏳ DEFERRED → Phase 4 polish (3-8 bucket) | review/convert endpoints log status transition; FCM digest pending |
@@ -752,17 +752,17 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 |------|--------|-------|
 | Mobile `KecamatanNavigator` (no bottom tabs, role-gated) | ✅ | `fe/mobile/src/navigation/KecamatanNavigator.tsx`; `RootNavigator.tsx` branches on `user.role === 'staff_kecamatan'` |
 | Mobile `SubmitScreen` (5-step wizard: address+GPS, photos, detail, preview, success) | ✅ | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx`; draft persisted in slice. Apr 27: NBButton variant + children compat fix |
-| Mobile `MyRequestsScreen` + `RequestDetailScreen` | ✅ | status chips (pending/approved/rejected/converted), pull-to-refresh, photo gallery |
+| Mobile `MyRequestsScreen` + `RequestDetailScreen` | ✅ | status chips (pending/approved/rejected/assigned), pull-to-refresh, photo gallery |
 | Mobile `pruningRequestsSlice` + `pruningRequestsApi` | ✅ | submitRequest, fetchMine, fetchById, fetchAdminPruningRequests, reviewPruningRequest, convertPruningRequestToTask |
 | Offline queue: `pruning_request.submit` action | ✅ | `syncManager.ts` — FIFO; retry deferred to Phase 4 |
 | `useNetworkStatus` hook | ✅ | `fe/mobile/src/hooks/useNetworkStatus.ts` |
 | Mobile `ReviewQueueScreen` (admin_data) | ✅ | `fe/mobile/src/screens/pruningRequests/ReviewQueueScreen.tsx` — tabs (pending/approved), rayon-scoped list |
-| Mobile `ConvertToTaskSheet` (capacity chip) | 🟡 | `fe/mobile/src/components/admin/ConvertToTaskSheet.tsx` — renders, capacity chip works; areas/users selectors empty until Phase 4 (no `areasSlice`/`usersSlice` yet). Apr 27 defensive patch keeps it from crashing |
+| Mobile `AssignToTaskSheet` (capacity chip) | 🟡 | `fe/mobile/src/components/admin/AssignToTaskSheet.tsx` — renders, capacity chip works; areas/users selectors empty until Phase 4 (no `areasSlice`/`usersSlice` yet). Apr 27 defensive patch keeps it from crashing |
 | Top-management read-only filter | ✅ | role list on admin endpoints includes `top_management` |
 | Web `/pruning-requests/` queue + `[id]/` detail | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
 | Web `(kecamatan)/` layout for staff_kecamatan submit on web | 🟡 | layout shell ✅ from 3-R4; submit form deferred. Apr 27: placeholder pages added at `(kecamatan)/pruning-requests/{,my}/page.tsx` to avoid 404s |
 
-**Completed:** 2026-04-27 (mobile complete; web deferred). Apr 27 audit surfaced + fixed: `NBButton` `outline`/`label`/`leftIcon` API gaps, `ConvertToTaskSheet` runtime drift, mobile `nbSpacing` numeric subscripts, web staff_kecamatan placeholder pages.
+**Completed:** 2026-04-27 (mobile complete; web deferred). Apr 27 audit surfaced + fixed: `NBButton` `outline`/`label`/`leftIcon` API gaps, `AssignToTaskSheet` runtime drift, mobile `nbSpacing` numeric subscripts, web staff_kecamatan placeholder pages.
 
 ---
 
@@ -773,8 +773,8 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | `CapacityService` (`bookAtomic`, `upsertCapacity`, `findCalendar`) | ✅ | `be/src/modules/service-capacity/service-capacity.service.ts` — `pessimistic_write` lock; throws `ConflictException` when over capacity. 24 tests, 98.9 % stmts |
 | `GET /rayons/:id/capacity?from=&to=&serviceType=` | ✅ | rayon × ISO-week × serviceType grain; admin-only |
 | `PUT /rayons/:id/capacity` (upsert) | ✅ | overrides default 5 units/day per rayon |
-| `POST /rayons/:id/capacity/book` (manual book) | ✅ | rare — convert-to-task uses service directly |
-| Implicit booking on `/pruning-requests/:id/convert-to-task` | ✅ | atomic — if capacity exceeded, conversion rolls back |
+| `POST /rayons/:id/capacity/book` (manual book) | ✅ | rare — assign-to-task uses service directly |
+| Implicit booking on `/pruning-requests/:id/assign-to-task` | ✅ | atomic — if capacity exceeded, conversion rolls back |
 | Mobile `serviceCapacitySlice` + `serviceCapacityApi` | ✅ | `fe/mobile/src/store/slices/serviceCapacitySlice.ts` — `fetchCapacity`, `calendarByRayon` cache |
 | Web capacity calendar page | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
 
@@ -847,13 +847,13 @@ End-to-end review checklist for the pruning workflow redesign + monitoring v2 + 
 | B1 | Login `admin` / `password123` on **mobile** → `ReviewQueueScreen` | A2's row appears | ✅ |
 | B2 | Tap row → `RequestDetailScreen` → Approve | Status → `approved`, `reviewed_by` populated | ✅ |
 | B3 | Same flow on **web** at `/pruning-requests` (admin list) → click row → Approve | Mirror of mobile | ✅ |
-| B4 | `ConvertToTaskSheet` (mobile) → pick area + assignee + caseType=GT + pruningAction=PM (no scheduled date) | Auto-pick path executes; `pruning_requests.expected_date` lands inside ISO 2026-W21 (May 18–24); `converted_task_id` populated | ✅ |
+| B4 | `AssignToTaskSheet` (mobile) → pick area + assignee + caseType=GT + pruningAction=PM (no scheduled date) | Auto-pick path executes; `pruning_requests.expected_date` lands inside ISO 2026-W21 (May 18–24); `assigned_task_id` populated | ✅ |
 | B5 | Same conversion on **web** detail page | Mirror of mobile B4 | ✅ |
 
 ### C. Delegation chain (ADR-038)
 | # | Step | Expected | Auto |
 |---|------|----------|------|
-| C1 | Open the converted task on **web** as the assigned `korlap` → "Disposisi Tugas" card visible | Card appears only when status=`assigned` AND viewer=`assigned_to` | ✅ |
+| C1 | Open the assigned task on **web** as the assigned `korlap` → "Disposisi Tugas" card visible | Card appears only when status=`assigned` AND viewer=`assigned_to` | ✅ |
 | C2 | Pick a satgas from the dropdown → "Kirim Disposisi" | Task `assigned_to` updates, push notification fires to new assignee, "Riwayat Penugasan" gains a row | ✅ |
 | C3 | Same on **mobile** `TaskDetailScreen` ("Disposisi ke Bawahan" button) | Same as C2 | ✅ |
 | C4 | Try to delegate from `accepted` status | Backend rejects with 400 (must decline first) | ✅ |
@@ -898,4 +898,4 @@ End-to-end review checklist for the pruning workflow redesign + monitoring v2 + 
 
 ---
 
-**Last Updated:** 2026-05-04
+**Last Updated:** 2026-05-10 — **pruning workflow hardening**: (1) approve gate — `review()` now requires `scheduled_date != null`, mirroring the mobile UI rule and closing the API bypass to "approved-without-date" limbo. Reject path unchanged. Use `under_review` for tentative dispositions. (2) reschedule cascade — `/expected-date` whitelist gains `assigned`. For `assigned` requests the cascade runs in one transaction: capacity rebook (book new before release old; abort BEFORE touching old slot if the new week is full), `task.deadline` bump, `task_delegations` audit row (`reason: "Jadwal diubah ke YYYY-MM-DD"`), then assignee push. `in_progress` / `done` / `rejected` / `cancelled` remain blocked. (3) AvailabilityCalendar UX: Sunday-start labels, month-grouped grid (each month renders its own Sun..Sat matrix so headers align under dates in every row), tap-to-toggle selection (`onSelect(null)` clears), inline `Tanggal Terpilih` strip with Hapus action, blue ring (no fill override) for preferred-week so the actual status color is never disguised. (4) `formatIsoWeekLabel` switched to Sun-Sat display via `getSundayWeekBoundsForIso` so the admin label matches what kecamatan saw on the WeekPicker (ISO 21 → "17–23 Mei" not "18–24 Mei"). (5) RescheduleSheet vertical compaction (~70 dp reclaimed via negative margins) + size="lg" on Batal/Simpan to match Buat Permohonan. (6) Kontak card on Detail Permohonan got per-contact copy / WhatsApp / call icon buttons + `Ketua RT` → `Ketua RT/RW`. Backend tests **94/94 ✓** (pruning service, +6 specs); mobile pruning + dateUtils **214/214 ✓**.

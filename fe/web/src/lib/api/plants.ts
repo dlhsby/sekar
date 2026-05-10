@@ -52,7 +52,7 @@ export type PruningRequestStatus =
   | 'under_review'
   | 'approved'
   | 'rejected'
-  | 'converted'
+  | 'assigned'
   | 'in_progress'
   | 'done'
   | 'cancelled';

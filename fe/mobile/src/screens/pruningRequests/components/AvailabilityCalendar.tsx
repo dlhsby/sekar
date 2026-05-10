@@ -1,14 +1,27 @@
 /**
- * AvailabilityCalendar — 8-week-ahead day picker driven by weekly capacity.
+ * AvailabilityCalendar — month-grouped, Sunday-start day picker driven by
+ * weekly capacity rows.
  *
- * Used by both the staff_kecamatan submit form (`SubmitScreen`) and the admin
- * reschedule sheet (`RescheduleSheet`). Capacity rows come from the
- * `serviceCapacity` slice; this component projects them to per-day status via
- * `projectWeeklyToDaily` and renders a colored cell per day. Tapping a
- * non-disabled cell calls `onSelect(date)`. Past dates are filtered out.
+ * Used by the admin reschedule sheet (`RescheduleSheet`). Capacity rows come
+ * from the `serviceCapacity` slice; this component projects them to per-day
+ * status via `projectWeeklyToDaily` and renders a colored cell per day.
  *
- * 2026-04-28 amendment to ADR-035: storage stays weekly; this calendar is
- * UX-only.
+ * UX (May 10, 2026 redesign):
+ *   - Week starts on **Sunday** (Indonesian convention — Minggu first).
+ *   - Range starts from **today** and extends to `rangeEnd` (caller passes
+ *     today + 3 months for the reschedule flow).
+ *   - Cells are **grouped by month**, with a sticky "Mei 2026" header above
+ *     each month's grid. Months render as a Sunday-start `Date` × `Sun..Sat`
+ *     matrix so day-of-week labels always sit directly above their dates;
+ *     no overlap, no drift.
+ *   - The submitter's preferred ISO week gets a soft yellow tint (the orange
+ *     border was visually noisy when the calendar redrew on date selection).
+ *   - Tapping a date selects it. Tapping the **same date again clears the
+ *     selection** (`onSelect(null)`), so admins can reset without a separate
+ *     button.
+ *   - The currently selected date is echoed in a "Tanggal Terpilih" banner
+ *     placed between the preferred-week banner and the legend so the admin
+ *     always sees what they've chosen, even when the calendar has scrolled.
  */
 
 import React, { useMemo } from 'react';
@@ -20,7 +33,12 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { nbColors, nbSpacing, nbBorders, nbBorderRadius } from '../../../constants/nbTokens';
+import {
+  nbColors,
+  nbSpacing,
+  nbBorders,
+  nbBorderRadius,
+} from '../../../constants/nbTokens';
 import {
   buildEightWeekRange,
   projectWeeklyToDaily,
@@ -29,6 +47,11 @@ import {
   type DayStatus,
   type RawCapacityRow,
 } from '../utils/capacityCalendar';
+import {
+  formatDateLong,
+  formatIsoWeekLabel,
+  getSundayWeekBoundsForIso,
+} from '../../../utils/dateUtils';
 
 const STATUS_COLOR: Record<DayStatus, string> = {
   available: '#16a34a',
@@ -37,40 +60,97 @@ const STATUS_COLOR: Record<DayStatus, string> = {
   unknown: nbColors.gray300,
 };
 
-const DAY_LABELS = ['S', 'S', 'R', 'K', 'J', 'S', 'M']; // Senin..Minggu
+// Sunday-start labels (Indonesian convention).
+const DAY_LABELS = ['M', 'S', 'S', 'R', 'K', 'J', 'S']; // Minggu..Sabtu
+
+const MONTH_LABELS_ID = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
 
 interface AvailabilityCalendarProps {
   rows: RawCapacityRow[];
   selectedDate: string | null;
-  onSelect: (date: string) => void;
+  /** Receives `null` when the user taps the currently selected date. */
+  onSelect: (date: string | null) => void;
   loading?: boolean;
+  /**
+   * Override the default 8-week-from-today range. The reschedule sheet passes
+   * today → today + 3 months.
+   */
+  rangeStart?: Date;
+  rangeEnd?: Date;
+  /**
+   * When set, renders a "Minggu Preferensi" banner above the legend AND tints
+   * cells inside that ISO week so the admin can locate the warga's
+   * preferred days at a glance.
+   */
+  preferredWeek?: { year: number; week: number } | null;
 }
 
-function isPast(dateStr: string): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(dateStr);
-  d.setHours(0, 0, 0, 0);
+function startOfDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function isPast(dateStr: string, today: Date): boolean {
+  const d = startOfDay(new Date(dateStr));
   return d.getTime() < today.getTime();
 }
 
-function chunkByWeek(days: DayAvailability[]): DayAvailability[][] {
-  const weeks: DayAvailability[][] = [];
-  let current: DayAvailability[] = [];
-  let currentKey = '';
-  for (const d of days) {
-    const key = `${d.isoYear}:${d.isoWeek}`;
-    if (key !== currentKey && current.length > 0) {
-      weeks.push(current);
-      current = [];
+interface MonthBucket {
+  year: number;
+  month: number; // 0-indexed
+  daysByIso: Map<string, DayAvailability>;
+}
+
+function bucketByMonth(days: DayAvailability[]): MonthBucket[] {
+  const buckets = new Map<string, MonthBucket>();
+  for (const day of days) {
+    const d = new Date(day.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = {
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        daysByIso: new Map(),
+      };
+      buckets.set(key, bucket);
     }
-    currentKey = key;
-    current.push(d);
+    bucket.daysByIso.set(day.date, day);
   }
-  if (current.length > 0) {
-    weeks.push(current);
+  return Array.from(buckets.values()).sort((a, b) =>
+    a.year !== b.year ? a.year - b.year : a.month - b.month,
+  );
+}
+
+/**
+ * Build a Sunday-start matrix for one month. Each row has 7 slots (Sun..Sat).
+ * Slots before the 1st and after the last day of the month are `null` (rendered
+ * as inert pad cells). Days outside our `daysByIso` (e.g. before today) also
+ * show as pad cells so we never invite the user to tap a day that has no
+ * capacity row.
+ */
+function buildMonthMatrix(
+  bucket: MonthBucket,
+): (DayAvailability | null)[][] {
+  const firstOfMonth = new Date(bucket.year, bucket.month, 1);
+  const startOffset = firstOfMonth.getDay(); // 0=Sun..6=Sat
+  const daysInMonth = new Date(bucket.year, bucket.month + 1, 0).getDate();
+  const cells: (DayAvailability | null)[] = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+    const iso = toIsoDate(new Date(bucket.year, bucket.month, dayNum));
+    cells.push(bucket.daysByIso.get(iso) ?? null);
   }
-  return weeks;
+  while (cells.length % 7 !== 0) cells.push(null);
+  const rows: (DayAvailability | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    rows.push(cells.slice(i, i + 7));
+  }
+  return rows;
 }
 
 export function AvailabilityCalendar({
@@ -78,19 +158,48 @@ export function AvailabilityCalendar({
   selectedDate,
   onSelect,
   loading = false,
+  rangeStart,
+  rangeEnd,
+  preferredWeek,
 }: AvailabilityCalendarProps): React.JSX.Element {
-  const weeks = useMemo(() => {
-    const { start, end } = buildEightWeekRange();
+  const today = useMemo(() => startOfDay(new Date()), []);
+
+  const months = useMemo(() => {
+    const { start: defaultStart, end: defaultEnd } = buildEightWeekRange();
+    // Always clamp the floor to today — past dates never make sense for a
+    // forward-looking schedule and the spec says "start from today".
+    const rawStart = rangeStart ?? defaultStart;
+    const start =
+      rawStart.getTime() < today.getTime() ? today : startOfDay(rawStart);
+    const end = rangeEnd ?? defaultEnd;
     const days = projectWeeklyToDaily(rows, start, end);
-    return chunkByWeek(days);
-  }, [rows]);
+    return bucketByMonth(days);
+  }, [rows, rangeStart, rangeEnd, today]);
+
+  // Highlight range is the Sunday-start week that the kecamatan actually
+  // saw on the submit form's WeekPicker (Sun..Sat), NOT the literal ISO
+  // Mon..Sun bounds — otherwise the label says "17–23 Mei" but the blue
+  // ring lights up 18–24 Mei, which mismatches what the kecamatan picked.
+  const preferredRange = useMemo(() => {
+    if (!preferredWeek) return null;
+    const { sunday, saturday } = getSundayWeekBoundsForIso(
+      preferredWeek.year,
+      preferredWeek.week,
+    );
+    return { startIso: toIsoDate(sunday), endIso: toIsoDate(saturday) };
+  }, [preferredWeek]);
 
   const handlePress = (day: DayAvailability) => {
-    if (isPast(day.date)) {
+    if (isPast(day.date, today)) return;
+    if (selectedDate === day.date) {
+      onSelect(null);
       return;
     }
     if (day.status === 'full') {
-      Alert.alert('Penuh', 'Minggu ini sedang penuh — pilih tanggal lain.');
+      Alert.alert(
+        'Penuh',
+        'Tanggal yang dipilih sudah penuh, silakan pilih tanggal lain.',
+      );
       return;
     }
     if (day.status === 'unknown') {
@@ -105,18 +214,77 @@ export function AvailabilityCalendar({
 
   return (
     <View style={styles.root}>
+      {/* Compact info strip — Minggu Preferensi (when set) + Tanggal Terpilih
+          stacked as inline label/value rows so the calendar grid below gets
+          the lion's share of vertical space. The previous stacked banners
+          consumed ~180 dp before the grid even started; this collapses that
+          to ~80 dp while keeping both pieces of information glanceable. */}
+      {preferredWeek ? (
+        <View style={styles.infoStripRow}>
+          <Text style={styles.infoStripLabel}>Minggu Preferensi</Text>
+          <Text style={styles.infoStripValue} numberOfLines={1}>
+            {formatIsoWeekLabel(preferredWeek.year, preferredWeek.week)}
+          </Text>
+        </View>
+      ) : null}
+
+      <View
+        style={[
+          styles.infoStripRow,
+          selectedDate && styles.infoStripRowSelected,
+        ]}
+      >
+        <Text
+          style={[
+            styles.infoStripLabel,
+            selectedDate && styles.infoStripLabelOnDark,
+          ]}
+        >
+          Tanggal Terpilih
+        </Text>
+        <Text
+          style={[
+            styles.infoStripValue,
+            selectedDate && styles.infoStripValueOnDark,
+          ]}
+          numberOfLines={1}
+        >
+          {selectedDate ? formatDateLong(selectedDate) : 'Belum dipilih'}
+        </Text>
+        {selectedDate ? (
+          <TouchableOpacity
+            onPress={() => onSelect(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Hapus tanggal terpilih"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.infoStripClear}
+            testID="perantingan-calendar-clear"
+          >
+            <Text style={styles.infoStripClearText}>Hapus</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
       <View style={styles.legend}>
         <LegendDot color={STATUS_COLOR.available} label="Tersedia" />
         <LegendDot color={STATUS_COLOR.partial} label="Hampir Penuh" />
         <LegendDot color={STATUS_COLOR.full} label="Penuh" />
         <LegendDot color={STATUS_COLOR.unknown} label="Belum Diatur" />
+        {preferredWeek ? (
+          <LegendRing color={nbColors.info} label="Minggu Preferensi" />
+        ) : null}
       </View>
 
+      {/* Day-of-week header. Each label sits inside a `flex: 1` column shared
+          with every cell underneath, so the 7 columns are mathematically
+          equal-width regardless of viewport — no chance of horizontal drift.
+          The header is rendered ONCE here (not per-month) because every
+          month grid below uses the same Sun..Sat order. */}
       <View style={styles.headerRow}>
         {DAY_LABELS.map((label, idx) => (
-          <Text key={`${label}-${idx}`} style={styles.headerCell}>
-            {label}
-          </Text>
+          <View key={`${label}-${idx}`} style={styles.col}>
+            <Text style={styles.headerCell}>{label}</Text>
+          </View>
         ))}
       </View>
 
@@ -126,50 +294,87 @@ export function AvailabilityCalendar({
         showsVerticalScrollIndicator={false}
       >
         {loading && <Text style={styles.loading}>Memuat kapasitas…</Text>}
-        {weeks.map((week) => {
-          const offset = (new Date(week[0].date).getDay() + 6) % 7; // align to Monday
+        {months.map((bucket) => {
+          const matrix = buildMonthMatrix(bucket);
           return (
-            <View key={`${week[0].isoYear}-${week[0].isoWeek}`} style={styles.weekRow}>
-              {Array.from({ length: offset }).map((_, i) => (
-                <View key={`pad-${i}`} style={styles.cellPad} />
+            <View
+              key={`${bucket.year}-${bucket.month}`}
+              style={styles.monthBlock}
+            >
+              <Text style={styles.monthHeader}>
+                {MONTH_LABELS_ID[bucket.month]} {bucket.year}
+              </Text>
+              {matrix.map((row, rowIdx) => (
+                <View
+                  key={`${bucket.year}-${bucket.month}-row-${rowIdx}`}
+                  style={styles.weekRow}
+                >
+                  {row.map((day, colIdx) => {
+                    if (!day) {
+                      return (
+                        <View
+                          key={`pad-${rowIdx}-${colIdx}`}
+                          style={styles.col}
+                        />
+                      );
+                    }
+                    const past = isPast(day.date, today);
+                    const selected = selectedDate === day.date;
+                    const inPreferredWeek =
+                      preferredRange != null &&
+                      day.date >= preferredRange.startIso &&
+                      day.date <= preferredRange.endIso;
+                    const dayNum = new Date(day.date).getDate();
+                    const cellTextColor = selected
+                      ? nbColors.white
+                      : past || day.status === 'unknown'
+                      ? nbColors.gray700
+                      : nbColors.black;
+                    // Style precedence (last wins): base → status background
+                    // (always, so the green/yellow/red chip is never hidden
+                    // by the preferred-week indicator) → preferred-week
+                    // blue ring → selected black fill + ring → past tint.
+                    // Earlier the preferred-week style overrode the status
+                    // background with `warningLight` (pale yellow), which
+                    // disguised a `full` day as `partial` and then surprised
+                    // the user with the "Penuh" alert (PR-1778385950945).
+                    const cellBgOverride = selected
+                      ? null
+                      : past
+                      ? { backgroundColor: nbColors.gray100 }
+                      : { backgroundColor: STATUS_COLOR[day.status] };
+                    return (
+                      <View key={day.date} style={styles.col}>
+                        <TouchableOpacity
+                          accessibilityLabel={
+                            `Tanggal ${day.date} status ${day.status}` +
+                            (inPreferredWeek ? ' (di dalam minggu preferensi)' : '') +
+                            (selected ? ' (terpilih, ketuk untuk batal)' : '')
+                          }
+                          onPress={() => handlePress(day)}
+                          disabled={past}
+                          style={[
+                            styles.cell,
+                            cellBgOverride,
+                            inPreferredWeek && styles.cellPreferred,
+                            selected && styles.cellSelected,
+                            past && { opacity: 0.4 },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.cellText,
+                              { color: cellTextColor },
+                            ]}
+                          >
+                            {dayNum}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
               ))}
-              {week.map((day) => {
-                const past = isPast(day.date);
-                const selected = selectedDate === day.date;
-                const dayNum = new Date(day.date).getDate();
-                return (
-                  <TouchableOpacity
-                    key={day.date}
-                    accessibilityLabel={`Tanggal ${day.date} status ${day.status}`}
-                    onPress={() => handlePress(day)}
-                    disabled={past}
-                    style={[
-                      styles.cell,
-                      {
-                        backgroundColor: past
-                          ? nbColors.gray100
-                          : STATUS_COLOR[day.status],
-                        opacity: past ? 0.4 : 1,
-                      },
-                      selected && styles.cellSelected,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.cellText,
-                        {
-                          color:
-                            past || day.status === 'unknown'
-                              ? nbColors.gray700
-                              : nbColors.black,
-                        },
-                      ]}
-                    >
-                      {dayNum}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
             </View>
           );
         })}
@@ -178,7 +383,13 @@ export function AvailabilityCalendar({
   );
 }
 
-function LegendDot({ color, label }: { color: string; label: string }): React.JSX.Element {
+function LegendDot({
+  color,
+  label,
+}: {
+  color: string;
+  label: string;
+}): React.JSX.Element {
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
@@ -187,44 +398,144 @@ function LegendDot({ color, label }: { color: string; label: string }): React.JS
   );
 }
 
-const CELL_SIZE = 40;
+/** Hollow ring variant — used for indicator-only legend entries (no fill). */
+function LegendRing({
+  color,
+  label,
+}: {
+  color: string;
+  label: string;
+}): React.JSX.Element {
+  return (
+    <View style={styles.legendItem}>
+      <View
+        style={[
+          styles.legendDot,
+          { backgroundColor: 'transparent', borderColor: color, borderWidth: 2 },
+        ]}
+      />
+      <Text style={styles.legendLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const CELL_SIZE = 34;
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  // Compact one-line info strip used for both Minggu Preferensi and Tanggal
+  // Terpilih. Each row is ~36 dp tall (vs the previous 60 dp banners), so
+  // both rows + legend now fit in roughly the height the old single banner
+  // used to occupy.
+  infoStripRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.sm,
+    paddingVertical: 6,
+    paddingHorizontal: nbSpacing.sm,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.sm,
+    backgroundColor: nbColors.gray100,
+    marginBottom: 6,
+  },
+  infoStripRowSelected: {
+    backgroundColor: nbColors.black,
+  },
+  infoStripLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: nbColors.gray700,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  infoStripLabelOnDark: {
+    color: nbColors.gray300,
+  },
+  infoStripValue: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: nbColors.black,
+  },
+  infoStripValueOnDark: {
+    color: nbColors.white,
+  },
+  infoStripClear: {
+    paddingVertical: 3,
+    paddingHorizontal: nbSpacing.sm,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.sm,
+  },
+  infoStripClearText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: nbColors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: nbSpacing.sm,
-    marginBottom: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nbSpacing.xs,
+    gap: 4,
   },
   legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     borderWidth: nbBorders.thin,
     borderColor: nbColors.black,
   },
   legendLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: nbColors.black,
   },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: nbSpacing.xs,
+    marginBottom: 4,
+    paddingBottom: 4,
+    borderBottomWidth: nbBorders.thin,
+    borderBottomColor: nbColors.black,
+  },
+  col: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 2,
+    paddingHorizontal: 2,
   },
   headerCell: {
-    width: CELL_SIZE,
     textAlign: 'center',
+    fontSize: 12,
     fontWeight: '700',
     color: nbColors.gray700,
+  },
+  // Preferred-week indicator: thick BLUE ring on top of the day's actual
+  // status color. Background is intentionally NOT overridden — the prior
+  // soft-yellow tint disguised `full` (red) days as `partial` (yellow) and
+  // surprised the user with a "Penuh" alert on what looked like an
+  // available cell. Blue is also the only ring color that doesn't collide
+  // with green/yellow/red status fills.
+  cellPreferred: {
+    borderColor: nbColors.info,
+    borderWidth: 3,
+  },
+  // Selected indicator: filled black + white text + 3 dp black border. The
+  // border bulges slightly past the preferred-week ring beneath it so a
+  // selected day inside the preferred week reads as "selected first".
+  cellSelected: {
+    backgroundColor: nbColors.black,
+    borderColor: nbColors.black,
+    borderWidth: 3,
   },
   scroll: {
     flex: 1,
@@ -232,10 +543,21 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: nbSpacing.xl,
   },
+  monthBlock: {
+    marginBottom: nbSpacing.sm,
+  },
+  monthHeader: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: nbColors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    paddingHorizontal: nbSpacing.xs,
+  },
   weekRow: {
     flexDirection: 'row',
-    gap: nbSpacing.xs,
-    marginBottom: nbSpacing.xs,
+    marginBottom: 4,
   },
   cell: {
     width: CELL_SIZE,
@@ -246,15 +568,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cellPad: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
-  },
-  cellSelected: {
-    borderWidth: nbBorders.thick,
-  },
   cellText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   loading: {

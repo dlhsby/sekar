@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Adds two nullable columns to `pruning_requests` that capture the ISO week the
  * staff_kecamatan submitter chose. The pre-existing `expected_date` column stays
- * — it is populated later (by `admin_data` at convert-to-task, or by the
+ * — it is populated later (by `admin_data` at assign-to-task, or by the
  * convert auto-pick when the admin doesn't specify a day).
  *
  * Three valid states emerge:

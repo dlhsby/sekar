@@ -1,14 +1,19 @@
 /**
- * RescheduleSheet — admin reschedule entry point.
+ * RescheduleSheet — admin "Atur Jadwal" entry point.
  *
- * Renders an `NBModal` sheet hosting `AvailabilityCalendar` so admin_data /
+ * Renders a fullscreen `NBModal` hosting `AvailabilityCalendar` so admin_data /
  * top_management can adjust a request's `expected_date` independent of the
- * convert-to-task flow. On confirm dispatches `reschedulePruningRequest`.
+ * assign-to-task flow. On confirm dispatches `reschedulePruningRequest`.
  *
- * Round 4 (Apr 28).
+ * Round 4 (Apr 28). Switched from `type="sheet"` to `type="fullscreen"` on
+ * May 9, 2026 — the bottom-sheet layout collapsed because the calendar's
+ * inner ScrollView has no bounded height when nested inside a sheet whose
+ * own height is `flexShrink: 1`. Fullscreen gives the calendar the full
+ * viewport, the NBModal scroll wrapper handles vertical overflow, and the
+ * footer pins the action row predictably.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { NBModal, NBButton } from '../../../components/nb';
 import { NBText } from '../../../components/nb/NBText';
@@ -18,7 +23,11 @@ import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchCapacity } from '../../../store/slices/serviceCapacitySlice';
 import { reschedulePruningRequest } from '../../../store/slices/pruningRequestsSlice';
-import { getISOWeek, formatDateLong } from '../../../utils/dateUtils';
+import {
+  getISOWeek,
+  formatDateLong,
+  getIsoWeekBounds,
+} from '../../../utils/dateUtils';
 import type { PruningRequest } from '../../../types/models.types';
 
 interface RescheduleSheetProps {
@@ -53,10 +62,42 @@ export function RescheduleSheet({
 
   const [selected, setSelected] = useState<string | null>(null);
 
+  // Derive the admin's calendar window:
+  //   • rangeStart = MIN(today, mondayOfPreferredWeek)
+  //     (show the warga's requested week even when it sits in the future,
+  //      and don't hide today either — past cells stay disabled).
+  //   • rangeEnd   = today + 3 months
+  // Falls back to "today + 8 weeks" when the request has no preferred week.
+  const expectedYear = (request as any).expectedYear as number | null | undefined;
+  const expectedIsoWeek = (request as any).expectedIsoWeek as number | null | undefined;
+  const preferredWeek = useMemo(
+    () =>
+      expectedYear != null && expectedIsoWeek != null
+        ? { year: expectedYear, week: expectedIsoWeek }
+        : null,
+    [expectedYear, expectedIsoWeek],
+  );
+
+  const { rangeStart, rangeEnd } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(today);
+    end.setMonth(end.getMonth() + 3);
+    if (!preferredWeek) {
+      return { rangeStart: today, rangeEnd: end };
+    }
+    const { monday } = getIsoWeekBounds(preferredWeek.year, preferredWeek.week);
+    const startCandidate = monday < today ? monday : today;
+    return { rangeStart: startCandidate, rangeEnd: end };
+  }, [preferredWeek]);
+
   useEffect(() => {
     if (!visible || !rayonId) {
       return;
     }
+    // Fetch capacity for the entire visible range so cells past the current
+    // 8-week window aren't stuck on "Belum Diatur". We page the request by
+    // ISO week — 14 weeks covers the worst case (today + 3 months).
     const today = new Date();
     const { year, week } = getISOWeek(today);
     void dispatch(
@@ -64,7 +105,7 @@ export function RescheduleSheet({
         rayonId,
         year,
         fromWeek: week,
-        toWeek: Math.min(week + 7, 53),
+        toWeek: Math.min(week + 13, 53),
         serviceType: 'pruning',
       }),
     );
@@ -86,7 +127,7 @@ export function RescheduleSheet({
       NBToast.show({
         level: 'success',
         title: 'Jadwal diperbarui',
-        body: `Tanggal diharapkan: ${formatDateLong(selected)}`,
+        body: `Tanggal dijadwalkan: ${formatDateLong(selected)}`,
       });
       onSuccess?.();
       onClose();
@@ -106,12 +147,18 @@ export function RescheduleSheet({
       visible={visible}
       onClose={onClose}
       title="Atur Jadwal"
-      type="sheet"
-      size="lg"
+      type="fullscreen"
       footer={
         <View style={styles.footer}>
           <View style={{ flex: 1 }}>
-            <NBButton title="Batal" variant="secondary" onPress={onClose} disabled={isBusy} fullWidth />
+            <NBButton
+              title="Batal"
+              variant="secondary"
+              onPress={onClose}
+              disabled={isBusy}
+              size="lg"
+              fullWidth
+            />
           </View>
           <View style={{ flex: 1 }}>
             <NBButton
@@ -119,6 +166,7 @@ export function RescheduleSheet({
               onPress={submit}
               loading={isBusy}
               disabled={isBusy || !selected}
+              size="lg"
               fullWidth
               testID="perantingan-reschedule-save"
             />
@@ -127,14 +175,17 @@ export function RescheduleSheet({
       }
     >
       <View style={styles.body}>
-        <NBText variant="body-sm" style={styles.helper}>
-          Pilih tanggal baru untuk permohonan {(request as any).referenceCode ?? ''}.
+        <NBText variant="caption" style={styles.helper}>
+          Pilih tanggal kerja untuk permohonan {(request as any).referenceCode ?? ''}.
         </NBText>
         <AvailabilityCalendar
           rows={capacityRows}
           selectedDate={selected}
           onSelect={setSelected}
           loading={capacityLoading}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          preferredWeek={preferredWeek}
         />
       </View>
     </NBModal>
@@ -142,18 +193,26 @@ export function RescheduleSheet({
 }
 
 const styles = StyleSheet.create({
+  // NBModal's `fullscreenBody` wraps children in `padding: nbSpacing.lg`
+  // (24 dp on every side). For the calendar that left ~48 dp of dead
+  // vertical space — too much above the helper text and between the
+  // calendar bottom and the footer chrome. Negative vertical margins
+  // reclaim ~20 dp on each side without touching NBModal globals; the
+  // 4 dp top inset keeps the helper from kissing the modal header
+  // border, and the 0 dp bottom lets the calendar's last row sit
+  // directly above the footer's top divider.
   body: {
     flex: 1,
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm,
+    marginTop: -nbSpacing.md,
+    marginBottom: -nbSpacing.lg,
+    paddingTop: 4,
   },
   helper: {
     color: nbColors.gray700,
-    marginBottom: nbSpacing.sm,
+    marginBottom: 4,
   },
   footer: {
     flexDirection: 'row',
     gap: nbSpacing.sm,
-    padding: nbSpacing.md,
   },
 });

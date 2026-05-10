@@ -2,7 +2,7 @@
  * Users Slice
  *
  * Lightweight cache of master-data users. Used by admin flows that need to
- * pick an assignee (e.g. ConvertToTaskSheet, task assign sheets). Selectors
+ * pick an assignee (e.g. AssignToTaskSheet, task assign sheets). Selectors
  * filter client-side by role / area / rayon since the user list is small
  * enough to ship in one request.
  */

@@ -6,7 +6,7 @@ import { ApiProperty } from '@nestjs/swagger';
  *
  * Round 4 (Apr 28): admin_data (rayon-scoped), kepala_rayon, top_management,
  * admin_system, and superadmin can adjust `expected_date` independent of the
- * convert-to-task flow.
+ * assign-to-task flow.
  */
 export class ReschedulePruningRequestDto {
   @ApiProperty({

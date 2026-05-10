@@ -49,7 +49,7 @@ const STATUS_OPTIONS: Array<{ label: string; value: PruningRequestStatus | 'all'
   { label: 'Direview',    value: 'under_review' },
   { label: 'Disetujui',   value: 'approved' },
   { label: 'Ditolak',     value: 'rejected' },
-  { label: 'Dijadwalkan',  value: 'converted' },
+  { label: 'Ditugaskan',  value: 'assigned' },
   { label: 'Diproses',    value: 'in_progress' },
   { label: 'Selesai',     value: 'done' },
   { label: 'Dibatalkan',  value: 'cancelled' },

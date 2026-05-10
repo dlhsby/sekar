@@ -286,3 +286,70 @@ export function getISOWeek(date: Date | string): { year: number; week: number } 
   };
 }
 
+/**
+ * Inverse of getISOWeek — given an ISO year + week number, return the
+ * Monday and Sunday that bracket that week.
+ */
+export function getIsoWeekBounds(
+  year: number,
+  week: number,
+): { monday: Date; sunday: Date } {
+  // Jan 4 is always in ISO week 1.
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const jan4Day = jan4.getUTCDay() || 7;
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - (jan4Day - 1));
+  const monday = new Date(week1Monday);
+  monday.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  return { monday, sunday };
+}
+
+/**
+ * Sunday-start week bounds for the calendar week that *contains* the given
+ * ISO week's midweek (Thursday). Indonesian convention is Minggu→Sabtu
+ * (Sun→Sat), but storage uses ISO 8601 (Mon→Sun) — this helper bridges the
+ * two so display can be Sun-Sat while the persisted `iso_week` field stays
+ * ISO. The returned `sunday` is the Sunday on/before the ISO Monday, and
+ * `saturday` is `sunday + 6`.
+ *
+ * Example: ISO 2026-W21 = Mon May 18 – Sun May 24 → returns
+ *   { sunday: 2026-05-17, saturday: 2026-05-23 }
+ */
+export function getSundayWeekBoundsForIso(
+  year: number,
+  week: number,
+): { sunday: Date; saturday: Date } {
+  const { monday } = getIsoWeekBounds(year, week);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() - 1);
+  const saturday = new Date(sunday);
+  saturday.setUTCDate(sunday.getUTCDate() + 6);
+  return { sunday, saturday };
+}
+
+/**
+ * Format an ISO year + week as a human-readable Indonesian label using the
+ * **Sunday-start** convention used by the WeekPicker on the kecamatan submit
+ * form. e.g. (2026, 21) → "Minggu 21 · 17–23 Mei 2026" (Sun May 17 – Sat
+ * May 23) — NOT "18–24 Mei" (which would be the literal ISO Mon–Sun bounds
+ * and would mismatch what the kecamatan saw on the submit calendar).
+ */
+export function formatIsoWeekLabel(year: number, week: number): string {
+  const { sunday, saturday } = getSundayWeekBoundsForIso(year, week);
+  const monthsShort = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+  ];
+  const daySun = sunday.getUTCDate();
+  const daySunMonth = monthsShort[sunday.getUTCMonth()];
+  const daySat = saturday.getUTCDate();
+  const daySatMonth = monthsShort[saturday.getUTCMonth()];
+  const daySatYear = saturday.getUTCFullYear();
+  if (sunday.getUTCMonth() === saturday.getUTCMonth()) {
+    return `Minggu ${week} · ${daySun}–${daySat} ${daySatMonth} ${daySatYear}`;
+  }
+  return `Minggu ${week} · ${daySun} ${daySunMonth} – ${daySat} ${daySatMonth} ${daySatYear}`;
+}
+

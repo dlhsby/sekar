@@ -155,12 +155,12 @@ CREATE TABLE pruning_requests (
     photo_urls TEXT[] NOT NULL DEFAULT '{}',
     notes TEXT NULL,
     status TEXT NOT NULL DEFAULT 'submitted',
-      -- 'submitted'|'under_review'|'approved'|'rejected'|'converted'|'in_progress'|'done'|'cancelled'
+      -- 'submitted'|'under_review'|'approved'|'rejected'|'assigned'|'in_progress'|'done'|'cancelled'
     rayon_id UUID NULL REFERENCES rayons(id) ON DELETE SET NULL,
     reviewed_by UUID NULL REFERENCES users(id) ON DELETE SET NULL,
     reviewed_at TIMESTAMPTZ NULL,
     review_notes TEXT NULL,
-    converted_task_id UUID NULL REFERENCES tasks(id) ON DELETE SET NULL,
+    assigned_task_id UUID NULL REFERENCES tasks(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
