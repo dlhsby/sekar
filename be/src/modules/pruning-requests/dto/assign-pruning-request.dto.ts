@@ -73,38 +73,44 @@ export class AssignPruningRequestDto {
   scheduledDate?: string;
 
   /**
-   * Case type (GT, PT, PS, PD, PK).
+   * Case type (GT, PT, PS, PD, PK). **May 11, 2026:** optional.
+   * Admins no longer classify the case at assignment time — the satgas
+   * records the actual case on the activity report once on-site.
    *
    * @example 'GT'
    */
-  @ApiProperty({
-    description: 'Case type',
+  @ApiPropertyOptional({
+    description:
+      'Case type. Optional at assignment — the satgas captures this on the activity report.',
     enum: ['GT', 'PT', 'PS', 'PD', 'PK'],
     example: 'GT',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Case type is required' })
+  @IsOptional()
   @IsIn(['GT', 'PT', 'PS', 'PD', 'PK'], {
     message: 'Case type must be GT, PT, PS, PD, or PK',
   })
-  caseType: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
+  caseType?: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
 
   /**
-   * Pruning action (PM, PB, PC).
+   * Pruning action (PM, PB, PC). **May 11, 2026:** optional.
+   * Admins no longer pre-decide the action; the satgas records what was
+   * actually done on the activity report.
    *
    * @example 'PM'
    */
-  @ApiProperty({
-    description: 'Pruning action',
+  @ApiPropertyOptional({
+    description:
+      'Pruning action. Optional at assignment — the satgas captures this on the activity report.',
     enum: ['PM', 'PB', 'PC'],
     example: 'PM',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Pruning action is required' })
+  @IsOptional()
   @IsIn(['PM', 'PB', 'PC'], {
     message: 'Pruning action must be PM, PB, or PC',
   })
-  pruningAction: 'PM' | 'PB' | 'PC';
+  pruningAction?: 'PM' | 'PB' | 'PC';
 
   /**
    * Capacity units to consume on `service_capacity`. **May 11, 2026:**

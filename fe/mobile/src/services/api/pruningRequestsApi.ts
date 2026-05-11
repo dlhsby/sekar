@@ -139,8 +139,10 @@ export async function assignPruningRequestToTask(
     areaId?: string;
     assignedTo: string;
     scheduledDate: string; // YYYY-MM-DD
-    caseType: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
-    pruningAction: 'PM' | 'PB' | 'PC';
+    /** Optional (May 11 late+1) — admin no longer sets these at assignment;
+     *  the satgas records the actual case + action on the activity report. */
+    caseType?: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
+    pruningAction?: 'PM' | 'PB' | 'PC';
     /** Defaults to 1 server-side; capacity is per-permohonan. */
     units?: number;
   },

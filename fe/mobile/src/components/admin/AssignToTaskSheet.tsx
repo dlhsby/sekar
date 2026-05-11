@@ -38,23 +38,6 @@ interface AssignToTaskSheetProps {
   onSuccess?: () => void;
 }
 
-type CaseType = 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
-type PruningAction = 'PM' | 'PB' | 'PC';
-
-const CASE_TYPES: { label: string; value: CaseType }[] = [
-  { label: 'Gawat Darurat', value: 'GT' },
-  { label: 'Pemeliharaan Teratur', value: 'PT' },
-  { label: 'Pemeliharaan Khusus', value: 'PS' },
-  { label: 'Pembersihan Dahan', value: 'PD' },
-  { label: 'Pemangkasan Khusus', value: 'PK' },
-];
-
-const PRUNING_ACTIONS: { label: string; value: PruningAction }[] = [
-  { label: 'Pemangkasan Moderat', value: 'PM' },
-  { label: 'Pemangkasan Berat', value: 'PB' },
-  { label: 'Pemangkasan Cabang', value: 'PC' },
-];
-
 /**
  * Convert to Task Sheet Component
  */
@@ -67,6 +50,9 @@ export function AssignToTaskSheet({
   const dispatch = useAppDispatch();
 
   const allUsers = useAppSelector((state) => state.users.list);
+  // Optional chain — some test stores omit the auth slice; defaulting to
+  // null means "no centralized default assignee" rather than a crash.
+  const currentUser = useAppSelector((state) => state.auth?.user ?? null);
   const { convertingId, error: pruningError } = useAppSelector(
     (state) => state.pruningRequests,
   );
@@ -91,46 +77,81 @@ export function AssignToTaskSheet({
     if (allUsers.length === 0) dispatch(fetchUsers());
   }, [visible, allUsers.length, dispatch]);
 
-  // Form state. May 11, 2026:
-  //   - `areaId` removed from the UI — pruning runs in neighborhoods /
-  //     private yards, not managed areas. Backend now treats `area_id`
-  //     as optional.
-  //   - `scheduledDate` pre-fills from `request.scheduledDate` (the date
-  //     admin already set via Atur Jadwal before approve). The field is
-  //     read-only here; to change it, admin uses Atur Ulang Jadwal which
-  //     cascades to task.deadline + capacity rebook.
-  //   - `units` defaults to 1 and is no longer surfaced in the form —
-  //     capacity is "permohonan slots" (not tree count), and tree count
-  //     itself lives on `request.treeCount`.
+  // Form state. May 11, 2026 (late+1):
+  //   - `areaId` removed — pruning runs in neighborhoods / private yards.
+  //   - `caseType` + `pruningAction` removed — not needed at assignment;
+  //     the satgas captures these on the eventual activity report.
+  //   - Two-step assignee picker: role first (default `admin_data`), then
+  //     person filtered by selected role (default = the current admin
+  //     themselves — supports the centralized-recap pattern where
+  //     admin_data takes ownership and tags satgas on the activity later).
+  //   - `scheduledDate` pre-fills from `request.scheduledDate` (set by
+  //     admin via Atur Jadwal pre-approve). Read-only here; to change,
+  //     use Atur Ulang Jadwal which cascades to task.deadline + capacity.
+  //   - `units` defaults to 1 server-side (capacity = permohonan slots).
+  const ASSIGNABLE_ROLES = [
+    'admin_data',
+    'kepala_rayon',
+    'korlap',
+    'satgas',
+    'linmas',
+  ] as const;
+  type AssignableRole = typeof ASSIGNABLE_ROLES[number];
+  const ROLE_LABELS: Record<AssignableRole, string> = {
+    admin_data: 'Admin Data',
+    kepala_rayon: 'Kepala Rayon',
+    korlap: 'Korlap',
+    satgas: 'Satgas',
+    linmas: 'Linmas',
+  };
+
+  const [assignedRole, setAssignedRole] = useState<AssignableRole>('admin_data');
   const [assignedTo, setAssignedTo] = useState<string>('');
   const scheduledDate = useMemo<Date | null>(
     () => (request.scheduledDate ? new Date(request.scheduledDate) : null),
     [request.scheduledDate],
   );
-  const [caseType, setCaseType] = useState<CaseType>('PT');
-  const [pruningAction, setPruningAction] = useState<PruningAction>('PM');
+
+  // Default the assignee to the current admin themselves when their role
+  // matches the selected role (typical case: admin_data assigning to
+  // self). When the role filter changes and the current admin doesn't
+  // qualify, clear the selection so the placeholder prompts a pick.
+  useEffect(() => {
+    if (!visible || !currentUser) return;
+    if (currentUser.role === assignedRole) {
+      setAssignedTo(currentUser.id);
+    } else {
+      setAssignedTo('');
+    }
+  }, [visible, assignedRole, currentUser]);
 
   // Validation state
   const isFormValid = useMemo(
-    () => Boolean(assignedTo && scheduledDate && caseType && pruningAction),
-    [assignedTo, scheduledDate, caseType, pruningAction],
+    () => Boolean(assignedTo && scheduledDate),
+    [assignedTo, scheduledDate],
   );
 
   // Pruning-eligible assignees: anyone in the rayon who can field-execute
-  // or take responsibility — kepala_rayon, admin_data (including the
-  // current admin themselves, for centralized-report patterns), korlap,
-  // satgas, linmas. Per ADR-038 + user clarification May 11, 2026.
+  // or take responsibility. Two-step picker (role → person) — the second
+  // dropdown is filtered by `assignedRole` so admins see a short, scoped
+  // list instead of hunting through every user in the rayon.
+  const roleOptions = useMemo(
+    () =>
+      ASSIGNABLE_ROLES.map((r) => ({
+        label: ROLE_LABELS[r],
+        value: r,
+      })),
+    [],
+  );
   const assigneeOptions = useMemo(
     () =>
       users
-        .filter((u) =>
-          ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_data'].includes(u.role),
-        )
+        .filter((u) => u.role === assignedRole)
         .map((u) => ({
-          label: `${u.full_name} (${u.role})`,
+          label: u.full_name,
           value: u.id,
         })),
-    [users],
+    [users, assignedRole],
   );
 
   // Fetch capacity when date changes
@@ -185,12 +206,12 @@ export function AssignToTaskSheet({
     await dispatch(
       assignPruningRequestToTask({
         id: request.id,
-        // areaId intentionally omitted — pruning isn't tied to a managed area.
-        // units defaults to 1 server-side; capacity is per-permohonan.
+        // areaId, caseType, pruningAction, units intentionally omitted —
+        // pruning isn't tied to a managed area, capacity is per-permohonan
+        // (units=1 server-side), and the case classification + action type
+        // are captured by the satgas on the activity report, not here.
         assignedTo,
         scheduledDate: scheduledDate ? scheduledDate.toISOString() : '',
-        caseType,
-        pruningAction,
       }),
     ).unwrap();
 
@@ -209,8 +230,6 @@ export function AssignToTaskSheet({
     request.id,
     assignedTo,
     scheduledDate,
-    caseType,
-    pruningAction,
     dispatch,
     onClose,
     onSuccess,
@@ -250,7 +269,25 @@ export function AssignToTaskSheet({
             </View>
           )}
 
-          {/* Assigned To */}
+          {/* Ditugaskan Ke — two-step picker (role → person). Both
+              dropdowns are searchable; the person list re-filters whenever
+              the role changes. Role defaults to admin_data; the person
+              defaults to the current admin themselves when their role
+              matches (centralized-recap pattern), otherwise the dropdown
+              starts unselected. */}
+          <View style={styles.field}>
+            <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
+              Peran
+            </NBText>
+            <NBSelect
+              value={assignedRole}
+              onValueChange={(v) => setAssignedRole(v as AssignableRole)}
+              options={roleOptions}
+              placeholder="Pilih peran"
+              searchable
+              testID="convert-role-select"
+            />
+          </View>
           <View style={styles.field}>
             <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
               Ditugaskan Ke
@@ -259,34 +296,13 @@ export function AssignToTaskSheet({
               value={assignedTo}
               onValueChange={setAssignedTo}
               options={assigneeOptions}
-              placeholder="Pilih pengguna"
+              placeholder={
+                assigneeOptions.length === 0
+                  ? `Tidak ada ${ROLE_LABELS[assignedRole]} di rayon ini`
+                  : 'Pilih pengguna'
+              }
+              searchable
               testID="convert-assignee-select"
-            />
-          </View>
-
-          {/* Case Type */}
-          <View style={styles.field}>
-            <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Tipe Kasus
-            </NBText>
-            <NBSelect
-              value={caseType}
-              onValueChange={(v) => setCaseType(v as CaseType)}
-              options={CASE_TYPES}
-              testID="convert-casetype-select"
-            />
-          </View>
-
-          {/* Pruning Action */}
-          <View style={styles.field}>
-            <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Aksi Pemangkasan
-            </NBText>
-            <NBSelect
-              value={pruningAction}
-              onValueChange={(v) => setPruningAction(v as PruningAction)}
-              options={PRUNING_ACTIONS}
-              testID="convert-action-select"
             />
           </View>
 

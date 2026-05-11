@@ -159,9 +159,10 @@ describe('AssignToTaskSheet', () => {
 
       // May 11, 2026 — Area + Jumlah Unit fields removed. Pruning happens
       // outside managed areas; capacity is per-permohonan (units=1).
+      // May 11, 2026 (late+1): Tipe Kasus + Aksi Pemangkasan removed.
+      // Two-step assignee picker adds 'Peran' label.
+      expect(screen.getByText('Peran')).toBeTruthy();
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
-      expect(screen.getByText('Tipe Kasus')).toBeTruthy();
-      expect(screen.getByText('Aksi Pemangkasan')).toBeTruthy();
       expect(screen.getByText('Tanggal Penjadwalan')).toBeTruthy();
     });
 
@@ -224,9 +225,10 @@ describe('AssignToTaskSheet', () => {
 
       // Verify all field labels are present (May 11, 2026 — Area + Jumlah
       // Unit removed; pruning has no managed area and capacity is per-permohonan).
+      // May 11, 2026 (late+1): Tipe Kasus + Aksi Pemangkasan removed.
+      // Two-step assignee picker adds 'Peran' label.
+      expect(screen.getByText('Peran')).toBeTruthy();
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
-      expect(screen.getByText('Tipe Kasus')).toBeTruthy();
-      expect(screen.getByText('Aksi Pemangkasan')).toBeTruthy();
       expect(screen.getByText('Tanggal Penjadwalan')).toBeTruthy();
 
       // Verify submit and cancel buttons are rendered
@@ -526,7 +528,11 @@ describe('AssignToTaskSheet', () => {
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
     });
 
-    it('includes all case type options', () => {
+    // 'case type' and 'pruning action' option tests removed May 11, 2026
+    // (late+1) — those selects no longer exist; the satgas records both
+    // on the activity report instead.
+
+    it('renders the role + person two-step picker', () => {
       render(
         <Provider store={store}>
           <AssignToTaskSheet
@@ -537,21 +543,10 @@ describe('AssignToTaskSheet', () => {
         </Provider>,
       );
 
-      expect(screen.getByText('Tipe Kasus')).toBeTruthy();
-    });
-
-    it('includes all pruning action options', () => {
-      render(
-        <Provider store={store}>
-          <AssignToTaskSheet
-            visible={true}
-            onClose={jest.fn()}
-            request={mockRequest}
-          />
-        </Provider>,
-      );
-
-      expect(screen.getByText('Aksi Pemangkasan')).toBeTruthy();
+      // Labels prove both NBSelects render; NBSelect doesn't forward
+      // testID to a queryable node, so we rely on label text here.
+      expect(screen.getByText('Peran')).toBeTruthy();
+      expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
     });
   });
 });

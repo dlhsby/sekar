@@ -255,13 +255,16 @@ export const assignPruningRequestToTask = createAsyncThunk(
       units,
     }: {
       id: string;
-      // May 11, 2026 — both optional: pruning happens outside managed areas,
-      // and capacity is per-permohonan (defaults to 1 server-side).
+      // May 11, 2026 — areaId / caseType / pruningAction / units all
+      // optional: pruning happens outside managed areas, capacity is
+      // per-permohonan (units=1 server-side), and the case classification
+      // + action type are captured on the activity report later, not at
+      // assignment time.
       areaId?: string;
       assignedTo: string;
       scheduledDate: string;
-      caseType: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
-      pruningAction: 'PM' | 'PB' | 'PC';
+      caseType?: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
+      pruningAction?: 'PM' | 'PB' | 'PC';
       units?: number;
     },
     { rejectWithValue },
