@@ -40,14 +40,19 @@ const shiftSlice = createSlice({
     },
 
     setShiftHistory: (state, action: PayloadAction<Shift[]>) => {
-      state.shiftHistory = action.payload;
+      // Defensive coercion — guards against an axios-failure path that
+      // calls setShiftHistory with undefined, or a stale HMR payload
+      // shape. HomeScreen's `shiftHistory.filter` crashed otherwise.
+      state.shiftHistory = Array.isArray(action.payload) ? action.payload : [];
       state.error = null;
     },
 
     clockInSuccess: (state, action: PayloadAction<Shift>) => {
       state.currentShift = action.payload;
-      // Add new shift to history
-      state.shiftHistory = [action.payload, ...state.shiftHistory];
+      // Add new shift to history (also coerce to array in case prior
+      // state was somehow malformed — defensive copy is cheap here).
+      const prev = Array.isArray(state.shiftHistory) ? state.shiftHistory : [];
+      state.shiftHistory = [action.payload, ...prev];
       state.isClockingIn = false;
       state.error = null;
     },

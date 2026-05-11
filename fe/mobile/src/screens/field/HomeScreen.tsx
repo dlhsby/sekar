@@ -82,14 +82,22 @@ export function HomeScreen(): React.JSX.Element {
   // Phase 2D-11: Home screen location status
   const { location: homeLocation, refresh: refreshHomeLocation, hasActiveShift } = useHomeLocation();
 
-  // Calculate today's activities count from Redux state
+  // Calculate today's activities count from Redux state.
+  // Array.isArray guard: in dev a stale HMR snapshot occasionally lands
+  // with `activitiesList` as undefined / non-array, which crashed the
+  // whole HomeScreen tree. Falling back to [] keeps the home screen
+  // mountable so the error boundary doesn't black-screen the app.
   const todayActivitiesCount = useMemo(() => {
-    return activitiesList.filter((activity) => isToday(activity.created_at)).length;
+    const list = Array.isArray(activitiesList) ? activitiesList : [];
+    return list.filter((activity) => isToday(activity.created_at)).length;
   }, [activitiesList]);
 
-  // Filter today's shifts from shift history
+  // Filter today's shifts from shift history. Same defensive guard —
+  // observed `shiftHistory.filter is not a function` crash on admin_data
+  // reload (May 11) when HMR/state-hydration produced a non-array value.
   const todayShifts = useMemo(() => {
-    return shiftHistory.filter((shift) => isToday(shift.clock_in_time));
+    const list = Array.isArray(shiftHistory) ? shiftHistory : [];
+    return list.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
 
   // Fix 7: loadInitialData no longer calls loadTodayActivities — useFocusEffect
