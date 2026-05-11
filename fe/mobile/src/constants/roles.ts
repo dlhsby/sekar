@@ -37,21 +37,27 @@ export const ACTIVITY_SUBMITTERS: UserRole[] = [
   'kepala_rayon',
 ];
 
-/** Roles that can create tasks */
+/** Roles that can create tasks (mirrors backend TASK_CREATORS).
+ *  May 11, 2026 — `admin_data` added: they create tasks via the pruning
+ *  Tugaskan flow and directly via the Tugas tab. */
 export const TASK_CREATORS: UserRole[] = [
   'korlap',
   'kepala_rayon',
+  'admin_data',
   'top_management',
   'admin_system',
   'superadmin',
 ];
 
-/** Roles that can receive task assignments */
+/** Roles that can receive task assignments (mirrors backend TASK_RECEIVERS).
+ *  May 11, 2026 — `admin_data` added: they may take pruning tasks
+ *  themselves for the centralized-recap pattern. */
 export const TASK_RECEIVERS: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
   'kepala_rayon',
+  'admin_data',
 ];
 
 /** Roles that can submit overtime */
@@ -67,11 +73,14 @@ export const MONITORING_ROLES: Record<'city' | 'rayon' | 'area', UserRole[]> = {
   area: ['korlap'],
 };
 
-/** Hierarchical task assignment rules (must match backend VALID_TASK_ASSIGNMENTS) */
+/** Hierarchical task assignment rules (mirrors backend VALID_TASK_ASSIGNMENTS).
+ *  May 11, 2026 — admin_data + kepala_rayon + top_management can assign
+ *  across the full rayon roster; korlap may assign to self/satgas/linmas. */
 export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
-  korlap: ['satgas', 'linmas'],
-  kepala_rayon: ['korlap'],
-  top_management: ['kepala_rayon', 'korlap'],
+  korlap: ['korlap', 'satgas', 'linmas'],
+  kepala_rayon: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
+  admin_data: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
+  top_management: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
   admin_system: ['kepala_rayon', 'korlap'],
   superadmin: ['kepala_rayon', 'korlap'],
 };
@@ -121,9 +130,11 @@ export const ROLES_WITHOUT_RAYON: UserRole[] = [...MONITORING_ROLES.area];
  */
 export const FILTER_SUBORDINATE_ROLES: Partial<Record<UserRole, UserRole[]>> = {
   korlap: ['satgas', 'linmas'],
-  kepala_rayon: ['korlap', 'admin_data'],
-  top_management: ['kepala_rayon'],
+  kepala_rayon: ['korlap', 'admin_data', 'satgas', 'linmas'],
+  top_management: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
   admin_system: ['kepala_rayon', 'korlap', 'admin_data', 'satgas', 'linmas'],
   superadmin: ['kepala_rayon', 'korlap', 'admin_data', 'satgas', 'linmas', 'top_management', 'admin_system'],
-  admin_data: [],
+  // May 11, 2026 — admin_data has a full delegation roster (was []) so
+  // the Tugaskan-Ulang picker on TaskDetailScreen shows candidates.
+  admin_data: ['korlap', 'satgas', 'linmas'],
 };

@@ -74,27 +74,29 @@ describe('Role Constants', () => {
   });
 
   describe('TASK_CREATORS', () => {
-    it('should include management and admin roles', () => {
+    it('should include management and admin roles (incl. admin_data, May 11 2026)', () => {
       expect(TASK_CREATORS).toEqual([
         'korlap',
         'kepala_rayon',
+        'admin_data',
         'top_management',
         'admin_system',
         'superadmin',
       ]);
-      expect(TASK_CREATORS).toHaveLength(5);
+      expect(TASK_CREATORS).toHaveLength(6);
     });
   });
 
   describe('TASK_RECEIVERS', () => {
-    it('should include field roles that can receive tasks', () => {
+    it('should include field roles that can receive tasks (incl. admin_data, May 11 2026)', () => {
       expect(TASK_RECEIVERS).toEqual([
         'satgas',
         'linmas',
         'korlap',
         'kepala_rayon',
+        'admin_data',
       ]);
-      expect(TASK_RECEIVERS).toHaveLength(4);
+      expect(TASK_RECEIVERS).toHaveLength(5);
     });
   });
 
@@ -131,10 +133,17 @@ describe('Role Constants', () => {
   });
 
   describe('VALID_TASK_ASSIGNMENTS', () => {
-    it('should define correct task assignment hierarchy', () => {
-      expect(VALID_TASK_ASSIGNMENTS.korlap).toEqual(['satgas', 'linmas']);
-      expect(VALID_TASK_ASSIGNMENTS.kepala_rayon).toEqual(['korlap']);
-      expect(VALID_TASK_ASSIGNMENTS.top_management).toEqual(['kepala_rayon', 'korlap']);
+    it('should define correct task assignment hierarchy (May 11, 2026 expansion)', () => {
+      expect(VALID_TASK_ASSIGNMENTS.korlap).toEqual(['korlap', 'satgas', 'linmas']);
+      expect(VALID_TASK_ASSIGNMENTS.kepala_rayon).toEqual([
+        'kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas',
+      ]);
+      expect(VALID_TASK_ASSIGNMENTS.admin_data).toEqual([
+        'kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas',
+      ]);
+      expect(VALID_TASK_ASSIGNMENTS.top_management).toEqual([
+        'kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas',
+      ]);
       expect(VALID_TASK_ASSIGNMENTS.admin_system).toEqual(['kepala_rayon', 'korlap']);
       expect(VALID_TASK_ASSIGNMENTS.superadmin).toEqual(['kepala_rayon', 'korlap']);
     });
@@ -181,10 +190,13 @@ describe('Role Constants', () => {
       expect(canCreateTasks('superadmin')).toBe(true);
     });
 
+    it('should return true for admin_data (May 11, 2026)', () => {
+      expect(canCreateTasks('admin_data')).toBe(true);
+    });
+
     it('should return false for non-creator roles', () => {
       expect(canCreateTasks('satgas')).toBe(false);
       expect(canCreateTasks('linmas')).toBe(false);
-      expect(canCreateTasks('admin_data')).toBe(false);
     });
   });
 
@@ -194,10 +206,11 @@ describe('Role Constants', () => {
       expect(canReceiveTasks('linmas')).toBe(true);
       expect(canReceiveTasks('korlap')).toBe(true);
       expect(canReceiveTasks('kepala_rayon')).toBe(true);
+      // May 11, 2026 — admin_data may take pruning tasks themselves.
+      expect(canReceiveTasks('admin_data')).toBe(true);
     });
 
     it('should return false for non-receiver roles', () => {
-      expect(canReceiveTasks('admin_data')).toBe(false);
       expect(canReceiveTasks('top_management')).toBe(false);
       expect(canReceiveTasks('admin_system')).toBe(false);
       expect(canReceiveTasks('superadmin')).toBe(false);
@@ -285,12 +298,22 @@ describe('Role Constants', () => {
       expect(FILTER_SUBORDINATE_ROLES['korlap']).toEqual(['satgas', 'linmas']);
     });
 
-    it('kepala_rayon subordinates are korlap and admin_data', () => {
-      expect(FILTER_SUBORDINATE_ROLES['kepala_rayon']).toEqual(['korlap', 'admin_data']);
+    it('kepala_rayon subordinates include full rayon roster (May 11, 2026)', () => {
+      expect(FILTER_SUBORDINATE_ROLES['kepala_rayon']).toEqual([
+        'korlap', 'admin_data', 'satgas', 'linmas',
+      ]);
     });
 
-    it('top_management subordinates are kepala_rayon only', () => {
-      expect(FILTER_SUBORDINATE_ROLES['top_management']).toEqual(['kepala_rayon']);
+    it('top_management subordinates include full chain (May 11, 2026)', () => {
+      expect(FILTER_SUBORDINATE_ROLES['top_management']).toEqual([
+        'kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas',
+      ]);
+    });
+
+    it('admin_data subordinates are korlap/satgas/linmas (May 11, 2026)', () => {
+      expect(FILTER_SUBORDINATE_ROLES['admin_data']).toEqual([
+        'korlap', 'satgas', 'linmas',
+      ]);
     });
 
     it('admin_system subordinates include all field and management roles', () => {
@@ -315,9 +338,8 @@ describe('Role Constants', () => {
       ]);
     });
 
-    it('admin_data subordinates is an empty array', () => {
-      expect(FILTER_SUBORDINATE_ROLES['admin_data']).toEqual([]);
-    });
+    // Removed May 11, 2026 — admin_data now has a subordinate roster
+    // (asserted above). Earlier "empty array" test is obsolete.
 
     it('satgas has no entry (undefined — no subordinates)', () => {
       expect(FILTER_SUBORDINATE_ROLES['satgas']).toBeUndefined();

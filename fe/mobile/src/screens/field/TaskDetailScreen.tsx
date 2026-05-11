@@ -501,6 +501,12 @@ export function TaskDetailScreen(): React.JSX.Element {
   const showComplete = task.status === 'in_progress' && isAssignee;
   const showAssign = task.status === 'pending' && isCreator;
   const showReassign = task.status === 'declined' && isCreator;
+  // May 11, 2026 — admin reassign while task is still `assigned` (not yet
+  // accepted). Lets the creator fix a wrong Tugaskan pick without forcing
+  // the current assignee to decline first. Hidden once the assignee is
+  // also the caller (the existing Disposisi button covers that path).
+  const showReassignByCreator =
+    task.status === 'assigned' && isCreator && !isAssignee;
   // ADR-038: current assignee can delegate before accepting (e.g. kepala_rayon
   // forwards the task to a korlap they manage). Reuses /tasks/:id/assign on
   // the backend, which now permits ASSIGNED + caller===assigned_to.
@@ -750,10 +756,14 @@ export function TaskDetailScreen(): React.JSX.Element {
 
         {/* ── Action Buttons ── */}
         <View style={styles.actionContainer}>
-          {/* Assign (pending) / Reassign (declined) — creator only */}
-          {(showAssign || showReassign) && !showAssignInput && (
+          {/* Assign (pending) / Reassign (declined OR assigned-by-creator,
+              May 11) — creator only. For the assigned-by-creator path,
+              backend allows it ONLY while task.status === 'assigned'; once
+              the assignee accepts, the button disappears and a decline is
+              required to reroute (ADR-038 invariant). */}
+          {(showAssign || showReassign || showReassignByCreator) && !showAssignInput && (
             <NBButton
-              title={showReassign ? 'Tugaskan Ulang' : 'Tugaskan'}
+              title={showAssign ? 'Tugaskan' : 'Tugaskan Ulang'}
               variant="primary"
               onPress={handleShowAssign}
               disabled={isSubmitting}
@@ -766,7 +776,7 @@ export function TaskDetailScreen(): React.JSX.Element {
               <Text style={styles.inlineInputLabel}>
                 {showDelegate
                   ? 'Disposisi ke Bawahan'
-                  : showReassign
+                  : (showReassign || showReassignByCreator)
                     ? 'Pilih Petugas Pengganti'
                     : 'Pilih Petugas'}
               </Text>
