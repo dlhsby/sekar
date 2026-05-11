@@ -26,7 +26,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly config: ConfigService) {}
 
   onModuleInit(): void {
-    const url = this.config.get<string>('REDIS_URL', 'redis://localhost:6379');
+    // Dev default uses the docker-compose host port (16379) — see
+    // infra/docker-compose.yml. Prod overrides via the `REDIS_URL` secret.
+    const url = this.config.get<string>('REDIS_URL', 'redis://localhost:16379');
     this.client = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
     this.subscriber = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
 

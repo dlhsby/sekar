@@ -21,6 +21,10 @@ docker-compose down
 - **PostgreSQL:** localhost:5432 (postgres/postgres/sekar_db)
 - **Adminer:** http://localhost:8080 (web database UI)
 - **LocalStack S3:** http://localhost:4566 (AWS emulation)
+- **Redis:** localhost:**16379** (container internal port is 6379; host
+  port is offset by `+10000` to avoid colliding with system Redis or
+  another project. Override via `REDIS_PORT` in `infra/.env`. The
+  backend's `REDIS_URL` in `be/.env` must match this host port.)
 
 ## Documentation
 

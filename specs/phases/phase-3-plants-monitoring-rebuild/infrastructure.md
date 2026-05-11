@@ -48,7 +48,7 @@ The web PWA is built by the existing Next.js `build` step plus a service-worker 
 
 | Component | Change | Reason |
 |-----------|--------|--------|
-| `infra/docker-compose.yml` | +`redis:7-alpine` service on port 6379 | Socket.IO Redis adapter + Redis Streams + cache |
+| `infra/docker-compose.yml` | +`redis:7-alpine` service. Host port `16379` (overridable via `REDIS_PORT` env), container internal `6379`. The `+10000` offset avoids colliding with system Redis or another project on the dev box. | Socket.IO Redis adapter + Redis Streams + cache |
 | `be/src/common/services/redis.service.ts` | New | Connection pool + `/health` report + graceful shutdown |
 | `be/src/gateways/events.gateway.ts` | Wire `@socket.io/redis-adapter` | Horizontal-scale WS (future multi-instance) |
 | `be/src/modules/monitoring/streams/` | New | Redis Streams producer + consumer group for `location:pings` |
@@ -68,7 +68,8 @@ services:
     container_name: sekar-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # Host 16379 (override via REDIS_PORT) → container 6379.
+      - "${REDIS_PORT:-16379}:6379"
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - sekar-redis-data:/data
@@ -82,15 +83,16 @@ volumes:
   sekar-redis-data:
 ```
 
-Redis runs alongside PostgreSQL (5432), Adminer (8080), LocalStack S3 (4566). No new ports exposed to the host beyond 6379.
+Redis runs alongside PostgreSQL (5432), Adminer (8080), LocalStack S3 (4566). Host port `16379` (offset by `+10000` from the default to avoid colliding with system Redis or another project on the dev box). Production deployments continue to use the standard `6379` via `REDIS_HOST` / `REDIS_URL` secrets.
 
 ---
 
 ## `.env.example` additions
 
 ```env
-# Redis (Phase 3)
-REDIS_URL=redis://localhost:6379
+# Redis (Phase 3) — dev host port is 16379 (override REDIS_PORT in infra/.env).
+# Production uses the standard 6379 via secrets pipeline.
+REDIS_URL=redis://localhost:16379
 REDIS_STREAM_MAX_LEN=100000          # MAXLEN ~ trim threshold on XADD
 
 # Monitoring v2

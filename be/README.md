@@ -136,8 +136,10 @@ docker exec sekar-backend npm run db:seed:prod
 Add to `.env` for Phase 3 M2 Monitoring v2 features (Redis Streams, status projector):
 
 ```env
-# Redis (Phase 3 M2+)
-REDIS_URL=redis://localhost:6379
+# Redis (Phase 3 M2+) — dev host port is 16379 (set in infra/docker-compose.yml)
+# to avoid colliding with a system-wide Redis. Override here if you changed
+# REDIS_PORT in infra/.env. Production uses standard 6379.
+REDIS_URL=redis://localhost:16379
 REDIS_STREAM_MAX_LEN=10000
 STAFFING_DEBOUNCE_SECONDS=30
 MONITORING_SWEEP_CRON=*/30 * * * *    # Every 30 minutes

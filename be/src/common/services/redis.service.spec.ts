@@ -60,7 +60,7 @@ describe('RedisService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string, def?: string) =>
-              key === 'REDIS_URL' ? 'redis://localhost:6379' : def,
+              key === 'REDIS_URL' ? 'redis://localhost:16379' : def,
             ),
           },
         },
