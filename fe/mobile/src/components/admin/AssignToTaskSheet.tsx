@@ -89,17 +89,21 @@ export function AssignToTaskSheet({
   //     admin via Atur Jadwal pre-approve). Read-only here; to change,
   //     use Atur Ulang Jadwal which cascades to task.deadline + capacity.
   //   - `units` defaults to 1 server-side (capacity = permohonan slots).
+  // Ordered top-down by org hierarchy so the dropdown reflects the
+  // chain of command (Kepala Rayon at the top, Linmas at the bottom).
+  // The default selection below is intentionally Admin Data (not the
+  // first item) — admin_data is the common Tugaskan flow.
   const ASSIGNABLE_ROLES = [
-    'admin_data',
     'kepala_rayon',
+    'admin_data',
     'korlap',
     'satgas',
     'linmas',
   ] as const;
   type AssignableRole = typeof ASSIGNABLE_ROLES[number];
   const ROLE_LABELS: Record<AssignableRole, string> = {
-    admin_data: 'Admin Data',
     kepala_rayon: 'Kepala Rayon',
+    admin_data: 'Admin Data',
     korlap: 'Korlap',
     satgas: 'Satgas',
     linmas: 'Linmas',
@@ -197,33 +201,51 @@ export function AssignToTaskSheet({
     return booked + 1 > cap;
   }, [weekCapacity]);
 
-  // Handle submit
+  // Handle submit. Wrap in try/catch so a server-side 409 (capacity full,
+  // wrong status, etc.) or 4xx (validation) shows a danger toast instead
+  // of silently bubbling up — the previous form left the user staring at
+  // an open modal with no feedback when the API rejected.
   const handleSubmit = useCallback(async () => {
     if (!isFormValid) {
       return;
     }
+    try {
+      await dispatch(
+        assignPruningRequestToTask({
+          id: request.id,
+          // areaId, caseType, pruningAction, units intentionally omitted —
+          // pruning isn't tied to a managed area, capacity is per-permohonan
+          // (units=1 server-side), and the case classification + action type
+          // are captured by the satgas on the activity report, not here.
+          assignedTo,
+          scheduledDate: scheduledDate ? scheduledDate.toISOString() : '',
+        }),
+      ).unwrap();
 
-    await dispatch(
-      assignPruningRequestToTask({
-        id: request.id,
-        // areaId, caseType, pruningAction, units intentionally omitted —
-        // pruning isn't tied to a managed area, capacity is per-permohonan
-        // (units=1 server-side), and the case classification + action type
-        // are captured by the satgas on the activity report, not here.
-        assignedTo,
-        scheduledDate: scheduledDate ? scheduledDate.toISOString() : '',
-      }),
-    ).unwrap();
+      NBToast.show({
+        level: 'success',
+        title: 'Berhasil',
+        body: 'Tugas berhasil dibuat dari permohonan',
+      });
 
-    NBToast.show({
-      level: 'success',
-      title: 'Berhasil',
-      body: 'Tugas berhasil dibuat dari permohonan',
-    });
-
-    onClose();
-    if (onSuccess) {
-      onSuccess();
+      onClose();
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      // The thunk returns either a string (legacy) or `{ error, code }`.
+      // Surface whichever shape we get without crashing on either.
+      const message =
+        typeof err === 'string'
+          ? err
+          : (err as { error?: string; message?: string })?.error ??
+            (err as { message?: string })?.message ??
+            'Gagal menugaskan permohonan. Coba lagi.';
+      NBToast.show({
+        level: 'danger',
+        title: 'Gagal menugaskan',
+        body: message,
+      });
     }
   }, [
     isFormValid,
@@ -355,23 +377,33 @@ export function AssignToTaskSheet({
             </View>
           )}
 
-          {/* Buttons */}
+          {/* Buttons — side-by-side, matches the Buat Permohonan footer
+              pattern (Batal left, primary action right). Wrapped in flex:1
+              halves so each button gets ~50% of the row width. */}
           <View style={styles.buttonGroup}>
-            <NBButton
-              variant="primary"
-              label="Tugaskan"
-              onPress={handleSubmit}
-              disabled={!isFormValid || capacityExceeded || convertingId === request.id}
-              loading={convertingId === request.id}
-              testID="convert-submit-btn"
-            />
-            <NBButton
-              variant="secondary"
-              label="Batal"
-              onPress={handleClose}
-              disabled={convertingId === request.id}
-              testID="convert-cancel-btn"
-            />
+            <View style={{ flex: 1 }}>
+              <NBButton
+                variant="secondary"
+                label="Batal"
+                onPress={handleClose}
+                disabled={convertingId === request.id}
+                size="lg"
+                fullWidth
+                testID="convert-cancel-btn"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <NBButton
+                variant="primary"
+                label="Tugaskan"
+                onPress={handleSubmit}
+                disabled={!isFormValid || capacityExceeded || convertingId === request.id}
+                loading={convertingId === request.id}
+                size="lg"
+                fullWidth
+                testID="convert-submit-btn"
+              />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -409,6 +441,7 @@ const styles = StyleSheet.create({
     borderColor: nbColors.danger,
   },
   buttonGroup: {
+    flexDirection: 'row',
     gap: nbSpacing[3],
   },
 });

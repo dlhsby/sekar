@@ -215,7 +215,7 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
         rayonId: 'rayon-uuid-1',
       });
     });
@@ -243,7 +243,7 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
         rayonId: 'rayon-uuid-2',
       });
     });
@@ -297,7 +297,7 @@ describe('UsersService', () => {
       const result = await service.findAllPaginated(1, 50, adminDataUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
         rayonId: 'empty-rayon-uuid',
       });
       expect(result.data).toHaveLength(0);
@@ -325,7 +325,7 @@ describe('UsersService', () => {
       const result = await service.findAllPaginated(1, 50, kepalaRayonUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
         rayonId: 'empty-rayon-uuid-2',
       });
       expect(result.data).toHaveLength(0);
@@ -357,7 +357,7 @@ describe('UsersService', () => {
       const result = await service.findAllPaginated(1, 50, adminDataUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
         rayonId: 'rayon-uuid-1',
       });
       expect(result.data).toHaveLength(2);

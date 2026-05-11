@@ -118,7 +118,15 @@ export class UsersService {
   ): Promise<PaginatedResponseDto<User>> {
     this.logger.log(`Fetching users with pagination: page=${page}, limit=${limit}`);
 
-    // Rayon-scoped roles see only users in their rayon
+    // Rayon-scoped roles see only users in their rayon.
+    // May 11, 2026 — switched from `area.rayon_id` (which required users to
+    // have an `area_id` set) to `user.rayon_id` directly. The old form
+    // excluded rayon-scoped roles (`admin_data`, `kepala_rayon`) and any
+    // satgas/korlap not yet placed in an area, so the Tugaskan ke Petugas
+    // assignee dropdown rendered "Tidak ada Admin Data di rayon ini" even
+    // when those users existed in the rayon. We OR the area-derived
+    // rayon too so satgas with only an `area_id` (no direct `rayon_id`)
+    // still appear — defensive for legacy rows.
     if (
       requestingUser &&
       (requestingUser.role === UserRole.ADMIN_DATA ||
@@ -138,7 +146,10 @@ export class UsersService {
           'user.rayon_id',
           'user.created_at',
         ])
-        .where('area.rayon_id = :rayonId', { rayonId: requestingUser.rayon_id })
+        .where(
+          '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+          { rayonId: requestingUser.rayon_id },
+        )
         .orderBy('user.created_at', 'DESC')
         .skip((page - 1) * limit)
         .take(limit);
