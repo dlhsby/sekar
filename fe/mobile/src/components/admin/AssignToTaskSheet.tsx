@@ -18,21 +18,18 @@ import {
   clearError,
 } from '../../store/slices/pruningRequestsSlice';
 import { fetchCapacity } from '../../store/slices/serviceCapacitySlice';
-import { fetchAreas } from '../../store/slices/areasSlice';
 import { fetchUsers } from '../../store/slices/usersSlice';
 import {
   NBModal,
   NBButton,
   NBSelect,
-  NBTextInput,
-  NBDatePicker,
   NBAlert,
 } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
-import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
 import { NBToast } from '../../components/nb/NBToast';
 import type { PruningRequest } from '../../types/models.types';
-import { getISOWeek } from '../../utils/dateUtils';
+import { formatDateLong, getISOWeek } from '../../utils/dateUtils';
 
 interface AssignToTaskSheetProps {
   visible: boolean;
@@ -69,7 +66,6 @@ export function AssignToTaskSheet({
 }: AssignToTaskSheetProps): React.JSX.Element {
   const dispatch = useAppDispatch();
 
-  const allAreas = useAppSelector((state) => state.areas.list);
   const allUsers = useAppSelector((state) => state.users.list);
   const { convertingId, error: pruningError } = useAppSelector(
     (state) => state.pruningRequests,
@@ -78,13 +74,9 @@ export function AssignToTaskSheet({
     (state) => state.serviceCapacity,
   );
 
-  // Scope the pickers to the request's rayon — areas live under a rayon, and
-  // assignees should be in-rayon korlap/satgas/linmas. Falls back to the full
-  // list if the request has no rayon for some reason.
-  const areas = useMemo(
-    () => (request.rayonId ? allAreas.filter((a) => a.rayon_id === request.rayonId) : allAreas),
-    [allAreas, request.rayonId],
-  );
+  // Scope the assignee picker to the request's rayon (May 11, 2026 — area
+  // picker removed since pruning happens outside managed areas). Falls back
+  // to the full list if the request has no rayon for some reason.
   const users = useMemo(
     () =>
       request.rayonId
@@ -96,37 +88,38 @@ export function AssignToTaskSheet({
   // Lazy-load master data the first time the sheet opens.
   useEffect(() => {
     if (!visible) return;
-    if (allAreas.length === 0) dispatch(fetchAreas());
     if (allUsers.length === 0) dispatch(fetchUsers());
-  }, [visible, allAreas.length, allUsers.length, dispatch]);
+  }, [visible, allUsers.length, dispatch]);
 
-  // Form state
-  const [areaId, setAreaId] = useState<string>('');
+  // Form state. May 11, 2026:
+  //   - `areaId` removed from the UI — pruning runs in neighborhoods /
+  //     private yards, not managed areas. Backend now treats `area_id`
+  //     as optional.
+  //   - `scheduledDate` pre-fills from `request.scheduledDate` (the date
+  //     admin already set via Atur Jadwal before approve). The field is
+  //     read-only here; to change it, admin uses Atur Ulang Jadwal which
+  //     cascades to task.deadline + capacity rebook.
+  //   - `units` defaults to 1 and is no longer surfaced in the form —
+  //     capacity is "permohonan slots" (not tree count), and tree count
+  //     itself lives on `request.treeCount`.
   const [assignedTo, setAssignedTo] = useState<string>('');
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const scheduledDate = useMemo<Date | null>(
+    () => (request.scheduledDate ? new Date(request.scheduledDate) : null),
+    [request.scheduledDate],
+  );
   const [caseType, setCaseType] = useState<CaseType>('PT');
   const [pruningAction, setPruningAction] = useState<PruningAction>('PM');
-  const [units, setUnits] = useState<string>('1');
 
   // Validation state
   const isFormValid = useMemo(
-    () => areaId && assignedTo && scheduledDate && caseType && pruningAction,
-    [areaId, assignedTo, scheduledDate, caseType, pruningAction],
+    () => Boolean(assignedTo && scheduledDate && caseType && pruningAction),
+    [assignedTo, scheduledDate, caseType, pruningAction],
   );
 
-  // Get area list
-  const areaOptions = useMemo(
-    () =>
-      areas.map((a) => ({
-        label: a.name,
-        value: a.id,
-      })),
-    [areas],
-  );
-
-  // Pruning-eligible assignees per ADR-038: korlap routinely runs the work,
-  // satgas/linmas can be the direct hand, kepala_rayon/admin_data may take
-  // a task themselves and tag others.
+  // Pruning-eligible assignees: anyone in the rayon who can field-execute
+  // or take responsibility — kepala_rayon, admin_data (including the
+  // current admin themselves, for centralized-report patterns), korlap,
+  // satgas, linmas. Per ADR-038 + user clarification May 11, 2026.
   const assigneeOptions = useMemo(
     () =>
       users
@@ -177,9 +170,11 @@ export function AssignToTaskSheet({
     const wc = weekCapacity as any;
     const booked = wc.booked_units ?? wc.bookedUnits ?? 0;
     const cap = wc.capacity_units ?? wc.capacityUnits ?? 0;
-    const unitsNum = parseInt(units, 10) || 0;
-    return booked + unitsNum > cap;
-  }, [weekCapacity, units]);
+    // Pruning always books 1 unit per permohonan (May 11, 2026 — units
+    // field was removed from the form). Capacity is "permohonan slots",
+    // not tree count.
+    return booked + 1 > cap;
+  }, [weekCapacity]);
 
   // Handle submit
   const handleSubmit = useCallback(async () => {
@@ -187,17 +182,15 @@ export function AssignToTaskSheet({
       return;
     }
 
-    const unitsNum = parseInt(units, 10) || 1;
-
     await dispatch(
       assignPruningRequestToTask({
         id: request.id,
-        areaId,
+        // areaId intentionally omitted — pruning isn't tied to a managed area.
+        // units defaults to 1 server-side; capacity is per-permohonan.
         assignedTo,
         scheduledDate: scheduledDate ? scheduledDate.toISOString() : '',
         caseType,
         pruningAction,
-        units: unitsNum,
       }),
     ).unwrap();
 
@@ -214,12 +207,10 @@ export function AssignToTaskSheet({
   }, [
     isFormValid,
     request.id,
-    areaId,
     assignedTo,
     scheduledDate,
     caseType,
     pruningAction,
-    units,
     dispatch,
     onClose,
     onSuccess,
@@ -229,9 +220,6 @@ export function AssignToTaskSheet({
     dispatch(clearError());
     onClose();
   }, [dispatch, onClose]);
-
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() + 1);
 
   return (
     <NBModal
@@ -261,20 +249,6 @@ export function AssignToTaskSheet({
               />
             </View>
           )}
-
-          {/* Area Selection */}
-          <View style={styles.field}>
-            <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Area
-            </NBText>
-            <NBSelect
-              value={areaId}
-              onValueChange={setAreaId}
-              options={areaOptions}
-              placeholder="Pilih area"
-              testID="convert-area-select"
-            />
-          </View>
 
           {/* Assigned To */}
           <View style={styles.field}>
@@ -316,16 +290,29 @@ export function AssignToTaskSheet({
             />
           </View>
 
-          {/* Scheduled Date */}
+          {/* Scheduled Date — read-only. Pre-filled from request.scheduledDate
+              (set by admin via Atur Jadwal before approve). To change, admin
+              uses Atur Ulang Jadwal which cascades correctly post-assign. */}
           <View style={styles.field}>
             <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
               Tanggal Penjadwalan
             </NBText>
-            <NBDatePicker
-              value={scheduledDate}
-              onChange={setScheduledDate}
-              minimumDate={minDate}
-            />
+            <View style={styles.readOnlyChip}>
+              <NBText
+                variant="body"
+                style={{ fontWeight: '700', color: nbColors.black }}
+              >
+                {scheduledDate
+                  ? formatDateLong(scheduledDate)
+                  : 'Belum dijadwalkan'}
+              </NBText>
+            </View>
+            <NBText
+              variant="caption"
+              style={{ color: nbColors.gray700, marginTop: nbSpacing[1] }}
+            >
+              Untuk mengubah, gunakan "Atur Ulang Jadwal" setelah penugasan.
+            </NBText>
           </View>
 
           {/* Capacity Info */}
@@ -351,20 +338,6 @@ export function AssignToTaskSheet({
               </NBText>
             </View>
           )}
-
-          {/* Units */}
-          <View style={styles.field}>
-            <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Jumlah Unit
-            </NBText>
-            <NBTextInput
-              value={units}
-              onChangeText={setUnits}
-              placeholder="Masukkan jumlah unit"
-              keyboardType="number-pad"
-              testID="convert-units-input"
-            />
-          </View>
 
           {/* Buttons */}
           <View style={styles.buttonGroup}>
@@ -398,6 +371,14 @@ const styles = StyleSheet.create({
   },
   field: {
     marginBottom: nbSpacing[4],
+  },
+  readOnlyChip: {
+    paddingVertical: nbSpacing[3],
+    paddingHorizontal: nbSpacing[3],
+    borderWidth: nbBorders.thin,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.sm,
+    backgroundColor: nbColors.gray100,
   },
   capacityBox: {
     padding: nbSpacing[3],

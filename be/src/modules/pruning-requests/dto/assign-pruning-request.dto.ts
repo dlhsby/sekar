@@ -19,17 +19,25 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  */
 export class AssignPruningRequestDto {
   /**
-   * Area ID where the pruning task will be assigned.
+   * Area ID where the pruning task will be executed.
+   *
+   * **May 11, 2026:** now optional. Pruning happens in neighborhoods /
+   * private yards that are not managed areas, so most kecamatan-driven
+   * pruning tasks have no `area_id` — they inherit GPS coords + address
+   * from the parent pruning_request instead. The Task entity already has
+   * `area_id` nullable; monitoring queries that filter by area simply
+   * exclude these rows (covered in the Phase 4 monitoring polish backlog).
    *
    * @example '11111111-1111-1111-1111-111111111101'
    */
-  @ApiProperty({
-    description: 'Area ID where the pruning task will be executed',
+  @ApiPropertyOptional({
+    description:
+      'Optional area ID. Pruning tasks typically have no managed area — leave blank for neighborhood / private-yard work.',
     example: '11111111-1111-1111-1111-111111111101',
   })
   @IsUUID()
-  @IsNotEmpty({ message: 'Area ID is required' })
-  areaId: string;
+  @IsOptional()
+  areaId?: string;
 
   /**
    * User ID of the worker assigned to this pruning task.
@@ -99,13 +107,18 @@ export class AssignPruningRequestDto {
   pruningAction: 'PM' | 'PB' | 'PC';
 
   /**
-   * Number of plants/units to be pruned (default 1).
+   * Capacity units to consume on `service_capacity`. **May 11, 2026:**
+   * almost always omitted by the client. When absent, the service
+   * defaults to `1` (one unit per request — capacity is measured in
+   * "permohonan slots", not in number of trees). The original 15-tree
+   * count etc. lives on the request itself (`request.treeCount`).
    *
-   * @example 15
+   * @example 1
    */
   @ApiPropertyOptional({
-    description: 'Number of plants/units to be pruned',
-    example: 15,
+    description:
+      'Capacity units to book (default 1). Capacity tracks permohonan slots, not tree count — the tree count is on the request.',
+    example: 1,
     minimum: 1,
   })
   @IsNumber()

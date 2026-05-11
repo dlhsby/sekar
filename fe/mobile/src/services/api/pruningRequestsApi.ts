@@ -135,11 +135,13 @@ export async function reviewPruningRequest(
 export async function assignPruningRequestToTask(
   id: string,
   data: {
-    areaId: string;
+    /** Optional — pruning runs outside managed areas (May 11, 2026). */
+    areaId?: string;
     assignedTo: string;
     scheduledDate: string; // YYYY-MM-DD
     caseType: 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
     pruningAction: 'PM' | 'PB' | 'PC';
+    /** Defaults to 1 server-side; capacity is per-permohonan. */
     units?: number;
   },
 ): Promise<ApiResponse<{ request: PruningRequest; task: any }>> {

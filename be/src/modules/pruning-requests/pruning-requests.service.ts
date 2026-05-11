@@ -495,10 +495,16 @@ export class PruningRequestsService {
 
       // Create task — pre-assigned, so it must land in `assigned` status
       // with `assigned_at` set so the satgas can accept/start/complete.
+      // May 11, 2026: `area_id` is optional (pruning often happens in
+      // neighborhoods / private yards, not managed areas). When omitted,
+      // we still stamp `rayon_id` from the request so monitoring + rayon-
+      // scoped queries continue to work. The GPS + address from the
+      // request itself become the work location.
       const task = tm.create(Task, {
         title: `Pruning Request ${request.referenceCode}`,
         description: `Convert from pruning request: ${request.address}`,
-        area_id: dto.areaId,
+        area_id: dto.areaId ?? null,
+        rayon_id: request.rayonId ?? null,
         assigned_to: dto.assignedTo,
         deadline: scheduledDateObj,
         created_by: user.id,

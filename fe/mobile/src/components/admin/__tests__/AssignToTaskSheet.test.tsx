@@ -157,12 +157,12 @@ describe('AssignToTaskSheet', () => {
         </Provider>,
       );
 
-      expect(screen.getByText('Area')).toBeTruthy();
+      // May 11, 2026 — Area + Jumlah Unit fields removed. Pruning happens
+      // outside managed areas; capacity is per-permohonan (units=1).
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
       expect(screen.getByText('Tipe Kasus')).toBeTruthy();
       expect(screen.getByText('Aksi Pemangkasan')).toBeTruthy();
       expect(screen.getByText('Tanggal Penjadwalan')).toBeTruthy();
-      expect(screen.getByText('Jumlah Unit')).toBeTruthy();
     });
 
     it('does not render when visible is false', () => {
@@ -176,7 +176,7 @@ describe('AssignToTaskSheet', () => {
         </Provider>,
       );
 
-      expect(queryByText('Area')).toBeNull();
+      expect(queryByText('Ditugaskan Ke')).toBeNull();
     });
 
     it('renders action buttons', () => {
@@ -222,13 +222,12 @@ describe('AssignToTaskSheet', () => {
         </Provider>,
       );
 
-      // Verify all field labels are present
-      expect(screen.getByText('Area')).toBeTruthy();
+      // Verify all field labels are present (May 11, 2026 — Area + Jumlah
+      // Unit removed; pruning has no managed area and capacity is per-permohonan).
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
       expect(screen.getByText('Tipe Kasus')).toBeTruthy();
       expect(screen.getByText('Aksi Pemangkasan')).toBeTruthy();
       expect(screen.getByText('Tanggal Penjadwalan')).toBeTruthy();
-      expect(screen.getByText('Jumlah Unit')).toBeTruthy();
 
       // Verify submit and cancel buttons are rendered
       const submitBtn = screen.getByTestId('convert-submit-btn');
@@ -506,37 +505,12 @@ describe('AssignToTaskSheet', () => {
     });
   });
 
-  describe('Unit Input', () => {
-    it('renders units input field', () => {
-      render(
-        <Provider store={store}>
-          <AssignToTaskSheet
-            visible={true}
-            onClose={jest.fn()}
-            request={mockRequest}
-          />
-        </Provider>,
-      );
-
-      expect(screen.getByText('Jumlah Unit')).toBeTruthy();
-      expect(screen.getByTestId('convert-units-input')).toBeTruthy();
-    });
-  });
+  // "Unit Input" block removed May 11, 2026 — the Jumlah Unit input no
+  // longer exists in the sheet (capacity is per-permohonan, units=1 default).
 
   describe('Select Options', () => {
-    it('populates area select with area names', () => {
-      render(
-        <Provider store={store}>
-          <AssignToTaskSheet
-            visible={true}
-            onClose={jest.fn()}
-            request={mockRequest}
-          />
-        </Provider>,
-      );
-
-      expect(screen.getByText('Area')).toBeTruthy();
-    });
+    // "populates area select" test removed May 11, 2026 — Area picker
+    // dropped because pruning doesn't run inside managed areas.
 
     it('filters assignees to korlap and kepala_rayon roles', () => {
       render(
