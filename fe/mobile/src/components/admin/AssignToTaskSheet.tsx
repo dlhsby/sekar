@@ -277,13 +277,13 @@ export function AssignToTaskSheet({
               starts unselected. */}
           <View style={styles.field}>
             <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Peran
+              Jabatan
             </NBText>
             <NBSelect
               value={assignedRole}
               onValueChange={(v) => setAssignedRole(v as AssignableRole)}
               options={roleOptions}
-              placeholder="Pilih peran"
+              placeholder="Pilih jabatan"
               searchable
               testID="convert-role-select"
             />

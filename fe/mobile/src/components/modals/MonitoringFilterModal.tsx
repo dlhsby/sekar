@@ -285,12 +285,12 @@ export function MonitoringFilterModal({
           </FilterSection>
 
           {/* Role multiselect */}
-          <FilterSection title="Peran">
+          <FilterSection title="Jabatan">
             <NBSelect
               options={roleOptions}
               selectedValues={selectedRoles}
               onValuesChange={handleRoleToggle}
-              placeholder="Pilih Peran"
+              placeholder="Pilih Jabatan"
               searchable
             />
           </FilterSection>

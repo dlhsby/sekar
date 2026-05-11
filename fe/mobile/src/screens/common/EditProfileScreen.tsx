@@ -255,7 +255,7 @@ export function EditProfileScreen(): React.JSX.Element {
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Peran</Text>
+              <Text style={styles.infoLabel}>Jabatan</Text>
               <Text style={styles.infoValue}>{roleLabel}</Text>
             </View>
             {user?.phone_number && (

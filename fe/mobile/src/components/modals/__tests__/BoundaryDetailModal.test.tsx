@@ -236,7 +236,7 @@ describe('BoundaryDetailModal', () => {
       const { getByText } = render(
         <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
       );
-      expect(getByText('Peran')).toBeTruthy();
+      expect(getByText('Jabatan')).toBeTruthy();
       expect(getByText('Dibutuhkan')).toBeTruthy();
       expect(getByText('Aktif')).toBeTruthy();
       expect(getByText('Delta')).toBeTruthy();

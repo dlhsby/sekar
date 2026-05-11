@@ -160,8 +160,8 @@ describe('AssignToTaskSheet', () => {
       // May 11, 2026 — Area + Jumlah Unit fields removed. Pruning happens
       // outside managed areas; capacity is per-permohonan (units=1).
       // May 11, 2026 (late+1): Tipe Kasus + Aksi Pemangkasan removed.
-      // Two-step assignee picker adds 'Peran' label.
-      expect(screen.getByText('Peran')).toBeTruthy();
+      // Two-step assignee picker adds 'Jabatan' label.
+      expect(screen.getByText('Jabatan')).toBeTruthy();
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
       expect(screen.getByText('Tanggal Penjadwalan')).toBeTruthy();
     });
@@ -226,8 +226,8 @@ describe('AssignToTaskSheet', () => {
       // Verify all field labels are present (May 11, 2026 — Area + Jumlah
       // Unit removed; pruning has no managed area and capacity is per-permohonan).
       // May 11, 2026 (late+1): Tipe Kasus + Aksi Pemangkasan removed.
-      // Two-step assignee picker adds 'Peran' label.
-      expect(screen.getByText('Peran')).toBeTruthy();
+      // Two-step assignee picker adds 'Jabatan' label.
+      expect(screen.getByText('Jabatan')).toBeTruthy();
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
       expect(screen.getByText('Tanggal Penjadwalan')).toBeTruthy();
 
@@ -545,7 +545,7 @@ describe('AssignToTaskSheet', () => {
 
       // Labels prove both NBSelects render; NBSelect doesn't forward
       // testID to a queryable node, so we rely on label text here.
-      expect(screen.getByText('Peran')).toBeTruthy();
+      expect(screen.getByText('Jabatan')).toBeTruthy();
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
     });
   });

@@ -203,7 +203,7 @@ export function BoundaryDetailModal({
                 <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>Detail</NBText>
                 <View style={styles.staffingTable}>
                   <View style={styles.tableHeader}>
-                    <NBText variant="caption" color="gray700" style={[styles.tableHeaderCell, styles.tableRoleCol]}>Peran</NBText>
+                    <NBText variant="caption" color="gray700" style={[styles.tableHeaderCell, styles.tableRoleCol]}>Jabatan</NBText>
                     <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Dibutuhkan</NBText>
                     <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Aktif</NBText>
                     <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Delta</NBText>
