@@ -322,6 +322,12 @@ export class TasksService {
         }
         break;
       case UserRole.KEPALA_RAYON:
+      case UserRole.ADMIN_DATA:
+        // May 11, 2026 — admin_data joined the rayon-scoped admin path
+        // (was falling through to the "no restriction" default, which
+        // was both incorrect and incidentally hiding the @Roles 403 that
+        // came from the controller decorator before ADMIN_DATA was added
+        // to TASK_RECEIVERS).
         if (
           task.area?.rayon_id !== user.rayon_id &&
           task.rayon_id !== user.rayon_id &&

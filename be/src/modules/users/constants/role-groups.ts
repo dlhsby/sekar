@@ -16,9 +16,15 @@ export const ACTIVITY_SUBMITTERS = [
   UserRole.KEPALA_RAYON,
 ];
 
+// May 11, 2026 — `admin_data` joined both lists. They create tasks via
+// the pruning-request Tugaskan flow (which lands in TASK_CREATORS access
+// on `/tasks/:id` and friends), and they may take pruning tasks
+// themselves for the centralized-recap pattern where admin_data owns
+// the report and tags satgas afterwards (TASK_RECEIVERS access).
 export const TASK_CREATORS = [
   UserRole.KORLAP,
   UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_DATA,
   UserRole.TOP_MANAGEMENT,
   UserRole.ADMIN_SYSTEM,
   UserRole.SUPERADMIN,
@@ -29,6 +35,7 @@ export const TASK_RECEIVERS = [
   UserRole.LINMAS,
   UserRole.KORLAP,
   UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_DATA,
 ];
 
 export const OVERTIME_SUBMITTERS = [

@@ -271,6 +271,11 @@ export const NBButton: React.FC<NBButtonProps> = ({
           ) : null}
           {resolvedTitle !== undefined ? (
             <Text
+              // numberOfLines=1 + ellipsizeMode keep a long label like
+              // "Tugaskan" from wrapping in narrow half-row footer slots
+              // where the size="lg" `paddingHorizontal: 32` eats space.
+              numberOfLines={1}
+              ellipsizeMode="tail"
               style={[
                 styles.text,
                 {
