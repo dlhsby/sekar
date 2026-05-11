@@ -182,10 +182,26 @@ See [database.md §tasks](./database.md#tasks-additive). Key backend work:
 
 | Method | Path | Auth / Roles | Description |
 |--------|------|--------------|-------------|
-| `POST` | `/api/v1/tasks` (extended) | `korlap`, `admin_data`, `kepala_rayon`, `admin_system`, `superadmin` | Accepts `task_type`, `custom_fields`, `target_plant_count` |
+| `POST` | `/api/v1/tasks` (extended) | `korlap`, `admin_data`, `kepala_rayon`, `admin_system`, `superadmin`, `top_management` | Accepts `task_type`, `custom_fields`, `target_plant_count`. **May 11, 2026:** `admin_data` joined `TASK_CREATORS` (they create tasks via pruning-request Tugaskan and directly). |
+| `POST` | `/api/v1/tasks/:id/assign` | task creator, current assignee, or rayon admin | **ADR-038 + May 11, 2026:** four legal pre-states — `PENDING` (initial assign), `DECLINED` (reassign after refusal), `ASSIGNED + caller===assignee` (delegation down the chain), and **`ASSIGNED + caller===creator`** (admin reassign before the assignee accepts — fixes a wrong Tugaskan pick without forcing the assignee to decline first). Once status flips to `ACCEPTED`, reassign requires a decline first. Hierarchy validation via `VALID_TASK_ASSIGNMENTS` still applies on every path. Each successful call inserts a `task_delegations` audit row. |
+| `GET` | `/api/v1/tasks/:id` + `/my-tasks` | `TASK_CREATORS ∪ TASK_RECEIVERS` | **May 11, 2026:** `admin_data` added to both groups. Service-level `checkTaskAccess` rayon-scopes `admin_data` identically to `kepala_rayon` (`task.area.rayon_id` or `task.rayon_id` must match `user.rayon_id`, OR caller is the creator/assignee). |
 | `POST` | `/api/v1/tasks/:id/partial-complete` | `satgas` (assigned), `korlap` | Body: `{ completed_count, plant_items[], notes }`. Server decides whether to spawn a child task via `TaskResumePolicy` |
 | `POST` | `/api/v1/tasks/:id/resume` | same | Creates child task with `parent_task_id = :id`, remaining `target_plant_count` |
 | `GET` | `/api/v1/tasks/:id/lineage` | JWT / scoped | Returns parent chain + children tree |
+
+### C2.1 Task hierarchy matrix (May 11, 2026)
+
+`VALID_TASK_ASSIGNMENTS` (used by `validateHierarchy` on every `/assign` call):
+
+| Creator role | May assign to |
+|---|---|
+| `top_management` | kepala_rayon, admin_data, korlap, satgas, linmas |
+| `kepala_rayon` | kepala_rayon (self), admin_data, korlap, satgas, linmas |
+| `admin_data` | kepala_rayon, admin_data (self), korlap, satgas, linmas |
+| `korlap` | korlap (self), satgas, linmas |
+| `admin_system` / `superadmin` | kepala_rayon, korlap |
+
+Self-assignment is legal for kepala_rayon / admin_data / korlap to support the centralized-recap pattern where a higher-role takes ownership of the activity report and tags the field workers involved (ADR-038 entry pattern `d`).
 
 ### C3. Partial-completion request example
 
