@@ -420,6 +420,44 @@ describe('TasksService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('allows the creator to reassign from ASSIGNED before the assignee accepts', async () => {
+      // May 11, 2026 — admin reassign path: callerId === task.created_by
+      // while task.status === ASSIGNED. Lets admin_data fix a wrong
+      // Tugaskan pick without forcing the assignee to decline first.
+      const assignedTask = {
+        ...mockTask,
+        status: TaskStatus.ASSIGNED,
+        assigned_to: 'wrong-person-uuid',
+        created_by: 'creator-uuid',
+      };
+      const newAssignee = { ...mockUser, id: 'right-person-uuid', role: UserRole.SATGAS };
+      const creator = { ...mockUser, id: 'creator-uuid', role: UserRole.ADMIN_DATA };
+      const previousAssignee = { ...mockUser, id: 'wrong-person-uuid', role: UserRole.SATGAS };
+
+      taskRepository.findOne
+        .mockResolvedValueOnce(assignedTask as Task)
+        .mockResolvedValueOnce({ ...assignedTask, assigned_to: 'right-person-uuid' } as Task);
+      usersService.findOne
+        .mockResolvedValueOnce(newAssignee as User) // assignee validation
+        .mockResolvedValueOnce(creator as User) // authority lookup
+        .mockResolvedValueOnce(previousAssignee as User); // previous-assignee role
+      taskRepository.save.mockResolvedValue(assignedTask as Task);
+
+      await service.assign(
+        'task-uuid',
+        { assigned_to: 'right-person-uuid' } as any,
+        'creator-uuid',
+      );
+
+      expect(taskRepository.save).toHaveBeenCalled();
+      const calls = (taskDelegationRepository.save as jest.Mock).mock.calls;
+      const saved = calls[calls.length - 1]?.[0];
+      expect(saved).toMatchObject({
+        from_user_id: 'wrong-person-uuid',
+        to_user_id: 'right-person-uuid',
+      });
+    });
+
     it('should throw BadRequestException if assigning to inactive user', async () => {
       const pendingTask = { ...mockTask, status: TaskStatus.PENDING };
       const inactiveUser = { ...mockUser, is_active: false };

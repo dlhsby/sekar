@@ -210,6 +210,18 @@ export function TaskDetailScreen(): React.JSX.Element {
   const navigation = useNavigation<TaskDetailNavigationProp>();
   const route = useRoute<TaskDetailRouteProp>();
   const { taskId } = route.params;
+  // Optional caller-supplied back target (e.g. PruningDetail → "Lihat
+  // Tugas" passes `from: 'PruningDetail'` + `fromParams: { requestId,
+  // adminMode }`). When unset, defaults to the global Tugas list.
+  const backTarget = (route.params as any)?.from as string | undefined;
+  const backTargetParams = (route.params as any)?.fromParams as Record<string, unknown> | undefined;
+  const handleBack = useCallback(() => {
+    if (backTarget) {
+      (navigation as any).navigate(backTarget, backTargetParams);
+    } else {
+      (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
+    }
+  }, [backTarget, backTargetParams, navigation]);
 
   const user = useAppSelector((state) => state.auth.user);
 
@@ -469,7 +481,7 @@ export function TaskDetailScreen(): React.JSX.Element {
             title="Tugas Tidak Ditemukan"
             message="Tugas yang Anda cari tidak ditemukan atau telah dihapus"
             actionLabel="Kembali"
-            onAction={() => navigation.navigate('TasksActivities', { initialTab: 'tasks' })}
+            onAction={handleBack}
             testID="task-detail-error"
           />
         </View>
@@ -907,7 +919,7 @@ export function TaskDetailScreen(): React.JSX.Element {
           <NBButton
             title="Kembali"
             variant="secondary"
-            onPress={() => navigation.navigate('TasksActivities', { initialTab: 'tasks' })}
+            onPress={handleBack}
           />
         </View>
       </ScrollView>

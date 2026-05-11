@@ -62,10 +62,37 @@ export const MONITORING_AREA = [UserRole.KORLAP, ...MONITORING_RAYON];
 
 export const USER_MANAGERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
 
+// May 11, 2026 — extended per the user clarification:
+//  - `admin_data` can assign to themselves (centralized-recap pattern),
+//    to kepala_rayon (delegating up the chain isn't normal but legal for
+//    the rayon-level peer), and to korlap/satgas/linmas (field workers).
+//  - `top_management` gains admin_data + kepala_rayon as legal targets so
+//    the top-mgmt → admin_data delegation chain (user point 5) works.
+//  - `kepala_rayon` gains admin_data + satgas + linmas (they previously
+//    could only assign down to korlap, which forced an artificial hop).
 export const VALID_TASK_ASSIGNMENTS: Record<string, string[]> = {
-  [UserRole.TOP_MANAGEMENT]: [UserRole.KEPALA_RAYON, UserRole.KORLAP],
-  [UserRole.KEPALA_RAYON]: [UserRole.KORLAP],
-  [UserRole.KORLAP]: [UserRole.SATGAS, UserRole.LINMAS],
+  [UserRole.TOP_MANAGEMENT]: [
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_DATA,
+    UserRole.KORLAP,
+    UserRole.SATGAS,
+    UserRole.LINMAS,
+  ],
+  [UserRole.KEPALA_RAYON]: [
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_DATA,
+    UserRole.KORLAP,
+    UserRole.SATGAS,
+    UserRole.LINMAS,
+  ],
+  [UserRole.ADMIN_DATA]: [
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_DATA,
+    UserRole.KORLAP,
+    UserRole.SATGAS,
+    UserRole.LINMAS,
+  ],
+  [UserRole.KORLAP]: [UserRole.KORLAP, UserRole.SATGAS, UserRole.LINMAS],
   [UserRole.ADMIN_SYSTEM]: [UserRole.KEPALA_RAYON, UserRole.KORLAP],
   [UserRole.SUPERADMIN]: [UserRole.KEPALA_RAYON, UserRole.KORLAP],
 };

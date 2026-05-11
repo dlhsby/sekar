@@ -228,19 +228,31 @@ function MainNavigator(): React.JSX.Element {
         })}
       />
 
-      {/* TaskDetail: back to Tugas tab */}
+      {/* TaskDetail: back honors `from`/`fromParams` route params so callers
+          (e.g. PruningDetail → "Lihat Tugas") can route the back action back
+          to themselves instead of always landing on the Tugas list. */}
       <Tab.Screen
         name="TaskDetail"
         component={TaskDetailScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => (
-            <FieldHomeHeader
-              title="Detail Tugas"
-              onBack={() => navigation.navigate('TasksActivities', { initialTab: 'tasks' })}
-            />
-          ),
-          tabBarButton: () => null,
-        })}
+        options={({ navigation, route }) => {
+          const params = (route.params ?? {}) as {
+            from?: string;
+            fromParams?: Record<string, unknown>;
+          };
+          const onBack = () => {
+            if (params.from) {
+              navigation.navigate(params.from as any, params.fromParams as any);
+            } else {
+              navigation.navigate('TasksActivities', { initialTab: 'tasks' });
+            }
+          };
+          return {
+            headerTitle: () => (
+              <FieldHomeHeader title="Detail Tugas" onBack={onBack} />
+            ),
+            tabBarButton: () => null,
+          };
+        }}
       />
 
       {/* TaskComplete: screen's setOptions overrides with handleCancel as onBack */}
@@ -340,19 +352,27 @@ function MainNavigator(): React.JSX.Element {
           FieldHomeHeader greeting; we override the title here is NOT needed
           since it lives in its own tab now. */}
 
-      {/* Pruning Request Detail: accessed from both submission and review flows */}
+      {/* Pruning Request Detail: accessed from both submission and review flows.
+          May 11, 2026 — back action explicitly routes by `adminMode` (passed as a
+          route param) so admin_data lands on the Review Queue and kecamatan
+          lands on their Perantingan list. Tab.goBack() previously returned to
+          the most-recently-focused other tab (usually Home), which was wrong. */}
       <Tab.Screen
         name="PruningDetail"
         component={RequestDetailScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => (
-            <FieldHomeHeader
-              title="Detail Permohonan"
-              onBack={() => navigation.goBack()}
-            />
-          ),
-          tabBarButton: () => null,
-        })}
+        options={({ navigation, route }) => {
+          const params = (route.params ?? {}) as { adminMode?: boolean };
+          const target = params.adminMode ? 'PruningReviewQueue' : 'Perantingan';
+          return {
+            headerTitle: () => (
+              <FieldHomeHeader
+                title="Detail Permohonan"
+                onBack={() => navigation.navigate(target)}
+              />
+            ),
+            tabBarButton: () => null,
+          };
+        }}
       />
 
       {/* Phase 3 Apr 27 — staff_kecamatan submission form (scrollable cards) */}

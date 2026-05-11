@@ -245,9 +245,15 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 
   const handleViewTask = useCallback(() => {
     if (request?.assignedTaskId) {
-      navigation.navigate('TaskDetail', { taskId: request.assignedTaskId });
+      // Pass `from` + `fromParams` so the TaskDetail header back button
+      // returns to THIS permohonan instead of the global Tugas list.
+      navigation.navigate('TaskDetail', {
+        taskId: request.assignedTaskId,
+        from: 'PruningDetail',
+        fromParams: { requestId: request.id, adminMode },
+      });
     }
-  }, [request?.assignedTaskId, navigation]);
+  }, [request?.assignedTaskId, request?.id, adminMode, navigation]);
 
   const handleCancel = useCallback(() => {
     if (!request) return;

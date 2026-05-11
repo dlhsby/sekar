@@ -434,22 +434,30 @@ export class TasksService {
 
     const task = await this.findOne(id);
 
-    // ADR-038 — three legal states for /assign:
+    // ADR-038 — four legal states for /assign:
     //   1. PENDING   — initial assignment by creator or a higher role.
     //   2. DECLINED  — reassignment after the previous assignee refused.
     //   3. ASSIGNED  — delegation by the current assignee before accepting
     //      ("kepala_rayon got the task, hands it to admin_data"). Only the
     //      current assignee may delegate; once they accept, the task is
     //      committed and a decline is required to reroute.
+    //   4. ASSIGNED  — admin reassign by the task creator before the
+    //      assignee accepts (May 11, 2026). Lets admin_data fix a wrong
+    //      Tugaskan pick without forcing the assignee to decline first.
+    //      Hierarchy validation below still applies, so a creator can't
+    //      escalate above their own authority via this path.
     const isCurrentAssigneeDelegation =
       task.status === TaskStatus.ASSIGNED && callerId === task.assigned_to;
+    const isCreatorReassignBeforeAccept =
+      task.status === TaskStatus.ASSIGNED && callerId === task.created_by;
     const allowed =
       task.status === TaskStatus.PENDING ||
       task.status === TaskStatus.DECLINED ||
-      isCurrentAssigneeDelegation;
+      isCurrentAssigneeDelegation ||
+      isCreatorReassignBeforeAccept;
     if (!allowed) {
       throw new BadRequestException(
-        `Cannot assign task with status "${task.status}". Task must be pending, declined, or assigned (delegation by the current assignee).`,
+        `Cannot assign task with status "${task.status}". Task must be pending, declined, or assigned (delegation by the current assignee, or reassignment by the creator before acceptance).`,
       );
     }
 
