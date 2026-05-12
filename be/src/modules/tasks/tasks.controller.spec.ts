@@ -278,9 +278,9 @@ describe('TasksController', () => {
     it('should remove a tag from a task', async () => {
       tasksService.removeTag.mockResolvedValue(undefined);
 
-      await controller.removeTag('task-uuid', 'user-1');
+      await controller.removeTag('task-uuid', 'user-1', mockUser as User);
 
-      expect(tasksService.removeTag).toHaveBeenCalledWith('task-uuid', 'user-1');
+      expect(tasksService.removeTag).toHaveBeenCalledWith('task-uuid', 'user-1', mockUser.id);
     });
   });
 });

@@ -922,9 +922,26 @@ export class TasksService {
 
     const task = await this.findOne(taskId);
 
-    // Verify the user has permission to add tags (task creator)
-    if (task.created_by !== userId) {
-      throw new ForbiddenException('Only the task creator can add tags');
+    // May 12, 2026 — widened from "creator only" to "creator OR current
+    // assignee". Visibility tags reflect who is expected to help, so the
+    // assignee (typically a korlap pulling satgas onto a job) needs to be
+    // able to tag too. Sealed states (completed/verified/declined/cancelled)
+    // are frozen — the task record is closed, no more roster changes.
+    const canEdit = task.created_by === userId || task.assigned_to === userId;
+    if (!canEdit) {
+      throw new ForbiddenException(
+        'Only the task creator or current assignee can add tags',
+      );
+    }
+    const sealedStatuses: TaskStatus[] = [
+      TaskStatus.COMPLETED,
+      TaskStatus.VERIFIED,
+      TaskStatus.DECLINED,
+    ];
+    if (sealedStatuses.includes(task.status)) {
+      throw new BadRequestException(
+        `Cannot modify tags on a task with status "${task.status}"`,
+      );
     }
 
     for (const taggedUserId of taggedUserIds) {
@@ -958,8 +975,29 @@ export class TasksService {
    * @param taskId - Task ID
    * @param taggedUserId - ID of the tagged user to remove
    */
-  async removeTag(taskId: string, taggedUserId: string): Promise<void> {
+  async removeTag(taskId: string, taggedUserId: string, callerId: string): Promise<void> {
     this.logger.log(`Removing tag from task ${taskId}: user ${taggedUserId}`);
+
+    const task = await this.findOne(taskId);
+
+    // Mirror the addTags permission model — creator OR current assignee,
+    // not sealed. Previously this endpoint had no permission gate at all.
+    const canEdit = task.created_by === callerId || task.assigned_to === callerId;
+    if (!canEdit) {
+      throw new ForbiddenException(
+        'Only the task creator or current assignee can remove tags',
+      );
+    }
+    const sealedStatuses: TaskStatus[] = [
+      TaskStatus.COMPLETED,
+      TaskStatus.VERIFIED,
+      TaskStatus.DECLINED,
+    ];
+    if (sealedStatuses.includes(task.status)) {
+      throw new BadRequestException(
+        `Cannot modify tags on a task with status "${task.status}"`,
+      );
+    }
 
     const tag = await this.taskTagRepository.findOne({
       where: { task_id: taskId, user_id: taggedUserId },

@@ -294,13 +294,13 @@ export class TasksController {
    * Add tags to a task (batch)
    */
   @Post(':id/tag')
-  @Roles(...TASK_CREATORS)
-  @ApiOperation({ summary: 'Add user tags to a task (batch)' })
+  @Roles(...TASK_CREATORS, ...TASK_RECEIVERS)
+  @ApiOperation({ summary: 'Add user tags to a task (batch) — creator or current assignee' })
   @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Tags added successfully', type: Task })
-  @ApiResponse({ status: 400, description: 'User already tagged or invalid input' })
+  @ApiResponse({ status: 400, description: 'Task is sealed (completed/verified/declined) or invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only task creator can add tags' })
+  @ApiResponse({ status: 403, description: 'Forbidden - only task creator or current assignee can add tags' })
   @ApiResponse({ status: 404, description: 'Task or user not found' })
   async addTags(
     @Param('id', ParseUUIDPipe) id: string,
@@ -314,20 +314,22 @@ export class TasksController {
    * Remove a tag from a task
    */
   @Delete(':id/tag/:userId')
-  @Roles(...TASK_CREATORS)
+  @Roles(...TASK_CREATORS, ...TASK_RECEIVERS)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remove a user tag from a task' })
+  @ApiOperation({ summary: 'Remove a user tag from a task — creator or current assignee' })
   @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
   @ApiParam({ name: 'userId', description: 'Tagged user ID (UUID)' })
   @ApiResponse({ status: 204, description: 'Tag removed successfully' })
+  @ApiResponse({ status: 400, description: 'Task is sealed (completed/verified/declined)' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
+  @ApiResponse({ status: 403, description: 'Forbidden - only task creator or current assignee can remove tags' })
   @ApiResponse({ status: 404, description: 'Tag not found' })
   async removeTag(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @GetUser() user: User,
   ): Promise<void> {
-    return this.tasksService.removeTag(id, userId);
+    return this.tasksService.removeTag(id, userId, user.id);
   }
 
   /**

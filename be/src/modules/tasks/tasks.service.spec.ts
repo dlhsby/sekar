@@ -1230,22 +1230,107 @@ describe('TasksService', () => {
   });
 
   describe('removeTag', () => {
-    it('should remove a tag from a task', async () => {
+    it('should remove a tag from a task when caller is creator', async () => {
+      const task = { ...mockTask, id: 'task-uuid', created_by: 'user-uuid' };
       const mockTag = { task_id: 'task-uuid', user_id: 'tagged-uuid' };
+      taskRepository.findOne.mockResolvedValue(task as Task);
       taskTagRepository.findOne.mockResolvedValue(mockTag as any);
       taskTagRepository.remove.mockResolvedValue(mockTag as any);
 
-      await service.removeTag('task-uuid', 'tagged-uuid');
+      await service.removeTag('task-uuid', 'tagged-uuid', 'user-uuid');
 
       expect(taskTagRepository.remove).toHaveBeenCalledWith(mockTag);
     });
 
     it('should throw NotFoundException if tag not found', async () => {
+      const task = { ...mockTask, id: 'task-uuid', created_by: 'user-uuid' };
+      taskRepository.findOne.mockResolvedValue(task as Task);
       taskTagRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.removeTag('task-uuid', 'nonexistent-uuid')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.removeTag('task-uuid', 'nonexistent-uuid', 'user-uuid'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('addTags assignee path (May 12)', () => {
+    it('allows the current assignee to tag (not just the creator)', async () => {
+      const task = {
+        ...mockTask,
+        id: 'task-uuid',
+        created_by: 'creator-uuid',
+        assigned_to: 'assignee-uuid',
+        status: TaskStatus.IN_PROGRESS,
+      };
+      const tagged = { ...mockUser, id: 'tagged-uuid' };
+
+      taskRepository.findOne.mockResolvedValue(task as Task);
+      taskTagRepository.findOne.mockResolvedValue(null);
+      usersService.findOne.mockResolvedValue(tagged as User);
+      taskTagRepository.save.mockResolvedValue({} as any);
+
+      await service.addTags('task-uuid', 'assignee-uuid', ['tagged-uuid']);
+
+      expect(taskTagRepository.save).toHaveBeenCalled();
+    });
+
+    it('rejects callers who are neither creator nor assignee', async () => {
+      const task = {
+        ...mockTask,
+        created_by: 'creator-uuid',
+        assigned_to: 'assignee-uuid',
+        status: TaskStatus.IN_PROGRESS,
+      };
+      taskRepository.findOne.mockResolvedValue(task as Task);
+
+      await expect(
+        service.addTags('task-uuid', 'random-uuid', ['tagged-uuid']),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it.each([TaskStatus.COMPLETED, TaskStatus.VERIFIED, TaskStatus.DECLINED])(
+      'blocks tag changes when task is sealed (%s)',
+      async (sealedStatus) => {
+        const task = {
+          ...mockTask,
+          created_by: 'creator-uuid',
+          assigned_to: 'assignee-uuid',
+          status: sealedStatus,
+        };
+        taskRepository.findOne.mockResolvedValue(task as Task);
+
+        await expect(
+          service.addTags('task-uuid', 'creator-uuid', ['tagged-uuid']),
+        ).rejects.toThrow(BadRequestException);
+      },
+    );
+
+    it('blocks removeTag with same sealed/permission gates', async () => {
+      const sealedTask = {
+        ...mockTask,
+        created_by: 'creator-uuid',
+        assigned_to: 'assignee-uuid',
+        status: TaskStatus.COMPLETED,
+      };
+      taskRepository.findOne.mockResolvedValue(sealedTask as Task);
+
+      await expect(
+        service.removeTag('task-uuid', 'tagged-uuid', 'creator-uuid'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('removeTag rejects non-creator non-assignee callers', async () => {
+      const task = {
+        ...mockTask,
+        created_by: 'creator-uuid',
+        assigned_to: 'assignee-uuid',
+        status: TaskStatus.IN_PROGRESS,
+      };
+      taskRepository.findOne.mockResolvedValue(task as Task);
+
+      await expect(
+        service.removeTag('task-uuid', 'tagged-uuid', 'random-uuid'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

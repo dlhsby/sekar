@@ -213,28 +213,27 @@ describe('TaskDetailScreen', () => {
     expect(await findByText('Rayon 1')).toBeTruthy();
   });
 
-  it('shows tagged users when present (Phase 2C)', async () => {
+  it('shows tagged users when present (Phase 2C, May 12 label update)', async () => {
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
 
     const { findByText } = renderWithNav(<TaskDetailScreen />);
 
-    expect(await findByText('Tag Petugas')).toBeTruthy();
+    expect(await findByText('Tag Petugas Terlibat')).toBeTruthy();
     expect(await findByText('Worker 2')).toBeTruthy();
     expect(await findByText('Worker 3')).toBeTruthy();
   });
 
-  it('handles task without tags gracefully (Phase 2C)', async () => {
+  it('shows empty-state CTA when no tags but caller can edit (May 12)', async () => {
     const taskWithoutTags = { ...mockTask, tags: [] };
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: taskWithoutTags });
 
-    const { queryByText } = renderWithNav(<TaskDetailScreen />);
+    const { findByText, queryByText } = renderWithNav(<TaskDetailScreen />);
 
-    await waitFor(() => {
-      expect(tasksApi.getTaskById).toHaveBeenCalled();
-    });
-
-    // Tag section should not be rendered when no tags
-    expect(queryByText('Tag Petugas')).toBeNull();
+    // Section IS now rendered for creator/assignee even when empty, so they
+    // can tap the pencil icon to add tags. The list is empty though.
+    expect(await findByText('Tag Petugas Terlibat')).toBeTruthy();
+    expect(queryByText('Worker 2')).toBeNull();
+    expect(queryByText('Worker 3')).toBeNull();
   });
 
   it('handles task without rayon gracefully (Phase 2C)', async () => {

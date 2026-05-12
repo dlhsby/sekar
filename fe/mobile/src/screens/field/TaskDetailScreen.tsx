@@ -262,6 +262,13 @@ export function TaskDetailScreen(): React.JSX.Element {
 
   const [showPartialComplete, setShowPartialComplete] = useState(false);
 
+  // May 12, 2026 — in-place tag editing on TaskDetailScreen. Creator OR
+  // current assignee can add/remove tags as long as the task isn't sealed
+  // (completed / verified / declined). Backend enforces the same gate.
+  const [isEditingTags, setIsEditingTags] = useState(false);
+  const [tagPickerSelection, setTagPickerSelection] = useState<string[]>([]);
+  const [isSavingTags, setIsSavingTags] = useState(false);
+
   const fetchTask = useCallback(async () => {
     try {
       const response = await tasksApi.getTaskById(taskId);
@@ -372,6 +379,50 @@ export function TaskDetailScreen(): React.JSX.Element {
   }, [task, fetchTask]);
 
   const handleDecline = useCallback(() => { setShowDeclineInput(true); }, []);
+
+  const handleStartEditTags = useCallback(() => {
+    if (!task) { return; }
+    setTagPickerSelection((task.tags ?? []).map((t) => t.user_id));
+    setIsEditingTags(true);
+    loadSubordinates();
+  }, [task, loadSubordinates]);
+
+  const handleCancelEditTags = useCallback(() => {
+    setIsEditingTags(false);
+    setTagPickerSelection([]);
+  }, []);
+
+  const handleSaveTags = useCallback(async () => {
+    if (!task) { return; }
+    const existingIds = new Set((task.tags ?? []).map((t) => t.user_id));
+    const desiredIds = new Set(tagPickerSelection);
+    const toAdd = [...desiredIds].filter((id) => !existingIds.has(id));
+    const toRemove = [...existingIds].filter((id) => !desiredIds.has(id));
+
+    if (toAdd.length === 0 && toRemove.length === 0) {
+      setIsEditingTags(false);
+      return;
+    }
+
+    setIsSavingTags(true);
+    try {
+      // Remove first so we never exceed any per-task tag cap if one is added later.
+      for (const userId of toRemove) {
+        const r = await tasksApi.removeTaskTag(task.id, userId);
+        if (r.error) { throw new Error(r.error); }
+      }
+      if (toAdd.length > 0) {
+        const r = await tasksApi.addTaskTags(task.id, toAdd);
+        if (r.error) { throw new Error(r.error); }
+      }
+      await fetchTask();
+      setIsEditingTags(false);
+    } catch (err) {
+      Alert.alert('Gagal Menyimpan Tag', (err as Error).message || 'Coba lagi.');
+    } finally {
+      setIsSavingTags(false);
+    }
+  }, [task, tagPickerSelection, fetchTask]);
 
   const handleDeclineSubmit = useCallback(async () => {
     if (!task) {return;}
@@ -632,24 +683,93 @@ export function TaskDetailScreen(): React.JSX.Element {
           </NBCardContent>
         </NBCard>
 
-        {/* ── Tagged Users ── */}
-        {task.tags && task.tags.length > 0 && (
-          <NBCard style={styles.card}>
-            <NBCardHeader>
-              <Text style={styles.sectionTitle}>Tag Petugas</Text>
-            </NBCardHeader>
-            <NBCardContent>
-              <View style={styles.tagsContainer}>
-                {task.tags.map((tag) => (
-                  <View key={tag.id} style={styles.tagItem}>
-                    <Icon name="tag-outline" size={14} color={nbColors.gray['500']} />
-                    <Text style={styles.tagName}>{tag.user?.full_name ?? '—'}</Text>
+        {/* ── Tagged Users (editable by creator or assignee while not sealed) ── */}
+        {(() => {
+          const sealedStatuses: TaskStatus[] = ['completed', 'verified', 'declined'];
+          const canEditTags =
+            (isCreator || isAssignee) && !sealedStatuses.includes(task.status);
+          const hasTags = task.tags && task.tags.length > 0;
+          if (!hasTags && !canEditTags) { return null; }
+
+          const tagOptions = subordinates.map((u) => ({
+            label: `${toTitleCase(u.role)} · ${u.full_name}`,
+            value: u.id,
+          }));
+
+          return (
+            <NBCard style={styles.card}>
+              <NBCardHeader>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={styles.sectionTitle}>Tag Petugas Terlibat</Text>
+                  {canEditTags && !isEditingTags && (
+                    <TouchableOpacity onPress={handleStartEditTags} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Icon name="pencil-outline" size={18} color={nbColors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </NBCardHeader>
+              <NBCardContent>
+                {!isEditingTags ? (
+                  hasTags ? (
+                    <View style={styles.tagsContainer}>
+                      {task.tags!.map((tag) => (
+                        <View key={tag.id} style={styles.tagItem}>
+                          <Icon name="tag-outline" size={14} color={nbColors.gray['500']} />
+                          <Text style={styles.tagName}>{tag.user?.full_name ?? '—'}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.subText}>
+                      Belum ada petugas yang di-tag. Tap ikon pensil untuk menambah.
+                    </Text>
+                  )
+                ) : (
+                  <View>
+                    {loadingSubordinates ? (
+                      <ActivityIndicator color={nbColors.primary} />
+                    ) : tagOptions.length === 0 ? (
+                      <Text style={styles.subText}>
+                        Tidak ada petugas yang dapat di-tag.
+                      </Text>
+                    ) : (
+                      <NBSelect
+                        label="Pilih petugas untuk di-tag"
+                        selectedValues={tagPickerSelection}
+                        onValuesChange={setTagPickerSelection}
+                        options={tagOptions}
+                        placeholder="Cari & pilih petugas..."
+                        searchable
+                        searchPlaceholder="Cari nama petugas..."
+                      />
+                    )}
+                    <View style={{ flexDirection: 'row', gap: nbSpacing.sm, marginTop: nbSpacing.md }}>
+                      <View style={{ flex: 1 }}>
+                        <NBButton
+                          title="Batal"
+                          variant="ghost"
+                          size="lg"
+                          onPress={handleCancelEditTags}
+                          disabled={isSavingTags}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <NBButton
+                          title="Simpan"
+                          variant="primary"
+                          size="lg"
+                          onPress={handleSaveTags}
+                          disabled={isSavingTags}
+                          loading={isSavingTags}
+                        />
+                      </View>
+                    </View>
                   </View>
-                ))}
-              </View>
-            </NBCardContent>
-          </NBCard>
-        )}
+                )}
+              </NBCardContent>
+            </NBCard>
+          );
+        })()}
 
         {/* ── Declined Reason ── */}
         {task.status === 'declined' && task.decline_reason && (
