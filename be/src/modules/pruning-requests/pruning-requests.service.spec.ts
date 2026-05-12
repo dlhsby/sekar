@@ -634,7 +634,7 @@ describe('PruningRequestsService', () => {
 
       const mockTask = {
         id: 'task-id',
-        title: `Pruning Request ${approvedRequest.referenceCode}`,
+        title: `Permintaan Perantingan ${approvedRequest.referenceCode}`,
       };
 
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
@@ -786,7 +786,7 @@ describe('PruningRequestsService', () => {
 
       const mockTask = {
         id: 'auto-task-id',
-        title: `Pruning Request ${approvedRequest.referenceCode}`,
+        title: `Permintaan Perantingan ${approvedRequest.referenceCode}`,
       };
 
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
@@ -1184,7 +1184,7 @@ describe('PruningRequestsService', () => {
       });
       const linkedTask = () => ({
         id: taskId,
-        title: 'Pruning Request PR-XYZ',
+        title: 'Permintaan Perantingan PR-XYZ',
         assigned_to: 'sat-id',
         deadline: new Date(futureDateString(7)),
       });

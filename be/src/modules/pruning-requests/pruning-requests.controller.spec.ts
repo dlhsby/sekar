@@ -339,7 +339,7 @@ describe('PruningRequestsController', () => {
 
       const mockTask = {
         id: 'task-id',
-        title: `Pruning Request ${mockPruningRequest.referenceCode}`,
+        title: `Permintaan Perantingan ${mockPruningRequest.referenceCode}`,
       };
 
       const updated: PruningRequest = {

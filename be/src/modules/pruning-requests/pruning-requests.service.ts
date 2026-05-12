@@ -500,9 +500,17 @@ export class PruningRequestsService {
       // we still stamp `rayon_id` from the request so monitoring + rayon-
       // scoped queries continue to work. The GPS + address from the
       // request itself become the work location.
+      // May 12, 2026 — title/description rendered in Bahasa Indonesia
+      // since these surface verbatim on the satgas's Detail Tugas screen.
+      // Description uses the kecamatan + address pair the warga gave us
+      // so the satgas knows where to go even before opening the linked
+      // permohonan.
+      const taskDescription = request.kecamatanName
+        ? `Permintaan Perantingan dari Kecamatan ${request.kecamatanName} : ${request.address}`
+        : `Permintaan Perantingan : ${request.address}`;
       const task = tm.create(Task, {
-        title: `Pruning Request ${request.referenceCode}`,
-        description: `Convert from pruning request: ${request.address}`,
+        title: `Permintaan Perantingan ${request.referenceCode}`,
+        description: taskDescription,
         area_id: dto.areaId ?? null,
         rayon_id: request.rayonId ?? null,
         assigned_to: dto.assignedTo,
