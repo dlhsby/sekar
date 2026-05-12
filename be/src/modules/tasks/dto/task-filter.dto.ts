@@ -87,6 +87,17 @@ export class TaskFilterDto extends PaginationDto {
   @IsOptional()
   created_before?: string;
 
+  // May 12 — also exposed as @Query('scope') on the my-tasks controller,
+  // but ValidationPipe with forbidNonWhitelisted strips/rejects unknown
+  // properties from the @Query() bag, so we whitelist it here too.
+  @ApiPropertyOptional({
+    description: 'Scope of /my-tasks results (only honored by that endpoint)',
+    enum: ['assigned', 'created', 'all'],
+  })
+  @IsIn(['assigned', 'created', 'all'])
+  @IsOptional()
+  scope?: 'assigned' | 'created' | 'all';
+
   @ApiPropertyOptional({
     description: 'Sort by field',
     enum: ['created_at', 'deadline', 'priority'],
