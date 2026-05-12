@@ -643,7 +643,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     for (const k of allKec) {
       i += 1;
       const username = `staff_kecamatan_${k.code}_1`;
-      const fullName = `Staff Kecamatan ${k.name}`;
+      const fullName = `Staff Kecamatan ${k.name} Satu`;
       const phone = `0812000${String(phoneSeq).padStart(5, '0')}`;
       phoneSeq += 1;
       const result = await queryRunner.query(

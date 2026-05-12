@@ -715,36 +715,36 @@ async function seedStaging() {
     };
 
     // ── System-wide (no area/rayon scope) ──────────────────────
-    await insertUser(USER_SUPERADMIN_ID, 'superadmin',       'Super Admin',       'superadmin',    '081200000010');
-    await insertUser(USER_ADMIN_SYS_ID,  'admin_system_1',    'Admin System',      'admin_system',  '081200000011');
-    await insertUser(USER_TOP_MGMT_ID,   'top_management_1',  'Top Management',    'top_management','081200000012');
+    await insertUser(USER_SUPERADMIN_ID, 'superadmin',       'Super Admin',          'superadmin',    '081200000010');
+    await insertUser(USER_ADMIN_SYS_ID,  'admin_system_1',    'Admin Sistem Satu',    'admin_system',  '081200000011');
+    await insertUser(USER_TOP_MGMT_ID,   'top_management_1',  'Top Management Satu',  'top_management','081200000012');
 
     // ── Rayon Pusat — management ───────────────────────────────
-    await insertUser(USER_KEPALA_RAYON_ID, 'kepala_rayon_pusat_1',  'Kepala Rayon Pusat',   'kepala_rayon', '081200000013', RAYON_PUSAT_ID);
-    await insertUser(USER_ADMIN_DATA_ID,   'admin_data_pusat_1',  'Admin Data Pusat 1',   'admin_data',   '081200000014', RAYON_PUSAT_ID);
+    await insertUser(USER_KEPALA_RAYON_ID, 'kepala_rayon_pusat_1',  'Kepala Rayon Pusat Satu',   'kepala_rayon', '081200000013', RAYON_PUSAT_ID);
+    await insertUser(USER_ADMIN_DATA_ID,   'admin_data_pusat_1',  'Admin Data Pusat Satu',   'admin_data',   '081200000014', RAYON_PUSAT_ID);
 
     // ── Rayon Pusat — korlap (primary area = Taman Bungkul; extras via user_areas) ──
-    await insertUser(USER_KORLAP_PUSAT1_ID,  'korlap_pusat_1',  'Korlap Pusat 1',  'korlap', '081200000015', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_KORLAP_PUSAT2_ID,  'korlap_pusat_2',  'Korlap Pusat 2',  'korlap', '081200000016', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_KORLAP_BUNGKUL_ID, 'korlap_pusat_3','Korlap Bungkul 1','korlap', '081200000017', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_KORLAP_PUSAT1_ID,  'korlap_pusat_1',  'Korlap Pusat Satu',  'korlap', '081200000015', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_KORLAP_PUSAT2_ID,  'korlap_pusat_2',  'Korlap Pusat Dua',  'korlap', '081200000016', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_KORLAP_BUNGKUL_ID, 'korlap_pusat_3',  'Korlap Pusat Tiga', 'korlap', '081200000017', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
     // ── Rayon Pusat — satgas / linmas ──────────────────────────
     // satgas_pusat_1: all 13 areas → primary = Taman Bungkul
-    await insertUser(USER_SATGAS_PUSAT1_ID,  'satgas_pusat_1',   'Satgas Pusat 1',   'satgas', '081200000018', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_SATGAS_PUSAT1_ID,  'satgas_pusat_1',   'Satgas Pusat Satu',   'satgas', '081200000018', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
     // satgas_pusat_2: 12 pedestrian only → primary = Darmo Pulau 1
-    await insertUser(USER_SATGAS_PUSAT2_ID,  'satgas_pusat_2',   'Satgas Pusat 2',   'satgas', '081200000019', RAYON_PUSAT_ID, AREA_DARMO_P1_ID);
+    await insertUser(USER_SATGAS_PUSAT2_ID,  'satgas_pusat_2',   'Satgas Pusat Dua',    'satgas', '081200000019', RAYON_PUSAT_ID, AREA_DARMO_P1_ID);
     // linmas_pusat_1: all 13 areas → primary = Taman Bungkul
-    await insertUser(USER_LINMAS_PUSAT1_ID,  'linmas_pusat_1',   'Linmas Pusat 1',   'linmas', '081200000020', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_LINMAS_PUSAT1_ID,  'linmas_pusat_1',   'Linmas Pusat Satu',   'linmas', '081200000020', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
     // linmas_pusat_2: Taman Bungkul only
-    await insertUser(USER_LINMAS_PUSAT2_ID,  'linmas_pusat_2',   'Linmas Pusat 2',   'linmas', '081200000021', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_LINMAS_PUSAT2_ID,  'linmas_pusat_2',   'Linmas Pusat Dua',    'linmas', '081200000021', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
     // satgas_pusat_3: Taman Bungkul only
-    await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_pusat_3', 'Satgas Bungkul 1', 'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_pusat_3',   'Satgas Pusat Tiga',   'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
 
     // ── Phase 3 — public intake (staff_kecamatan) ──────────────
     // staff_kecamatan_pusat_1: scoped to Rayon Pusat for testing pruning_requests workflow.
     // Apr 27 redesign: kecamatan_name attribution added so the redesigned mobile
     // submit form can preset rayon + kecamatan from the user profile.
-    await insertUser(USER_STAFF_KECAMATAN_PUSAT_ID, 'staff_kecamatan_pusat_1', 'Staff Kecamatan Pusat', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID, null, 'Tegalsari');
+    await insertUser(USER_STAFF_KECAMATAN_PUSAT_ID, 'staff_kecamatan_pusat_1', 'Staff Kecamatan Pusat Satu', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID, null, 'Tegalsari');
 
     // ── Real users ─────────────────────────────────────────────
     await insertUser(USER_PRAMUDITA_ID, 'pramudita_yustiani',   'Pramudita Yustiani',   'top_management', '08563302643');
@@ -815,7 +815,7 @@ async function seedStaging() {
                             role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active)
          VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE)
          ON CONFLICT (username) DO NOTHING`,
-        [username, PASSWORD_HASH, `Staff Kecamatan ${k.name}`, phone, k.rayon_id, k.name, k.id],
+        [username, PASSWORD_HASH, `Staff Kecamatan ${k.name} Satu`, phone, k.rayon_id, k.name, k.id],
       );
       const inserted = result && (result as any).rowCount > 0;
       if (inserted) kecInserted += 1;
