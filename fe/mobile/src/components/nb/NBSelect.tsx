@@ -5,7 +5,7 @@
  * Supports single-select, multi-select, clearable, and searchable modes
  */
 
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -101,6 +101,11 @@ export function NBSelect({
   const openSheet = useCallback(() => {
     if (disabled) return;
     setOpen(true);
+    // Stop any in-flight chevron animation before starting a new one.
+    // Without this, rapid open/close (or unmount mid-animation) leaves
+    // a native node referenced by a stale JS animation -> "Animated node
+    // with tag [N] does not exist" SoftException on Fabric.
+    chevronAnim.stopAnimation();
     Animated.timing(chevronAnim, {
       toValue: 1,
       duration: nbAnimation.normal,
@@ -111,11 +116,21 @@ export function NBSelect({
   const closeSheet = useCallback(() => {
     setOpen(false);
     setSearchQuery('');
+    chevronAnim.stopAnimation();
     Animated.timing(chevronAnim, {
       toValue: 0,
       duration: nbAnimation.normal,
       useNativeDriver: true,
     }).start();
+  }, [chevronAnim]);
+
+  // Hard stop on unmount — guards against the case where the parent
+  // closes the sheet by unmounting (e.g. inline tag editor on
+  // TaskDetailScreen) while the chevron timing is mid-flight.
+  useEffect(() => {
+    return () => {
+      chevronAnim.stopAnimation();
+    };
   }, [chevronAnim]);
 
   const filteredOptions = useMemo(() => {

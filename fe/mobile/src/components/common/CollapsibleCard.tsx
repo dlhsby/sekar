@@ -41,6 +41,15 @@ export function CollapsibleCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
   const rotateAnim = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
 
+  // Stop the rotation animation if the card unmounts mid-toggle.
+  // Prevents `connectAnimatedNodeToView: Animated node ... does not exist`
+  // SoftException when a parent unmounts immediately after a tap.
+  useEffect(() => {
+    return () => {
+      rotateAnim.stopAnimation();
+    };
+  }, [rotateAnim]);
+
   const toggleExpanded = () => {
     LayoutAnimation.configureNext({
       duration: 200,
@@ -51,6 +60,7 @@ export function CollapsibleCard({
 
     setExpanded(!expanded);
 
+    rotateAnim.stopAnimation();
     Animated.timing(rotateAnim, {
       toValue: expanded ? 0 : 1,
       duration: 200,

@@ -43,6 +43,7 @@ export function UserInfoCard({
   const translateY = React.useRef(new Animated.Value(CARD_HEIGHT)).current;
 
   React.useEffect(() => {
+    translateY.stopAnimation();
     Animated.spring(translateY, {
       toValue: visible ? 0 : CARD_HEIGHT,
       useNativeDriver: true,
@@ -50,6 +51,16 @@ export function UserInfoCard({
       friction: 8,
     }).start();
   }, [visible, translateY]);
+
+  // Stop on unmount — without this, a card that unmounts while the
+  // spring is still in flight (typical when tapping a marker then
+  // immediately panning the map elsewhere) leaves the JS animation
+  // pointing at a freed native node.
+  React.useEffect(() => {
+    return () => {
+      translateY.stopAnimation();
+    };
+  }, [translateY]);
 
   if (!user) {
     return <View />;
