@@ -48,6 +48,88 @@ export class PruningRequestsService {
   ) {}
 
   /**
+   * Notify every admin_data + kepala_rayon in `rayonId` about a state change
+   * on `request`. Best-effort; per-user push failures are logged but never
+   * abort the calling business operation. Used on submit, cancel — anywhere
+   * the kecamatan-side surface changes and admins need a heads-up without
+   * having to poll the review queue.
+   */
+  private async notifyRayonAdmins(
+    rayonId: string | null,
+    title: string,
+    body: string,
+    request: PruningRequest,
+  ): Promise<void> {
+    if (!rayonId) {
+      this.logger.warn(
+        `Skipping rayon-admin notification for request ${request.id} — no rayon_id`,
+      );
+      return;
+    }
+    try {
+      const admins = await this.userRepository.find({
+        where: [
+          { rayon_id: rayonId, role: UserRole.ADMIN_DATA, is_active: true },
+          { rayon_id: rayonId, role: UserRole.KEPALA_RAYON, is_active: true },
+        ],
+        select: ['id'],
+      });
+      if (admins.length === 0) {
+        this.logger.warn(
+          `No active admin_data/kepala_rayon found for rayon ${rayonId} (request ${request.referenceCode})`,
+        );
+        return;
+      }
+      await Promise.all(
+        admins.map((admin) =>
+          this.notificationsService
+            .sendToUser({
+              user_id: admin.id,
+              type: NotificationType.TASK_UPDATED,
+              title,
+              body,
+              data: { pruning_request_id: request.id, reference_code: request.referenceCode },
+            })
+            .catch((err) =>
+              this.logger.warn(
+                `notifyRayonAdmins push failed (admin ${admin.id}, request ${request.id}): ${err.message}`,
+              ),
+            ),
+        ),
+      );
+    } catch (err) {
+      this.logger.error(
+        `notifyRayonAdmins lookup failed for rayon ${rayonId}: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify the request submitter about a state change. Mirrors the helper
+   * above for the kecamatan side of the loop.
+   */
+  private async notifySubmitter(
+    request: PruningRequest,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    if (!request.submittedBy) return;
+    this.notificationsService
+      .sendToUser({
+        user_id: request.submittedBy,
+        type: NotificationType.TASK_UPDATED,
+        title,
+        body,
+        data: { pruning_request_id: request.id, reference_code: request.referenceCode },
+      })
+      .catch((err) =>
+        this.logger.warn(
+          `notifySubmitter push failed (submitter ${request.submittedBy}, request ${request.id}): ${err.message}`,
+        ),
+      );
+  }
+
+  /**
    * Submit a new pruning request.
    *
    * Sets status to 'submitted', captures submitter info, GPS, and photo keys.
@@ -151,6 +233,16 @@ export class PruningRequestsService {
     const saved = await this.pruningRequestRepository.save(pruningRequest);
     this.logger.log(
       `Pruning request ${saved.id} created with reference code ${saved.referenceCode}`,
+    );
+
+    // May 13 — heads-up push to every admin_data / kepala_rayon in the
+    // request's rayon so they don't have to poll the review queue.
+    // Fire-and-forget; submit must not block on FCM dispatch.
+    void this.notifyRayonAdmins(
+      saved.rayonId,
+      'Permohonan Perantingan Baru',
+      `${saved.kecamatanName || 'Kecamatan'} mengajukan permohonan ${saved.referenceCode}. Mohon ditinjau.`,
+      saved,
     );
 
     return saved;
@@ -320,6 +412,27 @@ export class PruningRequestsService {
     this.logger.log(
       `Pruning request ${id} reviewed: ${dto.decision} by ${user.id}`,
     );
+
+    // May 13 — close the loop on the submitter side. Approved → "your
+    // request is approved + scheduled for date". Rejected → "your
+    // request was rejected" (+ reason if provided).
+    if (dto.decision === 'approve') {
+      const dateStr = updated.scheduledDate
+        ? new Date(updated.scheduledDate).toISOString().slice(0, 10)
+        : '';
+      void this.notifySubmitter(
+        updated,
+        'Permohonan Perantingan Disetujui',
+        `Permohonan ${updated.referenceCode} disetujui. Jadwal: ${dateStr}.`,
+      );
+    } else {
+      const reasonSuffix = dto.reviewNotes ? ` Alasan: ${dto.reviewNotes}` : '';
+      void this.notifySubmitter(
+        updated,
+        'Permohonan Perantingan Ditolak',
+        `Permohonan ${updated.referenceCode} ditolak.${reasonSuffix}`,
+      );
+    }
 
     return updated;
   }
@@ -929,6 +1042,18 @@ export class PruningRequestsService {
         ? `${request.notes}\n[Dibatalkan] ${reason.trim()}`
         : `[Dibatalkan] ${reason.trim()}`;
     }
-    return this.pruningRequestRepository.save(request);
+    const saved = await this.pruningRequestRepository.save(request);
+
+    // May 13 — notify admins in the rayon when the submitter cancels so
+    // they remove it from the queue without having to refresh.
+    const cancelledByName = user.full_name || user.username;
+    void this.notifyRayonAdmins(
+      saved.rayonId,
+      'Permohonan Perantingan Dibatalkan',
+      `${cancelledByName} membatalkan permohonan ${saved.referenceCode}.`,
+      saved,
+    );
+
+    return saved;
   }
 }
