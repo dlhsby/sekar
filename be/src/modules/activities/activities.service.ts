@@ -184,6 +184,30 @@ export class ActivitiesService {
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
+    // Cascade to linked pruning_request when the activity references one.
+    // Closes the loop on the no-task path (kecamatan request → korlap files
+    // a direct activity tagged to the request). On the task path the
+    // TasksService.complete cascade already fires by `assigned_task_id`;
+    // this UPDATE is idempotent so a double-hit on the same row is fine.
+    // Best-effort — a failed cascade never aborts the activity creation.
+    if (dto.pruning_request_id) {
+      try {
+        await this.activitiesRepository.manager.query(
+          `UPDATE pruning_requests
+           SET status = 'done', updated_at = NOW()
+           WHERE id = $1 AND status NOT IN ('done', 'rejected', 'cancelled')`,
+          [dto.pruning_request_id],
+        );
+        this.logger.log(
+          `Cascaded pruning_request ${dto.pruning_request_id} → done via activity ${savedActivity.id}`,
+        );
+      } catch (err) {
+        this.logger.error(
+          `Activity → pruning_request cascade failed for request ${dto.pruning_request_id}: ${(err as Error).message}`,
+        );
+      }
+    }
+
     return savedActivity;
   }
 

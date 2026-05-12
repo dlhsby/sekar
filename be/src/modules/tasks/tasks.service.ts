@@ -366,6 +366,87 @@ export class TasksService {
   }
 
   /**
+   * Cascade task lifecycle state back to the linked pruning_request, if any.
+   *
+   * Closes the loop opened by `PruningRequestsService.assignToTask` — once
+   * a task is started/completed, the kecamatan-side request should reflect
+   * the same state instead of being stuck on `assigned` forever.
+   *
+   * Uses raw SQL via the repository's EntityManager to avoid a circular
+   * module dependency on PruningRequestsModule. The update is best-effort:
+   * if no linked request exists (task created outside the pruning flow),
+   * the UPDATE simply touches 0 rows and we move on. Failures are logged
+   * but never bubble — task lifecycle owns the source of truth, the
+   * request status is a downstream projection.
+   *
+   * @param taskId        Linked task id (matched against `pruning_requests.assigned_task_id`).
+   * @param newStatus     One of `in_progress` | `done`.
+   * @param actorId       User who triggered the transition (audit trail).
+   */
+  private async cascadePruningRequestStatus(
+    taskId: string,
+    newStatus: 'in_progress' | 'done',
+    actorId: string,
+  ): Promise<void> {
+    try {
+      const result = (await this.taskRepository.manager.query(
+        `UPDATE pruning_requests
+         SET status = $1, updated_at = NOW()
+         WHERE assigned_task_id = $2 AND status <> $1
+         RETURNING id, submitted_by, reference_code`,
+        [newStatus, taskId],
+      )) as Array<{ id: string; submitted_by: string; reference_code: string }>;
+
+      if (result.length === 0) return;
+
+      const row = result[0];
+      this.logger.log(
+        `Cascaded pruning_request ${row.id} (${row.reference_code}) → ${newStatus} via task ${taskId} by user ${actorId}`,
+      );
+
+      this.auditLogService
+        .log({
+          entity_type: 'pruning_request',
+          entity_id: row.id,
+          action: `cascade_${newStatus}`,
+          actor_id: actorId,
+          new_value: { status: newStatus, source_task_id: taskId },
+        })
+        .catch((err) =>
+          this.logger.error(`Audit log failed on request cascade: ${err.message}`),
+        );
+
+      // Best-effort push to the submitter so the kecamatan sees status flip
+      // in real-time. Maps to TASK_UPDATED so it surfaces in the generic
+      // activity tray; a dedicated PRUNING_REQUEST_STATUS type can come
+      // later if we want a distinct icon/grouping on the client.
+      this.notificationsService
+        .sendToUser({
+          user_id: row.submitted_by,
+          type: NotificationType.TASK_UPDATED,
+          title:
+            newStatus === 'done'
+              ? 'Permohonan Perantingan Selesai'
+              : 'Permohonan Perantingan Dikerjakan',
+          body:
+            newStatus === 'done'
+              ? `Permohonan ${row.reference_code} telah selesai dikerjakan.`
+              : `Permohonan ${row.reference_code} sedang dikerjakan oleh petugas.`,
+          data: { pruning_request_id: row.id, task_id: taskId },
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Push notification failed on request cascade (${row.id}): ${err.message}`,
+          ),
+        );
+    } catch (err) {
+      this.logger.error(
+        `cascadePruningRequestStatus failed (task=${taskId}, status=${newStatus}): ${(err as Error).message}`,
+      );
+    }
+  }
+
+  /**
    * Get tasks assigned to a specific user (my tasks)
    *
    * @param userId - User ID
@@ -637,6 +718,9 @@ export class TasksService {
     await this.taskRepository.save(task);
     this.logger.log(`Task ${id} started by user ${userId}`);
 
+    // Cascade lifecycle back to linked pruning_request (if any).
+    await this.cascadePruningRequestStatus(id, 'in_progress', userId);
+
     return this.findOne(id);
   }
 
@@ -682,6 +766,9 @@ export class TasksService {
         new_value: { status: TaskStatus.COMPLETED },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
+    // Cascade lifecycle back to linked pruning_request (if any).
+    await this.cascadePruningRequestStatus(id, 'done', userId);
 
     return this.findOne(id);
   }
@@ -1162,12 +1249,20 @@ export class TasksService {
     const isFullyDone = task.targetPlantCount ? newCompleted >= task.targetPlantCount : !dto.resume_tomorrow;
 
     task.completedPlantCount = newCompleted;
-    if (isFullyDone && task.status === TaskStatus.IN_PROGRESS) {
+    const becomesCompleted = isFullyDone && task.status === TaskStatus.IN_PROGRESS;
+    if (becomesCompleted) {
       task.status = TaskStatus.COMPLETED;
       task.completed_at = new Date();
     }
 
     await this.taskRepository.save(task);
+
+    // Cascade lifecycle back to linked pruning_request only when the parent
+    // task is truly done. Mid-progress partial submissions leave the
+    // request on `in_progress` (already set by `start`).
+    if (becomesCompleted) {
+      await this.cascadePruningRequestStatus(taskId, 'done', user.id);
+    }
 
     let childTaskId: string | undefined;
     if (dto.resume_tomorrow && !isFullyDone) {

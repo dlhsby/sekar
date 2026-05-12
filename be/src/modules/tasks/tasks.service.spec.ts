@@ -83,6 +83,9 @@ describe('TasksService', () => {
             find: jest.fn(),
             softDelete: jest.fn(),
             createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+            // Used by cascadePruningRequestStatus (and checkStaffKecamatanAccess).
+            // Default to "no linked request" so existing tests stay green.
+            manager: { query: jest.fn().mockResolvedValue([]) },
           },
         },
         {
@@ -688,6 +691,136 @@ describe('TasksService', () => {
 
       await expect(service.complete('task-uuid', 'user-uuid', completeDto)).rejects.toThrow(
         BadRequestException,
+      );
+    });
+  });
+
+  describe('cascadePruningRequestStatus (May 12)', () => {
+    it('fires UPDATE pruning_requests when start() runs', async () => {
+      const acceptedTask = {
+        ...mockTask,
+        status: TaskStatus.ACCEPTED,
+        assigned_to: 'user-uuid',
+      };
+      taskRepository.findOne.mockResolvedValue(acceptedTask as Task);
+      taskRepository.save.mockResolvedValue({
+        ...acceptedTask,
+        status: TaskStatus.IN_PROGRESS,
+      } as Task);
+
+      const queryMock = taskRepository.manager.query as jest.Mock;
+      queryMock.mockResolvedValueOnce([
+        { id: 'req-uuid', submitted_by: 'kec-uuid', reference_code: 'PR-1234' },
+      ]);
+
+      await service.start('task-uuid', 'user-uuid');
+
+      const cascadeCall = queryMock.mock.calls.find(
+        ([sql]) => typeof sql === 'string' && sql.includes('UPDATE pruning_requests'),
+      );
+      expect(cascadeCall).toBeDefined();
+      expect(cascadeCall![1]).toEqual(['in_progress', 'task-uuid']);
+    });
+
+    it('fires UPDATE pruning_requests with status=done when complete() runs', async () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'user-uuid',
+      };
+      taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
+      taskRepository.save.mockResolvedValue({
+        ...inProgressTask,
+        status: TaskStatus.COMPLETED,
+      } as Task);
+
+      const queryMock = taskRepository.manager.query as jest.Mock;
+      queryMock.mockResolvedValueOnce([
+        { id: 'req-uuid', submitted_by: 'kec-uuid', reference_code: 'PR-1234' },
+      ]);
+
+      await service.complete('task-uuid', 'user-uuid', {
+        completion_photo_urls: ['https://example.com/photo.jpg'],
+        description: 'Done',
+      });
+
+      const cascadeCall = queryMock.mock.calls.find(
+        ([sql]) => typeof sql === 'string' && sql.includes('UPDATE pruning_requests'),
+      );
+      expect(cascadeCall).toBeDefined();
+      expect(cascadeCall![1]).toEqual(['done', 'task-uuid']);
+    });
+
+    it('does not abort task lifecycle when cascade UPDATE throws', async () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'user-uuid',
+      };
+      taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
+      taskRepository.save.mockResolvedValue({
+        ...inProgressTask,
+        status: TaskStatus.COMPLETED,
+      } as Task);
+
+      const queryMock = taskRepository.manager.query as jest.Mock;
+      queryMock.mockRejectedValueOnce(new Error('DB unreachable'));
+
+      // Cascade failure must not surface as a failed task.complete().
+      await expect(
+        service.complete('task-uuid', 'user-uuid', {
+          completion_photo_urls: ['https://example.com/photo.jpg'],
+          description: 'Done',
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it('no-ops cleanly when the task has no linked request (UPDATE returns 0 rows)', async () => {
+      const acceptedTask = {
+        ...mockTask,
+        status: TaskStatus.ACCEPTED,
+        assigned_to: 'user-uuid',
+      };
+      taskRepository.findOne.mockResolvedValue(acceptedTask as Task);
+      taskRepository.save.mockResolvedValue({
+        ...acceptedTask,
+        status: TaskStatus.IN_PROGRESS,
+      } as Task);
+
+      // Default mock returns [] — empty result, no submitter to push to.
+      await expect(service.start('task-uuid', 'user-uuid')).resolves.toBeDefined();
+      // sendToUser must NOT fire when there's no linked request.
+      expect(notificationsService.sendToUser).not.toHaveBeenCalled();
+    });
+
+    it('pushes notification to submitter when cascade hits a linked request', async () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'user-uuid',
+      };
+      taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
+      taskRepository.save.mockResolvedValue({
+        ...inProgressTask,
+        status: TaskStatus.COMPLETED,
+      } as Task);
+
+      const queryMock = taskRepository.manager.query as jest.Mock;
+      queryMock.mockResolvedValueOnce([
+        { id: 'req-uuid', submitted_by: 'kec-uuid', reference_code: 'PR-1234' },
+      ]);
+
+      await service.complete('task-uuid', 'user-uuid', {
+        completion_photo_urls: ['https://example.com/photo.jpg'],
+        description: 'Done',
+      });
+
+      expect(notificationsService.sendToUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'kec-uuid',
+          title: 'Permohonan Perantingan Selesai',
+          data: expect.objectContaining({ pruning_request_id: 'req-uuid' }),
+        }),
       );
     });
   });
