@@ -57,12 +57,7 @@ export function PhotoUploader({
 }: PhotoUploaderProps): React.JSX.Element {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
 
-  const handleCapture = useCallback(async () => {
-    if (photos.length >= maxPhotos) {
-      Alert.alert('Maksimal Foto', `Anda hanya dapat menambahkan maksimal ${maxPhotos} foto.`);
-      return;
-    }
-
+  const captureFromCamera = useCallback(async () => {
     const permission = await requestCameraPermission();
     if (!permission.granted) {
       if (permission.message) {
@@ -70,16 +65,42 @@ export function PhotoUploader({
       }
       return;
     }
-
     try {
       const photo = await mediaService.capturePhoto(false);
-      if (photo) {
-        onAdd(photo);
-      }
+      if (photo) { onAdd(photo); }
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Gagal mengambil foto');
     }
+  }, [onAdd]);
+
+  const pickFromGallery = useCallback(async () => {
+    try {
+      const remaining = maxPhotos - photos.length;
+      const picked = await mediaService.pickFromGallery(remaining);
+      picked.forEach((p) => onAdd(p));
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Gagal memilih foto');
+    }
   }, [photos.length, maxPhotos, onAdd]);
+
+  const handleCapture = useCallback(() => {
+    if (photos.length >= maxPhotos) {
+      Alert.alert('Maksimal Foto', `Anda hanya dapat menambahkan maksimal ${maxPhotos} foto.`);
+      return;
+    }
+    // May 12 — let the user pick camera OR gallery, mirroring the
+    // standard pattern in TaskCompleteScreen / ActivitySubmissionScreen.
+    Alert.alert(
+      'Tambah Foto',
+      'Pilih sumber foto:',
+      [
+        { text: 'Kamera', onPress: () => { captureFromCamera(); } },
+        { text: 'Galeri', onPress: () => { pickFromGallery(); } },
+        { text: 'Batal', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
+  }, [photos.length, maxPhotos, captureFromCamera, pickFromGallery]);
 
   return (
     <View style={style}>

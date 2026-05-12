@@ -224,13 +224,16 @@ describe('TaskDetailScreen', () => {
   });
 
   it('shows empty-state CTA when no tags but caller can edit (May 12)', async () => {
-    const taskWithoutTags = { ...mockTask, tags: [] };
+    // Status must be accepted/in_progress/revision_needed for the
+    // assignee to qualify as editor (May 12 late refinement). Pre-accept
+    // (status='assigned') only the creator can tag.
+    const taskWithoutTags = { ...mockTask, status: 'in_progress' as const, tags: [] };
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: taskWithoutTags });
 
     const { findByText, queryByText } = renderWithNav(<TaskDetailScreen />);
 
-    // Section IS now rendered for creator/assignee even when empty, so they
-    // can tap the pencil icon to add tags. The list is empty though.
+    // Section IS now rendered for creator/accepted-assignee even when empty,
+    // so they can tap the pencil icon to add tags.
     expect(await findByText('Tag Petugas Terlibat')).toBeTruthy();
     expect(queryByText('Worker 2')).toBeNull();
     expect(queryByText('Worker 3')).toBeNull();

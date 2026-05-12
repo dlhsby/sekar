@@ -941,10 +941,23 @@ export class TasksService {
     // assignee (typically a korlap pulling satgas onto a job) needs to be
     // able to tag too. Sealed states (completed/verified/declined/cancelled)
     // are frozen — the task record is closed, no more roster changes.
-    const canEdit = task.created_by === userId || task.assigned_to === userId;
+    //
+    // Late-day refinement: the assignee can only tag once they've ACCEPTED
+    // the work. While status is `assigned` (not yet accepted) only the
+    // creator can edit tags — a pending assignee shouldn't be able to
+    // shape the roster before committing.
+    const isCreator = task.created_by === userId;
+    const isAssignee = task.assigned_to === userId;
+    const assigneeAcceptedStates: TaskStatus[] = [
+      TaskStatus.ACCEPTED,
+      TaskStatus.IN_PROGRESS,
+      TaskStatus.REVISION_NEEDED,
+    ];
+    const canEdit =
+      isCreator || (isAssignee && assigneeAcceptedStates.includes(task.status));
     if (!canEdit) {
       throw new ForbiddenException(
-        'Only the task creator or current assignee can add tags',
+        'Only the task creator or accepted assignee can modify tags',
       );
     }
     const sealedStatuses: TaskStatus[] = [
@@ -994,12 +1007,21 @@ export class TasksService {
 
     const task = await this.findOne(taskId);
 
-    // Mirror the addTags permission model — creator OR current assignee,
-    // not sealed. Previously this endpoint had no permission gate at all.
-    const canEdit = task.created_by === callerId || task.assigned_to === callerId;
+    // Mirror the addTags permission model — creator anytime (until sealed);
+    // assignee only after they've accepted (not while status='assigned').
+    // Previously this endpoint had no permission gate at all.
+    const isCreator = task.created_by === callerId;
+    const isAssignee = task.assigned_to === callerId;
+    const assigneeAcceptedStates: TaskStatus[] = [
+      TaskStatus.ACCEPTED,
+      TaskStatus.IN_PROGRESS,
+      TaskStatus.REVISION_NEEDED,
+    ];
+    const canEdit =
+      isCreator || (isAssignee && assigneeAcceptedStates.includes(task.status));
     if (!canEdit) {
       throw new ForbiddenException(
-        'Only the task creator or current assignee can remove tags',
+        'Only the task creator or accepted assignee can remove tags',
       );
     }
     const sealedStatuses: TaskStatus[] = [
@@ -1105,6 +1127,15 @@ export class TasksService {
       throw new BadRequestException('Tugas tidak memiliki penerima');
     }
 
+    // May 12 — assignee cannot verify their own completion. The hierarchy
+    // check below will still run for valid verifiers (creator, delegation
+    // hop, supervisor role).
+    if (task.assigned_to === verifierId) {
+      throw new ForbiddenException(
+        'Anda tidak dapat memverifikasi penyelesaian tugas Anda sendiri',
+      );
+    }
+
     const verifier = await this.usersService.findOne(verifierId);
     const assignee = await this.usersService.findOne(task.assigned_to);
 
@@ -1150,6 +1181,12 @@ export class TasksService {
 
     if (!task.assigned_to) {
       throw new BadRequestException('Tugas tidak memiliki penerima');
+    }
+
+    if (task.assigned_to === verifierId) {
+      throw new ForbiddenException(
+        'Anda tidak dapat meminta revisi atas penyelesaian tugas Anda sendiri',
+      );
     }
 
     const verifier = await this.usersService.findOne(verifierId);

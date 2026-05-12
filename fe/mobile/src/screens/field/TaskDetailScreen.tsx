@@ -581,8 +581,16 @@ export function TaskDetailScreen(): React.JSX.Element {
     user?.role &&
     (FILTER_SUBORDINATE_ROLES[user.role as keyof typeof FILTER_SUBORDINATE_ROLES] ?? []).length > 0;
   const showDelegate = task.status === 'assigned' && isAssignee && !!hasSubordinates;
-  const showVerify = task.status === 'completed' && canVerify;
-  const showRevision = task.status === 'completed' && canVerify;
+  // May 12 — verification is per-task, not just role-based. The
+  // assignee submitted the work; they cannot sign off on their own
+  // completion. Authority sits with the task creator (and, ideally,
+  // anyone in the delegation chain — that membership check belongs
+  // on the backend). For now: creator OR an authorized role (korlap /
+  // kepala_rayon / top_management) who is NOT the current assignee.
+  const canVerifyThisTask =
+    task.status === 'completed' && !isAssignee && (isCreator || canVerify);
+  const showVerify = canVerifyThisTask;
+  const showRevision = canVerifyThisTask;
 
   const completionPhotos = task.completion_photo_urls ?? [];
 
@@ -683,11 +691,21 @@ export function TaskDetailScreen(): React.JSX.Element {
           </NBCardContent>
         </NBCard>
 
-        {/* ── Tagged Users (editable by creator or assignee while not sealed) ── */}
+        {/* ── Tagged Users (editable by creator or accepted assignee) ── */}
         {(() => {
           const sealedStatuses: TaskStatus[] = ['completed', 'verified', 'declined'];
+          // May 12 — assignee can only edit tags once they've ACCEPTED
+          // the task (status >= accepted). Tagging at status='assigned'
+          // would let a pending assignee shape the roster before
+          // committing to the work, which is wrong. Creator can edit
+          // throughout (until sealed).
+          const assigneeCanEdit =
+            isAssignee &&
+            (task.status === 'accepted' ||
+              task.status === 'in_progress' ||
+              task.status === 'revision_needed');
           const canEditTags =
-            (isCreator || isAssignee) && !sealedStatuses.includes(task.status);
+            (isCreator || assigneeCanEdit) && !sealedStatuses.includes(task.status);
           const hasTags = task.tags && task.tags.length > 0;
           if (!hasTags && !canEditTags) { return null; }
 

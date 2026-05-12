@@ -685,14 +685,25 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           ) : null}
 
           {/* ── Tugas Terkait ─────────────────────────────────────────── */}
-          {request.status === 'assigned' && request.assignedTaskId ? (
+          {/* May 12 late — keep this card visible through every status
+              that has a linked task (assigned/in_progress/done). Admin
+              who created the task + staff_kecamatan who submitted the
+              request both need read-access to the task detail
+              (especially after completion — to see the foto bukti and
+              completion notes). Only hide when there's no linked task
+              at all (submitted/under_review/approved/rejected/cancelled). */}
+          {request.assignedTaskId ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
                 <Text style={styles.sectionTitle}>🔗 TUGAS TERKAIT</Text>
               </NBCardHeader>
               <NBCardContent>
                 <Text style={[styles.descriptionText, { marginBottom: nbSpacing.md }]}>
-                  Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat.
+                  {request.status === 'done'
+                    ? 'Pekerjaan telah selesai. Lihat detail tugas untuk foto bukti dan catatan penyelesaian.'
+                    : request.status === 'in_progress'
+                      ? 'Tugas sedang dikerjakan oleh petugas.'
+                      : 'Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat.'}
                 </Text>
                 <NBButton
                   variant="primary"
