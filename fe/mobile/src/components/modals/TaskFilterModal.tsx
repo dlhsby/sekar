@@ -22,7 +22,7 @@ import {
 } from '../../constants/nbTokens';
 import type { TaskStatus, UserRole, Rayon, Area, User } from '../../types/models.types';
 import { getRayons, getAreasByRayonId, getAreas, getUsers } from '../../services/api';
-import { FILTER_SUBORDINATE_ROLES } from '../../constants/roles';
+import { FILTER_SUBORDINATE_ROLES, TASK_CREATORS } from '../../constants/roles';
 import { parseFilterDate, toFilterDateString, toTitleCase } from '../../utils/filterHelpers';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -108,9 +108,14 @@ export function TaskFilterModal({
     [userRole],
   );
 
-  // Roles that can create tasks (and thus see "Dibuat oleh Saya")
+  // Roles that can create tasks (and thus see "Dibuat oleh Saya").
+  // May 12 — source of truth is the shared TASK_CREATORS constant which
+  // mirrors backend role-groups. Previously hand-rolled here and got
+  // stale after admin_data was added to TASK_CREATORS (May 11), hiding
+  // the filter from admins who CAN create tasks via the pruning
+  // Tugaskan flow.
   const canCreateTask = useMemo(
-    () => userRole !== 'satgas' && userRole !== 'linmas' && userRole !== 'admin_data',
+    () => (userRole ? TASK_CREATORS.includes(userRole) : false),
     [userRole],
   );
 
