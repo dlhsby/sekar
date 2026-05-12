@@ -44,8 +44,39 @@ function AppContent(): React.JSX.Element {
       if (isAuthenticated && !isRestoring) {
         const shouldShow = await permissionManager.shouldShowPermissionRequest();
         setShowPermissionModal(shouldShow);
+
+        // May 12 late+2 — bootstrap FCM unconditionally on auth-ready.
+        // Previously `fcmService.initialize` was ONLY called from
+        // `handlePermissionsComplete` (the permission modal callback),
+        // which fires once per install. After the first onboarding,
+        // shouldShow=false -> modal stays hidden -> initialize is never
+        // called on subsequent app launches -> foreground notifications
+        // never display (no foreground handler attached, no token
+        // re-registered to the currently logged-in user).
+        // initialize() is idempotent for the same session.
+        if (!shouldShow) {
+          try {
+            await fcmService.initialize(store);
+            // Always re-register the token after auth-ready so the
+            // backend's device_tokens row is associated with the
+            // CURRENT user. Important after logout-then-login-as-other.
+            const token = await fcmService.getToken();
+            if (token) {
+              await fcmService.registerToken(token);
+            }
+          } catch (err) {
+            console.warn('[FCM] Post-auth bootstrap failed:', err);
+          }
+        }
       } else {
         setShowPermissionModal(false);
+        // On logout (auth flipped to false), tear down FCM so the next
+        // login can re-initialize and register the token under the new
+        // user. Without this, `this.initialized=true` persists in the
+        // singleton, and the next initialize() call short-circuits.
+        if (!isAuthenticated && !isRestoring) {
+          fcmService.cleanup();
+        }
       }
     };
 
