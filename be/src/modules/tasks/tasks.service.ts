@@ -288,9 +288,15 @@ export class TasksService {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
-    // Scope-based access check when user is provided (controller calls)
+    // Scope-based access check when user is provided (controller calls).
+    // staff_kecamatan goes through an async DB lookup (linked permohonan
+    // they own); other roles use the synchronous role-switch.
     if (user) {
-      this.checkTaskAccess(task, user);
+      if (user.role === UserRole.STAFF_KECAMATAN) {
+        await this.checkStaffKecamatanAccess(task.id, user.id);
+      } else {
+        this.checkTaskAccess(task, user);
+      }
     }
 
     return task;
@@ -337,7 +343,25 @@ export class TasksService {
           throw new ForbiddenException('Anda tidak memiliki akses ke tugas ini');
         }
         break;
-      // top_management, admin_system, superadmin: no restriction
+      // top_management, admin_system, superadmin: no restriction.
+      // staff_kecamatan handled separately below (async check).
+    }
+  }
+
+  /**
+   * Async access check for staff_kecamatan — they may read tasks linked
+   * to a pruning_request they themselves submitted. Kept off the main
+   * `checkTaskAccess` switch because it needs a DB lookup.
+   */
+  private async checkStaffKecamatanAccess(taskId: string, userId: string): Promise<void> {
+    const rows = (await this.taskRepository.manager.query(
+      `SELECT 1 FROM pruning_requests
+       WHERE assigned_task_id = $1 AND submitted_by = $2
+       LIMIT 1`,
+      [taskId, userId],
+    )) as Array<unknown>;
+    if (rows.length === 0) {
+      throw new ForbiddenException('Anda tidak memiliki akses ke tugas ini');
     }
   }
 

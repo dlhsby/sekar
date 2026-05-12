@@ -203,7 +203,11 @@ export class TasksController {
    * Get a specific task by ID
    */
   @Get(':id')
-  @Roles(...TASK_CREATORS, ...TASK_RECEIVERS)
+  // May 12, 2026 — `staff_kecamatan` may view the task linked to a
+  // pruning_request they submitted (so they know who's doing it +
+  // status). Service-level `checkTaskAccess` enforces the ownership
+  // predicate (request.submitted_by === user.id).
+  @Roles(...TASK_CREATORS, ...TASK_RECEIVERS, UserRole.STAFF_KECAMATAN)
   @ApiOperation({ summary: 'Get a task by ID' })
   @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Task found', type: Task })

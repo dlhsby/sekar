@@ -16,6 +16,7 @@ import {
   Modal,
   TouchableOpacity,
   FlatList,
+  BackHandler,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -222,6 +223,21 @@ export function TaskDetailScreen(): React.JSX.Element {
       (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
     }
   }, [backTarget, backTargetParams, navigation]);
+
+  // May 12, 2026 — intercept Android hardware back so it routes through
+  // `handleBack` (same as the header chevron + Kembali button) instead of
+  // the Tab navigator's default `goBack`, which would land on the
+  // previously-focused tab (usually Home). Registration is scoped to
+  // when the screen is focused so other screens behave normally.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleBack();
+        return true; // mark event handled
+      });
+      return () => sub.remove();
+    }, [handleBack]),
+  );
 
   const user = useAppSelector((state) => state.auth.user);
 
@@ -869,16 +885,13 @@ export function TaskDetailScreen(): React.JSX.Element {
             <NBButton title="Mulai Kerjakan" variant="primary" onPress={handleStart} disabled={isSubmitting} loading={isSubmitting} />
           )}
 
-          {/* Complete button */}
+          {/* Complete button — May 12, 2026: "Selesai Sebagian" removed
+              per user direction. Work that spills past today must be
+              completed fully on the next session, not split into a child
+              task. The PartialCompleteSheet remains in the codebase but
+              is no longer reachable from the UI. */}
           {showComplete && (
-            <View style={styles.buttonRow}>
-              <View style={styles.buttonHalf}>
-                <NBButton title="Selesai Sebagian" variant="info" onPress={() => setShowPartialComplete(true)} disabled={isSubmitting} />
-              </View>
-              <View style={styles.buttonHalf}>
-                <NBButton title="Selesaikan Tugas" variant="success" onPress={handleComplete} disabled={isSubmitting} />
-              </View>
-            </View>
+            <NBButton title="Selesaikan Tugas" variant="success" onPress={handleComplete} disabled={isSubmitting} />
           )}
 
           {/* Verify + Revision */}
