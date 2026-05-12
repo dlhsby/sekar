@@ -696,6 +696,40 @@ describe('TasksService', () => {
   });
 
   describe('cascadePruningRequestStatus (May 12)', () => {
+    it('guards terminal statuses (UPDATE skips done/rejected/cancelled rows)', async () => {
+      // Confidence in the SQL guard: the WHERE clause is the only thing
+      // standing between a stray task completion and a wrong status flip
+      // on a rejected/cancelled request. This test asserts the exact
+      // shape of the SQL so a refactor can't quietly drop the guard.
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        assigned_to: 'user-uuid',
+      };
+      taskRepository.findOne.mockResolvedValue(inProgressTask as Task);
+      taskRepository.save.mockResolvedValue({
+        ...inProgressTask,
+        status: TaskStatus.COMPLETED,
+      } as Task);
+
+      const queryMock = taskRepository.manager.query as jest.Mock;
+      queryMock.mockResolvedValueOnce([]); // empty = no row matched the guard
+
+      await service.complete('task-uuid', 'user-uuid', {
+        completion_photo_urls: ['https://example.com/photo.jpg'],
+        description: 'Done',
+      });
+
+      const cascadeCall = queryMock.mock.calls.find(
+        ([sql]) => typeof sql === 'string' && sql.includes('UPDATE pruning_requests'),
+      );
+      expect(cascadeCall).toBeDefined();
+      const sql = cascadeCall![0] as string;
+      expect(sql).toMatch(/status NOT IN \('done', 'rejected', 'cancelled'\)/);
+      // Submitter push must NOT fire when the UPDATE touched 0 rows.
+      expect(notificationsService.sendToUser).not.toHaveBeenCalled();
+    });
+
     it('fires UPDATE pruning_requests when start() runs', async () => {
       const acceptedTask = {
         ...mockTask,

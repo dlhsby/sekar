@@ -389,10 +389,19 @@ export class TasksService {
     actorId: string,
   ): Promise<void> {
     try {
+      // May 12 late+2 — guard terminal statuses. A task that completes
+      // after the request was rejected / cancelled / already done must
+      // NOT silently rewrite the lifecycle backwards or forwards on
+      // a closed request. Mirror the activities-side cascade
+      // (activities.service.ts:create) which already excludes the same
+      // set. The `status <> $1` guard alone was too narrow (it only
+      // prevented overwriting an already-done request with done).
       const result = (await this.taskRepository.manager.query(
         `UPDATE pruning_requests
          SET status = $1, updated_at = NOW()
-         WHERE assigned_task_id = $2 AND status <> $1
+         WHERE assigned_task_id = $2
+           AND status <> $1
+           AND status NOT IN ('done', 'rejected', 'cancelled')
          RETURNING id, submitted_by, reference_code`,
         [newStatus, taskId],
       )) as Array<{ id: string; submitted_by: string; reference_code: string }>;

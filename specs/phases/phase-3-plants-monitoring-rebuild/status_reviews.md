@@ -340,7 +340,185 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 
 ---
 
-## Phase 3 — From-Scratch Verification Checklist (Apr 27, 2026)
+## Pruning Workflow — End-to-End Review & UAT Checklist (2026-05-12) ✅
+
+**Scope:** Full sweep across kecamatan submission → admin review → assignment → korlap execution → activity report → request closure, plus task tagging, verification, and the cascade that closes the loop. Triggered by user's 13-point spec evolved across May 9–12 + the May 12 round of UAT findings.
+
+**Method:** Two parallel code-review agents (backend + mobile), then targeted verification of HIGH-severity claims by reading the actual source. False positives discarded.
+
+### Summary
+
+| Area | Critical | Medium | Low | Fixed | Deferred |
+|------|----------|--------|-----|-------|----------|
+| Backend | 1 | 6 | 2 | 1 critical (`f12c0ea`) | 6 medium, 2 low |
+| Mobile | 1 | 4 | 0 | 1 medium (`f12c0ea`) | 4 medium |
+| **Total** | **2** | **10** | **2** | **2** | **12** |
+
+### Real bugs fixed in this pass
+
+| # | Severity | File | Issue | Fix |
+|---|----------|------|-------|-----|
+| 1 | CRITICAL | `be/src/modules/tasks/tasks.service.ts` (cascadePruningRequestStatus, line ~398) | The cascade `UPDATE pruning_requests` only guarded `status <> $1` — it would happily overwrite a `rejected` or `cancelled` request to `in_progress`/`done` if a stray task later completed. Activities-side cascade already had the right guard; tasks-side didn't mirror it. | Added `AND status NOT IN ('done','rejected','cancelled')` to the WHERE clause. New backend spec asserts the exact SQL fragment so a refactor can't quietly drop it. Tests 91/91 ✓. |
+| 2 | MEDIUM | `fe/mobile/src/components/admin/AssignToTaskSheet.tsx` (line ~66) | If `request.rayonId` was null/missing (data corruption), the picker silently fell back to the FULL cross-rayon user list — an admin in Pusat could assign a Pusat-kecamatan permohonan to a satgas in Timur. | Fail-closed: empty list instead of cross-rayon fallback. Rayon FK is NOT NULL by schema so this path is unreachable under normal flow; the guard prevents future schema-relaxation regressions. |
+
+### False positives (verified by reading source — no fix needed)
+
+| Claim | Reality |
+|-------|---------|
+| AdminList reducer calls `.forEach` on an envelope `{items,...}` and hangs infinitely | The thunk at `pruningRequestsSlice.ts:172-204` already normalizes both shapes (array OR envelope.items) before returning; reducer always sees an array. May 9 fix `c8ddf79`. |
+| Reschedule cascade vs. concurrent task completion race | Backend reschedule whitelist excludes `done`; the only overlap is `in_progress`. In that window, two parallel admin actions targeting the same request would last-write-wins on `pruning_requests.status`, but the data damage is limited to status — neither booking nor task is corrupted, and the request will self-heal on the next cascade or admin action. Documented, not fixed. |
+| Self-verification by creator-who-is-also-assignee (`kepala_rayon` makes a task for themselves) | `VERIFY_MAP` hierarchy check at `tasks.service.ts:1224` already blocks same-role verification; the `assigned_to===verifierId` guard is redundant but defensive. No bug. |
+
+### Deferred (tracked, intentional)
+
+| # | Area | Issue | Why deferred |
+|---|------|-------|--------------|
+| D-01 | Mobile | Tag picker UX (paginated server-search + role-filter chips) | Bigger UX change. User flagged the need but accepted current implementation for now. ~half day. |
+| D-02 | Mobile | `RescheduleSheet` capacity-fetch failure silent — no toast, calendar renders all-grey | Real but low-incidence (capacity endpoint is reliable). Polish later. |
+| D-03 | Backend | Cascade SQL writes outside the pruning-request transaction; two concurrent UPDATEs to the same request can race | Real but impact is limited to a transient wrong status; resolved by next cascade. Polish later with a row-level lock. |
+| D-04 | Mobile | `SubmitScreen` photo upload uses base64 data-URIs with no per-file size cap | Backend bodyParser limit + image picker default cap mitigate; switch to multipart form-data is a separate work item. |
+| D-05 | Backend | Mixed Indonesian/English error messages | i18n sweep is its own track. |
+| D-06 | Backend | `addTags` doesn't dedupe in-memory before DB lookup; duplicate IDs in `user_ids` array cause N redundant queries | Functional, just inefficient. |
+| D-07 | Mobile | Web admin `(dashboard)/pruning-requests/*` pages don't exist | Phase 4 backlog row. |
+| D-08 | Mobile | `RequestDetailScreen` reject-reason input not cleared on dismiss | Cosmetic — re-opens with stale text but always under explicit user action. |
+| D-09 | Mobile | `LocationMapModal` Google Maps deep-link has no fallback for devices without Google Maps | Edge case for unusual device configs. |
+| D-10 | Backend | `findMyTasks` `scope='assigned'` uses `.where()` instead of `.andWhere()` — works today because no prior filter | Defensive refactor for future safety. |
+
+### Related Commits
+
+- `f12c0ea` — backend cascade guard + mobile rayon fail-closed + cascade-guard regression test
+
+---
+
+## Pruning Workflow — Detailed UAT Checklist (2026-05-12)
+
+**Goal:** A reviewer can follow this top-to-bottom and confirm every behavior the user has asked for across the 13-point spec. Each scenario lists the test users, expected behavior, and what to look for if something goes wrong.
+
+All test passwords: `password123`. Run from a fresh `npm run db:seed` so display names match (`<Role> <Rayon> <Bahasa-number>`). Backend on `:3000`, mobile pointed at it.
+
+### Reference users for the full flow
+
+| Role | Username | Display name | Rayon |
+|------|----------|--------------|-------|
+| Public intake | `staff_kecamatan_tegalsari_1` | Staff Kecamatan Tegalsari Satu | Pusat |
+| Admin (review + assign) | `admin_data_pusat_1` | Admin Data Pusat Satu | Pusat |
+| Field coordinator (assignee) | `korlap_pusat_1` | Korlap Pusat Satu | Pusat |
+| Field worker (tagged) | `satgas_pusat_1` | Satgas Pusat Satu | Pusat |
+| Verifier alt (creator of multi-hop) | `kepala_rayon_pusat_1` | Kepala Rayon Pusat Satu | Pusat |
+| Cross-rayon negative test | `admin_data_timur_1_1` | Admin Data Timur 1 Satu | Timur 1 |
+
+### Round A — Kecamatan submission
+
+| # | Action | Expected | If broken |
+|---|--------|----------|-----------|
+| A1 | Login `staff_kecamatan_tegalsari_1` → Buat Permohonan → fill all fields including ≥1 photo + Ketua RT/RW phone | Form submits, MyRequestsScreen shows the new card with status **Diajukan** (warning/yellow badge) | Check `expected_year` + `expected_iso_week` are non-null on the new row in Adminer |
+| A2 | Tap the card → RequestDetailScreen opens | Kontak card has 3 icon buttons per contact: **copy / WhatsApp / call**. Label reads **Ketua RT/RW**. | Verify `normalizePhone` is imported on RequestDetailScreen; `wa.me/62…` link should swap a leading `0` → `62` |
+| A3 | Hardware back from Detail Permohonan | Returns to MyRequestsScreen (NOT Home) | `MainNavigator` route param `adminMode=false` should map back to `Perantingan` tab |
+| A4 | Submit a second permohonan with a week that's already 70%-full | Calendar cell shows yellow (hampir penuh) AND can be selected | A `full` cell shows red and a tap → "Tanggal yang dipilih sudah penuh" alert |
+
+### Round B — Admin review + schedule + Tugaskan
+
+| # | Action | Expected | If broken |
+|---|--------|----------|-----------|
+| B1 | Login `admin_data_pusat_1` → PruningReviewQueue | Cards from Rayon Pusat only (NOT Timur, Selatan, etc.) | Cross-rayon leakage = `findAll` query scope bug |
+| B2 | Open the request → tap **Setujui** WITHOUT setting schedule | 409 error toast: **"Atur jadwal terlebih dahulu sebelum menyetujui permohonan"** | Backend `review()` guard at `pruning-requests.service.ts` |
+| B3 | Tap Atur Jadwal → AvailabilityCalendar opens | Sun-Sat headers aligned with date rows. Today is the earliest selectable date. The preferred week (from kecamatan) has a **blue ring** (not a fill — the underlying capacity color shows through) | Mis-aligned headers = month-grouping regression |
+| B4 | Pick a date → "Tanggal Terpilih" strip appears with Hapus → Simpan | Modal dismisses, schedule visible on Detail Permohonan | |
+| B5 | Tap Setujui | Status flips to **Disetujui** (green badge) | |
+| B6 | Tap **Tugaskan ke Petugas** | Bottom sheet opens. Jabatan dropdown pre-fills **Admin Data** ordered Kepala Rayon → Admin Data → Korlap → Satgas → Linmas. Ditugaskan Ke pre-fills the current admin if their role matches. | Order wrong = stale ASSIGNABLE_ROLES constant |
+| B7 | Switch Jabatan to Korlap → Ditugaskan Ke list populates with Pusat korlaps only | Korlap Pusat Satu and Korlap Pusat Dua appear. **NO** Korlap Timur / Selatan etc. | Cross-rayon leakage = fixed in `f12c0ea`; fail-closed if `request.rayonId` is null |
+| B8 | Pick Korlap Pusat Satu → Tugaskan | Status flips to **Ditugaskan** (primary badge). Detail Permohonan now shows a "TUGAS TERKAIT" card with **Lihat Tugas** button. | |
+| B9 | Tap **Lihat Tugas** | TaskDetailScreen opens. Title: `Permintaan Perantingan PR-<ref>`. Description: `Permintaan Perantingan dari Kecamatan Tegalsari : <address>`. | English bleed (`Pruning Request` / `Convert from pruning request`) = stale title template |
+| B10 | Hardware back from TaskDetail | Returns to RequestDetailScreen (NOT global Tugas list) | `from`+`fromParams` propagation broken |
+| B11 | Open the same task from admin's "Tugas" tab → filter **Ditugaskan Kepada Saya** | Task does **NOT** appear (admin is creator, not assignee) | Pre-`4d1d979` scope-union bug |
+| B12 | Switch filter to **Dibuat oleh Saya** | Task **appears** | TaskFilterModal `canCreateTask` predicate broken; should include admin_data |
+
+### Round C — Task lifecycle + cascade
+
+| # | Action | Expected | If broken |
+|---|--------|----------|-----------|
+| C1 | Login `korlap_pusat_1` → Tugas → filter **Ditugaskan Kepada Saya** | Task `Permintaan Perantingan PR-<ref>` appears | If empty, retest after the scope fix landed (`de81c5f`) — was a DTO whitelist issue |
+| C2 | On TaskDetailScreen with status=ASSIGNED, check **Tag Petugas Terlibat** card | **No pencil icon** for the assignee — only the creator can tag pre-accept | If assignee can tag pre-accept, the gate-after-accept rule is broken |
+| C3 | Tap **Terima** → status flips to **Diterima** | Status badge updates. Pencil icon now appears on Tag card. | |
+| C4 | Tap pencil → multi-select opens. Pick `satgas_pusat_1` and `satgas_pusat_2`. Save. | Two chips appear under Tag Petugas Terlibat. | |
+| C5 | Switch to `satgas_pusat_1` → Tugas tab → filter **Tag Saya** | Task appears in their feed | `GET /tasks/tagged` not returning |
+| C6 | Back to `korlap_pusat_1` → Tap **Mulai Tugas** | Task status → Dikerjakan. **Cascade check**: switch to `staff_kecamatan_tegalsari_1` → MyRequests → request now shows **Diproses** (blue/primary). Kecamatan also gets a push notification "Permohonan Perantingan Dikerjakan". | If request stuck on "Ditugaskan", cascade not firing — check `cascadePruningRequestStatus` log line |
+| C7 | Back to korlap → **Selesaikan Tugas** | Photo uploader prompts **Kamera / Galeri / Batal**. Pick Galeri to test. Upload + submit. | If only camera option, PhotoUploader regression |
+| C8 | After completion, korlap sees TaskDetailScreen with status=Menunggu Verifikasi | **NO** Verifikasi or Revisi buttons visible to korlap (the assignee). | If buttons appear, the !isAssignee gate is broken |
+| C9 | Cascade check 2: switch to `staff_kecamatan_tegalsari_1` → MyRequests → request shows **Selesai** (green badge). Push: "Permohonan Perantingan Selesai". | | Cascade to 'done' from `complete()` |
+| C10 | Open the done request → "Tugas Terkait" card still visible | Lihat Tugas button still works. Body text: "Pekerjaan telah selesai. Lihat detail tugas untuk foto bukti dan catatan penyelesaian." | If card hidden, the `request.assignedTaskId` visibility guard regressed |
+| C11 | Tap Lihat Tugas as kecamatan → TaskDetailScreen opens read-only | Can see foto bukti, completion notes, tag chips. **NO** action buttons (Accept/Decline/Start/Complete/Verify/Revisi/Pencil-tag-edit). | If any action button visible to kecamatan, an `isAssignee || isCreator || canVerify` gate regressed |
+| C12 | Back to `admin_data_pusat_1` → open task (filter: Dibuat oleh Saya) | **Verifikasi** and **Revisi** buttons visible (admin is creator + not assignee + role allows) | If hidden, the new canVerifyThisTask check regressed |
+| C13 | Tap **Verifikasi** → status flips to Terverifikasi. Cascade does NOT flip request back from `done`. | Request stays `done`. | |
+
+### Round D — Direct activity (no task path)
+
+| # | Action | Expected | If broken |
+|---|--------|----------|-----------|
+| D1 | Login `korlap_pusat_2` (must clock in first) | | |
+| D2 | Bottom tab → Buat Aktivitas → fill description + photo (test both Kamera and Galeri) + select Tipe Aktivitas | Form submits | |
+| D3 | In "Tag Petugas Terlibat" pick 1 satgas | Activity submitted with tag | |
+| D4 | Switch to the tagged satgas → Aktivitas tab → filter **Tag Saya** | Activity from step D2 appears | `?involving_me=true` filter |
+
+### Round E — Multi-hop delegation
+
+| # | Action | Expected |
+|---|--------|----------|
+| E1 | Login `top_management_1` → Buat Tugas → assign to `kepala_rayon_pusat_1` | Task created |
+| E2 | Login `kepala_rayon_pusat_1` → open task → **Tugaskan Ulang** (delegation before accept) → admin_data_pusat_1 | Task reassigned, delegation row recorded |
+| E3 | Login `admin_data_pusat_1` → open task → Tugaskan Ulang → `korlap_pusat_1` | Same, 3 hops total |
+| E4 | Open Detail Tugas → "Riwayat Disposisi" section | Shows 3 rows in chronological order with `from_role` → `to_role` labels |
+
+### Round F — Reschedule (regression)
+
+| # | Action | Expected |
+|---|--------|----------|
+| F1 | On a task with status=ASSIGNED, admin changes schedule date via Atur Ulang Jadwal | `task.deadline` updates AND `task_delegations` gets a row with reason "Jadwal diubah ke YYYY-MM-DD". Capacity rebalances atomically. |
+| F2 | On a task with status=IN_PROGRESS, attempt reschedule | Whitelist allows it; same cascade fires |
+| F3 | On a task with status=COMPLETED or DONE, attempt reschedule | API rejects 400 "Status … tidak dapat diatur ulang" |
+
+### Round G — Cancel
+
+| # | Action | Expected |
+|---|--------|----------|
+| G1 | Kecamatan submits, BEFORE admin acts → Batalkan Permohonan | Allowed; status → `cancelled` |
+| G2 | Try to cancel an `assigned`/`in_progress`/`done` request | Blocked — whitelist is `['submitted','under_review','approved']` |
+| G3 | After cancel, admin opens it | No action buttons visible; status badge shows Dibatalkan |
+
+### Round H — Permission negative tests
+
+| # | Action | Expected |
+|---|--------|----------|
+| H1 | `staff_kecamatan_tegalsari_1` tries to GET `/tasks/<some-other-kecamatan-task-id>` via Swagger | 403 "Anda tidak memiliki akses ke tugas ini" |
+| H2 | `admin_data_timur_1_1` tries to read a Pusat permohonan | 403 / not in list |
+| H3 | Korlap who is the assignee on a `completed` task taps the API endpoint `/tasks/:id/verify` directly | 403 "Anda tidak dapat memverifikasi penyelesaian tugas Anda sendiri" |
+| H4 | Admin POSTs `/pruning-requests/:id/review` with `decision:'approve'` and the request has `scheduledDate=null` | 409 "Atur jadwal terlebih dahulu …" |
+| H5 | Cascade idempotency: complete a task whose request has been manually `cancelled` in DB | Task completes successfully BUT request status stays `cancelled` (not overwritten). Verify in Adminer. **This is the bug `f12c0ea` fixes.** |
+
+### Round I — Animation crash regression
+
+| # | Action | Expected |
+|---|--------|----------|
+| I1 | Admin opens AssignToTaskSheet → Tugaskan → IMMEDIATELY taps Lihat Tugas before the sheet fully dismisses | No `connectAnimatedNodeFromView` / `disconnectAnimatedNodeFromView` SoftException in logcat. App stays responsive. |
+| I2 | Open Tag editor on TaskDetailScreen → pick users → Simpan → IMMEDIATELY navigate away | Same — no Animated tag-not-found crash |
+
+### What the cascade looks like in DB (audit query)
+
+```sql
+SELECT pr.reference_code, pr.status AS request_status,
+       t.status AS task_status, t.assigned_to, t.created_by,
+       t.started_at, t.completed_at, pr.updated_at
+FROM pruning_requests pr
+LEFT JOIN tasks t ON pr.assigned_task_id = t.id
+WHERE pr.reference_code = 'PR-<ref>';
+```
+
+Expected after Round C12:
+- `request_status = 'done'`
+- `task_status = 'verified'` (or `completed` if not yet verified)
+- `completed_at` non-null, `started_at` non-null
+
+
 
 **Purpose:** Comprehensive walkthrough of all Phase 3 sub-phases (M1-R through 3-12) to confirm integration, data seeding, and UAT readiness before next rollout.
 

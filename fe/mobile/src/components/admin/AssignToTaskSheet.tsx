@@ -61,13 +61,17 @@ export function AssignToTaskSheet({
   );
 
   // Scope the assignee picker to the request's rayon (May 11, 2026 — area
-  // picker removed since pruning happens outside managed areas). Falls back
-  // to the full list if the request has no rayon for some reason.
+  // picker removed since pruning happens outside managed areas).
+  // May 12 late+2 — removed the cross-rayon fallback. Every request is
+  // submitted by a staff_kecamatan whose rayon is derived from the
+  // kecamatans table (NOT NULL FK), so request.rayonId should always be
+  // populated. If it isn't, the data is corrupt — fail closed (empty
+  // list) rather than open (every user in every rayon).
   const users = useMemo(
     () =>
       request.rayonId
         ? allUsers.filter((u) => u.rayon_id === request.rayonId)
-        : allUsers,
+        : [],
     [allUsers, request.rayonId],
   );
 
