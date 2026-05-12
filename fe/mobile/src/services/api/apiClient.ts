@@ -155,7 +155,21 @@ apiClient.interceptors.response.use(
         const min = error.response.data.details.minimumRequired;
         localizedMessage = `Durasi shift terlalu singkat. Minimal ${min} menit diperlukan sebelum Clock Out.`;
       } else {
-        localizedMessage = getErrorMessage(errorCode, error.response.data?.message);
+        // May 13 — NestJS ValidationPipe returns `message` as a string[]
+        // of class-validator failures. Previously the array was passed as
+        // `defaultMessage` and silently swallowed (defaultMessage is only
+        // used when the code isn't mapped) -> user got the generic
+        // "Permintaan tidak valid" toast instead of the actual field
+        // error. Join the array into a readable list so the form-level
+        // toast tells the user WHICH field needs fixing.
+        const rawMessage = error.response.data?.message;
+        const flatMessage = Array.isArray(rawMessage)
+          ? rawMessage.join('. ')
+          : (rawMessage as string | undefined);
+        localizedMessage =
+          errorCode === 'BAD_REQUEST' && flatMessage
+            ? flatMessage
+            : getErrorMessage(errorCode, flatMessage);
       }
 
       const apiError: ApiError = {

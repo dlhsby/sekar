@@ -460,6 +460,14 @@ export function SubmitScreen(): React.JSX.Element {
     if (!address.trim()) {
       return 'Alamat (jalan) wajib diisi.';
     }
+    // Mirror backend @MinLength(5) on address so the user gets feedback
+    // BEFORE submit instead of a generic 400 from the server.
+    if (address.trim().length < 5) {
+      return 'Alamat minimal 5 karakter.';
+    }
+    if (address.trim().length > 500) {
+      return 'Alamat maksimal 500 karakter.';
+    }
     if (gpsLat == null || gpsLng == null) {
       return 'Koordinat GPS belum terdeteksi. Tekan tombol perbarui pada kartu Lokasi.';
     }
@@ -553,10 +561,21 @@ export function SubmitScreen(): React.JSX.Element {
       resetForm();
       navigation.navigate('Perantingan');
     } catch (e) {
+      // The thunk rejects with rejectWithValue, so `.unwrap()` re-throws
+      // the payload directly (not an Error). Accept multiple shapes so
+      // backend validation messages surface instead of "Coba lagi".
+      const body =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'string'
+            ? e
+            : (e as { message?: string; error?: string })?.message ??
+              (e as { error?: string })?.error ??
+              'Coba lagi.';
       NBToast.show({
         level: 'danger',
         title: 'Gagal mengirim permohonan',
-        body: e instanceof Error ? e.message : 'Coba lagi.',
+        body,
         persistent: true,
       });
     } finally {

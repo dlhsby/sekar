@@ -5,7 +5,8 @@
  * @format
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 import { store } from './src/store/store';
@@ -82,6 +83,30 @@ function AppContent(): React.JSX.Element {
 
     checkPermissions();
   }, [isAuthenticated, isRestoring]);
+
+  // May 13 — re-register FCM token on every foreground transition while
+  // authenticated. Catches the case where the token was invalidated
+  // server-side (Firebase returned `registration-token-not-registered`
+  // for a push) while the app was backgrounded. Without this, the user
+  // is silently missing notifications until they log out + back in.
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async (next) => {
+      const prev = appStateRef.current;
+      appStateRef.current = next;
+      if (prev.match(/inactive|background/) && next === 'active' && isAuthenticated) {
+        try {
+          const token = await fcmService.getToken();
+          if (token) {
+            await fcmService.registerToken(token);
+          }
+        } catch (err) {
+          console.warn('[FCM] Foreground re-register failed:', err);
+        }
+      }
+    });
+    return () => sub.remove();
+  }, [isAuthenticated]);
 
   /**
    * Initialize FCM and LocationTracker after permissions are granted
