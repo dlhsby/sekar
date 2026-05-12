@@ -41,6 +41,10 @@ export async function getMyTasks(
     sort_dir?: 'asc' | 'desc';
     page?: number;
     limit?: number;
+    // May 12 — scope=assigned returns only tasks where the caller is
+    // the current assignee; scope=created returns only tasks the caller
+    // created. Omit (or 'all') for the legacy union behavior.
+    scope?: 'assigned' | 'created' | 'all';
   },
 ): Promise<ApiResponse<TasksListResponse>> {
   return get<TasksListResponse>('/tasks/my-tasks', filters);

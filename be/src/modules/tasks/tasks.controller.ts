@@ -106,10 +106,14 @@ export class TasksController {
   async findMyTasks(
     @GetUser() user: User,
     @Query('activeOnly') activeOnly?: string,
+    @Query('scope') scope?: string,
     @Query() filters?: TaskFilterDto,
   ): Promise<PaginatedResponseDto<Task>> {
     const activeOnlyBool = activeOnly === 'true';
-    return this.tasksService.findMyTasks(user.id, activeOnlyBool, filters);
+    // Normalize scope; fall back to legacy union if unknown.
+    const scopeNorm: 'assigned' | 'created' | 'all' =
+      scope === 'assigned' || scope === 'created' ? scope : 'all';
+    return this.tasksService.findMyTasks(user.id, activeOnlyBool, filters, scopeNorm);
   }
 
   /**

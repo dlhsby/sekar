@@ -109,7 +109,14 @@ export function NBSelect({
     Animated.timing(chevronAnim, {
       toValue: 1,
       duration: nbAnimation.normal,
-      useNativeDriver: true,
+      // May 12 — JS-driven on purpose. Fabric (RN 0.83) raises
+      // `disconnect/connectAnimatedNodeFromView: Animated node with tag [N]
+      // does not exist` when the chevron Animated.View unmounts while
+      // its native-driver animation is in flight (common when the
+      // editor branch closes after Simpan). JS-driver bypasses the
+      // native-node lifecycle entirely. The rotation is tiny so the
+      // perf cost is negligible.
+      useNativeDriver: false,
     }).start();
   }, [disabled, chevronAnim]);
 
@@ -120,7 +127,14 @@ export function NBSelect({
     Animated.timing(chevronAnim, {
       toValue: 0,
       duration: nbAnimation.normal,
-      useNativeDriver: true,
+      // May 12 — JS-driven on purpose. Fabric (RN 0.83) raises
+      // `disconnect/connectAnimatedNodeFromView: Animated node with tag [N]
+      // does not exist` when the chevron Animated.View unmounts while
+      // its native-driver animation is in flight (common when the
+      // editor branch closes after Simpan). JS-driver bypasses the
+      // native-node lifecycle entirely. The rotation is tiny so the
+      // perf cost is negligible.
+      useNativeDriver: false,
     }).start();
   }, [chevronAnim]);
 

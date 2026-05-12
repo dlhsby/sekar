@@ -188,9 +188,10 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
         fetchedTasks = paged?.data ?? [];
         totalPages = paged?.meta?.totalPages ?? 1;
       } else if (taskFilter === 'all') {
-        // Fetch both assigned + tagged, merge, no multi-page for 'all'
+        // Fetch both assigned + tagged, merge, no multi-page for 'all'.
+        // scope=all keeps legacy assigned-OR-created union for /my-tasks.
         const [myRes, tagRes] = await Promise.all([
-          getMyTasks({ ...myTasksParams, limit: 50, page: 1 }),
+          getMyTasks({ ...myTasksParams, scope: 'all', limit: 50, page: 1 }),
           getTaggedTasks({ ...baseParams, limit: 50, page: 1 }),
         ]);
         const seen = new Set<string>();
@@ -201,8 +202,10 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
         fetchedTasks = merged;
         totalPages = 1; // single fetch for 'all'
       } else {
-        // 'assigned' or 'created_by_me'
-        const response = await getMyTasks(myTasksParams);
+        // 'assigned' → only tasks where caller is assigned_to.
+        // 'created_by_me' → only tasks the caller created.
+        const scope = taskFilter === 'created_by_me' ? 'created' : 'assigned';
+        const response = await getMyTasks({ ...myTasksParams, scope });
         const paged = response.data;
         fetchedTasks = paged?.data ?? [];
         totalPages = paged?.meta?.totalPages ?? 1;

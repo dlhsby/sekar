@@ -457,8 +457,9 @@ export class TasksService {
     userId: string,
     activeOnly = false,
     filters?: TaskFilterDto,
+    scope: 'assigned' | 'created' | 'all' = 'all',
   ): Promise<PaginatedResponseDto<Task>> {
-    this.logger.log(`Fetching tasks for user: ${userId}`);
+    this.logger.log(`Fetching tasks for user: ${userId} (scope=${scope})`);
 
     const queryBuilder = this.taskRepository
       .createQueryBuilder('task')
@@ -466,8 +467,21 @@ export class TasksService {
       .leftJoinAndSelect('task.rayon', 'rayon')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
-      .leftJoinAndSelect('tags.user', 'taggedUser')
-      .where('(task.assigned_to = :userId OR task.created_by = :userId)', { userId });
+      .leftJoinAndSelect('tags.user', 'taggedUser');
+
+    // May 12 — scope-aware filter. Pre-existing behavior was "assigned OR
+    // created", which meant admin_data who Tugaskan'd a task saw it under
+    // "Ditugaskan Kepada Saya" on mobile even though they weren't the
+    // assignee. Now the mobile passes scope=assigned for the assignee
+    // tab and scope=created for the creator tab; legacy callers without
+    // scope keep the union behavior.
+    if (scope === 'assigned') {
+      queryBuilder.where('task.assigned_to = :userId', { userId });
+    } else if (scope === 'created') {
+      queryBuilder.where('task.created_by = :userId', { userId });
+    } else {
+      queryBuilder.where('(task.assigned_to = :userId OR task.created_by = :userId)', { userId });
+    }
 
     if (filters?.status) {
       // Explicit status filter overrides activeOnly behaviour

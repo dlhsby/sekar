@@ -64,7 +64,9 @@ export function CollapsibleCard({
     Animated.timing(rotateAnim, {
       toValue: expanded ? 0 : 1,
       duration: 200,
-      useNativeDriver: true,
+      // See NBSelect for rationale — JS-driven sidesteps Fabric's
+      // native-node lifecycle race on quick mount/unmount.
+      useNativeDriver: false,
     }).start();
   };
 
