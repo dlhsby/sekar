@@ -281,7 +281,11 @@ export function NBSelect({
 
       <Modal
         visible={open}
-        animationType="slide"
+        // May 12 — fade not slide to dodge the RN 0.83 + Fabric race on
+        // `connectAnimatedNodeToView` when the host screen navigates
+        // away mid-slide-out. See NBModal.tsx for full context.
+        animationType="fade"
+        hardwareAccelerated={false}
         transparent={true}
         statusBarTranslucent={true}
         onRequestClose={closeSheet}

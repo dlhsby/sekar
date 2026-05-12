@@ -104,7 +104,16 @@ function SheetModal({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      // May 12 — switched from "slide" to "fade" to dodge a known
+      // React Native 0.83 + Fabric bug where the slide animation's
+      // native node gets freed mid-flight when the host screen is
+      // navigated away from (e.g. tapping Lihat Tugas right after
+      // dismissing AssignToTaskSheet). Surfaced as:
+      //   connectAnimatedNodeToView: Animated node with tag [N] does not exist
+      // which kills the JS context. Fade is also native-driven but
+      // is opacity-only so it doesn't trip the same race.
+      animationType="fade"
+      hardwareAccelerated={false}
       statusBarTranslucent
       onRequestClose={onClose}
     >
@@ -142,7 +151,9 @@ function FullscreenModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      // See SheetModal — same Fabric race avoided by using fade.
+      animationType="fade"
+      hardwareAccelerated={false}
       presentationStyle="fullScreen"
       onRequestClose={onClose}
       testID={testID}

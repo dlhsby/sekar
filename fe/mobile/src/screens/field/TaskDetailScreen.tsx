@@ -1078,7 +1078,11 @@ export function TaskDetailScreen(): React.JSX.Element {
       {/* ── Audit Trail Modal ── */}
       <Modal
         visible={showAuditTrail}
-        animationType="slide"
+        // May 12 — fade not slide; avoids Fabric `connectAnimatedNodeToView`
+        // race when the modal is dismissed close to a navigation transition.
+        // See NBModal.tsx for the full rationale.
+        animationType="fade"
+        hardwareAccelerated={false}
         transparent
         onRequestClose={() => setShowAuditTrail(false)}
       >
