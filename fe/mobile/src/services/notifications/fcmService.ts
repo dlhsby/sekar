@@ -241,7 +241,7 @@ class FCMService {
    *
    * @param token - FCM token to register
    */
-  async registerToken(token: string): Promise<boolean> {
+  async registerToken(token: string, allowRotation = true): Promise<boolean> {
     try {
       console.debug('[FCM] Registering token with backend');
 
@@ -263,6 +263,35 @@ class FCMService {
       if (response.error) {
         console.error('[FCM] Token registration failed:', response.error);
         return false;
+      }
+
+      // May 13 — backend signals `requires_rotation: true` when the
+      // submitted token matches a row that was previously deactivated by
+      // Firebase rejection (`registration-token-not-registered`). The
+      // FCM SDK is caching a stale token locally; force rotation by
+      // deleting the cached one and pulling a fresh one from Firebase,
+      // then re-register. `allowRotation` guards against an infinite
+      // loop in the pathological case where the new token is ALSO
+      // already-deactivated.
+      const data = response.data as { requires_rotation?: boolean } | undefined;
+      if (allowRotation && data?.requires_rotation) {
+        console.warn(
+          '[FCM] Backend says token requires rotation. Forcing fresh token from Firebase.',
+        );
+        try {
+          await this.deleteToken();
+          const fresh = await this.getToken();
+          if (fresh && fresh !== token) {
+            return this.registerToken(fresh, false);
+          }
+          console.warn(
+            '[FCM] Rotation produced same/null token; backend will keep us deactivated until SDK self-refreshes.',
+          );
+          return false;
+        } catch (rotErr) {
+          console.error('[FCM] Token rotation failed:', rotErr);
+          return false;
+        }
       }
 
       console.debug('[FCM] Token registered successfully');

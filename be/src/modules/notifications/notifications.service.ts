@@ -36,7 +36,10 @@ export class NotificationsService {
    * @param userId - ID of the user registering the token
    * @returns The registered token
    */
-  async registerToken(dto: RegisterTokenDto, userId: string): Promise<NotificationToken> {
+  async registerToken(
+    dto: RegisterTokenDto,
+    userId: string,
+  ): Promise<NotificationToken & { requires_rotation?: boolean }> {
     this.logger.log(`Registering FCM token for user: ${userId}`);
 
     // Check if token already exists
@@ -45,6 +48,30 @@ export class NotificationsService {
     });
 
     if (existingToken) {
+      // May 13 — if the row was previously deactivated, that means
+      // Firebase rejected the token (`registration-token-not-registered`
+      // path in sendPushNotification). Re-activating the same bad token
+      // causes an infinite loop: backend disables, mobile re-registers,
+      // backend re-enables, next push fails again. Signal the mobile to
+      // rotate via deleteToken() + getToken() and DO NOT reactivate here.
+      const wasDeactivated = !existingToken.is_active;
+      if (wasDeactivated) {
+        this.logger.warn(
+          `FCM token for user ${userId} was previously deactivated; signaling mobile to rotate.`,
+        );
+        // Touch metadata but keep is_active=false until the mobile sends
+        // a fresh token. last_used_at update is intentional so the row
+        // doesn't get marked "stale" by any future GC.
+        existingToken.platform = dto.platform;
+        existingToken.device_id = dto.device_id || null;
+        existingToken.device_name = dto.device_name || null;
+        existingToken.device_model = dto.device_model || null;
+        existingToken.app_version = dto.app_version || null;
+        existingToken.last_used_at = new Date();
+        const saved = await this.tokenRepository.save(existingToken);
+        return Object.assign(saved, { requires_rotation: true });
+      }
+
       // If token exists for same user, update it
       if (existingToken.user_id === userId) {
         existingToken.platform = dto.platform;
