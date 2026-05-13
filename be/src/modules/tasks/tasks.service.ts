@@ -429,6 +429,9 @@ export class TasksService {
       // in real-time. Maps to TASK_UPDATED so it surfaces in the generic
       // activity tray; a dedicated PRUNING_REQUEST_STATUS type can come
       // later if we want a distinct icon/grouping on the client.
+      // Defensive: submitted_by is NOT NULL by schema, but if a future
+      // soft-delete cascade ever orphans the row, skip rather than crash.
+      if (!row.submitted_by) return;
       this.notificationsService
         .sendToUser({
           user_id: row.submitted_by,
@@ -1082,7 +1085,75 @@ export class TasksService {
     await this.taskRepository.save(task);
     this.logger.log(`Task ${taskId} accepted by user ${userId}`);
 
+    // May 13 — notify the creator so they don't have to poll the
+    // queue. Best-effort; never blocks acceptance on FCM dispatch.
+    this.notifyTaskLifecycleParty(task, userId, 'accepted');
+
     return this.findOne(taskId);
+  }
+
+  /**
+   * Fire a best-effort push on lifecycle transitions the creator /
+   * assignee needs to know about. Keeps the notification graph
+   * symmetric with the existing assign + cascade pushes.
+   *
+   * Routing:
+   *   accepted / declined   -> notify creator (they assigned the work)
+   *   verified / revision   -> notify assignee (they did the work)
+   *
+   * @param task     the task BEFORE the most-recent save (status field
+   *                 may already reflect the new state — that's fine,
+   *                 the helper only uses created_by / assigned_to / title
+   *                 and route).
+   * @param actorId  user who triggered the transition (used for audit;
+   *                 the recipient is the *other* side of the pair).
+   * @param event    one of 'accepted' | 'declined' | 'verified' | 'revision_needed'.
+   * @param extra    optional reason string included in the body.
+   */
+  private notifyTaskLifecycleParty(
+    task: Task,
+    actorId: string,
+    event: 'accepted' | 'declined' | 'verified' | 'revision_needed',
+    extra?: string,
+  ): void {
+    const recipientId =
+      event === 'accepted' || event === 'declined'
+        ? task.created_by
+        : task.assigned_to;
+    if (!recipientId || recipientId === actorId) return;
+
+    const titleMap = {
+      accepted: 'Tugas Diterima',
+      declined: 'Tugas Ditolak',
+      verified: 'Tugas Diverifikasi',
+      revision_needed: 'Tugas Perlu Revisi',
+    };
+    const bodyMap = {
+      accepted: `Tugas "${task.title}" diterima oleh petugas.`,
+      declined: `Tugas "${task.title}" ditolak oleh petugas${extra ? `. Alasan: ${extra}` : '.'}`,
+      verified: `Tugas "${task.title}" telah diverifikasi.`,
+      revision_needed: `Tugas "${task.title}" perlu direvisi${extra ? `. Alasan: ${extra}` : '.'}`,
+    };
+    const typeMap = {
+      accepted: NotificationType.TASK_UPDATED,
+      declined: NotificationType.TASK_DECLINED,
+      verified: NotificationType.TASK_COMPLETED,
+      revision_needed: NotificationType.TASK_UPDATED,
+    };
+
+    this.notificationsService
+      .sendToUser({
+        user_id: recipientId,
+        type: typeMap[event],
+        title: titleMap[event],
+        body: bodyMap[event],
+        data: { task_id: task.id, event },
+      })
+      .catch((err) =>
+        this.logger.warn(
+          `notifyTaskLifecycleParty push failed (task ${task.id}, event ${event}): ${err.message}`,
+        ),
+      );
   }
 
   /**
@@ -1112,6 +1183,11 @@ export class TasksService {
 
     await this.taskRepository.save(task);
     this.logger.log(`Task ${taskId} declined by user ${userId}`);
+
+    // May 13 — decline is high-priority for the creator (they need to
+    // reassign or the work won't happen). Push regardless of who else
+    // is watching the audit trail.
+    this.notifyTaskLifecycleParty(task, userId, 'declined', reason);
 
     return this.findOne(taskId);
   }
@@ -1168,6 +1244,10 @@ export class TasksService {
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
+    // May 13 — positive feedback to the assignee that their work
+    // was accepted. Best-effort.
+    this.notifyTaskLifecycleParty(task, verifierId, 'verified');
+
     return this.findOne(taskId);
   }
 
@@ -1208,6 +1288,10 @@ export class TasksService {
 
     await this.taskRepository.save(task);
     this.logger.log(`Revision requested on task ${taskId} by user ${verifierId}`);
+
+    // May 13 — high-priority push to the assignee with the revision
+    // reason so they know what to fix without re-opening the app.
+    this.notifyTaskLifecycleParty(task, verifierId, 'revision_needed', reason);
 
     this.auditLogService
       .log({

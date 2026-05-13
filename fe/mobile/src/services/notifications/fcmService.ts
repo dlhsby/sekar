@@ -121,7 +121,7 @@ class FCMService {
       if (Platform.OS === 'android') {
         await notifee.createChannel({
           id: 'sekar-notifications',
-          name: 'SEKAR Notifications',
+          name: 'Notifikasi SEKAR',
           importance: AndroidImportance.HIGH,
           sound: 'default',
         });

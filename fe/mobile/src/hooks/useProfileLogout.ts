@@ -11,6 +11,8 @@ import { logout, resetState as resetAuthState } from '../store/slices/authSlice'
 import { resetState as resetShiftState } from '../store/slices/shiftSlice';
 import { resetState as resetActivitiesState } from '../store/slices/activitiesSlice';
 import { resetState as resetOfflineState } from '../store/slices/offlineSlice';
+import { resetState as resetNotificationsState } from '../store/slices/notificationsSlice';
+import fcmService from '../services/notifications/fcmService';
 import {
   getPendingCount,
   getPendingCountsByType,
@@ -85,6 +87,18 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
         await onBeforeLogout();
       }
 
+      // May 13 — unregister the FCM token from the backend BEFORE
+      // clearing the auth token (the unregister call needs the JWT).
+      // Without this, the device_tokens row stays is_active=true and
+      // a future user logging in on this same device would have stale
+      // notifications routed to the previous account briefly. Wrapped
+      // in try/catch so a network failure doesn't block logout.
+      try {
+        await fcmService.unregisterToken();
+      } catch (err) {
+        console.warn('[useProfileLogout] FCM unregister failed:', err);
+      }
+
       // Clear tokens
       await EncryptedStorage.removeItem('auth_token');
       await EncryptedStorage.removeItem('refresh_token');
@@ -99,6 +113,7 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
       dispatch(resetAuthState());
       dispatch(resetShiftState());
       dispatch(resetActivitiesState());
+      dispatch(resetNotificationsState());
       dispatch(resetOfflineState());
 
       // Dispatch logout last to trigger navigation

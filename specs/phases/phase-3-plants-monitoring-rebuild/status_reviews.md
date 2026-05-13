@@ -746,6 +746,128 @@ If any of these fail, stop and fix before walking the full checklist:
 ---
 
 <!--
+## Notification Stack — End-to-End Review & UAT (2026-05-13) ✅
+
+**Scope:** Full sweep of FCM + push notifications across backend (dispatch, token lifecycle, error handling) and mobile (bootstrap, deep-link, AppState, logout). Triggered by UAT showing no notifications landing despite cascade fires.
+
+### Summary
+
+| Area | Critical | Important | Medium | Fixed | Deferred |
+|------|----------|-----------|--------|-------|----------|
+| Backend | 3 | 4 | 2 | 7 | 6 |
+| Mobile | 4 | 2 | 4 | 7 | 5 |
+| **Total** | **7** | **6** | **6** | **14** | **11** |
+
+### Real bugs fixed
+
+| # | Severity | File | Bug | Fix |
+|---|----------|------|-----|-----|
+| 1 | HIGH | `be/notifications.service.ts:414` | Token-deactivation `update()` fire-and-forget; DB failures silently swallowed | Added `.catch(err => logger.error(...))` |
+| 2 | HIGH | `be/notifications.service.ts:411` | Permanent-failure error code set missed `mismatched-sender-id` | Extended Set + documented transient codes |
+| 3 | HIGH | `be/tasks.service.ts:434` | Cascade fired sendToUser with no null guard on submitted_by | Early-return if falsy |
+| 4 | HIGH | `be/tasks.service.ts` (4 sites) | No push on task accept/decline/verify/revision | New `notifyTaskLifecycleParty` helper |
+| 5 | MEDIUM | `be/pruning-requests.service.ts:884` | Reschedule pushed only assignee, not submitter | Added `notifySubmitter` call |
+| 6 | HIGH | `fe/mobile/useProfileLogout.ts` | No unregisterToken on logout; device_tokens row stayed active | `await fcmService.unregisterToken()` before clearing JWT |
+| 7 | MEDIUM | `fe/mobile/useProfileLogout.ts` | NotificationsSlice not reset on logout | Added `resetNotificationsState` dispatch |
+| 8 | HIGH | `fe/mobile/App.tsx` | AppState foreground re-register POSTed every transition | `lastRegisteredTokenRef` idempotency guard |
+| 9 | HIGH | `fe/mobile/RootNavigator.tsx` | Zero deep-link wiring; push taps navigated nowhere | Exported `navigationRef`; `onNotificationOpened` + `getInitialNotification` route on task_id/pruning_request_id |
+| 10 | MEDIUM | `fe/mobile/fcmService.ts:124` | Android notifee channel name in English | "SEKAR Notifications" → "Notifikasi SEKAR" |
+
+### Deferred
+
+| # | Area | Description |
+|---|------|-------------|
+| D-N1 | Backend | `NotificationType.PRUNING_REQUEST_*` enum values |
+| D-N2 | Backend | Pushes on activity approve/reject |
+| D-N3 | Backend | Background retry job for stuck `is_sent=false` |
+| D-N4 | Backend | Integration specs for `notifyRayonAdmins` + `cascadePruningRequestStatus` |
+| D-N5 | Backend | `deactivation_reason` column for audit |
+| D-N6 | Mobile | `onNotificationOpened` multi-handler unsubscribe correctness |
+| D-N7 | Mobile | Stuck-state UX when rotation returns same token |
+| D-N8 | Mobile | Background message handler `delivered_at` tracking |
+| D-N9 | Mobile | `setupNotificationHandlers()` dead code cleanup |
+| D-N10 | Mobile | Permission-state race in `fcmService.initialize` |
+| D-N11 | Mobile | Spec coverage for `onNotificationOpened` |
+
+### Notification UAT Checklist
+
+Run from a fresh `npm run db:seed`. Login each role from scratch so the May 12+13 bootstrap registers a fresh FCM token. After each login, verify in Adminer:
+
+```sql
+SELECT u.username, nt.user_id, nt.is_active, nt.last_used_at,
+       LEFT(nt.fcm_token, 12) AS token_prefix
+FROM notification_tokens nt JOIN users u ON nt.user_id = u.id
+ORDER BY nt.last_used_at DESC LIMIT 10;
+```
+
+Expected: 1 active row per device-per-user. After the May 13 rotation fix shipped, the prefix should be **different** from the legacy `etdQPzEW...` (which was server-rejected).
+
+#### Round N-A — Submit / Approve / Reject / Cancel
+| # | Action | Expected push recipient | Body sample |
+|---|--------|------------------------|-------------|
+| N-A1 | `staff_kecamatan_tegalsari_1` submits | `admin_data_pusat_1` + `kepala_rayon_pusat_1` (rayon-scoped) | "Permohonan Perantingan Baru · Tegalsari mengajukan permohonan PR-…. Mohon ditinjau." |
+| N-A2 | Admin approves after Atur Jadwal | submitter | "Permohonan Perantingan Disetujui · PR-… disetujui. Jadwal: YYYY-MM-DD." |
+| N-A3 | Admin rejects with reason | submitter | "Permohonan Perantingan Ditolak · PR-… ditolak. Alasan: …" |
+| N-A4 | Submitter cancels a submitted PR | admin_data + kepala_rayon | "Permohonan Perantingan Dibatalkan · {name} membatalkan PR-…" |
+
+#### Round N-B — Task lifecycle (NEW May 13)
+| # | Action | Recipient | Body sample |
+|---|--------|-----------|-------------|
+| N-B1 | Admin Tugaskan'd | assignee | (existing — "Tugas baru ditugaskan: …") |
+| N-B2 | Korlap **accepts** | creator | "Tugas Diterima · Tugas '…' diterima oleh petugas." |
+| N-B3 | Korlap **declines** with reason | creator | "Tugas Ditolak · Tugas '…' ditolak oleh petugas. Alasan: …" |
+| N-B4 | Korlap starts | submitter (cascade) | "Permohonan Perantingan Dikerjakan · PR-… sedang dikerjakan oleh petugas." |
+| N-B5 | Korlap completes | submitter (cascade) | "Permohonan Perantingan Selesai · PR-… telah selesai dikerjakan." |
+| N-B6 | Admin **verifies** | assignee | "Tugas Diverifikasi · Tugas '…' telah diverifikasi." |
+| N-B7 | Admin **requests revision** | assignee | "Tugas Perlu Revisi · Tugas '…' perlu direvisi. Alasan: …" |
+
+#### Round N-C — Reschedule (NEW May 13)
+| # | Action | Recipients |
+|---|--------|-----------|
+| N-C1 | Admin reschedules `assigned` PR | assignee + submitter |
+| N-C2 | Admin reschedules `in_progress` PR | assignee + submitter |
+
+#### Round N-D — Deep-linking on notification tap (NEW May 13)
+| # | App state | Action | Expected |
+|---|-----------|--------|----------|
+| N-D1 | Foreground | Tap tray notification | No navigation; tray displays only |
+| N-D2 | Background | Tap notification with `task_id` | Opens TaskDetail for that task |
+| N-D3 | Background | Tap notification with `pruning_request_id` only | Opens PruningDetail for that request |
+| N-D4 | Killed | Tap notification, app cold-starts | Routes correctly via `getInitialNotification` |
+
+#### Round N-E — Token hygiene (regression for May 13 fixes)
+| # | Action | Expected |
+|---|--------|----------|
+| N-E1 | Login user A | device_tokens row: `user_id=A`, `is_active=true`, FRESH token prefix |
+| N-E2 | Logout A | A's row flips to `is_active=false` (mobile sent unregister) |
+| N-E3 | Login user B on same device | A row stays `is_active=false`; B row is new with `is_active=true` |
+| N-E4 | Push fires to A while only B is logged in | `getUserTokens(A)` returns empty → no FCM attempt to wrong device |
+| N-E5 | Background → foreground 3× rapidly | Backend logs **at most 1** `Registering FCM token` per app session |
+| N-E6 | Push to user with Firebase-rejected token | Backend logs `Deactivated invalid token: …` → next foreground triggers rotation (`requires_rotation: true` → mobile `deleteToken` + `getToken`) → fresh token registered → next push lands |
+
+#### Round N-F — Permission negative
+| # | Action | Expected |
+|---|--------|----------|
+| N-F1 | User denies POST_NOTIFICATIONS on Android 13+ | Token still registered; system tray won't display; in-app Redux entries still work |
+| N-F2 | User revokes permission in OS settings | `fcmService.initialize` logs "Permission not granted yet"; re-grant via onboarding modal re-initializes |
+
+#### What to check in backend logs
+
+After each push:
+- `[NotificationsService] Sending notification to user: <uuid>` — DB row created
+- `[NotificationsService] FCM send result: X/Y successful` — X should equal Y
+- `[NotificationsService] Push notification sent: <uuid>` — `is_sent=true` flipped
+
+If `Deactivated invalid token: …` appears, that token row is now inactive. The user needs a foreground transition (or fresh login) to trigger rotation via `requires_rotation`.
+
+### Related Commits
+- `1224ab3` — pruning notify edges
+- `b1c672c` — AppState foreground + validation surfacing
+- `2b9802b` — token rotation
+- `<this commit>` — 10 fixes from this review
+
+---
+
 Template (copy and fill when a sub-phase completes):
 
 ## Sub-Phase 3-X — Review (YYYY-MM-DD) ✅

@@ -861,15 +861,18 @@ export class PruningRequestsService {
         `Pruning request ${id} rescheduled to ${newDate.toISOString().slice(0, 10)} (W${newIso.isoWeek}/${newIso.year}); task ${task.id} deadline updated`,
       );
 
-      // 5. Best-effort push to the assignee. Failure must not roll back
-      // the (now-committed) transaction.
+      // 5. Best-effort pushes. Failure must not roll back the (now-committed)
+      // transaction. Notify both the assignee (so they can plan) AND the
+      // submitter (kecamatan) — May 13: previously only the assignee got
+      // the push, leaving the warga to find out by polling MyRequestsScreen.
+      const newDateStr = newDate.toISOString().slice(0, 10);
       if (task.assigned_to) {
         const assigneeId = task.assigned_to;
         this.notificationsService
           .sendToUser({
             user_id: assigneeId,
             title: `Jadwal tugas diubah`,
-            body: `Tugas "${task.title}" dijadwalkan ulang ke ${newDate.toISOString().slice(0, 10)}.`,
+            body: `Tugas "${task.title}" dijadwalkan ulang ke ${newDateStr}.`,
             type: NotificationType.TASK_ASSIGNED,
             data: {
               task_id: task.id,
@@ -882,6 +885,11 @@ export class PruningRequestsService {
             ),
           );
       }
+      void this.notifySubmitter(
+        savedRequest,
+        'Jadwal Permohonan Diubah',
+        `Permohonan ${savedRequest.referenceCode} dijadwalkan ulang ke ${newDateStr}.`,
+      );
 
       return savedRequest;
     });

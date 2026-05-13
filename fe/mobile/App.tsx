@@ -90,6 +90,7 @@ function AppContent(): React.JSX.Element {
   // for a push) while the app was backgrounded. Without this, the user
   // is silently missing notifications until they log out + back in.
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const lastRegisteredTokenRef = useRef<string | null>(null);
   useEffect(() => {
     const sub = AppState.addEventListener('change', async (next) => {
       const prev = appStateRef.current;
@@ -97,8 +98,13 @@ function AppContent(): React.JSX.Element {
       if (prev.match(/inactive|background/) && next === 'active' && isAuthenticated) {
         try {
           const token = await fcmService.getToken();
-          if (token) {
+          // May 13 — idempotency: skip the backend POST if the FCM
+          // token hasn't changed since the last register. Without this
+          // guard, a user who background-foregrounds the app several
+          // times per minute would hammer /devices each time.
+          if (token && token !== lastRegisteredTokenRef.current) {
             await fcmService.registerToken(token);
+            lastRegisteredTokenRef.current = token;
           }
         } catch (err) {
           console.warn('[FCM] Foreground re-register failed:', err);

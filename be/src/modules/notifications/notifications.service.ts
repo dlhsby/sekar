@@ -399,6 +399,18 @@ export class NotificationsService {
 
       // Handle partial failures
       if (response.failureCount > 0) {
+        // May 13 — extended the permanent-failure set to include
+        // `mismatched-sender-id` (token issued by a different Firebase
+        // project — will never succeed against this backend). Other
+        // codes like `internal-error` / timeouts are transient and
+        // should NOT trigger deactivation. Also added .catch() so a
+        // DB-side failure on the deactivation UPDATE is surfaced
+        // instead of silently swallowed by an unhandled rejection.
+        const permanentFailures = new Set<string>([
+          'messaging/invalid-registration-token',
+          'messaging/registration-token-not-registered',
+          'messaging/mismatched-sender-id',
+        ]);
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
             const errorCode = resp.error?.code;
@@ -406,13 +418,19 @@ export class NotificationsService {
               `Failed to send to token ${fcmTokens[idx].substring(0, 20)}...: ${errorCode}`,
             );
 
-            // Deactivate invalid tokens
-            if (
-              errorCode === 'messaging/invalid-registration-token' ||
-              errorCode === 'messaging/registration-token-not-registered'
-            ) {
-              this.tokenRepository.update({ fcm_token: fcmTokens[idx] }, { is_active: false });
-              this.logger.log(`Deactivated invalid token: ${fcmTokens[idx].substring(0, 20)}...`);
+            if (errorCode && permanentFailures.has(errorCode)) {
+              this.tokenRepository
+                .update({ fcm_token: fcmTokens[idx] }, { is_active: false })
+                .then(() =>
+                  this.logger.log(
+                    `Deactivated invalid token: ${fcmTokens[idx].substring(0, 20)}...`,
+                  ),
+                )
+                .catch((err) =>
+                  this.logger.error(
+                    `Failed to deactivate token ${fcmTokens[idx].substring(0, 20)}...: ${err.message}`,
+                  ),
+                );
             }
           }
         });
