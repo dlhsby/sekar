@@ -4,6 +4,21 @@ import {
   seedPhase3Reference,
   seedPhase3ServiceCapacity,
 } from './seed-phase3';
+import {
+  RAYON_BOUNDARIES,
+  RAYON_PUSAT_AREAS,
+  TIMUR2_AREAS,
+  parseCoords,
+  computeCentroidFromRings,
+  computeAreaM2FromRings,
+  toGeoJsonGeometry,
+  BUNGKUL_AREA_ID,
+  DARMO_P1_AREA_ID,
+  DARMO_P2_AREA_ID,
+  TAMAN_BUK_TONG_ID,
+  type AreaDef,
+  type RayonCode,
+} from './kmz-areas';
 
 config();
 
@@ -32,7 +47,7 @@ config();
  *
  * UAT structural data seeded (NOT transaction data):
  *   - 13 areas  (1 Taman Bungkul + 12 Kawasan Darmo pedestrian, from KMZ)
- *   - 24 users  (14 test + 10 real, incl. staff_kecamatan_pusat_1)
+ *   - 54 users  (14 test + 30 per-rayon dummy + 10 real, incl. staff_kecamatan_pusat_1)
  *   - user_areas assignments (permanent)
  *   - user_tracking_status  (all offline — testing starts clean)
  *   - area_staff_requirements (1 satgas + 1 linmas per area, SHIFT1/WEEKDAY)
@@ -91,6 +106,8 @@ const RAYON_TIMUR1_ID  = '42934ad5-4ea0-4537-abb6-cf7e984e2d39';
 const RAYON_TIMUR2_ID  = '742a135b-ddeb-45ca-8d0a-88d7d08aa78a';
 const RAYON_BARAT1_ID  = 'bf040137-fce4-4016-b5e7-704ad82c1594';
 const RAYON_BARAT2_ID  = '7422e6ee-0693-4565-9016-d4f759bdeed2';
+/** Logical (non-geographic) rayon for taman aktif parks city-wide. */
+const RAYON_TAMAN_AKTIF_ID = '8a8a8a8a-1111-4222-9333-444444444444';
 
 const SHIFT_1_ID = 'ca18ac41-2577-4f67-abfa-adaae27b75c8';
 const SHIFT_2_ID = '28822613-65de-47e4-a9b4-7b9bfd437f8a';
@@ -123,21 +140,15 @@ const SPECIAL_DAY_3_ID = '72bfe1fd-6285-4853-a4a9-d75e8edc65e6';
 const SPECIAL_DAY_4_ID = '8a8ff3d8-8c45-461e-b66c-8563c04cbbd5';
 
 // ============================================================
-// STAGING AREA UUIDs — 13 areas from KMZ (all Rayon Pusat)
+// STAGING AREA UUIDs — re-exported from ./kmz-areas for backward compat.
+// Real polygon coordinates + the 13 Rayon Pusat AreaDef[] live in kmz-areas.ts;
+// Rayon Timur 2 (25 areas) was added 2026-05-18 from KORLAP BERLIAN SABRINA
+// MAZAYA.kmz. Rayon Pusat user_area assignments below still scope only to
+// the 13 Pusat areas — Timur 2 has its own staffing.
 // ============================================================
-const AREA_BUNGKUL_ID     = '51a1b2c3-d4e5-4f67-8901-2a3b4c5d6e7f'; // Taman Bungkul (park/ACTIVE)
-const AREA_DARMO_P1_ID    = '51b2c3d4-e5f6-4a78-9012-3b4c5d6e7f80'; // Darmo Pulau 1 — Depan Taman Bungkul
-const AREA_DARMO_P2_ID    = '51c3d4e5-f6a7-4b89-0123-4c5d6e7f8091'; // Darmo Pulau 2 — Depan Graha Wonokoyo
-const AREA_DARMO_P3_ID    = '51d4e5f6-a7b8-4c90-1234-5d6e7f809102'; // Darmo Pulau 3 — Depan RS. Darmo
-const AREA_DARMO_P4_ID    = '51e5f6a7-b8c9-4d01-2345-6e7f80910213'; // Darmo Pulau 4 — Depan Santa Maria
-const AREA_DARMO_P5_ID    = '51f6a7b8-c9d0-4e12-3456-7f8091021324'; // Darmo Pulau 5 — Depan CIMB Niaga
-const AREA_DARMO_BCA_ID   = '52a7b8c9-d0e1-4f23-4567-809102132435'; // Darmo — Depan Bank BCA
-const AREA_NGAGEL_ID      = '52b8c9d0-e1f2-4034-5678-910213243546'; // Jl. Ngagel BAT
-const AREA_DINOYO_ID      = '52c9d0e1-f2a3-4145-6789-021324354657'; // Jl. Dinoyo Tenun
-const AREA_PROGO_ID       = '52d0e1f2-a3b4-4256-7890-132435465768'; // Jl. Progo
-const AREA_SERAYU_ID      = '52e1f2a3-b4c5-4367-8901-243546576879'; // Jl. Serayu
-const AREA_BENGAWAN_ID    = '52f2a3b4-c5d6-4478-9012-345657687980'; // Jl. Bengawan
-const AREA_DARMO_KALI_ID  = '53a3b4c5-d6e7-4589-0123-456768798091'; // Jl. Darmo Kali
+const AREA_BUNGKUL_ID    = BUNGKUL_AREA_ID;
+const AREA_DARMO_P1_ID   = DARMO_P1_AREA_ID;
+const AREA_DARMO_P2_ID   = DARMO_P2_AREA_ID;
 
 // ============================================================
 // STAGING USER UUIDs
@@ -172,122 +183,27 @@ const USER_AGUS_ID             = '56f6a7b8-c9d0-4212-3456-789091021324'; // agus
 // Pre-computed bcrypt hash for "password123" (10 salt rounds)
 const PASSWORD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
 
-// ============================================================
-// KML COORDINATE STRINGS — extracted from testing.kmz
-// Format: "lng,lat,alt lng,lat,alt ..." (closing coord repeats first)
-// ============================================================
-const COORDS_BUNGKUL = `112.7392071965829,-7.290985462579141,0 112.7391411737621,-7.291064508751593,0 112.7391264950255,-7.29114255718752,0 112.7391286655735,-7.291252456077554,0 112.7391681843655,-7.291747764212635,0 112.7391851394908,-7.291784975623941,0 112.7392285885794,-7.291794857063579,0 112.7395320432959,-7.291829181169,0 112.7397945388575,-7.291842849530311,0 112.7400323424098,-7.291838227449356,0 112.7402129206796,-7.291810584281428,0 112.7403254645698,-7.291760130089167,0 112.7403281139282,-7.291757397074448,0 112.7404099792645,-7.291659272447585,0 112.7404722929766,-7.291529350051733,0 112.7405120880349,-7.291354280251372,0 112.7405228990565,-7.29121731462599,0 112.7404855452234,-7.29110541849071,0 112.7404114182157,-7.291047866677819,0 112.7402534669827,-7.290989262548622,0 112.7398192984285,-7.290906530226962,0 112.7396732149951,-7.290901324756218,0 112.7395030222768,-7.290907313679851,0 112.7393600642398,-7.290923499217355,0 112.7392071965829,-7.290985462579141,0`;
-
-const COORDS_DARMO_P1 = `112.7392895488137,-7.295500688452539,0 112.7392811522987,-7.295428891706413,0 112.7392684753718,-7.295269549231628,0 112.7392550948797,-7.295037489490831,0 112.7392282313733,-7.294623740905449,0 112.7391995377378,-7.294205285917854,0 112.7391782151154,-7.293818486489188,0 112.7391607836946,-7.293475540677186,0 112.7391578958962,-7.29327474433941,0 112.7391361989128,-7.293034058987348,0 112.7391181745751,-7.292740575171175,0 112.7390969262287,-7.292347489573421,0 112.7390738782168,-7.292033757456075,0 112.7390563533713,-7.29175409333971,0 112.739024644325,-7.291376104622204,0 112.7390183906202,-7.291281991393806,0 112.7390098171483,-7.291257202436976,0 112.73898939461,-7.291263304672303,0 112.7389942232805,-7.291305308375523,0 112.7390191837731,-7.291610585087355,0 112.7390368224721,-7.291830967639599,0 112.7390561561243,-7.292131364146444,0 112.7390750562935,-7.292470043902774,0 112.7390933199425,-7.292764853339714,0 112.7391084447115,-7.293037878251277,0 112.7391265729645,-7.293259570682579,0 112.7391311916167,-7.29345603532796,0 112.7391451769185,-7.29370225962927,0 112.7391609038246,-7.29399695409665,0 112.7391838482884,-7.294313206450583,0 112.7391981471488,-7.294595757982096,0 112.739219768171,-7.294930476569813,0 112.7392308123975,-7.295094933266016,0 112.7392406793652,-7.295257898789611,0 112.7392325635959,-7.295397212224157,0 112.7392260122803,-7.295465141742797,0 112.7392895488137,-7.295500688452539,0`;
-
-const COORDS_DARMO_P2 = `112.7390080145651,-7.291065421705054,0 112.7389996714727,-7.290905358097485,0 112.7389911311556,-7.290646865598934,0 112.7389892564254,-7.290430962105162,0 112.7389946330756,-7.290183649566711,0 112.739001578839,-7.290028006027135,0 112.7390071407283,-7.289907657729954,0 112.7390080192957,-7.289876064752145,0 112.7389863869207,-7.289870228820547,0 112.7389760456148,-7.289874020765402,0 112.7389738635046,-7.290042114747537,0 112.7389649365532,-7.290188716385773,0 112.7389551860946,-7.290460364201117,0 112.7389568839753,-7.290649537779525,0 112.7389675928855,-7.29085939211236,0 112.7389767279509,-7.291048934162305,0 112.7389887886468,-7.291069776817822,0 112.7390080145651,-7.291065421705054,0`;
-
-const COORDS_DARMO_P3 = `112.7389878826136,-7.289722141367856,0 112.7390041518718,-7.289727519096829,0 112.7390219134472,-7.289708605721188,0 112.7391864682552,-7.288858789794571,0 112.73931897598,-7.288187573447807,0 112.7394372544996,-7.287515971442177,0 112.7396319195199,-7.286507144978543,0 112.7398253614934,-7.285418271770633,0 112.7399535304691,-7.284732226884658,0 112.7399473138568,-7.284721152343193,0 112.7399230040663,-7.28471838927606,0 112.7399175609091,-7.284738933970332,0 112.7398179527795,-7.285296112504549,0 112.7397328392158,-7.285775916491854,0 112.7396124721341,-7.286458790161833,0 112.7395155109099,-7.286960043257957,0 112.7393962376021,-7.28757748730323,0 112.7392911465757,-7.288185857839721,0 112.7391518788349,-7.288894752388278,0 112.7389996330062,-7.289647143887458,0 112.7389869909879,-7.289698968026165,0 112.7389878826136,-7.289722141367856,0`;
-
-const COORDS_DARMO_P4 = `112.7399636252876,-7.284531950007289,0 112.7399924058631,-7.284538235870674,0 112.7400072600951,-7.28447862501951,0 112.7401829356977,-7.283511562402384,0 112.7403696513349,-7.282511145545631,0 112.7405467336104,-7.281554733141495,0 112.740552965142,-7.281481741960207,0 112.7405400987264,-7.281478992140033,0 112.7405291809554,-7.281493833668975,0 112.7405207021124,-7.281568355782605,0 112.7404456697411,-7.281984944610816,0 112.7403519775966,-7.282477587884311,0 112.7402239708796,-7.283148154577262,0 112.740086236808,-7.283884291007102,0 112.7399755499589,-7.284477161448759,0 112.7399636252876,-7.284531950007289,0`;
-
-const COORDS_DARMO_P5 = `112.7406091609914,-7.280936539993449,0 112.7406313622486,-7.280925365422168,0 112.7407300061447,-7.280425105949908,0 112.7408600729451,-7.279760084496712,0 112.7408464500771,-7.279741581879392,0 112.7408178949059,-7.279753739148014,0 112.7406941975206,-7.280417673392772,0 112.7406195827396,-7.280800487797431,0 112.7405911608821,-7.280919980168088,0 112.7406091609914,-7.280936539993449,0`;
-
-const COORDS_DARMO_BCA = `112.7408499698084,-7.279622452376605,0 112.7408787765059,-7.279623741390892,0 112.7408943229135,-7.279589134646816,0 112.7410222924093,-7.278934466140391,0 112.741064142335,-7.278725986326418,0 112.7411754261468,-7.27815307538198,0 112.7413039364252,-7.277433772069833,0 112.7412942550628,-7.277410981204099,0 112.7412668656152,-7.277417504979207,0 112.7412543115205,-7.277482179049758,0 112.7411405715902,-7.278124515905689,0 112.7410083102662,-7.278785673669675,0 112.7408974158905,-7.279361131136298,0 112.7408513659653,-7.279579279698091,0 112.7408499698084,-7.279622452376605,0`;
-
-const COORDS_NGAGEL = `112.7449586797588,-7.288450909665041,0 112.7454588872769,-7.287859954900499,0 112.7463657491817,-7.286797114189932,0 112.7463243380659,-7.28677882917481,0 112.7452932782052,-7.287920378814952,0 112.7445635824781,-7.288648655113053,0 112.7447000847054,-7.288763656521048,0 112.7449586797588,-7.288450909665041,0`;
-
-const COORDS_DINOYO = `112.7469491055027,-7.28521986892546,0 112.7467983401257,-7.285566430585367,0 112.7467302407916,-7.285725212332608,0 112.7466558673489,-7.285848834321984,0 112.7465607364926,-7.28599066330618,0 112.7464519067359,-7.28612125324495,0 112.7463757070566,-7.286205604966985,0 112.746322783092,-7.286258913672143,0 112.7463335375511,-7.286269721551556,0 112.7464570266286,-7.286140366851322,0 112.7466155661047,-7.28594107508084,0 112.7467484583054,-7.285717965455372,0 112.746892161761,-7.285377026030497,0 112.7470267595343,-7.285069304735149,0 112.7470802506504,-7.284864268060027,0 112.7470603791943,-7.284859464878602,0 112.7470112994463,-7.285067325945029,0 112.7469491055027,-7.28521986892546,0`;
-
-const COORDS_PROGO = `112.7405367033875,-7.291769739995799,0 112.740321106237,-7.291901544863628,0 112.7405191784837,-7.291987531664613,0 112.7405367033875,-7.291769739995799,0`;
-
-const COORDS_SERAYU = `112.7405832212487,-7.29105284073,0 112.7406925263283,-7.291309350274858,0 112.7407774807493,-7.29110051737486,0 112.7405832212487,-7.29105284073,0`;
-
-const COORDS_BENGAWAN = `112.7406909649525,-7.290281258334188,0 112.7421574346636,-7.290991333415979,0 112.7421500580425,-7.290961723889217,0 112.7407031944334,-7.29026795458503,0 112.7406909649525,-7.290281258334188,0`;
-
-const COORDS_DARMO_KALI = `112.7438822950957,-7.288628076126993,0 112.7435108857126,-7.289047726285016,0 112.7435191681882,-7.289055020468726,0 112.7438879761848,-7.288633444305306,0 112.7438822950957,-7.288628076126993,0`;
-
-// ============================================================
-// HELPER FUNCTIONS
-// ============================================================
-
-/** Parse KML coordinate string "lng,lat,alt ..." → [lng, lat][] (deduped closing coord) */
-function parseCoords(coordStr: string): [number, number][] {
-  const pairs = coordStr
-    .trim()
-    .split(/\s+/)
-    .filter((s) => s.length > 0)
-    .map((c): [number, number] => {
-      const [lng, lat] = c.split(',').map(Number);
-      return [lng, lat];
-    });
-  // Drop closing coord if it repeats the first
-  const first = pairs[0];
-  const last = pairs[pairs.length - 1];
-  if (first[0] === last[0] && first[1] === last[1]) {
-    return pairs.slice(0, -1);
-  }
-  return pairs;
-}
-
-/** Compute centroid as average of polygon vertices */
-function computeCentroid(coords: [number, number][]): { lat: number; lng: number } {
-  const n = coords.length;
-  const sumLng = coords.reduce((s, c) => s + c[0], 0);
-  const sumLat = coords.reduce((s, c) => s + c[1], 0);
-  return { lng: sumLng / n, lat: sumLat / n };
-}
-
-/** Shoelace formula — polygon area in approximate m² */
-function computeAreaM2(coords: [number, number][]): number {
-  const n = coords.length;
-  let area = 0;
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    area += coords[i][0] * coords[j][1];
-    area -= coords[j][0] * coords[i][1];
-  }
-  area = Math.abs(area) / 2;
-  const avgLat = computeCentroid(coords).lat;
-  const latM = 111320;
-  const lngM = 111320 * Math.cos((avgLat * Math.PI) / 180);
-  return Math.round(area * latM * lngM * 100) / 100;
-}
-
-/** Convert [lng, lat][] to GeoJSON Polygon JSON string (ring is closed automatically) */
-function toGeoJson(coords: [number, number][]): string {
-  const ring: [number, number][] = [...coords, coords[0]]; // close the ring
-  return JSON.stringify({ type: 'Polygon', coordinates: [ring] });
-}
-
-// ============================================================
-// AREA DEFINITIONS
-// ============================================================
-interface AreaDef {
-  id: string;
-  name: string;
-  typeCode: 'park' | 'pedestrian';
-  coordStr: string;
-}
-
-const AREA_DEFS: AreaDef[] = [
-  { id: AREA_BUNGKUL_ID,    name: 'Taman Bungkul',                                       typeCode: 'park',       coordStr: COORDS_BUNGKUL    },
-  { id: AREA_DARMO_P1_ID,   name: 'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)',        typeCode: 'pedestrian', coordStr: COORDS_DARMO_P1   },
-  { id: AREA_DARMO_P2_ID,   name: 'Jl. Raya Darmo Pulau 2 (Depan Graha Wonokoyo)',       typeCode: 'pedestrian', coordStr: COORDS_DARMO_P2   },
-  { id: AREA_DARMO_P3_ID,   name: 'Jl. Raya Darmo Pulau 3 (Depan RS. Darmo)',            typeCode: 'pedestrian', coordStr: COORDS_DARMO_P3   },
-  { id: AREA_DARMO_P4_ID,   name: 'Jl. Raya Darmo Pulau 4 (Depan Santa Maria)',          typeCode: 'pedestrian', coordStr: COORDS_DARMO_P4   },
-  { id: AREA_DARMO_P5_ID,   name: 'Jl. Raya Darmo Pulau 5 (Depan CIMB Niaga)',           typeCode: 'pedestrian', coordStr: COORDS_DARMO_P5   },
-  { id: AREA_DARMO_BCA_ID,  name: 'Jl. Raya Darmo (Depan Bank BCA)',                     typeCode: 'pedestrian', coordStr: COORDS_DARMO_BCA  },
-  { id: AREA_NGAGEL_ID,     name: 'Jl. Ngagel BAT',                                      typeCode: 'pedestrian', coordStr: COORDS_NGAGEL     },
-  { id: AREA_DINOYO_ID,     name: 'Jl. Dinoyo Tenun',                                    typeCode: 'pedestrian', coordStr: COORDS_DINOYO     },
-  { id: AREA_PROGO_ID,      name: 'Jl. Progo',                                            typeCode: 'pedestrian', coordStr: COORDS_PROGO      },
-  { id: AREA_SERAYU_ID,     name: 'Jl. Serayu',                                           typeCode: 'pedestrian', coordStr: COORDS_SERAYU     },
-  { id: AREA_BENGAWAN_ID,   name: 'Jl. Bengawan',                                         typeCode: 'pedestrian', coordStr: COORDS_BENGAWAN   },
-  { id: AREA_DARMO_KALI_ID, name: 'Jl. Darmo Kali',                                      typeCode: 'pedestrian', coordStr: COORDS_DARMO_KALI },
-];
-
-// Pedestrian-only area IDs (excludes Taman Bungkul)
-const PEDESTRIAN_AREA_IDS = AREA_DEFS
+// Rayon Pusat area IDs and helpers — the user_areas assignment matrix below
+// is scoped to these 13 areas only. Rayon Timur 2 (25 areas from KORLAP KMZ)
+// has its own staffing baseline; per-user multi-area assignment for Timur 2
+// is left for UAT testers to configure as needed.
+const PUSAT_AREA_DEFS: AreaDef[] = RAYON_PUSAT_AREAS;
+const PEDESTRIAN_AREA_IDS = PUSAT_AREA_DEFS
   .filter((a) => a.typeCode === 'pedestrian')
   .map((a) => a.id);
+const ALL_AREA_IDS = PUSAT_AREA_DEFS.map((a) => a.id);
 
-// All 13 area IDs
-const ALL_AREA_IDS = AREA_DEFS.map((a) => a.id);
+// Rayon ID → code lookup so the boundary-update loop can hit the right row.
+const RAYON_ID_BY_CODE: Record<RayonCode, string> = {
+  SELATAN: RAYON_SELATAN_ID,
+  UTARA:   RAYON_UTARA_ID,
+  PUSAT:   RAYON_PUSAT_ID,
+  TIMUR1:  RAYON_TIMUR1_ID,
+  TIMUR2:  RAYON_TIMUR2_ID,
+  BARAT1:  RAYON_BARAT1_ID,
+  BARAT2:  RAYON_BARAT2_ID,
+  TAMAN_AKTIF: RAYON_TAMAN_AKTIF_ID,
+};
 
 // ============================================================
 // MAIN SEEDER
@@ -435,38 +351,47 @@ async function seedStaging() {
         ('${RAYON_TIMUR1_ID}',  'Rayon Timur 1', 'TIMUR1',  'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
         ('${RAYON_TIMUR2_ID}',  'Rayon Timur 2', 'TIMUR2',  'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
         ('${RAYON_BARAT1_ID}',  'Rayon Barat 1', 'BARAT1',  'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
-        ('${RAYON_BARAT2_ID}',  'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep')
+        ('${RAYON_BARAT2_ID}',  'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
+        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'TAMAN_AKTIF', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
       ON CONFLICT (code) DO NOTHING
     `);
 
-    // Set Rayon Pusat center (office location) and dummy boundary covering all UAT areas
+    // Set real polygon boundaries on every rayon from KMZ
+    // (data/Batas Wilayah Kerja Rayon (24Juni2023).kmz.kml — see kmz-areas.ts).
+    // Centroid of the polygon doubles as `center_lat/lng`. The Rayon Pusat
+    // office override (Taman Surya) is applied after the loop so map_defaults
+    // still lands on the office, not the centroid of the polygon.
+    for (const code of Object.keys(RAYON_BOUNDARIES) as RayonCode[]) {
+      const polygon = RAYON_BOUNDARIES[code];
+      if (!polygon) continue;
+      const ring = polygon.coordinates[0].map(([lng, lat]) => [lng, lat] as [number, number]);
+      const centroid = computeCentroidFromRings([ring]);
+      await queryRunner.query(
+        `UPDATE rayons SET
+          center_lat            = $1,
+          center_lng            = $2,
+          boundary_polygon      = $3::jsonb,
+          boundary_computed_at  = NOW()
+         WHERE code = $4`,
+        [centroid.lat, centroid.lng, JSON.stringify(polygon), code],
+      );
+    }
+    // Override Rayon Pusat center to the actual office (Taman Surya) so the
+    // mobile/web map opens on something useful — the polygon centroid lands
+    // further south.
     await queryRunner.query(
-      `UPDATE rayons SET
-        center_lat            = $1,
-        center_lng            = $2,
-        boundary_polygon      = $3::jsonb,
-        boundary_computed_at  = NOW()
-       WHERE code = 'PUSAT'`,
-      [
-        -7.2745614,
-        112.7579174,
-        JSON.stringify({
-          type: 'Polygon',
-          // Rectangle covering all 13 KMZ areas + office, ~0.003° padding
-          coordinates: [
-            [
-              [112.738, -7.273],
-              [112.760, -7.273],
-              [112.760, -7.299],
-              [112.738, -7.299],
-              [112.738, -7.273],
-            ],
-          ],
-        }),
-      ],
+      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'PUSAT'`,
+      [-7.2745614, 112.7579174],
     );
-    console.log('  ✓ 7 rayons');
-    console.log('  ✓ Rayon Pusat: center (-7.2745614, 112.7579174), dummy boundary set');
+    // Rayon Taman Aktif has no geographic boundary — anchor its center marker
+    // on Taman Bungkul so the mobile/web rayon pin lands somewhere meaningful.
+    await queryRunner.query(
+      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'TAMAN_AKTIF'`,
+      [-7.291347, 112.739764],
+    );
+    console.log('  ✓ 8 rayons (7 geographic + Rayon Taman Aktif logical bucket)');
+    console.log('  ✓ Rayon Pusat: center (-7.2745614, 112.7579174) — office override');
+    console.log('  ✓ Rayon Taman Aktif: center anchored on Taman Bungkul');
 
     // ============================================================
     // STEP 4b: KECAMATANS (31) — May 2026
@@ -619,15 +544,19 @@ async function seedStaging() {
     console.log('  ✓ 5 monitoring configs (map_defaults centered on Rayon Pusat office)');
 
     // ============================================================
-    // STEP 8: AREAS (13 from KMZ, all Rayon Pusat)
+    // STEP 8: AREAS (13 Rayon Pusat + 25 Rayon Timur 2 from KMZ = 38)
     // ============================================================
     console.log('\n📍 Seeding areas from KMZ...');
 
-    for (const areaDef of AREA_DEFS) {
-      const coords = parseCoords(areaDef.coordStr);
-      const { lat, lng } = computeCentroid(coords);
-      const coverageArea = computeAreaM2(coords);
-      const boundaryPolygon = toGeoJson(coords);
+    const ALL_AREA_DEFS: AreaDef[] = [...PUSAT_AREA_DEFS, ...TIMUR2_AREAS];
+    let pusatSeeded = 0;
+    let timur2Seeded = 0;
+    for (const areaDef of ALL_AREA_DEFS) {
+      const rings = areaDef.coordStrings.map((s) => parseCoords(s));
+      const { lat, lng } = computeCentroidFromRings(rings);
+      const coverageArea = computeAreaM2FromRings(rings);
+      const boundaryPolygon = JSON.stringify(toGeoJsonGeometry(areaDef.coordStrings));
+      const rayonId = RAYON_ID_BY_CODE[areaDef.rayonCode];
 
       await queryRunner.query(
         `INSERT INTO areas (
@@ -649,15 +578,19 @@ async function seedStaging() {
           lng,
           boundaryPolygon,
           coverageArea,
-          RAYON_PUSAT_ID,
+          rayonId,
         ],
       );
+      if (areaDef.rayonCode === 'PUSAT') pusatSeeded += 1;
+      else if (areaDef.rayonCode === 'TIMUR2') timur2Seeded += 1;
       console.log(
-        `  ✓ ${areaDef.name.substring(0, 55).padEnd(55)} | ` +
+        `  ✓ [${areaDef.rayonCode.padEnd(6)}] ${areaDef.name.substring(0, 55).padEnd(55)} | ` +
           `lat: ${lat.toFixed(6)}  lng: ${lng.toFixed(6)}  area: ${Math.round(coverageArea)} m²`,
       );
     }
-    console.log(`  → ${AREA_DEFS.length} areas seeded (1 park + 12 pedestrian)`);
+    console.log(
+      `  → ${ALL_AREA_DEFS.length} areas seeded: ${pusatSeeded} Rayon Pusat (1 park + 12 pedestrian) + ${timur2Seeded} Rayon Timur 2 (1 park 'Taman Buk Tong' + 24 pedestrian)`,
+    );
 
     // ============================================================
     // STEP 9: USERS (13 test + 10 real = 23 total)
@@ -746,6 +679,80 @@ async function seedStaging() {
     // submit form can preset rayon + kecamatan from the user profile.
     await insertUser(USER_STAFF_KECAMATAN_PUSAT_ID, 'staff_kecamatan_pusat_1', 'Staff Kecamatan Pusat Satu', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID, null, 'Tegalsari');
 
+    // ── Per-rayon dummy users (5 roles × 6 non-Pusat rayons = 30 users) ──
+    // 2026-05-18 — added so UAT can exercise every rayon (Selatan / Utara /
+    // Timur 1 / Timur 2 / Barat 1 / Barat 2) with the full role matrix.
+    // Only Rayon Timur 2 has KMZ areas in staging, so satgas/linmas/korlap
+    // there get Taman Buk Tong as primary; everywhere else area_id = NULL
+    // (intentional — exercises the "rayon with no areas" UI path).
+    //
+    // Phone block: 081200000030 → 081200000059 (deterministic, never collides
+    // with the kecamatan block 081200000100+).
+    const perRayonRoster: Array<{
+      slug: string;
+      rayonId: string;
+      label: string;
+      defaultAreaId: string | null;
+    }> = [
+      { slug: 'selatan',  rayonId: RAYON_SELATAN_ID, label: 'Selatan',  defaultAreaId: null              },
+      { slug: 'utara',    rayonId: RAYON_UTARA_ID,   label: 'Utara',    defaultAreaId: null              },
+      { slug: 'timur_1',  rayonId: RAYON_TIMUR1_ID,  label: 'Timur 1',  defaultAreaId: null              },
+      { slug: 'timur_2',  rayonId: RAYON_TIMUR2_ID,  label: 'Timur 2',  defaultAreaId: TAMAN_BUK_TONG_ID },
+      { slug: 'barat_1',  rayonId: RAYON_BARAT1_ID,  label: 'Barat 1',  defaultAreaId: null              },
+      { slug: 'barat_2',  rayonId: RAYON_BARAT2_ID,  label: 'Barat 2',  defaultAreaId: null              },
+    ];
+    const PER_RAYON_ROLES: Array<{
+      role: string;
+      usernamePrefix: string;
+      fullNamePrefix: string;
+      assignArea: boolean;
+    }> = [
+      { role: 'kepala_rayon', usernamePrefix: 'kepala_rayon', fullNamePrefix: 'Kepala Rayon', assignArea: false },
+      { role: 'admin_data',   usernamePrefix: 'admin_data',   fullNamePrefix: 'Admin Data',   assignArea: false },
+      { role: 'korlap',       usernamePrefix: 'korlap',       fullNamePrefix: 'Korlap',       assignArea: true  },
+      { role: 'satgas',       usernamePrefix: 'satgas',       fullNamePrefix: 'Satgas',       assignArea: true  },
+      { role: 'linmas',       usernamePrefix: 'linmas',       fullNamePrefix: 'Linmas',       assignArea: true  },
+    ];
+    // Pre-allocated UUIDs — stable across re-seeds. 5 roles × 6 rayons = 30.
+    const PER_RAYON_USER_IDS = [
+      '5a010101-0000-4001-8001-000000000001', '5a010102-0000-4001-8001-000000000002',
+      '5a010103-0000-4001-8001-000000000003', '5a010104-0000-4001-8001-000000000004',
+      '5a010105-0000-4001-8001-000000000005', '5a010106-0000-4001-8001-000000000006',
+      '5a010201-0000-4001-8002-000000000007', '5a010202-0000-4001-8002-000000000008',
+      '5a010203-0000-4001-8002-000000000009', '5a010204-0000-4001-8002-00000000000a',
+      '5a010205-0000-4001-8002-00000000000b', '5a010206-0000-4001-8002-00000000000c',
+      '5a010301-0000-4001-8003-00000000000d', '5a010302-0000-4001-8003-00000000000e',
+      '5a010303-0000-4001-8003-00000000000f', '5a010304-0000-4001-8003-000000000010',
+      '5a010305-0000-4001-8003-000000000011', '5a010306-0000-4001-8003-000000000012',
+      '5a010401-0000-4001-8004-000000000013', '5a010402-0000-4001-8004-000000000014',
+      '5a010403-0000-4001-8004-000000000015', '5a010404-0000-4001-8004-000000000016',
+      '5a010405-0000-4001-8004-000000000017', '5a010406-0000-4001-8004-000000000018',
+      '5a010501-0000-4001-8005-000000000019', '5a010502-0000-4001-8005-00000000001a',
+      '5a010503-0000-4001-8005-00000000001b', '5a010504-0000-4001-8005-00000000001c',
+      '5a010505-0000-4001-8005-00000000001d', '5a010506-0000-4001-8005-00000000001e',
+    ];
+    let perRayonIdx = 0;
+    let perRayonPhone = 30; // → 081200000030
+    for (const roleDef of PER_RAYON_ROLES) {
+      for (const r of perRayonRoster) {
+        const username = `${roleDef.usernamePrefix}_${r.slug}_1`;
+        const fullName = `${roleDef.fullNamePrefix} ${r.label} Satu`;
+        const phone = `0812000${String(perRayonPhone).padStart(5, '0')}`;
+        const areaId = roleDef.assignArea ? r.defaultAreaId : null;
+        await insertUser(
+          PER_RAYON_USER_IDS[perRayonIdx],
+          username,
+          fullName,
+          roleDef.role,
+          phone,
+          r.rayonId,
+          areaId,
+        );
+        perRayonIdx += 1;
+        perRayonPhone += 1;
+      }
+    }
+
     // ── Real users ─────────────────────────────────────────────
     await insertUser(USER_PRAMUDITA_ID, 'pramudita_yustiani',   'Pramudita Yustiani',   'top_management', '08563302643');
     await insertUser(USER_WAHYU_ID,     'wahyu_tri_p',          'Wahyu Tri P',          'superadmin',     '081232939377');
@@ -765,7 +772,7 @@ async function seedStaging() {
       `  ✓ ${usersInserted} users inserted, ${usersExisting} already existed (idempotent)`,
     );
     console.log(
-      `    24 expected = 14 test (system + Pusat trio + staff_kecamatan_pusat_1) + 10 real-name pilots.`,
+      `    54 expected = 14 test (system + Pusat trio + staff_kecamatan_pusat_1) + 30 per-rayon dummy (5 roles × 6 non-Pusat rayons) + 10 real-name pilots.`,
     );
 
     // ── May 2026 — staff_kecamatan_<code>_1 per kecamatan (31) ──────
@@ -949,7 +956,7 @@ async function seedStaging() {
     // ============================================================
     console.log('\n📋 Seeding area staff requirements...');
 
-    for (const areaDef of AREA_DEFS) {
+    for (const areaDef of ALL_AREA_DEFS) {
       // 1 satgas per area — Shift 1, Weekday
       await queryRunner.query(
         `INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type)
@@ -963,7 +970,9 @@ async function seedStaging() {
         [areaDef.id, SHIFT_1_ID],
       );
     }
-    console.log(`  ✓ ${AREA_DEFS.length * 2} requirements (13 areas × 2 roles: satgas + linmas, SHIFT1/WEEKDAY)`);
+    console.log(
+      `  ✓ ${ALL_AREA_DEFS.length * 2} requirements (${ALL_AREA_DEFS.length} areas × 2 roles: satgas + linmas, SHIFT1/WEEKDAY)`,
+    );
 
     // ============================================================
     // STEP 14: PHASE 3 DATA (plants, capacity, pruning, seeds)
@@ -1027,11 +1036,12 @@ async function seedStaging() {
     console.log('');
     console.log('  🏞️  Rayon Pusat UAT Footprint');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
-    console.log('      13 areas — 1 Taman Bungkul (aktif) + 12 Kawasan Darmo pedestrian (pasif)');
-    console.log(`      ${24 + (sc.staff_kec_users ?? 0)} users — 14 test + 10 real + ${sc.staff_kec_users ?? 0} staff_kecamatan`);
+    console.log('      13 Pusat areas — 1 Taman Bungkul (aktif) + 12 Kawasan Darmo pedestrian (pasif)');
+    console.log('      25 Timur 2 areas — 1 Taman Buk Tong (aktif) + 24 pedestrian (Kawasan Kertajaya / Pucang / Ngagel Utara / Menur-Manyar)');
+    console.log(`      ${54 + (sc.staff_kec_users ?? 0)} users — 14 test + 30 per-rayon dummy + 10 real + ${sc.staff_kec_users ?? 0} staff_kecamatan`);
     console.log(`      ${clockable_count} clockable users — user_tracking_status set to offline`);
-    console.log('      26 area_staff_requirements (13 areas × satgas + linmas, SHIFT1/WEEKDAY)');
-    console.log('      user_areas — permanent multi-area assignments per spec');
+    console.log('      76 area_staff_requirements (38 areas × satgas + linmas, SHIFT1/WEEKDAY)');
+    console.log('      user_areas — permanent multi-area assignments per spec (Rayon Pusat only)');
     console.log('');
     console.log('  📭 Empty by Design (essentials-only — UAT starts from scratch)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');

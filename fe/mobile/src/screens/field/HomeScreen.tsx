@@ -57,6 +57,9 @@ export function HomeScreen(): React.JSX.Element {
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
   const [locationMapVisible, setLocationMapVisible] = useState(false);
 
+  // Collapsible state for the active-shift card
+  const [shiftCardCollapsed, setShiftCardCollapsed] = useState(true);
+
   // Issue 8: Track last announced minute for accessibility (announce every 5 minutes)
   const lastAnnouncedMinuteRef = useRef<number>(-1);
 
@@ -330,15 +333,9 @@ export function HomeScreen(): React.JSX.Element {
 
         {/* Current Shift Card */}
         {currentShift ? (
-          <TouchableOpacity
-            onPress={() => setShiftModalVisible(true)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={currentShift.is_overtime ? 'Shift Lembur Aktif' : 'Shift Aktif'}
-            accessibilityHint="Ketuk untuk melihat detail shift"
-          >
-            <NBCard variant="elevated" style={[styles.shiftCard, currentShift.is_overtime && styles.shiftCardLembur]}>
-              <View style={styles.shiftCardTitleRow}>
+          <NBCard variant="elevated" style={[styles.shiftCard, currentShift.is_overtime && styles.shiftCardLembur]}>
+            <View style={styles.shiftCardTitleRow}>
+              <View style={styles.shiftCardTitleLeft}>
                 <Text style={styles.shiftCardTitleText}>
                   {currentShift.is_overtime ? 'Lembur Aktif' : 'Shift Aktif'}
                 </Text>
@@ -347,30 +344,60 @@ export function HomeScreen(): React.JSX.Element {
                     <Text style={styles.lemburBadgeText}>LEMBUR</Text>
                   </View>
                 )}
+                {shiftCardCollapsed && (
+                  <Text style={styles.shiftCardTitleTimer} accessibilityLabel={`Waktu shift berjalan: ${timer}`}>
+                    {timer}
+                  </Text>
+                )}
               </View>
-              <Text
-                style={styles.timer}
-                accessibilityLabel={`Waktu shift berjalan: ${timer}`}
+              <TouchableOpacity
+                onPress={() => setShiftCardCollapsed((v) => !v)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={shiftCardCollapsed ? 'Perluas kartu shift' : 'Ciutkan kartu shift'}
+                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                style={styles.collapseToggle}
+                testID="shift-card-collapse-toggle"
               >
-                {timer}
-              </Text>
-              <View style={styles.shiftInfo}>
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Area:</Text>
-                  <Text style={styles.infoValue}>
-                    {currentShift.area?.name || 'Tidak diketahui'}
-                  </Text>
+                <MaterialCommunityIcons
+                  name={shiftCardCollapsed ? 'chevron-down' : 'chevron-up'}
+                  size={24}
+                  color={nbColors.black}
+                />
+              </TouchableOpacity>
+            </View>
+            {!shiftCardCollapsed && (
+              <TouchableOpacity
+                onPress={() => setShiftModalVisible(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={currentShift.is_overtime ? 'Shift Lembur Aktif' : 'Shift Aktif'}
+                accessibilityHint="Ketuk untuk melihat detail shift"
+              >
+                <Text
+                  style={styles.timer}
+                  accessibilityLabel={`Waktu shift berjalan: ${timer}`}
+                >
+                  {timer}
+                </Text>
+                <View style={styles.shiftInfo}>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Area:</Text>
+                    <Text style={styles.infoValue}>
+                      {currentShift.area?.name || 'Tidak diketahui'}
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Mulai:</Text>
+                    <Text style={styles.infoValue}>
+                      {formatDateTime(currentShift.clock_in_time)}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Mulai:</Text>
-                  <Text style={styles.infoValue}>
-                    {formatDateTime(currentShift.clock_in_time)}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.tapHint}>Ketuk untuk detail lengkap</Text>
-            </NBCard>
-          </TouchableOpacity>
+                <Text style={styles.tapHint}>Ketuk untuk detail lengkap</Text>
+              </TouchableOpacity>
+            )}
+          </NBCard>
         ) : (
           <NBCard variant="elevated" style={styles.shiftCard}>
             <Text style={styles.cardTitle}>Belum Clock In</Text>
@@ -500,6 +527,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: nbSpacing.sm,
+  },
+  shiftCardTitleLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  shiftCardTitleTimer: {
+    marginLeft: nbSpacing.sm,
+    fontSize: nbTypography.fontSize.base,
+    fontWeight: nbTypography.fontWeight.extrabold,
+    color: nbColors.warning,
+    letterSpacing: 0.5,
+  },
+  collapseToggle: {
+    padding: nbSpacing.xs,
+    marginLeft: nbSpacing.sm,
   },
   lemburBadge: {
     backgroundColor: nbColors.warning,

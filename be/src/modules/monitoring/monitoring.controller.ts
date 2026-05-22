@@ -149,9 +149,25 @@ export class MonitoringController {
     @Query('rayon_id') rayonId: string | undefined,
     @GetUser() user: User,
   ): Promise<BoundariesResponseDto> {
-    const filters: { rayon_id?: string; area_ids?: string[] } = {};
+    const filters: { rayon_id?: string; area_ids?: string[]; area_id?: string } = {};
     if (rayonId) filters.rayon_id = rayonId;
     await this.applyScopeFilters(user, filters);
+    // Korlap scope: collapse area_id / area_ids into a single area_ids list so
+    // the service only returns assigned areas, not the entire rayon.
+    if (user.role === UserRole.KORLAP) {
+      const ids: string[] = [];
+      if (filters.area_ids) ids.push(...filters.area_ids);
+      if (filters.area_id) ids.push(filters.area_id);
+      if (ids.length > 0) {
+        filters.area_ids = ids;
+        delete filters.area_id;
+        // Korlap can be assigned to areas in different rayons (e.g. Taman
+        // Bungkul lives in 'Rayon Taman Aktif' while the korlap's home rayon
+        // is Pusat). Drop the rayon anchor so the cross-rayon assignments
+        // remain visible — the area_ids filter is sufficient.
+        delete filters.rayon_id;
+      }
+    }
     return this.statsService.getBoundaries(filters);
   }
 
@@ -277,6 +293,11 @@ export class MonitoringController {
     user: User,
     filters: { area_id?: string; area_ids?: string[]; rayon_id?: string },
   ): Promise<void> {
+    // City-level roles see everything — no scope filter applied.
+    if (MONITORING_CITY.includes(user.role as UserRole)) {
+      return;
+    }
+
     if (user.role === UserRole.KORLAP) {
       // Multi-area: get all assigned area IDs
       const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(user.id);
@@ -285,7 +306,15 @@ export class MonitoringController {
       } else if (user.area_id) {
         filters.area_id = user.area_id;
       }
-    } else if (user.role === UserRole.ADMIN_DATA && user.rayon_id) {
+      // Always anchor to the korlap's rayon as well so endpoints that only
+      // honor `rayon_id` (e.g. boundaries) never leak other-rayon data.
+      if (user.rayon_id) {
+        filters.rayon_id = user.rayon_id;
+      }
+    } else if (
+      (user.role === UserRole.ADMIN_DATA || user.role === UserRole.KEPALA_RAYON) &&
+      user.rayon_id
+    ) {
       filters.rayon_id = user.rayon_id;
     }
   }

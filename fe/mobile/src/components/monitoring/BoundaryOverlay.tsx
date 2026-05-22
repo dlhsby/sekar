@@ -17,6 +17,7 @@ import {
   withAlpha,
 } from '../../constants/nbTokens';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
+import { geometryToRings } from '../../utils/geoJsonUtils';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -33,18 +34,6 @@ interface BoundaryOverlayProps {
   showAreas?: boolean;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Extract outer ring from GeoJSON Polygon and convert to LatLng array.
- *  Coerces to Number() to handle TypeORM returning NUMERIC columns as strings. */
-function polygonToCoords(
-  polygon: { type: 'Polygon'; coordinates: [number, number][][] },
-): { latitude: number; longitude: number }[] {
-  const ring = polygon.coordinates[0];
-  if (!ring || ring.length < 3) return [];
-  return ring.map(([lng, lat]) => ({ latitude: Number(lat), longitude: Number(lng) }));
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const BoundaryOverlay = React.memo(function BoundaryOverlay({
@@ -56,41 +45,41 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
 }: BoundaryOverlayProps): React.JSX.Element {
   return (
     <>
-      {/* Layer 1: Rayon polygons */}
-      {showRayons && rayons.map(rayon => {
-        if (!rayon.boundary_polygon) return null;
-        const rayonCoords = polygonToCoords(rayon.boundary_polygon);
-        if (rayonCoords.length < 3) return null;
-        return (
+      {/* Layer 1: Rayon polygons (one <Polygon> per outer ring — handles
+          both Polygon and MultiPolygon geometries). */}
+      {showRayons && rayons.flatMap(rayon => {
+        const rings = geometryToRings(rayon.boundary_polygon);
+        return rings.map((ring, i) => (
           <Polygon
-            key={`rayon-poly-${rayon.id}`}
-            coordinates={rayonCoords}
+            key={`rayon-poly-${rayon.id}-${i}`}
+            coordinates={ring}
             strokeColor={nbColors.requestUnderReview}
             fillColor={withAlpha(nbColors.requestUnderReview, 0.08)}
             strokeWidth={2}
             lineDashPattern={[8, 4]}
           />
-        );
+        ));
       })}
 
-      {/* Layer 2: Area polygons / circles */}
+      {/* Layer 2: Area polygons / circles. MultiPolygon areas (e.g. Taman
+          Buk Tong, Menur RSJ sisi barat/timur) emit one <Polygon> per
+          member-polygon outer ring; only areas with no usable geometry at
+          all fall back to a <Circle>. */}
       {showAreas && rayons.flatMap(rayon =>
-        rayon.areas.map(area => {
-          const areaCoords = area.boundary_polygon
-            ? polygonToCoords(area.boundary_polygon)
-            : [];
-          if (areaCoords.length >= 3) {
-            return (
+        rayon.areas.flatMap(area => {
+          const rings = geometryToRings(area.boundary_polygon);
+          if (rings.length > 0) {
+            return rings.map((ring, i) => (
               <Polygon
-                key={`area-poly-${area.id}`}
-                coordinates={areaCoords}
+                key={`area-poly-${area.id}-${i}`}
+                coordinates={ring}
                 strokeColor={nbColors.black}
                 fillColor={withAlpha(nbColors.warningLight, 0.15)}
                 strokeWidth={2}
               />
-            );
+            ));
           }
-          return (
+          return [
             <Circle
               key={`area-circle-${area.id}`}
               center={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
@@ -98,8 +87,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
               strokeColor={nbColors.black}
               fillColor={withAlpha(nbColors.warningLight, 0.15)}
               strokeWidth={2}
-            />
-          );
+            />,
+          ];
         }),
       )}
 

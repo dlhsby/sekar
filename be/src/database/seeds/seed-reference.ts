@@ -38,6 +38,7 @@ const RAYON_4_ID = '42934ad5-4ea0-4537-abb6-cf7e984e2d39'; // TIMUR1
 const RAYON_5_ID = '742a135b-ddeb-45ca-8d0a-88d7d08aa78a'; // TIMUR2
 const RAYON_6_ID = 'bf040137-fce4-4016-b5e7-704ad82c1594'; // BARAT1
 const RAYON_7_ID = '7422e6ee-0693-4565-9016-d4f759bdeed2'; // BARAT2
+const RAYON_TAMAN_AKTIF_ID = '8a8a8a8a-1111-4222-9333-444444444444'; // logical bucket for taman aktif parks (no boundary)
 
 const SHIFT_1_ID = 'ca18ac41-2577-4f67-abfa-adaae27b75c8';
 const SHIFT_2_ID = '28822613-65de-47e4-a9b4-7b9bfd437f8a';
@@ -134,10 +135,11 @@ async function seedReference() {
         ('${RAYON_4_ID}', 'Rayon Timur 1', 'TIMUR1',  'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
         ('${RAYON_5_ID}', 'Rayon Timur 2', 'TIMUR2',  'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
         ('${RAYON_6_ID}', 'Rayon Barat 1', 'BARAT1',  'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
-        ('${RAYON_7_ID}', 'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep')
+        ('${RAYON_7_ID}', 'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
+        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'TAMAN_AKTIF', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✓ 7 rayons');
+    console.log('  ✓ 8 rayons (7 geographic + Rayon Taman Aktif)');
 
     // ============================================================
     // 3b. KECAMATANS (31) — idempotent — May 2026

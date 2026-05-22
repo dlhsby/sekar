@@ -206,16 +206,39 @@ export function isWithinAreaBoundary(
   lat: number,
   lng: number,
   area: {
-    boundary_polygon?: { type: 'Polygon'; coordinates: [number, number][][] } | null;
+    boundary_polygon?:
+      | { type: 'Polygon'; coordinates: [number, number][][] }
+      | { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+      | null;
     gps_lat?: number | null;
     gps_lng?: number | null;
     radius_meters?: number | null;
   },
 ): boolean {
-  // 1. Polygon check (preferred) — extract outer ring from GeoJSON
-  const ring = area.boundary_polygon?.coordinates?.[0];
-  if (ring && ring.length >= 3) {
-    return isPointInPolygon(lat, lng, ring);
+  // 1. Polygon / MultiPolygon check (preferred) — check each outer ring.
+  // MultiPolygon areas (e.g. Taman Buk Tong, Menur RSJ sisi barat/timur)
+  // need every member-polygon's outer ring tested individually.
+  //
+  // Defensive: only trust the geometry when `coordinates` is an array of the
+  // expected depth. Some legacy callers/tests pass a bare ring or `[[lng,lat],
+  // ...]` directly; in that case we fall through to the radius check.
+  const geom = area.boundary_polygon as { type?: string; coordinates?: unknown } | null | undefined;
+  if (geom && Array.isArray(geom.coordinates)) {
+    let rings: [number, number][][] = [];
+    if (geom.type === 'Polygon') {
+      const ring = (geom.coordinates as unknown[])[0];
+      if (Array.isArray(ring)) rings = [ring as [number, number][]];
+    } else if (geom.type === 'MultiPolygon') {
+      rings = (geom.coordinates as unknown[])
+        .map((p) => Array.isArray(p) ? (p as unknown[])[0] : null)
+        .filter((r): r is [number, number][] => Array.isArray(r));
+    }
+    if (rings.length > 0) {
+      for (const ring of rings) {
+        if (ring.length >= 3 && isPointInPolygon(lat, lng, ring)) return true;
+      }
+      if (rings.some((r) => r.length >= 3)) return false;
+    }
   }
 
   // 2. Radius fallback

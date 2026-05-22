@@ -127,41 +127,63 @@ describe('AreasService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all active areas without filter', async () => {
-      const mockQueryBuilder = {
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([mockArea]),
-      };
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+    const cityUser = { id: 'u1', username: 'sa', role: 'superadmin', rayon_id: null } as any;
+    const rayonUser = {
+      id: 'u2',
+      username: 'korlap_pusat_1',
+      role: 'korlap',
+      rayon_id: 'rayon-pusat-uuid',
+    } as any;
 
-      const result = await service.findAll();
+    const makeQB = () => ({
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([mockArea]),
+    });
+
+    it('should return all active areas for city roles without filter', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.findAll(cityUser);
 
       expect(result).toEqual([mockArea]);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('area.is_active = :isActive', {
-        isActive: true,
-      });
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
+      expect(qb.where).toHaveBeenCalledWith('area.is_active = :isActive', { isActive: true });
+      expect(qb.andWhere).not.toHaveBeenCalled();
     });
 
     it('should filter areas by area type code', async () => {
-      const mockQueryBuilder = {
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([mockArea]),
-      };
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.findAll('park');
+      const result = await service.findAll(cityUser, 'park');
 
       expect(result).toEqual([mockArea]);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('areaType.code = :areaType', {
-        areaType: 'park',
+      expect(qb.andWhere).toHaveBeenCalledWith('areaType.code = :areaType', { areaType: 'park' });
+    });
+
+    it('should scope by rayon_id for rayon-scoped roles', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(rayonUser);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
+        rayonId: 'rayon-pusat-uuid',
       });
+    });
+
+    it('should return empty array for rayon-scoped user without rayon_id', async () => {
+      const orphanUser = { ...rayonUser, rayon_id: null };
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.findAll(orphanUser);
+
+      expect(result).toEqual([]);
+      expect(qb.getMany).not.toHaveBeenCalled();
     });
   });
 

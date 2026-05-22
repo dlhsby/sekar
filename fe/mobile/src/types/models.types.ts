@@ -11,6 +11,16 @@ export interface GeoJsonPolygon {
   coordinates: [number, number][][];
 }
 
+/** GeoJSON MultiPolygon — used by areas whose KMZ source had MultiGeometry
+ *  (e.g. Taman Buk Tong, Jl. Menur RSJ Sisi Barat). Each entry in
+ *  `coordinates` is itself a polygon (array of rings). */
+export interface GeoJsonMultiPolygon {
+  type: 'MultiPolygon';
+  coordinates: [number, number][][][];
+}
+
+export type GeoJsonGeometry = GeoJsonPolygon | GeoJsonMultiPolygon;
+
 // User roles - 8 roles matching backend UserRole enum (lowercase)
 // Phase 3: staff_kecamatan added (non-clockable, pruning request submitter)
 export type UserRole =
@@ -86,7 +96,7 @@ export interface Area {
   gps_lat: number;
   gps_lng: number;
   radius_meters: number;
-  boundary_polygon?: GeoJsonPolygon;
+  boundary_polygon?: GeoJsonGeometry;
   address?: string;
   created_at: string;
   updated_at: string;
@@ -618,7 +628,7 @@ export interface AreaBoundary {
   name: string;
   center_lat: number;
   center_lng: number;
-  boundary_polygon: GeoJsonPolygon | null;
+  boundary_polygon: GeoJsonGeometry | null;
   radius_meters: number;
   rayon_id: string;
   rayon_name: string;
@@ -635,7 +645,7 @@ export interface RayonBoundary {
   code: string;
   center_lat: number;
   center_lng: number;
-  boundary_polygon: GeoJsonPolygon | null;
+  boundary_polygon: GeoJsonGeometry | null;
   areas: AreaBoundary[];
   area_count: number;
   is_understaffed: boolean;

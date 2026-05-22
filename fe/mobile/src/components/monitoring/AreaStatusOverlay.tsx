@@ -25,7 +25,8 @@ import {
   withAlpha,
 } from '../../constants/nbTokens';
 import type { RootState } from '../../store/store';
-import type { RayonBoundary, GeoJsonPolygon } from '../../types/models.types';
+import type { RayonBoundary } from '../../types/models.types';
+import { geometryToRings } from '../../utils/geoJsonUtils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,13 +68,6 @@ function statusToFillColor(status: AreaPlantStatus | undefined): string {
   }
 }
 
-function polygonToCoords(
-  polygon: GeoJsonPolygon,
-): { latitude: number; longitude: number }[] {
-  const ring = polygon.coordinates[0];
-  if (!ring || ring.length < 3) { return []; }
-  return ring.map(([lng, lat]) => ({ latitude: Number(lat), longitude: Number(lng) }));
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -103,24 +97,25 @@ export function AreaStatusOverlay({
 
   for (const rayon of rayons) {
     for (const area of rayon.areas) {
-      if (!area.boundary_polygon) { continue; }
-
-      const coords = polygonToCoords(area.boundary_polygon);
-      if (coords.length < 3) { continue; }
+      // Handles Polygon + MultiPolygon — one <Polygon> per outer ring.
+      const rings = geometryToRings(area.boundary_polygon);
+      if (rings.length === 0) { continue; }
 
       const status = areaStatusById[area.id];
       const fillColor = statusToFillColor(status);
 
-      polygons.push(
-        <Polygon
-          key={`area-status-${area.id}-${boundaryKey}`}
-          coordinates={coords}
-          strokeColor="transparent"
-          fillColor={fillColor}
-          strokeWidth={0}
-          zIndex={1}
-        />,
-      );
+      rings.forEach((coords, i) => {
+        polygons.push(
+          <Polygon
+            key={`area-status-${area.id}-${i}-${boundaryKey}`}
+            coordinates={coords}
+            strokeColor="transparent"
+            fillColor={fillColor}
+            strokeWidth={0}
+            zIndex={1}
+          />,
+        );
+      });
     }
   }
 

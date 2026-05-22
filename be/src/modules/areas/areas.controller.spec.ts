@@ -114,23 +114,30 @@ describe('AreasController', () => {
   });
 
   describe('findAll', () => {
+    const mockRequester = {
+      id: 'u1',
+      username: 'superadmin',
+      role: 'superadmin',
+      rayon_id: null,
+    } as any;
+
     it('should return an array of areas', async () => {
       mockAreasService.findAll.mockResolvedValue([mockArea]);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(mockRequester);
 
       expect(result).toEqual([mockArea]);
-      expect(service.findAll).toHaveBeenCalledWith(undefined);
+      expect(service.findAll).toHaveBeenCalledWith(mockRequester, undefined);
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should filter areas by area type', async () => {
       mockAreasService.findAll.mockResolvedValue([mockArea]);
 
-      const result = await controller.findAll('park');
+      const result = await controller.findAll(mockRequester, 'park');
 
       expect(result).toEqual([mockArea]);
-      expect(service.findAll).toHaveBeenCalledWith('park');
+      expect(service.findAll).toHaveBeenCalledWith(mockRequester, 'park');
     });
   });
 

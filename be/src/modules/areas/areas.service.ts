@@ -9,7 +9,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Area } from './entities/area.entity';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
+import { MONITORING_CITY } from '../users/constants/role-groups';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { AreaTypesService } from '../area-types/area-types.service';
@@ -66,11 +67,21 @@ export class AreasService {
   /**
    * Get all areas
    *
+   * Rayon scoping (2026-05-18):
+   *   - City roles (superadmin / admin_system / top_management): see all areas.
+   *   - Everyone else (kepala_rayon / admin_data / korlap / satgas / linmas /
+   *     staff_kecamatan): filtered to `area.rayon_id = user.rayon_id`.
+   *     Users without a rayon_id see nothing (defensive default).
+   *
+   * @param requester - The authenticated user issuing the request
    * @param areaType - Optional filter by area type code
    * @returns Array of areas with areaType loaded
    */
-  async findAll(areaType?: string): Promise<Area[]> {
-    this.logger.log(`Fetching all areas${areaType ? ` filtered by type: ${areaType}` : ''}`);
+  async findAll(requester: User, areaType?: string): Promise<Area[]> {
+    this.logger.log(
+      `Fetching areas for ${requester.username} (${requester.role})` +
+        (areaType ? ` filtered by type: ${areaType}` : ''),
+    );
 
     const query = this.areaRepository
       .createQueryBuilder('area')
@@ -80,6 +91,17 @@ export class AreasService {
 
     if (areaType) {
       query.andWhere('areaType.code = :areaType', { areaType });
+    }
+
+    const isCityRole = MONITORING_CITY.includes(requester.role as UserRole);
+    if (!isCityRole) {
+      if (!requester.rayon_id) {
+        // Rayon-scoped user without a rayon — return nothing. This shouldn't
+        // happen for healthy data but guards against accidental cross-rayon
+        // leakage during partial migrations.
+        return [];
+      }
+      query.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
     }
 
     return query.getMany();

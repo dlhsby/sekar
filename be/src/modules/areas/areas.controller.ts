@@ -30,7 +30,8 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../users/entities/user.entity';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User, UserRole } from '../users/entities/user.entity';
 import { USER_MANAGERS, MONITORING_AREA } from '../users/constants/role-groups';
 
 /**
@@ -112,8 +113,11 @@ export class AreasController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  findAll(@Query('area_type') areaType?: string): Promise<Area[]> {
-    return this.areasService.findAll(areaType);
+  findAll(
+    @GetUser() user: User,
+    @Query('area_type') areaType?: string,
+  ): Promise<Area[]> {
+    return this.areasService.findAll(user, areaType);
   }
 
   /**

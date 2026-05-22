@@ -97,10 +97,12 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
   const [activitySort, setActivitySort] = useState<ActivitySortOption>('created_at_desc');
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
 
-  // Activity filter state
-  const [activityFilters, setActivityFilters] = useState<ActivitiesFilter>(
-    initialAreaId ? { area_id: initialAreaId } : {}
-  );
+  // Activity filter state — no default area filter. Backend already scopes by role:
+  //   - satgas/linmas → own activities (via involving_me=true in fetchActivities below)
+  //   - korlap        → activities across all `user_areas` assignments
+  //   - kepala_rayon  → activities in their rayon
+  // User may apply an area filter explicitly via the filter modal.
+  const [activityFilters, setActivityFilters] = useState<ActivitiesFilter>({});
   const [isActivityFilterOpen, setIsActivityFilterOpen] = useState(false);
 
   // Tasks pagination state

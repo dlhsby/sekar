@@ -655,15 +655,21 @@ describe('MonitoringController', () => {
       expect(statsService.getBoundaries).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
     });
 
-    it('should scope korlap to own area', async () => {
+    it('should scope korlap to assigned areas only (not full rayon)', async () => {
       const mockBoundaries = { rayons: [], generated_at: new Date() };
       statsService.getBoundaries.mockResolvedValue(mockBoundaries);
 
       await controller.getBoundaries(undefined, mockKorlap);
 
+      // Korlap can span rayons (e.g. Bungkul lives in Rayon Taman Aktif while
+      // home rayon is Pusat). area_ids must include the legacy single area;
+      // area_id AND rayon_id must both be dropped so cross-rayon areas show.
       expect(statsService.getBoundaries).toHaveBeenCalledWith(
-        expect.objectContaining({ area_id: 'area-1' }),
+        expect.objectContaining({ area_ids: ['area-1'] }),
       );
+      const call = statsService.getBoundaries.mock.calls[0][0];
+      expect(call).not.toHaveProperty('area_id');
+      expect(call).not.toHaveProperty('rayon_id');
     });
 
     it('should scope admin_data to own rayon', async () => {

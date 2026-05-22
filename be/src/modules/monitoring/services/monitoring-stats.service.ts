@@ -579,7 +579,10 @@ export class MonitoringStatsService {
       .getCount();
   }
 
-  async getBoundaries(filters?: { rayon_id?: string }): Promise<BoundariesResponseDto> {
+  async getBoundaries(filters?: {
+    rayon_id?: string;
+    area_ids?: string[];
+  }): Promise<BoundariesResponseDto> {
     const rayonWhere: Record<string, any> = {};
     if (filters?.rayon_id) {
       rayonWhere.id = filters.rayon_id;
@@ -589,9 +592,34 @@ export class MonitoringStatsService {
 
     const rayonBoundaries: RayonBoundaryDto[] = await Promise.all(
       rayons.map(async (rayon) => {
-        const areas = await this.areaRepository.find({
-          where: { rayon_id: rayon.id, is_active: true },
-        });
+        const areaWhere: Record<string, any> = {
+          rayon_id: rayon.id,
+          is_active: true,
+        };
+        // Korlap-style area scoping: when caller passes area_ids, only return
+        // those areas (still grouped under their rayon). Empty filter list ⇒ no areas.
+        if (filters?.area_ids) {
+          if (filters.area_ids.length === 0) {
+            return {
+              id: rayon.id,
+              name: rayon.name,
+              code: rayon.code,
+              boundary_polygon: (rayon as any).boundary_polygon || null,
+              center_lat: (rayon as any).center_lat
+                ? parseFloat((rayon as any).center_lat.toString())
+                : null,
+              center_lng: (rayon as any).center_lng
+                ? parseFloat((rayon as any).center_lng.toString())
+                : null,
+              area_count: 0,
+              is_understaffed: false,
+              understaffed_area_count: 0,
+              areas: [],
+            } as RayonBoundaryDto;
+          }
+          areaWhere.id = In(filters.area_ids);
+        }
+        const areas = await this.areaRepository.find({ where: areaWhere });
 
         const areaIds = areas.map((a) => a.id);
         const assignedCounts =
@@ -652,8 +680,15 @@ export class MonitoringStatsService {
       }),
     );
 
+    // When the caller requested specific area_ids, suppress rayons that
+    // ended up with no matching areas (otherwise korlap would still see
+    // empty rayon polygons from across the city).
+    const finalRayons = filters?.area_ids
+      ? rayonBoundaries.filter((r) => r.areas.length > 0)
+      : rayonBoundaries;
+
     return {
-      rayons: rayonBoundaries,
+      rayons: finalRayons,
       generated_at: new Date(),
     };
   }

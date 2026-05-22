@@ -55,6 +55,15 @@ export class MonitoringUserService {
     if (filters?.area_id) {
       qb.andWhere('uts.area_id = :areaId', { areaId: filters.area_id });
     }
+    // Multi-area scoping (e.g. korlap with several `user_areas` rows).
+    const scopedAreaIds = (filters as { area_ids?: string[] } | undefined)?.area_ids;
+    if (scopedAreaIds) {
+      if (scopedAreaIds.length === 0) {
+        qb.andWhere('1 = 0');
+      } else {
+        qb.andWhere('uts.area_id IN (:...scopedAreaIds)', { scopedAreaIds });
+      }
+    }
     if (filters?.rayon_id) {
       qb.andWhere('area.rayon_id = :rayonId', { rayonId: filters.rayon_id });
     }

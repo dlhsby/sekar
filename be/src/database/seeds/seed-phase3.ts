@@ -317,7 +317,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         { species: 'MAHONI',           count: 11, lastPrunedDaysAgo: 30,  cycleDays: 180, status: 'ok'       },
         { species: 'TANJUNG',          count: 6,  lastPrunedDaysAgo: 50,  cycleDays: 365, status: 'ok'       },
       ],
-      'Jalan Raya Darmo': [
+      'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)': [
         { species: 'TABEBUYA PINK',    count: 18, lastPrunedDaysAgo: 220, cycleDays: 180, status: 'overdue'  },
         { species: 'TABEBUYA MERAH',   count: 16, lastPrunedDaysAgo: 110, cycleDays: 120, status: 'due_soon' },
         { species: 'PALEM RAJA',       count: 22, lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
@@ -344,7 +344,9 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         { species: 'KENANGGA',         count: 5,  lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
         { species: 'KAMBOJA',          count: 8,  lastPrunedDaysAgo: 30,  cycleDays: 240, status: 'ok'       },
       ],
-      'Taman Timur 2': [
+      // Renamed 2026-05-18 — dev/staging Rayon Timur 2 now uses real KMZ data;
+      // Taman Buk Tong is the only park-type area in that rayon.
+      'Taman Buk Tong': [
         { species: 'PALEM KIPAS',      count: 10, lastPrunedDaysAgo: 90,  cycleDays: 100, status: 'due_soon' },
         { species: 'SAWO KECIK',       count: 6,  lastPrunedDaysAgo: 25,  cycleDays: 240, status: 'ok'       },
         { species: 'GLODOKAN',         count: 9,  lastPrunedDaysAgo: 18,  cycleDays: 180, status: 'ok'       },
@@ -472,7 +474,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         lat: -7.2911, lng: 112.7382, heritage: true,
         label: 'Beringin Tua Selatan Bungkul',
         notes: 'Beringin tua dengan akar gantung, masuk daftar pohon dilindungi' },
-      { areaName: 'Jalan Raya Darmo', species: 'TABEBUYA PINK',
+      { areaName: 'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)', species: 'TABEBUYA PINK',
         lat: -7.2901, lng: 112.7405, heritage: false,
         label: 'Tabebuya Pink Jalur Darmo',
         notes: 'Penanda musim semi Surabaya — mekar serentak sekitar Mei' },

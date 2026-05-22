@@ -12,9 +12,11 @@ config();
  * Data seeded:
  *   - 1 user  (admin / superadmin) with explicit UUID
  *   - 4 area types
- *   - 3 areas  (Taman Bungkul, Jalan Raya Darmo, Taman Harmoni)
  *
- * Shifts, location logs, and activities are seeded in Phase 2.
+ * Areas, shifts, location logs, and activities are seeded in Phase 2.
+ * (Areas moved out of phase1 on 2026-05-18 — they now come from the shared
+ * KMZ-derived module `./kmz-areas` and need to be rayon-linked, which only
+ * makes sense after phase2 creates the 7 rayons.)
  *
  * Run: npm run db:seed:phase1
  * Prod: npm run db:seed:phase1:prod
@@ -139,48 +141,11 @@ async function seedPhase1() {
     `);
     console.log('  Created 4 area types');
 
-    // ============================================================
-    // AREAS (3)
-    // ============================================================
-    console.log('\nSeeding areas...');
-
-    await queryRunner.query(`
-      INSERT INTO areas (name, area_type_id, gps_lat, gps_lng, radius_meters, address, is_active, boundary_polygon, coverage_area)
-      SELECT 'Taman Bungkul', at.id,
-        -7.2905, 112.7398, 150,
-        'Jl. Taman Bungkul, Darmo, Surabaya', TRUE,
-        '{"type":"Polygon","coordinates":[[[112.7388,-7.2895],[112.7408,-7.2895],[112.7408,-7.2915],[112.7388,-7.2915],[112.7388,-7.2895]]]}'::jsonb,
-        44000
-      FROM area_types at WHERE at.code = 'park' LIMIT 1
-    `);
-
-    await queryRunner.query(`
-      INSERT INTO areas (name, area_type_id, gps_lat, gps_lng, radius_meters, address, is_active, boundary_polygon, coverage_area)
-      SELECT 'Jalan Raya Darmo', at.id,
-        -7.2844, 112.7915, 200,
-        'Jl. Raya Darmo, Surabaya', TRUE,
-        '{"type":"Polygon","coordinates":[[[112.7905,-7.2834],[112.7925,-7.2834],[112.7925,-7.2854],[112.7905,-7.2854],[112.7905,-7.2834]]]}'::jsonb,
-        44000
-      FROM area_types at WHERE at.code = 'pedestrian' LIMIT 1
-    `);
-
-    await queryRunner.query(`
-      INSERT INTO areas (name, area_type_id, gps_lat, gps_lng, radius_meters, address, is_active, boundary_polygon, coverage_area)
-      SELECT 'Taman Harmoni', at.id,
-        -7.3037, 112.7375, 100,
-        'Jl. Ketintang, Surabaya', TRUE,
-        '{"type":"Polygon","coordinates":[[[112.7365,-7.3027],[112.7385,-7.3027],[112.7385,-7.3047],[112.7365,-7.3047],[112.7365,-7.3027]]]}'::jsonb,
-        44000
-      FROM area_types at WHERE at.code = 'park' LIMIT 1
-    `);
-    console.log('  Created 3 areas (Taman Bungkul, Jalan Raya Darmo, Taman Harmoni)');
-
     console.log('\nPhase 1 Seeding Completed Successfully!');
     console.log('\nSummary:');
     console.log('  - 1 user: admin (superadmin) — password: password123');
     console.log('  - 4 area types (park, pedestrian, mini_garden, street)');
-    console.log('  - 3 areas (Taman Bungkul, Jalan Raya Darmo, Taman Harmoni)');
-    console.log('  - Shifts, location logs, and activities are seeded in Phase 2');
+    console.log('  - Areas, shifts, location logs, and activities are seeded in Phase 2');
   } catch (error) {
     console.error('Phase 1 seeding failed:', error);
     throw error;

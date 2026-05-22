@@ -63,6 +63,22 @@ export class ActivitiesService {
   ) {}
 
   /**
+   * Resolve the set of area UUIDs a korlap is permanently assigned to via
+   * `user_areas`. Falls back to `[user.area_id]` if no row exists, so legacy
+   * single-area users keep working before backfill.
+   */
+  private async getKorlapAreaIds(user: User): Promise<string[]> {
+    const rows: Array<{ area_id: string }> = await this.activitiesRepository.manager.query(
+      `SELECT area_id FROM user_areas
+        WHERE user_id = $1 AND assignment_type = 'permanent'`,
+      [user.id],
+    );
+    const ids = rows.map((r) => r.area_id);
+    if (ids.length > 0) return ids;
+    return user.area_id ? [user.area_id] : [];
+  }
+
+  /**
    * Create a new activity (Phase 2C)
    * Auto-detects active shift and validates activity type against user role
    *
@@ -262,7 +278,15 @@ export class ActivitiesService {
         { involvingUserId: user.id },
       );
     } else if (user.role === UserRole.KORLAP) {
-      queryBuilder.andWhere('activity.area_id = :areaId', { areaId: user.area_id });
+      // Korlap may have multiple permanent areas via `user_areas` (e.g. korlap_pusat_1
+      // → all 13 Rayon Pusat areas). The legacy single `user.area_id` only reflects
+      // their primary area, which would hide activities in other assigned areas.
+      const korlapAreaIds = await this.getKorlapAreaIds(user);
+      if (korlapAreaIds.length === 0) {
+        queryBuilder.andWhere('1=0');
+      } else {
+        queryBuilder.andWhere('activity.area_id IN (:...korlapAreaIds)', { korlapAreaIds });
+      }
     } else if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
       queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: user.rayon_id });
     } else if (ACTIVITY_SUBMITTERS.includes(user.role as UserRole)) {
@@ -383,11 +407,12 @@ export class ActivitiesService {
 
     // Scope-based access control (specific roles first, then generic groups)
     if (user.role === UserRole.KORLAP) {
-      if (activity.area_id !== user.area_id) {
+      const korlapAreaIds = await this.getKorlapAreaIds(user);
+      if (!activity.area_id || !korlapAreaIds.includes(activity.area_id)) {
         throw new ApiException(
           HttpStatus.FORBIDDEN,
           ApiErrorCode.ACTIVITY_ACCESS_DENIED,
-          'You can only access activities from your assigned area',
+          'You can only access activities from your assigned areas',
         );
       }
     } else if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
