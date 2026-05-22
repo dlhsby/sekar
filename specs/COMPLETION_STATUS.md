@@ -1,8 +1,8 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** April 26, 2026 (Phase 3: M2 milestone complete — 3-3/3-4/3-5 all done; next: M3 task typing)
-**Current Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake — 🟡 In Progress (10 / 21 sub-phases complete)
-**Next Phase:** Phase 4 Production Readiness & Polishing (renumbered from prior Phase 3)
+**Last Updated:** May 22, 2026 (Phase 4 spec re-baselined with Design System v2.1 rebrand + production-readiness gap audit; Phase 3 tail ~70% — being finalised in a separate session)
+**Current Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake — 🟡 In Progress (~70% weighted)
+**Next Phase:** Phase 4 Production Readiness, **Rebrand & UI/UX Revamp** (67-87 dev-days; 13 sub-phases including 4-0 Token Re-baseline, 4-R UI/UX Revamp, 4-V Gap Audit, plus 4-1…4-10; ADRs 040-043 NEW)
 **Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 2E: 100% ✅ **DEPLOYED (Apr 25, 2026)** | Phase 3: ~48% (M1-R 5/5 ✅ + 3-1 ✅ + 3-2 ✅ + 3-3 ✅ + 3-4 ✅ + 3-5 ✅, 10/21) | Phase 4: 0% | Phase 5: 0%
 
 ---

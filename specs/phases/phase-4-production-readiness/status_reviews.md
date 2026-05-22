@@ -1,9 +1,218 @@
-# Phase 4 - Specification Reviews
+# Phase 4 - Specification Reviews + Gap Audit + Revamp Acceptance
 
-**Last Updated:** March 12, 2026
-**Status:** Expert Review Complete ✅ | All Fixes Applied ✅
+**Last Updated:** May 22, 2026 (extended with §Revamp Acceptance Checklist + §Gap Audit; March-12 expert review preserved below)
+**Status:** Expert Review Complete ✅ · Gap Audit ⏳ pending (4-V) · Revamp Acceptance ⏳ pending (4-R)
 
-This document contains specification reviews for Phase 4 Production Readiness & Polishing.
+This document contains: (a) the March-12 expert specification review (preserved), (b) the **Production-Readiness Gap Audit** template that 4-V populates with verified findings, (c) the **Revamp Acceptance Checklist** that 4-R signs off screen by screen against the hi-fi.
+
+---
+
+## <a id="gap-audit"></a>Production-Readiness Gap Audit (Sub-Phase 4-V) — ⏳ pending
+
+**Purpose:** Replace speculation about production readiness with verified findings on staging. Output: one verdict per gap → **Deliver in 4-x** / **Already-good for MVP** / **Defer to Phase 5**. Final cross-gap synthesis is encoded in [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md).
+
+**Method:** Run each gap test on a staging build mirroring production config (FCM_ENABLED=true, Redis 7, AUTH_LOGIN_THROTTLE per prod values). Record on `main @ <commit>` at audit time.
+
+### Performance SLAs (pass thresholds for the audit)
+
+| Capability | Metric | Threshold |
+|------------|--------|-----------|
+| Offline sync queue → server | Sync-to-server time after reconnect | p95 ≤ 60 s for queues ≤ 50 items |
+| Offline queue size | Max items before back-pressure | ≥ 200 items without crash |
+| FCM end-to-end | Backend trigger → device toast | p50 ≤ 1.5 s, p99 ≤ 5 s |
+| FCM retry queue (BullMQ) | First-retry latency after transient failure | ≤ 90 s |
+| Background location update | Position freshness during shift | ≤ 60 s stale tolerance while moving |
+| Background battery drain | 4-h shift avg | ≤ 15 %/h (target ≤ 10 %/h) |
+| BullMQ job latency | p95 job pickup time | ≤ 5 s under nominal load |
+
+Failures against these thresholds escalate the verdict to "Deliver in 4-x".
+
+
+
+### Gap 1 — Offline sync (does it work for satgas in field-no-coverage?)
+
+| Probe | Result | Notes |
+|-------|--------|-------|
+| `fe/mobile/src/services/sync/offlineQueue.ts` `QueueItemType` enum coverage | ⏳ | Inventory expected types: `shift-clock-in`, `shift-clock-out`, `location-update`, `activity-submit`. Missing per March-12 spec: `overtime-start`, `overtime-end`, `task-completion`, `reassignment` |
+| Unit test pass rate on `__tests__/offlineQueue.*` | ⏳ | `npm test -- offlineQueue` |
+| Manual airplane-mode flow (clock-in → reconnect → submission) | ⏳ | Single-submission guarantee; no duplicate |
+| Manual airplane-mode flow (activity → reconnect) | ⏳ | Multipart upload re-attempts |
+| Timezone preservation across queue + sync | ⏳ | Asia/Jakarta retained, no UTC drift |
+| ConnectivityBanner present? | ⏳ | March-12 spec says no — confirm |
+| Distinction NO_INTERNET vs SERVER_UNREACHABLE? | ⏳ | ADR-019 design — verify implementation |
+
+**Verdict:** ⏳ TBD — most likely **Deliver in 4-2** (queue expansion + banner) with conflict resolution work delegated to last-write-wins per March-12 spec.
+
+### Gap 2 — Push notifications (FCM end-to-end on staging)
+
+| Probe | Result | Notes |
+|-------|--------|-------|
+| Backend trigger inventory: `grep -rn "notificationsService.sendToUser" be/src/` | ⏳ | Expected 8 points: task-assigned, task-completed, task-revision, activity-approved, activity-rejected, overtime-approved, overtime-rejected, monitoring-missing-alert |
+| Mobile token registration on login | ⏳ | `fe/mobile/src/services/fcm/fcmService.ts` — verify register on login + deregister on logout |
+| Foreground handling (toast + badge increment) | ⏳ | Verify NBToast appears + bell badge increments |
+| Background handling (system notification) | ⏳ | iOS + Android — verify system tray notification, tap → deep-link to entity |
+| Quit-state handling (cold-start with deep-link payload) | ⏳ | App launches and routes to entity directly |
+| FCM token rejection / re-registration | ⏳ | Verify the May-17 `fix(fcm)` loop is fixed — rejected token deactivates without reactivate-loop |
+| Delivery latency p50 / p99 | ⏳ | Measure end-to-end (backend trigger → device toast) |
+| Retry queue exists? | ⏳ | None today — proposes BullMQ-on-Redis (`backend.md § R2`) |
+| Notification preferences entity exists? | ⏳ | None today — proposes new entity in 4-3 |
+
+**Verdict:** ⏳ TBD — most likely **Deliver hardening in 4-3** (preferences + retry queue + screen) since FCM activation itself is already live.
+
+### Gap 3 — Background location tracking
+
+| Probe | Result | Notes |
+|-------|--------|-------|
+| Library | `react-native-geolocation-service@5.3.1` | Confirmed in `fe/mobile/package.json` |
+| Android `FOREGROUND_SERVICE` permission declared in `AndroidManifest.xml`? | ⏳ | `grep FOREGROUND_SERVICE fe/mobile/android/app/src/main/AndroidManifest.xml` |
+| Android `FOREGROUND_SERVICE_LOCATION` (API 34+)? | ⏳ | Required from Android 14 |
+| Android `ACCESS_BACKGROUND_LOCATION` permission flow? | ⏳ | Granted by separate dialog; OB-2 must prime |
+| Foreground-service implementation with persistent notification? | ⏳ | Required for any background tracking — verify class exists |
+| iOS `UIBackgroundModes` includes `location`? | ⏳ | `grep -A2 UIBackgroundModes fe/mobile/ios/sekar/Info.plist` |
+| iOS `NSLocationAlwaysAndWhenInUseUsageDescription` present? | ⏳ | Required for background access |
+| Current tracking interval | ⏳ | `fe/mobile/src/services/location/locationTracker.ts` — read interval + minimum displacement |
+| Battery audit (4-h field shift) | ⏳ | Measure average drain; goal ≤ 15 %/h |
+| Throttle logic when idle (no movement) | ⏳ | Verify reduced polling when stationary |
+| Permission denial fallback UX | ⏳ | OB-2 explicitly handles "Tolak" path |
+
+**Verdict:** ⏳ TBD — this is the **highest-risk** gap. If Android foreground-service is missing or iOS background-mode unset, ship fixes inside 4-2 (treat as blocker). If wired, **Already-good for MVP** plus minor battery tuning in 4-7 F-tasks.
+
+### Gap 4 — Message broker (do we need one?)
+
+| Probe | Result | Notes |
+|-------|--------|-------|
+| Current brokers / queues in `be/package.json` | `ioredis@5.10.1`, `@socket.io/redis-adapter@8.3.0` | No BullMQ, no AMQP, no Kafka |
+| Workloads that benefit from a queue | (see table below) | — |
+| Throughput requirements | ⏳ | Measure peak load (k6 test from Phase 3 sub-phase 3-14 — pending) |
+| Persistence + retry semantics needed for which workloads | ⏳ | — |
+
+**Workload candidate inventory:**
+
+| Workload | Today | Benefit from queue? | Recommendation |
+|----------|-------|--------------------|----------------|
+| FCM send | Sync in `notifications.service` | **Yes** — retry on transient failure | BullMQ `fcm-retry` queue |
+| Async exports (> 5k rows) | None | **Yes** — non-blocking | BullMQ `export-jobs` queue |
+| CSV import (> 1k rows) | None | **Yes** — progress tracking | BullMQ `csv-import` queue |
+| KMZ parse | Sync | **Yes** — slow operation | BullMQ `kmz-parse` queue |
+| Cron-driven aggregations (daily summary, stale cleanup) | `@nestjs/schedule` | No — cron is sufficient | Keep cron |
+| Monitoring projector (Redis Streams consumer) | Live (Phase 3) | No — Streams is the queue | Keep |
+
+**Verdict (proposed, finalize in ADR-043):** **Adopt BullMQ on existing Redis 7.** No new infrastructure. Implement in 4-3 + 4-5 per [`backend.md § R2`](./backend.md#r2-bullmq-retry-queue-on-existing-redis-per-adr-043).
+
+### Gap Audit Synthesis Matrix
+
+| Gap | Verdict | Sub-phase delivery | ADR-043 record |
+|-----|---------|---------------------|-----------------|
+| 1 Offline sync | ⏳ | 4-2 expected | Deliver |
+| 2 Push hardening | ⏳ | 4-3 expected | Deliver |
+| 3 Background location | ⏳ | depends — may escalate into 4-2 | Likely Deliver (some) |
+| 4 Broker / job queue | ⏳ | 4-3, 4-5 (BullMQ on Redis) | Adopt — no new infra |
+
+---
+
+## <a id="revamp-acceptance-checklist"></a>Revamp Acceptance Checklist (Sub-Phase 4-R) — ⏳ pending
+
+Every revamped screen lands ✅ only when the 6 gates in [`ui-ux.md § 4`](./ui-ux.md#4-per-screen-acceptance-gate) pass: visual fidelity, NB compliance, a11y floor, copy lock, token compliance, no test regression.
+
+### Mobile (38 screens — 11 NEW · 22 revamp · 2 token-only · 3 sections grouped)
+
+| Hi-Fi ID | Name | Type | Status |
+|----------|------|------|--------|
+| WL-1 | Splash · 1/5 | NEW | ⏳ |
+| WL-2 | Pantau real-time | NEW | ⏳ |
+| WL-3 | Tugas terstruktur | NEW | ⏳ |
+| WL-4 | Permohonan kecamatan | NEW | ⏳ |
+| WL-5 | Offline-ready | NEW | ⏳ |
+| AS-1 | Login · idle | Revamp | ⏳ |
+| AS-2 | Login · field error | Revamp | ⏳ |
+| AS-3 | Login · auth-fail toast | Revamp | ⏳ |
+| AS-4 | Lupa sandi · contact admin | NEW | ⏳ |
+| AS-5 | Ganti sandi (forced + success) | NEW | ⏳ |
+| OB-1 | Welcome · 1/3 | NEW | ⏳ |
+| OB-2 | Permissions · 2/3 · 6 items | NEW | ⏳ |
+| OB-3 | Area preview · 3/3 | NEW | ⏳ |
+| HOME-1 | Home · Satgas | Revamp | ⏳ |
+| HOME-2 | Home · Korlap | Revamp | ⏳ |
+| HOME-3 | Home · Admin Data | Revamp | ⏳ |
+| ABS-1 | Clock-in · GPS + selfie | Revamp | ⏳ |
+| ABS-2 | Clock-in · Di luar area | Revamp | ⏳ |
+| ABS-3 | Shift history | Revamp | ⏳ |
+| MON-1 | Map · Korlap view | Revamp | ⏳ |
+| MON-2 | Personnel sheet | Revamp | ⏳ |
+| MON-3 | Tools FAB · expanded | Revamp | ⏳ |
+| TUG-1 | Tugas list | Revamp | ⏳ |
+| TUG-2 | Tugas detail | Revamp | ⏳ |
+| TUG-3 | Selesaikan tugas | Revamp | ⏳ |
+| AKT-1 | Submit aktivitas | Revamp | ⏳ |
+| AKT-2 | Aktivitas list | Revamp | ⏳ |
+| LBR-1 | Lembur list | Revamp | ⏳ |
+| LBR-2 | Ajukan lembur | Revamp | ⏳ |
+| LBR-3 | Detail lembur · disetujui | Revamp | ⏳ |
+| PRT-1 | Submit · Kecamatan | Revamp | ⏳ |
+| PRT-2 | Review queue · Admin Data | Revamp | ⏳ |
+| PRT-3 | Detail permohonan | Revamp | ⏳ |
+| PRT-4 | Pengajuan saya · Kecamatan | Token-only | ⏳ |
+| PRF-1 | Profile · Satgas | Revamp | ⏳ |
+| PRF-2 | Pengaturan | Revamp | ⏳ |
+| PRF-3 | Edit profil | Token-only | ⏳ |
+| NOTIF-1 | Inbox · 3 baru | NEW | ⏳ |
+
+### Web (15 frames — 11 revamp + 4 NEW)
+
+| Hi-Fi ID | Name | Type | Status |
+|----------|------|------|--------|
+| LOG-1 | Login page | Revamp | ⏳ |
+| (new) | Forgot password (mirror AS-4) | NEW | ⏳ |
+| DASH-1 | Dashboard home | Revamp | ⏳ |
+| MON-1 | Monitoring wall | Revamp | ⏳ |
+| USR-1 | Daftar pengguna | Revamp | ⏳ |
+| RAY-1 | Rayon · detail | Revamp | ⏳ |
+| TSK-1 | Tugas list (kanban + table) | Revamp | ⏳ |
+| SCH-1 | Jadwal · weekly grid | Revamp | ⏳ |
+| LBR-1 | Lembur · approval queue | Revamp | ⏳ |
+| PRT-1 | Detail permohonan | Revamp | ⏳ |
+| SET-1 | Pengaturan · sistem | Revamp | ⏳ |
+| KEC-1 | Ajukan perantingan · Kecamatan | Revamp | ⏳ |
+| (new) | Notifications inbox | NEW | ⏳ |
+| (new) | Import (KMZ + CSV) | NEW | ⏳ |
+| (new) | Export | NEW | ⏳ |
+
+### Components sign-off (NEW — added May 22 late)
+
+| Component | Mobile | Web | Status |
+|-----------|--------|-----|--------|
+| `NotificationBell` (bell icon + badge in header, Instagram-style) | `components/common/NotificationBell.tsx` | `components/nb/NotificationBell.tsx` | ⏳ |
+| `deepLinkRouter` (single source for notification type → screen) | `services/notifications/deepLinkRouter.ts` | `services/notifications/deepLinkRouter.ts` | ⏳ |
+| `ConnectivityBanner` v2.1 restyle (tokens, no hex) | `components/common/ConnectivityBanner.tsx` | `components/nb/ConnectivityBanner.tsx` | ⏳ |
+| `OfflineScreen` (illo-offline + retry + status-specific subtitle) | `components/common/OfflineScreen.tsx` | `components/nb/OfflineScreen.tsx` | ⏳ |
+| `ConnectivityGate` wrapper (renders OfflineScreen when status = unavailable) | `components/common/ConnectivityGate.tsx` | `components/nb/ConnectivityGate.tsx` | ⏳ |
+| FCM foreground-suppression configured | `services/fcm/fcmService.ts` | `public/firebase-messaging-sw.js` | ⏳ |
+| Per-screen offline matrix implemented per `mobile.md § A5` | every screen audited | every route audited | ⏳ |
+
+### Sidebar redesign · sign-off
+
+| Element | Status | Notes |
+|---------|--------|-------|
+| Pinwheel brand-mark (30 × 30 px green-bordered card) | ⏳ | per `hifi-shared.css` lines 423-451 |
+| Active item state (primary bg + 2 px border + 1.5 px offset shadow) | ⏳ | |
+| Section dividers (uppercase JetBrains Mono) | ⏳ | |
+| Per-item count badge (monospace) | ⏳ | |
+| Bottom-pinned "me" card with avatar + role pill | ⏳ | |
+
+### Brand-asset shipment · sign-off
+
+| Asset | Mobile | Web | Status |
+|-------|--------|-----|--------|
+| Pinwheel mark SVG | `assets/brand/sekar-mark.svg` | `public/brand/sekar-mark.svg` | ⏳ |
+| App icon (iOS AppIcon) | n/a | ⏳ | |
+| Adaptive icon (Android) | ⏳ | n/a | |
+| Splash light | ⏳ | n/a | |
+| Splash dark | ⏳ | n/a | |
+| Splash green | ⏳ | n/a | |
+| 6 empty-state illustrations | `assets/empty/illo-*.svg` | `public/empty/illo-*.svg` | ⏳ |
+| 3 onboarding scenes | `assets/onboarding/onb-*.svg` | n/a | ⏳ |
+| PWA manifest theme + maskable icon | n/a | `public/manifest.webmanifest` | ⏳ |
+| Favicon (pinwheel) | n/a | `public/favicon.ico` | ⏳ |
 
 ---
 

@@ -1,22 +1,21 @@
-# Phase 4: Production Readiness & Polishing - Implementation Status
+# Phase 4: Production Readiness, Rebrand & UI/UX Revamp — Implementation Status
 
-**Status:** Not Started
-**Last Updated:** March 12, 2026
+**Status:** 🟡 Not Started — spec re-baselined May 22, 2026
+**Last Updated:** May 22, 2026
 **Overall Progress:** 0%
 **Branch:** TBD
-**Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md)
+**Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md), **NEW** [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
 
 ---
 
-## Specification Review
+## Specification Reviews
 
 | Item | Detail |
 |------|--------|
-| **Date** | March 12, 2026 |
-| **Status** | Expert review completed by System Architect, Database Engineer, Backend Developer |
-| **Findings** | 9 CRITICAL, 15 HIGH, 20 MEDIUM, 16 LOW — all addressed in spec updates |
-| **New documents** | status_reviews.md, status_deployment_checklist.md |
-| **Revised effort** | 52-68 developer-days (up from 44-57) |
+| **Initial review** | March 12, 2026 — System Architect / DB Engineer / Backend Developer; 9 CRITICAL / 15 HIGH / 20 MEDIUM / 16 LOW (all addressed) |
+| **Revamp re-baseline** | May 22, 2026 — adds rebrand + UI/UX revamp (Design System v2.1) + production-readiness gap audit (4-V); trims work already shipped in Phase 3 (FCM activation, Redis adapter, web PWA, generated tokens) |
+| **New documents** | `status_progress.md` (NEW), `design/` vendored bundle |
+| **Revised effort** | **67-87 developer-days** (was 52-68) — sum: 4-0 (3-4) + 4-R (15-18) + 4-V (4-5) + 4-1 (2-3) + 4-2 (4-6) + 4-3 (3-5) + 4-4 (3-4) + 4-5 (5-7) + 4-6 (4-5) + 4-7 (12-15) + 4-8 (3-4) + 4-9 (7-8) + 4-10 (2-3) = **67 low / 87 high** |
 
 ---
 
@@ -50,17 +49,51 @@
 
 | Sub-Phase | Name | Tasks | Complete | Progress |
 |-----------|------|-------|----------|----------|
-| 4-1 | Infrastructure & Evaluation | 10 | 0 | 0% |
+| **4-0** | **Design Bundle Adoption + Token Re-baseline** (NEW) | 12 | 0 | 0% |
+| **4-R** | **UI/UX Revamp Sweep (mobile + web)** (NEW) | 50 | 0 | 0% |
+| **4-V** | **Production-Readiness Gap Audit** (NEW) | 5 | 0 | 0% |
+| 4-1 | Infrastructure & Evaluation (trimmed) | 6 | 0 | 0% |
 | 4-2 | Offline Sync Completion | 9 | 0 | 0% |
-| 4-3 | Push Notification Activation | 11 | 0 | 0% |
+| 4-3 | Push Notification — Hardening (renamed) | 6 | 0 | 0% |
 | 4-4 | Worker Reassignment Workflow | 8 | 0 | 0% |
 | 4-5 | Export & Import Data | 9 | 0 | 0% |
 | 4-6 | Real Data Seeder & Data Management | 7 | 0 | 0% |
 | 4-7 | Refactor, Optimization & Security | 17 | 0 | 0% |
-| 4-8 | UI/UX Polish & Production Readiness | 14 | 0 | 0% |
+| 4-8 | Mobile & Web Production Hardening (trimmed) | 6 | 0 | 0% |
 | 4-9 | E2E Testing | 5 | 0 | 0% |
 | 4-10 | Documentation Sync | 9 | 0 | 0% |
-| **Total** | | **99** | **0** | **0%** |
+| **Total** | | **149** | **0** | **0%** |
+
+### Sub-Phase 4-0: Design Bundle Adoption + Token Re-baseline ⏳ NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| A1. Vendor `design/` bundle | ✅ | Done May 22 — 224 KB from Claude Design |
+| A2. Regenerate `specs/ui-ux/tokens.json` from `hifi-shared.css` | ⏳ | Script-assisted port |
+| A3. Update `specs/ui-ux/design-tokens.md` v2.1 note | ⏳ | Document yellow→green diff |
+| A4. Run `npm run tokens:build` | ⏳ | Regenerates web `tokens.css` + mobile `tokens.ts` |
+| A5. Visual diff snapshot | ⏳ | Story-driven, key NB primitives |
+| B1. Extract pinwheel SVG to brand assets | ⏳ | Mobile + web `brand/sekar-mark.svg` |
+| B2. Replace app icon (iOS + Android) | ⏳ | iOS AppIcon, Android adaptive icon |
+| B3. Replace splash screen (light/dark/green) | ⏳ | iOS LaunchScreen, Android splash |
+| B4. Ship 6 empty-state SVG illustrations | ⏳ | illo-reports/shifts/offline/location/search/personnel |
+| B5. Ship 3 onboarding scene SVGs | ⏳ | onb-clockin/photo/monitor |
+| B6. PWA manifest theme/icon update | ⏳ | `theme_color: #7FBC8C`, maskable pinwheel |
+| C1. Token-compliance ESLint sweep | ⏳ | Fix repo-wide violations |
+
+### Sub-Phase 4-R: UI/UX Revamp Sweep ⏳ NOT STARTED
+
+See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#revamp-acceptance-checklist) for the 50-row screen-by-screen sign-off table (WL-1…NOTIF-1 + LOG-1…KEC-1).
+
+### Sub-Phase 4-V: Production-Readiness Gap Audit ⏳ NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| G1. Offline sync — staging field-test | ⏳ | Verdict in `status_reviews.md` Gap 1 |
+| G2. Push notifications — end-to-end on staging | ⏳ | Verdict in Gap 2 |
+| G3. Background location — platform audit | ⏳ | Verdict in Gap 3 |
+| G4. Broker decision (BullMQ vs no-broker) | ⏳ | Verdict in Gap 4 + ADR-043 |
+| G5. Cross-gap synthesis | ⏳ | Final decision matrix in `status_reviews.md` |
 
 ---
 

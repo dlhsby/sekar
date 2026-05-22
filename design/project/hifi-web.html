@@ -1,0 +1,1572 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SEKAR Hi-Fi · Web dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="hifi-shared.css" />
+<style>
+  /* Web-specific tweaks */
+  .browser .canvas { height: 880px; }
+  .frames.wide { grid-template-columns: 1fr; }
+  .frames { grid-template-columns: 1fr; gap: 56px; }
+
+  /* Helpers */
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row.between { justify-content: space-between; }
+  .col { display: flex; flex-direction: column; }
+  .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-5 { gap: 20px; }
+  .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mb-5 { margin-bottom: 20px; } .mb-6 { margin-bottom: 24px; }
+
+  /* Web KPI grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .kpi-grid .card { padding: 16px 18px; }
+  .kpi-grid .kpi-h { font-size: 11px; }
+  .kpi-grid .kpi-v { font-size: 36px; }
+
+  /* Page header */
+  .page-h {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  }
+  .page-h h1 {
+    font-family: var(--ff-display); font-weight: 800; font-size: 26px;
+    color: var(--black); margin: 0; letter-spacing: -0.015em;
+  }
+  .page-h p { font-size: 13px; color: var(--g600); margin: 0; }
+  .page-h .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* Compact list row in card */
+  .listrow {
+    display: grid; grid-template-columns: 36px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 11px 4px; border-bottom: 1.5px dashed var(--g300);
+  }
+  .listrow:last-child { border-bottom: 0; }
+  .listrow .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 13.5px; color: var(--black); line-height: 1.25; }
+  .listrow .sub { font-family: var(--ff-mono); font-size: 10.5px; color: var(--g600); margin-top: 2px; }
+
+  /* Activity feed row */
+  .feed-row {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; padding: 10px 4px;
+    border-bottom: 1.5px dashed var(--g300);
+  }
+  .feed-row:last-child { border-bottom: 0; }
+  .feed-row .dot { width: 12px; height: 12px; background: var(--success); border: 2px solid var(--black); border-radius: 50%; margin-top: 3px; }
+  .feed-row .dot.bad { background: var(--danger); } .feed-row .dot.warn { background: var(--warning); } .feed-row .dot.info { background: var(--info); }
+  .feed-row .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 12.5px; color: var(--black); }
+  .feed-row .sub { font-size: 11.5px; color: var(--g700); margin-top: 1px; line-height: 1.45; }
+  .feed-row .ts { font-family: var(--ff-mono); font-size: 10px; color: var(--g500); white-space: nowrap; }
+
+  /* Section title within page */
+  .pg-section-h { font-family: var(--ff-display); font-weight: 700; font-size: 15px; color: var(--black); margin: 0 0 10px; display: flex; align-items: center; gap: 10px; }
+  .pg-section-h .badge { font-family: var(--ff-mono); font-size: 9.5px; font-weight: 700; padding: 2px 7px; border: 1.5px solid var(--black); border-radius: 999px; background: var(--paper); letter-spacing: 0.05em; }
+
+  /* Bar / sparkline */
+  .bar-row { display: grid; grid-template-columns: 100px 1fr 40px; align-items: center; gap: 10px; padding: 6px 0; }
+  .bar-row .lab { font-family: var(--ff-mono); font-size: 11px; color: var(--g700); }
+  .bar-row .bar { height: 14px; background: var(--g100); border: 1.5px solid var(--black); border-radius: 4px; overflow: hidden; position: relative; }
+  .bar-row .bar > i { display: block; height: 100%; background: var(--primary); }
+  .bar-row .val { font-family: var(--ff-mono); font-size: 11px; font-weight: 700; color: var(--black); text-align: right; }
+
+  /* Sparkline */
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 32px; }
+  .spark i { display: block; width: 8px; background: var(--primary); border: 1.5px solid var(--black); border-radius: 2px 2px 0 0; }
+
+  /* Inline form grid */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+
+  /* Drawer (right side panel) */
+  .drawer {
+    width: 360px; flex-shrink: 0;
+    background: var(--white); border-left: 2px solid var(--black);
+    padding: 18px; overflow-y: auto;
+  }
+
+  /* Donut + legend */
+  .donut-row { display: flex; align-items: center; gap: 18px; }
+  .donut {
+    width: 130px; height: 130px; border-radius: 50%; border: 2.5px solid var(--black);
+    background:
+      conic-gradient(var(--success) 0 55%, var(--warning) 55% 75%, var(--danger) 75% 87%, var(--g300) 87% 100%);
+    box-shadow: var(--sh-sm); position: relative; flex-shrink: 0;
+  }
+  .donut::after {
+    content: ""; position: absolute; inset: 18px; background: var(--white);
+    border: 2px solid var(--black); border-radius: 50%;
+  }
+  .donut .ctr { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2; }
+  .donut .ctr .v { font-family: var(--ff-display); font-weight: 800; font-size: 26px; line-height: 1; color: var(--black); }
+  .donut .ctr .lbl { font-family: var(--ff-mono); font-size: 10px; color: var(--g600); margin-top: 4px; letter-spacing: 0.05em; }
+
+  .legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend .li { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: center; font-size: 12.5px; color: var(--g700); }
+  .legend .li i { width: 14px; height: 14px; border: 1.5px solid var(--black); border-radius: 4px; }
+  .legend .li b { color: var(--black); font-family: var(--ff-mono); font-weight: 700; font-size: 12px; }
+
+  /* form field with description */
+  .field.web .input { font-size: 14px; padding: 9px 12px; min-height: 40px; border-radius: 8px; }
+  .field.web .lbl { font-size: 10.5px; }
+  .field.web .help { font-size: 11px; color: var(--g500); margin-top: 4px; line-height: 1.4; }
+
+  /* Map main wall */
+  .mapwall { position: relative; flex: 1; min-width: 0; }
+  .mapwall .minimap { position: absolute; inset: 0; border-radius: 0; border: 0; }
+
+  /* Cluster bubble */
+  .cluster {
+    position: absolute; background: var(--primary); border: 2.5px solid var(--black);
+    border-radius: 50%; box-shadow: var(--sh-sm); display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff-display); font-weight: 800; color: var(--black);
+  }
+  .cluster.s { width: 36px; height: 36px; font-size: 13px; }
+  .cluster.m { width: 48px; height: 48px; font-size: 16px; }
+  .cluster.l { width: 64px; height: 64px; font-size: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="anchnav">
+    <a class="home" href="index.html">← INDEX</a>
+    <a href="#login">① Login</a>
+    <a href="#dashboard">② Dashboard</a>
+    <a href="#monitoring">③ Monitoring</a>
+    <a href="#users">④ Users</a>
+    <a href="#rayons">⑤ Rayons</a>
+    <a href="#areas">⑥ Areas</a>
+    <a href="#tasks">⑦ Tasks</a>
+    <a href="#activities">⑧ Activities</a>
+    <a href="#schedules">⑨ Schedules</a>
+    <a href="#overtime">⑩ Overtime</a>
+    <a href="#pruning">⑪ Perantingan</a>
+    <a href="#settings">⑫ Settings</a>
+    <a href="#kecamatan">⑬ Kecamatan</a>
+    <a href="wireframes-web.html" style="margin-left:auto;">↻ Wireframes</a>
+  </nav>
+
+  <header class="masthead">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Hi-Fi · Web dashboard · v1.0</div>
+      <h1>Dashboard. <em>Monitoring.</em><br/>Tugas. Perantingan.</h1>
+      <p>Hi-fidelity treatment of the <b>Next.js PWA console</b> — installable, mobile-responsive at 375 / 768 / 1280. Matches <code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">fe/web/src/app/*</code> 1:1: dashboard, monitoring, users, rayons, areas, tasks, activities, schedules, overtime, pruning-requests, settings + the kecamatan-only intake at <code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">/pruning-submit</code>. Shared token set with mobile.</p>
+    </div>
+    <div class="mh-meta">
+      <div class="row" style="justify-content:space-between;"><span>Coverage</span><b>13 pages · 1 console + 1 intake</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Frame</span><b>Chrome · 1280×880</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Stack</span><b>Next.js 16 · Tailwind v4</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Sync</span><b>fe/web/src/app</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Status</span><span class="tag-pill">handoff-ready</span></div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════ LOGIN ═══════════════════════════════════════ -->
+  <section class="section" id="login">
+    <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">Login · konsol</h2><span class="sec-tag">(auth)/login/page.tsx</span></div>
+    <p class="sec-lede">Two-column layout. Left: brand panel with the SEKAR pinwheel + photography placeholder. Right: form. Accepts <b>phone OR username</b>, same as mobile.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">LOG-1</span><span class="fr-name">Login page</span></div>
+        <div class="browser">
+          <div class="topbar">
+            <div class="dots3"><i></i><i></i><i></i></div>
+            <div class="url">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>sekar.wahyutrip.com<b>/login</b></span>
+            </div>
+          </div>
+          <div class="canvas" style="display:grid; grid-template-columns:1fr 1fr; height:560px;">
+            <!-- Brand panel -->
+            <div style="background:var(--primary); border-right:2px solid var(--black); padding:48px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+              <div style="position:absolute; inset:0; background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.15) 1px, transparent 0); background-size: 24px 24px; opacity:0.4; pointer-events:none;"></div>
+              <div style="position:relative; z-index:1;">
+                <div class="row gap-3" style="margin-bottom:32px;">
+                  <div style="width:48px; height:48px; background:var(--white); border:2.5px solid var(--black); border-radius:11px; box-shadow:var(--sh-md); display:flex; align-items:center; justify-content:center;">
+                    <svg viewBox="0 0 120 120" width="32" height="32"><g transform="translate(60 60)"><g><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(45)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(90)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(135)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(180)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(225)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(270)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(315)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><circle r="12" fill="#FDFD96" stroke="#1C1917" stroke-width="4"/></g></svg>
+                  </div>
+                  <div style="line-height:1.1;">
+                    <div style="font-family:var(--ff-display); font-weight:800; font-size:24px; color:var(--black);">SEKAR</div>
+                    <div style="font-family:var(--ff-mono); font-size:10px; font-weight:700; letter-spacing:0.12em; color:var(--g700);">DLH SURABAYA</div>
+                  </div>
+                </div>
+                <h2 style="font-family:var(--ff-display); font-weight:800; font-size:38px; color:var(--black); line-height:1.05; margin:0 0 18px; letter-spacing:-0.02em;">Konsol<br/>pengelolaan<br/>RTH Surabaya.</h2>
+                <p style="font-size:14px; color:var(--black); line-height:1.55; max-width:36ch; margin:0;">Pantau satgas, kelola tugas, proses permohonan perantingan dari satu konsol terpusat.</p>
+              </div>
+              <div class="row gap-2" style="position:relative; z-index:1;">
+                <span class="pill" style="background:var(--white);"><span class="d" style="background:var(--success);"></span>Live monitoring</span>
+                <span class="pill" style="background:var(--white);"><span class="d" style="background:var(--info);"></span>Offline-safe</span>
+              </div>
+            </div>
+
+            <!-- Form panel -->
+            <div style="background:var(--paper); padding:48px 56px; display:flex; flex-direction:column; justify-content:center;">
+              <div style="max-width:340px; margin:0 auto; width:100%;">
+                <div class="eyebrow" style="margin-bottom:16px;"><span class="dot"></span>MASUK KE KONSOL</div>
+                <h2 style="font-family:var(--ff-display); font-weight:800; font-size:30px; color:var(--black); margin:0 0 8px; letter-spacing:-0.015em;">Selamat datang kembali</h2>
+                <p style="font-size:13px; color:var(--g700); margin:0 0 24px; line-height:1.5;">Gunakan akun yang dibuat oleh Admin. Username atau nomor HP yang terdaftar.</p>
+
+                <div class="field web mb-3">
+                  <span class="lbl">USERNAME / NO. HP</span>
+                  <div class="input"><span>admin</span></div>
+                </div>
+                <div class="field web mb-4">
+                  <span class="lbl">SANDI</span>
+                  <div class="input"><span style="flex:1;">•••••••••••</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                </div>
+                <div class="row between" style="margin-bottom:18px;">
+                  <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--g700);">
+                    <div style="width:16px; height:16px; border:2px solid var(--black); border-radius:4px; background:var(--white); display:flex; align-items:center; justify-content:center;">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    Ingat saya
+                  </label>
+                  <a href="#" style="font-family:var(--ff-mono); font-size:11px; font-weight:700; color:var(--black); text-decoration:underline;">Lupa sandi?</a>
+                </div>
+                <button class="btn primary btn-sh full">Masuk →</button>
+                <p style="font-size:11px; color:var(--g600); margin:18px 0 0; text-align:center; line-height:1.5;">Akun dibuat oleh admin. Hubungi <b style="color:var(--black);">admin@sekar</b> jika ada kendala.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Two-column auth pattern.</b> Brand panel uses primary yellow + dot grid, mirroring the mobile splash. Identifier accepts username or phone, matching backend Phase 2E.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ DASHBOARD ═══════════════════════════════════════ -->
+  <section class="section" id="dashboard">
+    <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">Admin Dashboard</h2><span class="sec-tag">(dashboard)/page.tsx</span></div>
+    <p class="sec-lede">Daily snapshot. 4 KPI tiles, status donut, live activity feed, quick actions. The "homepage" of the console.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">DASH-1</span><span class="fr-name">Dashboard home · Superadmin</span></div>
+        <div class="browser">
+          <div class="topbar">
+            <div class="dots3"><i></i><i></i><i></i></div>
+            <div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/</b></span></div>
+          </div>
+          <div class="canvas">
+            <!-- Sidebar -->
+            <aside class="web-side">
+              <div class="brand">
+                <div class="brand-mark">
+                  <svg viewBox="0 0 120 120" width="22" height="22"><g transform="translate(60 60)"><g><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(45)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(90)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(135)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(180)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(225)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(270)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(315)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g></g></svg>
+                </div>
+                SEKAR
+              </div>
+              <div class="g">UTAMA</div>
+              <a class="active">
+                <span class="ic">⌂</span>Dashboard
+              </a>
+              <a><span class="ic">📍</span>Monitoring<span class="ct">15</span></a>
+              <div class="g">DATA</div>
+              <a><span class="ic">👥</span>Pengguna<span class="ct">142</span></a>
+              <a><span class="ic">🗺</span>Rayon</a>
+              <a><span class="ic">▣</span>Area</a>
+              <div class="g">OPERASIONAL</div>
+              <a><span class="ic">✓</span>Tugas<span class="ct">28</span></a>
+              <a><span class="ic">⊕</span>Aktivitas</a>
+              <a><span class="ic">📅</span>Jadwal</a>
+              <a><span class="ic">⏱</span>Lembur<span class="ct">5</span></a>
+              <a><span class="ic">🌳</span>Perantingan<span class="ct">14</span></a>
+              <div class="g">SISTEM</div>
+              <a><span class="ic">⚙</span>Pengaturan</a>
+              <div class="me">
+                <div class="av super sm">SA</div>
+                <div style="flex:1;">
+                  <div class="who">Pak Hadi</div>
+                  <div class="ro">superadmin</div>
+                </div>
+              </div>
+            </aside>
+
+            <!-- Main -->
+            <div class="web-main">
+              <div class="web-top">
+                <div class="col" style="gap:2px;">
+                  <div class="crumb"><b>Dashboard</b></div>
+                  <h1 class="pgttl">Beranda</h1>
+                </div>
+                <div class="right">
+                  <span class="pill ok"><span class="d"></span>LIVE · 12 detik lalu</span>
+                  <div style="width:36px; height:36px; border:2px solid var(--black); border-radius:9px; background:var(--white); display:flex; align-items:center; justify-content:center; box-shadow:2px 2px 0 var(--black); position:relative;">
+                    🔔<span style="position:absolute; top:-4px; right:-4px; width:14px; height:14px; background:var(--danger); border:1.5px solid var(--black); border-radius:50%; font-family:var(--ff-mono); font-size:8px; color:var(--white); display:flex; align-items:center; justify-content:center;">3</span>
+                  </div>
+                </div>
+              </div>
+              <div class="web-cnt">
+
+                <!-- KPI tiles -->
+                <div class="kpi-grid mb-5">
+                  <div class="card">
+                    <p class="kpi-h">PETUGAS AKTIF</p>
+                    <div class="kpi-v" style="color:var(--success-fg);">87 / 142</div>
+                    <div class="kpi-d"><span class="delta up">▲ 6</span> vs kemarin</div>
+                  </div>
+                  <div class="card">
+                    <p class="kpi-h">TUGAS HARI INI</p>
+                    <div class="kpi-v">128</div>
+                    <div class="kpi-d"><b style="color:var(--success-fg);">94 selesai</b> · 34 sisa</div>
+                  </div>
+                  <div class="card yellow">
+                    <p class="kpi-h">PERANTINGAN MASUK</p>
+                    <div class="kpi-v">14</div>
+                    <div class="kpi-d"><b style="color:var(--danger-fg);">2 SLA &lt;6j</b></div>
+                  </div>
+                  <div class="card">
+                    <p class="kpi-h">LEMBUR ACC</p>
+                    <div class="kpi-v">5</div>
+                    <div class="kpi-d">2 menunggu · 3 ditolak</div>
+                  </div>
+                </div>
+
+                <!-- 2-col main -->
+                <div class="two-col mb-5">
+                  <!-- Status donut + live map -->
+                  <div class="card" style="padding:18px;">
+                    <div class="row between mb-4">
+                      <h3 class="pg-section-h" style="margin:0;">Status petugas <span class="badge">5-status</span></h3>
+                      <span style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">142 total · 7 rayon</span>
+                    </div>
+                    <div class="donut-row mb-4">
+                      <div class="donut">
+                        <div class="ctr"><div class="v">87</div><div class="lbl">AKTIF</div></div>
+                      </div>
+                      <div class="legend" style="flex:1;">
+                        <div class="li"><i style="background:var(--success);"></i><span>Aktif</span><b>87 · 61%</b></div>
+                        <div class="li"><i style="background:var(--warning);"></i><span>Tidak aktif</span><b>28 · 20%</b></div>
+                        <div class="li"><i style="background:var(--danger);"></i><span>Di luar area</span><b>17 · 12%</b></div>
+                        <div class="li"><i style="background:var(--info);"></i><span>Hilang</span><b>3 · 2%</b></div>
+                        <div class="li"><i style="background:var(--g300);"></i><span>Offline</span><b>7 · 5%</b></div>
+                      </div>
+                    </div>
+
+                    <div class="div-h">Per rayon</div>
+                    <div class="bar-row"><span class="lab">Pusat</span><div class="bar"><i style="width:88%;"></i></div><span class="val">22/25</span></div>
+                    <div class="bar-row"><span class="lab">Timur 1</span><div class="bar"><i style="width:75%;"></i></div><span class="val">15/20</span></div>
+                    <div class="bar-row"><span class="lab">Timur 2</span><div class="bar"><i style="width:65%; background:var(--warning);"></i></div><span class="val">13/20</span></div>
+                    <div class="bar-row"><span class="lab">Barat 1</span><div class="bar"><i style="width:80%;"></i></div><span class="val">16/20</span></div>
+                    <div class="bar-row"><span class="lab">Barat 2</span><div class="bar"><i style="width:55%; background:var(--danger);"></i></div><span class="val">11/20</span></div>
+                    <div class="bar-row"><span class="lab">Utara</span><div class="bar"><i style="width:50%; background:var(--warning);"></i></div><span class="val">7/14</span></div>
+                    <div class="bar-row"><span class="lab">Selatan</span><div class="bar"><i style="width:70%;"></i></div><span class="val">9/13</span></div>
+                  </div>
+
+                  <!-- Quick actions + Activity feed -->
+                  <div class="col gap-4">
+                    <div class="card yellow">
+                      <h3 class="pg-section-h" style="margin:0 0 12px;">Tindakan cepat</h3>
+                      <div class="three-col" style="gap:8px;">
+                        <button class="btn sm btn-sh" style="background:var(--white); flex-direction:column; padding:14px 6px; min-height:auto;">
+                          <div style="font-size:22px;">＋</div>
+                          <div style="font-size:11px; margin-top:4px;">Tugas baru</div>
+                        </button>
+                        <button class="btn sm btn-sh" style="background:var(--white); flex-direction:column; padding:14px 6px; min-height:auto;">
+                          <div style="font-size:22px;">👤</div>
+                          <div style="font-size:11px; margin-top:4px;">User baru</div>
+                        </button>
+                        <button class="btn sm btn-sh" style="background:var(--white); flex-direction:column; padding:14px 6px; min-height:auto;">
+                          <div style="font-size:22px;">📅</div>
+                          <div style="font-size:11px; margin-top:4px;">Jadwal</div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="card">
+                      <div class="row between mb-3">
+                        <h3 class="pg-section-h" style="margin:0;">Peringatan terkini <span class="badge" style="background:var(--danger-bg); color:var(--danger-fg);">5 BARU</span></h3>
+                        <a style="font-family:var(--ff-mono); font-size:11px; font-weight:700; color:var(--black); text-decoration:underline; cursor:pointer;">Semua →</a>
+                      </div>
+                      <div class="feed-row">
+                        <div class="dot bad"></div>
+                        <div>
+                          <div class="ttl">Rio Saputra keluar dari Bungkul</div>
+                          <div class="sub">Posisi 320m timur · sudah 12 menit · korlap Ibu Marni</div>
+                        </div>
+                        <div class="ts">09:28</div>
+                      </div>
+                      <div class="feed-row">
+                        <div class="dot warn"></div>
+                        <div>
+                          <div class="ttl">2 perantingan SLA &lt; 6 jam</div>
+                          <div class="sub">Trembesi Wonokromo · Sono Darmo Permai V</div>
+                        </div>
+                        <div class="ts">08:50</div>
+                      </div>
+                      <div class="feed-row">
+                        <div class="dot info"></div>
+                        <div>
+                          <div class="ttl">Pak Joko ajukan lembur 6 jam</div>
+                          <div class="sub">Pemangkasan Trembesi · Minggu 26 Mei</div>
+                        </div>
+                        <div class="ts">08:32</div>
+                      </div>
+                      <div class="feed-row">
+                        <div class="dot"></div>
+                        <div>
+                          <div class="ttl">128 tugas terdistribusi pagi ini</div>
+                          <div class="sub">Semua rayon · 18 korlap</div>
+                        </div>
+                        <div class="ts">06:00</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Weekly chart -->
+                <div class="card">
+                  <div class="row between mb-3">
+                    <h3 class="pg-section-h" style="margin:0;">Tugas selesai · 14 hari terakhir</h3>
+                    <div class="row gap-2">
+                      <span class="pill yellow">Total: 1.842</span>
+                      <span class="pill ok"><span class="d"></span>+ 12% MoM</span>
+                    </div>
+                  </div>
+                  <div class="spark" style="height:60px; gap:6px;">
+                    <i style="width:16px; height:55%;"></i>
+                    <i style="width:16px; height:48%;"></i>
+                    <i style="width:16px; height:62%;"></i>
+                    <i style="width:16px; height:70%;"></i>
+                    <i style="width:16px; height:65%;"></i>
+                    <i style="width:16px; height:78%;"></i>
+                    <i style="width:16px; height:30%; background:var(--accent-mint);"></i>
+                    <i style="width:16px; height:42%;"></i>
+                    <i style="width:16px; height:58%;"></i>
+                    <i style="width:16px; height:66%;"></i>
+                    <i style="width:16px; height:72%;"></i>
+                    <i style="width:16px; height:80%;"></i>
+                    <i style="width:16px; height:88%; background:var(--success);"></i>
+                    <i style="width:16px; height:75%;"></i>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Daily snapshot.</b> 4 KPIs above the fold; donut + per-rayon breakdown surfaces the 5-status palette consistently with monitoring + mobile.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ MONITORING WALL ═══════════════════════════════════════ -->
+  <section class="section" id="monitoring">
+    <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">Monitoring wall</h2><span class="sec-tag">(dashboard)/monitoring/page.tsx</span></div>
+    <p class="sec-lede">Real-time map + virtualized personnel list. Supercluster rendering. Drilldown drawer on click. Phase 3 rewrite: Socket.IO Redis adapter, incremental WS patches.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">MON-1</span><span class="fr-name">Monitoring wall · Live map + drawer</span></div>
+        <div class="browser">
+          <div class="topbar">
+            <div class="dots3"><i></i><i></i><i></i></div>
+            <div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/monitoring</b></span></div>
+          </div>
+          <div class="canvas">
+            <!-- Sidebar collapsed -->
+            <aside class="web-side" style="width:64px; padding:14px 6px; align-items:center;">
+              <div class="brand-mark" style="width:36px; height:36px; margin-bottom:14px;">
+                <svg viewBox="0 0 120 120" width="22" height="22"><g transform="translate(60 60)"><g><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(45)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(90)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(135)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(180)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(225)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(270)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(315)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g></g></svg>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:8px; align-items:center; flex:1;">
+                <a style="width:40px; height:40px; padding:0; justify-content:center;">⌂</a>
+                <a class="active" style="width:40px; height:40px; padding:0; justify-content:center;">📍</a>
+                <a style="width:40px; height:40px; padding:0; justify-content:center;">👥</a>
+                <a style="width:40px; height:40px; padding:0; justify-content:center;">✓</a>
+                <a style="width:40px; height:40px; padding:0; justify-content:center;">🌳</a>
+              </div>
+            </aside>
+
+            <!-- Filter rail -->
+            <aside style="width:260px; flex-shrink:0; background:var(--white); border-right:2px solid var(--black); padding:18px 16px; overflow-y:auto;">
+              <h1 style="font-family:var(--ff-display); font-weight:800; font-size:20px; color:var(--black); margin:0 0 4px;">Monitoring</h1>
+              <p style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g600); margin:0 0 16px;">142 PETUGAS · 7 RAYON</p>
+
+              <div class="div-h">Filter</div>
+              <div class="field web mb-3">
+                <span class="lbl">PENCARIAN</span>
+                <div class="input ph"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg><span style="flex:1;">Nama, NIP...</span></div>
+              </div>
+
+              <div class="div-h">Status · 5</div>
+              <div class="col gap-2 mb-4">
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:6px; background:var(--success-bg); font-size:12px; font-weight:600;">
+                  <div style="width:14px; height:14px; border:2px solid var(--black); background:var(--primary); border-radius:3px; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <span style="flex:1;">Aktif</span>
+                  <b style="font-family:var(--ff-mono); color:var(--success-fg);">87</b>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:6px; background:var(--white); font-size:12px;">
+                  <div style="width:14px; height:14px; border:2px solid var(--black); background:var(--primary); border-radius:3px; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <span style="flex:1;">Tidak aktif</span>
+                  <b style="font-family:var(--ff-mono);">28</b>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:6px; background:var(--danger-bg); font-size:12px;">
+                  <div style="width:14px; height:14px; border:2px solid var(--black); background:var(--primary); border-radius:3px; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <span style="flex:1;">Di luar area</span>
+                  <b style="font-family:var(--ff-mono); color:var(--danger-fg);">17</b>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:6px; background:var(--white); font-size:12px;">
+                  <div style="width:14px; height:14px; border:2px solid var(--black); background:var(--white); border-radius:3px;"></div>
+                  <span style="flex:1;">Hilang</span>
+                  <b style="font-family:var(--ff-mono);">3</b>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:6px; background:var(--white); font-size:12px;">
+                  <div style="width:14px; height:14px; border:2px solid var(--black); background:var(--white); border-radius:3px;"></div>
+                  <span style="flex:1;">Offline</span>
+                  <b style="font-family:var(--ff-mono);">7</b>
+                </div>
+              </div>
+
+              <div class="div-h">Rayon · 7</div>
+              <div class="col gap-1 mb-4">
+                <label style="display:flex; gap:6px; font-size:12px; padding:4px 0;"><input type="checkbox" checked style="accent-color:#7FBC8C;"/>Semua</label>
+                <label style="display:flex; gap:6px; font-size:12px; padding:4px 0;"><input type="checkbox" checked style="accent-color:#7FBC8C;"/>Pusat <b style="margin-left:auto; font-family:var(--ff-mono); color:var(--g600);">25</b></label>
+                <label style="display:flex; gap:6px; font-size:12px; padding:4px 0;"><input type="checkbox" checked style="accent-color:#7FBC8C;"/>Timur 1 / 2 <b style="margin-left:auto; font-family:var(--ff-mono); color:var(--g600);">40</b></label>
+                <label style="display:flex; gap:6px; font-size:12px; padding:4px 0;"><input type="checkbox" checked style="accent-color:#7FBC8C;"/>Barat 1 / 2 <b style="margin-left:auto; font-family:var(--ff-mono); color:var(--g600);">40</b></label>
+                <label style="display:flex; gap:6px; font-size:12px; padding:4px 0;"><input type="checkbox" checked style="accent-color:#7FBC8C;"/>Utara <b style="margin-left:auto; font-family:var(--ff-mono); color:var(--g600);">14</b></label>
+                <label style="display:flex; gap:6px; font-size:12px; padding:4px 0;"><input type="checkbox" checked style="accent-color:#7FBC8C;"/>Selatan <b style="margin-left:auto; font-family:var(--ff-mono); color:var(--g600);">13</b></label>
+              </div>
+
+              <div class="div-h">Role · 4</div>
+              <div class="row gap-2" style="flex-wrap:wrap;">
+                <span class="pill" style="background:var(--role-satgas);">Satgas <b style="margin-left:4px;">96</b></span>
+                <span class="pill" style="background:var(--role-linmas); color:var(--white);">Linmas <b style="margin-left:4px;">22</b></span>
+                <span class="pill" style="background:var(--role-korlap);">Korlap <b style="margin-left:4px;">18</b></span>
+              </div>
+            </aside>
+
+            <!-- Map wall -->
+            <div class="mapwall">
+              <div class="minimap dense">
+                <!-- Geofences -->
+                <div class="geofence" style="left:14%; top:18%; width:24%; height:28%;"></div>
+                <div class="geofence" style="left:42%; top:14%; width:32%; height:26%;"></div>
+                <div class="geofence" style="left:18%; top:52%; width:30%; height:30%;"></div>
+                <div class="geofence" style="left:55%; top:48%; width:36%; height:36%;"></div>
+
+                <!-- Cluster bubbles -->
+                <div class="cluster m" style="left:24%; top:30%;">14</div>
+                <div class="cluster l" style="left:58%; top:60%;">28</div>
+                <div class="cluster s" style="left:48%; top:25%;">9</div>
+                <div class="cluster m" style="left:32%; top:65%;">11</div>
+
+                <!-- Standalone pins -->
+                <div class="pin green" style="left:18%; top:22%;"></div>
+                <div class="pin amber" style="left:12%; top:42%;"></div>
+                <div class="pin red" style="left:8%; top:32%;"></div>
+                <div class="pin green" style="left:72%; top:35%;"></div>
+                <div class="pin blue" style="left:80%; top:18%;"></div>
+                <div class="pin green" style="left:88%; top:62%;"></div>
+                <div class="pin dark" style="left:78%; top:78%;"></div>
+
+                <!-- Selected pin highlight -->
+                <div style="position:absolute; left:72%; top:35%; transform:translate(-50%,-100%);">
+                  <div style="background:var(--primary); border:2.5px solid var(--black); border-radius:10px; padding:6px 10px; box-shadow:var(--sh-sm); font-family:var(--ff-display); font-weight:700; font-size:12px; white-space:nowrap;">BUDI SANTOSO · Bungkul</div>
+                </div>
+              </div>
+
+              <!-- Map controls top -->
+              <div style="position:absolute; left:18px; top:18px; right:18px; display:flex; align-items:center; gap:10px;">
+                <span class="pill ok" style="background:var(--white);"><span class="d" style="background:var(--success);"></span>Aktif 87</span>
+                <span class="pill warn" style="background:var(--white);"><span class="d" style="background:var(--warning);"></span>Tidak 28</span>
+                <span class="pill bad" style="background:var(--white);"><span class="d" style="background:var(--danger);"></span>Luar 17</span>
+                <span class="pill" style="background:var(--white);"><span class="d" style="background:var(--info);"></span>Hilang 3</span>
+                <span class="pill" style="background:var(--white);"><span class="d" style="background:var(--g500);"></span>Offline 7</span>
+                <div style="margin-left:auto; display:flex; gap:8px;">
+                  <div style="background:var(--white); border:2px solid var(--black); border-radius:9px; padding:6px 11px; font-family:var(--ff-mono); font-size:11px; font-weight:700; box-shadow:2px 2px 0 var(--black);">Zoom 14 · Surabaya</div>
+                  <div style="width:36px; height:36px; background:var(--primary); border:2px solid var(--black); border-radius:9px; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; justify-content:center;">⛶</div>
+                </div>
+              </div>
+
+              <!-- Zoom controls bottom-right -->
+              <div style="position:absolute; right:18px; bottom:18px; display:flex; flex-direction:column; gap:6px;">
+                <div style="width:38px; height:38px; background:var(--white); border:2px solid var(--black); border-radius:9px; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; font-size:18px;">+</div>
+                <div style="width:38px; height:38px; background:var(--white); border:2px solid var(--black); border-radius:9px; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; font-size:18px;">−</div>
+              </div>
+            </div>
+
+            <!-- Detail drawer -->
+            <aside class="drawer">
+              <div class="row between mb-3">
+                <span class="pill ok"><span class="d"></span>AKTIF</span>
+                <div style="width:28px; height:28px; border:2px solid var(--black); border-radius:7px; background:var(--white); display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">×</div>
+              </div>
+              <div class="row gap-3 mb-4">
+                <div class="av lg satgas">BS</div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:800; font-size:18px; color:var(--black);">Budi Santoso</div>
+                  <div style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g600); margin-top:3px;">Satgas · Pusat · Bungkul</div>
+                </div>
+              </div>
+
+              <div class="three-col mb-4" style="gap:8px;">
+                <div class="card flat" style="padding:9px 10px; text-align:center;">
+                  <div class="kpi-h" style="font-size:9px; margin-bottom:3px;">UPDATE</div>
+                  <div style="font-family:var(--ff-display); font-weight:800; font-size:14px; color:var(--black);">12s</div>
+                </div>
+                <div class="card flat" style="padding:9px 10px; text-align:center; background:var(--success-bg);">
+                  <div class="kpi-h" style="font-size:9px; margin-bottom:3px;">AKURASI</div>
+                  <div style="font-family:var(--ff-display); font-weight:800; font-size:14px; color:var(--black);">±8m</div>
+                </div>
+                <div class="card flat" style="padding:9px 10px; text-align:center; background:var(--primary-soft);">
+                  <div class="kpi-h" style="font-size:9px; margin-bottom:3px;">JAM</div>
+                  <div style="font-family:var(--ff-display); font-weight:800; font-size:14px; color:var(--black);">3:47</div>
+                </div>
+              </div>
+
+              <div class="div-h">Detail</div>
+              <div class="card flat" style="padding:0; margin-bottom:14px;">
+                <div style="display:flex; padding:9px 12px; border-bottom:1.5px dashed var(--g300); font-size:12px;"><span style="flex:1; color:var(--g600);">NIP</span><b style="font-family:var(--ff-mono); color:var(--black);">19840312…02001</b></div>
+                <div style="display:flex; padding:9px 12px; border-bottom:1.5px dashed var(--g300); font-size:12px;"><span style="flex:1; color:var(--g600);">Korlap</span><b style="color:var(--black);">Ibu Marni</b></div>
+                <div style="display:flex; padding:9px 12px; border-bottom:1.5px dashed var(--g300); font-size:12px;"><span style="flex:1; color:var(--g600);">Clock-in</span><b style="font-family:var(--ff-mono); color:var(--black);">06:02</b></div>
+                <div style="display:flex; padding:9px 12px; font-size:12px;"><span style="flex:1; color:var(--g600);">HP</span><b style="font-family:var(--ff-mono); color:var(--black);">081234567890</b></div>
+              </div>
+
+              <div class="div-h">Timeline hari ini</div>
+              <div class="feed-row" style="padding:6px 0;">
+                <div class="dot" style="background:var(--success);"></div>
+                <div><div class="ttl" style="font-size:12px;">Clock-in</div><div class="sub" style="font-size:11px;">06:02 · Bungkul</div></div>
+                <div class="ts">3:47 lalu</div>
+              </div>
+              <div class="feed-row" style="padding:6px 0;">
+                <div class="dot" style="background:var(--primary);"></div>
+                <div><div class="ttl" style="font-size:12px;">Tugas Sono selesai</div><div class="sub" style="font-size:11px;">2 pohon · 4 foto</div></div>
+                <div class="ts">07:18</div>
+              </div>
+              <div class="feed-row" style="padding:6px 0;">
+                <div class="dot" style="background:var(--primary);"></div>
+                <div><div class="ttl" style="font-size:12px;">Mulai Trembesi · PB</div><div class="sub" style="font-size:11px;">Wonokromo 45</div></div>
+                <div class="ts">09:30</div>
+              </div>
+
+              <div class="row gap-2 mt-3">
+                <button class="btn sm full">Hubungi</button>
+                <button class="btn primary sm full">Lihat profil →</button>
+              </div>
+            </aside>
+          </div>
+        </div>
+        <div class="annot"><b>Three-pane layout.</b> Filter rail · live map · detail drawer. Drawer opens on pin click; map auto-centers. WebSocket subscription scoped to currently-visible bbox to reduce payload.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ USERS ═══════════════════════════════════════ -->
+  <section class="section" id="users">
+    <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Pengguna</h2><span class="sec-tag">(dashboard)/users/page.tsx</span></div>
+    <p class="sec-lede">CRUD for the 9-role system. Filter by role + rayon. Soft-delete via <code>deleted_at</code>.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">USR-1</span><span class="fr-name">Daftar pengguna</span></div>
+        <div class="browser">
+          <div class="topbar">
+            <div class="dots3"><i></i><i></i><i></i></div>
+            <div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/users</b></span></div>
+          </div>
+          <div class="canvas">
+            <aside class="web-side">
+              <div class="brand"><div class="brand-mark">★</div>SEKAR</div>
+              <div class="g">UTAMA</div>
+              <a><span class="ic">⌂</span>Dashboard</a>
+              <a><span class="ic">📍</span>Monitoring<span class="ct">15</span></a>
+              <div class="g">DATA</div>
+              <a class="active"><span class="ic">👥</span>Pengguna<span class="ct">142</span></a>
+              <a><span class="ic">🗺</span>Rayon</a>
+              <a><span class="ic">▣</span>Area</a>
+              <div class="g">OPERASIONAL</div>
+              <a><span class="ic">✓</span>Tugas<span class="ct">28</span></a>
+              <a><span class="ic">⊕</span>Aktivitas</a>
+              <a><span class="ic">📅</span>Jadwal</a>
+              <a><span class="ic">⏱</span>Lembur<span class="ct">5</span></a>
+              <a><span class="ic">🌳</span>Perantingan<span class="ct">14</span></a>
+              <div class="g">SISTEM</div>
+              <a><span class="ic">⚙</span>Pengaturan</a>
+              <div class="me"><div class="av super sm">SA</div><div style="flex:1;"><div class="who">Pak Hadi</div><div class="ro">superadmin</div></div></div>
+            </aside>
+
+            <div class="web-main">
+              <div class="web-top">
+                <div class="col" style="gap:2px;">
+                  <div class="crumb">Data · <b>Pengguna</b></div>
+                  <h1 class="pgttl">Pengguna · 142</h1>
+                </div>
+                <div class="right">
+                  <button class="btn sm">⤓ Export CSV</button>
+                  <button class="btn primary sm btn-sh">＋ Tambah pengguna</button>
+                </div>
+              </div>
+              <div class="web-cnt">
+
+                <!-- Role pills -->
+                <div class="row gap-2 mb-4" style="flex-wrap:wrap;">
+                  <span class="pill dark">Semua · 142</span>
+                  <span class="pill" style="background:var(--role-satgas);">Satgas · 96</span>
+                  <span class="pill" style="background:var(--role-linmas); color:var(--white);">Linmas · 22</span>
+                  <span class="pill" style="background:var(--role-korlap);">Korlap · 18</span>
+                  <span class="pill lilac">Admin Data · 7</span>
+                  <span class="pill" style="background:var(--role-kepala); color:var(--white);">Kepala Rayon · 7</span>
+                  <span class="pill" style="background:var(--info-bg);">Top Mgmt · 3</span>
+                  <span class="pill yellow">Kecamatan · 31</span>
+                  <span class="pill dark">Admin Sys · 2</span>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="toolbar mb-4">
+                  <div class="field web search">
+                    <div class="input ph"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg><span style="flex:1;">Cari nama, NIP, username…</span></div>
+                  </div>
+                  <button class="btn sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 6h18M6 12h12M10 18h4"/></svg>Filter</button>
+                  <select style="font-family:var(--ff-body); font-size:13px; border:2px solid var(--black); border-radius:8px; padding:7px 12px; background:var(--white); box-shadow:2px 2px 0 var(--black);"><option>Semua rayon</option></select>
+                  <select style="font-family:var(--ff-body); font-size:13px; border:2px solid var(--black); border-radius:8px; padding:7px 12px; background:var(--white); box-shadow:2px 2px 0 var(--black);"><option>Aktif</option></select>
+                </div>
+
+                <!-- Table -->
+                <table class="tbl mb-3">
+                  <thead><tr>
+                    <th style="width:32px;"><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></th>
+                    <th>Pengguna</th><th>Role</th><th>Rayon</th><th>Status</th><th>Login terakhir</th><th>Aksi</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm satgas">BS</div><div><b>Budi Santoso</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">NIP …02001 · 081234567890</div></div></div></td>
+                      <td><span class="pill" style="background:var(--role-satgas);">Satgas</span></td>
+                      <td>Pusat</td>
+                      <td><span class="pill ok"><span class="d"></span>Aktif</span></td>
+                      <td class="num">9:28 AM</td>
+                      <td><div class="actions"><button class="btn sm" style="padding:5px 8px;">Edit</button><button class="btn sm" style="padding:5px 8px;">⋯</button></div></td>
+                    </tr>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm korlap">IM</div><div><b>Ibu Marni</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">NIP …87012 · korlap_bungkul</div></div></div></td>
+                      <td><span class="pill" style="background:var(--role-korlap);">Korlap</span></td>
+                      <td>Pusat</td>
+                      <td><span class="pill ok"><span class="d"></span>Aktif</span></td>
+                      <td class="num">9:42 AM</td>
+                      <td><div class="actions"><button class="btn sm" style="padding:5px 8px;">Edit</button><button class="btn sm" style="padding:5px 8px;">⋯</button></div></td>
+                    </tr>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px; background:var(--primary);"></div></td>
+                      <td><div class="row gap-2"><div class="av sm linmas">RS</div><div><b>Rio Saputra</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">NIP …45112 · 081887766554</div></div></div></td>
+                      <td><span class="pill" style="background:var(--role-linmas); color:var(--white);">Linmas</span></td>
+                      <td>Pusat</td>
+                      <td><span class="pill bad"><span class="d"></span>Di luar area</span></td>
+                      <td class="num">9:28 AM</td>
+                      <td><div class="actions"><button class="btn sm" style="padding:5px 8px;">Edit</button><button class="btn sm" style="padding:5px 8px;">⋯</button></div></td>
+                    </tr>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm admin-data">HD</div><div><b>Pak Hadi (Data)</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">admin_data · admin_data_pusat</div></div></div></td>
+                      <td><span class="pill lilac">Admin Data</span></td>
+                      <td>Pusat</td>
+                      <td><span class="pill ok"><span class="d"></span>Aktif</span></td>
+                      <td class="num">9:54 AM</td>
+                      <td><div class="actions"><button class="btn sm" style="padding:5px 8px;">Edit</button><button class="btn sm" style="padding:5px 8px;">⋯</button></div></td>
+                    </tr>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm kec">YT</div><div><b>Bu Yanti</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">staff_kecamatan · Wonokromo</div></div></div></td>
+                      <td><span class="pill yellow">Kecamatan</span></td>
+                      <td>—</td>
+                      <td><span class="pill ok"><span class="d"></span>Aktif</span></td>
+                      <td class="num">Kemarin</td>
+                      <td><div class="actions"><button class="btn sm" style="padding:5px 8px;">Edit</button><button class="btn sm" style="padding:5px 8px;">⋯</button></div></td>
+                    </tr>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm kepala">JM</div><div><b>Pak Joko Murti</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">kepala_rayon_pusat</div></div></div></td>
+                      <td><span class="pill" style="background:var(--role-kepala); color:var(--white);">Kepala Rayon</span></td>
+                      <td>Pusat</td>
+                      <td><span class="pill ok"><span class="d"></span>Aktif</span></td>
+                      <td class="num">7:14 AM</td>
+                      <td><div class="actions"><button class="btn sm" style="padding:5px 8px;">Edit</button><button class="btn sm" style="padding:5px 8px;">⋯</button></div></td>
+                    </tr>
+                    <tr style="opacity:0.55;">
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm satgas">DA</div><div><b>Doni Anggara</b> <span style="font-family:var(--ff-mono); font-size:10px; color:var(--danger-fg);">[deleted]</span><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">soft-deleted 12 Mei</div></div></div></td>
+                      <td><span class="pill" style="background:var(--role-satgas);">Satgas</span></td>
+                      <td>Timur 1</td>
+                      <td><span class="pill"><span class="d" style="background:var(--g500);"></span>Nonaktif</span></td>
+                      <td class="num">2 minggu</td>
+                      <td><div class="actions"><button class="btn sm" style="padding:5px 8px;">Restore</button></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div class="row between" style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">
+                  <span>Menampilkan 7 dari <b style="color:var(--black);">142</b></span>
+                  <div class="row gap-2">
+                    <button class="btn sm" style="padding:5px 9px;">‹</button>
+                    <span style="padding:0 8px;"><b style="color:var(--black);">1</b> / 21</span>
+                    <button class="btn sm" style="padding:5px 9px;">›</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>9-role palette in action.</b> Role pills + role-tinted avatars give instant scannability. Soft-deleted rows degrade to 55% but stay restorable.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ RAYONS + AREAS (compact, side-by-side) ═══════════════════════════════════════ -->
+  <section class="section" id="rayons">
+    <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Rayon &amp; Area</h2><span class="sec-tag">rayons/* + areas/*</span></div>
+    <p class="sec-lede">Organizational + geographic units. 7 rayons (Pusat, Timur 1/2, Barat 1/2, Utara, Selatan), each containing many areas (taman, kawasan).</p>
+
+    <div class="frames" id="areas">
+      <!-- RAY-1 Rayon detail -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">RAY-1</span><span class="fr-name">Rayon · detail (Pusat)</span></div>
+        <div class="browser">
+          <div class="topbar">
+            <div class="dots3"><i></i><i></i><i></i></div>
+            <div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/rayons/pusat</b></span></div>
+          </div>
+          <div class="canvas" style="height:760px;">
+            <aside class="web-side" style="width:64px; padding:14px 6px; align-items:center;">
+              <div class="brand-mark" style="width:36px; height:36px; margin-bottom:14px;">★</div>
+              <a style="width:40px; height:40px; padding:0; justify-content:center;">⌂</a>
+              <a style="width:40px; height:40px; padding:0; justify-content:center;">📍</a>
+              <a style="width:40px; height:40px; padding:0; justify-content:center;">👥</a>
+              <a class="active" style="width:40px; height:40px; padding:0; justify-content:center;">🗺</a>
+            </aside>
+            <div class="web-main">
+              <div class="web-top">
+                <div class="col" style="gap:2px;">
+                  <div class="crumb">Data · Rayon · <b>Pusat</b></div>
+                  <h1 class="pgttl">Rayon Pusat</h1>
+                </div>
+                <div class="right">
+                  <span class="pill yellow">25 PETUGAS</span>
+                  <button class="btn sm">Edit</button>
+                </div>
+              </div>
+              <div class="web-cnt">
+                <div class="two-col mb-5">
+                  <div class="card" style="padding:0; overflow:hidden;">
+                    <div class="minimap dense" style="height:340px; border:0; border-radius:0; border-bottom:2px solid var(--black);">
+                      <div class="geofence" style="left:14%; top:12%; width:30%; height:34%;"></div>
+                      <div class="geofence" style="left:48%; top:18%; width:34%; height:32%;"></div>
+                      <div class="geofence" style="left:24%; top:56%; width:26%; height:30%;"></div>
+                      <div class="geofence" style="left:60%; top:60%; width:30%; height:26%;"></div>
+                      <div class="cluster m" style="left:28%; top:28%;">8</div>
+                      <div class="cluster m" style="left:65%; top:32%;">7</div>
+                      <div class="cluster s" style="left:36%; top:70%;">5</div>
+                      <div class="cluster s" style="left:74%; top:72%;">5</div>
+                    </div>
+                    <div style="padding:14px 18px;">
+                      <h3 class="pg-section-h">Area · 4</h3>
+                      <div class="col gap-2">
+                        <div class="listrow"><div class="chip-ic" style="background:var(--accent-mint);">▣</div><div><div class="ttl">Taman Bungkul</div><div class="sub">12.4 ha · 8 petugas aktif · 142 pohon</div></div><span class="pill ok"><span class="d"></span>aktif</span></div>
+                        <div class="listrow"><div class="chip-ic" style="background:var(--accent-yellow);">▣</div><div><div class="ttl">Jl. Raya Darmo</div><div class="sub">2.1 km · 7 petugas · 88 pohon</div></div><span class="pill ok"><span class="d"></span>aktif</span></div>
+                        <div class="listrow"><div class="chip-ic" style="background:var(--accent-pink);">▣</div><div><div class="ttl">Taman Apsari</div><div class="sub">3.2 ha · 5 petugas · 64 pohon</div></div><span class="pill ok"><span class="d"></span>aktif</span></div>
+                        <div class="listrow"><div class="chip-ic">▣</div><div><div class="ttl">Jl. Pemuda</div><div class="sub">1.4 km · 5 petugas · 52 pohon</div></div><span class="pill ok"><span class="d"></span>aktif</span></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col gap-4">
+                    <div class="card">
+                      <h3 class="pg-section-h">Pemimpin</h3>
+                      <div class="row gap-3" style="padding:8px 0;">
+                        <div class="av lg kepala">JM</div>
+                        <div style="flex:1;"><div style="font-family:var(--ff-display); font-weight:700; font-size:14px; color:var(--black);">Pak Joko Murti</div><div style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">Kepala Rayon · 2021–</div></div>
+                      </div>
+                      <div class="row gap-3" style="padding:8px 0; border-top:1.5px dashed var(--g300);">
+                        <div class="av admin-data">HD</div>
+                        <div style="flex:1;"><div style="font-family:var(--ff-display); font-weight:700; font-size:14px;">Pak Hadi</div><div style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">Admin Data</div></div>
+                      </div>
+                    </div>
+
+                    <div class="card">
+                      <h3 class="pg-section-h">Komposisi</h3>
+                      <div class="bar-row"><span class="lab">Satgas</span><div class="bar"><i style="width:64%;"></i></div><span class="val">16</span></div>
+                      <div class="bar-row"><span class="lab">Linmas</span><div class="bar"><i style="width:20%; background:var(--info);"></i></div><span class="val">5</span></div>
+                      <div class="bar-row"><span class="lab">Korlap</span><div class="bar"><i style="width:16%; background:var(--warning);"></i></div><span class="val">4</span></div>
+                    </div>
+
+                    <div class="card mint">
+                      <h3 class="pg-section-h">Aktivitas hari ini</h3>
+                      <div class="three-col" style="gap:8px;">
+                        <div class="card flat" style="padding:8px; text-align:center; background:var(--white);"><div class="kpi-h" style="font-size:9.5px; margin-bottom:2px;">Tugas</div><div class="kpi-v" style="font-size:22px;">28</div></div>
+                        <div class="card flat" style="padding:8px; text-align:center; background:var(--white);"><div class="kpi-h" style="font-size:9.5px; margin-bottom:2px;">Selesai</div><div class="kpi-v" style="font-size:22px; color:var(--success-fg);">19</div></div>
+                        <div class="card flat" style="padding:8px; text-align:center; background:var(--white);"><div class="kpi-h" style="font-size:9.5px; margin-bottom:2px;">Hadir</div><div class="kpi-v" style="font-size:22px;">22</div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Rayon = container, Area = unit.</b> Map shows all geofences belonging to this rayon at once. Drill into any area card opens its detail page.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ TASKS ═══════════════════════════════════════ -->
+  <section class="section" id="tasks">
+    <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">Tugas</h2><span class="sec-tag">tasks/page.tsx · /[id] · /new</span></div>
+    <p class="sec-lede">Korlap creates → satgas executes. Web view emphasises bulk assignment + status overview.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">TSK-1</span><span class="fr-name">Tugas list · kanban + table</span></div>
+        <div class="browser">
+          <div class="topbar"><div class="dots3"><i></i><i></i><i></i></div><div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/tasks</b></span></div></div>
+          <div class="canvas">
+            <aside class="web-side" style="width:64px; padding:14px 6px; align-items:center;">
+              <div class="brand-mark" style="width:36px; height:36px; margin-bottom:14px;">★</div>
+              <a style="width:40px; height:40px; padding:0; justify-content:center;">⌂</a><a style="width:40px; height:40px; padding:0; justify-content:center;">📍</a><a style="width:40px; height:40px; padding:0; justify-content:center;">👥</a><a class="active" style="width:40px; height:40px; padding:0; justify-content:center;">✓</a>
+            </aside>
+            <div class="web-main">
+              <div class="web-top">
+                <div class="col" style="gap:2px;"><div class="crumb">Operasional · <b>Tugas</b></div><h1 class="pgttl">Tugas · 128</h1></div>
+                <div class="right">
+                  <div class="tabs"><div class="t active">Hari ini</div><div class="t">Minggu ini</div><div class="t">Akan datang</div><div class="t">Arsip</div></div>
+                  <button class="btn primary sm btn-sh">＋ Buat tugas</button>
+                </div>
+              </div>
+              <div class="web-cnt">
+
+                <!-- Kanban -->
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:24px;">
+                  <!-- Column 1 -->
+                  <div>
+                    <div class="row between mb-3" style="padding:0 4px;">
+                      <h3 class="pg-section-h" style="margin:0; font-size:13px;"><span class="d" style="width:10px; height:10px; background:var(--g400); border:1.5px solid var(--black); border-radius:50%;"></span>Belum mulai <span class="badge">34</span></h3>
+                    </div>
+                    <div class="col gap-2">
+                      <div class="card xtight" style="padding:11px 12px;">
+                        <div class="row gap-2 mb-2"><span class="pill" style="font-size:9px;">PRIO NORMAL</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">10:30</span></div>
+                        <div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; color:var(--black); margin-bottom:4px;">Sono · 2 pohon · PB</div>
+                        <div class="row gap-2"><div class="av sm satgas">BS</div><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Bungkul</span></div>
+                      </div>
+                      <div class="card xtight" style="padding:11px 12px;">
+                        <div class="row gap-2 mb-2"><span class="pill warn" style="font-size:9px;">PRIO TINGGI</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">13:00</span></div>
+                        <div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; margin-bottom:4px;">Glodokan · 4 pohon · PR</div>
+                        <div class="row gap-2"><div class="av sm satgas">JK</div><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Diponegoro</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Column 2 -->
+                  <div>
+                    <div class="row between mb-3" style="padding:0 4px;">
+                      <h3 class="pg-section-h" style="margin:0; font-size:13px;"><span style="width:10px; height:10px; background:var(--warning); border:1.5px solid var(--black); border-radius:50%; display:inline-block;"></span>Siap mulai <span class="badge">21</span></h3>
+                    </div>
+                    <div class="col gap-2">
+                      <div class="card xtight" style="padding:11px 12px; background:var(--warning-bg);">
+                        <div class="row gap-2 mb-2"><span class="pill info" style="font-size:9px;">PERANTINGAN</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">08:00</span></div>
+                        <div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; margin-bottom:4px;">Trembesi · 1 · PB</div>
+                        <div class="row gap-2"><div class="av sm satgas">BS</div><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Wonokromo</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Column 3 -->
+                  <div>
+                    <div class="row between mb-3" style="padding:0 4px;">
+                      <h3 class="pg-section-h" style="margin:0; font-size:13px;"><span style="width:10px; height:10px; background:var(--success); border:1.5px solid var(--black); border-radius:50%; display:inline-block;"></span>Sedang dikerjakan <span class="badge">39</span></h3>
+                    </div>
+                    <div class="col gap-2">
+                      <div class="card xtight" style="padding:11px 12px; background:var(--success-bg);">
+                        <div class="row gap-2 mb-2"><span class="pill" style="font-size:9px;">PRIO NORMAL</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">⏱ 1j 04m</span></div>
+                        <div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; margin-bottom:4px;">Trembesi · 1 · PB</div>
+                        <div style="height:5px; background:var(--white); border:1.5px solid var(--black); border-radius:3px; overflow:hidden;"><div style="height:100%; width:45%; background:var(--success);"></div></div>
+                      </div>
+                      <div class="card xtight" style="padding:11px 12px; background:var(--success-bg);">
+                        <div class="row gap-2 mb-2"><span class="pill" style="font-size:9px;">PRIO NORMAL</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">⏱ 22m</span></div>
+                        <div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; margin-bottom:4px;">Tabebuya · 3 · PR</div>
+                        <div style="height:5px; background:var(--white); border:1.5px solid var(--black); border-radius:3px; overflow:hidden;"><div style="height:100%; width:14%; background:var(--success);"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Column 4 -->
+                  <div>
+                    <div class="row between mb-3" style="padding:0 4px;">
+                      <h3 class="pg-section-h" style="margin:0; font-size:13px;"><span style="width:10px; height:10px; background:var(--info); border:1.5px solid var(--black); border-radius:50%; display:inline-block;"></span>Selesai <span class="badge">94</span></h3>
+                    </div>
+                    <div class="col gap-2">
+                      <div class="card xtight" style="padding:11px 12px; opacity:0.85;">
+                        <div class="row gap-2 mb-2"><span class="pill ok" style="font-size:9px;">SELESAI</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">07:18</span></div>
+                        <div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; margin-bottom:4px;">Sono · 2 · PB</div>
+                        <div class="row gap-2"><div class="av sm satgas">BS</div><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">4 foto</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Kanban for korlap.</b> Drag-and-drop between columns triggers status change. Same status palette as monitoring + mobile.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ ACTIVITIES + SCHEDULES (compact pair) ═══════════════════════════════════════ -->
+  <section class="section" id="activities">
+    <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">Aktivitas &amp; Jadwal</h2><span class="sec-tag">activities/* + schedules/*</span></div>
+    <p class="sec-lede">Aktivitas = field log (separate from tugas). Jadwal = recurring shift assignments. Both share table-first layout.</p>
+
+    <div class="frames" id="schedules">
+      <!-- Schedules calendar view -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">SCH-1</span><span class="fr-name">Jadwal · weekly grid</span></div>
+        <div class="browser">
+          <div class="topbar"><div class="dots3"><i></i><i></i><i></i></div><div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/schedules</b></span></div></div>
+          <div class="canvas" style="height:760px;">
+            <aside class="web-side" style="width:64px; padding:14px 6px; align-items:center;">
+              <div class="brand-mark" style="width:36px; height:36px; margin-bottom:14px;">★</div>
+              <a style="width:40px; height:40px; padding:0; justify-content:center;">⌂</a><a style="width:40px; height:40px; padding:0; justify-content:center;">📍</a><a style="width:40px; height:40px; padding:0; justify-content:center;">👥</a><a class="active" style="width:40px; height:40px; padding:0; justify-content:center;">📅</a>
+            </aside>
+            <div class="web-main">
+              <div class="web-top">
+                <div class="col" style="gap:2px;"><div class="crumb">Operasional · <b>Jadwal</b></div><h1 class="pgttl">Jadwal · Mei 21 – 27</h1></div>
+                <div class="right">
+                  <div class="row gap-2">
+                    <button class="btn sm">‹</button>
+                    <div class="pill yellow" style="font-size:11px;">Minggu 21 · 25 petugas</div>
+                    <button class="btn sm">›</button>
+                  </div>
+                  <button class="btn primary sm btn-sh">＋ Buat jadwal</button>
+                </div>
+              </div>
+              <div class="web-cnt">
+
+                <!-- Day headers -->
+                <div style="display:grid; grid-template-columns: 140px repeat(7, 1fr); gap:0; background:var(--white); border:2px solid var(--black); border-radius:10px; overflow:hidden; box-shadow:var(--sh-sm); font-size:12px;">
+                  <!-- header row -->
+                  <div style="background:var(--paper-2); padding:10px 12px; font-family:var(--ff-mono); font-size:10px; font-weight:700; letter-spacing:0.06em; color:var(--g600); border-right:1.5px solid var(--g300); border-bottom:2px solid var(--black);">PETUGAS</div>
+                  <div style="background:var(--paper-2); padding:10px 8px; text-align:center; border-right:1.5px solid var(--g300); border-bottom:2px solid var(--black); font-family:var(--ff-mono); font-size:10.5px;"><b style="color:var(--black);">SEN</b><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">21</div></div>
+                  <div style="background:var(--paper-2); padding:10px 8px; text-align:center; border-right:1.5px solid var(--g300); border-bottom:2px solid var(--black); font-family:var(--ff-mono); font-size:10.5px;"><b style="color:var(--black);">SEL</b><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">22</div></div>
+                  <div style="background:var(--paper-2); padding:10px 8px; text-align:center; border-right:1.5px solid var(--g300); border-bottom:2px solid var(--black); font-family:var(--ff-mono); font-size:10.5px;"><b style="color:var(--black);">RAB</b><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">23</div></div>
+                  <div style="background:var(--paper-2); padding:10px 8px; text-align:center; border-right:1.5px solid var(--g300); border-bottom:2px solid var(--black); font-family:var(--ff-mono); font-size:10.5px;"><b style="color:var(--black);">KAM</b><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">24</div></div>
+                  <div style="background:var(--paper-2); padding:10px 8px; text-align:center; border-right:1.5px solid var(--g300); border-bottom:2px solid var(--black); font-family:var(--ff-mono); font-size:10.5px;"><b style="color:var(--black);">JUM</b><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">25</div></div>
+                  <div style="background:var(--primary-soft); padding:10px 8px; text-align:center; border-right:1.5px solid var(--g300); border-bottom:2px solid var(--black); font-family:var(--ff-mono); font-size:10.5px;"><b style="color:var(--black);">SAB</b><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">26</div></div>
+                  <div style="background:var(--primary-soft); padding:10px 8px; text-align:center; border-bottom:2px solid var(--black); font-family:var(--ff-mono); font-size:10.5px;"><b style="color:var(--black);">MIN</b><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">27</div></div>
+
+                  <!-- BS -->
+                  <div style="padding:8px 12px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300); display:flex; align-items:center; gap:8px;"><div class="av sm satgas">BS</div><div style="line-height:1.1;"><b style="color:var(--black);">Budi S.</b><br/><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Satgas</span></div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--accent-yellow); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:700;">LEMBUR<br/>14–18</div></div>
+                  <div style="padding:6px; border-bottom:1.5px dashed var(--g300); background:var(--g100); font-family:var(--ff-mono); font-size:10px; color:var(--g500); display:flex; align-items:center; justify-content:center;">libur</div>
+
+                  <!-- JK -->
+                  <div style="padding:8px 12px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300); display:flex; align-items:center; gap:8px;"><div class="av sm satgas">JK</div><div style="line-height:1.1;"><b style="color:var(--black);">Joko K.</b><br/><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Satgas</span></div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--accent-mint); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">14–22</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--accent-mint); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">14–22</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300); background:var(--g100); font-family:var(--ff-mono); font-size:10px; color:var(--g500); display:flex; align-items:center; justify-content:center;">libur</div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--accent-mint); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">14–22</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--accent-mint); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">14–22</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--accent-mint); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">14–22</div></div>
+                  <div style="padding:6px; border-bottom:1.5px dashed var(--g300); background:var(--g100); font-family:var(--ff-mono); font-size:10px; color:var(--g500); display:flex; align-items:center; justify-content:center;">libur</div>
+
+                  <!-- IM -->
+                  <div style="padding:8px 12px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300); display:flex; align-items:center; gap:8px;"><div class="av sm korlap">IM</div><div style="line-height:1.1;"><b style="color:var(--black);">Ibu Marni</b><br/><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Korlap</span></div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300); background:var(--danger-bg);"><div style="border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--danger-fg);">SAKIT</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); border-bottom:1.5px dashed var(--g300);"><div style="background:var(--primary-soft); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">06–14</div></div>
+                  <div style="padding:6px; border-bottom:1.5px dashed var(--g300); background:var(--g100); font-family:var(--ff-mono); font-size:10px; color:var(--g500); display:flex; align-items:center; justify-content:center;">libur</div>
+
+                  <!-- + Row -->
+                  <div style="padding:8px 12px; border-right:1.5px solid var(--g300); display:flex; align-items:center; gap:8px;"><div class="av sm linmas">RS</div><div style="line-height:1.1;"><b>Rio S.</b><br/><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Linmas</span></div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300);"><div style="background:var(--info-bg); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">22–06</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300);"><div style="background:var(--info-bg); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">22–06</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300); background:var(--g100); font-family:var(--ff-mono); font-size:10px; color:var(--g500); display:flex; align-items:center; justify-content:center;">libur</div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300);"><div style="background:var(--info-bg); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">22–06</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300);"><div style="background:var(--info-bg); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">22–06</div></div>
+                  <div style="padding:6px; border-right:1.5px solid var(--g300);"><div style="background:var(--info-bg); border:1.5px solid var(--black); border-radius:5px; padding:4px 6px; font-family:var(--ff-mono); font-size:10px; font-weight:600;">22–06</div></div>
+                  <div style="padding:6px; background:var(--g100); font-family:var(--ff-mono); font-size:10px; color:var(--g500); display:flex; align-items:center; justify-content:center;">libur</div>
+                </div>
+
+                <!-- Legend -->
+                <div class="row gap-3 mt-3" style="font-family:var(--ff-mono); font-size:11px; color:var(--g600); flex-wrap:wrap;">
+                  <span class="row gap-2"><span style="width:14px; height:14px; background:var(--primary-soft); border:1.5px solid var(--black); border-radius:3px;"></span>Pagi 06–14</span>
+                  <span class="row gap-2"><span style="width:14px; height:14px; background:var(--accent-mint); border:1.5px solid var(--black); border-radius:3px;"></span>Siang 14–22</span>
+                  <span class="row gap-2"><span style="width:14px; height:14px; background:var(--info-bg); border:1.5px solid var(--black); border-radius:3px;"></span>Malam 22–06</span>
+                  <span class="row gap-2"><span style="width:14px; height:14px; background:var(--accent-yellow); border:1.5px solid var(--black); border-radius:3px;"></span>Lembur</span>
+                  <span class="row gap-2"><span style="width:14px; height:14px; background:var(--danger-bg); border:1.5px solid var(--black); border-radius:3px;"></span>Sakit / izin</span>
+                  <span class="row gap-2"><span style="width:14px; height:14px; background:var(--g100); border:1.5px solid var(--black); border-radius:3px;"></span>Libur</span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Drag-and-drop assignment.</b> Click a cell to set / change shift. Lembur cells link to overtime approval flow.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ OVERTIME + PRUNING (compact) ═══════════════════════════════════════ -->
+  <section class="section" id="overtime">
+    <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">Lembur · approval queue</h2><span class="sec-tag">overtime/page.tsx</span></div>
+    <p class="sec-lede">Admin Data approves lembur scoped by rayon. Table-first with bulk-action toolbar.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">LBR-1</span><span class="fr-name">Lembur · approval queue</span></div>
+        <div class="browser">
+          <div class="topbar"><div class="dots3"><i></i><i></i><i></i></div><div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/overtime</b></span></div></div>
+          <div class="canvas" style="height:720px;">
+            <aside class="web-side" style="width:64px; padding:14px 6px; align-items:center;"><div class="brand-mark" style="width:36px; height:36px; margin-bottom:14px;">★</div><a style="width:40px; height:40px; padding:0; justify-content:center;">⌂</a><a class="active" style="width:40px; height:40px; padding:0; justify-content:center;">⏱</a></aside>
+            <div class="web-main">
+              <div class="web-top"><div class="col" style="gap:2px;"><div class="crumb">Operasional · <b>Lembur</b></div><h1 class="pgttl">Lembur · 2 menunggu</h1></div><div class="right"><button class="btn sm">⤓ Export</button></div></div>
+              <div class="web-cnt">
+                <div class="kpi-grid mb-4">
+                  <div class="card"><p class="kpi-h">MENUNGGU</p><div class="kpi-v" style="color:var(--warning-fg);">2</div></div>
+                  <div class="card"><p class="kpi-h">DISETUJUI BULAN INI</p><div class="kpi-v">28</div></div>
+                  <div class="card"><p class="kpi-h">TOTAL JAM</p><div class="kpi-v">142<span style="font-size:18px; color:var(--g600);">j</span></div></div>
+                  <div class="card"><p class="kpi-h">DITOLAK</p><div class="kpi-v" style="color:var(--danger-fg);">3</div></div>
+                </div>
+
+                <div class="row between mb-3">
+                  <div class="tabs">
+                    <div class="t active">Menunggu · 2</div>
+                    <div class="t">Disetujui · 28</div>
+                    <div class="t">Ditolak · 3</div>
+                  </div>
+                  <div class="row gap-2">
+                    <button class="btn sm danger" style="opacity:0.6;">✕ Tolak terpilih (0)</button>
+                    <button class="btn sm success" style="opacity:0.6;">✓ Setujui terpilih (0)</button>
+                  </div>
+                </div>
+
+                <table class="tbl">
+                  <thead><tr>
+                    <th style="width:32px;"><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></th>
+                    <th>Petugas</th><th>Tanggal</th><th>Durasi</th><th>Kategori</th><th>Alasan</th><th>Diajukan</th><th>Aksi</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm satgas">JK</div><div><b>Pak Joko</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">Satgas · Pusat</div></div></div></td>
+                      <td><b style="color:var(--black);">Min, 26 Mei</b><br/><span style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g600);">06:00 – 12:00</span></td>
+                      <td><b style="font-family:var(--ff-display); font-size:16px; color:var(--black);">6j</b></td>
+                      <td><span class="pill yellow">Pemangkasan</span></td>
+                      <td style="max-width:240px; font-size:12.5px;">Trembesi besar perlu dipangkas sebelum hujan akhir minggu.</td>
+                      <td class="num">6j lalu</td>
+                      <td><div class="actions"><button class="btn sm danger" style="padding:5px 8px;">✕</button><button class="btn sm success" style="padding:5px 8px;">✓ Setujui</button></div></td>
+                    </tr>
+                    <tr>
+                      <td><div style="width:14px; height:14px; border:2px solid var(--black); border-radius:3px;"></div></td>
+                      <td><div class="row gap-2"><div class="av sm linmas">YT</div><div><b>Bu Yanti</b><div class="sub" style="font-size:11px; font-family:var(--ff-mono); color:var(--g600);">Linmas · Pusat</div></div></div></td>
+                      <td><b style="color:var(--black);">Sab, 25 Mei</b><br/><span style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g600);">14:00 – 18:00</span></td>
+                      <td><b style="font-family:var(--ff-display); font-size:16px; color:var(--black);">4j</b></td>
+                      <td><span class="pill mint">Pengamanan</span></td>
+                      <td style="max-width:240px; font-size:12.5px;">Acara Hari Lingkungan, butuh pengamanan tambahan.</td>
+                      <td class="num">4j lalu</td>
+                      <td><div class="actions"><button class="btn sm danger" style="padding:5px 8px;">✕</button><button class="btn sm success" style="padding:5px 8px;">✓ Setujui</button></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Bulk action toolbar.</b> Multi-select drives mass approve / reject. Each row keeps inline actions for single-item flow.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ PRUNING REQUESTS ═══════════════════════════════════════ -->
+  <section class="section" id="pruning">
+    <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Perantingan · disposition queue</h2><span class="sec-tag">pruning-requests/* + /[id]</span></div>
+    <p class="sec-lede">SLA-first queue. Admin Data dispositions per ADR-032 (scoped by <code>users.rayon_id</code>). Detail view splits intake data, map, disposition actions.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRT-1</span><span class="fr-name">Detail permohonan</span></div>
+        <div class="browser">
+          <div class="topbar"><div class="dots3"><i></i><i></i><i></i></div><div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/pruning-requests/PR-0331</b></span></div></div>
+          <div class="canvas">
+            <aside class="web-side" style="width:64px; padding:14px 6px; align-items:center;"><div class="brand-mark" style="width:36px; height:36px; margin-bottom:14px;">★</div><a style="width:40px; height:40px; padding:0; justify-content:center;">⌂</a><a class="active" style="width:40px; height:40px; padding:0; justify-content:center;">🌳</a></aside>
+            <div class="web-main">
+              <div class="web-top">
+                <div class="col" style="gap:2px;"><div class="crumb">Perantingan · <b>#PR-2026-0331</b></div><h1 class="pgttl">Trembesi · cabang besar miring</h1></div>
+                <div class="right">
+                  <span class="pill bad"><span class="d"></span>SLA 4j SISA</span>
+                  <button class="btn sm">⋯</button>
+                </div>
+              </div>
+              <div class="web-cnt">
+
+                <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:18px;">
+                  <!-- LEFT -->
+                  <div class="col gap-4">
+                    <!-- Photos -->
+                    <div class="card">
+                      <h3 class="pg-section-h">Foto · 4</h3>
+                      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+                        <div class="imgph" style="aspect-ratio:1;">CLOSE-UP<br/>CABANG</div>
+                        <div class="imgph" style="aspect-ratio:1; background:repeating-linear-gradient(45deg, var(--accent-pink) 0 8px, var(--g200) 8px 9px), var(--accent-pink);">WIDE<br/>POSISI</div>
+                        <div class="imgph" style="aspect-ratio:1; background:repeating-linear-gradient(135deg, var(--accent-yellow) 0 8px, var(--g200) 8px 9px), var(--accent-yellow);">BAWAH<br/>POHON</div>
+                        <div class="imgph" style="aspect-ratio:1; background:repeating-linear-gradient(90deg, var(--accent-mint) 0 8px, var(--g200) 8px 9px), var(--accent-mint);">JL.<br/>SEKITAR</div>
+                      </div>
+                    </div>
+
+                    <!-- Map -->
+                    <div class="card" style="padding:0; overflow:hidden;">
+                      <div class="minimap dense" style="height:240px; border:0; border-radius:0; border-bottom:2px solid var(--black);">
+                        <div class="pin red" style="left:50%; top:50%; transform:translate(-50%,-100%) rotate(-45deg);"></div>
+                        <div style="position:absolute; left:50%; top:38%; transform:translateX(-50%); background:var(--primary); border:2px solid var(--black); border-radius:8px; padding:4px 10px; font-family:var(--ff-mono); font-size:11px; font-weight:700; box-shadow:2px 2px 0 var(--black);">Jl. Wonokromo No. 45</div>
+                      </div>
+                      <div style="padding:14px 18px;">
+                        <div class="row between mb-2">
+                          <span style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">LOKASI · KOORDINAT</span>
+                          <a style="font-family:var(--ff-mono); font-size:11px; font-weight:700; color:var(--black); text-decoration:underline;">Lihat di peta lengkap →</a>
+                        </div>
+                        <div style="font-family:var(--ff-display); font-weight:700; font-size:15px; color:var(--black); margin-bottom:2px;">Jl. Wonokromo No. 45, Wonokromo, Surabaya</div>
+                        <div style="font-family:var(--ff-mono); font-size:11.5px; color:var(--g600);">-7.30245, 112.73411 · dalam wilayah <b>Rayon Pusat</b></div>
+                      </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="card">
+                      <h3 class="pg-section-h">Deskripsi</h3>
+                      <p style="font-size:13.5px; color:var(--g700); line-height:1.6; margin:0;">Cabang besar bagian timur trembesi sudah miring ke arah jalan, ada bekas patahan kecil yang berpotensi roboh saat hujan deras. Posisi cabang menggantung di atas trotoar dan jalur lambat, perlu pemangkasan berat sebelum musim hujan akhir Mei.</p>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div class="card">
+                      <h3 class="pg-section-h">Timeline</h3>
+                      <div class="feed-row">
+                        <div class="dot" style="background:var(--success);"></div>
+                        <div><div class="ttl">Permohonan diajukan</div><div class="sub">Bu Yanti (Kec. Wonokromo) via SEKAR Kecamatan</div></div>
+                        <div class="ts">Minggu 13:14</div>
+                      </div>
+                      <div class="feed-row">
+                        <div class="dot" style="background:var(--primary);"></div>
+                        <div><div class="ttl">Diterima admin data</div><div class="sub">Auto-routed ke Rayon Pusat (rayon_id=1)</div></div>
+                        <div class="ts">Min 13:15</div>
+                      </div>
+                      <div class="feed-row">
+                        <div class="dot" style="background:var(--g300);"></div>
+                        <div><div class="ttl" style="color:var(--g500);">Menunggu disposisi admin</div><div class="sub">SLA 24j · sisa 4j 32m</div></div>
+                        <div class="ts">—</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- RIGHT -->
+                  <div class="col gap-4">
+                    <!-- Pemohon -->
+                    <div class="card mint">
+                      <h3 class="pg-section-h">Pemohon</h3>
+                      <div class="row gap-3" style="margin-bottom:10px;">
+                        <div class="av lg kec">YT</div>
+                        <div style="flex:1; line-height:1.2;">
+                          <div style="font-family:var(--ff-display); font-weight:800; font-size:16px;">Bu Yanti</div>
+                          <div style="font-family:var(--ff-mono); font-size:11px; color:var(--g600); margin-top:2px;">Staff Kec. Wonokromo</div>
+                        </div>
+                      </div>
+                      <div class="card flat" style="padding:0; background:var(--white);">
+                        <div style="display:flex; padding:8px 12px; font-size:12px; border-bottom:1.5px dashed var(--g300);"><span style="flex:1; color:var(--g600);">HP</span><b style="font-family:var(--ff-mono); color:var(--black);">081234567890</b></div>
+                        <div style="display:flex; padding:8px 12px; font-size:12px; border-bottom:1.5px dashed var(--g300);"><span style="flex:1; color:var(--g600);">Email</span><b style="font-family:var(--ff-mono); color:var(--black);">yanti@wonokromo</b></div>
+                        <div style="display:flex; padding:8px 12px; font-size:12px;"><span style="flex:1; color:var(--g600);">Sejak</span><b style="color:var(--black);">Jan 2026</b></div>
+                      </div>
+                    </div>
+
+                    <!-- Disposition card -->
+                    <div class="card" style="background:var(--accent-yellow);">
+                      <h3 class="pg-section-h">Disposisi</h3>
+
+                      <div class="field web mb-3">
+                        <span class="lbl">JENIS PERANTINGAN</span>
+                        <div class="input"><span>Pemangkasan Berat (PB)</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+                      </div>
+                      <div class="field web mb-3">
+                        <span class="lbl">PRIORITAS</span>
+                        <div class="row gap-2"><span class="pill" style="background:var(--white);">Rendah</span><span class="pill dark">Normal</span><span class="pill warn">Tinggi</span></div>
+                      </div>
+                      <div class="field web mb-3">
+                        <span class="lbl">ASSIGN KE KORLAP</span>
+                        <div class="input"><div class="av sm korlap">IM</div><span style="flex:1;">Ibu Marni · Bungkul</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+                      </div>
+                      <div class="field web mb-3">
+                        <span class="lbl">CATATAN INTERNAL</span>
+                        <div class="input ph" style="align-items:flex-start; min-height:64px; font-size:12.5px;">Opsional — catatan untuk korlap…</div>
+                      </div>
+
+                      <div class="row gap-2">
+                        <button class="btn danger sm" style="flex:1;">Tolak</button>
+                        <button class="btn primary sm btn-sh" style="flex:2;">Setujui &amp; assign →</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Disposition all in one screen.</b> Required actions (assign jenis, prioritas, korlap, optional catatan) packed in one card; saves multi-step modal.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ SETTINGS ═══════════════════════════════════════ -->
+  <section class="section" id="settings">
+    <div class="sec-head"><span class="sec-num">10</span><h2 class="sec-title">Pengaturan</h2><span class="sec-tag">settings/page.tsx</span></div>
+    <p class="sec-lede">System config: rayon &amp; geofence editor, plant species, SLA thresholds, notifikasi, integrasi. Tabbed layout.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">SET-1</span><span class="fr-name">Pengaturan · sistem</span></div>
+        <div class="browser">
+          <div class="topbar"><div class="dots3"><i></i><i></i><i></i></div><div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/settings</b></span></div></div>
+          <div class="canvas" style="height:720px;">
+            <aside class="web-side" style="width:64px; padding:14px 6px; align-items:center;"><div class="brand-mark" style="width:36px; height:36px; margin-bottom:14px;">★</div><a style="width:40px; height:40px; padding:0; justify-content:center;">⌂</a><a class="active" style="width:40px; height:40px; padding:0; justify-content:center;">⚙</a></aside>
+            <div class="web-main">
+              <div class="web-top"><div class="col" style="gap:2px;"><div class="crumb">Sistem · <b>Pengaturan</b></div><h1 class="pgttl">Pengaturan</h1></div></div>
+              <div class="web-cnt">
+
+                <div style="display:grid; grid-template-columns:220px 1fr; gap:24px;">
+                  <!-- Side tabs -->
+                  <div class="col gap-1">
+                    <a class="row gap-3" style="padding:10px 14px; border:2px solid var(--black); border-radius:8px; background:var(--primary); font-family:var(--ff-display); font-weight:700; font-size:13px; box-shadow:2px 2px 0 var(--black);"><span>⚙</span>Umum</a>
+                    <a class="row gap-3" style="padding:10px 14px; border:1.5px solid transparent; border-radius:8px; font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--g700);"><span>🗺</span>Rayon &amp; Geofence</a>
+                    <a class="row gap-3" style="padding:10px 14px; border:1.5px solid transparent; border-radius:8px; font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--g700);"><span>🌳</span>Tanaman · 128</a>
+                    <a class="row gap-3" style="padding:10px 14px; border:1.5px solid transparent; border-radius:8px; font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--g700);"><span>⏱</span>SLA &amp; Threshold</a>
+                    <a class="row gap-3" style="padding:10px 14px; border:1.5px solid transparent; border-radius:8px; font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--g700);"><span>🔔</span>Notifikasi</a>
+                    <a class="row gap-3" style="padding:10px 14px; border:1.5px solid transparent; border-radius:8px; font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--g700);"><span>🔌</span>Integrasi · FCM</a>
+                    <a class="row gap-3" style="padding:10px 14px; border:1.5px solid transparent; border-radius:8px; font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--g700);"><span>📋</span>Audit log</a>
+                  </div>
+
+                  <!-- Content -->
+                  <div class="col gap-4">
+                    <div class="card">
+                      <h3 class="pg-section-h" style="font-size:18px;">Umum</h3>
+                      <div class="form-grid">
+                        <div class="field web">
+                          <span class="lbl">NAMA INSTANSI</span>
+                          <div class="input"><span>Dinas Lingkungan Hidup Kota Surabaya</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">SINGKATAN</span>
+                          <div class="input"><span>DLH SURABAYA</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">ZONA WAKTU</span>
+                          <div class="input"><span>WIB (UTC+7)</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">BAHASA</span>
+                          <div class="input"><span>Indonesia (default)</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="card">
+                      <h3 class="pg-section-h">Operasional</h3>
+                      <div class="form-grid">
+                        <div class="field web">
+                          <span class="lbl">SHIFT PAGI</span>
+                          <div class="input"><span>06:00 – 14:00</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">SHIFT SIANG</span>
+                          <div class="input"><span>14:00 – 22:00</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">SHIFT MALAM</span>
+                          <div class="input"><span>22:00 – 06:00</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">TOLERANSI TELAT</span>
+                          <div class="input"><span>10 menit</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">GEOFENCE TOLERANSI</span>
+                          <div class="input"><span>±100 m</span></div>
+                          <div class="help">GPS accuracy buffer. Worker considered "in area" if within geofence + this tolerance.</div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">LOCATION HEARTBEAT</span>
+                          <div class="input"><span>30 detik</span></div>
+                          <div class="help">Interval pengiriman lokasi saat clock-in.</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row between" style="padding:0 4px;">
+                      <p style="font-family:var(--ff-mono); font-size:11px; color:var(--g600); margin:0;">Perubahan disimpan otomatis sebagai draft · <b style="color:var(--black);">Tersimpan 2m lalu</b></p>
+                      <button class="btn primary sm btn-sh">Simpan &amp; terbitkan →</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>Tabbed settings.</b> Rayon &amp; Geofence and Tanaman tabs are essentially their own editors — full map drawing tools, CSV import for plant species (128 rows from Phase 3 seed).</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ KECAMATAN INTAKE ═══════════════════════════════════════ -->
+  <section class="section" id="kecamatan">
+    <div class="sec-head"><span class="sec-num">11</span><h2 class="sec-title">Kecamatan intake · public web</h2><span class="sec-tag">(kecamatan)/pruning-submit</span></div>
+    <p class="sec-lede">Separate layout for the staff_kecamatan role. No sidebar, no console chrome — simplified intake-first UX. ADR-033: non-clockable role.</p>
+
+    <div class="frames">
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">KEC-1</span><span class="fr-name">Ajukan perantingan · Kecamatan</span></div>
+        <div class="browser">
+          <div class="topbar"><div class="dots3"><i></i><i></i><i></i></div><div class="url"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>sekar.wahyutrip.com<b>/pruning-submit</b></span></div></div>
+          <div class="canvas" style="display:flex; flex-direction:column; height:760px;">
+            <!-- Simplified top -->
+            <header style="display:flex; align-items:center; gap:14px; padding:14px 32px; background:var(--white); border-bottom:2px solid var(--black);">
+              <div class="row gap-3">
+                <div class="brand-mark" style="width:34px; height:34px;">
+                  <svg viewBox="0 0 120 120" width="22" height="22"><g transform="translate(60 60)"><g><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(45)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(90)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(135)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(180)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(225)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(270)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g><g transform="rotate(315)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#1C1917" stroke="#1C1917" stroke-width="4" stroke-linejoin="round"/></g></g></svg>
+                </div>
+                <div style="line-height:1.1;">
+                  <div style="font-family:var(--ff-display); font-weight:800; font-size:17px;">SEKAR</div>
+                  <div style="font-family:var(--ff-mono); font-size:9px; font-weight:700; letter-spacing:0.1em; color:var(--g600);">DLH SURABAYA · KECAMATAN</div>
+                </div>
+              </div>
+              <nav class="row gap-4" style="margin-left:36px; font-family:var(--ff-display); font-size:13px;">
+                <a style="color:var(--black); font-weight:700; border-bottom:2.5px solid var(--primary); padding-bottom:2px;">Ajukan</a>
+                <a style="color:var(--g600);">Pengajuan saya · 4</a>
+                <a style="color:var(--g600);">Bantuan</a>
+              </nav>
+              <div class="row gap-3" style="margin-left:auto;">
+                <div class="av kec">YT</div>
+                <div style="line-height:1.1;"><div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; color:var(--black);">Bu Yanti</div><div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Kec. Wonokromo</div></div>
+              </div>
+            </header>
+
+            <div style="flex:1; padding:36px 48px; overflow-y:auto;">
+              <div style="max-width:920px; margin:0 auto;">
+                <div class="row gap-3 mb-4">
+                  <a style="font-family:var(--ff-mono); font-size:11px; font-weight:700; color:var(--g700); text-decoration:none;">← Kembali</a>
+                </div>
+
+                <h1 style="font-family:var(--ff-display); font-weight:800; font-size:38px; color:var(--black); line-height:1; letter-spacing:-0.02em; margin:0 0 6px;">Ajukan perantingan</h1>
+                <p style="font-size:14px; color:var(--g700); margin:0 0 28px;">Lengkapi formulir di bawah. Permohonan akan diteruskan ke Admin DLH sesuai rayon.</p>
+
+                <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap:24px;">
+                  <!-- Form column -->
+                  <div class="col gap-4">
+                    <div class="card">
+                      <h3 class="pg-section-h">1 · Foto pohon · min. 2</h3>
+                      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+                        <div class="imgph" style="aspect-ratio:1;">CLOSE-UP</div>
+                        <div class="imgph" style="aspect-ratio:1; background:repeating-linear-gradient(135deg, var(--accent-pink) 0 8px, var(--g200) 8px 9px), var(--accent-pink);">WIDE</div>
+                        <div style="aspect-ratio:1; border:2px dashed var(--black); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--white); cursor:pointer;">
+                          <div style="font-size:28px;">＋</div>
+                          <div style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--g600); margin-top:4px;">UPLOAD</div>
+                        </div>
+                        <div style="aspect-ratio:1; border:2px dashed var(--black); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--white); cursor:pointer;">
+                          <div style="font-size:28px;">＋</div>
+                          <div style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--g600); margin-top:4px;">UPLOAD</div>
+                        </div>
+                      </div>
+                      <p style="font-size:11px; color:var(--g600); margin:10px 0 0;">Tip: 1 close-up cabang yang bermasalah, 1 wide showing posisi pohon &amp; jalan sekitar.</p>
+                    </div>
+
+                    <div class="card">
+                      <h3 class="pg-section-h">2 · Lokasi pohon</h3>
+                      <div class="minimap dense" style="height:200px; margin-bottom:12px;">
+                        <div class="pin red" style="left:50%; top:50%;"></div>
+                      </div>
+                      <div class="form-grid">
+                        <div class="field web" style="grid-column: 1 / -1;">
+                          <span class="lbl">ALAMAT</span>
+                          <div class="input"><span>Jl. Wonokromo No. 45, Wonokromo</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">KOORDINAT</span>
+                          <div class="input"><span style="font-family:var(--ff-mono);">-7.30245, 112.73411</span></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">PATOKAN (OPSIONAL)</span>
+                          <div class="input ph"><span>Dekat warung, sebelah halte…</span></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="card">
+                      <h3 class="pg-section-h">3 · Detail pohon</h3>
+                      <div class="form-grid">
+                        <div class="field web">
+                          <span class="lbl">JENIS POHON</span>
+                          <div class="input"><span>Trembesi (Samanea saman)</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+                        </div>
+                        <div class="field web">
+                          <span class="lbl">JUMLAH</span>
+                          <div class="input"><span>1 batang</span></div>
+                        </div>
+                        <div class="field web" style="grid-column: 1 / -1;">
+                          <span class="lbl">ALASAN PERMOHONAN</span>
+                          <div class="input ph" style="align-items:flex-start; min-height:100px;">Jelaskan kondisi pohon dan alasan kenapa perlu dipangkas…</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Side: tips + submit -->
+                  <div class="col gap-4">
+                    <div class="card yellow" style="position:sticky; top:18px;">
+                      <h3 class="pg-section-h">Rangkuman</h3>
+                      <div class="card flat" style="background:var(--white); padding:0; margin-bottom:14px;">
+                        <div style="display:flex; padding:8px 12px; font-size:12px; border-bottom:1.5px dashed var(--g300);"><span style="flex:1; color:var(--g600);">Foto</span><b style="color:var(--black);">2 / min 2 ✓</b></div>
+                        <div style="display:flex; padding:8px 12px; font-size:12px; border-bottom:1.5px dashed var(--g300);"><span style="flex:1; color:var(--g600);">Lokasi</span><b style="color:var(--success-fg);">terkunci ✓</b></div>
+                        <div style="display:flex; padding:8px 12px; font-size:12px; border-bottom:1.5px dashed var(--g300);"><span style="flex:1; color:var(--g600);">Jenis</span><b style="color:var(--black);">Trembesi</b></div>
+                        <div style="display:flex; padding:8px 12px; font-size:12px;"><span style="flex:1; color:var(--g600);">Alasan</span><b style="color:var(--danger-fg);">belum diisi</b></div>
+                      </div>
+
+                      <p style="font-size:12px; color:var(--g700); margin:0 0 14px; line-height:1.5;">Permohonan akan diteruskan ke <b style="color:var(--black);">Admin Data Rayon Pusat</b>. SLA respon: <b style="color:var(--black);">24 jam.</b></p>
+
+                      <button class="btn primary btn-sh full">Kirim permohonan →</button>
+                      <button class="btn ghost full" style="margin-top:8px; font-size:12px;">Simpan sebagai draft</button>
+                    </div>
+
+                    <div class="card mint">
+                      <h3 class="pg-section-h">Tips</h3>
+                      <ul style="margin:0; padding:0 0 0 18px; font-size:12.5px; color:var(--g700); line-height:1.65;">
+                        <li>Ambil foto saat terang, hindari foto malam.</li>
+                        <li>Sertakan latar jalan / bangunan sebagai patokan.</li>
+                        <li>Sebut bahaya konkret: "ranting menutup kabel listrik".</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="annot"><b>No console chrome.</b> Kecamatan layout is intake-first: simplified top nav, "Rangkuman" card as a sticky progress meter. Per ADR-033 staff_kecamatan never sees the sidebar console.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ─── -->
+  <div class="foot">
+    <div>SEKAR · Hi-Fi Web Dashboard · v1.0 · 11 pages · 13 routes</div>
+    <div><a href="hifi-mobile.html">Mobile entry ↗</a> · <a href="hifi-mobile-app.html">Mobile app ↗</a> · <a href="index.html">Index ↗</a></div>
+  </div>
+
+</div>
+</body>
+</html>

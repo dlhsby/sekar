@@ -1,13 +1,108 @@
 # Phase 4: Mobile Specifications
 
-**Date:** March 12, 2026
-**Status:** Not Started
-**Depends On:** Phase 2E Mobile (Complete)
-**Related Sub-Phases:** 4-2, 4-3, 4-4, 4-7, 4-8
+**Date:** May 22, 2026 (revamp pass — sections below the §UI/UX Revamp block remain from March 12; updated facts in §0)
+**Status:** ⏳ Not Started
+**Depends On:** Phase 3 M1-R complete; **Sub-Phase 4-0 (token re-baseline) blocks the §UI/UX Revamp work**
+**Related Sub-Phases:** **4-R** (UI/UX Revamp), 4-2 (Offline), 4-3 (FCM hardening), 4-4 (Reassignment), 4-7 (Refactor), 4-8 (Prod hardening — non-UI)
 
 ---
 
-## Current Codebase Facts (Verified March 12, 2026)
+## 0. Reality check — May 22, 2026 (overrides March-12 facts in §1)
+
+| Fact | Updated value |
+|------|---------------|
+| Screens (current) | **21** (8 field + 9 monitoring + 4 shared); Phase 4 adds **7 NEW** screens → **28 total at Phase 4 finish** |
+| FCM | **Live** in `be/.env` (`FCM_ENABLED=true`); mobile token reg + foreground/background already wired (May 16-17 commits) |
+| ConnectivityBanner | Still does **not** exist — confirmed for Gap 1 → 4-2 |
+| Deep linking | Not configured — 4-8 E3 |
+| Sentry | Not integrated — 4-1 B4 |
+| ProGuard | Default — 4-8 E1 |
+| Background location | `react-native-geolocation-service@5.3.1` present; Android foreground-service + iOS background-mode wiring unverified — **4-V Gap 3** |
+
+---
+
+## <a id="ui-ux-revamp"></a>UI/UX Revamp (Sub-Phase 4-R) — hi-fi screen matrix
+
+**Source:** [`design/project/hifi-mobile.html`](../../../design/project/hifi-mobile.html). Every row maps a hi-fi screen ID to its current code file (or `NEW`) with the action. **NEW** = file doesn't exist yet. **Revamp** = file exists but is rebuilt against hi-fi (layout, tokens, copy). **Token-only** = automatic visual pickup from regenerated tokens, no layout change.
+
+### Pre-login carousel (5 NEW screens)
+
+| Hi-Fi ID | Name | Current file | Action | Notes |
+|----------|------|--------------|--------|-------|
+| WL-1 | Splash · 1/5 | none | **NEW** | First slide — pinwheel hero + tagline "Sistem Evaluasi Kerja Satgas RTH" |
+| WL-2 | Pantau real-time · 2/5 | none | **NEW** | Monitoring illustration |
+| WL-3 | Tugas terstruktur · 3/5 | none | **NEW** | Task workflow illustration |
+| WL-4 | Permohonan kecamatan · 4/5 | none | **NEW** | Perantingan illustration |
+| WL-5 | Offline-ready · 5/5 | none | **NEW** | Offline illustration + "Masuk" CTA |
+
+**One file:** `fe/mobile/src/screens/auth/WelcomeCarouselScreen.tsx` + `OnboardingSlide.tsx` reusable card. Skippable; "Lewati" goes to Login. `AsyncStorage` flag `carousel_seen` prevents re-showing.
+
+### Login & auth (5 screens — 3 revamp + 2 NEW)
+
+| Hi-Fi ID | Name | Current file | Action | Notes |
+|----------|------|--------------|--------|-------|
+| AS-1 | Login · idle | `fe/mobile/src/screens/auth/LoginScreen.tsx` | Revamp | Hi-fi layout (Selamat datang hero + Identifier + Password + Masuk button + Lupa sandi link) |
+| AS-2 | Login · field error | LoginScreen | Revamp | Inline per-field validation states |
+| AS-3 | Login · auth-fail toast | LoginScreen | Revamp | NBToast instead of native `Alert` |
+| AS-4 | Lupa sandi · contact admin | none | **NEW** | `ForgotPasswordScreen.tsx` — informational, no API call. tel:/wa.me deep-links per [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md) |
+| AS-5 | Ganti sandi · forced after reset + success | none | **NEW** | `ChangePasswordScreen.tsx` — tied to backend `users.password_must_change` boolean; auth-guard pushes user here on first login post-reset |
+
+### Onboarding & permissions (3 NEW screens)
+
+| Hi-Fi ID | Name | Current file | Action | Notes |
+|----------|------|--------------|--------|-------|
+| OB-1 | Welcome (greeting + role badge) | none | **NEW** | `OnboardingWelcomeScreen.tsx` — `onb-clockin.svg`; role-aware greeting; "Lanjut" CTA |
+| OB-2 | Permissions · 2/3 · 6 items | partial: `PermissionsModal.tsx` | **NEW (replaces modal)** | `OnboardingPermissionsScreen.tsx` — per-permission card with justification; sequential request flow; `onb-photo.svg` |
+| OB-3 | Area preview · 3/3 | none | **NEW** | `OnboardingAreaPreviewScreen.tsx` — embedded map + your-area card + clock-in CTA; `onb-monitor.svg` |
+
+**First-launch detection:** `AsyncStorage` flag `onboarding_completed` set on OB-3 completion. Auth-guard routes: not-authenticated → carousel/login; authenticated + `password_must_change=true` → AS-5; authenticated + `!onboarding_completed` → OB-1; else → role-aware home.
+
+### Post-login revamp (existing screens — layout + tokens)
+
+| Hi-Fi ID | Name | Current file | Action |
+|----------|------|--------------|--------|
+| HOME-1 | Home · Satgas | `fe/mobile/src/screens/field/HomeScreen.tsx` | Revamp |
+| HOME-2 | Home · Korlap | `fe/mobile/src/screens/monitoring/MonitoringHomeScreen.tsx` (or equivalent) | Revamp |
+| HOME-3 | Home · Admin Data | (current admin home) | Revamp |
+| ABS-1 | Clock-in · GPS + selfie | existing absensi screen | Revamp |
+| ABS-2 | Clock-in · Di luar area | existing | Revamp |
+| ABS-3 | Shift history | existing | Revamp |
+| MON-1 | Map · Korlap view | monitoring screen + `components/monitoring/*` | Revamp — map FAB + bottom-sheet redesign |
+| MON-2 | Personnel sheet | `UserDetailSheet.tsx` | Revamp |
+| MON-3 | Tools FAB · expanded | new sub-component | Revamp — grouped FAB replaces ad-hoc map buttons |
+| TUG-1 | Tugas list · filtered tabs | tasks list screen | Revamp |
+| TUG-2 | Tugas detail | TaskDetailScreen | Revamp |
+| TUG-3 | Selesaikan tugas | task completion screen | Revamp |
+| AKT-1 | Submit aktivitas | ActivitySubmissionScreen | Revamp |
+| AKT-2 | Aktivitas list | ActivitiesScreen | Revamp |
+| LBR-1 | Lembur list | OvertimeListScreen | Revamp |
+| LBR-2 | Ajukan lembur | OvertimeCreateScreen | Revamp |
+| LBR-3 | Detail lembur · disetujui | OvertimeDetailScreen | Revamp |
+| PRT-1 | Submit · Kecamatan | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | Revamp (keeps Apr-27/28 Phase 3 redesign; visual pass to v2.1) |
+| PRT-2 | Review queue · Admin Data | pruning-requests list (admin filter) | Revamp |
+| PRT-3 | Detail permohonan | RequestDetailScreen | Revamp |
+| PRT-4 | Pengajuan saya · Kecamatan | "my requests" list | Token-only |
+| PRF-1 | Profile · Satgas | ProfileScreen | Revamp |
+| PRF-2 | Pengaturan | SettingsScreen | Revamp |
+| PRF-3 | Edit profil | EditProfileScreen | Token-only |
+| NOTIF-1 | Inbox · 3 baru | none | **NEW** — `fe/mobile/src/screens/notifications/NotificationsScreen.tsx` |
+
+### Navigation routing changes
+
+Update `fe/mobile/src/navigation/AppNavigator.tsx` (or equivalent) with three pre-main routes (carousel / forgot-password / change-password / onboarding) gated by AsyncStorage flags + `password_must_change` server flag. NotificationsScreen reachable via header bell icon (badge with unread count) on every authenticated screen.
+
+### Brand assets in mobile
+
+- `fe/mobile/src/assets/brand/sekar-mark.svg` — header logo (22 × 22 px standard)
+- `fe/mobile/src/assets/empty/illo-*.svg` — 6 illustrations, wired via existing `NBEmptyState`
+- `fe/mobile/src/assets/onboarding/onb-*.svg` — 3 scenes (OB-1/2/3)
+- iOS `Images.xcassets/AppIcon` + Android `mipmap-*/ic_launcher*` — pinwheel app icon
+- iOS `LaunchScreen.storyboard` + Android `res/drawable/splash_*.xml` — splash variants (light/dark/green)
+- `react-native-bootsplash` config update for new splash
+
+---
+
+## 1. Current Codebase Facts (Verified March 12, 2026 — refreshed May 22 in §0)
 
 | Fact | Value |
 |------|-------|
@@ -86,7 +181,101 @@ When status = SERVER_UNREACHABLE:
 - Animated slide-down entrance, slide-up dismiss
 - Shows pending queue count: "3 perubahan menunggu sinkronisasi"
 
-### A5. Timezone Verification
+### A4b. Connectivity Banner — token-compliant restyle
+
+The existing A4 spec lists hex literals (`#F59E0B`, `#F97316`, `#22C55E`). With Design System v2.1 those must come from tokens. Restate using v2.1 tokens:
+
+| Status | Token bg | Token fg | Icon (Lucide) | Text (Indonesian) |
+|--------|----------|----------|---------------|--------------------|
+| `NO_INTERNET` | `--warning-bg` | `--warning-fg` | `wifi-off` | "Tidak ada koneksi internet" |
+| `SERVER_UNREACHABLE` | `--danger-bg` | `--danger-fg` | `server-off` (or `cloud-off`) | "Server tidak dapat dihubungi" |
+| `ONLINE` (recovery toast, 3 s) | `--success-bg` | `--success-fg` | `check` | "Terhubung kembali" |
+
+- 2 px black border (`--bw`), `--r-base` corners, `--sh-xs` shadow — the banner is a card, not flat.
+- Pending-queue badge ("3 perubahan menunggu") uses `--paper` chip with mono text — same chip primitive as bell badge.
+- Animated slide-down entrance 220 ms ease-out, slide-up dismiss 180 ms.
+
+### <a id="offline-screen-matrix"></a>A5. Offline behavior matrix — per-screen behavior by connectivity state
+
+Goal: every screen has an explicit verdict for what it does when the user is `NO_INTERNET` or `SERVER_UNREACHABLE`. Default mistake (silent failure or generic error) is no longer acceptable.
+
+**Three categories per screen:**
+
+- **Works offline (cached)** — reads from local cache / Redux / AsyncStorage; user can browse and submit, writes go to offline queue.
+- **Read-only offline (degraded)** — shows last-cached data with a "Data offline" banner; mutations are disabled with a toast "Aksi ini butuh koneksi".
+- **Unavailable offline** — replaced by a full-screen `OfflineScreen` (illustration `illo-offline` + headline "Anda offline" + retry button + "Coba lagi" + status-specific subtitle).
+
+| Screen / Flow | NO_INTERNET behavior | SERVER_UNREACHABLE behavior | Justification |
+|---------------|---------------------|------------------------------|----------------|
+| **Pre-login WL-1…5 carousel** | Works offline | Works offline | Static content, no API |
+| **AS-1…3 Login** | Unavailable | Unavailable | Cannot validate credentials without server |
+| **AS-4 Forgot password** | Works offline | Works offline | Static content (admin contacts) |
+| **AS-5 Change password** | Unavailable | Unavailable | Requires backend write |
+| **OB-1 / OB-3** | Works offline | Works offline | Static greeting + locally-cached area |
+| **OB-2 Permissions** | Works offline | Works offline | OS-level dialogs |
+| **HOME-1/2/3** | **Read-only offline** | **Read-only offline** | Show last-cached shift + today's tasks; "Clock-in" button works (queues) |
+| **ABS-1 Clock-in (GPS + selfie)** | **Works offline** | **Works offline** | Captures photo + GPS locally, queues submission |
+| **ABS-2 Clock-in out-of-area** | **Works offline** | **Works offline** | Same as ABS-1 with warning flag |
+| **ABS-3 Shift history** | **Read-only offline** | **Read-only offline** | Show cached history; pull-to-refresh disabled with toast |
+| **MON-1 Map (korlap)** | **Read-only offline** | **Read-only offline** | Last snapshot from Redux; live updates paused; banner "Pantauan offline · update terakhir {time}" |
+| **MON-2 Personnel sheet** | Read-only offline | Read-only offline | Cached personnel list |
+| **MON-3 Tools FAB** | Read-only offline | Read-only offline | Reassign action queued |
+| **TUG-1 Tugas list** | **Read-only offline** | **Read-only offline** | Cached list + filter tabs work locally |
+| **TUG-2 Tugas detail** | **Read-only offline** | **Read-only offline** | Cached detail; photos may not load if not cached |
+| **TUG-3 Selesaikan tugas** | **Works offline** | **Works offline** | Form fills locally; submission queues |
+| **AKT-1 Submit aktivitas** | **Works offline** | **Works offline** | Form + photos local; submission queues |
+| **AKT-2 Aktivitas list** | **Read-only offline** | **Read-only offline** | Cached list |
+| **LBR-1 Lembur list** | **Read-only offline** | **Read-only offline** | Cached |
+| **LBR-2 Ajukan lembur** | **Works offline** | **Works offline** | Queues |
+| **LBR-3 Detail lembur** | Read-only offline | Read-only offline | Cached |
+| **PRT-1 Submit · Kecamatan** | **Works offline** | **Works offline** | Already drafts to AsyncStorage (Phase 3 Apr-27 Round 2 — preserves) + queues |
+| **PRT-2 Review queue** | Read-only offline | Read-only offline | Cached list |
+| **PRT-3 Detail permohonan** | Read-only offline | Read-only offline | Cached |
+| **PRT-4 Pengajuan saya** | Read-only offline | Read-only offline | Cached |
+| **PRF-1 Profile** | Read-only offline | Read-only offline | Cached `/auth/me` snapshot |
+| **PRF-2 Pengaturan** | **Works offline** | **Works offline** | Local-only toggles (e.g., dark mode); server-bound toggles disabled with toast |
+| **PRF-3 Edit profil** | Unavailable | Unavailable | Server write required |
+| **NOTIF-1 Inbox** | Read-only offline | Read-only offline | Cached notifications; mark-read queued |
+| **Settings → Reset password** | Unavailable | Unavailable | Server-only |
+| **Settings → Notification preferences** | Read-only offline (read cached, mutations queue) | Read-only offline | — |
+| **Any deep-linked entity loaded fresh from FCM tap** | If not cached → Unavailable | If not cached → Unavailable | Fallback to NOTIF-1 with toast "Buka notifikasi saat online" |
+
+**Implementation rule:** every screen reads connectivity from `useConnectivity()` hook and conditionally renders one of three states. The `OfflineScreen` component is the same across "Unavailable" cases — only the subtitle changes per status:
+
+- `NO_INTERNET` subtitle: "Aktifkan WiFi atau data seluler"
+- `SERVER_UNREACHABLE` subtitle: "Server SEKAR sedang tidak dapat dihubungi. Coba lagi nanti."
+
+`OfflineScreen` uses the `illo-offline.svg` illustration from `design/project/illustrations.html`. Per [`ui-ux.md § 3.4`](./ui-ux.md#34-empty-state-illustrations-6-svgs).
+
+### A5b. Offline error screen — visual spec
+
+**File:** `fe/mobile/src/components/common/OfflineScreen.tsx`
+
+```
+┌────────────────────────────────────┐
+│            [illo-offline]           │   ← SVG, 180 × 180, centered
+│                                     │
+│           Anda offline              │   ← Space Grotesk 800, 24 px, --black
+│                                     │
+│   Aktifkan WiFi atau data seluler  │   ← Inter 14 px, --g700
+│   untuk menggunakan fitur ini.      │
+│                                     │
+│    ┌──────────────────────────┐    │
+│    │  ↻  Coba lagi             │    │   ← NBButton.primary full-width
+│    └──────────────────────────┘    │
+│                                     │
+│    ┌──────────────────────────┐    │
+│    │     Lihat data offline    │    │   ← NBButton.ghost (deep-links to NOTIF-1 / cached tab)
+│    └──────────────────────────┘    │
+└────────────────────────────────────┘
+```
+
+- Background: `--paper` warm stone, dot-grid pattern
+- Layout centered vertically + horizontally
+- Retry button: triggers `syncManager.checkHealth()` immediately; if healthy → ONLINE + flush queue + auto-dismiss; if still failing → shake animation + brief NBToast "Masih offline"
+- "Lihat data offline" link visible only on screens that have a usable cached fallback
+
+### A6. Timezone Verification
 
 All offline-queued items must store timestamps as ISO 8601 with Asia/Jakarta offset (`+07:00`):
 
@@ -227,6 +416,81 @@ Navigation: Bottom tab icon with unread badge count
 - List of toggles per notification type
 - Fetch: `GET /users/:id/notification-preferences`
 - Update: `PATCH /users/:id/notification-preferences`
+
+### B6. In-app notification bell + badge (Instagram / Twitter / Facebook pattern)
+
+**Goal:** Every authenticated screen has a bell icon in the app header with an unread-count badge. Tapping it opens the inbox (NOTIF-1). When a push notification arrives — whether the app is foreground, background, or quit — the same notification record drives both the OS-tray notification AND the in-app bell badge, so the two surfaces never disagree.
+
+**File:** `fe/mobile/src/components/common/NotificationBell.tsx`
+
+Visual spec (token-compliant, per `design/project/hifi-shared.css`):
+
+| Element | Spec |
+|---------|------|
+| Bell icon | Lucide `Bell` at 22 × 22 px, stroke 2 px, color `--black` |
+| Container | 36 × 36 px touch target, `var(--r-base)` corners, no border by default |
+| Badge | Top-right, 18 × 18 px, `var(--danger)` bg, `var(--white)` text, 2 px black border, `var(--r-full)` radius, `--sh-xs` shadow |
+| Badge text | JetBrains Mono 700, 10 px, centered; shows count for ≤ 9, "9+" for ≥ 10 |
+| Badge visibility | Hidden when `unreadCount === 0` |
+| Active (sheet open) | Container gets `--primary` bg + 2 px black border + `--sh-xs` |
+| A11y | `accessibilityLabel="Notifikasi, {count} belum dibaca"` updates dynamically |
+
+**Placement:** In `Header.tsx` (or current shared header), right-side after screen title. Visible on every authenticated screen except OB-1/2/3 and AS-5 (those are pre-app flows). On screens with their own header (e.g., NotificationsScreen itself), the bell is replaced by a "mark all read" action.
+
+**State source:** `notificationsSlice.unreadCount` (Redux). Updated by three writers:
+1. Initial fetch on app foreground (`GET /notifications?unread=true&limit=1` returns `meta.totalUnread`).
+2. FCM foreground handler (`fcmService.onMessage`) — increments by 1 + appends notification to `items`.
+3. NotificationsScreen mark-read / mark-all-read — decrements / zeroes.
+
+**Tap behavior:** Bell tap → navigate to `NotificationsScreen` (NOTIF-1). Same target whether bell is in the tab bar or in the app header — single inbox.
+
+**Foreground FCM behavior** (when app is open and a push arrives):
+
+| Step | Behavior |
+|------|----------|
+| 1 | NBToast slides in from top with notification title + body (180 ms, `--sh-md`) — does NOT auto-dismiss for HIGH-priority types (task-assigned, missing-alert); auto-dismisses after 4 s for routine types |
+| 2 | Bell badge increments by 1 (Redux update — re-renders all mounted screens) |
+| 3 | OS does NOT show a system-tray notification (suppressed by FCM SDK when foreground) — single surface only |
+| 4 | Tapping the toast or the bell routes to the deep-link target screen |
+| 5 | If user ignores the toast, it lands in the inbox for later read |
+
+**Background / quit FCM behavior:**
+
+| Step | Behavior |
+|------|----------|
+| 1 | OS shows system-tray notification (FCM default) — title + body + app icon |
+| 2 | On tap → app cold-starts (if quit) or foregrounds (if background) and deep-links to the entity |
+| 3 | On foreground, bell badge syncs from server (`GET /notifications/unread-count`) — corrects any race conditions |
+
+### B7. Deep-link routing matrix (push notification → screen)
+
+Every backend notification carries `data.type` + `data.entity_id`. The same routing table drives (a) tap-on-toast, (b) tap-on-bell-row, (c) tap-on-system-tray notification — guaranteeing one consistent destination per type. Source of truth: `fe/mobile/src/services/notifications/deepLinkRouter.ts`.
+
+| Notification type | Title (Indonesian) | Deep-link target | Required role |
+|-------------------|-------------------|------------------|---------------|
+| `task_assigned` | "Tugas baru: {title}" | `TaskDetailScreen` (TUG-2) with `task_id` | satgas, linmas, korlap |
+| `task_completed` | "Tugas selesai: {title}" | `TaskDetailScreen` (TUG-2) | korlap, admin_data |
+| `task_revision` | "Revisi tugas: {title}" | `TaskDetailScreen` (TUG-2) | satgas, linmas |
+| `activity_approved` | "Aktivitas disetujui" | `ActivityDetailScreen` (AKT-1 detail) | satgas, linmas |
+| `activity_rejected` | "Aktivitas ditolak" | `ActivityDetailScreen` | satgas, linmas |
+| `overtime_approved` | "Lembur disetujui" | `OvertimeDetailScreen` (LBR-3) | satgas, linmas |
+| `overtime_rejected` | "Lembur ditolak" | `OvertimeDetailScreen` | satgas, linmas |
+| `monitoring_missing` | "Petugas tidak hadir di {area}" | `MonitoringScreen` (MON-1) with `area_id` filter | korlap, admin_data, kepala_rayon |
+| `pruning_submitted` | "Permohonan baru dari {kecamatan}" | `RequestDetailScreen` (PRT-3) with `request_id` | admin_data (rayon-scoped) |
+| `pruning_disposed` | "Permohonan {code} ditugaskan" | `RequestDetailScreen` (PRT-3) | staff_kecamatan, korlap |
+| `shift_reminder` | "Shift dimulai 15 menit lagi" | `HomeScreen` (HOME-1) | satgas, linmas, korlap |
+| `system_announcement` | "{title}" | `NotificationsScreen` (NOTIF-1) — no deeper target | all |
+
+If the user lacks the required role (data integrity should prevent this, but defensive coding): route to NOTIF-1 with a NBToast "Anda tidak punya akses ke notifikasi ini" and the notification stays read.
+
+### B8. Web parity — bell + badge in sidebar header
+
+The web sidebar already plans a bell icon (see [`web.md`](./web.md#ui-ux-revamp)). Detailed spec:
+
+- `fe/web/src/components/nb/NotificationBell.tsx` — bell with badge in top-right of the main canvas, NOT in the sidebar (sidebar collapses at narrow widths; the bell must stay visible).
+- Click → opens `NotificationPanel` popover (last 5 unread + "Lihat Semua" link to `/dashboard/notifications`).
+- Same deep-link router on web — clicking a row navigates to the entity's web route (e.g., `task_assigned` → `/dashboard/tasks/{id}`).
+- Web push (via existing Phase 3 PWA push subscription) follows the same suppression rule: when the web tab is foreground, no service-worker notification surfaces; the NBToast + badge handles it.
 
 ---
 

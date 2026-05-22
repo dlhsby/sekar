@@ -1,8 +1,102 @@
 # Phase 4: Manual Testing Checklist
 
-**Date:** March 12, 2026
-**Status:** Not Started
-**Scope:** 22 mobile screens, 24+ web pages, 8 roles
+**Date:** May 22, 2026 (extended with §0 hi-fi walks; March-12 base checklist preserved below)
+**Status:** ⏳ Not Started
+**Scope:** **28 mobile screens** (21 existing + 7 NEW) · **26+ web pages** (21 existing + 4 NEW + 1 config) · **9 roles** (8 + staff_kecamatan)
+
+---
+
+## 0. Hi-Fi-driven entry-flow walks (revamp acceptance — Sub-Phase 4-R)
+
+Run each walk on a fresh-install device (AsyncStorage cleared). Compare screen-by-screen against the hi-fi rendered at [`design/project/hifi-mobile.html`](../../../design/project/hifi-mobile.html) (open in any browser).
+
+### Walk A · First-launch satgas (carousel → login → onboarding → home)
+
+1. Fresh install + first launch → **WL-1** splash slide visible
+2. Swipe through **WL-2 → WL-3 → WL-4 → WL-5** ("Offline-ready" with "Masuk" CTA)
+3. Tap "Masuk" → **AS-1** Login screen (Selamat datang hero, Identifier + Password)
+4. Try empty fields → **AS-2** field error states
+5. Wrong password → **AS-3** NBToast auth-fail
+6. Correct credentials (`satgas_bungkul_1/password123`) → **OB-1** Welcome
+7. Tap "Lanjut" → **OB-2** Permissions (6 cards: Lokasi/Kamera/Notifikasi/Galeri/Telepon/SMS), accept each
+8. **OB-3** Area preview → "Mulai shift" → **HOME-1** Satgas home
+9. Close + relaunch → no carousel, no onboarding (verifies AsyncStorage flags)
+
+### Walk B · First-launch korlap → HOME-2
+
+Same as A with `korlap_bungkul/password123`; lands on **HOME-2** with monitoring quick-access + team summary.
+
+### Walk C · First-launch admin_data → HOME-3
+
+`admin/password123` → **HOME-3** with KPI tiles + pending perantingan queue.
+
+### Walk D · First-launch staff_kecamatan
+
+`staff_kecamatan_<kecamatan-code>/password123` → after onboarding, lands on **Perantingan** tab with empty state + FAB to submit; monitoring tab hidden.
+
+### Walk E · Forgot password (informational)
+
+1. AS-1 → tap "Lupa sandi" → **AS-4** "Sandi tidak bisa di-reset sendiri"
+2. Verify per-rayon admin contact list (phone + WhatsApp icons)
+3. Tap phone → tel: intent opens dialer
+4. Tap WhatsApp → wa.me link with pre-filled message
+5. "Kembali" → AS-1
+
+### Walk F · Forced password change
+
+1. Admin (web) resets a satgas password → `users.password_must_change=true`
+2. Satgas logs in → routed to **AS-5** (cannot skip)
+3. Submit valid new password → success ("Sandi tersimpan") → home
+
+### Walk G · Notifications inbox + bell badge
+
+1. Admin assigns task to satgas via web (TSK-1)
+2. **App backgrounded:** Satgas device system-tray notification fires within 10 s; tap → app deep-links to TaskDetail (works from cold-start too)
+3. **App foregrounded during second push:** NBToast slides in from top with title + body; **no** system-tray notification appears (foreground suppression); bell badge increments
+4. Verify badge visual: top-right of bell, red (`--danger`) circle with white mono digit, 2 px black border, `--sh-xs` shadow
+5. Send 10+ pushes to verify badge overflow → shows "9+"
+6. Tap bell → **NOTIF-1** Inbox; bell container active state = primary bg + shadow
+7. Verify deep-link router for each notification type: tap a `task_assigned` row → routes to TaskDetail; tap `activity_approved` → ActivityDetail; tap `monitoring_missing` → MonitoringScreen with area filter
+8. Tap row → mark-read; row loses the `--primary` unread dot
+9. "Tandai semua dibaca" → all read; badge disappears (hidden when `unreadCount === 0`)
+10. **Web parity:** open dashboard in two tabs; mark-read in tab A → tab B's bell count updates within 1 s (BroadcastChannel cross-tab sync)
+
+### Walk H · Background location (4-V Gap 3 — manual confirmation)
+
+1. Satgas clocks in within geofence → status "active"
+2. Background app for 5 min
+3. Walk 100 m outside geofence
+4. Foreground app → status "outside"; admin/korlap can see in monitoring
+5. No persistent location-service notification visible? → **fail** (foreground service missing)
+6. 4-h battery drain ≤ 15 %/h? → **record actual** in `status_reviews.md § Gap 3`
+
+### Walk I · Offline sync + per-screen offline behavior (4-V Gap 1)
+
+1. Satgas authenticated, in coverage
+2. Airplane mode ON → ConnectivityBanner appears with `--warning-bg` + "Tidak ada koneksi internet"
+3. **Works-offline screens (per `mobile.md § A5`):** open ABS-1 clock-in → form works, submit → "Antrian" badge; open AKT-1 → fill activity with photos → queued; open LBR-2 → submit lembur → queued
+4. **Read-only-offline screens:** open MON-1 → shows last cached snapshot + grey "Pantauan offline · update terakhir {time}" banner; pull-to-refresh disabled with NBToast "Aksi ini butuh koneksi"; open TUG-1 → cached list rendered, tab filters work locally
+5. **Unavailable-offline screens:** open PRF-3 Edit Profile → full-screen `OfflineScreen` with `illo-offline.svg` + "Anda offline" + subtitle "Aktifkan WiFi atau data seluler" + "Coba lagi" button
+6. **SERVER_UNREACHABLE differentiation:** block server at firewall (or stop backend); banner switches to `--danger-bg` + "Server tidak dapat dihubungi"; OfflineScreen subtitle changes to "Server SEKAR sedang tidak dapat dihubungi…"
+7. Tap "Coba lagi" → triggers health check; if still failing → shake animation + NBToast "Masih offline"
+8. Airplane mode OFF + backend up; wait 30 s
+9. Banner shows green `--success-bg` "Terhubung kembali" toast and auto-dismisses after 3 s
+10. All queued items synced (no duplicate); timestamps preserved (Asia/Jakarta) — verify via web
+
+### Walk J · Sidebar redesign (web)
+
+1. Login at LOG-1
+2. Pinwheel mark visible top-left (sage primary border)
+3. Each item click → active state = primary bg + 1.5 px offset shadow
+4. Section dividers in monospace caps
+5. Per-item count badges render
+6. Bottom user card with avatar + role-accent pill
+7. 768 px → sidebar collapses to icon-rail
+8. 375 px → hidden behind hamburger
+
+---
+
+## 1. Original March-12 prerequisites + execution order
 
 ---
 

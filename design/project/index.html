@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SEKAR · Project Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="wf-styles.css" />
+<style>
+  body { padding: 48px 28px 96px; }
+  .wrap { max-width: 1240px; }
+
+  /* Big intro */
+  .intro-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; align-items: stretch; margin-bottom: 56px; }
+  .intro-main { background: var(--yellow); border: 2px solid var(--black); border-radius: var(--r-md); box-shadow: 12px 12px 0 var(--black); padding: 40px 44px; position: relative; overflow: hidden; }
+  .intro-main::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(var(--black) 1.2px, transparent 1.2px); background-size: 22px 22px; opacity: 0.07; pointer-events: none; }
+  .intro-eyebrow { font-family: var(--ff-mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--g700); display: flex; gap: 10px; align-items: center; margin-bottom: 18px; position: relative; }
+  .intro-eyebrow .badge { background: var(--black); color: var(--paper); padding: 3px 8px; border-radius: var(--r-sm); font-size: 10px; font-weight: 700; }
+  .intro-main h1 { font-family: var(--ff-display); font-size: 56px; font-weight: 800; line-height: 0.98; letter-spacing: -0.025em; margin: 0 0 16px; position: relative; }
+  .intro-main p { font-size: 16px; line-height: 1.55; max-width: 580px; color: var(--g800); margin: 0; position: relative; }
+
+  .intro-meta { background: var(--paper); border: 2px solid var(--black); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 24px 26px; display: grid; gap: 14px; align-content: start; }
+  .intro-meta h3 { font-family: var(--ff-display); font-size: 16px; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 2px solid var(--black); font-weight: 700; }
+  .meta-row { display: flex; justify-content: space-between; gap: 16px; font-family: var(--ff-mono); font-size: 12px; padding-bottom: 6px; border-bottom: 1px dashed var(--black); }
+  .meta-row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .meta-row b { font-weight: 700; }
+
+  /* Journey */
+  .journey { display: grid; grid-template-columns: 28px 1fr; gap: 22px; margin-bottom: 56px; position: relative; }
+  .j-rail { position: relative; }
+  .j-rail::after { content: ""; position: absolute; left: 50%; top: 22px; bottom: 0; width: 3px; background: var(--black); transform: translateX(-50%); }
+  .j-step { position: relative; }
+  .j-num { position: absolute; left: 0; top: 0; width: 28px; height: 28px; background: var(--yellow); border: 2px solid var(--black); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-weight: 800; font-size: 13px; box-shadow: 1px 1px 0 var(--black); }
+
+  .j-stack { display: grid; gap: 18px; padding-bottom: 36px; }
+
+  .stage-card { display: grid; grid-template-columns: 1fr; background: var(--paper); border: 2px solid var(--black); border-radius: var(--r-md); box-shadow: var(--sh-sm); overflow: hidden; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+  .stage-card:hover { transform: translate(-3px, -3px); box-shadow: 9px 9px 0 var(--black); }
+  .stage-head { padding: 22px 26px 18px; border-bottom: 2px solid var(--black); position: relative; }
+  .stage-head .label { display: inline-block; padding: 3px 8px; background: var(--black); color: var(--paper); font-family: var(--ff-mono); font-size: 10.5px; letter-spacing: 0.08em; font-weight: 700; border-radius: var(--r-sm); margin-bottom: 10px; }
+  .stage-head h2 { font-family: var(--ff-display); font-size: 28px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.015em; line-height: 1.1; }
+  .stage-head p { font-size: 14px; line-height: 1.55; color: var(--g700); margin: 0; max-width: 720px; }
+
+  .stage-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0; }
+  .stage-files a { display: block; padding: 16px 22px; text-decoration: none; color: var(--black); border-right: 2px solid var(--black); border-bottom: 2px solid var(--black); position: relative; }
+  .stage-files a:last-child { border-right: 0; }
+  .stage-files a:hover { background: var(--yellow); }
+  .stage-files .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: space-between; }
+  .stage-files .ttl .arr { font-family: var(--ff-mono); font-weight: 700; opacity: 0.5; transition: transform 0.12s ease, opacity 0.12s ease; }
+  .stage-files a:hover .ttl .arr { transform: translateX(4px); opacity: 1; }
+  .stage-files .meta { font-family: var(--ff-mono); font-size: 10.5px; color: var(--g600); margin-top: 4px; letter-spacing: 0.04em; }
+  .stage-files .desc { font-size: 12.5px; line-height: 1.5; color: var(--g700); margin-top: 10px; }
+  .stage-files .pill-row { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+  .stage-files .mini { font-family: var(--ff-mono); font-size: 9.5px; padding: 2px 5px; border: 1.5px solid var(--black); border-radius: 3px; background: var(--mint); font-weight: 600; }
+  .stage-files .mini.alt { background: var(--primary-soft); }
+  .stage-files .mini.warn { background: var(--warn-soft); }
+
+  /* Color the stage badges */
+  .stage-card.tokens .stage-head { background: var(--mint); }
+  .stage-card.wf .stage-head { background: var(--paper); }
+  .stage-card.hifi .stage-head { background: var(--primary-soft); }
+  .stage-card.spec .stage-head { background: var(--g100); }
+
+  /* Status pill on stage head */
+  .stage-status { position: absolute; top: 22px; right: 26px; font-family: var(--ff-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 3px 8px; border: 1.5px solid var(--black); border-radius: var(--r-sm); background: var(--paper); }
+  .stage-status.ok { background: var(--primary-soft); color: #15803D; }
+  .stage-status.wip { background: var(--warn-soft); color: var(--warn); }
+  .stage-status.next { background: var(--g100); color: var(--g700); }
+
+  /* Footer */
+  .foot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 36px; }
+  .foot-block { background: var(--paper); border: 2px solid var(--black); border-radius: var(--r-md); padding: 18px 22px; box-shadow: var(--sh-xs); }
+  .foot-block h4 { font-family: var(--ff-display); font-weight: 700; font-size: 15px; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1.5px solid var(--black); }
+  .foot-block p { font-size: 12.5px; line-height: 1.5; color: var(--g700); margin: 0 0 8px; }
+  .foot-block code { font-family: var(--ff-mono); font-size: 11px; background: var(--g100); padding: 1px 5px; border-radius: 3px; }
+
+  /* Tiny phone-frame thumb (decorative) */
+  .thumb-row { display: flex; gap: 8px; margin-top: 12px; }
+  .thumb { width: 44px; height: 78px; background: var(--g100); border: 1.5px solid var(--black); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+  .thumb .bar { height: 5px; background: var(--g300); border-radius: 2px; }
+  .thumb .bar.h { background: var(--yellow); }
+  .thumb .bar.t { background: var(--primary); }
+  .thumb-row.web .thumb { width: 90px; height: 60px; background: var(--g100); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ─── Intro ─── -->
+  <div class="intro-grid">
+    <div class="intro-main">
+      <div class="intro-eyebrow"><span class="badge">SEKAR</span> Project Index · Design Documentation</div>
+      <h1>Sistem Evaluasi<br/>Kerja Satgas<br/>RTH.</h1>
+      <p>End-to-end design package for <b>SEKAR</b> — DLH Surabaya's worker tracking &amp; task management system for the municipal parks &amp; green spaces (Ruang Terbuka Hijau) department. This index walks the work in the order you should read it: <b>tokens → wireframes → hi-fi</b>. Mobile is the field surface (React Native, satgas/korlap/linmas); web is the supervisor &amp; admin console (Next.js PWA). Hi-fi mobile + web share one tokens file (<code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">hifi-shared.css</code>) that mirrors <code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">design-system.html</code> and the generated tokens in <code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">fe/mobile/src/constants/generated/tokens.ts</code> — same green primary, same status palette, same type, end-to-end.</p>
+    </div>
+    <div class="intro-meta">
+      <h3>Snapshot</h3>
+      <div class="meta-row"><span>Project</span><b>SEKAR v1.0</b></div>
+      <div class="meta-row"><span>Owner</span><b>DLH Surabaya</b></div>
+      <div class="meta-row"><span>Mobile platform</span><b>React Native</b></div>
+      <div class="meta-row"><span>Web platform</span><b>Next.js PWA</b></div>
+      <div class="meta-row"><span>Roles</span><b>9 (incl. staff_kecamatan)</b></div>
+      <div class="meta-row"><span>Design tokens</span><b>shared</b></div>
+      <div class="meta-row"><span>Status</span><b>Hi-fi shipped (mobile + web)</b></div>
+    </div>
+  </div>
+
+  <!-- ─── Journey ─── -->
+  <div class="journey">
+    <div class="j-rail">
+      <div class="j-step"><div class="j-num">1</div></div>
+    </div>
+    <div class="j-stack">
+
+      <!-- 1. DESIGN SYSTEM -->
+      <div class="stage-card tokens">
+        <div class="stage-head">
+          <span class="label">01 · FOUNDATION</span>
+          <h2>Design System</h2>
+          <p>The single source of truth. Token primitives (colors, type, spacing, shadows), Layer 1 (raw) + Layer 2 (semantic role aliases), and a complete component inventory used by both mobile and web.</p>
+          <span class="stage-status ok">SHIPPED</span>
+        </div>
+        <div class="stage-files">
+          <a href="design-system.html">
+            <div class="ttl">Design System v2.1 <span class="arr">→</span></div>
+            <div class="meta">design-system.html · ~140 tokens · 38 components</div>
+            <div class="desc">Primary green #7FBC8C · Space Grotesk + Inter + JetBrains Mono · 2px outline ink-and-paper aesthetic. Includes Buttons, Inputs, Toasts, Banners, Modals, Bottom sheets, Tabs, Switches, Avatars, Stats, Tables, Sidebars, Tab bars, Map markers, OTP, Photo upload — and full role-color palette.</div>
+            <div class="pill-row">
+              <span class="mini alt">Colors</span>
+              <span class="mini alt">Type</span>
+              <span class="mini alt">Spacing</span>
+              <span class="mini">Components</span>
+              <span class="mini">Mobile + Web</span>
+            </div>
+          </a>
+          <a href="illustrations.html">
+            <div class="ttl">Brand &amp; Illustrations <span class="arr">→</span></div>
+            <div class="meta">illustrations.html · logo · app icon · splash · 6 empty states</div>
+            <div class="desc">SEKAR mark (pinwheel — 8 kinetic petals = 8 rayons, yellow center = DLH Surabaya) · primary lockup &amp; geometry · iOS/Android icons · light/dark/green splash · empty-state SVGs · onboarding scenes · brand iconography · map marker matrix · 5 patterns.</div>
+            <div class="pill-row">
+              <span class="mini alt">Logo</span>
+              <span class="mini alt">App icon</span>
+              <span class="mini alt">Splash</span>
+              <span class="mini">Illustrations</span>
+              <span class="mini">Map markers</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="journey">
+    <div class="j-rail">
+      <div class="j-step"><div class="j-num">2</div></div>
+    </div>
+    <div class="j-stack">
+
+      <!-- 2. WIREFRAMES -->
+      <div class="stage-card wf">
+        <div class="stage-head">
+          <span class="label">02 · STRUCTURE</span>
+          <h2>Wireframes — Lo-fi</h2>
+          <p>Structural blueprints. Information architecture, flows, states, and copy locked before any visual treatment. Two surfaces: <b>mobile</b> (Satgas + Korlap field-first) and <b>web</b> (Admin + Korlap back-office). Same tokens, same component vocabulary.</p>
+          <span class="stage-status ok">SHIPPED</span>
+        </div>
+        <div class="stage-files">
+          <a href="wireframes-mobile.html">
+            <div class="ttl">Mobile Wireframes <span class="arr">→</span></div>
+            <div class="meta">wireframes-mobile.html · hub · ~50 frames</div>
+            <div class="desc">All flows, all roles, one spine — pre-login carousel, auth, role-aware home/absensi, monitoring, tugas, aktivitas, lembur, perantingan, profile.</div>
+            <div class="thumb-row">
+              <div class="thumb"><div class="bar h"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div style="flex:1;"></div><div class="bar t"></div></div>
+              <div class="thumb"><div class="bar h"></div><div class="bar"></div><div class="bar" style="background:var(--primary)"></div><div class="bar"></div><div style="flex:1;"></div><div class="bar t"></div></div>
+              <div class="thumb"><div class="bar h"></div><div class="bar" style="background:var(--warn-soft)"></div><div class="bar"></div><div class="bar"></div><div style="flex:1;"></div><div class="bar t"></div></div>
+            </div>
+            <div class="pill-row" style="margin-top: 14px;">
+              <span class="mini">Satgas</span><span class="mini">Korlap</span><span class="mini">Admin</span><span class="mini warn">7 roles total</span>
+            </div>
+          </a>
+          <a href="wireframes-web.html">
+            <div class="ttl">Web Wireframes <span class="arr">→</span></div>
+            <div class="meta">wireframes-web.html · 10 frames · 1280×800</div>
+            <div class="desc">Admin Dashboard (KPIs, alert feed, quick actions, empty state) + Monitoring Wall (live map split, personnel drawer, geofence focus, filter composer) + Auth parity.</div>
+            <div class="thumb-row web">
+              <div class="thumb" style="display: flex; flex-direction: row; gap: 4px;"><div style="width: 18px; background: var(--g300); border-radius: 2px;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 3px;"><div class="bar h"></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; flex: 1;"><div style="background: var(--g300); border-radius: 2px;"></div><div style="background: var(--g300); border-radius: 2px;"></div><div style="background: var(--g300); border-radius: 2px;"></div></div></div></div>
+              <div class="thumb" style="display: flex; flex-direction: row; gap: 4px;"><div style="width: 18px; background: var(--g300); border-radius: 2px;"></div><div style="flex: 1; display: grid; grid-template-columns: 1.4fr 1fr; gap: 3px;"><div style="background: var(--primary-soft); border-radius: 2px;"></div><div style="background: var(--paper); border: 1px solid var(--g400); border-radius: 2px;"></div></div></div>
+            </div>
+            <div class="pill-row" style="margin-top: 14px;">
+              <span class="mini">Admin</span><span class="mini">Korlap</span><span class="mini warn">Satgas: future view-only</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="journey">
+    <div class="j-rail">
+      <div class="j-step"><div class="j-num">3</div></div>
+    </div>
+    <div class="j-stack">
+
+      <!-- 3. HI-FI -->
+      <div class="stage-card hifi">
+        <div class="stage-head">
+          <span class="label">03 · VISUAL</span>
+          <h2>Hi-Fidelity</h2>
+          <p>Pixel-true treatment of locked wireframes. Real type, real iconography (Lucide), real photography placeholders, real motion. <b>Mobile entry flows shipped</b>; web hi-fi follows after web wireframes are signed off.</p>
+          <span class="stage-status ok">SHIPPED</span>
+        </div>
+        <div class="stage-files">
+          <a href="hifi-mobile.html">
+            <div class="ttl">Mobile Hi-Fi · Entry + App <span class="arr">→</span></div>
+            <div class="meta">hifi-mobile.html · 39 screens · 12 sections</div>
+            <div class="desc">One file, every mobile screen — synced 1:1 with <code style="font-family:var(--ff-mono);font-size:11px;background:var(--g100);padding:1px 5px;border-radius:3px;">fe/mobile/src/screens/*</code>. Pre-login: <b>Carousel (5) · Auth (6) · Onboarding (3)</b>. Post-login: <b>Home (3 roles) · Absensi · Monitoring · Tugas · Aktivitas · Lembur · Perantingan · Profile · Notifikasi</b>. Locked SEKAR green #7FBC8C primary, Space Grotesk + Inter + JetBrains Mono.</div>
+            <div class="pill-row">
+              <span class="mini alt">Carousel</span>
+              <span class="mini alt">Auth</span>
+              <span class="mini alt">Onboarding</span>
+              <span class="mini alt">Satgas</span>
+              <span class="mini alt">Korlap</span>
+              <span class="mini alt">Admin</span>
+              <span class="mini alt">Kecamatan</span>
+              <span class="mini">React Native</span>
+            </div>
+          </a>
+          <a href="hifi-web.html">
+            <div class="ttl">Web Hi-Fi · Console + Intake <span class="arr">→</span></div>
+            <div class="meta">hifi-web.html · 11 frames · 13 routes · 1280×880</div>
+            <div class="desc">Next.js PWA console synced 1:1 with <code style="font-family:var(--ff-mono);font-size:11px;background:var(--g100);padding:1px 5px;border-radius:3px;">fe/web/src/app/*</code>: <b>Login · Dashboard · Monitoring Wall · Users · Rayons · Areas · Tasks · Schedules · Lembur · Perantingan · Settings</b> + the kecamatan-only intake at <code style="font-family:var(--ff-mono);font-size:11px;background:var(--g100);padding:1px 5px;border-radius:3px;">/pruning-submit</code>. Shared tokens with mobile.</div>
+            <div class="pill-row">
+              <span class="mini alt">Dashboard</span>
+              <span class="mini alt">Monitoring</span>
+              <span class="mini alt">Tasks Kanban</span>
+              <span class="mini alt">Schedules</span>
+              <span class="mini">Next.js PWA</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Footer notes ─── -->
+  <div class="foot-grid">
+    <div class="foot-block">
+      <h4>How to read this</h4>
+      <p>Top to bottom. <b>Step 1</b> locks the system. <b>Step 2</b> structures the screens. <b>Step 3</b> applies the visuals.</p>
+      <p>Within each artifact, the same convention applies: masthead → anchor nav → sectioned screens with annotations. Mobile wireframes live in one single scrollable file (<code>wireframes-mobile.html</code>); mobile hi-fi appends new flows to <code>hifi-mobile.html</code>.</p>
+    </div>
+    <div class="foot-block">
+      <h4>Conventions</h4>
+      <p>Screen IDs follow <code>FLOW-N</code> (e.g. <code>WL-3</code>, <code>AS-2</code>, <code>DASH-1</code>, <code>MON-2</code>). Wireframes use lo-fi line-art primitives in the wf-styles.css token set. Hi-fi uses real components from the design system.</p>
+      <p>Indonesian copy is final-pass — Bahasa Indonesia, action-first, no jargon. English appears only in dev-facing notes and IDs.</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>SEKAR · Index · v1.0</div>
+    <div>DLH Surabaya · RTH · Design Documentation</div>
+  </div>
+
+</div>
+</body>
+</html>

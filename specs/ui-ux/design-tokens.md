@@ -1,13 +1,47 @@
 # Design Tokens — Platform-Wide Foundation
 
-**Version:** 1.0.0 (Phase 3 adoption target)
-**Status:** Accepted — consumed starting Phase 3 M1-R sub-phase 3-R2 (generator + value migration)
-**Last Updated:** 2026-04-25
+**Version:** 2.1 (Phase 4 rebrand re-baseline — see [ADR-040](../architecture/decisions/ADR-040-design-system-v2.1.md))
+**Status:** Accepted v1.0 (Phase 3 M1-R) · Proposed v2.1 (Phase 4 Sub-Phase 4-0)
+**Last Updated:** 2026-05-22 (v2.1 diff added — see §v2.1 below; full body reflects v1.0)
 **Owner:** Design systems
 **Design language:** [Neo Brutalism 2.0](./neo-brutalism.md)
 **See also:** [responsive-design.md](./responsive-design.md), [typography.md](./typography.md), [accessibility.md](./accessibility.md)
 
 ---
+
+## v2.1 — Phase 4 rebrand re-baseline (May 22, 2026)
+
+A complete rebrand was iterated on Claude Design in May 2026 and vendored to [`design/`](../../design/). Design System v2.1 supersedes the v2.0 palette but **keeps the v1.0/v2.0 generator architecture and three-layer model unchanged** (see [ADR-040](../architecture/decisions/ADR-040-design-system-v2.1.md)). Only the *values* in `tokens.json` change.
+
+**Canonical source for v2.1:** [`design/project/hifi-shared.css`](../../design/project/hifi-shared.css) lines 7-82 (token block).
+
+### Headline v2.0 → v2.1 changes
+
+| Aspect | v2.0 (Phase 3 M1-R) | v2.1 (Phase 4 4-0) |
+|--------|----------------------|---------------------|
+| Primary | yellow `#FDFD96` | **sage green `#7FBC8C`** |
+| Primary-deep / hover | absent | `#5A9468` / `#6BA87A` |
+| Canvas | mixed yellow / off-white / warm stone | **warm stone `#F5F0EB`** uniform |
+| Yellow `#FDFD96` | primary | accent (pinwheel center, tab-active, masthead) |
+| Shadows | partial soft-blur | **zero-blur hard-edge** at `2/2/0` → `10/10/0` scale |
+| Status palette | ad-hoc per component | codified 5-state (`active`/`idle`/`outside`/`missing`/`offline`) with paired -fg/-bg |
+| Role accents | loose | codified 9 roles (incl. `staff_kecamatan`) |
+| Brand mark | wordmark only | **pinwheel** (8 petals = 8 rayons + yellow DLH Surabaya center) |
+
+Detailed token diff lives in [`specs/phases/phase-4-production-readiness/ui-ux.md § 1`](../phases/phase-4-production-readiness/ui-ux.md#1-design-system-v21--token-diff-vs-v20).
+
+### v2.1 migration impact
+
+- `specs/ui-ux/tokens.json` regenerated from `design/project/hifi-shared.css` in Sub-Phase 4-0.
+- `npm run tokens:build` produces a colour-shifted `tokens.css` (web) + `tokens.ts` (mobile). Most consumers repaint automatically; layout-level revamp happens screen-by-screen in Sub-Phase 4-R per the hi-fi.
+- New tokens added: `--primary-deep`, `--primary-hover`, `--primary-soft`, `--brand-sun` / `--accent-yellow`, `--navy`, `--secondary`, full status-* and role-* sets.
+- Brand identity ships alongside tokens: pinwheel SVG, app icons, splash variants, 6 empty-state illustrations, 3 onboarding scenes — see [`design/project/illustrations.html`](../../design/project/illustrations.html).
+- App-store re-submission required (icon + splash change).
+
+---
+
+## v1.0 — Phase 3 adoption (April 25, 2026)
+
 
 ## Purpose
 

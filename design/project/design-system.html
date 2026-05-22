@@ -1,0 +1,1734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SEKAR · Design System v2.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  /* ─── Layer 1 · Primitives (mirror of tokens.json) ─── */
+  --c-primary:        #7FBC8C;
+  --c-primary-hover:  #6BA87A;
+  --c-primary-active: #5A9468;
+  --c-secondary:      #8B7355;
+  --c-success:        #15803D;
+  --c-success-bg:     #DCFCE7;
+  --c-warning:        #D97706;
+  --c-warning-bg:     #FEF3C7;
+  --c-danger:         #DC2626;
+  --c-danger-bg:      #FEE2E2;
+  --c-info:           #2563EB;
+  --c-info-bg:        #DBEAFE;
+  --c-purple:         #9333EA;
+  --c-purple-bg:      #F3E8FF;
+
+  --bg-canvas:  #F5F0EB;
+  --bg-surface: #FFFFFF;
+  --bg-yellow:  #FDFD96;
+  --bg-mint:    #DAF5F0;
+  --bg-green:   #B5D2AD;
+  --bg-pink:    #FCDFFF;
+  --bg-overlay: rgba(0,0,0,0.5);
+
+  --black: #1C1917;
+  --white: #FFFFFF;
+  --navy:  #1A4D2E;
+
+  --g50:#FAFAF9; --g100:#F5F5F4; --g200:#E7E5E4; --g300:#D6D3D1;
+  --g400:#A8A29E; --g500:#78716C; --g600:#57534E; --g700:#44403C; --g800:#292524; --g900:#1C1917;
+
+  --sh-xs: 2px 2px 0 var(--black);
+  --sh-sm: 4px 4px 0 var(--black);
+  --sh-md: 6px 6px 0 var(--black);
+  --sh-lg: 8px 8px 0 var(--black);
+  --sh-xl: 12px 12px 0 var(--black);
+
+  --r-sm: 4px; --r-base: 6px; --r-md: 8px; --r-lg: 12px; --r-full: 9999px;
+
+  --bw-thin: 1px; --bw-base: 2px; --bw-thick: 3px; --bw-extra: 4px;
+
+  --sp-xs: 4px; --sp-sm: 8px; --sp-md: 16px; --sp-lg: 24px; --sp-xl: 32px; --sp-2xl: 48px; --sp-3xl: 64px;
+  --touch-mobile: 48px; --touch-web: 44px;
+
+  --ff-display: 'Space Grotesk', system-ui, sans-serif;
+  --ff-body:    'Inter', system-ui, sans-serif;
+  --ff-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* ─── Layer 2 · Semantic component tokens ─── */
+  --btn-primary-bg:        var(--c-primary);
+  --btn-primary-fg:        var(--black);
+  --btn-primary-border:    var(--black);
+  --btn-primary-shadow:    var(--sh-sm);
+  --btn-primary-hover-bg:  var(--c-primary-hover);
+  --btn-danger-bg:         var(--c-danger);
+  --btn-danger-fg:         var(--white);
+  --btn-ghost-bg:          transparent;
+  --btn-ghost-fg:          var(--black);
+
+  --input-bg:              var(--white);
+  --input-fg:              var(--black);
+  --input-border:          var(--black);
+  --input-border-focus:    var(--c-primary);
+  --input-border-error:    var(--c-danger);
+  --input-placeholder:     var(--g500);
+
+  --card-bg:               var(--bg-surface);
+  --card-border:           var(--black);
+  --card-shadow:           var(--sh-sm);
+
+  --modal-bg:              var(--bg-surface);
+  --modal-scrim:           var(--bg-overlay);
+  --modal-shadow:          var(--sh-xl);
+  --modal-radius:          var(--r-md);
+
+  --sheet-bg:              var(--bg-surface);
+  --sheet-handle:          var(--g400);
+  --sheet-shadow:          var(--sh-lg);
+  --sheet-radius-top:      18px;
+
+  --toast-success-bg:      var(--c-success-bg);
+  --toast-success-fg:      var(--c-success-fg);
+  --toast-warning-bg:      var(--c-warning-bg);
+  --toast-warning-fg:      var(--c-warning-fg);
+  --toast-danger-bg:       var(--c-danger-bg);
+  --toast-danger-fg:       var(--c-danger-fg);
+  --toast-info-bg:         var(--c-info-bg);
+  --toast-info-fg:         var(--c-info-fg);
+  --toast-shadow:          var(--sh-md);
+
+  --switch-track-on:       var(--c-primary);
+  --switch-track-off:      var(--g300);
+  --switch-thumb:          var(--white);
+
+  --checkbox-bg:           var(--white);
+  --checkbox-bg-on:        var(--c-primary);
+  --checkbox-fg-on:        var(--black);
+
+  --tab-fg:                var(--text-secondary);
+  --tab-fg-active:         var(--text-primary);
+  --tab-bg-active:         var(--bg-yellow);
+  --tab-indicator:         var(--c-primary);
+
+  --fab-bg:                var(--white);
+  --fab-fg:                var(--text-primary);
+  --fab-shadow:            var(--sh-md);
+
+  --avatar-bg:             var(--g200);
+  --avatar-fg:             var(--text-primary);
+  --avatar-border:         var(--black);
+
+  --skeleton-bg:           var(--g100);
+  --skeleton-shimmer:      var(--g200);
+
+  --table-head-bg:         var(--bg-mint);
+  --table-row-zebra:       var(--g50);
+  --table-divider:         var(--g200);
+
+  --chip-bg:               var(--white);
+  --chip-bg-on:            var(--bg-yellow);
+  --chip-fg:               var(--text-primary);
+
+  --progress-track:        var(--g200);
+  --progress-fill:         var(--c-primary);
+  --progress-fill-warn:    var(--c-warning-fg);
+  --progress-fill-danger:  var(--c-danger-fg);
+
+  --stepper-active:        var(--c-primary);
+  --stepper-done:          var(--black);
+  --stepper-pending:       var(--g300);
+
+  --topbar-bg:             var(--bg-surface);
+  --topbar-fg:             var(--text-primary);
+  --topbar-border:         var(--black);
+  --topbar-height:         56px;
+
+  --tabbar-bg:             var(--bg-surface);
+  --tabbar-fg:             var(--text-secondary);
+  --tabbar-fg-active:      var(--text-primary);
+  --tabbar-indicator:      var(--c-primary);
+  --tabbar-height:         64px;
+
+  --sidebar-bg:            #1F2937;
+  --sidebar-fg:            #E5E7EB;
+  --sidebar-fg-active:     var(--white);
+  --sidebar-active-bg:     var(--c-primary);
+
+  /* Form controls — semantic */
+  --radio-fill:            var(--c-primary);
+  --dp-cell-selected-bg:   var(--c-primary);
+  --dp-cell-selected-fg:   var(--black);
+  --dp-cell-today-border:  var(--black);
+  --dp-cell-muted-fg:      var(--g400);
+  --fab-bg-primary:        var(--c-primary);
+  --fab-fg-primary:        var(--black);
+
+  /* Tooltip · Spinner · Search · Slider */
+  --tooltip-bg:            var(--black);
+  --tooltip-fg:            var(--white);
+  --tooltip-radius:        var(--r-sm);
+  --spinner-track:         var(--g200);
+  --spinner-fill:          var(--c-primary);
+  --search-bg:             var(--white);
+  --search-fg:             var(--black);
+  --search-icon:           var(--g500);
+  --search-border:         var(--black);
+  --slider-track:          var(--g300);
+  --slider-fill:           var(--c-primary);
+  --slider-thumb:          var(--white);
+
+  /* Map marker (Phase 2D) */
+  --marker-bg:             var(--white);
+  --marker-ring-active:    var(--status-active);
+  --marker-ring-idle:      var(--status-idle);
+  --marker-ring-outside:   var(--status-outside);
+  --marker-ring-missing:   var(--status-missing);
+  --marker-ring-offline:   var(--status-offline);
+  --marker-label-bg:       var(--bg-yellow);
+
+  /* OTP / PIN · Photo upload */
+  --otp-bg:                var(--white);
+  --otp-fg:                var(--black);
+  --otp-border:            var(--black);
+  --otp-border-active:     var(--c-primary);
+  --photo-bg:              var(--g100);
+  --photo-border:          var(--black);
+  --photo-fg:              var(--text-tertiary);
+
+  --alert-info-bg:         var(--c-info-bg);
+  --alert-info-fg:         var(--c-info-fg);
+  --alert-warn-bg:         var(--c-warning-bg);
+  --alert-warn-fg:         var(--c-warning-fg);
+  --alert-success-bg:      var(--c-success-bg);
+  --alert-success-fg:      var(--c-success-fg);
+  --alert-danger-bg:       var(--c-danger-bg);
+  --alert-danger-fg:       var(--c-danger-fg);
+
+  --empty-bg:              var(--bg-surface);
+  --empty-fg:              var(--text-secondary);
+
+  --badge-success-bg:      var(--c-success-bg);
+  --badge-success-fg:      var(--c-success);
+  --badge-warning-bg:      var(--c-warning-bg);
+  --badge-warning-fg:      var(--c-warning);
+  --badge-danger-bg:       var(--c-danger-bg);
+  --badge-danger-fg:       var(--c-danger);
+
+  --status-active:         var(--c-success);
+  --status-active-bg:      var(--c-success-bg);
+  --status-idle:           var(--c-warning);
+  --status-idle-bg:        var(--c-warning-bg);
+  --status-outside:        var(--c-purple);
+  --status-outside-bg:     var(--c-purple-bg);
+  --status-missing:        var(--c-danger);
+  --status-missing-bg:     var(--c-danger-bg);
+  --status-offline:        var(--g500);
+  --status-offline-bg:     var(--g100);
+
+  --text-primary:          var(--black);
+  --text-secondary:        var(--g700);
+  --text-tertiary:         var(--g500);
+  --text-disabled:         var(--g400);
+  --text-inverse:          var(--white);
+
+  --surface-page:          var(--bg-canvas);
+  --surface-card:          var(--bg-surface);
+  --surface-raised:        var(--bg-yellow);
+  --surface-info:          var(--bg-mint);
+  --surface-overlay:       var(--bg-pink);
+}
+
+[data-theme="dark"] {
+  --bg-canvas:  #0F1411;
+  --bg-surface: #1A201D;
+  --bg-yellow:  #4A4520;
+  --bg-mint:    #1F3A38;
+  --bg-green:   #2A3D2C;
+  --bg-pink:    #3D1F35;
+
+  --black: #F5F0EB;       /* swap fg/bg */
+  --white: #1A201D;
+
+  --g50:#0F1411; --g100:#1A201D; --g200:#252B27; --g300:#3A413B;
+  --g400:#5C645E; --g500:#7E8680; --g600:#9CA39D; --g700:#B5BCB6; --g800:#D4DAD5; --g900:#EFF2EF;
+
+  --sh-xs: 2px 2px 0 var(--black);
+  --sh-sm: 4px 4px 0 var(--black);
+  --sh-md: 6px 6px 0 var(--black);
+  --sh-lg: 8px 8px 0 var(--black);
+  --sh-xl: 12px 12px 0 var(--black);
+
+  --c-primary: #95D4A0;
+  --c-success-bg: #1F3D2A;
+  --c-warning-bg: #3D2D14;
+  --c-danger-bg:  #3D1A1A;
+  --c-info-bg:    #1A2A3D;
+  --c-purple-bg:  #2D1A3D;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--ff-body); transition: background-color 200ms ease, color 200ms ease; }
+body { padding: 48px 32px 96px; }
+.wrap { max-width: 1360px; margin: 0 auto; }
+
+/* Theme toggle */
+.theme-toggle { position: fixed; top: 24px; right: 24px; z-index: 10; background: var(--white); color: var(--black); border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); padding: 10px 16px; font-family: var(--ff-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
+.theme-toggle:hover { transform: translate(-2px, -2px); box-shadow: var(--sh-md); }
+.theme-toggle:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* Masthead */
+.masthead { position: relative; background: var(--bg-yellow); border: 2px solid var(--black); border-radius: var(--r-md); box-shadow: var(--sh-xl); padding: 40px 40px 36px; margin-bottom: 56px; overflow: hidden; }
+.masthead::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(var(--black) 1.2px, transparent 1.2px); background-size: 24px 24px; opacity: 0.08; pointer-events: none; }
+.mh-row { display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: end; position: relative; }
+.mh-eyebrow { font-family: var(--ff-mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--g700); display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.mh-eyebrow .badge { background: var(--black); color: var(--white); padding: 3px 8px; border-radius: var(--r-sm); font-size: 10px; }
+.mh-title { font-family: var(--ff-display); font-size: 60px; line-height: 1; letter-spacing: -0.025em; font-weight: 800; margin: 0 0 18px; color: var(--text-primary); }
+.mh-sub { font-size: 19px; line-height: 1.55; margin: 0; max-width: 640px; color: var(--text-secondary); }
+.mh-meta { font-family: var(--ff-mono); font-size: 12px; display: grid; gap: 10px; min-width: 260px; padding: 20px; background: var(--white); border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); color: var(--text-primary); }
+.mh-meta div { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 6px; border-bottom: 1px dashed var(--black); }
+.mh-meta div:last-child { border-bottom: 0; padding-bottom: 0; }
+.mh-meta b { font-weight: 700; }
+
+/* Section */
+section { margin-bottom: 72px; }
+.sec-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 14px; margin-bottom: 22px; border-bottom: 2px solid var(--black); }
+.sec-num { font-family: var(--ff-mono); background: var(--black); color: var(--white); padding: 5px 11px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; }
+.sec-title { font-family: var(--ff-display); font-size: 32px; font-weight: 700; letter-spacing: -0.01em; margin: 0; color: var(--text-primary); }
+.sec-lede { font-size: 16px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 24px; max-width: 820px; }
+h3.sub { font-family: var(--ff-display); font-size: 21px; font-weight: 600; margin: 32px 0 14px; letter-spacing: -0.01em; color: var(--text-primary); }
+code.i { font-family: var(--ff-mono); font-size: 12.5px; background: var(--g100); border: 1px solid var(--g300); padding: 1px 6px; border-radius: 4px; color: var(--text-primary); }
+
+/* Layer diagram */
+.layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.layer { border: 2px solid var(--black); border-radius: var(--r-md); padding: 22px; box-shadow: var(--sh-md); display: flex; flex-direction: column; position: relative; }
+.layer.core { background: var(--bg-mint); }
+.layer.semantic { background: var(--bg-yellow); }
+.layer.platform { background: var(--bg-pink); }
+.layer .pin { position: absolute; top: -14px; left: 20px; font-family: var(--ff-mono); font-size: 11px; font-weight: 700; background: var(--black); color: var(--white); padding: 5px 10px; border-radius: var(--r-sm); letter-spacing: 0.04em; }
+.layer h3 { font-family: var(--ff-display); font-size: 21px; font-weight: 700; margin: 8px 0 4px; letter-spacing: -0.01em; color: var(--text-primary); }
+.layer .sub-txt { font-size: 13px; line-height: 1.5; margin: 0 0 14px; color: var(--text-secondary); }
+.layer ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.layer li { font-size: 13px; line-height: 1.45; padding: 7px 10px; background: var(--white); border: 2px solid var(--black); border-radius: var(--r-sm); box-shadow: var(--sh-xs); color: var(--text-primary); }
+
+/* Color swatches */
+.swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.sw { background: var(--white); border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-xs); overflow: hidden; }
+.sw-color { height: 64px; border-bottom: 2px solid var(--black); }
+.sw-meta { padding: 10px 12px; font-family: var(--ff-mono); font-size: 11px; line-height: 1.5; }
+.sw-meta b { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); }
+.sw-meta .h { color: var(--text-secondary); }
+
+/* Token tables */
+.tok-tbl { width: 100%; border-collapse: separate; border-spacing: 0; border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); background: var(--white); overflow: hidden; font-family: var(--ff-mono); font-size: 12.5px; }
+.tok-tbl th, .tok-tbl td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--g300); color: var(--text-primary); }
+.tok-tbl tr:last-child td { border-bottom: 0; }
+.tok-tbl th { background: var(--bg-mint); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; border-bottom: 2px solid var(--black); }
+.tok-tbl td.mono { color: var(--text-secondary); }
+.tok-tbl td.dot { display: flex; align-items: center; gap: 8px; }
+.tok-tbl td.dot::before { content: ""; display: inline-block; width: 16px; height: 16px; border: 2px solid var(--black); border-radius: 4px; flex-shrink: 0; background: var(--swatch-color, transparent); }
+
+/* Code block */
+.codeblock { background: #1C1917; color: #E7E5E4; border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); padding: 18px 20px; font-family: var(--ff-mono); font-size: 12.5px; line-height: 1.6; overflow-x: auto; white-space: pre; margin: 0 0 14px; }
+.codeblock .k { color: #FFDB58; }
+.codeblock .s { color: #BAFCA2; }
+.codeblock .c { color: #78716C; font-style: italic; }
+.codeblock .n { color: #69D2E7; }
+.codeblock-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cb-label { font-family: var(--ff-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.cb-label .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c-primary); border: 1.5px solid var(--black); }
+
+/* Component preview */
+.cmp-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 18px; align-items: stretch; }
+.cmp-preview { background: var(--bg-canvas); border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); padding: 22px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; justify-content: center; min-height: 200px; }
+.cmp-tokens { background: var(--white); border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); padding: 16px 18px; font-family: var(--ff-mono); font-size: 12px; line-height: 1.7; }
+.cmp-tokens .t-row { display: flex; justify-content: space-between; gap: 16px; padding: 4px 0; border-bottom: 1px dashed var(--g300); color: var(--text-primary); }
+.cmp-tokens .t-row:last-child { border-bottom: 0; }
+.cmp-tokens .t-row b { color: var(--c-primary-active); }
+.cmp-tokens .t-head { font-family: var(--ff-display); font-weight: 700; font-size: 14px; margin: -6px 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--black); display: flex; justify-content: space-between; align-items: center; }
+.cmp-tokens .t-head .pf { font-family: var(--ff-mono); font-size: 10px; padding: 2px 6px; background: var(--bg-yellow); border: 1.5px solid var(--black); border-radius: 3px; }
+
+/* Sample components */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--ff-display); font-weight: 700; font-size: 14px; border: var(--bw-base) solid var(--black); border-radius: var(--r-base); padding: 10px 18px; cursor: pointer; box-shadow: var(--sh-sm); transition: transform 100ms ease, box-shadow 100ms ease; min-height: var(--touch-web); }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: var(--sh-md); }
+.btn:active { transform: translate(2px, 2px); box-shadow: none; }
+.btn.primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); }
+.btn.danger { background: var(--btn-danger-bg); color: var(--btn-danger-fg); }
+.btn.ghost { background: var(--btn-ghost-bg); color: var(--btn-ghost-fg); box-shadow: none; }
+.btn.ghost:hover { background: var(--g100); transform: none; box-shadow: none; }
+
+.input { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; }
+.input label { font-family: var(--ff-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+.input input { font-family: var(--ff-body); font-size: 16px; background: var(--input-bg); color: var(--input-fg); border: var(--bw-base) solid var(--input-border); border-radius: var(--r-base); padding: 12px 14px; outline: none; transition: border-color 100ms ease; min-height: var(--touch-web); }
+.input input:focus { border-width: var(--bw-thick); border-color: var(--input-border-focus); padding: 11px 13px; }
+.input input::placeholder { color: var(--input-placeholder); }
+.input.error input { border-color: var(--input-border-error); }
+.input .hint { font-family: var(--ff-mono); font-size: 11px; color: var(--text-tertiary); }
+.input.error .hint { color: var(--input-border-error); }
+
+.card { background: var(--card-bg); border: var(--bw-base) solid var(--card-border); border-radius: var(--r-base); box-shadow: var(--card-shadow); padding: 16px 18px; max-width: 320px; }
+.card h4 { margin: 0 0 6px; font-family: var(--ff-display); font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.card p { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--ff-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 10px; border-radius: var(--r-full); border: 1.5px solid currentColor; }
+.badge.success { background: var(--badge-success-bg); color: var(--badge-success-fg); }
+.badge.warning { background: var(--badge-warning-bg); color: var(--badge-warning-fg); }
+.badge.danger  { background: var(--badge-danger-bg);  color: var(--badge-danger-fg); }
+.badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.status-pill { display: inline-flex; align-items: center; gap: 7px; font-family: var(--ff-mono); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: var(--r-full); }
+.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.status-pill.active   { background: var(--status-active-bg);   color: var(--status-active); }
+.status-pill.idle     { background: var(--status-idle-bg);     color: var(--status-idle); }
+.status-pill.outside  { background: var(--status-outside-bg);  color: var(--status-outside); }
+.status-pill.missing  { background: var(--status-missing-bg);  color: var(--status-missing); }
+.status-pill.offline  { background: var(--status-offline-bg);  color: var(--status-offline); }
+
+/* ═══ Sample components — extended ═══ */
+
+/* Modal */
+.modal-demo { width: 100%; max-width: 320px; background: var(--modal-bg); border: var(--bw-base) solid var(--black); border-radius: var(--modal-radius); box-shadow: var(--modal-shadow); padding: 18px; }
+.modal-demo h4 { margin: 0 0 6px; font-family: var(--ff-display); font-weight: 700; font-size: 16px; color: var(--text-primary); }
+.modal-demo p { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.modal-demo .actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Bottom sheet */
+.sheet-demo { width: 100%; max-width: 320px; background: var(--sheet-bg); border: var(--bw-base) solid var(--black); border-top-left-radius: var(--sheet-radius-top); border-top-right-radius: var(--sheet-radius-top); box-shadow: var(--sheet-shadow); padding: 14px 18px 18px; }
+.sheet-demo .handle { width: 40px; height: 4px; background: var(--sheet-handle); border-radius: 2px; margin: 0 auto 14px; }
+.sheet-demo h4 { margin: 0 0 6px; font-family: var(--ff-display); font-weight: 700; font-size: 16px; color: var(--text-primary); }
+.sheet-demo .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed var(--g300); font-size: 13px; }
+.sheet-demo .row:last-child { border-bottom: 0; }
+
+/* Toast */
+.toast-demo { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border: var(--bw-base) solid var(--black); border-radius: var(--r-base); box-shadow: var(--toast-shadow); font-family: var(--ff-body); font-size: 13px; font-weight: 600; max-width: 320px; }
+.toast-demo .ico { font-family: var(--ff-display); font-weight: 800; flex-shrink: 0; }
+.toast-demo.success { background: var(--toast-success-bg); color: var(--toast-success-fg); }
+.toast-demo.warning { background: var(--toast-warning-bg); color: var(--toast-warning-fg); }
+.toast-demo.danger  { background: var(--toast-danger-bg);  color: var(--toast-danger-fg); }
+.toast-demo.info    { background: var(--toast-info-bg);    color: var(--toast-info-fg); }
+
+/* Alert / banner */
+.alert-demo { display: flex; gap: 12px; padding: 14px 16px; border: var(--bw-base) solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-xs); max-width: 380px; }
+.alert-demo .ico { font-family: var(--ff-display); font-weight: 800; font-size: 18px; flex-shrink: 0; }
+.alert-demo .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 14px; margin: 0 0 4px; }
+.alert-demo .msg { margin: 0; font-size: 13px; line-height: 1.5; }
+.alert-demo.info    { background: var(--alert-info-bg);    color: var(--alert-info-fg); }
+.alert-demo.warn    { background: var(--alert-warn-bg);    color: var(--alert-warn-fg); }
+.alert-demo.success { background: var(--alert-success-bg); color: var(--alert-success-fg); }
+.alert-demo.danger  { background: var(--alert-danger-bg);  color: var(--alert-danger-fg); }
+
+/* Switch */
+.switch-demo { position: relative; width: 52px; height: 30px; background: var(--switch-track-off); border: var(--bw-base) solid var(--black); border-radius: var(--r-full); cursor: pointer; transition: background-color 120ms ease; }
+.switch-demo::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: var(--switch-thumb); border: 1.5px solid var(--black); border-radius: 50%; box-shadow: var(--sh-xs); transition: transform 120ms ease; }
+.switch-demo.on { background: var(--switch-track-on); }
+.switch-demo.on::after { transform: translateX(22px); }
+
+/* Checkbox */
+.checkbox-demo { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.checkbox-demo .box { width: 22px; height: 22px; background: var(--checkbox-bg); border: var(--bw-base) solid var(--black); border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--sh-xs); font-family: var(--ff-display); font-weight: 800; font-size: 14px; color: transparent; }
+.checkbox-demo.on .box { background: var(--checkbox-bg-on); color: var(--checkbox-fg-on); }
+
+/* Radio */
+.radio-demo { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.radio-demo .dot { width: 22px; height: 22px; background: var(--checkbox-bg); border: var(--bw-base) solid var(--black); border-radius: 50%; box-shadow: var(--sh-xs); display: inline-flex; align-items: center; justify-content: center; }
+.radio-demo .dot::after { content: ""; width: 0; height: 0; background: var(--radio-fill); border-radius: 50%; transition: width 100ms ease, height 100ms ease; }
+.radio-demo.on .dot::after { width: 12px; height: 12px; }
+
+/* Select */
+.select-demo { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; max-width: 320px; padding: 10px 14px; background: var(--input-bg); color: var(--input-fg); border: var(--bw-base) solid var(--input-border); border-radius: var(--r-base); font-size: 14px; cursor: pointer; min-height: var(--touch-web); }
+.select-demo .chev { font-family: var(--ff-display); font-weight: 800; font-size: 14px; color: var(--text-secondary); }
+
+/* DatePicker preview cell */
+.dp-demo { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; width: 100%; max-width: 280px; }
+.dp-demo .day { font-family: var(--ff-mono); font-size: 11px; padding: 6px 0; text-align: center; border: 1.5px solid transparent; border-radius: 4px; color: var(--text-primary); }
+.dp-demo .day.head { color: var(--text-secondary); font-weight: 700; }
+.dp-demo .day.muted { color: var(--dp-cell-muted-fg); }
+.dp-demo .day.sel { background: var(--dp-cell-selected-bg); color: var(--dp-cell-selected-fg); border-color: var(--black); font-weight: 700; box-shadow: var(--sh-xs); }
+.dp-demo .day.today { border-color: var(--dp-cell-today-border); }
+
+/* Tab (segmented) */
+.tab-demo { display: inline-flex; gap: 2px; padding: 4px; background: var(--white); border: var(--bw-base) solid var(--black); border-radius: var(--r-base); }
+.tab-demo .seg { font-family: var(--ff-display); font-weight: 600; font-size: 12px; padding: 6px 14px; border-radius: 4px; color: var(--tab-fg); cursor: pointer; }
+.tab-demo .seg.active { background: var(--tab-bg-active); color: var(--tab-fg-active); border: 1.5px solid var(--black); padding: 5px 13px; }
+
+/* Top tabs (underline) */
+.tab-line { display: flex; gap: 24px; border-bottom: 2px solid var(--black); padding: 0 6px; }
+.tab-line .seg { font-family: var(--ff-display); font-weight: 700; font-size: 13px; padding: 12px 0 10px; color: var(--tab-fg); position: relative; cursor: pointer; }
+.tab-line .seg.active { color: var(--tab-fg-active); }
+.tab-line .seg.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 4px; background: var(--tab-indicator); }
+
+/* FAB */
+.fab-demo { width: 52px; height: 52px; background: var(--fab-bg); color: var(--fab-fg); border: var(--bw-base) solid var(--black); border-radius: 50%; box-shadow: var(--fab-shadow); display: inline-flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-weight: 800; font-size: 20px; cursor: pointer; }
+.fab-demo.primary { background: var(--fab-bg-primary); color: var(--fab-fg-primary); }
+
+/* Avatar */
+.av-demo { width: 40px; height: 40px; border: var(--bw-base) solid var(--avatar-border); border-radius: 50%; background: var(--avatar-bg); color: var(--avatar-fg); display: inline-flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-weight: 700; font-size: 14px; box-shadow: var(--sh-xs); }
+.av-demo.role-satgas { background: var(--c-primary); }
+.av-demo.role-korlap { background: var(--bg-yellow); }
+.av-demo.role-admin { background: var(--bg-pink); }
+
+/* Stat (KPI) */
+.stat-demo { background: var(--white); border: var(--bw-base) solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); padding: 14px 16px; min-width: 150px; }
+.stat-demo .lbl { font-family: var(--ff-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 4px; }
+.stat-demo .val { font-family: var(--ff-display); font-weight: 800; font-size: 32px; line-height: 1; color: var(--text-primary); }
+.stat-demo .delta { font-family: var(--ff-mono); font-size: 11px; font-weight: 700; margin-top: 6px; }
+.stat-demo .delta.up { color: var(--c-success-fg); }
+.stat-demo .delta.down { color: var(--c-danger-fg); }
+
+/* Skeleton */
+.skel-demo { width: 100%; max-width: 280px; }
+.skel-demo .line { height: 12px; background: var(--skeleton-bg); border-radius: 4px; margin-bottom: 8px; position: relative; overflow: hidden; }
+.skel-demo .line.short { width: 60%; }
+.skel-demo .line::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--skeleton-shimmer), transparent); animation: shim 1.6s infinite; }
+@keyframes shim { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+/* Empty state */
+.empty-demo { background: var(--empty-bg); border: var(--bw-base) dashed var(--g400); border-radius: var(--r-base); padding: 24px 18px; text-align: center; max-width: 320px; }
+.empty-demo .ico { font-family: var(--ff-display); font-weight: 800; font-size: 32px; margin-bottom: 8px; }
+.empty-demo .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 14px; margin: 0 0 4px; color: var(--text-primary); }
+.empty-demo .msg { margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: var(--empty-fg); }
+
+/* Chip */
+.chip-demo { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: var(--chip-bg); border: 1.5px solid var(--black); border-radius: var(--r-full); font-family: var(--ff-mono); font-size: 11px; font-weight: 600; color: var(--chip-fg); cursor: pointer; }
+.chip-demo.on { background: var(--chip-bg-on); }
+.chip-demo .x { color: var(--text-secondary); }
+
+/* Progress */
+.progress-demo { width: 100%; max-width: 280px; }
+.progress-demo .track { height: 10px; background: var(--progress-track); border: 1.5px solid var(--black); border-radius: var(--r-full); overflow: hidden; }
+.progress-demo .fill { height: 100%; background: var(--progress-fill); border-right: 1.5px solid var(--black); }
+.progress-demo .meta { display: flex; justify-content: space-between; font-family: var(--ff-mono); font-size: 11px; margin-top: 4px; color: var(--text-secondary); }
+
+/* Stepper */
+.stepper-demo { display: flex; align-items: center; gap: 6px; max-width: 360px; }
+.stepper-demo .step { display: flex; align-items: center; gap: 6px; }
+.stepper-demo .num { width: 26px; height: 26px; border: 1.5px solid var(--black); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--ff-mono); font-size: 11px; font-weight: 700; background: var(--stepper-pending); color: var(--text-primary); }
+.stepper-demo .step.done .num { background: var(--stepper-done); color: var(--white); }
+.stepper-demo .step.active .num { background: var(--stepper-active); color: var(--black); box-shadow: var(--sh-xs); }
+.stepper-demo .lbl { font-family: var(--ff-mono); font-size: 11px; font-weight: 600; }
+.stepper-demo .step.done .lbl, .stepper-demo .step.active .lbl { color: var(--text-primary); }
+.stepper-demo .step:not(.done):not(.active) .lbl { color: var(--text-tertiary); }
+.stepper-demo .bar { flex: 1; height: 2px; background: var(--stepper-pending); }
+.stepper-demo .bar.done { background: var(--stepper-done); }
+
+/* TopBar */
+.topbar-demo { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: var(--topbar-height); background: var(--topbar-bg); border: var(--bw-base) solid var(--topbar-border); border-radius: var(--r-base); box-shadow: var(--sh-sm); width: 100%; max-width: 380px; }
+.topbar-demo .icon { width: 32px; height: 32px; border: 1.5px solid var(--black); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-weight: 800; }
+.topbar-demo .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 16px; color: var(--topbar-fg); flex: 1; }
+
+/* Tabbar (mobile bottom) */
+.tabbar-demo { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 6px 4px; background: var(--tabbar-bg); border: var(--bw-base) solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); width: 100%; max-width: 320px; }
+.tabbar-demo .tb { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 4px; font-family: var(--ff-mono); font-size: 9px; font-weight: 700; color: var(--tabbar-fg); }
+.tabbar-demo .tb .ic { font-family: var(--ff-display); font-size: 18px; }
+.tabbar-demo .tb.active { color: var(--tabbar-fg-active); background: var(--bg-yellow); border: 1.5px solid var(--black); padding: 4px 2px; }
+
+/* Sidebar (web) */
+.sidebar-demo { background: var(--sidebar-bg); color: var(--sidebar-fg); border: var(--bw-base) solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-sm); padding: 12px; width: 100%; max-width: 220px; }
+.sidebar-demo .item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 4px; font-family: var(--ff-display); font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.sidebar-demo .item.active { background: var(--sidebar-active-bg); color: var(--black); border: 1.5px solid var(--black); padding: 6px 10px; }
+.sidebar-demo .item .ic { width: 18px; }
+
+/* Table */
+.table-demo { width: 100%; max-width: 380px; border: var(--bw-base) solid var(--black); border-radius: var(--r-base); overflow: hidden; box-shadow: var(--sh-sm); font-family: var(--ff-mono); font-size: 11px; }
+.table-demo .row { display: grid; grid-template-columns: 1.4fr 1fr 80px; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--table-divider); background: var(--white); }
+.table-demo .row:last-child { border-bottom: 0; }
+.table-demo .row:nth-child(even) { background: var(--table-row-zebra); }
+.table-demo .row.head { background: var(--table-head-bg); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 2px solid var(--black); }
+
+/* Accordion */
+.acc-demo { width: 100%; max-width: 380px; }
+.acc-demo .row { border: var(--bw-base) solid var(--black); border-bottom-width: 0; background: var(--white); }
+.acc-demo .row:last-child { border-bottom-width: 2px; border-radius: 0 0 var(--r-base) var(--r-base); }
+.acc-demo .row:first-child { border-radius: var(--r-base) var(--r-base) 0 0; }
+.acc-demo .row .hd { display: flex; justify-content: space-between; padding: 12px 14px; cursor: pointer; font-family: var(--ff-display); font-weight: 600; font-size: 14px; }
+.acc-demo .row .bd { padding: 0 14px 14px; font-size: 13px; line-height: 1.55; color: var(--text-secondary); border-top: 1px solid var(--g200); padding-top: 10px; }
+
+/* Distribution chart */
+.dist { display: grid; grid-template-columns: 240px 1fr; gap: 14px; align-items: stretch; }
+.dist-source { background: var(--bg-yellow); border: 2px solid var(--black); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; position: relative; }
+.dist-source .icon { font-family: var(--ff-display); font-weight: 800; font-size: 36px; }
+.dist-source b { font-family: var(--ff-mono); font-size: 12px; letter-spacing: 0.05em; }
+.dist-source span { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+.dist-targets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.dist-target { background: var(--white); border: 2px solid var(--black); border-radius: var(--r-md); box-shadow: var(--sh-sm); padding: 18px 20px; }
+.dist-target .head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.dist-target .pf-tag { font-family: var(--ff-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; padding: 3px 8px; border-radius: var(--r-sm); border: 1.5px solid var(--black); text-transform: uppercase; }
+.dist-target .pf-mobile { background: var(--bg-mint); }
+.dist-target .pf-web { background: var(--bg-pink); }
+.dist-target h4 { margin: 0; font-family: var(--ff-display); font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.dist-target ul { margin: 0; padding: 0 0 0 14px; list-style: square; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+.dist-target ul li { margin-bottom: 4px; }
+.dist-target ul li code { font-family: var(--ff-mono); font-size: 11.5px; background: var(--g100); padding: 1px 5px; border-radius: 3px; color: var(--text-primary); }
+
+/* Type spec */
+.type-spec { display: grid; gap: 10px; }
+.type-row { display: grid; grid-template-columns: 140px 1fr 220px; gap: 16px; align-items: baseline; padding: 14px 16px; background: var(--white); border: 2px solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-xs); }
+.type-row .name { font-family: var(--ff-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); }
+.type-row .preview { color: var(--text-primary); }
+.type-row .meta { font-family: var(--ff-mono); font-size: 11px; color: var(--text-tertiary); text-align: right; }
+
+/* Sub-divider (groups inside a section) */
+.sub-divider { display: flex; align-items: center; gap: 14px; margin: 40px 0 18px; }
+.sub-divider::before, .sub-divider::after { content: ""; flex: 1; height: 2px; background: var(--black); }
+.sub-divider span { font-family: var(--ff-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 12px; background: var(--bg-yellow); border: 2px solid var(--black); border-radius: var(--r-sm); box-shadow: var(--sh-xs); color: var(--text-primary); }
+
+/* Tooltip */
+.tooltip-demo { position: relative; display: inline-flex; align-items: center; gap: 8px; font-family: var(--ff-mono); font-size: 12px; font-weight: 600; padding: 6px 12px; background: var(--white); border: var(--bw-base) solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-xs); cursor: help; color: var(--text-primary); }
+.tooltip-demo .bubble { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); background: var(--tooltip-bg); color: var(--tooltip-fg); padding: 6px 10px; border-radius: var(--tooltip-radius); font-family: var(--ff-body); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.tooltip-demo .bubble::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--tooltip-bg); }
+
+/* Spinner */
+.spinner-demo { width: 28px; height: 28px; border: 3px solid var(--spinner-track); border-top-color: var(--spinner-fill); border-radius: 50%; animation: spin 0.9s linear infinite; }
+.spinner-demo.lg { width: 44px; height: 44px; border-width: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Search bar */
+.search-demo { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 320px; padding: 10px 14px; background: var(--search-bg); color: var(--search-fg); border: var(--bw-base) solid var(--search-border); border-radius: var(--r-base); box-shadow: var(--sh-xs); min-height: var(--touch-web); }
+.search-demo .ic { color: var(--search-icon); font-family: var(--ff-display); font-weight: 800; font-size: 16px; }
+.search-demo input { flex: 1; border: 0; outline: 0; font-family: var(--ff-body); font-size: 14px; background: transparent; color: var(--search-fg); }
+.search-demo .kbd { font-family: var(--ff-mono); font-size: 10px; font-weight: 700; padding: 2px 6px; border: 1.5px solid var(--g300); border-radius: 3px; color: var(--text-tertiary); }
+
+/* Map marker (Phase 2D) */
+.marker-demo { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; }
+.marker-demo .pin { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; position: relative; }
+.marker-demo .ring { width: 36px; height: 36px; border-radius: 50%; background: var(--marker-bg); border: 3px solid var(--marker-ring-active); display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-weight: 800; font-size: 14px; box-shadow: var(--sh-xs); color: var(--text-primary); }
+.marker-demo.idle    .ring { border-color: var(--marker-ring-idle); }
+.marker-demo.outside .ring { border-color: var(--marker-ring-outside); }
+.marker-demo.missing .ring { border-color: var(--marker-ring-missing); }
+.marker-demo.offline .ring { border-color: var(--marker-ring-offline); }
+.marker-demo .mod { position: absolute; right: 2px; bottom: 2px; min-width: 14px; height: 14px; padding: 0 3px; border: 1.5px solid var(--black); border-radius: 50%; background: var(--marker-ring-active); color: var(--white); font-family: var(--ff-display); font-weight: 800; font-size: 9px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.marker-demo.idle    .mod { background: var(--marker-ring-idle); }
+.marker-demo.outside .mod { background: var(--marker-ring-outside); border-radius: 2px; }
+.marker-demo.missing .mod { background: var(--marker-ring-missing); border-radius: 2px; }
+.marker-demo.offline .mod { background: var(--marker-ring-offline); }
+.marker-demo .label { font-family: var(--ff-mono); font-size: 10px; font-weight: 700; padding: 2px 7px; background: var(--marker-label-bg); border: 1.5px solid var(--black); border-radius: var(--r-sm); color: var(--text-primary); }
+
+/* OTP / PIN */
+.otp-demo { display: flex; gap: 8px; }
+.otp-demo .cell { width: 42px; height: 52px; background: var(--otp-bg); color: var(--otp-fg); border: var(--bw-base) solid var(--otp-border); border-radius: var(--r-base); box-shadow: var(--sh-xs); display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-weight: 700; font-size: 22px; }
+.otp-demo .cell.active { border-width: var(--bw-thick); border-color: var(--otp-border-active); }
+.otp-demo .cell.empty { color: var(--text-tertiary); }
+
+/* Photo upload tile */
+.photo-demo { display: flex; gap: 10px; flex-wrap: wrap; }
+.photo-demo .tile { width: 96px; height: 96px; background: var(--photo-bg); border: var(--bw-base) solid var(--photo-border); border-radius: var(--r-base); box-shadow: var(--sh-xs); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.photo-demo .tile.filled { background: linear-gradient(135deg, var(--c-primary) 25%, transparent 25%) -8px 0/16px 16px, linear-gradient(135deg, var(--c-primary) 25%, var(--bg-mint) 25%) 0 0/16px 16px; }
+.photo-demo .tile .ic { font-family: var(--ff-display); font-weight: 800; font-size: 22px; color: var(--photo-fg); }
+.photo-demo .tile .lbl { position: absolute; bottom: 4px; left: 4px; right: 4px; font-family: var(--ff-mono); font-size: 9px; font-weight: 700; text-align: center; color: var(--text-secondary); }
+.photo-demo .tile.add { border-style: dashed; }
+.photo-demo .tile .remove { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; background: var(--black); color: var(--white); border-radius: 50%; font-family: var(--ff-display); font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+/* Snackbar (toast with action) */
+.snack-demo { display: inline-flex; align-items: center; gap: 14px; padding: 10px 14px 10px 16px; background: var(--black); color: var(--white); border: var(--bw-base) solid var(--black); border-radius: var(--r-base); box-shadow: var(--sh-md); font-family: var(--ff-body); font-size: 13px; font-weight: 500; max-width: 380px; }
+.snack-demo .msg { flex: 1; }
+.snack-demo .action { font-family: var(--ff-display); font-weight: 700; font-size: 12px; padding: 4px 10px; background: var(--c-primary); color: var(--black); border: 1.5px solid var(--c-primary); border-radius: var(--r-sm); cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* Slider */
+.slider-demo { width: 100%; max-width: 280px; }
+.slider-demo .track { position: relative; height: 8px; background: var(--slider-track); border: 1.5px solid var(--black); border-radius: var(--r-full); }
+.slider-demo .fill { position: absolute; top: -1.5px; left: -1.5px; height: 8px; background: var(--slider-fill); border: 1.5px solid var(--black); border-radius: var(--r-full); }
+.slider-demo .thumb { position: absolute; top: 50%; width: 22px; height: 22px; background: var(--slider-thumb); border: 2px solid var(--black); border-radius: 50%; box-shadow: var(--sh-xs); transform: translate(-50%, -50%); }
+.slider-demo .meta { display: flex; justify-content: space-between; font-family: var(--ff-mono); font-size: 11px; margin-top: 8px; color: var(--text-secondary); }
+
+/* Footer */
+.foot { margin-top: 64px; padding-top: 24px; border-top: 2px solid var(--black); font-family: var(--ff-mono); font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? '' : 'dark'; this.textContent = document.documentElement.dataset.theme === 'dark' ? '☀ Light' : '☾ Dark';">☾ Dark</button>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mh-row">
+      <div>
+        <div class="mh-eyebrow"><span class="badge">v2.1</span> SEKAR · Design System · Locked</div>
+        <h1 class="mh-title">One token<br/>set, two<br/>platforms.</h1>
+        <p class="mh-sub">Layer&nbsp;1 primitives in <code class="i">tokens.json</code>, Layer&nbsp;2 semantic component tokens layered on top, distributed to React Native (mobile) and React+PWA (web) from one build script. Dark-mode hooks throughout.</p>
+      </div>
+      <div class="mh-meta">
+        <div><span>Source of truth</span><b>tokens.json</b></div>
+        <div><span>Generator</span><b>build-tokens.ts</b></div>
+        <div><span>Mobile out</span><b>nbTokens.ts</b></div>
+        <div><span>Web out</span><b>tokens.css + tw preset</b></div>
+        <div><span>Dark mode</span><b>data-theme=dark</b></div>
+        <div><span>Theme</span><b>Try the toggle ↗</b></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ 01 · Three-layer model ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">Three-layer model</h2></div>
+    <p class="sec-lede">Tokens are split into three layers. Components consume <b>only</b> Layer&nbsp;2 semantic tokens — never Layer&nbsp;1 primitives directly. Layer&nbsp;3 platform adapters fill in what RN can't do (e.g. CSS variables, focus-visible).</p>
+
+    <div class="layers">
+      <div class="layer core">
+        <span class="pin">L1 · PRIMITIVES</span>
+        <h3>Raw values</h3>
+        <p class="sub-txt">The vocabulary. Hex codes, px values, font names. No meaning, just the palette.</p>
+        <ul>
+          <li><b>color</b> primary, danger, gray-50…900</li>
+          <li><b>space</b> xs · sm · md · lg · xl · 2xl · 3xl</li>
+          <li><b>radius</b> sm · base · md · lg · full</li>
+          <li><b>shadow</b> xs · sm · md · lg · xl (hard-edge)</li>
+          <li><b>type</b> display · h1·h2·h3 · body · caption · mono</li>
+          <li><b>motion</b> press · hover · enter · exit</li>
+        </ul>
+      </div>
+      <div class="layer semantic">
+        <span class="pin">L2 · SEMANTIC</span>
+        <h3>Meaning</h3>
+        <p class="sub-txt">Component-shaped roles. <code class="i">btn-primary-bg</code>, <code class="i">input-border-focus</code>, <code class="i">status-active</code>. This is what every button, input, card reads from.</p>
+        <ul>
+          <li><b>btn</b> primary · danger · ghost (bg/fg/border/shadow)</li>
+          <li><b>input</b> bg · border · border-focus · border-error</li>
+          <li><b>card · modal</b> bg · border · shadow · scrim</li>
+          <li><b>badge · status</b> active · idle · outside · missing</li>
+          <li><b>surface</b> page · card · raised · info · overlay</li>
+          <li><b>text</b> primary · secondary · tertiary · disabled · inverse</li>
+        </ul>
+      </div>
+      <div class="layer platform">
+        <span class="pin">L3 · PLATFORM</span>
+        <h3>Adapters</h3>
+        <p class="sub-txt">Where the platforms diverge. Same semantic name, platform-appropriate implementation.</p>
+        <ul>
+          <li><b>touch</b> mobile 48px · web 44px</li>
+          <li><b>shadow</b> CSS box-shadow · RN composite Views</li>
+          <li><b>focus</b> :focus-visible ring · 3px primary border on RN</li>
+          <li><b>motion</b> CSS transitions · RN Animated</li>
+          <li><b>nav</b> bottom tab bar · sidebar / topbar</li>
+          <li><b>scroll</b> native swipe · :hover scrollbar</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 02 · Distribution ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">Distribution</h2></div>
+    <p class="sec-lede">One JSON, four outputs. Run <code class="i">npm run tokens:build</code> at the repo root and every consumer is updated atomically. CI fails the PR if a generated file is out of sync.</p>
+
+    <div class="dist">
+      <div class="dist-source">
+        <span class="icon">{ }</span>
+        <b>specs/ui-ux/tokens.json</b>
+        <span>The only file you ever edit. Every other file in this section is auto-generated.</span>
+      </div>
+      <div class="dist-targets">
+        <div class="dist-target">
+          <div class="head">
+            <span class="pf-tag pf-mobile">Mobile · RN</span>
+            <h4>fe/mobile/src/constants/generated/tokens.ts</h4>
+          </div>
+          <ul>
+            <li>Plain JS object — <code>nbColors</code>, <code>nbSpacing</code>, <code>nbShadows</code>, <code>nbType</code></li>
+            <li><code>nbTokens.ts</code> wrapper adds backward-compat shims</li>
+            <li>Components import named tokens, not hex literals</li>
+          </ul>
+        </div>
+        <div class="dist-target">
+          <div class="head">
+            <span class="pf-tag pf-web">Web · CSS</span>
+            <h4>fe/web/src/styles/generated/tokens.css</h4>
+          </div>
+          <ul>
+            <li>CSS custom properties on <code>:root</code> + <code>[data-theme=dark]</code></li>
+            <li>Auto-injected via the app's root layout</li>
+            <li>Runtime theme switching, no rebuild</li>
+          </ul>
+        </div>
+        <div class="dist-target">
+          <div class="head">
+            <span class="pf-tag pf-web">Web · Tailwind</span>
+            <h4>fe/web/tailwind.preset.js</h4>
+          </div>
+          <ul>
+            <li>theme.extend.colors / spacing / borderRadius / boxShadow</li>
+            <li>Use <code>bg-nb-primary</code>, <code>shadow-nb-md</code> in JSX</li>
+            <li>Compiled-out CSS — no runtime cost</li>
+          </ul>
+        </div>
+        <div class="dist-target">
+          <div class="head">
+            <span class="pf-tag pf-web">Shared · TS</span>
+            <h4>packages/tokens/index.ts</h4>
+          </div>
+          <ul>
+            <li>Typed export <code>export const tokens = {...}</code></li>
+            <li>Used by both mobile + web for non-CSS logic (icon colors, charts)</li>
+            <li>Single import for status helpers (<code>getStatusColor</code>)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Generator output examples</h3>
+    <div class="codeblock-row">
+      <div>
+        <div class="cb-label"><span class="dot"></span>Web · tokens.css (excerpt)</div>
+        <pre class="codeblock"><span class="c">/* Auto-generated. Edit tokens.json. */</span>
+<span class="k">:root</span> {
+  <span class="n">--c-primary</span>: <span class="s">#7FBC8C</span>;
+  <span class="n">--c-success</span>: <span class="s">#15803D</span>;
+  <span class="n">--c-danger</span>:  <span class="s">#DC2626</span>;
+  <span class="n">--bg-canvas</span>: <span class="s">#F5F0EB</span>;
+  <span class="n">--sh-sm</span>:    <span class="s">4px 4px 0 #1C1917</span>;
+  <span class="n">--r-base</span>:   <span class="s">6px</span>;
+  <span class="n">--touch</span>:    <span class="s">44px</span>; <span class="c">/* web */</span>
+
+  <span class="c">/* Layer 2 semantic */</span>
+  <span class="n">--btn-primary-bg</span>:     <span class="k">var</span>(<span class="n">--c-primary</span>);
+  <span class="n">--input-border-focus</span>: <span class="k">var</span>(<span class="n">--c-primary</span>);
+  <span class="n">--status-active</span>:      <span class="k">var</span>(<span class="n">--c-success</span>);
+}
+<span class="k">[data-theme=</span><span class="s">"dark"</span><span class="k">]</span> {
+  <span class="n">--bg-canvas</span>: <span class="s">#0F1411</span>;
+  <span class="n">--c-primary</span>: <span class="s">#95D4A0</span>;
+  <span class="c">/* …semantic vars rebind automatically */</span>
+}</pre>
+      </div>
+      <div>
+        <div class="cb-label"><span class="dot" style="background:var(--c-info);"></span>Mobile · tokens.ts (excerpt)</div>
+<pre class="codeblock"><span class="c">// Auto-generated. Edit tokens.json.</span>
+<span class="k">export const</span> nbColors = {
+  primary:   <span class="s">'#7FBC8C'</span>,
+  success:   <span class="s">'#15803D'</span>,
+  danger:    <span class="s">'#DC2626'</span>,
+  bgCanvas:  <span class="s">'#F5F0EB'</span>,
+  <span class="c">// status</span>
+  statusActive:   <span class="s">'#15803D'</span>,
+  statusActiveBg: <span class="s">'#DCFCE7'</span>,
+  statusIdle:     <span class="s">'#D97706'</span>,
+} <span class="k">as const</span>;
+
+<span class="k">export const</span> nbShadows = {
+  <span class="c">// RN composite, hard-edge</span>
+  sm: { shadowColor: <span class="s">'#1C1917'</span>,
+        shadowOffset: { width: <span class="n">4</span>, height: <span class="n">4</span> },
+        shadowOpacity: <span class="n">1</span>, shadowRadius: <span class="n">0</span>,
+        elevation: <span class="n">4</span> },
+};</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 03 · Color primitives ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">Layer 1 · Color primitives</h2></div>
+    <p class="sec-lede">Every hex code in the system. Status and request colors are derived from <code class="i">tokens.color.*</code> and locked to specific WCAG AA contrast pairs.</p>
+
+    <h3 class="sub">Brand</h3>
+    <div class="swatch-grid">
+      <div class="sw"><div class="sw-color" style="background:#7FBC8C"></div><div class="sw-meta"><b>primary</b><span class="h">#7FBC8C</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#6BA87A"></div><div class="sw-meta"><b>primary.hover</b><span class="h">#6BA87A</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#5A9468"></div><div class="sw-meta"><b>primary.active</b><span class="h">#5A9468</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#8B7355"></div><div class="sw-meta"><b>secondary</b><span class="h">#8B7355</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#1A4D2E"></div><div class="sw-meta"><b>navy</b><span class="h">#1A4D2E</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#1C1917;"></div><div class="sw-meta"><b>black</b><span class="h">#1C1917</span></div></div>
+    </div>
+
+    <h3 class="sub">Semantic states</h3>
+    <div class="swatch-grid">
+      <div class="sw"><div class="sw-color" style="background:#15803D"></div><div class="sw-meta"><b>success</b><span class="h">#15803D</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#DCFCE7"></div><div class="sw-meta"><b>success.bg</b><span class="h">#DCFCE7</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#D97706"></div><div class="sw-meta"><b>warning</b><span class="h">#D97706</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#FEF3C7"></div><div class="sw-meta"><b>warning.bg</b><span class="h">#FEF3C7</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#DC2626"></div><div class="sw-meta"><b>danger</b><span class="h">#DC2626</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#FEE2E2"></div><div class="sw-meta"><b>danger.bg</b><span class="h">#FEE2E2</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#2563EB"></div><div class="sw-meta"><b>info</b><span class="h">#2563EB</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#9333EA"></div><div class="sw-meta"><b>purple</b><span class="h">#9333EA</span></div></div>
+    </div>
+
+    <h3 class="sub">Surfaces</h3>
+    <div class="swatch-grid">
+      <div class="sw"><div class="sw-color" style="background:#F5F0EB"></div><div class="sw-meta"><b>bg.canvas</b><span class="h">#F5F0EB · default page</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#FFFFFF"></div><div class="sw-meta"><b>bg.surface</b><span class="h">#FFFFFF · cards</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#FDFD96"></div><div class="sw-meta"><b>bg.yellow</b><span class="h">#FDFD96 · accent</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#DAF5F0"></div><div class="sw-meta"><b>bg.mint</b><span class="h">#DAF5F0 · info</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#B5D2AD"></div><div class="sw-meta"><b>bg.green</b><span class="h">#B5D2AD · 2nd surface</span></div></div>
+      <div class="sw"><div class="sw-color" style="background:#FCDFFF"></div><div class="sw-meta"><b>bg.pink</b><span class="h">#FCDFFF · elevated</span></div></div>
+    </div>
+
+    <h3 class="sub">Status pills (live preview)</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      <span class="status-pill active"><span class="dot"></span>AKTIF · 28</span>
+      <span class="status-pill idle"><span class="dot"></span>IDLE · 6</span>
+      <span class="status-pill outside"><span class="dot"></span>LUAR AREA · 2</span>
+      <span class="status-pill missing"><span class="dot"></span>HILANG · 1</span>
+      <span class="status-pill offline"><span class="dot"></span>OFFLINE · 4</span>
+    </div>
+  </section>
+
+  <!-- ═══ 04 · Type scale ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Type scale</h2></div>
+    <p class="sec-lede">Display weights for headings, Inter for body. JetBrains Mono for codes, IDs, and technical labels (tokens, lat/lng, timestamps). Mobile minimum body is 14px; web minimum is 12px (caption only).</p>
+
+    <div class="type-spec">
+      <div class="type-row"><span class="name">display-xl</span><span class="preview" style="font-family:var(--ff-display);font-weight:800;font-size:56px;line-height:1;letter-spacing:-0.025em;">Selamat datang</span><span class="meta">800 / 56 / 1.0</span></div>
+      <div class="type-row"><span class="name">h1</span><span class="preview" style="font-family:var(--ff-display);font-weight:700;font-size:28px;line-height:1.2;letter-spacing:-0.01em;">Monitoring Lapangan</span><span class="meta">700 / 28 / 1.2</span></div>
+      <div class="type-row"><span class="name">h2</span><span class="preview" style="font-family:var(--ff-display);font-weight:600;font-size:22px;line-height:1.3;">Tugas hari ini</span><span class="meta">600 / 22 / 1.3</span></div>
+      <div class="type-row"><span class="name">h3</span><span class="preview" style="font-family:var(--ff-display);font-weight:600;font-size:18px;line-height:1.35;">Petugas aktif</span><span class="meta">600 / 18 / 1.35</span></div>
+      <div class="type-row"><span class="name">body-lg</span><span class="preview" style="font-family:var(--ff-body);font-weight:500;font-size:18px;line-height:1.55;">Lokasi terakhir 5 menit lalu di Rayon Selatan.</span><span class="meta">500 / 18 / 1.55</span></div>
+      <div class="type-row"><span class="name">body</span><span class="preview" style="font-family:var(--ff-body);font-weight:400;font-size:16px;line-height:1.5;">Pohon yang belum selesai akan jadi sub-task baru untuk besok.</span><span class="meta">400 / 16 / 1.5</span></div>
+      <div class="type-row"><span class="name">body-sm</span><span class="preview" style="font-family:var(--ff-body);font-weight:400;font-size:14px;line-height:1.45;">Sumber: Walikota · TIW · Pengaduan Warga</span><span class="meta">400 / 14 / 1.45</span></div>
+      <div class="type-row"><span class="name">caption</span><span class="preview" style="font-family:var(--ff-body);font-weight:500;font-size:12px;line-height:1.4;">Diperbarui 2 menit lalu</span><span class="meta">500 / 12 / 1.4</span></div>
+      <div class="type-row"><span class="name">mono-sm</span><span class="preview" style="font-family:var(--ff-mono);font-weight:500;font-size:12px;">PR-2026-0142 · -7.2575, 112.7521</span><span class="meta">mono 500 / 12</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ 05 · Spacing + radius + shadow ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Spacing · radius · shadow</h2></div>
+
+    <h3 class="sub">Spacing</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:4px;height:32px;background:var(--c-primary);border:2px solid var(--black);"></div><code class="i">xs · 4</code></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:8px;height:32px;background:var(--c-primary);border:2px solid var(--black);"></div><code class="i">sm · 8</code></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:16px;height:32px;background:var(--c-primary);border:2px solid var(--black);"></div><code class="i">md · 16</code></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:24px;height:32px;background:var(--c-primary);border:2px solid var(--black);"></div><code class="i">lg · 24</code></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:32px;height:32px;background:var(--c-primary);border:2px solid var(--black);"></div><code class="i">xl · 32</code></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:48px;height:32px;background:var(--c-primary);border:2px solid var(--black);"></div><code class="i">2xl · 48</code></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:64px;height:32px;background:var(--c-primary);border:2px solid var(--black);"></div><code class="i">3xl · 64</code></div>
+    </div>
+
+    <h3 class="sub">Radius</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;">
+      <div style="width:80px;height:80px;background:var(--bg-yellow);border:2px solid var(--black);border-radius:0;display:flex;align-items:flex-end;justify-content:center;font-family:var(--ff-mono);font-size:11px;padding:6px;">none</div>
+      <div style="width:80px;height:80px;background:var(--bg-yellow);border:2px solid var(--black);border-radius:4px;display:flex;align-items:flex-end;justify-content:center;font-family:var(--ff-mono);font-size:11px;padding:6px;">sm · 4</div>
+      <div style="width:80px;height:80px;background:var(--bg-yellow);border:2px solid var(--black);border-radius:6px;display:flex;align-items:flex-end;justify-content:center;font-family:var(--ff-mono);font-size:11px;padding:6px;">base · 6</div>
+      <div style="width:80px;height:80px;background:var(--bg-yellow);border:2px solid var(--black);border-radius:8px;display:flex;align-items:flex-end;justify-content:center;font-family:var(--ff-mono);font-size:11px;padding:6px;">md · 8</div>
+      <div style="width:80px;height:80px;background:var(--bg-yellow);border:2px solid var(--black);border-radius:12px;display:flex;align-items:flex-end;justify-content:center;font-family:var(--ff-mono);font-size:11px;padding:6px;">lg · 12</div>
+      <div style="width:80px;height:80px;background:var(--bg-yellow);border:2px solid var(--black);border-radius:9999px;display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:11px;">full</div>
+    </div>
+
+    <h3 class="sub">Shadow (hard-edge, opaque)</h3>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:24px;margin-top:8px;">
+      <div style="background:var(--white);border:2px solid var(--black);border-radius:6px;height:80px;box-shadow:var(--sh-xs);display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:11px;font-weight:600;">xs · 2px</div>
+      <div style="background:var(--white);border:2px solid var(--black);border-radius:6px;height:80px;box-shadow:var(--sh-sm);display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:11px;font-weight:600;">sm · 4px</div>
+      <div style="background:var(--white);border:2px solid var(--black);border-radius:6px;height:80px;box-shadow:var(--sh-md);display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:11px;font-weight:600;">md · 6px</div>
+      <div style="background:var(--white);border:2px solid var(--black);border-radius:6px;height:80px;box-shadow:var(--sh-lg);display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:11px;font-weight:600;">lg · 8px</div>
+      <div style="background:var(--white);border:2px solid var(--black);border-radius:6px;height:80px;box-shadow:var(--sh-xl);display:flex;align-items:center;justify-content:center;font-family:var(--ff-mono);font-size:11px;font-weight:600;">xl · 12px</div>
+    </div>
+  </section>
+
+  <!-- ═══ 06 · Component tokens ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">Layer 2 · Component tokens</h2></div>
+    <p class="sec-lede">Components read these names — never the underlying primitives. Swap a primitive (or a whole theme) and every component follows automatically.</p>
+
+    <h3 class="sub">Button</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <button class="btn primary">Mulai Aktivitas</button>
+        <button class="btn danger">CLOCK OUT</button>
+        <button class="btn ghost">Batal</button>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Button · primary <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>btn-primary-bg</b></div>
+        <div class="t-row"><span>fg</span><b>btn-primary-fg</b></div>
+        <div class="t-row"><span>border</span><b>btn-primary-border</b></div>
+        <div class="t-row"><span>border-width</span><b>bw-base · 2px</b></div>
+        <div class="t-row"><span>radius</span><b>r-base · 6px</b></div>
+        <div class="t-row"><span>shadow</span><b>btn-primary-shadow</b></div>
+        <div class="t-row"><span>min-height</span><b>touch (mobile 48 / web 44)</b></div>
+        <div class="t-row"><span>type</span><b>display 700 / 14</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Input</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="input">
+          <label>Nomor HP</label>
+          <input type="text" placeholder="08xx-xxxx-xxxx" value="0812-3456-7890" />
+          <span class="hint">Format Indonesia, 10–13 digit</span>
+        </div>
+        <div class="input error">
+          <label>Sandi</label>
+          <input type="password" value="••••" />
+          <span class="hint">Minimal 8 karakter</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Input · text <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>input-bg</b></div>
+        <div class="t-row"><span>fg</span><b>input-fg</b></div>
+        <div class="t-row"><span>border</span><b>input-border</b></div>
+        <div class="t-row"><span>border focus</span><b>input-border-focus (3px)</b></div>
+        <div class="t-row"><span>border error</span><b>input-border-error</b></div>
+        <div class="t-row"><span>placeholder</span><b>input-placeholder</b></div>
+        <div class="t-row"><span>radius</span><b>r-base · 6px</b></div>
+        <div class="t-row"><span>min-height</span><b>touch</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Card</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="card">
+          <h4>Trembesi · 4 pohon</h4>
+          <p>Rayon Selatan · Area 03 · jatuh tempo dalam 2 hari</p>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Card · default <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>card-bg</b></div>
+        <div class="t-row"><span>border</span><b>card-border</b></div>
+        <div class="t-row"><span>border-width</span><b>bw-base · 2px</b></div>
+        <div class="t-row"><span>radius</span><b>r-base · 6px</b></div>
+        <div class="t-row"><span>shadow</span><b>card-shadow · sh-sm</b></div>
+        <div class="t-row"><span>padding</span><b>sp-md (16) · sp-lg (24)</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Badge / status pill</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <span class="badge success"><span class="dot"></span>SELESAI</span>
+        <span class="badge warning"><span class="dot"></span>UNDER REVIEW</span>
+        <span class="badge danger"><span class="dot"></span>OVERDUE</span>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Badge / Status pill <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg success</span><b>badge-success-bg</b></div>
+        <div class="t-row"><span>fg success</span><b>badge-success-fg</b></div>
+        <div class="t-row"><span>bg warning</span><b>badge-warning-bg</b></div>
+        <div class="t-row"><span>fg warning</span><b>badge-warning-fg</b></div>
+        <div class="t-row"><span>bg danger</span><b>badge-danger-bg</b></div>
+        <div class="t-row"><span>fg danger</span><b>badge-danger-fg</b></div>
+        <div class="t-row"><span>radius</span><b>r-full</b></div>
+      </div>
+    </div>
+
+    <div class="sub-divider"><span>Form controls</span></div>
+
+    <h3 class="sub">Toggle / Switch</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="flex-direction: row; gap: 24px; align-items: center;">
+        <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <div class="switch-demo on"></div>
+          <span style="font-family: var(--ff-mono); font-size: 10px; color: var(--text-secondary);">ON</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <div class="switch-demo"></div>
+          <span style="font-family: var(--ff-mono); font-size: 10px; color: var(--text-secondary);">OFF</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Switch <span class="pf">L2</span></div>
+        <div class="t-row"><span>track on</span><b>switch-track-on</b></div>
+        <div class="t-row"><span>track off</span><b>switch-track-off</b></div>
+        <div class="t-row"><span>thumb</span><b>switch-thumb</b></div>
+        <div class="t-row"><span>border</span><b>black + bw-base</b></div>
+        <div class="t-row"><span>radius</span><b>r-full</b></div>
+        <div class="t-row"><span>min hit</span><b>touch-mobile / touch-web</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Checkbox &amp; Radio</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="flex-direction: row; gap: 28px; flex-wrap: wrap;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <span class="checkbox-demo on"><span class="box">✓</span> Foto wajib</span>
+          <span class="checkbox-demo"><span class="box"></span> Catatan opsional</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <span class="radio-demo on"><span class="dot"></span> Selesai</span>
+          <span class="radio-demo"><span class="dot"></span> Ditinggalkan</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Checkbox · Radio <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg off</span><b>checkbox-bg</b></div>
+        <div class="t-row"><span>bg on</span><b>checkbox-bg-on</b></div>
+        <div class="t-row"><span>fg on</span><b>checkbox-fg-on</b></div>
+        <div class="t-row"><span>border</span><b>black + bw-base</b></div>
+        <div class="t-row"><span>checkbox r</span><b>4px</b></div>
+        <div class="t-row"><span>radio r</span><b>r-full</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Select / Dropdown</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="select-demo"><span>Pilih lokasi tugas</span><span class="chev">▾</span></div>
+        <div class="select-demo" style="background: var(--bg-yellow);"><span>Bandung Pos 04 — Soekarno-Hatta</span><span class="chev">▾</span></div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Select <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>input-bg</b></div>
+        <div class="t-row"><span>fg</span><b>input-fg</b></div>
+        <div class="t-row"><span>border</span><b>input-border</b></div>
+        <div class="t-row"><span>border focus</span><b>input-border-focus</b></div>
+        <div class="t-row"><span>radius</span><b>r-base</b></div>
+        <div class="t-row"><span>min height</span><b>touch-web · touch-mobile</b></div>
+        <div class="t-row"><span>chev color</span><b>text-secondary</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Date picker (cell grid)</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="dp-demo">
+          <span class="day head">M</span><span class="day head">S</span><span class="day head">S</span><span class="day head">R</span><span class="day head">K</span><span class="day head">J</span><span class="day head">S</span>
+          <span class="day muted">28</span><span class="day muted">29</span><span class="day">1</span><span class="day">2</span><span class="day">3</span><span class="day">4</span><span class="day">5</span>
+          <span class="day">6</span><span class="day">7</span><span class="day">8</span><span class="day">9</span><span class="day">10</span><span class="day">11</span><span class="day">12</span>
+          <span class="day">13</span><span class="day today">14</span><span class="day sel">15</span><span class="day sel">16</span><span class="day sel">17</span><span class="day">18</span><span class="day">19</span>
+          <span class="day">20</span><span class="day">21</span><span class="day">22</span><span class="day">23</span><span class="day">24</span><span class="day">25</span><span class="day">26</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">DatePicker cell <span class="pf">L2</span></div>
+        <div class="t-row"><span>cell selected bg</span><b>dp-cell-selected-bg</b></div>
+        <div class="t-row"><span>cell selected fg</span><b>dp-cell-selected-fg</b></div>
+        <div class="t-row"><span>today border</span><b>dp-cell-today-border</b></div>
+        <div class="t-row"><span>muted day</span><b>dp-cell-muted-fg</b></div>
+        <div class="t-row"><span>head</span><b>text-secondary · ff-mono</b></div>
+        <div class="t-row"><span>cell radius</span><b>4px</b></div>
+        <div class="t-row"><span>used in</span><b>SchedulePicker · DateRange</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">OTP / PIN input</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="otp-demo">
+          <span class="cell">4</span>
+          <span class="cell">2</span>
+          <span class="cell">7</span>
+          <span class="cell active">9</span>
+          <span class="cell empty">–</span>
+          <span class="cell empty">–</span>
+        </div>
+        <span style="font-family: var(--ff-mono); font-size: 11px; color: var(--text-secondary);">Kode OTP dikirim ke 0812…–90 · sisa 00:42</span>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">OTP / PIN <span class="pf">L2</span></div>
+        <div class="t-row"><span>cell bg</span><b>otp-bg</b></div>
+        <div class="t-row"><span>cell fg</span><b>otp-fg</b></div>
+        <div class="t-row"><span>border</span><b>otp-border</b></div>
+        <div class="t-row"><span>border active</span><b>otp-border-active (3px)</b></div>
+        <div class="t-row"><span>radius</span><b>r-base</b></div>
+        <div class="t-row"><span>type</span><b>ff-display 22 / 700</b></div>
+        <div class="t-row"><span>used in</span><b>AS-3 · PIN cepat shift</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Slider</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="slider-demo">
+          <div class="track">
+            <div class="fill" style="width: 42%;"></div>
+            <div class="thumb" style="left: 42%;"></div>
+          </div>
+          <div class="meta"><span>Radius geofence</span><span>100&nbsp;m</span></div>
+        </div>
+        <div class="slider-demo">
+          <div class="track">
+            <div class="fill" style="width: 78%;"></div>
+            <div class="thumb" style="left: 78%;"></div>
+          </div>
+          <div class="meta"><span>Tekanan foto JPEG</span><span>78%</span></div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Slider <span class="pf">L2</span></div>
+        <div class="t-row"><span>track</span><b>slider-track</b></div>
+        <div class="t-row"><span>fill</span><b>slider-fill</b></div>
+        <div class="t-row"><span>thumb</span><b>slider-thumb</b></div>
+        <div class="t-row"><span>thumb border</span><b>black 2px</b></div>
+        <div class="t-row"><span>thumb r</span><b>r-full · 22px</b></div>
+        <div class="t-row"><span>track r</span><b>r-full · 8px</b></div>
+        <div class="t-row"><span>used in</span><b>Geofence · Quality settings</b></div>
+      </div>
+    </div>
+
+    <div class="sub-divider"><span>Navigation &amp; disclosure</span></div>
+
+    <h3 class="sub">Search bar</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="search-demo">
+          <span class="ic">⚲</span>
+          <input type="text" placeholder="Cari personel, lokasi, aktivitas…" />
+          <span class="kbd">⌘K</span>
+        </div>
+        <div class="search-demo" style="background: var(--bg-yellow);">
+          <span class="ic">⚲</span>
+          <input type="text" value="Rayon Selatan" />
+          <span class="kbd">✕</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Search <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>search-bg</b></div>
+        <div class="t-row"><span>fg</span><b>search-fg</b></div>
+        <div class="t-row"><span>icon</span><b>search-icon</b></div>
+        <div class="t-row"><span>border</span><b>search-border</b></div>
+        <div class="t-row"><span>kbd badge</span><b>ff-mono 10 · g300 border</b></div>
+        <div class="t-row"><span>min height</span><b>touch-web / touch-mobile</b></div>
+        <div class="t-row"><span>radius</span><b>r-base</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Tooltip</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="padding-top: 64px;">
+        <span class="tooltip-demo">
+          GPS akurasi 5&nbsp;m
+          <span class="bubble">Hover untuk detail · muncul setelah 400ms</span>
+        </span>
+        <span class="tooltip-demo" style="background: var(--bg-yellow);">
+          ⛓ Geofence aktif
+        </span>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Tooltip <span class="pf">W</span></div>
+        <div class="t-row"><span>bg</span><b>tooltip-bg</b></div>
+        <div class="t-row"><span>fg</span><b>tooltip-fg</b></div>
+        <div class="t-row"><span>radius</span><b>tooltip-radius</b></div>
+        <div class="t-row"><span>arrow</span><b>5px solid · inherits bg</b></div>
+        <div class="t-row"><span>show delay</span><b>400ms</b></div>
+        <div class="t-row"><span>note</span><b>web only — mobile uses snack/inline</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Tabs &mdash; segmented &amp; underline</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="tab-demo">
+          <span class="seg active">Hari ini</span>
+          <span class="seg">Minggu</span>
+          <span class="seg">Bulan</span>
+        </div>
+        <div class="tab-line">
+          <span class="seg active">Aktivitas</span>
+          <span class="seg">Riwayat</span>
+          <span class="seg">Laporan</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Tab <span class="pf">L2</span></div>
+        <div class="t-row"><span>fg default</span><b>tab-fg</b></div>
+        <div class="t-row"><span>fg active</span><b>tab-fg-active</b></div>
+        <div class="t-row"><span>seg bg active</span><b>tab-bg-active</b></div>
+        <div class="t-row"><span>indicator</span><b>tab-indicator</b></div>
+        <div class="t-row"><span>seg radius</span><b>4px</b></div>
+        <div class="t-row"><span>line h</span><b>4px solid</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Chip / Filter pill</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="flex-direction: row; flex-wrap: wrap; gap: 8px;">
+        <span class="chip-demo on">Aktif <span class="x">×</span></span>
+        <span class="chip-demo on">Bandung <span class="x">×</span></span>
+        <span class="chip-demo">Off duty</span>
+        <span class="chip-demo">Korlap</span>
+        <span class="chip-demo">+ Filter</span>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Chip <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>chip-bg</b></div>
+        <div class="t-row"><span>bg selected</span><b>chip-bg-on</b></div>
+        <div class="t-row"><span>fg</span><b>chip-fg</b></div>
+        <div class="t-row"><span>border</span><b>black 1.5px</b></div>
+        <div class="t-row"><span>radius</span><b>r-full</b></div>
+        <div class="t-row"><span>family</span><b>ff-mono</b></div>
+      </div>
+    </div>
+
+    <div class="sub-divider"><span>Surfaces &amp; overlay</span></div>
+
+    <h3 class="sub">Modal</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="background: var(--bg-overlay);">
+        <div class="modal-demo">
+          <h4>Akhiri shift?</h4>
+          <p>Shift pagi 06.30 – 14.30 akan ditutup. Total 12 aktivitas tercatat.</p>
+          <div class="actions">
+            <button class="btn ghost" style="padding:8px 14px; font-size:13px;">Batal</button>
+            <button class="btn primary" style="padding:8px 14px; font-size:13px;">Ya, akhiri</button>
+          </div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Modal <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>modal-bg</b></div>
+        <div class="t-row"><span>scrim</span><b>modal-scrim</b></div>
+        <div class="t-row"><span>shadow</span><b>modal-shadow</b></div>
+        <div class="t-row"><span>radius</span><b>modal-radius</b></div>
+        <div class="t-row"><span>border</span><b>black + bw-base</b></div>
+        <div class="t-row"><span>padding</span><b>sp-md</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Bottom sheet</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="background: var(--bg-overlay); justify-content: flex-end; padding-bottom: 0; padding-left: 0; padding-right: 0;">
+        <div class="sheet-demo">
+          <div class="handle"></div>
+          <h4>Filter aktivitas</h4>
+          <div class="row"><span>Lokasi</span><b>Bandung Pos 04</b></div>
+          <div class="row"><span>Status</span><b>Semua</b></div>
+          <div class="row"><span>Tanggal</span><b>Hari ini</b></div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Bottom sheet <span class="pf">M</span></div>
+        <div class="t-row"><span>bg</span><b>sheet-bg</b></div>
+        <div class="t-row"><span>handle</span><b>sheet-handle</b></div>
+        <div class="t-row"><span>shadow</span><b>sheet-shadow</b></div>
+        <div class="t-row"><span>radius top</span><b>sheet-radius-top</b></div>
+        <div class="t-row"><span>scrim</span><b>bg-overlay</b></div>
+        <div class="t-row"><span>note</span><b>mobile only</b></div>
+      </div>
+    </div>
+
+    <div class="sub-divider"><span>Feedback &amp; status</span></div>
+
+    <h3 class="sub">Toast / Snackbar</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="align-items: flex-start;">
+        <div class="toast-demo success"><span class="ico">✓</span> Aktivitas berhasil disimpan</div>
+        <div class="toast-demo warning"><span class="ico">!</span> Lokasi di luar geofence</div>
+        <div class="toast-demo danger"><span class="ico">✕</span> Foto gagal di-upload</div>
+        <div class="toast-demo info"><span class="ico">i</span> Sinkronisasi 3 item offline</div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Toast <span class="pf">L2</span></div>
+        <div class="t-row"><span>success bg / fg</span><b>toast-success-bg / -fg</b></div>
+        <div class="t-row"><span>warning bg / fg</span><b>toast-warning-bg / -fg</b></div>
+        <div class="t-row"><span>danger bg / fg</span><b>toast-danger-bg / -fg</b></div>
+        <div class="t-row"><span>info bg / fg</span><b>toast-info-bg / -fg</b></div>
+        <div class="t-row"><span>shadow</span><b>toast-shadow</b></div>
+        <div class="t-row"><span>radius</span><b>r-base</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Snackbar (with action)</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="align-items: flex-start; gap: 10px;">
+        <div class="snack-demo">
+          <span class="msg">Aktivitas dipindahkan ke draft</span>
+          <button class="action">URUNG</button>
+        </div>
+        <div class="snack-demo" style="background: var(--c-danger);">
+          <span class="msg">Upload foto gagal · simpan offline</span>
+          <button class="action" style="background: var(--white); color: var(--black); border-color: var(--white);">COBA LAGI</button>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Snackbar <span class="pf">L2</span></div>
+        <div class="t-row"><span>bg</span><b>black (default) / c-danger</b></div>
+        <div class="t-row"><span>fg</span><b>white</b></div>
+        <div class="t-row"><span>action bg</span><b>c-primary</b></div>
+        <div class="t-row"><span>action fg</span><b>black</b></div>
+        <div class="t-row"><span>shadow</span><b>sh-md</b></div>
+        <div class="t-row"><span>auto-dismiss</span><b>5s (8s w/ action)</b></div>
+        <div class="t-row"><span>used in</span><b>undo, retry, navigation hint</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Alert / Banner</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="align-items: flex-start; gap: 10px;">
+        <div class="alert-demo info"><span class="ico">i</span><div><h5 class="ttl">Mode offline</h5><p class="msg">3 aktivitas akan disinkronkan saat sinyal kembali.</p></div></div>
+        <div class="alert-demo warn"><span class="ico">!</span><div><h5 class="ttl">Foto belum ada</h5><p class="msg">Aktivitas tanpa foto tidak akan diakui.</p></div></div>
+        <div class="alert-demo danger"><span class="ico">✕</span><div><h5 class="ttl">Sesi berakhir</h5><p class="msg">Silakan login kembali untuk melanjutkan.</p></div></div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Alert <span class="pf">L2</span></div>
+        <div class="t-row"><span>info bg / fg</span><b>alert-info-bg / -fg</b></div>
+        <div class="t-row"><span>warn bg / fg</span><b>alert-warn-bg / -fg</b></div>
+        <div class="t-row"><span>success bg / fg</span><b>alert-success-bg / -fg</b></div>
+        <div class="t-row"><span>danger bg / fg</span><b>alert-danger-bg / -fg</b></div>
+        <div class="t-row"><span>border</span><b>black + bw-base</b></div>
+        <div class="t-row"><span>used in</span><b>banner top of screen, inline forms</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Spinner / Loader</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="flex-direction: row; gap: 24px; align-items: center;">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
+          <div class="spinner-demo"></div>
+          <span style="font-family: var(--ff-mono); font-size: 10px; color: var(--text-secondary);">sm · 28</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
+          <div class="spinner-demo lg"></div>
+          <span style="font-family: var(--ff-mono); font-size: 10px; color: var(--text-secondary);">lg · 44</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
+          <div class="spinner-demo" style="border-top-color: var(--c-warning); border-color: var(--c-warning-bg);"></div>
+          <span style="font-family: var(--ff-mono); font-size: 10px; color: var(--text-secondary);">warn</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
+          <div class="spinner-demo" style="border-top-color: var(--c-danger); border-color: var(--c-danger-bg);"></div>
+          <span style="font-family: var(--ff-mono); font-size: 10px; color: var(--text-secondary);">danger</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Spinner <span class="pf">L2</span></div>
+        <div class="t-row"><span>track</span><b>spinner-track</b></div>
+        <div class="t-row"><span>fill</span><b>spinner-fill</b></div>
+        <div class="t-row"><span>border width</span><b>3px (sm) / 4px (lg)</b></div>
+        <div class="t-row"><span>animation</span><b>spin 0.9s linear infinite</b></div>
+        <div class="t-row"><span>variant warn / danger</span><b>c-warning / c-danger</b></div>
+        <div class="t-row"><span>used in</span><b>Sync, OTP send, photo upload</b></div>
+        <div class="t-row"><span>note</span><b>respect prefers-reduced-motion</b></div>
+      </div>
+    </div>
+
+    <div class="sub-divider"><span>Field-specific (mobile)</span></div>
+
+    <h3 class="sub">Map marker (Phase 2D)</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="background: var(--bg-mint); flex-direction: row; gap: 22px; align-items: flex-start; flex-wrap: wrap;">
+        <div class="marker-demo">
+          <div class="pin"><div class="ring">RA</div><span class="mod"><span>✓</span></span></div>
+          <span class="label">RIZAL A. · AKTIF</span>
+        </div>
+        <div class="marker-demo idle">
+          <div class="pin"><div class="ring">YS</div><span class="mod"><span>‖</span></span></div>
+          <span class="label">YUNI S. · IDLE 8m</span>
+        </div>
+        <div class="marker-demo outside">
+          <div class="pin"><div class="ring">DP</div><span class="mod"><span>↗</span></span></div>
+          <span class="label">DWI P. · LUAR AREA</span>
+        </div>
+        <div class="marker-demo missing">
+          <div class="pin"><div class="ring">HM</div><span class="mod"><span>!</span></span></div>
+          <span class="label">HADI M. · HILANG 22m</span>
+        </div>
+        <div class="marker-demo offline">
+          <div class="pin"><div class="ring">SN</div><span class="mod"><span>×</span></span></div>
+          <span class="label">SITI N. · OFFLINE</span>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Map marker <span class="pf">M+W</span></div>
+        <div class="t-row"><span>bg</span><b>marker-bg</b></div>
+        <div class="t-row"><span>ring active</span><b>marker-ring-active</b></div>
+        <div class="t-row"><span>ring idle</span><b>marker-ring-idle</b></div>
+        <div class="t-row"><span>ring outside</span><b>marker-ring-outside</b></div>
+        <div class="t-row"><span>ring missing</span><b>marker-ring-missing</b></div>
+        <div class="t-row"><span>ring offline</span><b>marker-ring-offline</b></div>
+        <div class="t-row"><span>label bg</span><b>marker-label-bg</b></div>
+        <div class="t-row"><span>touch target</span><b>44 × 44 (web) / 48 × 48 (mobile)</b></div>
+        <div class="t-row"><span>a11y</span><b>color + shape modifier</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Photo upload tile</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="photo-demo">
+          <div class="tile filled">
+            <span class="remove">×</span>
+            <span class="lbl">FOTO_01.jpg</span>
+          </div>
+          <div class="tile filled">
+            <span class="remove">×</span>
+            <span class="lbl">FOTO_02.jpg</span>
+          </div>
+          <div class="tile add">
+            <span class="ic">+</span>
+          </div>
+        </div>
+        <span style="font-family: var(--ff-mono); font-size: 11px; color: var(--text-secondary);">JPEG · maks 1&nbsp;MB · dikompres ke 800 px</span>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Photo upload <span class="pf">M</span></div>
+        <div class="t-row"><span>tile bg empty</span><b>photo-bg</b></div>
+        <div class="t-row"><span>border empty</span><b>black 2px dashed</b></div>
+        <div class="t-row"><span>border filled</span><b>black 2px solid</b></div>
+        <div class="t-row"><span>remove badge</span><b>black bg · white · r-full</b></div>
+        <div class="t-row"><span>label</span><b>ff-mono 9 · text-secondary</b></div>
+        <div class="t-row"><span>size</span><b>96 × 96</b></div>
+        <div class="t-row"><span>used in</span><b>Aktivitas · Perantingan · Insiden</b></div>
+      </div>
+    </div>
+
+    <div class="sub-divider"><span>Layout &amp; navigation</span></div>
+
+    <h3 class="sub">FAB · Avatar · Stat</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="flex-direction: row; flex-wrap: wrap; gap: 18px; align-items: center;">
+        <div style="display:flex; gap:12px; align-items:center;">
+          <span class="fab-demo primary">+</span>
+          <span class="fab-demo">⤴</span>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="av-demo role-satgas">RA</span>
+          <span class="av-demo role-korlap">YS</span>
+          <span class="av-demo role-admin">AD</span>
+        </div>
+        <div class="stat-demo">
+          <div class="lbl">Aktivitas hari ini</div>
+          <div class="val">12</div>
+          <div class="delta up">▲ 3 vs kemarin</div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">FAB · Avatar · Stat <span class="pf">L2</span></div>
+        <div class="t-row"><span>fab bg / fg</span><b>fab-bg · fab-fg</b></div>
+        <div class="t-row"><span>fab shadow</span><b>fab-shadow</b></div>
+        <div class="t-row"><span>avatar bg</span><b>avatar-bg · role tints</b></div>
+        <div class="t-row"><span>avatar border</span><b>avatar-border</b></div>
+        <div class="t-row"><span>stat label</span><b>ff-mono · text-secondary</b></div>
+        <div class="t-row"><span>stat value</span><b>ff-display 32 / 800</b></div>
+        <div class="t-row"><span>delta up / down</span><b>c-success-fg · c-danger-fg</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Skeleton · Empty state</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="flex-direction: row; gap: 22px; align-items: flex-start; flex-wrap: wrap;">
+        <div class="skel-demo">
+          <div class="line"></div>
+          <div class="line"></div>
+          <div class="line short"></div>
+        </div>
+        <div class="empty-demo">
+          <div class="ico">∅</div>
+          <h5 class="ttl">Belum ada aktivitas</h5>
+          <p class="msg">Mulai shift untuk mencatat aktivitas pertama hari ini.</p>
+          <button class="btn primary" style="padding:8px 14px; font-size:13px;">Mulai shift</button>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Skeleton · Empty <span class="pf">L2</span></div>
+        <div class="t-row"><span>skel bg</span><b>skeleton-bg</b></div>
+        <div class="t-row"><span>skel shimmer</span><b>skeleton-shimmer</b></div>
+        <div class="t-row"><span>empty bg</span><b>empty-bg</b></div>
+        <div class="t-row"><span>empty fg</span><b>empty-fg</b></div>
+        <div class="t-row"><span>empty border</span><b>g400 dashed</b></div>
+        <div class="t-row"><span>height (line)</span><b>12px</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Progress · Stepper</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="align-items: stretch; gap: 18px;">
+        <div class="progress-demo">
+          <div class="track"><div class="fill" style="width: 67%;"></div></div>
+          <div class="meta"><span>Upload foto</span><span>67%</span></div>
+        </div>
+        <div class="stepper-demo">
+          <div class="step done"><span class="num">✓</span><span class="lbl">Akun</span></div>
+          <span class="bar done"></span>
+          <div class="step active"><span class="num">2</span><span class="lbl">Profil</span></div>
+          <span class="bar"></span>
+          <div class="step"><span class="num">3</span><span class="lbl">Verifikasi</span></div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Progress · Stepper <span class="pf">L2</span></div>
+        <div class="t-row"><span>track</span><b>progress-track</b></div>
+        <div class="t-row"><span>fill</span><b>progress-fill</b></div>
+        <div class="t-row"><span>fill warn</span><b>progress-fill-warn</b></div>
+        <div class="t-row"><span>fill danger</span><b>progress-fill-danger</b></div>
+        <div class="t-row"><span>step active</span><b>stepper-active</b></div>
+        <div class="t-row"><span>step done</span><b>stepper-done</b></div>
+        <div class="t-row"><span>step pending</span><b>stepper-pending</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">TopBar (mobile) · Sidebar (web)</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview" style="align-items: stretch; gap: 14px;">
+        <div class="topbar-demo">
+          <div class="icon">‹</div>
+          <span class="ttl">Detail Aktivitas</span>
+          <div class="icon">⋯</div>
+        </div>
+        <div class="sidebar-demo">
+          <div class="item active"><span class="ic">▦</span> Dashboard</div>
+          <div class="item"><span class="ic">⊟</span> Aktivitas</div>
+          <div class="item"><span class="ic">⊠</span> Lokasi</div>
+          <div class="item"><span class="ic">☷</span> Personel</div>
+          <div class="item"><span class="ic">⚙</span> Pengaturan</div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">TopBar · Sidebar <span class="pf">L2</span></div>
+        <div class="t-row"><span>topbar bg / fg</span><b>topbar-bg · topbar-fg</b></div>
+        <div class="t-row"><span>topbar height</span><b>topbar-height (56)</b></div>
+        <div class="t-row"><span>topbar border</span><b>topbar-border</b></div>
+        <div class="t-row"><span>sidebar bg</span><b>sidebar-bg (#1F2937)</b></div>
+        <div class="t-row"><span>sidebar fg</span><b>sidebar-fg · sidebar-fg-active</b></div>
+        <div class="t-row"><span>sidebar active bg</span><b>sidebar-active-bg</b></div>
+        <div class="t-row"><span>note</span><b>topbar = mobile, sidebar = web</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Bottom tabbar (mobile)</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="tabbar-demo">
+          <div class="tb active"><span class="ic">⌂</span>Beranda</div>
+          <div class="tb"><span class="ic">▦</span>Aktivitas</div>
+          <div class="tb"><span class="ic">⊕</span>Catat</div>
+          <div class="tb"><span class="ic">⌖</span>Peta</div>
+          <div class="tb"><span class="ic">☷</span>Profil</div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Tabbar <span class="pf">M</span></div>
+        <div class="t-row"><span>bg</span><b>tabbar-bg</b></div>
+        <div class="t-row"><span>fg</span><b>tabbar-fg</b></div>
+        <div class="t-row"><span>fg active</span><b>tabbar-fg-active</b></div>
+        <div class="t-row"><span>indicator</span><b>tabbar-indicator</b></div>
+        <div class="t-row"><span>active bg</span><b>bg-yellow</b></div>
+        <div class="t-row"><span>height</span><b>tabbar-height (64)</b></div>
+        <div class="t-row"><span>label</span><b>ff-mono 9 / 700</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Table (web)</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="table-demo">
+          <div class="row head"><span>Personel</span><span>Lokasi</span><span>Aktivitas</span></div>
+          <div class="row"><span>Rizal A.</span><span>Bandung 04</span><span>12</span></div>
+          <div class="row"><span>Yuni S.</span><span>Bekasi 07</span><span>9</span></div>
+          <div class="row"><span>Dwi P.</span><span>Jakarta 12</span><span>15</span></div>
+          <div class="row"><span>Hadi M.</span><span>Surabaya 03</span><span>7</span></div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Table <span class="pf">W</span></div>
+        <div class="t-row"><span>head bg</span><b>table-head-bg</b></div>
+        <div class="t-row"><span>row zebra</span><b>table-row-zebra</b></div>
+        <div class="t-row"><span>divider</span><b>table-divider</b></div>
+        <div class="t-row"><span>border</span><b>black + bw-base</b></div>
+        <div class="t-row"><span>family</span><b>ff-mono 11</b></div>
+        <div class="t-row"><span>note</span><b>web only — mobile uses card list</b></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Accordion</h3>
+    <div class="cmp-grid">
+      <div class="cmp-preview">
+        <div class="acc-demo">
+          <div class="row"><div class="hd"><span>Bagaimana cara mulai shift?</span><span>−</span></div><div class="bd">Tekan tombol "Mulai Shift" di beranda. Anda harus berada dalam radius 100m dari lokasi pos tugas yang sudah ditugaskan.</div></div>
+          <div class="row"><div class="hd"><span>Apa yang terjadi jika offline?</span><span>+</span></div></div>
+          <div class="row"><div class="hd"><span>Bagaimana mengganti shift?</span><span>+</span></div></div>
+        </div>
+      </div>
+      <div class="cmp-tokens">
+        <div class="t-head">Accordion <span class="pf">L2</span></div>
+        <div class="t-row"><span>row bg</span><b>white</b></div>
+        <div class="t-row"><span>border</span><b>black + bw-base</b></div>
+        <div class="t-row"><span>radius</span><b>r-base (group)</b></div>
+        <div class="t-row"><span>hd font</span><b>ff-display 14 / 600</b></div>
+        <div class="t-row"><span>bd font</span><b>ff-body 13</b></div>
+        <div class="t-row"><span>divider</span><b>g200 1px</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 06b · Component inventory ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">Component inventory</h2></div>
+    <p class="sec-lede">Every reusable component, where it lives on each platform, and which Layer&nbsp;2 tokens it consumes. Components marked <span class="badge success" style="font-size:10px;padding:2px 6px;">shipped</span> are already in the codebase; <span class="badge warning" style="font-size:10px;padding:2px 6px;">phase 3</span> arrives with this redesign.</p>
+
+    <table class="tok-tbl" style="font-size:12px;">
+      <thead><tr>
+        <th style="width:18%;">Component</th>
+        <th style="width:21%;">Mobile (RN)</th>
+        <th style="width:21%;">Web (React PWA)</th>
+        <th style="width:24%;">L2 tokens consumed</th>
+        <th style="width:16%;">Status</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><b>Button</b></td><td>NBButton.tsx</td><td>&lt;Button/&gt; (button.tsx)</td><td>btn-primary-* · btn-danger-* · btn-ghost-*</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>TextInput</b></td><td>NBTextInput.tsx</td><td>&lt;TextInput/&gt;</td><td>input-bg · input-border · input-border-focus · input-border-error</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>PasswordInput</b></td><td>NBPasswordInput.tsx</td><td>&lt;PasswordInput/&gt;</td><td>(extends TextInput)</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Select</b></td><td>NBSelect.tsx</td><td>&lt;Select/&gt;</td><td>input-* + modal-* (dropdown sheet)</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>DatePicker</b></td><td>NBDatePicker.tsx</td><td>&lt;DatePicker/&gt;</td><td>input-* + modal-* + status-active (selected)</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Switch / Checkbox / Radio</b></td><td>(use RN core)</td><td>&lt;Switch/&gt; &lt;Checkbox/&gt; &lt;Radio/&gt;</td><td>input-* · btn-primary-bg (track-on)</td><td><span class="badge warning" style="font-size:9px;padding:2px 6px;">phase 3</span></td></tr>
+        <tr><td><b>Card</b></td><td>NBCard.tsx</td><td>&lt;Card/&gt;</td><td>card-bg · card-border · card-shadow</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Modal</b></td><td>NBModal.tsx (sheet/center variants)</td><td>&lt;Modal/&gt; (center) · &lt;Drawer/&gt; (side)</td><td>modal-bg · modal-scrim · modal-shadow</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>BottomSheet</b></td><td>@gorhom/bottom-sheet wrapper</td><td>&lt;Drawer position=bottom/&gt;</td><td>modal-* + handle-color (g400)</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>OTP / PIN input</b></td><td>NBOtpInput.tsx</td><td>&lt;OtpInput/&gt;</td><td>otp-bg · otp-border · otp-border-active</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Slider</b></td><td>(use RN Slider core)</td><td>&lt;Slider/&gt;</td><td>slider-track · slider-fill · slider-thumb</td><td><span class="badge warning" style="font-size:9px;padding:2px 6px;">phase 3</span></td></tr>
+        <tr><td><b>SearchBar</b></td><td>NBSearchBar.tsx</td><td>&lt;SearchBar/&gt;</td><td>search-bg · search-border · search-icon</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Tooltip</b></td><td>— (uses Snackbar)</td><td>&lt;Tooltip/&gt;</td><td>tooltip-bg · tooltip-fg · tooltip-radius</td><td><span class="badge warning" style="font-size:9px;padding:2px 6px;">phase 3</span></td></tr>
+        <tr><td><b>Snackbar (action)</b></td><td>NBSnackbar.tsx</td><td>&lt;Snackbar/&gt;</td><td>black bg · c-primary action · sh-md</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Spinner</b></td><td>NBSpinner.tsx</td><td>&lt;Spinner/&gt;</td><td>spinner-track · spinner-fill</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>MapMarker</b></td><td>RoleMarker.tsx (Mapbox layer)</td><td>&lt;RoleMarker/&gt; (Mapbox)</td><td>marker-bg · marker-ring-* · marker-label-bg</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>PhotoUpload</b></td><td>NBPhotoUpload.tsx</td><td>&lt;PhotoUpload/&gt;</td><td>photo-bg · photo-border · photo-fg</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Toast</b></td><td>NBToast.tsx</td><td>&lt;Toast/&gt;</td><td>badge-success-* · badge-danger-* + sh-md</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Alert</b></td><td>NBAlert.tsx</td><td>&lt;Alert/&gt;</td><td>surface-info · surface-raised · status-*</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Skeleton</b></td><td>NBSkeleton.tsx</td><td>&lt;Skeleton/&gt;</td><td>g100 · g200 (pulsing)</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>EmptyState</b></td><td>NBEmptyState.tsx</td><td>&lt;EmptyState/&gt;</td><td>surface-card · text-secondary · btn-ghost-*</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Badge</b></td><td>NBBadge.tsx</td><td>&lt;Badge/&gt;</td><td>badge-success-* · badge-warning-* · badge-danger-*</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Avatar</b></td><td>(role icon + initials)</td><td>&lt;Avatar/&gt;</td><td>g100 · text-primary</td><td><span class="badge warning" style="font-size:9px;padding:2px 6px;">phase 3</span></td></tr>
+        <tr><td><b>Stat</b></td><td>(card composition)</td><td>&lt;Stat/&gt;</td><td>card-* + status-* + h1 type</td><td><span class="badge warning" style="font-size:9px;padding:2px 6px;">phase 3</span></td></tr>
+        <tr><td><b>Tab</b></td><td>NBTab.tsx</td><td>&lt;Tabs/&gt;</td><td>surface-raised (active) · text-primary · text-secondary</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Accordion</b></td><td>—</td><td>&lt;Accordion/&gt;</td><td>card-* + chevron icon</td><td><span class="badge warning" style="font-size:9px;padding:2px 6px;">phase 3</span></td></tr>
+        <tr><td><b>Header</b></td><td>FieldHomeHeader · ScreenHeader</td><td>&lt;TopBar/&gt;</td><td>surface-card · text-primary · btn-ghost</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Tabbar / Sidebar</b></td><td>BottomTabBar (RN-nav)</td><td>&lt;Sidebar/&gt; (navy bg)</td><td>surface-card · sidebar-bg · sidebar-active</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>FAB</b></td><td>(in MapDashboardScreen)</td><td>&lt;FAB/&gt;</td><td>surface-card · text-primary · sh-md</td><td><span class="badge success" style="font-size:9px;padding:2px 6px;">shipped</span></td></tr>
+        <tr><td><b>Table</b></td><td>—</td><td>&lt;DataTable/&gt;</td><td>card-* · g200 (header bg) · g100 (zebra)</td><td><span class="badge warning" style="font-size:9px;padding:2px 6px;">phase 3</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ═══ 08 · Dark mode ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">Dark mode hooks</h2></div>
+    <p class="sec-lede">Layer&nbsp;2 semantic tokens automatically rebind when <code class="i">[data-theme=dark]</code> is set on <code class="i">&lt;html&gt;</code>. RN: a <code class="i">useColorScheme()</code>-driven <code class="i">ThemeProvider</code> swaps <code class="i">nbColors</code> at the React tree root. Dark mode is opt-in for v2.0 — light theme remains default.</p>
+
+    <table class="tok-tbl">
+      <thead><tr><th>Semantic token</th><th>Light value</th><th>Dark value</th><th>Why it changes</th></tr></thead>
+      <tbody>
+        <tr><td>bg.canvas</td><td class="mono">#F5F0EB · warm stone</td><td class="mono">#0F1411 · deep moss</td><td>Inverts surface base; outdoor app stays warm</td></tr>
+        <tr><td>bg.surface</td><td class="mono">#FFFFFF</td><td class="mono">#1A201D</td><td>Cards lift off canvas, not pure black</td></tr>
+        <tr><td>black (border / text)</td><td class="mono">#1C1917</td><td class="mono">#F5F0EB</td><td>Outline color flips with theme</td></tr>
+        <tr><td>primary</td><td class="mono">#7FBC8C</td><td class="mono">#95D4A0</td><td>Lifts brightness on dark bg for AA contrast</td></tr>
+        <tr><td>status.* bg</td><td class="mono">soft pastel (#DCFCE7 …)</td><td class="mono">muted dark tint (#1F3D2A …)</td><td>Backgrounds dimmed; foreground stays vivid</td></tr>
+        <tr><td>shadow.*</td><td class="mono">offset 0 #1C1917</td><td class="mono">offset 0 #F5F0EB</td><td>Hard-edge shadows still readable</td></tr>
+        <tr><td>gray-50 … 900</td><td class="mono">stone scale</td><td class="mono">inverted stone scale</td><td>Text hierarchy preserved</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub">Status colors stay constant in meaning, not in pixel</h3>
+    <p style="font-size:14px;line-height:1.55;color:var(--text-secondary);max-width:820px;">Status colors (active green, idle amber, danger red, outside purple) keep their <b>foreground</b> hue across themes — semantics over pixels. Only the soft <code class="i">.bg</code> backings darken. This means a returning user sees the same status meaning regardless of theme.</p>
+  </section>
+
+  <!-- ═══ 09 · Accessibility floor ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Accessibility floor</h2></div>
+    <p class="sec-lede">Hard rules baked into the tokens. CI checks <code class="i">tokens.json</code> against these on every PR.</p>
+
+    <table class="tok-tbl">
+      <thead><tr><th>Rule</th><th>Mobile</th><th>Web</th></tr></thead>
+      <tbody>
+        <tr><td>Min text contrast on bg.canvas</td><td>4.5:1 (body), 3:1 (h1)</td><td>4.5:1 (body), 3:1 (h1)</td></tr>
+        <tr><td>Min touch target</td><td>48 × 48 (touch)</td><td>44 × 44 (touch.web)</td></tr>
+        <tr><td>Status indicator must pair</td><td>Color + icon + text — never color alone</td><td>Color + icon + text — never color alone</td></tr>
+        <tr><td>Focus state</td><td>3px primary border on input/button</td><td>:focus-visible 3px primary outline + 2px offset</td></tr>
+        <tr><td>Min body type</td><td>14px (caption), 16px (body)</td><td>12px (caption), 16px (body)</td></tr>
+        <tr><td>Modal scrim</td><td>rgba(0,0,0,0.5) min</td><td>rgba(0,0,0,0.5) min · trap focus</td></tr>
+        <tr><td>Reduced motion</td><td>Disable transform on prefers-reduced-motion</td><td>Same; CSS @media query</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="foot">
+    <div>SEKAR · Design System v2.1 · locked 2026-05-18</div>
+    <div>Source: <code class="i">specs/ui-ux/tokens.json</code></div>
+  </div>
+</div>
+</body>
+</html>

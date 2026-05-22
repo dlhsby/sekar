@@ -70,6 +70,10 @@ Each ADR follows this structure:
 | [035](./ADR-035-service-capacity-model.md) | Generic `service_capacity` Model (Rayon × ISO-Week × Service_Type) | Accepted | 2026-04-24 |
 | [036](./ADR-036-design-tokens-single-source.md) | Design Tokens — Single Source of Truth at `specs/ui-ux/tokens.json` | Accepted | 2026-04-25 |
 | [037](./ADR-037-web-pwa.md) | Web Becomes an Installable PWA (Service Worker + Offline Shell + Web Push) | Accepted | 2026-04-25 |
+| [040](./ADR-040-design-system-v2.1.md) | Design System v2.1 — sage-primary token re-baseline + pinwheel brand identity | Proposed (supersedes ADR-036 palette) | 2026-05-22 |
+| [041](./ADR-041-forgot-password-contact-admin.md) | Forgot-password = contact admin (no self-serve reset) | Proposed | 2026-05-22 |
+| [042](./ADR-042-onboarding-flow.md) | First-launch onboarding — pre-login carousel + permissions priming + area preview | Proposed | 2026-05-22 |
+| [043](./ADR-043-production-gap-closure.md) | Production gap-closure decisions — offline / push / background location / BullMQ on existing Redis | Proposed | 2026-05-22 |
 
 ## How to Create a New ADR
 
@@ -85,5 +89,5 @@ Each ADR follows this structure:
 - [Tech Stack](../tech-stack.md)
 - [Business Rules](../../business-rules.md)
 
-**Last Updated:** 2026-04-25
+**Last Updated:** 2026-05-22 (ADRs 040-043 added for Phase 4 rebrand + UI/UX revamp + production gap-closure)
 **Maintained By:** System Architect

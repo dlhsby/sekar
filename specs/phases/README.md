@@ -245,11 +245,11 @@ Full rewrite of monitoring subsystem (Redis-backed event sourcing) plus new plan
 
 ---
 
-## Phase 4: Production Readiness & Polishing
+## Phase 4: Production Readiness, Rebrand & UI/UX Revamp
 
-**Duration:** 6-8 weeks (44-57 dev-days) | **Status:** Not Started (Specifications Complete — renumbered from prior Phase 3)
+**Duration:** 10-12 weeks (67-87 dev-days) | **Status:** Not Started (spec re-baselined May 22, 2026 — was 52-68 d polish-only)
 
-Production hardening with 19 requirements across 10 sub-phases: infrastructure (Sentry, logging; Redis inherited from Phase 3), offline sync, FCM activation, export/import, security, refactoring, UI/UX polish, E2E testing, documentation sync.
+Production hardening + **complete rebrand on Design System v2.1** (sage primary + warm stone canvas + pinwheel logo) + **production-readiness gap audit** (offline / push / background-location / broker). **13 sub-phases** — three new (4-0 Token Re-baseline 3-4 d, 4-R UI/UX Revamp Sweep 15-18 d, 4-V Gap Audit 4-5 d) plus the original ten 4-1…4-10 (trimmed). Trimmed 4-1 / 4-3 / 4-8 against Phase 3 deliveries (FCM live, Socket.IO Redis adapter live, web PWA shipped, generated tokens live). New ADRs 040 (Design System v2.1), 041 (Forgot-password contact-admin), 042 (Onboarding flow), 043 (Production gap-closure). Original 19 requirements + 4 new ones (#20 v2.1 adoption, #21 rebrand assets, #22 missing entry-flow screens, #23 gap audit).
 
 ### Key Deliverables
 - Redis already adopted in Phase 3 (ADR-016 / ADR-029); Phase 4 inherits caching + JWT blacklist usage

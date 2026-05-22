@@ -1,0 +1,2463 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SEKAR Hi-Fi · Mobile (entry + app)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="hifi-shared.css" />
+<style>
+  /* ═══════════════════════════════════════════
+     Carousel · Login · Onboarding local primitives
+     (used only by entry sections 01-03)
+     ═══════════════════════════════════════════ */
+
+  /* Carousel scene + illustration panel */
+  .scene { flex: 1; display: flex; flex-direction: column; padding: 18px 22px 0; }
+  .scene-illust {
+    flex: 1; min-height: 0;
+    background: var(--accent-mint);
+    border: 2px solid var(--black);
+    border-radius: 18px;
+    box-shadow: var(--sh-md);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+  }
+  .scene-illust.yellow { background: var(--accent-yellow); }
+  .scene-illust.pink   { background: var(--accent-pink); }
+  .scene-illust.deep   { background: var(--navy); }
+  .scene-illust.dark   { background: var(--g700); }
+  .scene-title { font-family: var(--ff-display); font-weight: 800; font-size: 26px; line-height: 1.1; letter-spacing: -0.01em; color: var(--black); margin: 0 0 8px; }
+  .scene-title em { font-style: normal; color: var(--primary-deep); }
+  .scene-sub { font-size: 14px; line-height: 1.55; color: var(--g700); margin: 0 0 18px; max-width: 32ch; }
+
+  /* Stat chips floated inside scenes */
+  .stat-chip {
+    position: absolute;
+    background: var(--white);
+    border: 2px solid var(--black);
+    border-radius: 10px;
+    box-shadow: var(--sh-sm);
+    padding: 8px 11px;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .stat-chip .lab { font-family: var(--ff-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--g600); }
+  .stat-chip .val { font-family: var(--ff-display); font-weight: 800; font-size: 18px; color: var(--black); line-height: 1; }
+  .stat-chip .val.ok  { color: var(--status-active); }
+  .stat-chip .val.bad { color: var(--status-missing); }
+
+  /* Carousel pagination */
+  .dots { display: flex; gap: 6px; justify-content: center; }
+  .dots .d { width: 8px; height: 8px; border-radius: 50%; background: var(--g300); border: 1.5px solid var(--black); }
+  .dots .d.active { width: 26px; border-radius: 5px; background: var(--primary); }
+
+  /* Carousel top progress bars */
+  .bars { display: flex; gap: 6px; }
+  .bars .b { flex: 1; height: 4px; background: var(--g200); border-radius: 2px; }
+  .bars .b.active { background: var(--primary); }
+
+  /* Login field error state */
+  .field .input.error { border-color: var(--danger-fg); }
+  .field .err { font-size: 12px; color: var(--danger-fg); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .field .input.ph,
+  .field .input.placeholder { color: var(--g500); }
+  .field .input.focus { box-shadow: 0 0 0 3px var(--accent-yellow); }
+
+  /* Login screen toast (slightly bigger than shared .toast for the entry flows) */
+  .toast.danger  { background: var(--danger-bg); }
+  .toast.success { background: var(--success-bg); }
+  .toast.warn    { background: var(--warning-bg); }
+  .toast.info    { background: var(--info-bg); }
+
+  /* Onboarding banner */
+  .banner {
+    display: flex; gap: 11px; padding: 12px 14px;
+    border: 2px solid var(--black);
+    border-radius: 10px;
+    background: var(--accent-mint);
+    align-items: flex-start;
+  }
+  .banner .ico { font-size: 20px; line-height: 1; }
+  .banner .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 13.5px; margin: 0 0 2px; color: var(--black); }
+  .banner .msg { font-size: 12.5px; line-height: 1.5; color: var(--g700); margin: 0; }
+
+  /* Permissions row */
+  .perm-row {
+    display: grid; grid-template-columns: 38px 1fr auto;
+    gap: 12px; align-items: center;
+    background: var(--white);
+    border: 2px solid var(--black);
+    border-radius: var(--r-base);
+    padding: 12px 14px;
+    box-shadow: var(--sh-xs);
+  }
+  .perm-row .pico {
+    width: 38px; height: 38px;
+    border: 2px solid var(--black);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .perm-row .pico.loc   { background: var(--accent-mint); }
+  .perm-row .pico.cam   { background: var(--accent-yellow); }
+  .perm-row .pico.notif { background: var(--accent-pink); }
+  .perm-row .pico.gal,
+  .perm-row .pico.tel,
+  .perm-row .pico.sms   { background: var(--paper-2); }
+  .perm-row .ttl { font-family: var(--ff-display); font-weight: 700; font-size: 13.5px; color: var(--black); margin: 0 0 1px; }
+  .perm-row .why { font-size: 11px; color: var(--g600); line-height: 1.4; margin: 0; }
+  .perm-row .pill {
+    font-family: var(--ff-mono); font-size: 9.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: var(--r-full);
+    border: 1.5px solid var(--black);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .pill.granted { background: var(--success-bg); color: var(--success-fg); }
+  .pill.pending { background: var(--paper-2); color: var(--g600); }
+  .pill.denied  { background: var(--danger-bg); color: var(--danger-fg); }
+  .perm-group-h {
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--g600);
+    margin: 14px 0 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .perm-group-h::after { content: ""; flex: 1; height: 1.5px; background: var(--g300); }
+
+  /* Dot-pulse for splash + redirect screens */
+  @keyframes dotpulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* ═══════════════════════════════════════════
+     In-app screen primitives (sections 04-12)
+     ═══════════════════════════════════════════ */
+
+  /* Frames wider for in-app density */
+  .frames { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+
+  /* Row layout primitives */
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row.between { justify-content: space-between; }
+  .col { display: flex; flex-direction: column; }
+  .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
+  .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
+  .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; }
+
+  /* Compact card variants */
+  .card.tight  { padding: 10px 12px; border-radius: 10px; box-shadow: 2px 2px 0 var(--black); }
+  .card.xtight { padding: 8px 10px; border-radius: 8px; box-shadow: 2px 2px 0 var(--black); }
+
+  /* Absensi hero */
+  .absensi {
+    background: var(--primary); border: 2.5px solid var(--black); border-radius: 16px;
+    box-shadow: var(--sh-md); padding: 14px 16px;
+  }
+  .absensi.during { background: var(--success-bg); }
+  .absensi.late   { background: var(--danger-bg); }
+  .absensi .clock {
+    font-family: var(--ff-mono); font-weight: 700; font-size: 36px;
+    line-height: 1; color: var(--black); letter-spacing: -0.02em;
+  }
+  .absensi .lbl-up { font-family: var(--ff-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g700); margin-bottom: 4px; }
+
+  /* List row */
+  .lrow {
+    background: var(--white); border: 2px solid var(--black); border-radius: 10px;
+    padding: 10px 12px; box-shadow: 2px 2px 0 var(--black);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .lrow .title { font-family: var(--ff-display); font-weight: 700; font-size: 13.5px; color: var(--black); line-height: 1.25; }
+  .lrow .meta { font-family: var(--ff-mono); font-size: 10px; color: var(--g600); display: flex; gap: 8px; flex-wrap: wrap; }
+  .lrow .meta b { color: var(--black); }
+
+  /* KPI / stat tile grid */
+  .gtiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gtiles.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  .stat-tile {
+    background: var(--white); border: 2px solid var(--black); border-radius: 10px;
+    padding: 9px 10px; box-shadow: 2px 2px 0 var(--black);
+  }
+  .stat-tile .h { font-family: var(--ff-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g600); margin-bottom: 2px; }
+  .stat-tile .v { font-family: var(--ff-display); font-weight: 800; font-size: 22px; line-height: 1; color: var(--black); }
+  .stat-tile .d { font-family: var(--ff-mono); font-size: 9px; color: var(--g600); margin-top: 2px; }
+  .stat-tile.warn   { background: var(--warning-bg); }
+  .stat-tile.ok     { background: var(--success-bg); }
+  .stat-tile.bad    { background: var(--danger-bg); }
+  .stat-tile.info   { background: var(--info-bg); }
+  .stat-tile.yellow { background: var(--accent-yellow); }
+
+  /* Photo upload grid */
+  .photogrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .photoslot {
+    aspect-ratio: 1; border: 2px dashed var(--black); border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--ff-mono); font-size: 9px; font-weight: 700; color: var(--g600);
+    background: var(--white);
+  }
+  .photoslot.filled {
+    background:
+      linear-gradient(45deg, var(--accent-mint) 25%, transparent 25%, transparent 50%, var(--accent-mint) 50%, var(--accent-mint) 75%, transparent 75%);
+    background-size: 18px 18px;
+    border-style: solid; color: transparent;
+  }
+  .photoslot.filled-2 {
+    background:
+      linear-gradient(135deg, var(--accent-pink) 25%, transparent 25%, transparent 50%, var(--accent-pink) 50%, var(--accent-pink) 75%, transparent 75%);
+    background-size: 18px 18px;
+    border-style: solid; color: transparent;
+  }
+
+  /* Selfie capture circle */
+  .selfie {
+    width: 200px; height: 200px; border-radius: 50%;
+    border: 3px solid var(--black); box-shadow: var(--sh-md);
+    background:
+      radial-gradient(circle at 40% 40%, var(--accent-yellow) 0%, var(--primary-soft) 60%, var(--paper-2) 100%);
+    margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff-mono); font-size: 11px; font-weight: 700; color: var(--g600);
+    position: relative;
+  }
+  .selfie::before {
+    content: ""; position: absolute; inset: 12px; border: 2px dashed var(--black); border-radius: 50%;
+    opacity: 0.4;
+  }
+
+  /* Generic icon chip */
+  .chip-ic {
+    width: 32px; height: 32px; border: 2px solid var(--black); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: var(--accent-mint);
+  }
+  .chip-ic.warn   { background: var(--warning-bg); }
+  .chip-ic.bad    { background: var(--danger-bg); }
+  .chip-ic.info   { background: var(--info-bg); }
+  .chip-ic.yellow { background: var(--primary); }
+
+  /* FAB */
+  .fab {
+    position: absolute; right: 14px; bottom: 78px;
+    width: 56px; height: 56px;
+    background: var(--primary); border: 2.5px solid var(--black); border-radius: 18px;
+    box-shadow: var(--sh-md);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff-display); font-weight: 800; font-size: 24px; color: var(--black);
+    z-index: 6;
+  }
+
+  /* Timeline (vertical) */
+  .tline { position: relative; padding-left: 22px; }
+  .tline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--black); }
+  .tline-step { position: relative; margin-bottom: 12px; }
+  .tline-step::before { content: ""; position: absolute; left: -19px; top: 2px; width: 12px; height: 12px; border: 2px solid var(--black); border-radius: 50%; background: var(--white); }
+  .tline-step.done::before   { background: var(--success); }
+  .tline-step.active::before { background: var(--primary); }
+  .tline-step .h { font-family: var(--ff-display); font-weight: 700; font-size: 12.5px; color: var(--black); }
+  .tline-step .s { font-family: var(--ff-mono); font-size: 10px; color: var(--g600); margin-top: 1px; }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- Top nav · all 12 sections -->
+  <nav class="anchnav">
+    <a class="home" href="index.html">← INDEX</a>
+    <span style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--g500); padding:6px 4px;">ENTRY</span>
+    <a href="#carousel">① Carousel</a>
+    <a href="#login">② Login</a>
+    <a href="#permissions">③ Onboarding</a>
+    <span style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--g500); padding:6px 4px;">APP</span>
+    <a href="#home">④ Home</a>
+    <a href="#absensi">⑤ Absensi</a>
+    <a href="#monitoring">⑥ Monitoring</a>
+    <a href="#tugas">⑦ Tugas</a>
+    <a href="#aktivitas">⑧ Aktivitas</a>
+    <a href="#lembur">⑨ Lembur</a>
+    <a href="#perantingan">⑩ Perantingan</a>
+    <a href="#profile">⑪ Profile</a>
+    <a href="#notifikasi">⑫ Notifikasi</a>
+    <a href="wireframes-mobile.html" style="margin-left:auto;">↻ Wireframes</a>
+  </nav>
+
+  <header class="masthead">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Hi-Fi · Mobile · v1.1 · entry + app</div>
+      <h1>Carousel. Login.<br/>Onboarding. <em>App.</em></h1>
+      <p>One file, every mobile screen — pre-login entry flows on top, role-aware in-app surfaces below. All 39 screens synced 1:1 with <code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">fe/mobile/src/screens/*</code> and rendered with the locked SEKAR token set: <b>green primary #7FBC8C</b>, Space&nbsp;Grotesk + Inter + JetBrains Mono, neo-brutalist 2px outlines, offset shadows, dot-grid paper background. Tokens live in <code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">hifi-shared.css</code> — mirror of <code style="font-family:var(--ff-mono);font-size:13px;background:var(--paper);padding:1px 6px;border-radius:3px;">design-system.html</code>.</p>
+    </div>
+    <div class="mh-meta">
+      <div class="row" style="justify-content:space-between;"><span>Coverage</span><b>39 screens · 12 sections</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Frame</span><b>iPhone 15 · 360pt</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Roles</span><b>satgas · korlap · admin · kec.</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Sync</span><b>fe/mobile/src/screens</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Tokens</span><b>hifi-shared.css ↔ DS</b></div>
+      <div class="row" style="justify-content:space-between;"><span>Status</span><span class="tag-pill">handoff-ready</span></div>
+    </div>
+  </header>
+
+<!-- ═══════════════════════════════════════ -->
+  <!-- ① CAROUSEL                              -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="section" id="carousel">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2 class="sec-title">Pre-login carousel</h2>
+      <span class="sec-tag">first-install only</span>
+    </div>
+    <p class="sec-lede">5 slides shown <b>once</b> on first launch (gated by <code style="font-family:var(--ff-mono);font-size:13px;background:var(--white);padding:1px 6px;border-radius:3px;border:1.5px solid var(--g300);">onboardingSeen</code> in Keychain). <b>Skip</b> always available top-right; <b>Masuk</b> CTA on every slide so users can short-circuit. Last slide swaps CTA to "Mulai".</p>
+
+    <div class="frames">
+
+      <!-- WL-1 Splash -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">WL-1</span><span class="fr-name">Splash · 1 / 5</span></div>
+        <p class="fr-note">Brand intro. Auto-advances after 1.5s; manual swipe afterward.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen" style="background:linear-gradient(160deg, var(--primary) 0%, var(--primary-deep) 100%);">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 32px; text-align:center;">
+            <div style="width:120px; height:120px; background:var(--white); border:3px solid var(--black); border-radius:28px; box-shadow:var(--sh-lg); display:flex; align-items:center; justify-content:center; margin-bottom:28px; transform:rotate(-4deg); padding:14px;">
+              <div style="width:100%; height:100%; transform:rotate(4deg);"><svg viewBox="0 0 120 120" width="100%" height="100%" style="display:block;"><g transform="translate(60 60)"><g transform="rotate(0)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><g transform="rotate(45)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><g transform="rotate(90)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><g transform="rotate(135)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><g transform="rotate(180)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><g transform="rotate(225)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><g transform="rotate(270)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><g transform="rotate(315)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/></g><circle r="12" fill="#FDFD96" stroke="#1C1917" stroke-width="3"/></g></svg></div>
+            </div>
+            <h1 style="font-family:var(--ff-display); font-weight:800; font-size:44px; line-height:0.95; letter-spacing:-0.02em; color:var(--black); margin:0 0 8px;">SEKAR</h1>
+            <p style="font-family:var(--ff-mono); font-size:11px; font-weight:700; letter-spacing:0.18em; color:var(--g700); margin:0 0 32px;">SISTEM KEAMANAN AREA</p>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <div style="width:8px; height:8px; border-radius:50%; background:var(--black); animation:dotpulse 1.2s infinite;"></div>
+              <div style="width:8px; height:8px; border-radius:50%; background:var(--black); opacity:0.5; animation:dotpulse 1.2s infinite 0.2s;"></div>
+              <div style="width:8px; height:8px; border-radius:50%; background:var(--black); opacity:0.3; animation:dotpulse 1.2s infinite 0.4s;"></div>
+            </div>
+          </div>
+          <div class="home-ind" style="background:var(--black);"></div>
+        </div></div>
+        <div class="annot"><b>Auto-advance.</b> Holds for ~1.5s while route guards check stored session. If <code>jwt</code> exists → skip carousel direct to home. Else → WL-2.</div>
+      </div>
+
+      <!-- WL-2 Pantau real-time -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">WL-2</span><span class="fr-name">Pantau real-time · 2 / 5</span></div>
+        <p class="fr-note">Feature 1 of 4. Map composition with live status pins.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px;">
+            <div class="bars" style="flex:1; max-width:120px;"><span class="b"></span><span class="b active"></span><span class="b"></span><span class="b"></span><span class="b"></span></div>
+            <span style="font-family:var(--ff-mono); font-size:12px; font-weight:700; color:var(--g600);">Lewati</span>
+          </div>
+          <div class="scene">
+            <div class="scene-illust">
+              <div class="minimap">
+                <div class="pin green" style="top:22%; left:30%;"></div>
+                <div class="pin" style="top:40%; left:62%;"></div>
+                <div class="pin red" style="top:62%; left:24%;"></div>
+                <div class="pin green" style="top:74%; left:70%;"></div>
+                <div class="pin" style="top:18%; left:75%;"></div>
+              </div>
+              <div class="stat-chip" style="top:14px; left:14px;">
+                <span class="lab">Aktif</span><span class="val ok">14</span>
+              </div>
+              <div class="stat-chip" style="bottom:14px; right:14px;">
+                <span class="lab">Off-area</span><span class="val bad">2</span>
+              </div>
+            </div>
+            <h2 class="scene-title">Pantau tim<br/>secara <em>real-time</em></h2>
+            <p class="scene-sub">Lihat posisi semua satgas di lapangan. Status hidup, langsung dari GPS.</p>
+            <div style="margin-bottom:14px;"><div class="dots"><span class="d"></span><span class="d active"></span><span class="d"></span><span class="d"></span><span class="d"></span></div></div>
+            <button class="btn primary full" style="margin-bottom:8px;">Lanjut</button>
+            <button class="btn ghost full" style="font-size:13px; min-height:36px;">Masuk</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Pin colors</b> mirror the legend used in monitoring: green=di area, yellow=idle, red=off-area. Stat chips show live counts to make the value tangible.</div>
+      </div>
+
+      <!-- WL-3 Tugas -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">WL-3</span><span class="fr-name">Tugas terstruktur · 3 / 5</span></div>
+        <p class="fr-note">Feature 2: task management. Form-y illustration with checklist.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px;">
+            <div class="bars" style="flex:1; max-width:120px;"><span class="b"></span><span class="b"></span><span class="b active"></span><span class="b"></span><span class="b"></span></div>
+            <span style="font-family:var(--ff-mono); font-size:12px; font-weight:700; color:var(--g600);">Lewati</span>
+          </div>
+          <div class="scene">
+            <div class="scene-illust yellow" style="padding:24px;">
+              <div style="background:var(--white); border:2px solid var(--black); border-radius:14px; box-shadow:var(--sh-md); padding:14px 16px; width:100%; transform:rotate(-1.5deg);">
+                <div style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--g500); letter-spacing:0.06em; margin-bottom:10px;">CHECKLIST PATROLI · POS 04</div>
+                <div style="display:flex; flex-direction:column; gap:9px;">
+                  <div style="display:flex; gap:10px; align-items:center; font-size:13px;"><span style="width:18px; height:18px; background:var(--success); border:2px solid var(--black); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;">✓</span><span style="text-decoration:line-through; color:var(--g500);">Patroli pintu utama</span></div>
+                  <div style="display:flex; gap:10px; align-items:center; font-size:13px;"><span style="width:18px; height:18px; background:var(--success); border:2px solid var(--black); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;">✓</span><span style="text-decoration:line-through; color:var(--g500);">Cek lampu &amp; CCTV</span></div>
+                  <div style="display:flex; gap:10px; align-items:center; font-size:13px; font-weight:600; color:var(--black);"><span style="width:18px; height:18px; background:var(--white); border:2px solid var(--black); border-radius:4px;"></span><span>Foto laporan area</span></div>
+                  <div style="display:flex; gap:10px; align-items:center; font-size:13px; color:var(--g600);"><span style="width:18px; height:18px; background:var(--white); border:2px solid var(--black); border-radius:4px;"></span><span>Kunci pos akhir shift</span></div>
+                </div>
+                <div style="height:6px; background:var(--g100); border-radius:3px; margin-top:14px; overflow:hidden;"><div style="width:50%; height:100%; background:var(--success);"></div></div>
+                <div style="display:flex; justify-content:space-between; font-family:var(--ff-mono); font-size:9.5px; font-weight:700; margin-top:5px;"><span style="color:var(--g600);">PROGRESS</span><span>2 / 4</span></div>
+              </div>
+            </div>
+            <h2 class="scene-title">Tugas <em>terstruktur</em><br/>tiap shift</h2>
+            <p class="scene-sub">Korlap kasih briefing & checklist. Selesai patroli, tinggal tap.</p>
+            <div style="margin-bottom:14px;"><div class="dots"><span class="d"></span><span class="d"></span><span class="d active"></span><span class="d"></span><span class="d"></span></div></div>
+            <button class="btn primary full" style="margin-bottom:8px;">Lanjut</button>
+            <button class="btn ghost full" style="font-size:13px; min-height:36px;">Masuk</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot">Illustration uses a <b>real checklist card</b> (rotated -1.5°) so users see the literal output, not abstract icons. Progress bar mirrors the in-app component.</div>
+      </div>
+
+      <!-- WL-4 Perantingan -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">WL-4</span><span class="fr-name">Permohonan kecamatan · 4 / 5</span></div>
+        <p class="fr-note">Feature 3: perantingan request flow.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px;">
+            <div class="bars" style="flex:1; max-width:120px;"><span class="b"></span><span class="b"></span><span class="b"></span><span class="b active"></span><span class="b"></span></div>
+            <span style="font-family:var(--ff-mono); font-size:12px; font-weight:700; color:var(--g600);">Lewati</span>
+          </div>
+          <div class="scene">
+            <div class="scene-illust pink" style="padding:18px;">
+              <div style="background:var(--white); border:2px solid var(--black); border-radius:12px; box-shadow:var(--sh-md); padding:14px; width:88%; transform:rotate(2deg); margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                  <div>
+                    <div style="font-family:var(--ff-mono); font-size:9.5px; font-weight:700; color:var(--g500); letter-spacing:0.06em;">PERMOHONAN #1042</div>
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:14px; color:var(--black); margin-top:2px;">Pohon tumbang Jl. Anggrek</div>
+                  </div>
+                  <span class="pill granted">DISETUJUI</span>
+                </div>
+                <div style="display:flex; gap:6px; font-family:var(--ff-mono); font-size:10px; color:var(--g600);">
+                  <span>📍 Bekasi 03</span>
+                  <span>•</span>
+                  <span>2 jam lalu</span>
+                </div>
+              </div>
+              <div style="background:var(--white); border:2px solid var(--black); border-radius:12px; box-shadow:var(--sh-sm); padding:12px 14px; width:78%; transform:rotate(-3deg); margin-left:18px;">
+                <div style="font-family:var(--ff-mono); font-size:9.5px; font-weight:700; color:var(--g500); letter-spacing:0.06em;">PERMOHONAN #1041</div>
+                <div style="font-family:var(--ff-display); font-weight:700; font-size:13px; color:var(--black); margin-top:2px;">Tebang pohon kering</div>
+                <div style="margin-top:6px;"><span class="pill pending">DIPROSES</span></div>
+              </div>
+            </div>
+            <h2 class="scene-title">Permohonan<br/>kecamatan, <em>cepat</em></h2>
+            <p class="scene-sub">Ajukan perantingan langsung dari lapangan. Admin lihat, putuskan.</p>
+            <div style="margin-bottom:14px;"><div class="dots"><span class="d"></span><span class="d"></span><span class="d"></span><span class="d active"></span><span class="d"></span></div></div>
+            <button class="btn primary full" style="margin-bottom:8px;">Lanjut</button>
+            <button class="btn ghost full" style="font-size:13px; min-height:36px;">Masuk</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot">Stacked request cards (rotated for energy) demonstrate the queue concept without needing a video. Status pills match the production component.</div>
+      </div>
+
+      <!-- WL-5 Offline -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">WL-5</span><span class="fr-name">Offline-ready · 5 / 5</span></div>
+        <p class="fr-note">Last slide. CTA flips to "Mulai (Masuk)".</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px;">
+            <div class="bars" style="flex:1; max-width:120px;"><span class="b"></span><span class="b"></span><span class="b"></span><span class="b"></span><span class="b active"></span></div>
+            <span style="font-family:var(--ff-mono); font-size:12px; font-weight:700; color:var(--g600); opacity:0;">Lewati</span>
+          </div>
+          <div class="scene">
+            <div class="scene-illust deep" style="padding:24px; color:var(--white);">
+              <div style="position:absolute; inset:0; background:repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,255,255,0.04) 8px 16px);"></div>
+              <div style="position:relative; text-align:center;">
+                <div style="width:84px; height:84px; background:var(--white); border:3px solid var(--black); border-radius:20px; box-shadow:var(--sh-md); display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--black);"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/><line x1="2" y1="2" x2="22" y2="22" stroke="var(--danger)"/></svg>
+                </div>
+                <div style="background:var(--white); color:var(--black); border:2px solid var(--black); border-radius:8px; padding:5px 10px; display:inline-flex; gap:6px; align-items:center; font-family:var(--ff-mono); font-size:10px; font-weight:700; box-shadow:var(--sh-xs);">
+                  <span style="width:6px; height:6px; background:var(--warning); border-radius:50%;"></span>
+                  3 ITEM ANTRI
+                </div>
+              </div>
+            </div>
+            <h2 class="scene-title">Tetap <em>jalan</em><br/>tanpa sinyal</h2>
+            <p class="scene-sub">Catatan tersimpan offline. Sinkron otomatis saat sinyal balik.</p>
+            <div style="margin-bottom:14px;"><div class="dots"><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d active"></span></div></div>
+            <button class="btn primary full">Mulai (Masuk)</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot">CTA <b>swap</b> on final slide: removes "Masuk" secondary, promotes single "Mulai (Masuk)". Visual lock-in: dark deep-blue panel signals the "edge" state.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- ② LOGIN                                 -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="section" id="login">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2 class="sec-title">Login &amp; auth</h2>
+      <span class="sec-tag">match existing impl</span>
+    </div>
+    <p class="sec-lede"><b>Identifier accepts phone OR username</b>. Errors split: <b>per-input</b> validation → inline field errors. <b>Toast</b> at top for server-side auth failures. <b>Forgot</b> = contact-admin (no self-serve reset). Forced password change after admin-issued temp password.</p>
+
+    <div class="frames">
+
+      <!-- AS-1 Idle -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AS-1</span><span class="fr-name">Login · idle</span></div>
+        <p class="fr-note">Default state. Identifier + password + show/hide. "Lupa sandi?" inline, full-width Masuk CTA.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div class="body" style="padding-top:22px;">
+            <div style="margin-bottom:28px;">
+              <div style="width:54px; height:54px; background:var(--primary); border:2.5px solid var(--black); border-radius:14px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; font-size:30px; color:var(--black); margin-bottom:18px;">S</div>
+              <h1 style="font-family:var(--ff-display); font-weight:800; font-size:28px; line-height:1.05; letter-spacing:-0.01em; margin:0 0 6px; color:var(--black);">Selamat datang.</h1>
+              <p style="font-size:14px; color:var(--g600); margin:0;">Masuk pakai HP atau username dari admin.</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div class="field">
+                <span class="lbl">HP / USERNAME</span>
+                <div class="input placeholder">081234567890</div>
+              </div>
+              <div class="field">
+                <span class="lbl">SANDI</span>
+                <div class="input placeholder"><span>Masukkan sandi</span><span style="color:var(--g500);">👁</span></div>
+              </div>
+              <div style="text-align:right; margin-top:-4px;">
+                <span style="font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--secondary); text-decoration:underline; text-underline-offset:3px;">Lupa sandi?</span>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <button class="btn primary full">Masuk</button>
+            <p style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g500); text-align:center; margin:12px 0 0;">v3.2.1 · 12 Mar 2025</p>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Identifier auto-detects</b> format: starts with <code>0</code> or <code>+62</code> → phone branch; else → username. No mode switch needed.</div>
+      </div>
+
+      <!-- AS-2 Per-input error -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AS-2</span><span class="fr-name">Login · field error</span></div>
+        <p class="fr-note">Client-side: format invalid or empty field. Inline error <b>below</b> each invalid field. CTA disabled until valid.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div class="body" style="padding-top:22px;">
+            <div style="margin-bottom:24px;">
+              <div style="width:54px; height:54px; background:var(--primary); border:2.5px solid var(--black); border-radius:14px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; font-size:30px; color:var(--black); margin-bottom:18px;">S</div>
+              <h1 style="font-family:var(--ff-display); font-weight:800; font-size:28px; line-height:1.05; margin:0 0 6px; color:var(--black);">Selamat datang.</h1>
+              <p style="font-size:14px; color:var(--g600); margin:0;">Masuk pakai HP atau username dari admin.</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div class="field">
+                <span class="lbl">HP / USERNAME</span>
+                <div class="input error"><span>0812345</span><span></span></div>
+                <span class="err">⚠ Nomor HP harus 10–13 digit</span>
+              </div>
+              <div class="field">
+                <span class="lbl">SANDI</span>
+                <div class="input error placeholder"><span>Masukkan sandi</span><span style="color:var(--g500);">👁</span></div>
+                <span class="err">⚠ Sandi tidak boleh kosong</span>
+              </div>
+              <div style="text-align:right; margin-top:-4px;">
+                <span style="font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--secondary); text-decoration:underline; text-underline-offset:3px;">Lupa sandi?</span>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <button class="btn primary full disabled">Masuk</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Validation triggers</b>: on blur (first time), then on every keystroke. Errors clear the moment the field is valid. Submit stays disabled while any error is active.</div>
+      </div>
+
+      <!-- AS-3 Toast -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AS-3</span><span class="fr-name">Login · toast (auth fail)</span></div>
+        <p class="fr-note">Server says 401/403/5xx. Generic auth errors show as <b>top toast</b>. Auto-dismiss 4s OR on next keystroke.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div style="padding:8px 18px 0;">
+            <div class="toast danger"><span class="ico">!</span><span>HP atau sandi salah. Coba lagi.</span></div>
+          </div>
+          <div class="body" style="padding-top:22px;">
+            <div style="margin-bottom:24px;">
+              <div style="width:54px; height:54px; background:var(--primary); border:2.5px solid var(--black); border-radius:14px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; font-size:30px; color:var(--black); margin-bottom:18px;">S</div>
+              <h1 style="font-family:var(--ff-display); font-weight:800; font-size:28px; line-height:1.05; margin:0 0 6px; color:var(--black);">Selamat datang.</h1>
+              <p style="font-size:14px; color:var(--g600); margin:0;">Masuk pakai HP atau username dari admin.</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div class="field">
+                <span class="lbl">HP / USERNAME</span>
+                <div class="input">081234567890</div>
+              </div>
+              <div class="field">
+                <span class="lbl">SANDI</span>
+                <div class="input"><span>••••••••</span><span style="color:var(--g500);">👁</span></div>
+              </div>
+              <div style="text-align:right; margin-top:-4px;">
+                <span style="font-family:var(--ff-display); font-weight:600; font-size:13px; color:var(--secondary); text-decoration:underline; text-underline-offset:3px;">Lupa sandi?</span>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <button class="btn primary full">Masuk</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Generic copy</b> ("HP atau sandi salah") so attackers can't enumerate which field is wrong. Server-side 5xx maps to a friendlier "Server bermasalah, coba lagi sebentar lagi" with the same toast surface.</div>
+      </div>
+
+      <!-- AS-4 Forgot -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AS-4</span><span class="fr-name">Lupa sandi · contact admin</span></div>
+        <p class="fr-note">No self-serve reset. Two channels: WhatsApp admin + telepon kantor.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div class="appbar"><div class="iconbtn">‹</div><div class="ttl">Lupa Sandi</div></div>
+          <div class="body" style="padding-top:18px;">
+            <div style="text-align:center; margin-bottom:22px;">
+              <div style="width:72px; height:72px; background:var(--accent-yellow); border:2.5px solid var(--black); border-radius:18px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--black);"><circle cx="12" cy="16" r="1"/><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></svg>
+              </div>
+              <h2 style="font-family:var(--ff-display); font-weight:700; font-size:20px; line-height:1.2; margin:0 0 6px; color:var(--black);">Sandi tidak bisa<br/>di-reset sendiri</h2>
+              <p style="font-size:13px; line-height:1.55; color:var(--g600); margin:0;">Akun kamu dikelola admin SEKAR.<br/>Hubungi mereka untuk reset.</p>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="background:var(--success-bg); border:2px solid var(--black); border-radius:var(--r-base); box-shadow:var(--sh-xs); padding:14px;">
+                <div style="display:flex; gap:12px; align-items:flex-start;">
+                  <div style="width:38px; height:38px; background:#25D366; border:2px solid var(--black); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.295-.771.964-.944 1.162-.175.195-.349.21-.646.075-.3-.15-1.263-.465-2.403-1.485-.888-.795-1.484-1.77-1.66-2.07-.174-.3-.019-.465.13-.615.136-.135.301-.345.451-.523.146-.181.194-.301.297-.496.1-.21.049-.375-.025-.524-.075-.15-.672-1.62-.922-2.206-.24-.584-.487-.51-.672-.51-.172-.015-.371-.015-.571-.015-.2 0-.523.074-.797.359-.273.3-1.045 1.02-1.045 2.475s1.07 2.865 1.219 3.075c.149.18 2.095 3.195 5.076 4.485.71.3 1.26.48 1.69.629.71.227 1.36.195 1.871.121.571-.091 1.766-.721 2.016-1.426.255-.705.255-1.29.18-1.425-.074-.135-.27-.21-.57-.345m-5.446 7.443h-.016a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.375a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884a9.825 9.825 0 0 1 6.99 2.899 9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884"/></svg></div>
+                  <div style="flex:1;">
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:13.5px; color:var(--black); margin-bottom:2px;">Chat WhatsApp Admin</div>
+                    <div style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">+62 812-1234-5678 · Senin–Jumat 08–17</div>
+                  </div>
+                  <span style="color:var(--g500); font-size:18px;">›</span>
+                </div>
+              </div>
+              <div style="background:var(--info-bg); border:2px solid var(--black); border-radius:var(--r-base); box-shadow:var(--sh-xs); padding:14px;">
+                <div style="display:flex; gap:12px; align-items:flex-start;">
+                  <div style="width:38px; height:38px; background:var(--info); border:2px solid var(--black); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+                  <div style="flex:1;">
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:13.5px; color:var(--black); margin-bottom:2px;">Telepon Kantor</div>
+                    <div style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">021-555-1234 · Operasional 24 jam</div>
+                  </div>
+                  <span style="color:var(--g500); font-size:18px;">›</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:14px; background:var(--paper-2); border:1.5px dashed var(--g400); border-radius:8px; padding:11px 12px; font-size:11.5px; line-height:1.5; color:var(--g700);">
+              <b>Setelah sandi di-reset:</b> admin kirim sandi sementara via WA. Saat masuk pertama kali, kamu wajib ganti sandi baru.
+            </div>
+
+            <div style="flex:1;"></div>
+            <button class="btn secondary full">Kembali ke Login</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot">Tap WA → opens <code>https://wa.me/...</code> with prefilled "Halo admin, saya butuh reset sandi. HP terdaftar: 0812****890". Masked phone for quick admin lookup, doesn't leak full number.</div>
+      </div>
+
+      <!-- AS-5 Forced password change -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AS-5</span><span class="fr-name">Ganti sandi · forced after reset</span></div>
+        <p class="fr-note">Triggered when JWT carries <code>mustChangePassword:true</code>. Only escape is logout. Live validation; submit gated until all rules pass.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:44</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div class="appbar"><div class="iconbtn" style="opacity:0.3;">‹</div><div class="ttl">Buat Sandi Baru</div></div>
+          <div class="body" style="padding-top:16px;">
+            <div class="banner" style="margin-bottom:16px;">
+              <span class="ico">🔑</span>
+              <div>
+                <p class="ttl">Sandi sementara harus diganti</p>
+                <p class="msg">Demi keamanan, buat sandi baru sebelum melanjutkan.</p>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div class="field">
+                <span class="lbl">SANDI SEMENTARA</span>
+                <div class="input placeholder"><span>dari WA admin</span><span style="color:var(--g500);">👁</span></div>
+              </div>
+              <div class="field">
+                <span class="lbl">SANDI BARU</span>
+                <div class="input focus"><span>••••••••</span><span style="color:var(--g500);">👁</span></div>
+              </div>
+              <div class="field">
+                <span class="lbl">KONFIRMASI SANDI BARU</span>
+                <div class="input"><span>••••••••</span><span style="color:var(--g500);">👁</span></div>
+              </div>
+            </div>
+            <div style="margin-top:14px; padding:12px 13px; background:var(--white); border:1.5px solid var(--g300); border-radius:var(--r-base);">
+              <div style="font-family:var(--ff-mono); font-size:9.5px; font-weight:700; letter-spacing:0.07em; color:var(--g600); margin-bottom:8px;">SYARAT SANDI</div>
+              <div style="display:flex; flex-direction:column; gap:5px;">
+                <div style="display:flex; gap:8px; align-items:center; font-size:12px;"><span style="width:14px; height:14px; background:var(--success); border:1.5px solid var(--black); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--black); font-weight:800; font-size:9px;">✓</span><span style="color:var(--success-fg);">Minimal 8 karakter</span></div>
+                <div style="display:flex; gap:8px; align-items:center; font-size:12px;"><span style="width:14px; height:14px; background:var(--success); border:1.5px solid var(--black); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--black); font-weight:800; font-size:9px;">✓</span><span style="color:var(--success-fg);">Berisi huruf dan angka</span></div>
+                <div style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--g500);"><span style="width:14px; height:14px; background:var(--white); border:1.5px solid var(--g400); border-radius:50%;"></span><span>Berbeda dari sandi sementara</span></div>
+                <div style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--g500);"><span style="width:14px; height:14px; background:var(--white); border:1.5px solid var(--g400); border-radius:50%;"></span><span>Konfirmasi cocok</span></div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <button class="btn primary full disabled" style="margin-bottom:6px;">Simpan &amp; Masuk</button>
+            <button class="btn ghost full" style="font-size:13px; min-height:36px;">Keluar &amp; login lain</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Server contract</b>: <code>POST /auth/change-password</code> with old + new. Server re-verifies temp pwd as 2nd factor before applying. Success → <code>mustChangePassword</code> cleared, JWT refreshed, route to OB-1 or H-*.</div>
+      </div>
+
+      <!-- AS-5b Success -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AS-5b</span><span class="fr-name">Ganti sandi · success</span></div>
+        <p class="fr-note">Brief confirmation + auto-redirect 1.5s. No "Done" button — keep user moving.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:44</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 32px 80px; text-align:center;">
+            <div style="width:108px; height:108px; background:var(--success); border:3px solid var(--black); border-radius:50%; box-shadow:var(--sh-md); display:flex; align-items:center; justify-content:center; margin-bottom:24px;">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--black)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h2 style="font-family:var(--ff-display); font-weight:800; font-size:24px; margin:0 0 8px; color:var(--black);">Sandi tersimpan</h2>
+            <p style="font-size:14px; color:var(--g600); margin:0 0 24px; line-height:1.55;">Mengarahkan ke beranda…</p>
+            <div style="display:flex; gap:7px;">
+              <div style="width:9px; height:9px; border-radius:50%; background:var(--black); animation:dotpulse 1.2s infinite;"></div>
+              <div style="width:9px; height:9px; border-radius:50%; background:var(--g400); animation:dotpulse 1.2s infinite 0.2s;"></div>
+              <div style="width:9px; height:9px; border-radius:50%; background:var(--g300); animation:dotpulse 1.2s infinite 0.4s;"></div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot">Conditional next route: <code>onboardingCompleted=false</code> → OB-1 (welcome). True → role home (H-Satgas / H-Korlap / H-Admin).</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- ③ ONBOARDING / PERMISSIONS              -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="section" id="permissions">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2 class="sec-title">Onboarding &amp; permissions</h2>
+      <span class="sec-tag">first-login only</span>
+    </div>
+    <p class="sec-lede">After login, only on <b>first login per device</b>. <b>6 permissions</b>, grouped: <i>core (must-have)</i> = location, kamera, notifikasi · <i>helpful (optional)</i> = gallery, telepon, SMS. Tapping a row triggers the native prompt; status pill updates after.</p>
+
+    <div class="frames">
+
+      <!-- OB-1 Welcome -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">OB-1</span><span class="fr-name">Welcome · 1 / 3</span></div>
+        <p class="fr-note">Greet by name from JWT. 3-dot pagination. Skip = onboardingCompleted=true minus permissions.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:42</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div class="body" style="padding-top:24px;">
+            <div style="display:flex; justify-content:center; gap:6px; margin-bottom:32px;">
+              <div style="width:30px; height:6px; background:var(--primary); border:1.5px solid var(--black); border-radius:3px;"></div>
+              <div style="width:14px; height:6px; background:var(--white); border:1.5px solid var(--black); border-radius:3px;"></div>
+              <div style="width:14px; height:6px; background:var(--white); border:1.5px solid var(--black); border-radius:3px;"></div>
+            </div>
+            <div style="height:200px; background:var(--accent-mint); border:2.5px solid var(--black); border-radius:18px; box-shadow:var(--sh-md); display:flex; align-items:center; justify-content:center; margin-bottom:24px; position:relative; overflow:hidden;">
+              <div style="position:absolute; top:18px; left:18px; background:var(--white); border:2px solid var(--black); border-radius:8px; padding:6px 10px; font-family:var(--ff-mono); font-size:10px; font-weight:700; box-shadow:var(--sh-xs);">SHIFT 06.30 → 14.30</div>
+              <div style="position:absolute; bottom:18px; right:18px;"><span class="pill granted">SIAP</span></div>
+              <div style="font-family:var(--ff-display); font-weight:800; font-size:80px; line-height:1; color:var(--black); transform:rotate(-3deg);">👋</div>
+            </div>
+            <h2 style="font-family:var(--ff-display); font-weight:800; font-size:30px; line-height:1.1; letter-spacing:-0.01em; margin:0 0 10px; color:var(--black);">Hai,<br/><span style="background:var(--primary); padding:0 8px; border:2.5px solid var(--black); border-radius:6px; display:inline-block; transform:rotate(-1deg);">Pak Budi</span></h2>
+            <p style="font-size:14px; line-height:1.55; color:var(--g700); margin:0;">SEKAR butuh sedikit setup biar kamu bisa langsung lapangan. Cuma 2 menit, sekali aja.</p>
+            <div style="flex:1;"></div>
+            <button class="btn primary full" style="margin-bottom:6px;">Lanjut</button>
+            <button class="btn ghost full" style="font-size:13px; min-height:36px;">Lewati</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot">Pulled from JWT: <code>name</code>, <code>role</code>, <code>shiftDefault</code>. Yellow chip on the name keeps the brand presence personal.</div>
+      </div>
+
+      <!-- OB-2 Permissions -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">OB-2</span><span class="fr-name">Permissions · 2 / 3 · 6 items</span></div>
+        <p class="fr-note">Grouped: 3 core + 3 helpful. Each row tappable. CTA advances when ≥ 3 core granted.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:42</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div class="body" style="padding-top:18px;">
+            <div style="display:flex; justify-content:center; gap:6px; margin-bottom:18px;">
+              <div style="width:14px; height:6px; background:var(--g300); border:1.5px solid var(--black); border-radius:3px;"></div>
+              <div style="width:30px; height:6px; background:var(--primary); border:1.5px solid var(--black); border-radius:3px;"></div>
+              <div style="width:14px; height:6px; background:var(--white); border:1.5px solid var(--black); border-radius:3px;"></div>
+            </div>
+            <h2 style="font-family:var(--ff-display); font-weight:800; font-size:22px; line-height:1.15; margin:0 0 6px; color:var(--black);">Beri akses ke HP-mu</h2>
+            <p style="font-size:13px; color:var(--g600); margin:0;">Kami pakai cuma untuk tugas. Bisa diubah di Pengaturan kapan saja.</p>
+
+            <div class="perm-group-h">WAJIB</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div class="perm-row">
+                <div class="pico loc">📍</div>
+                <div><p class="ttl">Lokasi (saat aktif)</p><p class="why">Untuk presensi &amp; geofence pos.</p></div>
+                <span class="pill granted">DIBERIKAN</span>
+              </div>
+              <div class="perm-row">
+                <div class="pico cam">📷</div>
+                <div><p class="ttl">Kamera</p><p class="why">Foto laporan aktivitas.</p></div>
+                <span class="pill granted">DIBERIKAN</span>
+              </div>
+              <div class="perm-row">
+                <div class="pico notif">🔔</div>
+                <div><p class="ttl">Notifikasi</p><p class="why">Briefing &amp; pengingat shift.</p></div>
+                <span class="pill pending">TAP UNTUK IZIN</span>
+              </div>
+            </div>
+
+            <div class="perm-group-h">OPSIONAL</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div class="perm-row">
+                <div class="pico gal">🖼</div>
+                <div><p class="ttl">Galeri</p><p class="why">Upload bukti dari foto lama.</p></div>
+                <span class="pill pending">BELUM</span>
+              </div>
+              <div class="perm-row">
+                <div class="pico tel">📞</div>
+                <div><p class="ttl">Telepon</p><p class="why">One-tap hubungi korlap.</p></div>
+                <span class="pill denied">DITOLAK</span>
+              </div>
+            </div>
+
+            <div style="flex:1;"></div>
+            <button class="btn primary full disabled" style="margin-top:14px;">Berikan izin (1 lagi)</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Pill copy</b>: "DIBERIKAN" (granted) · "TAP UNTUK IZIN" (pending core) · "BELUM" (pending optional) · "DITOLAK" (user said no — tap goes to Settings deeplink).</div>
+      </div>
+
+      <!-- OB-3 Area preview -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">OB-3</span><span class="fr-name">Area preview · 3 / 3</span></div>
+        <p class="fr-note">Show assigned territory + korlap contact. CTA "Mulai" persists onboardingCompleted=true.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar">
+            <span>9:42</span>
+            <div class="island"></div>
+            <div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div>
+          </div>
+          <div class="body" style="padding-top:18px;">
+            <div style="display:flex; justify-content:center; gap:6px; margin-bottom:18px;">
+              <div style="width:14px; height:6px; background:var(--g300); border:1.5px solid var(--black); border-radius:3px;"></div>
+              <div style="width:14px; height:6px; background:var(--g300); border:1.5px solid var(--black); border-radius:3px;"></div>
+              <div style="width:30px; height:6px; background:var(--primary); border:1.5px solid var(--black); border-radius:3px;"></div>
+            </div>
+            <h2 style="font-family:var(--ff-display); font-weight:800; font-size:22px; line-height:1.15; margin:0 0 14px; color:var(--black);">Area tugas kamu</h2>
+
+            <div style="height:170px; background:var(--accent-mint); border:2px solid var(--black); border-radius:14px; box-shadow:var(--sh-sm); position:relative; overflow:hidden; margin-bottom:14px;">
+              <div class="minimap" style="inset:0; border:none; border-radius:0;"></div>
+              <div style="position:absolute; inset:14px; border:2.5px dashed var(--black); border-radius:8px; opacity:0.35;"></div>
+              <div class="pin" style="top:38%; left:42%;"></div>
+              <div style="position:absolute; top:8px; left:8px; background:var(--white); border:2px solid var(--black); border-radius:6px; padding:4px 8px; font-family:var(--ff-mono); font-size:9.5px; font-weight:700; box-shadow:var(--sh-xs);">POS 04 · BANDUNG</div>
+              <div style="position:absolute; bottom:8px; right:8px; background:var(--primary); border:2px solid var(--black); border-radius:6px; padding:4px 8px; font-family:var(--ff-mono); font-size:9.5px; font-weight:700; box-shadow:var(--sh-xs);">RADIUS 100m</div>
+            </div>
+
+            <div style="background:var(--white); border:2px solid var(--black); border-radius:var(--r-base); box-shadow:var(--sh-xs); padding:13px 14px; margin-bottom:10px;">
+              <div style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--g600); letter-spacing:0.07em; margin-bottom:3px;">POS</div>
+              <div style="font-family:var(--ff-display); font-weight:700; font-size:15px; color:var(--black);">Bandung Pos 04 · Soekarno-Hatta</div>
+              <div style="font-size:12px; color:var(--g600); margin-top:1px;">Shift pagi 06.30 – 14.30 · Senin–Sabtu</div>
+            </div>
+
+            <div style="background:var(--accent-yellow); border:2px solid var(--black); border-radius:var(--r-base); padding:12px 14px; display:flex; gap:11px; align-items:center;">
+              <div style="width:40px; height:40px; background:var(--white); border:2px solid var(--black); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; font-size:14px; color:var(--black); flex-shrink:0;">YS</div>
+              <div style="flex:1;">
+                <div style="font-family:var(--ff-mono); font-size:9.5px; font-weight:700; color:var(--g700); letter-spacing:0.06em;">KORLAP KAMU</div>
+                <div style="font-family:var(--ff-display); font-weight:700; font-size:13.5px; color:var(--black);">Yusuf Setiawan</div>
+              </div>
+              <div style="width:36px; height:36px; background:var(--white); border:2px solid var(--black); border-radius:8px; display:flex; align-items:center; justify-content:center; box-shadow:var(--sh-xs);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            </div>
+
+            <div style="flex:1;"></div>
+            <button class="btn primary full" style="margin-top:14px;">Mulai</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot">Persists <code>onboardingCompleted=true</code> + <code>permissions={...}</code> to local storage. Routes by <code>role</code> claim → H-Satgas / H-Korlap / H-Admin home.</div>
+      </div>
+
+    </div>
+  </section>
+
+<!-- ═══════════════════════════════════════ HOME ═══════════════════════════════════════ -->
+  <section class="section" id="home">
+    <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Home · role-aware</h2><span class="sec-tag">field/HomeScreen.tsx</span></div>
+    <p class="sec-lede">Each role composes from a fixed widget set: <b>absensi (field), tugas hari ini, KPI tiles, perantingan tiles, peringatan</b>. Order varies. Bottom tab bar is consistent across roles (5 tabs); items vary by role.</p>
+
+    <div class="frames">
+
+      <!-- HOME-1 Satgas -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">HOME-1</span><span class="fr-name">Home · Satgas</span></div>
+        <p class="fr-note">Field worker — absensi up top, tugas hari ini, aktivitas terkini.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <!-- App header -->
+          <div style="padding:6px 18px 12px; display:flex; align-items:center; gap:10px; background:var(--paper); border-bottom:2px solid var(--black);">
+            <div class="av satgas">BS</div>
+            <div style="flex:1; line-height:1.1;">
+              <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600); font-weight:700; letter-spacing:0.06em;">SELAMAT PAGI</div>
+              <div style="font-family:var(--ff-display); font-weight:700; font-size:16px; color:var(--black);">Pak Budi Santoso</div>
+            </div>
+            <div style="width:36px; height:36px; border:2px solid var(--black); border-radius:9px; background:var(--white); display:flex; align-items:center; justify-content:center; box-shadow:2px 2px 0 var(--black); position:relative;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+              <span style="position:absolute; top:-4px; right:-4px; width:14px; height:14px; background:var(--danger); border:1.5px solid var(--black); border-radius:50%; font-family:var(--ff-mono); font-size:8px; font-weight:800; color:var(--white); display:flex; align-items:center; justify-content:center;">3</span>
+            </div>
+          </div>
+
+          <div class="body scroll">
+            <!-- Absensi card (during shift) -->
+            <div class="absensi during mb-3">
+              <div class="row between mb-2">
+                <div>
+                  <div class="lbl-up">SEDANG BERTUGAS</div>
+                  <div class="clock">06:47<span style="font-size:18px; color:var(--g600);">:22</span></div>
+                </div>
+                <div class="pill ok"><span class="d"></span>Di area</div>
+              </div>
+              <div class="row gap-2" style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g700); margin-bottom:8px;">
+                <span>⏱ Mulai 06:00</span>
+                <span>📍 Taman Bungkul</span>
+              </div>
+              <div class="row gap-2">
+                <button class="btn danger sm" style="flex:1;">Clock-out</button>
+                <button class="btn sm" style="background:var(--white);">Istirahat</button>
+              </div>
+            </div>
+
+            <!-- Today's tasks header -->
+            <div class="row between mb-2">
+              <h3 style="font-family:var(--ff-display); font-weight:700; font-size:14px; color:var(--black); margin:0;">Tugas hari ini</h3>
+              <span class="pill yellow">3 tersisa</span>
+            </div>
+
+            <div class="col gap-2 mb-3">
+              <div class="lrow">
+                <div class="row between">
+                  <span class="pill warn"><span class="d"></span>SIAP MULAI</span>
+                  <span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">08:00 · 1.2km</span>
+                </div>
+                <div class="title">Sono · 2 pohon · PB</div>
+                <div class="meta"><span>Taman Bungkul · Zona A</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between">
+                  <span class="pill"><span class="d" style="background:var(--g500);"></span>BELUM MULAI</span>
+                  <span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">10:30</span>
+                </div>
+                <div class="title">Trembesi · 1 pohon · PR</div>
+                <div class="meta"><span>Jl. Wonokromo No.45</span><b>dari perantingan</b></div>
+              </div>
+            </div>
+
+            <!-- Quick stats -->
+            <div class="div-h">Ringkasan minggu ini</div>
+            <div class="gtiles c3 mb-3">
+              <div class="stat-tile"><div class="h">Tugas</div><div class="v">12</div><div class="d">+3 minggu lalu</div></div>
+              <div class="stat-tile ok"><div class="h">Selesai</div><div class="v">10</div><div class="d">83%</div></div>
+              <div class="stat-tile yellow"><div class="h">Jam kerja</div><div class="v">38</div><div class="d">dari 40</div></div>
+            </div>
+          </div>
+
+          <!-- tab bar -->
+          <div class="tabbar">
+            <div class="tab active"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg></div><span>Beranda</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><path d="M9 11l3 3 8-8"/><rect x="3" y="5" width="14" height="14" rx="2"/></svg></div><span>Tugas</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg></div><span>Aktivitas</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 22s7-8 7-12a7 7 0 0 0-14 0c0 4 7 12 7 12z"/></svg></div><span>Peta</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 22c1.5-4 5-6 8-6s6.5 2 8 6"/></svg></div><span>Profil</span></div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Status awareness top-to-bottom.</b> Greeting → live absensi (with elapsed timer + geofence status) → tugas hari ini → quick stats. Vertical priority strict — absensi never demoted.</div>
+      </div>
+
+      <!-- HOME-2 Korlap -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">HOME-2</span><span class="fr-name">Home · Korlap</span></div>
+        <p class="fr-note">Field coordinator — team status first, tugas tim, peringatan.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div style="padding:6px 18px 12px; display:flex; align-items:center; gap:10px; background:var(--paper); border-bottom:2px solid var(--black);">
+            <div class="av korlap">IM</div>
+            <div style="flex:1; line-height:1.1;">
+              <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600); font-weight:700; letter-spacing:0.06em;">KORLAP · TAMAN BUNGKUL</div>
+              <div style="font-family:var(--ff-display); font-weight:700; font-size:16px; color:var(--black);">Ibu Marni</div>
+            </div>
+            <div style="width:36px; height:36px; border:2px solid var(--black); border-radius:9px; background:var(--white); display:flex; align-items:center; justify-content:center; box-shadow:2px 2px 0 var(--black);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg>
+            </div>
+          </div>
+
+          <div class="body scroll">
+            <!-- Team status hero -->
+            <div class="card mb-3" style="background:var(--accent-mint); border-width:2.5px;">
+              <div class="row between mb-2">
+                <span class="kpi-h">TIM HARI INI</span>
+                <span class="pill ok"><span class="d"></span>9 / 12 aktif</span>
+              </div>
+              <div class="row gap-2" style="margin-bottom:10px;">
+                <div class="av sm satgas">A</div>
+                <div class="av sm satgas">B</div>
+                <div class="av sm satgas">C</div>
+                <div class="av sm satgas">D</div>
+                <div class="av sm linmas">E</div>
+                <div class="av sm linmas">F</div>
+                <div class="av sm" style="background:var(--g300);">+6</div>
+              </div>
+              <button class="btn full sm" style="background:var(--white);">Lihat semua →</button>
+            </div>
+
+            <!-- KPI tiles -->
+            <div class="gtiles mb-3">
+              <div class="stat-tile bad"><div class="h">Diluar area</div><div class="v">2</div><div class="d">Rio · Yanti</div></div>
+              <div class="stat-tile warn"><div class="h">Belum clock-in</div><div class="v">1</div><div class="d">⏰ 06:47</div></div>
+              <div class="stat-tile yellow"><div class="h">Tugas tim</div><div class="v">28</div><div class="d">18 selesai</div></div>
+              <div class="stat-tile info"><div class="h">Perantingan</div><div class="v">4</div><div class="d">SLA aman</div></div>
+            </div>
+
+            <!-- Peringatan -->
+            <div class="div-h">Peringatan · 2 baru</div>
+            <div class="col gap-2">
+              <div class="lrow" style="background:var(--danger-bg);">
+                <div class="row between"><span class="pill bad"><span class="d"></span>DI LUAR AREA</span><span style="font-family:var(--ff-mono); font-size:10px;">12 mnt</span></div>
+                <div class="title">Rio Saputra keluar dari Taman Bungkul</div>
+                <div class="meta"><span>Posisi 320m timur · jam 09:28</span></div>
+              </div>
+              <div class="lrow" style="background:var(--warning-bg);">
+                <div class="row between"><span class="pill warn"><span class="d"></span>SLA 4 JAM</span><span style="font-family:var(--ff-mono); font-size:10px;">18 mnt</span></div>
+                <div class="title">Trembesi · cabang besar miring</div>
+                <div class="meta"><span>Jl. Wonokromo · belum di-assign</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab active"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg></div><span>Beranda</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 22s7-8 7-12a7 7 0 0 0-14 0c0 4 7 12 7 12z"/></svg></div><span>Monitor</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M9 11l3 3 8-8"/></svg></div><span>Tugas</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><path d="M12 2L3 7v6c0 6 9 9 9 9s9-3 9-9V7l-9-5z"/></svg></div><span>Cabang</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 22c1.5-4 5-6 8-6s6.5 2 8 6"/></svg></div><span>Profil</span></div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Korlap-first composition.</b> Team status replaces solo absensi; peringatan feed is prominent. Tab "Monitor" replaces "Aktivitas".</div>
+      </div>
+
+      <!-- HOME-3 Admin Data -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">HOME-3</span><span class="fr-name">Home · Admin Data</span></div>
+        <p class="fr-note">Disposition role — perantingan queue first.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div style="padding:6px 18px 12px; display:flex; align-items:center; gap:10px; background:var(--paper); border-bottom:2px solid var(--black);">
+            <div class="av admin-data">AD</div>
+            <div style="flex:1; line-height:1.1;">
+              <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600); font-weight:700; letter-spacing:0.06em;">ADMIN DATA · RAYON PUSAT</div>
+              <div style="font-family:var(--ff-display); font-weight:700; font-size:16px; color:var(--black);">Pak Hadi</div>
+            </div>
+          </div>
+
+          <div class="body scroll">
+            <!-- Perantingan queue hero -->
+            <div class="card yellow mb-3" style="border-width:2.5px;">
+              <div class="row between mb-2">
+                <span class="kpi-h">PERANTINGAN MASUK</span>
+                <span class="pill bad"><span class="d"></span>2 SLA &lt;6j</span>
+              </div>
+              <div class="row" style="align-items:flex-end; gap:14px;">
+                <div class="kpi-v" style="font-size:44px;">14</div>
+                <div class="kpi-d" style="margin-bottom:6px;"><span class="delta up">+3</span> sejak kemarin</div>
+              </div>
+              <div class="row gap-2 mt-3">
+                <button class="btn primary sm" style="flex:1; background:var(--black); color:var(--primary);">Buka antrian →</button>
+              </div>
+            </div>
+
+            <!-- Breakdown -->
+            <div class="div-h">Breakdown disposisi</div>
+            <div class="gtiles mb-3">
+              <div class="stat-tile"><div class="h">Baru masuk</div><div class="v">6</div></div>
+              <div class="stat-tile warn"><div class="h">Review</div><div class="v">5</div></div>
+              <div class="stat-tile ok"><div class="h">Disetujui</div><div class="v">3</div></div>
+              <div class="stat-tile bad"><div class="h">Ditolak</div><div class="v">0</div></div>
+            </div>
+
+            <!-- Lembur approval -->
+            <div class="div-h">Approval lembur · 2 menunggu</div>
+            <div class="col gap-2">
+              <div class="lrow">
+                <div class="row between"><span class="pill warn"><span class="d"></span>MENUNGGU</span><span style="font-family:var(--ff-mono); font-size:10px;">Bu Yanti · 4j</span></div>
+                <div class="title">Lembur potong rumput Bungkul</div>
+                <div class="meta"><span>Sabtu 14:00–18:00</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill warn"><span class="d"></span>MENUNGGU</span><span style="font-family:var(--ff-mono); font-size:10px;">Pak Joko · 6j</span></div>
+                <div class="title">Lembur pemangkasan Trembesi</div>
+                <div class="meta"><span>Minggu 06:00–12:00</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab active"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg></div><span>Beranda</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><path d="M12 2L3 7v6c0 6 9 9 9 9s9-3 9-9V7l-9-5z"/></svg></div><span>Cabang</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg></div><span>Lembur</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 22s7-8 7-12a7 7 0 0 0-14 0c0 4 7 12 7 12z"/></svg></div><span>Monitor</span></div>
+            <div class="tab"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C5F" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 22c1.5-4 5-6 8-6s6.5 2 8 6"/></svg></div><span>Profil</span></div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Disposition-first.</b> Perantingan queue dominates above the fold. ADR-032: admin_data has narrow disposition authority scoped to <code>users.rayon_id</code>.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ ABSENSI ═══════════════════════════════════════ -->
+  <section class="section" id="absensi">
+    <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Absensi · Clock-in / out</h2><span class="sec-tag">field/ClockInOutScreen.tsx</span></div>
+    <p class="sec-lede">3 states: <b>before shift</b> (GPS check + selfie verification), <b>during shift</b> (live timer + clock-out), <b>history</b>. Selfie optional per ADR; geofence ±100m tolerance.</p>
+
+    <div class="frames">
+
+      <!-- ABS-1 Clock-in screen -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">ABS-1</span><span class="fr-name">Clock-in · GPS + selfie</span></div>
+        <p class="fr-note">Pre-shift. GPS lock confirmed, selfie capture optional.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar">
+            <div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+            <div class="ttl">Clock-in</div>
+          </div>
+          <div class="body scroll">
+            <!-- Time hero -->
+            <div style="text-align:center; padding:14px 0 18px;">
+              <div style="font-family:var(--ff-mono); font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--g600);">SENIN, 21 MEI</div>
+              <div style="font-family:var(--ff-display); font-weight:800; font-size:54px; line-height:1; color:var(--black); letter-spacing:-0.03em;">05:58</div>
+              <div class="pill ok mt-2"><span class="d"></span>Tepat waktu (shift 06:00)</div>
+            </div>
+
+            <!-- Selfie capture -->
+            <div class="selfie mb-3">Live camera<br/>preview</div>
+            <p style="font-family:var(--ff-mono); font-size:10.5px; text-align:center; color:var(--g600); margin:0 0 14px;">Pastikan wajah jelas terlihat</p>
+
+            <!-- GPS card -->
+            <div class="card tight mb-3" style="background:var(--success-bg); border-color:var(--black);">
+              <div class="row gap-2">
+                <div class="chip-ic" style="background:var(--success);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 22s7-8 7-12a7 7 0 0 0-14 0c0 4 7 12 7 12z"/></svg>
+                </div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:12.5px; color:var(--black);">Posisi dikunci</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g700);">Taman Bungkul · ±8m akurasi</div>
+                </div>
+                <span class="pill ok" style="font-size:9px;">DI AREA</span>
+              </div>
+            </div>
+
+            <button class="btn primary full" style="margin-bottom:8px;">📷 Ambil selfie &amp; Clock-in</button>
+            <button class="btn full ghost" style="font-size:12.5px;">Lewati selfie (lapor korlap)</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Selfie optional.</b> Per ADR — workers can skip selfie but it surfaces a flag to korlap. GPS validation is non-optional.</div>
+      </div>
+
+      <!-- ABS-2 Outside area state -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">ABS-2</span><span class="fr-name">Clock-in · Di luar area</span></div>
+        <p class="fr-note">Worker too far from geofence — needs special permission.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Clock-in</div></div>
+          <div class="body scroll">
+            <div style="text-align:center; padding:14px 0 18px;">
+              <div style="font-family:var(--ff-mono); font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--g600);">SENIN, 21 MEI</div>
+              <div style="font-family:var(--ff-display); font-weight:800; font-size:54px; line-height:1; color:var(--black); letter-spacing:-0.03em;">06:12</div>
+              <div class="pill warn mt-2"><span class="d"></span>Terlambat 12 menit</div>
+            </div>
+
+            <!-- Mini map showing out-of-area -->
+            <div class="minimap" style="height:140px; margin-bottom:12px;">
+              <div class="geofence" style="left:55%; top:25%; width:36%; height:50%;"></div>
+              <div class="pin outside" style="left:18%; top:46%;"></div>
+              <div style="position:absolute; left:18%; top:35%; transform:translate(-30%, 0); background:var(--status-outside); color:var(--white); border:2px solid var(--black); border-radius:6px; font-family:var(--ff-mono); font-size:9px; font-weight:700; padding:2px 6px;">Anda di sini</div>
+              <div style="position:absolute; right:14px; bottom:14px; background:var(--white); border:1.5px solid var(--black); border-radius:6px; padding:3px 7px; font-family:var(--ff-mono); font-size:9.5px; font-weight:700;">340m dari Bungkul</div>
+            </div>
+
+            <div class="toast d mb-3" style="border-width:2px;">
+              <div class="ico">!</div>
+              <div><b>Di luar area kerja</b><br/><span style="font-weight:500; font-size:11.5px;">Mendekat ke Taman Bungkul atau lapor korlap.</span></div>
+            </div>
+
+            <div class="div-h">Alasan</div>
+            <div class="field mb-3">
+              <div class="input ph" style="align-items:flex-start; min-height:64px;">Contoh: Akses jalan tutup, sedang menuju lokasi...</div>
+            </div>
+
+            <button class="btn primary full" style="margin-bottom:8px;">Lapor &amp; Clock-in</button>
+            <button class="btn full ghost" style="font-size:12.5px;">Batal</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>5-status monitoring.</b> "outside_area" gets dedicated UX — special clock-in with mandatory alasan, korlap notified.</div>
+      </div>
+
+      <!-- ABS-3 Shift history -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">ABS-3</span><span class="fr-name">Shift history</span></div>
+        <p class="fr-note">field/ShiftHistoryScreen.tsx — last 30 days.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Riwayat absensi</div></div>
+          <div class="body scroll">
+            <!-- Summary -->
+            <div class="gtiles c3 mb-3">
+              <div class="stat-tile ok"><div class="h">Hadir</div><div class="v">22</div></div>
+              <div class="stat-tile warn"><div class="h">Telat</div><div class="v">3</div></div>
+              <div class="stat-tile bad"><div class="h">Absen</div><div class="v">1</div></div>
+            </div>
+            <div class="div-h">Mei 2026</div>
+            <div class="col gap-2">
+              <div class="lrow">
+                <div class="row between"><div class="row gap-2"><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">21</div><div style="font-family:var(--ff-mono); font-size:10px;">Senin</div></div><span class="pill ok"><span class="d"></span>Tepat</span></div>
+                <div class="meta"><span>06:00 – 14:12 · <b>8j 12m</b></span><span>Bungkul</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><div class="row gap-2"><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">20</div><div style="font-family:var(--ff-mono); font-size:10px;">Minggu</div></div><span class="pill" style="background:var(--g100);"><span class="d" style="background:var(--g500);"></span>LIBUR</span></div>
+                <div class="meta"><span>–</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><div class="row gap-2"><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">19</div><div style="font-family:var(--ff-mono); font-size:10px;">Sabtu</div></div><span class="pill warn"><span class="d"></span>Telat 8m</span></div>
+                <div class="meta"><span>06:08 – 14:00 · <b>7j 52m</b></span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><div class="row gap-2"><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">18</div><div style="font-family:var(--ff-mono); font-size:10px;">Jumat</div></div><span class="pill bad"><span class="d"></span>Tidak hadir</span></div>
+                <div class="meta"><span>Dispensasi izin sakit</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><div class="row gap-2"><div style="font-family:var(--ff-display); font-weight:800; font-size:18px;">17</div><div style="font-family:var(--ff-mono); font-size:10px;">Kamis</div></div><span class="pill ok"><span class="d"></span>Tepat</span></div>
+                <div class="meta"><span>05:58 – 14:05 · <b>8j 7m</b></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Filter day-types.</b> Libur, sakit, izin marked separately. Pill colour mirrors monitoring status colors for consistency.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ MONITORING ═══════════════════════════════════════ -->
+  <section class="section" id="monitoring">
+    <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">Monitoring · Map dashboard</h2><span class="sec-tag">monitoring/MapDashboardScreen.tsx</span></div>
+    <p class="sec-lede">Live map showing all field workers in a rayon. Tools FAB groups satgas filters, geofence overlay, layer toggle. Bottom sheet for personnel detail.</p>
+
+    <div class="frames">
+
+      <!-- MON-1 Map main -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">MON-1</span><span class="fr-name">Map · Korlap view</span></div>
+        <p class="fr-note">Supercluster rendering. Status pill per pin matches the 5-status palette.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar">
+            <div class="ttl">Monitoring</div>
+            <div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></div>
+            <div class="iconbtn" style="background:var(--primary);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          </div>
+          <div style="flex:1; position:relative;">
+            <div class="minimap dense" style="position:absolute; inset:0; border-radius:0; border:0;">
+              <!-- Geofences -->
+              <div class="geofence" style="left:18%; top:18%; width:36%; height:32%;"></div>
+              <div class="geofence" style="left:48%; top:48%; width:42%; height:38%;"></div>
+              <!-- Pins -->
+              <div class="pin green" style="left:28%; top:24%;"></div>
+              <div class="pin green" style="left:38%; top:34%;"></div>
+              <div class="pin amber" style="left:24%; top:42%;"></div>
+              <div class="pin outside" style="left:9%; top:36%;"></div>
+              <div class="pin green" style="left:65%; top:62%;"></div>
+              <div class="pin blue" style="left:74%; top:54%;"></div>
+              <div class="pin dark" style="left:60%; top:78%;"></div>
+              <!-- Cluster -->
+              <div style="position:absolute; left:42%; top:60%; width:44px; height:44px; background:var(--primary); border:2.5px solid var(--black); border-radius:50%; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; font-family:var(--ff-display); font-weight:800; font-size:15px; color:var(--black);">12</div>
+            </div>
+
+            <!-- Status legend top -->
+            <div style="position:absolute; left:14px; top:14px; right:14px; display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="pill ok" style="background:var(--white);"><span class="d" style="background:var(--status-active);"></span>Aktif 9</span>
+              <span class="pill" style="background:var(--white);"><span class="d" style="background:var(--status-idle);"></span>Tidak aktif 2</span>
+              <span class="pill" style="background:var(--white);"><span class="d" style="background:var(--status-outside);"></span>Luar area 1</span>
+              <span class="pill" style="background:var(--white);"><span class="d" style="background:var(--status-offline);"></span>Offline 3</span>
+            </div>
+
+            <!-- FAB stack -->
+            <div style="position:absolute; right:14px; top:80px; display:flex; flex-direction:column; gap:8px;">
+              <div style="width:42px; height:42px; background:var(--white); border:2px solid var(--black); border-radius:11px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+              </div>
+              <div style="width:42px; height:42px; background:var(--white); border:2px solid var(--black); border-radius:11px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 19l9-15 9 15z"/></svg>
+              </div>
+            </div>
+
+            <!-- FAB tools -->
+            <div class="fab" style="right:14px; bottom:14px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-1-3.6l2-2-2-2-2 2A7 7 0 0 0 12 5l-1-2-2 1 1 2A7 7 0 0 0 6.6 8L4 7l-1 2 2 1A7 7 0 0 0 5 12l-2 1 1 2 2-1A7 7 0 0 0 8 17.4L7 20l2 1 1-2A7 7 0 0 0 12 19l1 2 2-1-1-2a7 7 0 0 0 3.4-3l2 1 1-2-2-1a7 7 0 0 0 .6-1z"/></svg>
+            </div>
+          </div>
+
+          <!-- Persistent personnel strip -->
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:10px 14px;">
+            <div class="row between mb-2">
+              <span class="kpi-h" style="margin:0;">PERSONNEL · 15 SHOWN</span>
+              <span style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--g600);">Tap untuk detail ↑</span>
+            </div>
+            <div class="row gap-2" style="overflow-x:auto;">
+              <div class="av sm satgas">BS</div><div class="av sm satgas">JK</div><div class="av sm satgas">YT</div><div class="av sm linmas">RM</div><div class="av sm linmas" style="opacity:0.5;">DA</div><div class="av sm korlap">IM</div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>5-status palette.</b> Pin colors are the same vocabulary as Absensi pills + Monitoring legend. Single source of truth across screens.</div>
+      </div>
+
+      <!-- MON-2 Personnel detail (bottom sheet) -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">MON-2</span><span class="fr-name">Personnel sheet</span></div>
+        <p class="fr-note">Bottom sheet after tapping a pin. Profile, status, last update, quick actions.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div style="flex:1; position:relative; overflow:hidden;">
+            <div class="minimap dense" style="position:absolute; inset:0; border-radius:0; border:0; opacity:0.55;">
+              <div class="pin green" style="left:50%; top:24%;"></div>
+            </div>
+            <!-- Scrim -->
+            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.25);"></div>
+            <!-- Sheet -->
+            <div style="position:absolute; left:0; right:0; bottom:0; background:var(--white); border-top:2.5px solid var(--black); border-radius:20px 20px 0 0; padding:14px 18px 18px; box-shadow:0 -4px 0 var(--black);">
+              <div style="width:42px; height:5px; background:var(--g400); border-radius:3px; margin:0 auto 14px;"></div>
+              <div class="row gap-3 mb-3">
+                <div class="av lg satgas">BS</div>
+                <div style="flex:1; line-height:1.1;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:18px; color:var(--black);">Budi Santoso</div>
+                  <div style="font-family:var(--ff-mono); font-size:11px; color:var(--g600); margin-top:2px;">Satgas · Bungkul · 2 thn</div>
+                </div>
+                <span class="pill ok"><span class="d"></span>AKTIF</span>
+              </div>
+
+              <!-- Stats -->
+              <div class="gtiles c3 mb-3">
+                <div class="stat-tile"><div class="h">Lokasi</div><div class="v" style="font-size:13px;">Bungkul</div><div class="d">±8m akurasi</div></div>
+                <div class="stat-tile"><div class="h">Update</div><div class="v" style="font-size:13px;">12s lalu</div><div class="d">via FCM</div></div>
+                <div class="stat-tile yellow"><div class="h">Jam kerja</div><div class="v" style="font-size:13px;">3:47</div><div class="d">sejak 06:00</div></div>
+              </div>
+
+              <!-- Today work -->
+              <div class="div-h">Aktivitas hari ini</div>
+              <div class="col gap-2 mb-3">
+                <div class="row gap-2" style="font-size:12px;">
+                  <div style="width:8px; height:8px; background:var(--success); border:1.5px solid var(--black); border-radius:50%;"></div>
+                  <b style="color:var(--black);">06:02</b><span>Clock-in di Bungkul</span>
+                </div>
+                <div class="row gap-2" style="font-size:12px;">
+                  <div style="width:8px; height:8px; background:var(--success); border:1.5px solid var(--black); border-radius:50%;"></div>
+                  <b style="color:var(--black);">07:18</b><span>Tugas selesai · Sono 2 pohon</span>
+                </div>
+                <div class="row gap-2" style="font-size:12px;">
+                  <div style="width:8px; height:8px; background:var(--primary); border:1.5px solid var(--black); border-radius:50%;"></div>
+                  <b style="color:var(--black);">09:30</b><span>Sedang mengerjakan Trembesi</span>
+                </div>
+              </div>
+
+              <div class="row gap-2">
+                <button class="btn full sm">📞 Hubungi</button>
+                <button class="btn primary full sm">Lihat profil</button>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Live data via WebSocket.</b> Update timestamp + accuracy radius surfaced for trust. Phase 3: Redis Streams projector feeds incremental WS patches.</div>
+      </div>
+
+      <!-- MON-3 Filters / Tools -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">MON-3</span><span class="fr-name">Tools FAB · expanded</span></div>
+        <p class="fr-note">Replaces 5-button column with one FAB that expands a toolbox.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="ttl">Monitoring</div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div></div>
+          <div style="flex:1; position:relative;">
+            <div class="minimap dense" style="position:absolute; inset:0; border-radius:0; border:0; opacity:0.5;">
+              <div class="pin green" style="left:30%; top:30%;"></div><div class="pin amber" style="left:55%; top:50%;"></div>
+            </div>
+            <!-- Expanded toolbox -->
+            <div style="position:absolute; right:14px; bottom:78px; width:200px; background:var(--white); border:2.5px solid var(--black); border-radius:14px; box-shadow:var(--sh-md); padding:8px;">
+              <div style="font-family:var(--ff-mono); font-size:9.5px; font-weight:700; color:var(--g600); padding:4px 6px 8px; letter-spacing:0.06em;">TOOLS</div>
+              <div class="col gap-2">
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:8px; background:var(--primary-soft); font-size:12px; font-weight:600;">
+                  <div class="chip-ic" style="background:var(--primary); width:24px; height:24px; border-width:1.5px; border-radius:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <span>Tampilkan satgas</span>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:8px; background:var(--white); font-size:12px; font-weight:600;">
+                  <div class="chip-ic" style="background:var(--white); width:24px; height:24px; border-width:1.5px; border-radius:6px;"></div>
+                  <span>Tampilkan linmas</span>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:8px; background:var(--accent-mint); font-size:12px; font-weight:600;">
+                  <div class="chip-ic" style="background:var(--primary); width:24px; height:24px; border-width:1.5px; border-radius:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <span>Geofence</span>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:8px; background:var(--white); font-size:12px; font-weight:600;">
+                  <span class="chip-ic" style="width:24px; height:24px; border-width:1.5px; border-radius:6px; background:var(--accent-yellow);">🛰</span>
+                  <span>Tracking jejak</span>
+                </div>
+                <div class="row gap-2" style="padding:6px 8px; border:1.5px solid var(--black); border-radius:8px; background:var(--white); font-size:12px; font-weight:600;">
+                  <span class="chip-ic" style="width:24px; height:24px; border-width:1.5px; border-radius:6px; background:var(--white);">🗺️</span>
+                  <span>Layer satelit</span>
+                </div>
+              </div>
+            </div>
+            <div class="fab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="3"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Tools FAB grouping.</b> Single FAB expands into a toolbox of toggles. Saves vertical map space; keeps locate-me + compass as standalone always-visible controls.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ TUGAS ═══════════════════════════════════════ -->
+  <section class="section" id="tugas">
+    <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">Tugas · the work assigned</h2><span class="sec-tag">taskActivity · field</span></div>
+    <p class="sec-lede">Korlap creates → satgas executes. List → detail → execution flow. Status pills mirror monitoring vocabulary.</p>
+
+    <div class="frames">
+
+      <!-- TUG-1 List -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">TUG-1</span><span class="fr-name">Tugas list · filtered tabs</span></div>
+        <p class="fr-note">taskActivity/TasksActivityScreen.tsx — sticky filter tabs, group by date.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="ttl">Tugas</div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 6h18M6 12h12M10 18h4"/></svg></div></div>
+          <!-- tabs -->
+          <div style="padding:10px 14px 4px; background:var(--paper); border-bottom:2px solid var(--black);">
+            <div class="tabs">
+              <div class="t active">Hari ini · 4</div>
+              <div class="t">Akan datang · 7</div>
+              <div class="t">Selesai · 12</div>
+            </div>
+          </div>
+          <div class="body scroll">
+            <div class="div-h">Senin · 21 Mei</div>
+            <div class="col gap-2 mb-3">
+              <div class="lrow">
+                <div class="row between"><span class="pill ok"><span class="d"></span>SEDANG DIKERJAKAN</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">⏱ 1j 04m</span></div>
+                <div class="title">Trembesi · cabang besar · PB</div>
+                <div class="meta"><span>Jl. Wonokromo No.45</span><b style="color:var(--info-fg);">dari perantingan</b></div>
+                <div style="height:6px; background:var(--g100); border:1.5px solid var(--black); border-radius:4px; overflow:hidden; margin-top:4px;">
+                  <div style="height:100%; width:45%; background:var(--success);"></div>
+                </div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill warn"><span class="d"></span>SIAP MULAI</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">10:30 · 1.2km</span></div>
+                <div class="title">Sono · 2 pohon · PB</div>
+                <div class="meta"><span>Taman Bungkul · Zona A</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill"><span class="d" style="background:var(--g500);"></span>BELUM MULAI</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">13:00</span></div>
+                <div class="title">Glodokan · 4 pohon · PR</div>
+                <div class="meta"><span>Jl. Diponegoro · sisi timur</span></div>
+              </div>
+            </div>
+            <div class="div-h">Selasa · 22 Mei</div>
+            <div class="col gap-2">
+              <div class="lrow">
+                <div class="row between"><span class="pill"><span class="d" style="background:var(--g500);"></span>JADWAL</span><span style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">07:00</span></div>
+                <div class="title">Kerokot · 3 pohon · PR</div>
+                <div class="meta"><span>Taman Apsari</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Status pills</b> mirror monitoring 5-status palette so the same color = same meaning across the app.</div>
+      </div>
+
+      <!-- TUG-2 Detail -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">TUG-2</span><span class="fr-name">Tugas detail</span></div>
+        <p class="fr-note">field/TaskDetailScreen.tsx — all task metadata + plant items.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar">
+            <div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div>
+            <div class="ttl">Detail tugas</div>
+            <div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg></div>
+          </div>
+          <div class="body scroll">
+            <!-- Status -->
+            <div class="row gap-2 mb-3">
+              <span class="pill warn"><span class="d"></span>SIAP MULAI</span>
+              <span class="pill info">DARI PERANTINGAN</span>
+            </div>
+
+            <!-- Title -->
+            <h2 style="font-family:var(--ff-display); font-weight:800; font-size:22px; color:var(--black); margin:0 0 4px; line-height:1.15;">Trembesi · 1 pohon · PB</h2>
+            <p style="font-size:13px; color:var(--g700); margin:0 0 14px; line-height:1.5;">Cabang besar bagian timur miring, perlu pemangkasan berat.</p>
+
+            <!-- Metadata grid -->
+            <div class="gtiles mb-3">
+              <div class="stat-tile"><div class="h">Lokasi</div><div class="v" style="font-size:13px;">Jl. Wonokromo</div><div class="d">No. 45 · 1.2km</div></div>
+              <div class="stat-tile"><div class="h">Jadwal</div><div class="v" style="font-size:13px;">08:00</div><div class="d">Senin 21 Mei</div></div>
+              <div class="stat-tile yellow"><div class="h">Prioritas</div><div class="v" style="font-size:13px;">Normal</div></div>
+              <div class="stat-tile"><div class="h">Estimasi</div><div class="v" style="font-size:13px;">~2 jam</div></div>
+            </div>
+
+            <!-- Plant items -->
+            <div class="div-h">Tanaman</div>
+            <div class="card tight mb-3">
+              <div class="row gap-3" style="align-items:center;">
+                <div class="chip-ic" style="background:var(--success-bg); width:40px; height:40px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2"><path d="M12 22V8M12 8c-3 0-6-2-6-5 3 0 6 2 6 5zM12 8c3 0 6-2 6-5-3 0-6 2-6 5z"/></svg>
+                </div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:14px; color:var(--black);">Trembesi · 1 batang</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600); margin-top:2px;">Samanea saman · diameter ~80cm</div>
+                </div>
+                <div class="row gap-2">
+                  <span class="pill yellow" style="font-size:9px;">PB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submitted by -->
+            <div class="div-h">Pemohon</div>
+            <div class="card tight mb-4">
+              <div class="row gap-3">
+                <div class="av sm kec">YT</div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:13px; color:var(--black);">Bu Yanti</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Staff Kecamatan · diajukan 18 jam lalu</div>
+                </div>
+                <div style="width:32px; height:32px; border:2px solid var(--black); border-radius:8px; background:var(--white); display:flex; align-items:center; justify-content:center; box-shadow:1.5px 1.5px 0 var(--black);">📞</div>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom sticky CTA -->
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:12px 16px;">
+            <button class="btn primary full">▶ Mulai tugas</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Plant items as line items.</b> ADR-031 — JSONB <code>activity_plant_items</code>. Pemohon block links source perantingan request.</div>
+      </div>
+
+      <!-- TUG-3 Complete (photo capture) -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">TUG-3</span><span class="fr-name">Selesaikan tugas</span></div>
+        <p class="fr-note">field/TaskCompleteScreen.tsx — sebelum/sesudah photos, plant updates.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div class="ttl">Selesaikan tugas</div></div>
+          <div class="body scroll">
+            <!-- Progress -->
+            <div class="row gap-2 mb-3" style="align-items:center;">
+              <div style="flex:1; height:6px; background:var(--g100); border:1.5px solid var(--black); border-radius:4px; overflow:hidden;"><div style="height:100%; width:66%; background:var(--primary);"></div></div>
+              <span style="font-family:var(--ff-mono); font-size:11px; font-weight:700; color:var(--black);">2 / 3</span>
+            </div>
+
+            <h3 style="font-family:var(--ff-display); font-weight:700; font-size:15px; color:var(--black); margin:0 0 8px;">Foto sesudah · min. 2</h3>
+            <p style="font-size:11.5px; color:var(--g600); margin:0 0 12px; line-height:1.5;">Ambil close-up bagian yang dipangkas + wide shot pohon.</p>
+
+            <div class="photogrid mb-3">
+              <div class="photoslot filled"></div>
+              <div class="photoslot filled-2"></div>
+              <div class="photoslot">
+                <div style="font-size:24px; line-height:1;">+</div>
+                <div>Tambah</div>
+              </div>
+              <div class="photoslot">
+                <div style="font-size:24px; line-height:1;">+</div>
+                <div>Tambah</div>
+              </div>
+            </div>
+
+            <div class="div-h">Tanaman dikerjakan</div>
+            <div class="card tight mb-3">
+              <div class="row gap-3">
+                <div class="chip-ic" style="background:var(--success-bg);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:13px; color:var(--black);">Trembesi · 1 batang</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">PB selesai</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="div-h">Catatan (opsional)</div>
+            <div class="field mb-3">
+              <div class="input ph" style="align-items:flex-start; min-height:64px;">Pemangkasan dilakukan ke arah barat. Sisa cabang dirapikan.</div>
+            </div>
+
+            <div class="toast s mb-3">
+              <div class="ico" style="background:var(--success); color:var(--white); border-color:var(--black);">✓</div>
+              <div>Tersimpan lokal · sync otomatis saat sinyal kembali</div>
+            </div>
+          </div>
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:12px 16px;">
+            <button class="btn success full">Selesaikan tugas →</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Offline-first.</b> Photos held in local queue (sqlite) → sync when network returns. Toast confirms local persistence so user can leave area safely.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ AKTIVITAS ═══════════════════════════════════════ -->
+  <section class="section" id="aktivitas">
+    <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">Aktivitas · ad-hoc work log</h2><span class="sec-tag">field/Activity*Screen.tsx</span></div>
+    <p class="sec-lede">Anything in the field that isn't a scheduled tugas. Linmas spotting damage, satgas logging extra effort, korlap noting a meeting. Auto-tagged with location + timestamp.</p>
+
+    <div class="frames">
+
+      <!-- AKT-1 Submit -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AKT-1</span><span class="fr-name">Submit aktivitas</span></div>
+        <p class="fr-note">ActivitySubmissionScreen.tsx — kategori, foto, lokasi, catatan.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div class="ttl">Aktivitas baru</div></div>
+          <div class="body scroll">
+            <div class="div-h">Kategori</div>
+            <div class="gtiles c3 mb-3">
+              <div class="stat-tile yellow" style="text-align:center; padding:11px 6px;"><div style="font-size:22px; margin-bottom:2px;">🌳</div><div style="font-family:var(--ff-display); font-weight:700; font-size:11px;">Perawatan</div></div>
+              <div class="stat-tile" style="text-align:center; padding:11px 6px;"><div style="font-size:22px; margin-bottom:2px;">⚠️</div><div style="font-family:var(--ff-display); font-weight:700; font-size:11px;">Insiden</div></div>
+              <div class="stat-tile" style="text-align:center; padding:11px 6px;"><div style="font-size:22px; margin-bottom:2px;">📋</div><div style="font-family:var(--ff-display); font-weight:700; font-size:11px;">Lain</div></div>
+            </div>
+
+            <div class="div-h">Lokasi otomatis</div>
+            <div class="card tight mb-3" style="background:var(--success-bg);">
+              <div class="row gap-3">
+                <div class="chip-ic" style="background:var(--success);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 22s7-8 7-12a7 7 0 0 0-14 0c0 4 7 12 7 12z"/></svg></div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:13px;">Taman Bungkul</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g700);">Jl. Raya Darmo · ±6m</div>
+                </div>
+                <span class="pill ok" style="font-size:9px;">DI AREA</span>
+              </div>
+            </div>
+
+            <div class="div-h">Foto</div>
+            <div class="photogrid mb-3" style="grid-template-columns:1fr 1fr 1fr;">
+              <div class="photoslot filled" style="aspect-ratio:1;"></div>
+              <div class="photoslot">
+                <div style="font-size:22px; line-height:1;">📷</div>
+                <div>Kamera</div>
+              </div>
+              <div class="photoslot">
+                <div style="font-size:22px; line-height:1;">+</div>
+                <div>Galeri</div>
+              </div>
+            </div>
+
+            <div class="div-h">Catatan</div>
+            <div class="field mb-3">
+              <div class="input ph" style="align-items:flex-start; min-height:80px;">Penyiraman pohon trembesi area utara, ~30 pohon...</div>
+            </div>
+
+            <div class="div-h">Tag tanaman (opsional)</div>
+            <div class="row gap-2" style="flex-wrap:wrap;">
+              <span class="pill yellow" style="font-size:10px;">+ Trembesi</span>
+              <span class="pill" style="font-size:10px;">+ Sono</span>
+              <span class="pill" style="font-size:10px;">+ Tabebuya</span>
+              <span class="pill" style="font-size:10px;">+ Lainnya</span>
+            </div>
+          </div>
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:12px 16px;">
+            <button class="btn primary full">Simpan aktivitas</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Free-form companion to tugas.</b> 3 main categories (perawatan, insiden, lain) keep the data clean for reporting.</div>
+      </div>
+
+      <!-- AKT-2 Aktivitas list -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">AKT-2</span><span class="fr-name">Aktivitas list</span></div>
+        <p class="fr-note">Personal log + team feed (korlap).</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="ttl">Aktivitas</div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></div></div>
+          <div style="padding:10px 14px 4px; background:var(--paper); border-bottom:2px solid var(--black);">
+            <div class="tabs">
+              <div class="t active">Saya · 8</div>
+              <div class="t">Tim · 24</div>
+            </div>
+          </div>
+          <div class="body scroll">
+            <div class="div-h">Hari ini</div>
+            <div class="col gap-2 mb-3">
+              <div class="lrow">
+                <div class="row between"><span class="pill yellow"><span class="d"></span>PERAWATAN</span><span style="font-family:var(--ff-mono); font-size:10px;">08:42</span></div>
+                <div class="title">Penyiraman Trembesi area utara</div>
+                <div class="meta"><span>Taman Bungkul · 30 pohon</span><b>+ 2 foto</b></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill bad"><span class="d"></span>INSIDEN</span><span style="font-family:var(--ff-mono); font-size:10px;">07:18</span></div>
+                <div class="title">Pagar timur roboh karena angin</div>
+                <div class="meta"><span>Bungkul · sisi timur</span><b style="color:var(--info-fg);">dilanjutkan ke Tugas</b></div>
+              </div>
+            </div>
+            <div class="div-h">Kemarin · Minggu 20 Mei</div>
+            <div class="col gap-2">
+              <div class="lrow">
+                <div class="row between"><span class="pill yellow"><span class="d"></span>PERAWATAN</span><span style="font-family:var(--ff-mono); font-size:10px;">15:02</span></div>
+                <div class="title">Pemupukan baris depan</div>
+                <div class="meta"><span>Apsari · 12 pohon</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Tim feed for korlap.</b> Linmas insiden flag can be promoted to a Tugas with one tap — preserves origin link.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ LEMBUR ═══════════════════════════════════════ -->
+  <section class="section" id="lembur">
+    <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Lembur · overtime</h2><span class="sec-tag">overtime/* Screen.tsx</span></div>
+    <p class="sec-lede">Self-service overtime. User submits → admin approves. Status visible across the app.</p>
+
+    <div class="frames">
+
+      <!-- LBR-1 List -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">LBR-1</span><span class="fr-name">Lembur list</span></div>
+        <p class="fr-note">OvertimeListScreen.tsx — sorted by date desc.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="ttl">Lembur</div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 6h18M6 12h12M10 18h4"/></svg></div></div>
+          <div class="body scroll">
+            <!-- summary -->
+            <div class="card mb-3" style="background:var(--accent-mint);">
+              <div class="row between mb-2">
+                <span class="kpi-h">JAM LEMBUR · BULAN INI</span>
+                <span class="pill ok"><span class="d"></span>3 dari 5 ACC</span>
+              </div>
+              <div class="row" style="align-items:flex-end; gap:14px;">
+                <div class="kpi-v" style="font-size:42px;">24<span style="font-size:18px; font-family:var(--ff-mono); color:var(--g600);">j</span></div>
+                <div class="kpi-d" style="margin-bottom:6px;">+ 6j dari April</div>
+              </div>
+            </div>
+
+            <div class="div-h">Pengajuan terbaru</div>
+            <div class="col gap-2 mb-3">
+              <div class="lrow">
+                <div class="row between"><span class="pill ok"><span class="d"></span>DISETUJUI</span><span style="font-family:var(--ff-mono); font-size:10px;">19 Mei · Sab</span></div>
+                <div class="title">Lembur potong rumput</div>
+                <div class="meta"><span>14:00 – 18:00 · <b>4 jam</b></span><span>Bungkul</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill warn"><span class="d"></span>MENUNGGU ACC</span><span style="font-family:var(--ff-mono); font-size:10px;">26 Mei · Sab</span></div>
+                <div class="title">Pemangkasan Trembesi besar</div>
+                <div class="meta"><span>06:00 – 12:00 · <b>6 jam</b></span><span>Wonokromo</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill bad"><span class="d"></span>DITOLAK</span><span style="font-family:var(--ff-mono); font-size:10px;">14 Mei · Sel</span></div>
+                <div class="title">Lembur penyiraman</div>
+                <div class="meta"><span>"Tidak cocok kategori"</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Approval status pills</b> use the same vocabulary as Perantingan — kept consistent so users learn one shape language.</div>
+      </div>
+
+      <!-- LBR-2 Submit -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">LBR-2</span><span class="fr-name">Ajukan lembur</span></div>
+        <p class="fr-note">OvertimeSubmitScreen.tsx — tanggal, jam mulai/selesai, kategori, alasan.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div class="ttl">Ajukan lembur</div></div>
+          <div class="body scroll">
+            <div class="field mb-3">
+              <span class="lbl">TANGGAL</span>
+              <div class="input"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg><span>Sabtu, 26 Mei 2026</span></div>
+            </div>
+            <div class="row gap-2 mb-3">
+              <div class="field" style="flex:1;">
+                <span class="lbl">MULAI</span>
+                <div class="input"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>06:00</span></div>
+              </div>
+              <div class="field" style="flex:1;">
+                <span class="lbl">SELESAI</span>
+                <div class="input"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span>12:00</span></div>
+              </div>
+            </div>
+            <div class="card tight mb-3" style="background:var(--primary-soft);">
+              <div class="row between">
+                <span class="kpi-h">DURASI</span>
+                <div style="font-family:var(--ff-display); font-weight:800; font-size:22px; color:var(--black);">6 jam</div>
+              </div>
+            </div>
+
+            <div class="field mb-3">
+              <span class="lbl">KATEGORI</span>
+              <div class="input"><span>Pemangkasan darurat</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+
+            <div class="field mb-3">
+              <span class="lbl">ALASAN</span>
+              <div class="input ph" style="align-items:flex-start; min-height:80px;">Cabang trembesi besar perlu dipangkas sebelum hujan akhir minggu...</div>
+            </div>
+
+            <div class="toast i mb-3">
+              <div class="ico" style="background:var(--info); color:var(--white); border-color:var(--black);">i</div>
+              <div>Pengajuan akan dikirim ke <b>Pak Hadi</b> (Admin Data · Rayon Pusat)</div>
+            </div>
+          </div>
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:12px 16px;">
+            <button class="btn primary full">Kirim pengajuan</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Calculated duration</b> surfaces in real-time as a card — reduces back-of-napkin math for users.</div>
+      </div>
+
+      <!-- LBR-3 Detail -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">LBR-3</span><span class="fr-name">Detail lembur · disetujui</span></div>
+        <p class="fr-note">OvertimeDetailScreen.tsx — timeline + ACC notes.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Detail lembur</div></div>
+          <div class="body scroll">
+            <div class="row gap-2 mb-3">
+              <span class="pill ok"><span class="d"></span>DISETUJUI</span>
+              <span style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g600);">#LBR-2026-0142</span>
+            </div>
+            <h2 style="font-family:var(--ff-display); font-weight:800; font-size:20px; color:var(--black); margin:0 0 10px;">Lembur potong rumput</h2>
+
+            <div class="gtiles mb-3">
+              <div class="stat-tile"><div class="h">Tanggal</div><div class="v" style="font-size:13px;">19 Mei</div><div class="d">Sabtu</div></div>
+              <div class="stat-tile yellow"><div class="h">Jam</div><div class="v" style="font-size:13px;">14:00–18:00</div><div class="d">4 jam</div></div>
+            </div>
+
+            <div class="div-h">Alasan</div>
+            <p style="font-size:13px; color:var(--g700); line-height:1.5; background:var(--white); border:2px solid var(--black); border-radius:8px; padding:10px 12px; margin:0 0 14px;">Persiapan acara Hari Lingkungan, area depan perlu dirapikan.</p>
+
+            <div class="div-h">Timeline</div>
+            <div class="tline">
+              <div class="tline-step done">
+                <div class="h">Diajukan</div>
+                <div class="s">Kamis · 16 Mei · 09:14</div>
+              </div>
+              <div class="tline-step done">
+                <div class="h">Disetujui oleh Pak Hadi</div>
+                <div class="s">Kamis · 16 Mei · 14:32 · "OK, lanjutkan."</div>
+              </div>
+              <div class="tline-step active">
+                <div class="h">Akan dijalankan</div>
+                <div class="s">Sabtu · 19 Mei · 14:00</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Audit trail.</b> Timeline shows every state change with actor + timestamp; required for compliance.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ PERANTINGAN ═══════════════════════════════════════ -->
+  <section class="section" id="perantingan">
+    <div class="sec-head"><span class="sec-num">10</span><h2 class="sec-title">Perantingan · the citizen flow</h2><span class="sec-tag">pruningRequests/*</span></div>
+    <p class="sec-lede">4-stage handoff: <b>kecamatan ajukan → admin proses → korlap assign → satgas eksekusi</b>. Each role sees a different surface.</p>
+
+    <div class="frames">
+
+      <!-- PRT-1 Kecamatan submit -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRT-1</span><span class="fr-name">Submit · Kecamatan</span></div>
+        <p class="fr-note">SubmitScreen.tsx — foto pohon, lokasi, alasan, kontak.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div class="ttl">Permohonan perantingan</div></div>
+          <div class="body scroll">
+
+            <div class="card tight mb-3" style="background:var(--accent-yellow);">
+              <div class="row gap-3">
+                <div style="font-size:24px;">🌳</div>
+                <div style="flex:1; line-height:1.3;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:13px; color:var(--black);">Pohon di pinggir jalan / taman?</div>
+                  <div style="font-size:11px; color:var(--g700); margin-top:2px;">Ajukan permohonan perantingan ke DLH Surabaya.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="div-h">Foto pohon · min. 2</div>
+            <div class="photogrid mb-3">
+              <div class="photoslot filled" style="aspect-ratio:1;"></div>
+              <div class="photoslot filled-2" style="aspect-ratio:1;"></div>
+              <div class="photoslot">
+                <div style="font-size:22px;">+</div>
+                <div>Tambah</div>
+              </div>
+              <div class="photoslot">
+                <div style="font-size:22px;">+</div>
+                <div>Tambah</div>
+              </div>
+            </div>
+            <p style="font-size:10.5px; color:var(--g600); margin:-6px 0 14px;">1 close-up cabang bermasalah, 1 wide menunjukkan posisi pohon.</p>
+
+            <div class="div-h">Lokasi</div>
+            <div class="card tight mb-3" style="background:var(--success-bg);">
+              <div class="row gap-3">
+                <div class="chip-ic" style="background:var(--success);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 22s7-8 7-12a7 7 0 0 0-14 0c0 4 7 12 7 12z"/></svg></div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:13px;">Jl. Wonokromo No. 45</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g700);">Wonokromo, Surabaya</div>
+                </div>
+                <span style="font-family:var(--ff-mono); font-size:10px; font-weight:700; color:var(--black);">UBAH</span>
+              </div>
+            </div>
+
+            <div class="div-h">Jenis & alasan</div>
+            <div class="field mb-2">
+              <span class="lbl">JENIS POHON</span>
+              <div class="input"><span>Trembesi</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="field mb-3">
+              <span class="lbl">ALASAN</span>
+              <div class="input ph" style="align-items:flex-start; min-height:80px;">Cabang bagian timur miring ke jalan, takut roboh saat hujan...</div>
+            </div>
+          </div>
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:12px 16px;">
+            <button class="btn primary full">Kirim permohonan →</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Lightweight form for kecamatan.</b> No clock-in, no shift logic — staff_kecamatan is non-clockable per ADR-033.</div>
+      </div>
+
+      <!-- PRT-2 Admin review queue -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRT-2</span><span class="fr-name">Review queue · Admin Data</span></div>
+        <p class="fr-note">ReviewQueueScreen.tsx — SLA, prioritas.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="ttl">Perantingan</div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></div></div>
+          <div style="padding:10px 14px 4px; background:var(--paper); border-bottom:2px solid var(--black);">
+            <div class="tabs">
+              <div class="t active">Antrian · 14</div>
+              <div class="t">Diproses · 6</div>
+              <div class="t">Selesai · 42</div>
+            </div>
+          </div>
+          <div class="body scroll">
+            <div class="div-h">SLA &lt; 6 jam · 2 urgent</div>
+            <div class="col gap-2 mb-3">
+              <div class="lrow" style="background:var(--danger-bg);">
+                <div class="row between"><span class="pill bad"><span class="d"></span>SLA 4j</span><span style="font-family:var(--ff-mono); font-size:10px;">~ 18 jam · 4j sisa</span></div>
+                <div class="title">Trembesi · cabang besar miring</div>
+                <div class="meta"><span>Jl. Wonokromo No.45</span><span>diajukan <b>Bu Yanti</b></span></div>
+              </div>
+              <div class="lrow" style="background:var(--danger-bg);">
+                <div class="row between"><span class="pill bad"><span class="d"></span>SLA 4j</span><span style="font-family:var(--ff-mono); font-size:10px;">~ 19 jam · 5j sisa</span></div>
+                <div class="title">Sono · ranting menutup kabel listrik</div>
+                <div class="meta"><span>Jl. Darmo Permai V</span><span>diajukan <b>Pak Andi</b></span></div>
+              </div>
+            </div>
+            <div class="div-h">SLA &lt; 24 jam · 12</div>
+            <div class="col gap-2">
+              <div class="lrow">
+                <div class="row between"><span class="pill warn"><span class="d"></span>SLA 24j</span><span style="font-family:var(--ff-mono); font-size:10px;">~ 8 jam · 16j sisa</span></div>
+                <div class="title">Glodokan · daun mengganggu lampu</div>
+                <div class="meta"><span>Jl. Diponegoro 88</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill warn"><span class="d"></span>SLA 24j</span><span style="font-family:var(--ff-mono); font-size:10px;">~ 2 jam · 22j sisa</span></div>
+                <div class="title">Kerokot · tumbuh ke kabel</div>
+                <div class="meta"><span>Jl. Sulawesi 12</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>SLA-first sort.</b> Most urgent always top, color-coded background. Admin Data scoped by <code>users.rayon_id</code>.</div>
+      </div>
+
+      <!-- PRT-3 Request detail -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRT-3</span><span class="fr-name">Detail permohonan</span></div>
+        <p class="fr-note">RequestDetailScreen.tsx — disposisi actions for admin.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Detail permohonan</div></div>
+          <div class="body scroll">
+            <div class="row gap-2 mb-3">
+              <span class="pill bad"><span class="d"></span>SLA 4j SISA</span>
+              <span style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g600);">#PR-2026-0331</span>
+            </div>
+            <h2 style="font-family:var(--ff-display); font-weight:800; font-size:18px; color:var(--black); margin:0 0 4px;">Trembesi · cabang besar miring</h2>
+            <p style="font-size:12.5px; color:var(--g700); margin:0 0 14px;">Cabang besar bagian timur miring ke jalan, takut roboh saat hujan deras.</p>
+
+            <!-- Foto carousel -->
+            <div class="row gap-2 mb-3" style="overflow-x:auto;">
+              <div class="imgph" style="min-width:130px; height:130px; flex-shrink:0;">FOTO 1<br/>CLOSE-UP</div>
+              <div class="imgph" style="min-width:130px; height:130px; flex-shrink:0; background:repeating-linear-gradient(45deg, var(--accent-pink) 0 8px, var(--g200) 8px 9px), var(--accent-pink);">FOTO 2<br/>WIDE</div>
+            </div>
+
+            <!-- Lokasi map mini -->
+            <div class="div-h">Lokasi</div>
+            <div class="minimap" style="height:100px; margin-bottom:14px;">
+              <div class="pin red" style="left:50%; top:50%;"></div>
+              <div style="position:absolute; right:8px; bottom:8px; background:var(--white); border:1.5px solid var(--black); border-radius:6px; padding:3px 7px; font-family:var(--ff-mono); font-size:9.5px; font-weight:700;">Jl. Wonokromo 45</div>
+            </div>
+
+            <!-- Pemohon -->
+            <div class="div-h">Pemohon</div>
+            <div class="card tight mb-3">
+              <div class="row gap-3">
+                <div class="av kec">YT</div>
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:13px;">Bu Yanti</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600);">Staff Kec. Wonokromo · 081234567890</div>
+                </div>
+                <button class="btn sm">📞</button>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:12px 16px; display:flex; gap:8px;">
+            <button class="btn danger" style="flex:1;">Tolak</button>
+            <button class="btn primary" style="flex:2;">Setujui &amp; assign →</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Disposition actions sticky.</b> Tolak / Setujui always reachable thumb-distance regardless of scroll depth.</div>
+      </div>
+
+      <!-- PRT-4 My requests (kecamatan) -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRT-4</span><span class="fr-name">Pengajuan saya · Kecamatan</span></div>
+        <p class="fr-note">MyRequestsScreen.tsx — status tracker for citizens.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="ttl">Pengajuan saya</div></div>
+          <div class="body scroll">
+
+            <div class="col gap-2 mb-3">
+              <div class="lrow">
+                <div class="row between"><span class="pill warn"><span class="d"></span>DIPROSES</span><span style="font-family:var(--ff-mono); font-size:10px;">2j lalu</span></div>
+                <div class="title">Trembesi · cabang besar miring</div>
+                <div class="meta"><span>Jl. Wonokromo 45</span><span>#PR-0331</span></div>
+                <!-- Mini timeline -->
+                <div class="row gap-2 mt-2" style="font-family:var(--ff-mono); font-size:9px; color:var(--g500);">
+                  <div style="flex:1; text-align:center;"><div style="width:14px; height:14px; background:var(--success); border:1.5px solid var(--black); border-radius:50%; margin:0 auto 3px;"></div>AJUKAN</div>
+                  <div style="flex:0; align-self:center; width:18px; height:2px; background:var(--black); margin-top:-12px;"></div>
+                  <div style="flex:1; text-align:center;"><div style="width:14px; height:14px; background:var(--primary); border:1.5px solid var(--black); border-radius:50%; margin:0 auto 3px;"></div>PROSES</div>
+                  <div style="flex:0; align-self:center; width:18px; height:2px; background:var(--g300); margin-top:-12px;"></div>
+                  <div style="flex:1; text-align:center; color:var(--g400);"><div style="width:14px; height:14px; background:var(--white); border:1.5px solid var(--g400); border-radius:50%; margin:0 auto 3px;"></div>ASSIGN</div>
+                  <div style="flex:0; align-self:center; width:18px; height:2px; background:var(--g300); margin-top:-12px;"></div>
+                  <div style="flex:1; text-align:center; color:var(--g400);"><div style="width:14px; height:14px; background:var(--white); border:1.5px solid var(--g400); border-radius:50%; margin:0 auto 3px;"></div>SELESAI</div>
+                </div>
+              </div>
+
+              <div class="lrow">
+                <div class="row between"><span class="pill ok"><span class="d"></span>SELESAI</span><span style="font-family:var(--ff-mono); font-size:10px;">5 hari lalu</span></div>
+                <div class="title">Sono · ranting menutup kabel</div>
+                <div class="meta"><span>Jl. Darmo Permai V</span><span>#PR-0302</span></div>
+              </div>
+              <div class="lrow">
+                <div class="row between"><span class="pill bad"><span class="d"></span>DITOLAK</span><span style="font-family:var(--ff-mono); font-size:10px;">8 hari lalu</span></div>
+                <div class="title">Glodokan · daun rontok</div>
+                <div class="meta"><span>"Bukan kewenangan DLH"</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>4-step status tracker.</b> Visible progress per request — manages expectations without needing customer service contact.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ PROFILE ═══════════════════════════════════════ -->
+  <section class="section" id="profile">
+    <div class="sec-head"><span class="sec-num">11</span><h2 class="sec-title">Profile &amp; settings</h2><span class="sec-tag">common/*</span></div>
+    <p class="sec-lede">Identity + role-specific cards + utility links. Settings shared; kecamatan + top_management hide field-specific options.</p>
+
+    <div class="frames">
+
+      <!-- PRF-1 Profile -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRF-1</span><span class="fr-name">Profile · Satgas</span></div>
+        <p class="fr-note">ProfileScreen.tsx — identity, stats, role-specific links.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="ttl">Profil</div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-1-3.6l2-2-2-2-2 2A7 7 0 0 0 12 5l-1-2-2 1 1 2"/></svg></div></div>
+          <div class="body scroll">
+
+            <!-- Identity hero -->
+            <div class="card mb-3" style="background:var(--accent-mint); padding:16px; text-align:center;">
+              <div class="av lg satgas" style="margin:0 auto 10px; width:72px; height:72px; font-size:22px;">BS</div>
+              <div style="font-family:var(--ff-display); font-weight:800; font-size:20px; color:var(--black); margin-bottom:2px;">Budi Santoso</div>
+              <div class="row gap-2" style="justify-content:center; margin-bottom:8px;">
+                <span class="pill" style="background:var(--success); color:var(--black);">SATGAS</span>
+                <span class="pill yellow">RAYON PUSAT</span>
+              </div>
+              <div style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g700);">NIP 198403122023022001 · sejak 2023</div>
+            </div>
+
+            <!-- Stats -->
+            <div class="gtiles c3 mb-3">
+              <div class="stat-tile"><div class="h">Hadir</div><div class="v">22</div><div class="d">bulan ini</div></div>
+              <div class="stat-tile yellow"><div class="h">Tugas</div><div class="v">48</div><div class="d">bulan ini</div></div>
+              <div class="stat-tile ok"><div class="h">Jam</div><div class="v">182</div><div class="d">+24 lembur</div></div>
+            </div>
+
+            <div class="div-h">Akun</div>
+            <div class="card flat" style="padding:0;">
+              <a style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1.5px dashed var(--g300); text-decoration:none; color:var(--g700);">
+                <div class="chip-ic" style="width:30px; height:30px; background:var(--accent-mint);">👤</div>
+                <span style="flex:1; font-family:var(--ff-display); font-weight:600; font-size:13.5px; color:var(--black);">Edit profil</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9B9787" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+              </a>
+              <a style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1.5px dashed var(--g300); text-decoration:none; color:var(--g700);">
+                <div class="chip-ic" style="width:30px; height:30px; background:var(--accent-yellow);">🔒</div>
+                <span style="flex:1; font-family:var(--ff-display); font-weight:600; font-size:13.5px; color:var(--black);">Ubah sandi</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9B9787" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+              </a>
+              <a style="display:flex; align-items:center; gap:10px; padding:12px 14px; text-decoration:none; color:var(--g700);">
+                <div class="chip-ic" style="width:30px; height:30px; background:var(--accent-pink);">📜</div>
+                <span style="flex:1; font-family:var(--ff-display); font-weight:600; font-size:13.5px; color:var(--black);">Riwayat absensi</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9B9787" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+              </a>
+            </div>
+
+            <div class="div-h">Aplikasi</div>
+            <div class="card flat" style="padding:0;">
+              <a style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1.5px dashed var(--g300); text-decoration:none; color:var(--g700);">
+                <div class="chip-ic" style="width:30px; height:30px;">⚙️</div>
+                <span style="flex:1; font-family:var(--ff-display); font-weight:600; font-size:13.5px; color:var(--black);">Pengaturan</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9B9787" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+              </a>
+              <a style="display:flex; align-items:center; gap:10px; padding:12px 14px; text-decoration:none; color:var(--danger-fg);">
+                <div class="chip-ic" style="width:30px; height:30px; background:var(--danger-bg);">↩</div>
+                <span style="flex:1; font-family:var(--ff-display); font-weight:600; font-size:13.5px;">Keluar</span>
+              </a>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Identity hero + 3 stats.</b> Same shape across roles; only role chip + stat content vary.</div>
+      </div>
+
+      <!-- PRF-2 Settings -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRF-2</span><span class="fr-name">Pengaturan</span></div>
+        <p class="fr-note">SettingsScreen.tsx — notifikasi, lokasi, offline, bahasa, tentang.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Pengaturan</div></div>
+          <div class="body scroll">
+
+            <div class="div-h">Notifikasi</div>
+            <div class="card flat" style="padding:0; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1.5px dashed var(--g300);">
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:600; font-size:13.5px; color:var(--black);">Push notifikasi</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600); margin-top:2px;">Tugas baru, peringatan, perubahan jadwal</div>
+                </div>
+                <div style="width:42px; height:24px; border:2px solid var(--black); border-radius:13px; background:var(--primary); position:relative; box-shadow:1.5px 1.5px 0 var(--black);">
+                  <div style="position:absolute; right:2px; top:2px; width:16px; height:16px; background:var(--white); border:1.5px solid var(--black); border-radius:50%;"></div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding:12px 14px;">
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:600; font-size:13.5px; color:var(--black);">Suara &amp; getar</div>
+                </div>
+                <div style="width:42px; height:24px; border:2px solid var(--black); border-radius:13px; background:var(--g200); position:relative;">
+                  <div style="position:absolute; left:2px; top:2px; width:16px; height:16px; background:var(--white); border:1.5px solid var(--black); border-radius:50%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="div-h">Lokasi &amp; data</div>
+            <div class="card flat" style="padding:0; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1.5px dashed var(--g300);">
+                <div style="flex:1; line-height:1.2;">
+                  <div style="font-family:var(--ff-display); font-weight:600; font-size:13.5px;">Background tracking</div>
+                  <div style="font-family:var(--ff-mono); font-size:10px; color:var(--g600); margin-top:2px;">Saat aplikasi tertutup</div>
+                </div>
+                <div style="width:42px; height:24px; border:2px solid var(--black); border-radius:13px; background:var(--primary); position:relative; box-shadow:1.5px 1.5px 0 var(--black);">
+                  <div style="position:absolute; right:2px; top:2px; width:16px; height:16px; background:var(--white); border:1.5px solid var(--black); border-radius:50%;"></div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding:12px 14px;">
+                <div style="flex:1;">
+                  <div style="font-family:var(--ff-display); font-weight:600; font-size:13.5px;">Hemat data</div>
+                </div>
+                <div style="width:42px; height:24px; border:2px solid var(--black); border-radius:13px; background:var(--g200); position:relative;">
+                  <div style="position:absolute; left:2px; top:2px; width:16px; height:16px; background:var(--white); border:1.5px solid var(--black); border-radius:50%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="div-h">Offline sync</div>
+            <div class="card tight mb-3" style="background:var(--warning-bg);">
+              <div class="row between mb-2"><span class="kpi-h" style="margin:0;">ANTRIAN SYNC</span><span class="pill warn"><span class="d"></span>3 PENDING</span></div>
+              <div style="font-family:var(--ff-mono); font-size:10.5px; color:var(--g700);">2 foto · 1 aktivitas · ~ 4.2 MB</div>
+              <button class="btn sm full mt-2" style="background:var(--white);">Sync sekarang</button>
+            </div>
+
+            <div class="div-h">Tentang</div>
+            <div class="card flat" style="padding:0;">
+              <div style="display:flex; padding:12px 14px; border-bottom:1.5px dashed var(--g300);">
+                <span style="flex:1; font-family:var(--ff-display); font-weight:600; font-size:13.5px;">Versi</span>
+                <span style="font-family:var(--ff-mono); font-size:11px; color:var(--g600);">v3.2.1 (build 8421)</span>
+              </div>
+              <div style="display:flex; padding:12px 14px;">
+                <span style="flex:1; font-family:var(--ff-display); font-weight:600; font-size:13.5px;">Bantuan &amp; FAQ</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9B9787" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Offline sync visibility.</b> Pending queue surfaced as a warning card so users know data isn't lost in flight mode.</div>
+      </div>
+
+      <!-- PRF-3 Edit profile -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">PRF-3</span><span class="fr-name">Edit profil</span></div>
+        <p class="fr-note">EditProfileScreen.tsx — limited fields (admin-managed account).</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div class="ttl">Edit profil</div></div>
+          <div class="body scroll">
+            <div style="text-align:center; padding:14px 0;">
+              <div class="av lg satgas" style="margin:0 auto; width:88px; height:88px; font-size:28px; position:relative;">
+                BS
+                <div style="position:absolute; bottom:-2px; right:-2px; width:32px; height:32px; background:var(--primary); border:2px solid var(--black); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:1.5px 1.5px 0 var(--black);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M3 21l3-7 12-12 4 4-12 12-7 3z"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="field mb-3">
+              <span class="lbl">NAMA LENGKAP</span>
+              <div class="input"><span>Budi Santoso</span></div>
+            </div>
+
+            <div class="field mb-3">
+              <span class="lbl">NO. HANDPHONE</span>
+              <div class="input"><span>081234567890</span></div>
+            </div>
+
+            <div class="field mb-3">
+              <span class="lbl">EMAIL</span>
+              <div class="input"><span>budi.s@dlhsurabaya.go.id</span></div>
+            </div>
+
+            <div class="div-h">Tidak bisa diubah</div>
+            <div class="card flat" style="padding:0; opacity:0.85;">
+              <div style="display:flex; padding:11px 14px; border-bottom:1.5px dashed var(--g300);">
+                <span style="flex:1; font-family:var(--ff-mono); font-size:10.5px; color:var(--g600);">NIP</span>
+                <span style="font-family:var(--ff-mono); font-size:11px; color:var(--black);">198403122023022001</span>
+              </div>
+              <div style="display:flex; padding:11px 14px; border-bottom:1.5px dashed var(--g300);">
+                <span style="flex:1; font-family:var(--ff-mono); font-size:10.5px; color:var(--g600);">Username</span>
+                <span style="font-family:var(--ff-mono); font-size:11px; color:var(--black);">satgas_pusat_1</span>
+              </div>
+              <div style="display:flex; padding:11px 14px;">
+                <span style="flex:1; font-family:var(--ff-mono); font-size:10.5px; color:var(--g600);">Role &amp; Rayon</span>
+                <span style="font-family:var(--ff-mono); font-size:11px; color:var(--black);">Satgas · Pusat</span>
+              </div>
+            </div>
+
+            <p style="font-size:11px; color:var(--g600); margin:10px 0 0; line-height:1.5;">Field yang dikunci hanya bisa diubah oleh admin sistem. Hubungi <b style="color:var(--black);">admin@sekar</b>.</p>
+          </div>
+          <div style="background:var(--white); border-top:2px solid var(--black); padding:12px 16px;">
+            <button class="btn primary full">Simpan perubahan</button>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Admin-managed accounts.</b> NIP, username, role, rayon are immutable — surfaced visibly so users understand the contact path.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ NOTIFIKASI ═══════════════════════════════════════ -->
+  <section class="section" id="notifikasi">
+    <div class="sec-head"><span class="sec-num">12</span><h2 class="sec-title">Notifikasi</h2><span class="sec-tag">FCM · grouped feed</span></div>
+    <p class="sec-lede">Single inbox. Grouped by hari. Tap row deep-links to source (tugas, perantingan, lembur). Push via Firebase FCM.</p>
+
+    <div class="frames">
+
+      <!-- NOTIF-1 Feed -->
+      <div class="fr-card">
+        <div class="fr-head"><span class="fr-id">NOTIF-1</span><span class="fr-name">Inbox · 3 baru</span></div>
+        <p class="fr-note">Grouped by day; unread state = primary border-left.</p>
+        <div class="bezel"><span class="vol2"></span><div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="island"></div><div class="right"><span class="signal"><i></i><i></i><i></i><i></i></span><div class="batt"><i></i></div></div></div>
+          <div class="appbar"><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Notifikasi</div><div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1917" stroke-width="2.5"><path d="M2 4h20l-2 16H4z"/><path d="M22 4L12 14 2 4"/></svg></div></div>
+          <div class="body scroll">
+
+            <div class="div-h">Hari ini · 3 baru</div>
+            <div class="col gap-2 mb-3">
+              <div class="lrow" style="border-left:8px solid var(--primary);">
+                <div class="row gap-2">
+                  <div class="chip-ic warn">⚠️</div>
+                  <div style="flex:1; line-height:1.3;">
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:13px; color:var(--black);">Rio keluar area</div>
+                    <div style="font-size:11.5px; color:var(--g700); margin-top:2px;">Rio Saputra terdeteksi 320m dari Bungkul.</div>
+                  </div>
+                  <div style="font-family:var(--ff-mono); font-size:9.5px; color:var(--g500); align-self:flex-start;">09:28</div>
+                </div>
+              </div>
+              <div class="lrow" style="border-left:8px solid var(--primary);">
+                <div class="row gap-2">
+                  <div class="chip-ic" style="background:var(--info-bg);">📋</div>
+                  <div style="flex:1; line-height:1.3;">
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:13px; color:var(--black);">Tugas baru di-assign</div>
+                    <div style="font-size:11.5px; color:var(--g700); margin-top:2px;">Trembesi 1 pohon · Wonokromo · prio normal.</div>
+                  </div>
+                  <div style="font-family:var(--ff-mono); font-size:9.5px; color:var(--g500); align-self:flex-start;">08:14</div>
+                </div>
+              </div>
+              <div class="lrow" style="border-left:8px solid var(--primary);">
+                <div class="row gap-2">
+                  <div class="chip-ic" style="background:var(--success-bg);">✓</div>
+                  <div style="flex:1; line-height:1.3;">
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:13px;">Lembur disetujui</div>
+                    <div style="font-size:11.5px; color:var(--g700); margin-top:2px;">Lembur 19 Mei (4 jam) diterima oleh Pak Hadi.</div>
+                  </div>
+                  <div style="font-family:var(--ff-mono); font-size:9.5px; color:var(--g500); align-self:flex-start;">07:02</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="div-h">Kemarin</div>
+            <div class="col gap-2 mb-3">
+              <div class="lrow" style="opacity:0.7;">
+                <div class="row gap-2">
+                  <div class="chip-ic">🌳</div>
+                  <div style="flex:1; line-height:1.3;">
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:13px;">Perantingan baru di Pusat</div>
+                    <div style="font-size:11.5px; color:var(--g700); margin-top:2px;">Bu Yanti (Kec. Wonokromo) ajukan permohonan.</div>
+                  </div>
+                  <div style="font-family:var(--ff-mono); font-size:9.5px; color:var(--g500); align-self:flex-start;">16:42</div>
+                </div>
+              </div>
+              <div class="lrow" style="opacity:0.7;">
+                <div class="row gap-2">
+                  <div class="chip-ic info">📅</div>
+                  <div style="flex:1; line-height:1.3;">
+                    <div style="font-family:var(--ff-display); font-weight:700; font-size:13px;">Jadwal minggu ini terbit</div>
+                    <div style="font-size:11.5px; color:var(--g700); margin-top:2px;">5 shift · Senin – Jumat.</div>
+                  </div>
+                  <div style="font-family:var(--ff-mono); font-size:9.5px; color:var(--g500); align-self:flex-start;">09:00</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="div-h">Minggu ini</div>
+            <div class="lrow" style="opacity:0.7;">
+              <div class="row gap-2">
+                <div class="chip-ic" style="background:var(--accent-pink);">🎉</div>
+                <div style="flex:1; line-height:1.3;">
+                  <div style="font-family:var(--ff-display); font-weight:700; font-size:13px;">Hari Lingkungan Hidup</div>
+                  <div style="font-size:11.5px; color:var(--g700); margin-top:2px;">Acara peringatan Hari Lingkungan, 4 Juni.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div></div>
+        <div class="annot"><b>Unread = primary border.</b> Strong visual handle, no need for badge dots. Read state degrades to 70% opacity for visual separation.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>SEKAR · Hi-Fi Mobile · v1.1 · {Carousel × 5 + Auth × 6 + Onboarding × 3 + Home × 3 + Absensi × 3 + Monitoring × 3 + Tugas × 3 + Aktivitas × 2 + Lembur × 3 + Perantingan × 4 + Profile × 3 + Notifikasi × 1} = 39 screens</span>
+    <span><a href="design-system.html">↑ design system</a> · <a href="wireframes-mobile.html">↑ wireframes</a> · <a href="index.html">↑ INDEX</a></span>
+  </footer>
+
+</div>
+</body>
+</html>

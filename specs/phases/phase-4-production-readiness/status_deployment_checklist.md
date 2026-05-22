@@ -1,9 +1,85 @@
 # Phase 4 - Deployment & Testing Checklist
 
-**Purpose:** Comprehensive deployment procedures, environment setup, and manual testing checklist for Phase 4 verification.
-**Last Updated:** March 12, 2026
-**Deployment Status:** ⏳ NOT STARTED — Specifications complete, implementation pending
-**Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md)
+**Purpose:** Comprehensive deployment procedures, environment setup, manual testing, **rebrand cutover** for Phase 4 verification.
+**Last Updated:** May 22, 2026 (extended with §0 rebrand cutover; March-12 base preserved below)
+**Deployment Status:** ⏳ NOT STARTED
+**Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md), **NEW** [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
+
+---
+
+## 0. Rebrand cutover (Sub-Phase 4-0 + 4-R deployment items)
+
+### A · Code + asset readiness
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `design/` bundle vendored to repo | [x] | Done May 22 |
+| `specs/ui-ux/tokens.json` regenerated from v2.1 | [ ] | 4-0 A2 |
+| `npm run tokens:build` produces clean diff (commit) | [ ] | Verify regenerated `tokens.css` + `tokens.ts` reflect sage primary |
+| Pinwheel SVG shipped (mobile + web) | [ ] | 4-0 B1 |
+| 6 empty-state illustrations | [ ] | 4-0 B4 |
+| 3 onboarding scene SVGs | [ ] | 4-0 B5 |
+| iOS AppIcon updated | [ ] | 4-0 B2 |
+| Android adaptive icon updated | [ ] | 4-0 B2 |
+| Mobile splash variants (light/dark/green) | [ ] | 4-0 B3 |
+| PWA manifest theme_color = `#7FBC8C`, maskable icon | [ ] | 4-0 B6 |
+| Favicon (pinwheel) | [ ] | — |
+| `eslint-plugin-sekar-design` clean (no token literals) | [ ] | 4-0 C1 |
+| Visual regression snapshots match hi-fi | [ ] | 4-0 A5 |
+
+### B · App-store readiness (mobile)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Google Play listing graphics regenerated from hi-fi | [ ] | Feature graphic + screenshots + icon |
+| AAB built with new icon + splash | [ ] | Release build via Fastlane |
+| Listing description updated for v1.0 rebrand | [ ] | Indonesian copy |
+| **2-week store-review buffer scheduled** | [ ] | Block on review approval before launch |
+| Version bump `1.0.0-rebrand` | [ ] | `android/app/build.gradle` versionName + versionCode |
+| Sentry release tag matches version | [ ] | `sekar-mobile@1.0.0-rebrand+{build}` |
+
+### C · Web rebrand deployment
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `manifest.webmanifest` deployed | [ ] | Verify `sekar.wahyutrip.com` |
+| Favicon visible in browser tab | [ ] | |
+| PWA install prompt shows new icon | [ ] | Cold install on Chrome desktop + iOS Safari |
+| `<head>` meta theme-color | [ ] | Mobile-web status-bar tint |
+| OG image (1200×630) updated | [ ] | Pinwheel + tagline |
+| Lighthouse ≥ 90 / 95 / 95 / 90 (Perf/A11y/BP/SEO) | [ ] | Post-deploy audit |
+| Sentry release `sekar-web@1.0.0-rebrand` | [ ] | Source maps uploaded |
+
+### D · Backend support for new flows
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `users.password_must_change` column migrated | [ ] | Migration shipped by 4-R support |
+| Admin reset-password sets the flag | [ ] | Verify on staging |
+| `/auth/me` response includes the flag | [ ] | Verify on staging |
+| FCM staging project mirrors prod | [ ] | Same FCM sender ID config |
+| BullMQ queues registered + Bull Board at `/admin/queues` | [ ] | 4-3 R2 |
+
+### E · Onboarding + permissions content review
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Permission justification copy reviewed by legal | [ ] | OB-2 — 6 permissions |
+| App-store privacy nutrition labels updated | [ ] | All 6 permissions disclosed |
+| Per-rayon admin contact list current (AS-4) | [ ] | Phone + WhatsApp deep-link tested |
+
+### F · Cutover smoke (post-deploy)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Walks A–J from `manual-testing.md § 0` pass on production | [ ] | All ✅ before public announce |
+| Sentry no rebrand-tagged error spike (24-h watch) | [ ] | |
+| FCM delivery latency p99 < 2 s | [ ] | Sampling during cutover |
+| Gap 1–4 audit results captured in `status_reviews.md` | [ ] | 4-V deliverable |
+
+---
+
+## 1. Legend (original March-12)
 
 ---
 

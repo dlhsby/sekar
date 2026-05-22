@@ -1,9 +1,51 @@
 # Phase 4: Testing Specifications
 
-**Date:** March 12, 2026
-**Status:** Not Started
-**Depends On:** Sub-Phases 4-2 through 4-8
-**Related ADR:** [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md)
+**Date:** May 22, 2026 (revamp pass — sections below remain from March 12; new flows in §0)
+**Status:** ⏳ Not Started
+**Depends On:** Sub-Phases 4-0, 4-R, 4-2 through 4-8
+**Related ADRs:** [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
+
+---
+
+## 0. Revamp-driven E2E additions (May 22, 2026)
+
+### Maestro flows (mobile) — new entry-flow coverage
+
+| Flow file | Scenario | Hi-Fi IDs |
+|-----------|----------|-----------|
+| `01-welcome-carousel.yaml` | First-launch carousel — swipe through 5 slides + "Lewati" + "Masuk" | WL-1 … WL-5 |
+| `02-login-success.yaml` | Login with valid credentials → role-aware home (3 variants: satgas/korlap/admin_data) | AS-1 → HOME-1/2/3 |
+| `03-login-validation.yaml` | Empty fields + invalid email + bad password — assert per-field error states + auth-fail toast | AS-1 → AS-2 → AS-3 |
+| `04-forgot-password.yaml` | Login → tap "Lupa sandi" → AS-4 → tap admin phone → tel:/wa.me intent fires | AS-1 → AS-4 |
+| `05-change-password-forced.yaml` | Login as a user with `password_must_change=true` → routed to AS-5 → submit valid new password → success → home | AS-5 |
+| `06-onboarding-first-launch.yaml` | First successful login → OB-1 → OB-2 (request all 6 permissions sequentially) → OB-3 → home | OB-1 → OB-2 → OB-3 |
+| `07-onboarding-skip-perms.yaml` | OB-2 skip subset (decline notifications, gallery) — verify app still functional but feature-flagged | OB-2 |
+| `08-notifications-inbox.yaml` | Trigger FCM (task assigned) → bell badge increments → tap → NotificationsScreen → mark-read → deep-link to TaskDetail | NOTIF-1 |
+| Additional flows 09-15 | clock-in/out, activity submit, task complete, overtime request, perantingan submit (kecamatan) | (existing screens) |
+
+Flows live under `fe/mobile/.maestro/flows/`. CI runs on push to `main` + `workflow_dispatch` (not every PR — per existing ADR-017 strategy).
+
+### Playwright (web) — new revamp coverage
+
+| Spec file | Scenario | Hi-Fi IDs |
+|-----------|----------|-----------|
+| `auth/login-revamp.spec.ts` | LOG-1 layout + per-field errors + auth-fail toast + "Lupa sandi" link → forgot-password page | LOG-1 |
+| `auth/forgot-password.spec.ts` | Forgot-password page renders per-rayon admin contacts; mailto/tel/wa.me links present | — |
+| `dashboard/notifications.spec.ts` | Bell icon shows badge; popover lists 5 unread; full notifications page paginates; mark-read works | — |
+| `dashboard/sidebar-redesign.spec.ts` | Pinwheel mark renders; section dividers present; active item has primary bg + 1.5px shadow | — |
+
+### Visual regression (4-0 acceptance gate)
+
+Add **storybook-driven snapshot test** in `fe/mobile/__tests__/visual/` + `fe/web/e2e/visual/` for the NB primitives (Button / Card / Pill / Toast / Input / KPI tile) — fails if token re-baseline drifts unexpectedly. Run on push to `main`.
+
+### Accessibility automation
+
+- Mobile: `react-native-accessibility-engine` (or Maestro `assertVisible` with role+label patterns) — assert hit-target ≥ 44 × 44 px on every screen.
+- Web: Playwright `@axe-core/playwright` — fail on AA violations on every revamped page.
+
+---
+
+## 1. Overview (original March-12 testing strategy below)
 
 ---
 

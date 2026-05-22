@@ -1,9 +1,75 @@
 # Phase 4: Web Specifications
 
-**Date:** March 12, 2026
-**Status:** Not Started
-**Depends On:** Phase 2E Web (Complete)
-**Related Sub-Phases:** 4-5, 4-8, 4-9
+**Date:** May 22, 2026 (revamp pass — sections below the §UI/UX Revamp block remain from March 12; updated facts in §0)
+**Status:** ⏳ Not Started
+**Depends On:** Phase 3 M1-R complete (PWA shipped, generated tokens live); **Sub-Phase 4-0 (token re-baseline) blocks the §UI/UX Revamp work**
+**Related Sub-Phases:** **4-R** (UI/UX Revamp), 4-5 (Export/Import), 4-8 (Web prod hardening — non-UI), 4-9 (E2E)
+
+---
+
+## 0. Reality check — May 22, 2026 (overrides March-12 facts in §1)
+
+| Fact | Updated value |
+|------|---------------|
+| Pages (current) | 21 (+1 config); Phase 4 adds **4 NEW** pages (forgot-password, notifications, import, export) → **26+ total** |
+| PWA | **Shipped in Phase 3 M1-R 3-R4** — manifest, service worker, install prompt, offline shell (`fe/web/src/app/offline/page.tsx`), push subscription scaffold, mobile-web `ResponsiveShell`. Phase 4 polish: Lighthouse audit, OG/SEO, bundle analysis. |
+| Notifications UI | None — added in 4-3 + 4-R |
+| Export | None — added in 4-5 |
+| KMZ import | Backend endpoints exist; no web UI — added in 4-5 |
+
+---
+
+## <a id="ui-ux-revamp"></a>UI/UX Revamp (Sub-Phase 4-R) — hi-fi frame matrix
+
+**Source:** [`design/project/hifi-web.html`](../../../design/project/hifi-web.html). 11 hi-fi frames, each maps to one or more existing routes. All revamp (every route exists). New pages listed separately.
+
+### Existing routes — visual revamp
+
+| Hi-Fi ID | Frame | Route | Notes |
+|----------|-------|-------|-------|
+| LOG-1 | Login · konsol | `(auth)/login/page.tsx` | "Konsol SEKAR" hero left + login card right; identifier/password fields per AS-1 style; "Lupa sandi" link → new `/forgot-password` page |
+| DASH-1 | Dashboard home · Superadmin | `(dashboard)/page.tsx` | KPI tile grid (active users, areas covered, tasks today, alerts) + alert feed + quick-actions + recent-activity feed; role-aware (Superadmin sees all rayons; Kepala Rayon sees their rayon scope) |
+| MON-1 | Monitoring wall · Live map + drawer | `(dashboard)/monitoring/page.tsx` | Full-bleed Mapbox + right-hand sticky drawer (personnel list, filter composer, layer toggle); replace existing layout |
+| USR-1 | Daftar pengguna | `(dashboard)/users/page.tsx` | Table revamp — role pill column uses role-accent tokens, sortable headers with indicators, row hover = primary-soft |
+| RAY-1 | Rayon · detail (Pusat) | `(dashboard)/rayons/[id]/page.tsx` | KPI strip + map of areas + areas table |
+| TSK-1 | Tugas list · kanban + table | `(dashboard)/tasks/page.tsx` | Toggle between kanban (4 columns: assigned/in_progress/completed/cancelled) + table view |
+| SCH-1 | Jadwal · weekly grid | `(dashboard)/schedules/page.tsx` | 7-col × N-row grid; cells colored by shift type; sticky header |
+| LBR-1 | Lembur · approval queue | `(dashboard)/overtime/page.tsx` | Three-tab queue (Pending / Approved / Rejected); inline approve/reject |
+| PRT-1 | Detail permohonan | `(dashboard)/pruning-requests/[id]/page.tsx` | Section cards: request meta, location preview, photos, review decisions, history |
+| SET-1 | Pengaturan · sistem | `(dashboard)/settings/page.tsx` | Left rail tabs (General / Roles / Thresholds / Integrations / Audit) + form panels |
+| KEC-1 | Ajukan perantingan · Kecamatan | `(kecamatan)/pruning-submit/page.tsx` | Standalone shell (no dashboard sidebar) — form per hi-fi |
+
+### New web pages
+
+| Route | Hi-Fi source | Notes |
+|-------|--------------|-------|
+| `(auth)/forgot-password/page.tsx` | mirrors mobile AS-4 | **NEW** — informational, no API call. Lists per-rayon admin contacts (phone + WhatsApp). |
+| `(dashboard)/notifications/page.tsx` | mirrors mobile NOTIF-1 | **NEW** — paged inbox + filter by type, mark-read, mark-all-read. Sidebar bell icon pops `NotificationPanel` with last 5 unread + link to this page. |
+| `(dashboard)/import/page.tsx` | 4-5 scope | **NEW** — multi-format wizard: KMZ areas, CSV users, CSV areas. 3 steps: upload → validate → confirm. |
+| `(dashboard)/export/page.tsx` | 4-5 scope | **NEW** — entity-type selector + filters + format (CSV / XLSX) + sync (< 5000 rows) or async via `export_jobs`. |
+
+### Sidebar redesign
+
+Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
+
+- Pinwheel SVG `30 × 30 px` brand mark in green-bordered card top-left
+- `.active` = primary green bg + 2 px black border + 1.5 px offset shadow
+- Section dividers in uppercase JetBrains Mono ("MONITORING", "PENGATURAN")
+- Per-item monospace count badge
+- Bottom-pinned user "me" card replacing floating menu
+
+**File:** `fe/web/src/components/nb/Sidebar.tsx` (or current sidebar component).
+
+### Brand assets in web
+
+- `fe/web/public/brand/sekar-mark.svg` + raster derivatives — sidebar + favicon
+- `fe/web/public/favicon.ico` + `apple-touch-icon.png` — pinwheel
+- `fe/web/public/manifest.webmanifest` — `theme_color: #7FBC8C`, maskable icon = pinwheel, icons 192 + 512
+- `fe/web/public/empty/illo-*.svg` — 6 illustrations, wired via web `NBEmptyState`
+
+---
+
+## 1. Current Codebase Facts (Verified March 12, 2026 — refreshed May 22 in §0)
 
 ---
 
@@ -224,8 +290,72 @@
 ```
 
 - Infinite scroll with "Load More" button
-- Click notification → navigate to related entity page
-- Unread indicator (blue dot) on left side
+- Click notification → navigate to related entity page (uses the same deep-link router as mobile — see [`mobile.md § B7`](./mobile.md#b7-deep-link-routing-matrix-push-notification--screen))
+- Unread indicator: 8 px circle `--primary` on left side of each unread row
+
+### D3. Bell visual spec (token-compliant)
+
+Mirrors the mobile spec at [`mobile.md § B6`](./mobile.md#b6-in-app-notification-bell--badge-instagram--twitter--facebook-pattern) but lives in the web canvas top-bar (NOT in the sidebar — the sidebar collapses at narrow widths so the bell must stay visible).
+
+| Element | Spec |
+|---------|------|
+| Bell icon | Lucide `Bell` at 20 × 20 px, stroke 2 px, color `--black` |
+| Container | 32 × 32 px, `var(--r-base)` corners, no border default |
+| Hover | Container gets `--paper` bg + 1.5 px black border |
+| Active (panel open) | `--primary` bg + 2 px black border + `--sh-xs` shadow |
+| Badge | Top-right, 16 × 16 px, `--danger` bg, `--white` text, JetBrains Mono 700 9 px, 1.5 px black border, `--r-full` |
+| Badge text | Count for ≤ 9, "9+" for ≥ 10 |
+| Visibility | Hidden when `unreadCount === 0` |
+| A11y | `aria-label="Notifikasi, {count} belum dibaca"` |
+
+### D4. Foreground / background web push behavior
+
+| Context | Behavior |
+|---------|----------|
+| Tab foreground + web push arrives | Service worker hands off to in-app handler — NBToast slides from top + bell badge increments. No browser-level notification surfaces. |
+| Tab background or closed | Service worker shows browser notification (Phase 3 PWA push scaffold). Click → opens tab → routes to entity via deep-link router. |
+| Cross-tab sync | When user reads on one tab, `BroadcastChannel('notifications')` syncs unread count to other open tabs. |
+
+### D5. Bell placement
+
+Top-bar (canvas header, not sidebar), right-aligned with the user avatar dropdown:
+
+```
+[≡ sidebar toggle]   [Page title / breadcrumb]                        [🔔3]  [👤 Avatar ▾]
+```
+
+Visible on every authenticated dashboard route. The kecamatan-only `(kecamatan)` layout shows a simpler bell (no avatar dropdown, just the bell + a "Keluar" link).
+
+---
+
+## D-OFFLINE. Web offline behavior matrix
+
+Web is a PWA with a service-worker offline shell shipped in Phase 3 sub-phase 3-R4. The offline page (`fe/web/src/app/offline/page.tsx`) already exists. Phase 4 extends it with the same `OfflineScreen` aesthetic as mobile (illo-offline + retry button) and a per-route behavior matrix:
+
+| Route | NO_INTERNET behavior | SERVER_UNREACHABLE behavior |
+|-------|---------------------|------------------------------|
+| `(auth)/login` | Show `OfflineScreen` (cannot validate without server) | Same |
+| `(auth)/forgot-password` | Works offline (static admin contacts) | Works offline |
+| `(dashboard)/` (home) | Read-only — SWR cache from previous visit; banner "Tampilan offline · update terakhir {time}" | Same |
+| `(dashboard)/monitoring` | Read-only — last cached snapshot; live WS paused | Same |
+| `(dashboard)/users` | Read-only cached list; create/edit buttons disabled with tooltip "Butuh koneksi" | Same |
+| `(dashboard)/rayons`, `/areas`, `/schedules` | Read-only cached | Same |
+| `(dashboard)/tasks`, `/activities`, `/overtime` | Read-only cached lists; detail pages cached if previously visited | Same |
+| `(dashboard)/pruning-requests` | Read-only cached | Same |
+| `(dashboard)/notifications` | Read-only — show cached inbox | Same |
+| `(dashboard)/settings` | Local UI prefs work; server-bound mutations show inline error | Same |
+| `(dashboard)/import`, `/export` | `OfflineScreen` (server-write required) | Same |
+| `(kecamatan)/pruning-submit` | Works offline (form drafts to IndexedDB; submits when back) | Same |
+
+**Implementation:** every page wraps in `<ConnectivityGate fallback={<OfflineScreen subtitle={...} />}>` + uses SWR's `revalidateIfStale: false` when offline. `ConnectivityGate` reads the same three-state hook as the connectivity banner.
+
+**Offline-shell coverage** (service worker pre-caches) per Phase 3 3-R4 spec — extended in Phase 4:
+
+- App shell: HTML / CSS / JS for `/`, `/login`, `/offline`
+- Brand assets: pinwheel SVG, all 6 empty-state illos, favicon
+- Token CSS: `tokens.css`
+- Last 24 h of monitoring snapshot data (cached via SWR + IndexedDB)
+- Last 24 h of user's notifications inbox
 
 ---
 

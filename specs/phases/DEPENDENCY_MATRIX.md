@@ -32,7 +32,7 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
 | 2D | Real-Time Monitoring | 1 week | **COMPLETE & DEPLOYED** | Phase 2C complete |
 | 2E | Client Feedback II | 1 day | **COMPLETE** | Phase 2D complete |
 | 3 | Plants Management + Monitoring Rebuild + Public Intake (incl. M1-R Redesign Foundation) | 5-7 weeks (73 dev-days) | **Not Started (specs complete)** | Phase 2E complete |
-| 4 | Production Readiness & Polishing | 6-8 weeks | Not Started (specs complete) | Phase 3 complete (Redis + monitoring v2 inherited) |
+| 4 | Production Readiness, Rebrand & UI/UX Revamp (13 sub-phases incl. 4-0/4-R/4-V) | 10-12 weeks (67-87 d) | Not Started (spec re-baselined May 22, 2026) | Phase 3 complete (Redis + monitoring v2 + FCM live + PWA + generated tokens inherited) |
 | 5 | Finishing, Release & iOS (8 sub-phases) | 7-9 weeks | Not Started (specs complete) | Phase 4 complete |
 
 **Phase 3 Dependency Notes (new phase, 2026-04-24; M1-R milestone added 2026-04-25):**

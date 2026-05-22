@@ -1,9 +1,77 @@
 # Phase 4: Backend Specifications
 
-**Date:** March 12, 2026
-**Status:** Not Started
-**Depends On:** Phase 2E Backend (Complete)
-**Related Sub-Phases:** 4-1, 4-3, 4-5, 4-6, 4-7
+**Date:** May 22, 2026 (revamp pass — sections below remain from March 12; updated facts in §0)
+**Status:** ⏳ Not Started
+**Depends On:** Phase 3 complete; Redis 7 + Socket.IO Redis adapter + FCM already live
+**Related Sub-Phases:** 4-1 (trimmed infra), 4-3 (FCM hardening), 4-5 (Export), 4-6 (Seeder/data mgmt), 4-7 (Refactor/security), **NEW: ChangePassword flow + BullMQ-on-Redis**
+
+---
+
+## 0. Reality check — May 22, 2026 (overrides March-12 facts in §1)
+
+| Fact | Updated value |
+|------|---------------|
+| FCM | **Live** — `FCM_ENABLED=true` in `be/.env` and `be/.env.example`; 8 trigger points wired; `sendToUser()` operational |
+| Redis | **Live** — `ioredis@5.10.1` + `@socket.io/redis-adapter@8.3.0` in `be/package.json`; adapter wired in `be/src/gateways/events.gateway.ts:93` |
+| Sentry | Still not integrated — 4-1 B3 |
+| Logging | Still inconsistent console.log / Logger mix — 4-1 B1 |
+| Cron jobs | 1 active (monitoring 60s); 4-3 + 4-6 add 5 more |
+| Rate limiting | Global ThrottlerModule (100 req/min, 5 req/min login — `AUTH_LOGIN_THROTTLE_*` env knobs added in Phase 3); per-endpoint limits → 4-7 |
+| JWT | 7-day expiry, no refresh, no blacklist — 4-7 D2 |
+| Broker | **None today.** No BullMQ / AMQP / Kafka. **4-V Gap 4 decides** — likely BullMQ-on-existing-Redis (no new infra) per [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md) |
+
+---
+
+## ⊕ Revamp-driven backend changes (May 22, 2026)
+
+### R1. `users.password_must_change` boolean column (drives mobile AS-5 + web AS-5 mirror)
+
+**Migration:** `users` add `password_must_change BOOLEAN NOT NULL DEFAULT false`.
+
+**Behavior:**
+
+- Admin reset-password endpoint sets `password_must_change = true` and writes a temporary random password.
+- `POST /auth/login` returns user object with `password_must_change` flag in payload.
+- `POST /auth/change-password` clears the flag and updates the password (existing endpoint, extended to accept the post-reset call).
+- Mobile auth-guard reads the flag from `/auth/me` and pushes to AS-5 `ChangePasswordScreen` before any other route.
+- Per [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), no self-serve reset endpoint is added — admins reset on behalf of users.
+
+### R2. BullMQ retry queue on existing Redis (per [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md))
+
+**Decision:** Adopt [BullMQ](https://docs.bullmq.io/) as a job queue layered over the existing Redis 7. **No new infrastructure.** Workloads:
+
+| Queue | Producer | Worker | Retry policy |
+|-------|----------|--------|--------------|
+| `fcm-retry` | `notifications.service.sendToUser()` (on failure) | `FcmRetryProcessor` | Exponential backoff 1m / 5m / 30m / 2h / 12h; drop after 5 failures |
+| `export-jobs` | `POST /export` (async, > 5k rows) | `ExportJobProcessor` | Manual retry only; failures notify requestor |
+| `csv-import` | `POST /import/*/csv` (async, > 1k rows) | `CsvImportProcessor` | No retry; report errors row-by-row |
+| `kmz-parse` | `POST /import/kmz` (heavy) | `KmzParseProcessor` | 1 retry on parse-timeout |
+
+**Files (new):**
+
+- `be/src/queues/bullmq.module.ts` — single module registers all queues + workers
+- `be/src/queues/fcm-retry/fcm-retry.queue.ts`, `fcm-retry.processor.ts`
+- `be/src/queues/export/export.processor.ts` (works with `4-5` `ExportModule`)
+- Other processors land alongside their feature modules
+
+**Dependency:** `bullmq@^5` (no `bull` legacy). Reuses existing `ioredis` connection — must use a separate connection per BullMQ guidance, but the same Redis instance.
+
+### R3. Notification preferences (was in 4-3 — re-confirmed)
+
+**Entity:** `notification_preferences` (user_id, type, enabled, updated_at). Default = all-enabled.
+
+**Endpoints:**
+
+- `GET /notifications/preferences` — current user
+- `PATCH /notifications/preferences` — bulk update
+
+### R4. NotificationsScreen / web inbox backing API
+
+**Endpoints already exist** for the notifications collection (`GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`). Verify response shape matches the new mobile NOTIF-1 + web inbox; extend with `?type=` filter and `?unread=true` if missing.
+
+---
+
+## 1. Current Codebase Facts (Verified March 12, 2026 — refreshed May 22 in §0)
 
 ---
 

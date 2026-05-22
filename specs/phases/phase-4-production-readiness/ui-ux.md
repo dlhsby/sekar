@@ -1,290 +1,302 @@
-# Phase 4: UI/UX Polish Specifications
+# Phase 4: UI/UX Revamp — Hi-Fi-Driven Specifications
 
-**Date:** March 12, 2026
-**Status:** Not Started
-**Depends On:** Phase 2E UI (Complete)
-**Related Sub-Phase:** 4-8
-
----
-
-## A. Neo Brutalism Compliance Audit
-
-**Current Baseline (Phase 2E):** Known gaps from Phase 2 include: missing keyboard focus traps on modal dialogs, absent sort indicators on data tables, touch targets below 48×48dp on filter chips and tag elements, inconsistent border-width between 2px and 3px across card components, and missing `aria-live` regions for dynamic status updates. These gaps inform the audit priorities below.
-
-### A1. Mobile Screens (22 Total)
-
-| # | Screen | Border | Shadow | Touch ≥48px | Safe Area | Keyboard | Status |
-|---|--------|--------|--------|------------|-----------|----------|--------|
-| 1 | LoginScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 2 | HomeScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 3 | ClockInOutScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 4 | ActivitiesScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 5 | ActivityDetailScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 6 | TasksScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 7 | TaskDetailScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 8 | OvertimeScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 9 | ProfileScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 10 | MapDashboardScreen | ⏳ | ⏳ | ⏳ | ⏳ | N/A | ⏳ |
-| 11 | MonitoringFilterScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 12 | UserDetailScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 13 | UsersListScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 14 | SettingsScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 15 | SchedulesScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 16 | ReportsScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 17 | AreaDetailScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 18 | RayonDetailScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 19 | AuditLogScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 20 | ImportScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 21 | OvertimeApprovalScreen | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 22 | NotificationsScreen (NEW) | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-
-### A2. Web Pages (24+ Total)
-
-| # | Page | Border | Shadow | Focus Ring | Hover | 768px | 1024px | 1280px | Status |
-|---|------|--------|--------|-----------|-------|-------|--------|--------|--------|
-| 1 | Login | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 2 | Dashboard | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 3 | Users | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 4 | User Detail | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 5 | Areas | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 6 | Area Detail | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 7 | Rayons | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 8 | Rayon Detail | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 9 | Tasks | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 10 | Task Detail | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 11 | Activities | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 12 | Activity Detail | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 13 | Overtime | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 14 | Monitoring | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 15 | Monitoring Config | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 16 | Schedules | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 17 | Shift Definitions | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 18 | Activity Types | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 19 | Special Days | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 20 | Audit Logs | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 21 | Settings | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 22 | Import (NEW) | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 23 | Export (NEW) | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| 24 | Notifications (NEW) | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-
-### A3. NB Design Token Reference
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| Border width | 2px | All cards, inputs, buttons |
-| Border color | `#000000` | Default border |
-| Shadow (sm) | 2px 2px 0px #000 | Small interactive elements |
-| Shadow (md) | 4px 4px 0px #000 | Cards, buttons |
-| Shadow (lg) | 6px 6px 0px #000 | Modals, elevated cards |
-| Border radius | 2px | Minimal rounding |
-| Touch target | ≥48px | All interactive elements (mobile) |
-| Focus ring | 2px solid + 2px offset | All focusable elements (web) |
+**Date:** May 22, 2026 (replaces the March 12 polish-only spec)
+**Status:** ⏳ Not Started
+**Depends On:** Phase 3 M1-R complete (NB primitives + generated tokens v2.0); **4-0 token re-baseline must land first**
+**Related Sub-Phases:** **4-0** (token re-baseline), **4-R** (revamp sweep), **4-8** (mobile/web production hardening — non-UI)
+**Authoritative source:** [`design/project/hifi-mobile.html`](../../../design/project/hifi-mobile.html), [`design/project/hifi-web.html`](../../../design/project/hifi-web.html), [`design/project/design-system.html`](../../../design/project/design-system.html), [`design/project/illustrations.html`](../../../design/project/illustrations.html)
 
 ---
 
-## B. Empty States
+## 0. What changed (vs March-12 polish-only ui-ux.md)
 
-### B1. Web NBEmptyState Component
-
-9 variants with consistent structure:
-
-| Variant | Title | Description | Action |
-|---------|-------|-------------|--------|
-| `users` | Belum ada pengguna | Tambahkan pengguna baru untuk memulai | Tambah Pengguna |
-| `areas` | Belum ada area | Buat area baru atau import dari KMZ | Tambah Area |
-| `tasks` | Belum ada tugas | Buat tugas baru untuk ditugaskan | Buat Tugas |
-| `activities` | Belum ada aktivitas | Aktivitas akan muncul setelah disubmit pekerja | - |
-| `overtime` | Belum ada lembur | Data lembur akan muncul di sini | - |
-| `audit-logs` | Belum ada log audit | Log akan tercatat saat ada perubahan data | - |
-| `export-history` | Belum ada riwayat ekspor | Mulai ekspor data dari menu di atas | Ekspor Data |
-| `notifications` | Belum ada notifikasi | Notifikasi akan muncul di sini | - |
-| `search` | Tidak ditemukan | Coba ubah kata kunci pencarian | Reset Filter |
+The March-12 doc was a 22-row NB-compliance audit table (borders, shadows, touch targets, safe area, keyboard) per screen. That audit is **subsumed** by 4-R: every screen on the audit list will be rebuilt against its hi-fi mockup, and the hi-fi enforces all NB primitives by construction (every screen is rendered with `hifi-shared.css` primitives, so re-implementing to hi-fi automatically passes NB compliance). The accessibility floor (a11y / keyboard / focus-trap / sort-indicator) lives in §3 below — it's a checklist that gates every screen acceptance.
 
 ---
 
-## C. Loading Skeletons
+## 1. Design System v2.1 — token diff vs v2.0
 
-### C1. Web NBSkeleton Variants
+Reference: [`design/project/hifi-shared.css`](../../../design/project/hifi-shared.css) lines 7-82 (token block).
 
-| Variant | Structure | Usage |
-|---------|-----------|-------|
-| `NBTableSkeleton` | 5 rows × N columns, pulsing rectangles | Users, Tasks, Activities, Overtime tables |
-| `NBCardSkeleton` | Card with title bar + 3 lines body | Dashboard overview cards |
-| `NBMapSkeleton` | Full-width gray area + centered spinner | Monitoring page map |
-| `NBChartSkeleton` | Card with 5 bar shapes | Dashboard charts |
-| `NBDetailSkeleton` | Header + 6 key-value pairs | Detail pages |
+### 1.1 Color palette diff
 
-### C2. Mobile Loading States
+| Token | v2.0 (current generated) | v2.1 (Claude Design bundle) | Impact |
+|-------|--------------------------|------------------------------|--------|
+| `--primary` | `#FDFD96` (brand yellow) | `#7FBC8C` (sage green) | **High — repaints every primary CTA / active state** |
+| `--primary-deep` | n/a | `#5A9468` | New active-state token |
+| `--primary-hover` | n/a | `#6BA87A` | New hover-state token |
+| `--primary-soft` | n/a | `#DAF5F0` | Mint surface tinted to primary |
+| `--paper` (canvas) | `#FFFFF8` | `#F5F0EB` (warm stone) | **Medium — every app background** |
+| `--brand-sun` / `--accent-yellow` | (was primary) | `#FDFD96` (now accent only) | Yellow demoted — kept for pinwheel center + tab-active highlight + masthead tint |
+| `--navy` | n/a | `#1A4D2E` | Deep "edge" surface for headlines + select buttons |
+| `--secondary` | n/a | `#8B7355` (warm brown) | New |
+| `--success` / `--success-bg` / `--success-fg` | inconsistent | `#7FBC8C` / `#DCFCE7` / `#15803D` | Codified triplet |
+| `--warning` / `-bg` / `-fg` | inconsistent | `#E3A018` / `#FEF3C7` / `#D97706` | Codified triplet |
+| `--danger` / `-bg` / `-fg` | inconsistent | `#FF6B6B` / `#FEE2E2` / `#991B1B` | Codified triplet |
+| `--info` / `-bg` / `-fg` | inconsistent | `#69D2E7` / `#DBEAFE` / `#1E40AF` | Codified triplet |
 
-| Screen | Current | Target |
-|--------|---------|--------|
-| HomeScreen | Basic spinner | Skeleton cards matching layout |
-| MapDashboard | Blank | Map placeholder with spinner overlay |
-| TasksScreen | Spinner | NBSkeleton rows |
-| ActivitiesScreen | Spinner | NBSkeleton rows |
-| NotificationsScreen (NEW) | N/A | NBSkeleton rows |
+### 1.2 Monitoring 5-status palette (new)
 
----
+Per `hifi-shared.css` lines 43-48 — codifies the existing mobile 5-status enum into reusable tokens:
 
-## D. Animations
+| Status | Foreground | Background |
+|--------|-----------|------------|
+| `--status-active` (di area, hadir) | `#15803D` | `#DCFCE7` |
+| `--status-idle` (belum jalan, telat) | `#D97706` | `#FEF3C7` |
+| `--status-outside` (luar area) | `#9333EA` | `#F3E8FF` |
+| `--status-missing` (tidak hadir) | `#DC2626` | `#FEE2E2` |
+| `--status-offline` | `#6B7280` | `#F3F4F6` |
 
-### D1. Mobile Animations
+Every monitoring map pin, status pill, badge, KPI card uses these tokens — eliminates the current drift between `BoundaryOverlay`, `AreaStatusOverlay`, and `MonitoringStatusSheet` ad-hoc colours.
 
-| Animation | Config | Target |
-|-----------|--------|--------|
-| Screen transitions | `animation: 'slide_from_right'` in Stack.Navigator | All stack screens |
-| Button press | `scale(0.97)` with `withSpring` | All NB buttons |
-| List item fade-in | `FadeInDown.delay(index * 50).duration(300)` | Tasks, Activities, Notifications lists |
-| Pull-to-refresh | Custom indicator matching NB style | All refreshable screens |
-| Bottom tab switch | `tabBarAnimation: 'shift'` | Bottom tab navigator |
-| Toast enter | `SlideInUp.duration(200)` | Success/error toasts |
+### 1.3 Role accents (new — 9 roles)
 
-### D2. Web Animations
+Per `hifi-shared.css` lines 51-59:
 
-| Animation | CSS | Target |
-|-----------|-----|--------|
-| Modal entrance | `scale(0.95) → scale(1)`, `opacity(0) → opacity(1)`, `200ms ease-out` | All modals |
-| Modal exit | `scale(1) → scale(0.95)`, `opacity(1) → opacity(0)`, `150ms ease-in` | All modals |
-| Toast entrance | `translateY(-100%) → translateY(0)`, `200ms ease-out` | NBToast |
-| Toast exit | `translateY(0) → translateY(-100%)`, `150ms ease-in` | NBToast |
-| Table row hover | `background-color transition 150ms` | All data tables |
-| Button press | `transform: translate(2px, 2px); box-shadow: 2px 2px 0px` | NB buttons |
-| Skeleton pulse | `opacity: 0.4 → 1.0`, `1.5s ease-in-out infinite` | All skeletons |
+| Role | Accent |
+|------|--------|
+| satgas | `#7FBC8C` |
+| linmas | `#2563EB` |
+| korlap | `#E3A018` |
+| admin_data | `#9333EA` |
+| kepala_rayon | `#F48572` |
+| top_management | `#1A4D2E` |
+| admin_system | `#57534E` |
+| superadmin | `#1C1917` |
+| staff_kecamatan | `#FDFD96` |
 
----
+Drives `.av.role`, role pill, role icon background, role-specific home backgrounds.
 
-## E. Error Boundaries
+### 1.4 Typography (locked, no change from Phase 3)
 
-### E1. Mobile
+`--ff-display: "Space Grotesk"` · `--ff-body: "Inter"` · `--ff-mono: "JetBrains Mono"` — Phase 3 M1-R 3-R2 already bundled these on both platforms.
 
-Wrap each screen root component:
-
-```typescript
-<ErrorBoundary fallback={<NBErrorFallback onRetry={refetch} screenName="Tasks" />}>
-  <TasksScreen />
-</ErrorBoundary>
-```
-
-`NBErrorFallback` shows:
-- NB-styled card with error icon
-- "Terjadi Kesalahan" heading
-- Error message (sanitized, no stack traces in production)
-- "Coba Lagi" button that triggers retry callback
-
-### E2. Web
-
-Per route segment `error.tsx`:
+### 1.5 Shadows — hard-edge offset (codified scale)
 
 ```
-fe/web/src/app/
-├── (auth)/
-│   └── error.tsx        → Login error (redirect to login)
-├── (dashboard)/
-│   ├── error.tsx        → Dashboard root error
-│   ├── users/error.tsx  → Users section error
-│   ├── tasks/error.tsx  → Tasks section error
-│   └── monitoring/error.tsx → Monitoring error (map fallback)
+--sh-xs: 2px 2px 0 var(--black);
+--sh-sm: 3px 3px 0 var(--black);
+--sh-md: 4px 4px 0 var(--black);
+--sh-lg: 6px 6px 0 var(--black);
+--sh-xl: 10px 10px 0 var(--black);
 ```
 
----
+**Zero blur on every level.** Existing tokens.json has soft-blur shadows in some places — 4-0 token re-baseline drops blur to `0` everywhere.
 
-## F. Accessibility Gaps
+### 1.6 Radius
 
-### F1. Map Accessibility
+`--r-sm: 4px` · `--r-base: 10px` · `--r-md: 14px` · `--r-lg: 20px` · `--r-full: 999px` — codified scale; existing `--radius-*` tokens map 1:1.
 
-| Element | Current | Fix |
-|---------|---------|-----|
-| User markers (mobile) | No accessibility label | Add `accessibilityLabel="Satgas Ahmad Wijaya, Aktif"` |
-| User markers (web) | No ARIA | Add `aria-label` with role + name + status |
-| Area polygons (web) | No ARIA | Add `aria-label="Area Taman Bungkul, 5 dari 8 pekerja aktif"` |
-| Map controls | No labels | Add `aria-label` to zoom, filter buttons |
+### 1.7 Border width
 
-### F2. Filter Sidebar
+`--bw: 2px` · `--bw-thick: 2.5px` — codified.
 
-| Element | Current | Fix |
-|---------|---------|-----|
-| Collapsible sections | No ARIA | Add `aria-expanded`, `aria-controls` |
-| Filter chips | No role | Add `role="checkbox"`, `aria-checked` |
-| Clear all button | No announcement | Add `aria-live="polite"` on filter count |
+### 1.8 Spacing scale (unchanged)
 
-### F3. Data Tables
-
-| Element | Current | Fix |
-|---------|---------|-----|
-| Sortable columns | No indication | Add `aria-sort="ascending"` / `"descending"` / `"none"` |
-| Pagination | No context | Add `aria-label="Page 2 of 5"` on page buttons |
-| Row actions | Icon-only | Add `aria-label="Edit user Ahmad Wijaya"` |
-
-### F4. Modals
-
-| Element | Current | Fix |
-|---------|---------|-----|
-| Focus trap | Inconsistent | Ensure Tab cycles within modal |
-| Close on Escape | Some modals | Apply to all modals and sheets |
-| Return focus | Not implemented | Return focus to trigger element on close |
-| Title announcement | Missing | Add `aria-labelledby` pointing to modal title |
-
-### F5. Focus Ring Specification
-
-Focus indicators use `2px solid #1D4ED8` (blue-700, 5.1:1 contrast ratio against white background). On dark backgrounds, use `2px solid #93C5FD` (blue-300, 4.8:1 contrast ratio). Focus rings must be visible on all interactive elements including buttons, links, inputs, and custom controls.
+4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 px (1/2/3/4/5/6/8/10) — already canonical in tokens.json.
 
 ---
 
-## G. Timezone Display Standardization
+## 2. UI/UX Revamp — hi-fi screen matrix
 
-### G1. Date Format
+### 2.1 Mobile (39 screens across 12 sections)
 
-All dates displayed in Indonesian UI:
+Source: [`design/project/hifi-mobile.html`](../../../design/project/hifi-mobile.html). Detailed mapping to current code lives in [`mobile.md § UI/UX Revamp`](./mobile.md#ui-ux-revamp). Counts:
 
-| Context | Format | Example |
-|---------|--------|---------|
-| Date only | DD/MM/YYYY | 12/03/2026 |
-| Date + time | DD/MM/YYYY HH:mm WIB | 12/03/2026 14:30 WIB |
-| Relative (today) | HH:mm WIB | 14:30 WIB |
-| Relative (recent) | "X jam lalu" / "X menit lalu" | 2 jam lalu |
+| Section | Screens | NEW | Revamp | Token-only pass |
+|---------|---------|-----|--------|----------------|
+| Pre-login carousel (WL-1…WL-5) | 5 | **5 NEW** | — | — |
+| Login & auth (AS-1…AS-5) | 5 | **2 NEW** (AS-4, AS-5) | 3 (AS-1, AS-2, AS-3) | — |
+| Onboarding & permissions (OB-1…OB-3) | 3 | **3 NEW** | — | — |
+| Home (HOME-1…HOME-3, role-aware) | 3 | — | 3 | — |
+| Absensi (ABS-1…ABS-3) | 3 | — | 3 | — |
+| Monitoring (MON-1…MON-3) | 3 | — | 3 | — |
+| Tugas (TUG-1…TUG-3) | 3 | — | 3 | — |
+| Aktivitas (AKT-1…AKT-2) | 2 | — | 2 | — |
+| Lembur (LBR-1…LBR-3) | 3 | — | 3 | — |
+| Perantingan (PRT-1…PRT-4) | 4 | — | 3 | 1 |
+| Profile & settings (PRF-1…PRF-3) | 3 | — | 2 | 1 |
+| Notifikasi (NOTIF-1) | 1 | **1 NEW** | — | — |
+| **Total** | **38** | **11 NEW** | **22 revamp** | **2 token-only** |
 
-### G2. Implementation
+*(The bundle says "39 screens" — the 39th is the AS-5 success-state variant counted alongside its parent.)*
 
-```typescript
-// Shared date formatter
-export function formatDate(date: Date | string): string {
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'Asia/Jakarta',
-  }).format(new Date(date));
-}
+### 2.2 Web (11 frames across 13 routes)
 
-export function formatDateTime(date: Date | string): string {
-  const formatted = new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jakarta',
-    hour12: false,
-  }).format(new Date(date));
-  return `${formatted} WIB`;
-}
-```
+Source: [`design/project/hifi-web.html`](../../../design/project/hifi-web.html). Detailed mapping in [`web.md § UI/UX Revamp`](./web.md#ui-ux-revamp).
+
+| Hi-Fi frame | Existing route | Action |
+|-------------|----------------|--------|
+| LOG-1 Login page | `(auth)/login/page.tsx` | Revamp |
+| DASH-1 Dashboard home · Superadmin | `(dashboard)/page.tsx` | Revamp |
+| MON-1 Monitoring wall · Live map + drawer | `(dashboard)/monitoring/page.tsx` | Revamp |
+| USR-1 Daftar pengguna | `(dashboard)/users/page.tsx` | Revamp |
+| RAY-1 Rayon · detail (Pusat) | `(dashboard)/rayons/[id]/page.tsx` | Revamp |
+| TSK-1 Tugas list · kanban + table | `(dashboard)/tasks/page.tsx` | Revamp |
+| SCH-1 Jadwal · weekly grid | `(dashboard)/schedules/page.tsx` | Revamp |
+| LBR-1 Lembur · approval queue | `(dashboard)/overtime/page.tsx` | Revamp |
+| PRT-1 Detail permohonan | `(dashboard)/pruning-requests/[id]/page.tsx` | Revamp |
+| SET-1 Pengaturan · sistem | `(dashboard)/settings/page.tsx` | Revamp |
+| KEC-1 Ajukan perantingan · Kecamatan | `(kecamatan)/pruning-submit/page.tsx` | Revamp |
+
+**New web pages (not in hi-fi but implied by mobile parity / FCM scope):**
+
+| Route | Source | Action |
+|-------|--------|--------|
+| `(auth)/forgot-password/page.tsx` | mirrors mobile AS-4 | **NEW** — informational, no API |
+| `(dashboard)/notifications/page.tsx` | mirrors mobile NOTIF-1 | **NEW** — full inbox |
+| `(dashboard)/import/page.tsx` | 4-5 scope | **NEW** — KMZ + CSV |
+| `(dashboard)/export/page.tsx` | 4-5 scope | **NEW** — multi-format export |
+
+### 2.3 Sidebar redesign (web)
+
+Per `hifi-shared.css` lines 423-451 + `hifi-web.html` web sidebar component. Visual changes:
+
+- Brand mark: pinwheel SVG `30px × 30px` in green-bordered card top-left (was: text-only "SEKAR" logotype)
+- Item state: `.active` = primary green background + 2 px black border + 1.5 px black offset shadow
+- Section dividers: uppercase JetBrains Mono labels (e.g., "MONITORING", "PENGATURAN")
+- Per-item count badges: monospace pill on the right of each item (e.g., active-tasks count)
+- Bottom-pinned "me" card with avatar + role pill (replaces current floating user menu)
 
 ---
 
-## H. Monitoring Status Display Notes
+## 3. <a id="brand-illustrations"></a>Brand & Illustrations (4-0 B-tasks + 4-R asset integration)
 
-### H1. Stale Status Cleanup Conditions
+**Source bundle:** [`design/project/illustrations.html`](../../../design/project/illustrations.html) — pinwheel mark, app icon, splash, 6 empty states, onboarding scenes, brand iconography (29 SVG icons), map markers, 5 brand patterns.
 
-When the stale status cleanup cron runs (Sub-Phase 4-3, task B2), status transitions must follow these rules:
+### 3.1 Logo — pinwheel (8 petals = 8 rayons, yellow DLH Surabaya center)
 
-| Condition | New Status | Rationale |
-|-----------|-----------|-----------|
-| User has `status != 'offline'` AND no active shift | Set to `'offline'` | User is not working, clean up stale tracking |
-| User has `status != 'offline'` AND has an active shift | Set to `'missing'` | User should be reporting location during shift; absence = missing, not offline |
+Per [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md). 8 tear-shaped petals rotated 45° apart, all pointing the same kinetic direction, radiating from a yellow circle.
 
-Do NOT blindly set all stale users to `'offline'` — users with active shifts who go stale should be flagged as `'missing'` to trigger supervisor alerts.
+| Asset | Output | Source |
+|-------|--------|--------|
+| Mobile primary mark | `fe/mobile/src/assets/brand/sekar-mark.svg` (24/36/48/72/96 px) | `illustrations.html` `#sekar-mark` |
+| Web primary mark | `fe/web/public/brand/sekar-mark.svg` + ico/png raster | `illustrations.html` `#sekar-mark` |
+| Monochrome variant | `*-mono.svg` | `illustrations.html` `#sekar-mark-mono` |
+| Wordmark + mark lockup | `*-lockup.svg` (horizontal + stacked) | hi-fi headers |
+
+Used everywhere `.sekar-mark` class appears in `hifi-shared.css` (line 512: `width: 22px; height: 22px;`).
+
+### 3.2 App icon
+
+Replace both platforms:
+
+- **iOS:** `fe/mobile/ios/sekar/Images.xcassets/AppIcon.appiconset/` — 1024 px master + standard size set, pinwheel centered on warm-stone background with 2 px black border + 10 px offset shadow (rounded-square shape).
+- **Android:** `fe/mobile/android/app/src/main/res/mipmap-*/ic_launcher*` (legacy raster) + adaptive icon (`ic_launcher_foreground.xml` = pinwheel SVG; `ic_launcher_background.xml` = warm-stone color).
+
+### 3.3 Splash screen (3 variants)
+
+Per `illustrations.html § Splash screen`:
+
+- **Light** — warm-stone background, pinwheel hero, 2 px black border container, "SEKAR" wordmark in Space Grotesk 800.
+- **Dark** — navy `#1A4D2E` background, pinwheel hero (white-stroked variant), wordmark in paper white.
+- **Green** — sage primary background, pinwheel (yellow center prominent).
+
+Mobile: iOS `LaunchScreen.storyboard` + Android `res/drawable/splash_*.xml` + `AndroidManifest.xml` themes (uses `react-native-bootsplash` config).
+
+### 3.4 Empty-state illustrations (6 SVGs)
+
+| ID | File | Used by |
+|----|------|---------|
+| illo-reports | `empty/illo-reports.svg` | "Belum ada laporan" — `ActivitiesScreen`, web `/activities` empty |
+| illo-shifts | `empty/illo-shifts.svg` | "Belum ada shift hari ini" — `HomeScreen`, web `/schedules` empty |
+| illo-offline | `empty/illo-offline.svg` | "Tidak ada koneksi" — offline page + connectivity banner |
+| illo-location | `empty/illo-location.svg` | "GPS tidak tersedia" — clock-in screens |
+| illo-search | `empty/illo-search.svg` | "Pencarian tidak ditemukan" — every list with search |
+| illo-personnel | `empty/illo-personnel.svg` | "Belum ada satgas di area ini" — monitoring drawer |
+
+Wire via existing `NBEmptyState` component (mobile + web) — accept `illustration` prop, default to `illo-search`.
+
+### 3.5 Onboarding scenes (3 SVGs)
+
+| ID | File | Screen |
+|----|------|--------|
+| onb-clockin | `assets/onboarding/onb-clockin.svg` | OB-1 Welcome |
+| onb-photo | `assets/onboarding/onb-photo.svg` | OB-2 Permissions (camera context) |
+| onb-monitor | `assets/onboarding/onb-monitor.svg` | OB-3 Area preview |
+
+### 3.6 Brand iconography (29 icons in `illustrations.html`)
+
+| Icons | Strategy |
+|-------|----------|
+| pin, clock, camera, check, tree, leaf, bell, shield, clipboard, user, users, map, warn, power, sync, trash, search, message, settings (and 10 more) | Use Lucide React (already a dep) where 1:1 match exists. Ship custom SVGs from `illustrations.html` only for icons Lucide doesn't have OR where the brand override is intentional (e.g., the `i-tree` mark used in perantingan + plant species). |
+
+Custom SVGs land in `fe/mobile/src/assets/icons/` + `fe/web/public/icons/`; wire via a thin `BrandIcon` wrapper that falls through to Lucide for unknown names.
+
+### 3.7 Map marker matrix
+
+Per `illustrations.html § Map markers` — 3 roles (satgas / korlap / linmas) × 5 statuses (active / idle / outside / missing / offline) = 15 marker variants. Codify in `fe/mobile/src/components/monitoring/Marker.tsx` using `--status-*` tokens (see §1.2). Eliminates current ad-hoc colour drift.
+
+### 3.8 Brand patterns (5 SVG patterns)
+
+Subtle dot / dash / weave background patterns. Use as background fills on empty-state cards (optional polish).
 
 ---
 
-**Last Updated:** 2026-03-12
+## 4. Per-screen acceptance gate
+
+Every revamp screen lands ✅ in [`status_reviews.md § Revamp Acceptance Checklist`](./status_reviews.md#revamp-acceptance-checklist) only when **all** of:
+
+1. **Visual fidelity** — side-by-side diff with `design/project/hifi-mobile.html` (or `hifi-web.html`) shows pixel-aligned border / shadow / spacing / colour. Use the hi-fi rendered preview as reference.
+2. **NB compliance** — borders 2 px (or 2.5 px for masthead-level), shadows match scale (`--sh-xs/sm/md/lg/xl`), radii match scale, all hard-edge.
+3. **A11y floor:**
+   - Hit targets ≥ 44 × 44 px (mobile) / ≥ 24 × 24 px (web with mouse), per WCAG 2.1 AA
+   - Color contrast ≥ 4.5:1 on every body-text / pill / button
+   - Focus-trap on every NBModal + bottom-sheet
+   - Focus order matches visual order
+   - Keyboard navigable (web) — `Tab` + `Enter` + `Esc` work
+   - `aria-live` regions on dynamic status updates (monitoring, sync, FCM toast)
+   - Sort indicators on every sortable table column
+4. **Indonesian copy** — final-pass copy from hi-fi text content (every screen has locked copy). No English fall-back in user-facing strings.
+5. **Token compliance** — `eslint-plugin-sekar-design` clean (no literal hex / borderWidth / shadowOffset values).
+6. **No regression in tests** — affected `__tests__/` suite still green; snapshot updates explained in PR.
+
+---
+
+## 5. Animation & motion
+
+Per chat transcripts (Phase 4 backlog from design discussion):
+
+| Trigger | Duration | Easing |
+|---------|----------|--------|
+| Button press | 100 ms | ease-out |
+| Modal / bottom-sheet appear | 220 ms | ease-out |
+| Toast slide-in | 180 ms | ease-out |
+| List stagger (≤ 5 items animate, rest land instant) | 60 ms per item, total ≤ 300 ms | ease-out |
+| Screen transition (RN Stack) | 250 ms | default slide-from-right |
+| Map pin breathing (active status) | 1.6 s loop | ease-in-out |
+| FAB expand (monitoring tools) | 200 ms | ease-out |
+
+Implement via Reanimated (mobile) + CSS transitions (web). No animation for users with `prefers-reduced-motion: reduce`.
+
+---
+
+## 6. Mobile-web responsive (Phase 3 deliverable — verify only)
+
+Phase 3 M1-R 3-R4 + 3-R5 shipped the responsive shell at breakpoints 375 / 768 / 1280 px. Phase 4 verifies:
+
+- Web at < 768 px shows install banner pointing satgas/linmas/korlap to the native app.
+- Admin / korlap / kecamatan can complete their full workflow at any breakpoint.
+- Tables collapse to card-list at < 768 px (already implemented in 3-R5).
+- Sidebar collapses to icon-rail at 768-1024 px, hidden behind hamburger at < 768 px.
+
+---
+
+## 7. Dark mode (deferred to Phase 5)
+
+Tokens are dark-mode-ready (paired -fg/-bg, neutral scale spans light + dark). Phase 4 does **not** implement dark-mode visual validation; it ships the tokens so Phase 5 can flip the switch cheaply.
+
+---
+
+## 8. Cross-references
+
+- **Token re-baseline tasks:** [`README.md § 4-0`](./README.md#4-0--design-bundle-adoption--token-re-baseline-3-4-days)
+- **Mobile per-screen matrix:** [`mobile.md § UI/UX Revamp`](./mobile.md#ui-ux-revamp)
+- **Web per-screen matrix:** [`web.md § UI/UX Revamp`](./web.md#ui-ux-revamp)
+- **Per-screen acceptance checklist:** [`status_reviews.md § Revamp Acceptance Checklist`](./status_reviews.md#revamp-acceptance-checklist)
+- **Design tokens canonical doc:** [`specs/ui-ux/design-tokens.md`](../../ui-ux/design-tokens.md)
+- **Design bundle entry point:** [`design/project/index.html`](../../../design/project/index.html)
+
+---
+
+**Last Updated:** 2026-05-22

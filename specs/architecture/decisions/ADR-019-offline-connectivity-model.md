@@ -119,3 +119,9 @@ When ONLINE:
 1. **Binary online/offline** — Current behavior; rejected because workers can't distinguish personal connectivity from server issues
 2. **Three-tier with "degraded"** — ONLINE/DEGRADED/OFFLINE; rejected because "degraded" (slow but connected) doesn't change behavior enough to warrant a separate state
 3. **WebSocket-based detection** — Use Socket.IO disconnect events; rejected because WebSocket may not be active for all roles (field workers don't use monitoring WebSocket)
+
+## Appendix: Per-Screen Offline Behavior Matrix (added 2026-05-22)
+
+The decision above establishes the three-state connectivity model and the visual banner. The Phase 4 revamp pass (May 22, 2026) extends that with **explicit per-screen behavior** — each screen is now classified as **Works offline** (cached + queues writes), **Read-only offline** (cached read, mutations disabled), or **Unavailable offline** (full-screen `OfflineScreen` with `illo-offline` illustration + status-specific subtitle + retry).
+
+The matrix is implementation detail, not an architectural decision change. Lives at [`specs/phases/phase-4-production-readiness/mobile.md § A5`](../../phases/phase-4-production-readiness/mobile.md#a5-offline-behavior-matrix--per-screen-behavior-by-connectivity-state) for mobile and [`web.md § D-OFFLINE`](../../phases/phase-4-production-readiness/web.md#d-offline-web-offline-behavior-matrix) for web. Shared `OfflineScreen` component spec at [`mobile.md § A5b`](../../phases/phase-4-production-readiness/mobile.md#a5b-offline-error-screen--visual-spec).

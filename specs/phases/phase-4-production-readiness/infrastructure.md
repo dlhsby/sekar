@@ -1,9 +1,63 @@
 # Phase 4: Infrastructure Specifications
 
-**Date:** March 12, 2026
-**Status:** Not Started
-**Depends On:** Phase 2E Infrastructure (Complete)
-**Related Sub-Phases:** 4-1, 4-9
+**Date:** May 22, 2026 (revamp pass — sections below remain from March 12; updated facts in §0)
+**Status:** ⏳ Not Started
+**Depends On:** Phase 3 complete (Redis 7 + Socket.IO adapter live)
+**Related Sub-Phases:** 4-1 (trimmed), 4-3 (BullMQ on Redis), 4-9 (CI/CD)
+
+---
+
+## 0. Reality check — May 22, 2026 (overrides March-12 facts)
+
+| Fact | Updated value |
+|------|---------------|
+| Docker Compose | PostgreSQL 14, Adminer, LocalStack S3, **Redis 7-alpine** (shipped Phase 3 sub-phase 3-3) |
+| Redis | **Installed and live** — drives monitoring Streams + Socket.IO adapter |
+| Sentry | Still not configured — 4-1 B3/B4 |
+| Monitoring | No APM, no structured logs — 4-1 |
+| Production | api.sekar.wahyutrip.com + sekar.wahyutrip.com |
+
+---
+
+## ⊕ Revamp-driven infra changes (May 22, 2026)
+
+### I1. BullMQ on existing Redis (no new infra)
+
+Per [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md), Phase 4 adds BullMQ as a job-queue layer over the existing Redis 7 instance. **No new docker-compose service, no new prod cluster.** Implementation lives in `be/`; see [`backend.md § R2`](./backend.md#r2-bullmq-retry-queue-on-existing-redis-per-adr-043).
+
+**Operational notes:**
+
+- BullMQ uses a separate ioredis connection per queue (BullMQ guidance) — set `connection: { ...redisConfig, maxRetriesPerRequest: null }`.
+- Reserve ≥ 64 MB Redis memory headroom for queues (current monitoring Streams uses ≤ 128 MB at full load — total Redis sizing requirement ≈ 256 MB minimum; 512 MB recommended).
+- Add Bull Board dashboard at `/admin/queues` (admin-only) for ops visibility; behind JWT + RolesGuard.
+
+### I2. Sentry release tagging with rebrand version
+
+When Sentry ships in 4-1 B3/B4, the release tag should peg to the rebrand cutover for cohort separation:
+
+- Backend release tag: `sekar-be@1.0.0-rebrand`
+- Mobile release tag: `sekar-mobile@1.0.0-rebrand+{build}` — Android `versionCode`, iOS `CFBundleVersion`
+- Web release tag: `sekar-web@1.0.0-rebrand` (uploaded via `@sentry/nextjs` build step)
+
+### I3. App-store re-submission for rebrand
+
+App icon + splash change → **app-store re-submission required** (not just OTA / bundle update):
+
+- **Google Play:** Upload new APK / AAB with updated icon. Listing graphics + screenshots also need refresh to match v2.1 brand.
+- **iOS App Store (Phase 5+):** Same — new icon + screenshots.
+
+Plan **2-week store-review buffer** before launch. Listing assets (feature graphic, screenshots) regenerated from hi-fi screenshots (`design/project/hifi-mobile.html` rendered + masked).
+
+### I4. Web PWA manifest update (in 4-0, deployed via 4-8 F-tasks)
+
+- `theme_color`: `#7FBC8C` (sage primary)
+- `background_color`: `#F5F0EB` (warm stone)
+- Icons: maskable pinwheel SVG → 192 + 512 PNG derivatives
+- Add `share_target` for kecamatan flow (future)
+
+---
+
+## 1. Current Codebase Facts (Verified March 12, 2026 — refreshed May 22 in §0)
 
 ---
 
