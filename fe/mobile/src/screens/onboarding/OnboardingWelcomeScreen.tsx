@@ -1,103 +1,59 @@
 /**
- * OnboardingWelcomeScreen — Phase 4 M3b / ADR-042 / Hifi OB-1
+ * OnboardingWelcomeScreen — Phase 4 M3 / ADR-042 / Hifi OB-1
  *
- * Role-aware first onboarding step shown immediately after login (or after a
- * forced password change). Greets the user by role and bridges to the
- * permission-priming step (OB-2).
- *
- * Resolves design ambiguity #6 (ui-ux.md): three CTA copy variants — clockable
- * worker, staff_kecamatan, admin.
+ * First onboarding step after login (or a forced password change). Greets the
+ * user by name and bridges to the permission primer. "Lewati" skips the whole
+ * onboarding (marks it complete) so the user lands on Home.
  */
 
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { NBBadge, NBButton, NBText } from '../../components/nb';
-import { nbColors, nbSpacing } from '../../constants/nbTokens';
-import { useAppSelector } from '../../store/hooks';
-
-const ROLE_COPY: Record<
-  string,
-  { greeting: string; subtitle: string; badge: string }
-> = {
-  satgas: {
-    greeting: 'Selamat datang, Satgas',
-    subtitle: 'Anda akan menjaga ruang hijau Surabaya hari ini.',
-    badge: 'SATGAS',
-  },
-  linmas: {
-    greeting: 'Selamat datang, Linmas',
-    subtitle: 'Anda akan menjaga ruang hijau Surabaya hari ini.',
-    badge: 'LINMAS',
-  },
-  korlap: {
-    greeting: 'Selamat datang, Koordinator',
-    subtitle: 'Tim Anda menunggu arahan.',
-    badge: 'KORLAP',
-  },
-  kepala_rayon: {
-    greeting: 'Selamat datang, Kepala Rayon',
-    subtitle: 'Pantau kinerja rayon Anda.',
-    badge: 'KEPALA RAYON',
-  },
-  admin_data: {
-    greeting: 'Selamat datang, Admin Data',
-    subtitle: 'Tinjau dan disposisi permohonan masuk.',
-    badge: 'ADMIN DATA',
-  },
-  staff_kecamatan: {
-    greeting: 'Selamat datang, Staff Kecamatan',
-    subtitle: 'Ajukan permohonan perantingan dengan beberapa klik.',
-    badge: 'STAFF KECAMATAN',
-  },
-  top_management: {
-    greeting: 'Selamat datang',
-    subtitle: 'Akses ringkasan kinerja kota.',
-    badge: 'TOP MANAGEMENT',
-  },
-  admin_system: {
-    greeting: 'Selamat datang, Admin Sistem',
-    subtitle: 'Anda memiliki akses penuh konfigurasi sistem.',
-    badge: 'ADMIN SISTEM',
-  },
-  superadmin: {
-    greeting: 'Selamat datang, Superadmin',
-    subtitle: 'Anda memiliki akses penuh sistem.',
-    badge: 'SUPERADMIN',
-  },
-};
-
-const FALLBACK = {
-  greeting: 'Selamat datang',
-  subtitle: 'Mari mulai.',
-  badge: 'USER',
-};
+import { NBButton, NBText } from '../../components/nb';
+import { PaginationDots } from '../../components/auth/PaginationDots';
+import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { completeOnboarding } from '../../store/slices/authSlice';
+import { markOnboardingCompleted } from '../../services/storage/asyncStorageKeys';
 
 export function OnboardingWelcomeScreen(): React.JSX.Element {
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
-  const copy = (user?.role ? ROLE_COPY[user.role] : null) ?? FALLBACK;
+  const firstName = user?.full_name?.trim().split(' ')[0] ?? '';
+
+  const skip = useCallback(async () => {
+    if (user?.id) await markOnboardingCompleted(user.id);
+    dispatch(completeOnboarding());
+  }, [user, dispatch]);
 
   return (
-    <SafeAreaView
-      style={[
-        styles.root,
-        { backgroundColor: (nbColors as Record<string, string>).paper ?? '#F5F0EB' },
-      ]}
-      testID="onboarding-welcome-screen"
-    >
+    <SafeAreaView style={styles.root} testID="onboarding-welcome-screen">
       <View style={styles.content}>
-        <View style={styles.hero}>
-          <NBBadge color="primary" text={copy.badge} />
-          <NBText variant="display" style={styles.greeting}>
-            {copy.greeting}
-            {user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}.
-          </NBText>
-          <NBText variant="body" style={styles.subtitle}>
-            {copy.subtitle}
-          </NBText>
+        <PaginationDots variant="bars" total={3} index={0} style={styles.dots} />
+
+        <View style={styles.illo}>
+          <View style={styles.siapPill}>
+            <NBText variant="mono-sm" color="successDark">
+              SIAP
+            </NBText>
+          </View>
+          <Text style={styles.wave}>👋</Text>
         </View>
+
+        <NBText variant="h1">Hai,</NBText>
+        {firstName ? (
+          <View style={styles.nameChip}>
+            <NBText variant="h1">{firstName}</NBText>
+          </View>
+        ) : null}
+
+        <NBText variant="body-sm" color="gray700" style={styles.body}>
+          SEKAR butuh sedikit setup biar kamu bisa langsung ke lapangan. Cuma sebentar, sekali saja.
+        </NBText>
+
+        <View style={styles.spacer} />
 
         <NBButton
           title="Lanjut"
@@ -106,26 +62,58 @@ export function OnboardingWelcomeScreen(): React.JSX.Element {
           onPress={() => navigation.navigate('OnboardingPermissions' as never)}
           testID="onboarding-welcome-continue"
         />
+        <NBButton
+          title="Lewati"
+          variant="ghost"
+          fullWidth
+          onPress={skip}
+          testID="onboarding-welcome-skip"
+        />
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: {
-    flex: 1,
-    padding: nbSpacing?.lg ?? 24,
-    justifyContent: 'space-between',
-  },
-  hero: {
-    flex: 1,
+  root: { flex: 1, backgroundColor: nbColors.bgCanvas },
+  content: { flex: 1, padding: nbSpacing.lg },
+  dots: { marginBottom: nbSpacing.xl },
+  illo: {
+    height: 200,
+    backgroundColor: nbColors.bgAccentMint,
+    borderWidth: nbBorders.widthThick,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.lg,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-    alignItems: 'flex-start',
+    marginBottom: nbSpacing.lg,
+    ...nbShadows.md,
   },
-  greeting: {},
-  subtitle: { opacity: 0.85 },
+  siapPill: {
+    position: 'absolute',
+    top: nbSpacing.md,
+    right: nbSpacing.md,
+    backgroundColor: nbColors.statusActiveBg,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.full,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+  },
+  wave: { fontSize: 80, transform: [{ rotate: '-3deg' }] },
+  nameChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: nbColors.primary,
+    borderWidth: nbBorders.widthThick,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    marginTop: nbSpacing.xs,
+    transform: [{ rotate: '-1deg' }],
+  },
+  body: { marginTop: nbSpacing.md },
+  spacer: { flex: 1 },
 });
 
 export default OnboardingWelcomeScreen;

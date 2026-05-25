@@ -224,6 +224,12 @@ Per `illustrations.html § Splash screen`:
 - **Client change — temporary password is NOT re-entered.** The user already authenticated with it to reach this (forced) screen, so re-typing is redundant. Backend `POST /auth/change-password` `old_password` is now **optional** (`ChangePasswordDto` `@IsOptional`): required for a voluntary change (proves the current password), omitted for the admin-forced flow — which is gated by the JWT + `password_must_change` and **rejects re-using the temporary password** server-side (`bcrypt.compare(new, current)`). Mobile `changePasswordAndRotate(newPassword, oldPassword?)` only sends `old_password` when provided. Backend +3 spec tests (forced success / reused-temp reject / voluntary-without-old reject).
 - Tests: ForgotPassword 3/3 + ChangePassword 5/5 (no temp field, gated submit, success overlay, reused-temp toast); backend auth.service 31/31.
 
+**M3 revamp status — OB-1…OB-3 Onboarding ✅ (2026-05-25):** the three existing onboarding screens updated to the hi-fi (existing screens updated, not replaced; reuse `PaginationDots` + NB primitives).
+- **OB-1 Welcome:** bars 1/3 · waving illustration card (mint + "SIAP" pill) · "Hai, {firstName}" (name in a sage rotated chip) · "Lanjut" + "Lewati" (skip → marks onboarding complete). Greets by **name** (the prior role-badge greeting is gone).
+- **OB-2 Permissions:** bars 2/3 · three tappable permission rows (icon tile + title + why + status pill DIBERIKAN / DITOLAK / TAP UNTUK IZIN) · "Lanjut". **Reconciliation:** only the **3 real** permissions (location/camera/notifications); the hi-fi's optional gallery/phone/SMS group is omitted (not backed by `PermissionManager`); everything is skippable.
+- **OB-3 Area preview:** bars 3/3 · area name + radius + static map pin from Redux `auth.area` · role-variant CTA (Mulai Bekerja / Kelola Permohonan / Buka Dashboard). **Reconciliation:** the **korlap contact card is omitted** (no contact data at onboarding).
+- **Routing fix:** finishing/skipping onboarding now routes immediately — added a Redux `onboardingCompleted` flag (`authSlice`) that `RootNavigator` reads alongside the durable AsyncStorage flag (which was only read once at login, so the storage-only completion never re-routed → user stuck). Force-change still precedes onboarding (regression test added). Tests: onboarding 3 suites + nav green.
+
 ### 3.4 Empty-state illustrations (6 SVGs)
 
 | ID | File | Used by |

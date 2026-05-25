@@ -58,7 +58,7 @@ function deepLinkFromNotificationData(data: Record<string, unknown> | undefined)
 // role. The dedicated KecamatanNavigator (no bottom tabs, stack-only) is removed
 // in favor of a 2-tab layout (Perantingan + Profile) matching the rest of the app.
 function RootNavigator(): React.JSX.Element {
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user, onboardingCompleted } = useAppSelector((state) => state.auth);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   // Phase 4 M3a+b — onboarding gate. Default to `true` (i.e., "skip onboarding")
@@ -116,7 +116,8 @@ function RootNavigator(): React.JSX.Element {
   //      entirely and land on Home directly).
   const loggedIn = isAuthenticated && !!user;
   const forceChange = loggedIn && user?.password_must_change === true;
-  const showOnboarding = loggedIn && !forceChange && !onboardingDone;
+  const showOnboarding =
+    loggedIn && !forceChange && !onboardingDone && !onboardingCompleted;
 
   return (
     <NavigationContainer ref={navigationRef}>

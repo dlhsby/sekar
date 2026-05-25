@@ -14,6 +14,10 @@ interface AuthState {
   isLoading: boolean;
   isRestoring: boolean;
   error: string | null;
+  // In-session flag so finishing/skipping onboarding routes immediately. The
+  // durable per-user flag lives in AsyncStorage (hasCompletedOnboarding); this
+  // mirror exists because RootNavigator only reads storage once at login.
+  onboardingCompleted: boolean;
 }
 
 const initialState: AuthState = {
@@ -23,6 +27,7 @@ const initialState: AuthState = {
   isLoading: false,
   isRestoring: true, // Start as true, will be set to false after checking storage
   error: null,
+  onboardingCompleted: false,
 };
 
 const authSlice = createSlice({
@@ -49,12 +54,17 @@ const authSlice = createSlice({
       state.error = null;
     },
 
+    completeOnboarding: (state) => {
+      state.onboardingCompleted = true;
+    },
+
     logout: (state) => {
       state.user = null;
       state.assignedArea = null;
       state.isAuthenticated = false;
       state.isRestoring = false; // Ensure we're not stuck on loading spinner
       state.error = null;
+      state.onboardingCompleted = false;
     },
 
     setRestoring: (state, action: PayloadAction<boolean>) => {
@@ -80,6 +90,7 @@ export const {
   setUser,
   setError,
   clearError,
+  completeOnboarding,
   logout,
   setRestoring,
   restoreAuth,

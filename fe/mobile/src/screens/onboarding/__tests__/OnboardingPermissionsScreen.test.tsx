@@ -10,23 +10,13 @@ jest.mock('@react-navigation/native', () => ({
 const mockRequestLocation = jest.fn();
 const mockRequestCamera = jest.fn();
 const mockRequestNotification = jest.fn();
-jest.mock('../../../services/permissions', () => {
-  const PermissionType = {
-    NOTIFICATIONS: 'notifications',
-    LOCATION: 'location',
-    BACKGROUND_LOCATION: 'background_location',
-    CAMERA: 'camera',
-    GALLERY: 'gallery',
-  };
-  return {
-    PermissionType,
-    permissionManager: {
-      requestLocationPermission: () => mockRequestLocation(),
-      requestCameraPermission: () => mockRequestCamera(),
-      requestNotificationPermission: () => mockRequestNotification(),
-    },
-  };
-});
+jest.mock('../../../services/permissions', () => ({
+  permissionManager: {
+    requestLocationPermission: () => mockRequestLocation(),
+    requestCameraPermission: () => mockRequestCamera(),
+    requestNotificationPermission: () => mockRequestNotification(),
+  },
+}));
 
 describe('OnboardingPermissionsScreen', () => {
   beforeEach(() => {
@@ -36,41 +26,32 @@ describe('OnboardingPermissionsScreen', () => {
     mockRequestNotification.mockReset().mockResolvedValue({ granted: false });
   });
 
-  it('renders the 3 permission cards', () => {
+  it('renders the 3 permission rows', () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
     expect(getByTestId('perm-row-location')).toBeTruthy();
     expect(getByTestId('perm-row-camera')).toBeTruthy();
     expect(getByTestId('perm-row-notifications')).toBeTruthy();
   });
 
-  it('granting location marks status GRANTED', async () => {
+  it('tapping a pending row requests the permission → DIBERIKAN', async () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
-    fireEvent.press(getByTestId('perm-grant-location'));
+    fireEvent.press(getByTestId('perm-row-location'));
     await waitFor(() => {
-      expect(getByTestId('perm-status-location').props.children).toBe('GRANTED');
+      expect(getByTestId('perm-status-location').props.children).toBe('DIBERIKAN');
     });
     expect(mockRequestLocation).toHaveBeenCalled();
   });
 
-  it('skipping location marks status SKIPPED without calling request', async () => {
-    const { getByTestId } = render(<OnboardingPermissionsScreen />);
-    fireEvent.press(getByTestId('perm-skip-location'));
-    await waitFor(() => {
-      expect(getByTestId('perm-status-location').props.children).toBe('SKIPPED');
-    });
-    expect(mockRequestLocation).not.toHaveBeenCalled();
-  });
-
-  it('denied permission marks status DENIED', async () => {
+  it('a declined permission shows DITOLAK', async () => {
     mockRequestLocation.mockResolvedValue({ granted: false });
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
-    fireEvent.press(getByTestId('perm-grant-location'));
+    fireEvent.press(getByTestId('perm-row-location'));
     await waitFor(() => {
-      expect(getByTestId('perm-status-location').props.children).toBe('DENIED');
+      expect(getByTestId('perm-status-location').props.children).toBe('DITOLAK');
     });
   });
 
-  it('Lanjut navigates to OnboardingAreaPreview', () => {
+  it('Lanjut navigates to OnboardingAreaPreview (everything is skippable)', () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
     fireEvent.press(getByTestId('onboarding-permissions-continue'));
     expect(mockNavigate).toHaveBeenCalledWith('OnboardingAreaPreview');

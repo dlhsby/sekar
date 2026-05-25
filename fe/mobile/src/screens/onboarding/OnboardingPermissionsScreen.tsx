@@ -1,176 +1,197 @@
 /**
- * OnboardingPermissionsScreen — Phase 4 M3b / ADR-042 / Hifi OB-2
+ * OnboardingPermissionsScreen — Phase 4 M3 / ADR-042 / Hifi OB-2
  *
- * Replaces `PermissionRequestModal` with a full-screen, sequential primer.
- * Resolves design ambiguities #4 + #5 (ui-ux.md):
- * - Sequential order: location → camera → notifications → gallery → background-location
- *   (driven by the PermissionType enum in PermissionManager).
- * - Skip-anything allowed; no hard blockers. User reaches OB-3 after the
- *   list is processed regardless of grants.
+ * Permission primer. Tapping a row triggers the native prompt; the status pill
+ * updates after. Everything is skippable (no hard blockers) — "Lanjut" always
+ * advances to the area preview.
  *
- * `Background location` is grouped last because Android 11+ requires
- * foreground-location to be granted first.
+ * Reconciliation: the app's PermissionManager exposes three permissions
+ * (location · camera · notifications); the hi-fi's extra "optional" group
+ * (gallery/phone/SMS) isn't backed by the app, so it isn't shown.
  */
 
-import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { NBButton, NBCard, NBText } from '../../components/nb';
-import { nbColors, nbSpacing } from '../../constants/nbTokens';
-import { PermissionType, permissionManager } from '../../services/permissions';
+import { NBButton, NBText, type NBTextColor } from '../../components/nb';
+import { PaginationDots } from '../../components/auth/PaginationDots';
+import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
+import { permissionManager } from '../../services/permissions';
 
-type PermStatus = 'pending' | 'granted' | 'denied' | 'skipped';
+type PermStatus = 'pending' | 'granted' | 'denied';
 
-interface PermissionRow {
-  type: PermissionType;
+interface PermRow {
+  key: string;
   title: string;
   why: string;
-  required: boolean;
+  icon: string;
+  tint: string;
   request: () => Promise<{ granted: boolean }>;
 }
 
-const ROWS: PermissionRow[] = [
+const ROWS: PermRow[] = [
   {
-    type: PermissionType.LOCATION,
+    key: 'location',
     title: 'Lokasi',
-    why: 'Untuk validasi clock-in dan pelacakan tim selama shift.',
-    required: true,
+    why: 'Untuk presensi & geofence pos.',
+    icon: '📍',
+    tint: nbColors.bgAccentMint,
     request: () => permissionManager.requestLocationPermission(),
   },
   {
-    type: PermissionType.CAMERA,
+    key: 'camera',
     title: 'Kamera',
-    why: 'Untuk swafoto saat clock-in dan foto bukti aktivitas.',
-    required: true,
+    why: 'Foto laporan aktivitas.',
+    icon: '📷',
+    tint: nbColors.bgAccentYellow,
     request: () => permissionManager.requestCameraPermission(),
   },
   {
-    type: PermissionType.NOTIFICATIONS,
+    key: 'notifications',
     title: 'Notifikasi',
-    why: 'Untuk pengingat shift, penugasan, dan pengumuman.',
-    required: true,
+    why: 'Pengingat shift & penugasan.',
+    icon: '🔔',
+    tint: nbColors.bgAccentPink,
     request: () => permissionManager.requestNotificationPermission(),
   },
 ];
 
+const PILL: Record<PermStatus, { label: string; bg: string; fg: NBTextColor }> = {
+  pending: { label: 'TAP UNTUK IZIN', bg: nbColors.statusIdleBg, fg: 'statusIdle' },
+  granted: { label: 'DIBERIKAN', bg: nbColors.statusActiveBg, fg: 'statusActive' },
+  denied: { label: 'DITOLAK', bg: nbColors.statusMissingBg, fg: 'statusMissing' },
+};
+
+function PermissionRowView({
+  row,
+  status,
+  onPress,
+}: {
+  row: PermRow;
+  status: PermStatus;
+  onPress: () => void;
+}): React.JSX.Element {
+  const pill = PILL[status];
+  return (
+    <Pressable
+      style={styles.row}
+      onPress={status === 'pending' ? onPress : undefined}
+      accessibilityRole="button"
+      testID={`perm-row-${row.key}`}
+    >
+      <View style={[styles.pico, { backgroundColor: row.tint }]}>
+        <Text style={styles.picoIcon}>{row.icon}</Text>
+      </View>
+      <View style={styles.rowBody}>
+        <NBText variant="body-sm" color="black" style={styles.rowTitle}>
+          {row.title}
+        </NBText>
+        <NBText variant="caption" color="gray600">
+          {row.why}
+        </NBText>
+      </View>
+      <View style={[styles.pill, { backgroundColor: pill.bg }]}>
+        <NBText variant="mono-sm" color={pill.fg} testID={`perm-status-${row.key}`}>
+          {pill.label}
+        </NBText>
+      </View>
+    </Pressable>
+  );
+}
+
 export function OnboardingPermissionsScreen(): React.JSX.Element {
   const navigation = useNavigation();
-  const [statuses, setStatuses] = useState<Record<PermissionType, PermStatus>>(() => {
-    const init: Partial<Record<PermissionType, PermStatus>> = {};
-    ROWS.forEach((r) => (init[r.type] = 'pending'));
-    return init as Record<PermissionType, PermStatus>;
+  const [statuses, setStatuses] = useState<Record<string, PermStatus>>(() => {
+    const init: Partial<Record<string, PermStatus>> = {};
+    ROWS.forEach((r) => (init[r.key] = 'pending'));
+    return init as Record<string, PermStatus>;
   });
 
-  const allProcessed = useMemo(
-    () => ROWS.every((r) => statuses[r.type] !== 'pending'),
-    [statuses],
-  );
-
-  const grant = async (row: PermissionRow) => {
+  const grant = async (row: PermRow) => {
     try {
       const res = await row.request();
-      setStatuses((s) => ({
-        ...s,
-        [row.type]: res.granted ? 'granted' : 'denied',
-      }));
+      setStatuses((s) => ({ ...s, [row.key]: res.granted ? 'granted' : 'denied' }));
     } catch {
-      setStatuses((s) => ({ ...s, [row.type]: 'denied' }));
+      setStatuses((s) => ({ ...s, [row.key]: 'denied' }));
     }
   };
 
-  const skip = (row: PermissionRow) => {
-    setStatuses((s) => ({ ...s, [row.type]: 'skipped' }));
-  };
-
-  const finish = () => {
-    navigation.navigate('OnboardingAreaPreview' as never);
-  };
-
   return (
-    <SafeAreaView
-      style={[
-        styles.root,
-        { backgroundColor: (nbColors as Record<string, string>).paper ?? '#F5F0EB' },
-      ]}
-      testID="onboarding-permissions-screen"
-    >
+    <SafeAreaView style={styles.root} testID="onboarding-permissions-screen">
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <NBText variant="h1">Izin Aplikasi</NBText>
-          <NBText variant="body" style={styles.subtitle}>
-            Aplikasi memerlukan beberapa izin untuk berfungsi. Anda dapat melewati
-            izin yang tidak diperlukan dan mengaturnya nanti.
-          </NBText>
+        <PaginationDots variant="bars" total={3} index={1} style={styles.dots} />
+        <NBText variant="h2">Beri akses ke HP-mu</NBText>
+        <NBText variant="body-sm" color="gray600" style={styles.subtitle}>
+          Kami pakai hanya untuk tugas. Bisa diubah di Pengaturan kapan saja.
+        </NBText>
+
+        <View style={styles.list}>
+          {ROWS.map((row) => (
+            <PermissionRowView
+              key={row.key}
+              row={row}
+              status={statuses[row.key]}
+              onPress={() => grant(row)}
+            />
+          ))}
         </View>
+      </ScrollView>
 
-        {ROWS.map((row) => {
-          const status = statuses[row.type];
-          return (
-            <NBCard
-              key={row.type}
-              style={styles.card}
-              testID={`perm-row-${row.type}`}
-            >
-              <View style={styles.cardTop}>
-                <NBText variant="h3">{row.title}</NBText>
-                {status !== 'pending' ? (
-                  <NBText variant="caption" testID={`perm-status-${row.type}`}>
-                    {status.toUpperCase()}
-                  </NBText>
-                ) : null}
-              </View>
-              <NBText variant="body-sm" style={styles.cardBody}>
-                {row.why}
-              </NBText>
-              {status === 'pending' ? (
-                <View style={styles.cardActions}>
-                  <NBButton
-                    title="Lewati"
-                    variant="ghost"
-                    onPress={() => skip(row)}
-                    testID={`perm-skip-${row.type}`}
-                  />
-                  <NBButton
-                    title="Izinkan"
-                    variant="primary"
-                    onPress={() => grant(row)}
-                    testID={`perm-grant-${row.type}`}
-                  />
-                </View>
-              ) : null}
-            </NBCard>
-          );
-        })}
-
+      <View style={styles.footer}>
         <NBButton
-          title={allProcessed ? 'Lanjut' : 'Lewati semua & lanjut'}
-          variant={allProcessed ? 'primary' : 'ghost'}
+          title="Lanjut"
+          variant="primary"
           fullWidth
-          onPress={finish}
+          onPress={() => navigation.navigate('OnboardingAreaPreview' as never)}
           testID="onboarding-permissions-continue"
         />
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: {
-    padding: nbSpacing?.lg ?? 24,
-    gap: 12,
-  },
-  header: { gap: 8, paddingBottom: 8 },
-  subtitle: { opacity: 0.85 },
-  card: { gap: 8 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardBody: { opacity: 0.85 },
-  cardActions: {
+  root: { flex: 1, backgroundColor: nbColors.bgCanvas },
+  content: { padding: nbSpacing.lg },
+  dots: { marginBottom: nbSpacing.xl },
+  subtitle: { marginTop: nbSpacing.xs, marginBottom: nbSpacing.lg },
+  list: { gap: nbSpacing.sm },
+  row: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    paddingTop: 4,
+    alignItems: 'center',
+    gap: nbSpacing.md,
+    backgroundColor: nbColors.bgSurface,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    padding: nbSpacing.md,
+    ...nbShadows.xs,
+  },
+  pico: {
+    width: 40,
+    height: 40,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  picoIcon: { fontSize: 20 },
+  rowBody: { flex: 1 },
+  rowTitle: { fontWeight: '700' },
+  pill: {
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.full,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+  },
+  footer: {
+    padding: nbSpacing.lg,
+    borderTopWidth: nbBorders.widthBase,
+    borderTopColor: nbColors.black,
+    backgroundColor: nbColors.bgSurface,
   },
 });
 
