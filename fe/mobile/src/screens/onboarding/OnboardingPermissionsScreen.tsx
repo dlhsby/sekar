@@ -1,13 +1,16 @@
 /**
  * OnboardingPermissionsScreen — Phase 4 M3 / ADR-042 / Hifi OB-2
  *
- * Permission primer — this REPLACES the old startup PermissionRequestModal.
- * Each row has an "Izinkan" button that triggers the native prompt; the status
- * pill updates after. There is no skip — "Lanjut" stays disabled until every
+ * Permission primer — REPLACES the old startup PermissionRequestModal. Each row
+ * has an "Izinkan" button that triggers the native prompt; the status pill
+ * updates after. There is no skip — "Lanjut" stays disabled until every
  * permission has been addressed (granted or denied).
  *
  * Set reconciled with the legacy modal: notifications · location · background
- * location · camera · gallery (location is requested before background location).
+ * location · camera · gallery. Background location is requested after foreground
+ * location (its prerequisite); `ACCESS_BACKGROUND_LOCATION` is declared in the
+ * manifest so the OS offers "Izinkan sepanjang waktu". An AppState foreground
+ * re-check upgrades any pill the user grants from system Settings.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -27,7 +30,6 @@ interface PermRow {
   why: string;
   icon: string;
   tint: string;
-  required: boolean;
   request: () => Promise<{ granted: boolean }>;
 }
 
@@ -38,7 +40,6 @@ const ROWS: PermRow[] = [
     why: 'Pengingat shift & penugasan.',
     icon: '🔔',
     tint: nbColors.bgAccentPink,
-    required: true,
     request: () => permissionManager.requestNotificationPermission(),
   },
   {
@@ -47,8 +48,15 @@ const ROWS: PermRow[] = [
     why: 'Presensi & geofence pos.',
     icon: '📍',
     tint: nbColors.bgAccentMint,
-    required: true,
     request: () => permissionManager.requestLocationPermission(),
+  },
+  {
+    key: 'background_location',
+    title: 'Lokasi latar belakang',
+    why: 'Pelacakan rute selama shift berjalan.',
+    icon: '🛰️',
+    tint: nbColors.bgAccentGreen,
+    request: () => permissionManager.requestBackgroundLocationPermission(),
   },
   {
     key: 'camera',
@@ -56,7 +64,6 @@ const ROWS: PermRow[] = [
     why: 'Foto laporan & swafoto clock-in.',
     icon: '📷',
     tint: nbColors.bgAccentYellow,
-    required: true,
     request: () => permissionManager.requestCameraPermission(),
   },
   {
@@ -65,20 +72,7 @@ const ROWS: PermRow[] = [
     why: 'Lampirkan foto dari galeri.',
     icon: '🖼️',
     tint: nbColors.bgAccentLilac,
-    required: true,
     request: () => permissionManager.requestGalleryPermission(),
-  },
-  {
-    // Optional: Android 11+ grants "all the time" only from Settings, which is a
-    // poor onboarding experience — so this doesn't block "Lanjut". The app can
-    // re-prompt at clock-in where background tracking is actually used.
-    key: 'background_location',
-    title: 'Lokasi latar belakang',
-    why: 'Pelacakan rute selama shift berjalan.',
-    icon: '🛰️',
-    tint: nbColors.bgAccentGreen,
-    required: false,
-    request: () => permissionManager.requestBackgroundLocationPermission(),
   },
 ];
 
@@ -102,16 +96,9 @@ function PermissionRowView({
         <Text style={styles.picoIcon}>{row.icon}</Text>
       </View>
       <View style={styles.rowBody}>
-        <View style={styles.titleRow}>
-          <NBText variant="body-sm" color="black" style={styles.rowTitle}>
-            {row.title}
-          </NBText>
-          {!row.required ? (
-            <NBText variant="mono-sm" color="gray500">
-              · Opsional
-            </NBText>
-          ) : null}
-        </View>
+        <NBText variant="body-sm" color="black" style={styles.rowTitle}>
+          {row.title}
+        </NBText>
         <NBText variant="caption" color="gray600">
           {row.why}
         </NBText>
@@ -144,8 +131,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
   });
 
   // Re-read actual status on foreground return — catches permissions the user
-  // grants from system Settings (notably background location on Android 11+,
-  // which has no inline prompt). Only upgrades to 'granted', never downgrades.
+  // grants from system Settings (notably background location). Only upgrades.
   const refresh = useCallback(async () => {
     const all = await permissionManager.checkAllPermissions();
     setStatuses((s) => ({
@@ -166,12 +152,9 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
   }, [refresh]);
 
   const grant = async (row: PermRow) => {
-    // Background location: needs foreground location first, and on Android 11+
-    // can only be granted via Settings ("Izinkan sepanjang waktu").
+    // Background location needs foreground location first; with the manifest
+    // permission declared, the OS offers "Izinkan sepanjang waktu" inline.
     if (row.key === 'background_location') {
-      // Foreground location must be granted first, then attempt background inline.
-      // No Settings dump (poor UX) — background is optional; the AppState re-check
-      // upgrades the pill if the user later allows it from system Settings.
       const fg = await permissionManager.requestLocationPermission();
       setStatuses((s) => ({ ...s, location: fg.granted ? 'granted' : 'denied' }));
       const bg = fg.granted
@@ -189,11 +172,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
     }
   };
 
-  // "Lanjut" is gated on the required permissions only; background location is
-  // optional (can't be one-tapped on Android 11+).
-  const requiredAddressed = ROWS.filter((r) => r.required).every(
-    (r) => statuses[r.key] !== 'pending',
-  );
+  const allAddressed = ROWS.every((r) => statuses[r.key] !== 'pending');
 
   return (
     <SafeAreaView style={styles.root} testID="onboarding-permissions-screen">
@@ -201,7 +180,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
         <PaginationDots variant="bars" total={3} index={1} style={styles.dots} />
         <NBText variant="h2">Beri akses ke HP-mu</NBText>
         <NBText variant="body-sm" color="gray600" style={styles.subtitle}>
-          Aplikasi memerlukan izin berikut agar berfungsi penuh. Bisa diubah di Pengaturan kapan saja.
+          Semua izin di bawah diperlukan agar pelacakan & laporan berfungsi penuh.
         </NBText>
 
         <View style={styles.list}>
@@ -221,7 +200,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
           title="Lanjut"
           variant="primary"
           fullWidth
-          disabled={!requiredAddressed}
+          disabled={!allAddressed}
           onPress={() => navigation.navigate('OnboardingAreaPreview' as never)}
           testID="onboarding-permissions-continue"
         />
@@ -258,7 +237,6 @@ const styles = StyleSheet.create({
   },
   picoIcon: { fontSize: 20 },
   rowBody: { flex: 1 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs, flexWrap: 'wrap' },
   rowTitle: { fontWeight: '700' },
   pill: {
     borderWidth: nbBorders.widthThin,

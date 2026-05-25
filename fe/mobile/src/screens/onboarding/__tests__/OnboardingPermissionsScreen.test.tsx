@@ -33,7 +33,6 @@ jest.mock('../../../services/permissions', () => ({
 }));
 
 const KEYS = ['notifications', 'location', 'background_location', 'camera', 'gallery'] as const;
-const REQUIRED = ['notifications', 'location', 'camera', 'gallery'] as const;
 
 describe('OnboardingPermissionsScreen', () => {
   beforeEach(() => {
@@ -68,18 +67,34 @@ describe('OnboardingPermissionsScreen', () => {
     expect(mockReq.background_location).toHaveBeenCalled();
   });
 
-  it('Lanjut is gated on the required permissions; background location is optional', async () => {
+  it('Lanjut is gated until every permission is addressed (no skip)', async () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
 
     // Disabled at first — pressing does nothing.
     fireEvent.press(getByTestId('onboarding-permissions-continue'));
     expect(mockNavigate).not.toHaveBeenCalled();
 
-    // Address only the required permissions (NOT background location).
-    for (const k of REQUIRED) {
+    for (const k of KEYS) {
       fireEvent.press(getByTestId(`perm-grant-${k}`));
       await waitFor(() => expect(getByTestId(`perm-status-${k}`)).toBeTruthy());
     }
+    fireEvent.press(getByTestId('onboarding-permissions-continue'));
+    expect(mockNavigate).toHaveBeenCalledWith('OnboardingAreaPreview');
+  });
+
+  it('background location is required — Lanjut stays disabled until it is addressed', async () => {
+    const { getByTestId } = render(<OnboardingPermissionsScreen />);
+
+    // Address everything except background location.
+    for (const k of ['notifications', 'location', 'camera', 'gallery'] as const) {
+      fireEvent.press(getByTestId(`perm-grant-${k}`));
+      await waitFor(() => expect(getByTestId(`perm-status-${k}`)).toBeTruthy());
+    }
+    fireEvent.press(getByTestId('onboarding-permissions-continue'));
+    expect(mockNavigate).not.toHaveBeenCalled(); // background still pending
+
+    fireEvent.press(getByTestId('perm-grant-background_location'));
+    await waitFor(() => expect(getByTestId('perm-status-background_location')).toBeTruthy());
     fireEvent.press(getByTestId('onboarding-permissions-continue'));
     expect(mockNavigate).toHaveBeenCalledWith('OnboardingAreaPreview');
   });
