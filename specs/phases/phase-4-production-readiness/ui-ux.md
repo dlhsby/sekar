@@ -198,6 +198,13 @@ Per `illustrations.html § Splash screen`:
 - **Android:** `BootTheme` (`res/values/styles.xml`) sets `windowBackground` → `res/drawable/bootsplash.xml` (layer-list: `@color/bootsplash_background` sage `#7FBC8C` + centered `@drawable/pinwheel_logo` VectorDrawable). Also sets the Android-12+ `windowSplashScreenBackground` / `windowSplashScreenAnimatedIcon`. `AndroidManifest.xml` launches `MainActivity` under `BootTheme`; `MainActivity.onCreate` calls `setTheme(R.style.AppTheme)` before `super` so the splash doesn't linger. Requires a native rebuild (`npm run android`), not a Metro reload.
 - **iOS:** `LaunchScreen.storyboard` rebranded — sage background + centered bold "SEKAR" wordmark (system font). **Follow-up:** the pinwheel vector isn't yet in `Images.xcassets`; iOS shows the wordmark only until a PDF/SVG logo asset is exported from `design/`.
 
+**M3 revamp status — WL-2 carousel ✅ (2026-05-25):** Per client feedback the carousel is **split**: each slide's illustration panel (`components/auth/CarouselScenePanel.tsx`) + title (one sage-accent word) + subtitle swipe together; only the dot pagination (`components/auth/PaginationDots.tsx`) and the CTAs are pinned in a **fixed footer** that reflects the active slide. New scene: `components/auth/scenes/SceneLiveMap.tsx` (mini monitoring map — faint grid + five status pins + Aktif/Off-area stat chips). The old all-in-one `OnboardingSlide` was removed.
+- **CTAs:** slides WL-2…WL-4 show primary **"Lanjut"** (advance) + ghost **"Lewati"**; the last slide (WL-5) promotes a single **"Mulai (Masuk)"**. There is no top skip.
+- **"Lewati"** jumps to the **last slide** (it no longer redirects straight to Login); the user then taps "Mulai (Masuk)" to enter Login.
+- **Login is pushed (`navigate`), not replaced**, and `LoginScreen` shows a back button (`testID=login-back`, only when `canGoBack`) so the user can return to the carousel.
+
+**Reconciliations:** (1) WL-5's navy is the **illustration panel** background (`.scene-illust.deep`), not the whole screen. (2) Pagination reflects the **4-slide** carousel (WL-2…WL-5), not the hi-fi's "x/5" (which counted the now-separate splash). (3) The redundant top progress bars from the hi-fi were dropped in favor of the single footer dot pagination. (4) Body copy adopted from the hi-fi scene subtitles. WL-3/WL-4/WL-5 still use emoji placeholders pending `SceneChecklist` / `SceneRequests` / `SceneOffline`.
+
 ### 3.4 Empty-state illustrations (6 SVGs)
 
 | ID | File | Used by |
@@ -310,7 +317,7 @@ The 10 ambiguities surfaced during M2's exploration were resolved inline as the 
 | # | Ambiguity | M3 resolution |
 |---|---|---|
 | 1 | Carousel auto-advance timing | **Revised (M3, 2026-05-25):** WL-1 is now a standalone `SplashScreen` (≈1.5s hold → carousel), not a carousel slide. The carousel (WL-2…WL-5) has **no** auto-advance — the user drives it with "Lanjut". |
-| 2 | "Lewati" behavior | Navigates to Login. Available on **WL-2…WL-4** (WL-1 is the branded splash with no skip; WL-5 swaps to a single "Mulai (Masuk)"). **Revised (M3, 2026-05-25):** the carousel now **always** leads the logged-out flow — `carousel_seen` is no longer a navigation gate (still written by `markCarouselSeen`, but unread). |
+| 2 | "Lewati" behavior | **Revised (M3, 2026-05-25):** "Lewati" (ghost, on WL-2…WL-4) jumps to the **last slide**, not straight to Login; the user then taps "Mulai (Masuk)" on WL-5 to reach Login. Login is **pushed** (so it can go back to the carousel). The carousel always leads the logged-out flow — `carousel_seen` is no longer a navigation gate (still written, unread). |
 | 3 | AS-4 rayon contact scope | Lists every rayon (n=7) with phone + WhatsApp deep-links. Anonymous fetch. |
 | 4 | OB-2 permission order | Location → Camera → Notifications (sequential, single-card UI per row). |
 | 5 | OB-2 skip behavior | Every permission is skippable. No hard blockers; AreaPreview always reachable. |

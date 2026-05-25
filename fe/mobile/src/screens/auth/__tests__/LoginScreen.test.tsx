@@ -21,7 +21,7 @@ jest.mock('../../../services/storage/secureStorage');
 // Phase 4 M3a: LoginScreen calls useNavigation() for the "Lupa sandi?" link.
 // Existing tests render the screen bare (no NavigationContainer) — stub it.
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: jest.fn() }),
+  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn(), canGoBack: () => true }),
 }));
 jest.mock('../../../services/shift', () => ({
   loadAndSyncCurrentShift: jest.fn().mockResolvedValue(undefined),

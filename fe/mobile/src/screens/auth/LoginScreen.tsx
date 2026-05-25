@@ -8,6 +8,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
+  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -160,6 +161,18 @@ function LoginScreen(): React.JSX.Element {
       opacity={0.06}                          // Subtle pattern overlay
     >
       <SafeAreaView style={styles.safeArea}>
+        {navigation.canGoBack() ? (
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Kembali"
+            testID="login-back"
+          >
+            <MaterialCommunityIcons name="chevron-left" size={28} color={nbColors.black} />
+          </Pressable>
+        ) : null}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.container}>
@@ -262,6 +275,22 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent', // Let NBBackgroundPattern handle background
+  },
+  // Back to the carousel (Login is pushed on top of WelcomeCarousel).
+  backButton: {
+    position: 'absolute',
+    top: nbSpacing.md,
+    left: nbSpacing.md,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.base,
+    borderColor: nbColors.black,
+    borderRadius: nbBorderRadius.base,
+    ...nbShadows.xs,
   },
   container: {
     flex: 1,

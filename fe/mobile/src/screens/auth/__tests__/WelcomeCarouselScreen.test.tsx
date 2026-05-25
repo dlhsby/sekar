@@ -11,6 +11,13 @@ const makeNavigation = () => ({
   goBack: jest.fn(),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const renderScreen = (navigation: any) =>
+  render(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <WelcomeCarouselScreen navigation={navigation as any} route={{ key: 'k', name: 'WelcomeCarousel' } as any} />,
+  );
+
 describe('WelcomeCarouselScreen', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -22,46 +29,46 @@ describe('WelcomeCarouselScreen', () => {
     jest.useRealTimers();
   });
 
-  it('opens on WL-2 and surfaces all 4 carousel slides (no WL-1 splash)', () => {
-    const navigation = makeNavigation();
-    const { getByTestId, queryByTestId } = render(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      <WelcomeCarouselScreen navigation={navigation as any} route={{ key: 'k', name: 'WelcomeCarousel' } as any} />,
-    );
-    // WL-1 (splash) is no longer a carousel slide — the carousel opens on WL-2.
+  it('opens on WL-2 and surfaces all 4 scene panels (no WL-1 splash)', () => {
+    const { getByTestId, queryByTestId } = renderScreen(makeNavigation());
     expect(queryByTestId('carousel-slide-WL-1')).toBeNull();
     expect(getByTestId('carousel-slide-WL-2')).toBeTruthy();
     expect(getByTestId('carousel-slide-WL-5')).toBeTruthy();
   });
 
-  it('"Lewati" finishes and navigates to Login + sets carousel_seen', async () => {
+  it('first slide shows "Lanjut" + "Lewati" (not the final CTA)', () => {
+    const { getByText, getByTestId, queryByText } = renderScreen(makeNavigation());
+    expect(getByText('Lanjut')).toBeTruthy();
+    expect(getByTestId('carousel-skip')).toBeTruthy();
+    expect(queryByText('Mulai (Masuk)')).toBeNull();
+  });
+
+  it('"Lewati" jumps to the last slide instead of redirecting to Login', () => {
     const navigation = makeNavigation();
-    const { getByTestId } = render(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      <WelcomeCarouselScreen navigation={navigation as any} route={{ key: 'k', name: 'WelcomeCarousel' } as any} />,
-    );
-    // WL-1 is the branded splash (no skip). "Lewati" lives on slides WL-2…WL-4.
-    fireEvent.press(getByTestId('carousel-slide-WL-2-secondary'));
+    const { getByTestId, getByText, queryByTestId } = renderScreen(navigation);
+    fireEvent.press(getByTestId('carousel-skip'));
+    // Footer flips to the final CTA; skip disappears; no navigation yet.
+    expect(getByText('Mulai (Masuk)')).toBeTruthy();
+    expect(queryByTestId('carousel-skip')).toBeNull();
+    expect(navigation.navigate).not.toHaveBeenCalled();
+  });
+
+  it('the final CTA finishes the flow → Login + sets carousel_seen', async () => {
+    const navigation = makeNavigation();
+    const { getByTestId } = renderScreen(navigation);
+    fireEvent.press(getByTestId('carousel-skip')); // advance to the last slide
+    fireEvent.press(getByTestId('carousel-primary')); // "Mulai (Masuk)"
 
     await waitFor(() => {
-      expect(navigation.replace).toHaveBeenCalledWith('Login');
+      expect(navigation.navigate).toHaveBeenCalledWith('Login');
     });
     expect(await AsyncStorage.getItem(ASYNC_STORAGE_KEYS.CAROUSEL_SEEN)).toBe('true');
   });
 
-  it('"Masuk" on WL-5 finishes the flow', async () => {
+  it('"Lanjut" advances without navigating to Login', () => {
     const navigation = makeNavigation();
-    const { getByTestId } = render(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      <WelcomeCarouselScreen navigation={navigation as any} route={{ key: 'k', name: 'WelcomeCarousel' } as any} />,
-    );
-    // WL-5 is rendered in the FlatList — its primary CTA triggers finish.
-    fireEvent.press(getByTestId('carousel-slide-WL-5-primary'));
-
-    await waitFor(() => {
-      expect(navigation.replace).toHaveBeenCalledWith('Login');
-    });
-    expect(await AsyncStorage.getItem(ASYNC_STORAGE_KEYS.CAROUSEL_SEEN)).toBe('true');
+    const { getByTestId } = renderScreen(navigation);
+    fireEvent.press(getByTestId('carousel-primary'));
+    expect(navigation.navigate).not.toHaveBeenCalled();
   });
-
 });

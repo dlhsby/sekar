@@ -1,15 +1,15 @@
 /**
  * WelcomeCarouselScreen — Phase 4 M3a / ADR-042 / Hifi WL-2…WL-5
  *
- * 4-slide pre-login carousel shown to logged-out users after the Splash screen.
- * It opens on "Pantau real-time" (WL-2) — the WL-1 brand splash is no longer a
- * slide here; it lives in `SplashScreen` + the native boot splash, so showing it
- * again would duplicate it.
+ * 4-slide pre-login intro shown to logged-out users after the Splash screen.
+ * Each slide's illustration + title + subtitle swipe together; only the dot
+ * pagination and the CTAs are pinned in a fixed footer that reflects the
+ * active slide.
  *
  * Behavior:
- * - "Lanjut" advances; "Masuk" on the last slide finishes → Login.
- * - "Lewati" (Skip) on slides 2-4 jumps straight to Login.
- * - Swipe-back disabled — this is a linear intro, not exploration.
+ * - "Lanjut" advances; the last slide promotes a single "Mulai (Masuk)" → Login.
+ * - "Lewati" jumps to the last slide (it does NOT skip straight to Login).
+ * - Login is pushed (not replaced) so it can navigate back here.
  */
 
 import React, { useCallback, useRef, useState } from 'react';
@@ -19,12 +19,17 @@ import {
   StyleSheet,
   Text,
   View,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { nbColors } from '../../constants/nbTokens';
-import { OnboardingSlide } from '../../components/auth/OnboardingSlide';
+import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { NBButton, NBText } from '../../components/nb';
+import { CarouselScenePanel } from '../../components/auth/CarouselScenePanel';
+import { PaginationDots } from '../../components/auth/PaginationDots';
+import { SceneLiveMap } from '../../components/auth/scenes/SceneLiveMap';
 import { markCarouselSeen } from '../../services/storage/asyncStorageKeys';
 
 const { width } = Dimensions.get('window');
@@ -32,140 +37,165 @@ const { width } = Dimensions.get('window');
 interface Slide {
   id: string;
   title: string;
+  highlight: string;
   body: string;
-  emoji: string; // placeholder for the real SVG illustration shipped by design
-  backgroundColor?: string;
-  textColor?: string;
+  illustrationBg?: string;
+  scene?: React.ReactNode;
+  emoji?: string; // placeholder until the slide's scene illustration is built
 }
 
 const SLIDES: Slide[] = [
   {
     id: 'WL-2',
-    title: 'Pantau Real-time',
-    body: 'Lihat status tim dan kondisi taman secara langsung di peta.',
-    emoji: '🗺️',
+    title: 'Pantau tim secara real-time',
+    highlight: 'real-time',
+    body: 'Lihat posisi semua satgas di lapangan. Status hidup, langsung dari GPS.',
+    scene: <SceneLiveMap />,
   },
   {
     id: 'WL-3',
-    title: 'Tugas Terstruktur',
-    body: 'Susun perantingan, perawatan, dan penanaman dalam satu alur kerja.',
+    title: 'Tugas terstruktur tiap shift',
+    highlight: 'terstruktur',
+    body: 'Korlap kasih briefing & checklist. Selesai patroli, tinggal tap.',
     emoji: '📋',
+    illustrationBg: nbColors.bgAccentYellow,
   },
   {
     id: 'WL-4',
-    title: 'Permohonan Publik',
-    body: 'Terima dan tangani permohonan kecamatan dengan cepat.',
+    title: 'Permohonan kecamatan, cepat',
+    highlight: 'cepat',
+    body: 'Ajukan perantingan langsung dari lapangan. Admin lihat, putuskan.',
     emoji: '📨',
+    illustrationBg: nbColors.bgAccentPink,
   },
   {
     id: 'WL-5',
-    title: 'Bekerja Offline',
-    body: 'Tetap produktif di lapangan walau sinyal tidak stabil.',
+    title: 'Tetap jalan tanpa sinyal',
+    highlight: 'jalan',
+    body: 'Catatan tersimpan offline. Sinkron otomatis saat sinyal balik.',
     emoji: '📡',
-    backgroundColor: nbColors.navy, // deep navy per hifi WL-5
-    textColor: nbColors.white,
+    illustrationBg: nbColors.navy,
   },
 ];
+
+const LAST = SLIDES.length - 1;
+
+function SlideTitle({ title, highlight }: { title: string; highlight: string }): React.JSX.Element {
+  if (!title.includes(highlight)) {
+    return (
+      <NBText variant="h1" style={styles.title}>
+        {title}
+      </NBText>
+    );
+  }
+  const [before, after] = title.split(highlight);
+  return (
+    <NBText variant="h1" style={styles.title}>
+      {before}
+      <NBText variant="h1" color="primaryActive">
+        {highlight}
+      </NBText>
+      {after}
+    </NBText>
+  );
+}
 
 type Props = NativeStackScreenProps<Record<string, undefined>, 'WelcomeCarousel'>;
 
 export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element {
-  const [index, setIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [areaHeight, setAreaHeight] = useState(0);
   const listRef = useRef<FlatList<Slide>>(null);
 
-  const finish = useCallback(async () => {
+  const goToLogin = useCallback(async () => {
     await markCarouselSeen();
-    // Replace so the carousel doesn't sit on the stack.
-    navigation.replace('Login');
+    // Push (not replace) so Login can navigate back to the carousel.
+    navigation.navigate('Login');
   }, [navigation]);
 
-  const advance = useCallback(() => {
-    setIndex((i) => {
-      const next = Math.min(i + 1, SLIDES.length - 1);
-      listRef.current?.scrollToIndex({ index: next, animated: true });
-      return next;
-    });
+  const scrollTo = useCallback((i: number) => {
+    setActiveIndex(i);
+    listRef.current?.scrollToIndex({ index: i, animated: true });
   }, []);
 
-  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
-    setIndex(newIndex);
+  const onMomentumScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (width > 0) setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+  }, []);
+
+  const onAreaLayout = useCallback((e: LayoutChangeEvent) => {
+    setAreaHeight(e.nativeEvent.layout.height);
   }, []);
 
   const renderItem = useCallback(
-    ({ item, index: i }: { item: Slide; index: number }) => {
-      const isLast = i === SLIDES.length - 1;
-      return (
-        <View style={{ width }}>
-          <OnboardingSlide
-            title={item.title}
-            body={item.body}
-            illustration={
-              <View
-                style={[
-                  styles.illoPlaceholder,
-                  item.backgroundColor ? { backgroundColor: 'rgba(255,255,255,0.08)' } : null,
-                ]}
-                accessibilityLabel={item.title}
-              >
-                {/* Final hifi assets ship as SVG; emoji is the placeholder until
-                    `design/project/illustrations.html` exports are vendored. */}
-                <Text style={styles.illoEmoji}>{item.emoji}</Text>
-              </View>
-            }
-            primaryLabel={isLast ? 'Masuk' : 'Lanjut'}
-            onPrimaryPress={isLast ? finish : advance}
-            secondaryLabel={isLast ? undefined : 'Lewati'}
-            onSecondaryPress={isLast ? undefined : finish}
-            index={i}
-            total={SLIDES.length}
-            backgroundColor={item.backgroundColor}
-            textColor={item.textColor}
-            testID={`carousel-slide-${item.id}`}
-          />
-        </View>
-      );
-    },
-    [advance, finish],
+    ({ item }: { item: Slide }) => (
+      <View style={[styles.slidePage, { width, height: areaHeight }]}>
+        <CarouselScenePanel bg={item.illustrationBg} testID={`carousel-slide-${item.id}`}>
+          {item.scene ?? (
+            <Text style={styles.illoEmoji} accessibilityLabel={item.title}>
+              {item.emoji}
+            </Text>
+          )}
+        </CarouselScenePanel>
+        <SlideTitle title={item.title} highlight={item.highlight} />
+        <NBText variant="body-sm" color="gray700" style={styles.body}>
+          {item.body}
+        </NBText>
+      </View>
+    ),
+    [areaHeight],
   );
 
+  const isLast = activeIndex >= LAST;
+
   return (
-    <View
-      style={[
-        styles.root,
-        {
-          backgroundColor: SLIDES[index]?.backgroundColor ?? nbColors.bgCanvas,
-        },
-      ]}
-      testID="welcome-carousel-screen"
-    >
-      <FlatList
-        ref={listRef}
-        data={SLIDES}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScroll}
-        bounces={false}
-        getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-      />
-    </View>
+    <SafeAreaView style={styles.root} testID="welcome-carousel-screen">
+      <View style={styles.swipeArea} onLayout={onAreaLayout}>
+        <FlatList
+          ref={listRef}
+          data={SLIDES}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          bounces={false}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+        />
+      </View>
+
+      <View style={styles.footer}>
+        <PaginationDots variant="dots" total={SLIDES.length} index={activeIndex} style={styles.dots} />
+        <NBButton
+          title={isLast ? 'Mulai (Masuk)' : 'Lanjut'}
+          variant="primary"
+          fullWidth
+          onPress={isLast ? goToLogin : () => scrollTo(activeIndex + 1)}
+          testID="carousel-primary"
+        />
+        {!isLast ? (
+          <NBButton
+            title="Lewati"
+            variant="ghost"
+            fullWidth
+            onPress={() => scrollTo(LAST)}
+            testID="carousel-skip"
+          />
+        ) : null}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  illoPlaceholder: {
-    width: 220,
-    height: 220,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.04)',
-  },
+  root: { flex: 1, backgroundColor: nbColors.bgCanvas },
+  swipeArea: { flex: 1, paddingTop: nbSpacing.md },
+  slidePage: { paddingHorizontal: nbSpacing.lg },
   illoEmoji: { fontSize: 96 },
+  title: { marginTop: nbSpacing.md, marginBottom: nbSpacing.sm },
+  body: { marginBottom: nbSpacing.sm },
+  footer: { paddingHorizontal: nbSpacing.lg, paddingBottom: nbSpacing.lg, paddingTop: nbSpacing.sm },
+  dots: { marginBottom: nbSpacing.md },
 });
 
 export default WelcomeCarouselScreen;
