@@ -33,6 +33,19 @@ jest.mock('../../../constants/nbTokens', () => ({
     fontSize: { xs: 10, sm: 12, md: 14 },
     fontWeight: { semibold: '600', bold: '700' },
   },
+  // NBText reads nbType[variantKey[variant]] for fontFamily/Weight/Size/lineHeight.
+  nbType: {
+    displayXl: { fontFamily: 'Space Grotesk', fontWeight: '800', fontSize: 56, lineHeight: 56 },
+    display: { fontFamily: 'Space Grotesk', fontWeight: '700', fontSize: 40, lineHeight: 42 },
+    h1: { fontFamily: 'Space Grotesk', fontWeight: '700', fontSize: 28, lineHeight: 34 },
+    h2: { fontFamily: 'Space Grotesk', fontWeight: '600', fontSize: 22, lineHeight: 29 },
+    h3: { fontFamily: 'Space Grotesk', fontWeight: '600', fontSize: 18, lineHeight: 24 },
+    bodyLg: { fontFamily: 'Inter', fontWeight: '500', fontSize: 18, lineHeight: 28 },
+    body: { fontFamily: 'Inter', fontWeight: '400', fontSize: 16, lineHeight: 24 },
+    bodySm: { fontFamily: 'Inter', fontWeight: '400', fontSize: 14, lineHeight: 20 },
+    caption: { fontFamily: 'Inter', fontWeight: '500', fontSize: 12, lineHeight: 17 },
+    monoSm: { fontFamily: 'JetBrains Mono', fontWeight: '500', fontSize: 12, lineHeight: 17 },
+  },
   nbBorders: { thin: 1 },
   nbBorderRadius: { base: 8, full: 9999 },
 }));

@@ -31,6 +31,7 @@ import {
   FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance } from '@notifee/react-native';
+import { NBToast } from '../../components/nb/NBToast';
 import type { Notification } from '../../types/models.types';
 import { registerDevice, unregisterDevice } from '../api/notificationsApi';
 import type { Store } from '@reduxjs/toolkit';
@@ -375,23 +376,20 @@ class FCMService {
 
         const notification = this.convertToNotification(remoteMessage);
 
-        // Display notification in system tray when app is in foreground
+        // Phase 4-3 (M2): foreground-suppression — show the in-app NBToast
+        // instead of an OS tray notification when the app is already visible.
+        // Avoids the "double notification" UX where the user sees both an
+        // in-app indicator and the system banner for the same event.
         try {
-          await notifee.displayNotification({
+          NBToast.show({
             title: remoteMessage.notification?.title || 'SEKAR',
             body: remoteMessage.notification?.body || '',
-            android: {
-              channelId: 'sekar-notifications',
-              smallIcon: 'ic_launcher',
-              pressAction: {
-                id: 'default',
-              },
-            },
-            data: remoteMessage.data,
+            level: 'info',
+            durationMs: 4000,
           });
-          console.debug('[FCM] Foreground notification displayed in tray');
+          console.debug('[FCM] Foreground notification shown via NBToast');
         } catch (error) {
-          console.warn('[FCM] Failed to display foreground notification:', error);
+          console.warn('[FCM] Failed to show foreground NBToast:', error);
         }
 
         // Dispatch to Redux

@@ -14,7 +14,6 @@ import React, {
 } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   SafeAreaView,
@@ -56,11 +55,11 @@ import {
   NBBackgroundPattern,
   NBSelect,
   NBCardTextInput,
+  NBText,
 } from '../../components/nb';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -498,7 +497,7 @@ export const OvertimeSubmitScreen: React.FC<
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memeriksa status lembur...</Text>
+          <NBText variant="body" color="gray600" style={styles.loadingText}>Memeriksa status lembur...</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -525,9 +524,9 @@ export const OvertimeSubmitScreen: React.FC<
               {/* Error summary */}
               {Object.values(startErrors).some(Boolean) && (
                 <View style={styles.errorSummary}>
-                  <Text style={styles.errorSummaryTitle}>Mohon lengkapi data berikut:</Text>
+                  <NBText variant="body-sm" color="danger" style={styles.errorSummaryTitle}>Mohon lengkapi data berikut:</NBText>
                   {Object.values(startErrors).filter(Boolean).map((msg, i) => (
-                    <Text key={i} style={styles.errorSummaryItem}>- {msg}</Text>
+                    <NBText key={i} variant="body-sm" color="black" style={styles.errorSummaryItem}>- {msg}</NBText>
                   ))}
                 </View>
               )}
@@ -539,9 +538,9 @@ export const OvertimeSubmitScreen: React.FC<
                   size={20}
                   color={nbColors.gray[600]}
                 />
-                <Text style={styles.subtitleText}>
+                <NBText variant="body-sm" color="gray600" style={styles.subtitleText}>
                   Konfirmasi lokasi GPS untuk memulai lembur
-                </Text>
+                </NBText>
               </View>
 
               {/* Alasan Lembur (optional) */}
@@ -564,8 +563,8 @@ export const OvertimeSubmitScreen: React.FC<
                 >
                   <NBCardHeader>
                     <View style={styles.collapsibleHeaderRow}>
-                      <Text style={styles.sectionTitle}>SELFIE MULAI (OPSIONAL)</Text>
-                      <Text style={styles.chevron}>{isStartSelfieExpanded ? '▼' : '▶'}</Text>
+                      <NBText variant="h2" color="black" style={styles.sectionTitle}>SELFIE MULAI (OPSIONAL)</NBText>
+                      <NBText variant="caption" color="black" style={styles.chevron}>{isStartSelfieExpanded ? '▼' : '▶'}</NBText>
                     </View>
                   </NBCardHeader>
                 </TouchableOpacity>
@@ -590,9 +589,9 @@ export const OvertimeSubmitScreen: React.FC<
                       </View>
                     ) : (
                       <View>
-                        <Text style={styles.selfiePrompt}>
+                        <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
                           Foto selfie untuk verifikasi mulai lembur (tidak wajib)
-                        </Text>
+                        </NBText>
                         <NBButton
                           title="Ambil Selfie"
                           onPress={handleCaptureStartSelfie}
@@ -608,10 +607,10 @@ export const OvertimeSubmitScreen: React.FC<
               {/* Lokasi GPS */}
               <NBCard style={styles.card}>
                 <NBCardHeader>
-                  <Text style={styles.sectionTitle}>
+                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
                     LOKASI GPS{' '}
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </Text>
+                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
+                  </NBText>
                 </NBCardHeader>
                 <NBCardContent>
                   <GPSLocationSection
@@ -632,9 +631,9 @@ export const OvertimeSubmitScreen: React.FC<
               {/* Error summary */}
               {Object.values(endErrors).some(Boolean) && (
                 <View style={styles.errorSummary}>
-                  <Text style={styles.errorSummaryTitle}>Mohon lengkapi data berikut:</Text>
+                  <NBText variant="body-sm" color="danger" style={styles.errorSummaryTitle}>Mohon lengkapi data berikut:</NBText>
                   {Object.values(endErrors).filter(Boolean).map((msg, i) => (
-                    <Text key={i} style={styles.errorSummaryItem}>- {msg}</Text>
+                    <NBText key={i} variant="body-sm" color="black" style={styles.errorSummaryItem}>- {msg}</NBText>
                   ))}
                 </View>
               )}
@@ -642,23 +641,23 @@ export const OvertimeSubmitScreen: React.FC<
               {/* Active overtime info */}
               <NBCard style={styles.card}>
                 <NBCardHeader>
-                  <Text style={styles.sectionTitle}>LEMBUR BERLANGSUNG</Text>
+                  <NBText variant="h2" color="black" style={styles.sectionTitle}>LEMBUR BERLANGSUNG</NBText>
                 </NBCardHeader>
                 <NBCardContent>
                   <View style={styles.timerContainer}>
-                    <Text style={styles.timerLabel}>Durasi Lembur</Text>
-                    <Text style={styles.timerValue}>{elapsed}</Text>
+                    <NBText variant="body-sm" color="gray600" style={styles.timerLabel}>Durasi Lembur</NBText>
+                    <NBText variant="display-xl" color="warning" style={styles.timerValue}>{elapsed}</NBText>
                   </View>
                   <View style={styles.startTimeRow}>
-                    <Text style={styles.startTimeLabel}>Mulai:</Text>
-                    <Text style={styles.startTimeValue}>
+                    <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>Mulai:</NBText>
+                    <NBText variant="body-sm" color="black" style={styles.startTimeValue}>
                       {formatTime(activeOvertime.start_datetime)}
-                    </Text>
+                    </NBText>
                   </View>
                   {activeOvertime.reason && (
                     <View style={styles.reasonRow}>
-                      <Text style={styles.startTimeLabel}>Alasan:</Text>
-                      <Text style={styles.reasonValue}>{activeOvertime.reason}</Text>
+                      <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>Alasan:</NBText>
+                      <NBText variant="body-sm" color="black" style={styles.reasonValue}>{activeOvertime.reason}</NBText>
                     </View>
                   )}
                 </NBCardContent>
@@ -667,18 +666,18 @@ export const OvertimeSubmitScreen: React.FC<
               {/* Jenis Aktivitas */}
               <NBCard style={styles.card}>
                 <NBCardHeader>
-                  <Text style={styles.sectionTitle}>
+                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
                     JENIS AKTIVITAS{' '}
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </Text>
+                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
+                  </NBText>
                 </NBCardHeader>
                 <NBCardContent>
                   {loadingActivityTypes ? (
                     <ActivityIndicator style={styles.activityIndicator} />
                   ) : activityTypes.length === 0 ? (
-                    <Text style={styles.warningText}>
+                    <NBText variant="body-sm" color="warning" style={styles.warningText}>
                       Tidak ada jenis aktivitas tersedia. Hubungi administrator.
-                    </Text>
+                    </NBText>
                   ) : (
                     <NBSelect
                       value={endActivityTypeId || ''}
@@ -690,7 +689,7 @@ export const OvertimeSubmitScreen: React.FC<
                     />
                   )}
                   {endErrors.activityType && (
-                    <Text style={styles.errorText}>{endErrors.activityType}</Text>
+                    <NBText variant="body-sm" color="danger" style={styles.errorText}>{endErrors.activityType}</NBText>
                   )}
                 </NBCardContent>
               </NBCard>
@@ -710,11 +709,11 @@ export const OvertimeSubmitScreen: React.FC<
               {/* Foto Bukti */}
               <NBCard style={styles.card}>
                 <NBCardHeader>
-                  <Text style={styles.sectionTitle}>
+                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
                     FOTO BUKTI{' '}
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </Text>
-                  <Text style={styles.sectionSubtitle}>Tambahkan 1-3 foto pekerjaan lembur</Text>
+                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
+                  </NBText>
+                  <NBText variant="body-sm" color="gray600" style={styles.sectionSubtitle}>Tambahkan 1-3 foto pekerjaan lembur</NBText>
                 </NBCardHeader>
                 <NBCardContent>
                   <PhotoUploader
@@ -738,8 +737,8 @@ export const OvertimeSubmitScreen: React.FC<
                 >
                   <NBCardHeader>
                     <View style={styles.collapsibleHeaderRow}>
-                      <Text style={styles.sectionTitle}>SELFIE SELESAI (OPSIONAL)</Text>
-                      <Text style={styles.chevron}>{isEndSelfieExpanded ? '▼' : '▶'}</Text>
+                      <NBText variant="h2" color="black" style={styles.sectionTitle}>SELFIE SELESAI (OPSIONAL)</NBText>
+                      <NBText variant="caption" color="black" style={styles.chevron}>{isEndSelfieExpanded ? '▼' : '▶'}</NBText>
                     </View>
                   </NBCardHeader>
                 </TouchableOpacity>
@@ -764,9 +763,9 @@ export const OvertimeSubmitScreen: React.FC<
                       </View>
                     ) : (
                       <View>
-                        <Text style={styles.selfiePrompt}>
+                        <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
                           Foto selfie untuk verifikasi selesai (tidak wajib)
-                        </Text>
+                        </NBText>
                         <NBButton
                           title="Ambil Selfie"
                           onPress={handleCaptureEndSelfie}
@@ -782,10 +781,10 @@ export const OvertimeSubmitScreen: React.FC<
               {/* Lokasi GPS */}
               <NBCard style={styles.card}>
                 <NBCardHeader>
-                  <Text style={styles.sectionTitle}>
+                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
                     LOKASI GPS{' '}
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </Text>
+                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
+                  </NBText>
                 </NBCardHeader>
                 <NBCardContent>
                   <GPSLocationSection
@@ -848,9 +847,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: nbSpacing.md,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray[600],
-    fontWeight: nbTypography.fontWeight.medium,
+    // Typography handled by NBText variant="body" color="gray600"
   },
   scrollContent: {
     padding: nbSpacing.md,
@@ -867,15 +864,11 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     flex: 1,
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="gray600"
     lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
+    // Typography (fontSize, fontWeight, color) handled by NBText variant="h2" color="black"
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -886,20 +879,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chevron: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.black,
+    // Typography handled by NBText variant="caption" color="black"
     marginLeft: nbSpacing.sm,
   },
   requiredAsterisk: {
-    color: nbColors.danger,
-    fontWeight: nbTypography.fontWeight.bold,
-    fontSize: nbTypography.fontSize.lg,
+    // Typography handled by NBText variant="h2" color="danger"
     textTransform: 'none',
   },
   sectionSubtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="gray600"
     marginTop: nbSpacing.xs,
   },
   selfieImage: {
@@ -912,9 +900,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.gray[200],
   },
   selfiePrompt: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="gray600"
     textAlign: 'center',
     marginBottom: nbSpacing.sm,
   },
@@ -923,15 +909,11 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.sm,
   },
   timerLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="gray600"
     marginBottom: nbSpacing.xs,
   },
   timerValue: {
-    fontSize: 44,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.warning,
+    // Typography handled by NBText variant="display-xl" color="warning"
     letterSpacing: 1,
     textAlign: 'center',
   },
@@ -949,35 +931,25 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.xs,
   },
   startTimeLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="gray600"
   },
   startTimeValue: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
+    // Typography handled by NBText variant="body-sm" color="black"
   },
   reasonValue: {
     flex: 1,
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.black,
+    // Typography handled by NBText variant="body-sm" color="black"
     marginLeft: nbSpacing.xs,
   },
   activityIndicator: {
     marginVertical: nbSpacing.sm,
   },
   errorText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.danger,
+    // Typography handled by NBText variant="body-sm" color="danger"
     marginTop: nbSpacing.xs,
   },
   warningText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.warning,
+    // Typography handled by NBText variant="body-sm" color="warning"
     marginVertical: nbSpacing.xs,
   },
   errorSummary: {
@@ -990,14 +962,11 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   errorSummaryTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.danger,
+    // Typography handled by NBText variant="body-sm" color="danger"
     marginBottom: nbSpacing.xs,
   },
   errorSummaryItem: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
+    // Typography handled by NBText variant="body-sm" color="black"
     color: nbColors.danger,
     marginTop: 2,
   },

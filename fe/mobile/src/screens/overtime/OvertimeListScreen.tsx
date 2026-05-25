@@ -7,7 +7,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   RefreshControl,
@@ -21,7 +20,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { NBBackgroundPattern, NBButton, NBEmptyState } from '../../components/nb';
+import { NBBackgroundPattern, NBButton, NBEmptyState, NBText } from '../../components/nb';
 import { SortModal, OvertimeFilterModal } from '../../components/modals';
 import { OvertimeCard } from './components/OvertimeCard';
 import { getOvertimeStatusLabel } from '../../utils/statusHelpers';
@@ -31,7 +30,6 @@ import { useAppSelector } from '../../store/hooks';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -251,7 +249,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
 
         {/* Page Title — same style as Tugas & Aktivitas */}
         <View style={styles.headerContainer}>
-          <Text style={styles.pageTitle}>Lembur</Text>
+          <NBText variant="h3" style={styles.pageTitle}>Lembur</NBText>
         </View>
 
         {/* Filter Bar — indented with outer margin, matching TAT */}
@@ -274,12 +272,12 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
                       chip.chipStyle === 'assignment' && styles.miniChipAssignment,
                     ]}
                   >
-                    <Text style={styles.miniChipText}>{chip.text}</Text>
+                    <NBText variant="caption" color="black" style={styles.miniChipText}>{chip.text}</NBText>
                   </View>
                 ))}
               </ScrollView>
             ) : (
-              <Text style={styles.filterBarPlaceholder}>Semua Lembur</Text>
+              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Lembur</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -319,7 +317,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
               />
               {activeFilterCount > 0 && (
                 <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                  <NBText variant="caption" color="white" style={styles.filterBadgeText}>{activeFilterCount}</NBText>
                 </View>
               )}
             </TouchableOpacity>
@@ -371,9 +369,9 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
             ) : hasActiveRegularShift ? (
               // Regular shift still open — block new overtime
               <>
-                <Text style={styles.fabBlockedHint}>
+                <NBText variant="body-sm" color="warning" style={styles.fabBlockedHint}>
                   Selesaikan Clock Out shift biasa terlebih dahulu
-                </Text>
+                </NBText>
                 <NBButton
                   title="+ Ajukan Lembur"
                   onPress={() => {}}
@@ -434,9 +432,7 @@ const styles = StyleSheet.create({
     paddingBottom: nbSpacing.xs,
   },
   pageTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
+    marginBottom: 0,
   },
   // Filter bar — marginHorizontal matches TAT contentWrapper padding
   filterBarCollapsed: {
@@ -467,9 +463,8 @@ const styles = StyleSheet.create({
     marginLeft: nbSpacing.xs,
   },
   filterBarPlaceholder: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[400],
     fontStyle: 'italic',
+    // Color handled by NBText color="gray400"
   },
   miniChipsContent: {
     flexDirection: 'row',
@@ -490,9 +485,7 @@ const styles = StyleSheet.create({
   miniChipLocation: { backgroundColor: nbColors.infoLight },
   miniChipAssignment: { backgroundColor: nbColors.primary },
   miniChipText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
+    // Typography handled by NBText variant="caption"
   },
   filterClearButton: {
     padding: 4,
@@ -519,9 +512,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterBadgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
+    // Typography handled by NBText variant="caption"
   },
   // List — wrapper shrinks the frame above FAB, mirrors TAT contentWrapper pattern
   listWrapper: {
@@ -547,9 +538,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   fabBlockedHint: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.warning,
+    // Typography (fontSize, fontWeight, color) handled by NBText variant="body-sm" color="warning"
     textAlign: 'center',
     marginBottom: nbSpacing.xs,
     backgroundColor: nbColors.white,

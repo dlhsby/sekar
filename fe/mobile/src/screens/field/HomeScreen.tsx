@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   RefreshControl,
   StyleSheet,
@@ -13,9 +12,9 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { CLOCKABLE_ROLES } from '../../constants/roles';
 import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
-import { NBButton, NBCard } from '../../components/nb';
+import { NBButton, NBCard, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, LocationMapModal } from '../../components/modals';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 // Fix 15: canonical import path is store/hooks (matches majority of screens)
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi } from '../../services/api';
@@ -336,18 +335,18 @@ export function HomeScreen(): React.JSX.Element {
           <NBCard variant="elevated" style={[styles.shiftCard, currentShift.is_overtime && styles.shiftCardLembur]}>
             <View style={styles.shiftCardTitleRow}>
               <View style={styles.shiftCardTitleLeft}>
-                <Text style={styles.shiftCardTitleText}>
+                <NBText variant="body" style={styles.shiftCardTitleText}>
                   {currentShift.is_overtime ? 'Lembur Aktif' : 'Shift Aktif'}
-                </Text>
+                </NBText>
                 {currentShift.is_overtime && (
                   <View style={styles.lemburBadge}>
-                    <Text style={styles.lemburBadgeText}>LEMBUR</Text>
+                    <NBText variant="caption" uppercase style={styles.lemburBadgeText}>LEMBUR</NBText>
                   </View>
                 )}
                 {shiftCardCollapsed && (
-                  <Text style={styles.shiftCardTitleTimer} accessibilityLabel={`Waktu shift berjalan: ${timer}`}>
+                  <NBText variant="body" color="warning" style={styles.shiftCardTitleTimer} accessibilityLabel={`Waktu shift berjalan: ${timer}`}>
                     {timer}
-                  </Text>
+                  </NBText>
                 )}
               </View>
               <TouchableOpacity
@@ -374,42 +373,45 @@ export function HomeScreen(): React.JSX.Element {
                 accessibilityLabel={currentShift.is_overtime ? 'Shift Lembur Aktif' : 'Shift Aktif'}
                 accessibilityHint="Ketuk untuk melihat detail shift"
               >
-                <Text
+                <NBText
+                  variant="display"
+                  color="warning"
+                  align="center"
                   style={styles.timer}
                   accessibilityLabel={`Waktu shift berjalan: ${timer}`}
                 >
                   {timer}
-                </Text>
+                </NBText>
                 <View style={styles.shiftInfo}>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Area:</Text>
-                    <Text style={styles.infoValue}>
+                    <NBText variant="body" color="gray700" style={styles.infoLabel}>Area:</NBText>
+                    <NBText variant="body" style={styles.infoValue}>
                       {currentShift.area?.name || 'Tidak diketahui'}
-                    </Text>
+                    </NBText>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Mulai:</Text>
-                    <Text style={styles.infoValue}>
+                    <NBText variant="body" color="gray700" style={styles.infoLabel}>Mulai:</NBText>
+                    <NBText variant="body" style={styles.infoValue}>
                       {formatDateTime(currentShift.clock_in_time)}
-                    </Text>
+                    </NBText>
                   </View>
                 </View>
-                <Text style={styles.tapHint}>Ketuk untuk detail lengkap</Text>
+                <NBText variant="caption" color="gray500" align="center" style={styles.tapHint}>Ketuk untuk detail lengkap</NBText>
               </TouchableOpacity>
             )}
           </NBCard>
         ) : (
           <NBCard variant="elevated" style={styles.shiftCard}>
-            <Text style={styles.cardTitle}>Belum Clock In</Text>
-            <Text style={styles.noShiftText}>
+            <NBText variant="body" style={styles.cardTitle}>Belum Clock In</NBText>
+            <NBText variant="body" color="gray600" style={styles.noShiftText}>
               Anda belum memulai shift hari ini.
-            </Text>
+            </NBText>
             {assignedArea && (
               <View style={styles.assignedArea}>
-                <Text style={styles.assignedAreaLabel}>Area Tugas:</Text>
-                <Text style={styles.assignedAreaValue}>
+                <NBText variant="body-sm" color="gray700" style={styles.assignedAreaLabel}>Area Tugas:</NBText>
+                <NBText variant="body" color="primary" style={styles.assignedAreaValue}>
                   {assignedArea.name}
-                </Text>
+                </NBText>
               </View>
             )}
           </NBCard>
@@ -417,7 +419,7 @@ export function HomeScreen(): React.JSX.Element {
 
         {/* Today's Summary Card */}
         <NBCard variant="elevated" style={styles.summaryCard}>
-          <Text style={styles.cardTitle}>Ringkasan Hari Ini</Text>
+          <NBText variant="body" style={styles.cardTitle}>Ringkasan Hari Ini</NBText>
           <View style={styles.summaryRow}>
             <TouchableOpacity
               style={styles.summaryItem}
@@ -427,8 +429,8 @@ export function HomeScreen(): React.JSX.Element {
               accessibilityLabel={`${todayActivitiesCount} Aktivitas`}
               accessibilityHint="Ketuk untuk melihat daftar aktivitas hari ini"
             >
-              <Text style={styles.summaryValue}>{todayActivitiesCount}</Text>
-              <Text style={styles.summaryLabel}>Aktivitas</Text>
+              <NBText variant="h1" color="accentSky" style={styles.summaryValue}>{todayActivitiesCount}</NBText>
+              <NBText variant="body-sm" color="gray700" style={styles.summaryLabel}>Aktivitas</NBText>
             </TouchableOpacity>
             <View style={styles.summaryDivider} />
             <TouchableOpacity
@@ -439,8 +441,8 @@ export function HomeScreen(): React.JSX.Element {
               accessibilityLabel={`${totalTodayDuration} Jam Kerja`}
               accessibilityHint="Ketuk untuk melihat detail jam kerja hari ini"
             >
-              <Text style={styles.summaryValue}>{totalTodayDuration}</Text>
-              <Text style={styles.summaryLabel}>Jam Kerja</Text>
+              <NBText variant="h1" color="accentSky" style={styles.summaryValue}>{totalTodayDuration}</NBText>
+              <NBText variant="body-sm" color="gray700" style={styles.summaryLabel}>Jam Kerja</NBText>
             </TouchableOpacity>
           </View>
         </NBCard>
@@ -449,9 +451,9 @@ export function HomeScreen(): React.JSX.Element {
         {!assignedArea && !currentShift &&
           user?.role !== 'admin_data' && user?.role !== 'kepala_rayon' && (
           <NBCard style={styles.warningCard}>
-            <Text style={styles.warningText}>
+            <NBText variant="body" color="warning" align="center" style={styles.warningText}>
               Anda belum ditugaskan ke area manapun. Hubungi supervisor Anda.
-            </Text>
+            </NBText>
           </NBCard>
         )}
       </ScrollView>
@@ -536,9 +538,6 @@ const styles = StyleSheet.create({
   },
   shiftCardTitleTimer: {
     marginLeft: nbSpacing.sm,
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.warning,
     letterSpacing: 0.5,
   },
   collapseToggle: {
@@ -554,27 +553,15 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
   },
   lemburBadgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
     letterSpacing: 0.5,
   },
   shiftCardTitleText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+    // Typography now handled by NBText variant="body"
   },
   cardTitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
     marginBottom: nbSpacing.sm,
   },
   timer: {
-    fontSize: 40,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.warning,
-    textAlign: 'center',
     marginVertical: nbSpacing.md,
     letterSpacing: 1,
   },
@@ -587,19 +574,12 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.sm,
   },
   infoLabel: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
+    // Typography now handled by NBText variant="body"
   },
   infoValue: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
+    // Typography now handled by NBText variant="body"
   },
   noShiftText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
-    textAlign: 'center',
     marginVertical: nbSpacing.lg,
   },
   assignedArea: {
@@ -609,15 +589,10 @@ const styles = StyleSheet.create({
     borderTopColor: nbColors.black,
   },
   assignedAreaLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
     marginBottom: nbSpacing.xs,
   },
   assignedAreaValue: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.primary,
+    // Typography now handled by NBText variant="body" color="primary"
   },
   summaryCard: {
     marginBottom: nbSpacing.sm,
@@ -638,22 +613,12 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.black,
   },
   summaryValue: {
-    fontSize: 28,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.accentSky,
     letterSpacing: 0,
   },
   summaryLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
     marginTop: nbSpacing.xs,
   },
   tapHint: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
-    fontWeight: nbTypography.fontWeight.regular,
-    textAlign: 'center',
     marginTop: nbSpacing.sm,
     fontStyle: 'italic',
   },
@@ -670,9 +635,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.md,
   },
   warningText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.warning,
-    textAlign: 'center',
+    // Typography now handled by NBText variant="body" color="warning"
   },
 });
 

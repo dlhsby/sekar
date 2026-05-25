@@ -10,7 +10,6 @@ import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -31,7 +30,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import Geolocation from 'react-native-geolocation-service';
 import {
   nbColors,
-  nbTypography,
   nbSpacing,
   nbShadows,
   nbBorders,
@@ -414,7 +412,7 @@ export function MapDashboardScreen(): React.JSX.Element {
       >
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat peta...</Text>
+          <NBText variant="body" color="gray500" style={styles.loadingText}>Memuat peta...</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -429,9 +427,9 @@ export function MapDashboardScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <NBText variant="body" color="dangerDark" style={styles.errorText}>{error}</NBText>
           <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-            <Text style={styles.retryText}>Coba Lagi</Text>
+            <NBText variant="body" style={styles.retryText}>Coba Lagi</NBText>
           </TouchableOpacity>
         </View>
       </NBBackgroundPattern>
@@ -691,12 +689,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: nbSpacing.md,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['500'],
   },
   errorText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.dangerDark,
     textAlign: 'center',
     marginBottom: nbSpacing.md,
   },
@@ -708,11 +702,7 @@ const styles = StyleSheet.create({
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
-  retryText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
+  retryText: {},
   fabColumn: {
     position: 'absolute',
     right: nbSpacing.md,

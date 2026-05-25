@@ -6,14 +6,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBCard, NBEmptyState, NBBackgroundPattern } from '../../components/nb';
+import { NBCard, NBEmptyState, NBBackgroundPattern, NBText } from '../../components/nb';
 import { ShiftCard } from '../../components/common';
 import { getMyShifts } from '../../services/api/shiftsApi';
 import { getToken, getRefreshToken } from '../../services/storage/secureStorage';
@@ -21,7 +20,6 @@ import { isTokenExpired, getTokenTimeRemaining } from '../../utils/tokenUtils';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorderRadius,
   nbShadows,
   nbBorders,
@@ -124,7 +122,7 @@ function DateHeader({ date }: DateHeaderProps): React.JSX.Element {
         color={nbColors.gray['500']}
         style={styles.dateIcon}
       />
-      <Text style={styles.dateText}>{formatDate(date)}</Text>
+      <NBText variant="h3" color="gray700">{formatDate(date)}</NBText>
     </View>
   );
 }
@@ -208,7 +206,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat riwayat shift...</Text>
+          <NBText variant="body" color="gray600" style={styles.loadingText}>Memuat riwayat shift...</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -296,12 +294,12 @@ export function ShiftHistoryScreen(): React.JSX.Element {
         {/* Summary Header */}
         <NBCard variant="elevated" style={styles.summaryCard}>
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{shifts.length}</Text>
-            <Text style={styles.summaryLabel}>TOTAL SHIFT</Text>
+            <NBText variant="display" color="primary">{shifts.length}</NBText>
+            <NBText variant="caption" color="gray600" style={styles.summaryLabel}>TOTAL SHIFT</NBText>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>
+            <NBText variant="display" color="primary">
               {shifts.reduce((acc, shift) => {
                 if (!shift.clock_out_time) {return acc;}
                 const duration = calculateDuration(
@@ -310,8 +308,8 @@ export function ShiftHistoryScreen(): React.JSX.Element {
                 );
                 return acc + duration.hours + duration.minutes / 60;
               }, 0).toFixed(1)}
-            </Text>
-            <Text style={styles.summaryLabel}>TOTAL JAM</Text>
+            </NBText>
+            <NBText variant="caption" color="gray600" style={styles.summaryLabel}>TOTAL JAM</NBText>
           </View>
         </NBCard>
 
@@ -349,8 +347,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: nbSpacing.md,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
+    // Typography handled by NBText variant="body" color="gray600"
   },
   listContent: {
     paddingHorizontal: nbSpacing.md,
@@ -383,15 +380,11 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.black, // Bold divider for NB
   },
   summaryValue: {
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.primary,
+    // Typography handled by NBText variant="display" color="primary"
     marginBottom: nbSpacing.xs,
   },
   summaryLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['600'],
+    // Typography (fontSize, fontWeight, color) handled by NBText variant="caption" color="gray600"
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -407,9 +400,7 @@ const styles = StyleSheet.create({
     marginRight: nbSpacing.sm,
   },
   dateText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['700'],
+    // Typography handled by NBText variant="h3" color="gray700"
   },
 
 });

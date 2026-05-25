@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ViewStyle,
+  StyleProp,
   AccessibilityProps,
   Platform,
   AccessibilityInfo,
@@ -38,7 +39,7 @@ export interface NBCardProps extends AccessibilityProps {
   /** Press handler (required if interactive) */
   onPress?: () => void;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Test ID for testing */
   testID?: string;
 }
@@ -187,7 +188,7 @@ export const NBCard: React.FC<NBCardProps> = ({
  */
 export interface NBCardSectionProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const NBCardHeader: React.FC<NBCardSectionProps> = ({
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
+    borderRadius: nbBorderRadius.base, // from design token (v2.1.1: 10px)
   },
   header: {
     padding: nbSpacing.sm, // Reduced from md (16px) to sm (8px) for less vertical padding

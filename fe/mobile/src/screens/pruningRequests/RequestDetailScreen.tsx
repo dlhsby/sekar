@@ -19,7 +19,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -50,6 +49,7 @@ import {
   NBAlert,
   NBModal,
   NBCardTextInput,
+  NBText,
 } from '../../components/nb';
 import { AssignToTaskSheet } from '../../components/admin/AssignToTaskSheet';
 import { RescheduleSheet } from './components/RescheduleSheet';
@@ -58,7 +58,6 @@ import { NBToast } from '../../components/nb/NBToast';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -156,13 +155,13 @@ function ContactRow({ label, name, phone, isLast }: ContactRowProps): React.JSX.
   };
   return (
     <View style={[styles.infoRow, isLast && { marginBottom: 0 }]}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{name || '—'}</Text>
+      <NBText variant="body-sm" style={styles.label}>{label}</NBText>
+      <NBText variant="body" style={styles.value}>{name || '—'}</NBText>
       {phone ? (
         <View style={styles.contactPhoneRow}>
-          <Text style={styles.contactPhoneText} selectable>
+          <NBText variant="body" style={styles.contactPhoneText} selectable>
             {phone}
-          </Text>
+          </NBText>
           <View style={styles.contactActions}>
             <TouchableOpacity
               onPress={handleCopy}
@@ -183,6 +182,7 @@ function ContactRow({ label, name, phone, isLast }: ContactRowProps): React.JSX.
                 style={styles.contactIconBtn}
                 testID={`perantingan-contact-wa-${label}`}
               >
+                {/* eslint-disable-next-line sekar-design/no-inline-hex-colors -- WhatsApp brand color; no NB token equivalent and inventing one belongs in tokens.json, not here. */}
                 <MaterialCommunityIcons name="whatsapp" size={20} color="#25D366" />
               </TouchableOpacity>
             ) : null}
@@ -423,17 +423,17 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           <NBCard style={styles.card}>
             <NBCardHeader>
               <View style={styles.statusRow}>
-                <Text style={styles.sectionTitle}>📌 STATUS</Text>
+                <NBText variant="h2" style={styles.sectionTitle}>📌 STATUS</NBText>
                 <NBBadge text={statusLabel} color={statusColor} />
               </View>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Kode Permohonan</Text>
+                <NBText variant="body-sm" style={styles.label}>Kode Permohonan</NBText>
                 <View style={styles.refCodeRow}>
-                  <Text style={[styles.valueMono, styles.refCodeText]} selectable>
+                  <NBText variant="body" style={[styles.valueMono, styles.refCodeText]} selectable>
                     {request.referenceCode || '—'}
-                  </Text>
+                  </NBText>
                   {request.referenceCode ? (
                     <TouchableOpacity
                       onPress={async () => {
@@ -463,17 +463,17 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                   staff_kecamatan in this flow, so printing it adds noise. */}
               {(request.submitter?.full_name || request.submitter?.username || request.requesterName) ? (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Diajukan Oleh</Text>
-                  <Text style={styles.value}>
+                  <NBText variant="body-sm" style={styles.label}>Diajukan Oleh</NBText>
+                  <NBText variant="body" style={styles.value}>
                     {request.submitter?.full_name ||
                       request.submitter?.username ||
                       request.requesterName}
-                  </Text>
+                  </NBText>
                 </View>
               ) : null}
               <View style={[styles.infoRow, { marginBottom: 0 }]}>
-                <Text style={styles.label}>Diajukan Pada</Text>
-                <Text style={styles.value}>{formatDateTime(request.createdAt)}</Text>
+                <NBText variant="body-sm" style={styles.label}>Diajukan Pada</NBText>
+                <NBText variant="body" style={styles.value}>{formatDateTime(request.createdAt)}</NBText>
               </View>
             </NBCardContent>
           </NBCard>
@@ -481,31 +481,31 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           {/* ── Lokasi ────────────────────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>📍 LOKASI</Text>
+              <NBText variant="h2" style={styles.sectionTitle}>📍 LOKASI</NBText>
             </NBCardHeader>
             <NBCardContent>
               {request.kecamatanName ? (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Kecamatan</Text>
-                  <Text style={styles.value}>{request.kecamatanName}</Text>
+                  <NBText variant="body-sm" style={styles.label}>Kecamatan</NBText>
+                  <NBText variant="body" style={styles.value}>{request.kecamatanName}</NBText>
                 </View>
               ) : null}
               {request.rayon?.name ? (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Rayon</Text>
-                  <Text style={styles.value}>{request.rayon.name}</Text>
+                  <NBText variant="body-sm" style={styles.label}>Rayon</NBText>
+                  <NBText variant="body" style={styles.value}>{request.rayon.name}</NBText>
                 </View>
               ) : null}
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Alamat</Text>
-                <Text style={styles.value}>{request.address || '—'}</Text>
+                <NBText variant="body-sm" style={styles.label}>Alamat</NBText>
+                <NBText variant="body" style={styles.value}>{request.address || '—'}</NBText>
               </View>
               {/* Coordinate row — read-only display of lat/lng. */}
               <View style={[styles.infoRow, { marginBottom: nbSpacing.sm }]}>
-                <Text style={styles.label}>Koordinat GPS</Text>
-                <Text style={styles.valueMono}>
+                <NBText variant="body-sm" style={styles.label}>Koordinat GPS</NBText>
+                <NBText variant="body" style={styles.valueMono}>
                   {formatGps(request.gpsLat, request.gpsLng)}
-                </Text>
+                </NBText>
               </View>
               {/* Separate "open in map" CTA below — clearly clickable, with
                   its own icon, label, and accent color so the affordance
@@ -523,7 +523,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                     size={20}
                     color={nbColors.primary}
                   />
-                  <Text style={styles.viewMapCtaText}>Lihat di Peta</Text>
+                  <NBText variant="body" style={styles.viewMapCtaText}>Lihat di Peta</NBText>
                   <MaterialCommunityIcons
                     name="chevron-right"
                     size={20}
@@ -532,9 +532,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                   />
                 </TouchableOpacity>
               ) : (
-                <Text style={styles.gpsHint}>
+                <NBText variant="body-sm" style={styles.gpsHint}>
                   Lokasi belum tersedia untuk dilihat di peta.
-                </Text>
+                </NBText>
               )}
             </NBCardContent>
           </NBCard>
@@ -542,25 +542,25 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           {/* ── Detail Perantingan ────────────────────────────────────── */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>🌳 DETAIL PERANTINGAN</Text>
+              <NBText variant="h2" style={styles.sectionTitle}>🌳 DETAIL PERANTINGAN</NBText>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Jumlah Pohon</Text>
-                <Text style={styles.value}>
+                <NBText variant="body-sm" style={styles.label}>Jumlah Pohon</NBText>
+                <NBText variant="body" style={styles.value}>
                   {treeCount != null ? `${treeCount} pohon` : '—'}
-                </Text>
+                </NBText>
               </View>
               {request.treeHeightEstimate ? (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Tinggi (Perkiraan)</Text>
-                  <Text style={styles.value}>{request.treeHeightEstimate}</Text>
+                  <NBText variant="body-sm" style={styles.label}>Tinggi (Perkiraan)</NBText>
+                  <NBText variant="body" style={styles.value}>{request.treeHeightEstimate}</NBText>
                 </View>
               ) : null}
               {request.treeDiameterEstimate ? (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Diameter (Perkiraan)</Text>
-                  <Text style={styles.value}>{request.treeDiameterEstimate}</Text>
+                  <NBText variant="body-sm" style={styles.label}>Diameter (Perkiraan)</NBText>
+                  <NBText variant="body" style={styles.value}>{request.treeDiameterEstimate}</NBText>
                 </View>
               ) : null}
               {/* Submitter's preferred week (ADR-035 amendment 2026-05-01).
@@ -568,22 +568,22 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                   the warga asked for, separately from what the admin
                   confirmed. */}
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Minggu Preferensi</Text>
-                <Text style={styles.value}>
+                <NBText variant="body-sm" style={styles.label}>Minggu Preferensi</NBText>
+                <NBText variant="body" style={styles.value}>
                   {request.expectedYear != null && request.expectedIsoWeek != null
                     ? formatIsoWeekLabel(request.expectedYear, request.expectedIsoWeek)
                     : 'Tidak ditentukan'}
-                </Text>
+                </NBText>
               </View>
               {/* Admin-confirmed work day (May 9, 2026). Set at assign-to-task
                   or via "Atur Jadwal". Stays "Belum dijadwalkan" until then. */}
               <View style={[styles.infoRow, { marginBottom: 0 }]}>
-                <Text style={styles.label}>Tanggal Dijadwalkan</Text>
-                <Text style={styles.value}>
+                <NBText variant="body-sm" style={styles.label}>Tanggal Dijadwalkan</NBText>
+                <NBText variant="body" style={styles.value}>
                   {request.scheduledDate
                     ? formatDate(request.scheduledDate)
                     : 'Belum dijadwalkan'}
-                </Text>
+                </NBText>
               </View>
             </NBCardContent>
           </NBCard>
@@ -592,7 +592,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           {hasContact ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>👤 KONTAK</Text>
+                <NBText variant="h2" style={styles.sectionTitle}>👤 KONTAK</NBText>
               </NBCardHeader>
               <NBCardContent>
                 {(request.requesterName || request.requesterPhone) ? (
@@ -618,10 +618,10 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           {request.notes ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>📝 CATATAN</Text>
+                <NBText variant="h2" style={styles.sectionTitle}>📝 CATATAN</NBText>
               </NBCardHeader>
               <NBCardContent>
-                <Text style={styles.descriptionText}>{request.notes}</Text>
+                <NBText variant="body" style={styles.descriptionText}>{request.notes}</NBText>
               </NBCardContent>
             </NBCard>
           ) : null}
@@ -630,9 +630,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           {request.photoUrls && request.photoUrls.length > 0 ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>
+                <NBText variant="h2" style={styles.sectionTitle}>
                   📸 FOTO LOKASI ({request.photoUrls.length})
-                </Text>
+                </NBText>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -659,25 +659,25 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           {request.reviewedAt ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>✅ HASIL REVIEW</Text>
+                <NBText variant="h2" style={styles.sectionTitle}>✅ HASIL REVIEW</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Direview Oleh</Text>
-                  <Text style={styles.value}>
+                  <NBText variant="body-sm" style={styles.label}>Direview Oleh</NBText>
+                  <NBText variant="body" style={styles.value}>
                     {request.reviewer?.full_name || 'Admin'}
-                  </Text>
+                  </NBText>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Tanggal Review</Text>
-                  <Text style={styles.value}>
+                  <NBText variant="body-sm" style={styles.label}>Tanggal Review</NBText>
+                  <NBText variant="body" style={styles.value}>
                     {formatDateTime(request.reviewedAt)}
-                  </Text>
+                  </NBText>
                 </View>
                 {request.reviewNotes ? (
                   <View style={[styles.infoRow, { marginBottom: 0 }]}>
-                    <Text style={styles.label}>Catatan Review</Text>
-                    <Text style={styles.descriptionText}>{request.reviewNotes}</Text>
+                    <NBText variant="body-sm" style={styles.label}>Catatan Review</NBText>
+                    <NBText variant="body" style={styles.descriptionText}>{request.reviewNotes}</NBText>
                   </View>
                 ) : null}
               </NBCardContent>
@@ -695,16 +695,16 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           {request.assignedTaskId ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>🔗 TUGAS TERKAIT</Text>
+                <NBText variant="h2" style={styles.sectionTitle}>🔗 TUGAS TERKAIT</NBText>
               </NBCardHeader>
               <NBCardContent>
-                <Text style={[styles.descriptionText, { marginBottom: nbSpacing.md }]}>
+                <NBText variant="body" style={[styles.descriptionText, { marginBottom: nbSpacing.md }]}>
                   {request.status === 'done'
                     ? 'Pekerjaan telah selesai. Lihat detail tugas untuk foto bukti dan catatan penyelesaian.'
                     : request.status === 'in_progress'
                       ? 'Tugas sedang dikerjakan oleh petugas.'
                       : 'Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat.'}
-                </Text>
+                </NBText>
                 <NBButton
                   variant="primary"
                   label="Lihat Tugas"
@@ -981,8 +981,6 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -996,19 +994,13 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
   },
   label: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
     color: nbColors.gray700,
     marginBottom: nbSpacing.xs,
   },
   value: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
     color: nbColors.black,
   },
   valueMono: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.black,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     letterSpacing: 0.5,
@@ -1035,12 +1027,9 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.gray100,
   },
   viewMapCtaText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
     color: nbColors.primary,
   },
   gpsHint: {
-    fontSize: nbTypography.fontSize.sm,
     color: nbColors.gray500,
     fontStyle: 'italic',
     paddingVertical: nbSpacing[2],
@@ -1057,8 +1046,6 @@ const styles = StyleSheet.create({
   },
   contactPhoneText: {
     flexShrink: 1,
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
     color: nbColors.black,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     letterSpacing: 0.3,
@@ -1085,10 +1072,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   descriptionText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.regular,
     color: nbColors.black,
-    lineHeight: nbTypography.fontSize.base * 1.5,
+    lineHeight: 24,
   },
   photosContainer: {
     gap: nbSpacing.sm,

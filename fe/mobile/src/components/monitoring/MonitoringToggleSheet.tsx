@@ -10,17 +10,16 @@
 import React from 'react';
 import {
   View,
-  Text,
   Switch,
   StyleSheet,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb/NBModal';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbTypography,
 } from '../../constants/nbTokens';
 import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
 
@@ -105,9 +104,13 @@ function LayerToggleRow({
           color={enabled ? nbColors.primary : nbColors.gray500}
           style={styles.rowIcon}
         />
-        <Text style={[styles.rowLabel, !enabled && styles.rowLabelDisabled]}>
+        <NBText
+          variant="body"
+          color={enabled ? 'black' : 'gray500'}
+          style={styles.rowLabel}
+        >
           {label}
-        </Text>
+        </NBText>
       </View>
       <Switch
         value={enabled}
@@ -149,11 +152,6 @@ const styles = StyleSheet.create({
     width: 24,
   },
   rowLabel: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
-  },
-  rowLabelDisabled: {
-    color: nbColors.gray500,
+    flex: 1,
   },
 });

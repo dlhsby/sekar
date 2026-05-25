@@ -7,7 +7,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   SectionList,
   ActivityIndicator,
@@ -17,13 +16,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   nbColors,
-  nbTypography,
   nbSpacing,
   nbBorders,
   nbBorderRadius,
   nbShadows,
 } from '../../constants/nbTokens';
-import { NBCard, NBButton, NBBackgroundPattern } from '../../components/nb';
+import { NBCard, NBButton, NBBackgroundPattern, NBText } from '../../components/nb';
 import { getAttendance } from '../../services/api/monitoringApi';
 import { formatDate } from '../../utils/dateUtils';
 import AttendanceCard from '../../components/monitoring/AttendanceCard';
@@ -180,7 +178,7 @@ export default function AttendanceScreen() {
    */
   const renderSectionHeader = ({ section }: { section: SectionData }) => (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{section.title}</Text>
+      <NBText variant="caption" color="gray600" uppercase style={styles.sectionHeaderText}>{section.title}</NBText>
     </View>
   );
 
@@ -200,7 +198,7 @@ export default function AttendanceScreen() {
    */
   const renderSectionEmpty = () => (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyStateText}>Semua pekerja sudah masuk</Text>
+      <NBText variant="body" color="gray600" align="center" style={styles.emptyStateText}>Semua pekerja sudah masuk</NBText>
     </View>
   );
 
@@ -217,7 +215,7 @@ export default function AttendanceScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Kehadiran</Text>
+          <NBText variant="h1" style={styles.headerTitle}>Kehadiran</NBText>
         </View>
 
       {/* Date Navigator */}
@@ -232,7 +230,7 @@ export default function AttendanceScreen() {
         />
 
         <View style={styles.dateDisplay}>
-          <Text style={styles.dateText}>{formatDateIndonesian(selectedDate)}</Text>
+          <NBText variant="h3" style={styles.dateText}>{formatDateIndonesian(selectedDate)}</NBText>
         </View>
 
         <NBButton
@@ -250,12 +248,12 @@ export default function AttendanceScreen() {
       {attendanceData && (
         <View style={styles.summaryContainer}>
           <NBCard variant="elevated" style={[styles.summaryCard, styles.summaryCardPresent]}>
-            <Text style={styles.summaryCount}>{attendanceData.clocked_in_count}</Text>
-            <Text style={styles.summaryLabel}>Hadir</Text>
+            <NBText variant="display" color="white" align="center" style={styles.summaryCount}>{attendanceData.clocked_in_count}</NBText>
+            <NBText variant="body" color="white" align="center" style={styles.summaryLabel}>Hadir</NBText>
           </NBCard>
           <NBCard variant="elevated" style={[styles.summaryCard, styles.summaryCardAbsent]}>
-            <Text style={styles.summaryCount}>{attendanceData.not_clocked_in.length}</Text>
-            <Text style={styles.summaryLabel}>Tidak Hadir</Text>
+            <NBText variant="display" color="white" align="center" style={styles.summaryCount}>{attendanceData.not_clocked_in.length}</NBText>
+            <NBText variant="body" color="white" align="center" style={styles.summaryLabel}>Tidak Hadir</NBText>
           </NBCard>
         </View>
       )}
@@ -264,7 +262,7 @@ export default function AttendanceScreen() {
       {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat data kehadiran...</Text>
+          <NBText variant="body" color="gray600" style={styles.loadingText}>Memuat data kehadiran...</NBText>
         </View>
       )}
 
@@ -291,9 +289,9 @@ export default function AttendanceScreen() {
       {/* Note about clocked-in workers */}
       {!loading && attendanceData && attendanceData.clocked_in_count > 0 && (
         <View style={styles.noteContainer}>
-          <Text style={styles.noteText}>
+          <NBText variant="body-sm" color="gray600" style={styles.noteText}>
             💡 {attendanceData.clocked_in_count} pekerja sudah masuk. Lihat lokasi mereka di peta dashboard.
-          </Text>
+          </NBText>
         </View>
       )}
     </SafeAreaView>
@@ -314,9 +312,6 @@ const styles = StyleSheet.create({
     borderBottomColor: nbColors.black,
   },
   headerTitle: {
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
   },
   dateNavigator: {
     flexDirection: 'row',
@@ -337,9 +332,6 @@ const styles = StyleSheet.create({
     marginHorizontal: nbSpacing.md,
   },
   dateText: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -362,15 +354,9 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.dangerLight,
   },
   summaryCount: {
-    fontSize: nbTypography.fontSize['3xl'],
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
     marginBottom: nbSpacing.xs,
   },
   summaryLabel: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.white,
   },
   loadingContainer: {
     flex: 1,
@@ -380,8 +366,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: nbSpacing.md,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
   },
   listContent: {
     padding: nbSpacing.md,
@@ -396,9 +380,6 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.sm,
   },
   sectionHeaderText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['600'],
     letterSpacing: 0.5,
   },
   emptyState: {
@@ -406,9 +387,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyStateText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
-    textAlign: 'center',
   },
   noteContainer: {
     backgroundColor: nbColors.gray['50'],
@@ -422,8 +400,5 @@ const styles = StyleSheet.create({
     borderLeftColor: nbColors.primary,
   },
   noteText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    lineHeight: nbTypography.fontSize.sm * 1.5,
   },
 });

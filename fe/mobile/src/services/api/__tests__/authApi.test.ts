@@ -98,17 +98,20 @@ describe('authApi', () => {
   });
 
   describe('logout', () => {
-    it('should call post with correct endpoint', async () => {
+    it('sends refresh_token body to /auth/logout (Phase 4-7)', async () => {
       const mockResponse = { data: { success: true } };
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
       const result = await logout();
 
-      expect(apiClient.post).toHaveBeenCalledWith('/auth/logout');
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/auth/logout',
+        expect.objectContaining({ refresh_token: expect.any(String) }),
+      );
       expect(result).toEqual(mockResponse);
     });
 
-    it('should return error on failure', async () => {
+    it('returns error on failure', async () => {
       const mockError = { error: 'Logout failed' };
       (apiClient.post as jest.Mock).mockResolvedValue(mockError);
 

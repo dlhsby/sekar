@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   Image,
   StyleSheet,
   ScrollView,
@@ -30,11 +29,11 @@ import {
   NBAlert,
   NBSelect,
   NBCardTextInput,
+  NBText,
 } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
 import { PartialCompleteSheet } from '../../components/tasks/PartialCompleteSheet';
 
-const fontSizes = nbTypography.fontSize;
 import { formatDateTime } from '../../utils/dateUtils';
 import * as tasksApi from '../../services/api/tasksApi';
 import { getUsers } from '../../services/api';
@@ -533,7 +532,7 @@ export function TaskDetailScreen(): React.JSX.Element {
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat tugas...</Text>
+          <NBText variant="body" style={styles.loadingTextMargin}>Memuat tugas...</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -611,13 +610,13 @@ export function TaskDetailScreen(): React.JSX.Element {
             </View>
 
             {/* Title */}
-            <Text style={styles.title}>{task.title}</Text>
+            <NBText variant="h2" style={styles.titleStyle}>{task.title}</NBText>
 
             {/* Description */}
             {task.description ? (
-              <Text style={styles.description}>{task.description}</Text>
+              <NBText variant="body" style={styles.descriptionStyle}>{task.description}</NBText>
             ) : (
-              <Text style={styles.descriptionEmpty}>Tidak ada deskripsi</Text>
+              <NBText variant="body-sm" style={styles.descriptionEmptyStyle}>Tidak ada deskripsi</NBText>
             )}
 
             {/* Divider */}
@@ -628,21 +627,21 @@ export function TaskDetailScreen(): React.JSX.Element {
               {task.deadline && (
                 <View style={styles.metaItem}>
                   <Icon name="calendar-clock" size={14} color={isDeadlinePast ? nbColors.danger : nbColors.gray['500']} />
-                  <Text style={[styles.metaText, isDeadlinePast && styles.metaTextDanger]}>
+                  <NBText variant="caption" style={[styles.metaTextStyle, isDeadlinePast && styles.metaTextDangerStyle]}>
                     {formatDateTime(task.deadline)}
-                  </Text>
+                  </NBText>
                 </View>
               )}
               {task.area && (
                 <View style={styles.metaItem}>
                   <Icon name="map-marker" size={14} color={nbColors.gray['500']} />
-                  <Text style={styles.metaText}>{task.area.name}</Text>
+                  <NBText variant="caption" style={styles.metaTextStyle}>{task.area.name}</NBText>
                 </View>
               )}
               {task.rayon && (
                 <View style={styles.metaItem}>
                   <Icon name="map" size={14} color={nbColors.gray['500']} />
-                  <Text style={styles.metaText}>{task.rayon.name}</Text>
+                  <NBText variant="caption" style={styles.metaTextStyle}>{task.rayon.name}</NBText>
                 </View>
               )}
             </View>
@@ -652,18 +651,18 @@ export function TaskDetailScreen(): React.JSX.Element {
         {/* ── Assignment Info Card ── */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <Text style={styles.sectionTitle}>Penugasan</Text>
+            <NBText variant="h3" style={styles.sectionTitleStyle}>Penugasan</NBText>
           </NBCardHeader>
           <NBCardContent>
             <View style={styles.assignRow}>
               <View style={styles.assignBlock}>
-                <Text style={styles.assignLabel}>Dibuat oleh</Text>
+                <NBText variant="body-sm" style={styles.assignLabelStyle}>Dibuat oleh</NBText>
                 <View style={styles.assignUserRow}>
                   <Icon name="account-circle" size={16} color={nbColors.gray['500']} />
-                  <Text style={styles.assignValue}>{formatUser(task.creator)}</Text>
+                  <NBText variant="body-sm" style={styles.assignValueStyle}>{formatUser(task.creator)}</NBText>
                 </View>
                 {task.created_at && (
-                  <Text style={styles.assignDate}>{formatDateTime(task.created_at)}</Text>
+                  <NBText variant="caption" style={styles.assignDateStyle}>{formatDateTime(task.created_at)}</NBText>
                 )}
               </View>
 
@@ -672,19 +671,19 @@ export function TaskDetailScreen(): React.JSX.Element {
               </View>
 
               <View style={styles.assignBlock}>
-                <Text style={styles.assignLabel}>Ditugaskan ke</Text>
+                <NBText variant="body-sm" style={styles.assignLabelStyle}>Ditugaskan ke</NBText>
                 <View style={styles.assignUserRow}>
                   <Icon
                     name={task.assigned_to ? 'account' : 'account-question'}
                     size={16}
                     color={task.assigned_to ? nbColors.primary : nbColors.gray['400']}
                   />
-                  <Text style={[styles.assignValue, !task.assigned_to && styles.assignValueEmpty]}>
+                  <NBText variant="body-sm" style={[styles.assignValueStyle, !task.assigned_to && styles.assignValueEmptyStyle]} color={!task.assigned_to ? 'gray400' : undefined}>
                     {task.assignee ? formatUser(task.assignee) : task.assigned_to ? '(petugas)' : 'Belum ditugaskan'}
-                  </Text>
+                  </NBText>
                 </View>
                 {task.assigned_at && (
-                  <Text style={styles.assignDate}>{formatDateTime(task.assigned_at)}</Text>
+                  <NBText variant="caption" style={styles.assignDateStyle}>{formatDateTime(task.assigned_at)}</NBText>
                 )}
               </View>
             </View>
@@ -718,7 +717,7 @@ export function TaskDetailScreen(): React.JSX.Element {
             <NBCard style={styles.card}>
               <NBCardHeader>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={styles.sectionTitle}>Tag Petugas Terlibat</Text>
+                  <NBText variant="h3" style={styles.sectionTitleStyle}>Tag Petugas Terlibat</NBText>
                   {canEditTags && !isEditingTags && (
                     <TouchableOpacity onPress={handleStartEditTags} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Icon name="pencil-outline" size={18} color={nbColors.primary} />
@@ -733,23 +732,23 @@ export function TaskDetailScreen(): React.JSX.Element {
                       {task.tags!.map((tag) => (
                         <View key={tag.id} style={styles.tagItem}>
                           <Icon name="tag-outline" size={14} color={nbColors.gray['500']} />
-                          <Text style={styles.tagName}>{tag.user?.full_name ?? '—'}</Text>
+                          <NBText variant="body-sm" style={styles.tagNameStyle}>{tag.user?.full_name ?? '—'}</NBText>
                         </View>
                       ))}
                     </View>
                   ) : (
-                    <Text style={styles.subText}>
+                    <NBText variant="body-sm" style={styles.subTextStyle}>
                       Belum ada petugas yang di-tag. Tap ikon pensil untuk menambah.
-                    </Text>
+                    </NBText>
                   )
                 ) : (
                   <View>
                     {loadingSubordinates ? (
                       <ActivityIndicator color={nbColors.primary} />
                     ) : tagOptions.length === 0 ? (
-                      <Text style={styles.subText}>
+                      <NBText variant="body-sm" style={styles.subTextStyle}>
                         Tidak ada petugas yang dapat di-tag.
-                      </Text>
+                      </NBText>
                     ) : (
                       <NBSelect
                         label="Pilih petugas untuk di-tag"
@@ -793,12 +792,12 @@ export function TaskDetailScreen(): React.JSX.Element {
         {task.status === 'declined' && task.decline_reason && (
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={[styles.sectionTitle, styles.dangerTitle]}>Alasan Penolakan</Text>
+              <NBText variant="h3" style={[styles.sectionTitleStyle, styles.dangerTitleStyle]} color="danger">Alasan Penolakan</NBText>
             </NBCardHeader>
             <NBCardContent>
-              <Text style={styles.description}>{task.decline_reason}</Text>
+              <NBText variant="body" style={styles.descriptionStyle}>{task.decline_reason}</NBText>
               {task.declined_at && (
-                <Text style={styles.subText}>Ditolak pada {formatDateTime(task.declined_at)}</Text>
+                <NBText variant="body-sm" style={styles.subTextStyle}>Ditolak pada {formatDateTime(task.declined_at)}</NBText>
               )}
             </NBCardContent>
           </NBCard>
@@ -808,10 +807,10 @@ export function TaskDetailScreen(): React.JSX.Element {
         {task.status === 'revision_needed' && task.revision_reason && (
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={[styles.sectionTitle, styles.warningTitle]}>Alasan Revisi</Text>
+              <NBText variant="h3" style={[styles.sectionTitleStyle, styles.warningTitleStyle]} color="warning">Alasan Revisi</NBText>
             </NBCardHeader>
             <NBCardContent>
-              <Text style={styles.description}>{task.revision_reason}</Text>
+              <NBText variant="body" style={styles.descriptionStyle}>{task.revision_reason}</NBText>
             </NBCardContent>
           </NBCard>
         )}
@@ -820,23 +819,23 @@ export function TaskDetailScreen(): React.JSX.Element {
         {(task.status === 'completed' || task.status === 'verified') && (
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>Detail Penyelesaian</Text>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>Detail Penyelesaian</NBText>
             </NBCardHeader>
             <NBCardContent>
               {task.completed_at && (
                 <View style={styles.detailRow}>
                   <Icon name="check-circle" size={14} color={nbColors.success} />
-                  <Text style={styles.detailRowText}>Selesai {formatDateTime(task.completed_at)}</Text>
+                  <NBText variant="body-sm" style={styles.detailRowTextStyle}>Selesai {formatDateTime(task.completed_at)}</NBText>
                 </View>
               )}
               {task.completion_notes && (
-                <Text style={[styles.description, { marginTop: nbSpacing.sm }]}>{task.completion_notes}</Text>
+                <NBText variant="body" style={[styles.descriptionStyle, { marginTop: nbSpacing.sm }]}>{task.completion_notes}</NBText>
               )}
 
               {/* Completion photos */}
               {completionPhotos.length > 0 && (
                 <View style={styles.photoGrid}>
-                  <Text style={styles.photoLabel}>Foto Bukti ({completionPhotos.length})</Text>
+                  <NBText variant="body-sm" style={styles.photoLabelStyle}>Foto Bukti ({completionPhotos.length})</NBText>
                   <View style={styles.photoRow}>
                     {completionPhotos.map((uri, index) => (
                       <Image
@@ -860,19 +859,19 @@ export function TaskDetailScreen(): React.JSX.Element {
         {task.status === 'verified' && (
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={[styles.sectionTitle, styles.successTitle]}>Verifikasi</Text>
+              <NBText variant="h3" style={[styles.sectionTitleStyle, styles.successTitleStyle]} color="success">Verifikasi</NBText>
             </NBCardHeader>
             <NBCardContent>
               {task.verifier && (
                 <View style={styles.detailRow}>
                   <Icon name="shield-check" size={14} color={nbColors.success} />
-                  <Text style={styles.detailRowText}>Diverifikasi oleh {formatUser(task.verifier)}</Text>
+                  <NBText variant="body-sm" style={styles.detailRowTextStyle}>Diverifikasi oleh {formatUser(task.verifier)}</NBText>
                 </View>
               )}
               {task.verified_at && (
                 <View style={styles.detailRow}>
                   <Icon name="clock-check" size={14} color={nbColors.gray['500']} />
-                  <Text style={styles.detailRowText}>{formatDateTime(task.verified_at)}</Text>
+                  <NBText variant="body-sm" style={styles.detailRowTextStyle}>{formatDateTime(task.verified_at)}</NBText>
                 </View>
               )}
             </NBCardContent>
@@ -883,7 +882,7 @@ export function TaskDetailScreen(): React.JSX.Element {
         {delegations.length > 0 && (
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>Riwayat Penugasan</Text>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>Riwayat Penugasan</NBText>
             </NBCardHeader>
             <NBCardContent>
               {delegations.map((d, idx) => (
@@ -893,7 +892,7 @@ export function TaskDetailScreen(): React.JSX.Element {
                     size={14}
                     color={nbColors.gray['500']}
                   />
-                  <Text style={styles.detailRowText}>
+                  <NBText variant="body-sm" style={styles.detailRowTextStyle}>
                     {d.from_user
                       ? `${d.from_user.full_name} (${d.from_user.role})`
                       : 'Sistem'}
@@ -901,7 +900,7 @@ export function TaskDetailScreen(): React.JSX.Element {
                     {d.to_user.full_name} ({d.to_user.role})
                     {'  ·  '}
                     {formatDateTime(d.created_at)}
-                  </Text>
+                  </NBText>
                 </View>
               ))}
             </NBCardContent>
@@ -927,13 +926,13 @@ export function TaskDetailScreen(): React.JSX.Element {
           {/* Inline Assign Picker */}
           {showAssignInput && (
             <View style={styles.inlineInputContainer}>
-              <Text style={styles.inlineInputLabel}>
+              <NBText variant="body-sm" style={styles.inlineInputLabelStyle}>
                 {showDelegate
                   ? 'Disposisi ke Bawahan'
                   : (showReassign || showReassignByCreator)
                     ? 'Pilih Petugas Pengganti'
                     : 'Pilih Petugas'}
-              </Text>
+              </NBText>
               <NBSelect
                 value={assigneeId}
                 onValueChange={(v) => setAssigneeId(String(v))}
@@ -1107,7 +1106,7 @@ export function TaskDetailScreen(): React.JSX.Element {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Riwayat Tugas</Text>
+              <NBText variant="h2" style={styles.modalTitle}>Riwayat Tugas</NBText>
               <TouchableOpacity onPress={() => setShowAuditTrail(false)} style={styles.modalClose}>
                 <Icon name="close" size={22} color={nbColors.black} />
               </TouchableOpacity>
@@ -1127,14 +1126,14 @@ export function TaskDetailScreen(): React.JSX.Element {
                   <View style={styles.timelineContent}>
                     <View style={styles.timelineEventRow}>
                       <Icon name={item.icon} size={14} color={item.color} />
-                      <Text style={[styles.timelineEvent, { color: item.color }]}>{item.event}</Text>
+                      <NBText variant="body-sm" style={[styles.timelineEvent, { color: item.color }]}>{item.event}</NBText>
                     </View>
-                    <Text style={styles.timelineTime}>{formatDateTime(item.timestamp)}</Text>
+                    <NBText variant="caption" style={styles.timelineTime}>{formatDateTime(item.timestamp)}</NBText>
                     {item.actor ? (
-                      <Text style={styles.timelineActor}>{item.actor}</Text>
+                      <NBText variant="caption" style={styles.timelineActor}>{item.actor}</NBText>
                     ) : null}
                     {item.note ? (
-                      <Text style={styles.timelineNote}>{item.note}</Text>
+                      <NBText variant="caption" style={styles.timelineNote}>{item.note}</NBText>
                     ) : null}
                   </View>
                 </View>
@@ -1161,10 +1160,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
+  loadingTextMargin: {
     marginTop: nbSpacing.md,
-    fontSize: fontSizes.base,
-    color: nbColors.gray['600'],
   },
   card: {
     marginHorizontal: nbSpacing.md,
@@ -1176,22 +1173,11 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
     marginBottom: nbSpacing.sm,
   },
-  title: {
-    fontSize: fontSizes.xl,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+  titleStyle: {
     marginBottom: nbSpacing.xs,
   },
-  description: {
-    fontSize: fontSizes.base,
-    color: nbColors.gray['700'],
-    lineHeight: fontSizes.base * nbTypography.lineHeight.normal,
-  },
-  descriptionEmpty: {
-    fontSize: fontSizes.sm,
-    color: nbColors.gray['400'],
-    fontStyle: 'italic',
-  },
+  descriptionStyle: {},
+  descriptionEmptyStyle: {},
   divider: {
     height: 1,
     backgroundColor: nbColors.gray['200'],
@@ -1205,26 +1191,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: nbSpacing.xs,
   },
-  metaText: {
-    fontSize: fontSizes.sm,
-    color: nbColors.gray['600'],
-  },
-  metaTextDanger: {
-    color: nbColors.danger,
-    fontWeight: nbTypography.fontWeight.semibold,
-  },
+  metaTextStyle: {},
+  metaTextDangerStyle: {},
   // Section header
-  sectionTitle: {
-    fontSize: fontSizes.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
+  sectionTitleStyle: {
+    marginBottom: nbSpacing.xs,
   },
-  dangerTitle: { color: nbColors.danger },
-  warningTitle: { color: nbColors.accentSunshine },
-  successTitle: { color: nbColors.success },
-  subText: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray['500'],
+  dangerTitleStyle: {},
+  warningTitleStyle: {},
+  successTitleStyle: {},
+  subTextStyle: {
     marginTop: nbSpacing.xs,
   },
   // Assignment block
@@ -1240,11 +1216,7 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing.lg,
     alignItems: 'center',
   },
-  assignLabel: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray['500'],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  assignLabelStyle: {
     marginBottom: nbSpacing.xs,
   },
   assignUserRow: {
@@ -1252,20 +1224,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: nbSpacing.xs,
   },
-  assignValue: {
+  assignValueStyle: {
     flex: 1,
-    fontSize: fontSizes.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
   },
-  assignValueEmpty: {
-    color: nbColors.gray['400'],
-    fontWeight: nbTypography.fontWeight.regular,
-    fontStyle: 'italic',
-  },
-  assignDate: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray['500'],
+  assignValueEmptyStyle: {},
+  assignDateStyle: {
     marginTop: 2,
   },
   // Tags
@@ -1278,10 +1241,7 @@ const styles = StyleSheet.create({
     gap: nbSpacing.xs,
     paddingVertical: 2,
   },
-  tagName: {
-    fontSize: fontSizes.sm,
-    color: nbColors.black,
-  },
+  tagNameStyle: {},
   // Detail rows
   detailRow: {
     flexDirection: 'row',
@@ -1289,20 +1249,14 @@ const styles = StyleSheet.create({
     gap: nbSpacing.xs,
     marginBottom: nbSpacing.xs,
   },
-  detailRowText: {
+  detailRowTextStyle: {
     flex: 1,
-    fontSize: fontSizes.sm,
-    color: nbColors.gray['700'],
   },
   // Photos
   photoGrid: {
     marginTop: nbSpacing.sm,
   },
-  photoLabel: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray['500'],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  photoLabelStyle: {
     marginBottom: nbSpacing.sm,
   },
   photoRow: {
@@ -1337,11 +1291,7 @@ const styles = StyleSheet.create({
   inlineInputContainer: {
     gap: nbSpacing.sm,
   },
-  inlineInputLabel: {
-    fontSize: fontSizes.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
-  },
+  inlineInputLabelStyle: {},
   inputSection: {
     gap: nbSpacing.sm,
   },
@@ -1369,11 +1319,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: nbBorders.base,
     borderBottomColor: nbColors.gray['200'],
   },
-  modalTitle: {
-    fontSize: fontSizes.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
+  modalTitle: {},
   modalClose: {
     padding: nbSpacing.xs,
   },
@@ -1414,23 +1360,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: nbSpacing.xs,
   },
-  timelineEvent: {
-    fontSize: fontSizes.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-  },
+  timelineEvent: {},
   timelineTime: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray['500'],
     marginTop: 2,
   },
   timelineActor: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray['600'],
     marginTop: 2,
   },
   timelineNote: {
-    fontSize: fontSizes.xs,
-    color: nbColors.gray['700'],
     fontStyle: 'italic',
     marginTop: 4,
     backgroundColor: nbColors.gray['100'],

@@ -6,7 +6,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   Alert,
@@ -30,11 +29,11 @@ import {
   NBBadge,
   NBButton,
   NBCardTextInput,
+  NBText,
 } from '../../components/nb';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -200,7 +199,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat data...</Text>
+          <NBText variant="body" color="gray600" style={styles.loadingText}>Memuat data...</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -215,7 +214,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Lembur tidak ditemukan</Text>
+          <NBText variant="body" color="gray600" style={styles.loadingText}>Lembur tidak ditemukan</NBText>
           <NBButton
             title="Kembali"
             variant="secondary"
@@ -255,37 +254,37 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {/* General Info Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>📋 INFORMASI UMUM</Text>
+              <NBText variant="h2" color="black" style={styles.sectionTitle}>📋 INFORMASI UMUM</NBText>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Mulai</Text>
-                <Text style={styles.value}>{formatDateTimeIndonesian(overtime.start_datetime)}</Text>
+                <NBText variant="body-sm" color="gray600" style={styles.label}>Mulai</NBText>
+                <NBText variant="body" color="black" style={styles.value}>{formatDateTimeIndonesian(overtime.start_datetime)}</NBText>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Selesai</Text>
-                <Text style={styles.value}>
+                <NBText variant="body-sm" color="gray600" style={styles.label}>Selesai</NBText>
+                <NBText variant="body" color="black" style={styles.value}>
                   {overtime.end_datetime ? formatDateTimeIndonesian(overtime.end_datetime) : '(Belum selesai)'}
-                </Text>
+                </NBText>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Durasi</Text>
-                <Text style={styles.value}>
+                <NBText variant="body-sm" color="gray600" style={styles.label}>Durasi</NBText>
+                <NBText variant="body" color="black" style={styles.value}>
                   {overtime.end_datetime ? formatDurationHours(overtime.start_datetime, overtime.end_datetime) : '-'}
-                </Text>
+                </NBText>
               </View>
               {overtime.user && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Petugas</Text>
-                  <Text style={styles.value}>
+                  <NBText variant="body-sm" color="gray600" style={styles.label}>Petugas</NBText>
+                  <NBText variant="body" color="black" style={styles.value}>
                     {overtime.user.role} - {overtime.user.full_name}
-                  </Text>
+                  </NBText>
                 </View>
               )}
               {overtime.area?.name && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Area</Text>
-                  <Text style={styles.value}>{overtime.area.name}</Text>
+                  <NBText variant="body-sm" color="gray600" style={styles.label}>Area</NBText>
+                  <NBText variant="body" color="black" style={styles.value}>{overtime.area.name}</NBText>
                 </View>
               )}
             </NBCardContent>
@@ -294,12 +293,12 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {/* Reason Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>💬 ALASAN LEMBUR</Text>
+              <NBText variant="h2" color="black" style={styles.sectionTitle}>💬 ALASAN LEMBUR</NBText>
             </NBCardHeader>
             <NBCardContent>
-              <Text style={[styles.descriptionText, !overtime.reason && styles.descriptionPlaceholder]}>
+              <NBText variant="body" color={!overtime.reason ? 'gray400' : 'black'} style={[styles.descriptionText, !overtime.reason && styles.descriptionPlaceholder]}>
                 {overtime.reason || '(Tidak ada alasan)'}
-              </Text>
+              </NBText>
             </NBCardContent>
           </NBCard>
 
@@ -307,7 +306,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           <NBCard style={styles.card}>
             <NBCardHeader>
               <View style={styles.statusRow}>
-                <Text style={styles.sectionTitle}>📋 STATUS</Text>
+                <NBText variant="h2" color="black" style={styles.sectionTitle}>📋 STATUS</NBText>
                 <NBBadge
                   text={getOvertimeStatusLabel(overtime.status)}
                   color={getOvertimeStatusColor(overtime.status)}
@@ -317,8 +316,8 @@ export function OvertimeDetailScreen(): React.JSX.Element {
             <NBCardContent>
               {overtime.status === 'rejected' && overtime.rejection_reason && (
                 <View style={styles.infoRow}>
-                  <Text style={[styles.label, styles.dangerLabel]}>Alasan Penolakan</Text>
-                  <Text style={styles.value}>{overtime.rejection_reason}</Text>
+                  <NBText variant="body-sm" color="danger" style={[styles.label, styles.dangerLabel]}>Alasan Penolakan</NBText>
+                  <NBText variant="body" color="black" style={styles.value}>{overtime.rejection_reason}</NBText>
                 </View>
               )}
             </NBCardContent>
@@ -328,12 +327,12 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {overtime.activityType && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</Text>
+                <NBText variant="h2" color="black" style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</NBText>
               </NBCardHeader>
               <NBCardContent>
-                <Text style={styles.value}>{overtime.activityType.name}</Text>
+                <NBText variant="body" color="black" style={styles.value}>{overtime.activityType.name}</NBText>
                 {overtime.activityType.description && (
-                  <Text style={styles.description}>{overtime.activityType.description}</Text>
+                  <NBText variant="body-sm" color="gray600" style={styles.description}>{overtime.activityType.description}</NBText>
                 )}
               </NBCardContent>
             </NBCard>
@@ -342,12 +341,12 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {/* Description Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>📝 DESKRIPSI</Text>
+              <NBText variant="h2" color="black" style={styles.sectionTitle}>📝 DESKRIPSI</NBText>
             </NBCardHeader>
             <NBCardContent>
-              <Text style={[styles.descriptionText, !overtime.description && styles.descriptionPlaceholder]}>
+              <NBText variant="body" color={!overtime.description ? 'gray400' : 'black'} style={[styles.descriptionText, !overtime.description && styles.descriptionPlaceholder]}>
                 {overtime.description || '(Belum diisi)'}
-              </Text>
+              </NBText>
             </NBCardContent>
           </NBCard>
 
@@ -355,8 +354,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {(overtime.photo_urls?.length ?? 0) > 0 && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>📸 FOTO BUKTI</Text>
-                <Text style={styles.sectionSubtitle}>{overtime.photo_urls!.length} foto dilampirkan</Text>
+                <View style={styles.headerColumn}>
+                  <NBText variant="h2" color="black" style={styles.sectionTitle}>📸 FOTO BUKTI</NBText>
+                  <NBText variant="body-sm" color="gray600" style={styles.sectionSubtitle}>{overtime.photo_urls!.length} foto dilampirkan</NBText>
+                </View>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -388,7 +389,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {(overtime.shift?.clock_in_photo_url || overtime.shift?.clock_out_photo_url) && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>🤳 SELFIE VERIFIKASI</Text>
+                <NBText variant="h2" color="black" style={styles.sectionTitle}>🤳 SELFIE VERIFIKASI</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -409,7 +410,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                           resizeMode="cover"
                         />
                       </TouchableOpacity>
-                      <Text style={styles.selfiePhotoLabel}>Mulai Lembur</Text>
+                      <NBText variant="body-sm" color="black" style={styles.selfiePhotoLabel}>Mulai Lembur</NBText>
                     </View>
                   )}
                   {overtime.shift?.clock_out_photo_url && (
@@ -425,7 +426,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                           resizeMode="cover"
                         />
                       </TouchableOpacity>
-                      <Text style={styles.selfiePhotoLabel}>Selesai Lembur</Text>
+                      <NBText variant="body-sm" color="black" style={styles.selfiePhotoLabel}>Selesai Lembur</NBText>
                     </View>
                   )}
                 </ScrollView>
@@ -437,13 +438,13 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {overtime.gps_lat != null && overtime.gps_lng != null ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
+                <NBText variant="h2" color="black" style={styles.sectionTitle}>📍 LOKASI GPS</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <View style={styles.locationContainer}>
-                  <Text style={styles.locationText}>
+                  <NBText variant="body-sm" color="black" style={styles.locationText}>
                     {`${Number(overtime.gps_lat).toFixed(6)}, ${Number(overtime.gps_lng).toFixed(6)}`}
-                  </Text>
+                  </NBText>
                 </View>
               </NBCardContent>
             </NBCard>
@@ -453,7 +454,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {canViewTrail && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>🗺️ RUTE LOKASI</Text>
+                <NBText variant="h2" color="black" style={styles.sectionTitle}>🗺️ RUTE LOKASI</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <NBButton
@@ -586,9 +587,7 @@ const styles = StyleSheet.create({
     gap: nbSpacing.md,
   },
   loadingText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body" color="gray600"
   },
   contentContainer: {
     paddingVertical: nbSpacing.md,
@@ -606,16 +605,12 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
+    // Typography handled by NBText variant="h2" color="black"
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   sectionSubtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="gray600"
     marginTop: nbSpacing.xs,
   },
   statusRow: {
@@ -623,37 +618,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerColumn: {
+    flexDirection: 'column',
+    gap: nbSpacing.xs,
+  },
   infoRow: {
     marginBottom: nbSpacing.md,
   },
   label: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
+    // Typography handled by NBText variant="body-sm" color="gray600"
     marginBottom: nbSpacing.xs,
   },
   dangerLabel: {
-    color: nbColors.danger,
+    // Color handled by NBText color="danger"
   },
   value: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
+    // Typography handled by NBText variant="body" color="black"
   },
   description: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="gray600"
     marginTop: nbSpacing.xs,
   },
   descriptionText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.black,
-    lineHeight: nbTypography.fontSize.base * 1.5,
+    // Typography handled by NBText variant="body" color="black"
+    lineHeight: 1.5,
   },
   descriptionPlaceholder: {
-    color: nbColors.gray[400],
+    // Color handled by NBText color="gray400"
     fontStyle: 'italic',
   },
   photosContainer: {
@@ -676,9 +667,7 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
   },
   locationText: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+    // Typography handled by NBText variant="body-sm" color="black"
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     letterSpacing: 0.5,
   },
@@ -691,9 +680,7 @@ const styles = StyleSheet.create({
     gap: nbSpacing.xs,
   },
   selfiePhotoLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    // Typography handled by NBText variant="body-sm" color="black"
     textAlign: 'center',
   },
   fab: {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, Text, type TextStyle, type TextProps } from 'react-native';
+import { Platform, Text, type TextStyle, type StyleProp, type TextProps } from 'react-native';
 import { nbType, nbColors } from '../../constants/nbTokens';
 
 export type NBTextVariant =
@@ -23,7 +23,7 @@ export interface NBTextProps extends TextProps {
   color?: NBTextColor;
   align?: NBTextAlign;
   uppercase?: boolean;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
   children: React.ReactNode;
 }
 

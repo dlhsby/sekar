@@ -9,7 +9,12 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 
 // Root Stack Navigator (Auth flow)
 export type RootStackParamList = {
+  // Phase 4 M3a+b entry flow gates
+  WelcomeCarousel: undefined;
   Login: undefined;
+  ForgotPassword: undefined;
+  ChangePassword: undefined;
+  Onboarding: undefined;
   MainTabs: undefined;
   KecamatanTabs: undefined;
 };
@@ -38,6 +43,8 @@ export type MainTabParamList = {
   Settings: undefined;
   Attendance: undefined;
   EditProfile: undefined;
+  // Phase 4 M3d (NOTIF-1) — in-app notifications inbox
+  Notifications: undefined;
   // Pruning Requests (admin_data flow)
   PruningReviewQueue: undefined;
   PruningDetail: { requestId: string; adminMode?: boolean };

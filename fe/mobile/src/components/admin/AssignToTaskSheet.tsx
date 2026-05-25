@@ -441,7 +441,10 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing[4],
   },
   capacityBoxExceeded: {
-    backgroundColor: '#fff3cd',
+    // Audit H7: was '#fff3cd' (Bootstrap warning bg). Closest NB token is
+    // `statusIdleBg` (#FEF3C7) — same pale-warning tonality. Border keeps
+    // the danger red for the over-capacity emphasis.
+    backgroundColor: nbColors.statusIdleBg,
     borderColor: nbColors.danger,
   },
   buttonGroup: {

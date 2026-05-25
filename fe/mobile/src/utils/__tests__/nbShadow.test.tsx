@@ -146,7 +146,7 @@ describe('nbShadow Utilities', () => {
       const hovered = getHoverShadow(true);
 
       expect(normal).not.toEqual(hovered);
-      expect(hovered.elevation).toBeGreaterThanOrEqual(normal.elevation);
+      expect(hovered.elevation!).toBeGreaterThanOrEqual(normal.elevation!);
     });
   });
 
@@ -334,10 +334,10 @@ describe('nbShadow Utilities', () => {
       const md = getNBShadow('md');
       const lg = getNBShadow('lg');
 
-      expect(sm.shadowOffset.width).toBeLessThan(md.shadowOffset.width);
-      expect(md.shadowOffset.width).toBeLessThan(lg.shadowOffset.width);
-      expect(sm.elevation).toBeLessThan(md.elevation);
-      expect(md.elevation).toBeLessThan(lg.elevation);
+      expect(sm.shadowOffset!.width).toBeLessThan(md.shadowOffset!.width);
+      expect(md.shadowOffset!.width).toBeLessThan(lg.shadowOffset!.width);
+      expect(sm.elevation!).toBeLessThan(md.elevation!);
+      expect(md.elevation!).toBeLessThan(lg.elevation!);
     });
 
     it('should have matching width and height offsets (square shadows)', () => {
@@ -345,7 +345,7 @@ describe('nbShadow Utilities', () => {
 
       sizes.forEach(size => {
         const shadow = getNBShadow(size);
-        expect(shadow.shadowOffset.width).toBe(shadow.shadowOffset.height);
+        expect(shadow.shadowOffset!.width).toBe(shadow.shadowOffset!.height);
       });
     });
 

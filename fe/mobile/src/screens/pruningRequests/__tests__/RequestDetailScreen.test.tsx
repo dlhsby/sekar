@@ -3,6 +3,11 @@
  * Phase 3 sub-phase 3-10
  */
 
+// Heavy navigation + Redux + bottom-sheet stack; the default 30 s per-test
+// budget is too tight on slower CI runners and triggers spurious timeouts
+// in waitFor blocks. Bumped per-file rather than globally.
+jest.setTimeout(60000);
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Provider } from 'react-redux';

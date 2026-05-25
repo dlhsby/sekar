@@ -71,13 +71,24 @@ interface LegacyLocationBatchData {
 type LocationBatchData = NewLocationBatchData | LegacyLocationBatchData;
 
 /**
- * Sync priority order: clock-in → activities → pruning_request.submit → clock-out → location pings
+ * Sync priority order (Phase 4-2 (M2)):
+ *   clock-in / task-completion (1) → activities + overtime + pruning + reassignment (2-2.5)
+ *   → clock-out / overtime-end (3) → location pings (4)
+ *
+ * Rationale: task completions and clock-ins are user-facing wins (a worker
+ * just finished a task and wants confirmation). Overtime end + clock-out
+ * close lifecycle states. Location pings drain last — they're the heaviest
+ * and least time-sensitive.
  */
 const SYNC_PRIORITY: Record<string, number> = {
   'clock-in': 1,
+  'task-completion': 1,
   activity: 2,
+  'overtime-start': 2,
+  reassignment: 2,
   'pruning_request.submit': 2.5,
   'clock-out': 3,
+  'overtime-end': 3,
   location: 4,
 };
 
@@ -418,9 +429,52 @@ class SyncManager extends EventEmitter {
         await this.syncLocationBatch(item.data);
         break;
 
+      // Phase 4-2 (M2): four new queue types drained on reconnect.
+      case 'overtime-start':
+        await this.syncOvertimeStart(item.data);
+        break;
+
+      case 'overtime-end':
+        await this.syncOvertimeEnd(item.data);
+        break;
+
+      case 'task-completion':
+        await this.syncTaskCompletion(item.data);
+        break;
+
+      case 'reassignment':
+        await this.syncReassignment(item.data);
+        break;
+
       default:
         throw new Error(`Unknown queue item type: ${item.type}`);
     }
+  }
+
+  /**
+   * Phase 4-2 (M2): drain handlers for the four new queue types.
+   * Each forwards the queued payload to the existing typed API endpoint.
+   * The mutations themselves are idempotent enough for retry (server-side
+   * status guards block double-application).
+   */
+  private async syncOvertimeStart(data: { overtime_id: string; payload?: unknown }): Promise<void> {
+    const { apiClient } = await import('../api/apiClient');
+    await apiClient.post(`/api/v1/overtime/${data.overtime_id}/start`, data.payload ?? {});
+  }
+
+  private async syncOvertimeEnd(data: { overtime_id: string; payload?: unknown }): Promise<void> {
+    const { apiClient } = await import('../api/apiClient');
+    await apiClient.post(`/api/v1/overtime/${data.overtime_id}/end`, data.payload ?? {});
+  }
+
+  private async syncTaskCompletion(data: { task_id: string; payload: unknown }): Promise<void> {
+    const { apiClient } = await import('../api/apiClient');
+    await apiClient.post(`/api/v1/tasks/${data.task_id}/complete`, data.payload);
+  }
+
+  private async syncReassignment(data: { user_id: string; payload: unknown }): Promise<void> {
+    const { apiClient } = await import('../api/apiClient');
+    await apiClient.post(`/api/v1/monitoring/users/${data.user_id}/reassign`, data.payload);
   }
 
   /**

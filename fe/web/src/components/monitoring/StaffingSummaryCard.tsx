@@ -37,7 +37,7 @@ function RoleRow({ role }: RoleRowProps) {
         <div
           className={cn(
             'h-full rounded-full transition-all duration-300',
-            isFullyStaffed ? 'bg-[#15803D]' : 'bg-[#D97706]'
+            isFullyStaffed ? 'bg-[var(--color-status-active)]' : 'bg-[var(--color-status-idle)]'
           )}
           style={{ width: `${required > 0 ? Math.min((present / required) * 100, 100) : 0}%` }}
         />
@@ -46,19 +46,19 @@ function RoleRow({ role }: RoleRowProps) {
         {present}/{required}
       </span>
       <div className="flex gap-1 text-[10px] text-nb-gray-400">
-        <span title="Aktif" className="text-[#15803D]">
+        <span title="Aktif" className="text-[var(--color-status-active)]">
           {role.active}
         </span>
         <span>/</span>
-        <span title="Idle" className="text-[#D97706]">
+        <span title="Idle" className="text-[var(--color-status-idle)]">
           {role.idle}
         </span>
         <span>/</span>
-        <span title="Di Luar" className="text-[#9333EA]">
+        <span title="Di Luar" className="text-[var(--color-status-outside)]">
           {role.outside_area}
         </span>
         <span>/</span>
-        <span title="Tidak Terdeteksi" className="text-[#DC2626]">
+        <span title="Tidak Terdeteksi" className="text-[var(--color-status-missing)]">
           {role.missing}
         </span>
       </div>
@@ -72,7 +72,7 @@ interface UnderstaffedBadgeProps {
 
 function UnderstaffedBadge({ shortage }: UnderstaffedBadgeProps) {
   return (
-    <span className="flex items-center gap-1 text-[10px] font-bold text-[#DC2626] bg-[#FEE2E2] px-1.5 py-0.5 rounded-nb-sm border border-[#DC2626]">
+    <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-status-missing)] bg-[var(--color-status-missing-bg)] px-1.5 py-0.5 rounded-nb-sm border border-[var(--color-status-missing)]">
       <AlertTriangle className="w-2.5 h-2.5" />
       Kurang {shortage}
     </span>
@@ -120,7 +120,7 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
         </div>
         <div className="h-2 bg-nb-gray-200 border border-nb-black rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#15803D] transition-all duration-300"
+            className="h-full bg-[var(--color-status-active)] transition-all duration-300"
             style={{ width: `${totalAll > 0 ? (totalPresent / totalAll) * 100 : 0}%` }}
           />
         </div>
@@ -190,7 +190,7 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
             key={area.id}
             className={cn(
               'border-2 border-nb-black rounded-nb-base overflow-hidden',
-              area.is_understaffed && 'border-l-4 border-l-[#DC2626]'
+              area.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
             )}
           >
             <button
@@ -225,7 +225,7 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
                         <div
                           className={cn(
                             'h-full rounded-full transition-all duration-300',
-                            isFullyStaffed ? 'bg-[#15803D]' : 'bg-[#D97706]'
+                            isFullyStaffed ? 'bg-[var(--color-status-active)]' : 'bg-[var(--color-status-idle)]'
                           )}
                           style={{
                             width: `${s.required > 0 ? Math.min((s.active / s.required) * 100, 100) : 0}%`,
@@ -302,7 +302,7 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
             key={rayon.id}
             className={cn(
               'border-2 border-nb-black rounded-nb-base overflow-hidden',
-              rayon.is_understaffed && 'border-l-4 border-l-[#DC2626]'
+              rayon.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
             )}
           >
             <button
@@ -340,7 +340,7 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
                       key={area.id}
                       className={cn(
                         'flex items-center gap-2 px-2 py-1.5 rounded-nb-sm border border-nb-gray-200 bg-nb-white text-xs',
-                        area.is_understaffed && 'border-l-4 border-l-[#DC2626]'
+                        area.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
                       )}
                     >
                       <span className="flex-1 font-medium text-nb-gray-700 truncate">

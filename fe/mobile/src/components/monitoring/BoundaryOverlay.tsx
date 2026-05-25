@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Marker, Polygon, Circle } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
@@ -13,7 +13,6 @@ import {
   nbColors,
   nbBorders,
   nbShadows,
-  nbTypography,
   withAlpha,
 } from '../../constants/nbTokens';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
@@ -135,9 +134,9 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
             />
             {rayon.understaffed_area_count > 0 && (
               <View style={styles.understaffedBadge}>
-                <Text style={styles.understaffedBadgeText}>
+                <NBText variant="caption" color="white" style={{ fontSize: 9, fontWeight: 'bold' }}>
                   {rayon.understaffed_area_count}
-                </Text>
+                </NBText>
               </View>
             )}
           </View>
@@ -170,7 +169,8 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2563EB',
+    // Audit H7: was '#2563EB' (exact match to nbColors.requestUnderReview).
+    backgroundColor: nbColors.requestUnderReview,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: nbBorders.base,
@@ -187,10 +187,5 @@ const styles = StyleSheet.create({
     height: 16,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  understaffedBadgeText: {
-    color: nbColors.white,
-    fontSize: 9,
-    fontWeight: nbTypography.fontWeight.bold,
   },
 });

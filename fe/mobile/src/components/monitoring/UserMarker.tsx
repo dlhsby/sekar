@@ -5,15 +5,15 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
-  nbTypography,
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
 import { getStatusColor, getRoleIcon } from '../../utils/mapUtils';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { LiveUser, UserRole } from '../../types/models.types';
@@ -126,7 +126,9 @@ export const UserMarker = React.memo(function UserMarker({
       <View style={styles.markerContainer}>
         {isCluster ? (
           <View style={[styles.clusterMarker, { backgroundColor: nbColors.primary }]}>
-            <Text style={styles.clusterText}>{clusterCount}</Text>
+            <NBText variant="body" color="white" style={styles.clusterText}>
+              {clusterCount}
+            </NBText>
           </View>
         ) : (
           <>
@@ -140,7 +142,9 @@ export const UserMarker = React.memo(function UserMarker({
             <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
             {/* Always render label placeholder to keep view hierarchy stable on Android
                 (prevents bitmap recreation flicker when label appears/disappears) */}
-            <Text
+            <NBText
+              variant="caption"
+              color="white"
               style={[
                 styles.nameLabel,
                 isCloseZoom ? styles.nameLabelFull : styles.nameLabelAbbrev,
@@ -149,7 +153,7 @@ export const UserMarker = React.memo(function UserMarker({
               numberOfLines={1}
             >
               {label ?? ''}
-            </Text>
+            </NBText>
           </>
         )}
       </View>
@@ -196,7 +200,6 @@ const styles = StyleSheet.create({
   },
   nameLabel: {
     fontSize: 10,
-    fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.white,
     textShadowColor: nbColors.black,
     textShadowOffset: { width: 1, height: 1 },
@@ -227,7 +230,5 @@ const styles = StyleSheet.create({
   },
   clusterText: {
     color: nbColors.white,
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
   },
 });

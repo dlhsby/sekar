@@ -316,7 +316,12 @@ describe('CollapsibleCard', () => {
       expect(Animated.timing).toHaveBeenCalled();
     });
 
-    it('should use native driver for chevron rotation', () => {
+    it('should use JS-driven animation for chevron rotation (Fabric lifecycle race)', () => {
+      // The chevron rotation uses `useNativeDriver: false` on purpose — see the
+      // inline comment in `CollapsibleCard.tsx` (mirrors NBSelect). Native-driven
+      // rotation races with Fabric's node lifecycle when a parent unmounts
+      // immediately after a tap, surfacing the
+      // `connectAnimatedNodeToView: Animated node ... does not exist` SoftException.
       const mockTiming = jest.fn().mockReturnValue({
         start: jest.fn(),
         stop: jest.fn(),
@@ -334,7 +339,7 @@ describe('CollapsibleCard', () => {
 
       expect(mockTiming).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ useNativeDriver: true })
+        expect.objectContaining({ useNativeDriver: false })
       );
     });
   });

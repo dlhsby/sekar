@@ -19,6 +19,15 @@ jest.mock('../../nb', () => ({
   },
 }));
 
+// Phase 4 M3d — `FieldHomeHeader` now embeds `NotificationBell`, which
+// calls `useNavigation()` and reads the `notifications` slice. The
+// existing tests render the header bare (no NavigationContainer, no
+// notifications reducer in the mock store); stub the bell to a noop so
+// the assertions stay focused on header content.
+jest.mock('../NotificationBell', () => ({
+  NotificationBell: () => null,
+}));
+
 describe('FieldHomeHeader', () => {
   const createMockStore = (
     role: UserRole = 'satgas',

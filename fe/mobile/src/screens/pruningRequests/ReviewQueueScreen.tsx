@@ -28,7 +28,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -50,6 +49,7 @@ import {
   NBBackgroundPattern,
   NBEmptyState,
   NBToast,
+  NBText,
 } from '../../components/nb';
 import {
   SortModal,
@@ -61,7 +61,6 @@ import { getPruningRequestStatusLabel } from '../../utils/statusHelpers';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -312,7 +311,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
     return (
       <View style={styles.unauthorizedContainer}>
         <NBAlert
-          type="error"
+          variant="danger"
           title="Akses Ditolak"
           message="Anda tidak memiliki izin untuk mengakses halaman ini."
         />
@@ -334,7 +333,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
       <SafeAreaView style={styles.safeArea}>
         {/* Page Title — same style as Tugas / Aktivitas / Lembur */}
         <View style={styles.headerContainer}>
-          <Text style={styles.pageTitle}>Review Permohonan Perantingan</Text>
+          <NBText variant="h1" style={styles.pageTitle}>Review Permohonan Perantingan</NBText>
         </View>
 
         {/* Filter bar — mini chips (left) + sort/filter icons (right) */}
@@ -361,12 +360,12 @@ export function ReviewQueueScreen(): React.JSX.Element {
                       chip.chipStyle === 'location' && styles.miniChipLocation,
                     ]}
                   >
-                    <Text style={styles.miniChipText}>{chip.text}</Text>
+                    <NBText variant="caption" style={styles.miniChipText}>{chip.text}</NBText>
                   </View>
                 ))}
               </ScrollView>
             ) : (
-              <Text style={styles.filterBarPlaceholder}>Semua Permohonan</Text>
+              <NBText variant="body-sm" style={styles.filterBarPlaceholder}>Semua Permohonan</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -412,7 +411,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
               />
               {activeFilterCount > 0 && (
                 <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                  <NBText variant="caption" style={styles.filterBadgeText}>{activeFilterCount}</NBText>
                 </View>
               )}
             </TouchableOpacity>
@@ -487,8 +486,6 @@ const styles = StyleSheet.create({
     paddingBottom: nbSpacing.xs,
   },
   pageTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
     color: nbColors.black,
   },
   filterBarCollapsed: {
@@ -519,7 +516,6 @@ const styles = StyleSheet.create({
     marginLeft: nbSpacing.xs,
   },
   filterBarPlaceholder: {
-    fontSize: nbTypography.fontSize.sm,
     color: nbColors.gray[400],
     fontStyle: 'italic',
   },
@@ -541,8 +537,6 @@ const styles = StyleSheet.create({
   miniChipDate: { backgroundColor: nbColors.warning },
   miniChipLocation: { backgroundColor: nbColors.infoLight },
   miniChipText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
     color: nbColors.black,
   },
   filterClearButton: {
@@ -570,8 +564,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterBadgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.white,
   },
   listWrapper: {

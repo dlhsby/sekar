@@ -17,6 +17,7 @@ import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
 import { NBBadge } from '../nb';
 import { nbColors, nbTypography, nbSpacing, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { ROLE_LABELS } from '../../constants/roles';
+import { NotificationBell } from './NotificationBell';
 
 interface FieldHomeHeaderProps {
   /** When provided: back arrow is shown; otherwise leaf icon */
@@ -68,8 +69,12 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
         )}
       </View>
 
-      {/* Right column — always present: online / syncing / pending status */}
+      {/* Right column — bell + online/syncing/pending status. The bell is
+          hidden on sub-screens (when onBack is provided) to keep the right
+          slot from overflowing on small devices and because notifications
+          are reachable from the main-tab headers anyway. */}
       <View style={styles.right}>
+        {!onBack ? <NotificationBell /> : null}
         {isSyncing ? (
           <View style={[styles.statusBadge, styles.syncingBadge]}>
             <View style={styles.syncingDot} />
@@ -145,10 +150,12 @@ const styles = StyleSheet.create({
     color: nbColors.black,
     textAlign: 'left',
   },
-  /* Right column */
+  /* Right column — bell + status badge laid out horizontally. */
   right: {
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
   },
   statusBadge: {
     flexDirection: 'row',

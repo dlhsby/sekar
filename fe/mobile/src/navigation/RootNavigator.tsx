@@ -15,6 +15,15 @@ import fcmService from '../services/notifications/fcmService';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import MainNavigator from './MainNavigator';
+// Phase 4 M3a+b — entry flow gates
+import WelcomeCarouselScreen from '../screens/auth/WelcomeCarouselScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import ChangePasswordScreen from '../screens/auth/ChangePasswordScreen';
+import OnboardingNavigator from './OnboardingNavigator';
+import {
+  hasCompletedOnboarding,
+  hasSeenCarousel,
+} from '../services/storage/asyncStorageKeys';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -54,6 +63,30 @@ function RootNavigator(): React.JSX.Element {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  // Phase 4 M3a+b — entry-flow gates. Default both to `true` (i.e., "skip
+  // carousel/onboarding") so the synchronous first render lands on the post-
+  // gate flow. The async storage probes flip the flags only when needed,
+  // which causes a one-tick re-render on first install — acceptable tradeoff
+  // for test stability (no async setup required in 50+ existing test files).
+  const [carouselSeen, setCarouselSeen] = React.useState<boolean>(true);
+  const [onboardingDone, setOnboardingDone] = React.useState<boolean>(true);
+
+  useEffect(() => {
+    hasSeenCarousel()
+      .then(setCarouselSeen)
+      .catch(() => setCarouselSeen(true)); // fail-open: don't trap user in carousel on storage error
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setOnboardingDone(true);
+      return;
+    }
+    hasCompletedOnboarding(user.id)
+      .then(setOnboardingDone)
+      .catch(() => setOnboardingDone(true)); // fail-open
+  }, [user?.id]);
+
   // May 13 — wire up deep-linking from push notifications. Two paths:
   // (1) onNotificationOpened: user tapped a tray notification while app
   //     was in background. Fires every time, so subscribe ONCE.
@@ -82,11 +115,38 @@ function RootNavigator(): React.JSX.Element {
     };
   }, [isAuthenticated]);
 
+  // Gate precedence (Phase 4 M3a+b):
+  //   1. !carouselSeen          → WelcomeCarousel stack
+  //   2. !isAuthenticated/!user → Login stack (Login + ForgotPassword sibling)
+  //   3. user.password_must_change → ChangePassword (forced, no back)
+  //   4. !onboardingDone        → Onboarding stack
+  //   5. otherwise              → MainTabs
+  const showCarousel = !carouselSeen;
+  const loggedIn = isAuthenticated && !!user;
+  const forceChange = loggedIn && user?.password_must_change === true;
+  const showOnboarding = loggedIn && !forceChange && !onboardingDone;
+
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAuthenticated || !user ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
+        {showCarousel ? (
+          <Stack.Screen name="WelcomeCarousel" component={WelcomeCarouselScreen} />
+        ) : !loggedIn ? (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+            />
+          </>
+        ) : forceChange ? (
+          <Stack.Screen
+            name="ChangePassword"
+            component={ChangePasswordScreen}
+            options={{ gestureEnabled: false }}
+          />
+        ) : showOnboarding ? (
+          <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
         ) : (
           <Stack.Screen name="MainTabs" component={MainNavigator} />
         )}

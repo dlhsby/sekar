@@ -5,6 +5,9 @@
  * @format
  */
 
+import { initSentry } from './src/services/crashReporting/sentry';
+// Initialize Sentry as early as possible so init-time errors are captured.
+initSentry();
 import React, { useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -13,9 +16,15 @@ import { store } from './src/store/store';
 import RootNavigator from './src/navigation/RootNavigator';
 import { AuthProvider, NetworkProvider } from './src/providers';
 import { syncManager } from './src/services/sync';
+import { connectivityMonitor } from './src/services/sync/connectivityMonitor.instance';
+import { ConnectivityBanner } from './src/components/common/ConnectivityBanner';
 import fcmService from './src/services/notifications/fcmService';
 import { NBToastProvider } from './src/components/nb';
-import { ErrorBoundary, PermissionRequestModal } from './src/components/common';
+import {
+  ErrorBoundary,
+  PermissionRequestModal,
+  PermissionRevocationBanner,
+} from './src/components/common';
 import { permissionManager } from './src/services/permissions';
 import { locationTracker } from './src/services/location';
 import { useAppSelector } from './src/store/hooks';
@@ -30,10 +39,13 @@ function AppContent(): React.JSX.Element {
   useEffect(() => {
     // Initialize sync manager for offline queue processing
     syncManager.initialize();
+    // Phase 4-2 (M2): start three-state connectivity monitor.
+    connectivityMonitor.start();
 
     return () => {
       // Cleanup on unmount
       syncManager.cleanup();
+      connectivityMonitor.stop();
     };
   }, []);
 
@@ -145,6 +157,14 @@ function AppContent(): React.JSX.Element {
 
   return (
     <AuthProvider>
+      {/* Phase 4-2 (M2): three-state ConnectivityBanner sits above the
+          navigator so it persists across screen transitions. */}
+      <ConnectivityBanner monitor={connectivityMonitor} />
+      {/* Phase 4 M3a+b — runtime re-check for revoked permissions. The
+          OB-2 onboarding handles first-install grants; this banner handles
+          the case where a logged-in user revokes a permission later from
+          system Settings. Hook re-evaluates on every foreground transition. */}
+      <PermissionRevocationBanner enabled={isAuthenticated && !isRestoring} />
       <RootNavigator />
       <PermissionRequestModal
         visible={showPermissionModal}

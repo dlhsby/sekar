@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { NBButton, NBBackgroundPattern, NBModal, NBText } from '../../components/nb';
 import { ProfileHeader } from '../../components/common/ProfileHeader';
 import { ProfileMenu } from '../../components/common/ProfileMenu';
@@ -20,7 +20,7 @@ import { useProfileData } from '../../hooks/useProfileData';
 import { useProfileSync } from '../../hooks/useProfileSync';
 import { useProfileLogout } from '../../hooks/useProfileLogout';
 import { locationTracker } from '../../services/location/locationTracker';
-import { nbColors, nbSpacing, nbTypography } from '../../constants/nbTokens';
+import { nbColors, nbSpacing } from '../../constants/nbTokens';
 import type { MenuItem } from '../../components/common/ProfileMenu';
 
 export function ProfileScreen({ navigation }: any): React.JSX.Element {
@@ -109,7 +109,9 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat profil...</Text>
+          <NBText variant="body" color="gray600" style={styles.loadingText}>
+            Memuat profil...
+          </NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -239,8 +241,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: nbSpacing.md,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
   },
   logoutButtonContainer: {
     paddingHorizontal: nbSpacing.md,

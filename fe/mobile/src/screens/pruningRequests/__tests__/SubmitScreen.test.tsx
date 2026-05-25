@@ -6,6 +6,11 @@
  * with the wizard; this smoke test locks the new render shape.
  */
 
+// Heavy mock stack + draft-restore async paths blow past the default 30 s
+// timeout on slower CI runners. Local fix; do not promote to jest.config
+// (other suites are fine at 30 s).
+jest.setTimeout(60000);
+
 jest.mock('../../../constants/nbTokens', () => {
   const fontStack = (font: string) => `${font}, sans-serif`;
   const typeVariant = {

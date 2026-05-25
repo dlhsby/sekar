@@ -17,17 +17,16 @@
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
   StatusBar,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
@@ -121,9 +120,13 @@ export function TrailControlBar({
 
         {/* Worker title */}
         <View style={styles.titleWrap}>
-          <Text style={styles.titleLabel}>Riwayat Lokasi</Text>
+          <NBText variant="caption" color="gray600" style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Riwayat Lokasi
+          </NBText>
           {userName ? (
-            <Text style={styles.titleName} numberOfLines={1}>{userName}</Text>
+            <NBText variant="body" style={{ color: nbColors.black }}>
+              {userName}
+            </NBText>
           ) : null}
         </View>
 
@@ -146,7 +149,9 @@ export function TrailControlBar({
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="calendar" size={12} color={nbColors.black} />
-            <Text style={styles.dateLabel}>{formatDisplayDate(date)}</Text>
+            <NBText variant="caption" style={{ color: nbColors.black, fontWeight: '600' }}>
+              {formatDisplayDate(date)}
+            </NBText>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleNextDay}
@@ -209,18 +214,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  titleLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['600'],
-    fontWeight: nbTypography.fontWeight.medium,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  titleName: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.bold,
-  },
   dateStepper: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -249,10 +242,5 @@ const styles = StyleSheet.create({
     borderLeftWidth: nbBorders.thin,
     borderRightWidth: nbBorders.thin,
     borderColor: nbColors.black,
-  },
-  dateLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
   },
 });

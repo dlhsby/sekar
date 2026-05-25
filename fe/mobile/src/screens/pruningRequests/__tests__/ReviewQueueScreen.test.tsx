@@ -75,6 +75,8 @@ jest.mock('../../../components/nb', () => {
         React.createElement(Text, { testID: 'alert-message' }, message),
       ),
     NBToast: { show: jest.fn() },
+    NBText: ({ children, style }: any) =>
+      React.createElement(Text, { style }, children),
     NBCard: ({ children, style }: any) =>
       React.createElement(View, { style, testID: 'nb-card' }, children),
     NBBadge: ({ text, label }: any) =>

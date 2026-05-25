@@ -14,7 +14,6 @@
 import React, { useState, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Switch,
@@ -26,7 +25,7 @@ import { useDispatch } from 'react-redux';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DeviceInfo from 'react-native-device-info';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { NBCard, NBBackgroundPattern, NBAlert } from '../../components/nb';
+import { NBCard, NBBackgroundPattern, NBAlert, NBText } from '../../components/nb';
 import { logout } from '../../store/slices/authSlice';
 import { resetState as resetShiftState } from '../../store/slices/shiftSlice';
 import { resetState as resetActivitiesState } from '../../store/slices/activitiesSlice';
@@ -34,7 +33,6 @@ import { resetState as resetOfflineState } from '../../store/slices/offlineSlice
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbTouchTarget,
@@ -198,11 +196,17 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
           />
         </View>
         <View style={styles.settingItemText}>
-          <Text style={[styles.settingLabel, item.danger && styles.settingLabelDanger]}>
+          <NBText
+            variant="body"
+            color={item.danger ? 'danger' : 'black'}
+            style={styles.settingLabel}
+          >
             {item.label}
-          </Text>
+          </NBText>
           {item.description && (
-            <Text style={styles.settingDescription}>{item.description}</Text>
+            <NBText variant="body-sm" color="gray600" style={styles.settingDescription}>
+              {item.description}
+            </NBText>
           )}
         </View>
       </View>
@@ -212,7 +216,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
           onValueChange={item.onToggle}
           trackColor={{
             false: nbColors.gray['300'],
-            true: nbColors.primaryLight,
+            true: nbColors.primaryHover,
           }}
           thumbColor={item.value ? nbColors.primary : nbColors.gray['100']}
           ios_backgroundColor={nbColors.gray['300']}
@@ -233,7 +237,9 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
    */
   const renderSection = (title: string, items: SettingItem[]) => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <NBText variant="caption" color="gray600" uppercase style={styles.sectionTitle}>
+        {title}
+      </NBText>
       <NBCard style={styles.sectionCard}>
         {items.map((item, index) => (
           <React.Fragment key={item.key}>
@@ -247,14 +253,17 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
-      <NBBackgroundPattern variant="grid" opacity={0.03} />
-
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+      <NBBackgroundPattern
+        pattern="grid"
+        backgroundColor={nbColors.background}
+        patternColor={nbColors.primary}
+        opacity={0.03}
       >
-        {/* Page Title */}
-        <Text style={styles.pageTitle}>Pengaturan</Text>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <NBText variant="h1" style={styles.pageTitle}>Pengaturan</NBText>
 
         {/* Notification Settings */}
         {renderSection('Notifikasi', notificationSettings)}
@@ -268,21 +277,20 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         {/* Account Settings */}
         {renderSection('Akun', accountSettings)}
 
-        {/* App Info */}
-        <View style={styles.appInfo}>
-          <Text style={styles.appInfoText}>
-            Versi {appVersion} | Build {buildNumber}
-          </Text>
-          <Text style={styles.appInfoCopyright}>
-            SEKAR - Sistem Evaluasi Kerja Satgas RTH
-          </Text>
-          <Text style={styles.appInfoCopyright}>
-            DLH Surabaya 2026
-          </Text>
-        </View>
-      </ScrollView>
+          <View style={styles.appInfo}>
+            <NBText variant="body-sm" color="gray500" style={styles.appInfoText}>
+              Versi {appVersion} | Build {buildNumber}
+            </NBText>
+            <NBText variant="caption" color="gray400" align="center">
+              SEKAR - Sistem Evaluasi Kerja Satgas RTH
+            </NBText>
+            <NBText variant="caption" color="gray400" align="center">
+              DLH Surabaya 2026
+            </NBText>
+          </View>
+        </ScrollView>
+      </NBBackgroundPattern>
 
-      {/* Logout Confirmation Alert */}
       {showLogoutAlert && (
         <View style={styles.alertOverlay}>
           <View style={styles.alertContainer}>
@@ -314,19 +322,12 @@ const styles = StyleSheet.create({
     paddingBottom: nbSpacing['2xl'],
   },
   pageTitle: {
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
     marginBottom: nbSpacing.lg,
   },
   section: {
     marginBottom: nbSpacing.lg,
   },
   sectionTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['600'],
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: nbSpacing.sm,
     marginLeft: nbSpacing.xs,
@@ -366,17 +367,8 @@ const styles = StyleSheet.create({
   settingItemText: {
     flex: 1,
   },
-  settingLabel: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
-  },
-  settingLabelDanger: {
-    color: nbColors.danger,
-  },
+  settingLabel: {},
   settingDescription: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
     marginTop: 2,
   },
   divider: {
@@ -390,14 +382,7 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing.lg,
   },
   appInfoText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['500'],
     marginBottom: nbSpacing.xs,
-  },
-  appInfoCopyright: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['400'],
-    textAlign: 'center',
   },
   alertOverlay: {
     position: 'absolute',

@@ -14,6 +14,7 @@ import {
   type TextInput as TextInputType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -41,6 +42,7 @@ function LoginScreen(): React.JSX.Element {
   const [passwordError, setPasswordError] = useState('');
 
   const passwordInputRef = useRef<TextInputType>(null);
+  const navigation = useNavigation();
 
   const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector((state) => state.auth);
@@ -231,6 +233,16 @@ function LoginScreen(): React.JSX.Element {
               fullWidth
               variant="primary"
               testID="login-button"
+            />
+
+            {/* Phase 4-7 (M3a, AS-4): contact-admin password recovery (ADR-041). */}
+            <NBButton
+              title="Lupa sandi?"
+              onPress={() => navigation.navigate('ForgotPassword' as never)}
+              disabled={isLoading}
+              fullWidth
+              variant="ghost"
+              testID="forgot-password-link"
             />
           </View>
 

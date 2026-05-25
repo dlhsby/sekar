@@ -12,7 +12,6 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
-  Text,
   ActivityIndicator,
 } from 'react-native';
 import {
@@ -22,6 +21,7 @@ import {
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
 
 interface PhotoGalleryProps {
   photos: string[];
@@ -55,7 +55,9 @@ export function PhotoGallery({ photos, testID }: PhotoGalleryProps): JSX.Element
   if (!photos || photos.length === 0) {
     return (
       <View style={styles.emptyContainer} testID={`${testID}-empty`}>
-        <Text style={styles.emptyText}>Tidak ada foto</Text>
+        <NBText variant="body" color="gray600">
+          Tidak ada foto
+        </NBText>
       </View>
     );
   }
@@ -117,7 +119,9 @@ export function PhotoGallery({ photos, testID }: PhotoGalleryProps): JSX.Element
             style={styles.closeButton}
             onPress={handleCloseModal}
             testID={`${testID}-close-button`}>
-            <Text style={styles.closeButtonText}>✕</Text>
+            <NBText variant="body" color="white" style={{ fontSize: 24, fontWeight: 'bold' }}>
+              ✕
+            </NBText>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -150,10 +154,6 @@ const styles = StyleSheet.create({
     borderRadius: nbBorderRadius.base,
     borderWidth: nbBorders.base,
     borderColor: nbColors.gray['300'],
-  },
-  emptyText: {
-    fontSize: 14,
-    color: nbColors.gray['600'],
   },
   modalContainer: {
     flex: 1,
@@ -190,11 +190,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...nbShadows.md,
-  },
-  closeButtonText: {
-    color: nbColors.surface,
-    fontSize: 24,
-    fontWeight: 'bold',
   },
 });
 

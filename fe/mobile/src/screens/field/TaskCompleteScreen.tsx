@@ -6,17 +6,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBCardTextInput } from '../../components/nb';
+import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBCardTextInput, NBText } from '../../components/nb';
 import { PhotoUploader } from '../../components/common';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
-import { nbColors, nbSpacing, nbTypography } from '../../constants/nbTokens';
+import { nbColors, nbSpacing } from '../../constants/nbTokens';
 import { mediaService, type Photo } from '../../services/media';
 import * as tasksApi from '../../services/api/tasksApi';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -122,7 +121,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat...</Text>
+          <NBText variant="body" style={styles.loadingTextMargin}>Memuat...</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -132,7 +131,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
     return (
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Tugas tidak ditemukan</Text>
+          <NBText variant="body-sm" color="danger" style={styles.errorTextMargin}>Tugas tidak ditemukan</NBText>
           <NBButton title="Kembali" variant="secondary" onPress={() => navigation.goBack()} />
         </View>
       </NBBackgroundPattern>
@@ -145,12 +144,12 @@ export function TaskCompleteScreen(): React.JSX.Element {
         {/* Task Info */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <Text style={styles.sectionTitle}>Tugas</Text>
+            <NBText variant="h3" style={styles.sectionTitleStyle}>Tugas</NBText>
           </NBCardHeader>
           <NBCardContent>
-            <Text style={styles.taskTitle}>{task.title}</Text>
-            {task.area && <Text style={styles.taskArea}>Area: {task.area.name}</Text>}
-            {task.rayon && <Text style={styles.taskArea}>Rayon: {task.rayon.name}</Text>}
+            <NBText variant="body" style={styles.taskTitleStyle}>{task.title}</NBText>
+            {task.area && <NBText variant="body-sm" style={styles.taskAreaStyle}>Area: {task.area.name}</NBText>}
+            {task.rayon && <NBText variant="body-sm" style={styles.taskAreaStyle}>Rayon: {task.rayon.name}</NBText>}
           </NBCardContent>
         </NBCard>
 
@@ -168,8 +167,8 @@ export function TaskCompleteScreen(): React.JSX.Element {
         {/* Photo Evidence */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <Text style={styles.sectionTitle}>📸 FOTO BUKTI *</Text>
-            <Text style={styles.sectionSubtitle}>Tambahkan 1-3 foto hasil pekerjaan</Text>
+            <NBText variant="h3" style={styles.sectionTitleStyle}>📸 FOTO BUKTI *</NBText>
+            <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>Tambahkan 1-3 foto hasil pekerjaan</NBText>
           </NBCardHeader>
           <NBCardContent>
             <PhotoUploader
@@ -200,14 +199,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   contentContainer: { paddingVertical: nbSpacing.md, paddingBottom: nbSpacing.xl },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' },
-  loadingText: { marginTop: nbSpacing.md, fontSize: nbTypography.fontSize.base, color: nbColors.gray['600'] },
+  loadingTextMargin: { marginTop: nbSpacing.md },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', paddingHorizontal: nbSpacing.lg },
-  errorText: { fontSize: nbTypography.fontSize.lg, color: nbColors.danger, marginBottom: nbSpacing.md, textAlign: 'center' },
+  errorTextMargin: { marginBottom: nbSpacing.md, textAlign: 'center' },
   card: { marginHorizontal: nbSpacing.md, marginBottom: nbSpacing.md },
-  sectionTitle: { fontSize: nbTypography.fontSize.lg, fontWeight: nbTypography.fontWeight.extrabold, color: nbColors.black, marginBottom: nbSpacing.xs, letterSpacing: 0.5, textTransform: 'uppercase' },
-  sectionSubtitle: { fontSize: nbTypography.fontSize.sm, fontWeight: nbTypography.fontWeight.medium, color: nbColors.gray['600'], marginBottom: nbSpacing.md },
-  taskTitle: { fontSize: nbTypography.fontSize.base, fontWeight: '600', color: nbColors.black, marginBottom: nbSpacing.xs },
-  taskArea: { fontSize: nbTypography.fontSize.sm, color: nbColors.gray['600'] },
+  sectionTitleStyle: { marginBottom: nbSpacing.xs },
+  sectionSubtitleStyle: { marginBottom: nbSpacing.md },
+  taskTitleStyle: { marginBottom: nbSpacing.xs },
+  taskAreaStyle: {},
   actionContainer: { marginHorizontal: nbSpacing.md, marginTop: nbSpacing.md, gap: nbSpacing.sm },
 });
 

@@ -13,8 +13,18 @@ const QUEUE_KEY = 'OFFLINE_QUEUE';
 /**
  * Queue item types
  * Phase 3: pruning_request.submit added for staff_kecamatan offline submission
+ * Phase 4-2 (M2): overtime-start, overtime-end, task-completion, reassignment
  */
-export type QueueItemType = 'clock-in' | 'clock-out' | 'activity' | 'location' | 'pruning_request.submit';
+export type QueueItemType =
+  | 'clock-in'
+  | 'clock-out'
+  | 'activity'
+  | 'location'
+  | 'pruning_request.submit'
+  | 'overtime-start'
+  | 'overtime-end'
+  | 'task-completion'
+  | 'reassignment';
 
 /**
  * Queue item status

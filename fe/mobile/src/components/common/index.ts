@@ -15,6 +15,7 @@ export { EmptyState } from './EmptyState';
 export { ChangePasswordModal } from './ChangePasswordModal';
 export { ErrorBoundary } from './ErrorBoundary';
 export { PermissionRequestModal } from './PermissionRequestModal';
+export { PermissionRevocationBanner } from './PermissionRevocationBanner';
 export { ProfileHeader } from './ProfileHeader';
 export { ProfileMenu, type MenuItem } from './ProfileMenu';
 export { SyncStatusCard, type SyncStatus } from './SyncStatusCard';

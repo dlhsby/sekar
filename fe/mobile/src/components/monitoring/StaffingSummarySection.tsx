@@ -12,6 +12,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { NBText } from '../nb/NBText';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -89,14 +90,18 @@ export function StaffingSummarySection({
       {currentDayTypeLabel && (
         <View style={[styles.dayTypeBadge, { backgroundColor: getDayTypeBadgeColor(currentDayTypeLabel) }]}>
           <MaterialCommunityIcons name="calendar" size={12} color={nbColors.white} />
-          <Text style={styles.dayTypeBadgeText}>{currentDayTypeLabel}</Text>
+          <NBText variant="caption" color="white" style={{ fontWeight: '600' }}>
+            {currentDayTypeLabel}
+          </NBText>
         </View>
       )}
 
       {isLoading ? (
         <ActivityIndicator size="small" color={nbColors.primary} />
       ) : items.length === 0 ? (
-        <Text style={styles.emptyText}>Tidak ada data kepegawaian</Text>
+        <NBText variant="body-sm" color="gray500" style={{ fontStyle: 'italic' }}>
+          Tidak ada data kepegawaian
+        </NBText>
       ) : (
         items.map(item => {
           const pct = getStaffingPercentage(item);
@@ -111,10 +116,12 @@ export function StaffingSummarySection({
                 activeOpacity={0.7}
               >
                 <View style={styles.itemHeaderLeft}>
-                  <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.itemStats}>
+                  <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: 'bold' }} numberOfLines={1}>
+                    {item.name}
+                  </NBText>
+                  <NBText variant="caption" color="gray600" style={{ marginTop: 2 }}>
                     {item.total_active} aktif / {item.roles.reduce((s, r) => s + r.total_required, 0)} dibutuhkan
-                  </Text>
+                  </NBText>
                 </View>
                 <View style={styles.itemHeaderRight}>
                   {item.is_fully_staffed ? (

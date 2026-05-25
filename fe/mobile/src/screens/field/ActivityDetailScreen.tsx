@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   Alert,
@@ -18,8 +17,8 @@ import {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import { getActivityById, approveActivity, rejectActivity } from '../../services/api/activitiesApi';
-import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBBadge, NBButton, NBCardTextInput } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
+import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBBadge, NBButton, NBCardTextInput, NBText } from '../../components/nb';
+import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import type { Activity } from '../../types/models.types';
 import { useAppSelector } from '../../store/hooks';
 
@@ -172,7 +171,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <Text style={styles.loadingText}>Memuat data...</Text>
+          <NBText variant="body" style={styles.loadingTextMargin}>Memuat data...</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -187,7 +186,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Aktivitas tidak ditemukan</Text>
+          <NBText variant="body" style={styles.loadingTextMargin}>Aktivitas tidak ditemukan</NBText>
           <NBButton
             title="Kembali"
             variant="secondary"
@@ -219,23 +218,23 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {/* General Information Card - Merged Time & Worker */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>📋 INFORMASI UMUM</Text>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>📋 INFORMASI UMUM</NBText>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Tanggal & Waktu</Text>
-                <Text style={styles.value}>{formatDateTime(activity.created_at)}</Text>
+                <NBText variant="body-sm" style={styles.labelStyle}>Tanggal & Waktu</NBText>
+                <NBText variant="body" style={styles.valueStyle}>{formatDateTime(activity.created_at)}</NBText>
               </View>
               {activity.user && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Nama Petugas</Text>
-                  <Text style={styles.value}>{activity.user.full_name}</Text>
+                  <NBText variant="body-sm" style={styles.labelStyle}>Nama Petugas</NBText>
+                  <NBText variant="body" style={styles.valueStyle}>{activity.user.full_name}</NBText>
                 </View>
               )}
               {activity.area?.name && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Area</Text>
-                  <Text style={styles.value}>{activity.area.name}</Text>
+                  <NBText variant="body-sm" style={styles.labelStyle}>Area</NBText>
+                  <NBText variant="body" style={styles.valueStyle}>{activity.area.name}</NBText>
                 </View>
               )}
             </NBCardContent>
@@ -245,7 +244,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
           <NBCard style={styles.card}>
             <NBCardHeader>
               <View style={styles.statusRow}>
-                <Text style={styles.sectionTitle}>📋 STATUS</Text>
+                <NBText variant="h3" style={styles.sectionTitleStyle}>📋 STATUS</NBText>
                 <NBBadge
                   text={getActivityStatusLabel(activity.status)}
                   color={getActivityStatusVariant(activity.status)}
@@ -255,20 +254,20 @@ export function ActivityDetailScreen(): React.JSX.Element {
             <NBCardContent>
               {activity.status === 'rejected' && activity.rejection_reason && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Alasan Penolakan</Text>
-                  <Text style={styles.value}>{activity.rejection_reason}</Text>
+                  <NBText variant="body-sm" style={styles.labelStyle}>Alasan Penolakan</NBText>
+                  <NBText variant="body" style={styles.valueStyle}>{activity.rejection_reason}</NBText>
                 </View>
               )}
               {activity.reviewer && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Direview Oleh</Text>
-                  <Text style={styles.value}>{activity.reviewer.full_name}</Text>
+                  <NBText variant="body-sm" style={styles.labelStyle}>Direview Oleh</NBText>
+                  <NBText variant="body" style={styles.valueStyle}>{activity.reviewer.full_name}</NBText>
                 </View>
               )}
               {activity.reviewed_at && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.label}>Tanggal Review</Text>
-                  <Text style={styles.value}>{formatDateTime(activity.reviewed_at)}</Text>
+                  <NBText variant="body-sm" style={styles.labelStyle}>Tanggal Review</NBText>
+                  <NBText variant="body" style={styles.valueStyle}>{formatDateTime(activity.reviewed_at)}</NBText>
                 </View>
               )}
             </NBCardContent>
@@ -278,8 +277,8 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {activity.photo_urls.length > 0 && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>📸 FOTO AKTIVITAS</Text>
-                <Text style={styles.sectionSubtitle}>{activity.photo_urls.length} foto dilampirkan</Text>
+                <NBText variant="h3" style={styles.sectionTitleStyle}>📸 FOTO AKTIVITAS</NBText>
+                <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{activity.photo_urls.length} foto dilampirkan</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -304,12 +303,12 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {activity.activityType && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</Text>
+                <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ JENIS AKTIVITAS</NBText>
               </NBCardHeader>
               <NBCardContent>
-                <Text style={styles.value}>{activity.activityType.name}</Text>
+                <NBText variant="body" style={styles.valueStyle}>{activity.activityType.name}</NBText>
                 {activity.activityType.description && (
-                  <Text style={styles.description}>{activity.activityType.description}</Text>
+                  <NBText variant="body-sm" style={styles.descriptionStyle}>{activity.activityType.description}</NBText>
                 )}
               </NBCardContent>
             </NBCard>
@@ -318,10 +317,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {/* Description Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>📝 DESKRIPSI PEKERJAAN</Text>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>📝 DESKRIPSI PEKERJAAN</NBText>
             </NBCardHeader>
             <NBCardContent>
-              <Text style={styles.descriptionText}>{activity.description}</Text>
+              <NBText variant="body" style={styles.descriptionTextStyle}>{activity.description}</NBText>
             </NBCardContent>
           </NBCard>
 
@@ -329,13 +328,13 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {activity.gps_lat != null && activity.gps_lng != null ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
+                <NBText variant="h3" style={styles.sectionTitleStyle}>📍 LOKASI GPS</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <View style={styles.locationContainer}>
-                  <Text style={styles.locationText}>
+                  <NBText variant="mono-sm" style={styles.locationTextStyle}>
                     {`${Number(activity.gps_lat).toFixed(6)}, ${Number(activity.gps_lng).toFixed(6)}`}
-                  </Text>
+                  </NBText>
                 </View>
               </NBCardContent>
             </NBCard>
@@ -428,11 +427,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: nbSpacing.md,
   },
-  loadingText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
-  },
+  loadingTextMargin: {},
   contentContainer: {
     paddingVertical: nbSpacing.md,
     paddingBottom: nbSpacing['2xl'],
@@ -448,17 +443,8 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
   },
-  sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sectionSubtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+  sectionTitleStyle: {},
+  sectionSubtitleStyle: {
     marginTop: nbSpacing.xs,
   },
   statusRow: {
@@ -469,29 +455,14 @@ const styles = StyleSheet.create({
   infoRow: {
     marginBottom: nbSpacing.md,
   },
-  label: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[700],
+  labelStyle: {
     marginBottom: nbSpacing.xs,
   },
-  value: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
-  },
-  description: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[600],
+  valueStyle: {},
+  descriptionStyle: {
     marginTop: nbSpacing.xs,
   },
-  descriptionText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.black,
-    lineHeight: nbTypography.fontSize.base * 1.5,
-  },
+  descriptionTextStyle: {},
   photosContainer: {
     gap: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
@@ -511,13 +482,7 @@ const styles = StyleSheet.create({
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
-  locationText: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    letterSpacing: 0.5,
-  },
+  locationTextStyle: {},
   rejectInputSection: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,

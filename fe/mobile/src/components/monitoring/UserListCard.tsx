@@ -5,16 +5,16 @@
  */
 
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
 } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
 import { getStatusColor, getRoleIcon } from '../../utils/mapUtils';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { LiveUser, UserRole } from '../../types/models.types';
@@ -69,8 +69,12 @@ export function UserListCard({ user, onPress }: UserListCardProps): React.JSX.El
       {/* Header row: status dot + name + time */}
       <View style={styles.header}>
         <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-        <Text style={styles.name} numberOfLines={1}>{firstName}</Text>
-        <Text style={styles.time}>{relativeTime}</Text>
+        <NBText variant="body-sm" style={styles.name} numberOfLines={1}>
+          {firstName}
+        </NBText>
+        <NBText variant="caption" color="gray500" style={styles.time}>
+          {relativeTime}
+        </NBText>
       </View>
 
       {/* Role badge */}
@@ -80,11 +84,15 @@ export function UserListCard({ user, onPress }: UserListCardProps): React.JSX.El
           size={12}
           color={nbColors.gray['600']}
         />
-        <Text style={styles.roleText} numberOfLines={1}>{roleLabel}</Text>
+        <NBText variant="caption" color="gray600" style={styles.roleText} numberOfLines={1}>
+          {roleLabel}
+        </NBText>
       </View>
 
       {/* Area */}
-      <Text style={styles.areaText} numberOfLines={1}>{user.area_name}</Text>
+      <NBText variant="caption" color="gray500" numberOfLines={1}>
+        {user.area_name}
+      </NBText>
     </TouchableOpacity>
   );
 }
@@ -116,13 +124,9 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.gray['800'],
   },
   time: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
     flexShrink: 0,
   },
   roleBadge: {
@@ -131,12 +135,6 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   roleText: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['600'],
     flex: 1,
-  },
-  areaText: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
   },
 });

@@ -53,10 +53,14 @@ import {
   getSundayWeekBoundsForIso,
 } from '../../../utils/dateUtils';
 
+// Audit H7: capacity day-status colors map cleanly to plant-status semantics
+// (available ≈ ok, partial ≈ due_soon, full ≈ overdue). Was '#16a34a' /
+// '#facc15' / '#dc2626' hardcoded; plantOk + plantDue + plantOverdue tokens
+// give an exact (overdue) and visually-equivalent (ok / due) substitute.
 const STATUS_COLOR: Record<DayStatus, string> = {
-  available: '#16a34a',
-  partial: '#facc15',
-  full: '#dc2626',
+  available: nbColors.plantOk,
+  partial: nbColors.plantDue,
+  full: nbColors.plantOverdue,
   unknown: nbColors.gray300,
 };
 

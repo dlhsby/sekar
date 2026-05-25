@@ -15,18 +15,18 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Marker, Polyline, Callout } from 'react-native-maps';
 import type MapView from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
   nbShadows,
   nbSpacing,
 } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
 import { getUserLocationHistory } from '../../services/api/monitoringApi';
 import { TrailControlBar } from './TrailControlBar';
 import { TrailInfoBar } from './TrailInfoBar';
@@ -175,22 +175,28 @@ function TrailPointCallout({ title, point }: TrailPointCalloutProps): React.JSX.
   return (
     <Callout tooltip>
       <View style={styles.callout}>
-        <Text style={styles.calloutTitle}>{title}</Text>
-        <Text style={styles.calloutTime}>{formatTimeFull(point.logged_at)}</Text>
-        <Text style={styles.calloutDetail}>
+        <NBText variant="caption" color="white" style={{ marginBottom: 2 }}>
+          {title}
+        </NBText>
+        <NBText variant="caption" color="white">
+          {formatTimeFull(point.logged_at)}
+        </NBText>
+        <NBText variant="caption" color="gray400">
           {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}
-        </Text>
+        </NBText>
         {point.accuracy != null && (
-          <Text style={styles.calloutDetail}>
+          <NBText variant="caption" color="gray400">
             ±{Number(point.accuracy).toFixed(0)} m
-          </Text>
+          </NBText>
         )}
         {point.battery_level != null && (
-          <Text style={styles.calloutDetail}>Baterai: {point.battery_level}%</Text>
+          <NBText variant="caption" color="gray400">
+            Baterai: {point.battery_level}%
+          </NBText>
         )}
-        <Text style={styles.calloutDetail}>
+        <NBText variant="caption" color="gray400">
           {point.is_within_area ? 'Di dalam area' : 'Di luar area'}
-        </Text>
+        </NBText>
       </View>
     </Callout>
   );
@@ -280,7 +286,9 @@ export function LocationTrailMapLayers({
         >
           <View style={[styles.flagMarker, styles.flagMarkerLight]}>
             <MaterialCommunityIcons name="flag" size={14} color={nbColors.black} />
-            <Text style={styles.flagTextDark}>Mulai {formatTime(startPoint.logged_at)}</Text>
+            <NBText variant="caption" color="black" style={{ fontSize: 9 }}>
+              Mulai {formatTime(startPoint.logged_at)}
+            </NBText>
           </View>
           <TrailPointCallout title="Titik Mulai" point={startPoint} />
         </Marker>
@@ -293,7 +301,9 @@ export function LocationTrailMapLayers({
         >
           <View style={[styles.flagMarker, styles.flagMarkerDark]}>
             <MaterialCommunityIcons name="flag-checkered" size={14} color={nbColors.white} />
-            <Text style={styles.flagText}>Akhir {formatTime(endPoint.logged_at)}</Text>
+            <NBText variant="caption" color="white" style={{ fontSize: 9 }}>
+              Akhir {formatTime(endPoint.logged_at)}
+            </NBText>
           </View>
           <TrailPointCallout title="Titik Akhir" point={endPoint} />
         </Marker>
@@ -309,9 +319,9 @@ export function LocationTrailMapLayers({
             tracksViewChanges={false}
           >
             <View style={[styles.numberedMarker, { borderColor: accent }]}>
-              <Text style={[styles.numberedMarkerText, { color: accent }]}>
+              <NBText variant="caption" style={{ color: accent, fontSize: 9, lineHeight: 11 }}>
                 {displayNum}
-              </Text>
+              </NBText>
             </View>
             <TrailPointCallout title={`Titik #${displayNum}`} point={pt} />
           </Marker>
@@ -357,12 +367,16 @@ export function LocationTrailOverlay({
 
       {isLoading && (
         <View style={styles.loadingOverlay}>
-          <Text style={styles.loadingText}>Memuat riwayat lokasi...</Text>
+          <NBText variant="body-sm" color="white" style={styles.loadingText}>
+            Memuat riwayat lokasi...
+          </NBText>
         </View>
       )}
       {error && (
         <View style={styles.loadingOverlay}>
-          <Text style={styles.errorText}>{error}</Text>
+          <NBText variant="body-sm" color="dangerDark" style={styles.errorText}>
+            {error}
+          </NBText>
         </View>
       )}
     </>
@@ -390,16 +404,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.black,
     borderColor: nbColors.black,
   },
-  flagText: {
-    color: nbColors.white,
-    fontSize: 9,
-    fontWeight: nbTypography.fontWeight.bold,
-  },
-  flagTextDark: {
-    color: nbColors.black,
-    fontSize: 9,
-    fontWeight: nbTypography.fontWeight.bold,
-  },
+
   numberedMarker: {
     width: 18,
     height: 18,
@@ -409,33 +414,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  numberedMarkerText: {
-    fontSize: 9,
-    fontWeight: nbTypography.fontWeight.bold,
-    lineHeight: 11,
-    textAlign: 'center',
-  },
+
   callout: {
     backgroundColor: nbColors.black,
     borderRadius: nbBorderRadius.sm,
     padding: nbSpacing.xs,
     minWidth: 120,
   },
-  calloutTitle: {
-    color: nbColors.white,
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    marginBottom: 2,
-  },
-  calloutTime: {
-    color: nbColors.white,
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.semibold,
-  },
-  calloutDetail: {
-    color: nbColors.gray['400'],
-    fontSize: nbTypography.fontSize.xs,
-  },
+
   loadingOverlay: {
     position: 'absolute',
     top: '50%',
@@ -444,16 +430,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: nbColors.white,
-    fontSize: nbTypography.fontSize.sm,
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.xs,
     borderRadius: nbBorderRadius.base,
   },
   errorText: {
-    color: nbColors.dangerDark,
-    fontSize: nbTypography.fontSize.sm,
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.xs,

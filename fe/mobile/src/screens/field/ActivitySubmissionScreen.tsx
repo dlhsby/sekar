@@ -7,7 +7,6 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   SafeAreaView,
@@ -16,9 +15,9 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NBAlert, NBBackgroundPattern } from '../../components/nb';
+import { NBAlert, NBBackgroundPattern, NBText } from '../../components/nb';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBSelect, NBCardTextInput, type NBSelectOption } from '../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { PhotoUploader } from '../../components/common';
 import { useActivityForm } from '../../hooks';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -154,9 +153,9 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* Validation error summary */}
           {Object.values(errors).some(Boolean) && (
             <View style={styles.errorSummary}>
-              <Text style={styles.errorSummaryTitle}>⚠️ Mohon lengkapi data berikut:</Text>
+              <NBText variant="body-sm" style={styles.errorSummaryTitleStyle}>⚠️ Mohon lengkapi data berikut:</NBText>
               {Object.values(errors).filter(Boolean).map((msg, i) => (
-                <Text key={i} style={styles.errorSummaryItem}>• {msg}</Text>
+                <NBText key={i} variant="body-sm" style={styles.errorSummaryItemStyle}>• {msg}</NBText>
               ))}
             </View>
           )}
@@ -175,17 +174,17 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* Offline warning */}
           {!isOnline && (
             <NBCard style={styles.offlineWarning}>
-              <Text style={styles.offlineWarningText}>
+              <NBText variant="body-sm" color="warning" style={styles.offlineWarningTextStyle}>
                 ⚠️ Mode Offline - Aktivitas akan disimpan dan dikirim saat online
-              </Text>
+              </NBText>
             </NBCard>
           )}
 
           {/* Photos section */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>📸 FOTO AKTIVITAS</Text>
-              <Text style={styles.sectionSubtitle}>Tambahkan 1-3 foto pekerjaan yang dilakukan</Text>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>📸 FOTO AKTIVITAS</NBText>
+              <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>Tambahkan 1-3 foto pekerjaan yang dilakukan</NBText>
             </NBCardHeader>
             <NBCardContent>
               <PhotoUploader
@@ -200,17 +199,17 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* Activity Type Picker */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</Text>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ JENIS AKTIVITAS</NBText>
             </NBCardHeader>
             <NBCardContent>
               {isLoadingTypes ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <Text style={styles.loadingText}>Memuat jenis aktivitas...</Text>
+                  <NBText variant="body-sm" style={styles.loadingTextStyle}>Memuat jenis aktivitas...</NBText>
                 </View>
               ) : activityTypeOptions.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Tidak ada jenis aktivitas tersedia</Text>
+                  <NBText variant="body-sm" style={styles.emptyTextStyle}>Tidak ada jenis aktivitas tersedia</NBText>
                   <NBButton title="Coba Lagi" onPress={loadActivityTypes} variant="secondary" size="sm" />
                 </View>
               ) : (
@@ -223,23 +222,23 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
                   searchPlaceholder="Cari jenis aktivitas..."
                 />
               )}
-              {errors.activityType && <Text style={styles.errorText}>{errors.activityType}</Text>}
+              {errors.activityType && <NBText variant="body-sm" style={styles.errorTextStyle}>{errors.activityType}</NBText>}
             </NBCardContent>
           </NBCard>
 
           {/* Tagged Users (optional, ADR-038) */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>🏷️ TAG REKAN KERJA</Text>
-              <Text style={styles.sectionSubtitle}>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ TAG REKAN KERJA</NBText>
+              <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>
                 Opsional — tag rekan satu area yang ikut bekerja pada aktivitas ini
-              </Text>
+              </NBText>
             </NBCardHeader>
             <NBCardContent>
               {isLoadingTaggableUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <Text style={styles.loadingText}>Memuat daftar rekan...</Text>
+                  <NBText variant="body-sm" style={styles.loadingTextStyle}>Memuat daftar rekan...</NBText>
                 </View>
               ) : taggableOptions.length > 0 ? (
                 <NBSelect
@@ -252,7 +251,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Tidak ada rekan satu area untuk di-tag</Text>
+                  <NBText variant="body-sm" style={styles.emptyTextStyle}>Tidak ada rekan satu area untuk di-tag</NBText>
                 </View>
               )}
             </NBCardContent>
@@ -274,23 +273,23 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* GPS location */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>📍 LOKASI GPS</Text>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>📍 LOKASI GPS</NBText>
             </NBCardHeader>
             <NBCardContent>
-              {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
+              {errors.location && <NBText variant="body-sm" style={styles.errorTextStyle}>{errors.location}</NBText>}
               {isLoadingLocation ? (
                 <View style={styles.locationLoading}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <Text style={styles.locationLoadingText}>Mendapatkan lokasi...</Text>
+                  <NBText variant="body-sm" style={styles.locationLoadingTextStyle}>Mendapatkan lokasi...</NBText>
                 </View>
               ) : form.location ? (
                 <View style={styles.locationInfo}>
-                  <Text style={styles.locationText}>
+                  <NBText variant="mono-sm" style={styles.locationTextStyle}>
                     {form.location.latitude.toFixed(6)}, {form.location.longitude.toFixed(6)}
-                  </Text>
-                  <Text style={styles.locationAccuracy}>
+                  </NBText>
+                  <NBText variant="body-sm" style={styles.locationAccuracyStyle}>
                     Akurasi: ±{Math.round(form.location.accuracy)}m
-                  </Text>
+                  </NBText>
                 </View>
               ) : (
                 <NBButton title="Dapatkan Lokasi GPS" onPress={getCurrentLocation} variant="secondary" />
@@ -355,19 +354,10 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: nbSpacing.md,
   },
-  sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
+  sectionTitleStyle: {
     marginBottom: nbSpacing.xs,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
-  sectionSubtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-  },
+  sectionSubtitleStyle: {},
   offlineWarning: {
     backgroundColor: nbColors.warningLight,
     borderWidth: nbBorders.base,
@@ -375,18 +365,14 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
   },
-  offlineWarningText: {
-    color: nbColors.warning,
-    fontSize: nbTypography.fontSize.sm,
-  },
+  offlineWarningTextStyle: {},
   locationLoading: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: nbSpacing.md,
   },
-  locationLoadingText: {
+  locationLoadingTextStyle: {
     marginLeft: nbSpacing.sm,
-    color: nbColors.gray['600'],
   },
   locationInfo: {
     padding: nbSpacing.lg,
@@ -396,21 +382,11 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
-  locationText: {
-    fontSize: nbTypography.fontSize.lg,
-    color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.bold,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  locationAccuracy: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
+  locationTextStyle: {},
+  locationAccuracyStyle: {
     marginTop: nbSpacing.sm,
   },
-  errorText: {
-    color: nbColors.danger,
-    fontSize: nbTypography.fontSize.sm,
+  errorTextStyle: {
     marginBottom: nbSpacing.sm,
   },
   loadingContainer: {
@@ -418,18 +394,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: nbSpacing.md,
   },
-  loadingText: {
+  loadingTextStyle: {
     marginLeft: nbSpacing.sm,
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.sm,
   },
   emptyContainer: {
     alignItems: 'center',
     padding: nbSpacing.lg,
   },
-  emptyText: {
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.sm,
+  emptyTextStyle: {
     marginBottom: nbSpacing.md,
   },
   errorSummary: {
@@ -440,15 +412,10 @@ const styles = StyleSheet.create({
     padding: nbSpacing.sm,
     marginBottom: nbSpacing.md,
   },
-  errorSummaryTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.danger,
+  errorSummaryTitleStyle: {
     marginBottom: nbSpacing.xs,
   },
-  errorSummaryItem: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.danger,
+  errorSummaryItemStyle: {
     marginTop: 2,
   },
 });

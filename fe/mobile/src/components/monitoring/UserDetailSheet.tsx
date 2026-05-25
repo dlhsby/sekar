@@ -212,6 +212,7 @@ export function UserDetailSheet({
 
         {/* Action buttons */}
         <View style={styles.actionRow}>
+          {/* eslint-disable-next-line sekar-design/no-inline-hex-colors -- WhatsApp brand color; no NB token equivalent. */}
           <ActionButton
             icon="whatsapp"
             label="WhatsApp"
@@ -237,7 +238,8 @@ export function UserDetailSheet({
             <ActionButton
               icon="account-switch"
               label="Reassign"
-              color="#2563EB"
+              // Audit H7: was '#2563EB' (exact match to nbColors.requestUnderReview).
+              color={nbColors.requestUnderReview}
               disabled={false}
               onPress={handleReassign}
             />

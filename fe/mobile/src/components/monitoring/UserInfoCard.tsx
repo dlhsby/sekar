@@ -6,16 +6,15 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Animated,
 } from 'react-native';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
   nbBorderRadius,
-  nbTypography,
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
@@ -98,34 +97,54 @@ export function UserInfoCard({
         <View style={styles.content}>
           <View style={styles.headerSection}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
+              <NBText variant="body-lg" color="white">
                 {getInitials(user.full_name)}
-              </Text>
+              </NBText>
             </View>
             <View style={styles.headerText}>
-              <Text style={styles.userName}>{user.full_name}</Text>
-              <Text style={styles.userUsername}>@{user.username}</Text>
+              <NBText variant="body-lg" style={{ color: nbColors.black, marginBottom: 2 }}>
+                {user.full_name}
+              </NBText>
+              <NBText variant="body-sm" color="gray600">
+                @{user.username}
+              </NBText>
             </View>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Lokasi</Text>
-            <Text style={styles.infoValue}>{user.shift.area.name}</Text>
+            <NBText variant="body-sm" color="gray600">
+              Lokasi
+            </NBText>
+            <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
+              {user.shift.area.name}
+            </NBText>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Masuk</Text>
-            <Text style={styles.infoValue}>{formatTime(clockInTime)}</Text>
+            <NBText variant="body-sm" color="gray600">
+              Masuk
+            </NBText>
+            <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
+              {formatTime(clockInTime)}
+            </NBText>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Durasi kerja</Text>
-            <Text style={styles.infoValue}>{duration.formatted}</Text>
+            <NBText variant="body-sm" color="gray600">
+              Durasi kerja
+            </NBText>
+            <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
+              {duration.formatted}
+            </NBText>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Update lokasi</Text>
-            <Text style={styles.infoValue}>{lastUpdate}</Text>
+            <NBText variant="body-sm" color="gray600">
+              Update lokasi
+            </NBText>
+            <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
+              {lastUpdate}
+            </NBText>
           </View>
 
           {onViewDetails && (
@@ -133,7 +152,9 @@ export function UserInfoCard({
               style={styles.detailsButton}
               onPress={onViewDetails}
             >
-              <Text style={styles.detailsButtonText}>Lihat Detail</Text>
+              <NBText variant="body-sm" color="white" style={{ fontWeight: '600' }}>
+                Lihat Detail
+              </NBText>
             </TouchableOpacity>
           )}
         </View>
@@ -202,23 +223,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: nbSpacing.md,
   },
-  avatarText: {
-    color: nbColors.surface,
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-  },
   headerText: {
     flex: 1,
-  },
-  userName: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
-    marginBottom: 2,
-  },
-  userUsername: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
   },
   infoRow: {
     flexDirection: 'row',
@@ -227,15 +233,6 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: nbColors.gray['200'],
-  },
-  infoLabel: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
-  },
-  infoValue: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
   },
   detailsButton: {
     marginTop: nbSpacing.md,
@@ -246,10 +243,5 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     alignItems: 'center',
     ...nbShadows.sm,
-  },
-  detailsButtonText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.surface,
   },
 });

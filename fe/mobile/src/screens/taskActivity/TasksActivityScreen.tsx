@@ -8,7 +8,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -17,9 +16,9 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppSelector } from '../../store/hooks';
-import { NBBackgroundPattern, NBButton, NBTab } from '../../components/nb';
+import { NBBackgroundPattern, NBButton, NBTab, NBText } from '../../components/nb';
 import { TaskFilterModal, ActivityFilterModal } from '../../components/modals';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
 import { ACTIVITY_SUBMITTERS, TASK_CREATORS, canMonitor } from '../../constants/roles';
 import { getTaskStatusLabel } from '../../utils/statusHelpers';
 import type { MainTabParamList } from '../../types/navigation.types';
@@ -479,12 +478,12 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
             >
               {chips.map((chip, i) => (
                 <View key={i} style={[styles.miniChip, chip.style]}>
-                  <Text style={styles.miniChipText}>{chip.text}</Text>
+                  <NBText variant="caption" style={styles.miniChipText}>{chip.text}</NBText>
                 </View>
               ))}
             </ScrollView>
           ) : (
-            <Text style={styles.filterBarPlaceholder}>Semua {label}</Text>
+            <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua {label}</NBText>
           )}
           {count > 0 && (
             <TouchableOpacity
@@ -524,7 +523,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
             />
             {count > 0 && (
               <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{count}</Text>
+                <NBText variant="caption" color="white" style={styles.filterBadgeText}>{count}</NBText>
               </View>
             )}
           </TouchableOpacity>
@@ -552,7 +551,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
         ]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Tugas & Aktivitas</Text>
+            <NBText variant="h3" style={styles.title}>Tugas & Aktivitas</NBText>
           </View>
 
           {/* Main Tabs */}
@@ -709,11 +708,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: nbSpacing.sm,
   },
-  title: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
-  },
+  title: {},
   tabContainer: {
     marginBottom: nbSpacing.sm,
   },
@@ -744,8 +739,6 @@ const styles = StyleSheet.create({
     marginLeft: nbSpacing.xs,
   },
   filterBarPlaceholder: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[400],
     fontStyle: 'italic',
   },
   filterIconButton: {
@@ -772,11 +765,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  filterBadgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
-  },
+  filterBadgeText: {},
   miniChipsContent: {
     alignItems: 'center',
     gap: nbSpacing.xs,
@@ -802,11 +791,7 @@ const styles = StyleSheet.create({
   miniChipLocation: {
     backgroundColor: nbColors.infoLight,
   },
-  miniChipText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
-  },
+  miniChipText: {},
   content: {
     flex: 1,
   },

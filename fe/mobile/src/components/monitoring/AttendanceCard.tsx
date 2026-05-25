@@ -4,15 +4,15 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import {
   nbColors,
   nbSpacing,
   nbBorderRadius,
-  nbTypography,
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
 import { NBBadge } from '../nb/NBBadge';
 
 interface AttendanceCardProps {
@@ -77,34 +77,44 @@ export default function AttendanceCard({
             styles.avatar,
             isClockedIn ? styles.avatarClockedIn : styles.avatarNotClockedIn,
           ]}>
-          <Text style={styles.avatarText}>{initials}</Text>
+          <NBText variant="body" style={styles.avatarText}>
+            {initials}
+          </NBText>
         </View>
 
         {/* Worker info */}
         <View style={styles.infoSection}>
-          <Text style={styles.workerName}>{workerName}</Text>
+          <NBText variant="body" style={styles.workerName}>
+            {workerName}
+          </NBText>
 
           {isClockedIn && clockInTime && (
             <>
-              <Text style={styles.detailText}>
+              <NBText variant="body-sm" color="gray600" style={{ marginTop: 2 }}>
                 Masuk: {formatTime(clockInTime)}
-              </Text>
+              </NBText>
               {hoursWorked !== undefined && (
-                <Text style={styles.detailText}>
+                <NBText variant="body-sm" color="gray600" style={{ marginTop: 2 }}>
                   Durasi: {formatDuration(hoursWorked)}
-                </Text>
+                </NBText>
               )}
               {areaName && (
-                <Text style={styles.areaText}>{areaName}</Text>
+                <NBText variant="caption" color="gray500" style={styles.areaText}>
+                  {areaName}
+                </NBText>
               )}
             </>
           )}
 
           {!isClockedIn && (
             <>
-              <Text style={styles.absentText}>Belum absen hari ini</Text>
+              <NBText variant="body-sm" color="gray600" style={{ fontStyle: 'italic' }}>
+                Belum absen hari ini
+              </NBText>
               {areaName && (
-                <Text style={styles.areaText}>Area: {areaName}</Text>
+                <NBText variant="caption" color="gray500" style={styles.areaText}>
+                  Area: {areaName}
+                </NBText>
               )}
             </>
           )}
@@ -115,7 +125,9 @@ export default function AttendanceCard({
       <View style={styles.statusSection}>
         {isClockedIn ? (
           <>
-            <Text style={styles.statusIconPresent}>✓</Text>
+            <NBText variant="body" style={styles.statusIconPresent}>
+              ✓
+            </NBText>
             {isLate && (
               <NBBadge
                 text="Terlambat"
@@ -125,7 +137,9 @@ export default function AttendanceCard({
             )}
           </>
         ) : (
-          <Text style={styles.statusIconAbsent}>✕</Text>
+          <NBText variant="body" style={styles.statusIconAbsent}>
+            ✕
+          </NBText>
         )}
       </View>
     </View>
@@ -173,32 +187,16 @@ const styles = StyleSheet.create({
     borderColor: nbColors.dangerDark,
   },
   avatarText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
     color: nbColors.black,
   },
   infoSection: {
     flex: 1,
   },
   workerName: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
     color: nbColors.black,
     marginBottom: nbSpacing.xs,
   },
-  detailText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    marginTop: 2,
-  },
-  absentText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    fontStyle: 'italic',
-  },
   areaText: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
     marginTop: nbSpacing.xs,
   },
   statusSection: {
@@ -208,11 +206,9 @@ const styles = StyleSheet.create({
   statusIconPresent: {
     fontSize: 28,
     color: nbColors.successDark,
-    fontWeight: nbTypography.fontWeight.bold,
   },
   statusIconAbsent: {
     fontSize: 28,
     color: nbColors.dangerDark,
-    fontWeight: nbTypography.fontWeight.bold,
   },
 });

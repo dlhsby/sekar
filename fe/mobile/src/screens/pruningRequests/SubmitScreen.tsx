@@ -20,7 +20,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -67,7 +66,6 @@ import {
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbBorderRadius,
 } from '../../constants/nbTokens';
@@ -608,7 +606,8 @@ export function SubmitScreen(): React.JSX.Element {
                   as disabled NBSelects (matches the "Area Saya" pattern in the
                   tugas filter). Stacked vertically per UX review May 9, 2026.
                   staff_kecamatan users are pinned to a single kecamatan; admin
-                  callers keep the selectable behavior. */}
+                  callers keep the selectable behavior. Wrapped in <NBText> for
+                  typography consistency (Phase 4 M3c Stage 5). */}
               {user?.role === 'staff_kecamatan' ? (
                 <>
                   <View style={styles.fieldGroup} testID="perantingan-rayon-readonly">
@@ -828,7 +827,10 @@ export function SubmitScreen(): React.JSX.Element {
                 </View>
                 <MaterialCommunityIcons name="calendar-week" size={22} color={nbColors.black} />
               </TouchableOpacity>
-              <NBText variant="body-sm" style={[styles.helper, { marginTop: nbSpacing[2] }]}>
+              <NBText
+                variant="body-sm"
+                style={[styles.helper, { marginTop: nbSpacing[2] }] as any}
+              >
                 🟢 tersedia · 🟡 hampir penuh · 🔴 penuh · ⚪ belum diatur
               </NBText>
             </NBCardContent>
@@ -1038,7 +1040,7 @@ const styles = StyleSheet.create({
   },
   subHeading: {
     color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontWeight: '600',
     marginTop: nbSpacing[2],
     marginBottom: nbSpacing[2],
   },

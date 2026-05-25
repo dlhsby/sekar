@@ -41,6 +41,7 @@ import { TaskCreateScreen } from '../screens/taskActivity';
 // Common screens
 import { SettingsScreen } from '../screens/common/SettingsScreen';
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
+import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 
 // Pruning Requests screens (Phase 3 sub-phase 3-10)
 import { ReviewQueueScreen } from '../screens/pruningRequests/ReviewQueueScreen';
@@ -342,6 +343,17 @@ function MainNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader title="Edit Profil" onBack={() => navigation.goBack()} />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+      {/* Phase 4 M3d (NOTIF-1) — notifications inbox */}
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader title="Notifikasi" onBack={() => navigation.goBack()} />
           ),
           tabBarButton: () => null,
         })}

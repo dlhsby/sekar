@@ -72,8 +72,9 @@ export interface User {
   profile_picture_url?: string | null;  // Phase 2E: profile photo
   kecamatan_name?: string | null;       // Phase 3 Apr 27: staff_kecamatan attribution
   kecamatan_id?: string | null;         // May 2026: kecamatan promoted to FK
-  created_at: string;
-  updated_at: string;
+  password_must_change?: boolean;       // Phase 4-7 M3a: drives ChangePasswordScreen forced flow
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Area Type

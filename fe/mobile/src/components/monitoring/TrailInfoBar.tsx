@@ -6,15 +6,15 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
 import type { LocationHistory } from '../../types/models.types';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -85,11 +85,13 @@ function Stat({ icon, label, value, accent }: StatProps): React.JSX.Element {
     <View style={styles.stat}>
       <View style={styles.statHeader}>
         <MaterialCommunityIcons name={icon} size={14} color={accent} />
-        <Text style={styles.statLabel}>{label}</Text>
+        <NBText variant="caption" color="gray600" uppercase>
+          {label}
+        </NBText>
       </View>
-      <Text style={[styles.statValue, { color: accent }]} numberOfLines={1}>
+      <NBText variant="body" style={{ color: accent }} numberOfLines={1}>
         {value}
-      </Text>
+      </NBText>
     </View>
   );
 }
@@ -120,17 +122,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  statLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  statValue: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
   },
   divider: {
     width: nbBorders.thin,
