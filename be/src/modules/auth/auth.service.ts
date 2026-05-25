@@ -374,7 +374,7 @@ export class AuthService {
    */
   async changePassword(
     userId: string,
-    dto: { old_password: string; new_password: string },
+    dto: { old_password?: string; new_password: string },
   ): Promise<AuthResponseDto> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -392,14 +392,35 @@ export class AuthService {
       );
     }
 
-    const ok = await bcrypt.compare(dto.old_password, user.password_hash);
-    if (!ok) {
-      this.logger.warn(`changePassword failed: wrong old password for ${user.username}`);
+    if (dto.old_password) {
+      // Voluntary change (from Settings): prove the current password.
+      const ok = await bcrypt.compare(dto.old_password, user.password_hash);
+      if (!ok) {
+        this.logger.warn(`changePassword failed: wrong old password for ${user.username}`);
+        throw new ApiException(
+          HttpStatus.UNAUTHORIZED,
+          ApiErrorCode.AUTH_INVALID_CREDENTIALS,
+          'Old password is incorrect',
+        );
+      }
+    } else if (!user.password_must_change) {
+      // No old password supplied and not a forced reset → reject.
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         ApiErrorCode.AUTH_INVALID_CREDENTIALS,
-        'Old password is incorrect',
+        'Old password is required',
       );
+    } else {
+      // Admin-forced reset (already JWT-authenticated): the temporary password
+      // isn't re-typed, but block silently re-using it as the new password.
+      const reused = await bcrypt.compare(dto.new_password, user.password_hash);
+      if (reused) {
+        throw new ApiException(
+          HttpStatus.UNAUTHORIZED,
+          ApiErrorCode.AUTH_INVALID_CREDENTIALS,
+          'New password must differ from the temporary one',
+        );
+      }
     }
 
     user.password_hash = await this.hashPassword(dto.new_password);

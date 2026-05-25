@@ -43,12 +43,14 @@ export async function getMe(): Promise<ApiResponse<MeResponse>> {
  * pair the caller MUST persist via secureStorage.
  */
 export async function changePasswordAndRotate(
-  oldPassword: string,
   newPassword: string,
+  oldPassword?: string,
 ): Promise<ApiResponse<LoginResponse>> {
+  // `old_password` is only sent for a voluntary change; the admin-forced flow
+  // omits it (the caller is already authenticated with the temporary password).
   return post<LoginResponse>('/auth/change-password', {
-    old_password: oldPassword,
     new_password: newPassword,
+    ...(oldPassword ? { old_password: oldPassword } : {}),
   });
 }
 

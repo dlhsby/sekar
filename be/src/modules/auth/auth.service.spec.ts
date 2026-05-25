@@ -301,6 +301,57 @@ describe('AuthService', () => {
       );
     });
 
+    it('allows the forced flow without an old password and clears the flag', async () => {
+      mockUserRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        password_hash: 'temp.hash',
+        password_must_change: true,
+      });
+      mockUserRepository.save = jest.fn().mockImplementation((u) => Promise.resolve(u));
+      // new password differs from the stored temp hash
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+      jest.spyOn(bcrypt, 'hash').mockImplementation(() => Promise.resolve('new.hash'));
+
+      const result = await service.changePassword(mockUser.id, { new_password: 'newpass456' });
+
+      expect(result.user.password_must_change).toBe(false);
+      expect(mockUserRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ password_hash: 'new.hash', password_must_change: false }),
+      );
+    });
+
+    it('rejects re-using the temporary password in the forced flow', async () => {
+      mockUserRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        password_hash: 'temp.hash',
+        password_must_change: true,
+      });
+      // new password matches the stored temp hash
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
+
+      try {
+        await service.changePassword(mockUser.id, { new_password: 'newpass456' });
+        fail('should have thrown');
+      } catch (err) {
+        expect((err as ApiException).getCode()).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
+      }
+    });
+
+    it('rejects a voluntary change (no forced flag) without an old password', async () => {
+      mockUserRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        password_hash: 'hash',
+        password_must_change: false,
+      });
+
+      try {
+        await service.changePassword(mockUser.id, { new_password: 'newpass456' });
+        fail('should have thrown');
+      } catch (err) {
+        expect((err as ApiException).getCode()).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
+      }
+    });
+
     it('throws AUTH_INVALID_CREDENTIALS when old password is wrong', async () => {
       mockUserRepository.findOne.mockResolvedValue({ ...mockUser, password_hash: 'hash' });
       jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));

@@ -3,6 +3,8 @@
  *
  * SEKAR has no self-serve reset — credentials are admin-controlled. We show a
  * support hotline (WhatsApp + phone) so the user can request a temporary password.
+ * Reached from Login → "Lupa Kata Sandi?"; exit via "Kembali ke Login" or the
+ * device back button (no in-screen app-bar).
  *
  * NOTE: contacts are static for now. `/rayons` is auth-protected and this is a
  * pre-login screen, and we can't infer the caller's rayon anyway — so a single
@@ -10,7 +12,7 @@
  */
 
 import React, { useCallback } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -37,21 +39,7 @@ export function ForgotPasswordScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.root} testID="forgot-password-screen">
-      <View style={styles.appbar}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Kembali"
-          testID="forgot-back"
-        >
-          <MaterialCommunityIcons name="chevron-left" size={28} color={nbColors.black} />
-        </Pressable>
-        <NBText variant="h3">Lupa Kata Sandi</NBText>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.content}>
         <View style={styles.hero}>
           <View style={styles.lockBox}>
             <MaterialCommunityIcons name="lock-outline" size={36} color={nbColors.black} />
@@ -86,6 +74,8 @@ export function ForgotPasswordScreen(): React.JSX.Element {
           </NBText>
         </View>
 
+        <View style={styles.spacer} />
+
         <NBButton
           title="Kembali ke Login"
           variant="secondary"
@@ -93,36 +83,15 @@ export function ForgotPasswordScreen(): React.JSX.Element {
           onPress={() => navigation.goBack()}
           testID="forgot-password-back"
         />
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: nbColors.bgCanvas },
-  appbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.sm,
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm,
-    borderBottomWidth: nbBorders.widthBase,
-    borderBottomColor: nbColors.black,
-    backgroundColor: nbColors.bgSurface,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.bgSurface,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.base,
-    ...nbShadows.xs,
-  },
-  content: { padding: nbSpacing.lg, gap: nbSpacing.md },
-  hero: { alignItems: 'center', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
+  content: { flex: 1, padding: nbSpacing.lg, gap: nbSpacing.md },
+  hero: { alignItems: 'center', gap: nbSpacing.sm, marginTop: nbSpacing.xl, marginBottom: nbSpacing.sm },
   lockBox: {
     width: 72,
     height: 72,
@@ -144,6 +113,7 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
     backgroundColor: nbColors.bgSurface,
   },
+  spacer: { flex: 1 },
 });
 
 export default ForgotPasswordScreen;

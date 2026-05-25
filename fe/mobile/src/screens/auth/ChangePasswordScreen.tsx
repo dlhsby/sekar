@@ -28,25 +28,26 @@ const REDIRECT_MS = 1500;
 
 export function ChangePasswordScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
-  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // The temporary password isn't re-entered (the user already authenticated with
+  // it); the server gates the forced change on the JWT + password_must_change flag
+  // and rejects re-using the temp password.
   const rules = [
     { label: 'Minimal 8 karakter', met: newPassword.length >= 8 },
     { label: 'Berisi huruf dan angka', met: /[A-Za-z]/.test(newPassword) && /\d/.test(newPassword) },
-    { label: 'Berbeda dari sandi sementara', met: newPassword.length > 0 && newPassword !== oldPassword },
     { label: 'Konfirmasi cocok', met: confirmPassword.length > 0 && newPassword === confirmPassword },
   ];
-  const allValid = oldPassword.length > 0 && rules.every((r) => r.met);
+  const allValid = rules.every((r) => r.met);
 
   const handleSubmit = useCallback(async () => {
     if (!allValid) return;
     setSubmitting(true);
     try {
-      const res = await changePasswordAndRotate(oldPassword, newPassword);
+      const res = await changePasswordAndRotate(newPassword);
       const data = res.data;
       if (!data || !data.access_token) {
         NBToast.show({ level: 'danger', title: 'Gagal', body: res.error ?? 'Tidak ada respons dari server.' });
@@ -64,15 +65,19 @@ export function ChangePasswordScreen(): React.JSX.Element {
       setTimeout(() => dispatch(setUser({ user: data.user })), REDIRECT_MS);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan.';
-      if (/old.password|invalid.credentials|AUTH_INVALID/i.test(message)) {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: 'Sandi sementara salah.' });
+      if (/differ|invalid.credentials|AUTH_INVALID/i.test(message)) {
+        NBToast.show({
+          level: 'danger',
+          title: 'Gagal',
+          body: 'Sandi baru tidak boleh sama dengan sandi sementara.',
+        });
       } else {
         NBToast.show({ level: 'danger', title: 'Gagal', body: message });
       }
     } finally {
       setSubmitting(false);
     }
-  }, [allValid, oldPassword, newPassword, dispatch]);
+  }, [allValid, newPassword, dispatch]);
 
   const handleLogout = useCallback(async () => {
     await clearAll();
@@ -101,14 +106,6 @@ export function ChangePasswordScreen(): React.JSX.Element {
             message="Demi keamanan, buat sandi baru sebelum melanjutkan."
           />
 
-          <NBPasswordInput
-            label="Sandi Sementara"
-            placeholder="Dari WhatsApp admin"
-            value={oldPassword}
-            onChangeText={setOldPassword}
-            editable={!submitting}
-            testID="change-password-old"
-          />
           <NBPasswordInput
             label="Sandi Baru"
             placeholder="Masukkan sandi baru"

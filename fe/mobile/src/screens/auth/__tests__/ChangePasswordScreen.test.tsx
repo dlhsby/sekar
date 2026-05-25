@@ -46,17 +46,17 @@ describe('ChangePasswordScreen', () => {
     mockToast.mockClear();
   });
 
-  it('renders the live requirement checklist', () => {
-    const { getByText } = renderWithStore();
+  it('renders the live requirement checklist (no temporary-password field)', () => {
+    const { getByText, queryByTestId } = renderWithStore();
     expect(getByText('Minimal 8 karakter')).toBeTruthy();
     expect(getByText('Berisi huruf dan angka')).toBeTruthy();
-    expect(getByText('Berbeda dari sandi sementara')).toBeTruthy();
     expect(getByText('Konfirmasi cocok')).toBeTruthy();
+    // Temporary-password field is gone — the user already authenticated with it.
+    expect(queryByTestId('change-password-old')).toBeNull();
   });
 
   it('gates submit while the new password is too short', () => {
     const { getByTestId } = renderWithStore();
-    fireEvent.changeText(getByTestId('change-password-old'), 'oldpass1');
     fireEvent.changeText(getByTestId('change-password-new'), 'short');
     fireEvent.changeText(getByTestId('change-password-confirm'), 'short');
     fireEvent.press(getByTestId('change-password-submit'));
@@ -65,23 +65,13 @@ describe('ChangePasswordScreen', () => {
 
   it('gates submit while confirmation does not match', () => {
     const { getByTestId } = renderWithStore();
-    fireEvent.changeText(getByTestId('change-password-old'), 'oldpass1');
     fireEvent.changeText(getByTestId('change-password-new'), 'newpass12');
     fireEvent.changeText(getByTestId('change-password-confirm'), 'different9');
     fireEvent.press(getByTestId('change-password-submit'));
     expect(mockChangePassword).not.toHaveBeenCalled();
   });
 
-  it('gates submit while the new password equals the temporary one', () => {
-    const { getByTestId } = renderWithStore();
-    fireEvent.changeText(getByTestId('change-password-old'), 'samepass1');
-    fireEvent.changeText(getByTestId('change-password-new'), 'samepass1');
-    fireEvent.changeText(getByTestId('change-password-confirm'), 'samepass1');
-    fireEvent.press(getByTestId('change-password-submit'));
-    expect(mockChangePassword).not.toHaveBeenCalled();
-  });
-
-  it('on success: stores rotated tokens + shows the confirmation', async () => {
+  it('on success: submits the new password, stores tokens, shows confirmation', async () => {
     mockChangePassword.mockResolvedValue({
       data: {
         access_token: 'new.access',
@@ -90,28 +80,29 @@ describe('ChangePasswordScreen', () => {
       },
     });
     const { getByTestId } = renderWithStore();
-    fireEvent.changeText(getByTestId('change-password-old'), 'oldpass1');
     fireEvent.changeText(getByTestId('change-password-new'), 'newpass12');
     fireEvent.changeText(getByTestId('change-password-confirm'), 'newpass12');
     fireEvent.press(getByTestId('change-password-submit'));
 
-    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('oldpass1', 'newpass12'));
+    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('newpass12'));
     expect(mockSetToken).toHaveBeenCalledWith('new.access');
     expect(mockSetRefreshToken).toHaveBeenCalledWith('new.refresh');
     expect(mockSetUserStorage).toHaveBeenCalled();
     await waitFor(() => expect(getByTestId('change-password-success')).toBeTruthy());
   });
 
-  it('on wrong temporary password: surfaces a toast', async () => {
+  it('on reused temporary password: surfaces a toast', async () => {
     mockChangePassword.mockRejectedValue(new Error('AUTH_INVALID_CREDENTIALS'));
     const { getByTestId } = renderWithStore();
-    fireEvent.changeText(getByTestId('change-password-old'), 'wrongpw1');
     fireEvent.changeText(getByTestId('change-password-new'), 'newpass12');
     fireEvent.changeText(getByTestId('change-password-confirm'), 'newpass12');
     fireEvent.press(getByTestId('change-password-submit'));
     await waitFor(() =>
       expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'danger', body: 'Sandi sementara salah.' }),
+        expect.objectContaining({
+          level: 'danger',
+          body: 'Sandi baru tidak boleh sama dengan sandi sementara.',
+        }),
       ),
     );
   });
