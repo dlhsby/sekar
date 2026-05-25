@@ -58,6 +58,23 @@ jest.mock('../MainNavigator', () => {
   };
 });
 
+jest.mock('../../screens/auth/ChangePasswordScreen', () => {
+  const { Text } = require('react-native');
+  return {
+    __esModule: true,
+    default: function MockChangePassword() {
+      return <Text testID="change-password-screen">Change Password</Text>;
+    },
+  };
+});
+
+jest.mock('../OnboardingNavigator', () => {
+  const { Text } = require('react-native');
+  return function MockOnboarding() {
+    return <Text testID="onboarding-navigator">Onboarding</Text>;
+  };
+});
+
 // Helper to create store with preloaded state
 function createTestStore(preloadedState?: any) {
   return configureStore({
@@ -318,6 +335,37 @@ describe('RootNavigator', () => {
       );
 
       expect(screen.getByTestId('main-navigator')).toBeTruthy();
+    });
+  });
+
+  describe('forced password change precedence', () => {
+    it('renders ChangePassword before onboarding when password_must_change is set', () => {
+      const store = createTestStore({
+        auth: {
+          user: {
+            id: 'reset-1',
+            username: 'resettest',
+            full_name: 'Reset Test',
+            role: 'satgas',
+            password_must_change: true,
+          },
+          assignedArea: null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        },
+      });
+
+      render(
+        <Provider store={store}>
+          <RootNavigator />
+        </Provider>
+      );
+
+      // Forced change wins over the onboarding gate.
+      expect(screen.getByTestId('change-password-screen')).toBeTruthy();
+      expect(screen.queryByTestId('onboarding-navigator')).toBeNull();
+      expect(screen.queryByTestId('main-navigator')).toBeNull();
     });
   });
 });
