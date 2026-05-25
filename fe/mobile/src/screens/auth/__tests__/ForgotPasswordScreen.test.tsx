@@ -18,7 +18,7 @@ describe('ForgotPasswordScreen', () => {
     jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
   });
 
-  it('renders rayon list with phone + WhatsApp buttons', async () => {
+  it('renders rayon list with phone + WhatsApp contacts', async () => {
     mockGetRayons.mockResolvedValue({
       data: [
         {
@@ -31,7 +31,7 @@ describe('ForgotPasswordScreen', () => {
     });
     const { getByTestId } = render(<ForgotPasswordScreen />);
     await waitFor(() => {
-      expect(getByTestId('rayon-card-r-1')).toBeTruthy();
+      expect(getByTestId('rayon-r-1')).toBeTruthy();
     });
     expect(getByTestId('rayon-tel-r-1')).toBeTruthy();
     expect(getByTestId('rayon-wa-r-1')).toBeTruthy();

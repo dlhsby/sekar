@@ -13,10 +13,19 @@ jest.mock('../../../services/api/authApi', () => ({
 const mockSetToken = jest.fn().mockResolvedValue(undefined);
 const mockSetRefreshToken = jest.fn().mockResolvedValue(undefined);
 const mockSetUserStorage = jest.fn().mockResolvedValue(undefined);
+const mockClearAll = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../../services/storage/secureStorage', () => ({
   setToken: (...a: unknown[]) => mockSetToken(...a),
   setRefreshToken: (...a: unknown[]) => mockSetRefreshToken(...a),
   setUser: (...a: unknown[]) => mockSetUserStorage(...a),
+  clearAll: (...a: unknown[]) => mockClearAll(...a),
+}));
+
+const mockToast = jest.fn();
+jest.mock('../../../components/nb/NBToast', () => ({
+  NBToast: { show: (...a: unknown[]) => mockToast(...a), hide: jest.fn() },
+  NBToastProvider: () => null,
+  nbToastConfig: {},
 }));
 
 const renderWithStore = () => {
@@ -34,44 +43,45 @@ describe('ChangePasswordScreen', () => {
     mockSetToken.mockClear();
     mockSetRefreshToken.mockClear();
     mockSetUserStorage.mockClear();
+    mockToast.mockClear();
   });
 
-  it('validates new password length', async () => {
-    const { getByTestId, getByText } = renderWithStore();
+  it('renders the live requirement checklist', () => {
+    const { getByText } = renderWithStore();
+    expect(getByText('Minimal 8 karakter')).toBeTruthy();
+    expect(getByText('Berisi huruf dan angka')).toBeTruthy();
+    expect(getByText('Berbeda dari sandi sementara')).toBeTruthy();
+    expect(getByText('Konfirmasi cocok')).toBeTruthy();
+  });
+
+  it('gates submit while the new password is too short', () => {
+    const { getByTestId } = renderWithStore();
     fireEvent.changeText(getByTestId('change-password-old'), 'oldpass1');
     fireEvent.changeText(getByTestId('change-password-new'), 'short');
     fireEvent.changeText(getByTestId('change-password-confirm'), 'short');
     fireEvent.press(getByTestId('change-password-submit'));
-    await waitFor(() => {
-      expect(getByText(/minimal 8 karakter/i)).toBeTruthy();
-    });
     expect(mockChangePassword).not.toHaveBeenCalled();
   });
 
-  it('validates confirm password mismatch', async () => {
-    const { getByTestId, getByText } = renderWithStore();
+  it('gates submit while confirmation does not match', () => {
+    const { getByTestId } = renderWithStore();
     fireEvent.changeText(getByTestId('change-password-old'), 'oldpass1');
-    fireEvent.changeText(getByTestId('change-password-new'), 'newpassword');
-    fireEvent.changeText(getByTestId('change-password-confirm'), 'different1');
+    fireEvent.changeText(getByTestId('change-password-new'), 'newpass12');
+    fireEvent.changeText(getByTestId('change-password-confirm'), 'different9');
     fireEvent.press(getByTestId('change-password-submit'));
-    await waitFor(() => {
-      expect(getByText(/tidak cocok/i)).toBeTruthy();
-    });
     expect(mockChangePassword).not.toHaveBeenCalled();
   });
 
-  it('rejects when new password matches old', async () => {
-    const { getByTestId, getByText } = renderWithStore();
+  it('gates submit while the new password equals the temporary one', () => {
+    const { getByTestId } = renderWithStore();
     fireEvent.changeText(getByTestId('change-password-old'), 'samepass1');
     fireEvent.changeText(getByTestId('change-password-new'), 'samepass1');
     fireEvent.changeText(getByTestId('change-password-confirm'), 'samepass1');
     fireEvent.press(getByTestId('change-password-submit'));
-    await waitFor(() => {
-      expect(getByText(/harus berbeda/i)).toBeTruthy();
-    });
+    expect(mockChangePassword).not.toHaveBeenCalled();
   });
 
-  it('on success: stores rotated tokens + dispatches setUser', async () => {
+  it('on success: stores rotated tokens + shows the confirmation', async () => {
     mockChangePassword.mockResolvedValue({
       data: {
         access_token: 'new.access',
@@ -81,27 +91,28 @@ describe('ChangePasswordScreen', () => {
     });
     const { getByTestId } = renderWithStore();
     fireEvent.changeText(getByTestId('change-password-old'), 'oldpass1');
-    fireEvent.changeText(getByTestId('change-password-new'), 'newpassword');
-    fireEvent.changeText(getByTestId('change-password-confirm'), 'newpassword');
+    fireEvent.changeText(getByTestId('change-password-new'), 'newpass12');
+    fireEvent.changeText(getByTestId('change-password-confirm'), 'newpass12');
     fireEvent.press(getByTestId('change-password-submit'));
 
-    await waitFor(() => {
-      expect(mockChangePassword).toHaveBeenCalledWith('oldpass1', 'newpassword');
-    });
+    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('oldpass1', 'newpass12'));
     expect(mockSetToken).toHaveBeenCalledWith('new.access');
     expect(mockSetRefreshToken).toHaveBeenCalledWith('new.refresh');
     expect(mockSetUserStorage).toHaveBeenCalled();
+    await waitFor(() => expect(getByTestId('change-password-success')).toBeTruthy());
   });
 
-  it('on wrong old password: surfaces inline error', async () => {
+  it('on wrong temporary password: surfaces a toast', async () => {
     mockChangePassword.mockRejectedValue(new Error('AUTH_INVALID_CREDENTIALS'));
-    const { getByTestId, getByText } = renderWithStore();
-    fireEvent.changeText(getByTestId('change-password-old'), 'wrongpass');
-    fireEvent.changeText(getByTestId('change-password-new'), 'newpassword');
-    fireEvent.changeText(getByTestId('change-password-confirm'), 'newpassword');
+    const { getByTestId } = renderWithStore();
+    fireEvent.changeText(getByTestId('change-password-old'), 'wrongpw1');
+    fireEvent.changeText(getByTestId('change-password-new'), 'newpass12');
+    fireEvent.changeText(getByTestId('change-password-confirm'), 'newpass12');
     fireEvent.press(getByTestId('change-password-submit'));
-    await waitFor(() => {
-      expect(getByText(/sandi lama tidak benar/i)).toBeTruthy();
-    });
+    await waitFor(() =>
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'danger', body: 'Sandi sementara salah.' }),
+      ),
+    );
   });
 });

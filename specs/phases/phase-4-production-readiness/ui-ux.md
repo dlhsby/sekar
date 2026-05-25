@@ -218,6 +218,10 @@ Per `illustrations.html § Splash screen`:
 - **AS-3 error handling:** server auth failures show a **generic top toast** ("No. HP atau Kata Sandi salah. Coba lagi.", auto-dismiss 4s) so the failing field can't be enumerated; missing-token → "Server bermasalah…"; network/throw → "Tidak bisa terhubung. Coba lagi.".
 - Tests: LoginScreen suite rewritten to the new contract (testID/placeholder queries, blur-triggered validation, gated submit, generic toasts) — 23/23; the `react-native-device-info` jest mock gained `getVersion`/`getBuildNumber`.
 
+**M3 revamp status — AS-4 Forgot password ✅ (2026-05-25):** `ForgotPasswordScreen` rebuilt to hi-fi AS-4 — app-bar (back + "Lupa Kata Sandi") · lock-icon hero ("Sandi tidak bisa di-reset sendiri") · rayon contact list · dashed temp-password note · "Kembali ke Login". New reusable `components/auth/ContactChannelCard.tsx` (WhatsApp green / phone info icon card, `tel:` / `wa.me` deep-links). **Reconciliation:** the real feature lists **every rayon's** contacts (anonymous `getRayons`) rather than the hi-fi's two fixed channels — kept the dynamic list, applied the hi-fi card styling. WhatsApp brand green → `statusActive` token (no inline hex).
+
+**M3 revamp status — AS-5 + AS-5b Change password ✅ (2026-05-25):** `ChangePasswordScreen` rebuilt — `NBAlert` "sandi sementara" banner · Sandi Sementara / Sandi Baru / Konfirmasi fields · **live** `RequirementChecklist` (min 8 · huruf+angka · beda dari sementara · konfirmasi cocok) gating the "Simpan & Masuk" CTA · "Keluar & login lain" (clears storage + `logout`). On success it shows the **AS-5b** confirmation (`SuccessOverlay` — check circle + "Sandi tersimpan" + pulsing dots) for ~1.5s before `RootNavigator` routes on the cleared `password_must_change`. New reusable `components/common/RequirementChecklist.tsx` + `components/common/SuccessOverlay.tsx`. Tests: ForgotPassword 5/5 + ChangePassword 6/6 rewritten to the new contracts.
+
 ### 3.4 Empty-state illustrations (6 SVGs)
 
 | ID | File | Used by |
