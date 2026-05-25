@@ -22,6 +22,19 @@ First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrom
 
 ---
 
+## May 25, 2026 — M3 Home revamp · Checkpoint 2b: HOME-1 field dashboard
+
+Rebuilt `FieldHomeScreen` body to the hi-fi **HOME-1** using the Checkpoint-2a widgets; data loading, the live timer, the 5-min a11y announcement, and the modals are all preserved.
+- **Absensi hero** (replaces the old collapsible shift card): active shift → sage `statusActiveBg` card, "SEDANG BERTUGAS" (or "LEMBUR AKTIF" on `statusIdleBg`), live clock, an in-area `StatusPill` (`ok` "Di area" / `bad` "Di luar area" / `neutral` "Lokasi…" from `useHomeLocation.isWithinArea`), "Mulai {time} · {area}", and the **Clock-out** button. No shift → white "Belum clock in" / "Mulai shift hari ini" + assigned area + **Clock-in**. Tapping the clock area opens the shift-detail modal; tapping the pill opens the location-map modal.
+- **"Tugas hari ini"** (`HomeSectionDivider` + a "{n} tersisa" `StatusPill`) → `HomeListRow`s from a **new** `tasksApi.getMyTasks({scope:'assigned'})` fetch (active statuses only, top 5, status→pill via `taskPill`, deadline time + area meta, tap → `TaskDetail`). Empty → "Tidak ada tugas aktif hari ini." Gated to `TASK_RECEIVERS`.
+- **"Ringkasan hari ini"** → 3 `HomeStatTile`s: Aktivitas (→ activities modal), Jam kerja (→ work-hours modal), Tugas (active count).
+
+**Reconciliations vs hi-fi:** (a) the hi-fi **"Istirahat"/break** button is dropped — no break feature exists; (b) hi-fi **"Ringkasan minggu ini"** → **"hari ini"** — no cheap weekly aggregate, so today's real metrics are shown; (c) the separate Phase-2D `LocationStatusCard` (GPS coords/accuracy) is removed from the main view to match hi-fi — location now reads as the in-area pill, with the map still reachable by tapping it; (d) the old fixed clock **FAB** is gone — the clock action lives in the hero. The clock-out/in button keeps `testID="clock-button"` and the `CLOCKABLE_ROLES` gate, so the existing FAB role-guard tests still hold.
+
+**Tests:** `FieldHomeScreen` suite rewired (added `tasks` reducer + `tasksApi` mock; +HOME-1 UI cases — hero idle/active, summary tiles, task rows, empty hint) → 28/28; widgets 9/9. **Full mobile suite 4166 passed / 0 failed**; `tsc` only the pre-existing `LocationMapModal` `Area`/`AreaBoundary` baseline (unchanged by this work); ESLint clean. **Next:** HOME-2 (korlap) and HOME-3 (admin_data) dashboards.
+
+---
+
 ## May 25, 2026 — M3 Home revamp · Checkpoint 2a: reusable Home widgets
 
 The shared building blocks for the role dashboards (HOME-1/2/3), `src/components/home/`, tokens-only, all hard-edge v2.1:

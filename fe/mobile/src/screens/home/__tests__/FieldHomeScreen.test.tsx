@@ -14,8 +14,10 @@ import authReducer from '../../../store/slices/authSlice';
 import shiftReducer from '../../../store/slices/shiftSlice';
 import activitiesReducer from '../../../store/slices/activitiesSlice';
 import offlineReducer from '../../../store/slices/offlineSlice';
+import tasksReducer from '../../../store/slices/tasksSlice';
 import * as shiftsApi from '../../../services/api/shiftsApi';
 import * as activitiesApi from '../../../services/api/activitiesApi';
+import * as tasksApi from '../../../services/api/tasksApi';
 
 // Mock Alert to prevent "Alert.alert is not a function" errors
 jest.spyOn(Alert, 'alert').mockImplementation(() => {});
@@ -23,6 +25,7 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 // Mock the APIs
 jest.mock('../../../services/api/shiftsApi');
 jest.mock('../../../services/api/activitiesApi');
+jest.mock('../../../services/api/tasksApi');
 
 // Mock useLocationPermission hook
 jest.mock('../../../hooks', () => ({
@@ -74,6 +77,8 @@ jest.mock('../../../hooks/useHomeLocation', () => ({
 const createTestStore = (currentShift: any = null) => {
   // Mock reportsApi to return empty array
   (activitiesApi.getMyActivities as jest.Mock).mockResolvedValue({ data: [] });
+  // Default: no tasks (overridden per-test where the list is exercised)
+  (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({ data: { data: [] } });
 
   return configureStore({
     reducer: {
@@ -81,6 +86,7 @@ const createTestStore = (currentShift: any = null) => {
       shift: shiftReducer,
       activities: activitiesReducer,
       offline: offlineReducer,
+      tasks: tasksReducer,
     },
     preloadedState: {
       auth: {
@@ -442,6 +448,7 @@ describe('HomeScreen Clock In/Out FAB', () => {
         shift: shiftReducer,
         activities: activitiesReducer,
         offline: offlineReducer,
+        tasks: tasksReducer,
       },
       preloadedState: {
         auth: {
@@ -584,6 +591,7 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
         shift: shiftReducer,
         activities: activitiesReducer,
         offline: offlineReducer,
+        tasks: tasksReducer,
       },
       preloadedState: {
         auth: {
@@ -680,10 +688,10 @@ describe('HomeScreen — Fix 10: onActivityPress navigates to Activities screen'
     jest.clearAllMocks();
   });
 
-  it('handleViewActivities closes the modal (does not leave it open)', async () => {
+  it('opening the activities stat tile does not throw', async () => {
     const store = createTestStore(null);
 
-    const { getByAccessibilityHint, queryByText } = render(
+    const { getByTestId } = render(
       <Provider store={store}>
         <NavigationContainer>
           <HomeScreen />
@@ -693,15 +701,10 @@ describe('HomeScreen — Fix 10: onActivityPress navigates to Activities screen'
 
     await act(async () => { jest.advanceTimersByTime(200); });
 
-    // Open the activities modal by pressing the Aktivitas summary item
-    const aktivitasButton = getByAccessibilityHint('Ketuk untuk melihat daftar aktivitas hari ini');
-    fireEvent.press(aktivitasButton);
-
-    // The modal is open; when onActivityPress fires (simulated by closing logic),
-    // the modal should close. This verifies the handler does not leave state dangling.
-    // We can't fully navigate in unit tests without a real navigator stack,
-    // but we verify the handler doesn't throw.
-    expect(aktivitasButton).toBeTruthy();
+    // Open the activities modal by pressing the Aktivitas summary tile.
+    const aktivitasTile = getByTestId('stat-activities');
+    fireEvent.press(aktivitasTile);
+    expect(aktivitasTile).toBeTruthy();
   });
 });
 
@@ -717,6 +720,7 @@ describe('HomeScreen — Fix 9: No offline Redux selector subscription', () => {
         shift: shiftReducer,
         activities: activitiesReducer,
         offline: offlineReducer,
+        tasks: tasksReducer,
       },
       preloadedState: {
         auth: {
@@ -842,5 +846,116 @@ describe('HomeScreen Accessibility (Issue 8)', () => {
 
     // Should NOT have announced again for the same minute
     expect(mockAnnounce).toHaveBeenCalledTimes(initialCallCount);
+  });
+});
+
+// ============================================================
+// HOME-1 hi-fi body (Checkpoint 2b)
+// ============================================================
+
+describe('FieldHomeScreen HOME-1 body', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [] });
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+    (activitiesApi.getMyActivities as jest.Mock).mockResolvedValue({ data: [] });
+    (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({ data: { data: [] } });
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.clearAllTimers();
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
+
+  const renderHome = (store: ReturnType<typeof createTestStore>) =>
+    render(
+      <Provider store={store}>
+        <NavigationContainer>
+          <HomeScreen />
+        </NavigationContainer>
+      </Provider>
+    );
+
+  it('renders the idle absensi hero when no shift is active', async () => {
+    const store = createTestStore(null);
+    const { getByText, getByTestId } = renderHome(store);
+    await act(async () => { jest.advanceTimersByTime(200); });
+
+    await waitFor(() => {
+      expect(getByTestId('absensi-hero')).toBeTruthy();
+      expect(getByText('Belum clock in')).toBeTruthy();
+      expect(getByText('Mulai shift hari ini')).toBeTruthy();
+    });
+  });
+
+  it('renders the active absensi hero ("Sedang bertugas") with a shift', async () => {
+    const shift = createShift(new Date());
+    (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
+    (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
+    const store = createTestStore(shift);
+    const { getByText, getByTestId } = renderHome(store);
+    await act(async () => { jest.advanceTimersByTime(200); });
+
+    await waitFor(() => {
+      expect(getByTestId('absensi-hero')).toBeTruthy();
+      expect(getByText('Sedang bertugas')).toBeTruthy();
+      expect(getByTestId('clock-button')).toBeTruthy();
+    });
+  });
+
+  it('renders the "Ringkasan hari ini" summary tiles', async () => {
+    const store = createTestStore(null);
+    const { getByTestId } = renderHome(store);
+    await act(async () => { jest.advanceTimersByTime(200); });
+
+    await waitFor(() => {
+      expect(getByTestId('stat-activities')).toBeTruthy();
+      expect(getByTestId('stat-workhours')).toBeTruthy();
+      expect(getByTestId('stat-tasks')).toBeTruthy();
+    });
+  });
+
+  it('renders today\'s active tasks as list rows', async () => {
+    // NOTE: createTestStore() resets the getMyTasks mock to empty, so the
+    // populated mock must be set AFTER the store is created.
+    const store = createTestStore(null);
+    (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 't1',
+            title: 'Pangkas pohon Trembesi',
+            status: 'assigned',
+            priority: 'high',
+            deadline: new Date().toISOString(),
+            area: { id: 1, name: 'Zona A' },
+            created_by: 'u9',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ],
+      },
+    });
+    const { getByText, getByTestId } = renderHome(store);
+    await act(async () => { jest.advanceTimersByTime(300); await Promise.resolve(); });
+
+    await waitFor(() => {
+      expect(getByText('Pangkas pohon Trembesi')).toBeTruthy();
+      expect(getByTestId('home-task-t1')).toBeTruthy();
+      expect(getByText('Siap mulai')).toBeTruthy();
+    });
+  });
+
+  it('shows the empty-task hint when there are no active tasks', async () => {
+    const store = createTestStore(null);
+    const { getByText } = renderHome(store);
+    await act(async () => { jest.advanceTimersByTime(200); });
+
+    await waitFor(() => {
+      expect(getByText('Tidak ada tugas aktif hari ini.')).toBeTruthy();
+    });
   });
 });

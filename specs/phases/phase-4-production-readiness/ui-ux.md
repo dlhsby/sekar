@@ -240,6 +240,8 @@ Per `illustrations.html § Splash screen`:
 
 **M3 revamp status — Home role-aware dispatcher ✅ (2026-05-25) — Checkpoint 1c:** Home is now a single **role-aware anchor**: `src/screens/home/HomeScreen.tsx` reads `auth.user.role` and dispatches to the per-role dashboard. The old field `HomeScreen` moved to `screens/home/FieldHomeScreen.tsx` (HOME-1, body unchanged). korlap/kepala_rayon → HOME-2 and admin_data → HOME-3 are placeholders (next checkpoints); until then all Home-tab roles fall through to the field dashboard (no behavior change). Completes **Checkpoint 1 (shared chrome + dispatcher)**. Full suite 4152 passing.
 
+**M3 revamp status — Home widgets + HOME-1 body ✅ (2026-05-25) — Checkpoints 2a/2b:** Added reusable `components/home/` widgets — `StatusPill`, `HomeSectionDivider`, `HomeStatTile`, `HomeListRow` (tokens-only; feed all role dashboards). Rebuilt `FieldHomeScreen` (HOME-1) to hi-fi: **absensi hero** (live clock + in-area pill + clock-out), **"Tugas hari ini"** real assigned-task list (new `tasksApi.getMyTasks` fetch, status→pill, tap → TaskDetail), **"Ringkasan hari ini"** stat tiles (Aktivitas / Jam kerja / Tugas). **Reconciliations:** dropped hi-fi "Istirahat" (no break feature); "minggu ini" → "hari ini" (no weekly aggregate); removed the standalone `LocationStatusCard` (location now the in-area pill, map reachable by tapping it); clock action moved from the FAB into the hero (keeps `testID=clock-button` + `CLOCKABLE_ROLES` gate). Tests: FieldHomeScreen 28/28 + widgets 9/9; full suite 4166 passing. **Next:** HOME-2 (korlap) + HOME-3 (admin_data).
+
 ### 3.4 Empty-state illustrations (6 SVGs)
 
 | ID | File | Used by |
