@@ -179,11 +179,11 @@ function LoginScreen(): React.JSX.Element {
         >
           <View style={styles.content}>
             <View style={styles.header}>
-              <SekarLogoBox size={88} testID="login-logo" />
-              <NBText variant="h1" align="center" style={styles.heading}>
+              <SekarLogoBox size={64} testID="login-logo" />
+              <NBText variant="h1" style={styles.heading}>
                 Selamat datang.
               </NBText>
-              <NBText variant="body-sm" color="gray600" align="center">
+              <NBText variant="body-sm" color="gray600" style={styles.subtitle}>
                 Masuk menggunakan No. HP atau username Anda
               </NBText>
             </View>
@@ -230,7 +230,7 @@ function LoginScreen(): React.JSX.Element {
                 testID="forgot-password-link"
               >
                 <NBText variant="body-sm" color="secondary" style={styles.forgotText}>
-                  Lupa sandi?
+                  Lupa Kata Sandi?
                 </NBText>
               </Pressable>
             </View>
@@ -266,8 +266,10 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing['2xl'],
     paddingBottom: nbSpacing.xl,
   },
-  header: { alignItems: 'center' },
-  heading: { marginTop: nbSpacing.lg, marginBottom: nbSpacing.xs },
+  // Hi-fi AS-1: pinwheel logo on top-left, then a left-aligned greeting + instruction.
+  header: { alignItems: 'flex-start' },
+  heading: { marginTop: nbSpacing.lg, marginBottom: nbSpacing.xs, lineHeight: 30 },
+  subtitle: { lineHeight: 21 },
   form: { marginTop: nbSpacing['2xl'] },
   forgotWrap: { alignSelf: 'flex-end', marginTop: nbSpacing.sm },
   forgotText: { textDecorationLine: 'underline' },
