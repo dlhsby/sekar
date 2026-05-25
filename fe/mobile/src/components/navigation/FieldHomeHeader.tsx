@@ -173,7 +173,10 @@ const styles = StyleSheet.create({
     height: 56,
   },
   /* Left column — role-colored avatar (main screens). 40×40 + 8px gap = 48px
-     total, matching the back button's 44+4 so the center text holds its x. */
+     total, matching the back button's 44+4 so the center text holds its x.
+     A11y: the fill is the role accent at 0.22 alpha over the white header (a pale
+     tint) so BLACK initials clear WCAG AA for every role — worst case (superadmin)
+     is 10.9:1. Do NOT switch to a solid role fill: white-on-sage/yellow would fail. */
   avatar: {
     width: 40,
     height: 40,
@@ -185,7 +188,7 @@ const styles = StyleSheet.create({
     ...nbShadows.xs,
   },
   avatarText: {
-    fontSize: 15,
+    fontSize: 15, // hi-fi avatar initials size (one-off; no scale token at 15)
     fontWeight: '700',
   },
   /* Left column — back arrow button (sub-screens with back, 44×44 WCAG).

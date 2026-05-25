@@ -1,7 +1,7 @@
 # Phase 4: Production Readiness, Rebrand & UI/UX Revamp — Implementation Status
 
-**Status:** 🔵 In Progress — Milestone 3a+b (entry flow) shipped May 24; M1+M2 checkpoint review May 25, 2026
-**Last Updated:** May 25, 2026 (M1+M2 checkpoint: design-token reconciliation to design/ + NB component hardening + security review — see [`status_progress.md`](./status_progress.md) for the authoritative shipped trail)
+**Status:** 🔵 In Progress — M3a+b entry flow shipped May 24; M1+M2 checkpoint May 25; M3 Home revamp Checkpoint 1 (shared chrome + role-aware dispatcher) shipped May 25, 2026
+**Last Updated:** May 25, 2026 (M3 Home revamp Checkpoint 1: masthead + tab bar + role-aware Home dispatcher + **critical stale-`tokens.js` shadowing fix** that activates v2.1 tokens app-wide — see [`status_progress.md`](./status_progress.md) for the authoritative shipped trail)
 **Overall Progress:** ~50% (M1: 4-0 + 4-1 · M2: 4-2 + 4-3 + 4-7 + Sentry + BullMQ + coverage · M3a+b: entry-flow gates + ADRs 040-042 Accepted + pre-existing lint/typecheck clear)
 **Branch:** main (M1 + M2 + M3a+b committed in-tree pending PR)
 **Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md), **NEW** [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
@@ -52,7 +52,7 @@
 | Sub-Phase | Name | Milestone | Status |
 |-----------|------|-----------|--------|
 | **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟡 Token pipeline ✅ v2.1.1 (sage + hard-edge + 5-status + 9 role + lilac, matched to `design/`); brand-asset integration (icons/splash/illustrations B1-B6) ⏳ |
-| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow + 22-screen v2.1 sweep ✅; web revamp ⏳; brand assets ⏳ |
+| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home role-aware anchor **Checkpoint 1** (shared masthead + tab bar + dispatcher) ✅ + critical stale-`tokens.js` fix (v2.1 now renders app-wide) ✅; Home bodies HOME-1/2/3 + remaining screens ⏳; web revamp ⏳; brand assets ⏳ |
 | **4-V** | **Production-Readiness Gap Audit** | post-M3 | ⏳ Not started |
 | 4-1 | Infrastructure & Evaluation (trimmed) | M1 | 🟡 Health module (`/live`,`/ready`+real 503) ✅; Sentry + BullMQ scaffolding ✅; structured-logging/tracing items ⏳ |
 | 4-2 | Offline Sync Completion | M2 | 🟢 3-state connectivity + banner + queue expansion ✅ (staging field-test = 4-V) |

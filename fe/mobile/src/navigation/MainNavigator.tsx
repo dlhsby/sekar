@@ -461,6 +461,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabLabel: {
+    // hi-fi tab-label size (9.5/12) — a one-off below the mono-sm scale (12/17)
+    // so all 5 labels fit one line at 5 tabs; intentional, no token at this size.
     fontSize: 9.5,
     lineHeight: 12,
     letterSpacing: 0.2,
